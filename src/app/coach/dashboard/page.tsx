@@ -1,0 +1,155 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
+import CoachNavbar from '../../components/CoachNavbar';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export default function CoachDashboard() {
+  const router = useRouter();
+  const [coach, setCoach] = useState(null);
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total: 0, awaiting: 0, overdue: 0, new: 0 });
+
+  useEffect(() => {
+    const checkCoach = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        router.push('/coach/login');
+        return;
+      }
+      
+      // Check if user is a coach
+      const { data: coachData, error } = await supabase
+        .from('coaches')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error || !coachData) {
+        router.push('/dashboard'); // Not a coach
+        return;
+      }
+      
+      setCoach(coachData);
+      
+      // Load assigned clients from profiles table
+      const { data: clientsData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('coach_id', coachData.id);
+      
+      if (clientsData) {
+        setClients(clientsData);
+        const total = clientsData.length;
+        const awaiting = clientsData.filter(c => c.checkin_awaiting === true).length;
+        const overdue = clientsData.filter(c => c.checkin_overdue === true).length;
+        const newClients = clientsData.filter(c => c.plan_delivered === false).length;
+        setStats({ total, awaiting, overdue, new: newClients });
+      }
+      
+      setLoading(false);
+    };
+    checkCoach();
+  }, [router]);
+
+  if (loading) {
+    return <div style={styles.loading}>Loading coach dashboard...</div>;
+  }
+
+  return (
+    <>
+      <CoachNavbar />
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <h1>Coach Dashboard</h1>
+          <p style={styles.subtitle}>Welcome back, {coach?.name || 'Coach'}!</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div style={styles.statsGrid}>
+          <div style={styles.statCard}>
+            <div style={styles.statNumber}>{stats.total}</div>
+            <div style={styles.statLabel}>Total Clients</div>
+            <div style={styles.statSub}>{stats.total}/{coach?.hard_cap || 500} capacity</div>
+          </div>
+          <div style={{...styles.statCard, borderLeft: '4px solid #e94560'}}>
+            <div style={styles.statNumber}>{stats.awaiting}</div>
+            <div style={styles.statLabel}>Awaiting Response</div>
+          </div>
+          <div style={{...styles.statCard, borderLeft: '4px solid #f0a030'}}>
+            <div style={styles.statNumber}>{stats.overdue}</div>
+            <div style={styles.statLabel}>Overdue Check-ins</div>
+          </div>
+          <div style={{...styles.statCard, borderLeft: '4px solid #1a4a8a'}}>
+            <div style={styles.statNumber}>{stats.new}</div>
+            <div style={styles.statLabel}>New Clients</div>
+          </div>
+        </div>
+
+        {/* Client Queue */}
+        <div style={styles.queueSection}>
+          <h2>Client Queue</h2>
+          
+          <div style={styles.clientList}>
+            {clients.length === 0 ? (
+              <p style={styles.empty}>No clients assigned yet.</p>
+            ) : (
+              clients.map((client) => (
+                <div key={client.id} style={styles.clientCard}>
+                  <div style={styles.clientInfo}>
+                    <div style={styles.clientName}>{client.name || client.email}</div>
+                    <div style={styles.clientStatus}>
+                      {client.checkin_overdue && <span style={styles.badgeOverdue}>Overdue</span>}
+                      {client.checkin_awaiting && <span style={styles.badgeAwaiting}>Awaiting</span>}
+                      {!client.plan_delivered && <span style={styles.badgeNew}>New</span>}
+                      {!client.checkin_overdue && !client.checkin_awaiting && client.plan_delivered && 
+                        <span style={styles.badgeOk}>✓ OK</span>
+                      }
+                    </div>
+                  </div>
+                  <div style={styles.clientActions}>
+                    <button style={styles.actionBtn} onClick={() => router.push(`/coach/client/${client.id}`)}>
+                      View Profile
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+const styles = {
+  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: 20, color: '#666' },
+  container: { maxWidth: 1200, margin: '0 auto', padding: '30px 20px' },
+  header: { marginBottom: 30 },
+  subtitle: { color: '#666' },
+  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 30 },
+  statCard: { backgroundColor: 'white', padding: 20, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', borderLeft: '4px solid #1a1a2e' },
+  statNumber: { fontFamily: 'Syne, sans-serif', fontSize: 32, fontWeight: 800, color: '#1a1a2e' },
+  statLabel: { fontSize: 14, color: '#666' },
+  statSub: { fontSize: 12, color: '#999', marginTop: 4 },
+  queueSection: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
+  clientList: { display: 'flex', flexDirection: 'column', gap: 12, marginTop: 15 },
+  clientCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, border: '1px solid #eee', borderRadius: 8 },
+  clientInfo: { flex: 1 },
+  clientName: { fontWeight: 600, marginBottom: 4 },
+  clientStatus: { display: 'flex', gap: 8 },
+  badgeOverdue: { backgroundColor: '#f8d7da', color: '#721c24', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
+  badgeAwaiting: { backgroundColor: '#fff3cd', color: '#856404', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
+  badgeNew: { backgroundColor: '#cce5ff', color: '#004085', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
+  badgeOk: { backgroundColor: '#d4edda', color: '#155724', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
+  clientActions: { display: 'flex', gap: 10 },
+  actionBtn: { padding: '8px 16px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' },
+  empty: { textAlign: 'center', color: '#666', padding: '40px 0' },
+};

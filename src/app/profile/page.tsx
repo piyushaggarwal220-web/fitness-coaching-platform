@@ -1,0 +1,127 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
+import Navbar from '../components/Navbar';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export default function Profile() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState({ name: '', age: '', fitness_goal: '', weight: '', height: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        router.push('/login');
+        return;
+      }
+      setUser(data.user);
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileData) {
+        setProfile({
+          name: profileData.name || '',
+          age: profileData.age || '',
+          fitness_goal: profileData.fitness_goal || '',
+          weight: profileData.weight || '',
+          height: profileData.height || '',
+        });
+      }
+      setLoading(false);
+    };
+    checkUser();
+  }, [router]);
+
+  const handleChange = (e) => {
+    setProfile({ ...profile, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage('');
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        ...profile,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (error) {
+      setMessage('❌ Error saving profile: ' + error.message);
+    } else {
+      setMessage('✅ Profile saved successfully!');
+    }
+    setSaving(false);
+  };
+
+  if (loading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: 20 }}>Loading...</div>;
+  }
+
+  return (
+    <>
+      <Navbar />
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 20px' }}>
+        <h1 style={{ fontSize: 32, marginBottom: 10 }}>👤 Profile Settings</h1>
+        <p style={{ color: '#666', marginBottom: 30 }}>Update your fitness profile</p>
+
+        {message && <div style={{ padding: 15, borderRadius: 8, marginBottom: 20, backgroundColor: '#d4edda', color: '#155724' }}>{message}</div>}
+
+        <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', padding: 30, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Full Name</label>
+            <input type="text" name="name" value={profile.name} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box' }} placeholder="Enter your name" />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Age</label>
+            <input type="number" name="age" value={profile.age} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box' }} placeholder="Enter your age" />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Fitness Goal</label>
+            <select name="fitness_goal" value={profile.fitness_goal} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, backgroundColor: 'white' }}>
+              <option value="">Select your goal</option>
+              <option value="lose_weight">Lose Weight</option>
+              <option value="build_muscle">Build Muscle</option>
+              <option value="stay_fit">Stay Fit</option>
+              <option value="increase_stamina">Increase Stamina</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: 15 }}>
+            <div style={{ flex: 1, marginBottom: 20 }}>
+              <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Weight (kg)</label>
+              <input type="number" name="weight" value={profile.weight} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box' }} placeholder="70" />
+            </div>
+            <div style={{ flex: 1, marginBottom: 20 }}>
+              <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Height (cm)</label>
+              <input type="number" name="height" value={profile.height} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box' }} placeholder="175" />
+            </div>
+          </div>
+
+          <button type="submit" disabled={saving} style={{ width: '100%', padding: 14, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 18, cursor: 'pointer' }}>
+            {saving ? 'Saving...' : 'Save Profile'}
+          </button>
+        </form>
+      </div>
+    </>
+  );
+}
