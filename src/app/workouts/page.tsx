@@ -1,22 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
+import { createClient, type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import type { NewWorkoutForm, Workout } from '@/types/database';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Workouts() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [workouts, setWorkouts] = useState([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [newWorkout, setNewWorkout] = useState({
+  const [newWorkout, setNewWorkout] = useState<NewWorkoutForm>({
     name: '',
     duration: '',
     calories: '',
@@ -37,7 +37,7 @@ export default function Workouts() {
     checkUser();
   }, [router]);
 
-  const loadWorkouts = async (userId) => {
+  const loadWorkouts = async (userId: string) => {
     const { data } = await supabase
       .from('workouts')
       .select('*')
@@ -47,13 +47,15 @@ export default function Workouts() {
     if (data) setWorkouts(data);
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setNewWorkout({ ...newWorkout, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { data, error } = await supabase
+    if (!user) return;
+
+    const { error } = await supabase
       .from('workouts')
       .insert({
         user_id: user.id,
@@ -142,7 +144,7 @@ export default function Workouts() {
   );
 }
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' },
   container: { maxWidth: '800px', margin: '0 auto', padding: '30px 20px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },

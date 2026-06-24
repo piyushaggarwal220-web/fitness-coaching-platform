@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Navbar() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {

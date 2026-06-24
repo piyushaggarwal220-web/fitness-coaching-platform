@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import CoachNavbar from '../../components/CoachNavbar';
+import type { ClientProfile, Coach, CoachStats } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -11,10 +12,10 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function CoachDashboard() {
   const router = useRouter();
-  const [coach, setCoach] = useState(null);
-  const [clients, setClients] = useState([]);
+  const [coach, setCoach] = useState<Coach | null>(null);
+  const [clients, setClients] = useState<ClientProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, awaiting: 0, overdue: 0, new: 0 });
+  const [stats, setStats] = useState<CoachStats>({ total: 0, awaiting: 0, overdue: 0, new: 0 });
 
   useEffect(() => {
     const checkCoach = async () => {
@@ -129,7 +130,7 @@ export default function CoachDashboard() {
   );
 }
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: 20, color: '#666' },
   container: { maxWidth: 1200, margin: '0 auto', padding: '30px 20px' },
   header: { marginBottom: 30 },

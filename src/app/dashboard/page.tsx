@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import type { Profile } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -11,8 +12,8 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Dashboard() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats] = useState({ workouts: 12, streak: 5, progress: 78 });
 

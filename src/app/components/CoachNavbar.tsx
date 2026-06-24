@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useState, useEffect, type CSSProperties } from 'react';
+import { createClient, type User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function CoachNavbar() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
@@ -40,7 +40,7 @@ export default function CoachNavbar() {
   );
 }
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   navbar: { backgroundColor: '#1a1a2e', padding: '15px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 100 },
   container: { maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' },
   logo: { color: '#e94560', fontSize: 24, fontWeight: 'bold', textDecoration: 'none' },

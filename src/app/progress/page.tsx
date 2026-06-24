@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import type { ProgressStats, Workout } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -11,10 +12,10 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Progress() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [workouts, setWorkouts] = useState([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, totalMinutes: 0, totalCalories: 0, avgDuration: 0 });
+  const [stats, setStats] = useState<ProgressStats>({ total: 0, totalMinutes: 0, totalCalories: 0, avgDuration: 0 });
 
   useEffect(() => {
     const checkUser = async () => {

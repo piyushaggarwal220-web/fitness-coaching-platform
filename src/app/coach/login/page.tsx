@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties, type FormEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 
@@ -15,7 +15,7 @@ export default function CoachLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -88,7 +88,7 @@ export default function CoachLogin() {
   );
 }
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   container: {
     maxWidth: '400px',
     margin: '50px auto',

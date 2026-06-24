@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import type { ProfileForm } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -11,8 +12,8 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Profile() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState({ name: '', age: '', fitness_goal: '', weight: '', height: '' });
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<ProfileForm>({ name: '', age: '', fitness_goal: '', weight: '', height: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -46,12 +47,14 @@ export default function Profile() {
     checkUser();
   }, [router]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!user) return;
+
     setSaving(true);
     setMessage('');
 
