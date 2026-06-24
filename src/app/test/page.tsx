@@ -1,3 +1,5 @@
+'use client';
+
 export default function TestPage() {
   function handleClick() {
     alert('Button clicked!');
