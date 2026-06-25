@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient, type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import { authenticateClient } from '@/lib/onboarding';
 import type { ProfileForm } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -20,26 +21,18 @@ export default function Profile() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
-        router.push('/login');
-        return;
-      }
-      setUser(data.user);
+      const result = await authenticateClient(supabase, router, { requireOnboarding: true });
+      if (!result) return;
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
+      setUser(result.user as User);
 
-      if (profileData) {
+      if (result.profile) {
         setProfile({
-          name: profileData.name || '',
-          age: profileData.age || '',
-          fitness_goal: profileData.fitness_goal || '',
-          weight: profileData.weight || '',
-          height: profileData.height || '',
+          name: result.profile.name || '',
+          age: result.profile.age != null ? String(result.profile.age) : '',
+          fitness_goal: result.profile.fitness_goal || '',
+          weight: result.profile.weight != null ? String(result.profile.weight) : '',
+          height: result.profile.height != null ? String(result.profile.height) : '',
         });
       }
       setLoading(false);
@@ -102,6 +95,11 @@ export default function Profile() {
             <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Fitness Goal</label>
             <select name="fitness_goal" value={profile.fitness_goal} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, backgroundColor: 'white' }}>
               <option value="">Select your goal</option>
+              <option value="fat_loss">Fat Loss</option>
+              <option value="muscle_gain">Muscle Gain</option>
+              <option value="recomposition">Recomposition</option>
+              <option value="strength">Strength</option>
+              <option value="athletic_performance">Athletic Performance</option>
               <option value="lose_weight">Lose Weight</option>
               <option value="build_muscle">Build Muscle</option>
               <option value="stay_fit">Stay Fit</option>

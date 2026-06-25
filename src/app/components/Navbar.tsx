@@ -36,6 +36,8 @@ export default function Navbar() {
           {user ? (
             <>
               <Link href="/dashboard" style={styles.link}>Dashboard</Link>
+              <Link href="/plan" style={styles.link}>My Plan</Link>
+              <Link href="/checkin" style={styles.link}>Check-In</Link>
               <Link href="/profile" style={styles.link}>Profile</Link>
               <Link href="/workouts" style={styles.link}>Workouts</Link>
               <Link href="/progress" style={styles.link}>Progress</Link>

@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { createClient, type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
-import type { Profile } from '@/types/database';
+import { formatCheckinDate, getNextCheckinDate, isCheckinDue } from '@/lib/checkin';
+import { formatPlanDate } from '@/lib/plans';
+import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
+import type { Checkin, OnboardingProfile, Plan } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -13,26 +16,40 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<OnboardingProfile | null>(null);
+  const [latestCheckin, setLatestCheckin] = useState<Checkin | null>(null);
+  const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats] = useState({ workouts: 12, streak: 5, progress: 78 });
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
-        router.push('/login');
-        return;
-      }
-      setUser(data.user);
-      
-      const { data: profileData } = await supabase
-        .from('profiles')
+      const result = await authenticateClient(supabase, router, { requireOnboarding: true });
+      if (!result) return;
+
+      setUser(result.user as User);
+      setProfile(result.profile);
+
+      const { data: checkinData } = await supabase
+        .from('checkins')
         .select('*')
-        .eq('id', data.user.id)
-        .single();
-      
-      setProfile(profileData);
+        .eq('client_id', result.user.id)
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setLatestCheckin(checkinData);
+
+      const { data: planData } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('client_id', result.user.id)
+        .eq('active', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setActivePlan(planData);
       setLoading(false);
     };
     checkUser();
@@ -55,8 +72,78 @@ export default function Dashboard() {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '30px 20px' }}>
         <div style={{ marginBottom: 30 }}>
           <h1 style={{ fontSize: 32 }}>Welcome back, {profile?.name || user?.email || 'User'}!</h1>
-          <p style={{ color: '#666' }}>Here's your fitness summary for today</p>
+          <p style={{ color: '#666' }}>Here&apos;s your fitness summary for today</p>
         </div>
+
+        {profile && (
+          <div style={checkinStyles.card}>
+            <h2 style={checkinStyles.title}>Weekly check-in</h2>
+            <div style={checkinStyles.row}>
+              <div>
+                <p style={checkinStyles.statusLabel}>Status</p>
+                <p style={checkinStyles.statusValue}>
+                  {profile.checkin_awaiting
+                    ? 'Awaiting coach review'
+                    : latestCheckin?.reviewed
+                      ? 'Last check-in reviewed'
+                      : latestCheckin
+                        ? 'Submitted — pending review'
+                        : 'No check-ins yet'}
+                </p>
+                {latestCheckin && (
+                  <p style={checkinStyles.meta}>Last submitted: {formatCheckinDate(latestCheckin.submitted_at)}</p>
+                )}
+              </div>
+              <div>
+                <p style={checkinStyles.statusLabel}>Next check-in</p>
+                <p style={checkinStyles.statusValue}>
+                  {isCheckinDue(latestCheckin?.submitted_at ?? null)
+                    ? 'Due now'
+                    : formatCheckinDate(getNextCheckinDate(latestCheckin?.submitted_at ?? null).toISOString())}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => router.push('/checkin')}
+              style={checkinStyles.btn}
+            >
+              {isCheckinDue(latestCheckin?.submitted_at ?? null) ? 'Submit check-in' : 'View / submit early'}
+            </button>
+          </div>
+        )}
+
+        {profile && (
+          <div style={planStyles.card}>
+            <h2 style={planStyles.title}>Your coaching plan</h2>
+            <p style={planStyles.status}>
+              {activePlan
+                ? `${activePlan.title} · v${activePlan.version}`
+                : profile.plan_delivered
+                  ? 'Plan pending activation'
+                  : 'No plan delivered yet'}
+            </p>
+            {activePlan && (
+              <p style={planStyles.meta}>Last updated {formatPlanDate(activePlan.updated_at)}</p>
+            )}
+            <button onClick={() => router.push('/plan')} style={planStyles.btn}>
+              {activePlan ? 'View full plan' : 'Check plan status'}
+            </button>
+          </div>
+        )}
+
+        {profile && (
+          <div style={summaryStyles.card}>
+            <h2 style={summaryStyles.title}>Your onboarding profile</h2>
+            <div style={summaryStyles.grid}>
+              <SummaryItem label="Goal" value={getOnboardingLabel('fitness_goal', profile.fitness_goal)} />
+              <SummaryItem label="Training" value={getOnboardingLabel('training_experience', profile.training_experience)} />
+              <SummaryItem label="Activity" value={getOnboardingLabel('activity_level', profile.activity_level)} />
+              <SummaryItem label="Diet" value={getOnboardingLabel('diet_preference', profile.diet_preference)} />
+              <SummaryItem label="Sleep" value={getOnboardingLabel('sleep_duration', profile.sleep_duration)} />
+              <SummaryItem label="Age / Weight" value={`${profile.age ?? '—'} yrs · ${profile.weight ?? '—'} kg`} />
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 30 }}>
           <div style={{ backgroundColor: 'white', padding: 25, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', textAlign: 'center' }}>
@@ -92,6 +179,12 @@ export default function Dashboard() {
               📊 View Progress
             </button>
             <button 
+              onClick={() => router.push('/checkin')} 
+              style={{ padding: 15, backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' }}
+            >
+              📋 Weekly Check-In
+            </button>
+            <button 
               onClick={() => router.push('/profile')} 
               style={{ padding: 15, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' }}
             >
@@ -123,3 +216,39 @@ export default function Dashboard() {
     </>
   );
 }
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={summaryStyles.item}>
+      <span style={summaryStyles.itemLabel}>{label}</span>
+      <span style={summaryStyles.itemValue}>{value}</span>
+    </div>
+  );
+}
+
+const summaryStyles: Record<string, React.CSSProperties> = {
+  card: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24 },
+  title: { margin: '0 0 16px 0', fontSize: 20 },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 },
+  item: { display: 'flex', flexDirection: 'column', gap: 4 },
+  itemLabel: { fontSize: 12, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  itemValue: { fontSize: 15, fontWeight: 600, color: '#1a1a2e' },
+};
+
+const checkinStyles: Record<string, React.CSSProperties> = {
+  card: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24, borderLeft: '4px solid #e94560' },
+  title: { margin: '0 0 16px 0', fontSize: 20 },
+  row: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 16 },
+  statusLabel: { margin: 0, fontSize: 12, color: '#999', textTransform: 'uppercase' },
+  statusValue: { margin: '4px 0 0 0', fontSize: 16, fontWeight: 600 },
+  meta: { margin: '4px 0 0 0', fontSize: 13, color: '#666' },
+  btn: { padding: '12px 20px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 15, fontWeight: 600 },
+};
+
+const planStyles: Record<string, React.CSSProperties> = {
+  card: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24, borderLeft: '4px solid #1a1a2e' },
+  title: { margin: '0 0 12px 0', fontSize: 20 },
+  status: { margin: '0 0 4px 0', fontSize: 16, fontWeight: 600, color: '#1a1a2e' },
+  meta: { margin: '0 0 16px 0', fontSize: 13, color: '#666' },
+  btn: { padding: '12px 20px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 15, fontWeight: 600 },
+};

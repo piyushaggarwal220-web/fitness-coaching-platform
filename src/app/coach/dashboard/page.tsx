@@ -16,6 +16,8 @@ export default function CoachDashboard() {
   const [clients, setClients] = useState<ClientProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<CoachStats>({ total: 0, awaiting: 0, overdue: 0, new: 0 });
+  const [pendingCheckins, setPendingCheckins] = useState(0);
+  const [plansDelivered, setPlansDelivered] = useState(0);
 
   useEffect(() => {
     const checkCoach = async () => {
@@ -54,6 +56,22 @@ export default function CoachDashboard() {
         const newClients = clientsData.filter(c => c.plan_delivered === false).length;
         setStats({ total, awaiting, overdue, new: newClients });
       }
+
+      const { count } = await supabase
+        .from('checkins')
+        .select('*', { count: 'exact', head: true })
+        .eq('coach_id', coachData.id)
+        .eq('reviewed', false);
+
+      setPendingCheckins(count ?? 0);
+
+      const { count: activePlanCount } = await supabase
+        .from('plans')
+        .select('*', { count: 'exact', head: true })
+        .eq('coach_id', coachData.id)
+        .eq('active', true);
+
+      setPlansDelivered(activePlanCount ?? 0);
       
       setLoading(false);
     };
@@ -92,6 +110,30 @@ export default function CoachDashboard() {
             <div style={styles.statNumber}>{stats.new}</div>
             <div style={styles.statLabel}>New Clients</div>
           </div>
+        </div>
+
+        <div style={styles.checkinBanner}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18 }}>Pending check-in reviews</h2>
+            <p style={{ margin: '6px 0 0 0', color: '#666' }}>
+              {pendingCheckins === 0 ? 'All caught up!' : `${pendingCheckins} check-in${pendingCheckins === 1 ? '' : 's'} waiting for review`}
+            </p>
+          </div>
+          <button style={styles.checkinBtn} onClick={() => router.push('/coach/checkins')}>
+            Review check-ins
+          </button>
+        </div>
+
+        <div style={{ ...styles.checkinBanner, borderLeftColor: '#1a1a2e' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18 }}>Active plans delivered</h2>
+            <p style={{ margin: '6px 0 0 0', color: '#666' }}>
+              {plansDelivered} client{plansDelivered === 1 ? '' : 's'} with an active plan
+            </p>
+          </div>
+          <button style={{ ...styles.checkinBtn, backgroundColor: '#1a1a2e' }} onClick={() => router.push('/coach/plans')}>
+            Manage plans
+          </button>
         </div>
 
         {/* Client Queue */}
@@ -153,4 +195,18 @@ const styles: Record<string, CSSProperties> = {
   clientActions: { display: 'flex', gap: 10 },
   actionBtn: { padding: '8px 16px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' },
   empty: { textAlign: 'center', color: '#666', padding: '40px 0' },
+  checkinBanner: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 16,
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+    marginBottom: 24,
+    borderLeft: '4px solid #e94560',
+  },
+  checkinBtn: { padding: '10px 20px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 15 },
 };

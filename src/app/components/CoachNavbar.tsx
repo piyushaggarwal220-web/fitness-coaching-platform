@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, type CSSProperties } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient, type User } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { isTestModeEnabled } from '@/lib/test-mode';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -33,6 +34,11 @@ export default function CoachNavbar() {
         <div style={styles.links}>
           <Link href="/coach/dashboard" style={styles.link}>Dashboard</Link>
           <Link href="/coach/clients" style={styles.link}>Clients</Link>
+          <Link href="/coach/plans" style={styles.link}>Plans</Link>
+          <Link href="/coach/checkins" style={styles.link}>Check-ins</Link>
+          {isTestModeEnabled() && (
+            <Link href="/admin/dev-tools" style={styles.devLink}>Dev Tools</Link>
+          )}
           <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
         </div>
       </div>
@@ -47,4 +53,5 @@ const styles: Record<string, CSSProperties> = {
   links: { display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' },
   link: { color: 'white', textDecoration: 'none', padding: '8px 15px', borderRadius: 5, fontSize: 16 },
   logoutBtn: { backgroundColor: '#e94560', color: 'white', border: 'none', padding: '8px 20px', borderRadius: 5, cursor: 'pointer', fontSize: 16 },
+  devLink: { color: '#ffc107', textDecoration: 'none', padding: '8px 15px', borderRadius: 5, fontSize: 16, fontWeight: 700 },
 };

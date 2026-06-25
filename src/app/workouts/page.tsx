@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEve
 import { createClient, type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import { authenticateClient } from '@/lib/onboarding';
 import type { NewWorkoutForm, Workout } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -25,13 +26,11 @@ export default function Workouts() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      setUser(user);
-      await loadWorkouts(user.id);
+      const result = await authenticateClient(supabase, router, { requireOnboarding: true });
+      if (!result) return;
+
+      setUser(result.user as User);
+      await loadWorkouts(result.user.id);
       setLoading(false);
     };
     checkUser();

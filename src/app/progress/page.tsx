@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient, type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import { authenticateClient } from '@/lib/onboarding';
 import type { ProgressStats, Workout } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -19,17 +20,15 @@ export default function Progress() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
-        router.push('/login');
-        return;
-      }
-      setUser(data.user);
+      const result = await authenticateClient(supabase, router, { requireOnboarding: true });
+      if (!result) return;
+
+      setUser(result.user as User);
 
       const { data: workoutsData } = await supabase
         .from('workouts')
         .select('*')
-        .eq('user_id', data.user.id);
+        .eq('user_id', result.user.id);
 
       if (workoutsData) {
         setWorkouts(workoutsData);
