@@ -296,10 +296,10 @@ export default function Home() {
             marginTop: "40px"
           }}>
             {[
-              { plan: "1 Month", price: "₹500", save: "No commitment", link: "https://rzp.io/rzp/Qy2B2PdM" },
-              { plan: "3 Months", price: "₹900", save: "Save ₹600 vs monthly", link: "https://rzp.io/rzp/S4rsNLf" },
-              { plan: "6 Months", price: "₹1,500", save: "Save ₹1,500 vs monthly", link: "https://rzp.io/rzp/sBMjcJv", popular: true },
-              { plan: "12 Months", price: "₹2,400", save: "Save ₹3,600 vs monthly", link: "https://rzp.io/rzp/f2jJo5ns", best: true }
+              { plan: "1 Month", price: "₹500", save: "No commitment", slug: "1_month" },
+              { plan: "3 Months", price: "₹900", save: "Save ₹600 vs monthly", slug: "3_months" },
+              { plan: "6 Months", price: "₹1,500", save: "Save ₹1,500 vs monthly", slug: "6_months", popular: true },
+              { plan: "12 Months", price: "₹2,400", save: "Save ₹3,600 vs monthly", slug: "12_months", best: true }
             ].map((item, index) => (
               <div key={index} style={{
                 background: "rgba(255,255,255,0.03)",
@@ -335,7 +335,7 @@ export default function Home() {
                 <div style={{ fontSize: "1.3rem", fontWeight: "700" }}>{item.plan}</div>
                 <div style={{ fontFamily: "DM Mono, monospace", fontSize: "2.2rem", margin: "18px 0" }}>{item.price}</div>
                 <p style={{ color: "#B9B1A6", marginBottom: "6px", fontSize: "0.92rem" }}>{item.save}</p>
-                <a href={item.link} target="_blank" rel="noopener noreferrer" style={{
+                <a href={`/checkout?plan=${item.slug}`} style={{
                   background: "#FF4D2E",
                   color: "white",
                   padding: "16px 28px",

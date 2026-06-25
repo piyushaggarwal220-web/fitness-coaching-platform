@@ -26,7 +26,7 @@ export default function Workouts() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const result = await authenticateClient(supabase, router, { requireOnboarding: true });
+      const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
       if (!result) return;
 
       setUser(result.user as User);

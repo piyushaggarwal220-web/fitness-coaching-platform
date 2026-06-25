@@ -20,7 +20,7 @@ export default function ClientPlanPage() {
 
   useEffect(() => {
     const load = async () => {
-      const result = await authenticateClient(supabase, router, { requireOnboarding: true });
+      const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
       if (!result) return;
 
       const { data, error: planError } = await supabase

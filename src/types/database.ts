@@ -39,6 +39,12 @@ export type Profile = {
   medical_notes?: string | null
   sleep_duration?: string | null
   onboarding_complete?: boolean | null
+  onboarding_completed_at?: string | null
+  payment_confirmed?: boolean | null
+  progress_photo_front?: string | null
+  progress_photo_side?: string | null
+  progress_photo_back?: string | null
+  terms_accepted_at?: string | null
   updated_at?: string | null
   coach_id?: string | null
   checkin_awaiting?: boolean | null
@@ -49,6 +55,7 @@ export type Profile = {
 export type OnboardingProfile = Profile
 
 export type OnboardingFormData = {
+  name: string
   age: string
   gender: string
   height: string
@@ -60,6 +67,22 @@ export type OnboardingFormData = {
   injuries: string
   medical_notes: string
   sleep_duration: string
+  terms_accepted: boolean
+}
+
+export type Purchase = {
+  id: string
+  user_id: string | null
+  razorpay_payment_id: string
+  razorpay_order_id: string
+  plan_slug: string
+  plan_name: string
+  amount_paise: number
+  currency: string
+  status: string
+  customer_email: string
+  customer_name: string | null
+  created_at: string
 }
 
 export type Workout = {

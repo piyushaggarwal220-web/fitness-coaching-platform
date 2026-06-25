@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import {
@@ -13,6 +13,7 @@ import {
   ONBOARDING_STEPS,
   SLEEP_OPTIONS,
   TRAINING_OPTIONS,
+  uploadOnboardingPhoto,
   validateOnboardingStep,
 } from '@/lib/onboarding';
 import type { OnboardingFormData } from '@/types/database';
@@ -21,10 +22,17 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+type PhotoKey = 'front' | 'side' | 'back';
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<OnboardingFormData>(INITIAL_ONBOARDING_FORM);
+  const [photos, setPhotos] = useState<Record<PhotoKey, File | null>>({
+    front: null,
+    side: null,
+    back: null,
+  });
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -32,12 +40,16 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const init = async () => {
-      const result = await authenticateClient(supabase, router, { redirectIfOnboarded: true });
+      const result = await authenticateClient(supabase, router, {
+        redirectIfOnboarded: true,
+        requirePayment: true,
+      });
       if (!result) return;
 
       setUserId(result.user.id);
       if (result.profile) {
         setForm({
+          name: result.profile.name ?? '',
           age: result.profile.age != null ? String(result.profile.age) : '',
           gender: result.profile.gender ?? '',
           height: result.profile.height != null ? String(result.profile.height) : '',
@@ -49,6 +61,7 @@ export default function OnboardingPage() {
           injuries: result.profile.injuries ?? '',
           medical_notes: result.profile.medical_notes ?? '',
           sleep_duration: result.profile.sleep_duration ?? '',
+          terms_accepted: Boolean(result.profile.terms_accepted_at),
         });
       }
       setLoading(false);
@@ -59,12 +72,20 @@ export default function OnboardingPage() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type } = e.target;
+    const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
+    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+    setError('');
+  };
+
+  const handlePhotoChange = (key: PhotoKey) => (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setPhotos((prev) => ({ ...prev, [key]: file }));
     setError('');
   };
 
   const handleNext = () => {
-    const validationError = validateOnboardingStep(step, form);
+    const validationError = validateOnboardingStep(step, form, photos);
     if (validationError) {
       setError(validationError);
       return;
@@ -80,43 +101,60 @@ export default function OnboardingPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const validationError = validateOnboardingStep(step, form);
+    const validationError = validateOnboardingStep(step, form, photos);
     if (validationError) {
       setError(validationError);
       return;
     }
-    if (!userId) return;
+    if (!userId || !photos.front || !photos.side || !photos.back) return;
 
     setSubmitting(true);
     setError('');
 
-    const { data: { user } } = await supabase.auth.getUser();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const now = new Date().toISOString();
 
-    const { error: saveError } = await supabase.from('profiles').upsert({
-      id: userId,
-      email: user?.email ?? null,
-      age: Number(form.age),
-      gender: form.gender,
-      height: Number(form.height),
-      weight: Number(form.weight),
-      fitness_goal: form.fitness_goal,
-      training_experience: form.training_experience,
-      activity_level: form.activity_level,
-      diet_preference: form.diet_preference,
-      injuries: form.injuries || null,
-      medical_notes: form.medical_notes || null,
-      sleep_duration: form.sleep_duration,
-      onboarding_complete: true,
-      updated_at: new Date().toISOString(),
-    });
+      const [frontUrl, sideUrl, backUrl] = await Promise.all([
+        uploadOnboardingPhoto(supabase, userId, photos.front, 'front'),
+        uploadOnboardingPhoto(supabase, userId, photos.side, 'side'),
+        uploadOnboardingPhoto(supabase, userId, photos.back, 'back'),
+      ]);
 
-    if (saveError) {
-      setError('Failed to save onboarding data: ' + saveError.message);
+      const { error: saveError } = await supabase.from('profiles').upsert({
+        id: userId,
+        email: user?.email ?? null,
+        name: form.name.trim(),
+        age: Number(form.age),
+        gender: form.gender,
+        height: Number(form.height),
+        weight: Number(form.weight),
+        fitness_goal: form.fitness_goal,
+        training_experience: form.training_experience,
+        activity_level: form.activity_level,
+        diet_preference: form.diet_preference,
+        injuries: form.injuries || null,
+        medical_notes: form.medical_notes || null,
+        sleep_duration: form.sleep_duration,
+        progress_photo_front: frontUrl,
+        progress_photo_side: sideUrl,
+        progress_photo_back: backUrl,
+        terms_accepted_at: now,
+        onboarding_complete: true,
+        onboarding_completed_at: now,
+        updated_at: now,
+      });
+
+      if (saveError) {
+        throw new Error(saveError.message);
+      }
+
+      router.push('/dashboard');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save onboarding';
+      setError(message);
       setSubmitting(false);
-      return;
     }
-
-    router.push('/dashboard');
   };
 
   if (loading) {
@@ -130,7 +168,7 @@ export default function OnboardingPage() {
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>Welcome! Let&apos;s get started</h1>
-          <p style={styles.subtitle}>Complete your profile so we can build your personalised plan.</p>
+          <p style={styles.subtitle}>Payment confirmed — complete your profile so we can build your personalised plan.</p>
         </div>
 
         <div style={styles.progressWrap}>
@@ -155,12 +193,15 @@ export default function OnboardingPage() {
 
         {error && <div style={styles.error}>{error}</div>}
 
-        <form onSubmit={step === ONBOARDING_STEPS.length - 1 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}>
+        <form onSubmit={step === ONBOARDING_STEPS.length - 1 ? handleSubmit : (ev) => { ev.preventDefault(); handleNext(); }}>
           {step === 0 && (
             <div style={styles.stepContent}>
-              <h2 style={styles.stepTitle}>Personal details</h2>
+              <h2 style={styles.stepTitle}>Personal information</h2>
+              <Field label="Full name" required>
+                <input type="text" name="name" value={form.name} onChange={handleChange} required style={styles.input} />
+              </Field>
               <Field label="Age" required>
-                <input type="number" name="age" value={form.age} onChange={handleChange} min={13} max={100} required style={styles.input} placeholder="e.g. 28" />
+                <input type="number" name="age" value={form.age} onChange={handleChange} min={13} max={100} required style={styles.input} />
               </Field>
               <Field label="Gender" required>
                 <select name="gender" value={form.gender} onChange={handleChange} required style={styles.input}>
@@ -172,10 +213,10 @@ export default function OnboardingPage() {
               </Field>
               <div style={styles.row}>
                 <Field label="Height (cm)" required>
-                  <input type="number" name="height" value={form.height} onChange={handleChange} min={1} required style={styles.input} placeholder="175" />
+                  <input type="number" name="height" value={form.height} onChange={handleChange} min={1} required style={styles.input} />
                 </Field>
                 <Field label="Weight (kg)" required>
-                  <input type="number" name="weight" value={form.weight} onChange={handleChange} min={1} required style={styles.input} placeholder="70" />
+                  <input type="number" name="weight" value={form.weight} onChange={handleChange} min={1} required style={styles.input} />
                 </Field>
               </div>
             </div>
@@ -183,18 +224,11 @@ export default function OnboardingPage() {
 
           {step === 1 && (
             <div style={styles.stepContent}>
-              <h2 style={styles.stepTitle}>Your goal</h2>
-              <p style={styles.hint}>What do you want to achieve?</p>
+              <h2 style={styles.stepTitle}>Your goals</h2>
               <div style={styles.optionGrid}>
                 {FITNESS_GOAL_OPTIONS.map((o) => (
                   <label key={o.value} style={styles.optionCard}>
-                    <input
-                      type="radio"
-                      name="fitness_goal"
-                      value={o.value}
-                      checked={form.fitness_goal === o.value}
-                      onChange={handleChange}
-                    />
+                    <input type="radio" name="fitness_goal" value={o.value} checked={form.fitness_goal === o.value} onChange={handleChange} />
                     <span>{o.label}</span>
                   </label>
                 ))}
@@ -208,13 +242,7 @@ export default function OnboardingPage() {
               <div style={styles.optionGrid}>
                 {TRAINING_OPTIONS.map((o) => (
                   <label key={o.value} style={styles.optionCard}>
-                    <input
-                      type="radio"
-                      name="training_experience"
-                      value={o.value}
-                      checked={form.training_experience === o.value}
-                      onChange={handleChange}
-                    />
+                    <input type="radio" name="training_experience" value={o.value} checked={form.training_experience === o.value} onChange={handleChange} />
                     <span>{o.label}</span>
                   </label>
                 ))}
@@ -224,61 +252,16 @@ export default function OnboardingPage() {
 
           {step === 3 && (
             <div style={styles.stepContent}>
-              <h2 style={styles.stepTitle}>Activity level</h2>
-              <p style={styles.hint}>How active are you outside of workouts?</p>
-              <div style={styles.optionGrid}>
-                {ACTIVITY_OPTIONS.map((o) => (
-                  <label key={o.value} style={styles.optionCard}>
-                    <input
-                      type="radio"
-                      name="activity_level"
-                      value={o.value}
-                      checked={form.activity_level === o.value}
-                      onChange={handleChange}
-                    />
-                    <span>{o.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div style={styles.stepContent}>
-              <h2 style={styles.stepTitle}>Nutrition preference</h2>
-              <div style={styles.optionGrid}>
-                {DIET_OPTIONS.map((o) => (
-                  <label key={o.value} style={styles.optionCard}>
-                    <input
-                      type="radio"
-                      name="diet_preference"
-                      value={o.value}
-                      checked={form.diet_preference === o.value}
-                      onChange={handleChange}
-                    />
-                    <span>{o.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 5 && (
-            <div style={styles.stepContent}>
-              <h2 style={styles.stepTitle}>Health information</h2>
-              <Field label="Injuries (optional)">
-                <textarea name="injuries" value={form.injuries} onChange={handleChange} rows={3} style={styles.textarea} placeholder="Any current or past injuries we should know about?" />
+              <h2 style={styles.stepTitle}>Lifestyle</h2>
+              <Field label="Activity level" required>
+                <select name="activity_level" value={form.activity_level} onChange={handleChange} required style={styles.input}>
+                  <option value="">Select activity level</option>
+                  {ACTIVITY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
               </Field>
-              <Field label="Medical notes (optional)">
-                <textarea name="medical_notes" value={form.medical_notes} onChange={handleChange} rows={3} style={styles.textarea} placeholder="Conditions, medications, or other notes for your coach" />
-              </Field>
-            </div>
-          )}
-
-          {step === 6 && (
-            <div style={styles.stepContent}>
-              <h2 style={styles.stepTitle}>Recovery</h2>
-              <Field label="Typical sleep duration" required>
+              <Field label="Sleep duration" required>
                 <select name="sleep_duration" value={form.sleep_duration} onChange={handleChange} required style={styles.input}>
                   <option value="">Select sleep duration</option>
                   {SLEEP_OPTIONS.map((o) => (
@@ -289,6 +272,57 @@ export default function OnboardingPage() {
             </div>
           )}
 
+          {step === 4 && (
+            <div style={styles.stepContent}>
+              <h2 style={styles.stepTitle}>Diet</h2>
+              <div style={styles.optionGrid}>
+                {DIET_OPTIONS.map((o) => (
+                  <label key={o.value} style={styles.optionCard}>
+                    <input type="radio" name="diet_preference" value={o.value} checked={form.diet_preference === o.value} onChange={handleChange} />
+                    <span>{o.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div style={styles.stepContent}>
+              <h2 style={styles.stepTitle}>Medical history</h2>
+              <Field label="Injuries (optional)">
+                <textarea name="injuries" value={form.injuries} onChange={handleChange} rows={3} style={styles.textarea} />
+              </Field>
+              <Field label="Medical notes (optional)">
+                <textarea name="medical_notes" value={form.medical_notes} onChange={handleChange} rows={3} style={styles.textarea} />
+              </Field>
+            </div>
+          )}
+
+          {step === 6 && (
+            <div style={styles.stepContent}>
+              <h2 style={styles.stepTitle}>Progress photos</h2>
+              <p style={styles.hint}>Upload front, side, and back photos for your coach baseline.</p>
+              {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (
+                <Field key={key} label={`${key.charAt(0).toUpperCase()}${key.slice(1)} photo`} required>
+                  <input type="file" accept="image/*" onChange={handlePhotoChange(key)} required style={styles.input} />
+                </Field>
+              ))}
+            </div>
+          )}
+
+          {step === 7 && (
+            <div style={styles.stepContent}>
+              <h2 style={styles.stepTitle}>Terms &amp; conditions</h2>
+              <label style={styles.termsBox}>
+                <input type="checkbox" name="terms_accepted" checked={form.terms_accepted} onChange={handleChange} />
+                <span>
+                  I agree to the coaching terms, understand results depend on adherence, and confirm
+                  the health information provided is accurate.
+                </span>
+              </label>
+            </div>
+          )}
+
           <div style={styles.actions}>
             {step > 0 && (
               <button type="button" onClick={handleBack} style={styles.backBtn} disabled={submitting}>
@@ -296,9 +330,7 @@ export default function OnboardingPage() {
               </button>
             )}
             {step < ONBOARDING_STEPS.length - 1 ? (
-              <button type="submit" style={styles.nextBtn}>
-                Continue
-              </button>
+              <button type="submit" style={styles.nextBtn}>Continue</button>
             ) : (
               <button type="submit" style={styles.nextBtn} disabled={submitting}>
                 {submitting ? 'Saving...' : 'Complete onboarding'}
@@ -314,9 +346,7 @@ export default function OnboardingPage() {
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div style={styles.field}>
-      <label style={styles.label}>
-        {label}{required ? ' *' : ''}
-      </label>
+      <label style={styles.label}>{label}{required ? ' *' : ''}</label>
       {children}
     </div>
   );
@@ -331,8 +361,8 @@ const styles: Record<string, CSSProperties> = {
   progressWrap: { marginBottom: 28 },
   progressBar: { height: 6, backgroundColor: '#eee', borderRadius: 999, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: '#e94560', borderRadius: 999, transition: 'width 0.3s' },
-  stepLabels: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, fontSize: 11 },
-  stepLabel: { flex: '1 1 auto', minWidth: 60, textAlign: 'center' },
+  stepLabels: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, fontSize: 10 },
+  stepLabel: { flex: '1 1 auto', minWidth: 50, textAlign: 'center' },
   stepContent: { marginBottom: 24 },
   stepTitle: { margin: '0 0 16px 0', fontSize: 20 },
   hint: { color: '#666', marginTop: -8, marginBottom: 16, fontSize: 14 },
@@ -342,16 +372,8 @@ const styles: Record<string, CSSProperties> = {
   textarea: { width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical' },
   row: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 },
   optionGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 },
-  optionCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    padding: 14,
-    border: '1px solid #ddd',
-    borderRadius: 8,
-    cursor: 'pointer',
-    fontSize: 15,
-  },
+  optionCard: { display: 'flex', alignItems: 'center', gap: 10, padding: 14, border: '1px solid #ddd', borderRadius: 8, cursor: 'pointer', fontSize: 15 },
+  termsBox: { display: 'flex', gap: 12, alignItems: 'flex-start', fontSize: 15, lineHeight: 1.5 },
   actions: { display: 'flex', gap: 12, justifyContent: 'flex-end', flexWrap: 'wrap' },
   backBtn: { padding: '12px 24px', backgroundColor: 'white', color: '#333', border: '1px solid #ddd', borderRadius: 8, cursor: 'pointer', fontSize: 16 },
   nextBtn: { padding: '12px 28px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 16, fontWeight: 600 },

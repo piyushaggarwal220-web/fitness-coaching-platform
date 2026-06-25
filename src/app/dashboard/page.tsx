@@ -7,7 +7,8 @@ import Navbar from '../components/Navbar';
 import { formatCheckinDate, getNextCheckinDate, isCheckinDue } from '@/lib/checkin';
 import { formatPlanDate } from '@/lib/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
-import type { Checkin, OnboardingProfile, Plan } from '@/types/database';
+import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
+import type { Checkin, Coach, OnboardingProfile, Plan, Purchase } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -19,12 +20,14 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<OnboardingProfile | null>(null);
   const [latestCheckin, setLatestCheckin] = useState<Checkin | null>(null);
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
+  const [purchase, setPurchase] = useState<Purchase | null>(null);
+  const [coach, setCoach] = useState<Coach | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats] = useState({ workouts: 12, streak: 5, progress: 78 });
 
   useEffect(() => {
     const checkUser = async () => {
-      const result = await authenticateClient(supabase, router, { requireOnboarding: true });
+      const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
       if (!result) return;
 
       setUser(result.user as User);
@@ -50,6 +53,26 @@ export default function Dashboard() {
         .maybeSingle();
 
       setActivePlan(planData);
+
+      const { data: purchaseData } = await supabase
+        .from('purchases')
+        .select('*')
+        .eq('user_id', result.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setPurchase(purchaseData);
+
+      if (result.profile?.coach_id) {
+        const { data: coachData } = await supabase
+          .from('coaches')
+          .select('id, name, user_id, hard_cap')
+          .eq('id', result.profile.coach_id)
+          .maybeSingle();
+        setCoach(coachData);
+      }
+
       setLoading(false);
     };
     checkUser();
@@ -66,6 +89,10 @@ export default function Dashboard() {
     );
   }
 
+  const status = profile
+    ? getClientDashboardStatus({ profile, purchase, coach, activePlan })
+    : null;
+
   return (
     <>
       <Navbar />
@@ -74,6 +101,32 @@ export default function Dashboard() {
           <h1 style={{ fontSize: 32 }}>Welcome back, {profile?.name || user?.email || 'User'}!</h1>
           <p style={{ color: '#666' }}>Here&apos;s your fitness summary for today</p>
         </div>
+
+        {status && (
+          <div style={statusStyles.card}>
+            <h2 style={statusStyles.title}>Your coaching journey</h2>
+            <div style={statusStyles.grid}>
+              <StatusItem label="Payment" value={status.paymentConfirmed ? 'Confirmed ✓' : 'Pending'} ok={status.paymentConfirmed} />
+              <StatusItem label="Onboarding" value={status.onboardingComplete ? 'Complete ✓' : 'Incomplete'} ok={status.onboardingComplete} />
+              <StatusItem
+                label="Coach"
+                value={status.coachAssigned ? status.coachName ?? 'Assigned' : 'Assigning soon'}
+                ok={status.coachAssigned}
+              />
+              <StatusItem label="Plan" value={status.planStatus} ok={Boolean(activePlan)} />
+            </div>
+            {status.expectedDelivery && (
+              <p style={statusStyles.delivery}>Expected plan delivery by: <strong>{status.expectedDelivery}</strong></p>
+            )}
+            <div style={statusStyles.next}>
+              <p style={statusStyles.nextLabel}>Next action</p>
+              <p style={statusStyles.nextValue}>{status.nextAction}</p>
+              <button onClick={() => router.push(status.nextActionHref)} style={statusStyles.nextBtn}>
+                Go
+              </button>
+            </div>
+          </div>
+        )}
 
         {profile && (
           <div style={checkinStyles.card}>
@@ -225,6 +278,29 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function StatusItem({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div style={statusStyles.item}>
+      <span style={statusStyles.itemLabel}>{label}</span>
+      <span style={{ ...statusStyles.itemValue, color: ok ? '#155724' : '#856404' }}>{value}</span>
+    </div>
+  );
+}
+
+const statusStyles: Record<string, React.CSSProperties> = {
+  card: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24, borderLeft: '4px solid #C9A227' },
+  title: { margin: '0 0 16px 0', fontSize: 20 },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 },
+  item: { display: 'flex', flexDirection: 'column', gap: 4 },
+  itemLabel: { fontSize: 12, color: '#999', textTransform: 'uppercase' },
+  itemValue: { fontSize: 15, fontWeight: 600 },
+  delivery: { margin: '0 0 16px 0', color: '#666', fontSize: 14 },
+  next: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, paddingTop: 12, borderTop: '1px solid #eee' },
+  nextLabel: { margin: 0, fontSize: 12, color: '#999', textTransform: 'uppercase', width: '100%' },
+  nextValue: { margin: 0, flex: 1, fontSize: 16, fontWeight: 600 },
+  nextBtn: { padding: '10px 18px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 },
+};
 
 const summaryStyles: Record<string, React.CSSProperties> = {
   card: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24 },

@@ -1,15 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import { isTestModeEnabled } from '@/lib/test-mode'
 import type { OnboardingFormData, OnboardingProfile } from '@/types/database'
+
+export const ONBOARDING_PHOTO_BUCKET = 'onboarding-photos'
 
 export const ONBOARDING_STEPS = [
   'Personal',
   'Goals',
   'Training',
-  'Activity',
-  'Nutrition',
-  'Health',
-  'Recovery',
+  'Lifestyle',
+  'Diet',
+  'Medical',
+  'Photos',
+  'Terms',
 ] as const
 
 export const GENDER_OPTIONS = [
@@ -69,6 +73,7 @@ export function getOnboardingLabel(field: string, value: string | null | undefin
 }
 
 export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
+  name: '',
   age: '',
   gender: '',
   height: '',
@@ -80,11 +85,23 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   injuries: '',
   medical_notes: '',
   sleep_duration: '',
+  terms_accepted: false,
 }
 
-export function validateOnboardingStep(step: number, data: OnboardingFormData): string | null {
+export type OnboardingPhotoFiles = {
+  front: File | null
+  side: File | null
+  back: File | null
+}
+
+export function validateOnboardingStep(
+  step: number,
+  data: OnboardingFormData,
+  photos?: OnboardingPhotoFiles
+): string | null {
   switch (step) {
     case 0: {
+      if (!data.name.trim()) return 'Please enter your name.'
       const age = Number(data.age)
       if (!data.age || Number.isNaN(age) || age < 13 || age > 100) return 'Enter a valid age (13–100).'
       if (!data.gender) return 'Please select your gender.'
@@ -100,6 +117,7 @@ export function validateOnboardingStep(step: number, data: OnboardingFormData): 
       return null
     case 3:
       if (!data.activity_level) return 'Please select your activity level.'
+      if (!data.sleep_duration) return 'Please select your typical sleep duration.'
       return null
     case 4:
       if (!data.diet_preference) return 'Please select your diet preference.'
@@ -107,15 +125,43 @@ export function validateOnboardingStep(step: number, data: OnboardingFormData): 
     case 5:
       return null
     case 6:
-      if (!data.sleep_duration) return 'Please select your typical sleep duration.'
+      if (!photos?.front) return 'Front progress photo is required.'
+      if (!photos?.side) return 'Side progress photo is required.'
+      if (!photos?.back) return 'Back progress photo is required.'
+      return null
+    case 7:
+      if (!data.terms_accepted) return 'You must accept the terms to continue.'
       return null
     default:
       return null
   }
 }
 
+export async function uploadOnboardingPhoto(
+  supabase: SupabaseClient,
+  clientId: string,
+  file: File,
+  label: 'front' | 'side' | 'back'
+): Promise<string> {
+  const ext = file.name.split('.').pop() || 'jpg'
+  const path = `${clientId}/${Date.now()}_${label}.${ext}`
+
+  const { error } = await supabase.storage
+    .from(ONBOARDING_PHOTO_BUCKET)
+    .upload(path, file, { upsert: false, contentType: file.type })
+
+  if (error) throw new Error(`Photo upload failed (${label}): ${error.message}`)
+
+  const { data } = supabase.storage.from(ONBOARDING_PHOTO_BUCKET).getPublicUrl(path)
+  return data.publicUrl
+}
+
 export function isOnboardingComplete(profile: Pick<OnboardingProfile, 'onboarding_complete'> | null): boolean {
   return profile?.onboarding_complete === true
+}
+
+export function isPaymentConfirmed(profile: Pick<OnboardingProfile, 'payment_confirmed'> | null): boolean {
+  return profile?.payment_confirmed === true
 }
 
 type AuthResult = {
@@ -126,7 +172,11 @@ type AuthResult = {
 export async function authenticateClient(
   supabase: SupabaseClient,
   router: AppRouterInstance,
-  options?: { requireOnboarding?: boolean; redirectIfOnboarded?: boolean }
+  options?: {
+    requireOnboarding?: boolean
+    redirectIfOnboarded?: boolean
+    requirePayment?: boolean
+  }
 ): Promise<AuthResult | null> {
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -140,6 +190,15 @@ export async function authenticateClient(
     .select('*')
     .eq('id', user.id)
     .maybeSingle()
+
+  if (
+    options?.requirePayment &&
+    !isPaymentConfirmed(profile) &&
+    !isTestModeEnabled()
+  ) {
+    router.push('/checkout?plan=6_months')
+    return null
+  }
 
   if (options?.redirectIfOnboarded && isOnboardingComplete(profile)) {
     router.push('/dashboard')

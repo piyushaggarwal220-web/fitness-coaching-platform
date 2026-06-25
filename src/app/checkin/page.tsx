@@ -34,7 +34,7 @@ export default function CheckinPage() {
 
   useEffect(() => {
     const init = async () => {
-      const result = await authenticateClient(supabase, router, { requireOnboarding: true });
+      const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
       if (!result) return;
       setProfile(result.profile);
       setLoading(false);
