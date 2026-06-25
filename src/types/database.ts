@@ -172,3 +172,46 @@ export type PlanFormData = {
   supplement_plan: string
   coach_notes: string
 }
+
+export type AiKnowledgeCategory =
+  | 'fat_loss'
+  | 'muscle_gain'
+  | 'recomposition'
+  | 'strength'
+  | 'nutrition'
+  | 'cardio'
+  | 'supplements'
+  | 'recovery'
+  | 'checkins'
+  | 'injuries'
+  | 'female'
+  | 'beginner'
+  | 'intermediate'
+  | 'advanced'
+
+export type AiKnowledge = {
+  id: string
+  title: string
+  category: AiKnowledgeCategory
+  content: string
+  version: number
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type CreateAiKnowledgeInput = {
+  title: string
+  category: AiKnowledgeCategory
+  content: string
+  version?: number
+  active?: boolean
+}
+
+export type UpdateAiKnowledgeInput = {
+  title?: string
+  category?: AiKnowledgeCategory
+  content?: string
+  version?: number
+  active?: boolean
+}
