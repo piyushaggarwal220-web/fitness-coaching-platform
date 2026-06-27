@@ -48,28 +48,34 @@ export async function getNextPlanVersion(
 export async function syncPlanDeliveredFlag(
   supabase: SupabaseClient,
   clientId: string
-): Promise<void> {
-  const { count } = await supabase
+): Promise<{ error: string | null }> {
+  const { count, error: countError } = await supabase
     .from('plans')
     .select('*', { count: 'exact', head: true })
     .eq('client_id', clientId)
     .eq('active', true)
 
-  await supabase
+  if (countError) return { error: countError.message }
+
+  const { error } = await supabase
     .from('profiles')
     .update({ plan_delivered: (count ?? 0) > 0 })
     .eq('id', clientId)
+
+  return { error: error?.message ?? null }
 }
 
 export async function activatePlan(
   supabase: SupabaseClient,
   plan: Pick<Plan, 'id' | 'client_id'>
 ): Promise<{ error: string | null }> {
-  await supabase
+  const { error: deactivateError } = await supabase
     .from('plans')
     .update({ active: false, updated_at: new Date().toISOString() })
     .eq('client_id', plan.client_id)
     .neq('id', plan.id)
+
+  if (deactivateError) return { error: deactivateError.message }
 
   const { error } = await supabase
     .from('plans')
@@ -82,8 +88,7 @@ export async function activatePlan(
 
   if (error) return { error: error.message }
 
-  await syncPlanDeliveredFlag(supabase, plan.client_id)
-  return { error: null }
+  return syncPlanDeliveredFlag(supabase, plan.client_id)
 }
 
 export async function deactivatePlan(
@@ -97,8 +102,7 @@ export async function deactivatePlan(
 
   if (error) return { error: error.message }
 
-  await syncPlanDeliveredFlag(supabase, plan.client_id)
-  return { error: null }
+  return syncPlanDeliveredFlag(supabase, plan.client_id)
 }
 
 export function planToForm(plan: Plan): PlanFormData {

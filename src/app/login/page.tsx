@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { getClientPostAuthPath } from '@/lib/onboarding';
+import { createClient } from '@/lib/supabase/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,15 +21,29 @@ export default function LoginPage() {
     setError('');
 
     const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email: email,
+      email: email.trim(),
       password: password,
     });
 
     if (loginError) {
       setError('❌ ' + loginError.message);
-    } else {
-      router.push('/dashboard');
+      setLoading(false);
+      return;
     }
+
+    if (!data.user) {
+      setError('❌ Login failed. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .maybeSingle();
+
+    router.push(getClientPostAuthPath(profile));
     setLoading(false);
   };
 
@@ -68,7 +82,7 @@ export default function LoginPage() {
       </form>
 
       <p style={styles.link}>
-        Don't have an account? <a href="/signup" style={styles.linkColor}>Sign Up</a>
+        Don&apos;t have an account? <Link href="/checkout?plan=6_months" style={styles.linkColor}>Get started</Link>
       </p>
     </div>
   );

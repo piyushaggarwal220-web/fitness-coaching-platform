@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation'
-import { isTestModeEnabled } from '@/lib/test-mode'
+import { isDevToolkitEnabledClient } from '@/lib/dev-mode'
 import DevToolsClient from './DevToolsClient'
 
 export default function DevToolsPage() {
-  if (!isTestModeEnabled()) {
+  if (!isDevToolkitEnabledClient()) {
     notFound()
   }
 

@@ -1,37 +1,27 @@
 import { NextResponse } from 'next/server'
+import { isDevToolkitEnabledServer } from '@/lib/dev-mode'
 import { runSeedAction, type SeedAction } from '@/lib/dev-seeds'
-import { createClient } from '@/lib/supabase/server'
-import { getDevAdminEmail, isTestModeServer } from '@/lib/test-mode'
 
-async function assertDevAccess() {
-  if (!isTestModeServer()) {
-    return NextResponse.json({ error: 'Dev tools disabled (TEST_MODE is not true)' }, { status: 403 })
+function assertDevToolkitAccess() {
+  if (!isDevToolkitEnabledServer()) {
+    return NextResponse.json(
+      { error: 'Developer toolkit is disabled outside development' },
+      { status: 403 }
+    )
   }
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json(
-      { error: 'SUPABASE_SERVICE_ROLE_KEY is required for dev seed operations' },
+      { error: 'SUPABASE_SERVICE_ROLE_KEY is required for dev operations' },
       { status: 500 }
     )
-  }
-
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-  }
-
-  const adminEmail = getDevAdminEmail()
-  if (adminEmail && user.email !== adminEmail) {
-    return NextResponse.json({ error: 'Admin access only' }, { status: 403 })
   }
 
   return null
 }
 
 export async function POST(request: Request) {
-  const denied = await assertDevAccess()
+  const denied = assertDevToolkitAccess()
   if (denied) return denied
 
   let body: { action?: SeedAction; clientId?: string; coachId?: string; planId?: string }
@@ -60,7 +50,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  const denied = await assertDevAccess()
+  const denied = assertDevToolkitAccess()
   if (denied) return denied
 
   try {

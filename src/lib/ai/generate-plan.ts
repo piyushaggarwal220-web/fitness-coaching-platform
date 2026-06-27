@@ -1,5 +1,6 @@
-import { generateClaudeResponse } from '@/lib/ai/anthropic'
 import { DEFAULTS, LIMITS } from '@/lib/ai/config'
+import { buildMockGeneratedPlan } from '@/lib/ai/mock-plan-provider'
+import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import {
   calculateComplexityScore,
   type ComplexityScoreResult,
@@ -275,25 +276,13 @@ function buildPlanPrompts(
   }
 }
 
-async function callClaudeForPlan(
-  systemPrompt: string,
-  userPrompt: string,
-  model: string
-) {
-  return generateClaudeResponse({
-    systemPrompt,
-    userPrompt,
-    model,
-    maxTokens: LIMITS.MAX_PLAN_TOKENS,
-    temperature: DEFAULTS.DEFAULT_TEMPERATURE,
-  })
-}
-
 /**
  * Full AI plan generation pipeline.
  * Does not persist results — returns validated plan JSON only.
+ * Provider selection (mock vs Claude) is isolated in plan-provider.ts.
  */
 export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePlanResult> {
+  const providerMode = getPlanProviderMode()
   const complexityScore = calculateComplexityScore(
     profileToComplexityInput(input.profile, input.latestCheckin)
   )
@@ -307,8 +296,9 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   let totalInputTokens = 0
   let totalOutputTokens = 0
   let lastValidationError = 'Unknown validation error.'
+  const maxAttempts = providerMode === 'mock' ? 1 : 2
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const prompts = buildPlanPrompts(
       input.profile,
       input.latestCheckin,
@@ -318,7 +308,25 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       attempt === 1
     )
 
-    const response = await callClaudeForPlan(prompts.systemPrompt, prompts.userPrompt, model)
+    const mockText =
+      providerMode === 'mock'
+        ? JSON.stringify(
+            buildMockGeneratedPlan(
+              input.profile,
+              input.latestCheckin,
+              input.coachInstructions
+            )
+          )
+        : undefined
+
+    const response = await callPlanProvider(providerMode, {
+      systemPrompt: prompts.systemPrompt,
+      userPrompt: prompts.userPrompt,
+      model,
+      maxTokens: LIMITS.MAX_PLAN_TOKENS,
+      temperature: DEFAULTS.DEFAULT_TEMPERATURE,
+      mockText,
+    })
     totalInputTokens += response.inputTokens
     totalOutputTokens += response.outputTokens
 
@@ -337,7 +345,8 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     lastValidationError = error ?? 'Invalid plan JSON.'
   }
 
+  const providerLabel = providerMode === 'mock' ? 'Mock provider' : 'Claude'
   throw new GeneratePlanError(
-    `Claude returned invalid plan JSON after retry: ${lastValidationError}`
+    `${providerLabel} returned invalid plan JSON after retry: ${lastValidationError}`
   )
 }

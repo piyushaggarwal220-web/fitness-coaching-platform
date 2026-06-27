@@ -214,7 +214,7 @@ export default function Home() {
               Personal coaching, built specifically for you — backed by a coaching team of 20+ trainers and nutrition specialists with 6 years of experience and 6,000+ real client transformations.
             </p>
             <p style={{ color: "#B9B1A6", lineHeight: "1.8", marginTop: "18px" }}>
-              Every plan is reviewed before it reaches you. Every week, it changes based on what's actually happening with your body — not a template you'll outgrow in 10 days.
+              Every plan is reviewed before it reaches you. Every week, it changes based on what&apos;s actually happening with your body — not a template you&apos;ll outgrow in 10 days.
             </p>
             <div style={{
               marginTop: "28px",
@@ -413,7 +413,7 @@ export default function Home() {
               45-DAY GUARANTEE
             </h2>
             <p style={{ color: "#B9B1A6", maxWidth: "560px", margin: "0 auto", lineHeight: "1.7" }}>
-              Stay consistent with your plan and check-ins. If you don't see real progress within 45 days, you get a full refund. Simple.
+              Stay consistent with your plan and check-ins. If you don&apos;t see real progress within 45 days, you get a full refund. Simple.
             </p>
           </div>
         </div>

@@ -21,6 +21,11 @@ export type CoachClientDetail = ClientProfile & {
   age: string | number | null
   weight: string | number | null
   height: string | number | null
+  training_experience?: string | null
+  activity_level?: string | null
+  diet_preference?: string | null
+  injuries?: string | null
+  medical_notes?: string | null
 }
 
 export type Profile = {

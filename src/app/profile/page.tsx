@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient, type User } from '@supabase/supabase-js';
+import { type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
-import { authenticateClient } from '@/lib/onboarding';
+import { authenticateClient, FITNESS_GOAL_OPTIONS } from '@/lib/onboarding';
+import { createClient } from '@/lib/supabase/client';
 import type { ProfileForm } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function Profile() {
   const router = useRouter();
@@ -22,7 +21,10 @@ export default function Profile() {
   useEffect(() => {
     const checkUser = async () => {
       const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
-      if (!result) return;
+      if (!result) {
+        setLoading(false);
+        return;
+      }
 
       setUser(result.user as User);
 
@@ -51,11 +53,19 @@ export default function Profile() {
     setSaving(true);
     setMessage('');
 
+    const age = profile.age ? parseInt(profile.age, 10) : null;
+    const weight = profile.weight ? parseFloat(profile.weight) : null;
+    const height = profile.height ? parseFloat(profile.height) : null;
+
     const { error } = await supabase
       .from('profiles')
       .upsert({
         id: user.id,
-        ...profile,
+        name: profile.name.trim(),
+        age,
+        fitness_goal: profile.fitness_goal || null,
+        weight,
+        height,
         updated_at: new Date().toISOString(),
       });
 
@@ -66,6 +76,8 @@ export default function Profile() {
     }
     setSaving(false);
   };
+
+  const isError = message.startsWith('❌');
 
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: 20 }}>Loading...</div>;
@@ -78,7 +90,17 @@ export default function Profile() {
         <h1 style={{ fontSize: 32, marginBottom: 10 }}>👤 Profile Settings</h1>
         <p style={{ color: '#666', marginBottom: 30 }}>Update your fitness profile</p>
 
-        {message && <div style={{ padding: 15, borderRadius: 8, marginBottom: 20, backgroundColor: '#d4edda', color: '#155724' }}>{message}</div>}
+        {message && (
+          <div style={{
+            padding: 15,
+            borderRadius: 8,
+            marginBottom: 20,
+            backgroundColor: isError ? '#f8d7da' : '#d4edda',
+            color: isError ? '#721c24' : '#155724',
+          }}>
+            {message}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', padding: 30, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
           <div style={{ marginBottom: 20 }}>
@@ -95,19 +117,13 @@ export default function Profile() {
             <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Fitness Goal</label>
             <select name="fitness_goal" value={profile.fitness_goal} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, backgroundColor: 'white' }}>
               <option value="">Select your goal</option>
-              <option value="fat_loss">Fat Loss</option>
-              <option value="muscle_gain">Muscle Gain</option>
-              <option value="recomposition">Recomposition</option>
-              <option value="strength">Strength</option>
-              <option value="athletic_performance">Athletic Performance</option>
-              <option value="lose_weight">Lose Weight</option>
-              <option value="build_muscle">Build Muscle</option>
-              <option value="stay_fit">Stay Fit</option>
-              <option value="increase_stamina">Increase Stamina</option>
+              {FITNESS_GOAL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
             </select>
           </div>
 
-          <div style={{ display: 'flex', gap: 15 }}>
+          <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, marginBottom: 20 }}>
               <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Weight (kg)</label>
               <input type="number" name="weight" value={profile.weight} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box' }} placeholder="70" />

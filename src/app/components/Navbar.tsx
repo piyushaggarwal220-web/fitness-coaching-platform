@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient, type User } from '@supabase/supabase-js';
+import { type User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function Navbar() {
   const router = useRouter();
@@ -28,30 +27,41 @@ export default function Navbar() {
   };
 
   return (
-    <nav style={styles.navbar}>
-      <div style={styles.container}>
-        <Link href="/" style={styles.logo}>💪 Fitness Coach</Link>
-        <button onClick={() => setIsOpen(!isOpen)} style={styles.mobileBtn}>☰</button>
-        <div style={{ ...styles.links, ...(isOpen ? styles.linksOpen : {}) }}>
-          {user ? (
-            <>
-              <Link href="/dashboard" style={styles.link}>Dashboard</Link>
-              <Link href="/plan" style={styles.link}>My Plan</Link>
-              <Link href="/checkin" style={styles.link}>Check-In</Link>
-              <Link href="/profile" style={styles.link}>Profile</Link>
-              <Link href="/workouts" style={styles.link}>Workouts</Link>
-              <Link href="/progress" style={styles.link}>Progress</Link>
-              <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
-            </>
-          ) : (
-            <>
-              <Link href="/login" style={styles.link}>Login</Link>
-              <Link href="/signup" style={styles.link}>Sign Up</Link>
-            </>
-          )}
+    <>
+      <style>{`
+        .nav-links { display: flex; gap: 20px; align-items: center; }
+        .nav-mobile-btn { display: none; font-size: 28px; background: none; border: none; color: white; cursor: pointer; }
+        @media (max-width: 767px) {
+          .nav-links { display: none; flex-direction: column; width: 100%; margin-top: 15px; gap: 10px; align-items: stretch; }
+          .nav-links.open { display: flex; }
+          .nav-mobile-btn { display: block; }
+        }
+      `}</style>
+      <nav style={styles.navbar}>
+        <div style={styles.container}>
+          <Link href="/" style={styles.logo}>💪 Fitness Coach</Link>
+          <button type="button" className="nav-mobile-btn" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">☰</button>
+          <div className={`nav-links${isOpen ? ' open' : ''}`}>
+            {user ? (
+              <>
+                <Link href="/dashboard" style={styles.link} onClick={() => setIsOpen(false)}>Dashboard</Link>
+                <Link href="/plan" style={styles.link} onClick={() => setIsOpen(false)}>My Plan</Link>
+                <Link href="/checkin" style={styles.link} onClick={() => setIsOpen(false)}>Check-In</Link>
+                <Link href="/profile" style={styles.link} onClick={() => setIsOpen(false)}>Profile</Link>
+                <Link href="/workouts" style={styles.link} onClick={() => setIsOpen(false)}>Workouts</Link>
+                <Link href="/progress" style={styles.link} onClick={() => setIsOpen(false)}>Progress</Link>
+                <button type="button" onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" style={styles.link} onClick={() => setIsOpen(false)}>Login</Link>
+                <Link href="/checkout?plan=6_months" style={styles.link} onClick={() => setIsOpen(false)}>Get Started</Link>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }
 
@@ -78,18 +88,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: 'bold',
     textDecoration: 'none',
   },
-  links: {
-    display: 'flex',
-    gap: 20,
-    alignItems: 'center',
-  },
-  linksOpen: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%',
-    marginTop: 15,
-    gap: 10,
-  },
   link: {
     color: 'white',
     textDecoration: 'none',
@@ -105,13 +103,5 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: 5,
     cursor: 'pointer',
     fontSize: 16,
-  },
-  mobileBtn: {
-    fontSize: 28,
-    background: 'none',
-    border: 'none',
-    color: 'white',
-    cursor: 'pointer',
-    display: 'block',
   },
 };

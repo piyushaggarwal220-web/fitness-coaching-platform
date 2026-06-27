@@ -1,0 +1,119 @@
+.dev-panel {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 99990;
+  font-family: ui-monospace, 'DM Mono', monospace;
+  font-size: 0.72rem;
+}
+
+.dev-panel__toggle {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  background: rgba(10, 8, 6, 0.92);
+  color: #c9a227;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+}
+
+.dev-panel__toggle:hover {
+  border-color: #c9a227;
+  color: #fff;
+}
+
+.dev-panel__menu {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  right: 0;
+  width: min(92vw, 15rem);
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 10, 8, 0.96);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  color: #f6f1e7;
+}
+
+.dev-panel__title {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #c9a227;
+}
+
+.dev-panel__hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.6rem;
+  color: #9e968c;
+  line-height: 1.4;
+}
+
+.dev-panel__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.dev-panel__label {
+  margin: 0 0 0.15rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  color: #5ec8ff;
+}
+
+.dev-panel__group button,
+.dev-panel__group a {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f6f1e7;
+  text-decoration: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dev-panel__group button:hover:not(:disabled),
+.dev-panel__group a:hover {
+  border-color: rgba(201, 162, 39, 0.4);
+  background: rgba(201, 162, 39, 0.08);
+}
+
+.dev-panel__group button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dev-panel__danger {
+  border-color: rgba(255, 77, 46, 0.35) !important;
+  color: #ff9a88 !important;
+}
+
+.dev-panel__status {
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.35rem;
+  background: rgba(201, 162, 39, 0.1);
+  color: #e8dcc0;
+  font-size: 0.62rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+@media (max-width: 480px) {
+  .dev-panel {
+    bottom: 0.75rem;
+    right: 0.75rem;
+  }
+}

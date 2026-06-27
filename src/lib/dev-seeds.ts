@@ -1,7 +1,11 @@
 import { activatePlan } from '@/lib/plans'
+import { fulfillPurchase } from '@/lib/payments/fulfillment'
+import { COACHING_PLANS } from '@/lib/payments/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-const TEST_PASSWORD = 'TestPass123!'
+export const TEST_PASSWORD = 'TestPass123!'
+export const DEV_CLIENT_EMAIL = 'dev-client@dev.local'
+export const DEV_COACH_EMAIL = 'dev-coach@dev.local'
 
 export type SeedResult = {
   message: string
@@ -13,34 +17,169 @@ function timestamp(): string {
 }
 
 export async function seedCreateTestClient(): Promise<SeedResult> {
-  const admin = createAdminClient()
-  const email = `test-client-${timestamp()}@dev.local`
+  const ts = timestamp()
+  const email = `test-client-${ts}@dev.local`
+  const plan = COACHING_PLANS['6_months']
+  const now = Date.now()
 
-  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+  const result = await fulfillPurchase({
     email,
     password: TEST_PASSWORD,
+    name: 'Test Client',
+    plan,
+    razorpayPaymentId: `test_pay_${now}`,
+    razorpayOrderId: `test_order_${now}`,
+    amountPaise: plan.amountPaise,
+  })
+
+  return {
+    message: 'Test client created with paid checkout state',
+    data: {
+      clientId: result.userId,
+      email,
+      password: TEST_PASSWORD,
+      purchaseId: result.purchaseId,
+      planSlug: plan.slug,
+      paymentConfirmed: true,
+    },
+  }
+}
+
+export async function seedEnsureDevClient(): Promise<SeedResult> {
+  const plan = COACHING_PLANS['6_months']
+  const result = await fulfillPurchase({
+    email: DEV_CLIENT_EMAIL,
+    password: TEST_PASSWORD,
+    name: 'Dev Test Client',
+    plan,
+    razorpayPaymentId: 'dev_pay_dev-client',
+    razorpayOrderId: 'dev_order_dev-client',
+    amountPaise: plan.amountPaise,
+  })
+
+  return {
+    message: 'Dev test client ready',
+    data: {
+      clientId: result.userId,
+      email: DEV_CLIENT_EMAIL,
+      password: TEST_PASSWORD,
+      purchaseId: result.purchaseId,
+      paymentConfirmed: true,
+    },
+  }
+}
+
+export async function seedEnsureDevCoach(): Promise<SeedResult> {
+  const admin = createAdminClient()
+
+  const { data: profileByEmail } = await admin
+    .from('profiles')
+    .select('id, email')
+    .eq('email', DEV_COACH_EMAIL)
+    .maybeSingle()
+
+  if (profileByEmail?.id) {
+    const { data: coachRow } = await admin
+      .from('coaches')
+      .select('id, user_id')
+      .eq('user_id', profileByEmail.id)
+      .maybeSingle()
+
+    if (coachRow?.id) {
+      return {
+        message: 'Dev test coach ready',
+        data: {
+          coachId: coachRow.id,
+          userId: profileByEmail.id,
+          email: DEV_COACH_EMAIL,
+          password: TEST_PASSWORD,
+        },
+      }
+    }
+
+    const { data: inserted, error: coachError } = await admin
+      .from('coaches')
+      .insert({ user_id: profileByEmail.id, name: 'Dev Test Coach', hard_cap: 100 })
+      .select()
+      .single()
+    if (coachError || !inserted) throw new Error(coachError?.message ?? 'Failed to create coach record')
+    return {
+      message: 'Dev test coach ready',
+      data: {
+        coachId: inserted.id,
+        userId: profileByEmail.id,
+        email: DEV_COACH_EMAIL,
+        password: TEST_PASSWORD,
+      },
+    }
+  }
+
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email: DEV_COACH_EMAIL,
+    password: TEST_PASSWORD,
     email_confirm: true,
+    user_metadata: { role: 'coach' },
   })
 
   if (authError || !authData.user) {
-    throw new Error(authError?.message ?? 'Failed to create test client auth user')
+    throw new Error(authError?.message ?? 'Failed to create dev coach')
   }
 
-  const { error: profileError } = await admin.from('profiles').upsert({
-    id: authData.user.id,
-    email,
-    name: 'Test Client',
-    onboarding_complete: false,
-    plan_delivered: false,
-    checkin_awaiting: false,
-    checkin_overdue: false,
-  })
+  const { data: coachRow, error: coachError } = await admin
+    .from('coaches')
+    .insert({
+      user_id: authData.user.id,
+      name: 'Dev Test Coach',
+      hard_cap: 100,
+    })
+    .select()
+    .single()
+
+  if (coachError || !coachRow) throw new Error(coachError?.message ?? 'Failed to create coach record')
+
+  return {
+    message: 'Dev test coach ready',
+    data: {
+      coachId: coachRow.id,
+      userId: authData.user.id,
+      email: DEV_COACH_EMAIL,
+      password: TEST_PASSWORD,
+    },
+  }
+}
+
+export async function seedResetTestData(): Promise<SeedResult> {
+  const admin = createAdminClient()
+
+  const { data: devProfiles } = await admin
+    .from('profiles')
+    .select('id, email')
+    .like('email', '%@dev.local')
+
+  const ids = (devProfiles ?? []).map((p) => p.id)
+  if (ids.length === 0) {
+    return { message: 'No @dev.local test profiles to reset' }
+  }
+
+  await admin.from('checkins').delete().in('client_id', ids)
+  await admin.from('plans').delete().in('client_id', ids)
+
+  const { error: profileError } = await admin
+    .from('profiles')
+    .update({
+      onboarding_complete: false,
+      plan_delivered: false,
+      checkin_awaiting: false,
+      checkin_overdue: false,
+      updated_at: new Date().toISOString(),
+    })
+    .in('id', ids)
 
   if (profileError) throw new Error(profileError.message)
 
   return {
-    message: 'Test client created',
-    data: { clientId: authData.user.id, email, password: TEST_PASSWORD },
+    message: `Reset ${ids.length} test profile(s)`,
+    data: { profileIds: ids },
   }
 }
 
@@ -230,6 +369,9 @@ export async function seedListEntities(): Promise<SeedResult> {
 export type SeedAction =
   | 'create_test_client'
   | 'create_test_coach'
+  | 'ensure_test_client'
+  | 'ensure_test_coach'
+  | 'reset_test_data'
   | 'assign_client_to_coach'
   | 'mark_onboarding_complete'
   | 'create_sample_checkin'
@@ -244,6 +386,12 @@ export async function runSeedAction(
   switch (action) {
     case 'create_test_client':
       return seedCreateTestClient()
+    case 'ensure_test_client':
+      return seedEnsureDevClient()
+    case 'ensure_test_coach':
+      return seedEnsureDevCoach()
+    case 'reset_test_data':
+      return seedResetTestData()
     case 'create_test_coach':
       return seedCreateTestCoach()
     case 'assign_client_to_coach':

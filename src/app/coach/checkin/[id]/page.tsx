@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import CoachNavbar from '../../../components/CoachNavbar';
+import { requireCoach } from '@/lib/coach-session';
 import {
   formatCheckinDate,
   formatWaistChange,
@@ -13,18 +14,15 @@ import {
   serializeCoachResponse,
 } from '@/lib/checkin';
 import { formatFitnessGoal } from '@/lib/coach-utils';
-import type { Checkin, CheckinWithClient, Coach, CoachCheckinResponse } from '@/types/database';
+import type { Checkin, CheckinWithClient, CoachCheckinResponse } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function CoachCheckinDetailPage() {
   const router = useRouter();
   const params = useParams();
   const checkinId = typeof params.id === 'string' ? params.id : '';
 
-  const [coach, setCoach] = useState<Coach | null>(null);
   const [checkin, setCheckin] = useState<CheckinWithClient | null>(null);
   const [previous, setPrevious] = useState<Checkin | null>(null);
   const [clientProfile, setClientProfile] = useState<{ fitness_goal: string | null; age: string | number | null } | null>(null);
@@ -35,31 +33,9 @@ export default function CoachCheckinDetailPage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (!checkinId) {
-      setError('Invalid check-in ID.');
-      setLoading(false);
-      return;
-    }
-
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/coach/login');
-        return;
-      }
-
-      const { data: coachData, error: coachError } = await supabase
-        .from('coaches')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (coachError || !coachData) {
-        router.push('/dashboard');
-        return;
-      }
-
-      setCoach(coachData);
+      const coachData = await requireCoach(supabase, router);
+      if (!coachData) return;
 
       const { data: checkinData, error: checkinError } = await supabase
         .from('checkins')
@@ -101,6 +77,18 @@ export default function CoachCheckinDetailPage() {
 
     load();
   }, [checkinId, router]);
+
+  if (!checkinId) {
+    return (
+      <>
+        <CoachNavbar />
+        <div style={styles.container}>
+          <Link href="/coach/checkins" style={styles.backLink}>← Back to check-ins</Link>
+          <div style={styles.errorBox}>Invalid check-in ID.</div>
+        </div>
+      </>
+    );
+  }
 
   const handleSubmitReview = async (e: FormEvent) => {
     e.preventDefault();

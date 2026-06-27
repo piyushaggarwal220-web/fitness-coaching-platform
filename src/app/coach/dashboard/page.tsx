@@ -1,53 +1,43 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import CoachNavbar from '../../components/CoachNavbar';
+import { createClient } from '@/lib/supabase/client';
+import { requireCoach } from '@/lib/coach-session';
 import type { ClientProfile, Coach, CoachStats } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function CoachDashboard() {
   const router = useRouter();
   const [coach, setCoach] = useState<Coach | null>(null);
   const [clients, setClients] = useState<ClientProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [stats, setStats] = useState<CoachStats>({ total: 0, awaiting: 0, overdue: 0, new: 0 });
   const [pendingCheckins, setPendingCheckins] = useState(0);
   const [plansDelivered, setPlansDelivered] = useState(0);
 
   useEffect(() => {
     const checkCoach = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push('/coach/login');
-        return;
-      }
-      
-      // Check if user is a coach
-      const { data: coachData, error } = await supabase
-        .from('coaches')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (error || !coachData) {
-        router.push('/dashboard'); // Not a coach
-        return;
-      }
-      
+      setError('');
+      const coachData = await requireCoach(supabase, router);
+      if (!coachData) return;
+
       setCoach(coachData);
-      
-      // Load assigned clients from profiles table
-      const { data: clientsData } = await supabase
+
+      const { data: clientsData, error: clientsError } = await supabase
         .from('profiles')
         .select('*')
         .eq('coach_id', coachData.id);
-      
+
+      if (clientsError) {
+        setError('Failed to load dashboard data. Please try again.');
+        setLoading(false);
+        return;
+      }
+
       if (clientsData) {
         setClients(clientsData);
         const total = clientsData.length;
@@ -57,29 +47,61 @@ export default function CoachDashboard() {
         setStats({ total, awaiting, overdue, new: newClients });
       }
 
-      const { count } = await supabase
+      const { count, error: checkinsError } = await supabase
         .from('checkins')
         .select('*', { count: 'exact', head: true })
         .eq('coach_id', coachData.id)
         .eq('reviewed', false);
 
+      if (checkinsError) {
+        setError('Failed to load check-in counts.');
+        setLoading(false);
+        return;
+      }
+
       setPendingCheckins(count ?? 0);
 
-      const { count: activePlanCount } = await supabase
+      const { count: activePlanCount, error: plansError } = await supabase
         .from('plans')
         .select('*', { count: 'exact', head: true })
         .eq('coach_id', coachData.id)
         .eq('active', true);
 
+      if (plansError) {
+        setError('Failed to load plan counts.');
+        setLoading(false);
+        return;
+      }
+
       setPlansDelivered(activePlanCount ?? 0);
-      
       setLoading(false);
     };
     checkCoach();
   }, [router]);
 
   if (loading) {
-    return <div style={styles.loading}>Loading coach dashboard...</div>;
+    return (
+      <>
+        <CoachNavbar />
+        <div style={styles.loading}>Loading coach dashboard...</div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <CoachNavbar />
+        <div style={styles.container}>
+          <div style={styles.errorBox}>
+            <p style={styles.errorText}>{error}</p>
+            <button style={styles.retryBtn} onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (
@@ -91,7 +113,6 @@ export default function CoachDashboard() {
           <p style={styles.subtitle}>Welcome back, {coach?.name || 'Coach'}!</p>
         </div>
 
-        {/* Stats Cards */}
         <div style={styles.statsGrid}>
           <div style={styles.statCard}>
             <div style={styles.statNumber}>{stats.total}</div>
@@ -136,10 +157,9 @@ export default function CoachDashboard() {
           </button>
         </div>
 
-        {/* Client Queue */}
         <div style={styles.queueSection}>
           <h2>Client Queue</h2>
-          
+
           <div style={styles.clientList}>
             {clients.length === 0 ? (
               <p style={styles.empty}>No clients assigned yet.</p>
@@ -152,7 +172,7 @@ export default function CoachDashboard() {
                       {client.checkin_overdue && <span style={styles.badgeOverdue}>Overdue</span>}
                       {client.checkin_awaiting && <span style={styles.badgeAwaiting}>Awaiting</span>}
                       {!client.plan_delivered && <span style={styles.badgeNew}>New</span>}
-                      {!client.checkin_overdue && !client.checkin_awaiting && client.plan_delivered && 
+                      {!client.checkin_overdue && !client.checkin_awaiting && client.plan_delivered &&
                         <span style={styles.badgeOk}>✓ OK</span>
                       }
                     </div>
@@ -209,4 +229,7 @@ const styles: Record<string, CSSProperties> = {
     borderLeft: '4px solid #e94560',
   },
   checkinBtn: { padding: '10px 20px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 15 },
+  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 24, borderRadius: 12, textAlign: 'center' },
+  errorText: { margin: '0 0 16px 0' },
+  retryBtn: { padding: '10px 20px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14 },
 };

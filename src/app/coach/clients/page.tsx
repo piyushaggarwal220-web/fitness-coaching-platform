@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import CoachNavbar from '../../components/CoachNavbar';
+import { requireCoach } from '@/lib/coach-session';
 import {
   coachBadgeStyles,
   formatFitnessGoal,
@@ -12,9 +13,7 @@ import {
 } from '@/lib/coach-utils';
 import type { ClientProfile, Coach } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function CoachClientsPage() {
   const router = useRouter();
@@ -27,23 +26,8 @@ export default function CoachClientsPage() {
   useEffect(() => {
     const loadClients = async () => {
       setError('');
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push('/coach/login');
-        return;
-      }
-
-      const { data: coachData, error: coachError } = await supabase
-        .from('coaches')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (coachError || !coachData) {
-        router.push('/dashboard');
-        return;
-      }
+      const coachData = await requireCoach(supabase, router);
+      if (!coachData) return;
 
       setCoach(coachData);
 

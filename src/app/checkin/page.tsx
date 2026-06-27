@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import {
@@ -12,9 +12,7 @@ import {
 import { authenticateClient } from '@/lib/onboarding';
 import type { CheckinFormData, OnboardingProfile } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 type PhotoKey = 'front' | 'side' | 'back';
 
@@ -35,7 +33,10 @@ export default function CheckinPage() {
   useEffect(() => {
     const init = async () => {
       const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
-      if (!result) return;
+      if (!result) {
+        setLoading(false);
+        return;
+      }
       setProfile(result.profile);
       setLoading(false);
     };
@@ -123,6 +124,23 @@ export default function CheckinPage() {
       <>
         <Navbar />
         <div style={styles.loading}>Loading check-in form...</div>
+      </>
+    );
+  }
+
+  if (!profile?.coach_id) {
+    return (
+      <>
+        <Navbar />
+        <div style={styles.container}>
+          <h1 style={styles.title}>Weekly Check-In</h1>
+          <div style={styles.error}>
+            No coach is assigned to your account yet. Your coach will be assigned shortly — check your dashboard for updates.
+          </div>
+          <button type="button" onClick={() => router.push('/dashboard')} style={styles.submitBtn}>
+            Back to dashboard
+          </button>
+        </div>
       </>
     );
   }

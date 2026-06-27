@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function SignupPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -16,30 +17,26 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('1. Form submitted!');
-    console.log('2. Email:', email);
-    
     setLoading(true);
     setError('');
     setMessage('');
 
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email,
+        email: email.trim(),
         password: password,
       });
 
-      console.log('5. Supabase response:', { data, error: signUpError });
-
       if (signUpError) {
         setError('❌ ' + signUpError.message);
+      } else if (!data.session) {
+        setMessage('✅ Account created. Check your email to confirm, then complete checkout.');
       } else {
-        setMessage('✅ Account created! You can now login.');
-        setEmail('');
-        setPassword('');
+        router.push('/checkout?plan=6_months');
+        return;
       }
-    } catch (err: any) {
-      setError('❌ Something went wrong: ' + err.message);
+    } catch (err: unknown) {
+      setError('❌ Something went wrong: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
 
     setLoading(false);
@@ -48,6 +45,7 @@ export default function SignupPage() {
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Create Account</h1>
+      <p style={styles.note}>New clients should complete checkout to activate coaching access.</p>
       
       {message && <div style={styles.success}>{message}</div>}
       {error && <div style={styles.error}>{error}</div>}
@@ -82,7 +80,10 @@ export default function SignupPage() {
       </form>
 
       <p style={styles.link}>
-        Already have an account? <a href="/login" style={styles.linkColor}>Login</a>
+        Already have an account? <Link href="/login" style={styles.linkColor}>Login</Link>
+      </p>
+      <p style={styles.link}>
+        Ready to start coaching? <Link href="/checkout?plan=6_months" style={styles.linkColor}>Go to checkout</Link>
       </p>
     </div>
   );
@@ -100,8 +101,14 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   title: {
     textAlign: 'center',
-    marginBottom: '30px',
+    marginBottom: '10px',
     color: '#1a1a2e',
+  },
+  note: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 14,
+    marginBottom: 20,
   },
   form: {
     display: 'flex',

@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function CoachLogin() {
   const router = useRouter();
@@ -31,14 +29,22 @@ export default function CoachLogin() {
       return;
     }
 
-    // Check if user is a coach
-    const { data: coachData } = await supabase
+    if (!data.user) {
+      setError('❌ Login failed. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    const { data: coachData, error: coachError } = await supabase
       .from('coaches')
       .select('*')
       .eq('user_id', data.user.id)
       .maybeSingle();
 
-    if (coachData) {
+    if (coachError) {
+      setError('❌ Could not verify coach account: ' + coachError.message);
+      await supabase.auth.signOut();
+    } else if (coachData) {
       router.push('/coach/dashboard');
     } else {
       setError('❌ Not a coach account. Please use client login.');

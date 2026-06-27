@@ -2,13 +2,12 @@
 
 import { useState, useEffect, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient, type User } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { isTestModeEnabled } from '@/lib/test-mode';
+import { isDevToolkitEnabledClient } from '@/lib/dev-mode';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function CoachNavbar() {
   const router = useRouter();
@@ -36,7 +35,7 @@ export default function CoachNavbar() {
           <Link href="/coach/clients" style={styles.link}>Clients</Link>
           <Link href="/coach/plans" style={styles.link}>Plans</Link>
           <Link href="/coach/checkins" style={styles.link}>Check-ins</Link>
-          {isTestModeEnabled() && (
+          {isDevToolkitEnabledClient() && (
             <Link href="/admin/dev-tools" style={styles.devLink}>Dev Tools</Link>
           )}
           <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>

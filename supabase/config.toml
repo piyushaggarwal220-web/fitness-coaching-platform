@@ -1,0 +1,5 @@
+# Minimal Supabase CLI config for remote migration push
+project_id = "zhcedsmvpvpaqezbdiiy"
+
+[db]
+major_version = 15

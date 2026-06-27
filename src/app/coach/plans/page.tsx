@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import CoachNavbar from '../../components/CoachNavbar';
+import { requireCoach } from '@/lib/coach-session';
 import { formatPlanDate } from '@/lib/plans';
 import type { Coach, PlanWithClient } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 
@@ -24,22 +23,8 @@ export default function CoachPlansPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/coach/login');
-        return;
-      }
-
-      const { data: coachData, error: coachError } = await supabase
-        .from('coaches')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (coachError || !coachData) {
-        router.push('/dashboard');
-        return;
-      }
+      const coachData = await requireCoach(supabase, router);
+      if (!coachData) return;
 
       setCoach(coachData);
 
@@ -103,7 +88,12 @@ export default function CoachPlansPage() {
           </button>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && (
+          <div style={styles.errorBox}>
+            <p>{error}</p>
+            <button style={styles.retryBtn} onClick={() => window.location.reload()}>Retry</button>
+          </div>
+        )}
 
         <div style={styles.toolbar}>
           <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} style={styles.select}>
@@ -185,4 +175,6 @@ const styles: Record<string, CSSProperties> = {
   emptyTitle: { fontWeight: 600, fontSize: 18, marginBottom: 8 },
   emptyText: { color: '#666', margin: 0 },
   error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 16 },
+  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 16, borderRadius: 8, marginBottom: 16 },
+  retryBtn: { padding: '8px 16px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', marginTop: 8 },
 };

@@ -1,18 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient, type User } from '@supabase/supabase-js';
+import { type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import { formatCheckinDate, getNextCheckinDate, isCheckinDue } from '@/lib/checkin';
 import { formatPlanDate } from '@/lib/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
-import type { Checkin, Coach, OnboardingProfile, Plan, Purchase } from '@/types/database';
+import { createClient } from '@/lib/supabase/client';
+import type { Checkin, Coach, OnboardingProfile, Plan, Purchase, Workout } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
+
+type ActivityItem = {
+  id: string;
+  icon: string;
+  title: string;
+  subtitle: string;
+};
 
 export default function Dashboard() {
   const router = useRouter();
@@ -22,58 +28,133 @@ export default function Dashboard() {
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [coach, setCoach] = useState<Coach | null>(null);
+  const [workoutCount, setWorkoutCount] = useState(0);
+  const [totalMinutes, setTotalMinutes] = useState(0);
+  const [checkinCount, setCheckinCount] = useState(0);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats] = useState({ workouts: 12, streak: 5, progress: 78 });
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     const checkUser = async () => {
-      const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
-      if (!result) return;
+      try {
+        const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
+        if (!result) {
+          setLoading(false);
+          return;
+        }
 
-      setUser(result.user as User);
-      setProfile(result.profile);
+        setUser(result.user as User);
+        setProfile(result.profile);
 
-      const { data: checkinData } = await supabase
-        .from('checkins')
-        .select('*')
-        .eq('client_id', result.user.id)
-        .order('submitted_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        const userId = result.user.id;
+        const activity: ActivityItem[] = [];
 
-      setLatestCheckin(checkinData);
-
-      const { data: planData } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('client_id', result.user.id)
-        .eq('active', true)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      setActivePlan(planData);
-
-      const { data: purchaseData } = await supabase
-        .from('purchases')
-        .select('*')
-        .eq('user_id', result.user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      setPurchase(purchaseData);
-
-      if (result.profile?.coach_id) {
-        const { data: coachData } = await supabase
-          .from('coaches')
-          .select('id, name, user_id, hard_cap')
-          .eq('id', result.profile.coach_id)
+        const { data: checkinData, error: checkinError } = await supabase
+          .from('checkins')
+          .select('*')
+          .eq('client_id', userId)
+          .order('submitted_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
-        setCoach(coachData);
-      }
 
-      setLoading(false);
+        if (checkinError) throw new Error(checkinError.message);
+        setLatestCheckin(checkinData);
+
+        const { count: checkinsTotal, error: checkinCountError } = await supabase
+          .from('checkins')
+          .select('*', { count: 'exact', head: true })
+          .eq('client_id', userId);
+
+        if (checkinCountError) throw new Error(checkinCountError.message);
+        setCheckinCount(checkinsTotal ?? 0);
+
+        if (checkinData) {
+          activity.push({
+            id: `checkin-${checkinData.id}`,
+            icon: '📋',
+            title: 'Check-in submitted',
+            subtitle: formatCheckinDate(checkinData.submitted_at),
+          });
+        }
+
+        const { data: planData, error: planError } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('client_id', userId)
+          .eq('active', true)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (planError) throw new Error(planError.message);
+        setActivePlan(planData);
+
+        const { data: purchaseData, error: purchaseError } = await supabase
+          .from('purchases')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (purchaseError) throw new Error(purchaseError.message);
+        setPurchase(purchaseData);
+
+        const { data: workoutsData, error: workoutsError } = await supabase
+          .from('workouts')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (workoutsError) throw new Error(workoutsError.message);
+
+        const { count: workoutsTotal, error: workoutsCountError } = await supabase
+          .from('workouts')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId);
+
+        if (workoutsCountError) throw new Error(workoutsCountError.message);
+
+        const { data: durationRows, error: durationError } = await supabase
+          .from('workouts')
+          .select('duration')
+          .eq('user_id', userId);
+
+        if (durationError) throw new Error(durationError.message);
+
+        const workouts = (workoutsData ?? []) as Workout[];
+        setWorkoutCount(workoutsTotal ?? 0);
+        setTotalMinutes(
+          (durationRows ?? []).reduce((sum, w) => sum + (Number(w.duration) || 0), 0)
+        );
+
+        for (const w of workouts.slice(0, 3)) {
+          activity.push({
+            id: `workout-${w.id}`,
+            icon: '🏋️',
+            title: `Completed workout — ${w.name}`,
+            subtitle: new Date(w.date ?? w.created_at).toLocaleString(),
+          });
+        }
+
+        setRecentActivity(activity.slice(0, 5));
+
+        if (result.profile?.coach_id) {
+          const { data: coachData, error: coachError } = await supabase
+            .from('coaches')
+            .select('id, name, user_id, hard_cap')
+            .eq('id', result.profile.coach_id)
+            .maybeSingle();
+          if (coachError) throw new Error(coachError.message);
+          setCoach(coachData);
+        }
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : 'Failed to load dashboard');
+      } finally {
+        setLoading(false);
+      }
     };
     checkUser();
   }, [router]);
@@ -97,6 +178,12 @@ export default function Dashboard() {
     <>
       <Navbar />
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '30px 20px' }}>
+        {loadError && (
+          <div style={{ padding: 16, marginBottom: 20, backgroundColor: '#f8d7da', color: '#721c24', borderRadius: 8 }}>
+            {loadError}
+          </div>
+        )}
+
         <div style={{ marginBottom: 30 }}>
           <h1 style={{ fontSize: 32 }}>Welcome back, {profile?.name || user?.email || 'User'}!</h1>
           <p style={{ color: '#666' }}>Here&apos;s your fitness summary for today</p>
@@ -201,18 +288,18 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 30 }}>
           <div style={{ backgroundColor: 'white', padding: 25, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', textAlign: 'center' }}>
             <div style={{ fontSize: 32, marginBottom: 10 }}>🏋️</div>
-            <h3 style={{ margin: 0 }}>{stats.workouts}</h3>
-            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Total Workouts</p>
+            <h3 style={{ margin: 0 }}>{workoutCount}</h3>
+            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Logged Workouts</p>
           </div>
           <div style={{ backgroundColor: 'white', padding: 25, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>🔥</div>
-            <h3 style={{ margin: 0 }}>{stats.streak}</h3>
-            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Day Streak</p>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>⏱️</div>
+            <h3 style={{ margin: 0 }}>{totalMinutes}</h3>
+            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Total Minutes</p>
           </div>
           <div style={{ backgroundColor: 'white', padding: 25, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>📈</div>
-            <h3 style={{ margin: 0 }}>{stats.progress}%</h3>
-            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Progress</p>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
+            <h3 style={{ margin: 0 }}>{checkinCount}</h3>
+            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Check-ins Submitted</p>
           </div>
         </div>
 
@@ -249,20 +336,19 @@ export default function Dashboard() {
         <div style={{ backgroundColor: 'white', padding: 25, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
           <h2>Recent Activity</h2>
           <div style={{ marginTop: 15 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 15, padding: '12px 0', borderBottom: '1px solid #eee' }}>
-              <span style={{ fontSize: 20 }}>🟢</span>
-              <div>
-                <p style={{ margin: 0 }}><strong>Completed workout</strong> - Upper Body</p>
-                <small style={{ color: '#666' }}>2 hours ago</small>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 15, padding: '12px 0', borderBottom: '1px solid #eee' }}>
-              <span style={{ fontSize: 20 }}>🟡</span>
-              <div>
-                <p style={{ margin: 0 }}><strong>Updated profile</strong> - Fitness goal set</p>
-                <small style={{ color: '#666' }}>1 day ago</small>
-              </div>
-            </div>
+            {recentActivity.length === 0 ? (
+              <p style={{ color: '#666', margin: 0 }}>No activity yet. Log a workout or submit your first check-in.</p>
+            ) : (
+              recentActivity.map((item) => (
+                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 15, padding: '12px 0', borderBottom: '1px solid #eee' }}>
+                  <span style={{ fontSize: 20 }}>{item.icon}</span>
+                  <div>
+                    <p style={{ margin: 0 }}><strong>{item.title}</strong></p>
+                    <small style={{ color: '#666' }}>{item.subtitle}</small>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

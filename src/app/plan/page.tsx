@@ -1,16 +1,14 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import { formatPlanDate } from '@/lib/plans';
 import { authenticateClient } from '@/lib/onboarding';
+import { createClient } from '@/lib/supabase/client';
 import type { Plan } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function ClientPlanPage() {
   const router = useRouter();
@@ -21,7 +19,10 @@ export default function ClientPlanPage() {
   useEffect(() => {
     const load = async () => {
       const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
-      if (!result) return;
+      if (!result) {
+        setLoading(false);
+        return;
+      }
 
       const { data, error: planError } = await supabase
         .from('plans')
@@ -49,6 +50,23 @@ export default function ClientPlanPage() {
       <>
         <Navbar />
         <div style={styles.loading}>Loading your plan...</div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navbar />
+        <div style={styles.container}>
+          <div style={styles.empty}>
+            <h1 style={styles.emptyTitle}>Could not load plan</h1>
+            <p style={styles.emptyText}>{error}</p>
+            <button style={styles.backBtn} onClick={() => router.push('/dashboard')}>
+              Back to dashboard
+            </button>
+          </div>
+        </div>
       </>
     );
   }
@@ -94,6 +112,9 @@ export default function ClientPlanPage() {
           <PlanSection title="Supplements" icon="💊" content={plan.supplement_plan} accent="#6f42c1" />
           {plan.coach_notes && (
             <PlanSection title="Coach notes" icon="📝" content={plan.coach_notes} accent="#1a1a2e" />
+          )}
+          {!plan.workout_plan?.trim() && !plan.nutrition_plan?.trim() && !plan.cardio_plan?.trim() && !plan.supplement_plan?.trim() && !plan.coach_notes?.trim() && (
+            <p style={styles.emptyText}>Your coach has activated this plan. Detailed sections will appear here once added.</p>
           )}
         </div>
       </div>

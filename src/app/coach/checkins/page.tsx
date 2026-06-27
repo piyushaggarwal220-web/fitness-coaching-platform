@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import CoachNavbar from '../../components/CoachNavbar';
+import { requireCoach } from '@/lib/coach-session';
 import { formatCheckinDate } from '@/lib/checkin';
 import type { CheckinWithClient, Coach } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 type Tab = 'pending' | 'reviewed';
 
@@ -24,22 +23,8 @@ export default function CoachCheckinsPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/coach/login');
-        return;
-      }
-
-      const { data: coachData, error: coachError } = await supabase
-        .from('coaches')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (coachError || !coachData) {
-        router.push('/dashboard');
-        return;
-      }
+      const coachData = await requireCoach(supabase, router);
+      if (!coachData) return;
 
       setCoach(coachData);
 
@@ -94,7 +79,12 @@ export default function CoachCheckinsPage() {
         <h1 style={styles.title}>Check-ins</h1>
         <p style={styles.subtitle}>{coach?.name ? `${coach.name}'s queue` : 'Review client progress'}</p>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && (
+          <div style={styles.errorBox}>
+            <p>{error}</p>
+            <button style={styles.retryBtn} onClick={() => window.location.reload()}>Retry</button>
+          </div>
+        )}
 
         <div style={styles.toolbar}>
           <div style={styles.tabs}>
@@ -132,7 +122,9 @@ export default function CoachCheckinsPage() {
                 <div>
                   <div style={styles.clientName}>{checkin.profiles?.name || checkin.profiles?.email || 'Client'}</div>
                   <div style={styles.meta}>
-                    {formatCheckinDate(checkin.submitted_at)} · {checkin.weight} kg · Waist {checkin.waist} cm
+                    {formatCheckinDate(checkin.submitted_at)}
+                    {checkin.weight != null ? ` · ${checkin.weight} kg` : ''}
+                    {checkin.waist != null ? ` · Waist ${checkin.waist} cm` : ''}
                   </div>
                 </div>
                 <span style={checkin.reviewed ? styles.badgeReviewed : styles.badgePending}>
@@ -180,4 +172,6 @@ const styles: Record<string, CSSProperties> = {
   emptyTitle: { fontWeight: 600, fontSize: 18, marginBottom: 8 },
   emptyText: { color: '#666', margin: 0 },
   error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 16 },
+  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 16, borderRadius: 8, marginBottom: 16 },
+  retryBtn: { padding: '8px 16px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', marginTop: 8 },
 };

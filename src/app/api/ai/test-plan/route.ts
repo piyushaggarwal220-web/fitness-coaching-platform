@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import { generatePlan, GeneratePlanError } from '@/lib/ai/generate-plan'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { isDevToolkitEnabledServer } from '@/lib/dev-mode'
 import { getDevAdminEmail, isTestModeServer } from '@/lib/test-mode'
+import { getPlanProviderMode } from '@/lib/ai/plan-provider'
 import type { Checkin, OnboardingProfile } from '@/types/database'
 
 type TestPlanRequestBody = {
@@ -11,14 +13,14 @@ type TestPlanRequestBody = {
 }
 
 async function assertTestPlanAccess() {
-  if (!isTestModeServer()) {
+  if (!isDevToolkitEnabledServer() && !isTestModeServer()) {
     return NextResponse.json(
-      { success: false, error: 'AI test API disabled (TEST_MODE is not true)' },
+      { success: false, error: 'AI test API disabled outside development' },
       { status: 403 }
     )
   }
 
-  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
+  if (getPlanProviderMode() === 'claude' && !process.env.ANTHROPIC_API_KEY?.trim()) {
     return NextResponse.json(
       { success: false, error: 'ANTHROPIC_API_KEY is not configured' },
       { status: 500 }

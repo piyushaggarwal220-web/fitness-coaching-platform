@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import CoachNavbar from '../../../components/CoachNavbar';
+import { requireCoach } from '@/lib/coach-session';
 import {
   coachBadgeStyles,
   formatDate,
@@ -14,9 +15,7 @@ import {
 } from '@/lib/coach-utils';
 import type { Coach, CoachClientDetail, Workout } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function CoachClientDetailPage() {
   const router = useRouter();
@@ -30,31 +29,10 @@ export default function CoachClientDetailPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!clientId) {
-      setError('Invalid client ID.');
-      setLoading(false);
-      return;
-    }
-
     const loadClient = async () => {
       setError('');
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push('/coach/login');
-        return;
-      }
-
-      const { data: coachData, error: coachError } = await supabase
-        .from('coaches')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (coachError || !coachData) {
-        router.push('/dashboard');
-        return;
-      }
+      const coachData = await requireCoach(supabase, router);
+      if (!coachData) return;
 
       setCoach(coachData);
 
@@ -86,6 +64,23 @@ export default function CoachClientDetailPage() {
 
     loadClient();
   }, [clientId, router]);
+
+  if (!clientId) {
+    return (
+      <>
+        <CoachNavbar />
+        <div style={styles.container}>
+          <Link href="/coach/clients" style={styles.backLink}>← Back to clients</Link>
+          <div style={styles.errorBox}>
+            <p style={styles.errorText}>Invalid client ID.</p>
+            <button style={styles.retryBtn} onClick={() => router.push('/coach/clients')}>
+              Return to client list
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   if (loading) {
     return (
@@ -122,6 +117,15 @@ export default function CoachClientDetailPage() {
         <div style={styles.header}>
           <h1 style={styles.title}>{client.name || 'Unnamed client'}</h1>
           <p style={styles.subtitle}>{client.email || 'No email on file'}</p>
+        </div>
+
+        <div style={styles.actions}>
+          <button style={styles.generateBtn} onClick={() => router.push(`/coach/client/${client.id}/generate-plan`)}>
+            Generate plan
+          </button>
+          <button style={styles.actionBtn} onClick={() => router.push(`/coach/plan/new?clientId=${client.id}`)}>
+            Create plan manually
+          </button>
         </div>
 
         <div style={styles.statusRow}>
@@ -203,6 +207,9 @@ const styles: Record<string, CSSProperties> = {
   header: { marginBottom: 24 },
   title: { margin: 0, fontSize: 28 },
   subtitle: { color: '#666', marginTop: 6 },
+  actions: { display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
+  generateBtn: { padding: '10px 18px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 },
+  actionBtn: { padding: '10px 18px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' },
   statusRow: { display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
   statusCard: {
     backgroundColor: 'white',

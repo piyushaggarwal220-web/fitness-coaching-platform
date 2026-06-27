@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import { isTestModeEnabled } from '@/lib/test-mode';
+import { isDevToolkitEnabledClient } from '@/lib/dev-mode';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -42,21 +42,20 @@ export default function DevToolsClient() {
   }, [])
 
   useEffect(() => {
-    if (!isTestModeEnabled()) {
+    if (!isDevToolkitEnabledClient()) {
       router.replace('/')
       return
     }
 
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        addLog('error', 'Not logged in', 'Sign in as admin/coach to use dev tools')
-        setLoading(false)
-        return
-      }
       try {
         await loadEntities()
-        addLog('success', `Signed in as ${user.email}`)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          addLog('success', `Signed in as ${user.email}`)
+        } else {
+          addLog('success', 'Dev toolkit ready (use panel or sign in to test auth flows)')
+        }
       } catch (err) {
         addLog('error', err instanceof Error ? err.message : 'Init failed')
       }
@@ -103,7 +102,7 @@ export default function DevToolsClient() {
   return (
     <div style={styles.page}>
       <div style={styles.banner}>
-        <strong>TEST MODE</strong> — Dev tools only. No real payments required.
+        <strong>DEV MODE</strong> — Local development toolkit. Razorpay unchanged in production.
       </div>
 
       <h1 style={styles.title}>Development Testing Toolkit</h1>
@@ -215,7 +214,7 @@ export default function DevToolsClient() {
       </section>
 
       <p style={styles.footer}>
-        Set <code>TEST_MODE=true</code> and <code>NEXT_PUBLIC_TEST_MODE=true</code> in env. See TESTING_GUIDE.md.
+        Requires <code>npm run dev</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code>. See TESTING_GUIDE.md.
       </p>
     </div>
   )

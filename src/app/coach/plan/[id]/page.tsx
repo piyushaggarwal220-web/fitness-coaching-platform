@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import CoachNavbar from '../../../components/CoachNavbar';
@@ -14,11 +14,10 @@ import {
   planToForm,
   validatePlanForm,
 } from '@/lib/plans';
+import { requireCoach } from '@/lib/coach-session';
 import type { Plan, PlanFormData, PlanWithClient } from '@/types/database';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 export default function CoachPlanDetailPage() {
   const router = useRouter();
@@ -35,29 +34,9 @@ export default function CoachPlanDetailPage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (!planId) {
-      setError('Invalid plan ID.');
-      setLoading(false);
-      return;
-    }
-
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/coach/login');
-        return;
-      }
-
-      const { data: coachData } = await supabase
-        .from('coaches')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!coachData) {
-        router.push('/dashboard');
-        return;
-      }
+      const coachData = await requireCoach(supabase, router);
+      if (!coachData) return;
 
       const { data: planData, error: planError } = await supabase
         .from('plans')
@@ -89,6 +68,18 @@ export default function CoachPlanDetailPage() {
 
     load();
   }, [planId, router]);
+
+  if (!planId) {
+    return (
+      <>
+        <CoachNavbar />
+        <div style={styles.container}>
+          <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
+          <div style={styles.errorBox}>Invalid plan ID.</div>
+        </div>
+      </>
+    );
+  }
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     if (!form) return;
@@ -140,7 +131,7 @@ export default function CoachPlanDetailPage() {
     const { error: activateError } = await activatePlan(supabase, plan);
     if (activateError) setError(activateError);
     else {
-      setSuccess('Plan activated.');
+      setSuccess('Plan delivered to client.');
       setPlan({ ...plan, active: true, delivered_at: new Date().toISOString() });
       setHistory((h) => h.map((p) => ({ ...p, active: p.id === plan.id })));
     }
@@ -219,7 +210,17 @@ export default function CoachPlanDetailPage() {
     );
   }
 
-  if (!plan || !form) return null;
+  if (!plan || !form) {
+    return (
+      <>
+        <CoachNavbar />
+        <div style={styles.container}>
+          <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
+          <div style={styles.errorBox}>Unable to load plan data.</div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -251,7 +252,7 @@ export default function CoachPlanDetailPage() {
             </button>
           ) : (
             <button type="button" onClick={handleActivate} disabled={actionLoading} style={styles.primaryBtn}>
-              Activate plan
+              Deliver to client
             </button>
           )}
           <button type="button" onClick={handleDuplicate} disabled={actionLoading} style={styles.secondaryBtn}>

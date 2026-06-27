@@ -1,70 +1,81 @@
 'use client';
 
-import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { Suspense, useEffect, useState, type ChangeEvent, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import CoachNavbar from '../../../components/CoachNavbar';
 import { PlanEditor } from '@/components/PlanEditor';
 import { activatePlan, getNextPlanVersion, INITIAL_PLAN_FORM, validatePlanForm } from '@/lib/plans';
+import { clearPlanDraftFromSession, loadPlanDraftFromSession } from '@/lib/ai/plan-format';
+import { createClient } from '@/lib/supabase/client';
+import { requireCoach } from '@/lib/coach-session';
 import type { ClientProfile, Coach, PlanFormData } from '@/types/database';
 
 type ClientOption = Pick<ClientProfile, 'id' | 'name' | 'email' | 'coach_id'>;
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
-export default function CoachNewPlanPage() {
+function CoachNewPlanForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const clientIdParam = searchParams.get('clientId') ?? '';
+  const fromAi = searchParams.get('fromAi') === '1';
+
   const [coach, setCoach] = useState<Coach | null>(null);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [form, setForm] = useState<PlanFormData>(INITIAL_PLAN_FORM);
-  const [activateOnCreate, setActivateOnCreate] = useState(true);
+  const [aiDraftLoaded, setAiDraftLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/coach/login');
-        return;
-      }
-
-      const { data: coachData, error: coachError } = await supabase
-        .from('coaches')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (coachError || !coachData) {
-        router.push('/dashboard');
-        return;
-      }
+      setLoadError('');
+      const coachData = await requireCoach(supabase, router);
+      if (!coachData) return;
 
       setCoach(coachData);
 
-      const { data: clientsData } = await supabase
+      const { data: clientsData, error: clientsError } = await supabase
         .from('profiles')
         .select('id, name, email, coach_id')
         .eq('coach_id', coachData.id)
         .order('name');
 
-      setClients(clientsData ?? []);
+      if (clientsError) {
+        setLoadError('Failed to load clients. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      const list = clientsData ?? [];
+      setClients(list);
+
+      const targetClientId = clientIdParam || list[0]?.id || '';
+      let nextForm: PlanFormData = { ...INITIAL_PLAN_FORM, client_id: targetClientId };
+
+      if (fromAi && clientIdParam) {
+        const draft = loadPlanDraftFromSession(clientIdParam);
+        if (draft) {
+          nextForm = draft;
+          setAiDraftLoaded(true);
+        }
+      }
+
+      setForm(nextForm);
       setLoading(false);
     };
     load();
-  }, [router]);
+  }, [router, clientIdParam, fromAi]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError('');
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (deliver: boolean) => {
     const validationError = validatePlanForm(form);
     if (validationError) {
       setError(validationError);
@@ -104,13 +115,17 @@ export default function CoachNewPlanPage() {
       return;
     }
 
-    if (activateOnCreate) {
+    if (deliver) {
       const { error: activateError } = await activatePlan(supabase, created);
       if (activateError) {
-        setError('Plan created but activation failed: ' + activateError);
+        setError('Plan saved as draft but delivery failed: ' + activateError);
         setSubmitting(false);
         return;
       }
+    }
+
+    if (fromAi && form.client_id) {
+      clearPlanDraftFromSession(form.client_id);
     }
 
     router.push(`/coach/plan/${created.id}`);
@@ -125,12 +140,35 @@ export default function CoachNewPlanPage() {
     );
   }
 
+  if (loadError) {
+    return (
+      <>
+        <CoachNavbar />
+        <div style={styles.container}>
+          <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
+          <div style={styles.errorBox}>
+            <p>{loadError}</p>
+            <button style={styles.retryBtn} onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <CoachNavbar />
       <div style={styles.container}>
         <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
-        <h1 style={styles.title}>Create new plan</h1>
+        <h1 style={styles.title}>{aiDraftLoaded ? 'Review AI plan draft' : 'Create new plan'}</h1>
+
+        {aiDraftLoaded && (
+          <div style={styles.aiBanner}>
+            AI-generated draft loaded. Edit any section, then save as draft or deliver to the client.
+          </div>
+        )}
 
         {clients.length === 0 && (
           <div style={styles.warning}>No assigned clients. Assign clients before creating plans.</div>
@@ -138,24 +176,43 @@ export default function CoachNewPlanPage() {
 
         {error && <div style={styles.error}>{error}</div>}
 
-        <form onSubmit={handleSubmit} style={styles.form}>
+        <div style={styles.form}>
           <PlanEditor form={form} onChange={handleChange} clients={clients} />
 
-          <label style={styles.checkbox}>
-            <input
-              type="checkbox"
-              checked={activateOnCreate}
-              onChange={(e) => setActivateOnCreate(e.target.checked)}
-            />
-            Activate plan immediately (deactivates other plans for this client)
-          </label>
-
-          <button type="submit" disabled={submitting || clients.length === 0} style={styles.submitBtn}>
-            {submitting ? 'Creating...' : 'Create plan'}
-          </button>
-        </form>
+          <div style={styles.actions}>
+            <button
+              type="button"
+              disabled={submitting || clients.length === 0}
+              onClick={() => handleSave(false)}
+              style={styles.secondaryBtn}
+            >
+              {submitting ? 'Saving...' : 'Save draft'}
+            </button>
+            <button
+              type="button"
+              disabled={submitting || clients.length === 0}
+              onClick={() => handleSave(true)}
+              style={styles.primaryBtn}
+            >
+              {submitting ? 'Delivering...' : 'Deliver to client'}
+            </button>
+          </div>
+        </div>
       </div>
     </>
+  );
+}
+
+export default function CoachNewPlanPage() {
+  return (
+    <Suspense fallback={
+      <>
+        <CoachNavbar />
+        <div style={styles.loading}>Loading...</div>
+      </>
+    }>
+      <CoachNewPlanForm />
+    </Suspense>
   );
 }
 
@@ -165,8 +222,12 @@ const styles: Record<string, CSSProperties> = {
   backLink: { display: 'inline-block', color: '#e94560', textDecoration: 'none', marginBottom: 16, fontWeight: 600 },
   title: { margin: '0 0 24px 0', fontSize: 28 },
   form: { backgroundColor: 'white', padding: 28, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
-  checkbox: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, fontSize: 14, color: '#444' },
-  submitBtn: { marginTop: 20, width: '100%', padding: 14, backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer', fontWeight: 600 },
+  actions: { display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 20 },
+  primaryBtn: { flex: 1, minWidth: 160, padding: 14, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer', fontWeight: 600 },
+  secondaryBtn: { flex: 1, minWidth: 160, padding: 14, backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer', fontWeight: 600 },
   error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 16 },
   warning: { backgroundColor: '#fff3cd', color: '#856404', padding: 12, borderRadius: 8, marginBottom: 16 },
+  aiBanner: { backgroundColor: '#e7f3ff', color: '#004085', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 },
+  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 24, borderRadius: 12, textAlign: 'center' },
+  retryBtn: { padding: '10px 20px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, marginTop: 12 },
 };

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import { isTestModeEnabled } from '@/lib/test-mode'
+import { shouldBypassPaymentGuardClient } from '@/lib/dev-mode'
 import type { OnboardingFormData, OnboardingProfile } from '@/types/database'
 
 export const ONBOARDING_PHOTO_BUCKET = 'onboarding-photos'
@@ -164,6 +164,17 @@ export function isPaymentConfirmed(profile: Pick<OnboardingProfile, 'payment_con
   return profile?.payment_confirmed === true
 }
 
+/** Route paying clients to the correct next step after login. */
+export function getClientPostAuthPath(profile: OnboardingProfile | null): string {
+  if (!shouldBypassPaymentGuardClient() && !isPaymentConfirmed(profile)) {
+    return '/checkout?plan=6_months'
+  }
+  if (!isOnboardingComplete(profile)) {
+    return '/onboarding'
+  }
+  return '/dashboard'
+}
+
 type AuthResult = {
   user: { id: string; email?: string }
   profile: OnboardingProfile | null
@@ -194,7 +205,7 @@ export async function authenticateClient(
   if (
     options?.requirePayment &&
     !isPaymentConfirmed(profile) &&
-    !isTestModeEnabled()
+    !shouldBypassPaymentGuardClient()
   ) {
     router.push('/checkout?plan=6_months')
     return null
