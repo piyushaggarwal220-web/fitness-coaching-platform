@@ -28,6 +28,64 @@ export type CoachClientDetail = ClientProfile & {
   medical_notes?: string | null
 }
 
+/** Structured coaching intake stored in profiles.onboarding_data */
+export type OnboardingData = {
+  version: 1
+  resumeStep: number
+  lastSavedAt?: string
+  goals?: {
+    targetWeight?: string | number | null
+    deadline?: string | null
+    biggestStruggle?: string | null
+  }
+  lifestyle?: {
+    occupation?: string | null
+    dailySteps?: string | null
+    stressLevel?: string | null
+    waterIntake?: string | null
+  }
+  training?: {
+    location?: string | null
+    daysPerWeek?: string | number | null
+    durationMinutes?: string | null
+    preferredTime?: string | null
+    equipmentAvailable?: string[] | null
+    favoriteExercises?: string | null
+    exercisesDisliked?: string | null
+  }
+  medical?: {
+    conditions?: string | null
+    painDuringExercise?: string | null
+    medications?: string | null
+  }
+  diet?: {
+    eggDaysPerWeek?: string | null
+    chickenDaysPerWeek?: string | null
+    fishDaysPerWeek?: string | null
+    wheyProtein?: string | null
+    allergies?: string | null
+    foodsDisliked?: string | null
+    favoriteFoods?: string | null
+    monthlyFoodBudget?: string | null
+    cookingAbility?: string | null
+  }
+  eatingPattern?: {
+    breakfast?: string | null
+    lunch?: string | null
+    dinner?: string | null
+    snacks?: string | null
+    timings?: {
+      breakfast?: string | null
+      lunch?: string | null
+      dinner?: string | null
+      snacks?: string | null
+    }
+  }
+  supplements?: {
+    current?: string | null
+  }
+}
+
 export type Profile = {
   id: string
   name: string | null
@@ -45,6 +103,7 @@ export type Profile = {
   sleep_duration?: string | null
   onboarding_complete?: boolean | null
   onboarding_completed_at?: string | null
+  onboarding_data?: OnboardingData | null
   payment_confirmed?: boolean | null
   progress_photo_front?: string | null
   progress_photo_side?: string | null
@@ -66,12 +125,46 @@ export type OnboardingFormData = {
   height: string
   weight: string
   fitness_goal: string
-  training_experience: string
+  target_weight: string
+  goal_deadline: string
+  biggest_struggle: string
+  occupation: string
   activity_level: string
-  diet_preference: string
+  daily_steps: string
+  sleep_duration: string
+  stress_level: string
+  water_intake: string
+  training_location: string
+  training_experience: string
+  training_days_per_week: string
+  workout_duration: string
+  preferred_workout_time: string
+  equipment_available: string[]
+  favorite_exercises: string
+  exercises_disliked: string
   injuries: string
   medical_notes: string
-  sleep_duration: string
+  pain_during_exercise: string
+  medications: string
+  diet_preference: string
+  egg_days: string
+  chicken_days: string
+  fish_days: string
+  whey_protein: string
+  food_allergies: string
+  foods_disliked: string
+  favorite_foods: string
+  monthly_food_budget: string
+  cooking_ability: string
+  breakfast: string
+  lunch: string
+  dinner: string
+  snacks: string
+  timing_breakfast: string
+  timing_lunch: string
+  timing_dinner: string
+  timing_snacks: string
+  current_supplements: string
   terms_accepted: boolean
 }
 

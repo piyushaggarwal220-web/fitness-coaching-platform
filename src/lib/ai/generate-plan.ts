@@ -1,3 +1,4 @@
+import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { DEFAULTS, LIMITS } from '@/lib/ai/config'
 import { buildMockGeneratedPlan } from '@/lib/ai/mock-plan-provider'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
@@ -296,6 +297,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   let totalInputTokens = 0
   let totalOutputTokens = 0
   let lastValidationError = 'Unknown validation error.'
+  let lastRawResponse = ''
   const maxAttempts = providerMode === 'mock' ? 1 : 2
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -319,16 +321,30 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
           )
         : undefined
 
-    const response = await callPlanProvider(providerMode, {
-      systemPrompt: prompts.systemPrompt,
-      userPrompt: prompts.userPrompt,
-      model,
-      maxTokens: LIMITS.MAX_PLAN_TOKENS,
-      temperature: DEFAULTS.DEFAULT_TEMPERATURE,
-      mockText,
-    })
+    let response
+    try {
+      response = await callPlanProvider(providerMode, {
+        systemPrompt: prompts.systemPrompt,
+        userPrompt: prompts.userPrompt,
+        model,
+        maxTokens: LIMITS.MAX_PLAN_TOKENS,
+        temperature: DEFAULTS.DEFAULT_TEMPERATURE,
+        mockText,
+      })
+    } catch (err) {
+      if (err instanceof ClaudeResponseError) {
+        const detail = err.status ? ` (HTTP ${err.status})` : ''
+        throw new GeneratePlanError(
+          `Anthropic plan generation failed${detail}: ${err.message}`,
+          { cause: err }
+        )
+      }
+      throw err
+    }
+
     totalInputTokens += response.inputTokens
     totalOutputTokens += response.outputTokens
+    lastRawResponse = response.text
 
     const { plan, error } = parseGeneratedPlanResponse(response.text)
     if (plan) {
@@ -345,8 +361,8 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     lastValidationError = error ?? 'Invalid plan JSON.'
   }
 
-  const providerLabel = providerMode === 'mock' ? 'Mock provider' : 'Claude'
+  const providerLabel = providerMode === 'mock' ? 'Mock provider' : 'Anthropic'
   throw new GeneratePlanError(
-    `${providerLabel} returned invalid plan JSON after retry: ${lastValidationError}`
+    `${providerLabel} returned invalid plan JSON after retry: ${lastValidationError}. Raw response: ${lastRawResponse}`
   )
 }

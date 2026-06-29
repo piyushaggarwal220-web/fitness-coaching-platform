@@ -1,4 +1,4 @@
-import { generateClaudeResponse } from '@/lib/ai/anthropic'
+import { ClaudeResponseError, generateClaudeResponse } from '@/lib/ai/anthropic'
 import { DEFAULTS } from '@/lib/ai/config'
 
 export type PlanProviderMode = 'mock' | 'claude'
@@ -19,15 +19,21 @@ export type PlanProviderCallResult = {
   outputTokens: number
 }
 
+/** Mock only when explicitly requested; otherwise Anthropic is always used. */
 export function getPlanProviderMode(): PlanProviderMode {
   const explicit = process.env.AI_PLAN_PROVIDER?.trim().toLowerCase()
-  if (explicit === 'mock' || explicit === 'claude') {
-    return explicit
+  if (explicit === 'mock') {
+    return 'mock'
   }
-  if (process.env.ANTHROPIC_API_KEY?.trim()) {
-    return 'claude'
+  return 'claude'
+}
+
+function assertAnthropicConfigured(): void {
+  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
+    throw new ClaudeResponseError(
+      'ANTHROPIC_API_KEY is not configured. Add it to .env.local to generate plans.'
+    )
   }
-  return 'mock'
 }
 
 export async function callPlanProvider(
@@ -45,6 +51,8 @@ export async function callPlanProvider(
       outputTokens: 0,
     }
   }
+
+  assertAnthropicConfigured()
 
   const response = await generateClaudeResponse({
     systemPrompt: params.systemPrompt,

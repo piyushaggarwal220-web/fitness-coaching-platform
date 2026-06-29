@@ -171,7 +171,7 @@ export default function CoachGeneratePlanPage() {
           </label>
 
           <p style={styles.hint}>
-            Uses the AI pipeline with a mock provider until Claude is configured. Review and edit the draft before delivering.
+            Generates a personalized plan via Anthropic. Review and edit the draft before delivering.
           </p>
 
           <button type="submit" disabled={generating} style={styles.submitBtn}>

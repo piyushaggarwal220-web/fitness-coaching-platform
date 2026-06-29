@@ -26,10 +26,20 @@ const cols = [
   'payment_confirmed',
   'onboarding_complete',
   'onboarding_completed_at',
+  'onboarding_data',
   'coach_id',
   'plan_delivered',
   'checkin_awaiting',
   'checkin_overdue',
+  'gender',
+  'fitness_goal',
+  'training_experience',
+  'activity_level',
+  'diet_preference',
+  'sleep_duration',
+  'injuries',
+  'medical_notes',
+  'progress_photo_front',
 ]
 const { error: colErr } = await sb.from('profiles').select(cols.join(',')).limit(0)
 console.log(colErr ? `MISSING: ${colErr.message}` : 'all present')

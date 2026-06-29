@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { generatePlan, GeneratePlanError } from '@/lib/ai/generate-plan'
 import { generatedPlanToFormData } from '@/lib/ai/plan-format'
 import { createClient } from '@/lib/supabase/server'
@@ -92,6 +93,17 @@ export async function POST(request: Request) {
       generationTimeMs: Date.now() - startedAt,
     })
   } catch (err) {
+    if (err instanceof ClaudeResponseError) {
+      const detail = err.status ? ` (HTTP ${err.status})` : ''
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Anthropic plan generation failed${detail}: ${err.message}`,
+        },
+        { status: err.status && err.status >= 400 && err.status < 600 ? err.status : 502 }
+      )
+    }
+
     const message =
       err instanceof GeneratePlanError
         ? err.message
