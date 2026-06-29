@@ -117,3 +117,35 @@ export function planToForm(plan: Plan): PlanFormData {
     coach_notes: plan.coach_notes ?? '',
   }
 }
+
+/** Copy a plan into a new draft version without modifying the source. */
+export async function restorePlanAsDraft(
+  supabase: SupabaseClient,
+  plan: Plan
+): Promise<{ data: Plan | null; error: string | null }> {
+  const version = await getNextPlanVersion(supabase, plan.client_id)
+  const now = new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from('plans')
+    .insert({
+      client_id: plan.client_id,
+      coach_id: plan.coach_id,
+      title: `${plan.title} (restored v${plan.version})`,
+      phase: plan.phase,
+      workout_plan: plan.workout_plan,
+      nutrition_plan: plan.nutrition_plan,
+      cardio_plan: plan.cardio_plan,
+      supplement_plan: plan.supplement_plan,
+      coach_notes: plan.coach_notes,
+      version,
+      active: false,
+      created_at: now,
+      updated_at: now,
+    })
+    .select()
+    .single()
+
+  if (error || !data) return { data: null, error: error?.message ?? 'Failed to restore plan' }
+  return { data: data as Plan, error: null }
+}

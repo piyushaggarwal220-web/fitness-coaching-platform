@@ -5,8 +5,19 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import CoachNavbar from '../../../components/CoachNavbar';
 import { PlanEditor } from '@/components/PlanEditor';
+import { AiReasoningPanel } from '@/components/coach/ai-actions/shared';
+import {
+  clearPlanDraftFromSession,
+  clearWorkoutRetryError,
+  loadAiReasoningFromSession,
+  loadPlanDraftFromSession,
+  loadWorkoutRetryError,
+  savePlanDraftToSession,
+} from '@/lib/ai/plan-format';
+import { mergePlanForms } from '@/lib/coach/ai-actions';
+import { runCoachAiAction } from '@/lib/coach/ai-action-client';
+import type { AiReasoningDisplay } from '@/lib/coach/ai-actions';
 import { activatePlan, getNextPlanVersion, INITIAL_PLAN_FORM, validatePlanForm } from '@/lib/plans';
-import { clearPlanDraftFromSession, loadPlanDraftFromSession } from '@/lib/ai/plan-format';
 import { createClient } from '@/lib/supabase/client';
 import { requireCoach } from '@/lib/coach-session';
 import type { ClientProfile, Coach, PlanFormData } from '@/types/database';
@@ -20,6 +31,7 @@ function CoachNewPlanForm() {
   const searchParams = useSearchParams();
   const clientIdParam = searchParams.get('clientId') ?? '';
   const fromAi = searchParams.get('fromAi') === '1';
+  const retryWorkout = searchParams.get('retryWorkout') === '1';
 
   const [coach, setCoach] = useState<Coach | null>(null);
   const [clients, setClients] = useState<ClientOption[]>([]);
@@ -27,6 +39,9 @@ function CoachNewPlanForm() {
   const [aiDraftLoaded, setAiDraftLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [retryingWorkout, setRetryingWorkout] = useState(false);
+  const [workoutRetryError, setWorkoutRetryError] = useState<string | null>(null);
+  const [aiReasoning, setAiReasoning] = useState<AiReasoningDisplay | null>(null);
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
 
@@ -62,13 +77,50 @@ function CoachNewPlanForm() {
           nextForm = draft;
           setAiDraftLoaded(true);
         }
+        if (retryWorkout) {
+          setWorkoutRetryError(loadWorkoutRetryError(clientIdParam));
+        }
+        const reasoning = loadAiReasoningFromSession<AiReasoningDisplay>(clientIdParam);
+        if (reasoning) setAiReasoning(reasoning);
       }
 
       setForm(nextForm);
       setLoading(false);
     };
     load();
-  }, [router, clientIdParam, fromAi]);
+  }, [router, clientIdParam, fromAi, retryWorkout]);
+
+  const handleRetryWorkout = async () => {
+    if (!form.client_id) return;
+    setRetryingWorkout(true);
+    setError('');
+
+    const result = await runCoachAiAction({
+      action: 'initial_workout',
+      clientId: form.client_id,
+    });
+
+    setRetryingWorkout(false);
+
+    if (!result.success || !result.formData) {
+      setWorkoutRetryError(result.error ?? 'Workout plan generation failed.');
+      return;
+    }
+
+    const merged = mergePlanForms(form, {
+      workout_plan: result.formData.workout_plan,
+      cardio_plan: result.formData.cardio_plan,
+      coach_notes: [form.coach_notes, result.formData.coach_notes].filter(Boolean).join('\n\n'),
+      title: 'Complete Coaching Plan (Draft)',
+    });
+
+    setForm(merged);
+    savePlanDraftToSession(form.client_id, merged);
+    clearWorkoutRetryError(form.client_id);
+    setWorkoutRetryError(null);
+    if (result.aiReasoning) setAiReasoning(result.aiReasoning);
+    router.replace(`/coach/plan/new?clientId=${form.client_id}&fromAi=1`);
+  };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -170,6 +222,24 @@ function CoachNewPlanForm() {
           </div>
         )}
 
+        {workoutRetryError && (
+          <div style={styles.workoutRetryBanner}>
+            <p style={{ margin: '0 0 12px 0' }}>
+              Diet plan was generated successfully, but workout generation failed: {workoutRetryError}
+            </p>
+            <button
+              type="button"
+              disabled={retryingWorkout}
+              onClick={() => void handleRetryWorkout()}
+              style={styles.retryWorkoutBtn}
+            >
+              {retryingWorkout ? 'Retrying workout…' : 'Retry workout'}
+            </button>
+          </div>
+        )}
+
+        <AiReasoningPanel reasoning={aiReasoning} />
+
         {clients.length === 0 && (
           <div style={styles.warning}>No assigned clients. Assign clients before creating plans.</div>
         )}
@@ -228,6 +298,8 @@ const styles: Record<string, CSSProperties> = {
   error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 16 },
   warning: { backgroundColor: '#fff3cd', color: '#856404', padding: 12, borderRadius: 8, marginBottom: 16 },
   aiBanner: { backgroundColor: '#e7f3ff', color: '#004085', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 },
+  workoutRetryBanner: { backgroundColor: '#fff3cd', color: '#856404', padding: 16, borderRadius: 8, marginBottom: 16, fontSize: 14 },
+  retryWorkoutBtn: { padding: '10px 18px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 },
   errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 24, borderRadius: 12, textAlign: 'center' },
   retryBtn: { padding: '10px 20px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, marginTop: 12 },
 };

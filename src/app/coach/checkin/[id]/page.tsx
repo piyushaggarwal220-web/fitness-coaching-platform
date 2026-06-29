@@ -14,6 +14,7 @@ import {
   serializeCoachResponse,
 } from '@/lib/checkin';
 import { formatFitnessGoal } from '@/lib/coach-utils';
+import { WeeklyCoachingPanel } from '@/components/coach/ai-actions/WeeklyCoachingPanel';
 import type { Checkin, CheckinWithClient, CoachCheckinResponse } from '@/types/database';
 
 const supabase = createClient();
@@ -207,6 +208,19 @@ export default function CoachCheckinDetailPage() {
             <Photo label="Side" url={checkin.progress_photo_side} />
             <Photo label="Back" url={checkin.progress_photo_back} />
           </div>
+        </section>
+
+        <section style={styles.card}>
+          <WeeklyCoachingPanel
+            clientId={checkin.client_id}
+            checkinId={checkin.id}
+            onCoachMessage={(message) => {
+              setResponse((prev) => ({
+                ...prev,
+                feedback: prev.feedback.trim() ? prev.feedback : message,
+              }));
+            }}
+          />
         </section>
 
         <section style={styles.card}>
