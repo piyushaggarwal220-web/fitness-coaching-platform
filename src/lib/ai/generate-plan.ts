@@ -43,7 +43,11 @@ export type GeneratePlanInput = {
   profile: OnboardingProfile
   latestCheckin?: Checkin | null
   coachInstructions?: string | null
+  /** Relaxes schema checks for single-section generation (workout/diet/analysis). */
+  validationMode?: PlanValidationMode
 }
+
+export type PlanValidationMode = 'full' | 'workout_focus' | 'nutrition_focus' | 'minimal'
 
 export type GeneratePlanResult = {
   generatedPlan: GeneratedPlan
@@ -170,7 +174,12 @@ export function extractJsonFromResponse(text: string): string {
 }
 
 /** Validate parsed JSON against the required generated plan schema. */
-export function validateGeneratedPlan(value: unknown): { plan: GeneratedPlan | null; error: string | null } {
+export function validateGeneratedPlan(
+  value: unknown,
+  options?: { mode?: PlanValidationMode }
+): { plan: GeneratedPlan | null; error: string | null } {
+  const mode = options?.mode ?? 'full'
+  const allowPlaceholderNutrition = mode === 'workout_focus' || mode === 'minimal'
   if (!isRecord(value)) {
     return { plan: null, error: 'Response is not a JSON object.' }
   }
@@ -184,8 +193,13 @@ export function validateGeneratedPlan(value: unknown): { plan: GeneratedPlan | n
 
   const nutrition = value.nutrition_plan
   if (!isRecord(nutrition)) return { plan: null, error: 'Missing or invalid nutrition_plan.' }
-  if (!isNumber(nutrition.calories) || nutrition.calories <= 0) {
-    return { plan: null, error: 'nutrition_plan.calories must be a positive number.' }
+  if (!isNumber(nutrition.calories) || (allowPlaceholderNutrition ? nutrition.calories < 0 : nutrition.calories <= 0)) {
+    return {
+      plan: null,
+      error: allowPlaceholderNutrition
+        ? 'nutrition_plan.calories must be a non-negative number.'
+        : 'nutrition_plan.calories must be a positive number.',
+    }
   }
   if (!isNumber(nutrition.protein) || nutrition.protein < 0) {
     return { plan: null, error: 'nutrition_plan.protein must be a non-negative number.' }
@@ -232,7 +246,10 @@ export function validateGeneratedPlan(value: unknown): { plan: GeneratedPlan | n
 }
 
 /** Parse and validate model text into a GeneratedPlan. */
-export function parseGeneratedPlanResponse(text: string): { plan: GeneratedPlan | null; error: string | null } {
+export function parseGeneratedPlanResponse(
+  text: string,
+  options?: { mode?: PlanValidationMode }
+): { plan: GeneratedPlan | null; error: string | null } {
   const jsonText = extractJsonFromResponse(text)
 
   let parsed: unknown
@@ -242,7 +259,7 @@ export function parseGeneratedPlanResponse(text: string): { plan: GeneratedPlan 
     return { plan: null, error: 'Response is not valid JSON.' }
   }
 
-  return validateGeneratedPlan(parsed)
+  return validateGeneratedPlan(parsed, options)
 }
 
 function buildPlanPrompts(
@@ -346,7 +363,9 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     totalOutputTokens += response.outputTokens
     lastRawResponse = response.text
 
-    const { plan, error } = parseGeneratedPlanResponse(response.text)
+    const { plan, error } = parseGeneratedPlanResponse(response.text, {
+      mode: input.validationMode ?? 'full',
+    })
     if (plan) {
       return {
         generatedPlan: plan,

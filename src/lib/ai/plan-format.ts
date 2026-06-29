@@ -1,10 +1,166 @@
 import type { GeneratedPlan } from '@/lib/ai/generate-plan'
 import type { PlanFormData } from '@/types/database'
 
-function formatSection(title: string, body: unknown): string {
-  if (body == null) return ''
-  if (typeof body === 'string') return body.trim()
-  return JSON.stringify(body, null, 2)
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function formatScalar(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (Array.isArray(value)) return value.map(formatScalar).filter(Boolean).join(', ')
+  if (isRecord(value)) {
+    return Object.entries(value)
+      .filter(([, v]) => v != null && v !== '')
+      .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${formatScalar(v)}`)
+      .join(' · ')
+  }
+  return String(value)
+}
+
+function formatBulletLines(items: unknown[], indent = '  • '): string {
+  return items
+    .map((item) => {
+      const line = formatScalar(item)
+      return line ? `${indent}${line}` : ''
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+function formatWorkoutDays(days: unknown[]): string {
+  if (days.length === 0) return ''
+
+  return days
+    .map((day) => {
+      if (!isRecord(day)) return formatScalar(day)
+
+      const heading = [day.day, day.name, day.focus, day.title]
+        .map((v) => (typeof v === 'string' ? v.trim() : ''))
+        .filter(Boolean)
+        .join(' — ')
+
+      const exercises = day.exercises ?? day.movements ?? day.lifts
+      const exerciseBlock = Array.isArray(exercises) ? formatBulletLines(exercises) : ''
+
+      const notes = typeof day.notes === 'string' ? day.notes.trim() : ''
+      const extra = notes ? `  Note: ${notes}` : ''
+
+      return [heading, exerciseBlock, extra].filter(Boolean).join('\n')
+    })
+    .filter(Boolean)
+    .join('\n\n')
+}
+
+function formatMeals(meals: unknown[]): string {
+  if (meals.length === 0) return ''
+
+  return meals
+    .map((meal) => {
+      if (!isRecord(meal)) return formatScalar(meal)
+
+      const labelKeys = ['meal_name', 'meal', 'time', 'name', 'title', 'label', 'type'] as const
+      let name = 'Meal'
+      let detail: unknown =
+        meal.example ??
+        meal.description ??
+        meal.foods ??
+        meal.items ??
+        meal.options ??
+        meal.content
+
+      for (const key of labelKeys) {
+        const value = meal[key]
+        if (typeof value !== 'string' || !value.trim()) continue
+        if (value.length <= 40 && !value.includes(',')) {
+          name = value.trim()
+        } else if (!detail) {
+          detail = value
+        }
+      }
+
+      if (typeof detail === 'string' && detail.trim()) {
+        return `${name}: ${detail.trim()}`
+      }
+      if (Array.isArray(detail)) {
+        const text = detail.map(formatScalar).filter(Boolean).join(', ')
+        return text ? `${name}: ${text}` : name
+      }
+      if (isRecord(detail)) {
+        const text = formatScalar(detail)
+        return text ? `${name}: ${text}` : name
+      }
+
+      const macros = [meal.calories, meal.protein, meal.carbs, meal.fat]
+        .map((v) => (typeof v === 'number' ? v : null))
+        .filter((v) => v != null)
+      if (macros.length > 0) {
+        return `${name} (${macros.join(' / ')})`
+      }
+
+      const fallback = Object.entries(meal)
+        .filter(([k]) => !['meal', 'name', 'title'].includes(k))
+        .map(([, v]) => formatScalar(v))
+        .filter(Boolean)
+        .join(' · ')
+
+      return fallback ? `${name}: ${fallback}` : name
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+function formatCardioSessions(sessions: unknown[]): string {
+  if (sessions.length === 0) return ''
+
+  return sessions
+    .map((session) => {
+      if (!isRecord(session)) return formatScalar(session)
+
+      const type =
+        (typeof session.type === 'string' && session.type) ||
+        (typeof session.name === 'string' && session.name) ||
+        'Session'
+
+      const parts = [
+        typeof session.duration === 'string' ? session.duration : null,
+        typeof session.frequency === 'string' ? session.frequency : null,
+        typeof session.intensity === 'string' ? session.intensity : null,
+        typeof session.notes === 'string' ? session.notes : null,
+      ].filter(Boolean)
+
+      return parts.length > 0 ? `${type} — ${parts.join(' · ')}` : type
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+function formatSupplementItems(items: unknown[]): string {
+  if (items.length === 0) return ''
+
+  return items
+    .map((item) => {
+      if (!isRecord(item)) return formatScalar(item)
+
+      const name =
+        (typeof item.name === 'string' && item.name) ||
+        (typeof item.supplement === 'string' && item.supplement) ||
+        'Supplement'
+
+      const dose =
+        (typeof item.dose === 'string' && item.dose) ||
+        (typeof item.dosage === 'string' && item.dosage) ||
+        (typeof item.amount === 'string' && item.amount) ||
+        ''
+
+      const notes = typeof item.notes === 'string' ? item.notes.trim() : ''
+
+      const parts = [dose, notes].filter(Boolean)
+      return parts.length > 0 ? `${name} — ${parts.join(' · ')}` : name
+    })
+    .filter(Boolean)
+    .join('\n')
 }
 
 /** Map validated AI JSON into plan editor / DB text fields. */
@@ -13,20 +169,22 @@ export function generatedPlanToFormData(
   clientId: string,
   options?: { title?: string; phase?: string }
 ): PlanFormData {
-  const workoutText = [
-    generated.workout_plan.overview,
-    '',
-    formatSection('Days', generated.workout_plan.days),
-  ].join('\n').trim()
+  const workoutDays = formatWorkoutDays(generated.workout_plan.days)
+  const workoutText = [generated.workout_plan.overview, workoutDays ? `\n${workoutDays}` : '']
+    .join('')
+    .trim()
 
+  const mealsText = formatMeals(generated.nutrition_plan.meals)
   const nutritionText = [
     `Calories: ${generated.nutrition_plan.calories}`,
     `Protein: ${generated.nutrition_plan.protein}g`,
     `Carbs: ${generated.nutrition_plan.carbs}g`,
     `Fat: ${generated.nutrition_plan.fat}g`,
-    '',
-    formatSection('Meals', generated.nutrition_plan.meals),
-  ].join('\n')
+    mealsText ? '' : null,
+    mealsText || null,
+  ]
+    .filter((line) => line !== null)
+    .join('\n')
 
   return {
     client_id: clientId,
@@ -34,8 +192,8 @@ export function generatedPlanToFormData(
     phase: options?.phase ?? 'Phase 1',
     workout_plan: workoutText,
     nutrition_plan: nutritionText,
-    cardio_plan: formatSection('Cardio', generated.cardio_plan.sessions),
-    supplement_plan: formatSection('Supplements', generated.supplement_plan.items),
+    cardio_plan: formatCardioSessions(generated.cardio_plan.sessions),
+    supplement_plan: formatSupplementItems(generated.supplement_plan.items),
     coach_notes: generated.coach_notes.trim(),
   }
 }

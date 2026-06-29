@@ -1,0 +1,5 @@
+[33m9ceaad6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m feat(coach): implement AI coaching actions and plan versioning
+[33m90c0c86[m feat(onboarding): redesign coaching intake and add onboarding_data support
+[33m50ab4fb[m feat(mvp): complete end-to-end coaching workflow and production hardening
+[33m90b55f6[m feat: implement AI pipeline, purchase flow, onboarding, Razorpay integration, and customer journey
+[33me2d70f0[m feat(ai): add knowledge base system

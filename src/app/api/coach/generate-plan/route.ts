@@ -5,7 +5,7 @@ import {
   generatedPlanToFormData,
   generatedWorkoutFormData,
 } from '@/lib/ai/plan-format'
-import { generatePlan, GeneratePlanError } from '@/lib/ai/generate-plan'
+import { generatePlan, GeneratePlanError, type PlanValidationMode } from '@/lib/ai/generate-plan'
 import { selectKnowledgeCategories } from '@/lib/ai/prompt-builder'
 import {
   buildActionCoachInstructions,
@@ -25,6 +25,23 @@ type GeneratePlanRequestBody = {
   coachNote?: string
   coachInstructions?: string
   checkinId?: string
+}
+
+function actionValidationMode(
+  actionId: CoachAiActionId,
+  isLegacyFullPlan: boolean
+): PlanValidationMode {
+  if (isLegacyFullPlan) return 'full'
+  switch (actionId) {
+    case 'initial_workout':
+    case 'review_update_workout':
+      return 'workout_focus'
+    case 'review_analyze_checkin':
+    case 'review_coach_message':
+      return 'minimal'
+    default:
+      return 'full'
+  }
 }
 
 export async function POST(request: Request) {
@@ -142,6 +159,7 @@ export async function POST(request: Request) {
       profile: profile as OnboardingProfile,
       latestCheckin: checkinForPrompt,
       coachInstructions,
+      validationMode: actionValidationMode(actionId, isLegacyFullPlan),
     })
 
     const knowledgeCategories = selectKnowledgeCategories(profile as OnboardingProfile)
