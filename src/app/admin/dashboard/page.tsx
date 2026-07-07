@@ -8,6 +8,7 @@ import { AdminStatCard } from '@/components/admin/AdminStatCard'
 import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import type { PlatformHealth } from '@/lib/admin/platform-health'
+import type { PromptLibraryStats } from '@/types/database'
 import { formatDate } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
 import type { AdminProfile } from '@/lib/admin-session'
@@ -29,6 +30,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState({ clients: 0, coaches: 0, activePlans: 0, pendingOnboarding: 0 })
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [health, setHealth] = useState<PlatformHealth | null>(null)
+  const [promptStats, setPromptStats] = useState<PromptLibraryStats | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -101,12 +103,19 @@ export default function AdminDashboardPage() {
       setActivity(items.slice(0, 8))
 
       try {
-        const healthRes = await fetch('/api/admin/platform-health')
+        const [healthRes, promptStatsRes] = await Promise.all([
+          fetch('/api/admin/platform-health'),
+          fetch('/api/admin/prompts/stats'),
+        ])
         if (healthRes.ok) {
           setHealth((await healthRes.json()) as PlatformHealth)
         }
+        if (promptStatsRes.ok) {
+          setPromptStats((await promptStatsRes.json()) as PromptLibraryStats)
+        }
       } catch {
         setHealth(null)
+        setPromptStats(null)
       }
 
       setLoading(false)
@@ -200,6 +209,26 @@ export default function AdminDashboardPage() {
               {health && !health.metricsAvailable && (
                 <p style={{ margin: '16px 0 0 0', fontSize: 12, color: '#888' }}>{health.metricsNote}</p>
               )}
+            </div>
+
+            <div style={s.card}>
+              <h2 style={s.cardTitle}>Prompt Library</h2>
+              {promptStats ? (
+                <div style={s.infoGrid}>
+                  <HealthRow label="Total prompts" value={String(promptStats.total)} />
+                  <HealthRow label="Drafts" value={String(promptStats.drafts)} />
+                  <HealthRow label="Published" value={String(promptStats.published)} />
+                  <HealthRow
+                    label="Last updated prompt"
+                    value={promptStats.lastUpdated ? formatDate(promptStats.lastUpdated) : '—'}
+                  />
+                </div>
+              ) : (
+                <p style={{ margin: 0, color: '#666', fontSize: 14 }}>Prompt library data unavailable.</p>
+              )}
+              <Link href="/admin/prompts" style={{ ...s.linkBtn, display: 'inline-block', marginTop: 16 }}>
+                Open prompt library →
+              </Link>
             </div>
           </div>
 

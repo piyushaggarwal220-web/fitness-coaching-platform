@@ -3,22 +3,14 @@
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
+import { getAdminNavModules } from '@/lib/admin/modules'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
 
-const navLinks = [
-  { href: '/admin/dashboard', label: 'Dashboard' },
-  { href: '/admin/clients', label: 'Clients' },
-  { href: '/admin/coaches', label: 'Coaches' },
-  { href: '/admin/plans', label: 'Active Plans' },
-  { href: '/admin/ai-logs', label: 'AI Logs' },
-  { href: '/admin/onboarding', label: 'Pending Onboarding' },
-  { href: '/admin/settings', label: 'Settings' },
-]
-
 export default function AdminNavbar() {
   const router = useRouter()
+  const navLinks = getAdminNavModules()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -33,8 +25,8 @@ export default function AdminNavbar() {
         </Link>
         <div style={styles.links}>
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} style={styles.link}>
-              {link.label}
+            <Link key={link.id} href={link.href} style={styles.link} title={link.description}>
+              {link.title}
             </Link>
           ))}
           <button type="button" onClick={() => void handleLogout()} style={styles.logoutBtn}>

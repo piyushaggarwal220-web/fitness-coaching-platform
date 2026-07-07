@@ -382,6 +382,7 @@ export type SupportMessage = {
 
 export type SupportRequestWithClient = SupportRequest & {
   profiles?: Pick<Profile, 'name' | 'email' | 'age' | 'gender' | 'fitness_goal'> | null
+  coaches?: Pick<Coach, 'name'> | null
 }
 
 export type SupportRequestFormData = {
@@ -413,4 +414,89 @@ export type AiGenerationLog = {
 export type AiGenerationLogWithRelations = AiGenerationLog & {
   profiles?: Pick<Profile, 'name' | 'email'> | null
   coaches?: Pick<Coach, 'name'> | null
+}
+
+export type PlatformNotificationChannel = 'email' | 'in_app' | 'sms'
+
+export type PlatformNotificationStatus = 'draft' | 'scheduled' | 'sent' | 'failed'
+
+export type PlatformNotification = {
+  id: string
+  template_key: string
+  channel: PlatformNotificationChannel
+  subject: string | null
+  body: string
+  status: PlatformNotificationStatus
+  recipient_id: string | null
+  metadata: Record<string, unknown> | null
+  scheduled_at: string | null
+  sent_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type PromptLibraryCategory =
+  | 'system_prompt'
+  | 'initial_diet'
+  | 'initial_workout'
+  | 'weekly_diet_update'
+  | 'weekly_workout_update'
+  | 'mid_week_analysis'
+  | 'coach_message'
+  | 'future_prompts'
+
+export type PromptVersionStatus = 'draft' | 'published' | 'archived'
+
+export type PromptLibrary = {
+  id: string
+  slug: string
+  name: string
+  category: PromptLibraryCategory
+  description: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  archived_at: string | null
+}
+
+export type PromptLibraryVersion = {
+  id: string
+  prompt_id: string
+  version: number
+  status: PromptVersionStatus
+  prompt_body: string
+  description: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  published_at: string | null
+}
+
+export type PromptLibraryListItem = PromptLibrary & {
+  current_version: number | null
+  list_status: 'draft' | 'published' | 'archived'
+  last_version_updated: string | null
+  draft_version: PromptLibraryVersion | null
+  published_version: PromptLibraryVersion | null
+}
+
+export type PromptLibraryWithVersions = PromptLibrary & {
+  versions: PromptLibraryVersion[]
+  draft_version: PromptLibraryVersion | null
+  published_version: PromptLibraryVersion | null
+}
+
+export type PromptLibraryFormData = {
+  name: string
+  slug: string
+  category: PromptLibraryCategory
+  description: string
+  prompt_body: string
+}
+
+export type PromptLibraryStats = {
+  total: number
+  drafts: number
+  published: number
+  lastUpdated: string | null
 }

@@ -6,7 +6,7 @@ import { supportStyles as s } from './styles'
 
 type SupportThreadProps = {
   messages: SupportMessage[]
-  viewer: 'client' | 'coach'
+  viewer: 'client' | 'coach' | 'admin'
 }
 
 export function SupportThread({ messages, viewer }: SupportThreadProps) {
@@ -18,8 +18,18 @@ export function SupportThread({ messages, viewer }: SupportThreadProps) {
     <div style={s.thread}>
       {messages.map((msg) => {
         const isMine =
-          (viewer === 'client' && msg.sender_type === 'client') ||
-          (viewer === 'coach' && msg.sender_type === 'coach')
+          viewer !== 'admin' &&
+          ((viewer === 'client' && msg.sender_type === 'client') ||
+            (viewer === 'coach' && msg.sender_type === 'coach'))
+
+        const senderLabel =
+          viewer === 'admin'
+            ? msg.sender_type === 'coach'
+              ? 'Coach'
+              : 'Client'
+            : msg.sender_type === 'coach'
+              ? 'Coach'
+              : 'You'
 
         return (
           <div
@@ -31,7 +41,7 @@ export function SupportThread({ messages, viewer }: SupportThreadProps) {
           >
             <div>{msg.message}</div>
             <div style={s.bubbleMeta}>
-              {msg.sender_type === 'coach' ? 'Coach' : 'You'} · {formatSupportDate(msg.created_at)}
+              {senderLabel} · {formatSupportDate(msg.created_at)}
             </div>
           </div>
         )
