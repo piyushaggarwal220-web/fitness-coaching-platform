@@ -12,6 +12,7 @@ const navLinks = [
   { href: '/admin/clients', label: 'Clients' },
   { href: '/admin/coaches', label: 'Coaches' },
   { href: '/admin/plans', label: 'Active Plans' },
+  { href: '/admin/ai-logs', label: 'AI Logs' },
   { href: '/admin/onboarding', label: 'Pending Onboarding' },
   { href: '/admin/settings', label: 'Settings' },
 ]

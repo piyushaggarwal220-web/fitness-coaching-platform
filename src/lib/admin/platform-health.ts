@@ -1,4 +1,5 @@
 import { DEFAULTS, MODELS } from '@/lib/ai/config'
+import { computeAiMetricsFromLogs } from '@/lib/ai/trace-log'
 import { getPlanProviderMode } from '@/lib/ai/plan-provider'
 
 export type PlatformHealth = {
@@ -9,27 +10,35 @@ export type PlatformHealth = {
   lastSuccessfulGeneration: string | null
   averageLatencyMs: number | null
   aiSuccessRate: number | null
-  jsonValidationSuccessRate: number | null
+  retryRate: number | null
+  validationFailureRate: number | null
   metricsAvailable: boolean
   metricsNote: string
+  totalAttempts: number
 }
 
-/** Read-only platform health from env/config. AI trace metrics require Phase 3 logging. */
-export function getPlatformHealth(): PlatformHealth {
+/** Read-only platform health from env/config plus AI trace metrics when available. */
+export async function getPlatformHealth(): Promise<PlatformHealth> {
   const anthropicConfigured = Boolean(process.env.ANTHROPIC_API_KEY?.trim())
   const providerMode = getPlanProviderMode()
+  const metrics = await computeAiMetricsFromLogs()
 
   return {
     anthropicConfigured,
     anthropicStatus: anthropicConfigured ? 'configured' : 'not_configured',
     aiProvider: providerMode === 'mock' ? 'mock' : 'anthropic',
     currentModel: DEFAULTS.DEFAULT_MODEL || MODELS.CLAUDE_SONNET,
-    lastSuccessfulGeneration: null,
-    averageLatencyMs: null,
-    aiSuccessRate: null,
-    jsonValidationSuccessRate: null,
-    metricsAvailable: false,
-    metricsNote: 'AI generation metrics will be available after AI Trace Mode is enabled.',
+    lastSuccessfulGeneration: metrics.lastSuccessfulGeneration,
+    averageLatencyMs: metrics.averageLatencyMs,
+    aiSuccessRate: metrics.aiSuccessRate,
+    retryRate: metrics.retryRate,
+    validationFailureRate: metrics.validationFailureRate,
+    metricsAvailable: metrics.totalAttempts > 0,
+    metricsNote:
+      metrics.totalAttempts > 0
+        ? `Based on ${metrics.totalAttempts} logged generation attempt${metrics.totalAttempts === 1 ? '' : 's'}.`
+        : 'No AI generation logs yet. Metrics appear after the first logged attempt.',
+    totalAttempts: metrics.totalAttempts,
   }
 }
 

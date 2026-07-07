@@ -7,6 +7,7 @@ import {
 } from '@/lib/ai/plan-format'
 import { generatePlan, GeneratePlanError, type PlanValidationMode } from '@/lib/ai/generate-plan'
 import { selectKnowledgeCategories } from '@/lib/ai/prompt-builder'
+import { logAiGeneration } from '@/lib/ai/trace-log'
 import {
   buildActionCoachInstructions,
   buildAiReasoningDisplay,
@@ -145,6 +146,35 @@ export async function POST(request: Request) {
   const checkinForPrompt = checkin ?? (latestCheckin as Checkin | null)
 
   const startedAt = Date.now()
+  const actionLabel = isLegacyFullPlan ? 'legacy_full_plan' : actionId
+  const knowledgeCategories = selectKnowledgeCategories(profile as OnboardingProfile)
+
+  const writeTrace = async (input: {
+    success: boolean
+    model: string | null
+    promptTokens: number | null
+    completionTokens: number | null
+    retryCount: number
+    validationResult: string
+    rawOutput?: unknown
+    renderedOutput?: unknown
+  }) => {
+    await logAiGeneration({
+      clientId,
+      coachId: coach.id,
+      action: actionLabel,
+      model: input.model,
+      latencyMs: Date.now() - startedAt,
+      promptTokens: input.promptTokens,
+      completionTokens: input.completionTokens,
+      retryCount: input.retryCount,
+      validationResult: input.validationResult,
+      success: input.success,
+      knowledgeRefs: knowledgeCategories,
+      rawOutput: input.rawOutput,
+      renderedOutput: input.renderedOutput,
+    })
+  }
 
   try {
     const coachInstructions = isLegacyFullPlan
@@ -162,20 +192,31 @@ export async function POST(request: Request) {
       validationMode: actionValidationMode(actionId, isLegacyFullPlan),
     })
 
-    const knowledgeCategories = selectKnowledgeCategories(profile as OnboardingProfile)
+    const knowledgeCategoriesForReasoning = knowledgeCategories
     const aiReasoning = buildAiReasoningDisplay({
       complexityTier: result.complexityScore.tier,
       complexityScore: result.complexityScore.score,
       model: result.model,
-      knowledgeCategories,
+      knowledgeCategories: knowledgeCategoriesForReasoning,
       coachNotes: result.generatedPlan.coach_notes,
       complexityReasons: result.complexityScore.reasoning,
     })
 
     if (!isLegacyFullPlan && actionId === 'review_analyze_checkin') {
+      const insightText = result.generatedPlan.coach_notes.trim()
+      await writeTrace({
+        success: true,
+        model: result.model,
+        promptTokens: result.inputTokens,
+        completionTokens: result.outputTokens,
+        retryCount: result.retryCount,
+        validationResult: 'pass',
+        rawOutput: result.generatedPlan,
+        renderedOutput: { insightText },
+      })
       return NextResponse.json({
         success: true,
-        insightText: result.generatedPlan.coach_notes.trim(),
+        insightText,
         aiReasoning,
         selectedModel: result.model,
         generationTimeMs: Date.now() - startedAt,
@@ -183,9 +224,20 @@ export async function POST(request: Request) {
     }
 
     if (!isLegacyFullPlan && actionId === 'review_coach_message') {
+      const coachMessage = result.generatedPlan.coach_notes.trim()
+      await writeTrace({
+        success: true,
+        model: result.model,
+        promptTokens: result.inputTokens,
+        completionTokens: result.outputTokens,
+        retryCount: result.retryCount,
+        validationResult: 'pass',
+        rawOutput: result.generatedPlan,
+        renderedOutput: { coachMessage },
+      })
       return NextResponse.json({
         success: true,
-        coachMessage: result.generatedPlan.coach_notes.trim(),
+        coachMessage,
         aiReasoning,
         selectedModel: result.model,
         generationTimeMs: Date.now() - startedAt,
@@ -226,6 +278,17 @@ export async function POST(request: Request) {
       formData = generatedPlanToFormData(result.generatedPlan, clientId)
     }
 
+    await writeTrace({
+      success: true,
+      model: result.model,
+      promptTokens: result.inputTokens,
+      completionTokens: result.outputTokens,
+      retryCount: result.retryCount,
+      validationResult: 'pass',
+      rawOutput: result.generatedPlan,
+      renderedOutput: formData,
+    })
+
     return NextResponse.json({
       success: true,
       formData,
@@ -239,6 +302,24 @@ export async function POST(request: Request) {
       generationTimeMs: Date.now() - startedAt,
     })
   } catch (err) {
+    const failureMessage =
+      err instanceof ClaudeResponseError
+        ? `Anthropic plan generation failed${err.status ? ` (HTTP ${err.status})` : ''}: ${err.message}`
+        : err instanceof GeneratePlanError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Plan generation failed'
+
+    await writeTrace({
+      success: false,
+      model: null,
+      promptTokens: null,
+      completionTokens: null,
+      retryCount: 1,
+      validationResult: failureMessage,
+    })
+
     if (err instanceof ClaudeResponseError) {
       const detail = err.status ? ` (HTTP ${err.status})` : ''
       return NextResponse.json(
@@ -250,15 +331,8 @@ export async function POST(request: Request) {
       )
     }
 
-    const message =
-      err instanceof GeneratePlanError
-        ? err.message
-        : err instanceof Error
-          ? err.message
-          : 'Plan generation failed'
-
     const status = err instanceof GeneratePlanError ? 422 : 500
 
-    return NextResponse.json({ success: false, error: message }, { status })
+    return NextResponse.json({ success: false, error: failureMessage }, { status })
   }
 }

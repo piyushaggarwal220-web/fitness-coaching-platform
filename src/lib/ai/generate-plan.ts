@@ -56,6 +56,7 @@ export type GeneratePlanResult = {
   estimatedTokens: number
   inputTokens: number
   outputTokens: number
+  retryCount: number
 }
 
 export class GeneratePlanError extends Error {
@@ -374,6 +375,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         estimatedTokens: prompts.estimatedTokens,
         inputTokens: totalInputTokens,
         outputTokens: totalOutputTokens,
+        retryCount: attempt,
       }
     }
 

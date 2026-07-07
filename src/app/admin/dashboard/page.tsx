@@ -186,8 +186,12 @@ export default function AdminDashboardPage() {
                     value={health.aiSuccessRate != null ? `${health.aiSuccessRate}%` : '—'}
                   />
                   <HealthRow
-                    label="JSON Validation Success"
-                    value={health.jsonValidationSuccessRate != null ? `${health.jsonValidationSuccessRate}%` : '—'}
+                    label="Retry Rate"
+                    value={health.retryRate != null ? `${health.retryRate}%` : '—'}
+                  />
+                  <HealthRow
+                    label="Validation Failure Rate"
+                    value={health.validationFailureRate != null ? `${health.validationFailureRate}%` : '—'}
                   />
                 </div>
               ) : (

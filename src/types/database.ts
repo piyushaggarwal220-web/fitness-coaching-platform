@@ -390,3 +390,27 @@ export type SupportRequestFormData = {
   message: string
   priority: SupportRequestPriority
 }
+
+export type AiGenerationLog = {
+  id: string
+  client_id: string | null
+  coach_id: string | null
+  action: string
+  model: string | null
+  prompt_version: string
+  latency_ms: number | null
+  prompt_tokens: number | null
+  completion_tokens: number | null
+  retry_count: number
+  validation_result: string | null
+  success: boolean
+  knowledge_refs: string[] | null
+  raw_output: unknown | null
+  rendered_output: unknown | null
+  created_at: string
+}
+
+export type AiGenerationLogWithRelations = AiGenerationLog & {
+  profiles?: Pick<Profile, 'name' | 'email'> | null
+  coaches?: Pick<Coach, 'name'> | null
+}

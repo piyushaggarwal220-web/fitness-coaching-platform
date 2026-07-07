@@ -21,5 +21,5 @@ export async function GET() {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
-  return NextResponse.json(getPlatformHealth())
+  return NextResponse.json(await getPlatformHealth())
 }
