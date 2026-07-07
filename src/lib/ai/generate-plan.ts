@@ -8,7 +8,12 @@ import {
 } from '@/lib/ai/complexity-score'
 import { getAllKnowledge } from '@/lib/ai/knowledge'
 import { buildPrompt } from '@/lib/ai/prompt-builder'
-import type { Checkin, OnboardingProfile } from '@/types/database'
+import {
+  formatLibraryPromptVersion,
+  loadPublishedPromptsForAction,
+} from '@/lib/ai/prompt-library-loader'
+import type { CoachAiActionId } from '@/lib/coach/ai-actions'
+import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
 
 export type GeneratedWorkoutPlan = {
   overview: string
@@ -45,6 +50,8 @@ export type GeneratePlanInput = {
   coachInstructions?: string | null
   /** Relaxes schema checks for single-section generation (workout/diet/analysis). */
   validationMode?: PlanValidationMode
+  actionId?: CoachAiActionId
+  activePlan?: Plan | null
 }
 
 export type PlanValidationMode = 'full' | 'workout_focus' | 'nutrition_focus' | 'minimal'
@@ -57,6 +64,7 @@ export type GeneratePlanResult = {
   inputTokens: number
   outputTokens: number
   retryCount: number
+  promptVersion: string
 }
 
 export class GeneratePlanError extends Error {
@@ -269,7 +277,15 @@ function buildPlanPrompts(
   complexityScore: ComplexityScoreResult,
   knowledgeEntries: Awaited<ReturnType<typeof getAllKnowledge>>['data'],
   coachInstructions: string | null | undefined,
-  retry = false
+  options: {
+    retry?: boolean
+    activePlan?: Plan | null
+    libraryPrompts?: {
+      actionTemplate: string
+      systemTemplate: string | null
+    }
+    validationMode?: PlanValidationMode
+  } = {}
 ) {
   const base = buildPrompt({
     profile,
@@ -277,13 +293,22 @@ function buildPlanPrompts(
     complexityScore,
     knowledgeEntries,
     coachInstructions,
+    activePlan: options.activePlan,
+    actionTemplate: options.libraryPrompts?.actionTemplate ?? null,
+    systemTemplate: options.libraryPrompts?.systemTemplate ?? null,
   })
 
-  const systemPrompt = `${base.systemPrompt}\n\n${PLAN_OUTPUT_INSTRUCTIONS}`
+  const useLibraryTemplate = Boolean(options.libraryPrompts?.actionTemplate)
+  const needsJsonOutput = (options.validationMode ?? 'full') !== 'minimal'
+
+  const systemPrompt = needsJsonOutput
+    ? `${base.systemPrompt}\n\n${PLAN_OUTPUT_INSTRUCTIONS}`
+    : base.systemPrompt
+
   const userPrompt = [
     base.userPrompt,
-    PLAN_TASK_INSTRUCTIONS,
-    retry ? RETRY_INSTRUCTIONS : null,
+    useLibraryTemplate ? null : PLAN_TASK_INSTRUCTIONS,
+    options.retry ? RETRY_INSTRUCTIONS : null,
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -317,6 +342,27 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   let lastValidationError = 'Unknown validation error.'
   let lastRawResponse = ''
   const maxAttempts = providerMode === 'mock' ? 1 : 2
+  const validationMode = input.validationMode ?? 'full'
+
+  let libraryPrompts: { actionTemplate: string; systemTemplate: string | null } | undefined
+  let promptVersion = process.env.AI_PROMPT_VERSION?.trim() || 'v1'
+
+  if (input.actionId) {
+    const loaded = await loadPublishedPromptsForAction(input.actionId)
+    if (!loaded) {
+      throw new GeneratePlanError(
+        `No published Prompt Library entry for action "${input.actionId}". Publish the prompt in Admin → Prompt Library.`
+      )
+    }
+    libraryPrompts = {
+      actionTemplate: loaded.action.promptBody,
+      systemTemplate: loaded.system?.promptBody ?? null,
+    }
+    promptVersion = formatLibraryPromptVersion(loaded.action)
+    if (loaded.system) {
+      promptVersion = `${promptVersion}+${formatLibraryPromptVersion(loaded.system)}`
+    }
+  }
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const prompts = buildPlanPrompts(
@@ -325,7 +371,12 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       complexityScore,
       knowledgeEntries,
       input.coachInstructions,
-      attempt === 1
+      {
+        retry: attempt === 1,
+        activePlan: input.activePlan,
+        libraryPrompts,
+        validationMode,
+      }
     )
 
     const mockText =
@@ -365,7 +416,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     lastRawResponse = response.text
 
     const { plan, error } = parseGeneratedPlanResponse(response.text, {
-      mode: input.validationMode ?? 'full',
+      mode: validationMode,
     })
     if (plan) {
       return {
@@ -376,6 +427,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         inputTokens: totalInputTokens,
         outputTokens: totalOutputTokens,
         retryCount: attempt,
+        promptVersion,
       }
     }
 

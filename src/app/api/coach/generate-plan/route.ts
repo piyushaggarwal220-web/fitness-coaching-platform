@@ -9,7 +9,6 @@ import { generatePlan, GeneratePlanError, type PlanValidationMode } from '@/lib/
 import { selectKnowledgeCategories } from '@/lib/ai/prompt-builder'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 import {
-  buildActionCoachInstructions,
   buildAiReasoningDisplay,
   getCoachAiAction,
   isCoachAiActionId,
@@ -156,6 +155,7 @@ export async function POST(request: Request) {
     completionTokens: number | null
     retryCount: number
     validationResult: string
+    promptVersion?: string | null
     rawOutput?: unknown
     renderedOutput?: unknown
   }) => {
@@ -164,6 +164,7 @@ export async function POST(request: Request) {
       coachId: coach.id,
       action: actionLabel,
       model: input.model,
+      promptVersion: input.promptVersion,
       latencyMs: Date.now() - startedAt,
       promptTokens: input.promptTokens,
       completionTokens: input.completionTokens,
@@ -177,19 +178,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const coachInstructions = isLegacyFullPlan
-      ? coachNote
-      : buildActionCoachInstructions(actionId, {
-          coachNote,
-          activePlan: (activePlan as Plan | null) ?? null,
-          checkin: checkinForPrompt,
-        })
-
     const result = await generatePlan({
       profile: profile as OnboardingProfile,
       latestCheckin: checkinForPrompt,
-      coachInstructions,
+      coachInstructions: coachNote,
       validationMode: actionValidationMode(actionId, isLegacyFullPlan),
+      actionId: isLegacyFullPlan ? undefined : actionId,
+      activePlan: (activePlan as Plan | null) ?? null,
     })
 
     const knowledgeCategoriesForReasoning = knowledgeCategories
@@ -211,6 +206,7 @@ export async function POST(request: Request) {
         completionTokens: result.outputTokens,
         retryCount: result.retryCount,
         validationResult: 'pass',
+        promptVersion: result.promptVersion,
         rawOutput: result.generatedPlan,
         renderedOutput: { insightText },
       })
@@ -232,6 +228,7 @@ export async function POST(request: Request) {
         completionTokens: result.outputTokens,
         retryCount: result.retryCount,
         validationResult: 'pass',
+        promptVersion: result.promptVersion,
         rawOutput: result.generatedPlan,
         renderedOutput: { coachMessage },
       })
@@ -285,6 +282,7 @@ export async function POST(request: Request) {
       completionTokens: result.outputTokens,
       retryCount: result.retryCount,
       validationResult: 'pass',
+      promptVersion: result.promptVersion,
       rawOutput: result.generatedPlan,
       renderedOutput: formData,
     })

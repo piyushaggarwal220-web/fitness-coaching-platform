@@ -1,0 +1,46 @@
+{
+  "prompts": [
+    {
+      "slug": "system-prompt",
+      "category": "system_prompt",
+      "name": "System Prompt",
+      "file": "system-prompt.prompt"
+    },
+    {
+      "slug": "initial-diet-prompt",
+      "category": "initial_diet",
+      "name": "Initial Diet Prompt",
+      "file": "initial-diet.prompt"
+    },
+    {
+      "slug": "initial-workout-prompt",
+      "category": "initial_workout",
+      "name": "Initial Workout Prompt",
+      "file": "initial-workout.prompt"
+    },
+    {
+      "slug": "updated-diet-prompt",
+      "category": "weekly_diet_update",
+      "name": "Updated Diet Prompt",
+      "file": "updated-diet.prompt"
+    },
+    {
+      "slug": "updated-workout-prompt",
+      "category": "weekly_workout_update",
+      "name": "Updated Workout Prompt",
+      "file": "updated-workout.prompt"
+    },
+    {
+      "slug": "midweek-analysis-prompt",
+      "category": "mid_week_analysis",
+      "name": "Midweek Analysis Prompt",
+      "file": "midweek-analysis.prompt"
+    },
+    {
+      "slug": "coach-message-prompt",
+      "category": "coach_message",
+      "name": "Coach Message Prompt",
+      "file": "coach-message.prompt"
+    }
+  ]
+}

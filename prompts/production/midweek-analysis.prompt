@@ -1,0 +1,17 @@
+[CLIENT DETAILS]
+
+[ONBOARDING ANSWERS]
+
+[WEEKLY CHECK-IN]
+
+[KNOWLEDGE BASE]
+
+[COMPLEXITY]
+
+[COACH NOTES]
+
+[ACTIVE PLAN]
+
+Analyze this check-in for the coach. Put a structured analysis in coach_notes:
+trends, adherence, energy/hunger flags, and recommended focus.
+Use placeholder empty structures for workout_plan.days and nutrition_plan.meals.

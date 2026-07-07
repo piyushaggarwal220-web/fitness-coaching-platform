@@ -1,6 +1,13 @@
 import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
 import { getOnboardingLabel } from '@/lib/onboarding'
-import type { AiKnowledge, AiKnowledgeCategory, Checkin, OnboardingProfile } from '@/types/database'
+import type {
+  AiKnowledge,
+  AiKnowledgeCategory,
+  Checkin,
+  OnboardingData,
+  OnboardingProfile,
+  Plan,
+} from '@/types/database'
 
 /**
  * Goal → knowledge category mapping.
@@ -33,6 +40,11 @@ export type PromptBuilderInput = {
   complexityScore: ComplexityScoreResult
   knowledgeEntries: AiKnowledge[]
   coachInstructions?: string | null
+  activePlan?: Plan | null
+  /** Published Prompt Library template for the action (user prompt). */
+  actionTemplate?: string | null
+  /** Published Prompt Library system template. */
+  systemTemplate?: string | null
 }
 
 export type PromptBuilderResult = {
@@ -204,6 +216,155 @@ function buildSystemPrompt(
   return sections.join('\n\n')
 }
 
+function buildOnboardingSection(data: OnboardingData | null | undefined): string {
+  if (!data) {
+    return '## Onboarding Answers\nNo extended onboarding data on file.'
+  }
+
+  const lines: string[] = ['## Onboarding Answers']
+
+  if (data.goals) {
+    lines.push(
+      `Goals: target weight ${data.goals.targetWeight ?? '—'}, deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
+    )
+  }
+  if (data.lifestyle) {
+    lines.push(
+      `Lifestyle: occupation ${data.lifestyle.occupation ?? '—'}, steps ${data.lifestyle.dailySteps ?? '—'}, stress ${data.lifestyle.stressLevel ?? '—'}, water ${data.lifestyle.waterIntake ?? '—'}`
+    )
+  }
+  if (data.training) {
+    lines.push(
+      `Training: location ${data.training.location ?? '—'}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}`
+    )
+  }
+  if (data.medical) {
+    lines.push(
+      `Medical intake: conditions ${data.medical.conditions ?? '—'}, pain ${data.medical.painDuringExercise ?? '—'}, medications ${data.medical.medications ?? '—'}`
+    )
+  }
+  if (data.diet) {
+    lines.push(
+      `Diet habits: allergies ${data.diet.allergies ?? '—'}, dislikes ${data.diet.foodsDisliked ?? '—'}, favorites ${data.diet.favoriteFoods ?? '—'}, budget ${data.diet.monthlyFoodBudget ?? '—'}`
+    )
+  }
+  if (data.eatingPattern) {
+    lines.push(
+      `Eating pattern: breakfast ${data.eatingPattern.breakfast ?? '—'}, lunch ${data.eatingPattern.lunch ?? '—'}, dinner ${data.eatingPattern.dinner ?? '—'}, snacks ${data.eatingPattern.snacks ?? '—'}`
+    )
+  }
+  if (data.supplements?.current) {
+    lines.push(`Current supplements: ${data.supplements.current}`)
+  }
+
+  return lines.join('\n')
+}
+
+function buildActivePlanSection(plan: Plan | null | undefined): string {
+  if (!plan) {
+    return '## Current Active Plan\nNo active plan on file.'
+  }
+
+  const sections = [
+    '## Current Active Plan',
+    `- Title: ${plan.title}`,
+    plan.phase ? `- Phase: ${plan.phase}` : null,
+    `- Version: ${plan.version}`,
+    plan.nutrition_plan ? `### Nutrition\n${plan.nutrition_plan.trim()}` : null,
+    plan.workout_plan ? `### Workout\n${plan.workout_plan.trim()}` : null,
+    plan.cardio_plan ? `### Cardio\n${plan.cardio_plan.trim()}` : null,
+    plan.supplement_plan ? `### Supplements\n${plan.supplement_plan.trim()}` : null,
+    plan.coach_notes ? `### Coach Notes\n${plan.coach_notes.trim()}` : null,
+  ].filter((section): section is string => Boolean(section))
+
+  return sections.join('\n\n')
+}
+
+export type PromptContextSections = {
+  clientDetails: string
+  onboarding: string
+  activePlan: string
+  checkin: string
+  coachNotes: string
+  knowledge: string
+  complexity: string
+}
+
+/** Build injectable context blocks for Prompt Library placeholder replacement. */
+export function buildPromptContextSections(
+  input: Omit<PromptBuilderInput, 'actionTemplate' | 'systemTemplate'> & {
+    knowledgeEntries: AiKnowledge[]
+  }
+): PromptContextSections {
+  const categories = selectKnowledgeCategories(input.profile)
+  const selectedEntries = filterKnowledgeEntries(input.knowledgeEntries, categories)
+
+  return {
+    clientDetails: buildClientProfileSection(input.profile),
+    onboarding: buildOnboardingSection(input.profile.onboarding_data),
+    activePlan: buildActivePlanSection(input.activePlan),
+    checkin: input.latestCheckin
+      ? buildCheckinSection(input.latestCheckin)
+      : '## Latest Check-In\nNo check-in provided for this request.',
+    coachNotes: hasMeaningfulText(input.coachInstructions)
+      ? ['## Coach Notes', input.coachInstructions!.trim()].join('\n')
+      : '## Coach Notes\nNone provided.',
+    knowledge: buildKnowledgeSection(selectedEntries),
+    complexity: buildComplexitySection(input.complexityScore),
+  }
+}
+
+const PLACEHOLDER_ALIASES: Record<string, keyof PromptContextSections> = {
+  '[CLIENT DETAILS]': 'clientDetails',
+  '[CLIENT PROFILE]': 'clientDetails',
+  '[ONBOARDING ANSWERS]': 'onboarding',
+  '[ONBOARDING DATA]': 'onboarding',
+  '[ACTIVE PLAN]': 'activePlan',
+  '[CURRENT PLAN]': 'activePlan',
+  '[CURRENT ACTIVE PLAN]': 'activePlan',
+  '[WEEKLY CHECK-IN]': 'checkin',
+  '[CHECK-IN]': 'checkin',
+  '[LATEST CHECK-IN]': 'checkin',
+  '[CHECK IN]': 'checkin',
+  '[COACH NOTES]': 'coachNotes',
+  '[COACH INSTRUCTIONS]': 'coachNotes',
+  '[KNOWLEDGE BASE]': 'knowledge',
+  '[COMPLEXITY]': 'complexity',
+  '[COMPLEXITY ASSESSMENT]': 'complexity',
+  '[COMPLEXITY RESULT]': 'complexity',
+}
+
+/** Replace Prompt Library placeholders with assembled context. Does not alter template wording. */
+export function injectPromptPlaceholders(template: string, sections: PromptContextSections): string {
+  let output = template
+  for (const [placeholder, key] of Object.entries(PLACEHOLDER_ALIASES)) {
+    output = output.split(placeholder).join(sections[key])
+    const loose = new RegExp(placeholder.replace(/[\[\]]/g, '\\$&'), 'gi')
+    output = output.replace(loose, sections[key])
+  }
+  return output
+}
+
+function buildPromptFromLibraryTemplates(
+  input: PromptBuilderInput,
+  selectedEntries: AiKnowledge[]
+): PromptBuilderResult {
+  const sections = buildPromptContextSections({ ...input, knowledgeEntries: selectedEntries })
+  const categories = selectKnowledgeCategories(input.profile)
+
+  const userPrompt = injectPromptPlaceholders(input.actionTemplate!.trim(), sections)
+  const systemPrompt = input.systemTemplate?.trim()
+    ? injectPromptPlaceholders(input.systemTemplate.trim(), sections)
+    : buildSystemPrompt(input.complexityScore, selectedEntries)
+
+  return {
+    systemPrompt,
+    userPrompt,
+    selectedKnowledge: categories,
+    estimatedTokens: estimateTokens(systemPrompt, userPrompt),
+  }
+}
+
 function buildUserPrompt(
   profile: OnboardingProfile,
   latestCheckin: Checkin | null | undefined,
@@ -234,6 +395,10 @@ function buildUserPrompt(
 export function buildPrompt(input: PromptBuilderInput): PromptBuilderResult {
   const categories = selectKnowledgeCategories(input.profile)
   const selectedEntries = filterKnowledgeEntries(input.knowledgeEntries, categories)
+
+  if (input.actionTemplate?.trim()) {
+    return buildPromptFromLibraryTemplates(input, selectedEntries)
+  }
 
   const systemPrompt = buildSystemPrompt(input.complexityScore, selectedEntries)
   const userPrompt = buildUserPrompt(

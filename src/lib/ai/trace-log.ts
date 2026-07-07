@@ -14,6 +14,7 @@ export type AiGenerationLogInput = {
   coachId: string | null
   action: string
   model: string | null
+  promptVersion?: string | null
   latencyMs: number
   promptTokens: number | null
   completionTokens: number | null
@@ -38,7 +39,7 @@ export async function logAiGeneration(input: AiGenerationLogInput): Promise<void
       coach_id: input.coachId,
       action: input.action,
       model: input.model,
-      prompt_version: AI_PROMPT_VERSION,
+      prompt_version: input.promptVersion?.trim() || AI_PROMPT_VERSION,
       latency_ms: input.latencyMs,
       prompt_tokens: input.promptTokens,
       completion_tokens: input.completionTokens,

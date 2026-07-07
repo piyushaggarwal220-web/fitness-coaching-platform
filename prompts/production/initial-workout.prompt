@@ -1,0 +1,17 @@
+[CLIENT DETAILS]
+
+[ONBOARDING ANSWERS]
+
+[KNOWLEDGE BASE]
+
+[COMPLEXITY]
+
+[COACH NOTES]
+
+[ACTIVE PLAN]
+
+Generate a personalized workout plan for this client.
+Prioritize workout_plan and cardio_plan sessions.
+Respect training days, equipment, injuries, and experience level.
+For nutrition_plan use minimal placeholder macros (0) and empty meals array.
+Set coach_notes to a brief summary of training priorities only.

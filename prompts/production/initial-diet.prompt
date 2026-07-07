@@ -1,0 +1,16 @@
+[CLIENT DETAILS]
+
+[ONBOARDING ANSWERS]
+
+[KNOWLEDGE BASE]
+
+[COMPLEXITY]
+
+[COACH NOTES]
+
+[ACTIVE PLAN]
+
+Generate a personalized diet plan for this client.
+Prioritize nutrition_plan, supplement_plan, and cardio_plan.
+Align meals with their reported eating pattern and meal timings.
+For workout_plan set overview to "Workout plan pending" and days to an empty array.

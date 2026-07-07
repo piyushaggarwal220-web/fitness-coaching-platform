@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { requireAdmin } from '@/lib/admin-session'
+import { PromptImportPanel } from '@/components/admin/PromptImportPanel'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatPromptCategory, listPromptLibrary } from '@/lib/admin/prompt-library'
 import { formatDate } from '@/lib/coach-utils'
@@ -31,6 +32,7 @@ export default function AdminPromptsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState<'all' | PromptLibraryCategory>('all')
   const [sortKey, setSortKey] = useState<SortKey>('updated')
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     const load = async () => {
@@ -50,7 +52,7 @@ export default function AdminPromptsPage() {
     }
 
     void load()
-  }, [router])
+  }, [router, reloadKey])
 
   const filtered = useMemo(() => {
     let list = [...prompts]
@@ -100,7 +102,7 @@ export default function AdminPromptsPage() {
             <div>
               <h1 style={s.title}>Prompt Library</h1>
               <p style={s.subtitle}>
-                Future source of truth for AI prompts · not connected to live generation yet
+                Source of truth for AI prompts · published prompts feed live generation
               </p>
             </div>
             <Link href="/admin/prompts/new" style={s.primaryBtn}>
@@ -109,6 +111,11 @@ export default function AdminPromptsPage() {
           </div>
 
           {error && <div style={s.error}>{error}</div>}
+
+          <PromptImportPanel
+            endpoint="/api/admin/prompts/import"
+            onImported={() => setReloadKey((value) => value + 1)}
+          />
 
           <div style={s.toolbar}>
             <input

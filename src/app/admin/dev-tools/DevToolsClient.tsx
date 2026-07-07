@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import { PromptImportPanel } from '@/components/admin/PromptImportPanel'
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -192,6 +193,11 @@ export default function DevToolsClient() {
             disabled={!selectedPlanId}
           />
         </div>
+      </section>
+
+      <section style={styles.section}>
+        <h2 style={styles.sectionTitle}>Prompt Library import</h2>
+        <PromptImportPanel endpoint="/api/dev/prompt-import" />
       </section>
 
       <section style={styles.section}>
