@@ -339,3 +339,54 @@ export type UpdateAiKnowledgeInput = {
   version?: number
   active?: boolean
 }
+
+export type SupportRequestCategory =
+  | 'question'
+  | 'diet_update'
+  | 'workout_update'
+  | 'pain_injury'
+  | 'general'
+
+export type SupportRequestStatus = 'open' | 'claimed' | 'closed'
+
+export type SupportRequestPriority = 'low' | 'normal' | 'high' | 'urgent'
+
+export type SupportSenderType = 'client' | 'coach'
+
+export type SupportRequest = {
+  id: string
+  client_id: string
+  category: SupportRequestCategory
+  title: string
+  message: string
+  status: SupportRequestStatus
+  claimed_by: string | null
+  claimed_at: string | null
+  closed_at: string | null
+  priority: SupportRequestPriority
+  client_age?: string | null
+  client_gender?: string | null
+  client_goal?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type SupportMessage = {
+  id: string
+  request_id: string
+  sender_type: SupportSenderType
+  sender_id: string
+  message: string
+  created_at: string
+}
+
+export type SupportRequestWithClient = SupportRequest & {
+  profiles?: Pick<Profile, 'name' | 'email' | 'age' | 'gender' | 'fitness_goal'> | null
+}
+
+export type SupportRequestFormData = {
+  category: SupportRequestCategory
+  title: string
+  message: string
+  priority: SupportRequestPriority
+}

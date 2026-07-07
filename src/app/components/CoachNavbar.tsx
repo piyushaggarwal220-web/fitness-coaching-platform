@@ -35,6 +35,7 @@ export default function CoachNavbar() {
           <Link href="/coach/clients" style={styles.link}>Clients</Link>
           <Link href="/coach/plans" style={styles.link}>Plans</Link>
           <Link href="/coach/checkins" style={styles.link}>Check-ins</Link>
+          <Link href="/coach/support" style={styles.link}>Support</Link>
           {isDevToolkitEnabledClient() && (
             <Link href="/admin/dev-tools" style={styles.devLink}>Dev Tools</Link>
           )}
