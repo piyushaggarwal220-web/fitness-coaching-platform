@@ -27,6 +27,6 @@ export const DEFAULTS = {
 
 /** Per-feature output token ceilings for plan and check-in AI flows. */
 export const LIMITS = {
-  MAX_PLAN_TOKENS: 4096,
+  MAX_PLAN_TOKENS: 8192,
   MAX_CHECKIN_TOKENS: 2048,
 } as const

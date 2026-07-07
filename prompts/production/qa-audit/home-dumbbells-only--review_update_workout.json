@@ -1,0 +1,46 @@
+{
+  "caseId": "home-dumbbells-only--review_update_workout",
+  "personaId": "home-dumbbells-only",
+  "personaLabel": "Dumbbells only",
+  "group": "Home Workout",
+  "actionId": "review_update_workout",
+  "checkinScenario": "excellent_adherence",
+  "rendered": "Lakshmi, excellent adherence last month! You're ready for progression. We're shifting from single body-part focus to a 2-body-part split while keeping your 45-minute sessions and similar total volume. This variation will challenge your muscles differently and maintain momentum toward your goal.\n\n**Weekly Structure: 3 days, 45 minutes each**\n\n**Day 1 — Upper Body Push & Pull**\n- Dumbbell Bench Press: 4×8\n- Dumbbell Row: 4×8\n- Lateral Raise: 3×12\n- Dumbbell Pullovers: 3×10\n\n**Day 2 — Lower Body Strength & Accessory**\n- Goblet Squat: 4×8 (increased from 3×12 — your favorite, now heavier focus)\n- Romanian Deadlift: 3×10\n- Dumbbell Leg Curl (or Hamstring focus): 3×12\n- Dumbbell Calf Raise: 3×12\n\n**Day 3 — Full Body Compound & Core**\n- Dumbbell Push-ups: 3×AMRAP\n- Dumbbell Front Squat: 3×10 (variation from goblet)\n- Dumbbell Rows: 3×8\n- Plank Hold or Dead Bug: 3×20–30 sec\n\n**Notes:**\n- Rest 60–90 seconds between heavy sets (4×8), 45 seconds on accessory work.\n- Maintain controlled tempo; no burpees as per your preference.\n- If dumbbells feel light on Day 1 rows or squats, increase load by 1–2 kg next session.\n- Total session time stays ~45 min with slightly increased density.\n\nPerfect adherence & strong performance. Volume maintained, intensity increased via load & exercise variation. Monitor energy & hunger; adjust if needed.",
+  "model": "claude-haiku-4-5-20251001",
+  "promptVersion": "updated-workout-prompt@v2 [pending:weekly_workout_update_home]+system-prompt@v1",
+  "inputTokens": 1506,
+  "outputTokens": 592,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 5,
+      "equipmentSuitability": 8,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Ignored preferred exercises",
+        "severity": "medium",
+        "description": "Client dislikes \"burpees\" but it appears in plan.",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 3-day program.",
+        "promptToInspect": "updated-workout-home.prompt"
+      }
+    ],
+    "workoutAverage": 6.666666666666667,
+    "overallAverage": 7.333333333333334
+  },
+  "generatedAt": "2026-07-07T21:31:04.636Z"
+}

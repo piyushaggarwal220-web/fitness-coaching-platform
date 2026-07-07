@@ -1,0 +1,41 @@
+{
+  "caseId": "hybrid-runner-lifter--review_update_diet",
+  "personaId": "hybrid-runner-lifter",
+  "personaLabel": "Runs + lifts",
+  "group": "Hybrid Athlete",
+  "actionId": "review_update_diet",
+  "checkinScenario": "poor_sleep",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: **ADITYA'S UPDATED NUTRITION PLAN**\n\nLet me be direct: 5 hours of sleep, high cravings, and skipped workouts tell me your body is screaming for fuel and rest. You're training hard but undereating—that's a recipe for burnout, not athletic performance. We're fixing this NOW.\n\n**DAILY CALORIE TARGET: 2,300 kcal | Protein: 145g | Carbs: 290g | Fat: 65g**\n\n---\n\n**MEAL 1 — 8:30 AM (Breakfast)**\n- 1 cup oats cooked in 300ml full-fat milk\n- 1 scoop whey protein (mixed in or separate)\n- 1 banana\n- 10 almonds\n- 1 tsp ghee drizzled on oats\n\n*Calories: ~550 | Protein: 35g*\n\n---\n\n**MEAL 2 — 11:30 AM (Mid-Morning)**\n- 2 whole moong dal chillas (add chopped onion, tomato, coriander)\n- 100g paneer cubes (lightly pan-fried or raw)\n- 1 small bowl curd\n\n*Calories: ~450 | Protein: 30g*\n\n---\n\n**MEAL 3 — 1:30 PM (Lunch)**\n- 1.5 cups cooked white rice OR 4 medium rotis\n- 1 bowl dal (moong/toor—200ml)\n- 1 bowl mixed veg sabzi (beans, carrots, capsicum—avoid mushrooms)\n- 1 small bowl curd\n- Side salad: cucumber, tomato, onion, lemon\n\n*Calories: ~650 | Protein: 25g*\n\n---\n\n**MEAL 4 — 4:30 PM (Pre-Workout Snack)**\n- 2 idlis with coconut chutney OR 1 masala dosa (small)\n- 1 banana\n- Black coffee (optional)\n\n*Calories: ~350 | Protein: 10g*\n\n---\n\n**MEAL 5 — 6:30 PM (Post-Workout)**\n- 1 scoop whey protein shake with 250ml milk\n- 30g roasted chana OR 1 small sweet potato (boiled)\n\n*Calories: ~300 | Protein: 30g*\n\n---\n\n**MEAL 6 — 9:00 PM (Dinner)**\n- 3-4 rotis (whole wheat)\n- 150g paneer bhurji OR paneer tikka\n- 1 bowl mixed veg sabzi (different from lunch)\n- Large side salad with 1 tsp olive oil dressing\n- 1 small bowl curd\n\n*Calories: ~600 | Protein: 35g*\n\n---\n\n**BEFORE BED (10:30 PM)**\n- 1 glass warm milk with a pinch of turmeric OR 100g Greek yogurt\n\n*Calories: ~100 | Protein: 8g*\n\n---\n\n**WEEKLY ADJUSTMENTS:**\n- **2 days/week:** Replace 1 meal's paneer with 4 whole eggs (boiled/omelette) for variety.\n- **Rest days:** Drop the 4:30 PM snack, move those calories to breakfast (add 1 extra roti or 50g oats).\n\n---\n\n**HYDRATION & ESSENTIALS:**\n- **Water:** Minimum 3.5L daily (you're very active—2L is NOT enough).\n- **Electrolytes:** Add a pinch of salt + lemon to 1L of water during/after training.\n- **Creatine:** 5g daily with post-workout shake (non-negotiable for performance goals).\n\n---\n\n**WHAT YOU NEED TO HEAR:**\n\n1. **Sleep is non-negotiable.** 5 hours is sabotaging everything—your recovery, hunger hormones, performance, fat loss. Set a 10:30 PM alarm to START winding down. Aim for 7 hours minimum. If work is the issue, we need to talk about priorities.\n\n2. **High hunger = underfueling.** You're burning ~2,800 kcal/day with 12k steps + 5 gym sessions + running. Eating 2,000 kcal is why you're exhausted and craving junk. This plan adds 300 kcal strategically—more carbs around training, more protein to kill hunger.\n\n3. **Adherence at 6/10 isn't acceptable** if you want athletic performance. You don't need perfection, but you need consistency. Prep your chillas and idlis in batches on Sunday. Keep roasted chana and bananas at your desk. No excuses.\n\n4. **You're 0.3 kg down but losing muscle and energy, not fat.** The scale is moving because you're undereating and under-sleeping—not because you're getting leaner. Fix the process, and the results will follow.\n\n5. **Cravings = biology, not weakness.** When you sleep 5 hours, ghrelin (hunger hormone) spikes and leptin (fullness hormone) tanks. You're fighting your own hormones. More food + more sleep = cravings disappear.\n\n---\n\n**THIS WEEK'S FOCUS:**\n✅ Hit 7 hours of sleep at least 5 nights.\n✅ Eat ALL 6 meals—no skipping post-workout nutrition.\n✅ Track water intake (use an app if needed).\n✅ Zero skipped workouts unless you're genuinely sick.\n\nYou've got 11 weeks left to hit 62 kg while performing like an athlete. That's 100% doable—but only if you fuel and recover like one. Let's lock in.\n\n— Your Coach",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1437,
+  "outputTokens": 1672,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 4,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 9,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 5
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 6,
+    "overallAverage": 6.625
+  },
+  "generatedAt": "2026-07-07T21:29:10.923Z"
+}

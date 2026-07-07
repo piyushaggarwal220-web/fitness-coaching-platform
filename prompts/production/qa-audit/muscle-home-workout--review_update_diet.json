@@ -1,0 +1,41 @@
+{
+  "caseId": "muscle-home-workout--review_update_diet",
+  "personaId": "muscle-home-workout",
+  "personaLabel": "Home workout muscle gain",
+  "group": "Muscle Gain",
+  "actionId": "review_update_diet",
+  "checkinScenario": "missed_workouts",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: Meera, I see only 1 out of 3 workouts completed this week. Life happens, but we need to address this immediately—your muscle gain goal requires BOTH consistent training AND nutrition. High hunger (7/10) with low energy (5/10) tells me we need to optimize your meal timing and portions. Let's tighten this up.\n\n**DAILY NUTRITION TARGET:**\nCalories: ~2100 kcal | Protein: 135g | Carbs: 240g | Fat: 60g\n\n**MEAL 1 — 8:30 AM (Breakfast)**\n- 1 cup oats cooked in 200ml milk + 1 scoop whey protein (mixed in after cooking) OR 3 besan chilla with 1 tbsp ghee\n- 1 banana\n- 5 soaked almonds\n*Protein: ~35g*\n\n**MEAL 2 — 11:00 AM (Mid-Morning)**\n- 1 glass buttermilk\n- 1 small bowl roasted chana (30g)\n*Protein: ~10g*\n\n**MEAL 3 — 1:30 PM (Lunch)**\n- 1.5 cups rice (cooked)\n- 1 cup dal (moong/masoor—thick consistency)\n- 1 cup mixed vegetable sabzi (beans, carrot, peas)\n- 100g paneer bhurji or curd (200g)\n- Small salad with lemon\n*Protein: ~35g*\n\n**MEAL 4 — 4:30 PM (Pre-Evening Snack)**\n- 1 glass milk (250ml) with 5-6 dates OR peanut butter (2 tbsp) with 2 multigrain bread slices\n*Protein: ~12g*\n\n**MEAL 5 — 6:30 PM (Pre-Workout—if training)**\n- Tea with 1 small bowl roasted makhana or 1 fruit (apple/orange)\n*Light carbs for energy*\n\n**MEAL 6 — 9:00 PM (Dinner)**\n- 3 medium rotis (whole wheat)\n- 100g paneer curry OR rajma (1 cup) OR chole (1 cup)\n- 1 cup sabzi (palak, bhindi, or lauki)\n- Salad (cucumber, tomato, onion)\n- 100g curd\n*Protein: ~35g*\n\n**MEAL 7 — 10:30 PM (Before Bed—Optional)**\n- 1 glass warm milk OR 100g Greek curd with a pinch of cinnamon\n*Protein: ~8g*\n\n---\n\n**PROTEIN DISTRIBUTION ACROSS DAY:** Breakfast 35g | Mid-morning 10g | Lunch 35g | Evening 12g | Dinner 35g | Bedtime 8g = **~135g total**\n\n**HYDRATION:** 3–3.5 liters water daily. Set hourly reminders.\n\n---\n\n**YOUR ACTION POINTS THIS WEEK:**\n\n1. **PREP SUNDAY EVENING:** Cook dal, paneer, and chop vegetables for 3 days. No excuses about time.\n\n2. **NON-NEGOTIABLE PROTEIN:** Even if you skip a workout, you MUST hit 130g+ protein daily. Muscle preservation depends on it.\n\n3. **MANAGE HUNGER:** Your 7/10 hunger score suggests meals are too small or spaced poorly. Follow the 6-meal structure above—especially the 4:30 PM snack. This will stabilize energy and reduce evening cravings.\n\n4. **WORKOUT MINIMUM:** If chaos strikes, do at least 20 minutes—half the workout is better than zero. We'll discuss workout modifications separately, but your nutrition must stay locked in.\n\n5. **SLEEP CONSISTENCY:** Maintain 7–8 hours. Late dinners (9 PM) are fine, but be in bed by 11 PM.\n\n6. **TRACK HONESTLY:** Log your meals in our app daily. I need to see where you're actually struggling—not guessing.\n\n---\n\n**Meera, you're capable of this. One bad week doesn't define you, but a pattern will. Let's course-correct NOW. Check in with me mid-week if you're feeling overwhelmed—we'll adjust together. You've got this, but I need you to show up for yourself.**",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1313,
+  "outputTokens": 1275,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 4,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 9,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 5
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 6.142857142857143,
+    "overallAverage": 6.696428571428571
+  },
+  "generatedAt": "2026-07-07T21:15:31.697Z"
+}

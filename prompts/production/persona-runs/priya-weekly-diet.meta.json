@@ -1,0 +1,40 @@
+{
+  "persona": "Priya — weekly diet update",
+  "actionId": "review_update_diet",
+  "model": "mock-plan-v1",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 0,
+  "outputTokens": 0,
+  "checks": [
+    {
+      "id": "uses_client_name",
+      "pass": true,
+      "detail": "Mentions Priya"
+    },
+    {
+      "id": "covers_multiple_days",
+      "pass": true,
+      "detail": "Found 16 day references (need >= 4)"
+    },
+    {
+      "id": "has_meal_language",
+      "pass": true,
+      "detail": "Looks for meal-time language"
+    },
+    {
+      "id": "macro_or_portion_cues",
+      "pass": true,
+      "detail": "Looks for macro lines or Indian portion cues"
+    },
+    {
+      "id": "references_checkin",
+      "pass": true,
+      "detail": "Weekly diet update should reflect check-in context"
+    },
+    {
+      "id": "minimum_length",
+      "pass": true,
+      "detail": "Output length 1471 chars (need >= 800)"
+    }
+  ]
+}

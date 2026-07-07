@@ -1,4 +1,6 @@
 import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
+import type { CoachAiActionId } from '@/lib/coach/ai-actions'
+import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
 import { getOnboardingLabel } from '@/lib/onboarding'
 import type {
   AiKnowledge,
@@ -41,6 +43,9 @@ export type PromptBuilderInput = {
   knowledgeEntries: AiKnowledge[]
   coachInstructions?: string | null
   activePlan?: Plan | null
+  /** Newly generated diet for weekly workout updates (nutrition/cardio/supplements). */
+  updatedDietPlan?: Plan | null
+  actionId?: CoachAiActionId
   /** Published Prompt Library template for the action (user prompt). */
   actionTemplate?: string | null
   /** Published Prompt Library system template. */
@@ -234,8 +239,10 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
     )
   }
   if (data.training) {
+    const favorite = data.training.favoriteExercises?.trim()
+    const disliked = data.training.exercisesDisliked?.trim()
     lines.push(
-      `Training: location ${data.training.location ?? '—'}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}`
+      `Training: location ${data.training.location ?? '—'}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
     )
   }
   if (data.medical) {
@@ -260,6 +267,29 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   return lines.join('\n')
 }
 
+function buildTrainingPreferencesSection(profile: OnboardingProfile): string {
+  const data = profile.onboarding_data
+  const training = data?.training
+  const environment = resolveWorkoutEnvironment(profile)
+  const location = training?.location ?? null
+  const equipment = (training?.equipmentAvailable ?? []).filter(Boolean)
+
+  const lines = [
+    '## Training Preferences',
+    `- Workout environment: ${environment === 'gym' ? 'Full Gym' : 'Home Workout'}`,
+    `- Training location: ${location ? getOnboardingLabel('training_location', location) : 'Not provided'}`,
+    `- Days per week: ${training?.daysPerWeek ?? 'Not provided'}`,
+    `- Session duration: ${training?.durationMinutes ? `${training.durationMinutes} min` : 'Not provided'}`,
+    `- Preferred workout time: ${training?.preferredTime ? getOnboardingLabel('preferred_workout_time', training.preferredTime) : 'Not provided'}`,
+    `- Available equipment: ${equipment.length > 0 ? equipment.join(', ') : location === 'gym' ? 'Full commercial gym' : 'None / bodyweight only'}`,
+    `- Favorite exercises / exercises to include: ${training?.favoriteExercises?.trim() || 'None specified'}`,
+    `- Exercises to avoid: ${training?.exercisesDisliked?.trim() || 'None specified'}`,
+    `- Training experience: ${getOnboardingLabel('training_experience', profile.training_experience)}`,
+  ]
+
+  return lines.join('\n')
+}
+
 function buildActivePlanSection(plan: Plan | null | undefined): string {
   if (!plan) {
     return '## Current Active Plan\nNo active plan on file.'
@@ -280,10 +310,71 @@ function buildActivePlanSection(plan: Plan | null | undefined): string {
   return sections.join('\n\n')
 }
 
+function buildActiveDietSection(plan: Plan | null | undefined): string {
+  if (!plan) {
+    return '## Current Active Diet\nNo active diet on file.'
+  }
+
+  const sections = [
+    '## Current Active Diet',
+    `- Title: ${plan.title}`,
+    plan.phase ? `- Phase: ${plan.phase}` : null,
+    `- Version: ${plan.version}`,
+    plan.nutrition_plan
+      ? `### Nutrition\n${plan.nutrition_plan.trim()}`
+      : '### Nutrition\nNo nutrition plan on file.',
+    plan.cardio_plan ? `### Cardio\n${plan.cardio_plan.trim()}` : null,
+    plan.supplement_plan ? `### Supplements\n${plan.supplement_plan.trim()}` : null,
+  ].filter((section): section is string => Boolean(section))
+
+  return sections.join('\n\n')
+}
+
+function buildActiveWorkoutSection(plan: Plan | null | undefined): string {
+  if (!plan) {
+    return '## Current Active Workout\nNo active workout on file.'
+  }
+
+  const sections = [
+    '## Current Active Workout',
+    `- Title: ${plan.title}`,
+    plan.phase ? `- Phase: ${plan.phase}` : null,
+    `- Version: ${plan.version}`,
+    plan.workout_plan
+      ? `### Workout\n${plan.workout_plan.trim()}`
+      : '### Workout\nNo workout plan on file.',
+    plan.cardio_plan ? `### Cardio\n${plan.cardio_plan.trim()}` : null,
+  ].filter((section): section is string => Boolean(section))
+
+  return sections.join('\n\n')
+}
+
+function buildUpdatedDietSection(plan: Plan | null | undefined): string {
+  if (!plan?.nutrition_plan?.trim()) {
+    return '## Newly Generated Updated Diet\nNo updated diet is available. Generate the diet update before the workout update.'
+  }
+
+  const sections = [
+    '## Newly Generated Updated Diet',
+    `- Title: ${plan.title}`,
+    plan.phase ? `- Phase: ${plan.phase}` : null,
+    `### Nutrition\n${plan.nutrition_plan.trim()}`,
+    plan.cardio_plan ? `### Cardio\n${plan.cardio_plan.trim()}` : null,
+    plan.supplement_plan ? `### Supplements\n${plan.supplement_plan.trim()}` : null,
+    plan.coach_notes ? `### Coach Notes\n${plan.coach_notes.trim()}` : null,
+  ].filter((section): section is string => Boolean(section))
+
+  return sections.join('\n\n')
+}
+
 export type PromptContextSections = {
   clientDetails: string
   onboarding: string
+  trainingPreferences: string
   activePlan: string
+  activeDiet: string
+  activeWorkout: string
+  updatedDiet: string
   checkin: string
   coachNotes: string
   knowledge: string
@@ -302,7 +393,11 @@ export function buildPromptContextSections(
   return {
     clientDetails: buildClientProfileSection(input.profile),
     onboarding: buildOnboardingSection(input.profile.onboarding_data),
+    trainingPreferences: buildTrainingPreferencesSection(input.profile),
     activePlan: buildActivePlanSection(input.activePlan),
+    activeDiet: buildActiveDietSection(input.activePlan),
+    activeWorkout: buildActiveWorkoutSection(input.activePlan),
+    updatedDiet: buildUpdatedDietSection(input.updatedDietPlan),
     checkin: input.latestCheckin
       ? buildCheckinSection(input.latestCheckin)
       : '## Latest Check-In\nNo check-in provided for this request.',
@@ -317,11 +412,20 @@ export function buildPromptContextSections(
 const PLACEHOLDER_ALIASES: Record<string, keyof PromptContextSections> = {
   '[CLIENT DETAILS]': 'clientDetails',
   '[CLIENT PROFILE]': 'clientDetails',
+  '[PASTE CLIENT DETAILS HERE]': 'clientDetails',
   '[ONBOARDING ANSWERS]': 'onboarding',
   '[ONBOARDING DATA]': 'onboarding',
+  '[TRAINING PREFERENCES]': 'trainingPreferences',
+  '[WORKOUT PREFERENCES]': 'trainingPreferences',
   '[ACTIVE PLAN]': 'activePlan',
   '[CURRENT PLAN]': 'activePlan',
   '[CURRENT ACTIVE PLAN]': 'activePlan',
+  '[ACTIVE DIET]': 'activeDiet',
+  '[CURRENT ACTIVE DIET]': 'activeDiet',
+  '[ACTIVE WORKOUT]': 'activeWorkout',
+  '[CURRENT ACTIVE WORKOUT]': 'activeWorkout',
+  '[UPDATED DIET]': 'updatedDiet',
+  '[NEWLY GENERATED UPDATED DIET]': 'updatedDiet',
   '[WEEKLY CHECK-IN]': 'checkin',
   '[CHECK-IN]': 'checkin',
   '[LATEST CHECK-IN]': 'checkin',
@@ -345,6 +449,78 @@ export function injectPromptPlaceholders(template: string, sections: PromptConte
   return output
 }
 
+function sectionWasInjected(prompt: string, section: string): boolean {
+  if (!section.trim()) return true
+  const marker = section.trim().slice(0, 48)
+  return marker.length > 0 && prompt.includes(marker)
+}
+
+function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSections)[] {
+  switch (actionId) {
+    case 'initial_workout':
+      return [
+        'clientDetails',
+        'onboarding',
+        'trainingPreferences',
+        'activePlan',
+        'checkin',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
+    case 'review_update_diet':
+      return [
+        'clientDetails',
+        'onboarding',
+        'activeDiet',
+        'activeWorkout',
+        'checkin',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
+    case 'review_update_workout':
+      return [
+        'clientDetails',
+        'onboarding',
+        'trainingPreferences',
+        'activeWorkout',
+        'activeDiet',
+        'updatedDiet',
+        'checkin',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
+    default:
+      return [
+        'clientDetails',
+        'onboarding',
+        'activePlan',
+        'checkin',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
+  }
+}
+
+/** Append context blocks that were not injected via placeholders. */
+function appendMissingLibraryContext(
+  prompt: string,
+  sections: PromptContextSections,
+  actionId?: CoachAiActionId
+): string {
+  const extras = resolveAppendOrder(actionId)
+
+  const blocks = extras
+    .map((key) => sections[key])
+    .filter((section) => section.trim() && !sectionWasInjected(prompt, section))
+
+  if (blocks.length === 0) return prompt
+  return [prompt, ...blocks].join('\n\n')
+}
+
 function buildPromptFromLibraryTemplates(
   input: PromptBuilderInput,
   selectedEntries: AiKnowledge[]
@@ -352,7 +528,11 @@ function buildPromptFromLibraryTemplates(
   const sections = buildPromptContextSections({ ...input, knowledgeEntries: selectedEntries })
   const categories = selectKnowledgeCategories(input.profile)
 
-  const userPrompt = injectPromptPlaceholders(input.actionTemplate!.trim(), sections)
+  const userPrompt = appendMissingLibraryContext(
+    injectPromptPlaceholders(input.actionTemplate!.trim(), sections),
+    sections,
+    input.actionId
+  )
   const systemPrompt = input.systemTemplate?.trim()
     ? injectPromptPlaceholders(input.systemTemplate.trim(), sections)
     : buildSystemPrompt(input.complexityScore, selectedEntries)

@@ -1,0 +1,52 @@
+{
+  "caseId": "fat-loss-office-worker--review_update_workout",
+  "personaId": "fat-loss-office-worker",
+  "personaLabel": "Office worker",
+  "group": "Fat Loss",
+  "actionId": "review_update_workout",
+  "checkinScenario": "weight_unchanged",
+  "rendered": "**Upper/Lower Split – 4 Days Per Week**\n\nYou've completed your foundation phase with solid consistency. We're now progressing to an upper/lower split with two upper and two lower body sessions per week. This increases training frequency per muscle group while keeping session duration around 60 minutes. Volume is increased by approximately 15% through additional sets and exercise variations.\n\n**Day 1 – Upper Body A (Push Focus)**\n• Barbell Bench Press: 4 sets x 8 reps\n• Dumbbell Incline Press: 3 sets x 10 reps\n• Cable Lateral Raise: 3 sets x 12 reps\n• Cable Tricep Pushdown: 3 sets x 12 reps\n• Face Pulls: 3 sets x 15 reps\n\n**Day 2 – Lower Body A (Quad Focus)**\n• Barbell Back Squat: 4 sets x 8 reps\n• Leg Press: 3 sets x 12 reps\n• Walking Lunges (Dumbbell): 3 sets x 10 reps per leg\n• Leg Curl (Lying or Seated): 3 sets x 12 reps\n• Standing Calf Raise: 4 sets x 15 reps\n\n**Day 3 – Upper Body B (Pull Focus)**\n• Barbell Bent-Over Row: 4 sets x 8 reps\n• Lat Pulldown (Cable): 3 sets x 10 reps\n• Seated Cable Row: 3 sets x 12 reps\n• Dumbbell Bicep Curl: 3 sets x 12 reps\n• Dumbbell Shrugs: 3 sets x 15 reps\n\n**Day 4 – Lower Body B (Posterior Focus)**\n• Romanian Deadlift (Barbell): 4 sets x 8 reps\n• Bulgarian Split Squat (Dumbbell): 3 sets x 10 reps per leg\n• Leg Curl (Lying or Seated): 3 sets x 12 reps\n• Leg Press (Feet High): 3 sets x 12 reps\n• Seated Calf Raise: 4 sets x 15 reps\n\n**Rest Days:** 3 days per week – distribute around your schedule (e.g., train Mon/Tue, rest Wed, train Thu/Fri, rest Sat/Sun).\n\n**Progression Notes:**\n• Aim to add 2.5–5 kg to barbell lifts every 2 weeks if form remains solid.\n• For dumbbell and cable work, increase reps first (up to 15), then increase weight.\n• Rest 90–120 seconds between compound sets, 60–90 seconds for isolation moves.\n• Warm up with 5 minutes light cardio and dynamic stretches before lifting.\n\n**Cardio:**\n• 3 sessions per week: 30 minutes brisk walk or incline treadmill (post-workout or separate days).\n• Target: maintain heart rate conversational but elevated.\n\nThis split will challenge your muscles with increased frequency and variety while staying within your 60-minute evening training window. Focus on controlled tempo and full range of motion on every rep.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 1629,
+  "outputTokens": 947,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Karan).",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 4-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7.333333333333333,
+    "overallAverage": 7.416666666666666
+  },
+  "generatedAt": "2026-07-07T21:00:46.471Z"
+}

@@ -1,0 +1,47 @@
+{
+  "caseId": "home-bands-only--review_update_diet",
+  "personaId": "home-bands-only",
+  "personaLabel": "Resistance bands only",
+  "group": "Home Workout",
+  "actionId": "review_update_diet",
+  "checkinScenario": "missed_workouts",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: **SURESH, LET'S GET REAL AND GET BACK ON TRACK**\n\nYou managed diet mostly on track despite the chaos — that's actually solid work. But 1 out of 3 workouts and adherence at 4/10 means we need to tighten things up NOW. Work and family pressures are real, but your health can't keep taking the backseat. Let's make this week count.\n\n**YOUR NUTRITION BLUEPRINT FOR THIS WEEK**\n\nTarget: ~1900 kcal | Protein: 125-135g | Carbs: 180-200g | Fats: 50-60g\n\n---\n\n**MEAL 1 — BREAKFAST (8:30 AM)**\n\n**Option A:**\n- Oats (50g dry) cooked with water\n- 1 scoop whey protein mixed in or 200ml low-fat milk\n- 1 small banana\n- 5-6 almonds\n\n**Option B:**\n- 3 idlis with 1 tbsp coconut chutney\n- 200g plain curd (low-fat)\n- 1 boiled egg white (or 20g roasted chana if pure veg)\n\n**Option C:**\n- Poha (60g raw rice flakes) with peanuts (10g), peas, curry leaves\n- 1 glass buttermilk\n- 1 small apple\n\n---\n\n**MEAL 2 — MID-MORNING SNACK (11:00 AM)**\n\n- 1 glass buttermilk OR green tea\n- 30g roasted chana OR 1 small fruit (apple/orange)\n\n---\n\n**MEAL 3 — LUNCH (1:30 PM)**\n\n**Option A:**\n- 1 cup cooked rice (150g cooked weight)\n- 1 cup dal (moong/masoor — 150g)\n- 1 cup mixed vegetable sabzi (no oil-heavy gravies)\n- Small bowl curd (100g)\n- Side salad (cucumber, tomato, onion)\n\n**Option B:**\n- 2 medium rotis (whole wheat)\n- 1 cup rajma or chole (150g)\n- 1 cup bhindi/lauki/beans sabzi\n- Small bowl curd\n- Side salad\n\n**Option C:**\n- 1 cup brown rice OR millets (if available)\n- 1 cup sambar (with vegetables)\n- 100g paneer bhurji (minimal oil)\n- Side salad\n\n---\n\n**MEAL 4 — EVENING SNACK (6:30 PM)**\n\n**Option A:**\n- Tea (no sugar or 1 tsp max)\n- 30g roasted chana\n- 5-6 almonds\n\n**Option B:**\n- Coffee with 100ml low-fat milk\n- 1 small bowl sprouts chaat (moong) with lemon and spices\n\n**Option C:**\n- Green tea\n- 2 small idlis with mint chutney\n\n---\n\n**MEAL 5 — DINNER (9:00 PM)**\n\n**Option A:**\n- 2 medium rotis (whole wheat)\n- 100g paneer tikka or paneer bhurji (dry, minimal oil)\n- 1 cup mix veg sabzi (cauliflower, beans, capsicum)\n- Large bowl salad (cucumber, tomato, carrot, lettuce)\n\n**Option B:**\n- 2 rotis\n- 1 cup dal fry (masoor/moong)\n- 1 cup palak or methi sabzi\n- Salad\n- Small bowl curd (optional)\n\n**Option C:**\n- 1 cup curd rice (made with 100g cooked rice)\n- 1 cup sambar with vegetables\n- Cucumber raita (100g)\n- Side salad\n\n---\n\n**HYDRATION & GENERAL RULES**\n\n- **Water:** Minimum 3 liters daily. You're at 2L now — bump it up. Keep a bottle at your desk.\n- **Cooking:** Use minimal oil (1-1.5 tbsp total per day). Favor steaming, grilling, air-frying.\n- **Avoid:** Fried snacks, packaged biscuits, sugary drinks, excess sweets.\n- **Protein Priority:** Hit 125g minimum daily even if workouts are missed. Protein preserves muscle during fat loss.\n\n---\n\n**YOUR MARCHING ORDERS THIS WEEK**\n\n1. **Meal Prep Sunday:** Spend 1 hour prepping — boil eggs, chop veggies, portion chana. No excuses about being too busy during the week.\n\n2. **Track Everything:** Write down what you eat for 7 days. Awareness = accountability.\n\n3. **Hunger at 7/10 is TOO HIGH:** You're likely under-eating protein or spacing meals poorly. Follow the snack timings. Don't skip mid-morning or evening snacks.\n\n4. **Energy at 5/10:** This ties to inconsistent eating and missed workouts. Fuel properly, sleep 7-8 hours non-negotiable.\n\n5. **One Week Reset:** Forget last week's slip-ups. This week, aim for 7/10 adherence MINIMUM. Small wins build momentum.\n\n---\n\n**COACH'S REAL TALK**\n\nSuresh, you're 40 years old with a 16 kg fat loss goal in 12 weeks. That's aggressive but doable IF you show up consistently. Work and family will always demand attention — but 3 hours of training per week and basic meal discipline are NOT too much to ask from yourself.\n\nYou kept diet mostly on track under pressure — that proves you CAN do this. Now extend that same discipline to training. Even 20-minute sessions are better than zero.\n\nStop negotiating with yourself. You signed up for this. Your body is waiting for you to lead it. Let's go.\n\n**Check in next week with honesty. I'm here to support you, but I need YOU to meet me halfway.**",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1391,
+  "outputTokens": 1723,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 4,
+      "goalAlignment": 2
+    },
+    "overall": {
+      "coachingQuality": 6,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 3
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      },
+      {
+        "category": "Contradiction",
+        "severity": "critical",
+        "description": "Vegetarian client but non-veg items appear in diet plan.",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 5.285714285714286,
+    "overallAverage": 5.642857142857142
+  },
+  "generatedAt": "2026-07-07T21:32:56.158Z"
+}

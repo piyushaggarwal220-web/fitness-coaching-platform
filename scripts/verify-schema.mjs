@@ -39,6 +39,7 @@ const cols = [
   'sleep_duration',
   'injuries',
   'medical_notes',
+  'access_source',
   'progress_photo_front',
 ]
 const { error: colErr } = await sb.from('profiles').select(cols.join(',')).limit(0)

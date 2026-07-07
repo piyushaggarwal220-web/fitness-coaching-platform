@@ -1,0 +1,41 @@
+{
+  "caseId": "muscle-intermediate-lifter--review_update_diet",
+  "personaId": "muscle-intermediate-lifter",
+  "personaLabel": "Intermediate lifter",
+  "group": "Muscle Gain",
+  "actionId": "review_update_diet",
+  "checkinScenario": "excellent_adherence",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: VIKRAM SINGH — UPDATED NUTRITION PLAN\n\n**DAILY TARGETS: 2050 kcal | 135g Protein | 220g Carbs | 60g Fat**\n\n---\n\n**MONDAY**\n\nBreakfast (8:30 AM): 3 whole eggs + 2 slices whole wheat toast + 1 tbsp ghee + 1 glass milk\nSnack (6:30 PM): Tea with 40g roasted chana + 1 banana\nLunch (1:30 PM): 1.5 cups cooked rice + 1 cup dal (masoor/moong) + 150g grilled chicken breast + mixed vegetable sabzi\nDinner (9:00 PM): 3 whole wheat rotis + 200g paneer (grilled) + cucumber-tomato salad with lemon\n\n---\n\n**TUESDAY**\n\nBreakfast (8:30 AM): 1.5 cups oats (dry measure) + 2 whole eggs + 1 tbsp peanut butter + 1 glass milk\nSnack (6:30 PM): Tea with 40g roasted chana + 1 apple\nLunch (1:30 PM): 1.5 cups basmati rice + 1 cup dal + 150g grilled fish + broccoli and carrot sabzi\nDinner (9:00 PM): 3 whole wheat rotis + 180g paneer tikka + mixed green salad with olive oil dressing\n\n---\n\n**WEDNESDAY**\n\nBreakfast (8:30 AM): 3 idlis + 1 cup sambar + 1 tbsp ghee + 1 glass milk\nSnack (6:30 PM): Tea with 40g roasted chana + 1 orange\nLunch (1:30 PM): 1.5 cups rice + 1 cup dal + 150g chicken curry (light oil) + spinach sabzi\nDinner (9:00 PM): 3 whole wheat rotis + 200g paneer (butter-free) + beetroot-carrot salad\n\n---\n\n**THURSDAY**\n\nBreakfast (8:30 AM): Poha (1.5 cups dry poha) + 2 whole eggs + 1 tbsp ghee + 1 glass milk\nSnack (6:30 PM): Tea with 40g roasted chana + 1 pear\nLunch (1:30 PM): 1.5 cups rice + 1 cup dal + 150g grilled chicken + mixed vegetable sabzi\nDinner (9:00 PM): 3 whole wheat rotis + 180g paneer (grilled) + tomato-cucumber salad with lemon juice\n\n---\n\n**FRIDAY**\n\nBreakfast (8:30 AM): 1.5 cups oats + 3 whole eggs + 1 tbsp almond butter + 1 glass milk\nSnack (6:30 PM): Tea with 40g roasted chana + 1 banana\nLunch (1:30 PM): 1.5 cups rice + 1 cup dal + 150g fish curry (light) + carrot-beans sabzi\nDinner (9:00 PM): 3 whole wheat rotis + 200g paneer (tandoori style) + mixed green salad\n\n---\n\n**SATURDAY**\n\nBreakfast (8:30 AM): 3 idlis + 1 cup sambar + 1 tbsp ghee + 1 glass milk\nSnack (6:30 PM): Tea with 40g roasted chana + 1 apple\nLunch (1:30 PM): 1.5 cups rice + 1 cup dal + 150g grilled chicken + spinach-onion sabzi\nDinner (9:00 PM): 3 whole wheat rotis + 200g paneer curry (tomato-based, minimal oil) + salad\n\n---\n\n**SUNDAY**\n\nBreakfast (8:30 AM): Curd rice (1.5 cups cooked rice + 1 cup plain curd) + 2 whole eggs boiled + 1 tbsp ghee + 1 glass milk\nSnack (6:30 PM): Tea with 40g roasted chana + 1 orange\nLunch (1:30 PM): 1.5 cups rice + 1 cup dal + 150g fish or chicken + mixed vegetable sabzi\nDinner (9:00 PM): 3 whole wheat rotis + 200g paneer (grilled) + beetroot-carrot salad with lemon\n\n---\n\n**HYDRATION & SUPPLEMENTS**\nWater: Minimum 3L daily (increase from 2L)\nWhey Protein: 1 scoop post-workout if needed\nCreatine: 5g daily (optional but recommended for muscle gain)\n\n---\n\n**STRICT BUT SUPPORTIVE COACHING NOTES FOR VIKRAM:**\n\nYou crushed it this week — 10/10 adherence, perfect energy, and strong performance. That's exactly what we want to see. BUT here's the reality check: one perfect week doesn't build a physique. Consistency over weeks and months does. You've got the discipline; now we're raising the bar.\n\n**Key adjustments for this plan:**\n1. **Protein bumped to 135g** — You're ready for it. Your training performance is solid, so feed that muscle.\n2. **Calories slightly higher at 2050** — You've lost 0.5kg in one week while maintaining energy. This is sustainable progress, but we're not starving you. Fuel the work.\n3. **Water intake: 3L minimum** — You're at 2L. That's not enough for someone training 5x/week and aiming for muscle gain. Non-negotiable.\n4. **Meal timing locked in** — Your eating pattern works. Stick to it. No excuses about \"being busy.\"\n\n**What's working:**\n- Your favorite foods (dal, paneer, idli, curd rice) are all in the plan. No deprivation.\n- You're hitting your macros without bland chicken and broccoli 24/7.\n- Energy is high because you're eating enough.\n\n**What needs tightening:**\n- One perfect week is the baseline now, not the ceiling. Aim for 95%+ adherence going forward.\n- Track your weight weekly — 0.5kg loss per week is ideal for fat loss while preserving muscle. If it stalls, we adjust.\n- Your waist is 78cm. Target is 62kg at 180cm. That's 16kg to lose. At 0.5kg/week, you're on track for ~8 months. Stay patient and disciplined.\n\n**Bottom line:** You've proven you can execute. Now prove you can sustain. No shortcuts, no cheat days, no \"I'll start Monday.\" This is your foundation phase — make it unbreakable.\n\nExcellent adherence this week. Protein increased to 135g, calories to 2050. Increase water to 3L daily. Maintain 0.5kg/week loss rate. Sustain this discipline.",
+  "model": "claude-haiku-4-5-20251001",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1254,
+  "outputTokens": 1953,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 9,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 5
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 6.714285714285714,
+    "overallAverage": 6.982142857142858
+  },
+  "generatedAt": "2026-07-07T21:11:04.787Z"
+}

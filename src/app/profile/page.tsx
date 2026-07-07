@@ -5,6 +5,7 @@ import { type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import { authenticateClient, FITNESS_GOAL_OPTIONS } from '@/lib/onboarding';
+import { requestComplexityRecalculation } from '@/lib/complexity/client';
 import { createClient } from '@/lib/supabase/client';
 import type { ProfileForm } from '@/types/database';
 
@@ -72,6 +73,7 @@ export default function Profile() {
     if (error) {
       setMessage('❌ Error saving profile: ' + error.message);
     } else {
+      await requestComplexityRecalculation({ trigger: 'profile_edit_client' });
       setMessage('✅ Profile saved successfully!');
     }
     setSaving(false);

@@ -10,6 +10,7 @@ import {
   validateCheckinForm,
 } from '@/lib/checkin';
 import { authenticateClient } from '@/lib/onboarding';
+import { requestComplexityRecalculation } from '@/lib/complexity/client';
 import type { CheckinFormData, OnboardingProfile } from '@/types/database';
 
 const supabase = createClient();
@@ -83,7 +84,7 @@ export default function CheckinPage() {
         uploadCheckinPhoto(supabase, user.id, photos.back!, 'back'),
       ]);
 
-      const { error: insertError } = await supabase.from('checkins').insert({
+      const { data: inserted, error: insertError } = await supabase.from('checkins').insert({
         client_id: user.id,
         coach_id: profile.coach_id,
         weight: Number(form.weight),
@@ -97,7 +98,7 @@ export default function CheckinPage() {
         adherence_score: Number(form.adherence_score),
         notes: form.notes || null,
         reviewed: false,
-      });
+      }).select('id').single();
 
       if (insertError) throw new Error(insertError.message);
 
@@ -107,6 +108,11 @@ export default function CheckinPage() {
         .eq('id', user.id);
 
       if (profileError) throw new Error(profileError.message);
+
+      await requestComplexityRecalculation({
+        trigger: 'weekly_checkin',
+        checkinId: inserted?.id,
+      });
 
       setSuccess('Check-in submitted! Your coach will review it soon.');
       setForm(INITIAL_CHECKIN_FORM);

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { shouldBypassPaymentGuardClient } from '@/lib/dev-mode'
+import { hasClientEntitlement } from '@/lib/entitlements'
 import type {
   OnboardingData,
   OnboardingFormData,
@@ -780,8 +781,10 @@ export function isOnboardingComplete(profile: Pick<OnboardingProfile, 'onboardin
   return profile?.onboarding_complete === true
 }
 
-export function isPaymentConfirmed(profile: Pick<OnboardingProfile, 'payment_confirmed'> | null): boolean {
-  return profile?.payment_confirmed === true
+export function isPaymentConfirmed(
+  profile: Pick<OnboardingProfile, 'payment_confirmed' | 'access_source'> | null
+): boolean {
+  return hasClientEntitlement(profile)
 }
 
 /** Route paying clients to the correct next step after login. */

@@ -1,0 +1,47 @@
+{
+  "caseId": "fat-loss-night-shift--review_update_diet",
+  "personaId": "fat-loss-night-shift",
+  "personaLabel": "Night shift worker",
+  "group": "Fat Loss",
+  "actionId": "review_update_diet",
+  "checkinScenario": "poor_sleep",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: **DIVYA'S UPDATED NUTRITION PLAN**\n\nDivya, your check-in shows you're battling high hunger (8/10) and low energy (4/10) on just 5 hours of sleep. This is NOT sustainable. Your body is screaming for more fuel and rest. We're making strategic changes NOW to support your recovery and keep fat loss moving without burning you out.\n\n**DAILY CALORIE TARGET: ~1900 kcal | PROTEIN: 130-140g**\n\n---\n\n**MEAL 1 (7:00 AM – Post Night Shift)**\n- 2 medium whole wheat parathas with 1 tsp ghee each\n- 3 scrambled eggs (whole) cooked in 1 tsp oil\n- 1 small bowl curd (150g)\n- 1 small banana\n- Green tea or black coffee (no sugar)\n\n**MEAL 2 (11:00 AM – Before Sleep)**\n- 1 scoop whey protein shake with 200ml milk + 5 soaked almonds\n- 1 small apple\n*(This will help you sleep better and prevent muscle loss during your long sleep window)*\n\n**MEAL 3 (4:00 PM – Post Sleep)**\n- 1 cup brown rice (cooked)\n- 1 cup moong dal tadka\n- 100g paneer bhurji (cooked in 1 tsp oil)\n- Mixed veg salad with lemon\n\n**MEAL 4 (6:30 PM – Pre-Shift Snack)**\n- 30g roasted chana\n- 1 cup green tea\n- 1 small orange OR 10-12 grapes\n\n**MEAL 5 (8:30 PM – Dinner at Work)**\n- 2 medium whole wheat rotis\n- 1 cup rajma or chole curry\n- 1 cup mixed veg sabzi\n- Small bowl cucumber raita (100g)\n\n**MEAL 6 (12:00 AM – Mid-Shift, if hungry)**\n- 1 small bowl curd rice (100g rice + 150g curd)\n- OR 1 boiled egg + 1 small fruit\n\n---\n\n**HYDRATION:**\n- Minimum 3 liters water daily. Set hourly reminders during your shift.\n- Herbal tea (chamomile/ashwagandha) 30 min before sleep to improve sleep quality.\n\n---\n\n**YOUR NON-NEGOTIABLES THIS WEEK:**\n\n1. **SLEEP FIRST, FAT LOSS SECOND:** You MUST aim for 6.5-7 hours minimum. Blackout curtains, phone on silent, room cool. No compromise. Your body cannot recover or lose fat optimally on 5 hours.\n\n2. **EAT ALL 5-6 MEALS:** Skipping meals is WHY you're starving and low-energy. Every meal is planned to keep hunger controlled and energy stable.\n\n3. **PROTEIN AT EVERY MEAL:** This is your secret weapon against hunger. Notice every meal has a protein source—eggs, paneer, dal, whey, curd.\n\n4. **PRE-SLEEP NUTRITION:** The 11 AM shake is CRITICAL. It will reduce nighttime hunger and help muscle recovery during sleep.\n\n5. **WORKOUT ADHERENCE:** If you're too fatigued, do NOT skip—just reduce intensity by 20%. Movement helps energy. Skipping creates guilt and breaks momentum.\n\n---\n\n**WHAT'S CHANGED & WHY:**\n\n- **Calories increased slightly** from ~2000 to ~1900 (more structured distribution). You were likely under-eating due to meal skipping, spiking hunger and tanking energy.\n- **Added pre-sleep protein shake** to support overnight recovery and reduce morning hunger.\n- **Increased meal frequency** to 5-6 smaller feeds to stabilize blood sugar and control cravings.\n- **Strategic carbs around sleep and training** to support energy without excess.\n\n---\n\n**STRAIGHT TALK:**\n\nYou lost 300g this week, which is progress, but your adherence (6/10) and energy (4/10) tell me you're white-knuckling this. That ends NOW. Fat loss is a marathon, not a sprint. You're a night-shift nurse—your job is already hard on your body. We're not adding starvation and exhaustion to that.\n\nThis plan is designed to work WITH your schedule, not against it. But YOU have to execute. Meal prep on your off days. Pack your work meals. Prioritize sleep like it's a prescription—because it is.\n\nYou've got 11 weeks left to hit 62 kg. That's totally doable at 0.5-0.7 kg per week IF you fuel properly and recover. Let's make this week count.\n\n**Check in next week with:**\n- Actual sleep hours (daily average)\n- Hunger levels after following this plan\n- Energy during workouts\n- Any meals you struggled with\n\nYou've got this, Divya. Now prove it to yourself. 💪",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1534,
+  "outputTokens": 1434,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 4,
+      "goalAlignment": 2
+    },
+    "overall": {
+      "coachingQuality": 6,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 3
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      },
+      {
+        "category": "Contradiction",
+        "severity": "critical",
+        "description": "Vegetarian client but non-veg items appear in diet plan.",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 5.285714285714286,
+    "overallAverage": 5.642857142857142
+  },
+  "generatedAt": "2026-07-07T21:05:57.282Z"
+}

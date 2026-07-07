@@ -1,0 +1,41 @@
+{
+  "caseId": "fat-loss-office-worker--review_update_diet",
+  "personaId": "fat-loss-office-worker",
+  "personaLabel": "Office worker",
+  "group": "Fat Loss",
+  "actionId": "review_update_diet",
+  "checkinScenario": "weight_unchanged",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: **KARAN – YOUR UPDATED DIET PLAN**\n\nLet's address the elephant in the room: the scale hasn't moved in two weeks because your weekend discipline is sabotaging your weekday effort. You're doing well Monday–Friday, but fat loss doesn't take weekends off. This week, we're tightening things up—no negotiations with yourself on Saturday and Sunday.\n\n**DAILY CALORIE TARGET: ~1,850 kcal | Protein: ~135g**\n\n---\n\n**MEAL 1 – BREAKFAST (9:30 AM) | ~450 kcal**\n- 60g oats (dry weight) cooked in water\n- 1 scoop whey protein (mixed in oats or separately with water)\n- 1 small banana\n- 5g flaxseeds\n\n**MEAL 2 – MID-MORNING (11:30 AM) | ~180 kcal**\n- 200g plain Greek yogurt OR 1 cup low-fat curd\n- 10g almonds (roughly 7–8 pieces)\n\n**MEAL 3 – LUNCH (2:00 PM) | ~550 kcal**\n- 1 medium katori (100g cooked) brown rice OR 2 small phulkas\n- 1 katori mixed dal (moong + masoor)\n- 100g paneer bhurji (cooked in 1 tsp oil)\n- 1 bowl mixed vegetable sabzi (no potato)\n- Side salad: cucumber, tomato, onion with lemon\n\n**MEAL 4 – EVENING SNACK (6:00 PM) | ~200 kcal**\n- 1 cup black coffee or green tea (no sugar)\n- 30g roasted chana\n- 1 small apple OR 10–12 grapes\n\n**MEAL 5 – DINNER (9:30 PM – MOVE THIS EARLIER) | ~470 kcal**\n- 2 medium phulkas OR 80g cooked quinoa\n- 1 katori rajma OR chole (chickpeas)\n- 1 bowl stir-fried veggies (capsicum, beans, carrot) in 1 tsp olive oil\n- Side: 100g cucumber raita (low-fat curd)\n\n---\n\n**HYDRATION:**\n- Minimum 3 liters of water daily. Set hourly reminders if needed.\n\n**SUPPLEMENTS:**\n- Whey protein: 1 scoop post-workout or with breakfast (already included above)\n- Multivitamin: 1 tablet with lunch\n\n---\n\n**NON-NEGOTIABLES THIS WEEK:**\n\n1. **Dinner by 9:30 PM LATEST.** No more 10:30 PM biryani deliveries. Prep a simple dinner at home or order before 9 PM if unavoidable. Late eating is stalling your progress.\n\n2. **Weekend adherence = weekday adherence.** Track Saturday and Sunday just as strictly. One cheat meal is fine (lunch on Sunday), but it must fit roughly within 600–700 kcal, not an all-day free-for-all.\n\n3. **Weigh and log your paneer, oil, and nuts.** Eyeballing these calorie-dense foods is where you're leaking calories.\n\n4. **No liquid calories.** No sugary chai, no fruit juices, no soft drinks. Black coffee, green tea, or water only.\n\n5. **Pre-plan your weekends.** Sunday night, decide what you'll eat Saturday and Sunday. Don't wing it.\n\n---\n\n**TIPS FOR THIS WEEK:**\n\n- Your energy and hunger are both at 6/10, which tells me you're undereating some days and overeating others (likely weekends). Consistency will stabilize both.\n- Training performance at 7/10 is decent, but nutrition will unlock better recovery and strength gains. Stick to this plan and you'll feel the difference.\n- If you're genuinely hungry between meals, add 50g of boiled moong sprouts or raw veggies (carrot sticks, cucumber). Do NOT add biscuits or namkeen.\n- Office canteen sandwich is out—too unpredictable in calories and low in protein. Bring your breakfast or make it at home before leaving.\n\n---\n\n**ACCOUNTABILITY CHECK:**\n\nYou've been stuck at 88 kg for two weeks. That ends now. This plan works IF you work it. No excuses about stress, no \"just this once\" on weekends, no skipping meals and then bingeing later. You want 62 kg in 12 weeks? Then act like someone who's serious about 62 kg.\n\nI believe you can do this, Karan, but you have to believe it too—and prove it with your actions seven days a week, not five.\n\nLet's see a drop on the scale next check-in. You've got this. Now go execute.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1422,
+  "outputTokens": 1394,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 9,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 9,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 5
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 6.857142857142857,
+    "overallAverage": 7.053571428571429
+  },
+  "generatedAt": "2026-07-07T21:00:28.580Z"
+}

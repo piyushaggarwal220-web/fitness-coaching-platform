@@ -1,0 +1,52 @@
+{
+  "caseId": "home-bands-only--review_update_workout",
+  "personaId": "home-bands-only",
+  "personaLabel": "Resistance bands only",
+  "group": "Home Workout",
+  "actionId": "review_update_workout",
+  "checkinScenario": "missed_workouts",
+  "rendered": "**Home Resistance Band Program – Upper/Lower Split**\n\nYou're progressing to a 2-body-part split to build on your foundation while keeping sessions manageable given your recent schedule constraints. Each workout targets 2 major muscle groups with slightly increased volume (15% bump). Sessions remain ~45–50 minutes to reduce friction.\n\n**Weekly Structure: 3 days per week, evening sessions**\n\n---\n\n**Day 1: Chest + Back**\n\n1. **Band Chest Press** (anchor at mid-chest height)  \n   4 sets × 10 reps  \n   *Rest 90 sec between sets*\n\n2. **Band Rows** (anchor at chest height, your favorite)  \n   4 sets × 10 reps  \n   *Rest 90 sec*\n\n3. **Band Chest Fly** (anchor behind you, arms wide)  \n   3 sets × 12 reps  \n   *Rest 60 sec*\n\n4. **Band Face Pulls** (anchor high, pull to face)  \n   3 sets × 15 reps  \n   *Rest 60 sec*\n\n5. **Band Pulldowns** (anchor overhead, pull to chest)  \n   3 sets × 12 reps  \n   *Rest 60 sec*\n\n---\n\n**Day 2: Legs + Shoulders**\n\n1. **Band Squats** (stand on band, handles at shoulders)  \n   4 sets × 10 reps  \n   *Rest 90 sec*\n\n2. **Band Overhead Press** (stand on band, press overhead)  \n   4 sets × 10 reps  \n   *Rest 90 sec*\n\n3. **Band Romanian Deadlift** (stand on band, hinge at hips)  \n   3 sets × 12 reps  \n   *Rest 75 sec*\n\n4. **Band Lateral Raises**  \n   3 sets × 15 reps  \n   *Rest 60 sec*\n\n5. **Band Leg Curls** (anchor low, curl heel to glute lying prone)  \n   3 sets × 12 reps per leg  \n   *Rest 60 sec*\n\n---\n\n**Day 3: Arms + Core**\n\n1. **Band Bicep Curls** (stand on band, curl handles to shoulders)  \n   4 sets × 12 reps  \n   *Rest 60 sec*\n\n2. **Band Tricep Extensions** (anchor overhead, extend down)  \n   4 sets × 12 reps  \n   *Rest 60 sec*\n\n3. **Band Hammer Curls** (neutral grip curls)  \n   3 sets × 15 reps  \n   *Rest 60 sec*\n\n4. **Band Overhead Tricep Extension** (stand on band, extend overhead)  \n   3 sets × 15 reps  \n   *Rest 60 sec*\n\n5. **Plank Hold**  \n   3 sets × 30–45 sec  \n   *Rest 45 sec*\n\n6. **Band Pallof Press** (anchor at chest height, resist rotation)  \n   3 sets × 10 reps per side  \n   *Rest 45 sec*\n\n---\n\n**Progression Notes:**\n- Increase band tension (step further on band or use thicker band) when you hit top reps comfortably for 2 consecutive sessions.\n- Focus on controlled tempo: 2 sec down, 1 sec up.\n- If a session feels too long, drop the last exercise and keep the first 4–5.\n\n**Cardio:** Continue 3× 30-min brisk walks on non-training days or post-workout.\n\n**Key Reminders:**\n- Warm up 5 min: arm circles, leg swings, band pull-aparts.\n- Prioritize showing up over perfection—even 2 workouts this week beats zero.\n- Log your reps/sets to track progress and stay motivated.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2 [pending:weekly_workout_update_home]+system-prompt@v1",
+  "inputTokens": 1591,
+  "outputTokens": 1184,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Suresh).",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 3-day program.",
+        "promptToInspect": "updated-workout-home.prompt"
+      }
+    ],
+    "workoutAverage": 7.333333333333333,
+    "overallAverage": 7.416666666666666
+  },
+  "generatedAt": "2026-07-07T21:33:20.939Z"
+}

@@ -1,0 +1,46 @@
+{
+  "caseId": "strength-powerlifting--review_update_workout",
+  "personaId": "strength-powerlifting",
+  "personaLabel": "Powerlifting focused",
+  "group": "Strength",
+  "actionId": "review_update_workout",
+  "checkinScenario": "strength_increased",
+  "rendered": "**Advanced Strength Program – Upper/Lower/Push/Pull Split**\n\nYou've completed a full month on the 2-body-part split with excellent adherence and progressive overload. We're now transitioning to a 3-body-part-per-day structure to increase training density while keeping session duration around 90 minutes. Volume is increased by approximately 15% through additional working sets on compound movements and strategic accessory work. This split will provide fresh stimulus while maintaining your main lift priorities.\n\n**Training Schedule: 4 Days Per Week**\n\n---\n\n**Day 1: Chest / Back / Rear Delts**\n\n1. Barbell Bench Press – 5 sets x 6 reps (primary strength)\n2. Barbell Bent-Over Row – 5 sets x 6 reps (primary strength)\n3. Incline Dumbbell Press – 3 sets x 10 reps\n4. Cable Seated Row (wide grip) – 3 sets x 10 reps\n5. Dumbbell Rear Delt Fly – 4 sets x 12 reps\n6. Cable Face Pull – 3 sets x 15 reps\n\n*Rest 2–3 minutes between compound sets, 90 seconds between accessory sets.*\n\n---\n\n**Day 2: Quads / Hamstrings / Calves**\n\n1. Barbell Back Squat – 5 sets x 6 reps (primary strength)\n2. Romanian Deadlift – 4 sets x 8 reps\n3. Leg Press – 3 sets x 12 reps (controlled tempo)\n4. Lying Leg Curl – 4 sets x 10 reps\n5. Walking Dumbbell Lunges – 3 sets x 10 reps per leg\n6. Standing Calf Raise – 4 sets x 15 reps\n\n*Rest 2–3 minutes between squat and RDL sets, 90 seconds elsewhere.*\n\n---\n\n**Day 3: Shoulders / Triceps / Abs**\n\n1. Barbell Overhead Press – 4 sets x 8 reps (primary strength)\n2. Dumbbell Lateral Raise – 4 sets x 12 reps\n3. Cable Upright Row – 3 sets x 10 reps\n4. Close-Grip Barbell Bench Press – 4 sets x 8 reps\n5. Cable Tricep Pushdown – 3 sets x 12 reps\n6. Hanging Knee Raise – 3 sets x 15 reps\n7. Cable Crunch – 3 sets x 20 reps\n\n*Rest 2 minutes between overhead press sets, 90 seconds elsewhere.*\n\n---\n\n**Day 4: Back / Biceps / Glutes**\n\n1. Conventional Deadlift – 4 sets x 5 reps (primary strength)\n2. Pull-Ups or Lat Pulldown – 4 sets x 8 reps\n3. Dumbbell Single-Arm Row – 3 sets x 10 reps per arm\n4. Barbell Curl – 3 sets x 10 reps\n5. Dumbbell Hammer Curl – 3 sets x 12 reps\n6. Barbell Hip Thrust – 4 sets x 12 reps\n7. Cable Pull-Through – 3 sets x 15 reps\n\n*Rest 3 minutes between deadlift sets, 90 seconds elsewhere.*\n\n---\n\n**Progression Protocol:**\n- Add 2.5 kg to main barbell lifts when all prescribed reps are completed with good form across all sets\n- For accessory work, increase reps before adding weight (aim for top of range +2 reps, then add load)\n- Track all working sets in your log\n\n**Warm-Up (Each Session):**\n- 5 minutes light cardio (bike or rower)\n- Dynamic stretches for target muscle groups\n- 2 warm-up sets ramping to working weight on first compound lift\n\n**Estimated Session Duration:** 85–95 minutes including warm-up and rest periods.\n\nContinue your 3x weekly 30-minute brisk walks on non-training days for cardiovascular health and recovery. Maintain excellent sleep hygiene (7–8 hours) and hydration (2L+ daily). Your adherence and performance have been outstanding—keep that momentum while allowing this new split to challenge your muscles with varied angles and volume distribution.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 1553,
+  "outputTokens": 1283,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Harpreet).",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 4-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7.166666666666667,
+    "overallAverage": 7.333333333333334
+  },
+  "generatedAt": "2026-07-07T21:26:02.922Z"
+}

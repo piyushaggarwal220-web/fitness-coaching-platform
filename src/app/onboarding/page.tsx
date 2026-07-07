@@ -40,6 +40,7 @@ import {
   WORKOUT_DURATION_OPTIONS,
   WORKOUT_TIME_OPTIONS,
 } from '@/lib/onboarding'
+import { requestComplexityRecalculation } from '@/lib/complexity/client'
 import type { OnboardingFormData } from '@/types/database'
 import type { SavedPhotoUrls } from '@/lib/onboarding'
 
@@ -167,6 +168,7 @@ export default function OnboardingPage() {
     setError('')
     try {
       await persistProgress(ONBOARDING_SCREEN_COUNT - 1, true)
+      await requestComplexityRecalculation({ trigger: 'onboarding_complete' })
       router.push('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete onboarding')

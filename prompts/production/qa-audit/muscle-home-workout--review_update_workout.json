@@ -1,0 +1,52 @@
+{
+  "caseId": "muscle-home-workout--review_update_workout",
+  "personaId": "muscle-home-workout",
+  "personaLabel": "Home workout muscle gain",
+  "group": "Muscle Gain",
+  "actionId": "review_update_workout",
+  "checkinScenario": "missed_workouts",
+  "rendered": "**Upper/Lower Split – 4 Days per Week**\n\nYou'll now train with an upper/lower split hitting two body regions per session. Each workout remains ~50 minutes. This structure gives muscles more frequency and recovery while keeping session length manageable.\n\n**Day 1 – Upper Body (Push Focus)**\n1. Dumbbell Bench Press – 4 sets x 10 reps\n2. Dumbbell Shoulder Press – 3 sets x 10 reps\n3. Dumbbell Chest Fly – 3 sets x 12 reps\n4. Lateral Raise – 3 sets x 15 reps\n5. Overhead Tricep Extension – 3 sets x 12 reps\n\n**Day 2 – Lower Body (Quad Focus)**\n1. Goblet Squat – 4 sets x 10 reps\n2. Bulgarian Split Squat – 3 sets x 10 reps per leg\n3. Dumbbell Step-Up – 3 sets x 12 reps per leg\n4. Calf Raise (single leg, bodyweight or holding dumbbell) – 3 sets x 15 reps per leg\n5. Plank – 3 sets x 45 seconds\n\n**Day 3 – Upper Body (Pull Focus)**\n1. Dumbbell Bent-Over Row – 4 sets x 10 reps\n2. Single-Arm Dumbbell Row – 3 sets x 10 reps per arm\n3. Reverse Fly – 3 sets x 12 reps\n4. Dumbbell Bicep Curl – 3 sets x 12 reps\n5. Hammer Curl – 3 sets x 12 reps\n\n**Day 4 – Lower Body (Posterior Focus)**\n1. Romanian Deadlift – 4 sets x 10 reps\n2. Single-Leg RDL – 3 sets x 10 reps per leg\n3. Glute Bridge (dumbbell on hips) – 3 sets x 15 reps\n4. Lying Leg Curl (if possible with bench setup) or Good Morning – 3 sets x 12 reps\n5. Side Plank – 3 sets x 30 seconds per side\n\n**Rest Days:** 3 days per week. Space workouts evenly (e.g., Mon/Tue/Thu/Fri or Mon/Wed/Fri/Sat).\n\n**Progression:** Add 1–2 reps or 0.5–1 kg to dumbbells each week where form stays clean. Track every session.\n\n**Warm-Up (5 min):** Arm circles, bodyweight squats, glute bridges, and light cardio in place.\n\n**Cool-Down (5 min):** Stretch quads, hamstrings, chest, shoulders, and lats. Hold each 20–30 seconds.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2 [pending:weekly_workout_update_home]+system-prompt@v1",
+  "inputTokens": 1519,
+  "outputTokens": 867,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Meera).",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 4-day program.",
+        "promptToInspect": "updated-workout-home.prompt"
+      }
+    ],
+    "workoutAverage": 7.166666666666667,
+    "overallAverage": 7.333333333333334
+  },
+  "generatedAt": "2026-07-07T21:15:47.543Z"
+}

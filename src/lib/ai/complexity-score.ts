@@ -46,6 +46,10 @@ export const SCORING_SPEC = {
     LOW_MAX: 4,
     MEDIUM_MAX: 10,
   },
+  /** Maximum theoretical raw points for 0–100 display normalization. */
+  display: {
+    MAX_RAW_SCORE: 33,
+  },
   age: {
     UNDER_18: 2,
     FORTY_FIVE_TO_FIFTY_FOUR: 1,
@@ -310,6 +314,32 @@ export function getTierFromScore(score: number): ComplexityTier {
   if (score <= SCORING_SPEC.tiers.LOW_MAX) return 'LOW'
   if (score <= SCORING_SPEC.tiers.MEDIUM_MAX) return 'MEDIUM'
   return 'HIGH'
+}
+
+/** Map raw algorithm score to 0–100 display scale (higher = more complex). */
+export function toDisplayScore(rawScore: number): number {
+  const max = SCORING_SPEC.display.MAX_RAW_SCORE
+  if (max <= 0) return 0
+  return Math.min(100, Math.max(0, Math.round((rawScore / max) * 100)))
+}
+
+export type StoredComplexityTier = 'low' | 'medium' | 'high'
+
+export function toStoredTier(tier: ComplexityTier): StoredComplexityTier {
+  return tier.toLowerCase() as StoredComplexityTier
+}
+
+export function fromStoredTier(tier: StoredComplexityTier | string | null | undefined): ComplexityTier | null {
+  if (!tier) return null
+  const normalized = tier.toUpperCase()
+  if (normalized === 'LOW' || normalized === 'MEDIUM' || normalized === 'HIGH') {
+    return normalized as ComplexityTier
+  }
+  return null
+}
+
+export function formatDisplayScore(rawScore: number): string {
+  return `${toDisplayScore(rawScore)} / 100`
 }
 
 /** Route tier to the configured Claude model ID. */

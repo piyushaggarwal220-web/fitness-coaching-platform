@@ -1,17 +1,4 @@
-[CLIENT DETAILS]
-
-[ONBOARDING ANSWERS]
-
-[WEEKLY CHECK-IN]
-
-[KNOWLEDGE BASE]
-
-[COMPLEXITY]
-
-[COACH NOTES]
-
-[ACTIVE PLAN]
-
-Update the diet plan based on the latest check-in.
-Adjust nutrition_plan, supplements, and cardio as needed.
-Keep workout_plan minimal with overview "Unchanged this week" and days [].
+Here is the diet chart and workout plan of this person along with his weekly check-in. 
+I need you to create updated diet chart for him, only tell about diet in this message, not about workout. along with tips for him according to the weekly check-in he has given, keep tone a bit strict but supportive.
+Give diet chart for next week in a copy paste format
+Don't mention the number of week it is, just skip mentioning it

@@ -124,6 +124,16 @@ export const ADMIN_MODULES: AdminModule[] = [
     navOrder: 110,
     tables: [],
   },
+  {
+    id: 'testing-tools',
+    title: 'Testing Tools',
+    description: 'Create trial coach and client accounts for internal QA and demos.',
+    href: '/admin/testing-tools',
+    status: 'implemented',
+    showInNav: true,
+    navOrder: 115,
+    tables: ['profiles', 'coaches'],
+  },
 ]
 
 export function getAdminNavModules(): AdminModule[] {

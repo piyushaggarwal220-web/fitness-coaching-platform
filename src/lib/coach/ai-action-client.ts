@@ -18,6 +18,7 @@ export async function runCoachAiAction(input: {
   clientId: string
   coachNote?: string | null
   checkinId?: string | null
+  draftPlanContext?: PlanFormData | null
 }): Promise<CoachAiActionResponse> {
   const response = await fetch('/api/coach/generate-plan', {
     method: 'POST',
@@ -27,6 +28,7 @@ export async function runCoachAiAction(input: {
       action: input.action,
       coachNote: input.coachNote?.trim() || null,
       checkinId: input.checkinId ?? null,
+      draftPlanContext: input.draftPlanContext ?? null,
     }),
   })
 

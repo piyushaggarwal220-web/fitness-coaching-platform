@@ -25,6 +25,7 @@ type GeneratePlanRequestBody = {
   coachNote?: string
   coachInstructions?: string
   checkinId?: string
+  draftPlanContext?: Partial<PlanFormData> | null
 }
 
 function actionValidationMode(
@@ -36,12 +37,56 @@ function actionValidationMode(
     case 'initial_workout':
     case 'review_update_workout':
       return 'workout_focus'
-    case 'review_analyze_checkin':
-    case 'review_coach_message':
-      return 'minimal'
+    case 'initial_diet':
+    case 'review_update_diet':
+      return 'nutrition_focus'
     default:
       return 'full'
   }
+}
+
+/** Diet-only plan context for weekly workout prompts (keeps active workout from DB). */
+function buildUpdatedDietPlanForPrompt(
+  activePlan: Plan | null,
+  draft: Partial<PlanFormData> | null | undefined
+): Plan | null {
+  if (!activePlan && !draft?.nutrition_plan?.trim()) return null
+
+  const now = new Date().toISOString()
+  const base = activePlan ?? {
+    id: 'draft-context',
+    client_id: draft?.client_id ?? '',
+    coach_id: '',
+    title: draft?.title?.trim() || 'Updated diet draft',
+    phase: draft?.phase?.trim() || null,
+    workout_plan: null,
+    nutrition_plan: null,
+    cardio_plan: null,
+    supplement_plan: null,
+    coach_notes: null,
+    version: 0,
+    active: false,
+    delivered_at: null,
+    updated_at: now,
+    created_at: now,
+  }
+
+  if (!draft) return base
+
+  return {
+    ...base,
+    title: draft.title?.trim() || base.title,
+    phase: draft.phase?.trim() || base.phase,
+    nutrition_plan: draft.nutrition_plan?.trim() || base.nutrition_plan,
+    cardio_plan: draft.cardio_plan?.trim() || base.cardio_plan,
+    supplement_plan: draft.supplement_plan?.trim() || base.supplement_plan,
+    coach_notes: draft.coach_notes?.trim() || base.coach_notes,
+    workout_plan: base.workout_plan,
+  }
+}
+
+function isWeeklyUpdateAction(actionId: CoachAiActionId): boolean {
+  return actionId === 'review_update_diet' || actionId === 'review_update_workout'
 }
 
 export async function POST(request: Request) {
@@ -126,13 +171,27 @@ export async function POST(request: Request) {
     checkin = checkinData as Checkin
   }
 
-  const { data: activePlan } = await supabase
+  const { data: activePlanData } = await supabase
     .from('plans')
     .select('*')
     .eq('client_id', clientId)
     .eq('coach_id', coach.id)
     .eq('active', true)
     .maybeSingle()
+
+  const activePlan = (activePlanData as Plan | null) ?? null
+
+  if (!isLegacyFullPlan && isWeeklyUpdateAction(actionId) && !activePlan) {
+    return NextResponse.json(
+      { success: false, error: 'An active plan is required for weekly updates.' },
+      { status: 400 }
+    )
+  }
+
+  const updatedDietPlanForPrompt =
+    actionId === 'review_update_workout'
+      ? buildUpdatedDietPlanForPrompt(activePlan, body.draftPlanContext)
+      : null
 
   const { data: latestCheckin } = await supabase
     .from('checkins')
@@ -184,7 +243,8 @@ export async function POST(request: Request) {
       coachInstructions: coachNote,
       validationMode: actionValidationMode(actionId, isLegacyFullPlan),
       actionId: isLegacyFullPlan ? undefined : actionId,
-      activePlan: (activePlan as Plan | null) ?? null,
+      activePlan,
+      updatedDietPlan: updatedDietPlanForPrompt,
     })
 
     const knowledgeCategoriesForReasoning = knowledgeCategories
@@ -197,57 +257,13 @@ export async function POST(request: Request) {
       complexityReasons: result.complexityScore.reasoning,
     })
 
-    if (!isLegacyFullPlan && actionId === 'review_analyze_checkin') {
-      const insightText = result.generatedPlan.coach_notes.trim()
-      await writeTrace({
-        success: true,
-        model: result.model,
-        promptTokens: result.inputTokens,
-        completionTokens: result.outputTokens,
-        retryCount: result.retryCount,
-        validationResult: 'pass',
-        promptVersion: result.promptVersion,
-        rawOutput: result.generatedPlan,
-        renderedOutput: { insightText },
-      })
-      return NextResponse.json({
-        success: true,
-        insightText,
-        aiReasoning,
-        selectedModel: result.model,
-        generationTimeMs: Date.now() - startedAt,
-      })
-    }
-
-    if (!isLegacyFullPlan && actionId === 'review_coach_message') {
-      const coachMessage = result.generatedPlan.coach_notes.trim()
-      await writeTrace({
-        success: true,
-        model: result.model,
-        promptTokens: result.inputTokens,
-        completionTokens: result.outputTokens,
-        retryCount: result.retryCount,
-        validationResult: 'pass',
-        promptVersion: result.promptVersion,
-        rawOutput: result.generatedPlan,
-        renderedOutput: { coachMessage },
-      })
-      return NextResponse.json({
-        success: true,
-        coachMessage,
-        aiReasoning,
-        selectedModel: result.model,
-        generationTimeMs: Date.now() - startedAt,
-      })
-    }
-
     let formData: PlanFormData
     if (isLegacyFullPlan) {
       formData = generatedPlanToFormData(result.generatedPlan, clientId)
     } else if (actionId === 'initial_diet' || actionId === 'review_update_diet') {
       const diet = generatedDietFormData(result.generatedPlan, clientId)
       if (activePlan && actionId === 'review_update_diet') {
-        const active = planToForm(activePlan as Plan)
+        const active = planToForm(activePlan)
         formData = mergePlanForms(active, {
           nutrition_plan: diet.nutrition_plan,
           cardio_plan: diet.cardio_plan,
@@ -261,10 +277,21 @@ export async function POST(request: Request) {
     } else if (actionId === 'initial_workout' || actionId === 'review_update_workout') {
       const workout = generatedWorkoutFormData(result.generatedPlan, clientId)
       if (activePlan && actionId === 'review_update_workout') {
-        const active = planToForm(activePlan as Plan)
+        const active = planToForm(activePlan)
+        const dietFromDraft = body.draftPlanContext
+          ? {
+              nutrition_plan:
+                body.draftPlanContext.nutrition_plan?.trim() || active.nutrition_plan,
+              cardio_plan: body.draftPlanContext.cardio_plan?.trim() || active.cardio_plan,
+              supplement_plan:
+                body.draftPlanContext.supplement_plan?.trim() || active.supplement_plan,
+              coach_notes: body.draftPlanContext.coach_notes?.trim() || active.coach_notes,
+            }
+          : null
         formData = mergePlanForms(active, {
+          ...(dietFromDraft ?? {}),
           workout_plan: workout.workout_plan,
-          cardio_plan: workout.cardio_plan,
+          cardio_plan: workout.cardio_plan || dietFromDraft?.cardio_plan,
           coach_notes: workout.coach_notes,
           title: `${active.title} (Workout update draft)`,
         })

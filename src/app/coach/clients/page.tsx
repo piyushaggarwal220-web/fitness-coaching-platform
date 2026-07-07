@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import CoachNavbar from '../../components/CoachNavbar';
 import { requireCoach } from '@/lib/coach-session';
 import {
@@ -11,15 +11,29 @@ import {
   getCheckinStatus,
   getPlanStatus,
 } from '@/lib/coach-utils';
+import { COMPLEXITY_TIER_COLORS, formatTierLabel } from '@/lib/complexity/display';
 import type { ClientProfile, Coach } from '@/types/database';
+
+type SortOption = 'name' | 'highest' | 'lowest' | 'improved' | 'increased' | 'newest';
 
 const supabase = createClient();
 
 export default function CoachClientsPage() {
+  return (
+    <Suspense fallback={<div style={styles.loading}>Loading clients...</div>}>
+      <CoachClientsContent />
+    </Suspense>
+  );
+}
+
+function CoachClientsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tierFilter = (searchParams.get('tier') as 'low' | 'medium' | 'high' | null) ?? null;
   const [coach, setCoach] = useState<Coach | null>(null);
   const [clients, setClients] = useState<ClientProfile[]>([]);
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('name');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -52,14 +66,41 @@ export default function CoachClientsPage() {
 
   const filteredClients = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return clients;
+    let list = clients;
 
-    return clients.filter((client) => {
-      const name = (client.name ?? '').toLowerCase();
-      const email = (client.email ?? '').toLowerCase();
-      return name.includes(query) || email.includes(query);
+    if (tierFilter) {
+      list = list.filter((client) => client.complexity_tier === tierFilter);
+    }
+
+    if (query) {
+      list = list.filter((client) => {
+        const name = (client.name ?? '').toLowerCase();
+        const email = (client.email ?? '').toLowerCase();
+        return name.includes(query) || email.includes(query);
+      });
+    }
+
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      switch (sortBy) {
+        case 'highest':
+          return (b.complexity_score ?? -1) - (a.complexity_score ?? -1);
+        case 'lowest':
+          return (a.complexity_score ?? 999) - (b.complexity_score ?? 999);
+        case 'improved':
+          return (a.complexity_score_change ?? 0) - (b.complexity_score_change ?? 0);
+        case 'increased':
+          return (b.complexity_score_change ?? 0) - (a.complexity_score_change ?? 0);
+        case 'newest':
+          return new Date(b.complexity_last_calculated_at ?? 0).getTime() -
+            new Date(a.complexity_last_calculated_at ?? 0).getTime();
+        default:
+          return (a.name ?? '').localeCompare(b.name ?? '');
+      }
     });
-  }, [clients, search]);
+
+    return sorted;
+  }, [clients, search, tierFilter, sortBy]);
 
   if (loading) {
     return (
@@ -107,6 +148,27 @@ export default function CoachClientsPage() {
             onChange={(e) => setSearch(e.target.value)}
             style={styles.searchInput}
           />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            style={styles.sortSelect}
+          >
+            <option value="name">Sort: Name</option>
+            <option value="highest">Highest Complexity</option>
+            <option value="lowest">Lowest Complexity</option>
+            <option value="improved">Largest Improvement</option>
+            <option value="increased">Largest Increase</option>
+            <option value="newest">Newest Changes</option>
+          </select>
+          {tierFilter && (
+            <button
+              type="button"
+              style={styles.clearFilter}
+              onClick={() => router.push('/coach/clients')}
+            >
+              Clear {formatTierLabel(tierFilter)} filter
+            </button>
+          )}
         </div>
 
         <div style={styles.listSection}>
@@ -156,6 +218,20 @@ export default function CoachClientsPage() {
                         {getCheckinStatus(client)}
                       </span>
                     </div>
+                    {client.complexity_score != null && client.complexity_tier && (
+                      <div style={styles.metaItem}>
+                        <span style={styles.metaLabel}>Complexity</span>
+                        <span
+                          style={{
+                            ...coachBadgeStyles.ok,
+                            backgroundColor: COMPLEXITY_TIER_COLORS[client.complexity_tier].bg,
+                            color: COMPLEXITY_TIER_COLORS[client.complexity_tier].text,
+                          }}
+                        >
+                          {client.complexity_score} · {formatTierLabel(client.complexity_tier)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </button>
               ))}
@@ -173,7 +249,22 @@ const styles: Record<string, CSSProperties> = {
   header: { marginBottom: 24 },
   title: { margin: 0, fontSize: 28 },
   subtitle: { color: '#666', marginTop: 6 },
-  toolbar: { marginBottom: 20 },
+  toolbar: { marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' },
+  sortSelect: {
+    padding: '12px 16px',
+    border: '1px solid #ddd',
+    borderRadius: 8,
+    fontSize: 15,
+    backgroundColor: 'white',
+  },
+  clearFilter: {
+    padding: '10px 14px',
+    border: '1px solid #ddd',
+    borderRadius: 8,
+    backgroundColor: '#f8f9fb',
+    cursor: 'pointer',
+    fontSize: 14,
+  },
   searchInput: {
     width: '100%',
     maxWidth: 420,

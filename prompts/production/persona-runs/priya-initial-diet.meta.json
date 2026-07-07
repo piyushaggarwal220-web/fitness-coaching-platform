@@ -1,0 +1,35 @@
+{
+  "persona": "Priya — initial diet (vegetarian fat loss)",
+  "actionId": "initial_diet",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "initial-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1895,
+  "outputTokens": 3730,
+  "checks": [
+    {
+      "id": "uses_client_name",
+      "pass": true,
+      "detail": "Mentions Priya"
+    },
+    {
+      "id": "covers_multiple_days",
+      "pass": true,
+      "detail": "Found 36 day references (need >= 4)"
+    },
+    {
+      "id": "has_meal_language",
+      "pass": true,
+      "detail": "Looks for meal-time language"
+    },
+    {
+      "id": "macro_or_portion_cues",
+      "pass": true,
+      "detail": "Looks for macro lines or Indian portion cues"
+    },
+    {
+      "id": "minimum_length",
+      "pass": true,
+      "detail": "Output length 8861 chars (need >= 800)"
+    }
+  ]
+}

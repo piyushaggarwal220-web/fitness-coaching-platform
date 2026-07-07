@@ -1,0 +1,47 @@
+{
+  "caseId": "fat-loss-female-beginner-home--review_update_diet",
+  "personaId": "fat-loss-female-beginner-home",
+  "personaLabel": "Female beginner, home",
+  "group": "Fat Loss",
+  "actionId": "review_update_diet",
+  "checkinScenario": "excellent_adherence",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: **SNEHA'S FAT LOSS DIET PLAN**\n\n**Daily Target:** ~1,900 kcal | Protein: 125g | Carbs: 200g | Fat: 50g\n\n**Coach's Notes:**\nSneha, OUTSTANDING work last week! Perfect adherence, 0.5 kg down, energy through the roof — this is exactly what we want to see. You've earned this progression. We're keeping the structure you love but tightening portions slightly to keep fat loss consistent. No drastic changes because what you're doing is WORKING. Stay sharp, stay consistent, and let's keep this momentum rolling.\n\n**Key Rules:**\n✓ Drink 3L water daily (up from 2L — non-negotiable)\n✓ Meal timing stays the same — your rhythm is dialed in\n✓ Weigh paneer/dal portions this week (kitchen scale = accountability)\n✓ If hunger spikes above 6/10 for 2+ days, add 1 fruit mid-morning\n\n---\n\n**MEAL 1 — BREAKFAST (8:30 AM)**\n\n**Option A: Protein Oats Bowl**\n- Rolled oats: 40g (raw)\n- Milk (toned): 200ml\n- Protein powder (vanilla): 1 scoop (25g)\n- Almonds (chopped): 8–10 pieces\n- Banana: ½ medium\n- Cinnamon: pinch\n\n**Option B: Moong Dal Cheela (2 medium)**\n- Moong dal batter: 60g (soaked, ground)\n- Onion, tomato, coriander: 30g mixed\n- Paneer (grated, mixed in): 40g\n- Cooked in 1 tsp ghee\n- Side: Mint chutney (no sugar)\n\n**Option C: Idli Plate**\n- Idli: 3 medium\n- Sambar: 1 bowl (150ml, lentil-heavy)\n- Coconut chutney: 2 tbsp\n- Boiled egg whites: 3 (or 30g roasted chana if preferred)\n\n---\n\n**MEAL 2 — LUNCH (1:30 PM)**\n\n**Base Template (Daily):**\n- Rice (cooked): 1 cup (150g) OR 2 medium rotis\n- Dal (any): 1 bowl (200ml) — toor, moong, masoor\n- Sabzi (dry): 1 bowl — bhindi, beans, lauki, capsicum, etc.\n- Paneer bhurji OR curd: 80g paneer OR 150g curd\n- Salad (raw): Unlimited — cucumber, tomato, carrot, onion, lemon\n- Cooking oil: 1.5 tsp total for dal + sabzi\n\n**Pro Tip:** Eat salad FIRST, then dal, then sabzi, then rice/roti. Slows eating, increases fullness.\n\n---\n\n**MEAL 3 — EVENING SNACK (6:30 PM)**\n\n**Option A: Tea + Protein Snack**\n- Tea (with 100ml toned milk, no sugar or 1 stevia): 1 cup\n- Roasted chana: 40g\n- Carrot sticks: 1 medium carrot\n\n**Option B: Sprouts Chaat**\n- Mixed sprouts (moong/chana): 80g boiled\n- Onion, tomato, coriander, lemon, chaat masala\n- Roasted peanuts: 1 tbsp\n\n**Option C: Paneer Tikka (Homemade)**\n- Paneer cubes: 60g\n- Marinated in curd (50g) + spices, grilled/air-fried\n- Served with mint chutney\n\n---\n\n**MEAL 4 — DINNER (9:00 PM)**\n\n**Option A: Roti + Paneer + Sabzi**\n- Roti (whole wheat): 2 medium\n- Paneer curry (semi-dry): 100g paneer in tomato-onion gravy (1 tsp oil)\n- Sabzi (any): 1 bowl\n- Salad: Unlimited\n- Curd (plain): 100g\n\n**Option B: Curd Rice Bowl (Comfort Meal)**\n- Rice (cooked): ¾ cup (120g)\n- Curd (whisked): 200g\n- Tadka: mustard seeds, curry leaves, hing (½ tsp oil)\n- Side: Steamed veggies (carrot, beans): 1 cup\n- Roasted papad: 1 small\n\n**Option C: Dal Khichdi + Raita**\n- Rice + moong dal khichdi: 1 large bowl (200g total, cooked)\n- Ghee: 1 tsp on top\n- Raita (curd + cucumber): 150g\n- Sabzi (stir-fry): 1 bowl\n\n---\n\n**WEEKLY FLEX MEAL (Choose 1 Day)**\n\nPick ONE meal this week to enjoy something you're craving — dosa, pav bhaji, pasta, pizza slice, etc. Keep portion moderate (1 plate), pair with protein (paneer/curd), and get back on track next meal. This is part of the plan, not cheating. Sustainability > perfection.\n\n---\n\n**HYDRATION & SLEEP**\n- Water: 3L daily (track it — set phone reminders every 2 hours)\n- Sleep: 7–8 hours (you're nailing this, keep it up)\n- Herbal tea (optional): Ginger/green tea between meals if desired\n\n---\n\n**THIS WEEK'S CHALLENGE:**\n\nYou crushed last week. Now prove it wasn't luck. Same energy, same discipline, same results. Let's see another 0.4–0.6 kg drop and waist under 77 cm. You're 5.5 kg from goal weight — that's 8–10 weeks of THIS level of execution. No shortcuts, no excuses. Let's go.\n\n**Questions? Struggles? Message me. Otherwise, see you at next check-in with another win.**\n\n— Coach",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1357,
+  "outputTokens": 1783,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 4,
+      "goalAlignment": 2
+    },
+    "overall": {
+      "coachingQuality": 6,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 3
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      },
+      {
+        "category": "Contradiction",
+        "severity": "critical",
+        "description": "Vegetarian client but non-veg items appear in diet plan.",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 5.285714285714286,
+    "overallAverage": 5.642857142857142
+  },
+  "generatedAt": "2026-07-07T20:57:07.804Z"
+}

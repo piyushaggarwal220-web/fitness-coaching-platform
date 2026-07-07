@@ -1,12 +1,13 @@
 'use client'
 
 import type { AiReasoningDisplay, CoachAiActionDefinition } from '@/lib/coach/ai-actions'
-import { WEEKLY_COACHING_ACTIONS } from '@/lib/coach/ai-actions'
+import { WEEKLY_COACHING_ACTIONS, mergePlanForms } from '@/lib/coach/ai-actions'
 import { runCoachAiAction } from '@/lib/coach/ai-action-client'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import {
   saveAiReasoningToSession,
   savePlanDraftToSession,
+  saveWorkoutRetryError,
 } from '@/lib/ai/plan-format'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -16,15 +17,11 @@ import { aiActionStyles as s } from './styles'
 type WeeklyCoachingPanelProps = {
   clientId: string
   checkinId: string
-  onInsight?: (text: string) => void
-  onCoachMessage?: (text: string) => void
 }
 
 export function WeeklyCoachingPanel({
   clientId,
   checkinId,
-  onInsight,
-  onCoachMessage,
 }: WeeklyCoachingPanelProps) {
   const router = useRouter()
   const [coachNote, setCoachNote] = useState('')
@@ -32,7 +29,9 @@ export function WeeklyCoachingPanel({
   const [error, setError] = useState('')
   const [busy, setBusy] = useState<CoachAiActionId | null>(null)
   const [reasoning, setReasoning] = useState<AiReasoningDisplay | null>(null)
-  const [insight, setInsight] = useState<string | null>(null)
+
+  const dietAction = WEEKLY_COACHING_ACTIONS.find((action) => action.id === 'review_update_diet')!
+  const workoutAction = WEEKLY_COACHING_ACTIONS.find((action) => action.id === 'review_update_workout')!
 
   const runAction = async (action: CoachAiActionDefinition) => {
     setBusy(action.id)
@@ -59,44 +58,107 @@ export function WeeklyCoachingPanel({
       saveAiReasoningToSession(clientId, result.aiReasoning)
     }
 
-    if (action.id === 'review_analyze_checkin' && result.insightText) {
-      setInsight(result.insightText)
-      onInsight?.(result.insightText)
-      return
-    }
-
-    if (action.id === 'review_coach_message' && result.coachMessage) {
-      onCoachMessage?.(result.coachMessage)
-      return
-    }
-
     if (result.formData) {
       savePlanDraftToSession(clientId, result.formData)
       router.push(`/coach/plan/new?clientId=${clientId}&fromAi=1`)
     }
   }
 
+  const runWeeklyUpdate = async () => {
+    setBusy('review_update_diet')
+    setError('')
+    setStatus('Generating updated diet from active plan and check-in...')
+
+    const dietResult = await runCoachAiAction({
+      action: 'review_update_diet',
+      clientId,
+      checkinId,
+      coachNote,
+    })
+
+    if (!dietResult.success || !dietResult.formData) {
+      setBusy(null)
+      setStatus(null)
+      setError(dietResult.error ?? 'Diet update failed.')
+      return
+    }
+
+    if (dietResult.aiReasoning) {
+      setReasoning(dietResult.aiReasoning)
+      saveAiReasoningToSession(clientId, dietResult.aiReasoning)
+    }
+
+    setBusy('review_update_workout')
+    setStatus('Diet ready. Generating updated workout with the updated diet context...')
+
+    const workoutResult = await runCoachAiAction({
+      action: 'review_update_workout',
+      clientId,
+      checkinId,
+      coachNote,
+      draftPlanContext: dietResult.formData,
+    })
+
+    setBusy(null)
+    setStatus(null)
+
+    if (!workoutResult.success || !workoutResult.formData) {
+      savePlanDraftToSession(clientId, dietResult.formData)
+      saveWorkoutRetryError(clientId, workoutResult.error ?? 'Workout update failed after diet update.')
+      if (dietResult.aiReasoning) saveAiReasoningToSession(clientId, dietResult.aiReasoning)
+      router.push(`/coach/plan/new?clientId=${clientId}&fromAi=1&retryWorkout=1`)
+      return
+    }
+
+    const merged = mergePlanForms(
+      {
+        ...dietResult.formData,
+        title: 'Weekly Diet + Workout Update (Draft)',
+      },
+      {
+        workout_plan: workoutResult.formData.workout_plan,
+        cardio_plan: workoutResult.formData.cardio_plan,
+        coach_notes: [dietResult.formData.coach_notes, workoutResult.formData.coach_notes]
+          .filter(Boolean)
+          .join('\n\n'),
+      }
+    )
+
+    const finalReasoning = workoutResult.aiReasoning ?? dietResult.aiReasoning
+    if (finalReasoning) {
+      setReasoning(finalReasoning)
+      saveAiReasoningToSession(clientId, finalReasoning)
+    }
+
+    savePlanDraftToSession(clientId, merged)
+    router.push(`/coach/plan/new?clientId=${clientId}&fromAi=1`)
+  }
+
   return (
     <div>
       <p style={s.sectionLabel}>Weekly coaching</p>
-      {WEEKLY_COACHING_ACTIONS.map((action) => (
-        <ActionCard
-          key={action.id}
-          title={action.label}
-          description={action.description}
-          disabled={busy !== null}
-          onClick={() => void runAction(action)}
-        />
-      ))}
+      <ActionCard
+        title="Generate weekly diet + workout"
+        description="Runs diet first, then uses that updated diet as context for the workout update"
+        primary
+        disabled={busy !== null}
+        onClick={() => void runWeeklyUpdate()}
+      />
+      <ActionCard
+        title={dietAction.label}
+        description={`${dietAction.description} only`}
+        disabled={busy !== null}
+        onClick={() => void runAction(dietAction)}
+      />
+      <ActionCard
+        title={workoutAction.label}
+        description="Use only when the diet update is already saved in the active plan"
+        disabled={busy !== null}
+        onClick={() => void runAction(workoutAction)}
+      />
       <OptionalCoachNote value={coachNote} onChange={setCoachNote} />
       <GenerationStatus message={status} />
       {error && <div style={s.error}>{error}</div>}
-      {insight && (
-        <div style={s.card}>
-          <h3 style={{ margin: '0 0 8px 0', fontSize: 15 }}>Check-in analysis</h3>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{insight}</p>
-        </div>
-      )}
       <AiReasoningPanel reasoning={reasoning} />
     </div>
   )

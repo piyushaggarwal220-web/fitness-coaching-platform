@@ -1,0 +1,52 @@
+{
+  "caseId": "fat-loss-night-shift--review_update_workout",
+  "personaId": "fat-loss-night-shift",
+  "personaLabel": "Night shift worker",
+  "group": "Fat Loss",
+  "actionId": "review_update_workout",
+  "checkinScenario": "poor_sleep",
+  "rendered": "**3-Day Upper/Lower Split – Phase 2**\n\nYou've completed your foundation phase. We're now moving to a structured upper/lower split with slightly increased volume (15% bump) while keeping session length around 60 minutes. Given your low energy and sleep debt, we're prioritizing compound movements and managing fatigue carefully.\n\n**Training Schedule:**\n- Day 1: Upper Body\n- Day 2: Lower Body\n- Day 3: Upper Body\n\n**Warm-Up (all days):** 5 min light cardio + dynamic stretches (arm circles, leg swings, cat-cow)\n\n---\n\n**Day 1 – Upper Body (Push Focus)**\n\n1. Barbell Bench Press – 4 sets x 8 reps (2 min rest)\n2. Seated Cable Row – 4 sets x 10 reps (90 sec rest)\n3. Dumbbell Shoulder Press – 3 sets x 10 reps (90 sec rest)\n4. Cable Lateral Raise – 3 sets x 12 reps (60 sec rest)\n5. Dumbbell Bicep Curl – 3 sets x 12 reps (60 sec rest)\n6. Overhead Tricep Extension (dumbbell) – 3 sets x 12 reps (60 sec rest)\n\n**Cool-Down:** 3–5 min walk + upper body static stretches\n\n---\n\n**Day 2 – Lower Body**\n\n1. Barbell Back Squat – 4 sets x 8 reps (2 min rest)\n2. Romanian Deadlift (barbell) – 4 sets x 10 reps (2 min rest)\n3. Leg Press – 3 sets x 12 reps (90 sec rest)\n4. Lying Leg Curl – 3 sets x 12 reps (60 sec rest)\n5. Standing Calf Raise (dumbbell or machine) – 3 sets x 15 reps (60 sec rest)\n6. Plank Hold – 3 sets x 30–45 sec (60 sec rest)\n\n**Cool-Down:** 3–5 min walk + lower body static stretches\n\n---\n\n**Day 3 – Upper Body (Pull Focus)**\n\n1. Barbell Bent-Over Row – 4 sets x 8 reps (2 min rest)\n2. Dumbbell Incline Press – 3 sets x 10 reps (90 sec rest)\n3. Lat Pulldown (cable) – 3 sets x 10 reps (90 sec rest)\n4. Dumbbell Lateral Raise – 3 sets x 12 reps (60 sec rest)\n5. Cable Face Pull – 3 sets x 15 reps (60 sec rest)\n6. Dumbbell Hammer Curl – 3 sets x 12 reps (60 sec rest)\n\n**Cool-Down:** 3–5 min walk + upper body static stretches\n\n---\n\n**Progression Notes:**\n- Aim to add 1–2 reps or 2.5 kg when you can complete all prescribed reps with good form.\n- If energy is very low on a given day, reduce one working set per exercise rather than skipping the session.\n- Track your lifts in a notebook or app.\n\n**Recovery Priorities:**\n- Target 6.5–7 hours sleep on off-days if possible.\n- Keep steps around 5,000–6,000 daily.\n- Stay hydrated (2L+ water).\n\n**Cardio:**\n- Continue 3 x 30 min brisk walks on non-training days or post-workout if time allows.\n\nYou're doing great showing up despite tough shifts. Let's build momentum with this new split.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 1743,
+  "outputTokens": 1091,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Divya).",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 1 set×rep entries for 3-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7.333333333333333,
+    "overallAverage": 7.416666666666666
+  },
+  "generatedAt": "2026-07-07T21:06:17.749Z"
+}

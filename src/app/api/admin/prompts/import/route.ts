@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { NextResponse } from 'next/server'
 import {
+  CORE_PRODUCTION_PROMPT_CATEGORIES,
   importProductionPromptManifest,
   importPublishedPrompt,
   importPublishedPrompts,
@@ -22,6 +23,7 @@ type ImportBody =
       action: 'manifest'
       manifestPath?: string
       skipIfCategoryPublished?: boolean
+      republishIfChanged?: boolean
     }
 
 function isBatchBody(body: ImportBody): body is {
@@ -68,11 +70,17 @@ export async function POST(request: Request) {
 
     const result = await importProductionPromptManifest(supabase, user.id, manifestPath, {
       skipIfCategoryPublished: body.skipIfCategoryPublished ?? true,
+      republishIfChanged: body.republishIfChanged ?? true,
+    })
+
+    const coreVerification = await verifyImportedPrompts(supabase, {
+      categories: CORE_PRODUCTION_PROMPT_CATEGORIES,
     })
 
     return NextResponse.json({
-      success: result.errors.length === 0 && result.verification.ok,
+      success: result.errors.length === 0 && coreVerification.ok,
       message: summarizeImportBatch(result),
+      coreVerification,
       ...result,
     })
   }

@@ -1,0 +1,58 @@
+{
+  "caseId": "hybrid-runner-lifter--review_update_workout",
+  "personaId": "hybrid-runner-lifter",
+  "personaLabel": "Runs + lifts",
+  "group": "Hybrid Athlete",
+  "actionId": "review_update_workout",
+  "checkinScenario": "poor_sleep",
+  "rendered": "**Upper/Lower/Push/Pull 4-Day Split + Active Recovery**\n\nYou've completed your foundation phase with solid upper/lower work. This week we're shifting to a 4-day push/pull/upper/lower rotation to increase training frequency per muscle group while keeping session length around 60 minutes. Volume is increased by ~15% through added working sets. Given your low energy (4/10) and 5-hour sleep average, we're prioritizing compound movements and minimizing excessive isolation to respect recovery capacity.\n\n**Weekly Structure:**\n\n**Day 1 – Push (Chest/Shoulders/Triceps)**\n- Barbell Bench Press: 4 sets x 6–8 reps, 3 min rest\n- Dumbbell Incline Press: 3 sets x 8–10 reps, 2 min rest\n- Cable Lateral Raise: 3 sets x 12–15 reps, 90 sec rest\n- Overhead Dumbbell Press: 3 sets x 8–10 reps, 2 min rest\n- Cable Tricep Pushdown: 3 sets x 12–15 reps, 90 sec rest\n\n**Day 2 – Pull (Back/Biceps)**\n- Barbell Bent-Over Row: 4 sets x 6–8 reps, 3 min rest\n- Lat Pulldown (Cable): 3 sets x 8–10 reps, 2 min rest\n- Dumbbell Single-Arm Row: 3 sets x 10–12 reps per arm, 90 sec rest\n- Face Pull (Cable): 3 sets x 15–20 reps, 90 sec rest\n- Dumbbell Hammer Curl: 3 sets x 10–12 reps, 90 sec rest\n\n**Day 3 – Lower (Quad Focus)**\n- Barbell Back Squat: 4 sets x 6–8 reps, 3 min rest\n- Leg Press: 3 sets x 10–12 reps, 2 min rest\n- Dumbbell Walking Lunge: 3 sets x 8–10 reps per leg, 2 min rest\n- Leg Curl (Machine): 3 sets x 12–15 reps, 90 sec rest\n- Standing Calf Raise: 3 sets x 15–20 reps, 90 sec rest\n\n**Day 4 – Upper (Full Upper Body)**\n- Dumbbell Bench Press: 4 sets x 8–10 reps, 2 min rest\n- Cable Seated Row: 4 sets x 8–10 reps, 2 min rest\n- Dumbbell Shoulder Press: 3 sets x 10–12 reps, 90 sec rest\n- Cable Lat Pulldown (Wide Grip): 3 sets x 10–12 reps, 90 sec rest\n- Push-Ups: 2 sets x AMRAP, 2 min rest\n\n**Day 5 – Active Recovery / Tempo Run**\n- 30–40 min tempo run at conversational pace OR brisk walk + mobility work (hip flexor stretch, thoracic rotations, cat-cow, ankle circles)\n\n**Rest Days:** 2 full rest days per week. Prioritize 7–8 hours sleep, hydration (2L+), and stress management.\n\n**Progression Notes:**\n- Aim to add 1–2 reps or 2.5–5 kg to compound lifts each week when form and energy allow.\n- If energy remains low, reduce working sets by 1 per exercise and focus on movement quality.\n- Track sleep and hunger daily; address sleep hygiene (dark room, consistent bedtime, limit screen time 1 hour before bed) to improve recovery and reduce cravings.\n\n**Cardio Integration:**\n- 2 x 30 min brisk walks on rest days (low intensity, recovery-focused)\n- 1 x tempo run on Day 5 (moderate intensity, supports athletic performance goal)\n\n**Key Focus:**\n- Compound movements prioritized to maximize efficiency and hormonal response\n- Moderate rep ranges (6–15) to balance strength and hypertrophy\n- Rest periods calibrated to allow adequate recovery between sets\n- Volume increased by 15% from foundation phase via additional working sets\n- Session duration remains ~60 minutes per training day",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 1643,
+  "outputTokens": 1234,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Aditya).",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Ignored preferred exercises",
+        "severity": "medium",
+        "description": "Client dislikes \"excessive isolation\" but it appears in plan.",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 1 set×rep entries for 5-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7.166666666666667,
+    "overallAverage": 7.333333333333334
+  },
+  "generatedAt": "2026-07-07T21:29:36.690Z"
+}

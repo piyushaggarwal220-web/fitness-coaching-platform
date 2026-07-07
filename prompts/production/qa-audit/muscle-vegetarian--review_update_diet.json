@@ -1,0 +1,47 @@
+{
+  "caseId": "muscle-vegetarian--review_update_diet",
+  "personaId": "muscle-vegetarian",
+  "personaLabel": "Vegetarian muscle gain",
+  "group": "Muscle Gain",
+  "actionId": "review_update_diet",
+  "checkinScenario": "high_hunger",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: ANANYA'S UPDATED NUTRITION PLAN\n\n**IMPORTANT NOTES FOR YOU:**\nYour hunger spike Thu-Sun tells me your deficit is too aggressive mid-week, and weekend snacking is a symptom—not a weakness. We're fixing this by distributing calories more evenly and adding protein + fibre at EVERY meal. This kills hunger and keeps you consistent. No more boom-bust eating.\n\n---\n\n**DAILY STRUCTURE: ~2050 kcal | 135g protein | 230g carbs | 65g fat**\n\n**BREAKFAST (8:30 AM) – 450 kcal | 18g protein**\n- 1 cup oats (40g) + 200ml whole milk\n- 1 whole egg + 2 egg whites scrambled\n- 1 tsp ghee for cooking\n- Handful berries or banana\n*Why: Protein + complex carbs + fibre = stable energy & satiety*\n\n**MID-MORNING SNACK (11:00 AM) – 200 kcal | 15g protein**\n- 150g Greek yogurt (0% or 2%)\n- 2 tbsp granola\n- 1 tbsp honey\n*Why: Protein boost before lunch; prevents afternoon hunger*\n\n**LUNCH (1:30 PM) – 550 kcal | 28g protein**\n- 1.5 cups cooked basmati rice\n- 1 cup cooked dal (mix moong + masoor for variety)\n- 100g paneer curry (light oil, tomato-based)\n- 1 cup mixed vegetables (spinach, carrot, peas)\n- Small side salad with lemon\n*Why: Your favourite base + extra protein from paneer; fibre from dal & veg*\n\n**EVENING SNACK (6:30 PM) – 220 kcal | 12g protein**\n- 1 cup tea with 50ml low-fat milk\n- 40g roasted chana (your current habit—keep it)\n- 1 small roti or 2 rice cakes\n*Why: Maintains your routine; adds protein to prevent hunger spike*\n\n**DINNER (9:00 PM) – 550 kcal | 28g protein**\n- 2 medium roti (whole wheat)\n- 120g paneer (grilled or curry)\n- 1.5 cups mixed sabzi (broccoli, beans, capsicum, onion)\n- 150g boiled chickpeas OR 100g soya chunks (alternate days)\n- 1 tbsp low-fat yogurt as side\n*Why: High protein + fibre from legumes; keeps you full overnight*\n\n**OPTIONAL LATE SNACK (if hungry after 10 PM) – 100 kcal | 10g protein**\n- 1 cup warm milk with turmeric\n- OR 50g paneer\n\n---\n\n**WEEKLY ROTATION (Mix & Match):**\n\n**Lunch Variations:**\n- Day 1: Dal + paneer curry (as above)\n- Day 2: Dal + soya chunks stir-fry + rice\n- Day 3: Dal + paneer tikka + rice + extra vegetables\n- Day 4: Chickpea curry + rice + roti\n- Repeat or mix based on preference\n\n**Dinner Variations:**\n- Day 1: Paneer + chickpeas (as above)\n- Day 2: Soya chunks + vegetables + roti\n- Day 3: Paneer tikka + roti + dal\n- Day 4: Cottage cheese (paneer) + mixed dal + roti\n\n---\n\n**HYDRATION & FIBRE:**\n- Drink 2.5–3L water daily (increase by 500ml)\n- Add 1 tsp psyllium husk to evening milk if digestion feels slow\n- Eat vegetables at EVERY meal (non-negotiable)\n\n**WEEKEND STRATEGY (Thu–Sun):**\nYour hunger spike happens because mid-week calories drop. THIS PLAN distributes food evenly. Stick to portions even on weekends. If you snack:\n- Choose: roasted chana, Greek yogurt, paneer, boiled chickpeas\n- Avoid: biscuits, fried snacks, sugary items\n- Log it—don't hide it from yourself\n\n**ADHERENCE REALITY CHECK:**\nYou scored 6/10 because weekends derail you. That's fixable IF you:\n1. Prep paneer & chickpeas on Sunday (15 min)\n2. Keep Greek yogurt stocked\n3. Measure portions for 3 days at a time\n4. Tell yourself: \"Hunger is normal. Food is coming in 2 hours. I can wait.\"\n\n**PROTEIN SOURCES YOU LIKE (rotate them):**\n- Paneer: 8g protein per 30g\n- Greek yogurt: 10g per 100g\n- Soya chunks: 12g per 30g (rehydrated)\n- Eggs: 6g per egg\n- Dal: 9g per cooked cup\n- Chickpeas: 12g per cooked cup\n\n**RED FLAGS TO AVOID:**\n- Skipping meals to \"save calories\" → leads to weekend binge\n- Eating less on weekdays → your energy & training suffer\n- Removing paneer/soya → you won't stick to it\n\n**SUPPLEMENTS:**\n- Whey protein: 1 scoop if you miss a meal (optional, not required)\n- Creatine: 5g daily (optional, supports muscle gain)\n- Multivitamin: 1 tablet daily (recommended for vegetarians)\n\n---\n\n**YOUR CHALLENGE THIS PHASE:**\nYou want to gain 7kg in 12 weeks. That's ~0.6kg/week. You've lost 0.6kg in the last check-in (likely water + some muscle). This plan prevents that. Follow it for 7 days, then check in. If hunger is still 8+, we add 150 kcal. If you feel bloated, we reduce fibre slightly.\n\nYou've got this. Consistency beats perfection. Now prove it.\n\nWeight down 0.6kg—likely water loss + adherence gaps. New plan distributes calories evenly to eliminate Thu-Sun hunger spike. Protein increased to 135g; fibre emphasis prevents snacking. Weekend structure critical. Recheck in 7 days.",
+  "model": "claude-haiku-4-5-20251001",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1316,
+  "outputTokens": 1777,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 8,
+      "goalAlignment": 2
+    },
+    "overall": {
+      "coachingQuality": 6,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 3
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      },
+      {
+        "category": "Contradiction",
+        "severity": "critical",
+        "description": "Vegetarian client but non-veg items appear in diet plan.",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 5.857142857142857,
+    "overallAverage": 5.928571428571429
+  },
+  "generatedAt": "2026-07-07T21:14:03.306Z"
+}

@@ -1,17 +1,38 @@
-[CLIENT DETAILS]
+write a personalised 1-week gym plan for a client, based on their onboarding details below. Write it the way a real coach would send it — clear and structured where it needs to be (exercises, sets, reps), but with a personal, conversational voice around it, not like an auto-generated template.
 
-[ONBOARDING ANSWERS]
+CLIENT DETAILS:
+[paste client details here]
 
-[KNOWLEDGE BASE]
+HOW TO WRITE IT:
 
-[COMPLEXITY]
+1. Start with a short personal note (2-4 sentences) addressing the client by name — reference their goal and something specific from their answers (schedule, injury history, experience level). Keep it casual, like a coach checking in.
 
-[COACH NOTES]
+2. Build a non-generic split — Push-Pull-Legs variation, Upper-Lower hybrid, Power-Hypertrophy alternation, or similar. Avoid the standard chest day/back day/arm day bro-split. Name each day based on its focus (e.g. "Day 1 — Lower Power", "Day 2 — Upper Hypertrophy"), but write the day names naturally rather than in rigid brackets/caps.
 
-[ACTIVE PLAN]
+3. Compound lifts (squat, deadlift, bench, overhead press, rows): 3-6 rep range for strength. Other exercises (isolation/accessory/machine): 8-20 reps, higher reps for smaller muscle groups.
 
-Generate a personalized workout plan for this client.
-Prioritize workout_plan and cardio_plan sessions.
-Respect training days, equipment, injuries, and experience level.
-For nutrition_plan use minimal placeholder macros (0) and empty meals array.
-Set coach_notes to a brief summary of training priorities only.
+4. Include 3-4 ab/core exercises every training day, varied across the week — don't repeat the same combo daily.
+
+5. Adjust exercises for any limitations the client mentioned (e.g. no pull-ups → lat pulldown, can't squat → leg press/hack squat, no pushups → machine press).
+
+6. Open the plan with a short warmup routine (around 10 minutes) — brisk walk/light cardio, joint mobility, a few bodyweight movements — written as a simple flowing list rather than a rigid numbered table. Mention doing 2 lighter warm-up sets before the first heavy compound lift, phrased naturally (e.g. "before you get into your main lifts, run through a couple of lighter warm-up sets").
+
+7. For each training day, list exercises with sets/reps clearly (this part can and should look like a structured list — that's normal for a workout plan), but add a short coaching note here and there — a cue, a tip on tempo, what to focus on, written like a coach's aside rather than a formal instruction block.
+
+8. Give a daily step target for every day of the week, including rest/recovery days, varying based on whether it's a training day, active recovery day, or full rest day. Weave this in naturally rather than as a separate rigid section for every single day.
+
+9. Include one active recovery day and one rest day during the week, with light mobility/stretching suggestions for the recovery day.
+
+10. Mention training intensity guidance in a natural paragraph or two rather than a formal rulebook — leave a rep or two in reserve on compounds, push isolation work closer to failure, and only allow a couple of controlled "cheat reps" on the last set of isolation moves after strict failure (never on squats, deadlifts, RDLs, lunges, or any barbell compound). State this clearly but conversationally.
+
+11. End the week with a short stretching/cooldown routine covering the major muscle groups trained, with rough hold times (30-60 seconds each side), written casually.
+
+12. Add a short sleep section — duration target (7.5-9 hours), ideal timing based on the client's schedule, and 6-7 practical tips suited to an Indian lifestyle (chai cutoff times, screen habits before bed, meal timing). Write these as friendly suggestions, not a clinical list.
+
+13. Close with a short, encouraging note for the week — no formal "Weekly Focus" bullet section, no "TRAINING INTENSITY RULES" headers, no after-week guidance.
+
+14. Cover all days they can hit the workout. Balance upper and lower body across the week — don't overload either.
+
+15. Don't mention the number of week it is, just skip mentioning it
+
+TONE: Write like an experienced coach messaging a client they train personally — direct and practical for the workout details (sets/reps/exercises can stay in clean list form, that's expected), but wrapped in natural, encouraging language for the intros, transitions, cues, and tips. Avoid robotic section headers like "DAILY STEP TARGET" or "TRAINING INTENSITY RULES" — fold that information into the flow of the plan instead.

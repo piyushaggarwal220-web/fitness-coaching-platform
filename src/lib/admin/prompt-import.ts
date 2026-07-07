@@ -3,13 +3,14 @@ import path from 'node:path'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { formatPromptCategory, getPromptWithVersions } from '@/lib/admin/prompt-library'
 import {
+  CORE_PRODUCTION_PROMPT_CATEGORIES,
   IMPORTABLE_PROMPT_CATEGORIES,
   isImportablePromptCategory,
   type ImportablePromptCategory,
 } from '@/lib/admin/prompt-import-constants'
-import type { PromptLibraryCategory, PromptLibraryWithVersions } from '@/types/database'
+import type { PromptLibraryWithVersions } from '@/types/database'
 
-export { IMPORTABLE_PROMPT_CATEGORIES, isImportablePromptCategory }
+export { IMPORTABLE_PROMPT_CATEGORIES, CORE_PRODUCTION_PROMPT_CATEGORIES, HOME_WORKOUT_PROMPT_CATEGORIES, isImportablePromptCategory } from '@/lib/admin/prompt-import-constants'
 export type { ImportablePromptCategory }
 
 export type PromptImportInput = {
@@ -26,7 +27,7 @@ export type PromptImportResult = {
   category: ImportablePromptCategory
   promptId: string
   version: number
-  status: 'created' | 'skipped'
+  status: 'created' | 'skipped' | 'republished'
   reason?: string
 }
 
@@ -80,7 +81,12 @@ async function findActivePromptByCategory(
     .eq('category', category)
     .is('archived_at', null)
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (error.message.includes('invalid input value for enum prompt_library_category')) {
+      return null
+    }
+    throw new Error(error.message)
+  }
   if (!prompts?.length) return null
 
   for (const prompt of prompts) {
@@ -105,6 +111,65 @@ async function findPromptBySlug(supabase: SupabaseClient, slug: string) {
   return getPromptWithVersions(supabase, data.id)
 }
 
+async function nextPromptVersion(supabase: SupabaseClient, promptId: string): Promise<number> {
+  const { data } = await supabase
+    .from('prompt_library_versions')
+    .select('version')
+    .eq('prompt_id', promptId)
+    .order('version', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return ((data as { version: number } | null)?.version ?? 0) + 1
+}
+
+async function republishPromptBody(
+  supabase: SupabaseClient,
+  adminId: string | null,
+  prompt: PromptLibraryWithVersions,
+  promptBody: string,
+  category: ImportablePromptCategory,
+  slug: string
+): Promise<{ data: PromptImportResult | null; error: string | null }> {
+  const now = new Date().toISOString()
+  const nextVersion = await nextPromptVersion(supabase, prompt.id)
+
+  await supabase
+    .from('prompt_library_versions')
+    .update({ status: 'archived', updated_at: now })
+    .eq('prompt_id', prompt.id)
+    .eq('status', 'published')
+
+  const { error: versionError } = await supabase.from('prompt_library_versions').insert({
+    prompt_id: prompt.id,
+    version: nextVersion,
+    status: 'published',
+    prompt_body: promptBody,
+    description: prompt.description,
+    created_by: adminId,
+    created_at: now,
+    updated_at: now,
+    published_at: now,
+  })
+
+  if (versionError) {
+    return { data: null, error: versionError.message }
+  }
+
+  await supabase.from('prompt_library').update({ updated_at: now }).eq('id', prompt.id)
+
+  return {
+    data: {
+      slug,
+      category,
+      promptId: prompt.id,
+      version: nextVersion,
+      status: 'republished',
+    },
+    error: null,
+  }
+}
+
 /**
  * Import one prompt as version 1 with status=published.
  * Preserves prompt_body whitespace exactly.
@@ -113,17 +178,44 @@ export async function importPublishedPrompt(
   supabase: SupabaseClient,
   adminId: string | null,
   input: PromptImportInput,
-  options: { skipIfCategoryPublished?: boolean } = {}
+  options: { skipIfCategoryPublished?: boolean; republishIfChanged?: boolean } = {}
 ): Promise<{ data: PromptImportResult | null; error: string | null }> {
   const validation = validatePromptImportInput(input)
   if (validation) return { data: null, error: validation }
 
   const slug = input.slug.trim()
   const skipIfCategoryPublished = options.skipIfCategoryPublished ?? true
+  const republishIfChanged = options.republishIfChanged ?? false
 
   if (skipIfCategoryPublished) {
     const existingForCategory = await findActivePromptByCategory(supabase, input.category)
     if (existingForCategory?.published_version) {
+      if (
+        republishIfChanged &&
+        existingForCategory.published_version.prompt_body !== input.prompt_body
+      ) {
+        return republishPromptBody(
+          supabase,
+          adminId,
+          existingForCategory,
+          input.prompt_body,
+          input.category,
+          existingForCategory.slug
+        )
+      }
+      if (existingForCategory.published_version.prompt_body === input.prompt_body) {
+        return {
+          data: {
+            slug: existingForCategory.slug,
+            category: input.category,
+            promptId: existingForCategory.id,
+            version: existingForCategory.published_version.version,
+            status: 'skipped',
+            reason: 'Published prompt unchanged for this category.',
+          },
+          error: null,
+        }
+      }
       return {
         data: {
           slug: existingForCategory.slug,
@@ -227,7 +319,7 @@ export async function importPublishedPrompts(
   supabase: SupabaseClient,
   adminId: string | null,
   inputs: PromptImportInput[],
-  options: { skipIfCategoryPublished?: boolean } = {}
+  options: { skipIfCategoryPublished?: boolean; republishIfChanged?: boolean } = {}
 ): Promise<PromptImportBatchResult> {
   const imported: PromptImportResult[] = []
   const errors: PromptImportBatchResult['errors'] = []
@@ -289,14 +381,20 @@ export type PromptImportVerification = {
   categories: Record<ImportablePromptCategory, { slug: string; version: number } | null>
 }
 
-/** Verify all importable categories have an active published prompt. */
+/** Verify importable categories have an active published prompt. */
 export async function verifyImportedPrompts(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  options?: { categories?: readonly ImportablePromptCategory[] }
 ): Promise<PromptImportVerification> {
+  const categoriesToCheck = options?.categories ?? IMPORTABLE_PROMPT_CATEGORIES
   const categories = {} as PromptImportVerification['categories']
   const missingCategories: ImportablePromptCategory[] = []
 
   for (const category of IMPORTABLE_PROMPT_CATEGORIES) {
+    categories[category] = null
+  }
+
+  for (const category of categoriesToCheck) {
     const prompt = await findActivePromptByCategory(supabase, category)
     if (prompt?.published_version) {
       categories[category] = {
@@ -321,35 +419,36 @@ export async function verifyImportedPrompts(
 
 export async function loadProductionPromptManifest(
   manifestPath: string
-): Promise<{ inputs: PromptImportInput[]; error: string | null }> {
+): Promise<{ inputs: PromptImportInput[]; skippedEmpty: string[]; error: string | null }> {
   let raw: string
   try {
     raw = await readFile(manifestPath, 'utf8')
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to read manifest.'
-    return { inputs: [], error: message }
+    return { inputs: [], skippedEmpty: [], error: message }
   }
 
   let manifest: ProductionPromptManifest
   try {
     manifest = JSON.parse(raw) as ProductionPromptManifest
   } catch {
-    return { inputs: [], error: 'Manifest is not valid JSON.' }
+    return { inputs: [], skippedEmpty: [], error: 'Manifest is not valid JSON.' }
   }
 
   if (!Array.isArray(manifest.prompts) || manifest.prompts.length === 0) {
-    return { inputs: [], error: 'Manifest must include a non-empty prompts array.' }
+    return { inputs: [], skippedEmpty: [], error: 'Manifest must include a non-empty prompts array.' }
   }
 
   const baseDir = path.dirname(manifestPath)
   const inputs: PromptImportInput[] = []
+  const skippedEmpty: string[] = []
 
   for (const entry of manifest.prompts) {
     if (!entry.slug?.trim()) {
-      return { inputs: [], error: 'Each manifest entry requires a slug.' }
+      return { inputs: [], skippedEmpty: [], error: 'Each manifest entry requires a slug.' }
     }
     if (!isImportablePromptCategory(entry.category)) {
-      return { inputs: [], error: `Unsupported category "${entry.category}" in manifest.` }
+      return { inputs: [], skippedEmpty: [], error: `Unsupported category "${entry.category}" in manifest.` }
     }
 
     let promptBody: string
@@ -361,10 +460,15 @@ export async function loadProductionPromptManifest(
         promptBody = await readFile(filePath, 'utf8')
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to read prompt file.'
-        return { inputs: [], error: `Could not read ${entry.file}: ${message}` }
+        return { inputs: [], skippedEmpty: [], error: `Could not read ${entry.file}: ${message}` }
       }
     } else {
-      return { inputs: [], error: `Entry "${entry.slug}" requires file or prompt_body.` }
+      return { inputs: [], skippedEmpty: [], error: `Entry "${entry.slug}" requires file or prompt_body.` }
+    }
+
+    if (!promptBody.trim()) {
+      skippedEmpty.push(entry.slug.trim())
+      continue
     }
 
     inputs.push({
@@ -376,15 +480,17 @@ export async function loadProductionPromptManifest(
     })
   }
 
-  return { inputs, error: null }
+  return { inputs, skippedEmpty, error: null }
 }
 
 export async function importProductionPromptManifest(
   supabase: SupabaseClient,
   adminId: string | null,
   manifestPath: string,
-  options: { skipIfCategoryPublished?: boolean } = {}
-): Promise<PromptImportBatchResult & { verification: PromptImportVerification }> {
+  options: { skipIfCategoryPublished?: boolean; republishIfChanged?: boolean } = {}
+): Promise<
+  PromptImportBatchResult & { verification: PromptImportVerification; skippedEmpty: string[] }
+> {
   const loaded = await loadProductionPromptManifest(manifestPath)
   if (loaded.error) {
     const counts = await countPromptLibraryPrompts(supabase)
@@ -394,18 +500,20 @@ export async function importProductionPromptManifest(
       promptCount: counts.promptCount,
       publishedPromptCount: counts.publishedPromptCount,
       verification: await verifyImportedPrompts(supabase),
+      skippedEmpty: [],
     }
   }
 
   const batch = await importPublishedPrompts(supabase, adminId, loaded.inputs, options)
   const verification = await verifyImportedPrompts(supabase)
-  return { ...batch, verification }
+  return { ...batch, verification, skippedEmpty: loaded.skippedEmpty }
 }
 
 export function summarizeImportBatch(result: PromptImportBatchResult): string {
   const created = result.imported.filter((r) => r.status === 'created').length
+  const republished = result.imported.filter((r) => r.status === 'republished').length
   const skipped = result.imported.filter((r) => r.status === 'skipped').length
-  return `created=${created}, skipped=${skipped}, errors=${result.errors.length}, prompts=${result.promptCount}, published=${result.publishedPromptCount}`
+  return `created=${created}, republished=${republished}, skipped=${skipped}, errors=${result.errors.length}, prompts=${result.promptCount}, published=${result.publishedPromptCount}`
 }
 
 export type { PromptLibraryWithVersions }

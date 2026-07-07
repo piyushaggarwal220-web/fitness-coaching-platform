@@ -13,6 +13,9 @@ import {
   getCheckinStatus,
   getPlanStatus,
 } from '@/lib/coach-utils';
+import { ComplexityHistoryTimeline } from '@/components/complexity/ComplexityHistoryTimeline';
+import { ComplexityScoreCard } from '@/components/complexity/ComplexityScoreCard';
+import { CoachClientProfileEdit } from '@/components/coach/CoachClientProfileEdit';
 import type { Coach, CoachClientDetail, Workout } from '@/types/database';
 
 const supabase = createClient();
@@ -155,6 +158,19 @@ export default function CoachClientDetailPage() {
           )}
         </div>
 
+        <ComplexityScoreCard
+          score={client.complexity_score}
+          tier={client.complexity_tier}
+          previousScore={client.complexity_previous_score}
+          scoreChange={client.complexity_score_change}
+          lastCalculatedAt={client.complexity_last_calculated_at}
+        />
+
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Complexity History</h2>
+          <ComplexityHistoryTimeline clientId={client.id} />
+        </div>
+
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>Profile</h2>
           <div style={styles.infoGrid}>
@@ -167,6 +183,7 @@ export default function CoachClientDetailPage() {
             <InfoRow label="Coach assignment" value={coach?.name || 'Assigned to you'} />
             <InfoRow label="Profile updated" value={formatDate(client.updated_at)} />
           </div>
+          <CoachClientProfileEdit client={client} onSaved={setClient} />
         </div>
 
         <div style={styles.section}>

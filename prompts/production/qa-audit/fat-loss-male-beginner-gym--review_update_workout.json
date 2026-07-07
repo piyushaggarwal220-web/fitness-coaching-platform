@@ -1,0 +1,46 @@
+{
+  "caseId": "fat-loss-male-beginner-gym--review_update_workout",
+  "personaId": "fat-loss-male-beginner-gym",
+  "personaLabel": "Male beginner, gym",
+  "group": "Fat Loss",
+  "actionId": "review_update_workout",
+  "checkinScenario": "high_hunger",
+  "rendered": "**Upper/Lower Split – 4 Days Per Week**\n\nYou've completed your foundation phase with solid progress. We're now shifting to a structured upper/lower split to increase training frequency per muscle group while keeping session length around 60 minutes. Volume has been increased by approximately 15% through added sets and slight rep adjustments. Continue focusing on form and progressive overload.\n\n**Day 1 – Upper Body (Push Focus)**\n1. Barbell Bench Press – 4 sets x 8 reps\n2. Dumbbell Shoulder Press – 3 sets x 10 reps\n3. Cable Tricep Pushdown – 3 sets x 12 reps\n4. Dumbbell Lateral Raise – 3 sets x 12 reps\n5. Cable Chest Fly – 3 sets x 12 reps\n\n**Day 2 – Lower Body (Quad Focus)**\n1. Barbell Back Squat – 4 sets x 8 reps\n2. Leg Press – 3 sets x 12 reps\n3. Walking Dumbbell Lunges – 3 sets x 10 reps per leg\n4. Leg Extension (machine or cable) – 3 sets x 15 reps\n5. Standing Calf Raise – 3 sets x 15 reps\n\n**Day 3 – Upper Body (Pull Focus)**\n1. Barbell Bent-Over Row – 4 sets x 8 reps\n2. Lat Pulldown (cable) – 4 sets x 10 reps\n3. Dumbbell Hammer Curl – 3 sets x 12 reps\n4. Cable Face Pull – 3 sets x 15 reps\n5. Dumbbell Shrug – 3 sets x 12 reps\n\n**Day 4 – Lower Body (Posterior Focus)**\n1. Romanian Deadlift (barbell or dumbbell) – 4 sets x 10 reps\n2. Leg Curl (machine or cable) – 4 sets x 12 reps\n3. Bulgarian Split Squat (dumbbells) – 3 sets x 10 reps per leg\n4. Cable Pull-Through – 3 sets x 15 reps\n5. Seated Calf Raise – 3 sets x 15 reps\n\n**Rest Days:** 3 days per week. Space training days evenly (e.g., Mon/Tue/Thu/Fri or Mon/Wed/Fri/Sat).\n\n**Tempo & Rest:**\n- Control the eccentric (lowering) phase: 2–3 seconds\n- Rest 90–120 seconds between compound sets, 60–90 seconds for isolation exercises\n- Aim to increase weight by 2.5–5% when you hit the top end of the rep range with good form\n\n**Warm-Up (5–7 minutes):**\n- 3 minutes light cardio (treadmill walk or bike)\n- Dynamic stretches: arm circles, leg swings, bodyweight squats\n- 1–2 light warm-up sets for your first exercise\n\n**Cool-Down (3–5 minutes):**\n- Light stretching for major muscle groups worked that day\n\nThis split ensures balanced volume across push/pull/legs while keeping your favourite movements (squats and rows) prominent. Track your weights and aim for small weekly improvements.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 1624,
+  "outputTokens": 983,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Arjun).",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 4-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7.333333333333333,
+    "overallAverage": 7.416666666666666
+  },
+  "generatedAt": "2026-07-07T20:54:51.236Z"
+}

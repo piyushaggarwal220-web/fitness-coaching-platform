@@ -139,9 +139,11 @@ export default function AdminPromptsPage() {
               <option value="all">All categories</option>
               <option value="system_prompt">System Prompt</option>
               <option value="initial_diet">Initial Diet</option>
-              <option value="initial_workout">Initial Workout</option>
+              <option value="initial_workout">Initial Workout — Gym</option>
+              <option value="initial_workout_home">Initial Workout — Home</option>
               <option value="weekly_diet_update">Weekly Diet Update</option>
-              <option value="weekly_workout_update">Weekly Workout Update</option>
+              <option value="weekly_workout_update">Weekly Workout Update — Gym</option>
+              <option value="weekly_workout_update_home">Weekly Workout Update — Home</option>
               <option value="mid_week_analysis">Mid-week Analysis</option>
               <option value="coach_message">Coach Message</option>
               <option value="future_prompts">Future Prompts</option>

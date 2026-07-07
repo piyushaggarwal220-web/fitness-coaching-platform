@@ -1,3 +1,4 @@
+import { hasClientEntitlement } from '@/lib/entitlements'
 import type { Coach, OnboardingProfile, Plan, Purchase } from '@/types/database'
 
 const PLAN_DELIVERY_HOURS = 24
@@ -41,7 +42,7 @@ export function getClientDashboardStatus(params: {
   activePlan: Plan | null
 }): ClientDashboardStatus {
   const { profile, purchase, coach, activePlan } = params
-  const paymentConfirmed = profile.payment_confirmed === true || Boolean(purchase)
+  const paymentConfirmed = hasClientEntitlement(profile) || Boolean(purchase)
   const onboardingComplete = profile.onboarding_complete === true
   const coachAssigned = Boolean(profile.coach_id && coach?.name)
   const expectedDeliveryDate = getExpectedPlanDeliveryDate(profile)

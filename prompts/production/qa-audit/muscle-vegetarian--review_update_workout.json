@@ -1,0 +1,46 @@
+{
+  "caseId": "muscle-vegetarian--review_update_workout",
+  "personaId": "muscle-vegetarian",
+  "personaLabel": "Vegetarian muscle gain",
+  "group": "Muscle Gain",
+  "actionId": "review_update_workout",
+  "checkinScenario": "high_hunger",
+  "rendered": "Your new split progresses from single body parts to a 2-body-part structure, rotating between Upper/Lower and Full Body sessions. You'll maintain your 60-minute session time while introducing new exercise variations to shock your muscles after 4 weeks on the foundation phase. Volume increases by 15% through additional sets on compound movements. Continue with your favorite squats and rows as anchors, and avoid burpees as requested.\n\nDay 1 – Upper A: Barbell rows 4x8, incline dumbbell bench 4x8, cable lateral raise 3x12, barbell curls 3x10.\n\nDay 2 – Lower A: Barbell squat 4x8, leg press 4x8, leg curl 3x12, calf raises 3x15.\n\nDay 3 – Upper B: Dumbbell bench press 4x8, barbell bent-over rows 4x8, cable chest fly 3x12, tricep rope pushdown 3x10.\n\nDay 4 – Lower B: Goblet squat 3x10, Romanian deadlift 3x10, leg extension 3x12, walking lunges 3x10 per leg.\n\nCardio: Continue 3x 30-minute brisk walks on non-consecutive days. Maintain even spacing throughout the week.\n\nHigh hunger Thu-Sun signals calorie deficit. Add protein/fiber to breakfast (Greek yogurt + poha), lunch (extra dal), and snacks (roasted chana + paneer). Distribute weekend meals consistently—avoid large deficit gaps.",
+  "model": "claude-haiku-4-5-20251001",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 1522,
+  "outputTokens": 491,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 7,
+      "progression": 8,
+      "recovery": 5,
+      "equipmentSuitability": 8,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Ananya).",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Ignored preferred exercises",
+        "severity": "medium",
+        "description": "Client dislikes \"burpees\" but it appears in plan.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7,
+    "overallAverage": 7.25
+  },
+  "generatedAt": "2026-07-07T21:14:09.881Z"
+}

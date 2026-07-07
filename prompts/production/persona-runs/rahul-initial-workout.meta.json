@@ -1,0 +1,35 @@
+{
+  "persona": "Rahul — initial workout (muscle gain)",
+  "actionId": "initial_workout",
+  "model": "mock-plan-v1",
+  "promptVersion": "initial-workout-prompt@v3+system-prompt@v1",
+  "inputTokens": 0,
+  "outputTokens": 0,
+  "checks": [
+    {
+      "id": "uses_client_name",
+      "pass": true,
+      "detail": "Mentions Rahul"
+    },
+    {
+      "id": "has_exercise_structure",
+      "pass": true,
+      "detail": "Looks for sets/reps or named exercises"
+    },
+    {
+      "id": "has_warmup_or_recovery",
+      "pass": true,
+      "detail": "Looks for warmup/recovery guidance"
+    },
+    {
+      "id": "respects_injury",
+      "pass": true,
+      "detail": "Should avoid aggravating stated injury patterns"
+    },
+    {
+      "id": "minimum_length",
+      "pass": true,
+      "detail": "Output length 1201 chars (need >= 800)"
+    }
+  ]
+}

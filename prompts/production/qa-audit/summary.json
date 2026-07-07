@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-07-07T20:55:04.131Z",
+  "personas": 1,
+  "cases": 4,
+  "successful": 4,
+  "failed": 0,
+  "artifacts": [
+    {
+      "id": "fat-loss-male-beginner-gym--initial_diet",
+      "score": 7.125,
+      "issues": 1
+    },
+    {
+      "id": "fat-loss-male-beginner-gym--initial_workout",
+      "score": 7.666666666666666,
+      "issues": 2
+    },
+    {
+      "id": "fat-loss-male-beginner-gym--review_update_diet",
+      "score": 6.910714285714286,
+      "issues": 1
+    },
+    {
+      "id": "fat-loss-male-beginner-gym--review_update_workout",
+      "score": 7.416666666666666,
+      "issues": 2
+    }
+  ]
+}

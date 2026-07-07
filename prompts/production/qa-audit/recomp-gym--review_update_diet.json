@@ -1,0 +1,41 @@
+{
+  "caseId": "recomp-gym--review_update_diet",
+  "personaId": "recomp-gym",
+  "personaLabel": "Gym recomposition",
+  "group": "Body Recomposition",
+  "actionId": "review_update_diet",
+  "checkinScenario": "weight_unchanged",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: **UPDATED DIET PLAN FOR NEHA KAPOOR**\n\nNeha, your scale hasn't moved in two weeks and your adherence dips on weekends — this tells me exactly where we need to tighten up. You're doing well during the week, but those weekend slip-ups are stalling your progress. Let's address this head-on with a structured plan and some non-negotiables.\n\n**DAILY CALORIE TARGET: ~1,850 kcal | PROTEIN TARGET: 135g**\n\n---\n\n**MEAL 1 — BREAKFAST (8:30 AM) — ~450 kcal**\n- 60g oats (dry weight) cooked in water\n- 200ml low-fat milk (or unsweetened soy milk)\n- 1 scoop whey protein (25g protein) mixed in or on the side\n- 1 small banana or 10 almonds\n- Black coffee or green tea (no sugar)\n\n**MEAL 2 — MID-MORNING SNACK (11:00 AM) — ~180 kcal**\n- 150g Greek yogurt (unsweetened) OR 100g paneer (raw weight)\n- 5-6 almonds\n\n**MEAL 3 — LUNCH (1:30 PM) — ~550 kcal**\n- 80g rice (cooked weight ~200g) OR 2 medium rotis\n- 150g dal (moong/masoor/toor — measured cooked)\n- 150g mixed vegetable sabzi (lauki, beans, capsicum, spinach — minimal oil)\n- Small bowl of curd (100g)\n- Side salad: cucumber, tomato, carrot (unlimited, no dressing)\n\n**MEAL 4 — EVENING SNACK (6:30 PM) — ~200 kcal**\n- Tea with 100ml milk (no sugar or use stevia)\n- 30g roasted chana OR 1 small bowl of sprouts (moong) with lemon and chaat masala\n\n**MEAL 5 — DINNER (9:00 PM) — ~470 kcal**\n- 2 medium rotis (whole wheat)\n- 100g paneer bhurji or tofu stir-fry (measured raw, cooked with minimal oil)\n- 150g vegetable sabzi (different from lunch — try palak, bhindi, or baingan)\n- Large bowl of salad with lemon (cucumber, tomato, onion, radish)\n- Optional: 50g curd on the side\n\n---\n\n**WEEKEND PROTOCOL (NON-NEGOTIABLE):**\n\nNeha, weekends are where you're losing the battle. Here's what changes NOW:\n\n1. **Pre-log your meals Saturday and Sunday morning.** No winging it.\n2. **One flexible meal allowed** (Saturday OR Sunday lunch/dinner) — but stay within 2,200 kcal for the day. That means if you eat out, compensate by reducing portions at other meals.\n3. **No mindless snacking.** If it's not on this plan, it doesn't go in your mouth unless you've tracked it.\n4. **Alcohol = empty calories.** If you drink, account for it (1 drink = skip your evening snack).\n\n---\n\n**HYDRATION & COMPLIANCE:**\n- Minimum 3 liters of water daily (non-negotiable).\n- Track your food in an app (MyFitnessPal or HealthifyMe) — at least on weekends.\n- Weigh yourself every Monday morning, same time, after using the washroom.\n\n---\n\n**ADJUSTMENTS FROM LAST WEEK:**\n- **Reduced calories by ~150 kcal** to create a small deficit without being aggressive.\n- **Increased protein slightly** to 135g to preserve muscle during recomposition.\n- **Structured weekend guidelines** because that's where you're leaking calories.\n\n---\n\n**COOKING TIPS:**\n- Use a kitchen scale — \"1 roti\" can vary by 50+ kcal depending on size.\n- Cook sabzi with 1 tsp oil per serving max; use non-stick pans.\n- Paneer: buy low-fat varieties or press regular paneer between paper towels to remove excess fat.\n- Dal: no tadka with excess ghee — keep it simple with jeera and hing.\n\n---\n\n**YOUR ACTION ITEMS THIS WEEK:**\n1. ✅ Follow this plan 6 out of 7 days MINIMUM (preferably 7/7).\n2. ✅ Hit 6,000+ steps daily (up from 5,000 — non-negotiable).\n3. ✅ Complete all 3 cardio sessions (30 min brisk walk).\n4. ✅ Track your food on weekends in an app.\n5. ✅ Sleep 7-8 hours — no compromise.\n\n---\n\n**COACH'S REAL TALK:**\n\nNeha, you're at a crossroads. Two weeks of no progress means your body is in maintenance, not deficit. You have the tools, the plan, and the capability — but consistency is your currency right now. Weekday discipline is great, but 2 days of loose eating can undo 5 days of hard work.\n\nI'm not asking for perfection. I'm asking for **awareness and accountability**. You said you struggle with consistency — this week, prove to yourself you can do better. Your training is solid (7/10 performance is good), but nutrition is 70% of recomposition.\n\nLet's see the scale move next week. I believe you can do this, but you need to believe it too. No more \"weekends are hard\" — weekends are just two more days. Treat them like Monday.\n\nStick to this plan, check in honestly, and we'll adjust as needed. You've got this — now go execute. 💪",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1382,
+  "outputTokens": 1619,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 7,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 9,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 5
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 6.428571428571429,
+    "overallAverage": 6.839285714285714
+  },
+  "generatedAt": "2026-07-07T21:18:55.095Z"
+}

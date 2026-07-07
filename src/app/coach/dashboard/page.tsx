@@ -133,6 +133,21 @@ export default function CoachDashboard() {
           </div>
         </div>
 
+        <div style={styles.statsGrid}>
+          <button type="button" style={{ ...styles.statCard, ...styles.complexityCard, borderLeft: '4px solid #28a745' }} onClick={() => router.push('/coach/clients?tier=low')}>
+            <div style={styles.statNumber}>{clients.filter((c) => c.complexity_tier === 'low').length}</div>
+            <div style={styles.statLabel}>Low Complexity</div>
+          </button>
+          <button type="button" style={{ ...styles.statCard, ...styles.complexityCard, borderLeft: '4px solid #ffc107' }} onClick={() => router.push('/coach/clients?tier=medium')}>
+            <div style={styles.statNumber}>{clients.filter((c) => c.complexity_tier === 'medium').length}</div>
+            <div style={styles.statLabel}>Medium Complexity</div>
+          </button>
+          <button type="button" style={{ ...styles.statCard, ...styles.complexityCard, borderLeft: '4px solid #dc3545' }} onClick={() => router.push('/coach/clients?tier=high')}>
+            <div style={styles.statNumber}>{clients.filter((c) => c.complexity_tier === 'high').length}</div>
+            <div style={styles.statLabel}>High Complexity</div>
+          </button>
+        </div>
+
         <div style={styles.checkinBanner}>
           <div>
             <h2 style={{ margin: 0, fontSize: 18 }}>Pending check-in reviews</h2>
@@ -169,6 +184,15 @@ export default function CoachDashboard() {
                   <div style={styles.clientInfo}>
                     <div style={styles.clientName}>{client.name || client.email}</div>
                     <div style={styles.clientStatus}>
+                      {client.complexity_score != null && client.complexity_tier && (
+                        <span style={{
+                          backgroundColor: client.complexity_tier === 'low' ? '#d4edda' : client.complexity_tier === 'medium' ? '#fff3cd' : '#f8d7da',
+                          color: client.complexity_tier === 'low' ? '#155724' : client.complexity_tier === 'medium' ? '#856404' : '#721c24',
+                          padding: '2px 10px', borderRadius: 12, fontSize: 12,
+                        }}>
+                          {client.complexity_score}/100
+                        </span>
+                      )}
                       {client.checkin_overdue && <span style={styles.badgeOverdue}>Overdue</span>}
                       {client.checkin_awaiting && <span style={styles.badgeAwaiting}>Awaiting</span>}
                       {!client.plan_delivered && <span style={styles.badgeNew}>New</span>}
@@ -199,6 +223,7 @@ const styles: Record<string, CSSProperties> = {
   subtitle: { color: '#666' },
   statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 30 },
   statCard: { backgroundColor: 'white', padding: 20, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', borderLeft: '4px solid #1a1a2e' },
+  complexityCard: { cursor: 'pointer', textAlign: 'left', width: '100%', border: 'none' },
   statNumber: { fontFamily: 'Syne, sans-serif', fontSize: 32, fontWeight: 800, color: '#1a1a2e' },
   statLabel: { fontSize: 14, color: '#666' },
   statSub: { fontSize: 12, color: '#999', marginTop: 4 },

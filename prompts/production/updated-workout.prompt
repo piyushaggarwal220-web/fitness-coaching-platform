@@ -1,17 +1,3 @@
-[CLIENT DETAILS]
-
-[ONBOARDING ANSWERS]
-
-[WEEKLY CHECK-IN]
-
-[KNOWLEDGE BASE]
-
-[COMPLEXITY]
-
-[COACH NOTES]
-
-[ACTIVE PLAN]
-
-Update the workout plan based on the latest check-in.
-Adjust workout_plan and cardio sessions.
-Keep nutrition_plan with placeholder macros and empty meals.
+Now give me next week workout plan for him, copy paste format again. If the person is following the the split for a month, make a new split or him and increase intensity, if they are following single body part, push it to 2 body parts, if following 2 body parts, change to 3. If following 3 body parts a day, push to 4. And if already following 4 body parts a day, start cycle again with single body part per day. Make sure the time taken to workout is similar to usual, keep volume similar of the workout, but increase by 15% if completed a month.
+Don't mention the number of week it is, just skip mentioning it
+if the person is following the workout current split from last 4 weeks, give a new split, similar but different enough to give shock to the muscles.

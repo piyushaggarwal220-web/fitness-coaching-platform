@@ -13,9 +13,11 @@ import type {
 export const PROMPT_CATEGORIES: { value: PromptLibraryCategory; label: string }[] = [
   { value: 'system_prompt', label: 'System Prompt' },
   { value: 'initial_diet', label: 'Initial Diet' },
-  { value: 'initial_workout', label: 'Initial Workout' },
+  { value: 'initial_workout', label: 'Initial Workout — Gym' },
+  { value: 'initial_workout_home', label: 'Initial Workout — Home' },
   { value: 'weekly_diet_update', label: 'Weekly Diet Update' },
-  { value: 'weekly_workout_update', label: 'Weekly Workout Update' },
+  { value: 'weekly_workout_update', label: 'Weekly Workout Update — Gym' },
+  { value: 'weekly_workout_update_home', label: 'Weekly Workout Update — Home' },
   { value: 'mid_week_analysis', label: 'Mid-week Analysis' },
   { value: 'coach_message', label: 'Coach Message' },
   { value: 'future_prompts', label: 'Future Prompts' },

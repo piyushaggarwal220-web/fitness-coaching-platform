@@ -1,0 +1,46 @@
+{
+  "caseId": "muscle-skinny-beginner--review_update_workout",
+  "personaId": "muscle-skinny-beginner",
+  "personaLabel": "Skinny beginner",
+  "group": "Muscle Gain",
+  "actionId": "review_update_workout",
+  "checkinScenario": "strength_increased",
+  "rendered": "Amit, you've completed 4 weeks of Phase 1 with excellent adherence and strength gains. We're now progressing to a 4-day Upper/Lower/Upper/Lower split to increase frequency and volume while maintaining your 60-minute session target. This structure allows better recovery, more frequent stimulus on each muscle group, and aligns with your goal to reach 68kg. We're increasing overall volume by 15% through additional sets on compound lifts and strategic exercise additions.\n\nDay 1 – Upper A (Horizontal Press Focus):\n- Barbell bench press: 4×8\n- Dumbbell rows: 4×8\n- Incline dumbbell press: 3×10\n- Cable lateral raise: 3×12\n- Barbell curl (or cable curl): 2×10\nRest 90–120 seconds on compounds, 60 seconds on accessories.\n\nDay 2 – Lower A (Squat Focus):\n- Barbell back squat: 4×8\n- Leg press: 3×10\n- Romanian deadlift: 3×10\n- Leg curl: 3×12\n- Calf raise (machine or barbell): 2×15\nRest 2 minutes on squat, 90 seconds on leg press, 60 seconds on accessories.\n\nDay 3 – Upper B (Vertical Pull Focus):\n- Barbell rows: 4×8\n- Dumbbell bench press: 4×8\n- Lat pulldown (or assisted pull-ups): 3×10\n- Machine chest fly: 3×12\n- Face pulls: 3×15\nRest 90–120 seconds on compounds, 60 seconds on accessories.\n\nDay 4 – Lower B (Deadlift & Quad Focus):\n- Barbell deadlift (or trap bar): 3×6\n- Goblet squat: 3×12\n- Leg extension: 3×12\n- Walking lunges (dumbbell): 3×10 per leg\n- Leg curl: 2×12\nRest 2–2.5 minutes on deadlift, 90 seconds on goblet squat, 60 seconds on accessories.\n\nCardio: Maintain 3×30 min brisk walks on non-training days or post-session (optional, 10–15 min if added post-workout).\n\nProgression cues: Aim to add 2.5kg to main lifts each week. If you hit all reps cleanly, increase weight next session. Maintain strict form—no ego lifting.\n\nUL/UL split introduced. Volume +15%. Excellent check-in metrics—maintain sleep and hydration. Monitor hunger cues given underweight status and muscle-gain goal. Recheck weight in 2 weeks.",
+  "model": "claude-haiku-4-5-20251001",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 1549,
+  "outputTokens": 807,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 4-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7.166666666666667,
+    "overallAverage": 7.333333333333334
+  },
+  "generatedAt": "2026-07-07T21:09:47.887Z"
+}

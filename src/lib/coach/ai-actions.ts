@@ -5,8 +5,6 @@ export type CoachAiActionId =
   | 'initial_workout'
   | 'review_update_diet'
   | 'review_update_workout'
-  | 'review_analyze_checkin'
-  | 'review_coach_message'
 
 export type CoachAiActionScope = 'initial' | 'weekly'
 
@@ -37,13 +35,6 @@ export const INITIAL_PLAN_ACTIONS: CoachAiActionDefinition[] = [
 
 export const WEEKLY_COACHING_ACTIONS: CoachAiActionDefinition[] = [
   {
-    id: 'review_analyze_checkin',
-    label: 'Analyze check-in',
-    description: 'Review trends, adherence, and flags from this check-in',
-    scope: 'weekly',
-    requiresCheckin: true,
-  },
-  {
     id: 'review_update_diet',
     label: 'Update diet',
     description: 'Adjust nutrition based on the latest check-in',
@@ -54,13 +45,6 @@ export const WEEKLY_COACHING_ACTIONS: CoachAiActionDefinition[] = [
     id: 'review_update_workout',
     label: 'Update workout',
     description: 'Adjust training based on performance and recovery',
-    scope: 'weekly',
-    requiresCheckin: true,
-  },
-  {
-    id: 'review_coach_message',
-    label: 'Generate coach message',
-    description: 'Draft a client-facing message for this check-in',
     scope: 'weekly',
     requiresCheckin: true,
   },
@@ -165,30 +149,6 @@ export function buildActionCoachInstructions(
           planContext(activePlan ?? null, ['workout']),
           'Adjust workout_plan and cardio sessions.',
           'Keep nutrition_plan with placeholder macros and empty meals.',
-        ]
-          .filter(Boolean)
-          .join('\n\n'),
-        coachNote
-      )
-    case 'review_analyze_checkin':
-      return appendNote(
-        [
-          'Analyze this check-in for the coach. Put a structured analysis in coach_notes:',
-          'trends, adherence, energy/hunger flags, and recommended focus.',
-          checkin ? checkinContext(checkin) : '',
-          'Use placeholder empty structures for workout_plan.days and nutrition_plan.meals.',
-        ]
-          .filter(Boolean)
-          .join('\n\n'),
-        coachNote
-      )
-    case 'review_coach_message':
-      return appendNote(
-        [
-          'Write a warm, professional client-facing check-in message in coach_notes.',
-          'Include encouragement, one key win, and one focus for next week.',
-          checkin ? checkinContext(checkin) : '',
-          'Use placeholder empty structures for workout_plan.days and nutrition_plan.meals.',
         ]
           .filter(Boolean)
           .join('\n\n'),

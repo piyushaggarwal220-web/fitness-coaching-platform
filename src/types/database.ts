@@ -17,6 +17,11 @@ export type ClientProfile = {
   checkin_overdue: boolean | null
   plan_delivered: boolean | null
   updated_at?: string | null
+  complexity_score?: number | null
+  complexity_tier?: 'low' | 'medium' | 'high' | null
+  complexity_previous_score?: number | null
+  complexity_score_change?: number | null
+  complexity_last_calculated_at?: string | null
 }
 
 export type CoachClientDetail = ClientProfile & {
@@ -28,6 +33,8 @@ export type CoachClientDetail = ClientProfile & {
   diet_preference?: string | null
   injuries?: string | null
   medical_notes?: string | null
+  complexity_previous_score?: number | null
+  complexity_last_calculated_at?: string | null
 }
 
 /** Structured coaching intake stored in profiles.onboarding_data */
@@ -108,6 +115,7 @@ export type Profile = {
   onboarding_completed_at?: string | null
   onboarding_data?: OnboardingData | null
   payment_confirmed?: boolean | null
+  access_source?: 'purchase' | 'admin_trial' | null
   progress_photo_front?: string | null
   progress_photo_side?: string | null
   progress_photo_back?: string | null
@@ -117,6 +125,13 @@ export type Profile = {
   checkin_awaiting?: boolean | null
   checkin_overdue?: boolean | null
   plan_delivered?: boolean | null
+  complexity_score?: number | null
+  complexity_raw_score?: number | null
+  complexity_tier?: 'low' | 'medium' | 'high' | null
+  complexity_last_calculated_at?: string | null
+  complexity_previous_score?: number | null
+  complexity_previous_tier?: 'low' | 'medium' | 'high' | null
+  complexity_score_change?: number | null
 }
 
 export type OnboardingProfile = Profile
@@ -243,6 +258,28 @@ export type Checkin = {
   coach_response: string | null
   reviewed: boolean
   reviewed_at: string | null
+}
+
+export type ComplexityScoreHistory = {
+  id: string
+  client_id: string
+  raw_score: number
+  display_score: number
+  tier: 'low' | 'medium' | 'high'
+  previous_raw_score: number | null
+  previous_display_score: number | null
+  previous_tier: 'low' | 'medium' | 'high' | null
+  score_change: number | null
+  trigger_source:
+    | 'onboarding_complete'
+    | 'weekly_checkin'
+    | 'profile_edit_client'
+    | 'profile_edit_coach'
+    | 'profile_edit_admin'
+    | 'manual'
+  reasoning: string[]
+  checkin_id: string | null
+  created_at: string
 }
 
 export type CheckinWithClient = Checkin & {
@@ -453,8 +490,10 @@ export type PromptLibraryCategory =
   | 'system_prompt'
   | 'initial_diet'
   | 'initial_workout'
+  | 'initial_workout_home'
   | 'weekly_diet_update'
   | 'weekly_workout_update'
+  | 'weekly_workout_update_home'
   | 'mid_week_analysis'
   | 'coach_message'
   | 'future_prompts'

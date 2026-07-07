@@ -1,12 +1,6 @@
 {
   "prompts": [
     {
-      "slug": "system-prompt",
-      "category": "system_prompt",
-      "name": "System Prompt",
-      "file": "system-prompt.prompt"
-    },
-    {
       "slug": "initial-diet-prompt",
       "category": "initial_diet",
       "name": "Initial Diet Prompt",
@@ -15,8 +9,14 @@
     {
       "slug": "initial-workout-prompt",
       "category": "initial_workout",
-      "name": "Initial Workout Prompt",
+      "name": "Initial Workout — Gym",
       "file": "initial-workout.prompt"
+    },
+    {
+      "slug": "initial-workout-home-prompt",
+      "category": "initial_workout_home",
+      "name": "Initial Workout — Home",
+      "file": "initial-workout-home.prompt"
     },
     {
       "slug": "updated-diet-prompt",
@@ -27,20 +27,14 @@
     {
       "slug": "updated-workout-prompt",
       "category": "weekly_workout_update",
-      "name": "Updated Workout Prompt",
+      "name": "Updated Workout — Gym",
       "file": "updated-workout.prompt"
     },
     {
-      "slug": "midweek-analysis-prompt",
-      "category": "mid_week_analysis",
-      "name": "Midweek Analysis Prompt",
-      "file": "midweek-analysis.prompt"
-    },
-    {
-      "slug": "coach-message-prompt",
-      "category": "coach_message",
-      "name": "Coach Message Prompt",
-      "file": "coach-message.prompt"
+      "slug": "updated-workout-home-prompt",
+      "category": "weekly_workout_update_home",
+      "name": "Updated Workout — Home",
+      "file": "updated-workout-home.prompt"
     }
   ]
 }

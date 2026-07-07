@@ -1,0 +1,47 @@
+{
+  "caseId": "home-dumbbells-only--review_update_diet",
+  "personaId": "home-dumbbells-only",
+  "personaLabel": "Dumbbells only",
+  "group": "Home Workout",
+  "actionId": "review_update_diet",
+  "checkinScenario": "excellent_adherence",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: DIET PLAN FOR LAKSHMI VENKAT\n\n---\n\nDEAR LAKSHMI,\n\nYour adherence last week was PERFECT — 10/10. That's exactly the discipline needed for muscle gain. However, perfection must continue; one slip week and momentum breaks. Stay locked in.\n\nYour current weight is 63.5 kg. You're on track toward your 62 kg target, but remember: muscle gain means the scale may stall or rise. Track measurements, strength, and how you look—not just the number.\n\nEnergy at 8/10 and hunger at 5/10 is ideal. This means your calories are right. Do NOT reduce them further chasing the scale. Muscle building requires fuel.\n\n---\n\nDAILY NUTRITION TARGETS:\n• Calories: ~2000 kcal\n• Protein: 130g (1g per lb bodyweight minimum)\n• Carbs: 220g (fuel for training + recovery)\n• Fat: 60g (hormone health + satiety)\n\n---\n\nMEAL PLAN (VEGETARIAN):\n\n**BREAKFAST (8:30 AM)**\nOption A: 2 cups poha + 1 cup curd + 1 tbsp ghee + handful peanuts\nOption B: 3 idli + 1 cup sambar + 1 tbsp ghee + 1 boiled egg (if you eat eggs)\nOption C: 1 cup oats + 1 cup milk + 1 tbsp peanut butter + 1 banana\n\nAlternate daily. Each provides ~450 kcal, 15-18g protein.\n\n---\n\n**MID-MORNING SNACK (11:00 AM)** [Optional but recommended]\n1 banana + 20g almonds OR 1 cup Greek yogurt + granola\n~150 kcal, 6g protein\n\n---\n\n**LUNCH (1:30 PM)**\n• 1.5 cups cooked rice (basmati or brown)\n• 1 cup dal (moong, masoor, or chana dal) cooked with 1 tsp ghee\n• 1 cup mixed vegetable sabzi (broccoli, carrots, beans—NOT mushrooms)\n• 100g paneer curry (cooked in 1 tsp oil) OR 1 cup curd rice\n• Side: small salad with lemon\n\nProvides ~550 kcal, 22-25g protein.\n\n---\n\n**EVENING SNACK (6:30 PM)**nOption A: Tea (1 cup) + 1 cup roasted chana + 2 whole wheat biscuits\nOption B: Tea (1 cup) + 1 banana + 15g peanuts\nOption C: 1 cup buttermilk + 1 cup roasted chana\n\nProvides ~180 kcal, 8-10g protein.\n\n---\n\n**DINNER (9:00 PM)**\n• 2-3 whole wheat roti (cooked with ½ tsp ghee)\n• 150g paneer preparation (paneer bhurji, paneer tikka, or paneer curry) OR 1 cup curd rice\n• 1.5 cups cooked vegetables (spinach, bell peppers, tomatoes, zucchini)\n• Side: fresh salad with olive oil dressing\n\nProvides ~500 kcal, 20-24g protein.\n\n---\n\n**HYDRATION:**\n• Minimum 2.5L water daily (you're at 2L—increase by 500ml)\n• 1 cup herbal tea or green tea (optional, no calories)\n\n---\n\nKEY TIPS FOR YOU:\n\n1. **PROTEIN IS NON-NEGOTIABLE:** You hit 130g last week. MAINTAIN THIS. Paneer, dal, curd, and eggs (if you eat them) are your friends. No excuses.\n\n2. **MEAL TIMING MATTERS:** Eat breakfast within 1 hour of waking. Don't skip meals to \"save calories.\" Your hunger at 5/10 shows the plan works—trust it.\n\n3. **WATER INTAKE:** Increase to 2.5L minimum. You're moderately active + training 3x/week. More water = better recovery + clearer skin + better digestion.\n\n4. **CONSISTENCY OVER PERFECTION:** You nailed it last week. But one perfect week doesn't equal results. Results come from 12 weeks of THIS. Same meals, same portions, same discipline.\n\n5. **WEIGH YOUR PORTIONS:** Use a scale for dal, rice, and paneer. \"1 cup\" or \"100g\" must be accurate. Eyeballing leads to drift.\n\n6. **CARBS AROUND TRAINING:** Have your lunch or snack within 2 hours before your evening workout. Fuel matters for performance and recovery.\n\n7. **TRACK YOUR INTAKE:** Log meals in MyFitnessPal or similar. You'll see patterns and catch drift early.\n\n8. **BUDGET ADHERENCE:** This plan costs ~₹150-180/day (within your ₹8000/month budget). Paneer and dal are affordable protein sources—use them.\n\n---\n\nWHAT TO EXPECT:\n• Weight: May stay 63-64 kg for 2-3 weeks (muscle + water retention from training). This is NORMAL.\n• Measurements: Waist may drop 1-2 cm. Chest/arms may gain 0.5-1 cm. These are wins.\n• Strength: Should increase 5-10% week-on-week on main lifts. Track this.\n• Energy: Should remain 8+/10 if you eat enough.\n\n---\n\nIF YOU SLIP:\nOne missed meal = one day off track. One day = one week of stalled progress. You've proven you CAN do this. Now prove you WILL.\n\nYour next check-in is critical. Come back with the same adherence, same measurements tracked, same discipline.\n\nYou've got this. Now execute.\n\nPerfect adherence week 1. Maintain 130g protein, 2000 kcal. Increase water to 2.5L. Scale may plateau—track strength and measurements instead. Stay disciplined.",
+  "model": "claude-haiku-4-5-20251001",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 1303,
+  "outputTokens": 1732,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 4,
+      "goalAlignment": 2
+    },
+    "overall": {
+      "coachingQuality": 6,
+      "professionalism": 8,
+      "personalization": 8,
+      "sendWithoutEdits": 3
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      },
+      {
+        "category": "Contradiction",
+        "severity": "critical",
+        "description": "Vegetarian client but non-veg items appear in diet plan.",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 5.285714285714286,
+    "overallAverage": 5.767857142857142
+  },
+  "generatedAt": "2026-07-07T21:30:55.973Z"
+}

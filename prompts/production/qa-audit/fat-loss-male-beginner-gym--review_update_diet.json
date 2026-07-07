@@ -1,0 +1,41 @@
+{
+  "caseId": "fat-loss-male-beginner-gym--review_update_diet",
+  "personaId": "fat-loss-male-beginner-gym",
+  "personaLabel": "Male beginner, gym",
+  "group": "Fat Loss",
+  "actionId": "review_update_diet",
+  "checkinScenario": "high_hunger",
+  "rendered": "Calories: 0\nProtein: 0g\nCarbs: 0g\nFat: 0g\n\nWeekly Diet Plan: **ARJUN – YOUR UPDATED DIET PLAN**\n\nFirst, let's address the elephant in the room: a 9/10 hunger level and weekend snacking tells me we need to fix your meal structure NOW. You're doing the hard work in the gym, but letting hunger derail you on weekends is costing you progress. This week, we're making strategic changes to keep you full and on track.\n\n**KEY CHANGES THIS WEEK:**\n1. Higher protein and fibre at every meal to crush hunger\n2. Structured weekend meals – no more winging it\n3. Strategic snack timing to prevent evening binges\n4. Slightly higher calories (2100 kcal) to improve adherence while still losing fat\n\n**DAILY NUTRITION TARGETS:**\n- Calories: ~2100 kcal\n- Protein: 140-150g\n- Carbs: 200-220g\n- Fats: 55-65g\n- Water: Minimum 3L daily (non-negotiable)\n\n---\n\n**MEAL 1 – BREAKFAST (8:30 AM)**\n- 3 whole eggs (scrambled/boiled)\n- 1 cup cooked oats with 1 scoop whey protein mixed in\n- 1 small banana\n- Black coffee/green tea\n\n*Why: Protein + fibre combo to keep you full until lunch. The oats-whey mix is a game-changer for satiety.*\n\n---\n\n**MEAL 2 – LUNCH (1:30 PM)**\n- 1.5 cups cooked white rice\n- 1 cup dal (moong/masoor)\n- 150g chicken breast (grilled/curry)\n- 1 bowl mixed vegetable sabzi (lauki, beans, or spinach)\n- 1 cup curd\n- Small side salad (cucumber, tomato, onion)\n\n*Why: Your usual structure but with more chicken and added curd for protein. Veggies add volume without calories.*\n\n---\n\n**MEAL 3 – EVENING SNACK (6:30 PM)**\n- 1 cup tea (no sugar or use stevia)\n- 40g roasted chana\n- 1 apple or 1 orange\n\n*Why: This snack was too light before. Added fruit for fibre and volume to bridge the gap to dinner.*\n\n---\n\n**MEAL 4 – DINNER (9:00 PM)**\n- 3 medium rotis (whole wheat)\n- 150g paneer bhurji or paneer tikka\n- 1 large bowl salad (lettuce, cucumber, tomato, carrots) with lemon\n- 1 bowl vegetable soup OR sautéed veggies (optional but recommended)\n\n*Why: Paneer portion increased, salad portion DOUBLED. Soup/extra veggies = fullness insurance.*\n\n---\n\n**WEEKEND STRATEGY (CRITICAL):**\n\nYour weekends are sabotaging you. Here's your non-negotiable weekend structure:\n\n**Saturday & Sunday:**\n- Follow the SAME meal plan as above\n- ONE flexible meal: Saturday dinner OR Sunday lunch – you can have a moderate treat meal (dosa, biryani, pizza – but ONE plate, not unlimited)\n- NO unplanned snacking. If hungry between meals: carrots, cucumber, or 1 fruit\n- Drink 1 glass of water before every meal\n\n**If cravings hit hard:**\n- Have 1 cup black coffee or green tea\n- Eat 100g low-fat Greek yogurt or hung curd\n- Go for a 10-minute walk\n\n---\n\n**HYDRATION & HABITS:**\n- 3 litres water daily (track it)\n- 1 glass water immediately upon waking\n- 1 glass water 20 minutes before each meal\n- Herbal tea allowed anytime (no sugar)\n\n---\n\n**WEEKLY PREP TIPS:**\n- Boil 12-15 eggs on Sunday night\n- Pre-cut salad veggies and store in fridge\n- Cook chicken in bulk (300-400g) for 2 days\n- Portion out roasted chana in small containers\n\n---\n\n**YOUR COACH'S REAL TALK:**\n\nArjun, you lost 0.6 kg this week despite the weekend slip-ups – that shows the plan WORKS when you follow it. But here's the truth: you can't out-train a bad weekend. That 9/10 hunger is fixable with the changes above, but YOU have to execute.\n\nThis week, I need:\n1. 100% adherence Monday-Friday (you can do this)\n2. Structured weekend eating (use the flexible meal wisely)\n3. 3L water daily (set phone reminders)\n4. Honest check-in next week\n\nYou're capable of hitting 80 kg by next check-in if you lock in. The plan is designed to keep you full – now it's on you to trust the process and stop letting weekends steal your progress.\n\nLet's make this week count. No excuses, just execution.\n\n**COPY-PASTE FORMAT FOR YOUR PHONE:**\n\n8:30 AM – 3 eggs + 1 cup oats with whey + 1 banana\n1:30 PM – 1.5 cups rice + 1 cup dal + 150g chicken + veggie sabzi + curd + salad\n6:30 PM – Tea + 40g chana + 1 fruit\n9:00 PM – 3 rotis + 150g paneer + large salad + veggie soup\n\nWater: 3L daily | Flexible meal: 1x weekend\n\n---\n\nNow go execute. Check in next week with better adherence and lower hunger. You've got this.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-diet-prompt@v2+system-prompt@v1",
+  "inputTokens": 2860,
+  "outputTokens": 3492,
+  "evaluation": {
+    "diet": {
+      "calories": 3,
+      "protein": 3,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 7,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 9,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 5
+    },
+    "issues": [
+      {
+        "category": "Unrealistic calories",
+        "severity": "high",
+        "description": "No clear daily calorie totals found (header may show 0).",
+        "promptToInspect": "updated-diet.prompt"
+      }
+    ],
+    "dietAverage": 6.571428571428571,
+    "overallAverage": 6.910714285714286
+  },
+  "generatedAt": "2026-07-07T20:54:32.581Z"
+}

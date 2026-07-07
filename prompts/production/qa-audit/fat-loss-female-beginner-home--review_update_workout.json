@@ -1,0 +1,46 @@
+{
+  "caseId": "fat-loss-female-beginner-home--review_update_workout",
+  "personaId": "fat-loss-female-beginner-home",
+  "personaLabel": "Female beginner, home",
+  "group": "Fat Loss",
+  "actionId": "review_update_workout",
+  "checkinScenario": "excellent_adherence",
+  "rendered": "**Sneha Iyer – Progressive Upper/Lower Split**\n\nYou've crushed the foundation phase with perfect adherence! Time to level up with a two-body-part split while keeping your 3-day, 45-minute structure. Volume increases ~15% to keep driving progress.\n\n**Training Structure:**\n- **Day 1 – Upper Body (Push Focus)**\n- **Day 2 – Lower Body (Quad Focus)**\n- **Day 3 – Upper Body (Pull Focus) + Lower Accessory**\n\n---\n\n**DAY 1: UPPER PUSH**\n\n1. **Resistance Band Chest Press** – 4 sets x 10 reps\n   - Anchor band behind you, press forward at chest height\n   - 2-0-2 tempo, 60s rest\n\n2. **Pike Push-Ups** – 4 sets x 6–8 reps\n   - Hips high, hands shoulder-width, press to overhead position\n   - 90s rest\n\n3. **Resistance Band Lateral Raise** – 3 sets x 15 reps\n   - Stand on band center, raise handles to shoulder height\n   - 45s rest\n\n4. **Overhead Band Tricep Extension** – 3 sets x 12 reps\n   - Anchor band overhead, extend arms down\n   - 45s rest\n\n5. **Plank Hold** – 3 sets x 30–40 seconds\n   - Forearms on mat, body straight\n   - 45s rest\n\n**Total Time:** ~42 minutes\n\n---\n\n**DAY 2: LOWER QUAD**\n\n1. **Goblet Squat (Band Resistance)** – 4 sets x 10 reps\n   - Hold water jug or heavy object at chest, band around thighs for resistance\n   - 3-0-1 tempo, 90s rest\n\n2. **Bulgarian Split Squat (Bodyweight)** – 4 sets x 8 reps per leg\n   - Rear foot elevated on mat/step, descend until front thigh parallel\n   - 90s rest between legs\n\n3. **Resistance Band Leg Extension** – 3 sets x 15 reps\n   - Sit on floor, loop band around ankle and anchor point, extend knee\n   - 60s rest\n\n4. **Glute Bridge (Band Around Knees)** – 3 sets x 15 reps\n   - Squeeze glutes at top, 2-second hold\n   - 45s rest\n\n5. **Standing Calf Raise** – 3 sets x 20 reps\n   - Bodyweight or hold water jugs\n   - 45s rest\n\n**Total Time:** ~44 minutes\n\n---\n\n**DAY 3: UPPER PULL + LOWER ACCESSORY**\n\n1. **Resistance Band Rows** – 4 sets x 10 reps\n   - Anchor band at waist height, pull elbows back\n   - 2-0-2 tempo, 60s rest\n\n2. **Inverted Rows (Under Table)** – 4 sets x 6–8 reps\n   - Lie under sturdy table, pull chest to edge\n   - 90s rest\n\n3. **Resistance Band Face Pulls** – 3 sets x 15 reps\n   - Band at eye level, pull to face with elbows high\n   - 45s rest\n\n4. **Band Bicep Curls** – 3 sets x 12 reps\n   - Stand on band, curl handles to shoulders\n   - 45s rest\n\n5. **Romanian Deadlift (Band Resistance)** – 3 sets x 12 reps\n   - Stand on band, hinge at hips, feel hamstring stretch\n   - 60s rest\n\n6. **Dead Bug** – 2 sets x 10 reps per side\n   - Alternate lowering opposite arm and leg\n   - 30s rest\n\n**Total Time:** ~43 minutes\n\n---\n\n**CARDIO PLAN:**\n- 3 sessions per week x 30 minutes brisk walking (continue current schedule)\n- Optional: add 5 minutes to one session if energy permits\n\n**PROGRESSION NOTES:**\n- When you hit the top of rep ranges for 2 consecutive sessions, increase band resistance or add a 2-second pause at peak contraction\n- Focus on controlled tempo – no rushing through reps\n- Rest days: Tuesday, Thursday, Saturday/Sunday (adjust to your schedule)\n\n**FORM CUES:**\n- Keep core braced on all movements\n- Full range of motion – no partial reps\n- Breathe: exhale on effort, inhale on return\n\nYou're ready for this next challenge. Let's keep that momentum rolling!",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2 [pending:weekly_workout_update_home]+system-prompt@v1",
+  "inputTokens": 1557,
+  "outputTokens": 1384,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 7,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 3-day program.",
+        "promptToInspect": "updated-workout-home.prompt"
+      }
+    ],
+    "workoutAverage": 7.333333333333333,
+    "overallAverage": 7.291666666666666
+  },
+  "generatedAt": "2026-07-07T20:57:35.847Z"
+}

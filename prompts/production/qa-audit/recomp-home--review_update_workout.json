@@ -1,0 +1,46 @@
+{
+  "caseId": "recomp-home--review_update_workout",
+  "personaId": "recomp-home",
+  "personaLabel": "Home recomposition",
+  "group": "Body Recomposition",
+  "actionId": "review_update_workout",
+  "checkinScenario": "excellent_adherence",
+  "rendered": "**Pooja Menon – Progressive Upper/Lower Split**\n\nYou've completed your foundation phase with excellent adherence! We're now increasing volume by 15% and shifting to a 2-body-part focus per session to continue your recomposition progress.\n\n**Training Schedule: 3 days per week, ~60 minutes per session**\n\n---\n\n**Day 1 – Upper Body (Push + Pull Focus)**\n\n*Warm-up: 5 min arm circles, band pull-aparts, light cardio*\n\n1. **Dumbbell Bench Press** – 4 sets x 10 reps (2-0-2 tempo)\n2. **Dumbbell Bent-Over Rows** – 4 sets x 10 reps (2-0-2 tempo)\n3. **Dumbbell Shoulder Press** – 3 sets x 12 reps\n4. **Band-Assisted Pull-Aparts** – 3 sets x 15 reps\n5. **Dumbbell Bicep Curls** – 3 sets x 12 reps\n6. **Overhead Tricep Extension (Dumbbell)** – 3 sets x 12 reps\n7. **Plank Hold** – 3 sets x 30–45 seconds\n\n*Cool-down: 3 min stretching – chest, shoulders, lats*\n\n---\n\n**Day 2 – Lower Body (Quad + Glute Focus)**\n\n*Warm-up: 5 min leg swings, bodyweight squats, glute bridges*\n\n1. **Goblet Squats (Dumbbell)** – 4 sets x 10 reps (3-0-1 tempo)\n2. **Romanian Deadlifts (Dumbbell)** – 4 sets x 10 reps (3-0-1 tempo)\n3. **Walking Lunges (Bodyweight or Dumbbell)** – 3 sets x 12 reps per leg\n4. **Single-Leg Glute Bridges** – 3 sets x 12 reps per leg\n5. **Band Lateral Walks** – 3 sets x 15 steps each direction\n6. **Calf Raises (Dumbbell)** – 3 sets x 15 reps\n7. **Dead Bug** – 3 sets x 12 reps per side\n\n*Cool-down: 3 min stretching – quads, hamstrings, hip flexors*\n\n---\n\n**Day 3 – Full Body (Strength + Conditioning)**\n\n*Warm-up: 5 min dynamic stretches, inchworms, high knees*\n\n1. **Push-Ups (Elevated if needed)** – 4 sets x 8–12 reps (AMRAP last set)\n2. **Dumbbell Goblet Squats** – 3 sets x 15 reps\n3. **Dumbbell Single-Arm Rows** – 3 sets x 12 reps per arm\n4. **Reverse Lunges (Dumbbell)** – 3 sets x 12 reps per leg\n5. **Band Chest Press** – 3 sets x 15 reps\n6. **Plank to Downward Dog** – 3 sets x 10 reps\n7. **Bicycle Crunches** – 3 sets x 20 reps\n\n*Cool-down: 3 min full-body stretching*\n\n---\n\n**Progression Notes:**\n- Rest 60–90 seconds between sets for compound movements (squats, rows, presses)\n- Rest 45–60 seconds for isolation exercises\n- Increase dumbbell weight by 1–2 kg when you can complete all sets with good form\n- Track your reps and weights in your workout log\n\n**Cardio remains the same:** 3 x 30-minute brisk walks on non-training days or post-workout.\n\nYou're doing amazing, Pooja! Let's keep this momentum going. 💪",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2 [pending:weekly_workout_update_home]+system-prompt@v1",
+  "inputTokens": 1597,
+  "outputTokens": 1172,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 7,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 1 set×rep entries for 3-day program.",
+        "promptToInspect": "updated-workout-home.prompt"
+      }
+    ],
+    "workoutAverage": 7.166666666666667,
+    "overallAverage": 7.208333333333334
+  },
+  "generatedAt": "2026-07-07T21:24:01.929Z"
+}

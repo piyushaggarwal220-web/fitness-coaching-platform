@@ -214,12 +214,6 @@ export default function CoachCheckinDetailPage() {
           <WeeklyCoachingPanel
             clientId={checkin.client_id}
             checkinId={checkin.id}
-            onCoachMessage={(message) => {
-              setResponse((prev) => ({
-                ...prev,
-                feedback: prev.feedback.trim() ? prev.feedback : message,
-              }));
-            }}
           />
         </section>
 

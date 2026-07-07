@@ -1,0 +1,58 @@
+{
+  "caseId": "home-no-equipment--review_update_workout",
+  "personaId": "home-no-equipment",
+  "personaLabel": "No equipment",
+  "group": "Home Workout",
+  "actionId": "review_update_workout",
+  "checkinScenario": "low_motivation",
+  "rendered": "**Updated Training Plan – Progressive Split**\n\nYou've been running a single-muscle-focus split, so we're now moving to a **2-body-part push/pull/legs structure** to increase training density while keeping sessions around 30 minutes. Volume is increased by ~15% through added sets. All exercises remain bodyweight or minimal equipment to match your home setup.\n\n---\n\n**Day 1 – Push (Chest + Shoulders)**\n1. Push-Ups – 4 sets x 10–12 reps (or knees if needed)\n2. Pike Push-Ups – 3 sets x 8–10 reps\n3. Incline Push-Ups (hands elevated) – 3 sets x 12 reps\n4. Plank Shoulder Taps – 3 sets x 20 total taps\n\n**Day 2 – Pull + Core (Back + Abs)**\n1. Bodyweight Rows (use table edge or sturdy chair) – 4 sets x 8–10 reps\n2. Reverse Snow Angels (lying face down) – 3 sets x 12 reps\n3. Superman Holds – 3 sets x 20 seconds\n4. Dead Bug – 3 sets x 12 reps per side\n\n**Day 3 – Lower (Quads + Glutes + Hamstrings)**\n1. Bodyweight Squats – 4 sets x 15 reps (tempo: 3 sec down, 1 sec up)\n2. Bulgarian Split Squats (rear foot elevated on chair) – 3 sets x 10 reps per leg\n3. Glute Bridges – 4 sets x 15 reps (2 sec squeeze at top)\n4. Wall Sit – 3 sets x 30 seconds\n\n---\n\n**Rest & Progression**\n- Rest 60–90 seconds between sets.\n- Perform these 3 days per week (e.g., Mon/Wed/Fri).\n- Once you hit the top of the rep range for 2 consecutive sessions, slow the tempo or add a pause to increase difficulty.\n- Avoid burpees and jumping movements as requested.\n\n---\n\n**Warm-Up (5 min before each session)**\n- Arm circles, leg swings, cat-cow stretches, and 20 bodyweight squats.\n\n**Cool-Down (3 min post-workout)**\n- Child's pose, quad stretch, hamstring stretch, chest opener.\n\n---\n\nThis plan pairs two muscle groups per day to maximize efficiency, keeps you in the 30-minute window, and builds on your foundation phase. Focus on controlled reps and full range of motion.\n\nBrisk walk — 30 min · Moderate (can hold a conversation) · 3 sessions per week. Can split into 2×15 min if easier to fit into schedule.\n\n2-body-part split introduced. Volume +15%. Adherence focus: simplify meal prep, pre-log food, set 2 non-negotiable workout days.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2 [pending:weekly_workout_update_home]+system-prompt@v1",
+  "inputTokens": 1604,
+  "outputTokens": 1082,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Tanvi).",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Ignored preferred exercises",
+        "severity": "medium",
+        "description": "Client dislikes \"burpees\" but it appears in plan.",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 3-day program.",
+        "promptToInspect": "updated-workout-home.prompt"
+      }
+    ],
+    "workoutAverage": 7.333333333333333,
+    "overallAverage": 7.416666666666666
+  },
+  "generatedAt": "2026-07-07T21:36:48.240Z"
+}

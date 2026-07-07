@@ -1,0 +1,35 @@
+{
+  "persona": "Rahul — weekly workout update",
+  "actionId": "review_update_workout",
+  "model": "mock-plan-v1",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 0,
+  "outputTokens": 0,
+  "checks": [
+    {
+      "id": "uses_client_name",
+      "pass": true,
+      "detail": "Mentions Rahul"
+    },
+    {
+      "id": "has_exercise_structure",
+      "pass": true,
+      "detail": "Looks for sets/reps or named exercises"
+    },
+    {
+      "id": "has_warmup_or_recovery",
+      "pass": true,
+      "detail": "Skipped for weekly workout updates"
+    },
+    {
+      "id": "has_full_workout_plan",
+      "pass": true,
+      "detail": "Weekly workout update should list multiple exercises with sets x reps"
+    },
+    {
+      "id": "minimum_length",
+      "pass": true,
+      "detail": "Output length 1143 chars (need >= 600)"
+    }
+  ]
+}

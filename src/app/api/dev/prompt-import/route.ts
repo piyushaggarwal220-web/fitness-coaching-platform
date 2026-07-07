@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { NextResponse } from 'next/server'
 import {
+  CORE_PRODUCTION_PROMPT_CATEGORIES,
   importProductionPromptManifest,
   importPublishedPrompt,
   importPublishedPrompts,
@@ -31,7 +32,7 @@ function assertDevToolkitAccess() {
 }
 
 type DevImportBody =
-  | { action: 'manifest'; manifestPath?: string; skipIfCategoryPublished?: boolean }
+  | { action: 'manifest'; manifestPath?: string; skipIfCategoryPublished?: boolean; republishIfChanged?: boolean }
   | { action: 'single'; prompt: PromptImportInput; skipIfCategoryPublished?: boolean }
   | { action: 'batch'; prompts: PromptImportInput[]; skipIfCategoryPublished?: boolean }
   | { action: 'verify' }
@@ -61,11 +62,17 @@ export async function POST(request: Request) {
 
     const result = await importProductionPromptManifest(admin, null, manifestPath, {
       skipIfCategoryPublished: body.skipIfCategoryPublished ?? true,
+      republishIfChanged: body.republishIfChanged ?? true,
+    })
+
+    const coreVerification = await verifyImportedPrompts(admin, {
+      categories: CORE_PRODUCTION_PROMPT_CATEGORIES,
     })
 
     return NextResponse.json({
-      success: result.errors.length === 0 && result.verification.ok,
+      success: result.errors.length === 0 && coreVerification.ok,
       message: summarizeImportBatch(result),
+      coreVerification,
       ...result,
     })
   }

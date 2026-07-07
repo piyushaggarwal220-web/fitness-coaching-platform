@@ -3,7 +3,13 @@
  * Run: npx tsx --env-file=.env.local scripts/import-production-prompts.ts
  */
 import path from 'node:path'
-import { importProductionPromptManifest, summarizeImportBatch } from '../src/lib/admin/prompt-import'
+import {
+  CORE_PRODUCTION_PROMPT_CATEGORIES,
+  HOME_WORKOUT_PROMPT_CATEGORIES,
+  importProductionPromptManifest,
+  summarizeImportBatch,
+  verifyImportedPrompts,
+} from '../src/lib/admin/prompt-import'
 import { createAdminClient } from '../src/lib/supabase/admin'
 
 async function main(): Promise<void> {
@@ -15,11 +21,14 @@ async function main(): Promise<void> {
 
   const result = await importProductionPromptManifest(admin, null, manifestPath, {
     skipIfCategoryPublished: true,
+    republishIfChanged: true,
   })
 
   for (const item of result.imported) {
+    const label =
+      item.status === 'created' ? 'CREATED' : item.status === 'republished' ? 'REPUBLISHED' : 'SKIPPED'
     console.log(
-      `${item.status === 'created' ? 'CREATED' : 'SKIPPED'} ${item.category} (${item.slug}@v${item.version})${
+      `${label} ${item.category} (${item.slug}@v${item.version})${
         item.reason ? ` — ${item.reason}` : ''
       }`
     )
@@ -29,14 +38,32 @@ async function main(): Promise<void> {
     console.error(`ERROR ${err.category} (${err.slug}): ${err.error}`)
   }
 
-  console.log(`\n${summarizeImportBatch(result)}`)
-  console.log(`Verification: ${result.verification.ok ? 'PASS' : 'FAIL'}`)
-
-  if (!result.verification.ok) {
-    console.error('Missing categories:', result.verification.missingCategories.join(', '))
+  if (result.skippedEmpty.length > 0) {
+    console.log(
+      `\nSkipped empty placeholder files: ${result.skippedEmpty.join(', ')} (paste content and re-run import)`
+    )
   }
 
-  process.exit(result.errors.length === 0 && result.verification.ok ? 0 : 1)
+  console.log(`\n${summarizeImportBatch(result)}`)
+
+  const coreVerification = await verifyImportedPrompts(admin, {
+    categories: CORE_PRODUCTION_PROMPT_CATEGORIES,
+  })
+  const homeVerification = await verifyImportedPrompts(admin, {
+    categories: HOME_WORKOUT_PROMPT_CATEGORIES,
+  })
+
+  console.log(`Core verification: ${coreVerification.ok ? 'PASS' : 'FAIL'}`)
+  if (!coreVerification.ok) {
+    console.error('Missing core categories:', coreVerification.missingCategories.join(', '))
+  }
+
+  console.log(`Home workout verification: ${homeVerification.ok ? 'PASS' : 'PENDING'}`)
+  if (!homeVerification.ok) {
+    console.log('Home categories awaiting content:', homeVerification.missingCategories.join(', '))
+  }
+
+  process.exit(result.errors.length === 0 && coreVerification.ok ? 0 : 1)
 }
 
 main().catch((err) => {

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FounderAnalyticsPanel } from '@/components/admin/analytics/FounderAnalyticsPanel'
+import { ComplexityAnalyticsPanel } from '@/components/admin/analytics/ComplexityAnalyticsPanel'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { AdminStatCard } from '@/components/admin/AdminStatCard'
 import { requireAdmin } from '@/lib/admin-session'
@@ -159,6 +160,10 @@ export default function AdminDashboardPage() {
           </div>
 
           <FounderAnalyticsPanel />
+
+          <div style={{ marginTop: 24 }}>
+            <ComplexityAnalyticsPanel />
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginTop: 24 }}>
             <div style={s.card}>

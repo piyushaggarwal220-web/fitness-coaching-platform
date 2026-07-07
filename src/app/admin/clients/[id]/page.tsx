@@ -8,6 +8,9 @@ import { assignCoachToClient } from '@/lib/admin/assign-coach'
 import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { coachBadgeStyles, formatFitnessGoal, formatDate, getCheckinStatus, getPlanStatus } from '@/lib/coach-utils'
+import { ComplexityHistoryTimeline } from '@/components/complexity/ComplexityHistoryTimeline'
+import { ComplexityScoreCard } from '@/components/complexity/ComplexityScoreCard'
+import { CoachClientProfileEdit } from '@/components/coach/CoachClientProfileEdit'
 import { createClient } from '@/lib/supabase/client'
 import type { Coach, CoachClientDetail } from '@/types/database'
 
@@ -120,6 +123,19 @@ export default function AdminClientDetailPage() {
           {error && <div style={s.error}>{error}</div>}
           {success && <div style={{ ...s.error, backgroundColor: '#d4edda', color: '#155724' }}>{success}</div>}
 
+          <ComplexityScoreCard
+            score={client.complexity_score}
+            tier={client.complexity_tier}
+            previousScore={client.complexity_previous_score}
+            scoreChange={client.complexity_score_change}
+            lastCalculatedAt={client.complexity_last_calculated_at}
+          />
+
+          <div style={s.card}>
+            <h2 style={s.cardTitle}>Complexity History</h2>
+            <ComplexityHistoryTimeline clientId={client.id} />
+          </div>
+
           <div style={s.card}>
             <h2 style={s.cardTitle}>Profile</h2>
             <div style={s.infoGrid}>
@@ -131,6 +147,11 @@ export default function AdminClientDetailPage() {
               <Info label="Check-in" value={getCheckinStatus(client)} />
               <Info label="Updated" value={formatDate(client.updated_at)} />
             </div>
+            <CoachClientProfileEdit
+              client={client}
+              trigger="profile_edit_admin"
+              onSaved={setClient}
+            />
           </div>
 
           <div style={s.card}>

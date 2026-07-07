@@ -1,0 +1,52 @@
+{
+  "caseId": "fat-loss-budget--review_update_workout",
+  "personaId": "fat-loss-budget",
+  "personaLabel": "Budget client",
+  "group": "Fat Loss",
+  "actionId": "review_update_workout",
+  "checkinScenario": "low_motivation",
+  "rendered": "**Upper/Lower Split – 4 Days per Week**\n\nYou've built a solid foundation over the past month. We're now moving to a focused upper/lower split with slightly higher volume (15% increase) to continue fat loss and strength gains while keeping sessions around 60 minutes.\n\n**Training Schedule:**\n- Day 1: Upper Body A\n- Day 2: Lower Body A\n- Day 3: Rest or light activity\n- Day 4: Upper Body B\n- Day 5: Lower Body B\n- Day 6–7: Rest\n\n---\n\n**Day 1 – Upper Body A**\n1. Barbell Bench Press: 4 sets x 8 reps (2 min rest)\n2. Bent-Over Barbell Row: 4 sets x 8 reps (2 min rest)\n3. Dumbbell Shoulder Press: 3 sets x 10 reps (90 sec rest)\n4. Cable Lat Pulldown: 3 sets x 12 reps (60 sec rest)\n5. Dumbbell Bicep Curl: 3 sets x 12 reps (60 sec rest)\n6. Tricep Rope Pushdown: 3 sets x 12 reps (60 sec rest)\n\n**Day 2 – Lower Body A**\n1. Barbell Back Squat: 4 sets x 8 reps (2 min rest)\n2. Romanian Deadlift (Barbell): 4 sets x 10 reps (90 sec rest)\n3. Leg Press: 3 sets x 12 reps (90 sec rest)\n4. Lying Leg Curl: 3 sets x 12 reps (60 sec rest)\n5. Standing Calf Raise: 3 sets x 15 reps (60 sec rest)\n\n**Day 3 – Rest or Active Recovery**\nLight walk, stretching, or complete rest.\n\n**Day 4 – Upper Body B**\n1. Dumbbell Incline Bench Press: 4 sets x 10 reps (90 sec rest)\n2. Cable Seated Row: 4 sets x 10 reps (90 sec rest)\n3. Dumbbell Lateral Raise: 3 sets x 15 reps (60 sec rest)\n4. Cable Face Pull: 3 sets x 15 reps (60 sec rest)\n5. Hammer Curl: 3 sets x 12 reps (60 sec rest)\n6. Overhead Dumbbell Tricep Extension: 3 sets x 12 reps (60 sec rest)\n\n**Day 5 – Lower Body B**\n1. Goblet Squat (Dumbbell): 4 sets x 12 reps (90 sec rest)\n2. Barbell Sumo Deadlift: 4 sets x 8 reps (2 min rest)\n3. Bulgarian Split Squat (Dumbbells): 3 sets x 10 reps per leg (90 sec rest)\n4. Seated Leg Curl: 3 sets x 12 reps (60 sec rest)\n5. Seated Calf Raise: 3 sets x 15 reps (60 sec rest)\n\n---\n\n**Progression:**\n- Aim to add 1–2 reps or 2.5 kg when you complete all sets with good form.\n- Focus on controlled tempo: 2 seconds down, 1 second up.\n- Rest days are crucial for recovery and fat loss.\n\n**Notes:**\n- All exercises use equipment you have access to (barbell, dumbbells, cables, leg press).\n- Squats and rows remain central as requested.\n- No burpees or high-impact movements.\n- Keep rest periods tight to maintain calorie burn and session length around 60 minutes.\n\nStay consistent, track your lifts, and let's build momentum together.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 1600,
+  "outputTokens": 1115,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Ravi).",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Ignored preferred exercises",
+        "severity": "medium",
+        "description": "Client dislikes \"burpees\" but it appears in plan.",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 4-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7.333333333333333,
+    "overallAverage": 7.416666666666666
+  },
+  "generatedAt": "2026-07-07T21:08:03.301Z"
+}

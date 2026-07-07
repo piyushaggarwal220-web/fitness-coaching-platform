@@ -1,0 +1,52 @@
+{
+  "caseId": "recomp-gym--review_update_workout",
+  "personaId": "recomp-gym",
+  "personaLabel": "Gym recomposition",
+  "group": "Body Recomposition",
+  "actionId": "review_update_workout",
+  "checkinScenario": "weight_unchanged",
+  "rendered": "**Upper/Lower Split – 4 Days Per Week**\n\nYou've been running a solid foundation split, so we're now shifting to an upper/lower structure with two upper and two lower days to increase frequency and stimulus. Volume is maintained but distributed differently to break the plateau. Session duration remains ~60 minutes.\n\n**Day 1 – Upper A (Horizontal Focus)**\n1. Barbell Bench Press – 4 sets x 8 reps\n2. Seated Cable Row – 4 sets x 10 reps\n3. Dumbbell Incline Press – 3 sets x 10 reps\n4. Lat Pulldown (Wide Grip) – 3 sets x 12 reps\n5. Dumbbell Lateral Raise – 3 sets x 15 reps\n6. Face Pulls – 3 sets x 15 reps\n\n**Day 2 – Lower A (Quad/Posterior Focus)**\n1. Barbell Back Squat – 4 sets x 8 reps\n2. Romanian Deadlift (Barbell) – 4 sets x 10 reps\n3. Leg Press – 3 sets x 12 reps\n4. Lying Leg Curl – 3 sets x 12 reps\n5. Walking Lunges (Dumbbell) – 3 sets x 10 reps per leg\n6. Standing Calf Raise – 3 sets x 15 reps\n\n**Day 3 – Upper B (Vertical Focus)**\n1. Overhead Barbell Press – 4 sets x 8 reps\n2. Barbell Bent-Over Row – 4 sets x 8 reps\n3. Dumbbell Chest Fly (Flat Bench) – 3 sets x 12 reps\n4. Cable Straight-Arm Pulldown – 3 sets x 12 reps\n5. Dumbbell Hammer Curl – 3 sets x 12 reps\n6. Overhead Tricep Extension (Cable) – 3 sets x 12 reps\n\n**Day 4 – Lower B (Glute/Accessory Focus)**\n1. Goblet Squat (Dumbbell) – 4 sets x 12 reps\n2. Barbell Hip Thrust – 4 sets x 10 reps\n3. Bulgarian Split Squat (Dumbbell) – 3 sets x 10 reps per leg\n4. Seated Leg Curl – 3 sets x 12 reps\n5. Cable Pull-Through – 3 sets x 15 reps\n6. Plank Hold – 3 sets x 45 seconds\n\n**Progression:**\nAim to add 1–2 reps or 2.5 kg when you hit the top of the rep range for two consecutive sessions. Rest 90–120 seconds between compound sets, 60–90 seconds for accessory work.\n\n**Schedule Example:**\nMon – Upper A | Tue – Lower A | Thu – Upper B | Fri – Lower B\n\nThis split increases muscle frequency (each group hit twice per week) without adding session length, ideal for breaking through your current plateau.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
+  "inputTokens": 1588,
+  "outputTokens": 938,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 5,
+      "equipmentSuitability": 8,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Missing personalization",
+        "severity": "medium",
+        "description": "Output does not mention client first name (Neha).",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 4-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 6.666666666666667,
+    "overallAverage": 7.083333333333334
+  },
+  "generatedAt": "2026-07-07T21:19:12.253Z"
+}

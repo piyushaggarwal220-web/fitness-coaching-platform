@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
 import type { CoachingPlan } from '@/lib/payments/plans'
 import type { Purchase } from '@/types/database'
 
@@ -64,15 +65,22 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
   }
 
   const now = new Date().toISOString()
+  const includeAccessSource = await hasAccessSourceColumn()
 
-  const { error: profileError } = await admin.from('profiles').upsert({
+  const profilePayload: Record<string, unknown> = {
     id: userId,
     email,
     name: input.name.trim(),
     payment_confirmed: true,
     onboarding_complete: false,
     updated_at: now,
-  })
+  }
+
+  if (includeAccessSource) {
+    profilePayload.access_source = 'purchase'
+  }
+
+  const { error: profileError } = await admin.from('profiles').upsert(profilePayload)
 
   if (profileError) {
     throw new Error(`Failed to create profile: ${profileError.message}`)

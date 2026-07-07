@@ -1,0 +1,27 @@
+Rahul Mehta's muscle gain gym program (Intermediate level). 3 training days per week with progressive overload. Warm-up: 5–8 min light cardio plus dynamic mobility (hip circles, band pull-aparts, arm swings). Cool-down: 5 min stretching. Rest days: 8k+ steps and light mobility for recovery. Injury note: mild lower back tightness — avoid heavy deadlifts from floor — modify loads and avoid aggravating patterns.
+Monday — Upper push
+  • Bench press 4x8
+  • Overhead press 3x10
+  • Triceps pushdown 3x12
+  Note: Start each session with the warm-up block above; finish with cool-down stretching.
+
+Wednesday — Lower
+  • Leg press 4x10
+  • Romanian deadlift 3x10
+  • Walking lunges 3x12
+  Note: Start each session with the warm-up block above; finish with cool-down stretching.
+
+Friday — Upper pull
+  • Lat pulldown 4x10
+  • Barbell row 3x8
+  • Face pulls 3x15
+  Note: Start each session with the warm-up block above; finish with cool-down stretching.
+
+LISS walk — 30 min · 3x/week
+Optional intervals — 15 min · 1x/week
+
+Mock draft — replace AI_PLAN_PROVIDER=claude when ready for live generation.
+
+No check-in data yet — conservative starting targets.
+
+Goal: Muscle Gain. Diet preference: Non-Vegetarian.

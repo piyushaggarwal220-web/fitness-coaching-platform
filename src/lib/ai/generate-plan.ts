@@ -12,6 +12,8 @@ import {
   formatLibraryPromptVersion,
   loadPublishedPromptsForAction,
 } from '@/lib/ai/prompt-library-loader'
+import { profileToComplexityInput } from '@/lib/complexity/profile-input'
+import { getPromptCategoryForAction } from '@/lib/ai/workout-prompt-selection'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
 
@@ -51,7 +53,10 @@ export type GeneratePlanInput = {
   /** Relaxes schema checks for single-section generation (workout/diet/analysis). */
   validationMode?: PlanValidationMode
   actionId?: CoachAiActionId
+  /** Current active plan from the database (source of truth for weekly updates). */
   activePlan?: Plan | null
+  /** Newly generated diet context for weekly workout updates. */
+  updatedDietPlan?: Plan | null
 }
 
 export type PlanValidationMode = 'full' | 'workout_focus' | 'nutrition_focus' | 'minimal'
@@ -122,6 +127,51 @@ const RETRY_INSTRUCTIONS = [
   'Return ONLY a corrected JSON object with no extra text.',
 ].join(' ')
 
+const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
+  '# Plan Output Format',
+  'You MUST respond with ONLY valid JSON — no markdown fences, no commentary, no preamble.',
+  'The JSON must match this exact top-level structure:',
+  PLAN_JSON_SCHEMA,
+  '- Put the full client-facing diet plan prose in nutrition_plan.meals as ONE item: { "meal": "Weekly Diet Plan", "example": "<entire copy-paste diet plan>" }.',
+  '- Set nutrition_plan.calories, protein, carbs, and fat to 0.',
+  '- Set workout_plan.overview to "N/A" and workout_plan.days to [].',
+  '- cardio_plan.sessions and supplement_plan.items may be [].',
+  '- coach_notes must be an empty string or under 200 characters.',
+].join('\n')
+
+const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
+  '# Plan Output Format',
+  'You MUST respond with ONLY valid JSON — no markdown fences, no commentary, no preamble.',
+  'The JSON must match this exact top-level structure:',
+  PLAN_JSON_SCHEMA,
+  '- Put the full client-facing workout plan prose in workout_plan.overview.',
+  '- workout_plan.overview must include exercises, sets, reps, and weekly structure — not internal coach analysis.',
+  '- workout_plan.days may be [] when the prose already contains the daily structure.',
+  '- Set nutrition_plan calories/protein/carbs/fat to 0 and nutrition_plan.meals to [].',
+  '- cardio_plan.sessions and supplement_plan.items may be [].',
+  '- coach_notes must be an empty string or under 200 characters.',
+].join('\n')
+
+function resolvePlanOutputInstructions(options: {
+  useLibraryTemplate: boolean
+  actionId?: CoachAiActionId
+  validationMode?: PlanValidationMode
+}): string | null {
+  if ((options.validationMode ?? 'full') === 'minimal') return null
+  if (!options.useLibraryTemplate) return PLAN_OUTPUT_INSTRUCTIONS
+
+  switch (options.actionId) {
+    case 'initial_diet':
+    case 'review_update_diet':
+      return LIBRARY_DIET_OUTPUT_INSTRUCTIONS
+    case 'initial_workout':
+    case 'review_update_workout':
+      return LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS
+    default:
+      return PLAN_OUTPUT_INSTRUCTIONS
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -138,34 +188,7 @@ function isArray(value: unknown): value is unknown[] {
   return Array.isArray(value)
 }
 
-/** Map onboarding profile + check-in to complexity engine input. */
-export function profileToComplexityInput(
-  profile: OnboardingProfile,
-  latestCheckin?: Checkin | null
-) {
-  return {
-    age: profile.age,
-    gender: profile.gender,
-    height: profile.height,
-    weight: profile.weight,
-    fitnessGoal: profile.fitness_goal,
-    activityLevel: profile.activity_level,
-    trainingExperience: profile.training_experience,
-    dietPreference: profile.diet_preference,
-    injuries: profile.injuries,
-    medicalNotes: profile.medical_notes,
-    sleepDuration: profile.sleep_duration,
-    latestCheckin: latestCheckin
-      ? {
-          energy_level: latestCheckin.energy_level,
-          hunger_level: latestCheckin.hunger_level,
-          training_performance: latestCheckin.training_performance,
-          adherence_score: latestCheckin.adherence_score,
-          notes: latestCheckin.notes,
-        }
-      : undefined,
-  }
-}
+export { profileToComplexityInput } from '@/lib/complexity/profile-input'
 
 /** Strip markdown code fences and extract JSON payload from model text. */
 export function extractJsonFromResponse(text: string): string {
@@ -188,7 +211,9 @@ export function validateGeneratedPlan(
   options?: { mode?: PlanValidationMode }
 ): { plan: GeneratedPlan | null; error: string | null } {
   const mode = options?.mode ?? 'full'
-  const allowPlaceholderNutrition = mode === 'workout_focus' || mode === 'minimal'
+  const allowPlaceholderNutrition =
+    mode === 'workout_focus' || mode === 'nutrition_focus' || mode === 'minimal'
+  const allowPlaceholderWorkout = mode === 'nutrition_focus' || mode === 'minimal'
   if (!isRecord(value)) {
     return { plan: null, error: 'Response is not a JSON object.' }
   }
@@ -197,6 +222,9 @@ export function validateGeneratedPlan(
   if (!isRecord(workout)) return { plan: null, error: 'Missing or invalid workout_plan.' }
   if (!isString(workout.overview) || !workout.overview.trim()) {
     return { plan: null, error: 'workout_plan.overview must be a non-empty string.' }
+  }
+  if (!allowPlaceholderWorkout && workout.overview.trim().toUpperCase() === 'N/A') {
+    return { plan: null, error: 'workout_plan.overview must contain the workout plan content.' }
   }
   if (!isArray(workout.days)) return { plan: null, error: 'workout_plan.days must be an array.' }
 
@@ -220,6 +248,19 @@ export function validateGeneratedPlan(
     return { plan: null, error: 'nutrition_plan.fat must be a non-negative number.' }
   }
   if (!isArray(nutrition.meals)) return { plan: null, error: 'nutrition_plan.meals must be an array.' }
+  if (mode === 'nutrition_focus') {
+    const hasMealContent = nutrition.meals.some((meal) => {
+      if (!isRecord(meal)) return false
+      const example = meal.example ?? meal.description ?? meal.content
+      return typeof example === 'string' && example.trim().length > 80
+    })
+    if (!hasMealContent) {
+      return {
+        plan: null,
+        error: 'nutrition_plan.meals must include one item with the full diet plan prose.',
+      }
+    }
+  }
 
   const cardio = value.cardio_plan
   if (!isRecord(cardio)) return { plan: null, error: 'Missing or invalid cardio_plan.' }
@@ -280,11 +321,13 @@ function buildPlanPrompts(
   options: {
     retry?: boolean
     activePlan?: Plan | null
+    updatedDietPlan?: Plan | null
     libraryPrompts?: {
       actionTemplate: string
       systemTemplate: string | null
     }
     validationMode?: PlanValidationMode
+    actionId?: CoachAiActionId
   } = {}
 ) {
   const base = buildPrompt({
@@ -294,15 +337,21 @@ function buildPlanPrompts(
     knowledgeEntries,
     coachInstructions,
     activePlan: options.activePlan,
+    updatedDietPlan: options.updatedDietPlan,
+    actionId: options.actionId,
     actionTemplate: options.libraryPrompts?.actionTemplate ?? null,
     systemTemplate: options.libraryPrompts?.systemTemplate ?? null,
   })
 
   const useLibraryTemplate = Boolean(options.libraryPrompts?.actionTemplate)
-  const needsJsonOutput = (options.validationMode ?? 'full') !== 'minimal'
+  const outputInstructions = resolvePlanOutputInstructions({
+    useLibraryTemplate,
+    actionId: options.actionId,
+    validationMode: options.validationMode,
+  })
 
-  const systemPrompt = needsJsonOutput
-    ? `${base.systemPrompt}\n\n${PLAN_OUTPUT_INSTRUCTIONS}`
+  const systemPrompt = outputInstructions
+    ? `${base.systemPrompt}\n\n${outputInstructions}`
     : base.systemPrompt
 
   const userPrompt = [
@@ -348,10 +397,11 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   let promptVersion = process.env.AI_PROMPT_VERSION?.trim() || 'v1'
 
   if (input.actionId) {
-    const loaded = await loadPublishedPromptsForAction(input.actionId)
+    const loaded = await loadPublishedPromptsForAction(input.actionId, input.profile)
     if (!loaded) {
+      const category = getPromptCategoryForAction(input.actionId, input.profile)
       throw new GeneratePlanError(
-        `No published Prompt Library entry for action "${input.actionId}". Publish the prompt in Admin → Prompt Library.`
+        `No published Prompt Library entry for category "${category}" (action "${input.actionId}"). Publish the prompt in Admin → Prompt Library.`
       )
     }
     libraryPrompts = {
@@ -359,6 +409,9 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       systemTemplate: loaded.system?.promptBody ?? null,
     }
     promptVersion = formatLibraryPromptVersion(loaded.action)
+    if (loaded.fallbackFromCategory) {
+      promptVersion = `${promptVersion} [pending:${loaded.fallbackFromCategory}]`
+    }
     if (loaded.system) {
       promptVersion = `${promptVersion}+${formatLibraryPromptVersion(loaded.system)}`
     }
@@ -374,8 +427,10 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       {
         retry: attempt === 1,
         activePlan: input.activePlan,
+        updatedDietPlan: input.updatedDietPlan,
         libraryPrompts,
         validationMode,
+        actionId: input.actionId,
       }
     )
 
