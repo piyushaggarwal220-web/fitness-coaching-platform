@@ -17,7 +17,7 @@ export const ADMIN_MODULES: AdminModule[] = [
   {
     id: 'dashboard',
     title: 'Dashboard',
-    description: 'Platform overview, KPIs, and health metrics.',
+    description: 'Founder dashboard — revenue, AI costs, profit, and platform health.',
     href: '/admin/dashboard',
     status: 'implemented',
     showInNav: true,
@@ -109,7 +109,7 @@ export const ADMIN_MODULES: AdminModule[] = [
     title: 'Purchases',
     description: 'Payment and subscription purchase history.',
     href: '/admin/purchases',
-    status: 'placeholder',
+    status: 'implemented',
     showInNav: true,
     navOrder: 100,
     tables: ['purchases'],

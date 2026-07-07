@@ -1,3 +1,4 @@
+import { calculateAiCostUsd } from '@/lib/admin/pricing'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AiGenerationLog } from '@/types/database'
 
@@ -30,6 +31,8 @@ export async function logAiGeneration(input: AiGenerationLogInput): Promise<void
     const admin = createAdminClient()
     const debug = isDebugAiEnabled()
 
+    const costs = calculateAiCostUsd(input.model, input.promptTokens, input.completionTokens)
+
     const row = {
       client_id: input.clientId,
       coach_id: input.coachId,
@@ -43,6 +46,9 @@ export async function logAiGeneration(input: AiGenerationLogInput): Promise<void
       validation_result: input.validationResult,
       success: input.success,
       knowledge_refs: input.knowledgeRefs,
+      input_cost_usd: costs.inputCostUsd,
+      output_cost_usd: costs.outputCostUsd,
+      total_cost_usd: costs.totalCostUsd,
       raw_output: debug && input.rawOutput != null ? input.rawOutput : null,
       rendered_output: debug && input.renderedOutput != null ? input.renderedOutput : null,
       created_at: new Date().toISOString(),

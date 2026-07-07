@@ -406,9 +406,23 @@ export type AiGenerationLog = {
   validation_result: string | null
   success: boolean
   knowledge_refs: string[] | null
+  input_cost_usd: number | null
+  output_cost_usd: number | null
+  total_cost_usd: number | null
   raw_output: unknown | null
   rendered_output: unknown | null
   created_at: string
+}
+
+export type PurchaseWithProfile = Purchase & {
+  profiles?: Pick<Profile, 'id' | 'name' | 'email' | 'coach_id' | 'onboarding_complete' | 'plan_delivered'> | null
+}
+
+export type PurchaseDetail = PurchaseWithProfile & {
+  coach?: Pick<Coach, 'id' | 'name'> | null
+  plans: Plan[]
+  support_requests: SupportRequest[]
+  checkins: Checkin[]
 }
 
 export type AiGenerationLogWithRelations = AiGenerationLog & {

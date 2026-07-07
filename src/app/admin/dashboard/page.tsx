@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { FounderAnalyticsPanel } from '@/components/admin/analytics/FounderAnalyticsPanel'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { AdminStatCard } from '@/components/admin/AdminStatCard'
 import { requireAdmin } from '@/lib/admin-session'
@@ -138,9 +139,9 @@ export default function AdminDashboardPage() {
       <AdminNavbar />
       <div style={s.page}>
         <div style={s.containerWide}>
-          <h1 style={s.title}>Dashboard</h1>
+          <h1 style={s.title}>Founder Dashboard</h1>
           <p style={s.subtitle}>
-            {admin?.name || admin?.email || 'Admin'} · Platform overview
+            {admin?.name || admin?.email || 'Admin'} · Business operations overview
           </p>
 
           {error && <div style={s.error}>{error}</div>}
@@ -157,7 +158,9 @@ export default function AdminDashboardPage() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+          <FounderAnalyticsPanel />
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginTop: 24 }}>
             <div style={s.card}>
               <h2 style={s.cardTitle}>Recent Activity</h2>
               {activity.length === 0 ? (
