@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const TEST_PASSWORD = 'TestPass123!'
 export const DEV_CLIENT_EMAIL = 'dev-client@dev.local'
 export const DEV_COACH_EMAIL = 'dev-coach@dev.local'
+export const DEV_ADMIN_EMAIL = 'dev-admin@dev.local'
 
 export type SeedResult = {
   message: string
@@ -366,6 +367,49 @@ export async function seedListEntities(): Promise<SeedResult> {
   }
 }
 
+export async function seedEnsureDevAdmin(): Promise<SeedResult> {
+  const admin = createAdminClient()
+  const email = DEV_ADMIN_EMAIL
+
+  const { data: existingProfile } = await admin
+    .from('profiles')
+    .select('id, role')
+    .eq('email', email)
+    .maybeSingle()
+
+  if (existingProfile) {
+    await admin.from('profiles').update({ role: 'admin' }).eq('id', existingProfile.id)
+    return {
+      message: 'Dev admin ready',
+      data: { userId: existingProfile.id, email, password: TEST_PASSWORD, role: 'admin' },
+    }
+  }
+
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email,
+    password: TEST_PASSWORD,
+    email_confirm: true,
+    user_metadata: { role: 'admin' },
+  })
+
+  if (authError || !authData.user) throw new Error(authError?.message ?? 'Failed to create admin user')
+
+  const { error: profileError } = await admin.from('profiles').upsert({
+    id: authData.user.id,
+    email,
+    name: 'Dev Admin',
+    role: 'admin',
+    updated_at: new Date().toISOString(),
+  })
+
+  if (profileError) throw new Error(profileError.message)
+
+  return {
+    message: 'Dev admin created',
+    data: { userId: authData.user.id, email, password: TEST_PASSWORD, role: 'admin' },
+  }
+}
+
 export type SeedAction =
   | 'create_test_client'
   | 'create_test_coach'
@@ -378,6 +422,7 @@ export type SeedAction =
   | 'create_sample_plan'
   | 'activate_sample_plan'
   | 'list_entities'
+  | 'ensure_test_admin'
 
 export async function runSeedAction(
   action: SeedAction,
@@ -406,6 +451,8 @@ export async function runSeedAction(
       return seedActivateSamplePlan(payload.planId)
     case 'list_entities':
       return seedListEntities()
+    case 'ensure_test_admin':
+      return seedEnsureDevAdmin()
     default:
       throw new Error(`Unknown action: ${action}`)
   }

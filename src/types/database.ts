@@ -9,8 +9,10 @@ export type ClientProfile = {
   id: string
   name: string | null
   email: string | null
+  role?: 'client' | 'coach' | 'admin' | 'super_admin' | null
   coach_id: string | null
   fitness_goal: string | null
+  onboarding_complete?: boolean | null
   checkin_awaiting: boolean | null
   checkin_overdue: boolean | null
   plan_delivered: boolean | null
@@ -90,6 +92,7 @@ export type Profile = {
   id: string
   name: string | null
   email?: string | null
+  role?: 'client' | 'coach' | 'admin' | 'super_admin' | null
   age: string | number | null
   fitness_goal: string | null
   weight: string | number | null

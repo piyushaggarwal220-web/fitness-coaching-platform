@@ -1,0 +1,156 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
+import AdminNavbar from '@/components/admin/AdminNavbar'
+import { requireAdmin } from '@/lib/admin-session'
+import { adminStyles as s } from '@/lib/admin/styles'
+import { coachBadgeStyles, formatFitnessGoal, getCheckinStatus, getPlanStatus } from '@/lib/coach-utils'
+import { createClient } from '@/lib/supabase/client'
+import type { ClientProfile, Coach } from '@/types/database'
+
+const supabase = createClient()
+
+export default function AdminCoachDetailPage() {
+  const router = useRouter()
+  const params = useParams()
+  const coachId = typeof params.id === 'string' ? params.id : ''
+
+  const [coach, setCoach] = useState<Coach | null>(null)
+  const [clients, setClients] = useState<ClientProfile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const load = async () => {
+      if (!coachId) return
+      setError('')
+      const admin = await requireAdmin(supabase, router)
+      if (!admin) return
+
+      const [coachRes, clientsRes] = await Promise.all([
+        supabase.from('coaches').select('id, name, user_id, hard_cap').eq('id', coachId).maybeSingle(),
+        supabase.from('profiles').select('*').eq('coach_id', coachId).eq('role', 'client').order('name'),
+      ])
+
+      if (coachRes.error || !coachRes.data) {
+        setError('Coach not found.')
+        setLoading(false)
+        return
+      }
+
+      setCoach(coachRes.data as Coach)
+      setClients((clientsRes.data as ClientProfile[]) ?? [])
+      setLoading(false)
+    }
+
+    void load()
+  }, [coachId, router])
+
+  if (!coachId) {
+    return (
+      <>
+        <AdminNavbar />
+        <div style={s.container}><div style={s.error}>Invalid coach ID.</div></div>
+      </>
+    )
+  }
+
+  if (loading) {
+    return (
+      <>
+        <AdminNavbar />
+        <div style={s.loading}>Loading coach…</div>
+      </>
+    )
+  }
+
+  if (error && !coach) {
+    return (
+      <>
+        <AdminNavbar />
+        <div style={s.container}>
+          <Link href="/admin/coaches" style={s.backLink}>← Back to coaches</Link>
+          <div style={s.errorBox}>{error}</div>
+        </div>
+      </>
+    )
+  }
+
+  if (!coach) return null
+
+  const activeCount = clients.filter((c) => c.plan_delivered).length
+  const pendingCount = clients.filter((c) => c.checkin_awaiting || c.checkin_overdue || !c.plan_delivered).length
+
+  return (
+    <>
+      <AdminNavbar />
+      <div style={s.page}>
+        <div style={s.container}>
+          <Link href="/admin/coaches" style={s.backLink}>← Back to coaches</Link>
+
+          <h1 style={s.title}>{coach.name || 'Coach'}</h1>
+          <p style={s.subtitle}>
+            {clients.length} assigned clients · {activeCount} active · {pendingCount} pending work
+          </p>
+
+          <div style={s.card}>
+            <h2 style={s.cardTitle}>Coach info</h2>
+            <div style={s.infoGrid}>
+              <div style={s.infoRow}>
+                <span style={s.infoLabel}>Capacity</span>
+                <span style={s.infoValue}>{coach.hard_cap ?? 'Not set'}</span>
+              </div>
+              <div style={s.infoRow}>
+                <span style={s.infoLabel}>Assigned clients</span>
+                <span style={s.infoValue}>{clients.length}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={s.card}>
+            <h2 style={s.cardTitle}>Assigned clients</h2>
+            {clients.length === 0 ? (
+              <p style={{ margin: 0, color: '#666' }}>No clients assigned.</p>
+            ) : (
+              <div style={s.tableWrap}>
+                <table style={s.table}>
+                  <thead>
+                    <tr>
+                      <th style={s.th}>Client</th>
+                      <th style={s.th}>Goal</th>
+                      <th style={s.th}>Plan</th>
+                      <th style={s.th}>Check-in</th>
+                      <th style={s.th}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clients.map((client) => (
+                      <tr key={client.id}>
+                        <td style={s.td}>
+                          <strong>{client.name || 'Unnamed'}</strong>
+                          <div style={{ fontSize: 12, color: '#888' }}>{client.email}</div>
+                        </td>
+                        <td style={s.td}>{formatFitnessGoal(client.fitness_goal)}</td>
+                        <td style={s.td}>
+                          <span style={getPlanStatus(client) === 'Delivered' ? coachBadgeStyles.delivered : coachBadgeStyles.pending}>
+                            {getPlanStatus(client)}
+                          </span>
+                        </td>
+                        <td style={s.td}>{getCheckinStatus(client)}</td>
+                        <td style={s.td}>
+                          <Link href={`/admin/clients/${client.id}`} style={s.linkBtn}>View</Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
