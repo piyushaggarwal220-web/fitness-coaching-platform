@@ -6,6 +6,17 @@ export async function assignCoachToClient(
   clientId: string,
   coachId: string | null
 ): Promise<{ error: string | null }> {
+  if (coachId) {
+    const { data: coach, error: coachError } = await supabase
+      .from('coaches')
+      .select('id')
+      .eq('id', coachId)
+      .maybeSingle()
+
+    if (coachError) return { error: coachError.message }
+    if (!coach) return { error: 'Coach not found.' }
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({

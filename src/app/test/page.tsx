@@ -1,27 +1,14 @@
-'use client';
+import { notFound } from 'next/navigation'
 
 export default function TestPage() {
-  function handleClick() {
-    alert('Button clicked!');
+  if (process.env.NODE_ENV === 'production') {
+    notFound()
   }
 
   return (
     <div style={{ padding: '50px', textAlign: 'center' }}>
       <h1>Test Page</h1>
-      <button 
-        onClick={handleClick}
-        style={{
-          padding: '20px 40px',
-          fontSize: '20px',
-          backgroundColor: 'blue',
-          color: 'white',
-          border: 'none',
-          borderRadius: '10px',
-          cursor: 'pointer'
-        }}
-      >
-        Click Me
-      </button>
+      <p>Development only — not available in production builds.</p>
     </div>
-  );
+  )
 }

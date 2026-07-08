@@ -7,6 +7,7 @@ import {
 } from '@/lib/admin/fake-client-generator'
 import { getPortalLoginUrl } from '@/lib/admin/portal-urls'
 import { assertTrialClient } from '@/lib/admin/trial-client-guard'
+import { repairClientWorkflowConsistency } from '@/lib/admin/workflow-consistency'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AccessSource } from '@/lib/entitlements'
@@ -417,7 +418,31 @@ export async function ensureDemoClientAccount(
       updated_at: new Date().toISOString(),
     }
     if (includeAccessSource) fixPayload.access_source = 'admin_trial'
+    if (coachId) fixPayload.coach_id = coachId
     await admin.from('profiles').update(fixPayload).eq('id', existingId)
+
+    if (coachId) {
+      const { error: assignError } = await assignCoachToClient(admin, existingId, coachId)
+      if (assignError) throw new Error(assignError)
+    }
+
+    await repairClientWorkflowConsistency(existingId)
+
+    const { data: afterRepair } = await admin
+      .from('profiles')
+      .select('onboarding_complete, plan_delivered')
+      .eq('id', existingId)
+      .maybeSingle()
+
+    const { count: activePlanCount } = await admin
+      .from('plans')
+      .select('id', { count: 'exact', head: true })
+      .eq('client_id', existingId)
+      .eq('active', true)
+
+    if ((activePlanCount ?? 0) > 0 && !afterRepair?.onboarding_complete) {
+      await applyCompletedOnboarding(existingId, email, generateFakeOnboardingForm())
+    }
 
     return {
       userId: existingId,

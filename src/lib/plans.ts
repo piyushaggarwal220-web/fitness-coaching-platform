@@ -67,8 +67,25 @@ export async function syncPlanDeliveredFlag(
 
 export async function activatePlan(
   supabase: SupabaseClient,
-  plan: Pick<Plan, 'id' | 'client_id'>
+  plan: Pick<Plan, 'id' | 'client_id' | 'coach_id'>
 ): Promise<{ error: string | null }> {
+  const { data: client, error: clientError } = await supabase
+    .from('profiles')
+    .select('onboarding_complete, coach_id')
+    .eq('id', plan.client_id)
+    .maybeSingle()
+
+  if (clientError) return { error: clientError.message }
+  if (!client?.onboarding_complete) {
+    return { error: 'Cannot deliver plan: client has not completed onboarding.' }
+  }
+  if (!client.coach_id) {
+    return { error: 'Cannot deliver plan: client has no assigned coach.' }
+  }
+  if (client.coach_id !== plan.coach_id) {
+    return { error: 'Cannot deliver plan: plan coach does not match assigned coach.' }
+  }
+
   const { error: deactivateError } = await supabase
     .from('plans')
     .update({ active: false, updated_at: new Date().toISOString() })

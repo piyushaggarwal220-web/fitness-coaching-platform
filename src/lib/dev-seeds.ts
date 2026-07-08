@@ -341,11 +341,25 @@ export async function seedActivateSamplePlan(planId: string): Promise<SeedResult
 
   const { data: plan, error } = await admin
     .from('plans')
-    .select('id, client_id')
+    .select('id, client_id, coach_id')
     .eq('id', planId)
     .single()
 
   if (error || !plan) throw new Error(error?.message ?? 'Plan not found')
+
+  const { data: client, error: clientError } = await admin
+    .from('profiles')
+    .select('onboarding_complete, coach_id')
+    .eq('id', plan.client_id)
+    .maybeSingle()
+
+  if (clientError) throw new Error(clientError.message)
+  if (!client?.onboarding_complete) {
+    throw new Error('Cannot activate plan: client onboarding must be complete first (use mark_onboarding_complete).')
+  }
+  if (!client.coach_id) {
+    throw new Error('Cannot activate plan: client must be assigned to a coach.')
+  }
 
   const { error: activateError } = await activatePlan(admin, plan)
   if (activateError) throw new Error(activateError)
