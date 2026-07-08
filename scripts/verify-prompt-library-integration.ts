@@ -192,13 +192,13 @@ async function verifyWorkoutEnvironmentSelection(): Promise<void> {
   const gymLoaded = await loadPublishedPromptsForAction('initial_workout', gymProfile)
   const homeLoaded = await loadPublishedPromptsForAction('initial_workout', homeProfile)
 
-  if (!gymLoaded?.action) ok = false
-  if (homeLoaded?.resolvedCategory !== 'initial_workout_home') ok = false
+  if (!homeLoaded?.action) ok = false
+  if (homeLoaded?.action?.category !== 'initial_workout_home') ok = false
 
   if (ok) {
     pass(
       'Workout environment selection',
-      `gym→${gymCategory}, home→${homeCategory}${homeLoaded?.fallbackFromCategory ? ' (home pending import)' : ''}`
+      `gym→${gymCategory}, home→${homeCategory}`
     )
   } else {
     fail('Workout environment selection', 'category mapping incorrect')
@@ -379,8 +379,9 @@ async function verifyWeeklyUpdateContext(): Promise<void> {
   ]
 
   let dietOk = true
+  const dietCorpus = `${dietBuilt.systemPrompt}\n${dietBuilt.userPrompt}`
   for (const [needle, label] of dietChecks) {
-    if (!dietBuilt.userPrompt.includes(needle)) {
+    if (!dietCorpus.includes(needle)) {
       dietOk = false
       console.error(`  diet update missing ${label}: "${needle}"`)
     }
@@ -416,11 +417,17 @@ async function verifyWeeklyUpdateContext(): Promise<void> {
   ]
 
   let workoutOk = true
+  const workoutCorpus = `${workoutBuilt.systemPrompt}\n${workoutBuilt.userPrompt}`
   for (const [needle, label] of workoutChecks) {
-    if (!workoutBuilt.userPrompt.includes(needle)) {
+    if (!workoutCorpus.includes(needle)) {
       workoutOk = false
       console.error(`  workout update missing ${label}: "${needle}"`)
     }
+  }
+
+  if (dietOk && dietBuilt.userPrompt.includes('## Coaching Knowledge Base')) {
+    dietOk = false
+    console.error('  diet update duplicates knowledge base in user prompt')
   }
 
   if (dietOk && workoutOk) pass('Weekly update context')

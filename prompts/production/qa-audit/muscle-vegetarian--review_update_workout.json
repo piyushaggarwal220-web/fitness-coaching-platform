@@ -5,42 +5,42 @@
   "group": "Muscle Gain",
   "actionId": "review_update_workout",
   "checkinScenario": "high_hunger",
-  "rendered": "Your new split progresses from single body parts to a 2-body-part structure, rotating between Upper/Lower and Full Body sessions. You'll maintain your 60-minute session time while introducing new exercise variations to shock your muscles after 4 weeks on the foundation phase. Volume increases by 15% through additional sets on compound movements. Continue with your favorite squats and rows as anchors, and avoid burpees as requested.\n\nDay 1 – Upper A: Barbell rows 4x8, incline dumbbell bench 4x8, cable lateral raise 3x12, barbell curls 3x10.\n\nDay 2 – Lower A: Barbell squat 4x8, leg press 4x8, leg curl 3x12, calf raises 3x15.\n\nDay 3 – Upper B: Dumbbell bench press 4x8, barbell bent-over rows 4x8, cable chest fly 3x12, tricep rope pushdown 3x10.\n\nDay 4 – Lower B: Goblet squat 3x10, Romanian deadlift 3x10, leg extension 3x12, walking lunges 3x10 per leg.\n\nCardio: Continue 3x 30-minute brisk walks on non-consecutive days. Maintain even spacing throughout the week.\n\nHigh hunger Thu-Sun signals calorie deficit. Add protein/fiber to breakfast (Greek yogurt + poha), lunch (extra dal), and snacks (roasted chana + paneer). Distribute weekend meals consistently—avoid large deficit gaps.",
+  "rendered": "Hi Ananya,\n\nGreat effort this week! Your training performance is solid at 7/10, and you're showing good consistency despite moderate adherence. I've noticed your hunger spiking Thu-Sun and weekend snacking — we'll address that in your nutrition update. For this week, I'm progressing your split from single body-part focus to a 2-body-part upper/lower split with increased intensity. This gives your muscles a new stimulus while keeping your 60-minute sessions intact. I'm also increasing volume by ~15% since you've completed the foundation phase.\n\n**WEEKLY WORKOUT PLAN**\n\n**Day 1: Upper Body A (Strength Focus)**\nWarmup: 5 min light cardio + arm circles, band pull-aparts\n- Barbell Bench Press: 4 sets x 6 reps (increase load ~10%)\n- Barbell Rows: 4 sets x 6 reps (increase load ~10%)\n- Dumbbell Lateral Raise: 4 sets x 10 reps (up from 3x12)\n- Cable Chest Fly: 3 sets x 10 reps\nCooldown: 5 min walk + chest/shoulder stretch\n\n**Day 2: Lower Body A (Strength Focus)**\nWarmup: 5 min light cardio + leg swings, bodyweight squats\n- Barbell Back Squat: 4 sets x 6 reps (increase load ~10%)\n- Romanian Deadlift: 4 sets x 8 reps (up from 3x10)\n- Leg Curl Machine: 3 sets x 10 reps (up from 3x12)\n- Calf Raise: 3 sets x 12 reps\nCooldown: 5 min walk + quad/hamstring stretch\n\n**Day 3: Upper Body B (Hypertrophy Focus)**\nWarmup: 5 min light cardio + arm circles, band pull-aparts\n- Dumbbell Incline Press: 4 sets x 8 reps\n- Dumbbell Rows: 4 sets x 8 reps\n- Machine Lateral Raise: 3 sets x 12 reps\n- Dumbbell Flye: 3 sets x 12 reps\nCooldown: 5 min walk + chest/shoulder stretch\n\n**Day 4: Lower Body B (Hypertrophy Focus)**\nWarmup: 5 min light cardio + leg swings, bodyweight squats\n- Leg Press: 4 sets x 8 reps\n- Goblet Squat: 4 sets x 10 reps\n- Leg Extension: 3 sets x 12 reps\n- Hamstring Curl: 3 sets x 12 reps\nCooldown: 5 min walk + quad/hamstring stretch\n\n**Rest Days: 3 (spread across week for recovery)**\nDaily step target: 5000 steps. Maintain 7–8 hours sleep.\n\nFocus: Progressive overload on strength days (Days 1–2), controlled tempo on hypertrophy days (Days 3–4). Rest 90–120 sec between heavy compound sets, 60 sec between accessory sets.\n\nAdherence 6/10 + high hunger Thu-Sun signals meal structure issue. Nutrition update pending to address weekend deficit. Monitor energy (6/10) — ensure adequate sleep and protein spread across day. Load increases ~10% on strength days; adjust if form breaks.",
   "model": "claude-haiku-4-5-20251001",
-  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
-  "inputTokens": 1522,
-  "outputTokens": 491,
+  "promptVersion": "updated-workout-prompt@v3+system-prompt@v1",
+  "inputTokens": 2051,
+  "outputTokens": 1000,
   "evaluation": {
     "workout": {
       "exerciseSelection": 7,
-      "volume": 7,
+      "volume": 5,
       "progression": 8,
-      "recovery": 5,
+      "recovery": 8,
       "equipmentSuitability": 8,
       "goalAlignment": 7
     },
     "overall": {
       "coachingQuality": 10,
-      "professionalism": 8,
+      "professionalism": 7,
       "personalization": 5,
       "sendWithoutEdits": 7
     },
     "issues": [
       {
-        "category": "Missing personalization",
-        "severity": "medium",
-        "description": "Output does not mention client first name (Ananya).",
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
         "promptToInspect": "updated-workout.prompt"
       },
       {
-        "category": "Ignored preferred exercises",
+        "category": "Unrealistic training volume",
         "severity": "medium",
-        "description": "Client dislikes \"burpees\" but it appears in plan.",
+        "description": "Only 3 set×rep entries for 4-day program.",
         "promptToInspect": "updated-workout.prompt"
       }
     ],
-    "workoutAverage": 7,
-    "overallAverage": 7.25
+    "workoutAverage": 7.166666666666667,
+    "overallAverage": 7.208333333333334
   },
-  "generatedAt": "2026-07-07T21:14:09.881Z"
+  "generatedAt": "2026-07-08T06:14:51.304Z"
 }

@@ -267,6 +267,69 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   return lines.join('\n')
 }
 
+function buildHardConstraintsSection(profile: OnboardingProfile): string {
+  const data = profile.onboarding_data
+  const training = data?.training
+  const diet = data?.diet
+  const environment = resolveWorkoutEnvironment(profile)
+  const equipment = (training?.equipmentAvailable ?? []).filter(Boolean)
+  const location = training?.location ?? 'gym'
+
+  const lines = [
+    '## Hard Constraints (MUST obey — never violate)',
+    `- Diet preference: ${getOnboardingLabel('diet_preference', profile.diet_preference)} — this is non-negotiable for all meal options.`,
+  ]
+
+  if (profile.diet_preference === 'vegetarian') {
+    lines.push(
+      '- VEGETARIAN: No chicken, fish, mutton, prawn, or eggs in any meal. Use dal, paneer, soya, chana, dairy, nuts only.'
+    )
+  } else if (profile.diet_preference === 'non_vegetarian') {
+    const eggDays = diet?.eggDaysPerWeek ?? '0'
+    const chickenDays = diet?.chickenDaysPerWeek ?? '0'
+    const fishDays = diet?.fishDaysPerWeek ?? '0'
+    lines.push(
+      `- NON-VEGETARIAN day rules: eggs ${eggDays} days/week, chicken ${chickenDays} days/week, fish ${fishDays} days/week — respect exactly.`
+    )
+  }
+
+  if (diet?.allergies?.trim() && diet.allergies.toLowerCase() !== 'none') {
+    lines.push(`- Allergies (NEVER include): ${diet.allergies.trim()}`)
+  }
+  if (diet?.foodsDisliked?.trim()) {
+    lines.push(`- Foods disliked (NEVER include): ${diet.foodsDisliked.trim()}`)
+  }
+  if (diet?.monthlyFoodBudget?.trim()) {
+    lines.push(`- Monthly food budget: ₹${diet.monthlyFoodBudget} — stay within this; prioritize affordable staples.`)
+  }
+
+  if (environment === 'home') {
+    lines.push(
+      `- HOME WORKOUT ONLY: Use only equipment listed — ${equipment.length > 0 ? equipment.join(', ') : 'bodyweight only'}. NEVER prescribe barbell, smith machine, leg press, cable machines, or commercial gym equipment unless listed.`
+    )
+  } else if (location === 'gym' || location === 'both') {
+    lines.push('- GYM: Full commercial gym equipment is available unless client listed limitations.')
+  }
+
+  if (training?.daysPerWeek) {
+    lines.push(`- Training days per week: ${training.daysPerWeek} — program must match this exactly, not more.`)
+  }
+  if (training?.favoriteExercises?.trim()) {
+    lines.push(`- Include preferred exercises where appropriate: ${training.favoriteExercises.trim()}`)
+  }
+  if (training?.exercisesDisliked?.trim()) {
+    lines.push(`- Exercises to AVOID entirely (do not mention or prescribe): ${training.exercisesDisliked.trim()}`)
+  }
+  if (hasMeaningfulText(profile.injuries)) {
+    lines.push(`- Injury/limitation (modify all exercises accordingly): ${profile.injuries!.trim()}`)
+  }
+  if (hasMeaningfulText(profile.medical_notes)) {
+    lines.push(`- Medical notes: ${profile.medical_notes!.trim()}`)
+  }
+
+  return lines.join('\n')
+}
+
 function buildTrainingPreferencesSection(profile: OnboardingProfile): string {
   const data = profile.onboarding_data
   const training = data?.training
@@ -370,6 +433,7 @@ function buildUpdatedDietSection(plan: Plan | null | undefined): string {
 export type PromptContextSections = {
   clientDetails: string
   onboarding: string
+  hardConstraints: string
   trainingPreferences: string
   activePlan: string
   activeDiet: string
@@ -379,6 +443,69 @@ export type PromptContextSections = {
   coachNotes: string
   knowledge: string
   complexity: string
+}
+
+export type PromptContextSectionKey = keyof PromptContextSections
+
+const SECTION_LABELS: Record<PromptContextSectionKey, string> = {
+  clientDetails: 'Client Profile',
+  onboarding: 'Onboarding',
+  hardConstraints: 'Hard Constraints',
+  trainingPreferences: 'Training Preferences',
+  activePlan: 'Current Active Plan',
+  activeDiet: 'Current Active Diet',
+  activeWorkout: 'Current Active Workout',
+  updatedDiet: 'Newly Generated Updated Diet',
+  checkin: 'Weekly Check-in',
+  coachNotes: 'Coach Notes',
+  knowledge: 'Knowledge Base',
+  complexity: 'Complexity Score',
+}
+
+/** Inspect which context sections appear in assembled prompts (for audits). */
+export function analyzeInjectedContext(input: {
+  systemPrompt: string
+  userPrompt: string
+  sections: PromptContextSections
+  actionId?: CoachAiActionId
+}): {
+  inSystem: PromptContextSectionKey[]
+  inUser: PromptContextSectionKey[]
+  appendedToUser: PromptContextSectionKey[]
+  missingSubstantive: PromptContextSectionKey[]
+  duplicated: PromptContextSectionKey[]
+} {
+  const corpus = `${input.systemPrompt}\n${input.userPrompt}`
+  const keys = Object.keys(SECTION_LABELS) as PromptContextSectionKey[]
+
+  const inSystem: PromptContextSectionKey[] = []
+  const inUser: PromptContextSectionKey[] = []
+  const duplicated: PromptContextSectionKey[] = []
+
+  for (const key of keys) {
+    const section = input.sections[key]
+    if (!hasSubstantiveContext(section)) continue
+
+    const inSys = sectionWasInjected(input.systemPrompt, section)
+    const inUsr = sectionWasInjected(input.userPrompt, section)
+    if (inSys) inSystem.push(key)
+    if (inUsr) inUser.push(key)
+    if (inSys && inUsr) duplicated.push(key)
+  }
+
+  const required = resolveAppendOrder(input.actionId)
+  const missingSubstantive = required.filter((key) => {
+    const section = input.sections[key]
+    return hasSubstantiveContext(section) && !sectionWasInjected(corpus, section)
+  })
+
+  const appendedToUser = inUser.filter((key) => !inSystem.includes(key))
+
+  return { inSystem, inUser, appendedToUser, missingSubstantive, duplicated }
+}
+
+export function formatContextSectionLabel(key: PromptContextSectionKey): string {
+  return SECTION_LABELS[key]
 }
 
 /** Build injectable context blocks for Prompt Library placeholder replacement. */
@@ -393,6 +520,7 @@ export function buildPromptContextSections(
   return {
     clientDetails: buildClientProfileSection(input.profile),
     onboarding: buildOnboardingSection(input.profile.onboarding_data),
+    hardConstraints: buildHardConstraintsSection(input.profile),
     trainingPreferences: buildTrainingPreferencesSection(input.profile),
     activePlan: buildActivePlanSection(input.activePlan),
     activeDiet: buildActiveDietSection(input.activePlan),
@@ -415,6 +543,8 @@ const PLACEHOLDER_ALIASES: Record<string, keyof PromptContextSections> = {
   '[PASTE CLIENT DETAILS HERE]': 'clientDetails',
   '[ONBOARDING ANSWERS]': 'onboarding',
   '[ONBOARDING DATA]': 'onboarding',
+  '[HARD CONSTRAINTS]': 'hardConstraints',
+  '[NON-NEGOTIABLE CONSTRAINTS]': 'hardConstraints',
   '[TRAINING PREFERENCES]': 'trainingPreferences',
   '[WORKOUT PREFERENCES]': 'trainingPreferences',
   '[ACTIVE PLAN]': 'activePlan',
@@ -455,21 +585,39 @@ function sectionWasInjected(prompt: string, section: string): boolean {
   return marker.length > 0 && prompt.includes(marker)
 }
 
+/** Skip placeholder-only sections that add noise without real client data. */
+function hasSubstantiveContext(section: string): boolean {
+  const trimmed = section.trim()
+  if (!trimmed) return false
+
+  const emptyMarkers = [
+    '## Latest Check-In\nNo check-in provided',
+    '## Onboarding Answers\nNo extended onboarding data',
+    '## Coach Notes\nNone provided.',
+    '## Current Active Plan\nNo active plan on file.',
+    '## Current Active Diet\nNo active diet on file.',
+    '## Current Active Workout\nNo active workout on file.',
+    '## Newly Generated Updated Diet\nNo updated diet is available.',
+  ]
+
+  return !emptyMarkers.some((marker) => trimmed.startsWith(marker))
+}
+
 function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSections)[] {
   switch (actionId) {
     case 'initial_workout':
       return [
+        'hardConstraints',
         'clientDetails',
         'onboarding',
         'trainingPreferences',
-        'activePlan',
-        'checkin',
         'coachNotes',
         'knowledge',
         'complexity',
       ]
     case 'review_update_diet':
       return [
+        'hardConstraints',
         'clientDetails',
         'onboarding',
         'activeDiet',
@@ -481,6 +629,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
       ]
     case 'review_update_workout':
       return [
+        'hardConstraints',
         'clientDetails',
         'onboarding',
         'trainingPreferences',
@@ -494,10 +643,9 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
       ]
     default:
       return [
+        'hardConstraints',
         'clientDetails',
         'onboarding',
-        'activePlan',
-        'checkin',
         'coachNotes',
         'knowledge',
         'complexity',
@@ -507,18 +655,24 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
 
 /** Append context blocks that were not injected via placeholders. */
 function appendMissingLibraryContext(
-  prompt: string,
+  userPrompt: string,
+  systemPrompt: string,
   sections: PromptContextSections,
   actionId?: CoachAiActionId
 ): string {
+  const injectedCorpus = `${systemPrompt}\n${userPrompt}`
   const extras = resolveAppendOrder(actionId)
 
   const blocks = extras
     .map((key) => sections[key])
-    .filter((section) => section.trim() && !sectionWasInjected(prompt, section))
+    .filter(
+      (section) =>
+        hasSubstantiveContext(section) &&
+        !sectionWasInjected(injectedCorpus, section)
+    )
 
-  if (blocks.length === 0) return prompt
-  return [prompt, ...blocks].join('\n\n')
+  if (blocks.length === 0) return userPrompt
+  return [userPrompt, ...blocks].join('\n\n')
 }
 
 function buildPromptFromLibraryTemplates(
@@ -528,14 +682,16 @@ function buildPromptFromLibraryTemplates(
   const sections = buildPromptContextSections({ ...input, knowledgeEntries: selectedEntries })
   const categories = selectKnowledgeCategories(input.profile)
 
-  const userPrompt = appendMissingLibraryContext(
-    injectPromptPlaceholders(input.actionTemplate!.trim(), sections),
-    sections,
-    input.actionId
-  )
   const systemPrompt = input.systemTemplate?.trim()
     ? injectPromptPlaceholders(input.systemTemplate.trim(), sections)
     : buildSystemPrompt(input.complexityScore, selectedEntries)
+
+  const userPrompt = appendMissingLibraryContext(
+    injectPromptPlaceholders(input.actionTemplate!.trim(), sections),
+    systemPrompt,
+    sections,
+    input.actionId
+  )
 
   return {
     systemPrompt,

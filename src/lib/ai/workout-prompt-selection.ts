@@ -56,18 +56,6 @@ export function isHomeWorkoutPromptCategory(category: PromptLibraryCategory): bo
   )
 }
 
-export function gymFallbackCategoryForHome(
-  homeCategory: PromptLibraryCategory
-): PromptLibraryCategory | null {
-  if (homeCategory === HOME_WORKOUT_PROMPT_CATEGORIES.initial) {
-    return GYM_WORKOUT_PROMPT_CATEGORIES.initial
-  }
-  if (homeCategory === HOME_WORKOUT_PROMPT_CATEGORIES.weekly) {
-    return GYM_WORKOUT_PROMPT_CATEGORIES.weekly
-  }
-  return null
-}
-
 /** Prompt Library category for a coach action, accounting for workout environment. */
 export function getPromptCategoryForAction(
   actionId: CoachAiActionId,

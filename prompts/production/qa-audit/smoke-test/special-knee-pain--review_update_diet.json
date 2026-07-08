@@ -1,0 +1,34 @@
+{
+  "caseId": "special-knee-pain--review_update_diet",
+  "personaId": "special-knee-pain",
+  "personaLabel": "Knee pain",
+  "group": "Special Cases",
+  "actionId": "review_update_diet",
+  "checkinScenario": "poor_sleep",
+  "rendered": "Calories: 1875\nProtein: 128g\nCarbs: 205g\nFat: 52g\n\nWeekly Diet Plan: Geeta, good work on the 300g drop this week, but I'm concerned about your 5-hour sleep average, energy at 4/10, and hunger spiking to 8/10. That combination tells me you're under-recovering and the deficit is hitting too hard. We're adding ~100 kcal daily through higher-volume, fibre-rich meals and redistributing carbs to support your evening training and sleep. Adherence at 6/10 and one skipped session due to fatigue means we need to make this easier to stick to, not harder.\n\n**Why These Changes:**\n- **Hunger 8/10:** Increasing breakfast volume with oats + fruit, adding mid-morning snack, and boosting dinner vegetables to keep you fuller.\n- **Energy 4/10 + 5h sleep:** Carbs shifted slightly toward evening (dinner) to support recovery and sleep quality. Magnesium-rich foods (almonds, spinach) added.\n- **Adherence 6/10:** Simplified weekend meals—same breakfast and snack structure all week so you don't have to think. Dinner options stay flexible.\n- **Cravings high:** Protein stays ~130g to preserve muscle and satiety. Fibre bumped via vegetables, dal, and whole grains.\n\nYour job this week: hit 6–7 hours of sleep minimum, prep your evening snack in advance, and do NOT skip meals even if you're busy. If hunger stays high by Thursday, add 1 extra roti at dinner—don't suffer in silence.\n\n---\n\n**DAILY STRUCTURE (All 7 Days)**\n\n**Breakfast (8:30 AM)**\nOption A: Oats 50g + milk 200ml + banana 1 medium + almonds 10g  \n(P: 16g | C: 62g | F: 12g | ~410 kcal)\n\nOption B: Poha 60g (raw) cooked with peas 30g, peanuts 10g, curry leaves, mustard seeds + curd 100g on side  \n(P: 14g | C: 58g | F: 11g | ~385 kcal)\n\nOption C: Idli 3 medium (150g steamed batter) + sambar 1 katori (100ml) + coconut chutney 1 tbsp  \n(P: 12g | C: 60g | F: 8g | ~360 kcal)\n\n**Mid-Morning (11:00 AM)**\nApple 1 medium + roasted chana 25g  \n(P: 7g | C: 32g | F: 2g | ~170 kcal)\n\n**Lunch (1:30 PM)**\nOption A: Rice 1 katori cooked (80g raw) + moong dal 1 katori + bhindi sabzi 1 katori + curd 100g + salad (cucumber, tomato, onion)  \n(P: 22g | C: 68g | F: 8g | ~430 kcal)\n\nOption B: 2 roti (60g atta total) + rajma 1 katori + palak sabzi 1 katori + curd 100g + salad  \n(P: 24g | C: 64g | F: 9g | ~440 kcal)\n\nOption C: Curd rice (rice 60g raw, curd 150g, tempering) + chana masala 1 katori + carrot-beetroot salad  \n(P: 20g | C: 66g | F: 7g | ~415 kcal)\n\n**Evening Snack (6:30 PM — Pre-Workout)**\nTea (no sugar, 100ml milk) + roasted chana 30g + dates 2 small  \n(P: 10g | C: 28g | F: 3g | ~175 kcal)\n\n**Dinner (9:00 PM — Post-Workout)**\nOption A: 2 roti (60g atta) + paneer bhurji 100g (cooked with onion, tomato, minimal oil) + mixed veg sabzi 1 katori + cucumber-tomato salad  \n(P: 32g | C: 42g | F: 14g | ~430 kcal)\n\nOption B: 2 roti + dal tadka 1 katori + baingan bharta 1 katori + salad + curd 50g  \n(P: 28g | C: 46g | F: 12g | ~410 kcal)\n\nOption C: Khichdi (rice 40g + moong dal 30g raw, cooked together) + paneer tikka 80g (grilled/air-fried) + sautéed spinach 1 katori + raita 100g  \n(P: 30g | C: 48g | F: 13g | ~435 kcal)\n\n**Before Bed (Optional, if hunger persists)**\nWarm milk 150ml with a pinch of turmeric + 5 soaked almonds  \n(P: 7g | C: 9g | F: 4g | ~95 kcal)\n\n---\n\n**Daily Averages: ~1875 kcal | Protein: 128g | Carbs: 205g | Fat: 52g**\n\n---\n\n**Your Action Plan This Week:**\n\n1. **Sleep is non-negotiable.** Aim for lights out by 10:30 PM. No phone in bed. If work stress is keeping you up, we need to talk about it—chronic sleep deprivation will stall fat loss and crush energy no matter how perfect the diet is.\n\n2. **Prep your 11 AM and 6:30 PM snacks the night before.** Roasted chana in a small box, apple washed and ready. When hunger hits at 8/10, you won't have time to think—just eat what's in front of you. This alone will fix half your adherence issues.\n\n3. **Track your dinner timing.** If you're training at 7 PM and eating at 9 PM, that's fine—but if you're eating at 10:30 PM because work ran late, your sleep suffers. Adjust your workout time or have a lighter pre-made dinner option ready (khichdi reheats in 3 minutes).\n\n4. **Cravings? Add, don't subtract.** If you're craving sweets mid-week, eat 1 small piece of jaggery (10g) with your evening tea instead of fighting it and bingeing later. We're playing the long game—12 weeks is plenty of time if you stay consistent.\n\n5. **Communicate faster.** You skipped a workout due to fatigue—that's a red flag I need to hear about *during* the week, not after. Message me Thursday if energy isn't improving or hunger stays above 7/10. We'll tweak carbs or add a diet break day before you burn out.\n\nYou're doing the hard part by showing up and checking in. Now tighten up the sleep and meal prep, and let's see a 7/10 adherence score next week. You've got this, but I need you to take recovery as seriously as training.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-diet-prompt@v3+system-prompt@v1",
+  "inputTokens": 2287,
+  "outputTokens": 1967,
+  "evaluation": {
+    "diet": {
+      "calories": 6,
+      "protein": 5,
+      "mealPracticality": 8,
+      "indianFoodSuitability": 10,
+      "budgetSuitability": 7,
+      "variety": 5,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 8,
+      "sendWithoutEdits": 7
+    },
+    "issues": [],
+    "dietAverage": 7,
+    "overallAverage": 7.625
+  },
+  "generatedAt": "2026-07-08T06:52:27.200Z"
+}

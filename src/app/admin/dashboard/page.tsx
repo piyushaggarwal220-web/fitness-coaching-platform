@@ -2,18 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { FounderAnalyticsPanel } from '@/components/admin/analytics/FounderAnalyticsPanel'
 import { ComplexityAnalyticsPanel } from '@/components/admin/analytics/ComplexityAnalyticsPanel'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { AdminStatCard } from '@/components/admin/AdminStatCard'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import type { PlatformHealth } from '@/lib/admin/platform-health'
 import type { PromptLibraryStats } from '@/types/database'
 import { formatDate } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
-import type { AdminProfile } from '@/lib/admin-session'
 
 const supabase = createClient()
 
@@ -25,10 +22,9 @@ type ActivityItem = {
 }
 
 export default function AdminDashboardPage() {
-  const router = useRouter()
-  const [admin, setAdmin] = useState<AdminProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [adminLabel, setAdminLabel] = useState('Admin')
   const [stats, setStats] = useState({ clients: 0, coaches: 0, activePlans: 0, pendingOnboarding: 0 })
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [health, setHealth] = useState<PlatformHealth | null>(null)
@@ -37,9 +33,17 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const load = async () => {
       setError('')
-      const adminData = await requireAdmin(supabase, router)
-      if (!adminData) return
-      setAdmin(adminData)
+      setLoading(true)
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name, email')
+          .eq('id', user.id)
+          .maybeSingle()
+        setAdminLabel(profile?.name || profile?.email || 'Admin')
+      }
 
       const [
         clientsRes,
@@ -124,7 +128,7 @@ export default function AdminDashboardPage() {
     }
 
     void load()
-  }, [router])
+  }, [])
 
   if (loading) {
     return (
@@ -142,7 +146,7 @@ export default function AdminDashboardPage() {
         <div style={s.containerWide}>
           <h1 style={s.title}>Founder Dashboard</h1>
           <p style={s.subtitle}>
-            {admin?.name || admin?.email || 'Admin'} · Business operations overview
+            {adminLabel} · Business operations overview
           </p>
 
           {error && <div style={s.error}>{error}</div>}

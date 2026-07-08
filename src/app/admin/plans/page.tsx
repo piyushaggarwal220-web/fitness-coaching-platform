@@ -1,9 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatDate } from '@/lib/coach-utils'
 import { formatPlanDate } from '@/lib/plans'
@@ -18,7 +16,6 @@ type ActivePlanRow = Plan & {
 }
 
 export default function AdminActivePlansPage() {
-  const router = useRouter()
   const [plans, setPlans] = useState<ActivePlanRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -26,8 +23,6 @@ export default function AdminActivePlansPage() {
   useEffect(() => {
     const load = async () => {
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       const { data, error: loadError } = await supabase
         .from('plans')
@@ -46,7 +41,7 @@ export default function AdminActivePlansPage() {
     }
 
     void load()
-  }, [router])
+  }, [])
 
   if (loading) {
     return (

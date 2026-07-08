@@ -1,0 +1,46 @@
+{
+  "caseId": "fat-loss-male-beginner-gym--review_update_workout",
+  "personaId": "fat-loss-male-beginner-gym",
+  "personaLabel": "Male beginner, gym",
+  "group": "Fat Loss",
+  "actionId": "review_update_workout",
+  "checkinScenario": "high_hunger",
+  "rendered": "Hey Arjun,\n\nGreat work this week — you're showing up consistently and your training performance is solid at 7/10. I can see the hunger has been challenging, especially Thursday through Sunday, and weekend snacking crept in. We're addressing that on the nutrition side by boosting protein and fibre at each meal and structuring your weekend eating better so you're not fighting huge hunger spikes.\n\nOn the training front, you've been running the upper/lower/full split for a month now, so this week we're switching things up to give your muscles a fresh stimulus. We're moving to a 2-body-part-per-day split across your 4 training days. This keeps your session length around 60 minutes, maintains similar total volume, but spreads the work differently to challenge your body in a new way. You'll hit Chest + Back, Legs + Shoulders, Arms + Core, and then a second Legs + Back day. We're keeping your favourite movements — squats and rows — front and centre, and I've programmed zero burpees as always.\n\nBecause your adherence was 6/10 and energy was moderate (6/10), I'm not spiking intensity this week. Instead, we're holding volume steady and letting the new split provide the progression. If you nail all four sessions with good form and energy, we'll look at a small load bump next week. Your evening gym sessions fit your schedule well, so stick with that timing and aim to keep your daily steps above 5000 — even a 10-minute walk after dinner helps with fat loss and digestion.\n\nLet's lock in all four workouts this week, stay on top of the updated meal plan, and keep me posted on how the new split feels.\n\n**Weekly Workout Plan**\n\n**Day 1: Chest + Back (Evening)**\n\nWarmup:\n- 5 min incline treadmill walk\n- 10 arm circles each direction\n- 10 scapular push-ups\n- 10 band pull-aparts\n\nWorking Sets:\n1. Barbell Bench Press — 4 sets x 8 reps\n2. Barbell Bent-Over Row — 4 sets x 8 reps\n3. Incline Dumbbell Press — 3 sets x 10 reps\n4. Cable Seated Row — 3 sets x 10 reps\n5. Dumbbell Chest Fly — 3 sets x 12 reps\n6. Lat Pulldown — 3 sets x 12 reps\n\nCooldown:\n- 3 min walk\n- Chest and lat static stretches, 30 sec each\n\nDaily step target: 5000+ steps\n\n**Day 2: Legs + Shoulders (Evening)**\n\nWarmup:\n- 5 min bike or treadmill walk\n- 10 bodyweight squats\n- 10 leg swings each leg\n- 10 arm circles\n\nWorking Sets:\n1. Barbell Back Squat — 4 sets x 8 reps\n2. Leg Press — 3 sets x 10 reps\n3. Romanian Deadlift (Barbell) — 3 sets x 10 reps\n4. Dumbbell Shoulder Press — 3 sets x 10 reps\n5. Dumbbell Lateral Raise — 3 sets x 12 reps\n6. Cable Face Pull — 3 sets x 15 reps\n\nCooldown:\n- 3 min walk\n- Quad, hamstring, and shoulder stretches, 30 sec each\n\nDaily step target: 5000+ steps\n\n**Day 3: Rest / Active Recovery**\n\n- 20–30 min brisk walk or light stretching session\n- Focus on hydration (2L water) and sleep (7–8 hours)\n- Daily step target: 5000+ steps\n\n**Day 4: Arms + Core (Evening)**\n\nWarmup:\n- 5 min incline walk\n- 10 arm circles each direction\n- 10 wrist circles\n\nWorking Sets:\n1. Barbell Curl — 3 sets x 10 reps\n2. Cable Tricep Pushdown — 3 sets x 10 reps\n3. Dumbbell Hammer Curl — 3 sets x 12 reps\n4. Overhead Dumbbell Tricep Extension — 3 sets x 12 reps\n5. Cable Rope Curl — 3 sets x 12 reps\n6. Plank — 3 sets x 30–45 sec hold\n7. Cable Crunch — 3 sets x 15 reps\n\nCooldown:\n- 3 min walk\n- Bicep, tricep, and torso stretches, 30 sec each\n\nDaily step target: 5000+ steps\n\n**Day 5: Legs + Back (Evening)**\n\nWarmup:\n- 5 min bike or treadmill walk\n- 10 glute bridges\n- 10 leg swings each leg\n- 10 band pull-aparts\n\nWorking Sets:\n1. Barbell Front Squat or Goblet Squat (Dumbbell) — 3 sets x 10 reps\n2. Leg Curl Machine — 3 sets x 12 reps\n3. Walking Dumbbell Lunges — 3 sets x 10 reps per leg\n4. Cable Lat Pulldown (Wide Grip) — 3 sets x 10 reps\n5. Dumbbell Single-Arm Row — 3 sets x 12 reps per arm\n6. Hyperextension or Back Extension — 3 sets x 12 reps\n\nCooldown:\n- 3 min walk\n- Quad, hamstring, glute, and lat stretches, 30 sec each\n\nDaily step target: 5000+ steps\n\n**Days 6 & 7: Rest**\n\n- Prioritize 7–8 hours sleep\n- 2L water daily\n- Light activity if you like (walk, stretching), but no structured training\n- Daily step target: 5000+ steps\n\n**Cardio This Week:**\n- 3 sessions of 30 min brisk walk (can be done on rest days or post-workout)\n- Aim for a pace where you can talk but feel slightly breathless\n\n**Key Reminders:**\n- Rest 90–120 sec between compound sets (squats, bench, rows), 60–90 sec between accessory sets.\n- Track your weights in a notebook or app — we want to see small jumps week to week once you dial in form.\n- If any exercise causes pain (not fatigue), stop immediately and message me.\n- Keep your daily steps above 5000 — this supports your fat-loss goal without adding training fatigue.\n\nLet's make this week count, Arjun. Check in on time and let me know how the new split feels!",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v3+system-prompt@v1",
+  "inputTokens": 2153,
+  "outputTokens": 1890,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 7,
+      "personalization": 8,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Ignored preferred exercises",
+        "severity": "medium",
+        "description": "Client dislikes \"burpees\" but it appears in plan.",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 4-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7.333333333333333,
+    "overallAverage": 7.666666666666666
+  },
+  "generatedAt": "2026-07-08T06:41:57.820Z"
+}

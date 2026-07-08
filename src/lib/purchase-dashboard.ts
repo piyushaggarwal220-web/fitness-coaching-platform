@@ -44,7 +44,7 @@ export function getClientDashboardStatus(params: {
   const { profile, purchase, coach, activePlan } = params
   const paymentConfirmed = hasClientEntitlement(profile) || Boolean(purchase)
   const onboardingComplete = profile.onboarding_complete === true
-  const coachAssigned = Boolean(profile.coach_id && coach?.name)
+  const coachAssigned = Boolean(profile.coach_id)
   const expectedDeliveryDate = getExpectedPlanDeliveryDate(profile)
 
   let planStatus = 'Not started'
@@ -85,7 +85,7 @@ export function getClientDashboardStatus(params: {
     paymentConfirmed,
     onboardingComplete,
     coachAssigned,
-    coachName: coach?.name ?? null,
+    coachName: coach?.name ?? (profile.coach_id ? 'Assigned' : null),
     planStatus,
     expectedDelivery: formatExpectedDelivery(expectedDeliveryDate),
     nextAction,

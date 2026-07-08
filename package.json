@@ -6,7 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:prompts": "tsx --env-file=.env.local scripts/verify-prompt-library-integration.ts",
+    "verify:context": "tsx --env-file=.env.local scripts/audit-ai-context.ts",
+    "verify:home-workout": "tsx --env-file=.env.local scripts/verify-home-workout-integration.ts",
+    "verify:knowledge": "tsx --env-file=.env.local scripts/verify-knowledge-base.ts",
+    "verify:complexity": "tsx --env-file=.env.local scripts/verify-complexity-score-system.ts",
+    "verify:testing-accounts": "tsx --env-file=.env.local scripts/verify-testing-accounts.ts",
+    "seed:knowledge": "tsx --env-file=.env.local scripts/seed-knowledge-base.ts",
+    "verify:account-deletion": "tsx --env-file=.env.local scripts/verify-account-deletion.ts",
+    "verify:purchase-flow": "tsx --env-file=.env.local scripts/verify-purchase-flow.ts",
+    "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow",
+    "db:apply-pending": "node scripts/apply-pending-migrations.mjs",
+    "prompts:import": "tsx --env-file=.env.local scripts/import-production-prompts.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
@@ -32,7 +44,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "pg": "^8.16.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }

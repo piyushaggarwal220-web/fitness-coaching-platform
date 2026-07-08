@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-07-07T20:55:04.131Z",
-  "personas": 1,
-  "cases": 4,
-  "successful": 4,
-  "failed": 0,
+  "generatedAt": "2026-07-07T22:28:15.898Z",
+  "personas": 25,
+  "cases": 100,
+  "successful": 15,
+  "failed": 85,
   "artifacts": [
     {
       "id": "fat-loss-male-beginner-gym--initial_diet",
-      "score": 7.125,
+      "score": 7.714285714285714,
       "issues": 1
     },
     {
@@ -17,13 +17,578 @@
     },
     {
       "id": "fat-loss-male-beginner-gym--review_update_diet",
-      "score": 6.910714285714286,
+      "score": 7.982142857142858,
       "issues": 1
     },
     {
       "id": "fat-loss-male-beginner-gym--review_update_workout",
-      "score": 7.416666666666666,
+      "score": 7.666666666666666,
+      "issues": 1
+    },
+    {
+      "id": "fat-loss-female-beginner-home--initial_diet",
+      "score": 7.857142857142858,
+      "issues": 1
+    },
+    {
+      "id": "fat-loss-female-beginner-home--initial_workout",
+      "score": 6.375,
       "issues": 2
+    },
+    {
+      "id": "fat-loss-female-beginner-home--review_update_diet",
+      "score": 8.071428571428571,
+      "issues": 0
+    },
+    {
+      "id": "fat-loss-female-beginner-home--review_update_workout",
+      "score": 7.291666666666666,
+      "issues": 2
+    },
+    {
+      "id": "fat-loss-office-worker--initial_diet",
+      "score": 6.553571428571429,
+      "issues": 2
+    },
+    {
+      "id": "fat-loss-office-worker--initial_workout",
+      "score": 7.416666666666666,
+      "issues": 1
+    },
+    {
+      "id": "fat-loss-office-worker--review_update_diet",
+      "score": 7.857142857142858,
+      "issues": 0
+    },
+    {
+      "id": "fat-loss-office-worker--review_update_workout",
+      "score": 7.666666666666666,
+      "issues": 1
+    },
+    {
+      "id": "fat-loss-night-shift--initial_diet",
+      "score": 6.553571428571429,
+      "issues": 2
+    },
+    {
+      "id": "fat-loss-night-shift--initial_workout",
+      "score": 7.666666666666666,
+      "issues": 1
+    },
+    {
+      "id": "fat-loss-night-shift--review_update_diet",
+      "score": 6.678571428571429,
+      "issues": 2
+    },
+    {
+      "id": "fat-loss-night-shift--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV15fwApcCAu67sbrsc\"}"
+    },
+    {
+      "id": "fat-loss-budget--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1Afa748pUUJLMTHVU\"}"
+    },
+    {
+      "id": "fat-loss-budget--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1FfwxdHfxx3K4ZUom\"}"
+    },
+    {
+      "id": "fat-loss-budget--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1LZ8cfGdr6o1KcS33\"}"
+    },
+    {
+      "id": "fat-loss-budget--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1RHtVG4TH13RpjLfw\"}"
+    },
+    {
+      "id": "muscle-skinny-beginner--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1W9LpBSpiiord7whN\"}"
+    },
+    {
+      "id": "muscle-skinny-beginner--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1b2333dM4RqJTggRE\"}"
+    },
+    {
+      "id": "muscle-skinny-beginner--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1ftE1XueA2J2hcaCb\"}"
+    },
+    {
+      "id": "muscle-skinny-beginner--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1kfU3mzvuzrACCx7r\"}"
+    },
+    {
+      "id": "muscle-intermediate-lifter--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1rt1wfJMFk4UqtskZ\"}"
+    },
+    {
+      "id": "muscle-intermediate-lifter--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV1wbnd7SvTq9AzUp7T\"}"
+    },
+    {
+      "id": "muscle-intermediate-lifter--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV22VDgVWKYRd6diCEh\"}"
+    },
+    {
+      "id": "muscle-intermediate-lifter--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV27SsZQHq5ASUSQ6r7\"}"
+    },
+    {
+      "id": "muscle-advanced-bodybuilder--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2CNnW1GASSgSNnkZn\"}"
+    },
+    {
+      "id": "muscle-advanced-bodybuilder--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2HBWdb8ukdfUaQoMT\"}"
+    },
+    {
+      "id": "muscle-advanced-bodybuilder--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2N3htoRURBJ3RdVQH\"}"
+    },
+    {
+      "id": "muscle-advanced-bodybuilder--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2Sz7g3QhvWbTVrGLS\"}"
+    },
+    {
+      "id": "muscle-vegetarian--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2YaxtRKfQZnNGQpUx\"}"
+    },
+    {
+      "id": "muscle-vegetarian--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2dvC3Fw5erBAzk3pZ\"}"
+    },
+    {
+      "id": "muscle-vegetarian--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2imtCKwmLmhhGLoXu\"}"
+    },
+    {
+      "id": "muscle-vegetarian--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2p5NY4cXBKGZBz9Ze\"}"
+    },
+    {
+      "id": "muscle-home-workout--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2tjRAUMUkaAGUu8Ue\"}"
+    },
+    {
+      "id": "muscle-home-workout--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV2z3eoUZQxXJkiCJBw\"}"
+    },
+    {
+      "id": "muscle-home-workout--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV34y52PXDkbCYFLQ8S\"}"
+    },
+    {
+      "id": "muscle-home-workout--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3AddtyPLkBZapiMyq\"}"
+    },
+    {
+      "id": "recomp-gym--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3FQ8hdMy5SB7EsHE7\"}"
+    },
+    {
+      "id": "recomp-gym--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3LH51cNKzX72xD9eU\"}"
+    },
+    {
+      "id": "recomp-gym--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3RLBG5V9fnP6qhmcr\"}"
+    },
+    {
+      "id": "recomp-gym--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3WCsRwWrn3yRnjrRK\"}"
+    },
+    {
+      "id": "recomp-home--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3b6Jic8v7BpSkUsK1\"}"
+    },
+    {
+      "id": "recomp-home--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3gbwTVCuS4cQdG6JM\"}"
+    },
+    {
+      "id": "recomp-home--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3mNvmHstHxZckXDK9\"}"
+    },
+    {
+      "id": "recomp-home--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3sbVA8gZGHHLiRWCh\"}"
+    },
+    {
+      "id": "strength-powerlifting--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV3xqkaXAqWivjyno6f\"}"
+    },
+    {
+      "id": "strength-powerlifting--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV43gTS2SgWNG2xEyCi\"}"
+    },
+    {
+      "id": "strength-powerlifting--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV48MzaEtXRPbPM49sd\"}"
+    },
+    {
+      "id": "strength-powerlifting--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV4DJtz5iHucm1F9ACs\"}"
+    },
+    {
+      "id": "hybrid-runner-lifter--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV4JL22E9mJ2CSuhtQN\"}"
+    },
+    {
+      "id": "hybrid-runner-lifter--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV4PDxN2wyUTtUWUH8H\"}"
+    },
+    {
+      "id": "hybrid-runner-lifter--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV4U5eprsRjXK6xuaUY\"}"
+    },
+    {
+      "id": "hybrid-runner-lifter--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV4YstCZis8AmgQwmY8\"}"
+    },
+    {
+      "id": "home-dumbbells-only--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV4dYfcTYfhHnU9wYXq\"}"
+    },
+    {
+      "id": "home-dumbbells-only--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV4jP9ws1YEfgLxomKo\"}"
+    },
+    {
+      "id": "home-dumbbells-only--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV4p7Aj7JFt2zsjjARh\"}"
+    },
+    {
+      "id": "home-dumbbells-only--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV4vWP7nJ3cscVxhBRU\"}"
+    },
+    {
+      "id": "home-bands-only--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV51TYCau9YuPxQrKGj\"}"
+    },
+    {
+      "id": "home-bands-only--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV56wScWzwuKTUPTitA\"}"
+    },
+    {
+      "id": "home-bands-only--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV5BrcRZeygGzdy96r6\"}"
+    },
+    {
+      "id": "home-bands-only--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV5HRUw8AnT5H7k6YmC\"}"
+    },
+    {
+      "id": "home-pullup-bar--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV5NULdUXNGp83N9tf2\"}"
+    },
+    {
+      "id": "home-pullup-bar--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV5U6B6LVXjudWqXzAG\"}"
+    },
+    {
+      "id": "home-pullup-bar--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV5YjyQ7Na9EfpZoQ3K\"}"
+    },
+    {
+      "id": "home-pullup-bar--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV5eMZhJ9jdLtyCoh6V\"}"
+    },
+    {
+      "id": "home-no-equipment--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV5jAHfguCucMmmjC3t\"}"
+    },
+    {
+      "id": "home-no-equipment--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV5prqhh51oXqMNRiRX\"}"
+    },
+    {
+      "id": "home-no-equipment--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV5uvSSFazA4iJGNsMa\"}"
+    },
+    {
+      "id": "home-no-equipment--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV61Sab7Ek1wue7qZat\"}"
+    },
+    {
+      "id": "lifestyle-college-student--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV66Jmg8JCK1Rgm8GQs\"}"
+    },
+    {
+      "id": "lifestyle-college-student--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6B7FJNyxrSZ1dowp1\"}"
+    },
+    {
+      "id": "lifestyle-college-student--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6G4u14GUwbsfFGWBf\"}"
+    },
+    {
+      "id": "lifestyle-college-student--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6SLHbrEt1U9qJLPnD\"}"
+    },
+    {
+      "id": "lifestyle-busy-parent--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6XGhK7ypVTuxjMzjb\"}"
+    },
+    {
+      "id": "lifestyle-busy-parent--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6cmLrj4MK7oUzsbzX\"}"
+    },
+    {
+      "id": "lifestyle-busy-parent--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6hSsy6QuZSLu5gqTF\"}"
+    },
+    {
+      "id": "lifestyle-busy-parent--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6nr5AsVn2f7u21W9k\"}"
+    },
+    {
+      "id": "lifestyle-traveller--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6tyuitNyRpTXwzgyF\"}"
+    },
+    {
+      "id": "lifestyle-traveller--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6yqrzBq1Na1QsrFb9\"}"
+    },
+    {
+      "id": "lifestyle-traveller--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV74pWK3rfSJ1eByZo8\"}"
+    },
+    {
+      "id": "lifestyle-traveller--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7CCkzfcWCtUF2CbzX\"}"
+    },
+    {
+      "id": "special-knee-pain--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7HQJ7RpMDoJk2UWQY\"}"
+    },
+    {
+      "id": "special-knee-pain--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7NUPoW6BexPcCuisH\"}"
+    },
+    {
+      "id": "special-knee-pain--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7TnNm8jNipjfqWJFM\"}"
+    },
+    {
+      "id": "special-knee-pain--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7YV9WAEyF3K8KG5tg\"}"
+    },
+    {
+      "id": "special-shoulder-discomfort--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7dMqaQ51dGWKoerJu\"}"
+    },
+    {
+      "id": "special-shoulder-discomfort--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7iMijcebZunLt3efU\"}"
+    },
+    {
+      "id": "special-shoulder-discomfort--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7o6ygM2R2GL8bGC7i\"}"
+    },
+    {
+      "id": "special-shoulder-discomfort--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7sqyquL21WzPHBkzs\"}"
+    },
+    {
+      "id": "special-poor-sleep--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7xntPPsaUYCo7RB1z\"}"
+    },
+    {
+      "id": "special-poor-sleep--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV84QjDAcNhgkgVdy4m\"}"
+    },
+    {
+      "id": "special-poor-sleep--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV89gEQNbeNsnX9yBnz\"}"
+    },
+    {
+      "id": "special-poor-sleep--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV8Ef81ukhEHvNXcqNA\"}"
+    },
+    {
+      "id": "special-high-stress--initial_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV8KWa9mdoMymHPMHpr\"}"
+    },
+    {
+      "id": "special-high-stress--initial_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV8QRVpRjzy2P4G1Bfk\"}"
+    },
+    {
+      "id": "special-high-stress--review_update_diet",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV8V8GZrC73bEbiQdQM\"}"
+    },
+    {
+      "id": "special-high-stress--review_update_workout",
+      "score": 1,
+      "issues": 0,
+      "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV8a1TCfH5keN18nwzb\"}"
     }
   ]
 }

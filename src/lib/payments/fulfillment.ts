@@ -1,3 +1,5 @@
+import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
+import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
 import type { CoachingPlan } from '@/lib/payments/plans'
@@ -19,9 +21,39 @@ export type FulfillPurchaseResult = {
   isNewUser: boolean
 }
 
+async function syncAuthCredentials(
+  userId: string,
+  email: string,
+  password: string,
+  name: string
+): Promise<void> {
+  const admin = createAdminClient()
+
+  logPurchaseStep('password_sync', { userId, email })
+
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password,
+    email_confirm: true,
+    user_metadata: { name },
+  })
+
+  if (error) {
+    logPurchaseStep('password_sync_failed', { userId, error: error.message })
+    throw new Error(`Failed to set account credentials: ${error.message}`)
+  }
+}
+
 export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<FulfillPurchaseResult> {
   const admin = createAdminClient()
   const email = input.email.trim().toLowerCase()
+  const password = input.password
+  const name = input.name.trim()
+
+  if (password.length < 6) {
+    throw new Error('Password must be at least 6 characters')
+  }
+
+  logPurchaseStep('fulfillment_started', { email })
 
   const { data: existingPurchase } = await admin
     .from('purchases')
@@ -29,40 +61,38 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
     .eq('razorpay_payment_id', input.razorpayPaymentId)
     .maybeSingle()
 
-  if (existingPurchase?.user_id) {
-    return {
-      userId: existingPurchase.user_id,
-      purchaseId: existingPurchase.id,
-      isNewUser: false,
-    }
-  }
-
-  let userId: string
+  let userId = existingPurchase?.user_id ?? null
   let isNewUser = false
 
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
-    email,
-    password: input.password,
-    email_confirm: true,
-    user_metadata: { name: input.name },
-  })
+  if (!userId) {
+    const existingAuthUserId = await findAuthUserIdByEmail(admin, email)
 
-  if (createError || !created.user) {
-    const { data: profileByEmail } = await admin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle()
+    if (existingAuthUserId) {
+      userId = existingAuthUserId
+      logPurchaseStep('auth_user_exists', { email, userId })
+    } else {
+      const { data: created, error: createError } = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { name },
+      })
 
-    if (!profileByEmail?.id) {
-      throw new Error(createError?.message ?? 'Failed to create or find customer account')
+      if (createError || !created.user) {
+        logPurchaseStep('auth_user_create_failed', {
+          email,
+          error: createError?.message ?? 'unknown',
+        })
+        throw new Error(createError?.message ?? 'Failed to create customer account')
+      }
+
+      userId = created.user.id
+      isNewUser = true
+      logPurchaseStep('auth_user_created', { email, userId })
     }
-
-    userId = profileByEmail.id
-  } else {
-    userId = created.user.id
-    isNewUser = true
   }
+
+  await syncAuthCredentials(userId, email, password, name)
 
   const now = new Date().toISOString()
   const includeAccessSource = await hasAccessSourceColumn()
@@ -70,7 +100,8 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
   const profilePayload: Record<string, unknown> = {
     id: userId,
     email,
-    name: input.name.trim(),
+    name,
+    role: 'client',
     payment_confirmed: true,
     onboarding_complete: false,
     updated_at: now,
@@ -83,8 +114,12 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
   const { error: profileError } = await admin.from('profiles').upsert(profilePayload)
 
   if (profileError) {
+    logPurchaseStep('profile_create_failed', { userId, error: profileError.message })
     throw new Error(`Failed to create profile: ${profileError.message}`)
   }
+
+  logPurchaseStep('profile_created', { userId, email })
+  logPurchaseStep('entitlement_granted', { userId, payment_confirmed: true })
 
   let purchaseId = existingPurchase?.id
 
@@ -101,17 +136,25 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
         currency: 'INR',
         status: 'captured',
         customer_email: email,
-        customer_name: input.name.trim(),
+        customer_name: name,
       })
       .select()
       .single()
 
     if (purchaseError || !purchase) {
+      logPurchaseStep('fulfillment_failed', {
+        userId,
+        step: 'purchase_insert',
+        error: purchaseError?.message ?? 'unknown',
+      })
       throw new Error(purchaseError?.message ?? 'Failed to store purchase')
     }
 
     purchaseId = (purchase as Purchase).id
+    logPurchaseStep('purchase_recorded', { userId, purchaseId })
   }
+
+  logPurchaseStep('fulfillment_complete', { userId, purchaseId, isNewUser })
 
   return { userId, purchaseId, isNewUser }
 }

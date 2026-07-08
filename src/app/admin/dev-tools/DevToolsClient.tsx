@@ -1,14 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { PromptImportPanel } from '@/components/admin/PromptImportPanel'
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 type EntityClient = { id: string; name: string | null; email: string | null; coach_id: string | null };
 type EntityCoach = { id: string; name: string | null; user_id: string };

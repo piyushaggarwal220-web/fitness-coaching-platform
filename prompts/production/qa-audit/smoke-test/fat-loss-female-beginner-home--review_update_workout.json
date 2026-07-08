@@ -1,0 +1,46 @@
+{
+  "caseId": "fat-loss-female-beginner-home--review_update_workout",
+  "personaId": "fat-loss-female-beginner-home",
+  "personaLabel": "Female beginner, home",
+  "group": "Fat Loss",
+  "actionId": "review_update_workout",
+  "checkinScenario": "excellent_adherence",
+  "rendered": "Sneha, fantastic work this week! Perfect adherence and strong training performance show you're ready to progress. Since you've been following the single-body-part-per-day split, we're now moving to a 2-body-part split to increase training density while keeping your 45-minute sessions. Volume is increased by approximately 15% to continue your fat loss momentum.\n\n**WEEKLY STRUCTURE:**\n\nDay 1 (Monday/Tuesday): Upper Body Push + Pull\nDay 2 (Thursday/Friday): Lower Body + Core\nDay 3 (Saturday/Sunday): Full Body Circuit\n\n**WARM-UP (all days):** 5 minutes dynamic stretching — arm circles, leg swings, bodyweight squats, cat-cow stretches\n\n**DAY 1: UPPER BODY PUSH + PULL**\n\n1. Resistance Band Rows (favorite exercise) — 4 sets x 10 reps\n   - Anchor band at chest height, pull elbows back, squeeze shoulder blades\n   - Rest 60 seconds between sets\n\n2. Resistance Band Chest Press — 4 sets x 10 reps\n   - Anchor band behind you, press forward at chest level\n   - Rest 60 seconds\n\n3. Resistance Band Lateral Raises — 3 sets x 15 reps\n   - Stand on band center, raise arms to shoulder height\n   - Rest 45 seconds\n\n4. Resistance Band Bicep Curls — 3 sets x 12 reps\n   - Stand on band, curl handles to shoulders\n   - Rest 45 seconds\n\n5. Resistance Band Tricep Extensions — 3 sets x 12 reps\n   - Anchor band overhead, extend arms downward\n   - Rest 45 seconds\n\n**Cooldown:** 3 minutes stretching — chest, shoulders, arms\n\n**DAY 2: LOWER BODY + CORE**\n\n1. Bodyweight Squats (favorite exercise) — 5 sets x 12 reps\n   - Bodyweight or hold band for resistance\n   - Rest 60 seconds between sets\n\n2. Resistance Band Romanian Deadlifts — 4 sets x 12 reps\n   - Stand on band, hinge at hips, feel hamstring stretch\n   - Rest 60 seconds\n\n3. Resistance Band Glute Bridges — 4 sets x 15 reps\n   - Band across hips, squeeze glutes at top\n   - Rest 45 seconds\n\n4. Resistance Band Standing Leg Curls — 3 sets x 12 reps each leg\n   - Loop band around ankle, curl heel to glutes\n   - Rest 45 seconds\n\n5. Plank Hold — 3 sets x 30-45 seconds\n   - On yoga mat, maintain straight line from head to heels\n   - Rest 45 seconds\n\n**Cooldown:** 3 minutes stretching — quads, hamstrings, glutes, lower back\n\n**DAY 3: FULL BODY CIRCUIT**\n\nPerform 4 rounds of the following circuit with 90 seconds rest between rounds:\n\n1. Push-Ups — 10-12 reps (knees down if needed)\n2. Resistance Band Rows — 12 reps\n3. Bodyweight Squats — 15 reps\n4. Resistance Band Shoulder Press — 12 reps\n5. Mountain Climbers — 20 total reps (10 each leg)\n6. Bicycle Crunches — 20 total reps\n\n**Cooldown:** 5 minutes full body stretching on yoga mat\n\n**CARDIO PLAN:**\n- 3 sessions x 30 minutes brisk walking (non-training days or post-workout)\n- Target: 6000-7000 steps daily (up from 5000)\n\n**REST & RECOVERY:**\n- 4 rest days per week\n- Prioritize 7-8 hours sleep\n- Stay hydrated — 2-2.5L water daily\n\n**PROGRESSION NOTES:**\n- If all sets feel easy (RPE 6 or below), increase band resistance or add 2 reps next week\n- Focus on controlled tempo: 2 seconds down, 1 second up\n- Track your reps in each set to monitor progress\n\nYou've earned this progression with your perfect adherence. The 2-body-part split will challenge your muscles in new ways while keeping workouts efficient. Let's keep this momentum going!",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v3 [pending:weekly_workout_update_home]+system-prompt@v1",
+  "inputTokens": 2111,
+  "outputTokens": 1270,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 8,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 7,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 3-day program.",
+        "promptToInspect": "updated-workout-home.prompt"
+      }
+    ],
+    "workoutAverage": 7.333333333333333,
+    "overallAverage": 7.291666666666666
+  },
+  "generatedAt": "2026-07-08T06:44:07.606Z"
+}

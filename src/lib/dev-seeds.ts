@@ -72,77 +72,80 @@ export async function seedEnsureDevClient(): Promise<SeedResult> {
 
 export async function seedEnsureDevCoach(): Promise<SeedResult> {
   const admin = createAdminClient()
+  const email = DEV_COACH_EMAIL
+
+  let userId: string | null = null
 
   const { data: profileByEmail } = await admin
     .from('profiles')
     .select('id, email')
-    .eq('email', DEV_COACH_EMAIL)
+    .eq('email', email)
     .maybeSingle()
 
-  if (profileByEmail?.id) {
-    const { data: coachRow } = await admin
-      .from('coaches')
-      .select('id, user_id')
-      .eq('user_id', profileByEmail.id)
-      .maybeSingle()
+  const { data: listed } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const authUser = listed?.users.find((u) => u.email?.toLowerCase() === email)
 
-    if (coachRow?.id) {
-      return {
-        message: 'Dev test coach ready',
-        data: {
-          coachId: coachRow.id,
-          userId: profileByEmail.id,
-          email: DEV_COACH_EMAIL,
-          password: TEST_PASSWORD,
-        },
-      }
+  if (authUser?.id) {
+    userId = authUser.id
+  } else if (profileByEmail?.id) {
+    userId = profileByEmail.id
+  }
+
+  if (!userId) {
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({
+      email,
+      password: TEST_PASSWORD,
+      email_confirm: true,
+      user_metadata: { role: 'coach' },
+    })
+
+    if (authError || !authData.user) {
+      throw new Error(authError?.message ?? 'Failed to create dev coach')
     }
 
+    userId = authData.user.id
+  } else {
+    const { error: passwordError } = await admin.auth.admin.updateUserById(userId, {
+      password: TEST_PASSWORD,
+      email_confirm: true,
+      user_metadata: { name: 'Dev Test Coach', role: 'coach' },
+    })
+    if (passwordError) {
+      throw new Error(`Failed to sync dev coach credentials: ${passwordError.message}`)
+    }
+  }
+
+  const { data: coachRow } = await admin
+    .from('coaches')
+    .select('id, user_id')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  let coachId = coachRow?.id
+
+  if (!coachId) {
     const { data: inserted, error: coachError } = await admin
       .from('coaches')
-      .insert({ user_id: profileByEmail.id, name: 'Dev Test Coach', hard_cap: 100 })
+      .insert({ user_id: userId, name: 'Dev Test Coach', hard_cap: 100 })
       .select()
       .single()
     if (coachError || !inserted) throw new Error(coachError?.message ?? 'Failed to create coach record')
-    return {
-      message: 'Dev test coach ready',
-      data: {
-        coachId: inserted.id,
-        userId: profileByEmail.id,
-        email: DEV_COACH_EMAIL,
-        password: TEST_PASSWORD,
-      },
-    }
+    coachId = inserted.id
   }
 
-  const { data: authData, error: authError } = await admin.auth.admin.createUser({
-    email: DEV_COACH_EMAIL,
-    password: TEST_PASSWORD,
-    email_confirm: true,
-    user_metadata: { role: 'coach' },
+  await admin.from('profiles').upsert({
+    id: userId,
+    email,
+    name: 'Dev Test Coach',
+    role: 'coach',
+    updated_at: new Date().toISOString(),
   })
-
-  if (authError || !authData.user) {
-    throw new Error(authError?.message ?? 'Failed to create dev coach')
-  }
-
-  const { data: coachRow, error: coachError } = await admin
-    .from('coaches')
-    .insert({
-      user_id: authData.user.id,
-      name: 'Dev Test Coach',
-      hard_cap: 100,
-    })
-    .select()
-    .single()
-
-  if (coachError || !coachRow) throw new Error(coachError?.message ?? 'Failed to create coach record')
 
   return {
     message: 'Dev test coach ready',
     data: {
-      coachId: coachRow.id,
-      userId: authData.user.id,
+      coachId,
+      userId,
       email: DEV_COACH_EMAIL,
       password: TEST_PASSWORD,
     },

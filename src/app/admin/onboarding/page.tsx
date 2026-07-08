@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { coachBadgeStyles, formatDate, formatFitnessGoal } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
@@ -13,7 +11,6 @@ import type { ClientProfile } from '@/types/database'
 const supabase = createClient()
 
 export default function AdminPendingOnboardingPage() {
-  const router = useRouter()
   const [clients, setClients] = useState<ClientProfile[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -22,8 +19,7 @@ export default function AdminPendingOnboardingPage() {
   useEffect(() => {
     const load = async () => {
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
+      setLoading(true)
 
       const { data, error: loadError } = await supabase
         .from('profiles')
@@ -34,16 +30,14 @@ export default function AdminPendingOnboardingPage() {
 
       if (loadError) {
         setError('Failed to load pending onboarding.')
-        setLoading(false)
-        return
+      } else {
+        setClients((data as ClientProfile[]) ?? [])
       }
-
-      setClients((data as ClientProfile[]) ?? [])
       setLoading(false)
     }
 
     void load()
-  }, [router])
+  }, [])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()

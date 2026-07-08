@@ -12,6 +12,8 @@ import {
   formatLibraryPromptVersion,
   loadPublishedPromptsForAction,
 } from '@/lib/ai/prompt-library-loader'
+import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
+import { syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
 import { profileToComplexityInput } from '@/lib/complexity/profile-input'
 import { getPromptCategoryForAction } from '@/lib/ai/workout-prompt-selection'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
@@ -124,7 +126,8 @@ const PLAN_TASK_INSTRUCTIONS = [
 
 const RETRY_INSTRUCTIONS = [
   'Your previous response was not valid JSON matching the required schema.',
-  'Return ONLY a corrected JSON object with no extra text.',
+  'Return ONLY a corrected JSON object with no extra text, no markdown fences.',
+  'Escape all newlines inside JSON strings as \\n. Ensure the JSON parses cleanly.',
 ].join(' ')
 
 const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
@@ -133,7 +136,9 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   'The JSON must match this exact top-level structure:',
   PLAN_JSON_SCHEMA,
   '- Put the full client-facing diet plan prose in nutrition_plan.meals as ONE item: { "meal": "Weekly Diet Plan", "example": "<entire copy-paste diet plan>" }.',
-  '- Set nutrition_plan.calories, protein, carbs, and fat to 0.',
+  '- Set nutrition_plan.calories, protein, carbs, and fat to the rounded AVERAGE daily totals from the 7-day plan (sum each day, divide by 7). NEVER use 0 or placeholder values.',
+  '- Header macros MUST match the meal plan: if meals show (P: Xg | C: Yg | F: Zg | ~K kcal) lines, totals must reflect those sums.',
+  '- Include a clear daily average line in the prose, e.g. "Daily averages: ~1850 kcal | P: 130g | C: 200g | F: 55g" matching the header fields.',
   '- Set workout_plan.overview to "N/A" and workout_plan.days to [].',
   '- cardio_plan.sessions and supplement_plan.items may be [].',
   '- coach_notes must be an empty string or under 200 characters.',
@@ -146,10 +151,12 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   PLAN_JSON_SCHEMA,
   '- Put the full client-facing workout plan prose in workout_plan.overview.',
   '- workout_plan.overview must include exercises, sets, reps, and weekly structure — not internal coach analysis.',
+  '- Use "sets x reps" format (e.g. 4 sets x 8 reps) — the letter x, not special symbols.',
   '- workout_plan.days may be [] when the prose already contains the daily structure.',
   '- Set nutrition_plan calories/protein/carbs/fat to 0 and nutrition_plan.meals to [].',
   '- cardio_plan.sessions and supplement_plan.items may be [].',
   '- coach_notes must be an empty string or under 200 characters.',
+  '- Escape all newlines inside JSON string values as \\n. Never use literal line breaks inside JSON strings.',
 ].join('\n')
 
 function resolvePlanOutputInstructions(options: {
@@ -192,16 +199,13 @@ export { profileToComplexityInput } from '@/lib/complexity/profile-input'
 
 /** Strip markdown code fences and extract JSON payload from model text. */
 export function extractJsonFromResponse(text: string): string {
-  const trimmed = text.trim()
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)
-  if (fenced) return fenced[1].trim()
+  const candidates = extractJsonCandidates(text)
+  if (candidates.length > 0) return candidates[0]!
 
+  const trimmed = text.trim()
   const start = trimmed.indexOf('{')
   const end = trimmed.lastIndexOf('}')
-  if (start !== -1 && end !== -1 && end > start) {
-    return trimmed.slice(start, end + 1)
-  }
-
+  if (start !== -1 && end > start) return trimmed.slice(start, end + 1)
   return trimmed
 }
 
@@ -300,16 +304,34 @@ export function parseGeneratedPlanResponse(
   text: string,
   options?: { mode?: PlanValidationMode }
 ): { plan: GeneratedPlan | null; error: string | null } {
-  const jsonText = extractJsonFromResponse(text)
-
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(jsonText)
-  } catch {
-    return { plan: null, error: 'Response is not valid JSON.' }
+  const { parsed, error: parseError } = parseJsonFromModelResponse(text)
+  if (parseError || parsed === null) {
+    return { plan: null, error: parseError ?? 'Response is not valid JSON.' }
   }
 
-  return validateGeneratedPlan(parsed, options)
+  const { plan, error } = validateGeneratedPlan(parsed, options)
+  if (!plan) return { plan: null, error }
+
+  const mode = options?.mode ?? 'full'
+  if (mode === 'nutrition_focus' || mode === 'full') {
+    const syncedNutrition = syncNutritionPlanMacros(plan.nutrition_plan)
+    const syncedPlan = { ...plan, nutrition_plan: syncedNutrition }
+
+    if (
+      (mode === 'nutrition_focus' || mode === 'full') &&
+      syncedNutrition.calories <= 0
+    ) {
+      return {
+        plan: null,
+        error:
+          'nutrition_plan.calories must be a positive number matching the meal plan totals (never 0).',
+      }
+    }
+
+    return { plan: syncedPlan, error: null }
+  }
+
+  return { plan, error: null }
 }
 
 function buildPlanPrompts(
@@ -409,9 +431,6 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       systemTemplate: loaded.system?.promptBody ?? null,
     }
     promptVersion = formatLibraryPromptVersion(loaded.action)
-    if (loaded.fallbackFromCategory) {
-      promptVersion = `${promptVersion} [pending:${loaded.fallbackFromCategory}]`
-    }
     if (loaded.system) {
       promptVersion = `${promptVersion}+${formatLibraryPromptVersion(loaded.system)}`
     }

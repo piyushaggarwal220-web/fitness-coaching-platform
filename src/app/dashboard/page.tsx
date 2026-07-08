@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import { formatCheckinDate, getNextCheckinDate, isCheckinDue } from '@/lib/checkin';
 import { formatPlanDate } from '@/lib/plans';
-import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
+import { authenticateClient, fetchClientProfile, getOnboardingLabel, isOnboardingComplete } from '@/lib/onboarding';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { createClient } from '@/lib/supabase/client';
 import type { Checkin, Coach, OnboardingProfile, Plan, Purchase, Workout } from '@/types/database';
@@ -38,14 +38,44 @@ export default function Dashboard() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
+        const result = await authenticateClient(supabase, router, { requirePayment: true });
         if (!result) {
           setLoading(false);
           return;
         }
 
+        let profileData = result.profile
+
+        if (!profileData && !result.profileError) {
+          const retry = await fetchClientProfile(supabase, result.user.id)
+          profileData = retry.profile
+          if (retry.error && !profileData) {
+            setLoadError('Could not load your profile. Please refresh the page.')
+            setLoading(false)
+            return
+          }
+        }
+
+        if (result.profileError && !profileData) {
+          setLoadError('Could not load your profile. Please refresh the page.');
+          setLoading(false);
+          return;
+        }
+
+        if (!profileData) {
+          setLoadError('Your profile could not be loaded. Please refresh or log in again.');
+          setLoading(false);
+          return;
+        }
+
+        if (!isOnboardingComplete(profileData)) {
+          router.push('/onboarding');
+          setLoading(false);
+          return;
+        }
+
         setUser(result.user as User);
-        setProfile(result.profile);
+        setProfile(profileData);
 
         const userId = result.user.id;
         const activity: ActivityItem[] = [];
@@ -197,7 +227,7 @@ export default function Dashboard() {
               <StatusItem label="Onboarding" value={status.onboardingComplete ? 'Complete ✓' : 'Incomplete'} ok={status.onboardingComplete} />
               <StatusItem
                 label="Coach"
-                value={status.coachAssigned ? status.coachName ?? 'Assigned' : 'Assigning soon'}
+                value={status.coachAssigned ? (status.coachName ?? 'Assigned') : 'Assigning soon'}
                 ok={status.coachAssigned}
               />
               <StatusItem label="Plan" value={status.planStatus} ok={Boolean(activePlan)} />

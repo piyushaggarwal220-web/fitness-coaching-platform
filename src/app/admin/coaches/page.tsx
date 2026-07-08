@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { createClient } from '@/lib/supabase/client'
 import type { ClientProfile, Coach } from '@/types/database'
@@ -18,7 +16,6 @@ type CoachWithStats = Coach & {
 }
 
 export default function AdminCoachesPage() {
-  const router = useRouter()
   const [coaches, setCoaches] = useState<CoachWithStats[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -27,8 +24,6 @@ export default function AdminCoachesPage() {
   useEffect(() => {
     const load = async () => {
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       const [coachesRes, clientsRes] = await Promise.all([
         supabase.from('coaches').select('id, name, user_id, hard_cap').order('name'),
@@ -71,7 +66,7 @@ export default function AdminCoachesPage() {
     }
 
     void load()
-  }, [router])
+  }, [])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()

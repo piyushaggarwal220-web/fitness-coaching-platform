@@ -1,0 +1,109 @@
+{
+  "generatedAt": "2026-07-08T06:53:07.132Z",
+  "personas": 5,
+  "cases": 20,
+  "successful": 20,
+  "failed": 0,
+  "artifacts": [
+    {
+      "id": "fat-loss-male-beginner-gym--initial_diet",
+      "score": 7.267857142857142,
+      "issues": 1
+    },
+    {
+      "id": "fat-loss-male-beginner-gym--initial_workout",
+      "score": 7.666666666666666,
+      "issues": 1
+    },
+    {
+      "id": "fat-loss-male-beginner-gym--review_update_diet",
+      "score": 8.071428571428571,
+      "issues": 0
+    },
+    {
+      "id": "fat-loss-male-beginner-gym--review_update_workout",
+      "score": 7.666666666666666,
+      "issues": 2
+    },
+    {
+      "id": "fat-loss-female-beginner-home--initial_diet",
+      "score": 8.071428571428571,
+      "issues": 0
+    },
+    {
+      "id": "fat-loss-female-beginner-home--initial_workout",
+      "score": 6.375,
+      "issues": 2
+    },
+    {
+      "id": "fat-loss-female-beginner-home--review_update_diet",
+      "score": 5.535714285714286,
+      "issues": 2
+    },
+    {
+      "id": "fat-loss-female-beginner-home--review_update_workout",
+      "score": 7.291666666666666,
+      "issues": 2
+    },
+    {
+      "id": "muscle-vegetarian--initial_diet",
+      "score": 7.857142857142858,
+      "issues": 1
+    },
+    {
+      "id": "muscle-vegetarian--initial_workout",
+      "score": 7.583333333333334,
+      "issues": 1
+    },
+    {
+      "id": "muscle-vegetarian--review_update_diet",
+      "score": 7.857142857142858,
+      "issues": 1
+    },
+    {
+      "id": "muscle-vegetarian--review_update_workout",
+      "score": 7.458333333333334,
+      "issues": 1
+    },
+    {
+      "id": "home-bands-only--initial_diet",
+      "score": 7.642857142857142,
+      "issues": 1
+    },
+    {
+      "id": "home-bands-only--initial_workout",
+      "score": 6.375,
+      "issues": 2
+    },
+    {
+      "id": "home-bands-only--review_update_diet",
+      "score": 6.678571428571429,
+      "issues": 2
+    },
+    {
+      "id": "home-bands-only--review_update_workout",
+      "score": 7.166666666666666,
+      "issues": 2
+    },
+    {
+      "id": "special-knee-pain--initial_diet",
+      "score": 7.785714285714286,
+      "issues": 1
+    },
+    {
+      "id": "special-knee-pain--initial_workout",
+      "score": 7.041666666666666,
+      "issues": 2
+    },
+    {
+      "id": "special-knee-pain--review_update_diet",
+      "score": 7.625,
+      "issues": 0
+    },
+    {
+      "id": "special-knee-pain--review_update_workout",
+      "score": 7.041666666666666,
+      "issues": 2
+    }
+  ]
+}

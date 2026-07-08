@@ -5,42 +5,21 @@
   "group": "Lifestyle",
   "actionId": "review_update_workout",
   "checkinScenario": "high_hunger",
-  "rendered": "Rahul, you've completed 4 weeks on your foundation phase. You're now progressing to a 2-body-part split to increase training stimulus while maintaining your 45-minute session duration and similar overall volume. This split alternates between upper and lower focus days, allowing better recovery and strength development. Continue training 3 days per week in the evening.\n\n**Day 1 – Upper Body Focus:**\nBench Press: 4×8 reps\nBent-Over Rows: 4×8 reps\nIncline Dumbbell Press: 3×10 reps\nLateral Raises: 3×12 reps\nFace Pulls: 3×12 reps\n\n**Day 2 – Lower Body Focus:**\nBarbell Back Squat: 4×8 reps\nRomanian Deadlift: 3×10 reps\nLeg Press: 3×10 reps\nLeg Curls: 3×12 reps\nCalf Raises: 3×15 reps\n\n**Day 3 – Upper/Lower Hybrid:**\nGoblet Squats: 3×12 reps\nDumbbell Rows: 3×10 reps\nPush-ups: 3×AMRAP (as many reps as possible)\nDumbbell Pullovers: 3×12 reps\nPlank Hold: 3×30-45 seconds\n\nMaintain brisk walking 3×30 minutes weekly. Rest days between sessions to allow recovery.\n\nHigh hunger Thu-Sun indicates potential weekday deficit. Increase protein/fibre at lunch and dinner (add curd, dal portions). Distribute snacks evenly across week to prevent weekend overeating.",
-  "model": "claude-haiku-4-5-20251001",
-  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
-  "inputTokens": 1550,
-  "outputTokens": 549,
+  "rendered": "",
+  "model": "error",
+  "promptVersion": "",
+  "inputTokens": 0,
+  "outputTokens": 0,
   "evaluation": {
-    "workout": {
-      "exerciseSelection": 7,
-      "volume": 5,
-      "progression": 8,
-      "recovery": 8,
-      "equipmentSuitability": 8,
-      "goalAlignment": 7
-    },
     "overall": {
-      "coachingQuality": 10,
-      "professionalism": 8,
-      "personalization": 5,
-      "sendWithoutEdits": 7
+      "coachingQuality": 1,
+      "professionalism": 1,
+      "personalization": 1,
+      "sendWithoutEdits": 1
     },
-    "issues": [
-      {
-        "category": "Ignored onboarding answers",
-        "severity": "low",
-        "description": "Preferred exercises from onboarding not included.",
-        "promptToInspect": "updated-workout.prompt"
-      },
-      {
-        "category": "Unrealistic training volume",
-        "severity": "medium",
-        "description": "Only 0 set×rep entries for 3-day program.",
-        "promptToInspect": "updated-workout.prompt"
-      }
-    ],
-    "workoutAverage": 7.166666666666667,
-    "overallAverage": 7.333333333333334
+    "issues": [],
+    "overallAverage": 1
   },
-  "generatedAt": "2026-07-07T21:38:14.253Z"
+  "generatedAt": "2026-07-07T22:27:46.897Z",
+  "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6SLHbrEt1U9qJLPnD\"}"
 }

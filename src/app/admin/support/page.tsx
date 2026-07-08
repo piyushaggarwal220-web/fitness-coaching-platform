@@ -2,10 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { priorityBadgeStyle, statusBadgeStyle } from '@/components/support/styles'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import {
   formatSupportCategory,
@@ -21,7 +19,6 @@ const supabase = createClient()
 type StatusFilter = 'all' | 'open' | 'claimed' | 'closed'
 
 export default function AdminSupportPage() {
-  const router = useRouter()
   const [requests, setRequests] = useState<SupportRequestWithClient[]>([])
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
@@ -31,8 +28,6 @@ export default function AdminSupportPage() {
   useEffect(() => {
     const load = async () => {
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       const { data, error: fetchError } = await supabase
         .from('support_requests')
@@ -52,7 +47,7 @@ export default function AdminSupportPage() {
     }
 
     void load()
-  }, [router])
+  }, [])
 
   const filtered = useMemo(() => {
     let list = [...requests]

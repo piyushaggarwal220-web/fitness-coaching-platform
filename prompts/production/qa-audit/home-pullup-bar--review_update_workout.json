@@ -5,11 +5,11 @@
   "group": "Home Workout",
   "actionId": "review_update_workout",
   "checkinScenario": "strength_increased",
-  "rendered": "Ishaan, you've completed a month of solid foundation work with excellent adherence and strength gains. We're now progressing to a 3-day upper/lower/full-body split with increased volume and intensity. Each session remains 60 minutes. Main lifts increase by 2.5kg where possible; accessory work increases by 1–2 reps or a set. Continue avoiding burpees. Maintain your evening training window.\n\nDay 1 – Upper (Strength + Hypertrophy):\n• Bench Press: 4×8 (increase weight +2.5kg)\n• Bent-Over Rows: 4×8 (increase weight +2.5kg)\n• Pull-ups: 3×6–8 (add 1 set from Phase 1)\n• Lateral Raises: 3×12 (maintain weight, add 1 rep target)\n• Dips: 3×8 (new; leverage your dip station)\nTotal: ~55 min\n\nDay 2 – Lower (Strength + Hypertrophy):\n• Goblet Squat: 4×10 (increase from 3×12; heavier load)\n• Romanian Deadlift: 3×10 (maintain, add 1 rep)\n• Leg Curl (bodyweight or resistance band): 3×12–14 (add 2 reps)\n• Single-Leg Calf Raises: 3×12 (new accessory)\nTotal: ~50 min\n\nDay 3 – Full Body (Density + Work Capacity):\n• Push-ups: 4×AMRAP (increase from 3; track total reps)\n• Goblet Squat: 3×12 (maintain)\n• Inverted Rows (using pull-up bar): 3×10 (new; replaces previous full-body gap)\n• Dip Station Holds or Negative Dips: 3×8–10 sec (new; build dip strength)\nTotal: ~55 min\n\nCardio: Maintain 3× 30-min brisk walks weekly (can split across training days as warm-up/cool-down or separate sessions).\n\nExcellent check-in. Volume up ~15% via extra sets and reps. 3-day split introduces upper/lower split shock while maintaining full-body stimulus. Monitor recovery; adjust rest days if needed.",
+  "rendered": "Ishaan, excellent work this past month — 9/10 adherence, all sessions completed, and main lifts up 2.5kg shows real progress. Your energy is high and recovery is solid, so we're progressing you to a 2-body-part split (Upper/Lower paired) to increase training stimulus while keeping your 60-minute sessions intact. Volume increases ~15% on weak points (lateral raises, leg curls) and we're maintaining your favorite pull-ups and dips. This new structure will challenge your muscles differently and drive continued strength and muscle gains toward your 62kg target.\n\n**WEEKLY STRUCTURE (4 days, 60 min each)**\n\n**Day 1: Upper Power + Pull**\nWarmup: 5 min light cardio + arm circles, band pull-aparts\n- Pull-ups: 5 sets x 5 reps (strength focus)\n- Barbell rows: 4 sets x 6 reps\n- Dips: 4 sets x 8 reps\n- Lateral raise: 4 sets x 12 reps (increased from 3 sets)\nCooldown: 5 min stretch\n\n**Day 2: Lower Power**\nWarmup: 5 min light cardio + leg swings, bodyweight squats\n- Goblet squat: 4 sets x 8 reps (increased from 3x12)\n- Romanian deadlift: 4 sets x 8 reps (increased from 3x10)\n- Leg curl (resistance band or bodyweight): 4 sets x 12 reps (increased from 3 sets)\nCooldown: 5 min stretch\n\n**Day 3: Upper Hypertrophy + Push**\nWarmup: 5 min light cardio + shoulder rolls, push-up hold\n- Push-ups: 5 sets x 12 reps (increased volume)\n- Incline push-ups: 3 sets x 10 reps (new angle)\n- Dumbbell or water jug rows: 3 sets x 12 reps\n- Face pulls (band): 3 sets x 15 reps\nCooldown: 5 min stretch\n\n**Day 4: Lower Hypertrophy + Posterior Chain**\nWarmup: 5 min light cardio + hip circles, glute bridges\n- Goblet squat: 4 sets x 12 reps\n- Single-leg RDL (assisted): 3 sets x 10 reps per leg\n- Glute bridge holds: 3 sets x 15 reps\n- Step-ups (on bench): 3 sets x 12 reps per leg\nCooldown: 5 min stretch\n\n**Cardio:** 3x 30 min brisk walk (maintain current pace)\n\n**Rest Days:** 3 full rest days; prioritize 7–8 hours sleep and hydration.\n\nProgressed to Upper/Lower split (2 body parts per day). Volume +15% on weak points. Maintain 60 min session duration. High adherence merits strength + hypertrophy focus. Monitor sleep and hunger; adjust if energy drops.",
   "model": "claude-haiku-4-5-20251001",
-  "promptVersion": "updated-workout-prompt@v2 [pending:weekly_workout_update_home]+system-prompt@v1",
-  "inputTokens": 1520,
-  "outputTokens": 698,
+  "promptVersion": "updated-workout-prompt@v3 [pending:weekly_workout_update_home]+system-prompt@v1",
+  "inputTokens": 2079,
+  "outputTokens": 905,
   "evaluation": {
     "workout": {
       "exerciseSelection": 7,
@@ -27,20 +27,14 @@
     },
     "issues": [
       {
-        "category": "Ignored preferred exercises",
-        "severity": "medium",
-        "description": "Client dislikes \"burpees\" but it appears in plan.",
-        "promptToInspect": "updated-workout-home.prompt"
-      },
-      {
         "category": "Unrealistic training volume",
         "severity": "medium",
-        "description": "Only 0 set×rep entries for 4-day program.",
+        "description": "Only 3 set×rep entries for 4-day program.",
         "promptToInspect": "updated-workout-home.prompt"
       }
     ],
     "workoutAverage": 7.166666666666667,
     "overallAverage": 7.708333333333334
   },
-  "generatedAt": "2026-07-07T21:34:56.375Z"
+  "generatedAt": "2026-07-08T06:37:48.483Z"
 }

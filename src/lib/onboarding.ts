@@ -190,6 +190,13 @@ export const COOKING_OPTIONS = [
   { value: 'advanced', label: 'Enjoy cooking' },
 ] as const
 
+export const MEAL_TIMING_OPTIONS = [
+  { value: 'breakfast', label: 'Breakfast' },
+  { value: 'lunch', label: 'Lunch' },
+  { value: 'dinner', label: 'Dinner' },
+  { value: 'snacks', label: 'Snacks' },
+] as const
+
 export const PAIN_OPTIONS = [
   { value: 'none', label: 'No pain' },
   { value: 'yes', label: 'Yes, during some exercises' },
@@ -343,6 +350,9 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
 }
 
 export function getResumeStep(profile: OnboardingProfile | null): number {
+  if (profile?.onboarding_complete) {
+    return ONBOARDING_SCREEN_COUNT - 1
+  }
   const step = profile?.onboarding_data?.resumeStep
   if (typeof step === 'number' && step >= 0 && step < ONBOARDING_SCREEN_COUNT) {
     return step
@@ -486,7 +496,11 @@ export function validateOnboardingStep(
   step: number,
   data: OnboardingFormData,
   photos?: OnboardingPhotoFiles,
-  savedPhotoUrls?: SavedPhotoUrls
+  savedPhotoUrls?: SavedPhotoUrls,
+  mealTimingContext?: {
+    mealsForTiming: string[]
+    confirmedMeals: string[]
+  }
 ): string | null {
   switch (step) {
     case 0: {
@@ -569,7 +583,7 @@ export function validateOnboardingStep(
     case 15:
       return null
     case 16: {
-      if (!data.monthly_food_budget) return 'Please select your food budget.'
+      if (!data.monthly_food_budget.trim()) return 'Please enter your monthly food budget.'
       if (!data.cooking_ability) return 'Please select your cooking ability.'
       return null
     }
@@ -584,9 +598,30 @@ export function validateOnboardingStep(
       return null
     }
     case 19: {
-      if (!data.timing_breakfast) return 'Please set your breakfast time.'
-      if (!data.timing_lunch) return 'Please set your lunch time.'
-      if (!data.timing_dinner) return 'Please set your dinner time.'
+      const meals = mealTimingContext?.mealsForTiming ?? ['breakfast', 'lunch', 'dinner']
+      const confirmed = new Set(mealTimingContext?.confirmedMeals ?? [])
+
+      if (meals.length === 0) return 'Please select at least one meal to set a time for.'
+
+      const timingFields: Record<string, keyof OnboardingFormData> = {
+        breakfast: 'timing_breakfast',
+        lunch: 'timing_lunch',
+        dinner: 'timing_dinner',
+        snacks: 'timing_snacks',
+      }
+
+      for (const meal of meals) {
+        const field = timingFields[meal]
+        const value = field ? String(data[field] ?? '') : ''
+        if (!value) {
+          const label = MEAL_TIMING_OPTIONS.find((o) => o.value === meal)?.label ?? meal
+          return `Please set your ${label.toLowerCase()} time.`
+        }
+        if (!confirmed.has(meal)) {
+          const label = MEAL_TIMING_OPTIONS.find((o) => o.value === meal)?.label ?? meal
+          return `Please confirm your ${label.toLowerCase()} time.`
+        }
+      }
       return null
     }
     case 20: {
@@ -704,7 +739,7 @@ export function buildReviewSections(
         { label: 'Allergies', value: form.food_allergies || 'None' },
         { label: 'Foods disliked', value: form.foods_disliked || 'None' },
         { label: 'Favourite foods', value: form.favorite_foods || 'None' },
-        { label: 'Monthly budget', value: getOnboardingLabel('monthly_food_budget', form.monthly_food_budget) },
+        { label: 'Monthly budget', value: form.monthly_food_budget || 'Not set' },
         { label: 'Cooking ability', value: getOnboardingLabel('cooking_ability', form.cooking_ability) },
       ],
     },
@@ -766,6 +801,18 @@ export async function saveOnboardingProgress(
     complete?: boolean
   }
 ): Promise<void> {
+  if (!options.complete) {
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('onboarding_complete')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (existing?.onboarding_complete) {
+      return
+    }
+  }
+
   const payload = buildProfilePayload(form, userId, {
     email: options.email,
     resumeStep: options.complete ? ONBOARDING_SCREEN_COUNT - 1 : options.step,
@@ -773,12 +820,20 @@ export async function saveOnboardingProgress(
     photoUrls: options.photoUrls,
   })
 
-  const { error } = await supabase.from('profiles').upsert(payload)
+  const { error } = options.complete
+    ? await supabase.from('profiles').upsert(payload)
+    : await supabase.from('profiles').update(payload).eq('id', userId)
+
   if (error) throw new Error(error.message)
 }
 
-export function isOnboardingComplete(profile: Pick<OnboardingProfile, 'onboarding_complete'> | null): boolean {
-  return profile?.onboarding_complete === true
+export function isOnboardingComplete(
+  profile: Pick<OnboardingProfile, 'onboarding_complete' | 'onboarding_completed_at'> | null
+): boolean {
+  if (!profile) return false
+  if (profile.onboarding_complete === true) return true
+  if (profile.onboarding_completed_at) return true
+  return false
 }
 
 export function isPaymentConfirmed(
@@ -788,7 +843,16 @@ export function isPaymentConfirmed(
 }
 
 /** Route paying clients to the correct next step after login. */
-export function getClientPostAuthPath(profile: OnboardingProfile | null): string {
+export function getClientPostAuthPath(
+  profile: OnboardingProfile | null,
+  profileError?: string
+): string {
+  // Never send to onboarding when profile failed to load — completed users were
+  // falsely routed here when the post-login profile query returned null.
+  if (profileError || !profile) {
+    return '/dashboard'
+  }
+
   if (!shouldBypassPaymentGuardClient() && !isPaymentConfirmed(profile)) {
     return '/checkout?plan=6_months'
   }
@@ -801,6 +865,36 @@ export function getClientPostAuthPath(profile: OnboardingProfile | null): string
 type AuthResult = {
   user: { id: string; email?: string }
   profile: OnboardingProfile | null
+  profileError?: string
+}
+
+const PROFILE_FETCH_RETRY_DELAYS_MS = [0, 200, 500, 1000, 1500]
+
+export async function fetchClientProfile(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ profile: OnboardingProfile | null; error: string | null }> {
+  let lastError: string | null = null
+
+  for (let attempt = 0; attempt < PROFILE_FETCH_RETRY_DELAYS_MS.length; attempt++) {
+    if (PROFILE_FETCH_RETRY_DELAYS_MS[attempt] > 0) {
+      await new Promise((resolve) => setTimeout(resolve, PROFILE_FETCH_RETRY_DELAYS_MS[attempt]))
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (!error) {
+      return { profile: (data as OnboardingProfile | null) ?? null, error: null }
+    }
+
+    lastError = error.message
+  }
+
+  return { profile: null, error: lastError ?? 'Failed to load profile' }
 }
 
 export async function authenticateClient(
@@ -812,21 +906,32 @@ export async function authenticateClient(
     requirePayment?: boolean
   }
 ): Promise<AuthResult | null> {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  let user = session?.user ?? null
+
+  if (!user) {
+    const { data: { user: refreshedUser } } = await supabase.auth.getUser()
+    user = refreshedUser
+  }
 
   if (!user) {
     router.push('/login')
     return null
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle()
+  const { profile, error: profileError } = await fetchClientProfile(supabase, user.id)
+
+  if (profileError && !profile) {
+    return {
+      user,
+      profile: null,
+      profileError,
+    }
+  }
 
   if (
     options?.requirePayment &&
+    profile &&
     !isPaymentConfirmed(profile) &&
     !shouldBypassPaymentGuardClient()
   ) {
@@ -834,17 +939,22 @@ export async function authenticateClient(
     return null
   }
 
-  if (options?.redirectIfOnboarded && isOnboardingComplete(profile)) {
+  if (options?.requirePayment && !profile && !shouldBypassPaymentGuardClient()) {
+    router.push('/checkout?plan=6_months')
+    return null
+  }
+
+  if (options?.redirectIfOnboarded && profile && isOnboardingComplete(profile)) {
     router.push('/dashboard')
     return null
   }
 
-  if (options?.requireOnboarding && !isOnboardingComplete(profile)) {
+  if (options?.requireOnboarding && profile && !isOnboardingComplete(profile)) {
     router.push('/onboarding')
     return null
   }
 
-  return { user, profile }
+  return { user, profile, profileError: profileError ?? undefined }
 }
 
 /**

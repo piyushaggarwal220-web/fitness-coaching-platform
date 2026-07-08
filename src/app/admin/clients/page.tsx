@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { coachBadgeStyles, formatFitnessGoal, getCheckinStatus, getPlanStatus } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
@@ -15,7 +13,6 @@ const supabase = createClient()
 type FilterKey = 'all' | 'unassigned' | 'pending_plan' | 'pending_onboarding'
 
 export default function AdminClientsPage() {
-  const router = useRouter()
   const [clients, setClients] = useState<ClientProfile[]>([])
   const [coaches, setCoaches] = useState<Coach[]>([])
   const [search, setSearch] = useState('')
@@ -26,8 +23,6 @@ export default function AdminClientsPage() {
   useEffect(() => {
     const load = async () => {
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       const [clientsRes, coachesRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('role', 'client').order('name', { ascending: true }),
@@ -46,7 +41,7 @@ export default function AdminClientsPage() {
     }
 
     void load()
-  }, [router])
+  }, [])
 
   const coachMap = useMemo(() => {
     const map = new Map<string, string>()

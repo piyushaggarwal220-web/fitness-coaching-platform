@@ -58,12 +58,13 @@ async function main(): Promise<void> {
     console.error('Missing core categories:', coreVerification.missingCategories.join(', '))
   }
 
-  console.log(`Home workout verification: ${homeVerification.ok ? 'PASS' : 'PENDING'}`)
+  console.log(`Home workout verification: ${homeVerification.ok ? 'PASS' : 'FAIL'}`)
   if (!homeVerification.ok) {
-    console.log('Home categories awaiting content:', homeVerification.missingCategories.join(', '))
+    console.error('Missing home categories:', homeVerification.missingCategories.join(', '))
   }
 
-  process.exit(result.errors.length === 0 && coreVerification.ok ? 0 : 1)
+  const allOk = result.errors.length === 0 && coreVerification.ok && homeVerification.ok
+  process.exit(allOk ? 0 : 1)
 }
 
 main().catch((err) => {

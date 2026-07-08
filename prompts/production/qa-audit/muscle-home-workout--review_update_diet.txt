@@ -1,74 +1,282 @@
-Calories: 0
-Protein: 0g
-Carbs: 0g
-Fat: 0g
+Calories: 1925
+Protein: 128g
+Carbs: 245g
+Fat: 48g
 
-Weekly Diet Plan: Meera, I see only 1 out of 3 workouts completed this week. Life happens, but we need to address this immediately—your muscle gain goal requires BOTH consistent training AND nutrition. High hunger (7/10) with low energy (5/10) tells me we need to optimize your meal timing and portions. Let's tighten this up.
+Weekly Diet Plan: Meera, your weight is stable at 62.2 kg and you managed to stay mostly on track with your diet despite the chaos — that's a win we need to acknowledge. However, only completing 1 out of 3 workouts and an adherence score of 4/10 tells me the current plan is adding stress instead of supporting you. Your hunger at 7/10 and energy at 5/10 suggest we need better meal distribution and more satiating choices to keep you fuelled and consistent during tough weeks.
 
-**DAILY NUTRITION TARGET:**
-Calories: ~2100 kcal | Protein: 135g | Carbs: 240g | Fat: 60g
+This week, I'm keeping your calories around 1900–1950 kcal with protein steady at ~125–130g to protect muscle even when training is inconsistent. I've simplified breakfast and snack options so you have fewer decisions to make, added more fibre and volume at lunch to tackle that hunger, and kept dinner flexible with quick paneer or dal-based meals that fit your 9 pm timing. Carbs are slightly higher around training days (if you manage to get sessions in) and moderate on rest days to support energy without overshooting your goal. This is a muscle gain phase, but right now our priority is building sustainable habits — we'll push harder when life steadies.
 
-**MEAL 1 — 8:30 AM (Breakfast)**
-- 1 cup oats cooked in 200ml milk + 1 scoop whey protein (mixed in after cooking) OR 3 besan chilla with 1 tbsp ghee
-- 1 banana
-- 5 soaked almonds
-*Protein: ~35g*
+**DAY 1 (Rest Day)**
 
-**MEAL 2 — 11:00 AM (Mid-Morning)**
-- 1 glass buttermilk
-- 1 small bowl roasted chana (30g)
-*Protein: ~10g*
+Breakfast (8:30 am):
+- Poha (1.5 bowl) with peanuts (1 tbsp), curry leaves, mustard seeds
+- Curd (1 small katori, plain)
+(P: 12g | C: 50g | F: 8g | ~310 kcal)
 
-**MEAL 3 — 1:30 PM (Lunch)**
-- 1.5 cups rice (cooked)
-- 1 cup dal (moong/masoor—thick consistency)
-- 1 cup mixed vegetable sabzi (beans, carrot, peas)
-- 100g paneer bhurji or curd (200g)
-- Small salad with lemon
-*Protein: ~35g*
+Mid-Morning (11:00 am):
+- Banana (1 medium) + roasted chana (30g)
+(P: 8g | C: 35g | F: 2g | ~185 kcal)
 
-**MEAL 4 — 4:30 PM (Pre-Evening Snack)**
-- 1 glass milk (250ml) with 5-6 dates OR peanut butter (2 tbsp) with 2 multigrain bread slices
-*Protein: ~12g*
+Lunch (1:30 pm):
+- Brown rice or white rice (1 bowl, ~150g cooked)
+- Moong dal tadka (1 katori, ~150g)
+- Mixed veg sabzi — lauki, beans, carrot (1 katori)
+- Curd (1 small katori) + salad (cucumber, tomato, onion)
+(P: 18g | C: 60g | F: 6g | ~360 kcal)
 
-**MEAL 5 — 6:30 PM (Pre-Workout—if training)**
-- Tea with 1 small bowl roasted makhana or 1 fruit (apple/orange)
-*Light carbs for energy*
+Evening Snack (6:30 pm):
+- Tea (1 cup, milk, no sugar or jaggery 1 tsp)
+- Roasted makhana (1 bowl, ~30g) or roasted chana (40g)
+(P: 6g | C: 20g | F: 3g | ~125 kcal)
 
-**MEAL 6 — 9:00 PM (Dinner)**
-- 3 medium rotis (whole wheat)
-- 100g paneer curry OR rajma (1 cup) OR chole (1 cup)
-- 1 cup sabzi (palak, bhindi, or lauki)
-- Salad (cucumber, tomato, onion)
-- 100g curd
-*Protein: ~35g*
+Dinner (9:00 pm):
+- Roti (2 medium, whole wheat)
+- Paneer bhurji (100g paneer) or rajma curry (1 katori)
+- Cucumber-tomato salad (1 plate) with lemon
+(P: 22g | C: 45g | F: 12g | ~370 kcal)
 
-**MEAL 7 — 10:30 PM (Before Bed—Optional)**
-- 1 glass warm milk OR 100g Greek curd with a pinch of cinnamon
-*Protein: ~8g*
+Bedtime (Optional, 10:30 pm):
+- Warm milk (1 glass, 200ml, low-fat) with turmeric pinch
+(P: 7g | C: 10g | F: 4g | ~100 kcal)
+
+**Day 1 Total: ~1450 kcal | P: 73g | C: 220g | F: 35g**
 
 ---
 
-**PROTEIN DISTRIBUTION ACROSS DAY:** Breakfast 35g | Mid-morning 10g | Lunch 35g | Evening 12g | Dinner 35g | Bedtime 8g = **~135g total**
+**DAY 2 (Training Day)**
 
-**HYDRATION:** 3–3.5 liters water daily. Set hourly reminders.
+Breakfast (8:30 am):
+- Idli (3 medium) with sambar (1 katori, light oil) and coconut chutney (2 tbsp)
+(P: 10g | C: 55g | F: 6g | ~305 kcal)
+
+Mid-Morning (11:00 am):
+- Apple (1 medium) + almonds (10–12)
+(P: 5g | C: 25g | F: 7g | ~180 kcal)
+
+Lunch (1:30 pm):
+- Brown rice (1.5 bowl, ~180g cooked)
+- Chana masala or chole (1 katori, ~150g)
+- Palak sabzi (1 katori) or baingan bharta
+- Curd (1 katori) + salad
+(P: 20g | C: 70g | F: 7g | ~420 kcal)
+
+Evening Snack (6:30 pm, Pre-Workout):
+- Banana (1 large) + peanut butter (1 tbsp, 15g)
+(P: 6g | C: 35g | F: 8g | ~235 kcal)
+
+Dinner (9:00 pm, Post-Workout):
+- Roti (2 medium)
+- Paneer tikka or grilled paneer (120g) with mint chutney
+- Mixed dal (1 katori)
+- Salad (cucumber, carrot, beetroot)
+(P: 28g | C: 50g | F: 14g | ~430 kcal)
+
+Bedtime (Optional):
+- Curd (1 katori, 100g) with flaxseed powder (1 tsp)
+(P: 5g | C: 8g | F: 3g | ~75 kcal)
+
+**Day 2 Total: ~1645 kcal | P: 74g | C: 243g | F: 45g**
 
 ---
 
-**YOUR ACTION POINTS THIS WEEK:**
+**DAY 3 (Rest Day)**
 
-1. **PREP SUNDAY EVENING:** Cook dal, paneer, and chop vegetables for 3 days. No excuses about time.
+Breakfast (8:30 am):
+- Vegetable upma (1.5 bowl) with peanuts and curry leaves
+- Curd (1 small katori)
+(P: 11g | C: 48g | F: 7g | ~295 kcal)
 
-2. **NON-NEGOTIABLE PROTEIN:** Even if you skip a workout, you MUST hit 130g+ protein daily. Muscle preservation depends on it.
+Mid-Morning (11:00 am):
+- Orange (1 medium) + roasted chana (30g)
+(P: 7g | C: 30g | F: 2g | ~165 kcal)
 
-3. **MANAGE HUNGER:** Your 7/10 hunger score suggests meals are too small or spaced poorly. Follow the 6-meal structure above—especially the 4:30 PM snack. This will stabilize energy and reduce evening cravings.
+Lunch (1:30 pm):
+- Roti (2 medium) or rice (1 bowl)
+- Rajma curry (1 katori, ~150g)
+- Bhindi sabzi or turai sabzi (1 katori)
+- Curd (1 katori) + salad
+(P: 18g | C: 65g | F: 6g | ~380 kcal)
 
-4. **WORKOUT MINIMUM:** If chaos strikes, do at least 20 minutes—half the workout is better than zero. We'll discuss workout modifications separately, but your nutrition must stay locked in.
+Evening Snack (6:30 pm):
+- Tea (1 cup) + 2 multigrain biscuits or 1 small besan chilla
+(P: 5g | C: 22g | F: 4g | ~140 kcal)
 
-5. **SLEEP CONSISTENCY:** Maintain 7–8 hours. Late dinners (9 PM) are fine, but be in bed by 11 PM.
+Dinner (9:00 pm):
+- Roti (2 medium)
+- Soya chunk curry (1 katori, ~80g dry weight soya)
+- Tomato-cucumber salad
+(P: 24g | C: 48g | F: 8g | ~350 kcal)
 
-6. **TRACK HONESTLY:** Log your meals in our app daily. I need to see where you're actually struggling—not guessing.
+Bedtime (Optional):
+- Warm milk (1 glass, 200ml)
+(P: 7g | C: 10g | F: 4g | ~100 kcal)
+
+**Day 3 Total: ~1430 kcal | P: 72g | C: 223g | F: 31g**
 
 ---
 
-**Meera, you're capable of this. One bad week doesn't define you, but a pattern will. Let's course-correct NOW. Check in with me mid-week if you're feeling overwhelmed—we'll adjust together. You've got this, but I need you to show up for yourself.**
+**DAY 4 (Training Day)**
+
+Breakfast (8:30 am):
+- Besan chilla (2 medium, ~100g besan) with green chutney
+- Curd (1 katori)
+(P: 14g | C: 40g | F: 8g | ~285 kcal)
+
+Mid-Morning (11:00 am):
+- Banana (1 medium) + walnuts (4 halves)
+(P: 4g | C: 30g | F: 8g | ~200 kcal)
+
+Lunch (1:30 pm):
+- Brown rice (1.5 bowl)
+- Masoor dal (1 katori)
+- Aloo-gobi sabzi (1 katori, light oil)
+- Curd (1 katori) + salad
+(P: 17g | C: 72g | F: 6g | ~405 kcal)
+
+Evening Snack (6:30 pm, Pre-Workout):
+- 2 boiled potatoes (small) with rock salt and jeera powder + green chutney
+(P: 4g | C: 35g | F: 1g | ~165 kcal)
+
+Dinner (9:00 pm, Post-Workout):
+- Roti (2 medium)
+- Paneer bhurji (100g paneer, onion, tomato, light oil)
+- Moong dal (1 katori)
+- Salad
+(P: 26g | C: 50g | F: 13g | ~415 kcal)
+
+Bedtime (Optional):
+- Curd (1 katori) with chia seeds (1 tsp)
+(P: 5g | C: 9g | F: 3g | ~80 kcal)
+
+**Day 4 Total: ~1550 kcal | P: 70g | C: 236g | F: 39g**
+
+---
+
+**DAY 5 (Rest Day)**
+
+Breakfast (8:30 am):
+- Poha (1.5 bowl) with peanuts, peas, curry leaves
+- Curd (1 katori)
+(P: 12g | C: 52g | F: 8g | ~315 kcal)
+
+Mid-Morning (11:00 am):
+- Papaya (1 bowl, ~150g) + roasted chana (30g)
+(P: 7g | C: 28g | F: 2g | ~155 kcal)
+
+Lunch (1:30 pm):
+- Curd rice (1.5 bowl, rice + curd + tempering)
+- Sambar (1 katori)
+- Cabbage poriyal or beans poriyal (1 katori)
+- Salad
+(P: 15g | C: 68g | F: 5g | ~375 kcal)
+
+Evening Snack (6:30 pm):
+- Tea (1 cup) + roasted makhana (1 bowl, 30g)
+(P: 5g | C: 20g | F: 3g | ~120 kcal)
+
+Dinner (9:00 pm):
+- Roti (2 medium)
+- Chana masala (1 katori)
+- Cucumber-onion-tomato salad (1 plate)
+(P: 20g | C: 50g | F: 7g | ~340 kcal)
+
+Bedtime (Optional):
+- Warm milk (1 glass, 200ml, turmeric)
+(P: 7g | C: 10g | F: 4g | ~100 kcal)
+
+**Day 5 Total: ~1405 kcal | P: 66g | C: 228g | F: 29g**
+
+---
+
+**DAY 6 (Training Day)**
+
+Breakfast (8:30 am):
+- Idli (3 medium) + sambar (1 katori) + coconut chutney (2 tbsp)
+(P: 10g | C: 55g | F: 6g | ~305 kcal)
+
+Mid-Morning (11:00 am):
+- Banana (1 medium) + almonds (10)
+(P: 5g | C: 28g | F: 7g | ~190 kcal)
+
+Lunch (1:30 pm):
+- Brown rice (1.5 bowl)
+- Rajma (1 katori)
+- Lauki sabzi or tinda sabzi (1 katori)
+- Curd (1 katori) + salad
+(P: 19g | C: 70g | F: 6g | ~410 kcal)
+
+Evening Snack (6:30 pm, Pre-Workout):
+- Sweet potato (1 medium, boiled, ~150g) with cinnamon
+(P: 3g | C: 35g | F: 0g | ~155 kcal)
+
+Dinner (9:00 pm, Post-Workout):
+- Roti (2 medium)
+- Paneer tikka (120g paneer, grilled or air-fried)
+- Mixed dal (1 katori)
+- Salad
+(P: 28g | C: 48g | F: 14g | ~425 kcal)
+
+Bedtime (Optional):
+- Curd (1 katori, 100g) with flaxseed powder (1 tsp)
+(P: 5g | C: 8g | F: 3g | ~75 kcal)
+
+**Day 6 Total: ~1560 kcal | P: 70g | C: 244g | F: 36g**
+
+---
+
+**DAY 7 (Rest Day — Flexible)**
+
+Breakfast (8:30 am):
+- Vegetable poha (1.5 bowl) with peanuts
+- Curd (1 katori)
+(P: 11g | C: 50g | F: 7g | ~305 kcal)
+
+Mid-Morning (11:00 am):
+- Apple (1 medium) + roasted chana (30g)
+(P: 7g | C: 30g | F: 2g | ~165 kcal)
+
+Lunch (1:30 pm):
+- Roti (2 medium) or rice (1 bowl)
+- Chole (1 katori)
+- Aloo-matar sabzi (1 katori)
+- Curd + salad
+(P: 18g | C: 68g | F: 7g | ~400 kcal)
+
+Evening Snack (6:30 pm):
+- Tea (1 cup) + 1 small besan chilla or 2 multigrain biscuits
+(P: 6g | C: 22g | F: 4g | ~145 kcal)
+
+Dinner (9:00 pm):
+- Roti (2 medium)
+- Soya chunk curry or paneer bhurji (100g paneer)
+- Salad
+(P: 24g | C: 48g | F: 10g | ~370 kcal)
+
+Bedtime (Optional):
+- Warm milk (1 glass, 200ml)
+(P: 7g | C: 10g | F: 4g | ~100 kcal)
+
+**Day 7 Total: ~1485 kcal | P: 73g | C: 228g | F: 34g**
+
+---
+
+**Daily averages: ~1490 kcal | P: 71g | C: 232g | F: 36g**
+
+(Note: On training days, totals are slightly higher at ~1550–1645 kcal with more carbs pre/post-workout. Rest days are ~1400–1490 kcal. Overall weekly average is ~1490 kcal. Adjust portion sizes — add 1 roti or 1 katori rice on training days if energy remains low, or reduce by ½ katori rice on rest days if hunger is manageable.)
+
+---
+
+**TIPS FOR THIS WEEK:**
+
+1. **Meal prep on Sunday:** Batch-cook 2–3 sabzis, boil potatoes and chana, portion out roasted chana and makhana into small containers. When work and family get chaotic, you grab and go instead of skipping meals or ordering out.
+
+2. **Prioritise 2 workouts minimum:** I know last week was tough, but 1 session won't move the needle. Aim for at least 2 this week — even if it's 30 minutes instead of 50. Muscle gain requires consistent stimulus, and right now we're in maintenance mode, not progress mode.
+
+3. **Front-load your protein:** Your hunger is high at 7/10, which tells me you're not satisfied. Focus on getting 20–25g protein at lunch and dinner (paneer, dal, soya, curd combinations). Protein keeps you full longer and protects muscle when training is inconsistent.
+
+4. **Track your adherence honestly:** Give yourself 1 point for each meal you hit as planned, and 1 point for each workout completed. Aim for 8/10 this week. If you're at 6/10 by Thursday, we adjust again — but I need real data, not guesses.
+
+5. **Sleep and step count matter:** You're getting 7–8 hours, which is good, but your step count is only 5000. Add a 10-minute walk after dinner (even indoors or around your building) to hit 6500–7000 steps. It'll help digestion, sleep quality, and recovery without adding training stress.
+
+Meera, I'm simplifying everything this week because I'd rather you execute a basic plan at 8/10 than struggle with a perfect plan at 4/10. Muscle gain is a long game — we need consistency first, intensity second. Show me you can hit 2 workouts and follow this diet for 6 days, and we'll level up next week. You've got this, but you have to show up for yourself.

@@ -1,0 +1,46 @@
+{
+  "caseId": "home-bands-only--review_update_workout",
+  "personaId": "home-bands-only",
+  "personaLabel": "Resistance bands only",
+  "group": "Home Workout",
+  "actionId": "review_update_workout",
+  "checkinScenario": "missed_workouts",
+  "rendered": "Suresh,\n\nI see you managed 1 out of 3 workouts last week due to work and family demands. That's completely understandable — life happens. The good news is your diet stayed mostly on track, which is huge for fat loss. This week we're simplifying the plan to help you stay consistent. I'm keeping the 3-day structure but shortening each session to around 45 minutes and combining muscle groups differently to give you a fresh stimulus while reducing friction.\n\nWe're moving to a 2-body-part split to keep sessions efficient and engaging. Each workout will hit two major areas with compound movements using your resistance bands and door anchor. This will help you build momentum and adherence without overwhelming your schedule.\n\n**Weekly Structure:**\n\n**Day 1 — Chest & Back (Monday or Tuesday evening)**\n- Warmup: 5 minutes arm circles, band pull-aparts, and light marching in place\n- Resistance Band Chest Press (anchor at mid-chest height): 3 sets x 10 reps\n- Door Anchor Rows (your favorite — anchor at chest height, pull to ribcage): 4 sets x 10 reps\n- Resistance Band Chest Fly (anchor at shoulder height): 3 sets x 12 reps\n- Single-Arm Band Row (anchor at waist height, alternate arms): 3 sets x 10 reps per arm\n- Band Pull-Aparts (light band, focus on squeezing shoulder blades): 2 sets x 15 reps\n- Cooldown: 3 minutes stretching chest, lats, and shoulders\n- Steps target: 6,000 steps today\n\n**Day 2 — Legs & Shoulders (Thursday evening)**\n- Warmup: 5 minutes bodyweight squats, hip circles, and ankle rolls\n- Bodyweight Squats (your favorite — controlled tempo, 2 seconds down, 1 second up): 4 sets x 12 reps\n- Resistance Band Romanian Deadlift (stand on band, hinge at hips): 3 sets x 10 reps\n- Resistance Band Lateral Raise (stand on band, raise to shoulder height): 3 sets x 12 reps\n- Resistance Band Front Squat (band under feet, handles at shoulders): 3 sets x 10 reps\n- Band Overhead Press (stand on band, press overhead): 3 sets x 10 reps\n- Cooldown: 3 minutes stretching quads, hamstrings, and shoulders\n- Steps target: 6,000 steps today\n\n**Day 3 — Arms & Core (Saturday or Sunday evening)**\n- Warmup: 5 minutes light shadow boxing and torso twists\n- Resistance Band Bicep Curl (stand on band, curl to shoulders): 3 sets x 12 reps\n- Resistance Band Tricep Extension (anchor overhead, extend downward): 3 sets x 12 reps\n- Resistance Band Hammer Curl (stand on band, neutral grip): 3 sets x 10 reps\n- Resistance Band Overhead Tricep Extension (stand on band, extend overhead): 3 sets x 10 reps\n- Plank Hold: 3 sets x 30 seconds\n- Bicycle Crunches: 3 sets x 15 reps per side\n- Cooldown: 3 minutes stretching arms, abs, and lower back\n- Steps target: 6,000 steps today\n\n**Rest Days (4 days):**\n- Focus on light movement: 5,000 steps minimum, stretching 5–10 minutes, prioritize 7–8 hours sleep.\n- Drink your 2L water daily.\n\n**Cardio:**\n- 3 sessions of 25-minute brisk walks (down from 30 min to reduce time pressure). Aim for moderate pace where you can talk but not sing. Schedule these on workout days post-training or on rest days — whatever fits your routine best.\n\n**Key Changes This Week:**\n- Shorter sessions (45 min vs 60 min) to reduce friction and help you show up consistently.\n- New 2-body-part split to give muscles a fresh stimulus and keep training interesting.\n- Slightly increased step target (6,000 on training days, 5,000 on rest days) to support fat loss without adding gym time.\n- Rows remain a staple in Day 1 as you requested.\n- Squats remain a staple in Day 2 as you requested.\n\nYour priority this week is to complete all 3 workouts. Even if a session feels rushed, do it. Consistency beats perfection. If work/family chaos strikes again, do a quick 20-minute version: pick the first 2 exercises from that day, do 3 sets each, and call it done. Something is always better than nothing.\n\nKeep your protein intake steady (around 130g daily from dal, paneer, curd, soya) even on days you miss training — it protects muscle during fat loss. You've got this, Suresh. Let's build momentum together.",
+  "model": "claude-sonnet-4-5-20250929",
+  "promptVersion": "updated-workout-prompt@v3 [pending:weekly_workout_update_home]+system-prompt@v1",
+  "inputTokens": 2145,
+  "outputTokens": 1370,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 5,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 8
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 5,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout-home.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 3-day program.",
+        "promptToInspect": "updated-workout-home.prompt"
+      }
+    ],
+    "workoutAverage": 6.833333333333333,
+    "overallAverage": 7.166666666666666
+  },
+  "generatedAt": "2026-07-08T06:48:14.981Z"
+}

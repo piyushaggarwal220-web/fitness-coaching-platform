@@ -21,12 +21,12 @@ export async function requireCoach(
     .maybeSingle()
 
   if (coachError) {
-    router.push('/dashboard')
+    router.push('/coach/login')
     return null
   }
 
   if (!coachData) {
-    router.push('/dashboard')
+    router.push('/coach/login')
     return null
   }
 

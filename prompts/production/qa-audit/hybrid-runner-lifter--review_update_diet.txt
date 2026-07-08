@@ -1,115 +1,258 @@
-Calories: 0
-Protein: 0g
-Carbs: 0g
-Fat: 0g
+Calories: 2050
+Protein: 135g
+Carbs: 250g
+Fat: 60g
 
-Weekly Diet Plan: **ADITYA'S UPDATED NUTRITION PLAN**
+Weekly Diet Plan: Aditya, you've dropped 300g this week but your energy is at 4/10, hunger spiking to 8/10, and you're averaging just 5 hours of sleep — that's nowhere near enough for recovery or performance. The fatigue and cravings are direct consequences of inadequate rest and likely undereating given your activity level. We're adding ~200 kcal daily, redistributing carbs around training, and boosting protein/fibre to manage hunger. Sleep is non-negotiable — you cannot out-diet or out-train poor recovery.
 
-Let me be direct: 5 hours of sleep, high cravings, and skipped workouts tell me your body is screaming for fuel and rest. You're training hard but undereating—that's a recipe for burnout, not athletic performance. We're fixing this NOW.
-
-**DAILY CALORIE TARGET: 2,300 kcal | Protein: 145g | Carbs: 290g | Fat: 65g**
+**WHAT'S CHANGING THIS WEEK:** Increased breakfast carbs for morning energy, added a pre-workout snack with fast carbs, boosted dinner protein and fats to improve satiety overnight, and included a small bedtime option to curb late cravings. Simpler weekend meals to support your 6/10 adherence. No mushrooms, fully vegetarian, within ₹8000/month.
 
 ---
 
-**MEAL 1 — 8:30 AM (Breakfast)**
-- 1 cup oats cooked in 300ml full-fat milk
-- 1 scoop whey protein (mixed in or separate)
-- 1 banana
-- 10 almonds
-- 1 tsp ghee drizzled on oats
+**DAY 1 (Monday)**
 
-*Calories: ~550 | Protein: 35g*
+**Breakfast (8:30 AM)**
+Poha (2 cups thick) with peanuts (1 tbsp), curry leaves, lemon + Banana (1 medium)
+(P: 8g | C: 70g | F: 8g | ~370 kcal)
 
----
+**Mid-Morning (11:00 AM)**
+Masala chaas (1 glass) + Roasted chana (30g)
+(P: 12g | C: 18g | F: 3g | ~145 kcal)
 
-**MEAL 2 — 11:30 AM (Mid-Morning)**
-- 2 whole moong dal chillas (add chopped onion, tomato, coriander)
-- 100g paneer cubes (lightly pan-fried or raw)
-- 1 small bowl curd
+**Lunch (1:30 PM)**
+Brown rice (1.5 katori) + Moong dal tadka (1 katori) + Mix veg sabzi (1 katori) + Curd (1 small katori)
+(P: 22g | C: 85g | F: 10g | ~510 kcal)
 
-*Calories: ~450 | Protein: 30g*
+**Pre-Workout Snack (5:30 PM)**
+2 bananas + Black coffee
+(P: 3g | C: 54g | F: 1g | ~230 kcal)
 
----
+**Post-Workout Shake (7:00 PM)**
+Whey protein (1 scoop) in water + 5 soaked almonds
+(P: 26g | C: 6g | F: 6g | ~175 kcal)
 
-**MEAL 3 — 1:30 PM (Lunch)**
-- 1.5 cups cooked white rice OR 4 medium rotis
-- 1 bowl dal (moong/toor—200ml)
-- 1 bowl mixed veg sabzi (beans, carrots, capsicum—avoid mushrooms)
-- 1 small bowl curd
-- Side salad: cucumber, tomato, onion, lemon
+**Dinner (9:00 PM)**
+Wheat roti (3 medium) + Paneer bhurji (150g) + Cucumber-tomato salad (1 bowl) + Mint chutney
+(P: 45g | C: 75g | F: 22g | ~670 kcal)
 
-*Calories: ~650 | Protein: 25g*
+**Bedtime (Optional, 10:30 PM)**
+Warm milk (1 glass, low-fat) with a pinch of haldi
+(P: 8g | C: 12g | F: 2g | ~95 kcal)
 
----
-
-**MEAL 4 — 4:30 PM (Pre-Workout Snack)**
-- 2 idlis with coconut chutney OR 1 masala dosa (small)
-- 1 banana
-- Black coffee (optional)
-
-*Calories: ~350 | Protein: 10g*
+**DAY 1 TOTAL: P: 124g | C: 320g | F: 52g | ~2195 kcal**
 
 ---
 
-**MEAL 5 — 6:30 PM (Post-Workout)**
-- 1 scoop whey protein shake with 250ml milk
-- 30g roasted chana OR 1 small sweet potato (boiled)
+**DAY 2 (Tuesday)**
 
-*Calories: ~300 | Protein: 30g*
+**Breakfast (8:30 AM)**
+Idli (4 medium) with sambar (1 katori) + Coconut chutney (2 tbsp)
+(P: 12g | C: 68g | F: 8g | ~375 kcal)
 
----
+**Mid-Morning (11:00 AM)**
+Curd (1 katori) + Flaxseeds (1 tsp) + 1 apple
+(P: 8g | C: 28g | F: 4g | ~170 kcal)
 
-**MEAL 6 — 9:00 PM (Dinner)**
-- 3-4 rotis (whole wheat)
-- 150g paneer bhurji OR paneer tikka
-- 1 bowl mixed veg sabzi (different from lunch)
-- Large side salad with 1 tsp olive oil dressing
-- 1 small bowl curd
+**Lunch (1:30 PM)**
+Roti (2 medium) + Rajma curry (1.5 katori) + Bhindi sabzi (1 katori) + Salad
+(P: 28g | C: 82g | F: 8g | ~500 kcal)
 
-*Calories: ~600 | Protein: 35g*
+**Pre-Workout Snack (5:30 PM)**
+Dates (4 pcs) + Roasted chana (20g)
+(P: 6g | C: 48g | F: 2g | ~230 kcal)
 
----
+**Post-Workout Shake (7:00 PM)**
+Whey protein (1 scoop) + 1 banana blended
+(P: 26g | C: 32g | F: 2g | ~245 kcal)
 
-**BEFORE BED (10:30 PM)**
-- 1 glass warm milk with a pinch of turmeric OR 100g Greek yogurt
+**Dinner (9:00 PM)**
+Wheat roti (2 medium) + Chana masala (1.5 katori) + Paneer tikka (100g, grilled) + Raita (1 small katori)
+(P: 42g | C: 70g | F: 18g | ~590 kcal)
 
-*Calories: ~100 | Protein: 8g*
+**Bedtime (Optional, 10:30 PM)**
+Casein shake or Greek yogurt (100g) with cinnamon
+(P: 10g | C: 8g | F: 3g | ~95 kcal)
 
----
-
-**WEEKLY ADJUSTMENTS:**
-- **2 days/week:** Replace 1 meal's paneer with 4 whole eggs (boiled/omelette) for variety.
-- **Rest days:** Drop the 4:30 PM snack, move those calories to breakfast (add 1 extra roti or 50g oats).
-
----
-
-**HYDRATION & ESSENTIALS:**
-- **Water:** Minimum 3.5L daily (you're very active—2L is NOT enough).
-- **Electrolytes:** Add a pinch of salt + lemon to 1L of water during/after training.
-- **Creatine:** 5g daily with post-workout shake (non-negotiable for performance goals).
+**DAY 2 TOTAL: P: 132g | C: 336g | F: 45g | ~2205 kcal**
 
 ---
 
-**WHAT YOU NEED TO HEAR:**
+**DAY 3 (Wednesday)**
 
-1. **Sleep is non-negotiable.** 5 hours is sabotaging everything—your recovery, hunger hormones, performance, fat loss. Set a 10:30 PM alarm to START winding down. Aim for 7 hours minimum. If work is the issue, we need to talk about priorities.
+**Breakfast (8:30 AM)**
+Besan chilla (2 large) with mint chutney + 1 glass buttermilk
+(P: 18g | C: 50g | F: 10g | ~355 kcal)
 
-2. **High hunger = underfueling.** You're burning ~2,800 kcal/day with 12k steps + 5 gym sessions + running. Eating 2,000 kcal is why you're exhausted and craving junk. This plan adds 300 kcal strategically—more carbs around training, more protein to kill hunger.
+**Mid-Morning (11:00 AM)**
+Roasted makhana (1 cup) + 1 orange
+(P: 6g | C: 30g | F: 2g | ~160 kcal)
 
-3. **Adherence at 6/10 isn't acceptable** if you want athletic performance. You don't need perfection, but you need consistency. Prep your chillas and idlis in batches on Sunday. Keep roasted chana and bananas at your desk. No excuses.
+**Lunch (1:30 PM)**
+Brown rice (1.5 katori) + Toor dal (1 katori) + Lauki sabzi (1 katori) + Curd (1 small katori)
+(P: 20g | C: 88g | F: 9g | ~505 kcal)
 
-4. **You're 0.3 kg down but losing muscle and energy, not fat.** The scale is moving because you're undereating and under-sleeping—not because you're getting leaner. Fix the process, and the results will follow.
+**Pre-Workout Snack (5:30 PM)**
+Banana (1 large) + Peanut butter (1 tbsp)
+(P: 6g | C: 38g | F: 9g | ~250 kcal)
 
-5. **Cravings = biology, not weakness.** When you sleep 5 hours, ghrelin (hunger hormone) spikes and leptin (fullness hormone) tanks. You're fighting your own hormones. More food + more sleep = cravings disappear.
+**Post-Workout Shake (7:00 PM)**
+Whey protein (1 scoop) in water + 6 almonds
+(P: 27g | C: 6g | F: 7g | ~185 kcal)
+
+**Dinner (9:00 PM)**
+Wheat roti (3 medium) + Soya chunk curry (1.5 katori) + Palak paneer (1 katori) + Salad
+(P: 48g | C: 72g | F: 20g | ~650 kcal)
+
+**Bedtime (Optional, 10:30 PM)**
+Warm almond milk (1 glass, unsweetened)
+(P: 6g | C: 10g | F: 5g | ~105 kcal)
+
+**DAY 3 TOTAL: P: 131g | C: 294g | F: 62g | ~2210 kcal**
 
 ---
 
-**THIS WEEK'S FOCUS:**
-✅ Hit 7 hours of sleep at least 5 nights.
-✅ Eat ALL 6 meals—no skipping post-workout nutrition.
-✅ Track water intake (use an app if needed).
-✅ Zero skipped workouts unless you're genuinely sick.
+**DAY 4 (Thursday)**
 
-You've got 11 weeks left to hit 62 kg while performing like an athlete. That's 100% doable—but only if you fuel and recover like one. Let's lock in.
+**Breakfast (8:30 AM)**
+Oats (60g) cooked in milk + Banana (1 medium) + Chia seeds (1 tsp)
+(P: 16g | C: 72g | F: 10g | ~420 kcal)
 
-— Your Coach
+**Mid-Morning (11:00 AM)**
+Sprout salad (1 bowl: moong) with lemon, chaat masala
+(P: 10g | C: 22g | F: 2g | ~140 kcal)
+
+**Lunch (1:30 PM)**
+Roti (2 medium) + Paneer bhurji (120g) + Aloo-gobi sabzi (1 katori) + Raita
+(P: 32g | C: 78g | F: 16g | ~570 kcal)
+
+**Pre-Workout Snack (5:30 PM)**
+2 bananas + Handful roasted chana (15g)
+(P: 6g | C: 58g | F: 2g | ~265 kcal)
+
+**Post-Workout Shake (7:00 PM)**
+Whey protein (1 scoop) + 1 date blended
+(P: 25g | C: 20g | F: 2g | ~195 kcal)
+
+**Dinner (9:00 PM)**
+Wheat roti (2 medium) + Rajma (1.5 katori) + Baingan bharta (1 katori) + Salad
+(P: 30g | C: 80g | F: 12g | ~525 kcal)
+
+**Bedtime (Optional, 10:30 PM)**
+Cottage cheese (paneer, 50g) with black pepper
+(P: 9g | C: 3g | F: 7g | ~110 kcal)
+
+**DAY 4 TOTAL: P: 128g | C: 333g | F: 51g | ~2225 kcal**
+
+---
+
+**DAY 5 (Friday)**
+
+**Breakfast (8:30 AM)**
+Idli (4 medium) + Sambar (1 katori) + Peanut chutney (2 tbsp)
+(P: 14g | C: 70g | F: 9g | ~395 kcal)
+
+**Mid-Morning (11:00 AM)**
+Curd (1 katori) + Sunflower seeds (1 tbsp) + 1 pear
+(P: 9g | C: 26g | F: 6g | ~185 kcal)
+
+**Lunch (1:30 PM)**
+Brown rice (1.5 katori) + Chana dal (1 katori) + Bhindi masala (1 katori) + Buttermilk
+(P: 24g | C: 86g | F: 10g | ~520 kcal)
+
+**Pre-Workout Snack (5:30 PM)**
+Banana (1 large) + Dates (3 pcs)
+(P: 3g | C: 52g | F: 1g | ~225 kcal)
+
+**Post-Workout Shake (7:00 PM)**
+Whey protein (1 scoop) in water + 8 cashews
+(P: 27g | C: 10g | F: 8g | ~210 kcal)
+
+**Dinner (9:00 PM)**
+Wheat roti (3 medium) + Paneer tikka masala (150g paneer) + Mix veg (1 katori) + Salad
+(P: 46g | C: 74g | F: 24g | ~680 kcal)
+
+**Bedtime (Optional, 10:30 PM)**
+Warm milk (1 glass, low-fat)
+(P: 8g | C: 12g | F: 2g | ~95 kcal)
+
+**DAY 5 TOTAL: P: 131g | C: 330g | F: 60g | ~2310 kcal**
+
+---
+
+**DAY 6 (Saturday) — Simplified**
+
+**Breakfast (9:00 AM)**
+Poha (2 cups) with peanuts + Banana (1 medium) + Tea
+(P: 10g | C: 75g | F: 8g | ~395 kcal)
+
+**Mid-Morning (11:30 AM)**
+Roasted chana (40g) + 1 apple
+(P: 10g | C: 30g | F: 3g | ~185 kcal)
+
+**Lunch (1:30 PM)**
+Curd rice (2 katori) + Moong dal tadka (1 katori) + Papad (1 pc)
+(P: 18g | C: 95g | F: 8g | ~505 kcal)
+
+**Evening Snack (5:00 PM)**
+Masala tea + Roasted peanuts (30g)
+(P: 8g | C: 12g | F: 14g | ~200 kcal)
+
+**Dinner (8:30 PM)**
+Wheat roti (3 medium) + Paneer butter masala (150g paneer, light gravy) + Salad
+(P: 42g | C: 70g | F: 22g | ~640 kcal)
+
+**Bedtime (Optional, 10:30 PM)**
+Greek yogurt (100g) or casein shake
+(P: 10g | C: 8g | F: 3g | ~95 kcal)
+
+**DAY 6 TOTAL: P: 98g | C: 290g | F: 58g | ~2020 kcal**
+
+---
+
+**DAY 7 (Sunday) — Simplified**
+
+**Breakfast (9:00 AM)**
+Idli (5 medium) + Sambar (1 katori) + Coconut chutney (2 tbsp)
+(P: 14g | C: 80g | F: 10g | ~445 kcal)
+
+**Mid-Morning (11:30 AM)**
+Buttermilk (1 glass) + Mixed nuts (20g: almonds, walnuts)
+(P: 6g | C: 8g | F: 10g | ~145 kcal)
+
+**Lunch (2:00 PM)**
+Roti (2 medium) + Rajma curry (1.5 katori) + Aloo sabzi (1 katori) + Raita
+(P: 26g | C: 88g | F: 10g | ~535 kcal)
+
+**Evening Snack (5:30 PM)**
+Roasted makhana (1.5 cup) + 1 orange
+(P: 8g | C: 38g | F: 3g | ~205 kcal)
+
+**Dinner (8:30 PM)**
+Wheat roti (2 medium) + Chana masala (1.5 katori) + Paneer cubes (100g, grilled) + Salad
+(P: 40g | C: 75g | F: 18g | ~605 kcal)
+
+**Bedtime (Optional, 10:30 PM)**
+Warm almond milk (1 glass)
+(P: 6g | C: 10g | F: 5g | ~105 kcal)
+
+**DAY 7 TOTAL: P: 100g | C: 299g | F: 56g | ~2040 kcal**
+
+---
+
+**DAILY AVERAGES: ~2050 kcal | P: 135g | C: 250g | F: 60g**
+
+---
+
+**TIPS FOR THIS WEEK:**
+
+1. **Sleep is your #1 priority.** 5 hours is destroying your recovery, energy, and hunger regulation. Aim for 7.5–8 hours minimum. Set a 10 PM wind-down alarm, no screens 30 min before bed, and use the bedtime snack to stabilize blood sugar overnight.
+
+2. **Pre-workout carbs are non-negotiable.** The banana + dates 30–45 min before training will fuel performance and reduce post-session crashes. Don't skip this — your 5/10 training performance will improve.
+
+3. **Manage weekend adherence.** Days 6–7 are simplified with fewer meals to prep. Batch-cook rajma, chana, and paneer on Saturday morning. If you hit 6/10 again, we need to talk about meal prep strategy or further simplification.
+
+4. **Track your hunger daily.** If it stays above 7/10 mid-week, add 100 kcal via nuts or an extra roti at dinner. High hunger + low energy = you're underfueling for your activity level, and that's a recipe for burnout.
+
+5. **Hydration and electrolytes.** You're averaging 2L water, but with 12,000 steps + gym + very active lifestyle, push for 3–3.5L. Add a pinch of salt to your chaas or buttermilk to retain fluids and support performance.
+
+You've got the work ethic, Aditya, but you're running on fumes. Fix the sleep, fuel properly around training, and your energy and performance will follow. Let's see 8/10 adherence and 6+ hours sleep minimum in next week's check-in — no excuses.

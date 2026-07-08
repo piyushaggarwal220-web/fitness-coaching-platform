@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
-import { requireAdmin } from '@/lib/admin-session'
 import { PromptImportPanel } from '@/components/admin/PromptImportPanel'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatPromptCategory, listPromptLibrary } from '@/lib/admin/prompt-library'
@@ -24,7 +22,6 @@ function statusBadge(status: PromptLibraryListItem['list_status']) {
 }
 
 export default function AdminPromptsPage() {
-  const router = useRouter()
   const [prompts, setPrompts] = useState<PromptLibraryListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -37,8 +34,6 @@ export default function AdminPromptsPage() {
   useEffect(() => {
     const load = async () => {
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       const result = await listPromptLibrary(supabase)
       if (result.error) {
@@ -52,7 +47,7 @@ export default function AdminPromptsPage() {
     }
 
     void load()
-  }, [router, reloadKey])
+  }, [reloadKey])
 
   const filtered = useMemo(() => {
     let list = [...prompts]

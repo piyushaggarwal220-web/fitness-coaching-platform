@@ -1,0 +1,25 @@
+{
+  "caseId": "special-shoulder-discomfort--initial_workout",
+  "personaId": "special-shoulder-discomfort",
+  "personaLabel": "Shoulder discomfort",
+  "group": "Special Cases",
+  "actionId": "initial_workout",
+  "checkinScenario": "missed_workouts",
+  "rendered": "",
+  "model": "error",
+  "promptVersion": "",
+  "inputTokens": 0,
+  "outputTokens": 0,
+  "evaluation": {
+    "overall": {
+      "coachingQuality": 1,
+      "professionalism": 1,
+      "personalization": 1,
+      "sendWithoutEdits": 1
+    },
+    "issues": [],
+    "overallAverage": 1
+  },
+  "generatedAt": "2026-07-07T22:28:04.219Z",
+  "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV7iMijcebZunLt3efU\"}"
+}

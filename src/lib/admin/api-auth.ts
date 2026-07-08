@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { isAdminRole } from '@/lib/roles'
+import { isAdminRole, isSuperAdminRole } from '@/lib/roles'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/types/database'
 
@@ -37,4 +37,22 @@ export async function requireAdminApi(): Promise<AdminApiAuthResult> {
   }
 
   return { ok: true, userId: user.id, profile: profile as AdminApiProfile }
+}
+
+/** Validate the current session is a super_admin only (for destructive API routes). */
+export async function requireSuperAdminApi(): Promise<AdminApiAuthResult> {
+  const base = await requireAdminApi()
+  if (!base.ok) return base
+
+  if (!isSuperAdminRole(base.profile.role)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, error: 'Super admin access required' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  return base
 }

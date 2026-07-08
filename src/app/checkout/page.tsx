@@ -1,16 +1,14 @@
 'use client';
 
-import { Suspense, useEffect, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { Suspense, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
+import { createClient } from '@/lib/supabase/client';
 import { isTestModeEnabled } from '@/lib/test-mode';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 type RazorpayHandlerResponse = {
   razorpay_order_id: string;
@@ -63,12 +61,22 @@ function CheckoutForm() {
       throw new Error(verifyData.error ?? 'Payment verification failed');
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
-      throw new Error('Payment succeeded but sign-in failed: ' + signInError.message);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!verifyData.sessionEstablished) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+      if (signInError) {
+        throw new Error(
+          'Your payment was received but we could not sign you in automatically. Please use the login page or contact support.'
+        );
+      }
     }
 
-    router.push('/onboarding');
+    router.refresh();
+    router.push(verifyData.redirectTo ?? '/onboarding');
   };
 
   const handleSubmit = async (e: FormEvent) => {

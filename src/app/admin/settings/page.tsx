@@ -1,17 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import type { SystemSettings } from '@/lib/admin/platform-health'
-import { createClient } from '@/lib/supabase/client'
-
-const supabase = createClient()
 
 export default function AdminSettingsPage() {
-  const router = useRouter()
   const [settings, setSettings] = useState<SystemSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -19,8 +13,6 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     const load = async () => {
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       try {
         const res = await fetch('/api/admin/settings')
@@ -34,7 +26,7 @@ export default function AdminSettingsPage() {
     }
 
     void load()
-  }, [router])
+  }, [])
 
   if (loading) {
     return (

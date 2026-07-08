@@ -62,26 +62,58 @@ CREATE INDEX IF NOT EXISTS complexity_score_history_tier_idx
 
 ALTER TABLE complexity_score_history ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Clients can read own complexity history"
-  ON complexity_score_history FOR SELECT
-  USING (client_id = auth.uid());
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Clients can read own complexity history'
+      AND tablename = 'complexity_score_history'
+  ) THEN
+    CREATE POLICY "Clients can read own complexity history"
+      ON complexity_score_history FOR SELECT
+      USING (client_id = auth.uid());
+  END IF;
+END $$;
 
-CREATE POLICY "Coaches can read assigned client complexity history"
-  ON complexity_score_history FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles p
-      JOIN coaches c ON c.id = p.coach_id
-      WHERE p.id = complexity_score_history.client_id
-        AND c.user_id = auth.uid()
-    )
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Coaches can read assigned client complexity history'
+      AND tablename = 'complexity_score_history'
+  ) THEN
+    CREATE POLICY "Coaches can read assigned client complexity history"
+      ON complexity_score_history FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM profiles p
+          JOIN coaches c ON c.id = p.coach_id
+          WHERE p.id = complexity_score_history.client_id
+            AND c.user_id = auth.uid()
+        )
+      );
+  END IF;
+END $$;
 
-CREATE POLICY "Admins can read all complexity history"
-  ON complexity_score_history FOR SELECT
-  USING (public.is_platform_admin());
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Admins can read all complexity history'
+      AND tablename = 'complexity_score_history'
+  ) THEN
+    CREATE POLICY "Admins can read all complexity history"
+      ON complexity_score_history FOR SELECT
+      USING (public.is_platform_admin());
+  END IF;
+END $$;
 
-CREATE POLICY "Service role manages complexity history"
-  ON complexity_score_history FOR ALL
-  USING (auth.role() = 'service_role')
-  WITH CHECK (auth.role() = 'service_role');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Service role manages complexity history'
+      AND tablename = 'complexity_score_history'
+  ) THEN
+    CREATE POLICY "Service role manages complexity history"
+      ON complexity_score_history FOR ALL
+      USING (auth.role() = 'service_role')
+      WITH CHECK (auth.role() = 'service_role');
+  END IF;
+END $$;

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
@@ -11,6 +12,33 @@ const supabase = createClient()
 export default function AdminNavbar() {
   const router = useRouter()
   const navLinks = getAdminNavModules()
+  const [signedInAs, setSignedInAs] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadIdentity = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name, email, role')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (cancelled) return
+
+      const label = profile?.name || profile?.email || user.email || 'Unknown'
+      const role = profile?.role ?? 'unknown'
+      setSignedInAs(`${label} (${role})`)
+    }
+
+    void loadIdentity()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -24,6 +52,7 @@ export default function AdminNavbar() {
           Admin Console
         </Link>
         <div style={styles.links}>
+          {signedInAs ? <span style={styles.identity}>{signedInAs}</span> : null}
           {navLinks.map((link) => (
             <Link key={link.id} href={link.href} style={styles.link} title={link.description}>
               {link.title}
@@ -68,6 +97,13 @@ const styles: Record<string, CSSProperties> = {
     gap: 8,
     alignItems: 'center',
     flexWrap: 'wrap',
+  },
+  identity: {
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 13,
+    padding: '6px 10px',
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   link: {
     color: 'rgba(255,255,255,0.9)',

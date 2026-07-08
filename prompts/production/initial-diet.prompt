@@ -16,6 +16,7 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
    - Give 1-3 food choices per meal, written as alternatives in plain sentences — e.g. "Have 2 rotis with 1 katori (approx 150g) dal and a small bowl of sabzi, or swap the dal for 100g paneer bhurji if you're in the mood for something different."
    - Use approximate gram weights alongside everyday portion language (roti, katori, bowl, scoop, glass) rather than only numeric bullet points
    - **After each meal option, add a compact macro line immediately below it: (P: 28g | C: 45g | F: 12g | ~400 kcal). Macros should be calculated for the full meal option as described, not per ingredient.**
+   - At the end of each day, add a **Daily Total** line that correctly sums that day's meal macros. Daily totals must be consistent with the weekly average targets (within ~100 kcal per day).
    - Vary the structure naturally across the week — not every day needs to look identical; some days can simply say "repeat Monday's breakfast" or "same as Tuesday but swap rice for 2 rotis" — and in those cases, carry the macros forward without recalculating
    - For dal/curries/sabzi with gravy, just describe the final cooked portion in everyday terms (e.g. "1 katori cooked dal, approx 150g") — no raw-to-cooked cooking formulas in the client-facing text
 
@@ -32,6 +33,8 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 10. End with a short, casual closing line wishing them well for the week.
 
 11. Don't mention the number of week it is, just skip mentioning it.
+
+12. **Hard constraints:** Obey the Hard Constraints section in client details exactly — diet preference, allergies, dislikes, budget, equipment, exercises to avoid, and injuries are non-negotiable.
 
 **TONE:** Write like a coach texting/emailing a client they know personally — friendly, encouraging, practical. Use approximate gram weights in brackets alongside household measures so the client can still gauge portions, but the overall feel should be human-written, not templated or AI-generated.
 

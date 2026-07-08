@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getClientPostAuthPath } from '@/lib/onboarding';
+import { fetchClientProfile, getClientPostAuthPath } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError('');
 
     const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       password: password,
     });
 
@@ -37,13 +37,12 @@ export default function LoginPage() {
       return;
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .maybeSingle();
+    await supabase.auth.getSession();
 
-    router.push(getClientPostAuthPath(profile));
+    const { profile, error: profileError } = await fetchClientProfile(supabase, data.user.id);
+
+    router.refresh();
+    router.push(getClientPostAuthPath(profile, profileError ?? undefined));
     setLoading(false);
   };
 

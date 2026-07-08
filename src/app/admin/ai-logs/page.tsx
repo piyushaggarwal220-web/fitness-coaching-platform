@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatDate } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
@@ -20,7 +18,6 @@ function formatTokens(prompt: number | null, completion: number | null): string 
 }
 
 export default function AdminAiLogsPage() {
-  const router = useRouter()
   const [logs, setLogs] = useState<AiGenerationLogWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -32,8 +29,6 @@ export default function AdminAiLogsPage() {
   useEffect(() => {
     const load = async () => {
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       const { data, error: fetchError } = await supabase
         .from('ai_generation_logs')
@@ -52,7 +47,7 @@ export default function AdminAiLogsPage() {
     }
 
     void load()
-  }, [router])
+  }, [])
 
   const models = useMemo(() => {
     const set = new Set<string>()

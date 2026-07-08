@@ -9,7 +9,6 @@ import { onboardingStyles as s } from '@/components/onboarding/styles'
 import {
   ACTIVITY_OPTIONS,
   authenticateClient,
-  BUDGET_OPTIONS,
   COOKING_OPTIONS,
   DAYS_PER_WEEK_OPTIONS,
   DIET_OPTIONS,
@@ -21,6 +20,8 @@ import {
   getSectionForStep,
   GOAL_DEADLINE_OPTIONS,
   INITIAL_ONBOARDING_FORM,
+  isOnboardingComplete,
+  MEAL_TIMING_OPTIONS,
   OCCUPATION_OPTIONS,
   ONBOARDING_SCREEN_COUNT,
   ONBOARDING_SECTIONS,
@@ -47,6 +48,31 @@ import type { SavedPhotoUrls } from '@/lib/onboarding'
 const supabase = createClient()
 
 type PhotoKey = 'front' | 'side' | 'back'
+type MealTimingKey = 'breakfast' | 'lunch' | 'dinner' | 'snacks'
+
+const MEAL_TIMING_FIELD: Record<MealTimingKey, keyof OnboardingFormData> = {
+  breakfast: 'timing_breakfast',
+  lunch: 'timing_lunch',
+  dinner: 'timing_dinner',
+  snacks: 'timing_snacks',
+}
+
+function formatMealTime(value: string): string {
+  if (!value) return 'Not set'
+  const [hours, minutes] = value.split(':').map(Number)
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return value
+  const date = new Date()
+  date.setHours(hours, minutes, 0, 0)
+  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}
+
+function defaultMealsForTiming(form: OnboardingFormData): MealTimingKey[] {
+  const meals: MealTimingKey[] = ['breakfast', 'lunch', 'dinner']
+  if (form.snacks.trim() && !/^none$/i.test(form.snacks.trim())) {
+    meals.push('snacks')
+  }
+  return meals
+}
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -69,6 +95,8 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [mealsForTiming, setMealsForTiming] = useState<MealTimingKey[]>(['breakfast', 'lunch', 'dinner'])
+  const [confirmedMealTimes, setConfirmedMealTimes] = useState<MealTimingKey[]>([])
 
   useEffect(() => {
     const init = async () => {
@@ -77,6 +105,17 @@ export default function OnboardingPage() {
         requirePayment: true,
       })
       if (!result) return
+
+      if (result.profileError) {
+        setError('Could not load your profile. Please refresh the page.')
+        setLoading(false)
+        return
+      }
+
+      if (result.profile && isOnboardingComplete(result.profile)) {
+        router.replace('/dashboard')
+        return
+      }
 
       setUserId(result.user.id)
       setUserEmail(result.user.email ?? null)
@@ -134,8 +173,16 @@ export default function OnboardingPage() {
     setError('')
   }
 
+  useEffect(() => {
+    if (step === 19 && mealsForTiming.length === 0) {
+      setMealsForTiming(defaultMealsForTiming(form))
+    }
+  }, [step, form, mealsForTiming.length])
+
+  const mealTimingContext = { mealsForTiming, confirmedMeals: confirmedMealTimes }
+
   const handleNext = async () => {
-    const validationError = validateOnboardingStep(step, form, photos, photoUrls)
+    const validationError = validateOnboardingStep(step, form, photos, photoUrls, mealTimingContext)
     if (validationError) {
       setError(validationError)
       return
@@ -157,7 +204,7 @@ export default function OnboardingPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const validationError = validateOnboardingStep(step, form, photos, photoUrls)
+    const validationError = validateOnboardingStep(step, form, photos, photoUrls, mealTimingContext)
     if (validationError) {
       setError(validationError)
       return
@@ -231,7 +278,19 @@ export default function OnboardingPage() {
           style={{ marginTop: 24 }}
           onSubmit={step === ONBOARDING_SCREEN_COUNT - 1 ? handleSubmit : (ev) => { ev.preventDefault(); void handleNext() }}
         >
-          {renderStep(step, form, updateForm, photos, photoUrls, handlePhotoChange, handleEditSection)}
+          {renderStep(
+            step,
+            form,
+            updateForm,
+            photos,
+            photoUrls,
+            handlePhotoChange,
+            handleEditSection,
+            mealsForTiming,
+            setMealsForTiming,
+            confirmedMealTimes,
+            setConfirmedMealTimes
+          )}
 
           <div style={{ height: 72 }} />
         </form>
@@ -276,7 +335,11 @@ function renderStep(
   photos: Record<PhotoKey, File | null>,
   photoUrls: SavedPhotoUrls,
   onPhotoChange: (key: PhotoKey) => (e: ChangeEvent<HTMLInputElement>) => void,
-  onEditSection: (step: number) => void
+  onEditSection: (step: number) => void,
+  mealsForTiming: MealTimingKey[],
+  setMealsForTiming: (meals: MealTimingKey[]) => void,
+  confirmedMealTimes: MealTimingKey[],
+  setConfirmedMealTimes: (meals: MealTimingKey[] | ((prev: MealTimingKey[]) => MealTimingKey[])) => void
 ) {
   switch (step) {
     case 0:
@@ -624,8 +687,15 @@ function renderStep(
               style={s.textarea}
             />
           </Field>
-          <Field label="Monthly food budget" required>
-            <ChipGroup options={BUDGET_OPTIONS} value={form.monthly_food_budget} onChange={(v) => update({ monthly_food_budget: v })} />
+          <Field label="Monthly food budget" required hint="Enter your own monthly food budget in rupees.">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={form.monthly_food_budget}
+              onChange={(e) => update({ monthly_food_budget: e.target.value })}
+              placeholder="e.g. 8000"
+              style={s.input}
+            />
           </Field>
           <Field label="Cooking ability" required>
             <ChipGroup options={COOKING_OPTIONS} value={form.cooking_ability} onChange={(v) => update({ cooking_ability: v })} />
@@ -681,19 +751,107 @@ function renderStep(
       return (
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Meal timings</h2>
-          <p style={s.stepHint}>Approximate times help your coach plan realistic meals.</p>
-          <Field label="Breakfast time" required>
-            <input type="time" value={form.timing_breakfast} onChange={(e) => update({ timing_breakfast: e.target.value })} style={s.input} />
+          <p style={s.stepHint}>Select which meals you want to set times for, enter approximate times, then confirm each one.</p>
+
+          <Field label="Which meals should we time?" required>
+            <MultiChipGroup
+              options={MEAL_TIMING_OPTIONS}
+              values={mealsForTiming}
+              onChange={(values) => {
+                const next = values as MealTimingKey[]
+                setMealsForTiming(next)
+                setConfirmedMealTimes((prev) => prev.filter((meal) => next.includes(meal)))
+              }}
+            />
           </Field>
-          <Field label="Lunch time" required>
-            <input type="time" value={form.timing_lunch} onChange={(e) => update({ timing_lunch: e.target.value })} style={s.input} />
-          </Field>
-          <Field label="Dinner time" required>
-            <input type="time" value={form.timing_dinner} onChange={(e) => update({ timing_dinner: e.target.value })} style={s.input} />
-          </Field>
-          <Field label="Snack time" hint="Optional">
-            <input type="time" value={form.timing_snacks} onChange={(e) => update({ timing_snacks: e.target.value })} style={s.input} />
-          </Field>
+
+          {mealsForTiming.includes('breakfast') && (
+            <Field label="Breakfast time" required>
+              <input
+                type="time"
+                value={form.timing_breakfast}
+                onChange={(e) => {
+                  update({ timing_breakfast: e.target.value })
+                  setConfirmedMealTimes((prev) => prev.filter((meal) => meal !== 'breakfast'))
+                }}
+                style={s.input}
+              />
+            </Field>
+          )}
+          {mealsForTiming.includes('lunch') && (
+            <Field label="Lunch time" required>
+              <input
+                type="time"
+                value={form.timing_lunch}
+                onChange={(e) => {
+                  update({ timing_lunch: e.target.value })
+                  setConfirmedMealTimes((prev) => prev.filter((meal) => meal !== 'lunch'))
+                }}
+                style={s.input}
+              />
+            </Field>
+          )}
+          {mealsForTiming.includes('dinner') && (
+            <Field label="Dinner time" required>
+              <input
+                type="time"
+                value={form.timing_dinner}
+                onChange={(e) => {
+                  update({ timing_dinner: e.target.value })
+                  setConfirmedMealTimes((prev) => prev.filter((meal) => meal !== 'dinner'))
+                }}
+                style={s.input}
+              />
+            </Field>
+          )}
+          {mealsForTiming.includes('snacks') && (
+            <Field label="Snack time" required>
+              <input
+                type="time"
+                value={form.timing_snacks}
+                onChange={(e) => {
+                  update({ timing_snacks: e.target.value })
+                  setConfirmedMealTimes((prev) => prev.filter((meal) => meal !== 'snacks'))
+                }}
+                style={s.input}
+              />
+            </Field>
+          )}
+
+          {mealsForTiming.length > 0 && (
+            <div>
+              <p style={{ ...s.stepHint, marginBottom: 12 }}>Confirm each meal time before continuing.</p>
+              <div style={s.timingConfirmList}>
+                {mealsForTiming.map((meal) => {
+                  const label = MEAL_TIMING_OPTIONS.find((option) => option.value === meal)?.label ?? meal
+                  const timeValue = String(form[MEAL_TIMING_FIELD[meal]] ?? '')
+                  const confirmed = confirmedMealTimes.includes(meal)
+                  return (
+                    <div
+                      key={meal}
+                      style={{ ...s.timingConfirmRow, ...(confirmed ? s.timingConfirmRowDone : {}) }}
+                    >
+                      <div>
+                        <div style={s.timingConfirmLabel}>{label}</div>
+                        <div style={s.timingConfirmTime}>{formatMealTime(timeValue)}</div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!timeValue || confirmed}
+                        style={{ ...s.timingConfirmBtn, ...(confirmed ? s.timingConfirmBtnDone : {}) }}
+                        onClick={() => {
+                          if (!timeValue) return
+                          setConfirmedMealTimes((prev) => (prev.includes(meal) ? prev : [...prev, meal]))
+                        }}
+                      >
+                        {confirmed ? 'Confirmed ✓' : 'Confirm time'}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )
 

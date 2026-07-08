@@ -4,13 +4,9 @@ import { useState, type CSSProperties, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { PROMPT_CATEGORIES, slugifyPromptName, validatePromptForm } from '@/lib/admin/prompt-library'
-import { createClient } from '@/lib/supabase/client'
 import type { PromptLibraryCategory, PromptLibraryFormData } from '@/types/database'
-
-const supabase = createClient()
 
 const INITIAL_FORM: PromptLibraryFormData = {
   name: '',
@@ -44,9 +40,6 @@ export default function AdminNewPromptPage() {
       setError(validation)
       return
     }
-
-    const admin = await requireAdmin(supabase, router)
-    if (!admin) return
 
     setBusy(true)
     try {

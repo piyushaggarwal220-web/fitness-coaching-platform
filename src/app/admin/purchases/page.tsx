@@ -2,21 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatInr } from '@/lib/admin/pricing'
 import { formatDate } from '@/lib/coach-utils'
-import { createClient } from '@/lib/supabase/client'
 import type { PurchaseListResult } from '@/lib/admin/business-analytics'
-
-const supabase = createClient()
 
 type SortKey = 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc'
 
 export default function AdminPurchasesPage() {
-  const router = useRouter()
   const [result, setResult] = useState<PurchaseListResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -33,8 +27,7 @@ export default function AdminPurchasesPage() {
     const load = async () => {
       setLoading(true)
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin || cancelled) return
+      if (cancelled) return
 
       const params = new URLSearchParams({
         page: String(page),
@@ -63,7 +56,7 @@ export default function AdminPurchasesPage() {
     return () => {
       cancelled = true
     }
-  }, [router, page, search, status, from, to, sort])
+  }, [page, search, status, from, to, sort])
 
   const totalPages = result ? Math.max(1, Math.ceil(result.total / result.pageSize)) : 1
 

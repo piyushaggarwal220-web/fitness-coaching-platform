@@ -1,10 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { CredentialDisplay } from '@/components/admin/CredentialDisplay'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { FITNESS_GOAL_OPTIONS } from '@/lib/onboarding'
 import {
@@ -13,9 +11,6 @@ import {
 } from '@/lib/admin/testing-accounts'
 import type { TrialClientSummary } from '@/lib/admin/trial-client-guard'
 import { getPortalLoginUrls } from '@/lib/admin/portal-urls'
-import { createClient } from '@/lib/supabase/client'
-
-const supabase = createClient()
 
 const RESET_CONFIRM_MESSAGE =
   'Reset this trial client? This will permanently remove all coaching data, plans, check-ins, and progress for this account.'
@@ -31,7 +26,6 @@ type BusyAction =
   | null
 
 export default function TestingToolsClient() {
-  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [coaches, setCoaches] = useState<CoachOption[]>([])
@@ -76,8 +70,6 @@ export default function TestingToolsClient() {
   useEffect(() => {
     const init = async () => {
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       try {
         await Promise.all([loadCoaches(), loadTrialClients()])
@@ -89,7 +81,7 @@ export default function TestingToolsClient() {
     }
 
     void init()
-  }, [router, loadCoaches, loadTrialClients])
+  }, [loadCoaches, loadTrialClients])
 
   const refreshLists = async () => {
     await Promise.all([loadCoaches(), loadTrialClients()])

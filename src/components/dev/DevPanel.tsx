@@ -2,15 +2,11 @@
 
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode'
 import { TEST_PASSWORD } from '@/lib/dev-seeds'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
+const supabase = createClient()
 
 type SeedAction =
   | 'ensure_test_client'
@@ -33,7 +29,6 @@ async function runDevAction(action: SeedAction) {
 }
 
 export default function DevPanel() {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
@@ -55,9 +50,26 @@ export default function DevPanel() {
 
   if (!isDevToolkitEnabledClient()) return null
 
-  async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+  async function signInAs(email: string, password: string, redirectTo: string) {
+    const normalizedEmail = email.trim().toLowerCase()
+    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    })
     if (error) throw new Error(error.message)
+
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.email?.toLowerCase() === normalizedEmail) {
+        // Full navigation so middleware and coach guards see the new session
+        window.location.assign(redirectTo)
+        return
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+
+    throw new Error('Sign-in succeeded but session did not update. Please try again.')
   }
 
   return (
@@ -88,10 +100,8 @@ export default function DevPanel() {
                   const email = json.data?.email
                   const password = json.data?.password ?? TEST_PASSWORD
                   if (!email) throw new Error('No client email returned')
-                  await signIn(email, password)
+                  await signInAs(email, password, '/dashboard')
                   setStatus(`Signed in as ${email}`)
-                  router.push('/dashboard')
-                  router.refresh()
                 })
               }
             >
@@ -106,10 +116,8 @@ export default function DevPanel() {
                   const email = json.data?.email
                   const password = json.data?.password ?? TEST_PASSWORD
                   if (!email) throw new Error('No coach email returned')
-                  await signIn(email, password)
+                  await signInAs(email, password, '/coach/dashboard')
                   setStatus(`Signed in as coach ${email}`)
-                  router.push('/coach/dashboard')
-                  router.refresh()
                 })
               }
             >
@@ -124,10 +132,8 @@ export default function DevPanel() {
                   const email = json.data?.email
                   const password = json.data?.password ?? TEST_PASSWORD
                   if (!email) throw new Error('No email returned')
-                  await signIn(email, password)
+                  await signInAs(email, password, '/onboarding')
                   setStatus(`Created & signed in: ${email}`)
-                  router.push('/onboarding')
-                  router.refresh()
                 })
               }
             >

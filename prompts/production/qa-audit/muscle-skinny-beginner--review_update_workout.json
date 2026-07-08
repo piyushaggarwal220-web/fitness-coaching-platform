@@ -5,11 +5,11 @@
   "group": "Muscle Gain",
   "actionId": "review_update_workout",
   "checkinScenario": "strength_increased",
-  "rendered": "Amit, you've completed 4 weeks of Phase 1 with excellent adherence and strength gains. We're now progressing to a 4-day Upper/Lower/Upper/Lower split to increase frequency and volume while maintaining your 60-minute session target. This structure allows better recovery, more frequent stimulus on each muscle group, and aligns with your goal to reach 68kg. We're increasing overall volume by 15% through additional sets on compound lifts and strategic exercise additions.\n\nDay 1 – Upper A (Horizontal Press Focus):\n- Barbell bench press: 4×8\n- Dumbbell rows: 4×8\n- Incline dumbbell press: 3×10\n- Cable lateral raise: 3×12\n- Barbell curl (or cable curl): 2×10\nRest 90–120 seconds on compounds, 60 seconds on accessories.\n\nDay 2 – Lower A (Squat Focus):\n- Barbell back squat: 4×8\n- Leg press: 3×10\n- Romanian deadlift: 3×10\n- Leg curl: 3×12\n- Calf raise (machine or barbell): 2×15\nRest 2 minutes on squat, 90 seconds on leg press, 60 seconds on accessories.\n\nDay 3 – Upper B (Vertical Pull Focus):\n- Barbell rows: 4×8\n- Dumbbell bench press: 4×8\n- Lat pulldown (or assisted pull-ups): 3×10\n- Machine chest fly: 3×12\n- Face pulls: 3×15\nRest 90–120 seconds on compounds, 60 seconds on accessories.\n\nDay 4 – Lower B (Deadlift & Quad Focus):\n- Barbell deadlift (or trap bar): 3×6\n- Goblet squat: 3×12\n- Leg extension: 3×12\n- Walking lunges (dumbbell): 3×10 per leg\n- Leg curl: 2×12\nRest 2–2.5 minutes on deadlift, 90 seconds on goblet squat, 60 seconds on accessories.\n\nCardio: Maintain 3×30 min brisk walks on non-training days or post-session (optional, 10–15 min if added post-workout).\n\nProgression cues: Aim to add 2.5kg to main lifts each week. If you hit all reps cleanly, increase weight next session. Maintain strict form—no ego lifting.\n\nUL/UL split introduced. Volume +15%. Excellent check-in metrics—maintain sleep and hydration. Monitor hunger cues given underweight status and muscle-gain goal. Recheck weight in 2 weeks.",
+  "rendered": "Amit, excellent work this past month—9/10 adherence, main lifts up 2.5kg, and strong energy levels. You're showing textbook progressive overload. This week we're shifting your split from single body-part days to a 2-body-part upper/lower structure. This change will increase training density, let you hit muscle groups twice per week for better growth stimulus, and keep total session time at 60 minutes. We've also increased overall volume by ~12% while maintaining exercise selection you prefer (squats and rows remain anchors). Recovery is solid, so we're confident in this progression.\n\n**WEEKLY STRUCTURE: 4 DAYS**\n\n**DAY 1 — Upper A (Chest & Back Focus)**\nWarmup: 5 min light rowing + arm circles\nBench Press: 4 sets x 8 reps\nBarbell Rows: 4 sets x 8 reps\nIncline Dumbbell Press: 3 sets x 10 reps\nCable Face Pulls: 3 sets x 12 reps\nCooldown: 3 min stretching (chest, back, shoulders)\nTotal: ~58 min\n\n**DAY 2 — Lower A (Quads & Hamstrings Focus)**\nWarmup: 5 min light cardio + leg swings\nBarbell Squat: 4 sets x 8 reps\nRomanian Deadlift: 3 sets x 10 reps\nLeg Press: 3 sets x 10 reps\nLeg Curl: 3 sets x 12 reps\nCooldown: 3 min stretching (quads, hamstrings, glutes)\nTotal: ~58 min\n\n**DAY 3 — Rest or Light Activity**\n30 min brisk walk or gentle stretching\n\n**DAY 4 — Upper B (Shoulders & Arms)**\nWarmup: 5 min light rowing + band pull-aparts\nOverhead Press (Barbell or Dumbbell): 4 sets x 8 reps\nSupinated Barbell Rows (or Dumbbell Rows): 3 sets x 10 reps\nLateral Raise: 3 sets x 12 reps\nDumbbell Curls: 3 sets x 10 reps\nTricep Rope Pushdown: 3 sets x 12 reps\nCooldown: 3 min stretching (shoulders, arms)\nTotal: ~58 min\n\n**DAY 5 — Lower B (Posterior Chain & Glutes)**\nWarmup: 5 min light cardio + hip circles\nBarbell Squat (or Leg Press variation): 4 sets x 8 reps\nDeadlift or Trap Bar Deadlift: 3 sets x 6 reps\nBulgarian Split Squat (Dumbbell): 3 sets x 10 reps per leg\nGlute Bridge or Hip Thrust: 3 sets x 12 reps\nCooldown: 3 min stretching (glutes, lower back, hip flexors)\nTotal: ~58 min\n\n**DAYS 6 & 7 — Rest**\n\n**CARDIO**\n3x 30 min brisk walk (spread across the week on non-lifting days or post-session if energy permits)\n\n**NOTES**\n- Rest 90–120 sec between compound sets (bench, rows, squat, deadlift).\n- Rest 60–90 sec between isolation/accessory work.\n- Aim to match or exceed the weight used last week; if you hit all reps cleanly, add 2.5 kg next session.\n- Track your hunger post-workout—your hunger level is 6/10, so ensure you're eating within 1–2 hours of training to support recovery and the muscle-gain goal.\n- Sleep and energy remain excellent; maintain this consistency.\n\nUpper/Lower 2-body-part split introduced. Volume +12%. Progression on main lifts working—maintain intensity. Monitor hunger pre/post workout; may need slight nutrition increase to support 68 kg target.",
   "model": "claude-haiku-4-5-20251001",
-  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
-  "inputTokens": 1549,
-  "outputTokens": 807,
+  "promptVersion": "updated-workout-prompt@v3+system-prompt@v1",
+  "inputTokens": 2039,
+  "outputTokens": 1152,
   "evaluation": {
     "workout": {
       "exerciseSelection": 7,
@@ -22,25 +22,19 @@
     "overall": {
       "coachingQuality": 10,
       "professionalism": 8,
-      "personalization": 5,
+      "personalization": 8,
       "sendWithoutEdits": 7
     },
     "issues": [
       {
-        "category": "Ignored onboarding answers",
-        "severity": "low",
-        "description": "Preferred exercises from onboarding not included.",
-        "promptToInspect": "updated-workout.prompt"
-      },
-      {
         "category": "Unrealistic training volume",
         "severity": "medium",
-        "description": "Only 0 set×rep entries for 4-day program.",
+        "description": "Only 1 set×rep entries for 4-day program.",
         "promptToInspect": "updated-workout.prompt"
       }
     ],
     "workoutAverage": 7.166666666666667,
-    "overallAverage": 7.333333333333334
+    "overallAverage": 7.708333333333334
   },
-  "generatedAt": "2026-07-07T21:09:47.887Z"
+  "generatedAt": "2026-07-08T06:09:51.038Z"
 }

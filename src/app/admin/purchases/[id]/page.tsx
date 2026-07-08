@@ -2,20 +2,15 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatInr } from '@/lib/admin/pricing'
 import { formatSupportCategory, formatSupportStatus } from '@/lib/support'
 import { formatDate } from '@/lib/coach-utils'
-import { createClient } from '@/lib/supabase/client'
 import type { PurchaseDetail } from '@/types/database'
 
-const supabase = createClient()
-
 export default function AdminPurchaseDetailPage() {
-  const router = useRouter()
   const params = useParams()
   const purchaseId = typeof params.id === 'string' ? params.id : ''
 
@@ -31,9 +26,6 @@ export default function AdminPurchaseDetailPage() {
         return
       }
 
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
-
       try {
         const res = await fetch(`/api/admin/purchases/${purchaseId}`)
         if (!res.ok) throw new Error('Not found')
@@ -46,7 +38,7 @@ export default function AdminPurchaseDetailPage() {
     }
 
     void load()
-  }, [purchaseId, router])
+  }, [purchaseId])
 
   if (loading) {
     return (

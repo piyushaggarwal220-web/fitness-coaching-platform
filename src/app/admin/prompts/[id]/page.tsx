@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import {
   diffPromptLines,
@@ -35,7 +34,6 @@ type PreviewResult = {
 }
 
 export default function AdminPromptDetailPage() {
-  const router = useRouter()
   const params = useParams()
   const promptId = typeof params.id === 'string' ? params.id : ''
 
@@ -91,8 +89,6 @@ export default function AdminPromptDetailPage() {
       }
 
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       const { data: clientRows } = await supabase
         .from('profiles')
@@ -106,7 +102,7 @@ export default function AdminPromptDetailPage() {
     }
 
     void init()
-  }, [promptId, router, loadPrompt])
+  }, [promptId, loadPrompt])
 
   const compareVersions = useMemo(() => {
     if (!prompt) return { left: null, right: null, diff: null }

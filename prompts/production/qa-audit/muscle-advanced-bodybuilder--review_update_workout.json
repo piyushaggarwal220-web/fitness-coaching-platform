@@ -5,15 +5,15 @@
   "group": "Muscle Gain",
   "actionId": "review_update_workout",
   "checkinScenario": "strength_increased",
-  "rendered": "Rohan, you've completed 4 weeks on the foundation split with excellent adherence and strength gains. We're now progressing to a Upper/Lower/Upper/Lower/Full/Full split to increase frequency on compound movements and allow for better recovery distribution. Your main lifts are up 2.5kg, so we're adding 15% volume while maintaining your 90-minute session duration. Continue hitting squats and rows as primary movements.\n\nDay 1 Upper A: Barbell Bench Press 4x8, Barbell Rows 4x8, Incline Dumbbell Press 3x10, Cable Rows 3x10, Lateral Raise 3x12, Tricep Pushdown 3x12.\n\nDay 2 Lower A: Barbell Squat 4x8, Romanian Deadlift 3x10, Leg Curl 3x12, Leg Press 3x10, Calf Raise 3x15.\n\nDay 3 Upper B: Dumbbell Bench Press 4x8, Seal Rows 4x8, Barbell Rows 3x10, Dumbbell Flyes 3x12, Face Pulls 3x12, Barbell Curl 3x10.\n\nDay 4 Lower B: Barbell Squat 4x8, Leg Press 4x10, Walking Lunges 3x12 (per leg), Leg Curl 3x12, Calf Raise 3x15.\n\nDay 5 Full Body A: Barbell Bench Press 3x8, Barbell Squat 3x8, Barbell Rows 3x8, Dumbbell RDL 3x10, Push-ups 3xAMRAP, Goblet Squat 3x12.\n\nDay 6 Full Body B: Dumbbell Bench Press 3x8, Barbell Squat 3x8, Seal Rows 3x8, Leg Press 3x10, Dumbbell Flyes 3x10, Leg Curl 3x10.\n\nMaintain 90-minute session pacing. Rest 2-3 minutes on main compounds, 60-90 seconds on accessories.\n\nUpper/Lower split increases frequency on your favorite lifts. Volume up 15% via added sets on rows and squats. Monitor recovery; hunger at 6/10 suggests adequate intake. Maintain current diet structure.",
+  "rendered": "Rohan, excellent work this past month—9/10 adherence, all sessions completed, and main lifts up 2.5kg. Your energy is high (8/10) and recovery is solid. You're ready to progress.\n\nSince you've been following a 3-day split (Upper/Lower/Full Body) for the past 4 weeks, we're shifting you to a new stimulus: a 4-day Upper/Lower split with increased volume (~15% more total reps) and slightly heavier loading. This maintains your 90-minute session window and keeps frequency high for muscle gain.\n\n**Weekly Structure: 6 Training Days**\n\n**Day 1: Upper Power (Monday)**\nWarmup: 5 min light cardio + arm circles, band pull-aparts.\nBench Press: 4 sets x 6 reps (heavy)\nBent-Over Barbell Rows: 4 sets x 6 reps (heavy)\nIncline Dumbbell Press: 3 sets x 8 reps\nCable Rows (single-arm): 3 sets x 10 reps\nLateral Raise (dumbbell): 3 sets x 12 reps\nTricep Rope Pushdown: 2 sets x 12 reps\nCooldown: 5 min walking + light stretching.\n\n**Day 2: Lower Power (Tuesday)**\nWarmup: 5 min light cardio + leg swings, bodyweight squats.\nBarbell Back Squat: 4 sets x 6 reps (heavy)\nRomanian Deadlift: 3 sets x 8 reps\nLeg Press: 3 sets x 8 reps\nLeg Curl (machine): 3 sets x 10 reps\nCalf Raise (barbell): 3 sets x 12 reps\nCooldown: 5 min walking + quad/hamstring stretching.\n\n**Day 3: Upper Hypertrophy (Thursday)**\nWarmup: 5 min light cardio + shoulder mobility.\nDumbbell Bench Press: 3 sets x 8 reps\nPendulum Rows (or cable rows): 4 sets x 8 reps\nDumbbell Flyes: 3 sets x 10 reps\nFace Pulls (cable): 3 sets x 12 reps\nDumbbell Lateral Raise: 3 sets x 12 reps\nBicep Curls (dumbbell): 3 sets x 10 reps\nCooldown: 5 min walking + chest/shoulder stretching.\n\n**Day 4: Lower Hypertrophy (Friday)**\nWarmup: 5 min light cardio + hip circles, glute bridges.\nGoblet Squat: 3 sets x 10 reps\nLeg Press: 4 sets x 10 reps\nHack Squat (or leg press variation): 3 sets x 10 reps\nLying Leg Curl: 3 sets x 12 reps\nLeg Extension: 3 sets x 12 reps\nCalf Raise (machine): 3 sets x 15 reps\nCooldown: 5 min walking + lower body stretching.\n\n**Day 5: Full Body Compound (Saturday)**\nWarmup: 5 min light cardio + dynamic stretching.\nBarbell Squat: 3 sets x 8 reps\nBent-Over Rows: 3 sets x 8 reps\nBench Press (dumbbell or barbell): 3 sets x 8 reps\nRDL: 2 sets x 8 reps\nLateral Raise: 2 sets x 12 reps\nCable Rows: 2 sets x 10 reps\nCooldown: 5 min walking + full-body stretching.\n\n**Day 6: Active Recovery (Sunday)**\n30–40 min brisk walk or light cycling. Focus on movement and recovery, not intensity.\n\n**Rest Days: Wednesday**\nComplete rest or very light mobility work at home.\n\nTotal weekly volume increased ~15% via additional sets and reps on compound lifts. Load on bench, squat, and rows pushed slightly heavier (aim +2.5–5kg if form holds). Session duration stays ~90 min per training day.\n\nStrong month — now progressing to 4-day split for new stimulus. Maintain form on heavier loads. Monitor sleep and hunger; adjust calories if energy dips.",
   "model": "claude-haiku-4-5-20251001",
-  "promptVersion": "updated-workout-prompt@v2+system-prompt@v1",
-  "inputTokens": 1524,
-  "outputTokens": 713,
+  "promptVersion": "updated-workout-prompt@v3+system-prompt@v1",
+  "inputTokens": 2053,
+  "outputTokens": 1252,
   "evaluation": {
     "workout": {
       "exerciseSelection": 7,
-      "volume": 7,
+      "volume": 5,
       "progression": 8,
       "recovery": 8,
       "equipmentSuitability": 8,
@@ -22,12 +22,25 @@
     "overall": {
       "coachingQuality": 10,
       "professionalism": 8,
-      "personalization": 8,
+      "personalization": 5,
       "sendWithoutEdits": 7
     },
-    "issues": [],
-    "workoutAverage": 7.5,
-    "overallAverage": 7.875
+    "issues": [
+      {
+        "category": "Ignored onboarding answers",
+        "severity": "low",
+        "description": "Preferred exercises from onboarding not included.",
+        "promptToInspect": "updated-workout.prompt"
+      },
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 0 set×rep entries for 6-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 7.166666666666667,
+    "overallAverage": 7.333333333333334
   },
-  "generatedAt": "2026-07-07T21:12:46.371Z"
+  "generatedAt": "2026-07-08T06:13:13.533Z"
 }

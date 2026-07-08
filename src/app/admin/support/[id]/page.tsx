@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { SupportThread } from '@/components/support/SupportThread'
 import { priorityBadgeStyle, statusBadgeStyle } from '@/components/support/styles'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatFitnessGoal } from '@/lib/coach-utils'
 import { getOnboardingLabel } from '@/lib/onboarding'
@@ -22,7 +21,6 @@ import type { SupportMessage, SupportRequestWithClient } from '@/types/database'
 const supabase = createClient()
 
 export default function AdminSupportDetailPage() {
-  const router = useRouter()
   const params = useParams()
   const requestId = typeof params.id === 'string' ? params.id : ''
 
@@ -40,8 +38,6 @@ export default function AdminSupportDetailPage() {
       }
 
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       const { data, error: reqError } = await supabase
         .from('support_requests')
@@ -75,7 +71,7 @@ export default function AdminSupportDetailPage() {
     }
 
     void load()
-  }, [requestId, router])
+  }, [requestId])
 
   if (loading) {
     return (

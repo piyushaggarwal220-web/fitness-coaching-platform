@@ -5,48 +5,21 @@
   "group": "Lifestyle",
   "actionId": "review_update_workout",
   "checkinScenario": "missed_workouts",
-  "rendered": "**Upper/Lower Split – 3 Days Per Week**\n\nYou'll now train two body parts per session to increase training density while keeping sessions around 30 minutes. This split builds on your foundation work and adds variety to stimulate new adaptation.\n\n**Day 1 – Upper Body (Push Focus)**\n1. Dumbbell Bench Press – 4 sets x 8 reps\n2. Dumbbell Shoulder Press – 3 sets x 10 reps\n3. Cable Tricep Pushdown – 3 sets x 12 reps\n4. Dumbbell Lateral Raise – 3 sets x 12 reps\n\n**Day 2 – Lower Body (Quad & Glute Focus)**\n1. Barbell Back Squat – 4 sets x 8 reps\n2. Dumbbell Walking Lunges – 3 sets x 10 reps per leg\n3. Leg Press – 3 sets x 12 reps\n4. Standing Calf Raise – 3 sets x 15 reps\n\n**Day 3 – Upper Body (Pull Focus)**\n1. Barbell Bent-Over Row – 4 sets x 8 reps\n2. Cable Lat Pulldown – 3 sets x 10 reps\n3. Dumbbell Bicep Curl – 3 sets x 12 reps\n4. Face Pulls – 3 sets x 15 reps\n\n**Rest 60–90 seconds between sets. Warm up with 5 minutes of light movement. If a session feels too long, drop one exercise or reduce sets by one across the board.**",
-  "model": "claude-sonnet-4-5-20250929",
-  "promptVersion": "updated-workout-prompt@v2 [pending:weekly_workout_update_home]+system-prompt@v1",
-  "inputTokens": 1649,
-  "outputTokens": 543,
+  "rendered": "",
+  "model": "error",
+  "promptVersion": "",
+  "inputTokens": 0,
+  "outputTokens": 0,
   "evaluation": {
-    "workout": {
-      "exerciseSelection": 7,
-      "volume": 5,
-      "progression": 5,
-      "recovery": 8,
-      "equipmentSuitability": 8,
-      "goalAlignment": 8
-    },
     "overall": {
-      "coachingQuality": 10,
-      "professionalism": 8,
-      "personalization": 5,
-      "sendWithoutEdits": 7
+      "coachingQuality": 1,
+      "professionalism": 1,
+      "personalization": 1,
+      "sendWithoutEdits": 1
     },
-    "issues": [
-      {
-        "category": "Missing personalization",
-        "severity": "medium",
-        "description": "Output does not mention client first name (Priya).",
-        "promptToInspect": "updated-workout-home.prompt"
-      },
-      {
-        "category": "Ignored onboarding answers",
-        "severity": "low",
-        "description": "Preferred exercises from onboarding not included.",
-        "promptToInspect": "updated-workout-home.prompt"
-      },
-      {
-        "category": "Unrealistic training volume",
-        "severity": "medium",
-        "description": "Only 0 set×rep entries for 3-day program.",
-        "promptToInspect": "updated-workout-home.prompt"
-      }
-    ],
-    "workoutAverage": 6.833333333333333,
-    "overallAverage": 7.166666666666666
+    "issues": [],
+    "overallAverage": 1
   },
-  "generatedAt": "2026-07-07T21:41:22.567Z"
+  "generatedAt": "2026-07-07T22:27:51.730Z",
+  "error": "Anthropic plan generation failed (HTTP 400): 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CcoV6nr5AsVn2f7u21W9k\"}"
 }

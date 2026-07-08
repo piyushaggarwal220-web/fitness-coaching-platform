@@ -1,0 +1,40 @@
+{
+  "caseId": "muscle-vegetarian--review_update_workout",
+  "personaId": "muscle-vegetarian",
+  "personaLabel": "Vegetarian muscle gain",
+  "group": "Muscle Gain",
+  "actionId": "review_update_workout",
+  "checkinScenario": "high_hunger",
+  "rendered": "Ananya, great effort this week—your training performance was solid at 7/10, and you've maintained good energy despite high hunger signals Thu-Sun. This tells me your current split is working, but we need to address weekend adherence and fuel gaps. Since you've been on the upper/lower/full split for 4 weeks, I'm introducing a new stimulus: a 4-day Push/Pull/Legs/Full split. This keeps your favorite squats and rows, maintains 60 min sessions, and rotates movement patterns to shock the muscles while you stabilize weekend eating. Volume stays similar; intensity increases ~10% on key lifts. Warmup: 5 min light cardio + dynamic stretches. Cooldown: 5 min walk + static stretches every session.\n\nDAY 1 – PUSH (Chest, Shoulders, Triceps)\nBarbell bench press 4 sets x 6 reps\nIncline dumbbell press 3 sets x 8 reps\nCable lateral raise 3 sets x 12 reps\nTricep rope pushdown 3 sets x 10 reps\nOverhead press 2 sets x 8 reps\n\nDAY 2 – PULL (Back, Biceps)\nBarbell rows 4 sets x 6 reps\nLat pulldown 3 sets x 8 reps\nDumbbell rows (single arm) 3 sets x 10 reps\nBicep curls (barbell) 3 sets x 8 reps\nFace pulls 3 sets x 12 reps\n\nDAY 3 – LEGS (Quads, Hamstrings, Glutes, Calves)\nBarbell back squat 4 sets x 6 reps\nRomanian deadlift 3 sets x 8 reps\nLeg press 3 sets x 10 reps\nLeg curl 3 sets x 10 reps\nCalf raises (machine or barbell) 3 sets x 12 reps\n\nDAY 4 – FULL BODY (Compound Focus)\nGoblet squat 3 sets x 10 reps\nDumbbell bench press 3 sets x 8 reps\nDumbbell rows 3 sets x 10 reps\nRack pulls (or deadlift variation) 2 sets x 5 reps\nPush-ups 2 sets x 10 reps\n\nRest days: 3 days (spread across week; suggest Mon/Wed/Fri if training Tue/Thu/Sat/Sun, or adjust to your schedule).\nCardio: Maintain 3x 30 min brisk walks on rest or low-intensity days.\nTarget session time: 55–60 min per session (warmup + work + cooldown).\n\nAdherence 6/10 + high hunger Thu-Sun signals meal timing/volume gaps. Check-in shows weight dip (55→54.4 kg); ensure protein/fibre at each meal to stabilize weekend snacking. New split introduces variation after 4 weeks; monitor form closely on Day 1 bench and Day 3 squat (load increases ~10%).",
+  "model": "claude-haiku-4-5-20251001",
+  "promptVersion": "updated-workout-prompt@v3+system-prompt@v1",
+  "inputTokens": 2051,
+  "outputTokens": 905,
+  "evaluation": {
+    "workout": {
+      "exerciseSelection": 7,
+      "volume": 5,
+      "progression": 5,
+      "recovery": 8,
+      "equipmentSuitability": 8,
+      "goalAlignment": 7
+    },
+    "overall": {
+      "coachingQuality": 10,
+      "professionalism": 8,
+      "personalization": 8,
+      "sendWithoutEdits": 7
+    },
+    "issues": [
+      {
+        "category": "Unrealistic training volume",
+        "severity": "medium",
+        "description": "Only 1 set×rep entries for 4-day program.",
+        "promptToInspect": "updated-workout.prompt"
+      }
+    ],
+    "workoutAverage": 6.666666666666667,
+    "overallAverage": 7.458333333333334
+  },
+  "generatedAt": "2026-07-08T06:45:37.439Z"
+}

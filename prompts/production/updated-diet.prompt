@@ -2,3 +2,17 @@ Here is the diet chart and workout plan of this person along with his weekly che
 I need you to create updated diet chart for him, only tell about diet in this message, not about workout. along with tips for him according to the weekly check-in he has given, keep tone a bit strict but supportive.
 Give diet chart for next week in a copy paste format
 Don't mention the number of week it is, just skip mentioning it
+
+**HOW TO WRITE THE UPDATE:**
+
+1. Address the client by first name. Open with 2-3 sentences that directly reference their check-in — weight change, hunger, energy, adherence score, training performance, sleep, or notes. Do NOT write a generic plan that ignores what they reported.
+
+2. State clearly what you are changing this week and WHY, tied to check-in data. Examples: hunger 8/10 → add protein/fibre or redistribute calories; adherence 6/10 → simplify weekend meals; weight dropped too fast → slight calorie increase; energy low → adjust carb timing.
+
+3. Respect ALL hard constraints: diet preference (vegetarian = no eggs/chicken/fish ever), allergies, disliked foods, budget, and existing meal timings from onboarding. Never contradict the client's diet preference.
+
+4. Build the full 7-day diet in the same natural style as the initial plan — meal timings from their routine, Indian portions (roti, katori, bowl), and after each meal option add: (P: Xg | C: Yg | F: Zg | ~K kcal).
+
+5. Include a daily average summary line matching your calculated totals, e.g. "Daily averages: ~1850 kcal | P: 130g | C: 200g | F: 55g". Header macros must match the meal plan — never leave totals at zero.
+
+6. End with 3-5 specific, actionable tips tied to their check-in (not generic motivation). Close supportively but hold them accountable where adherence was weak.

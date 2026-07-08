@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatDate } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
@@ -41,7 +40,6 @@ function JsonBlock({ value }: { value: unknown }) {
 }
 
 export default function AdminAiLogDetailPage() {
-  const router = useRouter()
   const params = useParams()
   const id = typeof params.id === 'string' ? params.id : ''
 
@@ -59,8 +57,6 @@ export default function AdminAiLogDetailPage() {
       }
 
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       try {
         const res = await fetch(`/api/admin/ai-logs/${id}`)
@@ -82,7 +78,7 @@ export default function AdminAiLogDetailPage() {
     }
 
     void load()
-  }, [id, router])
+  }, [id])
 
   if (loading) {
     return (

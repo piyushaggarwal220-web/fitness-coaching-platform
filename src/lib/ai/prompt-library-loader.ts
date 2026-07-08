@@ -2,8 +2,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import {
   getPromptCategoryForAction,
-  gymFallbackCategoryForHome,
-  isHomeWorkoutPromptCategory,
 } from '@/lib/ai/workout-prompt-selection'
 import type { OnboardingProfile, PromptLibraryCategory } from '@/types/database'
 
@@ -29,8 +27,6 @@ export type LoadedLibraryPrompts = {
   system: PublishedLibraryPrompt | null
   /** Category selected from onboarding (before any gym fallback). */
   resolvedCategory: PromptLibraryCategory
-  /** Set when a home prompt is not yet published and gym prompt is used temporarily. */
-  fallbackFromCategory?: PromptLibraryCategory | null
 }
 
 export async function getPublishedPromptByCategory(
@@ -74,21 +70,12 @@ export async function loadPublishedPromptsForAction(
   profile?: OnboardingProfile | null
 ): Promise<LoadedLibraryPrompts | null> {
   const resolvedCategory = getPromptCategoryForAction(actionId, profile)
-  let action = await getPublishedPromptByCategory(resolvedCategory)
-  let fallbackFromCategory: PromptLibraryCategory | null = null
-
-  if (!action && isHomeWorkoutPromptCategory(resolvedCategory)) {
-    const gymCategory = gymFallbackCategoryForHome(resolvedCategory)
-    if (gymCategory) {
-      action = await getPublishedPromptByCategory(gymCategory)
-      if (action) fallbackFromCategory = resolvedCategory
-    }
-  }
+  const action = await getPublishedPromptByCategory(resolvedCategory)
 
   if (!action) return null
 
   const system = await getPublishedPromptByCategory('system_prompt')
-  return { action, system, resolvedCategory, fallbackFromCategory }
+  return { action, system, resolvedCategory }
 }
 
 export function formatLibraryPromptVersion(prompt: PublishedLibraryPrompt): string {

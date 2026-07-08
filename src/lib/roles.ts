@@ -6,6 +6,10 @@ export function isAdminRole(role: string | null | undefined): role is 'admin' | 
   return role === 'admin' || role === 'super_admin'
 }
 
+export function isSuperAdminRole(role: string | null | undefined): role is 'super_admin' {
+  return role === 'super_admin'
+}
+
 export function formatUserRole(role: string | null | undefined): string {
   if (!role) return 'Client'
   return role

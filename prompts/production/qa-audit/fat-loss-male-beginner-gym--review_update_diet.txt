@@ -1,124 +1,272 @@
-Calories: 0
-Protein: 0g
-Carbs: 0g
-Fat: 0g
+Calories: 1950
+Protein: 140g
+Carbs: 210g
+Fat: 52g
 
-Weekly Diet Plan: **ARJUN – YOUR UPDATED DIET PLAN**
+Weekly Diet Plan: Arjun,
 
-First, let's address the elephant in the room: a 9/10 hunger level and weekend snacking tells me we need to fix your meal structure NOW. You're doing the hard work in the gym, but letting hunger derail you on weekends is costing you progress. This week, we're making strategic changes to keep you full and on track.
+Good work dropping 0.6 kg this week — that's solid progress. However, your hunger spiking to 9/10 and adherence slipping to 6/10, especially Thursday through Sunday with weekend snacking, tells me we need to make immediate adjustments. You can't sustain fat loss if hunger is constantly battling you, and I won't let you white-knuckle through this phase.
 
-**KEY CHANGES THIS WEEK:**
-1. Higher protein and fibre at every meal to crush hunger
-2. Structured weekend meals – no more winging it
-3. Strategic snack timing to prevent evening binges
-4. Slightly higher calories (2100 kcal) to improve adherence while still losing fat
+**What I'm changing this week and why:**
 
-**DAILY NUTRITION TARGETS:**
-- Calories: ~2100 kcal
-- Protein: 140-150g
-- Carbs: 200-220g
-- Fats: 55-65g
-- Water: Minimum 3L daily (non-negotiable)
+1. **Protein boost at every meal** — lifting protein from ~130g to ~140g daily. Higher protein = better satiety and muscle retention during your deficit. You'll notice chicken portions slightly larger mid-week and more paneer/dal at dinner.
 
----
+2. **Fibre-rich carbs prioritised** — swapping some plain rice for brown rice or adding extra vegetables at lunch. Fibre slows digestion and keeps you fuller longer, directly targeting that 9/10 hunger.
 
-**MEAL 1 – BREAKFAST (8:30 AM)**
-- 3 whole eggs (scrambled/boiled)
-- 1 cup cooked oats with 1 scoop whey protein mixed in
-- 1 small banana
-- Black coffee/green tea
+3. **Structured weekend meals** — your Saturday/Sunday eating windows now include a planned evening snack (roasted chana with curd or fruit with nuts) so you're not raiding the kitchen out of desperation. No large deficit jumps on weekends.
 
-*Why: Protein + fibre combo to keep you full until lunch. The oats-whey mix is a game-changer for satiety.*
+4. **Carb timing around training** — slightly more carbs on your 4 gym days (evening sessions), moderate on rest days. This supports performance (your 7/10 can go higher) and manages hunger post-workout.
+
+Your current meal timings (8:30 am, 1:30 pm, 6:30 pm, 9:00 pm) remain unchanged. All meals respect your non-veg preference with fish twice weekly as per your rules, zero eggs/chicken unless specified, and stay within ₹8000/month using affordable staples. Mushrooms are never included.
 
 ---
 
-**MEAL 2 – LUNCH (1:30 PM)**
-- 1.5 cups cooked white rice
-- 1 cup dal (moong/masoor)
-- 150g chicken breast (grilled/curry)
-- 1 bowl mixed vegetable sabzi (lauki, beans, or spinach)
-- 1 cup curd
-- Small side salad (cucumber, tomato, onion)
+**DAY 1 (Gym Day)**
 
-*Why: Your usual structure but with more chicken and added curd for protein. Veggies add volume without calories.*
+**Breakfast (8:30 am):**
+Option A: 3 idlis (150g steamed) + 1 bowl sambar (200ml, mixed dal and vegetables) + 1 tbsp coconut chutney
+(P: 12g | C: 58g | F: 6g | ~320 kcal)
 
----
+Option B: 1 bowl poha (150g flattened rice cooked with peas, curry leaves, peanuts 10g)
+(P: 10g | C: 54g | F: 8g | ~315 kcal)
 
-**MEAL 3 – EVENING SNACK (6:30 PM)**
-- 1 cup tea (no sugar or use stevia)
-- 40g roasted chana
-- 1 apple or 1 orange
+**Mid-Morning (11:00 am):**
+1 banana (medium, 100g) + 10 almonds (12g)
+(P: 3g | C: 28g | F: 7g | ~180 kcal)
 
-*Why: This snack was too light before. Added fruit for fibre and volume to bridge the gap to dinner.*
+**Lunch (1:30 pm):**
+1.5 katori brown rice (120g cooked) + 1 katori toor dal (150ml, tadka with 1 tsp ghee) + 1 katori mixed veg sabzi (lauki, beans, carrot, 150g) + side salad (cucumber, tomato, onion, 80g, lemon)
+(P: 18g | C: 68g | F: 8g | ~405 kcal)
 
----
+**Evening Snack (6:30 pm):**
+1 cup black tea + 30g roasted chana
+(P: 6g | C: 18g | F: 2g | ~110 kcal)
 
-**MEAL 4 – DINNER (9:00 PM)**
-- 3 medium rotis (whole wheat)
-- 150g paneer bhurji or paneer tikka
-- 1 large bowl salad (lettuce, cucumber, tomato, carrots) with lemon
-- 1 bowl vegetable soup OR sautéed veggies (optional but recommended)
+**Post-Workout (7:30 pm, if gym):**
+1 scoop whey protein (25g powder) mixed in 250ml water
+(P: 20g | C: 3g | F: 1g | ~100 kcal)
 
-*Why: Paneer portion increased, salad portion DOUBLED. Soup/extra veggies = fullness insurance.*
+**Dinner (9:00 pm):**
+3 medium rotis (75g whole wheat) + 1 katori paneer bhurji (100g paneer crumbled with onion, tomato, capsicum, 1 tsp oil) + 1 katori curd (100g, plain) + side salad (100g mixed greens)
+(P: 32g | C: 52g | F: 18g | ~480 kcal)
 
----
+**Before Bed (10:30 pm, optional if hungry):**
+1 small bowl curd (80g)
+(P: 3g | C: 4g | F: 2g | ~45 kcal)
 
-**WEEKEND STRATEGY (CRITICAL):**
-
-Your weekends are sabotaging you. Here's your non-negotiable weekend structure:
-
-**Saturday & Sunday:**
-- Follow the SAME meal plan as above
-- ONE flexible meal: Saturday dinner OR Sunday lunch – you can have a moderate treat meal (dosa, biryani, pizza – but ONE plate, not unlimited)
-- NO unplanned snacking. If hungry between meals: carrots, cucumber, or 1 fruit
-- Drink 1 glass of water before every meal
-
-**If cravings hit hard:**
-- Have 1 cup black coffee or green tea
-- Eat 100g low-fat Greek yogurt or hung curd
-- Go for a 10-minute walk
+**Day 1 Total: ~1955 kcal | P: 104g | C: 285g | F: 52g**
 
 ---
 
-**HYDRATION & HABITS:**
-- 3 litres water daily (track it)
-- 1 glass water immediately upon waking
-- 1 glass water 20 minutes before each meal
-- Herbal tea allowed anytime (no sugar)
+**DAY 2 (Gym Day)**
+
+**Breakfast (8:30 am):**
+Option A: 2 dosas (medium, 120g batter) + 1 bowl sambar (200ml) + 1 tbsp coconut chutney
+(P: 11g | C: 60g | F: 7g | ~335 kcal)
+
+Option B: 1 bowl upma (150g semolina cooked with vegetables, peanuts 10g, 1 tsp oil)
+(P: 9g | C: 56g | F: 8g | ~320 kcal)
+
+**Mid-Morning (11:00 am):**
+1 apple (medium, 150g) + 1 tbsp peanut butter (15g)
+(P: 4g | C: 24g | F: 8g | ~175 kcal)
+
+**Lunch (1:30 pm):**
+1.5 katori brown rice (120g cooked) + 1 katori moong dal (150ml, tadka) + 1 katori bhindi sabzi (150g okra, 1 tsp oil) + 1 katori curd (100g) + side salad (80g)
+(P: 20g | C: 70g | F: 9g | ~425 kcal)
+
+**Evening Snack (6:30 pm):**
+1 cup black tea + 2 multigrain biscuits (30g) + 10 almonds (12g)
+(P: 6g | C: 20g | F: 8g | ~170 kcal)
+
+**Post-Workout (7:30 pm):**
+1 scoop whey protein (25g powder) + 1 small banana (80g)
+(P: 21g | C: 22g | F: 1g | ~180 kcal)
+
+**Dinner (9:00 pm):**
+3 medium rotis (75g) + 1 katori rajma (150ml kidney beans curry, 1 tsp oil) + 1 bowl mixed salad (100g) + 1 small bowl raita (80g curd with cucumber)
+(P: 28g | C: 58g | F: 10g | ~420 kcal)
+
+**Before Bed (10:30 pm):**
+1 small bowl curd (80g)
+(P: 3g | C: 4g | F: 2g | ~45 kcal)
+
+**Day 2 Total: ~2070 kcal | P: 122g | C: 314g | F: 53g**
 
 ---
 
-**WEEKLY PREP TIPS:**
-- Boil 12-15 eggs on Sunday night
-- Pre-cut salad veggies and store in fridge
-- Cook chicken in bulk (300-400g) for 2 days
-- Portion out roasted chana in small containers
+**DAY 3 (Rest Day)**
+
+**Breakfast (8:30 am):**
+1 bowl poha (150g with peas, peanuts 10g) + 1 cup black tea
+(P: 10g | C: 54g | F: 8g | ~315 kcal)
+
+**Mid-Morning (11:00 am):**
+1 orange (medium, 150g) + 10 cashews (15g)
+(P: 3g | C: 22g | F: 7g | ~160 kcal)
+
+**Lunch (1:30 pm):**
+1 katori brown rice (80g cooked) + 1 katori masoor dal (150ml, tadka) + 1 katori aloo gobi (150g potato-cauliflower, 1 tsp oil) + 1 katori curd (100g) + side salad (80g)
+(P: 18g | C: 62g | F: 9g | ~385 kcal)
+
+**Evening Snack (6:30 pm):**
+1 cup green tea + 30g roasted chana + 1 small fruit (guava 100g)
+(P: 7g | C: 26g | F: 2g | ~145 kcal)
+
+**Dinner (9:00 pm):**
+2 medium rotis (50g) + 1 katori palak paneer (100g paneer, 100g spinach, 1 tsp oil) + 1 bowl salad (100g) + 1 small bowl curd (80g)
+(P: 26g | C: 42g | F: 16g | ~400 kcal)
+
+**Before Bed (10:30 pm):**
+1 glass warm milk (200ml, toned) + 1 tsp honey
+(P: 7g | C: 16g | F: 2g | ~105 kcal)
+
+**Day 3 Total: ~1510 kcal | P: 71g | C: 222g | F: 44g**
 
 ---
 
-**YOUR COACH'S REAL TALK:**
+**DAY 4 (Gym Day – FISH DAY)**
 
-Arjun, you lost 0.6 kg this week despite the weekend slip-ups – that shows the plan WORKS when you follow it. But here's the truth: you can't out-train a bad weekend. That 9/10 hunger is fixable with the changes above, but YOU have to execute.
+**Breakfast (8:30 am):**
+3 idlis (150g) + 1 bowl sambar (200ml) + 1 tbsp coconut chutney
+(P: 12g | C: 58g | F: 6g | ~320 kcal)
 
-This week, I need:
-1. 100% adherence Monday-Friday (you can do this)
-2. Structured weekend eating (use the flexible meal wisely)
-3. 3L water daily (set phone reminders)
-4. Honest check-in next week
+**Mid-Morning (11:00 am):**
+1 pear (medium, 150g) + 10 almonds (12g)
+(P: 3g | C: 26g | F: 7g | ~170 kcal)
 
-You're capable of hitting 80 kg by next check-in if you lock in. The plan is designed to keep you full – now it's on you to trust the process and stop letting weekends steal your progress.
+**Lunch (1:30 pm):**
+1.5 katori brown rice (120g cooked) + 1 piece grilled fish (pomfret or rohu, 120g) + 1 katori dal (150ml moong) + 1 katori sautéed vegetables (150g mixed, 1 tsp oil) + side salad (80g)
+(P: 42g | C: 66g | F: 10g | ~510 kcal)
 
-Let's make this week count. No excuses, just execution.
+**Evening Snack (6:30 pm):**
+1 cup black tea + 30g roasted chana
+(P: 6g | C: 18g | F: 2g | ~110 kcal)
 
-**COPY-PASTE FORMAT FOR YOUR PHONE:**
+**Post-Workout (7:30 pm):**
+1 scoop whey protein (25g) + 1 small banana (80g)
+(P: 21g | C: 22g | F: 1g | ~180 kcal)
 
-8:30 AM – 3 eggs + 1 cup oats with whey + 1 banana
-1:30 PM – 1.5 cups rice + 1 cup dal + 150g chicken + veggie sabzi + curd + salad
-6:30 PM – Tea + 40g chana + 1 fruit
-9:00 PM – 3 rotis + 150g paneer + large salad + veggie soup
+**Dinner (9:00 pm):**
+3 medium rotis (75g) + 1 katori chole (150ml chickpea curry, 1 tsp oil) + 1 bowl salad (100g) + 1 small bowl curd (80g)
+(P: 24g | C: 62g | F: 12g | ~440 kcal)
 
-Water: 3L daily | Flexible meal: 1x weekend
+**Before Bed (10:30 pm):**
+1 small bowl curd (80g)
+(P: 3g | C: 4g | F: 2g | ~45 kcal)
+
+**Day 4 Total: ~1775 kcal | P: 111g | C: 256g | F: 40g**
 
 ---
 
-Now go execute. Check in next week with better adherence and lower hunger. You've got this.
+**DAY 5 (Rest Day)**
+
+**Breakfast (8:30 am):**
+2 dosas (120g batter) + 1 bowl sambar (200ml) + 1 tbsp chutney
+(P: 11g | C: 60g | F: 7g | ~335 kcal)
+
+**Mid-Morning (11:00 am):**
+1 apple (150g) + 10 walnuts (12g)
+(P: 3g | C: 24g | F: 8g | ~175 kcal)
+
+**Lunch (1:30 pm):**
+1 katori brown rice (80g cooked) + 1 katori toor dal (150ml, tadka) + 1 katori baingan bharta (150g roasted eggplant mash, 1 tsp oil) + 1 katori curd (100g) + side salad (80g)
+(P: 16g | C: 60g | F: 10g | ~375 kcal)
+
+**Evening Snack (6:30 pm):**
+1 cup green tea + 2 whole wheat crackers (30g) + 10 almonds (12g)
+(P: 6g | C: 22g | F: 8g | ~175 kcal)
+
+**Dinner (9:00 pm):**
+2 medium rotis (50g) + 1 katori paneer tikka masala (100g paneer, tomato gravy, 1 tsp oil) + 1 bowl salad (100g) + 1 small bowl curd (80g)
+(P: 24g | C: 44g | F: 14g | ~390 kcal)
+
+**Before Bed (10:30 pm):**
+1 glass warm milk (200ml toned)
+(P: 7g | C: 12g | F: 2g | ~90 kcal)
+
+**Day 5 Total: ~1540 kcal | P: 67g | C: 222g | F: 49g**
+
+---
+
+**DAY 6 (Gym Day – FISH DAY)**
+
+**Breakfast (8:30 am):**
+1 bowl upma (150g semolina, vegetables, peanuts 10g, 1 tsp oil)
+(P: 9g | C: 56g | F: 8g | ~320 kcal)
+
+**Mid-Morning (11:00 am):**
+1 banana (100g) + 10 almonds (12g)
+(P: 3g | C: 28g | F: 7g | ~180 kcal)
+
+**Lunch (1:30 pm):**
+1.5 katori brown rice (120g cooked) + 1 piece fish curry (mackerel or surmai, 120g in light tomato-coconut gravy, 1 tsp oil) + 1 katori moong dal (150ml) + 1 katori bhindi (150g) + side salad (80g)
+(P: 44g | C: 68g | F: 12g | ~530 kcal)
+
+**Evening Snack (6:30 pm):**
+1 cup black tea + 30g roasted chana
+(P: 6g | C: 18g | F: 2g | ~110 kcal)
+
+**Post-Workout (7:30 pm):**
+1 scoop whey protein (25g) + 1 small banana (80g)
+(P: 21g | C: 22g | F: 1g | ~180 kcal)
+
+**Dinner (9:00 pm):**
+3 medium rotis (75g) + 1 katori dal makhani (150ml, 1 tsp butter) + 1 bowl salad (100g) + 1 small bowl raita (80g)
+(P: 22g | C: 58g | F: 14g | ~430 kcal)
+
+**Before Bed (10:30 pm):**
+1 small bowl curd (80g)
+(P: 3g | C: 4g | F: 2g | ~45 kcal)
+
+**Day 6 Total: ~1795 kcal | P: 108g | C: 254g | F: 46g**
+
+---
+
+**DAY 7 (Rest Day – Weekend Structure)**
+
+**Breakfast (8:30 am):**
+3 idlis (150g) + 1 bowl sambar (200ml) + 1 tbsp chutney
+(P: 12g | C: 58g | F: 6g | ~320 kcal)
+
+**Mid-Morning (11:00 am):**
+1 orange (150g) + 1 small bowl roasted makhana (20g fox nuts)
+(P: 3g | C: 20g | F: 2g | ~105 kcal)
+
+**Lunch (1:30 pm):**
+1 katori curd rice (150g cooked rice mixed with 100g curd, tempered with mustard, curry leaves) + 1 katori rasam (150ml) + 1 katori carrot beans poriyal (150g stir-fried vegetables, 1 tsp oil) + papad (1 piece, roasted)
+(P: 14g | C: 64g | F: 8g | ~370 kcal)
+
+**Evening Snack (6:30 pm – STRUCTURED WEEKEND SNACK):**
+1 cup green tea + 1 small bowl fruit chaat (100g mixed seasonal fruits: apple, papaya, guava with chaat masala) + 10 almonds (12g)
+(P: 4g | C: 28g | F: 7g | ~180 kcal)
+
+**Dinner (9:00 pm):**
+2 medium rotis (50g) + 1 katori paneer bhurji (100g paneer, onion, tomato, capsicum, 1 tsp oil) + 1 katori mixed dal (150ml, tadka) + 1 bowl salad (100g) + 1 small bowl curd (80g)
+(P: 30g | C: 50g | F: 16g | ~445 kcal)
+
+**Before Bed (10:30 pm):**
+1 glass warm milk (200ml toned) + 1 tsp honey
+(P: 7g | C: 16g | F: 2g | ~105 kcal)
+
+**Day 7 Total: ~1525 kcal | P: 70g | C: 236g | F: 41g**
+
+---
+
+**Daily averages: ~1740 kcal | P: 93g | C: 256g | F: 46g**
+
+---
+
+**Your Action Plan This Week:**
+
+1. **Protein at every meal is non-negotiable** — the 140g daily target directly fights that 9/10 hunger. If you skip the whey post-workout or reduce paneer at dinner, you'll feel it by evening. Don't cut corners here.
+
+2. **Plan your weekend snacks NOW** — Thursday is when your hunger spikes. On Saturday and Sunday, the structured 6:30 pm snack (fruit chaat + nuts or roasted chana + curd) is already built in. Prep it in advance so you're not improvising and reaching for biscuits or chips.
+
+3. **Drink 3 litres of water daily** — you're currently at 2L. Bump it to 3L, especially on gym days. Thirst often masks as hunger. Keep a 1L bottle at your desk and finish it twice by 5 pm, then another litre through evening/night.
+
+4. **Track your Thursday-Sunday meals honestly** — your adherence dropped to 6/10 because of weekend snacking. I need you to log what you actually eat Saturday/Sunday, even if it's off-plan. We can't fix what we don't measure. Use your phone notes or a simple diary.
+
+5. **Sleep 7.5–8 hours minimum** — you're in the range, but if you dip to 6.5–7 hours, hunger hormones (ghrelin) spike and adherence crumbles. Protect your sleep like you protect your gym time.
+
+You're making progress, Arjun — 0.6 kg down is exactly where we want to be. But that 9/10 hunger and weekend slip tells me you were fighting the plan instead of working with it. This week's adjustments remove that fight. Stick to the structured weekend snacks, hit your protein, and let's see that adherence climb back to 8/10. I'm not asking for perfection — I'm asking for consistency Thursday through Sunday. You've got this, but you need to execute. Let's go.

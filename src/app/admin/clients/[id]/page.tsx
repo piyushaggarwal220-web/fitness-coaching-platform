@@ -2,22 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { assignCoachToClient } from '@/lib/admin/assign-coach'
-import { requireAdmin } from '@/lib/admin-session'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { coachBadgeStyles, formatFitnessGoal, formatDate, getCheckinStatus, getPlanStatus } from '@/lib/coach-utils'
 import { ComplexityHistoryTimeline } from '@/components/complexity/ComplexityHistoryTimeline'
 import { ComplexityScoreCard } from '@/components/complexity/ComplexityScoreCard'
 import { CoachClientProfileEdit } from '@/components/coach/CoachClientProfileEdit'
 import { createClient } from '@/lib/supabase/client'
+import { useAdminRole } from '@/lib/admin/use-admin-role'
 import type { Coach, CoachClientDetail } from '@/types/database'
 
 const supabase = createClient()
 
 export default function AdminClientDetailPage() {
-  const router = useRouter()
   const params = useParams()
   const clientId = typeof params.id === 'string' ? params.id : ''
 
@@ -26,15 +25,15 @@ export default function AdminClientDetailPage() {
   const [selectedCoachId, setSelectedCoachId] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const { role } = useAdminRole()
 
   useEffect(() => {
     const load = async () => {
       if (!clientId) return
       setError('')
-      const admin = await requireAdmin(supabase, router)
-      if (!admin) return
 
       const [clientRes, coachesRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', clientId).maybeSingle(),
@@ -55,7 +54,7 @@ export default function AdminClientDetailPage() {
     }
 
     void load()
-  }, [clientId, router])
+  }, [clientId])
 
   const handleAssign = async () => {
     if (!client) return
@@ -109,6 +108,37 @@ export default function AdminClientDetailPage() {
   if (!client) return null
 
   const assignedCoach = coaches.find((c) => c.id === client.coach_id)
+  const canDelete = role === 'super_admin'
+
+  const handleDelete = async () => {
+    if (!canDelete) return
+    if (!clientId) return
+
+    const confirm = window.prompt(
+      'You are about to permanently delete this client and all associated data.\n\nThis action cannot be undone.\n\nType DELETE to confirm.'
+    )
+    if (confirm !== 'DELETE') return
+
+    const reason = window.prompt('Reason (optional):') ?? null
+
+    setDeleting(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Delete failed')
+
+      window.location.href = '/admin/clients'
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <>
@@ -205,6 +235,27 @@ export default function AdminClientDetailPage() {
               )}
             </div>
           </div>
+
+          {canDelete && (
+            <div style={{ ...s.card, border: '1px solid rgba(185, 28, 28, 0.35)' }}>
+              <h2 style={{ ...s.cardTitle, color: '#b91c1c' }}>Danger zone</h2>
+              <p style={{ margin: '0 0 12px 0', color: '#7f1d1d', fontSize: 14, lineHeight: 1.5 }}>
+                Delete this client permanently, including all coaching data and their authentication account. This action
+                cannot be undone.
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                disabled={deleting}
+                style={{
+                  ...s.primaryBtn,
+                  backgroundColor: '#b91c1c',
+                }}
+              >
+                {deleting ? 'Deleting…' : 'Delete client'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>

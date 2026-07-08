@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { fulfillPurchase } from '@/lib/payments/fulfillment'
+import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
+import { establishPurchaseSession } from '@/lib/payments/purchase-session'
 import { getCoachingPlan } from '@/lib/payments/plans'
 import {
   fetchRazorpayPayment,
@@ -98,6 +100,13 @@ export async function POST(request: Request) {
     }
   }
 
+  logPurchaseStep('payment_verified', {
+    email,
+    plan: plan.slug,
+    paymentId: paymentId || 'test',
+    testMode: isTestModeServer(),
+  })
+
   try {
     const result = await fulfillPurchase({
       email,
@@ -109,15 +118,35 @@ export async function POST(request: Request) {
       amountPaise: plan.amountPaise,
     })
 
+    const session = await establishPurchaseSession(email, password)
+    if (!session.ok) {
+      logPurchaseStep('fulfillment_failed', {
+        step: 'automatic_sign_in',
+        email,
+        userId: result.userId,
+        error: session.error,
+      })
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Your payment was received but we could not sign you in automatically. Please contact support with your payment confirmation.',
+        },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
       userId: result.userId,
       purchaseId: result.purchaseId,
       isNewUser: result.isNewUser,
+      sessionEstablished: true,
       redirectTo: '/onboarding',
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to fulfill purchase'
+    logPurchaseStep('fulfillment_failed', { email, error: message })
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }
