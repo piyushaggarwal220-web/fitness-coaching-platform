@@ -7,7 +7,7 @@ import {
   fetchRazorpayPayment,
   verifyRazorpaySignature,
 } from '@/lib/payments/razorpay'
-import { isTestModeServer } from '@/lib/test-mode'
+import { shouldBypassPayment } from '@/lib/config'
 
 type VerifyPaymentBody = {
   planSlug?: string
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   const paymentId = body.razorpay_payment_id ?? ''
   const signature = body.razorpay_signature ?? ''
 
-  if (!isTestModeServer()) {
+  if (!shouldBypassPayment()) {
     if (!orderId || !paymentId || !signature) {
       return NextResponse.json(
         { success: false, error: 'Payment verification fields are required' },
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     email,
     plan: plan.slug,
     paymentId: paymentId || 'test',
-    testMode: isTestModeServer(),
+    testMode: shouldBypassPayment(),
   })
 
   try {

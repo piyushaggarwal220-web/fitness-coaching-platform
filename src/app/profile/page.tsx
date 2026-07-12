@@ -3,10 +3,16 @@
 import { useEffect, useState } from 'react';
 import { type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import Navbar from '../components/Navbar';
+import { LogOut } from 'lucide-react';
+import { ClientShell } from '@/components/ui/ClientShell';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { authenticateClient, FITNESS_GOAL_OPTIONS } from '@/lib/onboarding';
 import { requestComplexityRecalculation } from '@/lib/complexity/client';
 import { createClient } from '@/lib/supabase/client';
+import { mobileStyles } from '@/lib/mobile-styles';
+import { colors, spacing } from '@/lib/design-tokens';
 import type { ProfileForm } from '@/types/database';
 
 const supabase = createClient();
@@ -22,13 +28,9 @@ export default function Profile() {
   useEffect(() => {
     const checkUser = async () => {
       const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
-      if (!result) {
-        setLoading(false);
-        return;
-      }
+      if (!result) { setLoading(false); return; }
 
       setUser(result.user as User);
-
       if (result.profile) {
         setProfile({
           name: result.profile.name || '',
@@ -71,53 +73,65 @@ export default function Profile() {
       });
 
     if (error) {
-      setMessage('❌ Error saving profile: ' + error.message);
+      setMessage('Error saving profile: ' + error.message);
     } else {
       await requestComplexityRecalculation({ trigger: 'profile_edit_client' });
-      setMessage('✅ Profile saved successfully!');
+      setMessage('Profile saved successfully!');
     }
     setSaving(false);
   };
 
-  const isError = message.startsWith('❌');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
 
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: 20 }}>Loading...</div>;
-  }
+  const isError = message.toLowerCase().includes('error');
+
+  if (loading) return <ClientShell title="Profile" loading />;
 
   return (
-    <>
-      <Navbar />
-      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 20px' }}>
-        <h1 style={{ fontSize: 32, marginBottom: 10 }}>👤 Profile Settings</h1>
-        <p style={{ color: '#666', marginBottom: 30 }}>Update your fitness profile</p>
+    <ClientShell title="Profile">
+      <div style={{ marginBottom: spacing[5] }}>
+        <div style={{
+          width: 72, height: 72, borderRadius: '50%',
+          backgroundColor: colors.accentMuted,
+          border: `2px solid ${colors.accent}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 28, fontWeight: 800, color: colors.accent,
+          marginBottom: spacing[3],
+        }}>
+          {(profile.name?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase()}
+        </div>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>
+          {profile.name || 'Your Profile'}
+        </h1>
+        <p style={{ margin: '6px 0 0', color: colors.textSecondary, fontSize: 15 }}>{user?.email}</p>
+      </div>
 
-        {message && (
-          <div style={{
-            padding: 15,
-            borderRadius: 8,
-            marginBottom: 20,
-            backgroundColor: isError ? '#f8d7da' : '#d4edda',
-            color: isError ? '#721c24' : '#155724',
-          }}>
-            {message}
-          </div>
-        )}
+      {message && (
+        <div style={isError ? mobileStyles.error : mobileStyles.success}>{message}</div>
+      )}
 
-        <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', padding: 30, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Full Name</label>
-            <input type="text" name="name" value={profile.name} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box' }} placeholder="Enter your name" />
-          </div>
+      <form onSubmit={handleSubmit}>
+        <Card variant="elevated">
+          <Input label="Full Name" type="text" name="name" value={profile.name} onChange={handleChange} placeholder="Enter your name" />
+          <Input label="Age" type="number" name="age" value={profile.age} onChange={handleChange} placeholder="Enter your age" />
 
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Age</label>
-            <input type="number" name="age" value={profile.age} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box' }} placeholder="Enter your age" />
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Fitness Goal</label>
-            <select name="fitness_goal" value={profile.fitness_goal} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, backgroundColor: 'white' }}>
+          <div style={{ marginBottom: spacing[3] }}>
+            <label style={{ display: 'block', marginBottom: spacing[1], fontSize: 14, fontWeight: 500, color: colors.textSecondary }}>
+              Fitness Goal
+            </label>
+            <select
+              name="fitness_goal"
+              value={profile.fitness_goal}
+              onChange={handleChange}
+              style={{
+                width: '100%', minHeight: 56, padding: '12px 16px',
+                border: `1px solid ${colors.borderSubtle}`, borderRadius: 12,
+                fontSize: 16, backgroundColor: colors.bgElevated, color: colors.textPrimary,
+              }}
+            >
               <option value="">Select your goal</option>
               {FITNESS_GOAL_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -125,22 +139,20 @@ export default function Profile() {
             </select>
           </div>
 
-          <div style={{ display: 'flex', gap: 15, flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Weight (kg)</label>
-              <input type="number" name="weight" value={profile.weight} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box' }} placeholder="70" />
-            </div>
-            <div style={{ flex: 1, marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: 5, fontWeight: 500 }}>Height (cm)</label>
-              <input type="number" name="height" value={profile.height} onChange={handleChange} style={{ width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, boxSizing: 'border-box' }} placeholder="175" />
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
+            <Input label="Weight (kg)" type="number" name="weight" value={profile.weight} onChange={handleChange} placeholder="70" />
+            <Input label="Height (cm)" type="number" name="height" value={profile.height} onChange={handleChange} placeholder="175" />
           </div>
 
-          <button type="submit" disabled={saving} style={{ width: '100%', padding: 14, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 18, cursor: 'pointer' }}>
-            {saving ? 'Saving...' : 'Save Profile'}
-          </button>
-        </form>
+          <Button type="submit" loading={saving} fullWidth>Save Profile</Button>
+        </Card>
+      </form>
+
+      <div style={{ marginTop: spacing[4] }}>
+        <Button variant="ghost" fullWidth onClick={handleLogout} style={{ color: colors.danger }}>
+          <LogOut size={18} /> Sign Out
+        </Button>
       </div>
-    </>
+    </ClientShell>
   );
 }

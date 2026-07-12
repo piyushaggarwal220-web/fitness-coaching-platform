@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Mic, Square, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { colors } from '@/lib/design-tokens'
 
 type VoiceRecorderProps = {
   conversationId: string
@@ -93,7 +95,7 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
     return (
       <div style={styles.preview}>
         <audio src={preview.url} controls style={{ height: 32, maxWidth: 120 }} />
-        <button type="button" onClick={deletePreview} style={styles.smallBtn} aria-label="Delete">🗑</button>
+        <button type="button" onClick={deletePreview} style={styles.smallBtn} aria-label="Delete"><Trash2 size={18} color={colors.textMuted} /></button>
         <button type="button" onClick={() => void sendVoice()} disabled={sending} style={styles.sendSmall}>
           {sending ? '...' : 'Send'}
         </button>
@@ -108,15 +110,15 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
       style={{ ...styles.micBtn, ...(recording ? styles.recording : {}) }}
       aria-label={recording ? 'Stop recording' : 'Record voice message'}
     >
-      {recording ? '⏹' : '🎤'}
+      {recording ? <Square size={18} color={colors.danger} fill={colors.danger} /> : <Mic size={20} color={colors.textSecondary} />}
     </button>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  micBtn: { minHeight: 48, minWidth: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: '1px solid #ddd', borderRadius: '50%', cursor: 'pointer', fontSize: 20 },
-  recording: { backgroundColor: '#fee', borderColor: '#e94560' },
+  micBtn: { minHeight: 48, minWidth: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgElevated, border: `1px solid ${colors.borderSubtle}`, borderRadius: '50%', cursor: 'pointer' },
+  recording: { backgroundColor: colors.dangerMuted, borderColor: colors.danger },
   preview: { display: 'flex', alignItems: 'center', gap: 4 },
-  smallBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, minWidth: 36, minHeight: 36 },
-  sendSmall: { padding: '6px 12px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 16, fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 36 },
+  smallBtn: { background: 'none', border: 'none', cursor: 'pointer', minWidth: 36, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  sendSmall: { padding: '6px 12px', backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: 16, fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 36 },
 }

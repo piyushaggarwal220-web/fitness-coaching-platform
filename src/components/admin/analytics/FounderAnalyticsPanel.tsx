@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { AdminStatCard } from '@/components/admin/AdminStatCard'
 import { BarChartCard, LineChartCard } from '@/components/admin/analytics/AnalyticsCharts'
 import { adminStyles as s } from '@/lib/admin/styles'
+import { colors } from '@/lib/design-tokens'
 import { formatInr, formatUsd } from '@/lib/admin/pricing'
 import type { BusinessAnalytics } from '@/lib/admin/business-analytics'
 
@@ -37,7 +38,7 @@ export function FounderAnalyticsPanel() {
   }, [])
 
   if (loading) {
-    return <div style={{ ...s.card, color: '#666' }}>Loading business analytics…</div>
+    return <div style={{ ...s.card, color: colors.textMuted }}>Loading business analytics…</div>
   }
 
   if (error || !data) {
@@ -48,17 +49,17 @@ export function FounderAnalyticsPanel() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <h2 style={{ ...s.cardTitle, fontSize: 22, marginBottom: 4 }}>Business Analytics</h2>
-        <p style={{ margin: 0, color: '#666', fontSize: 14 }}>Revenue, customers, plans, and support at a glance.</p>
+        <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14 }}>Revenue, customers, plans, and support at a glance.</p>
       </div>
 
       <div>
         <h3 style={sectionTitle}>Revenue</h3>
         <div style={s.statGrid}>
-          <AdminStatCard label="Today" value={formatInr(data.revenue.todayInr)} accent="#0d9488" />
+          <AdminStatCard label="Today" value={formatInr(data.revenue.todayInr)} accent={colors.accent} />
           <AdminStatCard label="Yesterday" value={formatInr(data.revenue.yesterdayInr)} />
           <AdminStatCard label="This Week" value={formatInr(data.revenue.weekInr)} />
-          <AdminStatCard label="This Month" value={formatInr(data.revenue.monthInr)} accent="#7c3aed" />
-          <AdminStatCard label="Lifetime" value={formatInr(data.revenue.lifetimeInr)} accent="#1a1a2e" />
+          <AdminStatCard label="This Month" value={formatInr(data.revenue.monthInr)} accent={colors.accent} />
+          <AdminStatCard label="Lifetime" value={formatInr(data.revenue.lifetimeInr)} accent={colors.textPrimary} />
         </div>
       </div>
 
@@ -90,7 +91,7 @@ export function FounderAnalyticsPanel() {
       <div>
         <h3 style={sectionTitle}>AI Cost Analytics</h3>
         <div style={s.statGrid}>
-          <AdminStatCard label="Today" value={formatUsd(data.aiCosts.todayUsd)} accent="#d97706" />
+          <AdminStatCard label="Today" value={formatUsd(data.aiCosts.todayUsd)} accent={colors.warning} />
           <AdminStatCard label="This Week" value={formatUsd(data.aiCosts.weekUsd)} />
           <AdminStatCard label="This Month" value={formatUsd(data.aiCosts.monthUsd)} />
           <AdminStatCard label="Lifetime" value={formatUsd(data.aiCosts.lifetimeUsd)} />
@@ -186,12 +187,12 @@ function ProfitStep({ label, value, highlight }: { label: string; value: string;
       style={{
         padding: 14,
         borderRadius: 10,
-        backgroundColor: highlight ? '#f5f3ff' : '#f8f9fb',
-        border: highlight ? '1px solid #ddd6fe' : '1px solid #eee',
+        backgroundColor: highlight ? colors.accentMuted : colors.bgElevated,
+        border: highlight ? `1px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
       }}
     >
-      <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginTop: 4 }}>{value}</div>
+      <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary, marginTop: 4 }}>{value}</div>
     </div>
   )
 }
@@ -224,15 +225,16 @@ const sectionTitle: CSSProperties = {
   margin: '0 0 12px 0',
   fontSize: 16,
   fontWeight: 600,
-  color: '#1a1a2e',
+  color: colors.textPrimary,
 }
 
 const exportBtnStyle: CSSProperties = {
   padding: '6px 10px',
   borderRadius: 6,
-  backgroundColor: '#1a1a2e',
-  color: 'white',
+  backgroundColor: colors.bgElevated,
+  color: colors.textPrimary,
   textDecoration: 'none',
   fontSize: 12,
   fontWeight: 600,
+  border: `1px solid ${colors.borderSubtle}`,
 }

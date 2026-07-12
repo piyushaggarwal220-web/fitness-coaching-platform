@@ -3,7 +3,9 @@
 import { Suspense, useEffect, useState, type ChangeEvent, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import CoachNavbar from '../../../components/CoachNavbar';
+import { CoachShell } from '@/components/ui/CoachShell';
+import { coachPageStyles } from '@/lib/coach-page-styles';
+import { colors } from '@/lib/design-tokens';
 import { PlanEditor } from '@/components/PlanEditor';
 import { AiReasoningPanel } from '@/components/coach/ai-actions/shared';
 import {
@@ -184,35 +186,25 @@ function CoachNewPlanForm() {
   };
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={styles.loading}>Loading...</div>
-      </>
-    );
+    return <CoachShell narrow loading><span /></CoachShell>;
   }
 
   if (loadError) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
-          <div style={styles.errorBox}>
-            <p>{loadError}</p>
-            <button style={styles.retryBtn} onClick={() => window.location.reload()}>
-              Retry
-            </button>
-          </div>
+      <CoachShell narrow>
+        <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
+        <div style={styles.errorBox}>
+          <p>{loadError}</p>
+          <button style={styles.retryBtn} onClick={() => window.location.reload()}>
+            Retry
+          </button>
         </div>
-      </>
+      </CoachShell>
     );
   }
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={styles.container}>
+    <CoachShell narrow>
         <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
         <h1 style={styles.title}>{aiDraftLoaded ? 'Review AI plan draft' : 'Create new plan'}</h1>
 
@@ -268,38 +260,31 @@ function CoachNewPlanForm() {
             </button>
           </div>
         </div>
-      </div>
-    </>
+    </CoachShell>
   );
 }
 
 export default function CoachNewPlanPage() {
   return (
-    <Suspense fallback={
-      <>
-        <CoachNavbar />
-        <div style={styles.loading}>Loading...</div>
-      </>
-    }>
+    <Suspense fallback={<CoachShell narrow loading><span /></CoachShell>}>
       <CoachNewPlanForm />
     </Suspense>
   );
 }
 
 const styles: Record<string, CSSProperties> = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', fontSize: 20, color: '#666' },
-  container: { maxWidth: 800, margin: '0 auto', padding: '30px 20px' },
-  backLink: { display: 'inline-block', color: '#e94560', textDecoration: 'none', marginBottom: 16, fontWeight: 600 },
-  title: { margin: '0 0 24px 0', fontSize: 28 },
-  form: { backgroundColor: 'white', padding: 28, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
+  ...coachPageStyles,
+  container: coachPageStyles.containerNarrow,
+  backLink: coachPageStyles.backLink,
+  title: coachPageStyles.title,
+  form: coachPageStyles.card,
   actions: { display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 20 },
-  primaryBtn: { flex: 1, minWidth: 160, padding: 14, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer', fontWeight: 600 },
-  secondaryBtn: { flex: 1, minWidth: 160, padding: 14, backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer', fontWeight: 600 },
-  error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 16 },
-  warning: { backgroundColor: '#fff3cd', color: '#856404', padding: 12, borderRadius: 8, marginBottom: 16 },
-  aiBanner: { backgroundColor: '#e7f3ff', color: '#004085', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 },
-  workoutRetryBanner: { backgroundColor: '#fff3cd', color: '#856404', padding: 16, borderRadius: 8, marginBottom: 16, fontSize: 14 },
-  retryWorkoutBtn: { padding: '10px 18px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600 },
-  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 24, borderRadius: 12, textAlign: 'center' },
-  retryBtn: { padding: '10px 20px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, marginTop: 12 },
+  primaryBtn: { ...coachPageStyles.primaryBtn, flex: 1, minWidth: 160 },
+  secondaryBtn: { ...coachPageStyles.secondaryBtn, flex: 1, minWidth: 160 },
+  warning: { backgroundColor: colors.warningMuted, color: colors.warning, padding: 12, borderRadius: 12, marginBottom: 16 },
+  aiBanner: { backgroundColor: colors.accentMuted, color: colors.accent, padding: 12, borderRadius: 12, marginBottom: 16, fontSize: 14 },
+  workoutRetryBanner: { backgroundColor: colors.warningMuted, color: colors.warning, padding: 16, borderRadius: 12, marginBottom: 16, fontSize: 14 },
+  retryWorkoutBtn: coachPageStyles.secondaryBtn,
+  errorBox: { ...coachPageStyles.card, textAlign: 'center', borderColor: colors.danger },
+  retryBtn: coachPageStyles.primaryBtn,
 };

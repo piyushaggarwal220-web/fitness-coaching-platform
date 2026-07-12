@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import CoachNavbar from '../../components/CoachNavbar';
+import { CoachShell } from '@/components/ui/CoachShell';
+import { coachPageStyles as styles } from '@/lib/coach-page-styles';
+import { colors } from '@/lib/design-tokens';
 import { requireCoach } from '@/lib/coach-session';
 import { formatPlanDate } from '@/lib/plans';
 import type { Coach, PlanWithClient } from '@/types/database';
@@ -66,32 +68,25 @@ export default function CoachPlansPage() {
   }, [plans, clientFilter, statusFilter]);
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={styles.loading}>Loading plans...</div>
-      </>
-    );
+    return <CoachShell loading />;
   }
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={styles.container}>
+    <CoachShell>
         <div style={styles.header}>
           <div>
             <h1 style={styles.title}>Coaching Plans</h1>
             <p style={styles.subtitle}>{coach?.name ? `${coach.name}'s plans` : 'Manage client plans'}</p>
           </div>
-          <button style={styles.createBtn} onClick={() => router.push('/coach/plan/new')}>
+          <button style={styles.primaryBtn} onClick={() => router.push('/coach/plan/new')}>
             + New plan
           </button>
         </div>
 
         {error && (
-          <div style={styles.errorBox}>
-            <p>{error}</p>
-            <button style={styles.retryBtn} onClick={() => window.location.reload()}>Retry</button>
+          <div style={styles.error}>
+            <p style={{ margin: '0 0 8px' }}>{error}</p>
+            <button style={styles.primaryBtn} onClick={() => window.location.reload()}>Retry</button>
           </div>
         )}
 
@@ -109,7 +104,7 @@ export default function CoachPlansPage() {
           </select>
         </div>
 
-        <div style={styles.list}>
+        <div style={localStyles.list}>
           {filtered.length === 0 ? (
             <div style={styles.empty}>
               <p style={styles.emptyTitle}>No plans found</p>
@@ -120,61 +115,33 @@ export default function CoachPlansPage() {
               <button
                 key={plan.id}
                 type="button"
-                style={styles.card}
+                style={localStyles.cardBtn}
                 onClick={() => router.push(`/coach/plan/${plan.id}`)}
               >
                 <div>
-                  <div style={styles.planTitle}>{plan.title}</div>
-                  <div style={styles.meta}>
+                  <div style={localStyles.planTitle}>{plan.title}</div>
+                  <div style={localStyles.meta}>
                     {plan.profiles?.name || plan.profiles?.email || 'Client'} · v{plan.version}
                     {plan.phase ? ` · ${plan.phase}` : ''}
                   </div>
-                  <div style={styles.meta}>Updated {formatPlanDate(plan.updated_at)}</div>
+                  <div style={localStyles.meta}>Updated {formatPlanDate(plan.updated_at)}</div>
                 </div>
-                <span style={plan.active ? styles.badgeActive : styles.badgeInactive}>
+                <span style={plan.active ? localStyles.badgeActive : localStyles.badgeInactive}>
                   {plan.active ? 'Active' : 'Inactive'}
                 </span>
               </button>
             ))
           )}
         </div>
-      </div>
-    </>
+    </CoachShell>
   );
 }
 
-const styles: Record<string, CSSProperties> = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', fontSize: 20, color: '#666' },
-  container: { maxWidth: 960, margin: '0 auto', padding: '30px 20px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 24 },
-  title: { margin: 0, fontSize: 28 },
-  subtitle: { color: '#666', marginTop: 6 },
-  createBtn: { padding: '12px 20px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 15, fontWeight: 600 },
-  toolbar: { display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
-  select: { padding: '10px 14px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, minWidth: 180 },
-  list: { display: 'flex', flexDirection: 'column', gap: 12 },
-  card: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    padding: 18,
-    backgroundColor: 'white',
-    border: '1px solid #eee',
-    borderRadius: 10,
-    cursor: 'pointer',
-    textAlign: 'left',
-    width: '100%',
-    flexWrap: 'wrap',
-  },
-  planTitle: { fontWeight: 600, fontSize: 16, marginBottom: 4 },
-  meta: { fontSize: 14, color: '#666' },
-  badgeActive: { backgroundColor: '#d4edda', color: '#155724', padding: '4px 12px', borderRadius: 12, fontSize: 12 },
-  badgeInactive: { backgroundColor: '#e2e3e5', color: '#383d41', padding: '4px 12px', borderRadius: 12, fontSize: 12 },
-  empty: { textAlign: 'center', padding: '48px 20px', backgroundColor: 'white', borderRadius: 12 },
-  emptyTitle: { fontWeight: 600, fontSize: 18, marginBottom: 8 },
-  emptyText: { color: '#666', margin: 0 },
-  error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 16 },
-  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 16, borderRadius: 8, marginBottom: 16 },
-  retryBtn: { padding: '8px 16px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', marginTop: 8 },
+const localStyles: Record<string, CSSProperties> = {
+  list: { display: 'flex', flexDirection: 'column', gap: 0 },
+  cardBtn: { ...styles.listItem, cursor: 'pointer', textAlign: 'left', width: '100%', border: 'none', font: 'inherit' },
+  planTitle: { fontWeight: 600, fontSize: 16, marginBottom: 4, color: colors.textPrimary },
+  meta: { fontSize: 14, color: colors.textSecondary },
+  badgeActive: { ...styles.badge, backgroundColor: colors.successMuted, color: colors.success },
+  badgeInactive: { ...styles.badge, backgroundColor: colors.bgElevated, color: colors.textMuted },
 };

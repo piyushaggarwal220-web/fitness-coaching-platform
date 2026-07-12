@@ -11,7 +11,7 @@ const sb = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-const tables = ['profiles', 'purchases', 'plans', 'checkins', 'coaches', 'ai_knowledge']
+const tables = ['profiles', 'purchases', 'plans', 'checkins', 'journey_entries', 'coaches', 'ai_knowledge']
 console.log('=== Tables (SELECT probe) ===')
 for (const t of tables) {
   const { data, error } = await sb.from(t).select('id').limit(1)

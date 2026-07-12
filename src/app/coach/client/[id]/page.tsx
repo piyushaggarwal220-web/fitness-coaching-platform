@@ -4,7 +4,9 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import CoachNavbar from '../../../components/CoachNavbar';
+import { CoachShell } from '@/components/ui/CoachShell';
+import { coachPageStyles } from '@/lib/coach-page-styles';
+import { colors } from '@/lib/design-tokens';
 import { requireCoach } from '@/lib/coach-session';
 import {
   coachBadgeStyles,
@@ -70,51 +72,34 @@ export default function CoachClientDetailPage() {
 
   if (!clientId) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <Link href="/coach/clients" style={styles.backLink}>← Back to clients</Link>
-          <div style={styles.errorBox}>
-            <p style={styles.errorText}>Invalid client ID.</p>
-            <button style={styles.retryBtn} onClick={() => router.push('/coach/clients')}>
-              Return to client list
-            </button>
-          </div>
+      <CoachShell narrow>
+        <Link href="/coach/clients" style={styles.backLink}>← Back to clients</Link>
+        <div style={styles.errorBox}>
+          <p style={styles.errorText}>Invalid client ID.</p>
+          <button style={styles.retryBtn} onClick={() => router.push('/coach/clients')}>Return to client list</button>
         </div>
-      </>
+      </CoachShell>
     );
   }
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={styles.loading}>Loading client profile...</div>
-      </>
-    );
+    return <CoachShell loading narrow />;
   }
 
   if (error || !client) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <Link href="/coach/clients" style={styles.backLink}>← Back to clients</Link>
-          <div style={styles.errorBox}>
-            <p style={styles.errorText}>{error || 'Client not found.'}</p>
-            <button style={styles.retryBtn} onClick={() => router.push('/coach/clients')}>
-              Return to client list
-            </button>
-          </div>
+      <CoachShell narrow>
+        <Link href="/coach/clients" style={styles.backLink}>← Back to clients</Link>
+        <div style={styles.errorBox}>
+          <p style={styles.errorText}>{error || 'Client not found.'}</p>
+          <button style={styles.retryBtn} onClick={() => router.push('/coach/clients')}>Return to client list</button>
         </div>
-      </>
+      </CoachShell>
     );
   }
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={styles.container}>
+    <CoachShell narrow>
         <Link href="/coach/clients" style={styles.backLink}>← Back to clients</Link>
 
         <div style={styles.header}>
@@ -203,8 +188,7 @@ export default function CoachClientDetailPage() {
             </div>
           )}
         </div>
-      </div>
-    </>
+    </CoachShell>
   );
 }
 
@@ -218,64 +202,30 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles: Record<string, CSSProperties> = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', fontSize: 20, color: '#666' },
-  container: { maxWidth: 900, margin: '0 auto', padding: '30px 20px' },
-  backLink: { display: 'inline-block', color: '#e94560', textDecoration: 'none', marginBottom: 20, fontWeight: 600 },
-  header: { marginBottom: 24 },
-  title: { margin: 0, fontSize: 28 },
-  subtitle: { color: '#666', marginTop: 6 },
+  ...coachPageStyles,
+  container: { ...coachPageStyles.containerNarrow },
+  backLink: coachPageStyles.backLink,
+  header: coachPageStyles.header,
+  title: coachPageStyles.title,
+  subtitle: coachPageStyles.subtitle,
   actions: { display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
-  generateBtn: { padding: '10px 18px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 },
-  actionBtn: { padding: '10px 18px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' },
+  generateBtn: coachPageStyles.primaryBtn,
+  actionBtn: coachPageStyles.secondaryBtn,
   statusRow: { display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
-  statusCard: {
-    backgroundColor: 'white',
-    padding: '16px 20px',
-    borderRadius: 12,
-    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    minWidth: 160,
-  },
-  statusLabel: { fontSize: 12, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  section: {
-    backgroundColor: 'white',
-    padding: 24,
-    borderRadius: 12,
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    marginBottom: 20,
-  },
-  sectionTitle: { margin: '0 0 20px 0', fontSize: 20 },
-  infoGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: 16,
-  },
-  infoRow: { display: 'flex', flexDirection: 'column', gap: 4 },
-  infoLabel: { fontSize: 12, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  infoValue: { fontSize: 16, fontWeight: 500, color: '#1a1a2e' },
+  statusCard: { ...coachPageStyles.card, marginBottom: 0, minWidth: 160, display: 'flex', flexDirection: 'column', gap: 8 },
+  statusLabel: coachPageStyles.metaLabel,
+  section: coachPageStyles.card,
+  sectionTitle: { margin: '0 0 20px 0', fontSize: 20, fontWeight: 700, color: colors.textPrimary },
+  infoGrid: coachPageStyles.clientMeta,
+  infoRow: coachPageStyles.metaItem,
+  infoLabel: coachPageStyles.metaLabel,
+  infoValue: { fontSize: 16, fontWeight: 500, color: colors.textPrimary },
   workoutList: { display: 'flex', flexDirection: 'column', gap: 10 },
-  workoutCard: { padding: 14, border: '1px solid #eee', borderRadius: 8 },
-  workoutName: { fontWeight: 600, marginBottom: 4 },
-  workoutMeta: { fontSize: 14, color: '#666' },
-  emptyText: { color: '#666', margin: 0 },
-  errorBox: {
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-    padding: 24,
-    borderRadius: 12,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  errorText: { margin: '0 0 16px 0' },
-  retryBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#1a1a2e',
-    color: 'white',
-    border: 'none',
-    borderRadius: 6,
-    cursor: 'pointer',
-    fontSize: 14,
-  },
+  workoutCard: { padding: 14, border: `1px solid ${colors.borderSubtle}`, borderRadius: 12, backgroundColor: colors.bgElevated },
+  workoutName: { fontWeight: 600, marginBottom: 4, color: colors.textPrimary },
+  workoutMeta: { fontSize: 14, color: colors.textSecondary },
+  emptyText: { color: colors.textMuted, margin: 0 },
+  errorBox: { ...coachPageStyles.card, textAlign: 'center', borderColor: colors.danger },
+  errorText: { margin: '0 0 16px 0', color: colors.danger },
+  retryBtn: coachPageStyles.primaryBtn,
 };

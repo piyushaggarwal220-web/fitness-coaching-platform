@@ -4,7 +4,9 @@ import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEve
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import CoachNavbar from '../../../components/CoachNavbar';
+import { CoachShell } from '@/components/ui/CoachShell';
+import { coachPageStyles } from '@/lib/coach-page-styles';
+import { colors } from '@/lib/design-tokens';
 import { PlanEditor } from '@/components/PlanEditor';
 import {
   activatePlan,
@@ -71,13 +73,10 @@ export default function CoachPlanDetailPage() {
 
   if (!planId) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
-          <div style={styles.errorBox}>Invalid plan ID.</div>
-        </div>
-      </>
+      <CoachShell narrow>
+        <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
+        <div style={styles.errorBox}>Invalid plan ID.</div>
+      </CoachShell>
     );
   }
 
@@ -190,42 +189,29 @@ export default function CoachPlanDetailPage() {
   };
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={styles.loading}>Loading plan...</div>
-      </>
-    );
+    return <CoachShell narrow loading><span /></CoachShell>;
   }
 
   if (error && !plan) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
-          <div style={styles.errorBox}>{error}</div>
-        </div>
-      </>
+      <CoachShell narrow>
+        <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
+        <div style={styles.errorBox}>{error}</div>
+      </CoachShell>
     );
   }
 
   if (!plan || !form) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
-          <div style={styles.errorBox}>Unable to load plan data.</div>
-        </div>
-      </>
+      <CoachShell narrow>
+        <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
+        <div style={styles.errorBox}>Unable to load plan data.</div>
+      </CoachShell>
     );
   }
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={styles.container}>
+    <CoachShell narrow>
         <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
 
         <div style={styles.header}>
@@ -292,45 +278,30 @@ export default function CoachPlanDetailPage() {
             </div>
           )}
         </section>
-      </div>
-    </>
+    </CoachShell>
   );
 }
 
 const styles: Record<string, CSSProperties> = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', fontSize: 20, color: '#666' },
-  container: { maxWidth: 800, margin: '0 auto', padding: '30px 20px' },
-  backLink: { display: 'inline-block', color: '#e94560', textDecoration: 'none', marginBottom: 16, fontWeight: 600 },
+  ...coachPageStyles,
+  container: coachPageStyles.containerNarrow,
+  backLink: coachPageStyles.backLink,
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 20, flexWrap: 'wrap' },
-  title: { margin: 0, fontSize: 28 },
-  subtitle: { color: '#666', marginTop: 6 },
-  meta: { color: '#999', fontSize: 13, marginTop: 4 },
-  badgeActive: { backgroundColor: '#d4edda', color: '#155724', padding: '4px 12px', borderRadius: 12, fontSize: 12 },
-  badgeInactive: { backgroundColor: '#e2e3e5', color: '#383d41', padding: '4px 12px', borderRadius: 12, fontSize: 12 },
+  title: coachPageStyles.title,
+  subtitle: coachPageStyles.subtitle,
+  meta: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
+  badgeActive: { backgroundColor: colors.successMuted, color: colors.success, padding: '4px 12px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  badgeInactive: { backgroundColor: colors.bgElevated, color: colors.textMuted, padding: '4px 12px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
   actions: { display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  primaryBtn: { padding: '10px 18px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' },
-  secondaryBtn: { padding: '10px 18px', backgroundColor: 'white', color: '#333', border: '1px solid #ddd', borderRadius: 8, cursor: 'pointer' },
-  form: { backgroundColor: 'white', padding: 28, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24 },
-  saveBtn: { marginTop: 16, width: '100%', padding: 14, backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' },
-  history: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.08)' },
-  historyTitle: { margin: '0 0 16px 0', fontSize: 18 },
-  historyEmpty: { color: '#666', margin: 0 },
+  primaryBtn: coachPageStyles.primaryBtn,
+  secondaryBtn: coachPageStyles.secondaryBtn,
+  form: coachPageStyles.card,
+  saveBtn: { ...coachPageStyles.primaryBtn, marginTop: 16, width: '100%' },
+  history: coachPageStyles.card,
+  historyTitle: { margin: '0 0 16px 0', fontSize: 18, fontWeight: 700, color: colors.textPrimary },
+  historyEmpty: { color: colors.textMuted, margin: 0 },
   historyList: { display: 'flex', flexDirection: 'column', gap: 8 },
-  historyItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    padding: 12,
-    border: '1px solid #eee',
-    borderRadius: 8,
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    textAlign: 'left',
-    width: '100%',
-  },
-  historyItemCurrent: { borderColor: '#e94560', backgroundColor: '#fff5f6' },
-  error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 16 },
-  success: { backgroundColor: '#d4edda', color: '#155724', padding: 12, borderRadius: 8, marginBottom: 16 },
-  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 24, borderRadius: 12, marginTop: 20 },
+  historyItem: { ...coachPageStyles.listItem, cursor: 'pointer', textAlign: 'left', width: '100%' },
+  historyItemCurrent: { borderColor: colors.accent, backgroundColor: colors.accentMuted },
+  errorBox: { ...coachPageStyles.card, borderColor: colors.danger, marginTop: 20 },
 };

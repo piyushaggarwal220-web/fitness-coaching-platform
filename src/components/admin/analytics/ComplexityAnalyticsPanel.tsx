@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { AdminStatCard } from '@/components/admin/AdminStatCard'
 import { BarChartCard, LineChartCard } from '@/components/admin/analytics/AnalyticsCharts'
 import { adminStyles as s } from '@/lib/admin/styles'
+import { colors } from '@/lib/design-tokens'
 import type { ComplexityAnalytics, ComplexityAnalyticsPeriod } from '@/lib/complexity/analytics'
 import { formatTierLabel } from '@/lib/complexity/display'
 
@@ -45,7 +46,7 @@ export function ComplexityAnalyticsPanel() {
   }, [])
 
   if (loading) {
-    return <div style={{ ...s.card, color: '#666' }}>Loading complexity analytics…</div>
+    return <div style={{ ...s.card, color: colors.textMuted }}>Loading complexity analytics…</div>
   }
 
   if (error || !data) {
@@ -59,7 +60,7 @@ export function ComplexityAnalyticsPanel() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <h2 style={{ ...s.cardTitle, fontSize: 22, marginBottom: 4 }}>Complexity Analytics</h2>
-        <p style={{ margin: 0, color: '#666', fontSize: 14 }}>
+        <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14 }}>
           Client coaching complexity distribution, trends, and tier movement.
         </p>
       </div>
@@ -120,8 +121,8 @@ export function ComplexityAnalyticsPanel() {
                 onClick={() => setPeriod(key)}
                 style={{
                   ...periodBtn,
-                  backgroundColor: period === key ? '#1a1a2e' : '#f0f0f0',
-                  color: period === key ? 'white' : '#333',
+                  backgroundColor: period === key ? colors.accent : colors.bgElevated,
+                  color: period === key ? colors.textInverse : colors.textSecondary,
                 }}
               >
                 {PERIOD_LABELS[key]}
@@ -129,7 +130,7 @@ export function ComplexityAnalyticsPanel() {
             ))}
           </div>
           {movements.length === 0 ? (
-            <p style={{ color: '#888', fontSize: 14 }}>No tier movements in this period.</p>
+            <p style={{ color: colors.textMuted, fontSize: 14 }}>No tier movements in this period.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
               {movements.map((m) => (
@@ -161,8 +162,8 @@ export function ComplexityAnalyticsPanel() {
       </div>
 
       {data.mostComplexClient && (
-        <p style={{ margin: 0, fontSize: 13, color: '#666' }}>
-          <Link href={`/admin/clients/${data.mostComplexClient.id}`} style={{ color: '#7c3aed' }}>
+        <p style={{ margin: 0, fontSize: 13, color: colors.textSecondary }}>
+          <Link href={`/admin/clients/${data.mostComplexClient.id}`} style={s.linkBtn}>
             View most complex client →
           </Link>
         </p>
@@ -171,7 +172,7 @@ export function ComplexityAnalyticsPanel() {
   )
 }
 
-const sectionTitle: CSSProperties = { margin: '0 0 12px 0', fontSize: 15, fontWeight: 600, color: '#1a1a2e' }
+const sectionTitle: CSSProperties = { margin: '0 0 12px 0', fontSize: 15, fontWeight: 600, color: colors.textPrimary }
 const periodTabs: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8 }
 const periodBtn: CSSProperties = {
   border: 'none',
@@ -186,5 +187,5 @@ const movementRow: CSSProperties = {
   justifyContent: 'space-between',
   fontSize: 14,
   padding: '8px 0',
-  borderBottom: '1px solid #f0f0f0',
+  borderBottom: `1px solid ${colors.divider}`,
 }

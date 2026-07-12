@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { adminStyles as s } from '@/lib/admin/styles'
+import { colors } from '@/lib/design-tokens'
 import {
   diffPromptLines,
   formatPromptCategory,
@@ -561,18 +562,20 @@ const tabRowStyle: CSSProperties = {
 
 const tabStyle: CSSProperties = {
   padding: '10px 16px',
-  border: '1px solid #ddd',
+  border: `1px solid ${colors.borderSubtle}`,
   borderRadius: 8,
-  backgroundColor: 'white',
+  backgroundColor: colors.bgElevated,
+  color: colors.textSecondary,
   cursor: 'pointer',
   fontSize: 14,
 }
 
 const tabActiveStyle: CSSProperties = {
   ...tabStyle,
-  backgroundColor: '#7c3aed',
-  color: 'white',
-  borderColor: '#7c3aed',
+  backgroundColor: colors.accentMuted,
+  color: colors.accent,
+  borderColor: colors.accent,
+  fontWeight: 600,
 }
 
 const fieldLabel: CSSProperties = {
@@ -582,28 +585,31 @@ const fieldLabel: CSSProperties = {
   marginBottom: 16,
   fontSize: 14,
   fontWeight: 600,
-  color: '#333',
+  color: colors.textPrimary,
 }
 
 const textareaStyle: CSSProperties = {
   width: '100%',
   padding: '12px 14px',
-  border: '1px solid #ddd',
+  border: `1px solid ${colors.borderSubtle}`,
   borderRadius: 8,
   fontSize: 14,
   fontFamily: 'inherit',
   boxSizing: 'border-box',
   resize: 'vertical',
+  backgroundColor: colors.bgElevated,
+  color: colors.textPrimary,
 }
 
 const preStyle: CSSProperties = {
   margin: 0,
   padding: 14,
-  backgroundColor: '#f8f9fb',
+  backgroundColor: colors.bgElevated,
   borderRadius: 8,
   fontSize: 12,
   overflow: 'auto',
   maxHeight: 480,
-  border: '1px solid #eee',
+  border: `1px solid ${colors.borderSubtle}`,
   whiteSpace: 'pre-wrap',
+  color: colors.textPrimary,
 }

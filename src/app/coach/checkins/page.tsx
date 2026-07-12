@@ -1,177 +1,203 @@
-'use client';
-
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import CoachNavbar from '../../components/CoachNavbar';
-import { requireCoach } from '@/lib/coach-session';
-import { formatCheckinDate } from '@/lib/checkin';
-import type { CheckinWithClient, Coach } from '@/types/database';
-
-const supabase = createClient();
-
-type Tab = 'pending' | 'reviewed';
-
-export default function CoachCheckinsPage() {
-  const router = useRouter();
-  const [coach, setCoach] = useState<Coach | null>(null);
-  const [checkins, setCheckins] = useState<CheckinWithClient[]>([]);
-  const [tab, setTab] = useState<Tab>('pending');
-  const [clientFilter, setClientFilter] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const load = async () => {
-      const coachData = await requireCoach(supabase, router);
-      if (!coachData) return;
-
-      setCoach(coachData);
-
-      const { data, error: checkinsError } = await supabase
-        .from('checkins')
-        .select('*, profiles:client_id(name, email)')
-        .eq('coach_id', coachData.id)
-        .order('submitted_at', { ascending: false });
-
-      if (checkinsError) {
-        setError('Failed to load check-ins.');
-        setLoading(false);
-        return;
-      }
-
-      setCheckins((data as CheckinWithClient[]) ?? []);
-      setLoading(false);
-    };
-    load();
-  }, [router]);
-
-  const clients = useMemo(() => {
-    const names = new Map<string, string>();
-    checkins.forEach((c) => {
-      const label = c.profiles?.name || c.profiles?.email || c.client_id;
-      names.set(c.client_id, label);
-    });
-    return Array.from(names.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [checkins]);
-
-  const filtered = useMemo(() => {
-    return checkins.filter((c) => {
-      const matchesTab = tab === 'pending' ? !c.reviewed : c.reviewed;
-      const matchesClient = !clientFilter || c.client_id === clientFilter;
-      return matchesTab && matchesClient;
-    });
-  }, [checkins, tab, clientFilter]);
-
-  if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={styles.loading}>Loading check-ins...</div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <CoachNavbar />
-      <div style={styles.container}>
-        <h1 style={styles.title}>Check-ins</h1>
-        <p style={styles.subtitle}>{coach?.name ? `${coach.name}'s queue` : 'Review client progress'}</p>
-
-        {error && (
-          <div style={styles.errorBox}>
-            <p>{error}</p>
-            <button style={styles.retryBtn} onClick={() => window.location.reload()}>Retry</button>
-          </div>
-        )}
-
-        <div style={styles.toolbar}>
-          <div style={styles.tabs}>
-            <button type="button" style={{ ...styles.tab, ...(tab === 'pending' ? styles.tabActive : {}) }} onClick={() => setTab('pending')}>
-              Pending ({checkins.filter((c) => !c.reviewed).length})
-            </button>
-            <button type="button" style={{ ...styles.tab, ...(tab === 'reviewed' ? styles.tabActive : {}) }} onClick={() => setTab('reviewed')}>
-              Reviewed ({checkins.filter((c) => c.reviewed).length})
-            </button>
-          </div>
-          <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} style={styles.select}>
-            <option value="">All clients</option>
-            {clients.map(([id, label]) => (
-              <option key={id} value={id}>{label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={styles.list}>
-          {filtered.length === 0 ? (
-            <div style={styles.empty}>
-              <p style={styles.emptyTitle}>No {tab} check-ins</p>
-              <p style={styles.emptyText}>
-                {tab === 'pending' ? 'You are all caught up!' : 'Reviewed check-ins will appear here.'}
-              </p>
-            </div>
-          ) : (
-            filtered.map((checkin) => (
-              <button
-                key={checkin.id}
-                type="button"
-                style={styles.card}
-                onClick={() => router.push(`/coach/checkin/${checkin.id}`)}
-              >
-                <div>
-                  <div style={styles.clientName}>{checkin.profiles?.name || checkin.profiles?.email || 'Client'}</div>
-                  <div style={styles.meta}>
-                    {formatCheckinDate(checkin.submitted_at)}
-                    {checkin.weight != null ? ` · ${checkin.weight} kg` : ''}
-                    {checkin.waist != null ? ` · Waist ${checkin.waist} cm` : ''}
-                  </div>
-                </div>
-                <span style={checkin.reviewed ? styles.badgeReviewed : styles.badgePending}>
-                  {checkin.reviewed ? 'Reviewed' : 'Pending'}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
-const styles: Record<string, CSSProperties> = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', fontSize: 20, color: '#666' },
-  container: { maxWidth: 900, margin: '0 auto', padding: '30px 20px' },
-  title: { margin: 0, fontSize: 28 },
-  subtitle: { color: '#666', marginTop: 6, marginBottom: 24 },
-  toolbar: { display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 20, alignItems: 'center' },
-  tabs: { display: 'flex', gap: 8 },
-  tab: { padding: '10px 18px', border: '1px solid #ddd', borderRadius: 8, backgroundColor: 'white', cursor: 'pointer', fontSize: 14 },
-  tabActive: { backgroundColor: '#1a1a2e', color: 'white', borderColor: '#1a1a2e' },
-  select: { padding: '10px 14px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, minWidth: 180 },
-  list: { display: 'flex', flexDirection: 'column', gap: 12 },
-  card: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    padding: 18,
-    backgroundColor: 'white',
-    border: '1px solid #eee',
-    borderRadius: 10,
-    cursor: 'pointer',
-    textAlign: 'left',
-    width: '100%',
-    flexWrap: 'wrap',
-  },
-  clientName: { fontWeight: 600, fontSize: 16, marginBottom: 4 },
-  meta: { fontSize: 14, color: '#666' },
-  badgePending: { backgroundColor: '#fff3cd', color: '#856404', padding: '4px 12px', borderRadius: 12, fontSize: 12 },
-  badgeReviewed: { backgroundColor: '#d4edda', color: '#155724', padding: '4px 12px', borderRadius: 12, fontSize: 12 },
-  empty: { textAlign: 'center', padding: '48px 20px', backgroundColor: 'white', borderRadius: 12 },
-  emptyTitle: { fontWeight: 600, fontSize: 18, marginBottom: 8 },
-  emptyText: { color: '#666', margin: 0 },
-  error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 16 },
-  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 16, borderRadius: 8, marginBottom: 16 },
-  retryBtn: { padding: '8px 16px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', marginTop: 8 },
-};
+'use client';
+
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { CoachShell } from '@/components/ui/CoachShell';
+import { coachPageStyles as styles } from '@/lib/coach-page-styles';
+import { colors } from '@/lib/design-tokens';
+import { requireCoach } from '@/lib/coach-session';
+import { formatCheckinDate } from '@/lib/checkin';
+import { getCheckinTypeLabel, getCoachCheckinQueue, type CoachCheckinQueueItem } from '@/lib/checkin-schedule';
+import type { Checkin, CheckinWithClient, Coach } from '@/types/database';
+
+const supabase = createClient();
+
+type Tab = 'pending' | 'completed' | 'missed' | 'due_today';
+type TypeFilter = 'all' | 'mid_week' | 'weekly';
+
+export default function CoachCheckinsPage() {
+  const router = useRouter();
+  const [coach, setCoach] = useState<Coach | null>(null);
+  const [checkins, setCheckins] = useState<CheckinWithClient[]>([]);
+  const [clients, setClients] = useState<{ id: string; name: string | null; email: string | null; onboarding_completed_at: string | null }[]>([]);
+  const [tab, setTab] = useState<Tab>('pending');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [clientFilter, setClientFilter] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      const coachData = await requireCoach(supabase, router);
+      if (!coachData) return;
+
+      setCoach(coachData);
+
+      const [{ data: checkinData, error: checkinsError }, { data: clientsData }] = await Promise.all([
+        supabase
+          .from('checkins')
+          .select('*, profiles:client_id(name, email)')
+          .eq('coach_id', coachData.id)
+          .order('submitted_at', { ascending: false }),
+        supabase
+          .from('profiles')
+          .select('id, name, email, onboarding_completed_at')
+          .eq('coach_id', coachData.id),
+      ]);
+
+      if (checkinsError) {
+        setError('Failed to load check-ins.');
+        setLoading(false);
+        return;
+      }
+
+      setCheckins((checkinData as CheckinWithClient[]) ?? []);
+      setClients(clientsData ?? []);
+      setLoading(false);
+    };
+    load();
+  }, [router]);
+
+  const queue = useMemo(() => {
+    return getCoachCheckinQueue(clients, checkins as Checkin[]);
+  }, [clients, checkins]);
+
+  const clientOptions = useMemo(() => {
+    const names = new Map<string, string>();
+    clients.forEach((c) => names.set(c.id, c.name || c.email || c.id));
+    return Array.from(names.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [clients]);
+
+  const filtered = useMemo(() => {
+    return queue.filter((item) => {
+      const matchesTab =
+        (tab === 'pending' && item.status === 'pending_review') ||
+        (tab === 'completed' && item.status === 'completed') ||
+        (tab === 'missed' && item.status === 'missed') ||
+        (tab === 'due_today' && item.status === 'due_today');
+      const matchesType = typeFilter === 'all' || item.type === typeFilter;
+      const matchesClient = !clientFilter || item.clientId === clientFilter;
+      return matchesTab && matchesType && matchesClient;
+    });
+  }, [queue, tab, typeFilter, clientFilter]);
+
+  const counts = useMemo(() => ({
+    pending: queue.filter((i) => i.status === 'pending_review').length,
+    completed: queue.filter((i) => i.status === 'completed').length,
+    missed: queue.filter((i) => i.status === 'missed').length,
+    dueToday: queue.filter((i) => i.status === 'due_today').length,
+  }), [queue]);
+
+  if (loading) {
+    return <CoachShell loading />;
+  }
+
+  return (
+    <CoachShell>
+        <h1 style={styles.title}>Check-ins</h1>
+        <p style={styles.subtitle}>{coach?.name ? `${coach.name}'s queue` : 'Review client progress'}</p>
+
+        {error && (
+          <div style={styles.error}>
+            <p style={{ margin: '0 0 8px' }}>{error}</p>
+            <button style={styles.primaryBtn} onClick={() => window.location.reload()}>Retry</button>
+          </div>
+        )}
+
+        <div style={{ ...styles.toolbar, justifyContent: 'space-between' }}>
+          <div style={styles.tabs}>
+            <TabButton active={tab === 'pending'} onClick={() => setTab('pending')} label={`Pending (${counts.pending})`} />
+            <TabButton active={tab === 'due_today'} onClick={() => setTab('due_today')} label={`Due today (${counts.dueToday})`} />
+            <TabButton active={tab === 'completed'} onClick={() => setTab('completed')} label={`Completed (${counts.completed})`} />
+            <TabButton active={tab === 'missed'} onClick={() => setTab('missed')} label={`Missed (${counts.missed})`} />
+          </div>
+          <div style={localStyles.filters}>
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as TypeFilter)} style={styles.select}>
+              <option value="all">All types</option>
+              <option value="mid_week">Day 3</option>
+              <option value="weekly">Weekly (Day 7)</option>
+            </select>
+            <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} style={styles.select}>
+              <option value="">All clients</option>
+              {clientOptions.map(([id, label]) => (
+                <option key={id} value={id}>{label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div style={localStyles.list}>
+          {filtered.length === 0 ? (
+            <div style={styles.empty}>
+              <p style={styles.emptyTitle}>No {tab.replace('_', ' ')} check-ins</p>
+              <p style={styles.emptyText}>Check-ins will appear here as clients progress through their coaching weeks.</p>
+            </div>
+          ) : (
+            filtered.map((item) => (
+              <QueueCard key={`${item.clientId}-${item.type}-${item.coachingWeek}`} item={item} onOpen={(id) => router.push(`/coach/checkin/${id}`)} />
+            ))
+          )}
+        </div>
+    </CoachShell>
+  );
+}
+
+function TabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button type="button" style={{ ...styles.tab, ...(active ? styles.tabActive : {}) }} onClick={onClick}>
+      {label}
+    </button>
+  );
+}
+
+function QueueCard({ item, onOpen }: { item: CoachCheckinQueueItem; onOpen: (id: string) => void }) {
+  const badgeStyle =
+    item.status === 'completed' ? localStyles.badgeReviewed :
+    item.status === 'missed' ? localStyles.badgeMissed :
+    item.status === 'due_today' ? localStyles.badgeDue :
+    localStyles.badgePending;
+
+  const badgeLabel =
+    item.status === 'completed' ? 'Completed' :
+    item.status === 'missed' ? 'Missed' :
+    item.status === 'due_today' ? 'Due today' :
+    'Pending review';
+
+  const content = (
+    <>
+      <div>
+        <div style={localStyles.clientName}>{item.clientName}</div>
+        <div style={localStyles.meta}>
+          {getCheckinTypeLabel(item.type)} · Week {item.coachingWeek} · Day {item.coachingDay}
+          {item.submittedAt ? ` · ${formatCheckinDate(item.submittedAt)}` : ` · Due ${formatCheckinDate(item.dueDate.toISOString())}`}
+        </div>
+      </div>
+      <span style={badgeStyle}>{badgeLabel}</span>
+    </>
+  );
+
+  if (item.checkinId) {
+    return (
+      <button type="button" style={localStyles.cardBtn} onClick={() => onOpen(item.checkinId!)}>
+        {content}
+      </button>
+    );
+  }
+
+  return <div style={localStyles.cardStatic}>{content}</div>;
+}
+
+const localStyles: Record<string, CSSProperties> = {
+  filters: { display: 'flex', flexWrap: 'wrap', gap: 8 },
+  list: { display: 'flex', flexDirection: 'column', gap: 0 },
+  cardBtn: { ...styles.listItem, cursor: 'pointer', textAlign: 'left', width: '100%', border: 'none', font: 'inherit' },
+  cardStatic: { ...styles.listItem, cursor: 'default' },
+  clientName: { fontWeight: 600, fontSize: 16, marginBottom: 4, color: colors.textPrimary },
+  meta: { fontSize: 14, color: colors.textSecondary },
+  badgePending: { ...styles.badge, backgroundColor: colors.warningMuted, color: colors.warning },
+  badgeReviewed: { ...styles.badge, backgroundColor: colors.successMuted, color: colors.success },
+  badgeMissed: { ...styles.badge, backgroundColor: colors.dangerMuted, color: colors.danger },
+  badgeDue: { ...styles.badge, backgroundColor: colors.accentMuted, color: colors.accent },
+};
+

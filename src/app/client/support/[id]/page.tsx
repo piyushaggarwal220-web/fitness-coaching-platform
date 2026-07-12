@@ -16,6 +16,7 @@ import {
   formatSupportStatus,
 } from '@/lib/support'
 import { createClient } from '@/lib/supabase/client'
+import { colors } from '@/lib/design-tokens'
 import type { SupportMessage, SupportRequest } from '@/types/database'
 
 const supabase = createClient()
@@ -146,9 +147,9 @@ export default function ClientSupportDetailPage() {
           </div>
 
           {request.status === 'closed' ? (
-            <p style={{ color: '#666', fontSize: 14 }}>This request is closed. No further replies.</p>
+            <p style={{ color: colors.textMuted, fontSize: 14 }}>This request is closed. No further replies.</p>
           ) : !allowReply ? (
-            <p style={{ color: '#666', fontSize: 14 }}>Your coach will reply soon. You can respond after they message you.</p>
+            <p style={{ color: colors.textMuted, fontSize: 14 }}>Your coach will reply soon. You can respond after they message you.</p>
           ) : (
             <form onSubmit={(e) => void handleReply(e)} style={s.card}>
               <label style={s.label} htmlFor="reply">Your reply</label>

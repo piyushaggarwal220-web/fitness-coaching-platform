@@ -250,11 +250,17 @@ export type ProgressStats = {
   avgDuration: number
 }
 
+export type CheckinType = 'mid_week' | 'weekly'
+
 export type Checkin = {
   id: string
   client_id: string
   coach_id: string
   submitted_at: string
+  checkin_type: CheckinType
+  coaching_week: number | null
+  coaching_day: number | null
+  due_date: string | null
   weight: number | null
   waist: number | null
   progress_photo_front: string | null
@@ -264,10 +270,36 @@ export type Checkin = {
   hunger_level: number | null
   training_performance: number | null
   adherence_score: number | null
+  diet_adherence: number | null
+  workout_adherence: number | null
+  sleep_quality: number | null
+  stress_level: number | null
+  motivation_level: number | null
+  digestion: string | null
+  pain_injuries: string | null
+  questions_for_coach: string | null
+  cardio_completed: string | null
+  extra_photos: string[] | null
+  plan_version: number | null
   notes: string | null
   coach_response: string | null
   reviewed: boolean
   reviewed_at: string | null
+}
+
+export type JourneyEntry = {
+  id: string
+  client_id: string
+  checkin_id: string
+  entry_date: string
+  weight: number | null
+  photo_front: string | null
+  photo_side: string | null
+  photo_back: string | null
+  extra_photos: string[] | null
+  checkin_summary: string | null
+  plan_version: number | null
+  created_at: string
 }
 
 export type ComplexityScoreHistory = {
@@ -304,6 +336,33 @@ export type CheckinFormData = {
   training_performance: string
   adherence_score: string
   notes: string
+}
+
+export type MidWeekCheckinFormData = {
+  diet_adherence: string
+  workout_adherence: string
+  energy_level: string
+  sleep_quality: string
+  stress_level: string
+  hunger_level: string
+  pain_injuries: string
+  questions_for_coach: string
+  additional_comments: string
+}
+
+export type WeeklyCheckinFormData = {
+  weight: string
+  diet_adherence: string
+  workout_adherence: string
+  energy_level: string
+  sleep_quality: string
+  stress_level: string
+  hunger_level: string
+  motivation_level: string
+  digestion: string
+  pain_injuries: string
+  cardio_completed: string
+  additional_notes: string
 }
 
 export type CoachCheckinResponse = {
@@ -624,6 +683,8 @@ export type NotificationType =
   | 'plan_delivered'
   | 'coach_replied'
   | 'weekly_checkin_reminder'
+  | 'mid_week_checkin_reminder'
+  | 'checkin_submitted'
   | 'support_reply'
   | 'coach_assigned'
   | 'welcome'

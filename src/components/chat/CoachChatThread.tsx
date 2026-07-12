@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { ConversationMessage } from '@/types/database'
 import { formatMessageTime } from '@/lib/coach-chat'
 import { CoachReplyRatingPrompt } from '@/components/chat/CoachReplyRating'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
+import { colors } from '@/lib/design-tokens'
 
 type CoachChatThreadProps = {
   conversationId: string
@@ -163,18 +164,18 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   )
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  wrapper: { display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)', maxHeight: 700 },
-  thread: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0' },
-  systemMsg: { textAlign: 'center', color: '#888', fontSize: 13, padding: '8px 16px', fontStyle: 'italic' },
-  bubbleMine: { backgroundColor: '#e94560', color: 'white', borderRadius: '16px 16px 4px 16px', padding: '10px 14px', maxWidth: '80%' },
-  bubbleOther: { backgroundColor: '#f0f0f0', color: '#1a1a2e', borderRadius: '16px 16px 16px 4px', padding: '10px 14px', maxWidth: '80%' },
-  meta: { fontSize: 11, opacity: 0.7, marginTop: 4 },
-  image: { maxWidth: '100%', borderRadius: 8, maxHeight: 200 },
-  typing: { color: '#888', fontSize: 13, fontStyle: 'italic', padding: '4px 8px' },
-  error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 8, borderRadius: 8, fontSize: 13, marginBottom: 8 },
-  inputBar: { display: 'flex', gap: 8, alignItems: 'center', padding: '12px 0', borderTop: '1px solid #eee' },
-  input: { flex: 1, minHeight: 48, padding: '10px 14px', border: '1px solid #ddd', borderRadius: 24, fontSize: 16, outline: 'none' },
-  sendBtn: { minHeight: 48, minWidth: 48, padding: '10px 20px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 24, fontWeight: 600, cursor: 'pointer', fontSize: 15 },
-  attachBtn: { minHeight: 48, minWidth: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20 },
+const styles: Record<string, CSSProperties> = {
+  wrapper: { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 400 },
+  thread: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 16px' },
+  systemMsg: { textAlign: 'center', color: colors.textMuted, fontSize: 13, padding: '8px 16px', fontStyle: 'italic' },
+  bubbleMine: { backgroundColor: colors.accent, color: colors.textInverse, borderRadius: '20px 20px 4px 20px', padding: '12px 16px', maxWidth: '80%' },
+  bubbleOther: { backgroundColor: colors.bgElevated, color: colors.textPrimary, borderRadius: '20px 20px 20px 4px', padding: '12px 16px', maxWidth: '80%', border: `1px solid ${colors.borderSubtle}` },
+  meta: { fontSize: 11, opacity: 0.6, marginTop: 4 },
+  image: { maxWidth: '100%', borderRadius: 12, maxHeight: 200 },
+  typing: { color: colors.textMuted, fontSize: 13, fontStyle: 'italic', padding: '4px 16px' },
+  error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: 8, borderRadius: 12, fontSize: 13, margin: '0 16px 8px' },
+  inputBar: { display: 'flex', gap: 8, alignItems: 'center', padding: '12px 16px', borderTop: `1px solid ${colors.divider}`, backgroundColor: colors.bgCard },
+  input: { flex: 1, minHeight: 48, padding: '10px 16px', border: `1px solid ${colors.borderSubtle}`, borderRadius: 24, fontSize: 16, outline: 'none', backgroundColor: colors.bgElevated, color: colors.textPrimary },
+  sendBtn: { minHeight: 48, minWidth: 48, padding: '10px 20px', backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: 24, fontWeight: 600, cursor: 'pointer', fontSize: 15 },
+  attachBtn: { minHeight: 48, minWidth: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, color: colors.textSecondary, backgroundColor: colors.bgElevated, borderRadius: '50%' },
 }

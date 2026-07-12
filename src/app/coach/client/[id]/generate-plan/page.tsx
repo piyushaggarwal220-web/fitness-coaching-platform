@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import CoachNavbar from '../../../../components/CoachNavbar'
+import { CoachShell } from '@/components/ui/CoachShell'
+import { colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
 import { requireCoach } from '@/lib/coach-session'
 import { INITIAL_PLAN_ACTIONS, mergePlanForms, type AiReasoningDisplay } from '@/lib/coach/ai-actions'
@@ -190,44 +191,30 @@ export default function CoachGeneratePlanPage() {
 
   if (!clientId) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={s.container}>
-          <Link href="/coach/clients" style={s.backLink}>← Back to clients</Link>
-          <div style={s.error}>Invalid client ID.</div>
-        </div>
-      </>
+      <CoachShell narrow>
+        <Link href="/coach/clients" style={s.backLink}>← Back to clients</Link>
+        <div style={s.error}>Invalid client ID.</div>
+      </CoachShell>
     )
   }
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={{ ...s.container, textAlign: 'center', color: '#666', paddingTop: 80 }}>Loading…</div>
-      </>
-    )
+    return <CoachShell narrow loading><span /></CoachShell>
   }
 
   if (error && !client) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={s.container}>
-          <Link href={`/coach/client/${clientId}`} style={s.backLink}>← Back to client</Link>
-          <div style={s.error}>{error}</div>
-        </div>
-      </>
+      <CoachShell narrow>
+        <Link href={`/coach/client/${clientId}`} style={s.backLink}>← Back to client</Link>
+        <div style={s.error}>{error}</div>
+      </CoachShell>
     )
   }
 
   if (!client) return null
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={s.page}>
-        <div style={s.container}>
+    <CoachShell narrow>
           <Link href={`/coach/client/${client.id}`} style={s.backLink}>← Back to client</Link>
 
           <h1 style={s.title}>AI coaching actions</h1>
@@ -245,7 +232,7 @@ export default function CoachGeneratePlanPage() {
 
           <div style={s.card}>
             <h2 style={{ margin: '0 0 12px 0', fontSize: 15, fontWeight: 600 }}>Client summary</h2>
-            <div style={{ display: 'grid', gap: 8, fontSize: 14, color: '#444' }}>
+            <div style={{ display: 'grid', gap: 8, fontSize: 14, color: colors.textSecondary }}>
               <span>Goal: {formatFitnessGoal(client.fitness_goal)}</span>
               <span>Training: {getOnboardingLabel('training_experience', client.training_experience)}</span>
               <span>Diet: {getOnboardingLabel('diet_preference', client.diet_preference)}</span>
@@ -287,8 +274,6 @@ export default function CoachGeneratePlanPage() {
               restoringId={restoringId}
             />
           </div>
-        </div>
-      </div>
 
       {comparePlans && (
         <PlanCompareDrawer
@@ -297,6 +282,6 @@ export default function CoachGeneratePlanPage() {
           onClose={() => setComparePlans(null)}
         />
       )}
-    </>
+    </CoachShell>
   )
 }

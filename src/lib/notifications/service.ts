@@ -122,6 +122,18 @@ export const NotificationTemplates = {
     body: 'You missed your weekly check-in. Submit it when you can.',
     actionUrl: '/checkin',
   }),
+  midWeekCheckinReminder: () => ({
+    type: 'mid_week_checkin_reminder' as NotificationType,
+    title: 'Mid-week check-in due',
+    body: 'Complete your Day 3 accountability check-in for your coach.',
+    actionUrl: '/checkin/mid-week',
+  }),
+  checkinSubmitted: (clientName: string, checkinType: 'mid_week' | 'weekly') => ({
+    type: 'checkin_submitted' as NotificationType,
+    title: checkinType === 'mid_week' ? 'Mid-week check-in submitted' : 'Weekly check-in submitted',
+    body: `${clientName} submitted a ${checkinType === 'mid_week' ? 'Day 3' : 'weekly'} check-in for review.`,
+    actionUrl: '/coach/checkins',
+  }),
   planAvailable: () => ({
     type: 'plan_available' as NotificationType,
     title: 'New plan available',

@@ -10,6 +10,7 @@ import { adminStyles as s } from '@/lib/admin/styles'
 import type { PlatformHealth } from '@/lib/admin/platform-health'
 import type { PromptLibraryStats } from '@/types/database'
 import { formatDate } from '@/lib/coach-utils'
+import { colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
@@ -153,7 +154,7 @@ export default function AdminDashboardPage() {
 
           <div style={s.statGrid}>
             <AdminStatCard label="Total Clients" value={stats.clients} />
-            <AdminStatCard label="Total Coaches" value={stats.coaches} accent="#e94560" />
+            <AdminStatCard label="Total Coaches" value={stats.coaches} accent={colors.accent} />
             <AdminStatCard label="Active Plans" value={stats.activePlans} accent="#0d9488" />
             <AdminStatCard
               label="Pending Onboarding"

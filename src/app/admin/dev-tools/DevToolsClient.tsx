@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { PromptImportPanel } from '@/components/admin/PromptImportPanel'
+import { adminStyles } from '@/lib/admin/styles'
+import { colors } from '@/lib/design-tokens'
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode';
 
 const supabase = createClient();
@@ -254,25 +256,25 @@ function ActionButton({
 }
 
 const styles: Record<string, CSSProperties> = {
-  page: { maxWidth: 900, margin: '0 auto', padding: '30px 20px 60px', fontFamily: 'system-ui, sans-serif' },
-  banner: { backgroundColor: '#fff3cd', color: '#856404', padding: '12px 16px', borderRadius: 8, marginBottom: 24, textAlign: 'center' },
-  title: { margin: '0 0 8px 0', fontSize: 28 },
-  subtitle: { color: '#666', marginTop: 0, marginBottom: 28 },
-  section: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.08)', marginBottom: 20 },
-  sectionTitle: { margin: '0 0 16px 0', fontSize: 18 },
+  page: adminStyles.container,
+  banner: { backgroundColor: colors.warningMuted, color: colors.warning, padding: '12px 16px', borderRadius: 8, marginBottom: 24, textAlign: 'center' },
+  title: adminStyles.title,
+  subtitle: adminStyles.subtitle,
+  section: adminStyles.card,
+  sectionTitle: adminStyles.cardTitle,
   btnGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 },
-  btn: { padding: '14px 16px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600 },
+  btn: adminStyles.primaryBtn,
   row: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 },
-  label: { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 500 },
-  select: { padding: 10, border: '1px solid #ddd', borderRadius: 8, fontSize: 14 },
-  input: { padding: 10, border: '1px solid #ddd', borderRadius: 8, fontSize: 14 },
-  credentials: { marginTop: 16, padding: 12, backgroundColor: '#f8f9fa', borderRadius: 8, fontSize: 13, overflow: 'auto' },
+  label: { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 500, color: colors.textSecondary },
+  select: adminStyles.select,
+  input: adminStyles.searchInput,
+  credentials: { marginTop: 16, padding: 12, backgroundColor: colors.bgElevated, borderRadius: 8, fontSize: 13, overflow: 'auto', color: colors.textPrimary, border: `1px solid ${colors.borderSubtle}` },
   logList: { display: 'flex', flexDirection: 'column', gap: 10 },
-  logItem: { padding: 12, backgroundColor: '#f8f9fa', borderRadius: 8, borderLeft: '4px solid' },
+  logItem: { padding: 12, backgroundColor: colors.bgElevated, borderRadius: 8, borderLeft: '4px solid', border: `1px solid ${colors.borderSubtle}` },
   logHeader: { display: 'flex', gap: 12, flexWrap: 'wrap' },
-  logTime: { color: '#999', fontSize: 12 },
-  logMessage: { fontWeight: 600, fontSize: 14 },
-  logDetail: { margin: '8px 0 0 0', fontSize: 11, overflow: 'auto', whiteSpace: 'pre-wrap' },
-  muted: { color: '#666', margin: 0 },
-  footer: { fontSize: 13, color: '#666', marginTop: 24 },
+  logTime: { color: colors.textMuted, fontSize: 12 },
+  logMessage: { fontWeight: 600, fontSize: 14, color: colors.textPrimary },
+  logDetail: { margin: '8px 0 0 0', fontSize: 11, overflow: 'auto', whiteSpace: 'pre-wrap', color: colors.textSecondary },
+  muted: { color: colors.textMuted, margin: 0 },
+  footer: { fontSize: 13, color: colors.textMuted, marginTop: 24 },
 }

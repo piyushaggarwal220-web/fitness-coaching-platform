@@ -3,7 +3,9 @@
 import { Suspense, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import CoachNavbar from '../../components/CoachNavbar';
+import { CoachShell } from '@/components/ui/CoachShell';
+import { coachPageStyles as styles } from '@/lib/coach-page-styles';
+import { colors } from '@/lib/design-tokens';
 import { requireCoach } from '@/lib/coach-session';
 import {
   coachBadgeStyles,
@@ -20,7 +22,7 @@ const supabase = createClient();
 
 export default function CoachClientsPage() {
   return (
-    <Suspense fallback={<div style={styles.loading}>Loading clients...</div>}>
+    <Suspense fallback={<CoachShell loading><span /></CoachShell>}>
       <CoachClientsContent />
     </Suspense>
   );
@@ -103,34 +105,22 @@ function CoachClientsContent() {
   }, [clients, search, tierFilter, sortBy]);
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={styles.loading}>Loading clients...</div>
-      </>
-    );
+    return <CoachShell loading />;
   }
 
   if (error) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <div style={styles.errorBox}>
-            <p style={styles.errorText}>{error}</p>
-            <button style={styles.retryBtn} onClick={() => window.location.reload()}>
-              Retry
-            </button>
-          </div>
+      <CoachShell>
+        <div style={{ ...styles.card, textAlign: 'center', borderColor: colors.danger }}>
+          <p style={{ margin: '0 0 16px', color: colors.danger }}>{error}</p>
+          <button style={styles.primaryBtn} onClick={() => window.location.reload()}>Retry</button>
         </div>
-      </>
+      </CoachShell>
     );
   }
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={styles.container}>
+    <CoachShell>
         <div style={styles.header}>
           <div>
             <h1 style={styles.title}>Clients</h1>
@@ -151,7 +141,7 @@ function CoachClientsContent() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            style={styles.sortSelect}
+            style={styles.select}
           >
             <option value="name">Sort: Name</option>
             <option value="highest">Highest Complexity</option>
@@ -163,7 +153,7 @@ function CoachClientsContent() {
           {tierFilter && (
             <button
               type="button"
-              style={styles.clearFilter}
+              style={styles.secondaryBtn}
               onClick={() => router.push('/coach/clients')}
             >
               Clear {formatTierLabel(tierFilter)} filter
@@ -171,7 +161,7 @@ function CoachClientsContent() {
           )}
         </div>
 
-        <div style={styles.listSection}>
+        <div style={styles.card}>
           {clients.length === 0 ? (
             <div style={styles.empty}>
               <p style={styles.emptyTitle}>No clients assigned yet</p>
@@ -183,17 +173,17 @@ function CoachClientsContent() {
               <p style={styles.emptyText}>Try a different name or email search.</p>
             </div>
           ) : (
-            <div style={styles.clientList}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filteredClients.map((client) => (
                 <button
                   key={client.id}
                   type="button"
-                  style={styles.clientCard}
+                  style={{ ...styles.listItem, flexDirection: 'column', alignItems: 'stretch' }}
                   onClick={() => router.push(`/coach/client/${client.id}`)}
                 >
                   <div style={styles.clientMain}>
-                    <div style={styles.clientName}>{client.name || 'Unnamed client'}</div>
-                    <div style={styles.clientEmail}>{client.email || 'No email'}</div>
+                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4, color: colors.textPrimary }}>{client.name || 'Unnamed client'}</div>
+                    <div style={{ color: colors.textSecondary, fontSize: 14 }}>{client.email || 'No email'}</div>
                   </div>
                   <div style={styles.clientMeta}>
                     <div style={styles.metaItem}>
@@ -238,90 +228,6 @@ function CoachClientsContent() {
             </div>
           )}
         </div>
-      </div>
-    </>
+    </CoachShell>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', fontSize: 20, color: '#666' },
-  container: { maxWidth: 1200, margin: '0 auto', padding: '30px 20px' },
-  header: { marginBottom: 24 },
-  title: { margin: 0, fontSize: 28 },
-  subtitle: { color: '#666', marginTop: 6 },
-  toolbar: { marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' },
-  sortSelect: {
-    padding: '12px 16px',
-    border: '1px solid #ddd',
-    borderRadius: 8,
-    fontSize: 15,
-    backgroundColor: 'white',
-  },
-  clearFilter: {
-    padding: '10px 14px',
-    border: '1px solid #ddd',
-    borderRadius: 8,
-    backgroundColor: '#f8f9fb',
-    cursor: 'pointer',
-    fontSize: 14,
-  },
-  searchInput: {
-    width: '100%',
-    maxWidth: 420,
-    padding: '12px 16px',
-    border: '1px solid #ddd',
-    borderRadius: 8,
-    fontSize: 16,
-    boxSizing: 'border-box',
-  },
-  listSection: {
-    backgroundColor: 'white',
-    padding: 24,
-    borderRadius: 12,
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-  },
-  clientList: { display: 'flex', flexDirection: 'column', gap: 12 },
-  clientCard: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-    padding: 16,
-    border: '1px solid #eee',
-    borderRadius: 8,
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    textAlign: 'left',
-    width: '100%',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
-  },
-  clientMain: { flex: 1 },
-  clientName: { fontWeight: 600, fontSize: 16, marginBottom: 4 },
-  clientEmail: { color: '#666', fontSize: 14 },
-  clientMeta: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-    gap: 12,
-  },
-  metaItem: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 },
-  metaLabel: { fontSize: 12, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  empty: { textAlign: 'center', padding: '48px 20px' },
-  emptyTitle: { fontWeight: 600, fontSize: 18, marginBottom: 8, color: '#333' },
-  emptyText: { color: '#666', margin: 0 },
-  errorBox: {
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-    padding: 24,
-    borderRadius: 12,
-    textAlign: 'center',
-  },
-  errorText: { margin: '0 0 16px 0' },
-  retryBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#1a1a2e',
-    color: 'white',
-    border: 'none',
-    borderRadius: 6,
-    cursor: 'pointer',
-    fontSize: 14,
-  },
-};

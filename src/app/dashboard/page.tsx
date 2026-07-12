@@ -3,19 +3,34 @@
 import { useEffect, useState } from 'react';
 import { type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import Navbar from '../components/Navbar';
-import { formatCheckinDate, getNextCheckinDate, isCheckinDue } from '@/lib/checkin';
+import {
+  ArrowRight,
+  Calendar,
+  CheckCircle2,
+  ClipboardList,
+  Dumbbell,
+  Map,
+  MessageCircle,
+  Timer,
+} from 'lucide-react';
+import { ClientShell } from '@/components/ui/ClientShell';
+import { Card, StatCard } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { formatCheckinDate } from '@/lib/checkin';
+import { getClientCheckinSchedule } from '@/lib/checkin-schedule';
 import { formatPlanDate } from '@/lib/plans';
 import { authenticateClient, fetchClientProfile, getOnboardingLabel, isOnboardingComplete } from '@/lib/onboarding';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { createClient } from '@/lib/supabase/client';
+import { colors, spacing } from '@/lib/design-tokens';
+import { mobileStyles } from '@/lib/mobile-styles';
 import type { Checkin, Coach, OnboardingProfile, Plan, Purchase, Workout } from '@/types/database';
 
 const supabase = createClient();
 
 type ActivityItem = {
   id: string;
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   subtitle: string;
 };
@@ -24,7 +39,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<OnboardingProfile | null>(null);
-  const [latestCheckin, setLatestCheckin] = useState<Checkin | null>(null);
+  const [allCheckins, setAllCheckins] = useState<Checkin[]>([]);
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [coach, setCoach] = useState<Coach | null>(null);
@@ -89,12 +104,12 @@ export default function Dashboard() {
           .from('checkins')
           .select('*')
           .eq('client_id', userId)
-          .order('submitted_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .order('submitted_at', { ascending: false });
 
         if (checkinError) throw new Error(checkinError.message);
-        setLatestCheckin(checkinData);
+        const checkinList = (checkinData ?? []) as Checkin[];
+        setAllCheckins(checkinList);
+        const latestCheckin = checkinList[0] ?? null;
 
         const { count: checkinsTotal, error: checkinCountError } = await supabase
           .from('checkins')
@@ -104,12 +119,12 @@ export default function Dashboard() {
         if (checkinCountError) throw new Error(checkinCountError.message);
         setCheckinCount(checkinsTotal ?? 0);
 
-        if (checkinData) {
+        if (latestCheckin) {
           activity.push({
-            id: `checkin-${checkinData.id}`,
-            icon: '📋',
-            title: 'Check-in submitted',
-            subtitle: formatCheckinDate(checkinData.submitted_at),
+            id: `checkin-${latestCheckin.id}`,
+            icon: <ClipboardList size={18} color={colors.accent} />,
+            title: `${latestCheckin.checkin_type === 'mid_week' ? 'Day 3' : 'Weekly'} check-in submitted`,
+            subtitle: formatCheckinDate(latestCheckin.submitted_at),
           });
         }
 
@@ -168,7 +183,7 @@ export default function Dashboard() {
         for (const w of workouts.slice(0, 3)) {
           activity.push({
             id: `workout-${w.id}`,
-            icon: '🏋️',
+            icon: <Dumbbell size={18} color={colors.accent} />,
             title: `Completed workout — ${w.name}`,
             subtitle: new Date(w.date ?? w.created_at).toLocaleString(),
           });
@@ -194,258 +209,275 @@ export default function Dashboard() {
     checkUser();
   }, [router]);
 
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', fontSize: 20, color: '#666' }}>
-          Loading...
-        </div>
-      </>
-    );
-  }
-
   const status = profile
     ? getClientDashboardStatus({ profile, purchase, coach, activePlan })
     : null;
 
+  const latestCheckin = allCheckins[0] ?? null;
+  const checkinSchedule = profile?.onboarding_completed_at
+    ? getClientCheckinSchedule(profile.onboarding_completed_at, allCheckins)
+    : null;
+
+  const firstName = profile?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
+
   return (
-    <>
-      <Navbar />
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '30px 20px' }}>
-        {loadError && (
-          <div style={{ padding: 16, marginBottom: 20, backgroundColor: '#f8d7da', color: '#721c24', borderRadius: 8 }}>
-            {loadError}
-          </div>
-        )}
-
-        <div style={{ marginBottom: 30 }}>
-          <h1 style={{ fontSize: 32 }}>Welcome back, {profile?.name || user?.email || 'User'}!</h1>
-          <p style={{ color: '#666' }}>Here&apos;s your fitness summary for today</p>
+    <ClientShell loading={loading}>
+      {loadError && (
+        <div style={{ ...mobileStyles.error, marginBottom: spacing[4] }}>
+          {loadError}
         </div>
+      )}
 
-        {status && (
-          <div style={statusStyles.card}>
-            <h2 style={statusStyles.title}>Your coaching journey</h2>
-            <div style={statusStyles.grid}>
-              <StatusItem label="Payment" value={status.paymentConfirmed ? 'Confirmed ✓' : 'Pending'} ok={status.paymentConfirmed} />
-              <StatusItem label="Onboarding" value={status.onboardingComplete ? 'Complete ✓' : 'Incomplete'} ok={status.onboardingComplete} />
-              <StatusItem
-                label="Coach"
-                value={status.coachAssigned ? (status.coachName ?? 'Assigned') : 'Assigning soon'}
-                ok={status.coachAssigned}
-              />
-              <StatusItem label="Plan" value={status.planStatus} ok={Boolean(activePlan)} />
+      {/* Greeting */}
+      <div style={{ marginBottom: spacing[5] }}>
+        <p style={{ margin: 0, fontSize: 15, color: colors.textMuted, fontWeight: 500 }}>Good {getGreeting()}</p>
+        <h1 style={{ margin: '4px 0 0', fontSize: 'clamp(1.75rem, 7vw, 2.25rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+          {firstName}
+        </h1>
+        <p style={{ margin: '8px 0 0', fontSize: 15, color: colors.textSecondary }}>
+          Here&apos;s your coaching overview for today
+        </p>
+      </div>
+
+      {/* Next check-in countdown */}
+      {checkinSchedule?.countdownLabel && (
+        <Card variant="glass" style={{ marginBottom: spacing[4] }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Timer size={22} color={colors.accent} />
             </div>
-            {status.expectedDelivery && (
-              <p style={statusStyles.delivery}>Expected plan delivery by: <strong>{status.expectedDelivery}</strong></p>
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: 0, fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>Next check-in</p>
+              <p style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 700, color: colors.textPrimary }}>
+                {checkinSchedule.countdownLabel}
+              </p>
+            </div>
+            {checkinSchedule.coachingDay && (
+              <span style={{ fontSize: 13, color: colors.textMuted }}>Day {checkinSchedule.coachingDay}</span>
             )}
-            <div style={statusStyles.next}>
-              <p style={statusStyles.nextLabel}>Next action</p>
-              <p style={statusStyles.nextValue}>{status.nextAction}</p>
-              <button onClick={() => router.push(status.nextActionHref)} style={statusStyles.nextBtn}>
-                Go
-              </button>
-            </div>
           </div>
-        )}
+        </Card>
+      )}
 
-        {profile && (
-          <div style={checkinStyles.card}>
-            <h2 style={checkinStyles.title}>Weekly check-in</h2>
-            <div style={checkinStyles.row}>
-              <div>
-                <p style={checkinStyles.statusLabel}>Status</p>
-                <p style={checkinStyles.statusValue}>
-                  {profile.checkin_awaiting
-                    ? 'Awaiting coach review'
-                    : latestCheckin?.reviewed
-                      ? 'Last check-in reviewed'
-                      : latestCheckin
-                        ? 'Submitted — pending review'
-                        : 'No check-ins yet'}
+      {/* Today's Tasks */}
+      {checkinSchedule && (
+        <section style={{ marginBottom: spacing[5] }}>
+          <h2 style={sectionHeading}>Today&apos;s Tasks</h2>
+          {checkinSchedule.todayTasks.length === 0 ? (
+            <Card variant="elevated">
+              <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
+                <CheckCircle2 size={20} color={colors.success} />
+                <p style={{ margin: 0, color: colors.textSecondary, fontSize: 15 }}>
+                  All caught up for today
                 </p>
-                {latestCheckin && (
-                  <p style={checkinStyles.meta}>Last submitted: {formatCheckinDate(latestCheckin.submitted_at)}</p>
+              </div>
+            </Card>
+          ) : (
+            checkinSchedule.todayTasks.map((task) => (
+              <Card key={`${task.type}-${task.coachingWeek}`} variant="elevated" style={{ marginBottom: spacing[2] }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: spacing[3] }}>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>{task.label}</p>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
+                      {task.status === 'available' && 'Ready to complete'}
+                      {task.status === 'awaiting_review' && 'Awaiting coach review'}
+                      {task.status === 'completed' && 'Completed'}
+                    </p>
+                  </div>
+                  {task.status === 'available' && (
+                    <Button size="md" onClick={() => router.push(task.href)}>Start</Button>
+                  )}
+                  {task.status === 'awaiting_review' && (
+                    <span style={{ fontSize: 13, fontWeight: 600, color: colors.success, backgroundColor: colors.successMuted, padding: '6px 12px', borderRadius: 999 }}>Done</span>
+                  )}
+                </div>
+              </Card>
+            ))
+          )}
+        </section>
+      )}
+
+      {/* Current Plan */}
+      {profile && (
+        <section style={{ marginBottom: spacing[5] }}>
+          <h2 style={sectionHeading}>Current Plan</h2>
+          <Card
+            variant="glass"
+            onClick={() => router.push('/plan')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ClipboardList size={22} color={colors.accent} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {activePlan ? activePlan.title : profile.plan_delivered ? 'Plan pending activation' : 'Plan in preparation'}
+                </p>
+                {activePlan && (
+                  <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
+                    v{activePlan.version} · Updated {formatPlanDate(activePlan.updated_at)}
+                  </p>
                 )}
               </div>
+              <ArrowRight size={20} color={colors.textMuted} />
+            </div>
+          </Card>
+        </section>
+      )}
+
+      {/* Coach & status */}
+      {status && status.nextAction && (
+        <section style={{ marginBottom: spacing[5] }}>
+          <h2 style={sectionHeading}>Next Step</h2>
+          <Card variant="elevated">
+            <p style={{ margin: '0 0 12px', fontSize: 15, color: colors.textSecondary }}>{status.nextAction}</p>
+            <Button fullWidth onClick={() => router.push(status.nextActionHref)}>Continue</Button>
+          </Card>
+        </section>
+      )}
+
+      {/* Stats glance */}
+      <section style={{ marginBottom: spacing[5] }}>
+        <h2 style={sectionHeading}>Progress</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[2] }}>
+          <StatCard label="Workouts" value={String(workoutCount)} icon={<Dumbbell size={18} />} />
+          <StatCard label="Minutes" value={String(totalMinutes)} icon={<Timer size={18} />} />
+          <StatCard label="Check-ins" value={String(checkinCount)} icon={<Calendar size={18} />} />
+        </div>
+      </section>
+
+      {/* Journey shortcut */}
+      <section style={{ marginBottom: spacing[5] }}>
+        <Card variant="elevated" onClick={() => router.push('/journey')} style={{ cursor: 'pointer' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+            <Map size={22} color={colors.accent} />
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>View your journey</p>
+              <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textMuted }}>Timeline, photos & milestones</p>
+            </div>
+            <ArrowRight size={20} color={colors.textMuted} />
+          </div>
+        </Card>
+      </section>
+
+      {/* Check-in status */}
+      {profile && (
+        <section style={{ marginBottom: spacing[5] }}>
+          <h2 style={sectionHeading}>Check-in Status</h2>
+          <Card variant="elevated">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4] }}>
               <div>
-                <p style={checkinStyles.statusLabel}>Next check-in</p>
-                <p style={checkinStyles.statusValue}>
-                  {isCheckinDue(latestCheckin?.submitted_at ?? null)
-                    ? 'Due now'
-                    : formatCheckinDate(getNextCheckinDate(latestCheckin?.submitted_at ?? null).toISOString())}
+                <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</p>
+                <p style={{ margin: '4px 0 0', fontSize: 15, fontWeight: 600 }}>
+                  {profile.checkin_awaiting
+                    ? 'Awaiting review'
+                    : latestCheckin?.reviewed
+                      ? 'Reviewed'
+                      : latestCheckin
+                        ? 'Pending review'
+                        : 'No check-ins yet'}
+                </p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Next due</p>
+                <p style={{ margin: '4px 0 0', fontSize: 15, fontWeight: 600 }}>
+                  {checkinSchedule?.nextCheckin
+                    ? formatCheckinDate(checkinSchedule.nextCheckin.dueDate.toISOString())
+                    : '—'}
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => router.push('/checkin')}
-              style={checkinStyles.btn}
-            >
-              {isCheckinDue(latestCheckin?.submitted_at ?? null) ? 'Submit check-in' : 'View / submit early'}
-            </button>
-          </div>
-        )}
+          </Card>
+        </section>
+      )}
 
-        {profile && (
-          <div style={planStyles.card}>
-            <h2 style={planStyles.title}>Your coaching plan</h2>
-            <p style={planStyles.status}>
-              {activePlan
-                ? `${activePlan.title} · v${activePlan.version}`
-                : profile.plan_delivered
-                  ? 'Plan pending activation'
-                  : 'No plan delivered yet'}
-            </p>
-            {activePlan && (
-              <p style={planStyles.meta}>Last updated {formatPlanDate(activePlan.updated_at)}</p>
-            )}
-            <button onClick={() => router.push('/plan')} style={planStyles.btn}>
-              {activePlan ? 'View full plan' : 'Check plan status'}
-            </button>
-          </div>
-        )}
-
-        {profile && (
-          <div style={summaryStyles.card}>
-            <h2 style={summaryStyles.title}>Your onboarding profile</h2>
-            <div style={summaryStyles.grid}>
-              <SummaryItem label="Goal" value={getOnboardingLabel('fitness_goal', profile.fitness_goal)} />
-              <SummaryItem label="Training" value={getOnboardingLabel('training_experience', profile.training_experience)} />
-              <SummaryItem label="Activity" value={getOnboardingLabel('activity_level', profile.activity_level)} />
-              <SummaryItem label="Diet" value={getOnboardingLabel('diet_preference', profile.diet_preference)} />
-              <SummaryItem label="Sleep" value={getOnboardingLabel('sleep_duration', profile.sleep_duration)} />
-              <SummaryItem label="Age / Weight" value={`${profile.age ?? '—'} yrs · ${profile.weight ?? '—'} kg`} />
+      {/* Coach chat shortcut */}
+      {coach && (
+        <section style={{ marginBottom: spacing[5] }}>
+          <Card variant="glass" onClick={() => router.push('/client/chat')} style={{ cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+              <MessageCircle size={22} color={colors.accent} />
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>Message {coach.name}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textMuted }}>Your assigned coach</p>
+              </div>
+              <ArrowRight size={20} color={colors.textMuted} />
             </div>
-          </div>
-        )}
+          </Card>
+        </section>
+      )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 30 }}>
-          <div style={{ backgroundColor: 'white', padding: 25, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>🏋️</div>
-            <h3 style={{ margin: 0 }}>{workoutCount}</h3>
-            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Logged Workouts</p>
-          </div>
-          <div style={{ backgroundColor: 'white', padding: 25, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>⏱️</div>
-            <h3 style={{ margin: 0 }}>{totalMinutes}</h3>
-            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Total Minutes</p>
-          </div>
-          <div style={{ backgroundColor: 'white', padding: 25, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
-            <h3 style={{ margin: 0 }}>{checkinCount}</h3>
-            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Check-ins Submitted</p>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 30 }}>
-          <h2>Quick Actions</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 15, marginTop: 15 }}>
-            <button 
-              onClick={() => router.push('/workouts')} 
-              style={{ padding: 15, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' }}
-            >
-              ➕ Log Workout
-            </button>
-            <button 
-              onClick={() => router.push('/journey')} 
-              style={{ padding: 15, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' }}
-            >
-              📊 View Journey
-            </button>
-            <button 
-              onClick={() => router.push('/checkin')} 
-              style={{ padding: 15, backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' }}
-            >
-              📋 Weekly Check-In
-            </button>
-            <button 
-              onClick={() => router.push('/profile')} 
-              style={{ padding: 15, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' }}
-            >
-              👤 Update Profile
-            </button>
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: 'white', padding: 25, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-          <h2>Recent Activity</h2>
-          <div style={{ marginTop: 15 }}>
-            {recentActivity.length === 0 ? (
-              <p style={{ color: '#666', margin: 0 }}>No activity yet. Log a workout or submit your first check-in.</p>
-            ) : (
-              recentActivity.map((item) => (
-                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 15, padding: '12px 0', borderBottom: '1px solid #eee' }}>
-                  <span style={{ fontSize: 20 }}>{item.icon}</span>
-                  <div>
-                    <p style={{ margin: 0 }}><strong>{item.title}</strong></p>
-                    <small style={{ color: '#666' }}>{item.subtitle}</small>
-                  </div>
+      {/* Recent activity */}
+      <section style={{ marginBottom: spacing[5] }}>
+        <h2 style={sectionHeading}>Recent Activity</h2>
+        <Card variant="elevated" padding={0} style={{ overflow: 'hidden' }}>
+          {recentActivity.length === 0 ? (
+            <p style={{ margin: 0, padding: spacing[4], color: colors.textMuted, fontSize: 15 }}>
+              No activity yet. Log a workout or submit your first check-in.
+            </p>
+          ) : (
+            recentActivity.map((item, i) => (
+              <div
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: spacing[3],
+                  padding: `${spacing[3]}px ${spacing[4]}px`,
+                  borderBottom: i < recentActivity.length - 1 ? `1px solid ${colors.divider}` : 'none',
+                }}
+              >
+                {item.icon}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>{item.subtitle}</p>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-    </>
+              </div>
+            ))
+          )}
+        </Card>
+      </section>
+
+      {/* Onboarding summary — collapsed glance */}
+      {profile && (
+        <section>
+          <h2 style={sectionHeading}>Your Profile</h2>
+          <Card variant="elevated">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: spacing[3] }}>
+              <GlanceItem label="Goal" value={getOnboardingLabel('fitness_goal', profile.fitness_goal)} />
+              <GlanceItem label="Training" value={getOnboardingLabel('training_experience', profile.training_experience)} />
+              <GlanceItem label="Weight" value={profile.weight ? `${profile.weight} kg` : '—'} />
+              <GlanceItem label="Age" value={profile.age ? `${profile.age} yrs` : '—'} />
+            </div>
+          </Card>
+        </section>
+      )}
+    </ClientShell>
   );
 }
 
-function SummaryItem({ label, value }: { label: string; value: string }) {
+function GlanceItem({ label, value }: { label: string; value: string }) {
   return (
-    <div style={summaryStyles.item}>
-      <span style={summaryStyles.itemLabel}>{label}</span>
-      <span style={summaryStyles.itemValue}>{value}</span>
+    <div>
+      <p style={{ margin: 0, fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+      <p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 600 }}>{value}</p>
     </div>
   );
 }
 
-function StatusItem({ label, value, ok }: { label: string; value: string; ok: boolean }) {
-  return (
-    <div style={statusStyles.item}>
-      <span style={statusStyles.itemLabel}>{label}</span>
-      <span style={{ ...statusStyles.itemValue, color: ok ? '#155724' : '#856404' }}>{value}</span>
-    </div>
-  );
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'morning';
+  if (hour < 17) return 'afternoon';
+  return 'evening';
 }
 
-const statusStyles: Record<string, React.CSSProperties> = {
-  card: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24, borderLeft: '4px solid #C9A227' },
-  title: { margin: '0 0 16px 0', fontSize: 20 },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 },
-  item: { display: 'flex', flexDirection: 'column', gap: 4 },
-  itemLabel: { fontSize: 12, color: '#999', textTransform: 'uppercase' },
-  itemValue: { fontSize: 15, fontWeight: 600 },
-  delivery: { margin: '0 0 16px 0', color: '#666', fontSize: 14 },
-  next: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, paddingTop: 12, borderTop: '1px solid #eee' },
-  nextLabel: { margin: 0, fontSize: 12, color: '#999', textTransform: 'uppercase', width: '100%' },
-  nextValue: { margin: 0, flex: 1, fontSize: 16, fontWeight: 600 },
-  nextBtn: { padding: '10px 18px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 },
-};
-
-const summaryStyles: Record<string, React.CSSProperties> = {
-  card: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24 },
-  title: { margin: '0 0 16px 0', fontSize: 20 },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 },
-  item: { display: 'flex', flexDirection: 'column', gap: 4 },
-  itemLabel: { fontSize: 12, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  itemValue: { fontSize: 15, fontWeight: 600, color: '#1a1a2e' },
-};
-
-const checkinStyles: Record<string, React.CSSProperties> = {
-  card: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24, borderLeft: '4px solid #e94560' },
-  title: { margin: '0 0 16px 0', fontSize: 20 },
-  row: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 16 },
-  statusLabel: { margin: 0, fontSize: 12, color: '#999', textTransform: 'uppercase' },
-  statusValue: { margin: '4px 0 0 0', fontSize: 16, fontWeight: 600 },
-  meta: { margin: '4px 0 0 0', fontSize: 13, color: '#666' },
-  btn: { padding: '12px 20px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 15, fontWeight: 600 },
-};
-
-const planStyles: Record<string, React.CSSProperties> = {
-  card: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: 24, borderLeft: '4px solid #1a1a2e' },
-  title: { margin: '0 0 12px 0', fontSize: 20 },
-  status: { margin: '0 0 4px 0', fontSize: 16, fontWeight: 600, color: '#1a1a2e' },
-  meta: { margin: '0 0 16px 0', fontSize: 13, color: '#666' },
-  btn: { padding: '12px 20px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 15, fontWeight: 600 },
+const sectionHeading: React.CSSProperties = {
+  margin: '0 0 12px',
+  fontSize: 13,
+  fontWeight: 600,
+  color: colors.textMuted,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
 };

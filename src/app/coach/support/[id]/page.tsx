@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import CoachNavbar from '@/app/components/CoachNavbar'
+import { CoachShell } from '@/components/ui/CoachShell'
 import { SupportThread } from '@/components/support/SupportThread'
 import { priorityBadgeStyle, statusBadgeStyle, supportStyles as s } from '@/components/support/styles'
 import { requireCoach } from '@/lib/coach-session'
@@ -157,23 +157,15 @@ export default function CoachSupportDetailPage() {
   }
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={s.loading}>Loading request…</div>
-      </>
-    )
+    return <CoachShell narrow loading><span /></CoachShell>
   }
 
   if (!request || !coach) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={s.container}>
-          <Link href="/coach/support" style={s.backLink}>← Back to queue</Link>
-          <div style={s.error}>{error || 'Request not found.'}</div>
-        </div>
-      </>
+      <CoachShell narrow>
+        <Link href="/coach/support" style={s.backLink}>← Back to queue</Link>
+        <div style={s.error}>{error || 'Request not found.'}</div>
+      </CoachShell>
     )
   }
 
@@ -189,10 +181,7 @@ export default function CoachSupportDetailPage() {
   const priorityStyle = priorityBadgeStyle(request.priority)
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={s.page}>
-        <div style={s.containerNarrow}>
+    <CoachShell narrow>
           <Link href="/coach/support" style={s.backLink}>← Back to queue</Link>
 
           <h1 style={s.title}>{request.title}</h1>
@@ -269,10 +258,8 @@ export default function CoachSupportDetailPage() {
           )}
 
           {isClosed && (
-            <p style={{ color: '#666', fontSize: 14 }}>This request is closed.</p>
+            <p style={{ color: '#a1a1aa', fontSize: 14 }}>This request is closed.</p>
           )}
-        </div>
-      </div>
-    </>
+    </CoachShell>
   )
 }

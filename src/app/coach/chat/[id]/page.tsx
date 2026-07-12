@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import CoachNavbar from '@/app/components/CoachNavbar'
+import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
+import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { requireCoach } from '@/lib/coach-session'
-import { mobileStyles } from '@/lib/mobile-styles'
 import { createClient } from '@/lib/supabase/client'
 import type { CoachConversation, ConversationMessage } from '@/types/database'
 
@@ -46,39 +46,28 @@ export default function CoachChatDetailPage() {
   }, [conversationId])
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={mobileStyles.loading}>Loading conversation...</div>
-      </>
-    )
+    return <CoachShell loading narrow />
   }
 
   if (!conversation) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={mobileStyles.empty}>Conversation not found.</div>
-      </>
+      <CoachShell narrow>
+        <p style={styles.emptyText}>Conversation not found.</p>
+      </CoachShell>
     )
   }
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={{ ...mobileStyles.page, backgroundColor: '#f8f9fa' }}>
-        <div style={mobileStyles.container}>
-          <h1 style={{ ...mobileStyles.title, fontSize: '1.25rem' }}>{clientName}</h1>
-          <div style={{ ...mobileStyles.card, padding: '12px 16px' }}>
-            <CoachChatThread
-              conversationId={conversation.id}
-              coachId={conversation.coach_id}
-              viewer="coach"
-              initialMessages={messages}
-            />
-          </div>
-        </div>
+    <CoachShell narrow>
+      <h1 style={{ ...styles.title, fontSize: '1.25rem' }}>{clientName}</h1>
+      <div style={{ ...styles.card, padding: '12px 16px' }}>
+        <CoachChatThread
+          conversationId={conversation.id}
+          coachId={conversation.coach_id}
+          viewer="coach"
+          initialMessages={messages}
+        />
       </div>
-    </>
+    </CoachShell>
   )
 }

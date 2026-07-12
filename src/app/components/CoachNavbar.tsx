@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { Menu, X } from 'lucide-react';
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { mobileNavStyles } from '@/lib/mobile-styles';
+import { colors, spacing } from '@/lib/design-tokens';
 
 const supabase = createClient();
 
@@ -34,10 +36,12 @@ export default function CoachNavbar() {
       <style>{mobileNavStyles}</style>
       <nav style={styles.navbar}>
         <div style={styles.container}>
-          <Link href="/coach/dashboard" style={styles.logo} onClick={() => setIsOpen(false)}>🏋️ Coach Portal</Link>
+          <Link href="/coach/dashboard" style={styles.logo} onClick={() => setIsOpen(false)}>Coach Portal</Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {user && <NotificationBell />}
-            <button type="button" className="mobile-nav-btn" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">☰</button>
+            <button type="button" className="mobile-nav-btn" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
           <div className={`mobile-nav-links${isOpen ? ' open' : ''}`}>
             <Link href="/coach/dashboard" style={styles.link} onClick={() => setIsOpen(false)}>Dashboard</Link>
@@ -58,10 +62,19 @@ export default function CoachNavbar() {
 }
 
 const styles: Record<string, CSSProperties> = {
-  navbar: { backgroundColor: '#1a1a2e', padding: '12px 16px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', position: 'sticky', top: 0, zIndex: 100 },
+  navbar: {
+    backgroundColor: colors.bgGlass,
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    padding: `${spacing[2]}px ${spacing[3]}px`,
+    borderBottom: `1px solid ${colors.divider}`,
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
+  },
   container: { maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' },
-  logo: { color: '#e94560', fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 'bold', textDecoration: 'none' },
-  link: { color: 'white', textDecoration: 'none', padding: '10px 14px', borderRadius: 5, fontSize: 16, display: 'block' },
-  logoutBtn: { backgroundColor: '#e94560', color: 'white', border: 'none', padding: '10px 20px', borderRadius: 5, cursor: 'pointer', fontSize: 16, minHeight: 44, width: '100%', textAlign: 'left' },
-  devLink: { color: '#ffc107', textDecoration: 'none', padding: '10px 14px', borderRadius: 5, fontSize: 16, fontWeight: 700, display: 'block' },
+  logo: { color: colors.accent, fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: 800, textDecoration: 'none', letterSpacing: '-0.02em' },
+  link: { color: colors.textPrimary, textDecoration: 'none', padding: '10px 14px', borderRadius: 12, fontSize: 15, display: 'block', fontWeight: 500 },
+  logoutBtn: { backgroundColor: colors.dangerMuted, color: colors.danger, border: 'none', padding: '10px 20px', borderRadius: 12, cursor: 'pointer', fontSize: 15, minHeight: 44, width: '100%', textAlign: 'left', fontWeight: 600 },
+  devLink: { color: colors.warning, textDecoration: 'none', padding: '10px 14px', borderRadius: 12, fontSize: 15, fontWeight: 600, display: 'block' },
 };

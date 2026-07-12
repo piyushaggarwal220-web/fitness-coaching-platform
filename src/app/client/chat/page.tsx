@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Navbar from '@/app/components/Navbar'
+import { ClientShell } from '@/components/ui/ClientShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { authenticateClient } from '@/lib/onboarding'
 import { mobileStyles } from '@/lib/mobile-styles'
+import { colors, spacing } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
 import type { CoachConversation } from '@/types/database'
 
@@ -51,38 +52,34 @@ export default function ClientChatPage() {
     void init()
   }, [router])
 
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <div style={mobileStyles.loading}>Loading chat...</div>
-      </>
-    )
-  }
+  if (loading) return <ClientShell title="Chat" loading />
 
   return (
-    <>
-      <Navbar />
-      <div style={{ ...mobileStyles.page, backgroundColor: '#f8f9fa' }}>
-        <div style={mobileStyles.container}>
-          <h1 style={mobileStyles.title}>Need Help?</h1>
-          <p style={mobileStyles.subtitle}>
-            {connecting ? 'Connecting you with your coach...' : 'Chat directly with your assigned coach.'}
-          </p>
+    <ClientShell title="Chat">
+      {connecting && (
+        <p style={{ margin: '0 0 12px', fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>
+          Connecting you with your coach...
+        </p>
+      )}
 
-          {error && <div style={mobileStyles.error}>{error}</div>}
+      {error && <div style={mobileStyles.error}>{error}</div>}
 
-          {conversation && (
-            <div style={{ ...mobileStyles.card, padding: '12px 16px' }}>
-              <CoachChatThread
-                conversationId={conversation.id}
-                coachId={conversation.coach_id}
-                viewer="client"
-              />
-            </div>
-          )}
+      {conversation && (
+        <div style={{
+          backgroundColor: colors.bgCard,
+          borderRadius: 16,
+          border: `1px solid ${colors.borderSubtle}`,
+          overflow: 'hidden',
+          height: 'calc(100vh - 180px)',
+          maxHeight: 700,
+        }}>
+          <CoachChatThread
+            conversationId={conversation.id}
+            coachId={conversation.coach_id}
+            viewer="client"
+          />
         </div>
-      </div>
-    </>
+      )}
+    </ClientShell>
   )
 }

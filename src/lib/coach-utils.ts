@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { ClientProfile } from '@/types/database'
+import { colors } from '@/lib/design-tokens'
 
 export const FITNESS_GOAL_LABELS: Record<string, string> = {
   lose_weight: 'Lose Weight',
@@ -38,10 +39,10 @@ export function getCheckinStatus(client: Pick<ClientProfile, 'checkin_awaiting' 
 }
 
 export const coachBadgeStyles: Record<string, CSSProperties> = {
-  overdue: { backgroundColor: '#f8d7da', color: '#721c24', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
-  awaiting: { backgroundColor: '#fff3cd', color: '#856404', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
-  new: { backgroundColor: '#cce5ff', color: '#004085', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
-  ok: { backgroundColor: '#d4edda', color: '#155724', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
-  pending: { backgroundColor: '#e2e3e5', color: '#383d41', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
-  delivered: { backgroundColor: '#d4edda', color: '#155724', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
+  overdue: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  awaiting: { backgroundColor: colors.warningMuted, color: colors.warning, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  new: { backgroundColor: colors.accentMuted, color: colors.accent, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  ok: { backgroundColor: colors.successMuted, color: colors.success, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  pending: { backgroundColor: colors.bgElevated, color: colors.textMuted, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  delivered: { backgroundColor: colors.successMuted, color: colors.success, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
 }

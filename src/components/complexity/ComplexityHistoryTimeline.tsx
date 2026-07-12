@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from 'react'
 import { COMPLEXITY_TIER_COLORS, formatTierLabel } from '@/lib/complexity/display'
+import { colors } from '@/lib/design-tokens'
 import type { ComplexityScoreHistory } from '@/types/database'
 import type { StoredComplexityTier } from '@/lib/ai/complexity-score'
 
@@ -58,13 +59,13 @@ export function ComplexityHistoryTimeline({ clientId }: ComplexityHistoryTimelin
     <div style={styles.list}>
       {chronological.map((entry, index) => {
         const tierKey = entry.tier as StoredComplexityTier
-        const colors = COMPLEXITY_TIER_COLORS[tierKey]
+        const tierColors = COMPLEXITY_TIER_COLORS[tierKey]
         return (
           <div key={entry.id} style={styles.item}>
             <div style={styles.week}>Week {index + 1}</div>
             <div style={styles.scoreRow}>
               <span style={styles.score}>{entry.display_score}</span>
-              <span style={{ ...styles.tier, backgroundColor: colors.bg, color: colors.text }}>
+              <span style={{ ...styles.tier, backgroundColor: tierColors.bg, color: tierColors.text }}>
                 {formatTierLabel(tierKey)}
               </span>
             </div>
@@ -88,13 +89,13 @@ const styles: Record<string, CSSProperties> = {
     gap: 12,
     alignItems: 'center',
     padding: '12px 0',
-    borderBottom: '1px solid #eee',
+    borderBottom: `1px solid ${colors.divider}`,
   },
-  week: { fontSize: 13, color: '#888', fontWeight: 600 },
+  week: { fontSize: 13, color: colors.textMuted, fontWeight: 600 },
   scoreRow: { display: 'flex', alignItems: 'center', gap: 12 },
-  score: { fontSize: 22, fontWeight: 700, color: '#1a1a2e' },
+  score: { fontSize: 22, fontWeight: 700, color: colors.textPrimary },
   tier: { padding: '4px 10px', borderRadius: 999, fontSize: 13, fontWeight: 600 },
-  delta: { fontSize: 13, color: '#666' },
-  muted: { margin: 0, color: '#888', fontSize: 14 },
-  error: { margin: 0, color: '#c0392b', fontSize: 14 },
+  delta: { fontSize: 13, color: colors.textSecondary },
+  muted: { margin: 0, color: colors.textMuted, fontSize: 14 },
+  error: { margin: 0, color: colors.danger, fontSize: 14 },
 }

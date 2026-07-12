@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { getAdminNavModules } from '@/lib/admin/modules'
+import { colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
@@ -69,9 +70,11 @@ export default function AdminNavbar() {
 
 const styles: Record<string, CSSProperties> = {
   navbar: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.bgGlass,
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
     padding: '14px 20px',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+    borderBottom: `1px solid ${colors.divider}`,
     position: 'sticky',
     top: 0,
     zIndex: 100,
@@ -86,9 +89,9 @@ const styles: Record<string, CSSProperties> = {
     gap: 12,
   },
   logo: {
-    color: '#a78bfa',
-    fontSize: 22,
-    fontWeight: 700,
+    color: colors.accent,
+    fontSize: 20,
+    fontWeight: 800,
     textDecoration: 'none',
     letterSpacing: '-0.02em',
   },
@@ -99,29 +102,30 @@ const styles: Record<string, CSSProperties> = {
     flexWrap: 'wrap',
   },
   identity: {
-    color: 'rgba(255,255,255,0.65)',
+    color: colors.textMuted,
     fontSize: 13,
     padding: '6px 10px',
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 8,
+    backgroundColor: colors.bgElevated,
   },
   link: {
-    color: 'rgba(255,255,255,0.9)',
+    color: colors.textSecondary,
     textDecoration: 'none',
     padding: '8px 12px',
-    borderRadius: 6,
+    borderRadius: 8,
     fontSize: 14,
     fontWeight: 500,
   },
   logoutBtn: {
-    backgroundColor: '#7c3aed',
-    color: 'white',
+    backgroundColor: colors.accentMuted,
+    color: colors.accent,
     border: 'none',
     padding: '8px 16px',
-    borderRadius: 6,
+    borderRadius: 8,
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 600,
     marginLeft: 4,
+    minHeight: 40,
   },
 }

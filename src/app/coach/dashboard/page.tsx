@@ -2,9 +2,11 @@
 
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import CoachNavbar from '../../components/CoachNavbar';
+import { CoachShell } from '@/components/ui/CoachShell';
+import { coachPageStyles } from '@/lib/coach-page-styles';
 import { createClient } from '@/lib/supabase/client';
 import { requireCoach } from '@/lib/coach-session';
+import { colors } from '@/lib/design-tokens';
 import type { ClientProfile, Coach, CoachStats } from '@/types/database';
 
 const supabase = createClient();
@@ -80,36 +82,26 @@ export default function CoachDashboard() {
   }, [router]);
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={styles.loading}>Loading coach dashboard...</div>
-      </>
-    );
+    return <CoachShell loading><span /></CoachShell>;
   }
 
   if (error) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <div style={styles.errorBox}>
-            <p style={styles.errorText}>{error}</p>
-            <button style={styles.retryBtn} onClick={() => window.location.reload()}>
-              Retry
-            </button>
-          </div>
+      <CoachShell>
+        <div style={styles.errorBox}>
+          <p style={styles.errorText}>{error}</p>
+          <button style={styles.retryBtn} onClick={() => window.location.reload()}>
+            Retry
+          </button>
         </div>
-      </>
+      </CoachShell>
     );
   }
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={styles.container}>
+    <CoachShell>
         <div style={styles.header}>
-          <h1>Coach Dashboard</h1>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.02em' }}>Coach Dashboard</h1>
           <p style={styles.subtitle}>Welcome back, {coach?.name || 'Coach'}!</p>
         </div>
 
@@ -119,39 +111,39 @@ export default function CoachDashboard() {
             <div style={styles.statLabel}>Total Clients</div>
             <div style={styles.statSub}>{stats.total}/{coach?.hard_cap || 500} capacity</div>
           </div>
-          <div style={{...styles.statCard, borderLeft: '4px solid #e94560'}}>
+          <div style={{...styles.statCard, borderColor: colors.warning}}>
             <div style={styles.statNumber}>{stats.awaiting}</div>
             <div style={styles.statLabel}>Awaiting Response</div>
           </div>
-          <div style={{...styles.statCard, borderLeft: '4px solid #f0a030'}}>
+          <div style={{...styles.statCard, borderColor: colors.danger}}>
             <div style={styles.statNumber}>{stats.overdue}</div>
             <div style={styles.statLabel}>Overdue Check-ins</div>
           </div>
-          <div style={{...styles.statCard, borderLeft: '4px solid #1a4a8a'}}>
+          <div style={{...styles.statCard, borderColor: colors.accent}}>
             <div style={styles.statNumber}>{stats.new}</div>
             <div style={styles.statLabel}>New Clients</div>
           </div>
         </div>
 
         <div style={styles.statsGrid}>
-          <button type="button" style={{ ...styles.statCard, ...styles.complexityCard, borderLeft: '4px solid #28a745' }} onClick={() => router.push('/coach/clients?tier=low')}>
-            <div style={styles.statNumber}>{clients.filter((c) => c.complexity_tier === 'low').length}</div>
+          <button type="button" style={{ ...styles.statCard, ...styles.complexityCard }} onClick={() => router.push('/coach/clients?tier=low')}>
+            <div style={{ ...styles.statNumber, color: colors.success }}>{clients.filter((c) => c.complexity_tier === 'low').length}</div>
             <div style={styles.statLabel}>Low Complexity</div>
           </button>
-          <button type="button" style={{ ...styles.statCard, ...styles.complexityCard, borderLeft: '4px solid #ffc107' }} onClick={() => router.push('/coach/clients?tier=medium')}>
-            <div style={styles.statNumber}>{clients.filter((c) => c.complexity_tier === 'medium').length}</div>
+          <button type="button" style={{ ...styles.statCard, ...styles.complexityCard }} onClick={() => router.push('/coach/clients?tier=medium')}>
+            <div style={{ ...styles.statNumber, color: colors.warning }}>{clients.filter((c) => c.complexity_tier === 'medium').length}</div>
             <div style={styles.statLabel}>Medium Complexity</div>
           </button>
-          <button type="button" style={{ ...styles.statCard, ...styles.complexityCard, borderLeft: '4px solid #dc3545' }} onClick={() => router.push('/coach/clients?tier=high')}>
-            <div style={styles.statNumber}>{clients.filter((c) => c.complexity_tier === 'high').length}</div>
+          <button type="button" style={{ ...styles.statCard, ...styles.complexityCard }} onClick={() => router.push('/coach/clients?tier=high')}>
+            <div style={{ ...styles.statNumber, color: colors.danger }}>{clients.filter((c) => c.complexity_tier === 'high').length}</div>
             <div style={styles.statLabel}>High Complexity</div>
           </button>
         </div>
 
         <div style={styles.checkinBanner}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Pending check-in reviews</h2>
-            <p style={{ margin: '6px 0 0 0', color: '#666' }}>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>Pending check-in reviews</h2>
+            <p style={{ margin: '6px 0 0 0', color: colors.textSecondary }}>
               {pendingCheckins === 0 ? 'All caught up!' : `${pendingCheckins} check-in${pendingCheckins === 1 ? '' : 's'} waiting for review`}
             </p>
           </div>
@@ -160,20 +152,20 @@ export default function CoachDashboard() {
           </button>
         </div>
 
-        <div style={{ ...styles.checkinBanner, borderLeftColor: '#1a1a2e' }}>
+        <div style={styles.checkinBanner}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 18 }}>Active plans delivered</h2>
-            <p style={{ margin: '6px 0 0 0', color: '#666' }}>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>Active plans delivered</h2>
+            <p style={{ margin: '6px 0 0 0', color: colors.textSecondary }}>
               {plansDelivered} client{plansDelivered === 1 ? '' : 's'} with an active plan
             </p>
           </div>
-          <button style={{ ...styles.checkinBtn, backgroundColor: '#1a1a2e' }} onClick={() => router.push('/coach/plans')}>
+          <button style={styles.checkinBtn} onClick={() => router.push('/coach/plans')}>
             Manage plans
           </button>
         </div>
 
         <div style={styles.queueSection}>
-          <h2>Client Queue</h2>
+          <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>Client Queue</h2>
 
           <div style={styles.clientList}>
             {clients.length === 0 ? (
@@ -186,9 +178,9 @@ export default function CoachDashboard() {
                     <div style={styles.clientStatus}>
                       {client.complexity_score != null && client.complexity_tier && (
                         <span style={{
-                          backgroundColor: client.complexity_tier === 'low' ? '#d4edda' : client.complexity_tier === 'medium' ? '#fff3cd' : '#f8d7da',
-                          color: client.complexity_tier === 'low' ? '#155724' : client.complexity_tier === 'medium' ? '#856404' : '#721c24',
-                          padding: '2px 10px', borderRadius: 12, fontSize: 12,
+                          backgroundColor: client.complexity_tier === 'low' ? colors.successMuted : client.complexity_tier === 'medium' ? colors.warningMuted : colors.dangerMuted,
+                          color: client.complexity_tier === 'low' ? colors.success : client.complexity_tier === 'medium' ? colors.warning : colors.danger,
+                          padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
                         }}>
                           {client.complexity_score}/100
                         </span>
@@ -211,50 +203,40 @@ export default function CoachDashboard() {
             )}
           </div>
         </div>
-      </div>
-    </>
+    </CoachShell>
   );
 }
 
 const styles: Record<string, CSSProperties> = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: 20, color: '#666' },
-  container: { maxWidth: 1200, margin: '0 auto', padding: '30px 20px' },
-  header: { marginBottom: 30 },
-  subtitle: { color: '#666' },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 30 },
-  statCard: { backgroundColor: 'white', padding: 20, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)', borderLeft: '4px solid #1a1a2e' },
-  complexityCard: { cursor: 'pointer', textAlign: 'left', width: '100%', border: 'none' },
-  statNumber: { fontFamily: 'Syne, sans-serif', fontSize: 32, fontWeight: 800, color: '#1a1a2e' },
-  statLabel: { fontSize: 14, color: '#666' },
-  statSub: { fontSize: 12, color: '#999', marginTop: 4 },
-  queueSection: { backgroundColor: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
+  ...coachPageStyles,
+  header: { marginBottom: 24 },
+  subtitle: { color: colors.textSecondary, margin: '4px 0 0' },
+  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 },
+  statCard: { backgroundColor: colors.bgCard, padding: 20, borderRadius: 16, border: `1px solid ${colors.borderSubtle}` },
+  complexityCard: { cursor: 'pointer', textAlign: 'left', width: '100%' },
+  statNumber: { fontSize: 32, fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.02em' },
+  statLabel: { fontSize: 13, color: colors.textMuted, marginTop: 4, fontWeight: 500 },
+  statSub: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+  queueSection: { backgroundColor: colors.bgCard, padding: 24, borderRadius: 16, border: `1px solid ${colors.borderSubtle}` },
   clientList: { display: 'flex', flexDirection: 'column', gap: 12, marginTop: 15 },
-  clientCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, border: '1px solid #eee', borderRadius: 8 },
+  clientCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, border: `1px solid ${colors.borderSubtle}`, borderRadius: 12, backgroundColor: colors.bgElevated },
   clientInfo: { flex: 1 },
-  clientName: { fontWeight: 600, marginBottom: 4 },
-  clientStatus: { display: 'flex', gap: 8 },
-  badgeOverdue: { backgroundColor: '#f8d7da', color: '#721c24', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
-  badgeAwaiting: { backgroundColor: '#fff3cd', color: '#856404', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
-  badgeNew: { backgroundColor: '#cce5ff', color: '#004085', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
-  badgeOk: { backgroundColor: '#d4edda', color: '#155724', padding: '2px 10px', borderRadius: 12, fontSize: 12 },
+  clientName: { fontWeight: 600, marginBottom: 4, color: colors.textPrimary },
+  clientStatus: { display: 'flex', gap: 8, flexWrap: 'wrap' },
+  badgeOverdue: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  badgeAwaiting: { backgroundColor: colors.warningMuted, color: colors.warning, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  badgeNew: { backgroundColor: colors.accentMuted, color: colors.accent, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  badgeOk: { backgroundColor: colors.successMuted, color: colors.success, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
   clientActions: { display: 'flex', gap: 10 },
-  actionBtn: { padding: '8px 16px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' },
-  empty: { textAlign: 'center', color: '#666', padding: '40px 0' },
+  actionBtn: { padding: '10px 16px', backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: 12, cursor: 'pointer', fontWeight: 600, fontSize: 14, minHeight: 44 },
+  empty: { textAlign: 'center', color: colors.textMuted, padding: '40px 0' },
   checkinBanner: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 16,
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    marginBottom: 24,
-    borderLeft: '4px solid #e94560',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16,
+    backgroundColor: colors.bgCard, padding: 20, borderRadius: 16, marginBottom: 16,
+    border: `1px solid ${colors.borderSubtle}`,
   },
-  checkinBtn: { padding: '10px 20px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 15 },
-  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 24, borderRadius: 12, textAlign: 'center' },
+  checkinBtn: { padding: '12px 20px', backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 600, minHeight: 48 },
+  errorBox: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: 24, borderRadius: 16, textAlign: 'center', border: `1px solid rgba(239,68,68,0.2)` },
   errorText: { margin: '0 0 16px 0' },
-  retryBtn: { padding: '10px 20px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14 },
+  retryBtn: { padding: '12px 20px', backgroundColor: colors.bgElevated, color: colors.textPrimary, border: `1px solid ${colors.borderSubtle}`, borderRadius: 12, cursor: 'pointer', fontSize: 14, minHeight: 48 },
 };

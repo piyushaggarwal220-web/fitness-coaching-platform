@@ -4,7 +4,9 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import CoachNavbar from '../../../components/CoachNavbar';
+import { CoachShell } from '@/components/ui/CoachShell';
+import { coachPageStyles } from '@/lib/coach-page-styles';
+import { colors } from '@/lib/design-tokens';
 import { requireCoach } from '@/lib/coach-session';
 import {
   formatCheckinDate,
@@ -13,6 +15,7 @@ import {
   parseCoachResponse,
   serializeCoachResponse,
 } from '@/lib/checkin';
+import { getCheckinTypeLabel } from '@/lib/checkin-schedule';
 import { formatFitnessGoal } from '@/lib/coach-utils';
 import { WeeklyCoachingPanel } from '@/components/coach/ai-actions/WeeklyCoachingPanel';
 import type { Checkin, CheckinWithClient, CoachCheckinResponse } from '@/types/database';
@@ -81,13 +84,10 @@ export default function CoachCheckinDetailPage() {
 
   if (!checkinId) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <Link href="/coach/checkins" style={styles.backLink}>← Back to check-ins</Link>
-          <div style={styles.errorBox}>Invalid check-in ID.</div>
-        </div>
-      </>
+      <CoachShell narrow>
+        <Link href="/coach/checkins" style={styles.backLink}>← Back to check-ins</Link>
+        <div style={styles.errorBox}>Invalid check-in ID.</div>
+      </CoachShell>
     );
   }
 
@@ -134,37 +134,34 @@ export default function CoachCheckinDetailPage() {
   };
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={styles.loading}>Loading check-in...</div>
-      </>
-    );
+    return <CoachShell loading narrow />;
   }
 
   if (error && !checkin) {
     return (
-      <>
-        <CoachNavbar />
-        <div style={styles.container}>
-          <Link href="/coach/checkins" style={styles.backLink}>← Back to check-ins</Link>
-          <div style={styles.errorBox}>{error}</div>
-        </div>
-      </>
+      <CoachShell narrow>
+        <Link href="/coach/checkins" style={styles.backLink}>← Back to check-ins</Link>
+        <div style={styles.errorBox}>{error}</div>
+      </CoachShell>
     );
   }
 
   if (!checkin) return null;
 
+  const isWeekly = checkin.checkin_type === 'weekly';
+  const extraPhotos = Array.isArray(checkin.extra_photos) ? checkin.extra_photos : [];
+
   return (
-    <>
-      <CoachNavbar />
-      <div style={styles.container}>
+    <CoachShell narrow>
         <Link href="/coach/checkins" style={styles.backLink}>← Back to check-ins</Link>
 
         <div style={styles.header}>
           <h1 style={styles.title}>{checkin.profiles?.name || checkin.profiles?.email || 'Client check-in'}</h1>
-          <p style={styles.subtitle}>Submitted {formatCheckinDate(checkin.submitted_at)}</p>
+          <p style={styles.subtitle}>
+            {getCheckinTypeLabel(checkin.checkin_type)}
+            {checkin.coaching_week ? ` · Week ${checkin.coaching_week}` : ''}
+            {' · '}Submitted {formatCheckinDate(checkin.submitted_at)}
+          </p>
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
@@ -179,43 +176,95 @@ export default function CoachCheckinDetailPage() {
             <InfoRow label="Age" value={clientProfile?.age != null ? String(clientProfile.age) : '—'} />
           </section>
 
-          <section style={styles.card}>
-            <h2 style={styles.cardTitle}>Measurements</h2>
-            <InfoRow label="Weight" value={formatWeightChange(checkin.weight, previous?.weight ?? null)} />
-            <InfoRow label="Waist" value={formatWaistChange(checkin.waist, previous?.waist ?? null)} />
-          </section>
+          {isWeekly && (
+            <section style={styles.card}>
+              <h2 style={styles.cardTitle}>Measurements</h2>
+              <InfoRow label="Weight" value={formatWeightChange(checkin.weight, previous?.weight ?? null)} />
+              {checkin.waist != null && (
+                <InfoRow label="Waist" value={formatWaistChange(checkin.waist, previous?.waist ?? null)} />
+              )}
+              {checkin.plan_version != null && (
+                <InfoRow label="Plan version" value={`v${checkin.plan_version}`} />
+              )}
+            </section>
+          )}
 
           <section style={styles.card}>
             <h2 style={styles.cardTitle}>Scores (1–10)</h2>
+            <InfoRow label="Diet adherence" value={String(checkin.diet_adherence ?? checkin.adherence_score ?? '—')} />
+            <InfoRow label="Workout adherence" value={String(checkin.workout_adherence ?? checkin.training_performance ?? '—')} />
             <InfoRow label="Energy" value={String(checkin.energy_level ?? '—')} />
+            <InfoRow label="Sleep" value={String(checkin.sleep_quality ?? '—')} />
+            <InfoRow label="Stress" value={String(checkin.stress_level ?? '—')} />
             <InfoRow label="Hunger" value={String(checkin.hunger_level ?? '—')} />
-            <InfoRow label="Training" value={String(checkin.training_performance ?? '—')} />
-            <InfoRow label="Adherence" value={String(checkin.adherence_score ?? '—')} />
+            {isWeekly && <InfoRow label="Motivation" value={String(checkin.motivation_level ?? '—')} />}
           </section>
         </div>
 
+        {checkin.pain_injuries && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Pain / injuries</h2>
+            <p style={styles.notes}>{checkin.pain_injuries}</p>
+          </section>
+        )}
+
+        {checkin.questions_for_coach && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Questions for coach</h2>
+            <p style={styles.notes}>{checkin.questions_for_coach}</p>
+          </section>
+        )}
+
+        {isWeekly && checkin.digestion && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Digestion</h2>
+            <p style={styles.notes}>{checkin.digestion}</p>
+          </section>
+        )}
+
+        {isWeekly && checkin.cardio_completed && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Cardio completed</h2>
+            <p style={styles.notes}>{checkin.cardio_completed}</p>
+          </section>
+        )}
+
         {checkin.notes && (
           <section style={styles.card}>
-            <h2 style={styles.cardTitle}>Client notes</h2>
+            <h2 style={styles.cardTitle}>{isWeekly ? 'Additional notes' : 'Additional comments'}</h2>
             <p style={styles.notes}>{checkin.notes}</p>
           </section>
         )}
 
-        <section style={styles.card}>
-          <h2 style={styles.cardTitle}>Progress photos</h2>
-          <div style={styles.photoGrid}>
-            <Photo label="Front" url={checkin.progress_photo_front} />
-            <Photo label="Side" url={checkin.progress_photo_side} />
-            <Photo label="Back" url={checkin.progress_photo_back} />
-          </div>
-        </section>
+        {isWeekly && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Progress photos</h2>
+            <div style={styles.photoGrid}>
+              <Photo label="Front" url={checkin.progress_photo_front} />
+              <Photo label="Side" url={checkin.progress_photo_side} />
+              <Photo label="Back" url={checkin.progress_photo_back} />
+            </div>
+            {extraPhotos.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ fontSize: 14, marginBottom: 8 }}>Extra photos</h3>
+                <div style={styles.photoGrid}>
+                  {extraPhotos.map((url, i) => (
+                    <Photo key={i} label={`Extra ${i + 1}`} url={url} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
-        <section style={styles.card}>
-          <WeeklyCoachingPanel
-            clientId={checkin.client_id}
-            checkinId={checkin.id}
-          />
-        </section>
+        {isWeekly && (
+          <section style={styles.card}>
+            <WeeklyCoachingPanel
+              clientId={checkin.client_id}
+              checkinId={checkin.id}
+            />
+          </section>
+        )}
 
         <section style={styles.card}>
           <h2 style={styles.cardTitle}>Coach review</h2>
@@ -251,8 +300,7 @@ export default function CoachCheckinDetailPage() {
             )}
           </form>
         </section>
-      </div>
-    </>
+    </CoachShell>
   );
 }
 
@@ -280,30 +328,30 @@ function Photo({ label, url }: { label: string; url: string | null }) {
 }
 
 const styles: Record<string, CSSProperties> = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', fontSize: 20, color: '#666' },
-  container: { maxWidth: 960, margin: '0 auto', padding: '30px 20px' },
-  backLink: { display: 'inline-block', color: '#e94560', textDecoration: 'none', marginBottom: 20, fontWeight: 600 },
-  header: { marginBottom: 24 },
-  title: { margin: 0, fontSize: 28 },
-  subtitle: { color: '#666', marginTop: 6 },
+  ...coachPageStyles,
+  container: coachPageStyles.containerNarrow,
+  backLink: coachPageStyles.backLink,
+  header: coachPageStyles.header,
+  title: coachPageStyles.title,
+  subtitle: coachPageStyles.subtitle,
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 16 },
-  card: { backgroundColor: 'white', padding: 22, borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.08)', marginBottom: 16 },
-  cardTitle: { margin: '0 0 16px 0', fontSize: 18 },
-  infoRow: { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 },
-  infoLabel: { fontSize: 12, color: '#999', textTransform: 'uppercase' },
-  infoValue: { fontSize: 15, fontWeight: 500 },
-  notes: { margin: 0, lineHeight: 1.6, color: '#333' },
+  card: coachPageStyles.card,
+  cardTitle: { margin: '0 0 16px 0', fontSize: 18, fontWeight: 700, color: colors.textPrimary },
+  infoRow: coachPageStyles.metaItem,
+  infoLabel: coachPageStyles.metaLabel,
+  infoValue: { fontSize: 15, fontWeight: 500, color: colors.textPrimary },
+  notes: { margin: 0, lineHeight: 1.6, color: colors.textSecondary },
   photoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 },
   photoWrap: { display: 'flex', flexDirection: 'column', gap: 8 },
-  photoLabel: { fontSize: 13, fontWeight: 600, color: '#666' },
-  photo: { width: '100%', borderRadius: 8, objectFit: 'cover', aspectRatio: '3/4', backgroundColor: '#f0f0f0' },
-  noPhoto: { padding: 40, textAlign: 'center', backgroundColor: '#f5f5f5', borderRadius: 8, color: '#999' },
+  photoLabel: { fontSize: 13, fontWeight: 600, color: colors.textSecondary },
+  photo: { width: '100%', borderRadius: 12, objectFit: 'cover', aspectRatio: '3/4', backgroundColor: colors.bgElevated },
+  noPhoto: { padding: 40, textAlign: 'center', backgroundColor: colors.bgElevated, borderRadius: 12, color: colors.textMuted },
   field: { marginBottom: 16 },
-  label: { display: 'block', marginBottom: 6, fontWeight: 500 },
-  textarea: { width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 15, boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical' },
-  submitBtn: { padding: '12px 24px', backgroundColor: '#1a1a2e', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 16 },
-  reviewedBadge: { color: '#155724', backgroundColor: '#d4edda', display: 'inline-block', padding: '6px 12px', borderRadius: 8, fontSize: 13, marginBottom: 16 },
-  error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 16 },
-  success: { backgroundColor: '#d4edda', color: '#155724', padding: 12, borderRadius: 8, marginBottom: 16 },
-  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: 24, borderRadius: 12, marginTop: 20 },
+  label: coachPageStyles.label,
+  textarea: coachPageStyles.textarea,
+  submitBtn: coachPageStyles.primaryBtn,
+  reviewedBadge: { color: colors.success, backgroundColor: colors.successMuted, display: 'inline-block', padding: '6px 12px', borderRadius: 8, fontSize: 13, marginBottom: 16, fontWeight: 600 },
+  error: coachPageStyles.error,
+  success: coachPageStyles.success,
+  errorBox: { ...coachPageStyles.card, borderColor: colors.danger },
 };

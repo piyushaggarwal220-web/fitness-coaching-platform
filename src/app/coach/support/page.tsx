@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import CoachNavbar from '@/app/components/CoachNavbar'
+import { CoachShell } from '@/components/ui/CoachShell'
 import { priorityBadgeStyle, statusBadgeStyle, supportStyles as s } from '@/components/support/styles'
 import { requireCoach } from '@/lib/coach-session'
 import {
@@ -72,19 +72,11 @@ export default function CoachSupportPage() {
   }, [requests, tab, coach])
 
   if (loading) {
-    return (
-      <>
-        <CoachNavbar />
-        <div style={s.loading}>Loading support queue…</div>
-      </>
-    )
+    return <CoachShell loading><span /></CoachShell>
   }
 
   return (
-    <>
-      <CoachNavbar />
-      <div style={s.page}>
-        <div style={s.container}>
+    <CoachShell>
           <h1 style={s.title}>Support queue</h1>
           <p style={s.subtitle}>Structured coaching requests · shared open queue</p>
 
@@ -137,8 +129,6 @@ export default function CoachSupportPage() {
               })}
             </div>
           )}
-        </div>
-      </div>
-    </>
+    </CoachShell>
   )
 }

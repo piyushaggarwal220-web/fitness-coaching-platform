@@ -1,9 +1,10 @@
 import type { StoredComplexityTier } from '@/lib/ai/complexity-score'
+import { colors } from '@/lib/design-tokens'
 
 export const COMPLEXITY_TIER_COLORS: Record<StoredComplexityTier, { bg: string; text: string; border: string }> = {
-  low: { bg: '#d4edda', text: '#155724', border: '#28a745' },
-  medium: { bg: '#fff3cd', text: '#856404', border: '#ffc107' },
-  high: { bg: '#f8d7da', text: '#721c24', border: '#dc3545' },
+  low: { bg: colors.successMuted, text: colors.success, border: colors.success },
+  medium: { bg: colors.warningMuted, text: colors.warning, border: colors.warning },
+  high: { bg: colors.dangerMuted, text: colors.danger, border: colors.danger },
 }
 
 export const COMPLEXITY_TIER_LABELS: Record<StoredComplexityTier, string> = {

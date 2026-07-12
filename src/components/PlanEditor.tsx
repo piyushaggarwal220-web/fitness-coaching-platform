@@ -1,6 +1,7 @@
 'use client';
 
 import type { ChangeEvent, CSSProperties } from 'react';
+import { coachPageStyles as styles } from '@/lib/coach-page-styles';
 import type { ClientProfile, PlanFormData } from '@/types/database';
 
 type PlanEditorProps = {
@@ -12,7 +13,7 @@ type PlanEditorProps = {
 
 export function PlanEditor({ form, onChange, clients, clientLocked }: PlanEditorProps) {
   return (
-    <div style={styles.wrap}>
+    <div style={localStyles.wrap}>
       {clients && (
         <Field label="Client" required>
           <select
@@ -31,7 +32,7 @@ export function PlanEditor({ form, onChange, clients, clientLocked }: PlanEditor
         </Field>
       )}
 
-      <div style={styles.row}>
+      <div style={localStyles.row}>
         <Field label="Plan title" required>
           <input type="text" name="title" value={form.title} onChange={onChange} required style={styles.input} />
         </Field>
@@ -61,18 +62,15 @@ export function PlanEditor({ form, onChange, clients, clientLocked }: PlanEditor
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div style={styles.field}>
+    <div style={localStyles.field}>
       <label style={styles.label}>{label}{required ? ' *' : ''}</label>
       {children}
     </div>
   );
 }
 
-const styles: Record<string, CSSProperties> = {
+const localStyles: Record<string, CSSProperties> = {
   wrap: { display: 'flex', flexDirection: 'column', gap: 18 },
   row: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 },
   field: { display: 'flex', flexDirection: 'column', gap: 6 },
-  label: { fontWeight: 500, fontSize: 14 },
-  input: { width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 15, boxSizing: 'border-box', backgroundColor: 'white' },
-  textarea: { width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 15, boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.5, resize: 'vertical' },
 };

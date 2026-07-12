@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { type User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Menu, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { mobileNavStyles } from '@/lib/mobile-styles';
+import { colors, spacing } from '@/lib/design-tokens';
 
 const supabase = createClient();
 
@@ -33,20 +35,17 @@ export default function Navbar() {
       <style>{mobileNavStyles}</style>
       <nav style={styles.navbar}>
         <div style={styles.container}>
-          <Link href="/" style={styles.logo} onClick={() => setIsOpen(false)}>💪 Fitness Coach</Link>
+          <Link href="/" style={styles.logo} onClick={() => setIsOpen(false)}>Coach</Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {user && <NotificationBell />}
-            <button type="button" className="mobile-nav-btn" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">☰</button>
+            <button type="button" className="mobile-nav-btn" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
           <div className={`mobile-nav-links${isOpen ? ' open' : ''}`}>
             {user ? (
               <>
                 <Link href="/dashboard" style={styles.link} onClick={() => setIsOpen(false)}>Dashboard</Link>
-                <Link href="/plan" style={styles.link} onClick={() => setIsOpen(false)}>My Plan</Link>
-                <Link href="/checkin" style={styles.link} onClick={() => setIsOpen(false)}>Check-In</Link>
-                <Link href="/journey" style={styles.link} onClick={() => setIsOpen(false)}>Journey</Link>
-                <Link href="/client/chat" style={styles.link} onClick={() => setIsOpen(false)}>Need Help</Link>
-                <Link href="/profile" style={styles.link} onClick={() => setIsOpen(false)}>Profile</Link>
                 <Link href="/workouts" style={styles.link} onClick={() => setIsOpen(false)}>Workouts</Link>
                 <Link href="/client/support" style={styles.link} onClick={() => setIsOpen(false)}>Support</Link>
                 <Link href="/client/report-issue" style={styles.link} onClick={() => setIsOpen(false)}>Report Issue</Link>
@@ -67,15 +66,17 @@ export default function Navbar() {
 
 const styles: { [key: string]: React.CSSProperties } = {
   navbar: {
-    backgroundColor: '#1a1a2e',
-    padding: '12px 16px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+    backgroundColor: colors.bgGlass,
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    padding: `${spacing[2]}px ${spacing[3]}px`,
+    borderBottom: `1px solid ${colors.divider}`,
     position: 'sticky',
     top: 0,
     zIndex: 100,
   },
   container: {
-    maxWidth: '1200px',
+    maxWidth: 1200,
     margin: '0 auto',
     display: 'flex',
     justifyContent: 'space-between',
@@ -83,29 +84,32 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexWrap: 'wrap',
   },
   logo: {
-    color: '#e94560',
-    fontSize: 'clamp(18px, 4vw, 24px)',
-    fontWeight: 'bold',
+    color: colors.accent,
+    fontSize: 'clamp(18px, 4vw, 22px)',
+    fontWeight: 800,
     textDecoration: 'none',
+    letterSpacing: '-0.02em',
   },
   link: {
-    color: 'white',
+    color: colors.textPrimary,
     textDecoration: 'none',
     padding: '10px 14px',
-    borderRadius: 5,
-    fontSize: 16,
+    borderRadius: 12,
+    fontSize: 15,
     display: 'block',
+    fontWeight: 500,
   },
   logoutBtn: {
-    backgroundColor: '#e94560',
-    color: 'white',
+    backgroundColor: colors.dangerMuted,
+    color: colors.danger,
     border: 'none',
     padding: '10px 20px',
-    borderRadius: 5,
+    borderRadius: 12,
     cursor: 'pointer',
-    fontSize: 16,
+    fontSize: 15,
     minHeight: 44,
     width: '100%',
     textAlign: 'left',
+    fontWeight: 600,
   },
 };

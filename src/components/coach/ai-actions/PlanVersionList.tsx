@@ -3,6 +3,7 @@
 import { formatPlanDate } from '@/lib/plans'
 import type { Plan } from '@/types/database'
 import { useRouter } from 'next/navigation'
+import { colors } from '@/lib/design-tokens'
 import { aiActionStyles as s } from './styles'
 
 type PlanVersionListProps = {
@@ -22,7 +23,7 @@ export function PlanVersionList({ plans, onCompare, onRestore, restoringId }: Pl
   const router = useRouter()
 
   if (plans.length === 0) {
-    return <p style={{ color: '#666', fontSize: 14, margin: 0 }}>No plan versions yet.</p>
+    return <p style={{ color: colors.textMuted, fontSize: 14, margin: 0 }}>No plan versions yet.</p>
   }
 
   return (

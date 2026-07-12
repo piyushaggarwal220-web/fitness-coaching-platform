@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
 import { createClient } from '@/lib/supabase/client';
-import { isDevelopmentModeClient } from '@/lib/config';
-import { isTestModeEnabled } from '@/lib/test-mode';
+import { isPaymentBypassClient } from '@/lib/config';
+import { colors, spacing, radius } from '@/lib/design-tokens';
 
 const supabase = createClient();
 
@@ -42,7 +42,7 @@ function CheckoutForm() {
   const [redeemCode, setRedeemCode] = useState('');
   const [redeemValid, setRedeemValid] = useState<{ planName?: string } | null>(null);
   const [validatingCode, setValidatingCode] = useState(false);
-  const testMode = isTestModeEnabled() || isDevelopmentModeClient();
+  const testMode = isPaymentBypassClient();
 
   const completeVerification = async (payload: {
     razorpay_order_id: string;
@@ -241,8 +241,8 @@ function CheckoutForm() {
               href={`/checkout?plan=${item.slug}`}
               style={{
                 ...styles.planChip,
-                borderColor: item.slug === plan.slug ? '#e94560' : '#ddd',
-                backgroundColor: item.slug === plan.slug ? '#fff5f7' : 'white',
+                borderColor: item.slug === plan.slug ? colors.accent : colors.borderSubtle,
+                backgroundColor: item.slug === plan.slug ? colors.accentMuted : colors.bgElevated,
               }}
             >
               {item.name}
@@ -300,24 +300,24 @@ export default function CheckoutPage() {
 }
 
 const styles: Record<string, CSSProperties> = {
-  page: { minHeight: '100vh', backgroundColor: '#15110D', padding: '40px 20px' },
-  card: { maxWidth: 520, margin: '0 auto', backgroundColor: 'white', borderRadius: 16, padding: 32 },
-  backLink: { color: '#666', textDecoration: 'none', fontSize: 14 },
-  title: { margin: '16px 0 8px', fontSize: 28, color: '#1a1a2e' },
-  subtitle: { margin: '0 0 20px', color: '#666' },
-  testBanner: { backgroundColor: '#fff3cd', color: '#856404', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 14 },
-  planPicker: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-  planChip: { padding: '8px 14px', borderRadius: 999, border: '1px solid #ddd', textDecoration: 'none', color: '#1a1a2e', fontSize: 14 },
+  page: { minHeight: '100vh', backgroundColor: colors.bgPrimary, padding: `${spacing[6]}px ${spacing[3]}px` },
+  card: { maxWidth: 520, margin: '0 auto', backgroundColor: colors.bgCard, borderRadius: radius.lg, padding: spacing[6], border: `1px solid ${colors.borderSubtle}` },
+  backLink: { color: colors.textMuted, textDecoration: 'none', fontSize: 14 },
+  title: { margin: '16px 0 8px', fontSize: 28, color: colors.textPrimary, fontWeight: 800, letterSpacing: '-0.02em' },
+  subtitle: { margin: '0 0 20px', color: colors.textSecondary },
+  testBanner: { backgroundColor: colors.warningMuted, color: colors.warning, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[3], fontSize: 14 },
+  planPicker: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: spacing[4] },
+  planChip: { padding: '8px 14px', borderRadius: 999, border: `1px solid ${colors.borderSubtle}`, textDecoration: 'none', color: colors.textPrimary, fontSize: 14, backgroundColor: colors.bgElevated },
   form: { display: 'flex', flexDirection: 'column', gap: 10 },
-  label: { fontWeight: 600, fontSize: 14, marginTop: 8 },
-  input: { padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16 },
-  payBtn: { marginTop: 16, padding: 16, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 10, fontSize: 17, fontWeight: 700, cursor: 'pointer' },
-  error: { backgroundColor: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 12 },
-  secure: { marginTop: 16, fontSize: 13, color: '#888', textAlign: 'center' },
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: '#F6F1E7' },
-  redeemLink: { background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 16, padding: '8px 0', minHeight: 44 },
-  redeemBox: { backgroundColor: '#f8f5ff', padding: 16, borderRadius: 10, marginBottom: 16 },
-  validateBtn: { padding: '12px 16px', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', minHeight: 48, whiteSpace: 'nowrap' },
-  validBanner: { backgroundColor: '#d4edda', color: '#155724', padding: 10, borderRadius: 8, fontSize: 14, marginBottom: 8 },
-  backToPay: { background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, padding: '8px 0', minHeight: 44 },
+  label: { fontWeight: 600, fontSize: 14, marginTop: 8, color: colors.textSecondary },
+  input: { padding: '14px 16px', border: `1px solid ${colors.borderSubtle}`, borderRadius: radius.sm, fontSize: 16, backgroundColor: colors.bgElevated, color: colors.textPrimary, minHeight: 56 },
+  payBtn: { marginTop: spacing[3], padding: 16, backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: radius.md, fontSize: 17, fontWeight: 700, cursor: 'pointer', minHeight: 56 },
+  error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[2] },
+  secure: { marginTop: spacing[3], fontSize: 13, color: colors.textMuted, textAlign: 'center' },
+  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: colors.textSecondary, backgroundColor: colors.bgPrimary },
+  redeemLink: { background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: spacing[3], padding: '8px 0', minHeight: 44 },
+  redeemBox: { backgroundColor: colors.accentMuted, padding: spacing[3], borderRadius: radius.sm, marginBottom: spacing[3] },
+  validateBtn: { padding: '12px 16px', backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: radius.sm, fontWeight: 600, cursor: 'pointer', minHeight: 48, whiteSpace: 'nowrap' },
+  validBanner: { backgroundColor: colors.successMuted, color: colors.success, padding: 10, borderRadius: radius.sm, fontSize: 14, marginBottom: 8 },
+  backToPay: { background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 13, padding: '8px 0', minHeight: 44 },
 };

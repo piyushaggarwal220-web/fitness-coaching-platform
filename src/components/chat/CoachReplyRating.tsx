@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { RATING_OPTIONS } from '@/lib/coach-ratings'
+import { colors } from '@/lib/design-tokens'
 import type { CoachRatingValue } from '@/types/database'
 
 type CoachReplyRatingPromptProps = {
@@ -88,11 +89,11 @@ export function CoachReplyRatingPrompt({ messageId, coachId }: CoachReplyRatingP
 
 const styles: Record<string, React.CSSProperties> = {
   container: { padding: '8px 0', maxWidth: 320 },
-  label: { fontSize: 12, color: '#888', display: 'block', marginBottom: 6 },
+  label: { fontSize: 12, color: colors.textMuted, display: 'block', marginBottom: 6 },
   options: { display: 'flex', flexWrap: 'wrap', gap: 6 },
-  optionBtn: { padding: '6px 10px', fontSize: 12, border: '1px solid #ddd', borderRadius: 16, background: 'white', cursor: 'pointer', minHeight: 36 },
+  optionBtn: { padding: '6px 10px', fontSize: 12, border: `1px solid ${colors.borderSubtle}`, borderRadius: 16, background: colors.bgElevated, color: colors.textPrimary, cursor: 'pointer', minHeight: 36 },
   commentBox: { marginTop: 8 },
-  textarea: { width: '100%', padding: 8, border: '1px solid #ddd', borderRadius: 8, fontSize: 14, resize: 'vertical', boxSizing: 'border-box' },
-  submitBtn: { marginTop: 6, padding: '8px 16px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer' },
-  thanks: { fontSize: 12, color: '#28a745', padding: '4px 0' },
+  textarea: { width: '100%', padding: 8, border: `1px solid ${colors.borderSubtle}`, borderRadius: 8, fontSize: 14, resize: 'vertical', boxSizing: 'border-box', backgroundColor: colors.bgElevated, color: colors.textPrimary, fontFamily: 'inherit' },
+  submitBtn: { marginTop: 6, padding: '8px 16px', backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer', minHeight: 40, fontWeight: 600 },
+  thanks: { fontSize: 12, color: colors.success, padding: '4px 0' },
 }

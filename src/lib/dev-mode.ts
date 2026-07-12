@@ -2,7 +2,7 @@
  * Development-only helpers. Never enabled when NODE_ENV is production.
  */
 
-import { isTestModeEnabled, isTestModeServer } from '@/lib/test-mode'
+import { isPaymentBypassClient, shouldBypassPayment } from '@/lib/config'
 
 export function isDevModeServer(): boolean {
   if (process.env.NODE_ENV === 'production') return false
@@ -17,14 +17,14 @@ export function isDevModeClient(): boolean {
   )
 }
 
-/** Skip payment gates on client routes (dev or TEST_MODE — never in production). */
+/** Skip payment gates on client routes (dev, test, or Vercel Preview staging). */
 export function shouldBypassPaymentGuardClient(): boolean {
-  return isDevModeClient() || isTestModeEnabled()
+  return isPaymentBypassClient()
 }
 
-/** Skip payment gates on server (dev or TEST_MODE — never in production). */
+/** Skip payment gates on server (dev, test, or Vercel Preview staging). */
 export function shouldBypassPaymentGuardServer(): boolean {
-  return isDevModeServer() || isTestModeServer()
+  return shouldBypassPayment()
 }
 
 /** Dev APIs / panels — never in production builds. */

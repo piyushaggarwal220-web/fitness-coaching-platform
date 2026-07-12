@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { Bell } from 'lucide-react'
 import type { UserNotification } from '@/types/database'
+import { colors, radius } from '@/lib/design-tokens'
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
@@ -57,14 +59,14 @@ export function NotificationBell() {
         style={styles.bell}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
-        🔔
+        <Bell size={22} color={colors.textSecondary} />
         {unreadCount > 0 && <span style={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
 
       {open && (
         <div style={styles.dropdown}>
           <div style={styles.header}>
-            <span style={{ fontWeight: 600 }}>Notifications</span>
+            <span style={{ fontWeight: 600, color: colors.textPrimary }}>Notifications</span>
             {unreadCount > 0 && (
               <button type="button" onClick={() => void markAllRead()} style={styles.markAll}>
                 Mark all read
@@ -115,17 +117,17 @@ function formatTime(date: string): string {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  bell: { position: 'relative', background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', minWidth: 48, minHeight: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', top: 4, right: 4, backgroundColor: '#e94560', color: 'white', fontSize: 10, fontWeight: 700, borderRadius: 10, minWidth: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' },
-  dropdown: { position: 'absolute', top: '100%', right: 0, width: 320, maxWidth: '90vw', backgroundColor: 'white', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.15)', zIndex: 200, marginTop: 8, overflow: 'hidden' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #eee' },
-  markAll: { background: 'none', border: 'none', color: '#e94560', fontSize: 13, cursor: 'pointer' },
+  bell: { position: 'relative', background: 'none', border: 'none', cursor: 'pointer', minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
+  badge: { position: 'absolute', top: 4, right: 4, backgroundColor: colors.accent, color: colors.textInverse, fontSize: 10, fontWeight: 700, borderRadius: 10, minWidth: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' },
+  dropdown: { position: 'absolute', top: '100%', right: 0, width: 320, maxWidth: '90vw', backgroundColor: colors.bgCard, borderRadius: radius.md, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 200, marginTop: 8, overflow: 'hidden', border: `1px solid ${colors.borderSubtle}` },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${colors.divider}` },
+  markAll: { background: 'none', border: 'none', color: colors.accent, fontSize: 13, cursor: 'pointer', fontWeight: 600 },
   list: { maxHeight: 400, overflowY: 'auto' },
-  empty: { padding: 24, textAlign: 'center', color: '#888', fontSize: 14 },
-  item: { padding: '12px 16px', borderBottom: '1px solid #f0f0f0', cursor: 'pointer' },
-  unread: { backgroundColor: '#fff5f7' },
+  empty: { padding: 24, textAlign: 'center', color: colors.textMuted, fontSize: 14 },
+  item: { padding: '12px 16px', borderBottom: `1px solid ${colors.divider}`, cursor: 'pointer' },
+  unread: { backgroundColor: colors.accentMuted },
   itemLink: { textDecoration: 'none', color: 'inherit', display: 'block' },
-  itemTitle: { fontWeight: 600, fontSize: 14, color: '#1a1a2e', marginBottom: 2 },
-  itemBody: { fontSize: 13, color: '#666', lineHeight: 1.4 },
-  itemTime: { fontSize: 11, color: '#aaa', marginTop: 4 },
+  itemTitle: { fontWeight: 600, fontSize: 14, color: colors.textPrimary, marginBottom: 2 },
+  itemBody: { fontSize: 13, color: colors.textSecondary, lineHeight: 1.4 },
+  itemTime: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
 }

@@ -4,6 +4,8 @@ import { useState, type CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
 import { FITNESS_GOAL_OPTIONS } from '@/lib/onboarding'
+import { colors } from '@/lib/design-tokens'
+import { coachPageStyles as pageStyles } from '@/lib/coach-page-styles'
 import type { CoachClientDetail } from '@/types/database'
 
 type CoachClientProfileEditProps = {
@@ -72,19 +74,19 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
       <div style={styles.grid}>
         <label style={styles.field}>
           Age
-          <input value={age} onChange={(e) => setAge(e.target.value)} style={styles.input} type="number" />
+          <input value={age} onChange={(e) => setAge(e.target.value)} style={pageStyles.input} type="number" />
         </label>
         <label style={styles.field}>
           Weight (kg)
-          <input value={weight} onChange={(e) => setWeight(e.target.value)} style={styles.input} type="number" />
+          <input value={weight} onChange={(e) => setWeight(e.target.value)} style={pageStyles.input} type="number" />
         </label>
         <label style={styles.field}>
           Height (cm)
-          <input value={height} onChange={(e) => setHeight(e.target.value)} style={styles.input} type="number" />
+          <input value={height} onChange={(e) => setHeight(e.target.value)} style={pageStyles.input} type="number" />
         </label>
         <label style={styles.field}>
           Fitness goal
-          <select value={fitnessGoal} onChange={(e) => setFitnessGoal(e.target.value)} style={styles.input}>
+          <select value={fitnessGoal} onChange={(e) => setFitnessGoal(e.target.value)} style={pageStyles.input}>
             <option value="">—</option>
             {FITNESS_GOAL_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -96,13 +98,13 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
       </div>
       <label style={styles.field}>
         Injuries
-        <textarea value={injuries} onChange={(e) => setInjuries(e.target.value)} rows={2} style={styles.textarea} />
+        <textarea value={injuries} onChange={(e) => setInjuries(e.target.value)} rows={2} style={pageStyles.textarea} />
       </label>
       <label style={styles.field}>
         Medical notes
-        <textarea value={medicalNotes} onChange={(e) => setMedicalNotes(e.target.value)} rows={2} style={styles.textarea} />
+        <textarea value={medicalNotes} onChange={(e) => setMedicalNotes(e.target.value)} rows={2} style={pageStyles.textarea} />
       </label>
-      <button type="button" onClick={() => void handleSave()} disabled={saving} style={styles.btn}>
+      <button type="button" onClick={() => void handleSave()} disabled={saving} style={pageStyles.primaryBtn}>
         {saving ? 'Saving…' : 'Save & recalculate complexity'}
       </button>
       {message && <p style={styles.message}>{message}</p>}
@@ -112,21 +114,9 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
 
 const styles: Record<string, CSSProperties> = {
   wrap: { marginTop: 8 },
-  title: { margin: '0 0 8px 0', fontSize: 16, fontWeight: 600 },
-  hint: { margin: '0 0 16px 0', fontSize: 13, color: '#666' },
+  title: { margin: '0 0 8px 0', fontSize: 16, fontWeight: 600, color: colors.textPrimary },
+  hint: { margin: '0 0 16px 0', fontSize: 13, color: colors.textSecondary },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 12 },
-  field: { display: 'grid', gap: 6, fontSize: 14 },
-  input: { padding: 10, border: '1px solid #ddd', borderRadius: 8, fontSize: 15 },
-  textarea: { padding: 10, border: '1px solid #ddd', borderRadius: 8, fontSize: 15, fontFamily: 'inherit' },
-  btn: {
-    marginTop: 12,
-    padding: '10px 16px',
-    backgroundColor: '#1a1a2e',
-    color: 'white',
-    border: 'none',
-    borderRadius: 8,
-    cursor: 'pointer',
-    fontWeight: 600,
-  },
-  message: { marginTop: 12, fontSize: 13, color: '#155724' },
+  field: { display: 'grid', gap: 6, fontSize: 14, color: colors.textSecondary },
+  message: { marginTop: 12, fontSize: 13, color: colors.success },
 }

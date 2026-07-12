@@ -1,9 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Checkin, Plan, Profile } from '@/types/database'
+import type { Checkin, JourneyEntry, Plan, Profile } from '@/types/database'
+import { parseCoachResponse } from '@/lib/checkin'
 
 export type JourneyMilestone = {
   id: string
-  type: 'onboarding' | 'plan' | 'checkin' | 'workout' | 'coach_comment'
+  type: 'onboarding' | 'plan' | 'checkin' | 'workout' | 'coach_comment' | 'journey_entry'
   title: string
   description: string
   date: string
@@ -22,8 +23,20 @@ export type MeasurementEntry = {
   weight: number | null
 }
 
+export type JourneyWeeklyEntry = {
+  id: string
+  date: string
+  weight: number | null
+  photos: { front?: string; side?: string; back?: string; extra?: string[] }
+  coachComment: string | null
+  checkinSummary: string | null
+  planVersion: number | null
+  checkinId: string
+}
+
 export type ProgressJourneyData = {
   milestones: JourneyMilestone[]
+  weeklyEntries: JourneyWeeklyEntry[]
   weightHistory: WeightEntry[]
   measurements: MeasurementEntry[]
   progressPhotos: { date: string; front?: string; side?: string; back?: string }[]
@@ -46,13 +59,18 @@ export async function loadProgressJourney(
   supabase: SupabaseClient,
   userId: string
 ): Promise<ProgressJourneyData> {
-  const [profileRes, checkinsRes, plansRes, workoutsRes] = await Promise.all([
+  const [profileRes, checkinsRes, journeyRes, plansRes, workoutsRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', userId).single(),
     supabase
       .from('checkins')
       .select('*')
       .eq('client_id', userId)
       .order('submitted_at', { ascending: true }),
+    supabase
+      .from('journey_entries')
+      .select('*')
+      .eq('client_id', userId)
+      .order('entry_date', { ascending: true }),
     supabase
       .from('plans')
       .select('*')
@@ -67,14 +85,19 @@ export async function loadProgressJourney(
 
   const profile = profileRes.data as Profile | null
   const checkins = (checkinsRes.data ?? []) as Checkin[]
+  const journeyEntries = (journeyRes.data ?? []) as JourneyEntry[]
   const plans = (plansRes.data ?? []) as Plan[]
   const workouts = workoutsRes.data ?? []
+
+  const weeklyCheckins = checkins.filter((c) => c.checkin_type === 'weekly')
+  const checkinById = new Map(checkins.map((c) => [c.id, c]))
 
   const milestones: JourneyMilestone[] = []
   const weightHistory: WeightEntry[] = []
   const measurements: MeasurementEntry[] = []
   const progressPhotos: ProgressJourneyData['progressPhotos'] = []
   const coachComments: ProgressJourneyData['coachComments'] = []
+  const weeklyEntries: JourneyWeeklyEntry[] = []
 
   if (profile?.onboarding_completed_at) {
     milestones.push({
@@ -116,11 +139,80 @@ export async function loadProgressJourney(
     }
   }
 
-  for (const checkin of checkins) {
+  for (const entry of journeyEntries) {
+    const checkin = checkinById.get(entry.checkin_id)
+    const coachResponse = checkin ? parseCoachResponse(checkin.coach_response) : { feedback: '', action_items: '' }
+    const coachComment = coachResponse.feedback || null
+
+    weeklyEntries.push({
+      id: entry.id,
+      date: entry.entry_date,
+      weight: entry.weight,
+      photos: {
+        front: entry.photo_front ?? undefined,
+        side: entry.photo_side ?? undefined,
+        back: entry.photo_back ?? undefined,
+        extra: Array.isArray(entry.extra_photos) ? entry.extra_photos : undefined,
+      },
+      coachComment,
+      checkinSummary: entry.checkin_summary,
+      planVersion: entry.plan_version,
+      checkinId: entry.checkin_id,
+    })
+
+    milestones.push({
+      id: `journey-${entry.id}`,
+      type: 'journey_entry',
+      title: `Week ${checkin?.coaching_week ?? ''} Check-in`.trim(),
+      description: entry.checkin_summary?.slice(0, 80) ?? 'Weekly progress check-in.',
+      date: entry.entry_date,
+      icon: '✅',
+    })
+
+    if (entry.weight != null) {
+      weightHistory.push({ date: entry.entry_date, weight: entry.weight, source: 'checkin' })
+    }
+
+    measurements.push({
+      date: entry.entry_date,
+      waist: checkin?.waist ?? null,
+      weight: entry.weight,
+    })
+
+    if (entry.photo_front || entry.photo_side || entry.photo_back) {
+      progressPhotos.push({
+        date: entry.entry_date,
+        front: entry.photo_front ?? undefined,
+        side: entry.photo_side ?? undefined,
+        back: entry.photo_back ?? undefined,
+      })
+    }
+
+    if (coachComment) {
+      coachComments.push({
+        date: checkin?.reviewed_at ?? entry.entry_date,
+        comment: coachComment,
+        checkinId: entry.checkin_id,
+      })
+      milestones.push({
+        id: `coach-${entry.checkin_id}`,
+        type: 'coach_comment',
+        title: 'Coach Feedback',
+        description: coachComment.slice(0, 80),
+        date: checkin?.reviewed_at ?? entry.entry_date,
+        icon: '💬',
+      })
+    }
+  }
+
+  // Fallback for legacy weekly check-ins without journey_entries rows
+  for (const checkin of weeklyCheckins) {
+    if (journeyEntries.some((e) => e.checkin_id === checkin.id)) continue
+
     milestones.push({
       id: `checkin-${checkin.id}`,
       type: 'checkin',
-      title: `Week ${checkins.indexOf(checkin) + 1} Check-in`,
+      title: `Week ${checkin.coaching_week ?? weeklyCheckins.indexOf(checkin) + 1} Check-in`,
       description: checkin.notes?.slice(0, 80) ?? 'Weekly progress check-in submitted.',
       date: checkin.submitted_at,
       icon: '✅',
@@ -129,12 +221,6 @@ export async function loadProgressJourney(
     if (checkin.weight != null) {
       weightHistory.push({ date: checkin.submitted_at, weight: checkin.weight, source: 'checkin' })
     }
-
-    measurements.push({
-      date: checkin.submitted_at,
-      waist: checkin.waist,
-      weight: checkin.weight,
-    })
 
     if (checkin.progress_photo_front || checkin.progress_photo_side || checkin.progress_photo_back) {
       progressPhotos.push({
@@ -145,30 +231,13 @@ export async function loadProgressJourney(
       })
     }
 
-    if (checkin.coach_response) {
-      try {
-        const parsed = JSON.parse(checkin.coach_response)
-        const feedback = parsed.feedback ?? checkin.coach_response
-        coachComments.push({
-          date: checkin.reviewed_at ?? checkin.submitted_at,
-          comment: feedback,
-          checkinId: checkin.id,
-        })
-        milestones.push({
-          id: `coach-${checkin.id}`,
-          type: 'coach_comment',
-          title: 'Coach Feedback',
-          description: feedback.slice(0, 80),
-          date: checkin.reviewed_at ?? checkin.submitted_at,
-          icon: '💬',
-        })
-      } catch {
-        coachComments.push({
-          date: checkin.reviewed_at ?? checkin.submitted_at,
-          comment: checkin.coach_response,
-          checkinId: checkin.id,
-        })
-      }
+    const coachResponse = parseCoachResponse(checkin.coach_response)
+    if (coachResponse.feedback) {
+      coachComments.push({
+        date: checkin.reviewed_at ?? checkin.submitted_at,
+        comment: coachResponse.feedback,
+        checkinId: checkin.id,
+      })
     }
   }
 
@@ -194,6 +263,7 @@ export async function loadProgressJourney(
 
   return {
     milestones,
+    weeklyEntries: weeklyEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     weightHistory,
     measurements,
     progressPhotos,

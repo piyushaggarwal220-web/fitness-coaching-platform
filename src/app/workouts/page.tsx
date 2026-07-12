@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import Navbar from '../components/Navbar';
+import { Dumbbell, Plus } from 'lucide-react';
+import { ClientShell } from '@/components/ui/ClientShell';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
+import { mobileStyles } from '@/lib/mobile-styles';
+import { colors, spacing } from '@/lib/design-tokens';
 import type { NewWorkoutForm, Workout } from '@/types/database';
 
 const supabase = createClient();
@@ -16,7 +22,6 @@ async function fetchWorkouts(userId: string) {
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
-
   return { data, loadError };
 }
 
@@ -37,18 +42,11 @@ export default function Workouts() {
   useEffect(() => {
     const checkUser = async () => {
       const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
-      if (!result) {
-        setLoading(false);
-        return;
-      }
-
+      if (!result) { setLoading(false); return; }
       setUser(result.user as User);
       const { data, loadError } = await fetchWorkouts(result.user.id);
-      if (loadError) {
-        setError(loadError.message);
-      } else if (data) {
-        setWorkouts(data);
-      }
+      if (loadError) setError(loadError.message);
+      else if (data) setWorkouts(data);
       setLoading(false);
     };
     checkUser();
@@ -56,11 +54,8 @@ export default function Workouts() {
 
   const loadWorkouts = async (userId: string) => {
     const { data, loadError } = await fetchWorkouts(userId);
-    if (loadError) {
-      setError(loadError.message);
-      return;
-    }
-    if (data) setWorkouts(data);
+    if (loadError) setError(loadError.message);
+    else if (data) setWorkouts(data);
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -72,112 +67,69 @@ export default function Workouts() {
     e.preventDefault();
     if (!user) return;
 
-    const { error: insertError } = await supabase
-      .from('workouts')
-      .insert({
-        user_id: user.id,
-        name: newWorkout.name.trim(),
-        duration: parseInt(newWorkout.duration, 10) || 0,
-        calories: parseInt(newWorkout.calories, 10) || 0,
-        date: newWorkout.date || null,
-      });
+    const { error: insertError } = await supabase.from('workouts').insert({
+      user_id: user.id,
+      name: newWorkout.name.trim(),
+      duration: parseInt(newWorkout.duration, 10) || 0,
+      calories: parseInt(newWorkout.calories, 10) || 0,
+      date: newWorkout.date || null,
+    });
 
-    if (insertError) {
-      setError(insertError.message);
-      return;
-    }
+    if (insertError) { setError(insertError.message); return; }
 
     setNewWorkout({ name: '', duration: '', calories: '', date: new Date().toISOString().split('T')[0] });
     setShowForm(false);
     await loadWorkouts(user.id);
   };
 
-  if (loading) {
-    return <div style={styles.loading}>Loading...</div>;
-  }
+  if (loading) return <ClientShell title="Workouts" loading />;
 
   return (
-    <>
-      <Navbar />
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <h1>🏋️ Workout Tracker</h1>
-          <button style={styles.addBtn} onClick={() => setShowForm(!showForm)}>
-            {showForm ? '✕ Cancel' : '+ Log Workout'}
-          </button>
+    <ClientShell title="Workouts">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[4], gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>Workouts</h1>
+          <p style={{ margin: '4px 0 0', color: colors.textSecondary }}>Log your training sessions</p>
         </div>
-
-        {error && <div style={styles.error}>{error}</div>}
-
-        {showForm && (
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <input
-              type="text"
-              name="name"
-              placeholder="Workout name"
-              value={newWorkout.name}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
-            <input
-              type="number"
-              name="duration"
-              placeholder="Duration (minutes)"
-              value={newWorkout.duration}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
-            <input
-              type="number"
-              name="calories"
-              placeholder="Calories burned"
-              value={newWorkout.calories}
-              onChange={handleChange}
-              style={styles.input}
-            />
-            <input
-              type="date"
-              name="date"
-              value={newWorkout.date}
-              onChange={handleChange}
-              style={styles.input}
-            />
-            <button type="submit" style={styles.submitBtn}>Save Workout</button>
-          </form>
-        )}
-
-        <div style={styles.workoutList}>
-          {workouts.length === 0 ? (
-            <p style={styles.empty}>No workouts logged yet. Start your fitness journey!</p>
-          ) : (
-            workouts.map((workout) => (
-              <div key={workout.id} style={styles.workoutItem}>
-                <div>
-                  <h3>{workout.name}</h3>
-                  <p>⏱️ {workout.duration} min • 🔥 {workout.calories || 0} cal</p>
-                  <small>📅 {new Date(workout.date ?? workout.created_at).toLocaleDateString()}</small>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <Button size="md" onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancel' : <><Plus size={18} /> Log</>}
+        </Button>
       </div>
-    </>
+
+      {error && <div style={mobileStyles.error}>{error}</div>}
+
+      {showForm && (
+        <Card variant="elevated">
+          <form onSubmit={handleSubmit}>
+            <Input label="Workout name" name="name" value={newWorkout.name} onChange={handleChange} required placeholder="e.g. Upper body" />
+            <Input label="Duration (minutes)" type="number" name="duration" value={newWorkout.duration} onChange={handleChange} required />
+            <Input label="Calories burned" type="number" name="calories" value={newWorkout.calories} onChange={handleChange} />
+            <Input label="Date" type="date" name="date" value={newWorkout.date} onChange={handleChange} />
+            <Button type="submit" fullWidth>Save Workout</Button>
+          </form>
+        </Card>
+      )}
+
+      {workouts.length === 0 ? (
+        <Card variant="glass">
+          <div style={{ textAlign: 'center', padding: spacing[4] }}>
+            <Dumbbell size={32} color={colors.textMuted} style={{ marginBottom: 12 }} />
+            <p style={{ margin: 0, color: colors.textMuted }}>No workouts logged yet. Start your fitness journey!</p>
+          </div>
+        </Card>
+      ) : (
+        workouts.map((workout) => (
+          <Card key={workout.id} variant="elevated">
+            <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 600 }}>{workout.name}</h3>
+            <p style={{ margin: '0 0 4px', color: colors.textSecondary, fontSize: 14 }}>
+              {workout.duration} min · {workout.calories || 0} cal
+            </p>
+            <p style={{ margin: 0, fontSize: 12, color: colors.textMuted }}>
+              {new Date(workout.date ?? workout.created_at).toLocaleDateString()}
+            </p>
+          </Card>
+        ))
+      )}
+    </ClientShell>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' },
-  container: { maxWidth: '800px', margin: '0 auto', padding: '30px 20px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: 12 },
-  addBtn: { padding: '12px 24px', backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px' },
-  form: { backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '30px', display: 'flex', flexDirection: 'column', gap: '12px' },
-  input: { padding: '12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '16px' },
-  submitBtn: { padding: '12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px' },
-  workoutList: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  workoutItem: { backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
-  empty: { textAlign: 'center', color: '#666', padding: '40px', fontSize: '18px' },
-  error: { padding: 12, marginBottom: 16, backgroundColor: '#f8d7da', color: '#721c24', borderRadius: 8 },
-};
