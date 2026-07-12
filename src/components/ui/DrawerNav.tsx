@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { X } from 'lucide-react'
-import { colors, layout, spacing } from '@/lib/design-tokens'
+import { colors, spacing } from '@/lib/design-tokens'
+import { staggerClass } from '@/lib/motion'
 
 export type DrawerNavItem = {
   href: string
@@ -22,19 +23,37 @@ type DrawerNavProps = {
 
 export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavProps) {
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
+  const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (!open) return
+    if (open) {
+      setMounted(true)
+      requestAnimationFrame(() => setVisible(true))
+    } else if (mounted) {
+      setVisible(false)
+    }
+  }, [open, mounted])
+
+  useEffect(() => {
+    if (!mounted) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
-  }, [open])
+  }, [mounted])
 
-  if (!open) return null
+  useEffect(() => {
+    if (!visible && mounted) {
+      const timer = setTimeout(() => setMounted(false), 360)
+      return () => clearTimeout(timer)
+    }
+  }, [visible, mounted])
+
+  if (!mounted) return null
 
   return (
     <div
-      className="drawer-overlay"
+      className={`drawer-overlay ${visible ? '' : 'drawer-overlay--closing'}`}
       style={{
         position: 'fixed',
         inset: 0,
@@ -58,7 +77,7 @@ export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavPr
         }}
       />
       <nav
-        className="drawer-panel safe-top safe-bottom"
+        className={`drawer-panel safe-top safe-bottom ${visible ? '' : 'drawer-panel--closing'}`}
         style={{
           width: 'min(320px, 85vw)',
           backgroundColor: colors.bgSecondary,
@@ -80,6 +99,7 @@ export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavPr
             type="button"
             onClick={onClose}
             aria-label="Close"
+            className="btn-press"
             style={{
               width: 40,
               height: 40,
@@ -98,13 +118,14 @@ export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavPr
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-          {items.map((item) => {
+          {items.map((item, index) => {
             const active = pathname === item.href || (item.href !== '/dashboard' && item.href !== '/coach/dashboard' && item.href !== '/admin' && pathname.startsWith(item.href))
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
+                className={`drawer-item-cascade ${staggerClass(index)}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -118,7 +139,7 @@ export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavPr
                   fontWeight: active ? 600 : 500,
                   fontSize: 15,
                   minHeight: 48,
-                  transition: 'background-color 150ms ease, color 150ms ease',
+                  transition: 'background-color 180ms ease, color 180ms ease',
                 }}
               >
                 <span style={{ color: active ? colors.accent : colors.textMuted, display: 'flex' }}>{item.icon}</span>
@@ -142,6 +163,7 @@ export function DrawerMenuButton({ onClick, label = 'Open menu' }: { onClick: ()
       type="button"
       onClick={onClick}
       aria-label={label}
+      className="btn-press"
       style={{
         width: 40,
         height: 40,

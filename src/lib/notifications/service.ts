@@ -106,7 +106,7 @@ export const NotificationTemplates = {
   }),
   welcome: () => ({
     type: 'welcome' as NotificationType,
-    title: 'Welcome to your coaching journey!',
+    title: 'Welcome to Lurvox!',
     body: 'Complete your onboarding to get your personalized plan.',
     actionUrl: '/onboarding',
   }),

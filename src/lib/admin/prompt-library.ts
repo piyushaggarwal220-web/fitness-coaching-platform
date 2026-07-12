@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { invalidatePromptLibrary } from '@/lib/ai/prompt-cache'
 import type {
   PromptLibrary,
   PromptLibraryCategory,
@@ -354,6 +355,7 @@ export async function publishPromptDraft(
   if (error) return { error: error.message }
 
   await supabase.from('prompt_library').update({ updated_at: now }).eq('id', promptId)
+  invalidatePromptLibrary()
   return { error: null }
 }
 

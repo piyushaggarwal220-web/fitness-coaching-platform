@@ -1,14 +1,23 @@
-import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const MIGRATION_FILES = [
   'supabase/migrations/20260708100000_add_home_workout_prompt_categories.sql',
   'supabase/migrations/20260708110000_seed_ai_knowledge.sql',
   'supabase/migrations/20260708200000_complexity_score_system.sql',
+  'supabase/migrations/20260712100000_recurring_checkin_system.sql',
+  'supabase/migrations/20260713100000_premium_polish_chat_fixes.sql',
 ]
 
-async function tryManagementApi(ref: string, token: string): Promise<boolean> {
-  const { readFileSync } = await import('node:fs')
+function loadEnvLocal() {
+  for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
+    const m = line.match(/^([^#=]+)=(.*)$/)
+    if (m) process.env[m[1].trim()] = m[2].trim()
+  }
+}
+
+async function tryManagementApi(ref, token) {
   for (const file of MIGRATION_FILES) {
     const sql = readFileSync(file, 'utf8')
     const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
@@ -29,9 +38,8 @@ async function tryManagementApi(ref: string, token: string): Promise<boolean> {
   return true
 }
 
-async function tryPgConnection(connectionString: string): Promise<boolean> {
+async function tryPgConnection(connectionString) {
   const pg = await import('pg')
-  const { readFileSync } = await import('node:fs')
   const client = new pg.default.Client({ connectionString, ssl: { rejectUnauthorized: false } })
   await client.connect()
   try {
@@ -45,22 +53,22 @@ async function tryPgConnection(connectionString: string): Promise<boolean> {
   }
 }
 
-async function verifyHomeEnum(admin: SupabaseClient): Promise<boolean> {
-  const { error } = await admin.from('prompt_library').select('id').eq('category', 'initial_workout_home').limit(1)
-  if (error?.message?.includes('invalid input value for enum')) {
-    return false
-  }
-  return true
+async function verifyCheckinSchema(admin) {
+  const { error: checkinError } = await admin
+    .from('checkins')
+    .select('checkin_type, coaching_week, coaching_day, due_date, plan_version')
+    .limit(0)
+  if (checkinError) return false
+
+  const { error: journeyError } = await admin
+    .from('journey_entries')
+    .select('id, client_id, checkin_id, entry_date, plan_version')
+    .limit(0)
+  return !journeyError
 }
 
-async function main(): Promise<void> {
-  const { readFileSync } = await import('node:fs')
-  const { join } = await import('node:path')
-
-  for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
-    const m = line.match(/^([^#=]+)=(.*)$/)
-    if (m) process.env[m[1].trim()] = m[2].trim()
-  }
+async function main() {
+  loadEnvLocal()
 
   const ref = process.env.SUPABASE_PROJECT_REF?.trim() || 'zhcedsmvpvpaqezbdiiy'
 
@@ -92,17 +100,23 @@ async function main(): Promise<void> {
     }
   }
 
-  const admin = createAdminClient()
-  const enumReady = await verifyHomeEnum(admin)
-  if (enumReady) {
-    console.log('SKIP: migrations may already be applied (home enum accepts queries).')
-    console.log('If home prompts still fail to import, run SQL manually:')
-    for (const file of MIGRATION_FILES) console.log(`  - ${file}`)
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    console.error('FAIL: Cannot apply migrations automatically.')
+    console.error('Set SUPABASE_ACCESS_TOKEN or SUPABASE_DB_PASSWORD in .env.local, or run SQL in Supabase dashboard:')
+    for (const file of MIGRATION_FILES) console.error(`  ${file}`)
+    process.exit(1)
+  }
+
+  const admin = createClient(url, key)
+  const schemaReady = await verifyCheckinSchema(admin)
+  if (schemaReady) {
+    console.log('SKIP: pending migrations appear already applied (checkin + journey schema present).')
     process.exit(0)
   }
 
-  console.error('FAIL: Cannot apply migrations automatically.')
-  console.error('Set SUPABASE_ACCESS_TOKEN or SUPABASE_DB_PASSWORD in .env.local, or run SQL in Supabase dashboard:')
+  console.error('FAIL: Cannot apply migrations automatically without SUPABASE_ACCESS_TOKEN or SUPABASE_DB_PASSWORD.')
   for (const file of MIGRATION_FILES) console.error(`  ${file}`)
   process.exit(1)
 }

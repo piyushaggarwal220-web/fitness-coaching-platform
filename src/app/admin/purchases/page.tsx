@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { AdminShell } from '@/components/admin/AdminShell'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatInr } from '@/lib/admin/pricing'
 import { formatDate } from '@/lib/coach-utils'
@@ -72,7 +73,7 @@ export default function AdminPurchasesPage() {
     <AdminShell>
       <div style={s.page}>
         <div style={s.containerWide}>
-          <h1 style={s.title}>Purchases</h1>
+          <h1 style={s.title}>{brandTitle('Purchases')}</h1>
           <p style={s.subtitle}>Payment history and Razorpay transaction records.</p>
 
           {error && <div style={s.error}>{error}</div>}

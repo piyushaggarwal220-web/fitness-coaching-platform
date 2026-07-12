@@ -9,6 +9,10 @@ import { Card } from '@/components/ui/Card';
 import { Slider, TextArea } from '@/components/ui/Input';
 import { INITIAL_MID_WEEK_FORM, validateMidWeekForm } from '@/lib/checkin';
 import { isCheckinAvailableToday } from '@/lib/checkin-schedule';
+import { brandTitle } from '@/lib/brand';
+import { shouldBypassCheckinScheduleClient } from '@/lib/config';
+import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
+import { readApiJson } from '@/lib/api-response';
 import { authenticateClient } from '@/lib/onboarding';
 import { mobileStyles } from '@/lib/mobile-styles';
 import { colors, spacing } from '@/lib/design-tokens';
@@ -45,8 +49,9 @@ export default function MidWeekCheckinPage() {
       setCheckins(rows);
 
       const onboardingAt = result.profile?.onboarding_completed_at;
+      const bypassSchedule = shouldBypassCheckinScheduleClient();
       if (onboardingAt) {
-        setAvailable(isCheckinAvailableToday(onboardingAt, 'mid_week', rows));
+        setAvailable(isCheckinAvailableToday(onboardingAt, 'mid_week', rows, new Date(), { bypassSchedule }));
       }
 
       setLoading(false);
@@ -79,6 +84,7 @@ export default function MidWeekCheckinPage() {
       const res = await fetch('/api/checkin/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           checkinType: 'mid_week',
           diet_adherence: Number(form.diet_adherence),
@@ -93,8 +99,8 @@ export default function MidWeekCheckinPage() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Failed to submit check-in.');
+      const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
 
       setSuccess('Day 3 check-in submitted! Your coach has been notified.');
       setForm(INITIAL_MID_WEEK_FORM);
@@ -106,12 +112,14 @@ export default function MidWeekCheckinPage() {
     }
   };
 
+  const devMode = shouldBypassCheckinScheduleClient();
+
   if (loading) return <ClientShell title="Check-In" loading hideBottomNav />;
 
   if (!profile?.coach_id) {
     return (
       <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={styles.title}>Mid-Week Check-In</h1>
+        <h1 style={styles.title}>{brandTitle('Mid-Week Check-In')}</h1>
         <div style={styles.error}>No coach is assigned to your account yet.</div>
         <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
       </ClientShell>
@@ -121,7 +129,7 @@ export default function MidWeekCheckinPage() {
   if (!available) {
     return (
       <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={styles.title}>Mid-Week Check-In</h1>
+        <h1 style={styles.title}>{brandTitle('Mid-Week Check-In')}</h1>
         <div style={styles.infoBox}>Your Day 3 check-in is not available today.</div>
         <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
       </ClientShell>
@@ -130,7 +138,8 @@ export default function MidWeekCheckinPage() {
 
   return (
     <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={styles.title}>Mid-Week Check-In</h1>
+        {devMode && <DevelopmentModeBadge />}
+        <h1 style={styles.title}>{brandTitle('Mid-Week Check-In')}</h1>
         <p style={styles.subtitle}>Day 3 accountability check-in — questions only, no photos.</p>
 
         {error && <div style={styles.error}>{error}</div>}

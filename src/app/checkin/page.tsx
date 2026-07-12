@@ -14,8 +14,13 @@ import {
   validateWeeklyCheckinForm,
 } from '@/lib/checkin';
 import { isCheckinAvailableToday } from '@/lib/checkin-schedule';
+import { brandTitle } from '@/lib/brand';
+import { shouldBypassCheckinScheduleClient } from '@/lib/config';
+import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
+import { readApiJson } from '@/lib/api-response';
 import { authenticateClient } from '@/lib/onboarding';
 import { requestComplexityRecalculation } from '@/lib/complexity/client';
+import { SlideTransition, SuccessState } from '@/components/motion'
 import { mobileStyles } from '@/lib/mobile-styles';
 import { colors, spacing } from '@/lib/design-tokens';
 import type { Checkin, OnboardingProfile, Plan, WeeklyCheckinFormData } from '@/types/database';
@@ -40,6 +45,7 @@ export default function CheckinPage() {
   const [success, setSuccess] = useState('');
   const [available, setAvailable] = useState(false);
   const [currentSection, setCurrentSection] = useState<Section>('measurements');
+  const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forward');
 
   useEffect(() => {
     const init = async () => {
@@ -58,8 +64,9 @@ export default function CheckinPage() {
       setActivePlan(planData);
 
       const onboardingAt = result.profile?.onboarding_completed_at;
+      const bypassSchedule = shouldBypassCheckinScheduleClient();
       if (onboardingAt) {
-        setAvailable(isCheckinAvailableToday(onboardingAt, 'weekly', rows));
+        setAvailable(isCheckinAvailableToday(onboardingAt, 'weekly', rows, new Date(), { bypassSchedule }));
       }
       setLoading(false);
     };
@@ -86,12 +93,18 @@ export default function CheckinPage() {
 
   const goNext = () => {
     const idx = SECTIONS.indexOf(currentSection);
-    if (idx < SECTIONS.length - 1) setCurrentSection(SECTIONS[idx + 1]);
+    if (idx < SECTIONS.length - 1) {
+      setSlideDirection('forward');
+      setCurrentSection(SECTIONS[idx + 1]);
+    }
   };
 
   const goPrev = () => {
     const idx = SECTIONS.indexOf(currentSection);
-    if (idx > 0) setCurrentSection(SECTIONS[idx - 1]);
+    if (idx > 0) {
+      setSlideDirection('back');
+      setCurrentSection(SECTIONS[idx - 1]);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -121,6 +134,7 @@ export default function CheckinPage() {
       const res = await fetch('/api/checkin/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           checkinType: 'weekly',
           weight: Number(form.weight),
@@ -143,10 +157,13 @@ export default function CheckinPage() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Failed to submit check-in.');
+      const parsed = await readApiJson<{ success?: boolean; error?: string; checkinId?: string }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
 
-      await requestComplexityRecalculation({ trigger: 'weekly_checkin', checkinId: data.checkinId });
+      const data = parsed.data
+      if (!data.checkinId) throw new Error('Check-in saved but no ID returned.')
+
+      await requestComplexityRecalculation({ trigger: 'weekly_checkin', checkinId: data.checkinId })
 
       setSuccess('Weekly check-in submitted! Your coach will review it and update your plan.');
       setForm(INITIAL_WEEKLY_FORM);
@@ -160,12 +177,14 @@ export default function CheckinPage() {
     }
   };
 
+  const devMode = shouldBypassCheckinScheduleClient();
+
   if (loading) return <ClientShell title="Check-In" loading hideBottomNav />;
 
   if (!profile?.coach_id) {
     return (
       <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>Weekly Check-In</h1>
+        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>{brandTitle('Weekly Check-In')}</h1>
         <div style={mobileStyles.info}>
           No coach is assigned to your account yet. Your coach will be assigned shortly.
         </div>
@@ -177,7 +196,7 @@ export default function CheckinPage() {
   if (!available) {
     return (
       <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>Weekly Check-In</h1>
+        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>{brandTitle('Weekly Check-In')}</h1>
         <div style={mobileStyles.info}>
           Your weekly check-in is not available today. Check your dashboard for the next scheduled check-in.
         </div>
@@ -188,8 +207,9 @@ export default function CheckinPage() {
 
   return (
     <ClientShell title="Check-In" hideBottomNav>
+      {devMode && <DevelopmentModeBadge />}
       <div style={{ marginBottom: spacing[4] }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>Weekly Check-In</h1>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>{brandTitle('Weekly Check-In')}</h1>
         <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 15 }}>
           Day 7 progress update — photos required
         </p>
@@ -206,14 +226,15 @@ export default function CheckinPage() {
           </span>
         </div>
         <div style={{ height: 4, backgroundColor: colors.bgElevated, borderRadius: 999, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${progress}%`, backgroundColor: colors.accent, borderRadius: 999, transition: 'width 300ms ease' }} />
+          <div className="motion-progress-fill" style={{ height: '100%', width: `${progress}%`, backgroundColor: colors.accent, borderRadius: 999 }} />
         </div>
       </div>
 
-      {error && <div style={mobileStyles.error}>{error}</div>}
-      {success && <div style={mobileStyles.success}>{success}</div>}
+      {error && <div className="motion-shake" style={mobileStyles.error}>{error}</div>}
+      {success && <SuccessState message={success} />}
 
       <form onSubmit={handleSubmit}>
+        <SlideTransition sectionKey={currentSection} direction={slideDirection}>
         {currentSection === 'measurements' && (
           <Card variant="elevated">
             <h2 style={sectionTitle}>Measurements</h2>
@@ -262,6 +283,7 @@ export default function CheckinPage() {
             </div>
           </Card>
         )}
+        </SlideTransition>
 
         {/* Sticky action bar */}
         <div style={{

@@ -1,5 +1,6 @@
 'use client'
 
+import { brandTitle } from '@/lib/brand'
 import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -239,7 +240,7 @@ export default function OnboardingPage() {
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.header}>
-          <h1 style={s.title}>Coaching intake</h1>
+          <h1 style={s.title}>{brandTitle('Coaching intake')}</h1>
           <p style={s.subtitle}>
             Help your coach build a personalised diet and workout plan tailored to your life.
           </p>

@@ -70,6 +70,28 @@ const legacy = resolvePlanSections({
 assert('legacy unstructured diet preserved', legacy.diet.includes('Calories: 1800'))
 assert('legacy workout preserved', legacy.workout === 'Monday: squats')
 
+const withMeta = resolvePlanSections({
+  nutrition_plan: '',
+  workout_plan: '',
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes:
+    '@@META{"checkinId":"abc","week":1,"generatedBy":"ai","source":"Week 1 Check-in"}@@\nGreat week — keep protein high on training days.',
+})
+
+assert('strips plan meta prefix from coach notes', !withMeta.coachNotes.includes('@@META'))
+assert('preserves coach notes after meta prefix', withMeta.coachNotes.includes('Great week'))
+
+const metaOnly = resolvePlanSections({
+  nutrition_plan: '',
+  workout_plan: '',
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '@@META{"checkinId":"abc","week":1,"generatedBy":"ai","source":"Week 1 Check-in"}@@',
+})
+
+assert('meta-only coach notes become empty', metaOnly.coachNotes === '')
+
 if (failed > 0) {
   console.error(`\n${failed} plan parser checks failed`)
   process.exit(1)

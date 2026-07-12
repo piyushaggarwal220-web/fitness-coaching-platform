@@ -1,33 +1,51 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { CoachShell } from '@/components/ui/CoachShell';
 import { coachPageStyles } from '@/lib/coach-page-styles';
 import { createClient } from '@/lib/supabase/client';
 import { requireCoach } from '@/lib/coach-session';
+import { brandTitle } from '@/lib/brand';
+import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { colors } from '@/lib/design-tokens';
 import { CoachConversationsSection } from '@/components/chat/CoachConversationsSection';
 import { CoachWorkQueuePanel } from '@/components/coach/CoachWorkQueuePanel';
-import type { ClientProfile, Coach, CoachStats } from '@/types/database';
+import { CoachWorkSummaryCards } from '@/components/coach/CoachWorkSummaryCards';
+import type { WorkQueueCounts, WorkQueueFilter } from '@/lib/coach-work-queue';
+import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
+import type { Checkin, ClientProfile, Coach, CoachStats } from '@/types/database';
 
+type CoachClientRow = ClientProfile & { onboarding_completed_at?: string | null };
 const supabase = createClient();
 
 export default function CoachDashboard() {
   const router = useRouter();
   const [coach, setCoach] = useState<Coach | null>(null);
-  const [clients, setClients] = useState<ClientProfile[]>([]);
+  const [clients, setClients] = useState<CoachClientRow[]>([]);
+  const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [restoringSession, setRestoringSession] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState<CoachStats>({ total: 0, awaiting: 0, overdue: 0, new: 0 });
   const [pendingCheckins, setPendingCheckins] = useState(0);
   const [plansDelivered, setPlansDelivered] = useState(0);
+  const [queueFilter, setQueueFilter] = useState<WorkQueueFilter>('all');
+  const [queueCounts, setQueueCounts] = useState<WorkQueueCounts | null>(null);
 
+  const handleCountsChange = useCallback((counts: WorkQueueCounts) => {
+    setQueueCounts(counts);
+  }, []);
   useEffect(() => {
     const checkCoach = async () => {
       setError('');
       const coachData = await requireCoach(supabase, router);
-      if (!coachData) return;
+      setRestoringSession(false);
+      if (!coachData) {
+        setError((prev) => prev || 'Could not restore your session. Please refresh or sign in again.');
+        setLoading(false);
+        return;
+      }
 
       setCoach(coachData);
 
@@ -49,6 +67,15 @@ export default function CoachDashboard() {
         const overdue = clientsData.filter(c => c.checkin_overdue === true).length;
         const newClients = clientsData.filter(c => c.plan_delivered === false).length;
         setStats({ total, awaiting, overdue, new: newClients });
+
+        const clientIds = clientsData.map((c) => c.id);
+        if (clientIds.length > 0) {
+          const { data: checkinData } = await supabase
+            .from('checkins')
+            .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed, submitted_at')
+            .in('client_id', clientIds);
+          setCheckins((checkinData ?? []) as Checkin[]);
+        }
       }
 
       const { count, error: checkinsError } = await supabase
@@ -84,7 +111,11 @@ export default function CoachDashboard() {
   }, [router]);
 
   if (loading) {
-    return <CoachShell loading><span /></CoachShell>;
+    return (
+      <CoachShell loading loadingMessage={restoringSession ? SESSION_RESTORE_MESSAGE : undefined}>
+        <span />
+      </CoachShell>
+    );
   }
 
   if (error) {
@@ -103,8 +134,8 @@ export default function CoachDashboard() {
   return (
     <CoachShell>
         <div style={styles.header}>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.02em' }}>Coach Dashboard</h1>
-          <p style={styles.subtitle}>Welcome back, {coach?.name || 'Coach'}!</p>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.02em' }}>{brandTitle('Today\'s Work')}</h1>
+          <p style={styles.subtitle}>Welcome back, {coach?.name || 'Coach'}! Here&apos;s what needs your attention.</p>
         </div>
 
         <div style={styles.statsGrid}>
@@ -142,7 +173,12 @@ export default function CoachDashboard() {
           </button>
         </div>
 
-        <CoachWorkQueuePanel />
+        <CoachWorkSummaryCards
+          counts={queueCounts}
+          filter={queueFilter}
+          onFilter={setQueueFilter}
+        />
+        <CoachWorkQueuePanel filter={queueFilter} onCountsChange={handleCountsChange} />
 
         <div style={styles.checkinBanner}>
           <div>
@@ -190,11 +226,39 @@ export default function CoachDashboard() {
             {clients.length === 0 ? (
               <p style={styles.empty}>No clients assigned yet.</p>
             ) : (
-              clients.map((client) => (
+              clients.map((client) => {
+                const summary = client.onboarding_completed_at
+                  ? getCoachClientCheckinSummary(client.id, client.onboarding_completed_at, checkins)
+                  : null;
+
+                return (
                 <div key={client.id} style={styles.clientCard}>
                   <div style={styles.clientInfo}>
                     <div style={styles.clientName}>{client.name || client.email}</div>
+                    {summary && (
+                      <div style={styles.checkinMeta}>
+                        <span>Week {summary.activeCoachingWeek}</span>
+                        <span>·</span>
+                        <span>
+                          Next: {summary.nextCheckin ? getCheckinTypeDisplayName(summary.nextCheckin.type) : '—'}
+                        </span>
+                        <span>·</span>
+                        <span>
+                          {summary.countdownDetailed ?? (summary.nextCheckinStatus === 'available' ? 'Available today' : '—')}
+                        </span>
+                      </div>
+                    )}
                     <div style={styles.clientStatus}>
+                      {summary && (
+                        <>
+                          <span style={summary.midWeekStatus === 'completed' ? styles.badgeOk : summary.midWeekStatus === 'missed' ? styles.badgeOverdue : styles.badgeAwaiting}>
+                            Mid: {getCheckinStatusLabel(summary.midWeekStatus)}
+                          </span>
+                          <span style={summary.weeklyStatus === 'completed' ? styles.badgeOk : summary.weeklyStatus === 'missed' ? styles.badgeOverdue : styles.badgeAwaiting}>
+                            Weekly: {getCheckinStatusLabel(summary.weeklyStatus)}
+                          </span>
+                        </>
+                      )}
                       {client.complexity_score != null && client.complexity_tier && (
                         <span style={{
                           backgroundColor: client.complexity_tier === 'low' ? colors.successMuted : client.complexity_tier === 'medium' ? colors.warningMuted : colors.dangerMuted,
@@ -218,7 +282,8 @@ export default function CoachDashboard() {
                     </button>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -241,6 +306,7 @@ const styles: Record<string, CSSProperties> = {
   clientCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, border: `1px solid ${colors.borderSubtle}`, borderRadius: 12, backgroundColor: colors.bgElevated },
   clientInfo: { flex: 1 },
   clientName: { fontWeight: 600, marginBottom: 4, color: colors.textPrimary },
+  checkinMeta: { display: 'flex', flexWrap: 'wrap', gap: 6, fontSize: 13, color: colors.textSecondary, marginBottom: 6 },
   clientStatus: { display: 'flex', gap: 8, flexWrap: 'wrap' },
   badgeOverdue: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },
   badgeAwaiting: { backgroundColor: colors.warningMuted, color: colors.warning, padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 },

@@ -72,10 +72,21 @@
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-accent: 0 4px 20px var(--accent-glow);
 
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Motion durations */
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
+  --duration-medium: 250ms;
+  --duration-slow: 350ms;
+
+  /* Legacy aliases */
+  --transition-fast: var(--duration-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: var(--duration-medium) cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: var(--duration-slow) cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Easing */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ─── Reset & Base ─── */
@@ -112,6 +123,13 @@ button {
 input, textarea, select {
   font-family: inherit;
   font-size: 16px;
+  color: var(--text-primary);
+  background-color: var(--bg-elevated);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
 }
 
 /* Touch targets */
@@ -125,9 +143,19 @@ button, a[role="button"], input[type="submit"] {
   outline-offset: 2px;
 }
 
-/* ─── Animations ─── */
+/* ─── Motion System ─── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -136,17 +164,8 @@ button, a[role="button"], input[type="submit"] {
   100% { background-position: 200% 0; }
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.animate-fade-in {
-  animation: fadeIn var(--transition-base) ease-out;
 }
 
 @keyframes slideInDrawer {
@@ -154,27 +173,361 @@ button, a[role="button"], input[type="submit"] {
   to { transform: translateX(0); }
 }
 
+@keyframes slideOutDrawer {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
 @keyframes fadeOverlay {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-.drawer-overlay {
-  animation: fadeOverlay var(--transition-base) ease-out;
+@keyframes fadeOverlayOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
-.drawer-panel {
-  animation: slideInDrawer var(--transition-slow) cubic-bezier(0.32, 0.72, 0, 1);
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slideDownSheet {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@keyframes slideForward {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideBack {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes messageEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes bellBounce {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+@keyframes successGlow {
+  0% { opacity: 0; transform: translateY(6px); box-shadow: 0 0 0 rgba(249, 115, 22, 0); }
+  40% { box-shadow: 0 0 24px rgba(249, 115, 22, 0.18); }
+  100% { opacity: 1; transform: translateY(0); box-shadow: 0 0 12px rgba(249, 115, 22, 0.08); }
+}
+
+@keyframes dropdownEnter {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes queueEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes drawerItemEnter {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes recordingPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+@keyframes waveformBar {
+  0%, 100% { transform: scaleY(0.45); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes statusPulseOnce {
+  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(249, 115, 22, 0); }
+  100% { box-shadow: none; }
+}
+
+@keyframes aiStepEnter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes emptyEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Page transitions */
+.motion-page-enter {
+  animation: pageEnter var(--duration-medium) var(--ease-out) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--duration-medium) var(--ease-out) both;
+}
+
+.motion-card-enter {
+  animation: cardEnter var(--duration-medium) var(--ease-out) both;
+}
+
+.motion-card-interactive {
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard),
+    border-color var(--duration-normal) var(--ease-standard);
+  will-change: transform;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .motion-card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(249, 115, 22, 0.15);
+  }
+}
+
+.motion-card-interactive:active {
+  transform: translateY(0) scale(0.99);
+  transition-duration: var(--duration-fast);
 }
 
 .card-hover {
-  transition: transform var(--transition-fast), box-shadow var(--transition-base), border-color var(--transition-base);
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard),
+    border-color var(--duration-normal) var(--ease-standard);
 }
 
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: rgba(249, 115, 22, 0.15);
+@media (hover: hover) and (pointer: fine) {
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(249, 115, 22, 0.15);
+  }
+}
+
+/* Stagger delays for lists */
+.motion-stagger-0 { animation-delay: 0ms; }
+.motion-stagger-1 { animation-delay: 40ms; }
+.motion-stagger-2 { animation-delay: 80ms; }
+.motion-stagger-3 { animation-delay: 120ms; }
+.motion-stagger-4 { animation-delay: 160ms; }
+.motion-stagger-5 { animation-delay: 200ms; }
+.motion-stagger-6 { animation-delay: 240ms; }
+.motion-stagger-7 { animation-delay: 280ms; }
+.motion-stagger-8 { animation-delay: 320ms; }
+
+/* Drawer */
+.drawer-overlay {
+  animation: fadeOverlay var(--duration-normal) var(--ease-out) both;
+}
+
+.drawer-overlay--closing {
+  animation: fadeOverlayOut var(--duration-normal) var(--ease-standard) both;
+}
+
+.drawer-panel {
+  animation: slideInDrawer var(--duration-slow) var(--ease-drawer) both;
+}
+
+.drawer-panel--closing {
+  animation: slideOutDrawer var(--duration-slow) var(--ease-drawer) both;
+}
+
+.drawer-item-cascade {
+  animation: drawerItemEnter var(--duration-normal) var(--ease-out) both;
+}
+
+/* Bottom sheet */
+.motion-bottom-sheet-overlay {
+  animation: fadeOverlay var(--duration-normal) var(--ease-out) both;
+}
+
+.motion-bottom-sheet-panel {
+  animation: slideUpSheet var(--duration-slow) var(--ease-drawer) both;
+}
+
+/* Check-in slides */
+.motion-slide-forward {
+  animation: slideForward var(--duration-medium) var(--ease-out) both;
+}
+
+.motion-slide-back {
+  animation: slideBack var(--duration-medium) var(--ease-out) both;
+}
+
+/* Chat */
+.motion-message-enter {
+  animation: messageEnter var(--duration-normal) var(--ease-out) both;
+}
+
+.motion-input-bar-enter {
+  animation: fadeIn var(--duration-normal) var(--ease-out) both;
+}
+
+.motion-waveform-playing .waveform-bar {
+  animation: waveformBar 0.8s var(--ease-standard) infinite;
+  transform-origin: center bottom;
+}
+
+/* Notifications */
+.motion-badge-pop {
+  animation: badgePop var(--duration-medium) var(--ease-out) both;
+}
+
+.motion-bell-bounce {
+  animation: bellBounce var(--duration-slow) var(--ease-out);
+}
+
+.motion-dropdown-enter {
+  animation: dropdownEnter var(--duration-normal) var(--ease-out) both;
+}
+
+/* Success / error */
+.motion-success-glow {
+  animation: successGlow var(--duration-slow) var(--ease-out) both;
+}
+
+.motion-shake {
+  animation: shake var(--duration-medium) var(--ease-standard);
+}
+
+/* Coach queue */
+.motion-queue-enter {
+  animation: queueEnter var(--duration-medium) var(--ease-out) both;
+}
+
+/* Journey photos */
+.motion-photo-zoom {
+  transition: transform var(--duration-normal) var(--ease-out);
+  overflow: hidden;
+}
+
+.motion-photo-zoom:active {
+  transform: scale(0.97);
+}
+
+.motion-photo-zoom img {
+  transition: transform var(--duration-medium) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .motion-photo-zoom:hover img {
+    transform: scale(1.04);
+  }
+}
+
+/* AI generation */
+.motion-ai-step-enter {
+  animation: aiStepEnter var(--duration-normal) var(--ease-out) both;
+}
+
+.motion-progress-fill {
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+.motion-status-pulse-once {
+  animation: statusPulseOnce 0.8s var(--ease-out) 1;
+}
+
+/* Recording */
+.motion-recording-pulse {
+  animation: recordingPulse 1.4s var(--ease-standard) infinite;
+}
+
+/* Empty states */
+.motion-empty-enter {
+  animation: emptyEnter var(--duration-slow) var(--ease-out) both;
+}
+
+/* Button press */
+.btn-press {
+  transition: transform var(--duration-fast) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard);
+  touch-action: manipulation;
+}
+
+.btn-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-press--success {
+  background-color: var(--success) !important;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.25) !important;
+}
+
+/* Accordion — grid-based height */
+.accordion-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-slow) var(--ease-out);
+}
+
+.accordion-grid--open {
+  grid-template-rows: 1fr;
+}
+
+.accordion-grid-inner {
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.accordion-grid--open .accordion-grid-inner {
+  opacity: 1;
+}
+
+.accordion-chevron {
+  transition: transform var(--duration-medium) var(--ease-out);
+}
+
+.accordion-chevron--open {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  overflow: hidden;
+  transition: max-height var(--duration-slow) var(--ease-out), opacity var(--duration-normal) var(--ease-out);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .motion-waveform-playing .waveform-bar {
+    animation: none;
+  }
+
+  .motion-recording-pulse {
+    animation: none;
+  }
 }
 
 /* Chat viewport — mobile-safe flex scroll */
@@ -202,17 +555,20 @@ button, a[role="button"], input[type="submit"] {
   border-radius: var(--radius-sm);
 }
 
-/* Button press */
-.btn-press:active {
-  transform: scale(0.97);
-  transition: transform var(--transition-fast);
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    var(--bg-card) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
 }
 
-/* Accordion */
-.accordion-content {
-  overflow: hidden;
-  transition: max-height var(--transition-slow), opacity var(--transition-base);
-}
+/* Button press — legacy alias handled above */
 
 /* Range slider */
 input[type="range"] {

@@ -7,6 +7,7 @@ import { User } from '@supabase/supabase-js'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { DrawerMenuButton } from '@/components/ui/DrawerNav'
 import { createClient } from '@/lib/supabase/client'
+import { BRAND_NAME } from '@/lib/brand'
 import { colors, layout, spacing } from '@/lib/design-tokens'
 
 const supabase = createClient()
@@ -59,7 +60,7 @@ export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) 
           </h1>
         ) : (
           <span style={{ fontSize: 17, fontWeight: 800, color: colors.accent, letterSpacing: '-0.02em' }}>
-            Coach
+            {BRAND_NAME}
           </span>
         )}
       </div>

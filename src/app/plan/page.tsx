@@ -12,6 +12,7 @@ import {
 import { ClientShell } from '@/components/ui/ClientShell';
 import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
@@ -118,7 +119,7 @@ export default function ClientPlanPage() {
         }}
       >
         <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: colors.accent, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          Your Plan
+          {BRAND_NAME} · Your Plan
         </p>
         <h1 style={{ margin: '8px 0 0', fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
           {plan.title}

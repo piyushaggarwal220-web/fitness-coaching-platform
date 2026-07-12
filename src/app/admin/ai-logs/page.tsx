@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminNavbar from '@/components/admin/AdminNavbar'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatDate } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
@@ -93,7 +94,7 @@ export default function AdminAiLogsPage() {
       <AdminNavbar />
       <div style={s.page}>
         <div style={s.containerWide}>
-          <h1 style={s.title}>AI Generation Logs</h1>
+          <h1 style={s.title}>{brandTitle('AI Generation Logs')}</h1>
           <p style={s.subtitle}>Internal trace for AI generation attempts — debugging and QA.</p>
 
           {error && <div style={s.error}>{error}</div>}

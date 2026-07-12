@@ -4,13 +4,15 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { FounderAnalyticsPanel } from '@/components/admin/analytics/FounderAnalyticsPanel'
 import { ComplexityAnalyticsPanel } from '@/components/admin/analytics/ComplexityAnalyticsPanel'
+import { PromptCacheAnalyticsPanel } from '@/components/admin/analytics/PromptCacheAnalyticsPanel'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { AdminStatCard } from '@/components/admin/AdminStatCard'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import type { PlatformHealth } from '@/lib/admin/platform-health'
 import type { PromptLibraryStats } from '@/types/database'
-import { formatDate } from '@/lib/coach-utils'
 import { colors } from '@/lib/design-tokens'
+import { formatDate } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
@@ -145,7 +147,7 @@ export default function AdminDashboardPage() {
       <AdminNavbar />
       <div style={s.page}>
         <div style={s.containerWide}>
-          <h1 style={s.title}>Founder Dashboard</h1>
+          <h1 style={s.title}>{brandTitle('Founder Dashboard')}</h1>
           <p style={s.subtitle}>
             {adminLabel} · Business operations overview
           </p>
@@ -167,6 +169,10 @@ export default function AdminDashboardPage() {
           <FounderAnalyticsPanel />
 
           <div style={{ marginTop: 24 }}>
+            <PromptCacheAnalyticsPanel />
+          </div>
+
+          <div style={{ marginTop: 24 }}>
             <ComplexityAnalyticsPanel />
           </div>
 
@@ -174,7 +180,7 @@ export default function AdminDashboardPage() {
             <div style={s.card}>
               <h2 style={s.cardTitle}>Recent Activity</h2>
               {activity.length === 0 ? (
-                <p style={{ margin: 0, color: '#666', fontSize: 14 }}>No recent activity yet.</p>
+                <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>No recent activity yet.</p>
               ) : (
                 activity.map((item) => (
                   <div key={item.id} style={s.activityItem}>
@@ -217,10 +223,10 @@ export default function AdminDashboardPage() {
                   />
                 </div>
               ) : (
-                <p style={{ margin: 0, color: '#666', fontSize: 14 }}>Health data unavailable.</p>
+                <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Health data unavailable.</p>
               )}
               {health && !health.metricsAvailable && (
-                <p style={{ margin: '16px 0 0 0', fontSize: 12, color: '#888' }}>{health.metricsNote}</p>
+                <p style={{ margin: '16px 0 0 0', fontSize: 12, color: colors.textMuted }}>{health.metricsNote}</p>
               )}
             </div>
 
@@ -237,7 +243,7 @@ export default function AdminDashboardPage() {
                   />
                 </div>
               ) : (
-                <p style={{ margin: 0, color: '#666', fontSize: 14 }}>Prompt library data unavailable.</p>
+                <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Prompt library data unavailable.</p>
               )}
               <Link href="/admin/prompts" style={{ ...s.linkBtn, display: 'inline-block', marginTop: 16 }}>
                 Open prompt library →

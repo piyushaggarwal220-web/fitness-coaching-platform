@@ -23,11 +23,36 @@ export type CheckinTask = ScheduledCheckin & {
 
 export type ClientCheckinSchedule = {
   coachingDay: number
-  coachingWeek: number
+  /** Calendar week from days since onboarding. */
+  calendarCoachingWeek: number
+  /** Week the client is currently working through for check-ins. */
+  activeCoachingWeek: number
+  /** Mid-week + weekly status for the active coaching week. */
+  weekCheckins: CheckinTask[]
   todayTasks: CheckinTask[]
   nextCheckin: ScheduledCheckin | null
+  nextCheckinStatus: CheckinTaskStatus | null
   countdownMs: number | null
   countdownLabel: string | null
+  countdownDetailed: string | null
+  /** @deprecated Use activeCoachingWeek */
+  coachingWeek: number
+  developmentScheduleMessage: string | null
+}
+
+export type CoachClientCheckinSummary = {
+  clientId: string
+  activeCoachingWeek: number
+  nextCheckin: ScheduledCheckin | null
+  nextCheckinStatus: CheckinTaskStatus | null
+  countdownDetailed: string | null
+  midWeekStatus: CheckinTaskStatus
+  weeklyStatus: CheckinTaskStatus
+}
+
+export type CheckinScheduleOptions = {
+  /** When true, treat current-week check-ins as available regardless of due date. */
+  bypassSchedule?: boolean
 }
 
 function startOfDay(date: Date): Date {
@@ -84,26 +109,63 @@ export function buildScheduledCheckin(
     coachingDay,
     dueDate,
     label: type === 'mid_week'
-      ? `Complete Day ${MID_WEEK_DAY} Check-in (Week ${coachingWeek})`
-      : `Complete Weekly Check-in (Week ${coachingWeek})`,
+      ? `Mid-Week Check-in (Week ${coachingWeek})`
+      : `Weekly Check-in (Week ${coachingWeek})`,
     href: type === 'mid_week' ? '/checkin/mid-week' : '/checkin',
   }
 }
 
-type CheckinRef = Pick<Checkin, 'checkin_type' | 'coaching_week'> & Partial<Pick<Checkin, 'id' | 'reviewed'>>
+type CheckinRef = Pick<Checkin, 'checkin_type' | 'coaching_week'> &
+  Partial<Pick<Checkin, 'coaching_day' | 'id' | 'reviewed'>>
+
+function inferCoachingWeekFromCheckin(checkin: CheckinRef): number | null {
+  if (checkin.coaching_week != null) return checkin.coaching_week
+  if (checkin.coaching_day != null) return getCoachingWeek(checkin.coaching_day)
+  return null
+}
+
+function matchesScheduledSlot(
+  checkin: CheckinRef,
+  coachingWeek: number,
+  type: CheckinType
+): boolean {
+  if (checkin.checkin_type !== type) return false
+  if (checkin.coaching_week === coachingWeek) return true
+  const inferredWeek = inferCoachingWeekFromCheckin(checkin)
+  if (inferredWeek === coachingWeek) return true
+  const expectedDay = getAbsoluteCoachingDay(coachingWeek, type === 'mid_week' ? MID_WEEK_DAY : WEEKLY_DAY)
+  return checkin.coaching_day === expectedDay
+}
 
 function findSubmission(
   checkins: CheckinRef[],
   coachingWeek: number,
   type: CheckinType
 ): Pick<Checkin, 'id' | 'reviewed'> | undefined {
-  const match = checkins.find((c) => c.coaching_week === coachingWeek && c.checkin_type === type)
+  const match = checkins.find((c) => matchesScheduledSlot(c, coachingWeek, type))
   if (!match?.id) return undefined
   return { id: match.id, reviewed: match.reviewed ?? false }
 }
 
 function hasSubmission(checkins: CheckinRef[], coachingWeek: number, type: CheckinType): boolean {
-  return checkins.some((c) => c.coaching_week === coachingWeek && c.checkin_type === type)
+  return checkins.some((c) => matchesScheduledSlot(c, coachingWeek, type))
+}
+
+/** First coaching week that still has an incomplete check-in slot. */
+export function getActiveCoachingWeek(
+  checkins: CheckinRef[],
+  onboardingCompletedAt?: string | Date | null,
+  referenceDate: Date = new Date()
+): number {
+  for (let week = 1; week <= 520; week++) {
+    for (const type of ['mid_week', 'weekly'] as CheckinType[]) {
+      if (!hasSubmission(checkins, week, type)) return week
+    }
+  }
+  if (onboardingCompletedAt) {
+    return getCoachingWeek(getCoachingDay(onboardingCompletedAt, referenceDate))
+  }
+  return 1
 }
 
 function resolveTaskStatus(
@@ -132,85 +194,189 @@ function resolveTaskStatus(
   return { ...scheduled, status: 'upcoming' }
 }
 
-/** Build schedule state for the client dashboard. */
-export function getClientCheckinSchedule(
+function findNextIncompleteCheckin(
   onboardingCompletedAt: string | Date,
   checkins: CheckinRef[],
-  referenceDate: Date = new Date()
-): ClientCheckinSchedule {
-  const coachingDay = getCoachingDay(onboardingCompletedAt, referenceDate)
-  const coachingWeek = getCoachingWeek(coachingDay)
-
-  const currentWeekTypes: CheckinType[] = ['mid_week', 'weekly']
-  const todayTasks: CheckinTask[] = []
-
-  for (const type of currentWeekTypes) {
-    const scheduled = buildScheduledCheckin(onboardingCompletedAt, coachingWeek, type)
-    const submission = findSubmission(checkins, coachingWeek, type)
-    const task = resolveTaskStatus(scheduled, submission, referenceDate)
-    if (task.status === 'available' || task.status === 'awaiting_review') {
-      todayTasks.push(task)
-    }
-  }
-
-  let nextCheckin: ScheduledCheckin | null = null
-  let countdownMs: number | null = null
-
-  for (let week = coachingWeek; week <= coachingWeek + 52 && !nextCheckin; week++) {
+  referenceDate: Date
+): { scheduled: ScheduledCheckin; status: CheckinTaskStatus } | null {
+  for (let week = 1; week <= 520; week++) {
     for (const type of ['mid_week', 'weekly'] as CheckinType[]) {
+      if (hasSubmission(checkins, week, type)) continue
       const scheduled = buildScheduledCheckin(onboardingCompletedAt, week, type)
-      const submission = findSubmission(checkins, week, type)
-      if (!submission && startOfDay(scheduled.dueDate) >= startOfDay(referenceDate)) {
-        if (startOfDay(scheduled.dueDate).getTime() > startOfDay(referenceDate).getTime() || !nextCheckin) {
-          if (!submission) {
-            const task = resolveTaskStatus(scheduled, undefined, referenceDate)
-            if (task.status === 'upcoming' || (task.status === 'available' && !todayTasks.some((t) => t.type === type && t.coachingWeek === week))) {
-              nextCheckin = scheduled
-              countdownMs = startOfDay(scheduled.dueDate).getTime() - startOfDay(referenceDate).getTime()
-              break
-            }
-          }
-        }
-      }
+      const status = resolveTaskStatus(scheduled, undefined, referenceDate).status
+      return { scheduled, status }
     }
   }
-
-  if (!nextCheckin) {
-    const nextWeek = coachingWeek + 1
-    nextCheckin = buildScheduledCheckin(onboardingCompletedAt, nextWeek, 'mid_week')
-    countdownMs = startOfDay(nextCheckin.dueDate).getTime() - startOfDay(referenceDate).getTime()
-  }
-
-  const countdownLabel = countdownMs != null ? formatCountdown(countdownMs) : null
-
-  return {
-    coachingDay,
-    coachingWeek,
-    todayTasks,
-    nextCheckin,
-    countdownMs,
-    countdownLabel,
-  }
+  return null
 }
 
 export function formatCountdown(ms: number): string {
   if (ms <= 0) return 'Due now'
   const days = Math.ceil(ms / (24 * 60 * 60 * 1000))
-  if (days === 0) return 'Due today'
+  if (days <= 0) return 'Due today'
   if (days === 1) return '1 day'
   return `${days} days`
+}
+
+export function formatDetailedCountdown(ms: number): string {
+  if (ms <= 0) return 'Available now'
+  const totalMinutes = Math.floor(ms / 60000)
+  const days = Math.floor(totalMinutes / (60 * 24))
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60)
+  const minutes = totalMinutes % 60
+  const parts: string[] = []
+  if (days > 0) parts.push(`${days} day${days === 1 ? '' : 's'}`)
+  if (hours > 0) parts.push(`${hours} hour${hours === 1 ? '' : 's'}`)
+  if (minutes > 0 || parts.length === 0) parts.push(`${minutes} minute${minutes === 1 ? '' : 's'}`)
+  return parts.join(' ')
+}
+
+export function getCheckinStatusLabel(status: CheckinTaskStatus): string {
+  switch (status) {
+    case 'completed':
+      return 'Completed'
+    case 'upcoming':
+      return 'Upcoming'
+    case 'available':
+      return 'Available Today'
+    case 'missed':
+      return 'Overdue'
+    case 'awaiting_review':
+      return 'Awaiting Review'
+    default:
+      return status
+  }
+}
+
+export function getCheckinTypeDisplayName(type: CheckinType): string {
+  return type === 'mid_week' ? 'Mid-Week Check-in' : 'Weekly Check-in'
+}
+
+/** Build schedule state for the client dashboard. */
+export function getClientCheckinSchedule(
+  onboardingCompletedAt: string | Date,
+  checkins: CheckinRef[],
+  referenceDate: Date = new Date(),
+  options?: CheckinScheduleOptions
+): ClientCheckinSchedule {
+  const bypassSchedule = options?.bypassSchedule === true
+  const coachingDay = getCoachingDay(onboardingCompletedAt, referenceDate)
+  const calendarCoachingWeek = getCoachingWeek(coachingDay)
+  const activeCoachingWeek = getActiveCoachingWeek(checkins, onboardingCompletedAt, referenceDate)
+
+  const weekCheckins: CheckinTask[] = []
+  for (const type of ['mid_week', 'weekly'] as CheckinType[]) {
+    const scheduled = buildScheduledCheckin(onboardingCompletedAt, activeCoachingWeek, type)
+    const submission = findSubmission(checkins, activeCoachingWeek, type)
+    if (bypassSchedule && !submission) {
+      weekCheckins.push({ ...scheduled, status: 'available' })
+    } else {
+      weekCheckins.push(resolveTaskStatus(scheduled, submission, referenceDate))
+    }
+  }
+
+  const todayTasks = weekCheckins.filter(
+    (task) =>
+      task.status === 'available' ||
+      task.status === 'awaiting_review' ||
+      task.status === 'missed'
+  )
+
+  if (bypassSchedule) {
+    return {
+      coachingDay,
+      calendarCoachingWeek,
+      activeCoachingWeek,
+      coachingWeek: activeCoachingWeek,
+      weekCheckins,
+      todayTasks,
+      nextCheckin: null,
+      nextCheckinStatus: null,
+      countdownMs: null,
+      countdownLabel: null,
+      countdownDetailed: null,
+      developmentScheduleMessage: 'Check-ins available immediately.',
+    }
+  }
+
+  const next = findNextIncompleteCheckin(onboardingCompletedAt, checkins, referenceDate)
+  const nextCheckin = next?.scheduled ?? null
+  const nextCheckinStatus = next?.status ?? null
+
+  let countdownMs: number | null = null
+  if (nextCheckin) {
+    if (nextCheckinStatus === 'upcoming') {
+      countdownMs = Math.max(0, startOfDay(nextCheckin.dueDate).getTime() - referenceDate.getTime())
+    } else if (nextCheckinStatus === 'available' || nextCheckinStatus === 'missed') {
+      countdownMs = 0
+    }
+  }
+
+  return {
+    coachingDay,
+    calendarCoachingWeek,
+    activeCoachingWeek,
+    coachingWeek: activeCoachingWeek,
+    weekCheckins,
+    todayTasks,
+    nextCheckin,
+    nextCheckinStatus,
+    countdownMs,
+    countdownLabel: countdownMs != null ? formatCountdown(countdownMs) : null,
+    countdownDetailed: countdownMs != null ? formatDetailedCountdown(countdownMs) : null,
+    developmentScheduleMessage: null,
+  }
 }
 
 export function isCheckinAvailableToday(
   onboardingCompletedAt: string | Date,
   type: CheckinType,
   checkins: CheckinRef[],
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  options?: CheckinScheduleOptions
 ): boolean {
-  const coachingWeek = getCoachingWeek(getCoachingDay(onboardingCompletedAt, referenceDate))
-  if (hasSubmission(checkins, coachingWeek, type)) return false
-  const scheduled = buildScheduledCheckin(onboardingCompletedAt, coachingWeek, type)
+  const activeWeek = getActiveCoachingWeek(checkins, onboardingCompletedAt, referenceDate)
+  if (hasSubmission(checkins, activeWeek, type)) return false
+  if (type === 'weekly' && !hasSubmission(checkins, activeWeek, 'mid_week')) return false
+
+  const scheduled = buildScheduledCheckin(onboardingCompletedAt, activeWeek, type)
+  if (options?.bypassSchedule) return true
   return startOfDay(scheduled.dueDate).getTime() === startOfDay(referenceDate).getTime()
+}
+
+/** Resolve which week/type slot a submission should target (production schedule enforced separately). */
+export function resolveCheckinSubmissionSlot(
+  onboardingCompletedAt: string | Date,
+  type: CheckinType,
+  checkins: CheckinRef[],
+  referenceDate: Date = new Date()
+): ScheduledCheckin | null {
+  const activeWeek = getActiveCoachingWeek(checkins, onboardingCompletedAt, referenceDate)
+  if (hasSubmission(checkins, activeWeek, type)) return null
+  if (type === 'weekly' && !hasSubmission(checkins, activeWeek, 'mid_week')) return null
+  return buildScheduledCheckin(onboardingCompletedAt, activeWeek, type)
+}
+
+export function getCoachClientCheckinSummary(
+  clientId: string,
+  onboardingCompletedAt: string | Date,
+  checkins: Pick<Checkin, 'client_id' | 'checkin_type' | 'coaching_week' | 'coaching_day' | 'id' | 'reviewed'>[],
+  referenceDate: Date = new Date()
+): CoachClientCheckinSummary {
+  const clientCheckins = checkins.filter((c) => c.client_id === clientId)
+  const schedule = getClientCheckinSchedule(onboardingCompletedAt, clientCheckins, referenceDate)
+  const midWeek = schedule.weekCheckins.find((t) => t.type === 'mid_week')
+  const weekly = schedule.weekCheckins.find((t) => t.type === 'weekly')
+
+  return {
+    clientId,
+    activeCoachingWeek: schedule.activeCoachingWeek,
+    nextCheckin: schedule.nextCheckin,
+    nextCheckinStatus: schedule.nextCheckinStatus,
+    countdownDetailed: schedule.countdownDetailed,
+    midWeekStatus: midWeek?.status ?? 'upcoming',
+    weeklyStatus: weekly?.status ?? 'upcoming',
+  }
 }
 
 export type CoachCheckinQueueItem = {
@@ -220,7 +386,7 @@ export type CoachCheckinQueueItem = {
   coachingWeek: number
   coachingDay: number
   dueDate: Date
-  status: 'pending_review' | 'completed' | 'missed' | 'due_today'
+  status: 'pending_review' | 'completed' | 'missed' | 'due_today' | 'upcoming'
   checkinId?: string
   submittedAt?: string
 }
@@ -236,15 +402,15 @@ export function getCoachCheckinQueue(
 
   for (const client of clients) {
     if (!client.onboarding_completed_at) continue
-    const coachingDay = getCoachingDay(client.onboarding_completed_at, referenceDate)
-    const coachingWeek = getCoachingWeek(coachingDay)
     const clientName = client.name || client.email || 'Client'
     const clientCheckins = checkins.filter((c) => c.client_id === client.id)
+    const activeWeek = getActiveCoachingWeek(clientCheckins, client.onboarding_completed_at, referenceDate)
+    const maxWeek = Math.max(activeWeek, getCoachingWeek(getCoachingDay(client.onboarding_completed_at, referenceDate)))
 
-    for (let week = 1; week <= coachingWeek; week++) {
+    for (let week = 1; week <= maxWeek; week++) {
       for (const type of ['mid_week', 'weekly'] as CheckinType[]) {
         const scheduled = buildScheduledCheckin(client.onboarding_completed_at, week, type)
-        const submission = clientCheckins.find((c) => c.coaching_week === week && c.checkin_type === type)
+        const submission = clientCheckins.find((c) => matchesScheduledSlot(c, week, type))
         const dueStart = startOfDay(scheduled.dueDate)
 
         if (submission) {
@@ -279,12 +445,22 @@ export function getCoachCheckinQueue(
             dueDate: scheduled.dueDate,
             status: 'due_today',
           })
+        } else if (week === activeWeek) {
+          items.push({
+            clientId: client.id,
+            clientName,
+            type,
+            coachingWeek: week,
+            coachingDay: scheduled.coachingDay,
+            dueDate: scheduled.dueDate,
+            status: 'upcoming',
+          })
         }
       }
     }
   }
 
-  return items.sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime())
+  return items.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
 }
 
 export function getCheckinTypeLabel(type: CheckinType): string {

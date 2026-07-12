@@ -1,20 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { fetchClientProfile, getClientPostAuthPath } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
+import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
+import { colors } from '@/lib/design-tokens';
 
 const supabase = createClient();
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const sessionExpired = searchParams.get('expired') === '1';
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,15 +48,32 @@ export default function LoginPage() {
     const { profile, error: profileError } = await fetchClientProfile(supabase, data.user.id);
 
     router.refresh();
-    router.push(getClientPostAuthPath(profile, profileError ?? undefined));
+    const destination = profileError || !profile
+      ? redirectTo.startsWith('/') ? redirectTo : '/dashboard'
+      : getClientPostAuthPath(profile, profileError ?? undefined);
+    router.push(destination);
     setLoading(false);
   };
 
   return (
     <div style={authStyles.page}>
       <div style={authStyles.card}>
-        <div style={authStyles.logo}>Coach</div>
-        <h1 style={authStyles.title}>Welcome back</h1>
+        <div style={authStyles.logo}>{BRAND_NAME}</div>
+        <h1 style={authStyles.title}>{brandTitle('Welcome back')}</h1>
+
+        {sessionExpired && (
+          <div style={{
+            backgroundColor: colors.warningMuted,
+            color: colors.warning,
+            padding: '12px 16px',
+            borderRadius: 12,
+            fontSize: 14,
+            marginBottom: 16,
+            lineHeight: 1.5,
+          }}>
+            Your session expired. Please sign in again.
+          </div>
+        )}
 
         {error && <div style={authStyles.error}>{error}</div>}
 
@@ -91,5 +113,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={authStyles.page}><div style={authStyles.card}>Loading…</div></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

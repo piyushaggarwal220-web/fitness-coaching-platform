@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { formatIssueCategory, formatIssueStatus, ISSUE_STATUSES } from '@/lib/issue-reports'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import type { IssueReport, IssueStatus } from '@/types/database'
 
@@ -36,7 +37,7 @@ export default function AdminIssuesPage() {
   return (
     <AdminShell>
       <div style={s.container}>
-        <h1 style={s.title}>Issue Reports</h1>
+        <h1 style={s.title}>{brandTitle('Issue Reports')}</h1>
         <p style={s.subtitle}>Client-submitted bug reports and technical issues.</p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         <button type="button" onClick={() => setFilter('all')} style={filter === 'all' ? s.primaryBtn : s.secondaryBtn}>All</button>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { authenticateClient } from '@/lib/onboarding'
 import { createIssueReport, collectSystemInfo, ISSUE_CATEGORIES } from '@/lib/issue-reports'
+import { brandTitle } from '@/lib/brand'
 import { colors } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { createClient } from '@/lib/supabase/client'
@@ -80,7 +81,7 @@ export default function ReportIssuePage() {
 
   return (
     <ClientShell title="Report an Issue" hideBottomNav>
-      <h1 style={mobileStyles.title}>Report an Issue</h1>
+      <h1 style={mobileStyles.title}>{brandTitle('Report an Issue')}</h1>
       <p style={mobileStyles.subtitle}>Let us know if something isn&apos;t working correctly.</p>
 
       {success && (

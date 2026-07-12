@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatDate } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
@@ -115,7 +116,7 @@ export default function AdminAiLogDetailPage() {
           <Link href="/admin/ai-logs" style={s.backLink}>
             ← Back to AI logs
           </Link>
-          <h1 style={s.title}>AI Generation Log</h1>
+          <h1 style={s.title}>{brandTitle('AI Generation Log')}</h1>
           <p style={s.subtitle}>Generation ID: {log.id}</p>
 
           <div style={s.card}>

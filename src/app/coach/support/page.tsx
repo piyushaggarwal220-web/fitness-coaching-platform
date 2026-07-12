@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { brandTitle } from '@/lib/brand'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { priorityBadgeStyle, statusBadgeStyle, supportStyles as s } from '@/components/support/styles'
 import { requireCoach } from '@/lib/coach-session'
@@ -77,7 +78,7 @@ export default function CoachSupportPage() {
 
   return (
     <CoachShell>
-          <h1 style={s.title}>Support queue</h1>
+          <h1 style={s.title}>{brandTitle('Support queue')}</h1>
           <p style={s.subtitle}>Structured coaching requests · shared open queue</p>
 
           {error && <div style={s.error}>{error}</div>}

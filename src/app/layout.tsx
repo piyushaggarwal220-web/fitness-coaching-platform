@@ -6,9 +6,11 @@ import { initWhatsAppProvider } from "@/lib/notifications/whatsapp-provider";
 
 initWhatsAppProvider();
 
+import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
+
 export const metadata: Metadata = {
-  title: "Fitness Coaching Platform",
-  description: "Track your fitness journey",
+  title: BRAND_NAME,
+  description: BRAND_TAGLINE,
 };
 
 export const viewport: Viewport = {

@@ -1,4 +1,5 @@
 import { calculateAiCostUsd } from '@/lib/admin/pricing'
+import type { CompileCacheReport } from '@/lib/ai/prompt-cache/types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AiGenerationLog } from '@/types/database'
 
@@ -24,6 +25,7 @@ export type AiGenerationLogInput = {
   knowledgeRefs: string[] | null
   rawOutput?: unknown
   renderedOutput?: unknown
+  cacheReport?: CompileCacheReport | null
 }
 
 /** Persist one AI generation attempt. Never throws — logging must not break generation. */
@@ -51,7 +53,13 @@ export async function logAiGeneration(input: AiGenerationLogInput): Promise<void
       output_cost_usd: costs.outputCostUsd,
       total_cost_usd: costs.totalCostUsd,
       raw_output: debug && input.rawOutput != null ? input.rawOutput : null,
-      rendered_output: debug && input.renderedOutput != null ? input.renderedOutput : null,
+      rendered_output:
+        debug && (input.renderedOutput != null || input.cacheReport != null)
+          ? {
+              ...(input.renderedOutput != null ? { output: input.renderedOutput } : {}),
+              ...(input.cacheReport != null ? { promptCache: input.cacheReport } : {}),
+            }
+          : null,
       created_at: new Date().toISOString(),
     }
 

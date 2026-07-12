@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isAdminRole } from '@/lib/roles'
+import { BRAND_ADMIN_LABEL, BRAND_NAME, brandTitle } from '@/lib/brand'
 import { authStyles } from '@/lib/auth-styles'
 
 const supabase = createClient()
@@ -61,9 +62,9 @@ export default function AdminLoginPage() {
   return (
     <div style={authStyles.page}>
       <div style={authStyles.card}>
-        <div style={authStyles.logo}>Admin</div>
-        <h1 style={authStyles.title}>Admin Console</h1>
-        <p style={{ ...authStyles.link, marginTop: 0, marginBottom: 24 }}>Platform operations and client management</p>
+        <div style={authStyles.logo}>{BRAND_NAME}</div>
+        <h1 style={authStyles.title}>{brandTitle('Admin Console')}</h1>
+        <p style={{ ...authStyles.link, marginTop: 0, marginBottom: 24 }}>{BRAND_ADMIN_LABEL} — platform operations and client management</p>
 
         {error && <div style={authStyles.error}>{error}</div>}
 

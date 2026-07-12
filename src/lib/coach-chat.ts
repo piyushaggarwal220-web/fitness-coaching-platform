@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
+import { isCheckinSystemMessage } from '@/lib/checkin-chat'
 import { sendNotification } from '@/lib/notifications/service'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type {
@@ -22,16 +23,38 @@ function messagePreview(
 
 async function insertSystemMessage(
   conversationId: string,
-  content: string
+  content: string,
+  options?: { incrementCoachUnread?: boolean }
 ): Promise<void> {
   const admin = createAdminClient()
+  const now = new Date().toISOString()
+
   await admin.from('conversation_messages').insert({
     conversation_id: conversationId,
     sender_type: 'system' as MessageSender,
     message_type: 'system' as MessageType,
     content,
-    created_at: new Date().toISOString(),
+    created_at: now,
   })
+
+  if (options?.incrementCoachUnread) {
+    const { data: conv } = await admin
+      .from('coach_conversations')
+      .select('unread_by_coach')
+      .eq('id', conversationId)
+      .single()
+
+    await admin
+      .from('coach_conversations')
+      .update({
+        unread_by_coach: ((conv?.unread_by_coach as number) ?? 0) + 1,
+        last_message_at: now,
+        last_message_preview: content.slice(0, 120),
+        updated_at: now,
+        status: 'active',
+      })
+      .eq('id', conversationId)
+  }
 }
 
 async function syncConversationCoach(
@@ -306,29 +329,65 @@ export function formatConversationStatus(status: ConversationStatus): string {
   return 'Closed'
 }
 
-export function formatMessageTime(date: string): string {
-  const d = new Date(date)
-  const now = new Date()
-  const isToday = d.toDateString() === now.toDateString()
-  if (isToday) {
-    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+export { formatMessageTime, formatRelativeActivity } from '@/lib/coach-chat-ui'
+
+/**
+ * Post a check-in summary into the client's persistent coach conversation.
+ * Uses admin client — safe for API routes after check-in submit.
+ */
+export async function postCheckinToCoachChat(
+  supabase: SupabaseClient,
+  input: {
+    clientId: string
+    coachId: string
+    message: string
+    checkinId: string
+    checkinType: 'mid_week' | 'weekly'
   }
-  return d.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+): Promise<{ error: string | null }> {
+  try {
+    const { data: conversation, error: convError, isNew } = await getOrCreateConversation(
+      supabase,
+      input.clientId
+    )
+
+    if (convError || !conversation) {
+      return { error: convError ?? 'Could not open conversation' }
+    }
+
+    if (conversation.coach_id !== input.coachId) {
+      await supabase
+        .from('coach_conversations')
+        .update({ coach_id: input.coachId, updated_at: new Date().toISOString() })
+        .eq('id', conversation.id)
+    }
+
+    await insertSystemMessage(conversation.id, input.message, { incrementCoachUnread: !isNew })
+
+    const admin = createAdminClient()
+    const { data: coach } = await admin
+      .from('coaches')
+      .select('user_id')
+      .eq('id', input.coachId)
+      .maybeSingle()
+
+    if (coach?.user_id) {
+      const label = input.checkinType === 'mid_week' ? 'Mid-week check-in' : 'Weekly check-in'
+      await sendNotification({
+        userId: coach.user_id,
+        type: 'unread_chat',
+        title: `${label} in chat`,
+        body: input.message.split('\n').slice(0, 3).join(' · '),
+        actionUrl: `/coach/chat/${conversation.id}`,
+        metadata: { checkinId: input.checkinId, clientId: input.clientId },
+      })
+    }
+
+    return { error: null }
+  } catch (err) {
+    console.error('[checkin-chat]', err)
+    return { error: err instanceof Error ? err.message : 'Failed to post check-in to chat' }
+  }
 }
 
-export function formatRelativeActivity(date: string | null | undefined): string {
-  if (!date) return 'No activity'
-  const diff = Date.now() - new Date(date).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'Just now'
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
-}
+export { isCheckinSystemMessage }

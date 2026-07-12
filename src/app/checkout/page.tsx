@@ -4,6 +4,7 @@ import { Suspense, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
+import { brandTitle } from '@/lib/brand';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
@@ -196,7 +197,7 @@ function CheckoutForm() {
     <div style={styles.page}>
       <div style={styles.card}>
         <Link href="/" style={styles.backLink}>← Back to home</Link>
-        <h1 style={styles.title}>Complete your purchase</h1>
+        <h1 style={styles.title}>{brandTitle('Complete your purchase')}</h1>
         <p style={styles.subtitle}>
           {plan.name} plan · {plan.displayPrice} · {plan.saveLabel}
         </p>

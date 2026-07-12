@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { invalidatePromptCacheForClient } from '@/lib/ai/prompt-cache'
+import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import type { Plan, PlanFormData } from '@/types/database'
 
 export const INITIAL_PLAN_FORM: PlanFormData = {
@@ -106,7 +106,7 @@ export async function activatePlan(
 
   if (error) return { error: error.message }
 
-  invalidatePromptCacheForClient(plan.client_id)
+  void invalidateForEvent('plan_activated', plan.client_id)
   return syncPlanDeliveredFlag(supabase, plan.client_id)
 }
 
@@ -122,6 +122,10 @@ export async function deactivatePlan(
   if (error) return { error: error.message }
 
   return syncPlanDeliveredFlag(supabase, plan.client_id)
+}
+
+export function invalidatePlanEdit(clientId: string): void {
+  void invalidateForEvent('plan_edited', clientId)
 }
 
 export function planToForm(plan: Plan): PlanFormData {

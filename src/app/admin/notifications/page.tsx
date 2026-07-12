@@ -1,6 +1,7 @@
 'use client'
 
 import { AdminShell } from '@/components/admin/AdminShell'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { isWhatsAppConfigured } from '@/lib/notifications/whatsapp-provider'
 
@@ -10,7 +11,7 @@ export default function AdminNotificationsPage() {
   return (
     <AdminShell>
       <div style={s.container}>
-        <h1 style={s.title}>Notifications</h1>
+        <h1 style={s.title}>{brandTitle('Notifications')}</h1>
         <p style={s.subtitle}>In-app notification system with future-ready channels.</p>
 
         <div style={s.statGrid}>

@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server'
-import { buildCheckinSummary, buildScheduledCheckin, getCoachingWeek, getCoachingDay } from '@/lib/checkin-schedule'
-import { invalidatePromptCacheForClient } from '@/lib/ai/prompt-cache'
+import { requireApiUser } from '@/lib/api-auth'
+import { logApiDev } from '@/lib/api-dev-log'
+import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
+import { shouldBypassCheckinScheduleServer } from '@/lib/config'
+import { buildCheckinSummary, resolveCheckinSubmissionSlot } from '@/lib/checkin-schedule'
+import {
+  formatMidWeekCheckinChatMessage,
+  formatWeeklyCheckinChatMessage,
+} from '@/lib/checkin-chat'
+import { postCheckinToCoachChat } from '@/lib/coach-chat'
+import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
 import type { CheckinType } from '@/types/database'
 
 type MidWeekBody = {
@@ -72,187 +80,281 @@ function validateBody(body: SubmitBody): string | null {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-  }
-
-  let body: SubmitBody
   try {
-    body = (await request.json()) as SubmitBody
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
+    logApiDev('checkin_submit_started', {
+      host: request.headers.get('host'),
+      hasCookie: Boolean(request.headers.get('cookie')),
+    })
 
-  if (body.checkinType !== 'mid_week' && body.checkinType !== 'weekly') {
-    return NextResponse.json({ error: 'Invalid check-in type.' }, { status: 400 })
-  }
-
-  const validationError = validateBody(body)
-  if (validationError) {
-    return NextResponse.json({ error: validationError }, { status: 400 })
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, name, email, coach_id, onboarding_completed_at, onboarding_complete')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError || !profile) {
-    return NextResponse.json({ error: 'Profile not found.' }, { status: 404 })
-  }
-
-  if (!profile.coach_id) {
-    return NextResponse.json({ error: 'No coach assigned.' }, { status: 400 })
-  }
-
-  if (!profile.onboarding_completed_at && !profile.onboarding_complete) {
-    return NextResponse.json({ error: 'Complete onboarding first.' }, { status: 400 })
-  }
-
-  const onboardingAt = profile.onboarding_completed_at ?? new Date().toISOString()
-  const coachingDay = getCoachingDay(onboardingAt)
-  const coachingWeek = getCoachingWeek(coachingDay)
-  const scheduled = buildScheduledCheckin(onboardingAt, coachingWeek, body.checkinType as CheckinType)
-
-  const today = new Date()
-  const dueStart = new Date(scheduled.dueDate)
-  dueStart.setHours(0, 0, 0, 0)
-  const todayStart = new Date(today)
-  todayStart.setHours(0, 0, 0, 0)
-
-  if (todayStart.getTime() !== dueStart.getTime()) {
-    return NextResponse.json({ error: 'This check-in is not available today.' }, { status: 403 })
-  }
-
-  const { data: existing } = await supabase
-    .from('checkins')
-    .select('id')
-    .eq('client_id', user.id)
-    .eq('coaching_week', coachingWeek)
-    .eq('checkin_type', body.checkinType)
-    .maybeSingle()
-
-  if (existing) {
-    return NextResponse.json({ error: 'Check-in already submitted for this week.' }, { status: 409 })
-  }
-
-  const dueDateStr = scheduled.dueDate.toISOString().slice(0, 10)
-  const baseRow = {
-    client_id: user.id,
-    coach_id: profile.coach_id,
-    checkin_type: body.checkinType,
-    coaching_week: coachingWeek,
-    coaching_day: scheduled.coachingDay,
-    due_date: dueDateStr,
-    diet_adherence: body.diet_adherence,
-    workout_adherence: body.workout_adherence,
-    energy_level: body.energy_level,
-    sleep_quality: body.sleep_quality,
-    stress_level: body.stress_level,
-    hunger_level: body.hunger_level,
-    adherence_score: body.diet_adherence,
-    training_performance: body.workout_adherence,
-    pain_injuries: body.pain_injuries ?? null,
-    reviewed: false,
-  }
-
-  let insertRow: Record<string, unknown>
-
-  if (body.checkinType === 'mid_week') {
-    insertRow = {
-      ...baseRow,
-      questions_for_coach: body.questions_for_coach ?? null,
-      notes: body.additional_comments ?? null,
+    const auth = await requireApiUser()
+    if (!auth.ok) {
+      logApiDev('checkin_submit_auth_failed', { sessionFound: false })
+      return auth.response
     }
-  } else {
-    insertRow = {
-      ...baseRow,
-      weight: body.weight,
-      motivation_level: body.motivation_level,
-      digestion: body.digestion ?? null,
-      cardio_completed: body.cardio_completed ?? null,
-      notes: body.additional_notes ?? null,
-      progress_photo_front: body.progress_photo_front,
-      progress_photo_side: body.progress_photo_side,
-      progress_photo_back: body.progress_photo_back,
-      extra_photos: body.extra_photos ?? [],
-      plan_version: body.plan_version ?? null,
+
+    const { supabase, user } = auth
+    logApiDev('checkin_submit_auth_ok', { userId: user.id, sessionFound: true })
+
+    let body: SubmitBody
+    try {
+      body = (await request.json()) as SubmitBody
+    } catch {
+      return NextResponse.json({ success: false, error: 'Invalid JSON body' }, { status: 400 })
     }
-  }
 
-  const { data: inserted, error: insertError } = await supabase
-    .from('checkins')
-    .insert(insertRow)
-    .select('id')
-    .single()
+    if (body.checkinType !== 'mid_week' && body.checkinType !== 'weekly') {
+      return NextResponse.json({ success: false, error: 'Invalid check-in type.' }, { status: 400 })
+    }
 
-  if (insertError || !inserted) {
-    return NextResponse.json({ error: insertError?.message ?? 'Failed to save check-in.' }, { status: 500 })
-  }
+    const validationError = validateBody(body)
+    if (validationError) {
+      return NextResponse.json({ success: false, error: validationError }, { status: 400 })
+    }
 
-  await supabase
-    .from('profiles')
-    .update({ checkin_awaiting: true, checkin_overdue: false })
-    .eq('id', user.id)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, name, email, coach_id, onboarding_completed_at, onboarding_complete')
+      .eq('id', user.id)
+      .single()
 
-  if (body.checkinType === 'weekly') {
-    const summary = buildCheckinSummary({
-      weight: body.weight,
+    if (profileError || !profile) {
+      return NextResponse.json({ success: false, error: 'Profile not found.' }, { status: 404 })
+    }
+
+    if (!profile.coach_id) {
+      return NextResponse.json({ success: false, error: 'No coach assigned.' }, { status: 400 })
+    }
+
+    if (!profile.onboarding_completed_at && !profile.onboarding_complete) {
+      return NextResponse.json({ success: false, error: 'Complete onboarding first.' }, { status: 400 })
+    }
+
+    const onboardingAt = profile.onboarding_completed_at ?? new Date().toISOString()
+
+    const { data: existingCheckins } = await supabase
+      .from('checkins')
+      .select('id, checkin_type, coaching_week, coaching_day, reviewed')
+      .eq('client_id', user.id)
+
+    const priorCheckins = existingCheckins ?? []
+    const scheduled = resolveCheckinSubmissionSlot(
+      onboardingAt,
+      body.checkinType as CheckinType,
+      priorCheckins
+    )
+
+    if (!scheduled) {
+      return NextResponse.json({ success: false, error: 'Check-in already submitted for this week.' }, { status: 409 })
+    }
+
+    const today = new Date()
+    const dueStart = new Date(scheduled.dueDate)
+    dueStart.setHours(0, 0, 0, 0)
+    const todayStart = new Date(today)
+    todayStart.setHours(0, 0, 0, 0)
+
+    if (!shouldBypassCheckinScheduleServer(request.headers.get('host'))) {
+      if (todayStart.getTime() !== dueStart.getTime()) {
+        return NextResponse.json({ success: false, error: 'This check-in is not available today.' }, { status: 403 })
+      }
+    }
+
+    const { data: existing } = await supabase
+      .from('checkins')
+      .select('id')
+      .eq('client_id', user.id)
+      .eq('coaching_week', scheduled.coachingWeek)
+      .eq('checkin_type', body.checkinType)
+      .maybeSingle()
+
+    if (existing) {
+      return NextResponse.json({ success: false, error: 'Check-in already submitted for this week.' }, { status: 409 })
+    }
+
+    const dueDateStr = scheduled.dueDate.toISOString().slice(0, 10)
+    const baseRow = {
+      client_id: user.id,
+      coach_id: profile.coach_id,
+      checkin_type: body.checkinType,
+      coaching_week: scheduled.coachingWeek,
+      coaching_day: scheduled.coachingDay,
+      due_date: dueDateStr,
       diet_adherence: body.diet_adherence,
       workout_adherence: body.workout_adherence,
       energy_level: body.energy_level,
       sleep_quality: body.sleep_quality,
       stress_level: body.stress_level,
       hunger_level: body.hunger_level,
-      motivation_level: body.motivation_level,
+      adherence_score: body.diet_adherence,
+      training_performance: body.workout_adherence,
       pain_injuries: body.pain_injuries ?? null,
-      notes: body.additional_notes ?? null,
+      reviewed: false,
+    }
+
+    let insertRow: Record<string, unknown>
+
+    if (body.checkinType === 'mid_week') {
+      insertRow = {
+        ...baseRow,
+        questions_for_coach: body.questions_for_coach ?? null,
+        notes: body.additional_comments ?? null,
+      }
+    } else {
+      insertRow = {
+        ...baseRow,
+        weight: body.weight,
+        motivation_level: body.motivation_level,
+        digestion: body.digestion ?? null,
+        cardio_completed: body.cardio_completed ?? null,
+        notes: body.additional_notes ?? null,
+        progress_photo_front: body.progress_photo_front,
+        progress_photo_side: body.progress_photo_side,
+        progress_photo_back: body.progress_photo_back,
+        extra_photos: body.extra_photos ?? [],
+        plan_version: body.plan_version ?? null,
+      }
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('checkins')
+      .insert(insertRow)
+      .select('id')
+      .single()
+
+    if (insertError || !inserted) {
+      logApiDev('checkin_submit_insert_failed', { userId: user.id, error: insertError?.message })
+      return NextResponse.json(
+        { success: false, error: insertError?.message ?? 'Failed to save check-in.' },
+        { status: 500 }
+      )
+    }
+
+    await supabase
+      .from('profiles')
+      .update({ checkin_awaiting: true, checkin_overdue: false })
+      .eq('id', user.id)
+
+    if (body.checkinType === 'weekly') {
+      const summary = buildCheckinSummary({
+        weight: body.weight,
+        diet_adherence: body.diet_adherence,
+        workout_adherence: body.workout_adherence,
+        energy_level: body.energy_level,
+        sleep_quality: body.sleep_quality,
+        stress_level: body.stress_level,
+        hunger_level: body.hunger_level,
+        motivation_level: body.motivation_level,
+        pain_injuries: body.pain_injuries ?? null,
+        notes: body.additional_notes ?? null,
+      })
+
+      const { error: journeyError } = await supabase.from('journey_entries').insert({
+        client_id: user.id,
+        checkin_id: inserted.id,
+        entry_date: new Date().toISOString(),
+        weight: body.weight,
+        photo_front: body.progress_photo_front,
+        photo_side: body.progress_photo_side,
+        photo_back: body.progress_photo_back,
+        extra_photos: body.extra_photos ?? [],
+        checkin_summary: summary,
+        plan_version: body.plan_version ?? null,
+      })
+
+      if (journeyError) {
+        logApiDev('checkin_submit_journey_failed', { userId: user.id, error: journeyError.message })
+      }
+    }
+
+    const admin = createAdminClient()
+    const { data: coach } = await admin
+      .from('coaches')
+      .select('user_id')
+      .eq('id', profile.coach_id)
+      .maybeSingle()
+
+    const clientName = profile.name || profile.email || 'A client'
+    if (coach?.user_id) {
+      const template = NotificationTemplates.checkinSubmitted(clientName, body.checkinType)
+      await sendNotification({
+        userId: coach.user_id,
+        ...template,
+        metadata: { checkinId: inserted.id, clientId: user.id, checkinType: body.checkinType },
+        actionUrl: `/coach/checkin/${inserted.id}`,
+      })
+    }
+
+    invalidateForEvent('checkin_submitted', user.id)
+    invalidateForEvent('journey_updated', user.id)
+
+    const photoCount =
+      body.checkinType === 'weekly'
+        ? 3 + (body.extra_photos?.length ?? 0)
+        : 0
+
+    const chatMessage =
+      body.checkinType === 'mid_week'
+        ? formatMidWeekCheckinChatMessage({
+            coachingWeek: scheduled.coachingWeek,
+            dietAdherence: body.diet_adherence,
+            workoutAdherence: body.workout_adherence,
+            energyLevel: body.energy_level,
+            sleepQuality: body.sleep_quality,
+            stressLevel: body.stress_level,
+            painInjuries: body.pain_injuries,
+            questionsForCoach: body.questions_for_coach,
+          })
+        : formatWeeklyCheckinChatMessage({
+            coachingWeek: scheduled.coachingWeek,
+            weight: body.weight,
+            dietAdherence: body.diet_adherence,
+            workoutAdherence: body.workout_adherence,
+            energyLevel: body.energy_level,
+            sleepQuality: body.sleep_quality,
+            stressLevel: body.stress_level,
+            motivationLevel: body.motivation_level,
+            painInjuries: body.pain_injuries,
+            notes: body.additional_notes,
+            photoCount,
+            journeyUrl: '/journey',
+          })
+
+    void postCheckinToCoachChat(supabase, {
+      clientId: user.id,
+      coachId: profile.coach_id,
+      message: chatMessage,
+      checkinId: inserted.id,
+      checkinType: body.checkinType,
+    }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
+
+    if (body.checkinType === 'weekly') {
+      void generateWeeklyPlanDraft({
+        clientId: user.id,
+        coachId: profile.coach_id,
+        checkinId: inserted.id,
+        coachingWeek: scheduled.coachingWeek,
+        trigger: 'auto',
+      }).catch((err) => console.error('[checkin-submit] auto draft failed:', err))
+    }
+
+    logApiDev('checkin_submit_success', {
+      userId: user.id,
+      coachId: profile.coach_id,
+      checkinId: inserted.id,
+      checkinType: body.checkinType,
+      coachingWeek: scheduled.coachingWeek,
     })
 
-    await supabase.from('journey_entries').insert({
-      client_id: user.id,
-      checkin_id: inserted.id,
-      entry_date: new Date().toISOString(),
-      weight: body.weight,
-      photo_front: body.progress_photo_front,
-      photo_side: body.progress_photo_side,
-      photo_back: body.progress_photo_back,
-      extra_photos: body.extra_photos ?? [],
-      checkin_summary: summary,
-      plan_version: body.plan_version ?? null,
+    return NextResponse.json({
+      success: true,
+      checkinId: inserted.id,
+      checkinType: body.checkinType,
+      coachingWeek: scheduled.coachingWeek,
     })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Check-in submission failed'
+    logApiDev('checkin_submit_exception', { error: message })
+    console.error('[checkin-submit] unhandled:', err)
+    return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
-
-  const admin = createAdminClient()
-  const { data: coach } = await admin
-    .from('coaches')
-    .select('user_id')
-    .eq('id', profile.coach_id)
-    .maybeSingle()
-
-  const clientName = profile.name || profile.email || 'A client'
-  if (coach?.user_id) {
-    const template = NotificationTemplates.checkinSubmitted(clientName, body.checkinType)
-    await sendNotification({
-      userId: coach.user_id,
-      ...template,
-      metadata: { checkinId: inserted.id, clientId: user.id, checkinType: body.checkinType },
-      actionUrl: `/coach/checkin/${inserted.id}`,
-    })
-  }
-
-  invalidatePromptCacheForClient(user.id)
-
-  return NextResponse.json({
-    success: true,
-    checkinId: inserted.id,
-    checkinType: body.checkinType,
-    coachingWeek,
-  })
 }

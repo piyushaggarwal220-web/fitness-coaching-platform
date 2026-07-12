@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, type ChangeEvent, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { brandTitle } from '@/lib/brand';
 import { CoachShell } from '@/components/ui/CoachShell';
 import { coachPageStyles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/design-tokens';
@@ -206,7 +207,7 @@ function CoachNewPlanForm() {
   return (
     <CoachShell narrow>
         <Link href="/coach/plans" style={styles.backLink}>← Back to plans</Link>
-        <h1 style={styles.title}>{aiDraftLoaded ? 'Review AI plan draft' : 'Create new plan'}</h1>
+        <h1 style={styles.title}>{aiDraftLoaded ? brandTitle('Review AI plan draft') : brandTitle('Create new plan')}</h1>
 
         {aiDraftLoaded && (
           <div style={styles.aiBanner}>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CoachShell } from '@/components/ui/CoachShell'
+import { brandTitle } from '@/lib/brand'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
@@ -61,7 +62,7 @@ export default function CoachAnalyticsPage() {
 
   return (
     <CoachShell>
-      <h1 style={styles.title}>Analytics</h1>
+      <h1 style={styles.title}>{brandTitle('Analytics')}</h1>
       <p style={styles.subtitle}>Client portfolio overview</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
         <Stat label="Total clients" value={stats.total} />

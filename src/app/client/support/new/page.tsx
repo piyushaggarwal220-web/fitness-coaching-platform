@@ -4,6 +4,7 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/app/components/Navbar'
+import { brandTitle } from '@/lib/brand'
 import { supportStyles as s } from '@/components/support/styles'
 import { authenticateClient } from '@/lib/onboarding'
 import {
@@ -70,7 +71,7 @@ export default function ClientSupportNewPage() {
       <div style={s.page}>
         <div style={s.containerNarrow}>
           <Link href="/client/support" style={s.backLink}>← Back to support</Link>
-          <h1 style={s.title}>New request</h1>
+          <h1 style={s.title}>{brandTitle('New request')}</h1>
           <p style={s.subtitle}>Describe what you need help with. Your coach will respond in the support queue.</p>
 
           {error && <div style={s.error}>{error}</div>}

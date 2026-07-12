@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import AdminNavbar from '@/components/admin/AdminNavbar'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import type { SystemSettings } from '@/lib/admin/platform-health'
 
@@ -42,7 +43,7 @@ export default function AdminSettingsPage() {
       <AdminNavbar />
       <div style={s.page}>
         <div style={s.container}>
-          <h1 style={s.title}>Settings</h1>
+          <h1 style={s.title}>{brandTitle('Settings')}</h1>
           <p style={s.subtitle}>Read-only system configuration (MVP)</p>
 
           {error && <div style={s.error}>{error}</div>}

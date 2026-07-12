@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { isAdminRole } from '@/lib/roles'
+import {
+  fetchAdminProfile,
+  redirectToLogin,
+  restoreSession,
+} from '@/lib/session-restore'
 import type { Profile } from '@/types/database'
 
 export type AdminProfile = Pick<Profile, 'id' | 'name' | 'email' | 'role'>
@@ -10,23 +15,41 @@ export async function requireAdmin(
   supabase: SupabaseClient,
   router: AppRouterInstance
 ): Promise<AdminProfile | null> {
-  const { data: { user } } = await supabase.auth.getUser()
+  const restored = await restoreSession(supabase)
 
-  if (!user) {
-    router.push('/admin/login')
+  if (restored.status === 'unauthenticated') {
+    redirectToLogin(router, 'admin', 'session_expired')
     return null
   }
 
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('id, name, email, role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (error || !profile || !isAdminRole(profile.role)) {
-    router.push('/admin/login')
+  if (restored.role !== 'admin') {
+    redirectToLogin(router, 'admin', 'not_an_admin')
     return null
   }
 
-  return profile as AdminProfile
+  if (restored.status === 'profile_unavailable') {
+    return null
+  }
+
+  const profile = restored.profile
+  if (profile && isAdminRole(profile.role)) {
+    return {
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      role: profile.role,
+    }
+  }
+
+  const { profile: adminProfile, error } = await fetchAdminProfile(supabase, restored.user.id)
+  if (adminProfile && isAdminRole(adminProfile.role)) {
+    return adminProfile as AdminProfile
+  }
+
+  if (error) {
+    return null
+  }
+
+  redirectToLogin(router, 'admin', 'admin_profile_missing')
+  return null
 }

@@ -8,7 +8,7 @@ import {
 } from '@/lib/ai/complexity-score'
 import { getAllKnowledge } from '@/lib/ai/knowledge'
 import { buildPrompt } from '@/lib/ai/prompt-builder'
-import { getCachedPrompt } from '@/lib/ai/prompt-cache'
+import { compileCachedPrompt } from '@/lib/ai/prompt-cache'
 import {
   formatLibraryPromptVersion,
   loadPublishedPromptsForAction,
@@ -337,7 +337,7 @@ export function parseGeneratedPlanResponse(
   return { plan, error: null }
 }
 
-function buildPlanPrompts(
+async function buildPlanPrompts(
   profile: OnboardingProfile,
   latestCheckin: Checkin | null | undefined,
   complexityScore: ComplexityScoreResult,
@@ -356,7 +356,7 @@ function buildPlanPrompts(
     promptVersion?: string
   } = {}
 ) {
-  const base = getCachedPrompt({
+  const { result: base, report } = await compileCachedPrompt({
     profile,
     latestCheckin,
     complexityScore,
@@ -369,10 +369,10 @@ function buildPlanPrompts(
     systemTemplate: options.libraryPrompts?.systemTemplate ?? null,
     clientId: profile.id,
     promptVersion: options.promptVersion,
-    planVersion: options.activePlan?.version,
-    checkinVersion: latestCheckin?.submitted_at,
-    onboardingVersion: profile.updated_at ?? profile.onboarding_completed_at ?? undefined,
+    retry: options.retry,
   })
+
+  void report
 
   const useLibraryTemplate = Boolean(options.libraryPrompts?.actionTemplate)
   const outputInstructions = resolvePlanOutputInstructions({
@@ -446,7 +446,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   }
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const prompts = buildPlanPrompts(
+    const prompts = await buildPlanPrompts(
       input.profile,
       input.latestCheckin,
       complexityScore,

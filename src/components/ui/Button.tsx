@@ -1,7 +1,8 @@
 'use client'
 
 import type { CSSProperties, ReactNode, ButtonHTMLAttributes } from 'react'
-import { colors, radius, shadows } from '@/lib/design-tokens'
+import { Check } from 'lucide-react'
+import { colors, radius, shadows, transition } from '@/lib/design-tokens'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'md' | 'lg'
@@ -10,6 +11,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
   size?: ButtonSize
   loading?: boolean
+  success?: boolean
   fullWidth?: boolean
   children: ReactNode
 }
@@ -50,6 +52,7 @@ export function Button({
   variant = 'primary',
   size = 'lg',
   loading = false,
+  success = false,
   fullWidth = false,
   disabled,
   children,
@@ -57,11 +60,13 @@ export function Button({
   className,
   ...props
 }: ButtonProps) {
+  const isDisabled = disabled || loading
+
   return (
     <button
       type="button"
-      disabled={disabled || loading}
-      className={`btn-press ${className ?? ''}`}
+      disabled={isDisabled}
+      className={`btn-press ${success ? 'btn-press--success' : ''} ${className ?? ''}`.trim()}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -69,10 +74,10 @@ export function Button({
         gap: 8,
         fontWeight: 600,
         borderRadius: radius.md,
-        cursor: disabled || loading ? 'not-allowed' : 'pointer',
-        opacity: disabled || loading ? 0.5 : 1,
+        cursor: isDisabled ? 'not-allowed' : 'pointer',
+        opacity: isDisabled ? 0.5 : 1,
         width: fullWidth ? '100%' : undefined,
-        transition: 'transform 150ms ease, opacity 150ms ease',
+        transition: transition('fast', 'transform, opacity, background-color, box-shadow'),
         touchAction: 'manipulation',
         ...variantStyles[variant],
         ...sizeStyles[size],
@@ -92,6 +97,7 @@ export function Button({
           }}
         />
       )}
+      {success && !loading && <Check size={18} strokeWidth={3} />}
       {children}
     </button>
   )

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { priorityBadgeStyle, statusBadgeStyle } from '@/components/support/styles'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import {
   formatSupportCategory,
@@ -80,7 +81,7 @@ export default function AdminSupportPage() {
     <AdminShell>
       <div style={s.page}>
         <div style={s.containerWide}>
-          <h1 style={s.title}>Support Queue</h1>
+          <h1 style={s.title}>{brandTitle('Support Queue')}</h1>
           <p style={s.subtitle}>
             Admin oversight of all client coaching requests · {requests.length} total
           </p>

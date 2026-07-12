@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import {
+  fetchCoachRecord,
+  redirectToLogin,
+  restoreSession,
+} from '@/lib/session-restore'
 import type { Coach } from '@/types/database'
 
 /** Returns the logged-in coach row or redirects and returns null. */
@@ -7,28 +12,35 @@ export async function requireCoach(
   supabase: SupabaseClient,
   router: AppRouterInstance
 ): Promise<Coach | null> {
-  const { data: { user } } = await supabase.auth.getUser()
+  const restored = await restoreSession(supabase)
 
-  if (!user) {
-    router.push('/coach/login')
+  if (restored.status === 'unauthenticated') {
+    redirectToLogin(router, 'coach', 'session_expired')
     return null
   }
 
-  const { data: coachData, error: coachError } = await supabase
-    .from('coaches')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (coachError) {
-    router.push('/coach/login')
+  if (restored.role !== 'coach') {
+    redirectToLogin(router, 'coach', 'not_a_coach')
     return null
   }
 
-  if (!coachData) {
-    router.push('/coach/login')
+  if (restored.status === 'profile_unavailable') {
     return null
   }
 
-  return coachData as Coach
+  if (restored.coach) {
+    return restored.coach
+  }
+
+  const { coach, error } = await fetchCoachRecord(supabase, restored.user.id)
+  if (coach) {
+    return coach
+  }
+
+  if (error) {
+    return null
+  }
+
+  redirectToLogin(router, 'coach', 'coach_record_missing')
+  return null
 }

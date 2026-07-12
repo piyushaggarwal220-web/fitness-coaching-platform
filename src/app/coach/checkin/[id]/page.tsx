@@ -8,7 +8,7 @@ import { CoachShell } from '@/components/ui/CoachShell';
 import { coachPageStyles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/design-tokens';
 import { requireCoach } from '@/lib/coach-session';
-import { sendNotification } from '@/lib/notifications/service'
+import { sendClientNotification } from '@/lib/notifications/client'
 import {
   formatCheckinDate,
   formatWaistChange,
@@ -129,7 +129,7 @@ export default function CoachCheckinDetailPage() {
       return;
     }
 
-    await sendNotification({
+    void sendClientNotification({
       userId: checkin.client_id,
       type: 'coach_replied',
       title: 'Check-in reviewed',
@@ -171,6 +171,9 @@ export default function CoachCheckinDetailPage() {
             {checkin.coaching_week ? ` · Week ${checkin.coaching_week}` : ''}
             {' · '}Submitted {formatCheckinDate(checkin.submitted_at)}
           </p>
+          <Link href={`/coach/chat?clientId=${checkin.client_id}`} style={styles.chatLink}>
+            Reply in chat →
+          </Link>
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
@@ -271,6 +274,9 @@ export default function CoachCheckinDetailPage() {
             <WeeklyCoachingPanel
               clientId={checkin.client_id}
               checkinId={checkin.id}
+              coachId={checkin.coach_id}
+              coachingWeek={checkin.coaching_week}
+              checkinSubmittedAt={checkin.submitted_at}
             />
           </section>
         )}
@@ -363,4 +369,12 @@ const styles: Record<string, CSSProperties> = {
   error: coachPageStyles.error,
   success: coachPageStyles.success,
   errorBox: { ...coachPageStyles.card, borderColor: colors.danger },
+  chatLink: {
+    display: 'inline-block',
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: 600,
+    color: colors.accent,
+    textDecoration: 'none',
+  },
 };

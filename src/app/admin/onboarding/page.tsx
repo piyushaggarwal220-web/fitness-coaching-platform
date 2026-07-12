@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminNavbar from '@/components/admin/AdminNavbar'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { coachBadgeStyles, formatDate, formatFitnessGoal } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
@@ -63,7 +64,7 @@ export default function AdminPendingOnboardingPage() {
       <AdminNavbar />
       <div style={s.page}>
         <div style={s.containerWide}>
-          <h1 style={s.title}>Pending Onboarding</h1>
+          <h1 style={s.title}>{brandTitle('Pending Onboarding')}</h1>
           <p style={s.subtitle}>{clients.length} clients have not completed onboarding</p>
 
           {error && <div style={s.error}>{error}</div>}

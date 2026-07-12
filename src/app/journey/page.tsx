@@ -5,17 +5,36 @@ import { useRouter } from 'next/navigation'
 import { Flag, MessageCircle, Scale, Trophy } from 'lucide-react'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { Card, StatCard } from '@/components/ui/Card'
+import { PhotoGalleryViewer, type GalleryPhoto } from '@/components/journey/PhotoGalleryViewer'
 import { authenticateClient } from '@/lib/onboarding'
-import { loadProgressJourney, type ProgressJourneyData } from '@/lib/progress-journey'
+import { loadProgressJourney, type ProgressJourneyData, type JourneyWeeklyEntry } from '@/lib/progress-journey'
+import { brandTitle } from '@/lib/brand'
 import { colors, spacing } from '@/lib/design-tokens'
+import { staggerClass, useCountUp } from '@/lib/motion'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
+
+type GalleryState = {
+  photos: GalleryPhoto[]
+  index: number
+  meta: { weekNumber?: number | null; date?: string | null; weight?: number | null }
+}
+
+function collectPhotos(entry: JourneyWeeklyEntry): GalleryPhoto[] {
+  const photos: GalleryPhoto[] = []
+  if (entry.photos.front) photos.push({ url: entry.photos.front, label: 'Front' })
+  if (entry.photos.side) photos.push({ url: entry.photos.side, label: 'Side' })
+  if (entry.photos.back) photos.push({ url: entry.photos.back, label: 'Back' })
+  entry.photos.extra?.forEach((url, i) => photos.push({ url, label: `Extra ${i + 1}` }))
+  return photos
+}
 
 export default function JourneyPage() {
   const router = useRouter()
   const [data, setData] = useState<ProgressJourneyData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [gallery, setGallery] = useState<GalleryState | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -28,6 +47,13 @@ export default function JourneyPage() {
     void load()
   }, [router])
 
+  const openGallery = (photos: GalleryPhoto[], index: number, meta: GalleryState['meta']) => {
+    if (photos.length === 0) return
+    setGallery({ photos, index, meta })
+  }
+
+  const weightChangeAnimated = useCountUp(data?.stats.weightChange ?? 0)
+
   if (loading) return <ClientShell title="Journey" loading />
   if (!data) return null
 
@@ -35,9 +61,18 @@ export default function JourneyPage() {
 
   return (
     <ClientShell title="Journey">
+      {gallery && (
+        <PhotoGalleryViewer
+          photos={gallery.photos}
+          initialIndex={gallery.index}
+          meta={gallery.meta}
+          onClose={() => setGallery(null)}
+        />
+      )}
+
       <div style={{ marginBottom: spacing[5] }}>
-        <h1 style={{ margin: 0, fontSize: 'clamp(1.75rem, 6vw, 2.25rem)', fontWeight: 800, letterSpacing: '-0.03em' }}>
-          Your Journey
+        <h1 style={{ margin: 0, fontSize: 'clamp(1.75rem, 6vw, 2.25rem)', fontWeight: 800, letterSpacing: '-0.03em', color: colors.textPrimary }}>
+          {brandTitle('Your Journey')}
         </h1>
         <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 15 }}>
           Every step forward counts
@@ -45,20 +80,20 @@ export default function JourneyPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: spacing[2], marginBottom: spacing[5] }}>
-        <StatCard label="Weeks Active" value={String(stats.weeksActive)} />
-        <StatCard label="Check-ins" value={String(stats.totalCheckins)} />
-        <StatCard label="Workouts" value={String(stats.totalWorkouts)} />
-        <StatCard label="Minutes" value={String(stats.totalWorkoutMinutes)} />
+        <StatCard label="Weeks Active" value={String(stats.weeksActive)} staggerIndex={0} />
+        <StatCard label="Check-ins" value={String(stats.totalCheckins)} staggerIndex={1} />
+        <StatCard label="Workouts" value={String(stats.totalWorkouts)} staggerIndex={2} />
+        <StatCard label="Minutes" value={String(stats.totalWorkoutMinutes)} staggerIndex={3} />
         {stats.weightChange != null && (
           <StatCard
             label="Weight Change"
-            value={`${stats.weightChange > 0 ? '+' : ''}${stats.weightChange.toFixed(1)} kg`}
+            value={`${weightChangeAnimated > 0 ? '+' : ''}${weightChangeAnimated.toFixed(1)} kg`}
             highlight={stats.weightChange < 0}
+            staggerIndex={4}
           />
         )}
       </div>
 
-      {/* Timeline */}
       <section style={{ marginBottom: spacing[5] }}>
         <h2 style={sectionHeading}><Trophy size={14} style={{ display: 'inline', marginRight: 6 }} />Milestones</h2>
         <Card variant="elevated">
@@ -68,7 +103,7 @@ export default function JourneyPage() {
             <div style={{ position: 'relative', paddingLeft: 28 }}>
               <div style={{ position: 'absolute', left: 10, top: 4, bottom: 4, width: 2, backgroundColor: colors.accent, opacity: 0.3, borderRadius: 1 }} />
               {milestones.map((m, i) => (
-                <div key={m.id} style={{ position: 'relative', marginBottom: i < milestones.length - 1 ? spacing[4] : 0 }}>
+                <div key={m.id} className={`motion-card-enter ${staggerClass(i)}`} style={{ position: 'relative', marginBottom: i < milestones.length - 1 ? spacing[4] : 0 }}>
                   <div style={{
                     position: 'absolute', left: -24, top: 2, width: 20, height: 20,
                     borderRadius: '50%', backgroundColor: colors.accentMuted,
@@ -77,7 +112,7 @@ export default function JourneyPage() {
                   }}>
                     <Flag size={10} color={colors.accent} />
                   </div>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: 15 }}>{m.title}</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>{m.title}</p>
                   <p style={{ margin: '4px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>{m.description}</p>
                   <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.textMuted }}>{new Date(m.date).toLocaleDateString()}</p>
                 </div>
@@ -87,40 +122,56 @@ export default function JourneyPage() {
         </Card>
       </section>
 
-      {/* Weekly entries */}
       {weeklyEntries.length > 0 && (
         <section style={{ marginBottom: spacing[5] }}>
           <h2 style={sectionHeading}>Weekly Check-ins</h2>
-          {weeklyEntries.map((entry) => (
-            <Card key={entry.id} variant="glass" style={{ marginBottom: spacing[3] }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: spacing[2] }}>
-                <span style={{ fontWeight: 700, fontSize: 16 }}>{new Date(entry.date).toLocaleDateString()}</span>
-                {entry.weight != null && (
-                  <span style={{ fontWeight: 700, fontSize: 16, color: colors.accent }}>{entry.weight} kg</span>
-                )}
-              </div>
-              {entry.planVersion != null && (
-                <p style={{ margin: '0 0 8px', fontSize: 12, color: colors.textMuted }}>Plan v{entry.planVersion}</p>
-              )}
-              {entry.checkinSummary && (
-                <p style={{ fontSize: 14, color: colors.textSecondary, margin: '0 0 12px', lineHeight: 1.5 }}>{entry.checkinSummary}</p>
-              )}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: entry.coachComment ? 12 : 0 }}>
-                {entry.photos.front && <img src={entry.photos.front} alt="Front" style={photoStyle} />}
-                {entry.photos.side && <img src={entry.photos.side} alt="Side" style={photoStyle} />}
-                {entry.photos.back && <img src={entry.photos.back} alt="Back" style={photoStyle} />}
-                {entry.photos.extra?.map((url, i) => (
-                  <img key={i} src={url} alt={`Extra ${i + 1}`} style={photoStyle} />
-                ))}
-              </div>
-              {entry.coachComment && (
-                <div style={{ backgroundColor: colors.accentMuted, padding: 12, borderRadius: 12, fontSize: 14, lineHeight: 1.5, color: colors.textSecondary }}>
-                  <MessageCircle size={14} color={colors.accent} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
-                  {entry.coachComment}
+          {weeklyEntries.map((entry, entryIndex) => {
+            const photos = collectPhotos(entry)
+            return (
+              <Card key={entry.id} variant="glass" style={{ marginBottom: spacing[3] }} staggerIndex={entryIndex}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: spacing[2] }}>
+                  <span style={{ fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
+                    {entry.coachingWeek != null ? `Week ${entry.coachingWeek} · Weekly Check-in` : `Weekly Check-in · ${new Date(entry.date).toLocaleDateString()}`}
+                  </span>
+                  {entry.weight != null && (
+                    <span style={{ fontWeight: 700, fontSize: 16, color: colors.accent }}>{entry.weight} kg</span>
+                  )}
                 </div>
-              )}
-            </Card>
-          ))}
+                <p style={{ margin: '0 0 8px', fontSize: 12, color: colors.textMuted }}>
+                  {new Date(entry.date).toLocaleDateString()}
+                  {entry.planVersion != null ? ` · Plan v${entry.planVersion}` : ''}
+                </p>
+                {entry.checkinSummary && (
+                  <p style={{ fontSize: 14, color: colors.textSecondary, margin: '0 0 12px', lineHeight: 1.5 }}>{entry.checkinSummary}</p>
+                )}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: entry.coachComment ? 12 : 0 }}>
+                  {photos.map((photo, photoIndex) => (
+                    <button
+                      key={photo.url}
+                      type="button"
+                      onClick={() => openGallery(photos, photoIndex, {
+                        weekNumber: entry.coachingWeek,
+                        date: entry.date,
+                        weight: entry.weight,
+                      })}
+                      className="motion-photo-zoom"
+                      style={photoButtonStyle}
+                      aria-label={`View ${photo.label ?? 'photo'}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo.url} alt={photo.label ?? 'Progress'} style={photoStyle} />
+                    </button>
+                  ))}
+                </div>
+                {entry.coachComment && (
+                  <div style={{ backgroundColor: colors.accentMuted, padding: 12, borderRadius: 12, fontSize: 14, lineHeight: 1.5, color: colors.textSecondary }}>
+                    <MessageCircle size={14} color={colors.accent} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
+                    {entry.coachComment}
+                  </div>
+                )}
+              </Card>
+            )
+          })}
         </section>
       )}
 
@@ -135,7 +186,7 @@ export default function JourneyPage() {
                 borderBottom: i < weightHistory.length - 1 ? `1px solid ${colors.divider}` : 'none',
               }}>
                 <span style={{ color: colors.textSecondary }}>{new Date(entry.date).toLocaleDateString()}</span>
-                <span style={{ fontWeight: 600 }}>{entry.weight} kg</span>
+                <span style={{ fontWeight: 600, color: colors.textPrimary }}>{entry.weight} kg</span>
               </div>
             ))}
           </Card>
@@ -145,18 +196,33 @@ export default function JourneyPage() {
       {progressPhotos.length > 0 && (
         <section style={{ marginBottom: spacing[5] }}>
           <h2 style={sectionHeading}>Progress Photos</h2>
-          {progressPhotos.map((photo, i) => (
-            <Card key={i} variant="elevated" style={{ marginBottom: spacing[3] }}>
-              <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textMuted }}>
-                {photo.date ? new Date(photo.date).toLocaleDateString() : 'Start'}
-              </p>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {photo.front && <img src={photo.front} alt="Front" style={photoStyle} />}
-                {photo.side && <img src={photo.side} alt="Side" style={photoStyle} />}
-                {photo.back && <img src={photo.back} alt="Back" style={photoStyle} />}
-              </div>
-            </Card>
-          ))}
+          {progressPhotos.map((photo, i) => {
+            const photos: GalleryPhoto[] = []
+            if (photo.front) photos.push({ url: photo.front, label: 'Front' })
+            if (photo.side) photos.push({ url: photo.side, label: 'Side' })
+            if (photo.back) photos.push({ url: photo.back, label: 'Back' })
+            return (
+              <Card key={i} variant="elevated" style={{ marginBottom: spacing[3] }}>
+                <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textMuted }}>
+                  {photo.date ? new Date(photo.date).toLocaleDateString() : 'Start'}
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {photos.map((p, photoIndex) => (
+                    <button
+                      key={p.url}
+                      type="button"
+                      onClick={() => openGallery(photos, photoIndex, { date: photo.date })}
+                      className="motion-photo-zoom"
+                      style={photoButtonStyle}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.url} alt={p.label} style={photoStyle} />
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )
+          })}
         </section>
       )}
 
@@ -187,7 +253,7 @@ export default function JourneyPage() {
                 borderBottom: i < recentWorkouts.length - 1 ? `1px solid ${colors.divider}` : 'none',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontWeight: 600, fontSize: 15 }}>{w.name}</span>
+                  <span style={{ fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>{w.name}</span>
                   <span style={{ color: colors.textMuted, fontSize: 14 }}>{w.duration} min</span>
                 </div>
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.textMuted }}>{new Date(w.date).toLocaleDateString()}</p>
@@ -217,4 +283,14 @@ const photoStyle: React.CSSProperties = {
   objectFit: 'cover',
   borderRadius: 12,
   border: `1px solid ${colors.borderSubtle}`,
+  display: 'block',
+}
+
+const photoButtonStyle: React.CSSProperties = {
+  padding: 0,
+  border: 'none',
+  background: 'none',
+  cursor: 'pointer',
+  borderRadius: 12,
+  transition: 'transform 150ms ease',
 }

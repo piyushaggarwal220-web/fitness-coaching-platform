@@ -4,6 +4,7 @@ import { useState, type CSSProperties, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { PROMPT_CATEGORIES, slugifyPromptName, validatePromptForm } from '@/lib/admin/prompt-library'
 import type { PromptLibraryCategory, PromptLibraryFormData } from '@/types/database'
@@ -68,7 +69,7 @@ export default function AdminNewPromptPage() {
           <Link href="/admin/prompts" style={s.backLink}>
             ← Back to prompt library
           </Link>
-          <h1 style={s.title}>New Prompt</h1>
+          <h1 style={s.title}>{brandTitle('New Prompt')}</h1>
           <p style={s.subtitle}>Creates a new prompt with version 1 as draft.</p>
 
           {error && <div style={s.error}>{error}</div>}

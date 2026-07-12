@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminNavbar from '@/components/admin/AdminNavbar'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { coachBadgeStyles, formatFitnessGoal, getCheckinStatus, getPlanStatus } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
@@ -80,7 +81,7 @@ export default function AdminClientsPage() {
       <AdminNavbar />
       <div style={s.page}>
         <div style={s.containerWide}>
-          <h1 style={s.title}>Clients</h1>
+          <h1 style={s.title}>{brandTitle('Clients')}</h1>
           <p style={s.subtitle}>{clients.length} registered clients</p>
 
           {error && <div style={s.error}>{error}</div>}

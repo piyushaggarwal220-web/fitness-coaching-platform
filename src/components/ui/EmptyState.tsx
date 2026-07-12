@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { colors, spacing } from '@/lib/design-tokens'
+import { motionClass } from '@/lib/motion'
 import { Button } from './Button'
 
 type EmptyStateProps = {
@@ -15,6 +16,7 @@ type EmptyStateProps = {
 export function EmptyState({ icon, title, description, actionLabel, onAction }: EmptyStateProps) {
   return (
     <div
+      className={motionClass.emptyEnter}
       style={{
         textAlign: 'center',
         padding: `${spacing[7]}px ${spacing[5]}px`,
@@ -22,7 +24,7 @@ export function EmptyState({ icon, title, description, actionLabel, onAction }: 
       }}
     >
       {icon && (
-        <div style={{ marginBottom: spacing[4], color: colors.textSecondary, display: 'flex', justifyContent: 'center' }}>
+        <div style={{ marginBottom: spacing[4], color: colors.textSecondary, display: 'flex', justifyContent: 'center', opacity: 0.85 }}>
           {icon}
         </div>
       )}

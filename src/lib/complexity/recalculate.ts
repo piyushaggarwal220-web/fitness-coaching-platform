@@ -8,6 +8,7 @@ import { profileToComplexityInput } from '@/lib/complexity/profile-input'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Checkin, OnboardingProfile } from '@/types/database'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 
 export { profileToComplexityInput } from '@/lib/complexity/profile-input'
 
@@ -170,6 +171,8 @@ export async function recalculateClientComplexity(
   if (updateError) {
     throw new Error(updateError.message)
   }
+
+  invalidateForEvent('complexity_recalculated', clientId)
 
   return {
     clientId,

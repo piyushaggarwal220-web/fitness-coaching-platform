@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { mobileNavStyles } from '@/lib/mobile-styles';
+import { BRAND_NAME } from '@/lib/brand'
+import { mobileNavStyles } from '@/lib/mobile-styles'
 import { colors, spacing } from '@/lib/design-tokens';
 
 const supabase = createClient();
@@ -35,7 +36,7 @@ export default function Navbar() {
       <style>{mobileNavStyles}</style>
       <nav style={styles.navbar}>
         <div style={styles.container}>
-          <Link href="/" style={styles.logo} onClick={() => setIsOpen(false)}>Coach</Link>
+          <Link href="/" style={styles.logo} onClick={() => setIsOpen(false)}>{BRAND_NAME}</Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {user && <NotificationBell />}
             <button type="button" className="mobile-nav-btn" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">

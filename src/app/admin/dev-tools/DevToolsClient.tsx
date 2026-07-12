@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { PromptImportPanel } from '@/components/admin/PromptImportPanel'
 import { adminStyles } from '@/lib/admin/styles'
-import { colors } from '@/lib/design-tokens'
+import { brandTitle } from '@/lib/brand'
+import { colors } from '@/lib/design-tokens';
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode';
 
 const supabase = createClient();
@@ -106,7 +107,7 @@ export default function DevToolsClient() {
         <strong>DEV MODE</strong> — Local development toolkit. Razorpay unchanged in production.
       </div>
 
-      <h1 style={styles.title}>Development Testing Toolkit</h1>
+      <h1 style={styles.title}>{brandTitle('Development Testing Toolkit')}</h1>
       <p style={styles.subtitle}>Seed test data for end-to-end flows without Razorpay.</p>
 
       <section style={styles.section}>

@@ -1,8 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import {
+  ensureAuthSession,
+  fetchClientProfile,
+  getRoleHomePath,
+  isDefinitivelyOnboardingIncomplete,
+  isOnboardingComplete,
+  redirectToLogin,
+  restoreSession,
+} from '@/lib/session-restore'
 import { shouldBypassPaymentGuardClient } from '@/lib/dev-mode'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { inferFitnessGoal } from '@/lib/ai/goal-inference'
+import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import type {
   OnboardingData,
   OnboardingFormData,
@@ -898,15 +908,18 @@ export async function saveOnboardingProgress(
     : await supabase.from('profiles').update(payload).eq('id', userId)
 
   if (error) throw new Error(error.message)
+
+  if (options.complete) {
+    invalidateForEvent('onboarding_submitted', userId)
+  }
 }
 
-export function isOnboardingComplete(
+export { ensureAuthSession, fetchClientProfile, isOnboardingComplete } from '@/lib/session-restore'
+
+export function hasCompletedOnboarding(
   profile: Pick<OnboardingProfile, 'onboarding_complete' | 'onboarding_completed_at'> | null
 ): boolean {
-  if (!profile) return false
-  if (profile.onboarding_complete === true) return true
-  if (profile.onboarding_completed_at) return true
-  return false
+  return isOnboardingComplete(profile)
 }
 
 export function isPaymentConfirmed(
@@ -920,8 +933,6 @@ export function getClientPostAuthPath(
   profile: OnboardingProfile | null,
   profileError?: string
 ): string {
-  // Never send to onboarding when profile failed to load — completed users were
-  // falsely routed here when the post-login profile query returned null.
   if (profileError || !profile) {
     return '/dashboard'
   }
@@ -929,9 +940,11 @@ export function getClientPostAuthPath(
   if (!shouldBypassPaymentGuardClient() && !isPaymentConfirmed(profile)) {
     return '/checkout?plan=6_months'
   }
-  if (!isOnboardingComplete(profile)) {
+
+  if (isDefinitivelyOnboardingIncomplete(profile)) {
     return '/onboarding'
   }
+
   return '/dashboard'
 }
 
@@ -939,58 +952,6 @@ type AuthResult = {
   user: { id: string; email?: string }
   profile: OnboardingProfile | null
   profileError?: string
-}
-
-const PROFILE_FETCH_RETRY_DELAYS_MS = [0, 200, 500, 1000, 1500, 2500]
-
-/** Ensure the Supabase client has a valid, refreshed auth session. */
-export async function ensureAuthSession(
-  supabase: SupabaseClient
-): Promise<{ user: { id: string; email?: string } | null }> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-
-  if (user && !error) {
-    return { user: { id: user.id, email: user.email } }
-  }
-
-  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-  if (refreshData?.user && !refreshError) {
-    return { user: { id: refreshData.user.id, email: refreshData.user.email } }
-  }
-
-  const { data: { user: retryUser } } = await supabase.auth.getUser()
-  if (retryUser) {
-    return { user: { id: retryUser.id, email: retryUser.email } }
-  }
-
-  return { user: null }
-}
-
-export async function fetchClientProfile(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<{ profile: OnboardingProfile | null; error: string | null }> {
-  let lastError: string | null = null
-
-  for (let attempt = 0; attempt < PROFILE_FETCH_RETRY_DELAYS_MS.length; attempt++) {
-    if (PROFILE_FETCH_RETRY_DELAYS_MS[attempt] > 0) {
-      await new Promise((resolve) => setTimeout(resolve, PROFILE_FETCH_RETRY_DELAYS_MS[attempt]))
-    }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
-
-    if (!error) {
-      return { profile: (data as OnboardingProfile | null) ?? null, error: null }
-    }
-
-    lastError = error.message
-  }
-
-  return { profile: null, error: lastError ?? 'Failed to load profile' }
 }
 
 export async function authenticateClient(
@@ -1002,22 +963,32 @@ export async function authenticateClient(
     requirePayment?: boolean
   }
 ): Promise<AuthResult | null> {
-  const { user } = await ensureAuthSession(supabase)
+  const restored = await restoreSession(supabase)
 
-  if (!user) {
-    router.push('/login')
+  if (restored.status === 'unauthenticated') {
+    redirectToLogin(router, 'client', 'session_expired')
     return null
   }
 
-  const { profile, error: profileError } = await fetchClientProfile(supabase, user.id)
+  if (restored.role === 'coach') {
+    router.push(getRoleHomePath('coach'))
+    return null
+  }
 
-  if (profileError && !profile) {
+  if (restored.role === 'admin') {
+    router.push(getRoleHomePath('admin'))
+    return null
+  }
+
+  if (restored.status === 'profile_unavailable') {
     return {
-      user,
+      user: restored.user,
       profile: null,
-      profileError,
+      profileError: restored.profileError,
     }
   }
+
+  const { user, profile } = restored
 
   if (
     options?.requirePayment &&
@@ -1029,28 +1000,17 @@ export async function authenticateClient(
     return null
   }
 
-  if (options?.requirePayment && !profile && !shouldBypassPaymentGuardClient()) {
-    router.push('/checkout?plan=6_months')
-    return null
-  }
-
   if (options?.redirectIfOnboarded && profile && isOnboardingComplete(profile)) {
     router.push('/dashboard')
     return null
   }
 
-  // Only redirect to onboarding when profile is loaded AND definitively incomplete.
-  // Never redirect when profile is still null (session/profile race after refresh).
-  if (
-    options?.requireOnboarding &&
-    profile &&
-    !isOnboardingComplete(profile)
-  ) {
+  if (options?.requireOnboarding && profile && isDefinitivelyOnboardingIncomplete(profile)) {
     router.push('/onboarding')
     return null
   }
 
-  return { user, profile, profileError: profileError ?? undefined }
+  return { user, profile }
 }
 
 /**

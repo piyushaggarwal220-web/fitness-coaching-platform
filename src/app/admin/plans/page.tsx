@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import AdminNavbar from '@/components/admin/AdminNavbar'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatDate } from '@/lib/coach-utils'
 import { formatPlanDate } from '@/lib/plans'
@@ -57,7 +58,7 @@ export default function AdminActivePlansPage() {
       <AdminNavbar />
       <div style={s.page}>
         <div style={s.containerWide}>
-          <h1 style={s.title}>Active Plans</h1>
+          <h1 style={s.title}>{brandTitle('Active Plans')}</h1>
           <p style={s.subtitle}>{plans.length} plans currently delivered to clients</p>
 
           {error && <div style={s.error}>{error}</div>}

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { brandTitle } from '@/lib/brand'
 import type { AdminModule } from '@/lib/admin/modules'
 import { adminStyles as s } from '@/lib/admin/styles'
 
@@ -12,7 +13,7 @@ export function AdminModulePlaceholder({ module }: AdminModulePlaceholderProps) 
   return (
     <div style={s.page}>
       <div style={s.container}>
-        <h1 style={s.title}>{module.title}</h1>
+        <h1 style={s.title}>{brandTitle(module.title)}</h1>
         <p style={s.subtitle}>{module.description}</p>
 
         <div style={s.card}>

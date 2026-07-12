@@ -6,6 +6,7 @@ import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { chatLayoutStyles } from '@/lib/chat-layout'
+import { readApiJson } from '@/lib/api-response'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
 import type { CoachConversation, ConversationMessage } from '@/types/database'
@@ -38,9 +39,11 @@ export default function CoachChatDetailPage() {
       setConversation(conv as CoachConversation)
       setClientName((conv.profiles as { name?: string })?.name ?? 'Client')
 
-      const res = await fetch(`/api/chat/messages?conversationId=${conversationId}`)
-      const data = await res.json()
-      if (data.messages) setMessages(data.messages)
+      const res = await fetch(`/api/chat/messages?conversationId=${conversationId}`, {
+        credentials: 'include',
+      })
+      const parsed = await readApiJson<{ messages?: ConversationMessage[] }>(res)
+      if (parsed.ok && parsed.data.messages) setMessages(parsed.data.messages)
       setLoading(false)
     }
     void load()

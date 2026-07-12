@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { CredentialDisplay } from '@/components/admin/CredentialDisplay'
 import { adminStyles as s } from '@/lib/admin/styles'
+import { brandTitle } from '@/lib/brand'
 import { FITNESS_GOAL_OPTIONS } from '@/lib/onboarding'
 import {
   generateSecurePassword,
@@ -259,7 +260,7 @@ export default function TestingToolsClient() {
       <AdminNavbar />
       <div style={s.page}>
         <div style={s.container}>
-          <h1 style={s.title}>Testing Tools</h1>
+          <h1 style={s.title}>{brandTitle('Testing Tools')}</h1>
           <p style={s.subtitle}>
             Internal QA and demo account creation. Trial clients bypass payment and receive full platform access.
           </p>

@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowRight,
   Calendar,
-  CheckCircle2,
   ClipboardList,
   Dumbbell,
   Map,
@@ -17,9 +16,12 @@ import { ClientShell } from '@/components/ui/ClientShell';
 import { Card, StatCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { formatCheckinDate } from '@/lib/checkin';
-import { getClientCheckinSchedule } from '@/lib/checkin-schedule';
+import { getClientCheckinSchedule, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
+import { shouldBypassCheckinScheduleClient } from '@/lib/config';
+import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { formatPlanDate } from '@/lib/plans';
-import { authenticateClient, fetchClientProfile, getOnboardingLabel, isOnboardingComplete } from '@/lib/onboarding';
+import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
+import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { createClient } from '@/lib/supabase/client';
@@ -49,28 +51,20 @@ export default function Dashboard() {
   const [checkinCount, setCheckinCount] = useState(0);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [restoringSession, setRestoringSession] = useState(true);
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     const checkUser = async () => {
       try {
         const result = await authenticateClient(supabase, router, { requirePayment: true });
+        setRestoringSession(false);
         if (!result) {
           setLoading(false);
           return;
         }
 
-        let profileData = result.profile
-
-        if (!profileData && !result.profileError) {
-          const retry = await fetchClientProfile(supabase, result.user.id)
-          profileData = retry.profile
-          if (retry.error && !profileData) {
-            setLoadError('Could not load your profile. Please refresh the page.')
-            setLoading(false)
-            return
-          }
-        }
+        const profileData = result.profile;
 
         if (result.profileError && !profileData) {
           setLoadError('Could not load your profile. Please refresh the page.');
@@ -82,17 +76,6 @@ export default function Dashboard() {
           setLoadError('Your profile could not be loaded. Please refresh or log in again.');
           setLoading(false);
           return;
-        }
-
-        if (!isOnboardingComplete(profileData)) {
-          const retry = await fetchClientProfile(supabase, result.user.id);
-          const retryProfile = retry.profile ?? profileData;
-          if (!isOnboardingComplete(retryProfile)) {
-            router.push('/onboarding');
-            setLoading(false);
-            return;
-          }
-          profileData = retryProfile;
         }
 
         setUser(result.user as User);
@@ -215,14 +198,20 @@ export default function Dashboard() {
     : null;
 
   const latestCheckin = allCheckins[0] ?? null;
+  const checkinScheduleBypass = shouldBypassCheckinScheduleClient();
   const checkinSchedule = profile?.onboarding_completed_at
-    ? getClientCheckinSchedule(profile.onboarding_completed_at, allCheckins)
+    ? getClientCheckinSchedule(profile.onboarding_completed_at, allCheckins, new Date(), {
+        bypassSchedule: checkinScheduleBypass,
+      })
     : null;
 
   const firstName = profile?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
 
   return (
-    <ClientShell loading={loading}>
+    <ClientShell
+      loading={loading}
+      loadingMessage={restoringSession ? SESSION_RESTORE_MESSAGE : undefined}
+    >
       {loadError && (
         <div style={{ ...mobileStyles.error, marginBottom: spacing[4] }}>
           {loadError}
@@ -240,66 +229,127 @@ export default function Dashboard() {
         </p>
       </div>
 
+      {checkinScheduleBypass && (
+        <DevelopmentModeBadge style={{ marginBottom: spacing[4] }} />
+      )}
+
       {/* Plan delivery countdown */}
       {profile && status?.onboardingComplete && status.coachAssigned && (
         <PlanCountdownCard profile={profile} activePlan={activePlan} />
       )}
 
-      {/* Next check-in countdown */}
-      {checkinSchedule?.countdownLabel && (
+      {/* Coaching week + next check-in */}
+      {checkinSchedule?.developmentScheduleMessage ? (
         <Card variant="glass" style={{ marginBottom: spacing[4] }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-            <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Timer size={22} color={colors.accent} />
+            <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.warningMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Timer size={22} color={colors.warning} />
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>Next check-in</p>
-              <p style={{ margin: '2px 0 0', fontSize: 20, fontWeight: 700, color: colors.textPrimary }}>
-                {checkinSchedule.countdownLabel}
+              <p style={{ margin: 0, fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>Development Mode</p>
+              <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 600, color: colors.textPrimary }}>
+                {checkinSchedule.developmentScheduleMessage}
               </p>
             </div>
-            {checkinSchedule.coachingDay && (
-              <span style={{ fontSize: 13, color: colors.textMuted }}>Day {checkinSchedule.coachingDay}</span>
+          </div>
+        </Card>
+      ) : checkinSchedule ? (
+        <Card variant="glass" style={{ marginBottom: spacing[4] }}>
+          <div style={{ display: 'grid', gap: spacing[3] }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Current Coaching Week
+              </p>
+              <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 800, color: colors.textPrimary }}>
+                Week {checkinSchedule.activeCoachingWeek}
+              </p>
+            </div>
+            {checkinSchedule.nextCheckin && (
+              <>
+                <div>
+                  <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    Next Check-in
+                  </p>
+                  <p style={{ margin: '4px 0 0', fontSize: 17, fontWeight: 700, color: colors.textPrimary }}>
+                    {getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)}
+                  </p>
+                  <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textSecondary }}>
+                    Week {checkinSchedule.nextCheckin.coachingWeek} · Day {checkinSchedule.nextCheckin.coachingDay}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Timer size={20} color={colors.accent} />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, fontWeight: 500 }}>
+                      {checkinSchedule.nextCheckinStatus === 'available'
+                        ? 'Available today'
+                        : checkinSchedule.nextCheckinStatus === 'missed'
+                          ? 'Overdue — complete now'
+                          : 'Available in'}
+                    </p>
+                    <p style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>
+                      {checkinSchedule.nextCheckinStatus === 'available' || checkinSchedule.nextCheckinStatus === 'missed'
+                        ? 'Now'
+                        : checkinSchedule.countdownDetailed ?? checkinSchedule.countdownLabel ?? 'Soon'}
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </Card>
-      )}
+      ) : null}
 
-      {/* Today's Tasks */}
-      {checkinSchedule && (
+      {/* Active week check-in status */}
+      {checkinSchedule && checkinSchedule.weekCheckins.length > 0 && (
         <section style={{ marginBottom: spacing[5] }}>
-          <h2 style={sectionHeading}>Today&apos;s Tasks</h2>
-          {checkinSchedule.todayTasks.length === 0 ? (
-            <Card variant="elevated">
-              <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
-                <CheckCircle2 size={20} color={colors.success} />
-                <p style={{ margin: 0, color: colors.textSecondary, fontSize: 15 }}>
-                  All caught up for today
-                </p>
-              </div>
-            </Card>
-          ) : (
-            checkinSchedule.todayTasks.map((task) => (
-              <Card key={`${task.type}-${task.coachingWeek}`} variant="elevated" style={{ marginBottom: spacing[2] }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: spacing[3] }}>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>{task.label}</p>
-                    <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-                      {task.status === 'available' && 'Ready to complete'}
-                      {task.status === 'awaiting_review' && 'Awaiting coach review'}
-                      {task.status === 'completed' && 'Completed'}
-                    </p>
+          <h2 style={sectionHeading}>This Week&apos;s Check-ins</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
+            {checkinSchedule.weekCheckins.map((task) => {
+              const statusColor =
+                task.status === 'completed' ? colors.success :
+                task.status === 'available' ? colors.accent :
+                task.status === 'missed' ? colors.danger :
+                task.status === 'awaiting_review' ? colors.warning :
+                colors.textMuted
+              const statusBg =
+                task.status === 'completed' ? colors.successMuted :
+                task.status === 'available' ? colors.accentMuted :
+                task.status === 'missed' ? colors.dangerMuted :
+                task.status === 'awaiting_review' ? colors.warningMuted :
+                colors.bgElevated
+
+              return (
+                <Card key={`${task.type}-${task.coachingWeek}`} variant="elevated" interactive>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: spacing[3] }}>
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>{getCheckinTypeDisplayName(task.type)}</p>
+                      <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
+                        Day {task.coachingDay}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
+                      <span style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: statusColor,
+                        backgroundColor: statusBg,
+                        padding: '6px 12px',
+                        borderRadius: 999,
+                      }}>
+                        {getCheckinStatusLabel(task.status)}
+                      </span>
+                      {(task.status === 'available' || task.status === 'missed') && (
+                        <Button size="md" onClick={() => router.push(task.href)}>Start</Button>
+                      )}
+                    </div>
                   </div>
-                  {task.status === 'available' && (
-                    <Button size="md" onClick={() => router.push(task.href)}>Start</Button>
-                  )}
-                  {task.status === 'awaiting_review' && (
-                    <span style={{ fontSize: 13, fontWeight: 600, color: colors.success, backgroundColor: colors.successMuted, padding: '6px 12px', borderRadius: 999 }}>Done</span>
-                  )}
-                </div>
-              </Card>
-            ))
-          )}
+                </Card>
+              )
+            })}
+          </div>
         </section>
       )}
 
@@ -366,37 +416,6 @@ export default function Dashboard() {
           </div>
         </Card>
       </section>
-
-      {/* Check-in status */}
-      {profile && (
-        <section style={{ marginBottom: spacing[5] }}>
-          <h2 style={sectionHeading}>Check-in Status</h2>
-          <Card variant="elevated">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[4] }}>
-              <div>
-                <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</p>
-                <p style={{ margin: '4px 0 0', fontSize: 15, fontWeight: 600 }}>
-                  {profile.checkin_awaiting
-                    ? 'Awaiting review'
-                    : latestCheckin?.reviewed
-                      ? 'Reviewed'
-                      : latestCheckin
-                        ? 'Pending review'
-                        : 'No check-ins yet'}
-                </p>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Next due</p>
-                <p style={{ margin: '4px 0 0', fontSize: 15, fontWeight: 600 }}>
-                  {checkinSchedule?.nextCheckin
-                    ? formatCheckinDate(checkinSchedule.nextCheckin.dueDate.toISOString())
-                    : '—'}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </section>
-      )}
 
       {/* Coach chat shortcut */}
       {coach && (

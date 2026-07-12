@@ -47,22 +47,15 @@ export function AccordionItem({ title, icon, isOpen, onToggle, children }: Accor
         <ChevronDown
           size={20}
           color={colors.textMuted}
-          style={{
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 250ms ease',
-            flexShrink: 0,
-          }}
+          className={`accordion-chevron ${isOpen ? 'accordion-chevron--open' : ''}`}
+          style={{ flexShrink: 0 }}
         />
       </button>
-      <div
-        className="accordion-content"
-        style={{
-          maxHeight: isOpen ? '3000px' : '0',
-          opacity: isOpen ? 1 : 0,
-        }}
-      >
-        <div style={{ padding: `0 ${spacing[4]}px ${spacing[4]}px` }}>
-          {children}
+      <div className={`accordion-grid ${isOpen ? 'accordion-grid--open' : ''}`}>
+        <div className="accordion-grid-inner">
+          <div style={{ padding: `0 ${spacing[4]}px ${spacing[4]}px` }}>
+            {children}
+          </div>
         </div>
       </div>
     </div>

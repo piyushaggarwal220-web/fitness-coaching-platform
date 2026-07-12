@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/app/components/Navbar'
 import { priorityBadgeStyle, statusBadgeStyle, supportStyles as s } from '@/components/support/styles'
+import { brandTitle } from '@/lib/brand'
 import { authenticateClient } from '@/lib/onboarding'
 import {
   formatSupportCategory,
@@ -71,7 +72,7 @@ export default function ClientSupportPage() {
         <div style={s.container}>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
             <div>
-              <h1 style={s.title}>Support</h1>
+              <h1 style={s.title}>{brandTitle('Support')}</h1>
               <p style={{ ...s.subtitle, marginBottom: 0 }}>Submit structured coaching requests to your coach.</p>
             </div>
             <Link href="/client/support/new" style={{ ...s.primaryBtn, textDecoration: 'none', alignSelf: 'center' }}>

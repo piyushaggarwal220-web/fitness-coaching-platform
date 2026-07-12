@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CoachShell } from '@/components/ui/CoachShell'
+import { brandTitle } from '@/lib/brand'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
-import { formatRelativeActivity } from '@/lib/coach-chat'
+import { formatRelativeActivity } from '@/lib/coach-chat-ui'
 import { colors, shadows } from '@/lib/design-tokens'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
@@ -48,7 +49,7 @@ export default function CoachChatListPage() {
 
   return (
     <CoachShell>
-      <h1 style={styles.title}>Client Conversations</h1>
+      <h1 style={styles.title}>{brandTitle('Client Conversations')}</h1>
       <p style={styles.subtitle}>Active coaching conversations with your clients.</p>
 
       {conversations.length === 0 ? (

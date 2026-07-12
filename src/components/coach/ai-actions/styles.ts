@@ -54,6 +54,22 @@ export const aiActionStyles: Record<string, CSSProperties> = {
     fontSize: 14,
     marginBottom: spacing[2],
   },
+  statusSuccess: {
+    backgroundColor: colors.successMuted,
+    color: colors.success,
+    padding: '12px 14px',
+    borderRadius: radius.sm,
+    fontSize: 14,
+    marginBottom: spacing[2],
+  },
+  statusError: {
+    backgroundColor: colors.dangerMuted,
+    color: colors.danger,
+    padding: '12px 14px',
+    borderRadius: radius.sm,
+    fontSize: 14,
+    marginBottom: spacing[2],
+  },
   error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[2], fontSize: 14 },
   noteToggle: {
     background: 'none',

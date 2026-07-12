@@ -78,7 +78,7 @@ export async function getCoachWorkQueue(
     tasks.push({
       id: `checkin-${checkin.id}`,
       type: 'checkin_review',
-      title: 'Review Weekly Check-in',
+      title: checkin.checkin_type === 'mid_week' ? 'Review Mid-Week Check-in' : 'Review Weekly Check-in',
       subtitle: name,
       href: `/coach/checkin/${checkin.id}`,
       clientId: checkin.client_id,
@@ -155,4 +155,35 @@ export async function getCoachWorkQueue(
   }
 
   return sortTasks(tasks)
+}
+
+export type WorkQueueFilter = WorkQueueTaskType | 'all'
+
+export type WorkQueueCounts = {
+  initial_plan: number
+  checkin_review: number
+  unread_chat: number
+  issue_report: number
+  other: number
+  total: number
+}
+
+export function getWorkQueueCounts(tasks: WorkQueueTask[]): WorkQueueCounts {
+  const counts: WorkQueueCounts = {
+    initial_plan: 0,
+    checkin_review: 0,
+    unread_chat: 0,
+    issue_report: 0,
+    other: 0,
+    total: tasks.length,
+  }
+  for (const task of tasks) {
+    counts[task.type] += 1
+  }
+  return counts
+}
+
+export function filterWorkQueue(tasks: WorkQueueTask[], filter: WorkQueueFilter): WorkQueueTask[] {
+  if (filter === 'all') return tasks
+  return tasks.filter((t) => t.type === filter)
 }

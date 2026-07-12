@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
+import { getLastCompileReport } from '@/lib/ai/prompt-cache'
 import {
   generatedDietFormData,
   generatedPlanToFormData,
@@ -233,6 +234,7 @@ export async function POST(request: Request) {
       knowledgeRefs: knowledgeCategories,
       rawOutput: input.rawOutput,
       renderedOutput: input.renderedOutput,
+      cacheReport: getLastCompileReport(),
     })
   }
 

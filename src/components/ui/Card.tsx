@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 import { colors, radius, spacing } from '@/lib/design-tokens'
+import { motionClass, staggerClass } from '@/lib/motion'
 
 type CardVariant = 'default' | 'glass' | 'elevated'
 
@@ -12,6 +13,9 @@ type CardProps = {
   style?: CSSProperties
   onClick?: () => void
   className?: string
+  /** Stagger index for list entrance animations */
+  staggerIndex?: number
+  interactive?: boolean
 }
 
 const variantStyles: Record<CardVariant, CSSProperties> = {
@@ -33,13 +37,28 @@ const variantStyles: Record<CardVariant, CSSProperties> = {
   },
 }
 
-export function Card({ children, variant = 'default', padding = 4, style, onClick, className }: CardProps) {
+export function Card({
+  children,
+  variant = 'default',
+  padding = 4,
+  style,
+  onClick,
+  className,
+  staggerIndex,
+  interactive,
+}: CardProps) {
   const pad = typeof padding === 'number' ? padding : spacing[padding]
+  const motionClasses = [
+    motionClass.cardEnter,
+    staggerIndex != null ? staggerClass(staggerIndex) : '',
+    interactive || onClick ? motionClass.cardInteractive : '',
+    className ?? '',
+  ].filter(Boolean).join(' ')
 
   return (
     <div
       onClick={onClick}
-      className={`animate-fade-in ${className ?? ''}`}
+      className={motionClasses}
       style={{
         borderRadius: radius.md,
         padding: pad,
@@ -59,14 +78,16 @@ export function StatCard({
   value,
   icon,
   highlight,
+  staggerIndex,
 }: {
   label: string
   value: string
   icon?: ReactNode
   highlight?: boolean
+  staggerIndex?: number
 }) {
   return (
-    <Card variant="elevated" padding={3} style={{ marginBottom: 0, textAlign: 'center' }}>
+    <Card variant="elevated" padding={3} style={{ marginBottom: 0, textAlign: 'center' }} staggerIndex={staggerIndex}>
       {icon && <div style={{ marginBottom: spacing[1], color: highlight ? colors.accent : colors.textMuted }}>{icon}</div>}
       <div style={{ fontSize: '1.75rem', fontWeight: 800, color: highlight ? colors.accent : colors.textPrimary, letterSpacing: '-0.02em' }}>
         {value}

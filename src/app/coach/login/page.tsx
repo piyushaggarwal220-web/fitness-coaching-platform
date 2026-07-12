@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
 
 const supabase = createClient();
@@ -58,8 +59,8 @@ export default function CoachLogin() {
   return (
     <div style={authStyles.page}>
       <div style={authStyles.card}>
-        <div style={authStyles.logo}>Coach Portal</div>
-        <h1 style={authStyles.title}>Coach sign in</h1>
+        <div style={authStyles.logo}>{BRAND_NAME}</div>
+        <h1 style={authStyles.title}>{brandTitle('Coach sign in')}</h1>
 
         {error && <div style={authStyles.error}>{error}</div>}
 

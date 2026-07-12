@@ -8,9 +8,13 @@ import { createClient } from '@supabase/supabase-js'
 import {
   buildScheduledCheckin,
   getAbsoluteCoachingDay,
+  getActiveCoachingWeek,
   getClientCheckinSchedule,
   getCoachingDay,
+  getCheckinTypeDisplayName,
+  isCheckinAvailableToday,
 } from '../src/lib/checkin-schedule'
+import { shouldBypassCheckinScheduleServer, isLocalhostHost } from '../src/lib/config'
 
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
   const m = line.match(/^([^#=]+)=(.*)$/)
@@ -72,6 +76,84 @@ async function main() {
   } else {
     fail('Mid-week availability on day 3')
   }
+
+  const jan2 = new Date('2026-01-02T10:00:00Z')
+  const blockedEarly = isCheckinAvailableToday(onboarding.toISOString(), 'mid_week', [], jan2)
+  if (!blockedEarly) ok('Production schedule blocks early Day 3 check-in')
+  else fail('Early Day 3 should be blocked without bypass')
+
+  const bypassEarly = isCheckinAvailableToday(onboarding.toISOString(), 'mid_week', [], jan2, {
+    bypassSchedule: true,
+  })
+  if (bypassEarly) ok('Dev bypass allows Day 3 check-in before due date')
+  else fail('Dev bypass should allow early Day 3')
+
+  const scheduleBypass = getClientCheckinSchedule(onboarding.toISOString(), [], jan2, {
+    bypassSchedule: true,
+  })
+  if (scheduleBypass.developmentScheduleMessage?.includes('immediately')) {
+    ok('Dev schedule replaces countdown with immediate message')
+  } else {
+    fail('Dev schedule message missing')
+  }
+
+  const week1Complete = [
+    { checkin_type: 'mid_week' as const, coaching_week: 1, coaching_day: 3 },
+    { checkin_type: 'weekly' as const, coaching_week: 1, coaching_day: 7 },
+  ]
+  const day8 = new Date('2026-01-08T10:00:00Z')
+  const activeWeekAfterW1 = getActiveCoachingWeek(week1Complete, onboarding.toISOString(), day8)
+  if (activeWeekAfterW1 === 2) ok('Week 1 complete advances active coaching week to 2')
+  else fail('Active week after Week 1 complete', `got ${activeWeekAfterW1}`)
+
+  const scheduleAfterW1 = getClientCheckinSchedule(onboarding.toISOString(), week1Complete, day8)
+  if (scheduleAfterW1.activeCoachingWeek === 2) ok('Dashboard schedule tracks Week 2 after Week 1 complete')
+  else fail('Dashboard active week after Week 1', `got ${scheduleAfterW1.activeCoachingWeek}`)
+
+  if (scheduleAfterW1.nextCheckin?.coachingWeek === 2 && scheduleAfterW1.nextCheckin.type === 'mid_week') {
+    ok('Next check-in is Week 2 mid-week after Week 1 complete')
+  } else {
+    fail('Next check-in after Week 1', JSON.stringify(scheduleAfterW1.nextCheckin))
+  }
+
+  if (scheduleAfterW1.nextCheckinStatus === 'upcoming') ok('Week 2 mid-week is upcoming before due date')
+  else fail('Week 2 mid-week status', String(scheduleAfterW1.nextCheckinStatus))
+
+  if (scheduleAfterW1.countdownDetailed?.includes('day')) ok('Detailed countdown present for next check-in')
+  else fail('Detailed countdown missing', scheduleAfterW1.countdownDetailed ?? 'null')
+
+  const week2MidComplete = [
+    ...week1Complete,
+    { checkin_type: 'mid_week' as const, coaching_week: 2, coaching_day: 10 },
+  ]
+  const activeWeekAfterW2Mid = getActiveCoachingWeek(week2MidComplete, onboarding.toISOString(), day8)
+  if (activeWeekAfterW2Mid === 2) ok('Week 2 mid complete keeps active week at 2 until weekly done')
+  else fail('Active week after Week 2 mid', `got ${activeWeekAfterW2Mid}`)
+
+  const scheduleAfterW2Mid = getClientCheckinSchedule(onboarding.toISOString(), week2MidComplete, day8)
+  if (scheduleAfterW2Mid.nextCheckin?.type === 'weekly' && scheduleAfterW2Mid.nextCheckin.coachingWeek === 2) {
+    ok('After Week 2 mid-week, next check-in is Week 2 weekly')
+  } else {
+    fail('Next check-in after Week 2 mid', JSON.stringify(scheduleAfterW2Mid.nextCheckin))
+  }
+
+  if (getCheckinTypeDisplayName('mid_week') === 'Mid-Week Check-in') ok('Mid-week display label')
+  else fail('Mid-week display label')
+
+  if (!shouldBypassCheckinScheduleServer() || process.env.NODE_ENV === 'production') {
+    ok('Server bypass disabled without localhost request')
+  } else {
+    ok('Server bypass available in non-production dev env')
+  }
+
+  if (shouldBypassCheckinScheduleServer('preview.example.vercel.app')) {
+    fail('Deployed host must not bypass check-in schedule')
+  } else {
+    ok('Deployed host blocked from check-in schedule bypass')
+  }
+
+  if (!isLocalhostHost('localhost:3000')) fail('localhost hostname detection')
+  else ok('localhost hostname detection')
 
   console.log('\nDatabase schema:')
 

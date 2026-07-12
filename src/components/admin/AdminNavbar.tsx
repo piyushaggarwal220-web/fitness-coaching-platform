@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { LayoutGrid } from 'lucide-react'
 import { getAdminNavModules } from '@/lib/admin/modules'
 import { DrawerMenuButton, DrawerNav, type DrawerNavItem } from '@/components/ui/DrawerNav'
+import { BRAND_ADMIN_LABEL, BRAND_NAME } from '@/lib/brand'
 import { colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
 
@@ -61,7 +62,7 @@ export default function AdminNavbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <DrawerMenuButton onClick={() => setDrawerOpen(true)} />
             <Link href="/admin" style={styles.logo}>
-              Admin Console
+              {BRAND_ADMIN_LABEL}
             </Link>
           </div>
           <div style={styles.links}>
@@ -76,8 +77,8 @@ export default function AdminNavbar() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         items={drawerItems}
-        title="Admin"
-        subtitle={signedInAs ?? 'Platform management'}
+        title={BRAND_ADMIN_LABEL}
+        subtitle={signedInAs ?? `${BRAND_NAME} platform management`}
       />
     </>
   )

@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { ConversationMessage } from '@/types/database'
-import { formatMessageTime } from '@/lib/coach-chat'
+import { readApiJson } from '@/lib/api-response'
+import { formatMessageTime } from '@/lib/coach-chat-ui'
+import { isCheckinSystemMessage } from '@/lib/checkin-chat'
 import { CoachReplyRatingPrompt } from '@/components/chat/CoachReplyRating'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
 import { colors, shadows } from '@/lib/design-tokens'
+import { motionClass } from '@/lib/motion'
 import { Check, CheckCheck, ImageIcon, Send } from 'lucide-react'
 
 type CoachChatThreadProps = {
@@ -29,13 +32,20 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const fetchMessages = useCallback(async (markRead = true) => {
-    const res = await fetch(`/api/chat/messages?conversationId=${conversationId}${markRead ? '' : '&peek=1'}`)
-    const data = await res.json()
-    if (data.messages) {
-      setMessages(data.messages)
+    const res = await fetch(`/api/chat/messages?conversationId=${conversationId}${markRead ? '' : '&peek=1'}`, {
+      credentials: 'include',
+    })
+    const parsed = await readApiJson<{ messages?: ConversationMessage[]; peerTyping?: boolean; error?: string }>(res)
+    if (!parsed.ok) {
+      setError(parsed.error)
+      setLoading(false)
+      return
+    }
+    if (parsed.data.messages) {
+      setMessages(parsed.data.messages)
       setLoading(false)
     }
-    if (typeof data.peerTyping === 'boolean') setPeerTyping(data.peerTyping)
+    if (typeof parsed.data.peerTyping === 'boolean') setPeerTyping(parsed.data.peerTyping)
   }, [conversationId])
 
   useEffect(() => {
@@ -93,6 +103,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       const res = await fetch('/api/chat/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           conversationId,
           content: content || undefined,
@@ -101,8 +112,8 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           mediaDurationSeconds: opts?.mediaDurationSeconds,
         }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to send')
+      const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
       await fetchMessages()
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
@@ -117,6 +128,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     fetch('/api/chat/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ conversationId, typing: true }),
     }).catch(() => {})
   }
@@ -177,18 +189,27 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           const isSystem = msg.sender_type === 'system' || msg.message_type === 'system'
 
           if (isSystem) {
+            const isCheckin = isCheckinSystemMessage(msg.content)
             return (
-              <div key={msg.id} style={styles.systemMsg}>
-                {msg.content}
+              <div key={msg.id} style={isCheckin ? styles.checkinSystemMsg : styles.systemMsg}>
+                {isCheckin ? (
+                  <pre style={styles.checkinContent}>{msg.content}</pre>
+                ) : (
+                  msg.content
+                )}
               </div>
             )
           }
 
           return (
-            <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
+            <div key={msg.id} className={motionClass.messageEnter} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
               <div style={{ ...(isMine ? styles.bubbleMine : styles.bubbleOther) }}>
                 {msg.message_type === 'voice' && msg.media_url ? (
-                  <VoicePlayer url={msg.media_url} duration={msg.media_duration_seconds ?? undefined} />
+                  <VoicePlayer
+                    url={msg.media_url}
+                    duration={msg.media_duration_seconds ?? undefined}
+                    fromCoach={msg.sender_type === 'coach'}
+                  />
                 ) : msg.message_type === 'image' && msg.media_url ? (
                   <img src={msg.media_url} alt="Shared" style={styles.image} />
                 ) : (
@@ -217,10 +238,10 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         <div ref={bottomRef} />
       </div>
 
-      {error && <div style={styles.error}>{error}</div>}
+      {error && <div className={motionClass.shake} style={styles.error}>{error}</div>}
 
       {imagePreview && (
-        <div style={styles.imagePreviewBar}>
+        <div className={motionClass.inputBarEnter} style={styles.imagePreviewBar}>
           <img src={imagePreview.url} alt="Preview" style={styles.previewThumb} />
           <button type="button" onClick={() => { URL.revokeObjectURL(imagePreview.url); setImagePreview(null) }} style={styles.previewCancel}>
             Cancel
@@ -231,16 +252,16 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         </div>
       )}
 
-      <div style={styles.inputBar}>
-        <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} id={`chat-image-${conversationId}`} />
-        <label htmlFor={`chat-image-${conversationId}`} style={styles.attachBtn} aria-label="Attach image">
-          <ImageIcon size={20} color={colors.textSecondary} />
-        </label>
+      <div className={motionClass.inputBarEnter} style={styles.inputBar}>
         <VoiceRecorder
           conversationId={conversationId}
           onSent={() => void fetchMessages()}
           onError={setError}
         />
+        <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} id={`chat-image-${conversationId}`} />
+        <label htmlFor={`chat-image-${conversationId}`} style={styles.attachBtn} aria-label="Attach image">
+          <ImageIcon size={20} color={colors.textSecondary} />
+        </label>
         <input
           value={input}
           onChange={(e) => { setInput(e.target.value); handleTyping() }}
@@ -249,7 +270,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           style={styles.input}
           disabled={sending}
         />
-        <button type="button" onClick={() => void sendMessage()} disabled={sending || !input.trim()} style={styles.sendBtn} aria-label="Send">
+        <button type="button" onClick={() => void sendMessage()} disabled={sending || !input.trim()} className="btn-press" style={styles.sendBtn} aria-label="Send">
           <Send size={18} />
         </button>
       </div>
@@ -281,6 +302,25 @@ const styles: Record<string, CSSProperties> = {
   skeletonWrap: { display: 'flex', flexDirection: 'column', gap: 12 },
   empty: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 32 },
   systemMsg: { textAlign: 'center', color: colors.textMuted, fontSize: 12, padding: '6px 16px', fontStyle: 'italic', backgroundColor: colors.bgElevated, borderRadius: 999, alignSelf: 'center' },
+  checkinSystemMsg: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: colors.bgCard,
+    border: `1px solid ${colors.borderSubtle}`,
+    borderRadius: 16,
+    padding: '14px 16px',
+    margin: '4px 0',
+  },
+  checkinContent: {
+    margin: 0,
+    fontFamily: 'inherit',
+    fontSize: 14,
+    lineHeight: 1.55,
+    color: colors.textPrimary,
+    whiteSpace: 'pre-wrap',
+    textAlign: 'left',
+  },
   bubbleMine: {
     background: `linear-gradient(135deg, ${colors.accent} 0%, #ea580c 100%)`,
     color: colors.textInverse,

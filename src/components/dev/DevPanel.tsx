@@ -1,5 +1,6 @@
 'use client'
 
+import { BRAND_COACH_LABEL } from '@/lib/brand'
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode'
 import { TEST_PASSWORD } from '@/lib/dev-seeds'
 import { createClient } from '@/lib/supabase/client'
@@ -169,7 +170,7 @@ export default function DevPanel() {
               Weekly Check-ins
             </Link>
             <Link href="/coach/dashboard" onClick={() => setOpen(false)}>
-              Coach Portal
+              {BRAND_COACH_LABEL}
             </Link>
             <Link href="/admin/dev-tools" onClick={() => setOpen(false)}>
               Full Dev Toolkit

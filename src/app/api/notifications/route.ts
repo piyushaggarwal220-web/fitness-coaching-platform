@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { sendNotification } from '@/lib/notifications/service'
+import type { NotificationType } from '@/types/database'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -58,4 +59,75 @@ export async function PATCH(request: Request) {
   }
 
   return NextResponse.json({ error: 'notificationId or markAll required' }, { status: 400 })
+}
+
+type SendNotificationBody = {
+  userId?: string
+  type?: NotificationType
+  title?: string
+  body?: string
+  actionUrl?: string
+  metadata?: Record<string, unknown>
+}
+
+export async function POST(request: Request) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: coach } = await supabase
+    .from('coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!coach?.id) {
+    return NextResponse.json({ error: 'Coach access required' }, { status: 403 })
+  }
+
+  let body: SendNotificationBody
+  try {
+    body = (await request.json()) as SendNotificationBody
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  const userId = body.userId?.trim()
+  const type = body.type
+  const title = body.title?.trim()
+  const notifBody = body.body?.trim()
+
+  if (!userId || !type || !title || !notifBody) {
+    return NextResponse.json({ error: 'userId, type, title, and body are required' }, { status: 400 })
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('coach_id')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (profile?.coach_id !== coach.id) {
+    return NextResponse.json({ error: 'Client not assigned to this coach' }, { status: 403 })
+  }
+
+  const notification = await sendNotification({
+    userId,
+    type,
+    title,
+    body: notifBody,
+    actionUrl: body.actionUrl,
+    metadata: body.metadata,
+  })
+
+  if (!notification) {
+    return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true, notificationId: notification.id })
 }

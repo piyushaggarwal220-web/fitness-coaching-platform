@@ -16,14 +16,23 @@ export default function Home() {
         textAlign: "center",
         minHeight: "80vh"
       }}>
-        <h1 style={{ 
+        <h1 style={{
           fontSize: "clamp(2.4rem, 7vw, 6.4rem)", 
           color: "#C9A227",
           marginBottom: "20px",
           fontFamily: "Big Shoulders Display, sans-serif"
         }}>
-          ONE DECISION CHANGES EVERYTHING
+          LURVOX
         </h1>
+        <h2 style={{ 
+          fontSize: "clamp(1.5rem, 4vw, 2.5rem)", 
+          color: "#F6F1E7",
+          marginBottom: "20px",
+          fontFamily: "Big Shoulders Display, sans-serif",
+          fontWeight: 700,
+        }}>
+          ONE DECISION CHANGES EVERYTHING
+        </h2>
         <p style={{ 
           fontSize: "1.15rem", 
           color: "#B9B1A6", 

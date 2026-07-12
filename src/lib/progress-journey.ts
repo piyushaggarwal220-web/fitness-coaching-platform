@@ -2,6 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Checkin, JourneyEntry, Plan, Profile } from '@/types/database'
 import { parseCoachResponse } from '@/lib/checkin'
 
+function buildMidWeekJourneyDescription(checkin: Checkin): string {
+  const parts: string[] = []
+  if (checkin.diet_adherence != null) parts.push(`Diet ${checkin.diet_adherence}/10`)
+  if (checkin.workout_adherence != null) parts.push(`Workout ${checkin.workout_adherence}/10`)
+  if (checkin.energy_level != null) parts.push(`Energy ${checkin.energy_level}/10`)
+  return parts.join(' · ') || 'Mid-week progress check-in.'
+}
+
 export type JourneyMilestone = {
   id: string
   type: 'onboarding' | 'plan' | 'checkin' | 'workout' | 'coach_comment' | 'journey_entry'
@@ -27,6 +35,7 @@ export type JourneyWeeklyEntry = {
   id: string
   date: string
   weight: number | null
+  coachingWeek: number | null
   photos: { front?: string; side?: string; back?: string; extra?: string[] }
   coachComment: string | null
   checkinSummary: string | null
@@ -139,6 +148,20 @@ export async function loadProgressJourney(
     }
   }
 
+  for (const checkin of checkins) {
+    if (checkin.checkin_type === 'mid_week') {
+      const week = checkin.coaching_week ?? (checkin.coaching_day ? Math.ceil(checkin.coaching_day / 7) : null)
+      milestones.push({
+        id: `midweek-${checkin.id}`,
+        type: 'checkin',
+        title: week ? `Week ${week} · Mid-Week Check-in` : 'Mid-Week Check-in',
+        description: buildMidWeekJourneyDescription(checkin),
+        date: checkin.submitted_at,
+        icon: '📋',
+      })
+    }
+  }
+
   for (const entry of journeyEntries) {
     const checkin = checkinById.get(entry.checkin_id)
     const coachResponse = checkin ? parseCoachResponse(checkin.coach_response) : { feedback: '', action_items: '' }
@@ -148,6 +171,7 @@ export async function loadProgressJourney(
       id: entry.id,
       date: entry.entry_date,
       weight: entry.weight,
+      coachingWeek: checkin?.coaching_week ?? null,
       photos: {
         front: entry.photo_front ?? undefined,
         side: entry.photo_side ?? undefined,
@@ -163,7 +187,9 @@ export async function loadProgressJourney(
     milestones.push({
       id: `journey-${entry.id}`,
       type: 'journey_entry',
-      title: `Week ${checkin?.coaching_week ?? ''} Check-in`.trim(),
+      title: checkin?.coaching_week
+        ? `Week ${checkin.coaching_week} · Weekly Check-in`
+        : 'Weekly Check-in',
       description: entry.checkin_summary?.slice(0, 80) ?? 'Weekly progress check-in.',
       date: entry.entry_date,
       icon: '✅',

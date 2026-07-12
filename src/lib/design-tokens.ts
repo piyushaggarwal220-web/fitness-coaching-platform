@@ -58,6 +58,27 @@ export const shadows = {
   accent: '0 4px 20px rgba(249, 115, 22, 0.22)',
 } as const
 
+export const motion = {
+  duration: {
+    fast: 120,
+    normal: 180,
+    medium: 250,
+    slow: 350,
+  },
+  easing: {
+    standard: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    out: 'cubic-bezier(0.16, 1, 0.3, 1)',
+    drawer: 'cubic-bezier(0.32, 0.72, 0, 1)',
+  },
+} as const
+
+export function transition(
+  speed: keyof typeof motion.duration = 'normal',
+  properties = 'all',
+): string {
+  return `${properties} ${motion.duration[speed]}ms ${motion.easing.standard}`
+}
+
 export const typography = {
   pageTitle: {
     fontSize: 'clamp(1.75rem, 6vw, 2.25rem)',

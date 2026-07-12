@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Mic, Square, Trash2 } from 'lucide-react'
+import { readApiJson } from '@/lib/api-response'
 import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/design-tokens'
+import { motionClass } from '@/lib/motion'
 
 type VoiceRecorderProps = {
   conversationId: string
@@ -70,6 +72,7 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
       const res = await fetch('/api/chat/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           conversationId,
           messageType: 'voice',
@@ -77,8 +80,8 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
           mediaDurationSeconds: preview.duration,
         }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to send')
+      const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
 
       deletePreview()
       onSent()
@@ -107,6 +110,7 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
     <button
       type="button"
       onClick={recording ? stopRecording : () => void startRecording()}
+      className={`btn-press ${recording ? motionClass.recordingPulse : ''}`}
       style={{ ...styles.micBtn, ...(recording ? styles.recording : {}) }}
       aria-label={recording ? 'Stop recording' : 'Record voice message'}
     >

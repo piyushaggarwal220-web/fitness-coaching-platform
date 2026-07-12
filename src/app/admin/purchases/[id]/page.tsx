@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { AdminShell } from '@/components/admin/AdminShell'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatInr } from '@/lib/admin/pricing'
 import { formatSupportCategory, formatSupportStatus } from '@/lib/support'
@@ -66,7 +67,7 @@ export default function AdminPurchaseDetailPage() {
       <div style={s.page}>
         <div style={s.containerWide}>
           <Link href="/admin/purchases" style={s.backLink}>← Back to purchases</Link>
-          <h1 style={s.title}>Purchase Detail</h1>
+          <h1 style={s.title}>{brandTitle('Purchase Detail')}</h1>
           <p style={s.subtitle}>{purchase.plan_name} · {formatInr(purchase.amount_paise / 100)}</p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>

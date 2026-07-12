@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { COACHING_PLAN_LIST } from '@/lib/payments/plans'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import type { RedemptionCode } from '@/types/database'
 
@@ -62,7 +63,7 @@ export default function AdminRedemptionCodesPage() {
   return (
     <AdminShell>
       <div style={s.container}>
-        <h1 style={s.title}>Redemption Codes</h1>
+        <h1 style={s.title}>{brandTitle('Redemption Codes')}</h1>
         <p style={s.subtitle}>Create and manage coupon codes for customers who paid outside the platform.</p>
       <div style={{ marginBottom: 16 }}>
         <button type="button" onClick={() => setShowForm(!showForm)} style={s.primaryBtn}>

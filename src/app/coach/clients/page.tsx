@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState, type CSSProperties } from 'reac
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CoachShell } from '@/components/ui/CoachShell';
+import { brandTitle } from '@/lib/brand';
 import { coachPageStyles as styles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/design-tokens';
 import { requireCoach } from '@/lib/coach-session';
@@ -14,7 +15,10 @@ import {
   getPlanStatus,
 } from '@/lib/coach-utils';
 import { COMPLEXITY_TIER_COLORS, formatTierLabel } from '@/lib/complexity/display';
-import type { ClientProfile, Coach } from '@/types/database';
+import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
+import type { Checkin, ClientProfile, Coach } from '@/types/database';
+
+type CoachClientRow = ClientProfile & { onboarding_completed_at?: string | null };
 
 type SortOption = 'name' | 'highest' | 'lowest' | 'improved' | 'increased' | 'newest';
 
@@ -33,7 +37,8 @@ function CoachClientsContent() {
   const searchParams = useSearchParams();
   const tierFilter = (searchParams.get('tier') as 'low' | 'medium' | 'high' | null) ?? null;
   const [coach, setCoach] = useState<Coach | null>(null);
-  const [clients, setClients] = useState<ClientProfile[]>([]);
+  const [clients, setClients] = useState<CoachClientRow[]>([]);
+  const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name');
   const [loading, setLoading] = useState(true);
@@ -60,6 +65,16 @@ function CoachClientsContent() {
       }
 
       setClients(clientsData ?? []);
+
+      const clientIds = (clientsData ?? []).map((c) => c.id);
+      if (clientIds.length > 0) {
+        const { data: checkinData } = await supabase
+          .from('checkins')
+          .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed, submitted_at')
+          .in('client_id', clientIds);
+        setCheckins((checkinData ?? []) as Checkin[]);
+      }
+
       setLoading(false);
     };
 
@@ -123,7 +138,7 @@ function CoachClientsContent() {
     <CoachShell>
         <div style={styles.header}>
           <div>
-            <h1 style={styles.title}>Clients</h1>
+            <h1 style={styles.title}>{brandTitle('Clients')}</h1>
             <p style={styles.subtitle}>
               {coach?.name ? `${coach.name}'s roster` : 'Your assigned clients'} · {clients.length} total
             </p>
@@ -174,7 +189,12 @@ function CoachClientsContent() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {filteredClients.map((client) => (
+              {filteredClients.map((client) => {
+                const summary = client.onboarding_completed_at
+                  ? getCoachClientCheckinSummary(client.id, client.onboarding_completed_at, checkins)
+                  : null
+
+                return (
                 <button
                   key={client.id}
                   type="button"
@@ -187,6 +207,30 @@ function CoachClientsContent() {
                   </div>
                   <div style={styles.clientMeta}>
                     <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>Coaching week</span>
+                      <span>{summary ? `Week ${summary.activeCoachingWeek}` : '—'}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>Next check-in</span>
+                      <span>
+                        {summary?.nextCheckin
+                          ? getCheckinTypeDisplayName(summary.nextCheckin.type)
+                          : '—'}
+                      </span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>Countdown</span>
+                      <span>{summary?.countdownDetailed ?? (summary?.nextCheckinStatus === 'available' ? 'Today' : '—')}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>Mid-week</span>
+                      <span>{summary ? getCheckinStatusLabel(summary.midWeekStatus) : '—'}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>Weekly</span>
+                      <span>{summary ? getCheckinStatusLabel(summary.weeklyStatus) : '—'}</span>
+                    </div>
+                    <div style={styles.metaItem}>
                       <span style={styles.metaLabel}>Goal</span>
                       <span>{formatFitnessGoal(client.fitness_goal)}</span>
                     </div>
@@ -197,7 +241,7 @@ function CoachClientsContent() {
                       </span>
                     </div>
                     <div style={styles.metaItem}>
-                      <span style={styles.metaLabel}>Check-in</span>
+                      <span style={styles.metaLabel}>Legacy status</span>
                       <span style={
                         client.checkin_overdue
                           ? coachBadgeStyles.overdue
@@ -224,7 +268,7 @@ function CoachClientsContent() {
                     )}
                   </div>
                 </button>
-              ))}
+              )})}
             </div>
           )}
         </div>

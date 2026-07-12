@@ -2,6 +2,9 @@
 
 import type { AiReasoningDisplay } from '@/lib/coach/ai-actions'
 import { useState } from 'react'
+import { AiGenerationProgress } from '@/components/motion/AiGenerationProgress'
+import { SuccessState } from '@/components/motion/SuccessState'
+import { motionClass } from '@/lib/motion'
 import { aiActionStyles as s } from './styles'
 
 export function AiReasoningPanel({ reasoning }: { reasoning: AiReasoningDisplay | null }) {
@@ -72,9 +75,28 @@ export function OptionalCoachNote({
   )
 }
 
-export function GenerationStatus({ message }: { message: string | null }) {
+export function GenerationStatus({
+  message,
+  variant = 'loading',
+}: {
+  message: string | null
+  variant?: 'loading' | 'success' | 'error'
+}) {
   if (!message) return null
-  return <div style={s.status}>{message}</div>
+
+  if (variant === 'success') {
+    return <SuccessState message={message} />
+  }
+
+  if (variant === 'loading') {
+    return (
+      <div style={s.status}>
+        <AiGenerationProgress active />
+      </div>
+    )
+  }
+
+  return <div className={motionClass.shake} style={s.statusError}>{message}</div>
 }
 
 export function ActionCard({

@@ -1,3 +1,4 @@
+import { stripPlanMeta } from '@/lib/plan-metadata'
 import type { Plan, PlanFormData } from '@/types/database'
 
 export type ParsedPlanSections = {
@@ -150,7 +151,7 @@ export function resolvePlanSections(input: {
   const workout = normalizeText(input.workout_plan)
   const supplementsExplicit = normalizeText(input.supplement_plan)
   const cardioExplicit = normalizeText(input.cardio_plan)
-  const notesExplicit = normalizeText(input.coach_notes)
+  const notesExplicit = stripPlanMeta(normalizeText(input.coach_notes))
 
   const fromNutrition = splitPlanTextByHeaders(nutrition)
   const fromWorkout = splitPlanTextByHeaders(workout)

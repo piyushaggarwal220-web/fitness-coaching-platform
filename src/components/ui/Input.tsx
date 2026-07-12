@@ -1,7 +1,8 @@
 'use client'
 
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { colors, radius, spacing, transition } from '@/lib/design-tokens'
+import { motionClass } from '@/lib/motion'
 
 const baseInputStyle: React.CSSProperties = {
   width: '100%',
@@ -14,7 +15,7 @@ const baseInputStyle: React.CSSProperties = {
   backgroundColor: colors.bgElevated,
   color: colors.textPrimary,
   outline: 'none',
-  transition: 'border-color 150ms ease',
+  transition: transition('normal', 'border-color'),
 }
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
@@ -34,10 +35,11 @@ export function Input({ label, error, style, id, ...props }: InputProps) {
       )}
       <input
         id={inputId}
+        className={error ? motionClass.shake : undefined}
         style={{ ...baseInputStyle, ...(error ? { borderColor: colors.danger } : {}), ...style }}
         {...props}
       />
-      {error && <p style={{ margin: '6px 0 0', fontSize: 13, color: colors.danger }}>{error}</p>}
+      {error && <p className="motion-ai-step-enter" style={{ margin: '6px 0 0', fontSize: 13, color: colors.danger }}>{error}</p>}
     </div>
   )
 }
@@ -59,6 +61,7 @@ export function TextArea({ label, error, style, id, ...props }: TextAreaProps) {
       )}
       <textarea
         id={inputId}
+        className={error ? motionClass.shake : undefined}
         style={{
           ...baseInputStyle,
           minHeight: 120,
@@ -69,7 +72,7 @@ export function TextArea({ label, error, style, id, ...props }: TextAreaProps) {
         }}
         {...props}
       />
-      {error && <p style={{ margin: '6px 0 0', fontSize: 13, color: colors.danger }}>{error}</p>}
+      {error && <p className="motion-ai-step-enter" style={{ margin: '6px 0 0', fontSize: 13, color: colors.danger }}>{error}</p>}
     </div>
   )
 }

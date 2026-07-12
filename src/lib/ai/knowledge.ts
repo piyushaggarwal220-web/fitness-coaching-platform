@@ -1,3 +1,4 @@
+import { invalidateKnowledgeBase } from '@/lib/ai/prompt-cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type {
   AiKnowledge,
@@ -119,6 +120,7 @@ export async function createKnowledge(
     .single()
 
   if (error) return { data: null, error: error.message }
+  invalidateKnowledgeBase()
   return { data: data as AiKnowledge, error: null }
 }
 
@@ -154,5 +156,6 @@ export async function updateKnowledge(
     .single()
 
   if (error) return { data: null, error: error.message }
+  invalidateKnowledgeBase()
   return { data: data as AiKnowledge, error: null }
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { CoachShell } from '@/components/ui/CoachShell';
+import { brandTitle } from '@/lib/brand';
 import { coachPageStyles as styles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/design-tokens';
 import { requireCoach } from '@/lib/coach-session';
@@ -75,7 +76,7 @@ export default function CoachPlansPage() {
     <CoachShell>
         <div style={styles.header}>
           <div>
-            <h1 style={styles.title}>Coaching Plans</h1>
+            <h1 style={styles.title}>{brandTitle('Coaching Plans')}</h1>
             <p style={styles.subtitle}>{coach?.name ? `${coach.name}'s plans` : 'Manage client plans'}</p>
           </div>
           <button style={styles.primaryBtn} onClick={() => router.push('/coach/plan/new')}>

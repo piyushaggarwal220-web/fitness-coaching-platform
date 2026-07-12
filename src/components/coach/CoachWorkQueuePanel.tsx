@@ -2,16 +2,31 @@
 
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
-import { CoachShell } from '@/components/ui/CoachShell'
-import { coachPageStyles } from '@/lib/coach-page-styles'
-import { getCoachWorkQueue, type WorkQueueTask } from '@/lib/coach-work-queue'
+import {
+  filterWorkQueue,
+  getCoachWorkQueue,
+  getWorkQueueCounts,
+  type WorkQueueCounts,
+  type WorkQueueFilter,
+  type WorkQueueTask,
+} from '@/lib/coach-work-queue'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/design-tokens'
+import { motionClass } from '@/lib/motion'
 
 const supabase = createClient()
 
 const COMPLETED_KEY = 'coach-queue-completed'
+
+const FILTER_LABELS: Record<WorkQueueFilter, string> = {
+  all: 'All tasks',
+  initial_plan: 'Initial Plans',
+  checkin_review: 'Weekly Reviews',
+  unread_chat: 'Unread Chats',
+  issue_report: 'Issue Reports',
+  other: 'Everything Else',
+}
 
 function loadCompleted(): Set<string> {
   if (typeof window === 'undefined') return new Set()
@@ -27,7 +42,12 @@ function saveCompleted(ids: Set<string>) {
   sessionStorage.setItem(COMPLETED_KEY, JSON.stringify([...ids]))
 }
 
-export function CoachWorkQueuePanel() {
+type CoachWorkQueuePanelProps = {
+  filter?: WorkQueueFilter
+  onCountsChange?: (counts: WorkQueueCounts) => void
+}
+
+export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWorkQueuePanelProps) {
   const router = useRouter()
   const [tasks, setTasks] = useState<WorkQueueTask[]>([])
   const [completed, setCompleted] = useState<Set<string>>(new Set())
@@ -43,20 +63,28 @@ export function CoachWorkQueuePanel() {
 
     const load = async () => {
       const coach = await requireCoach(supabase, router)
-      if (!coach || !active) { setLoading(false); return }
+      if (!coach || !active) {
+        setLoading(false)
+        return
+      }
       const queue = await getCoachWorkQueue(supabase, coach.id)
       if (active) {
         setTasks(queue)
+        onCountsChange?.(getWorkQueueCounts(queue))
         setLoading(false)
       }
     }
 
     void load()
     poll = setInterval(() => void load(), 8000)
-    return () => { active = false; if (poll) clearInterval(poll) }
-  }, [router])
+    return () => {
+      active = false
+      if (poll) clearInterval(poll)
+    }
+  }, [router, onCountsChange])
 
-  const visible = tasks.filter((t) => !completed.has(t.id))
+  const filtered = filterWorkQueue(tasks, filter)
+  const visible = filtered.filter((t) => !completed.has(t.id))
   const current = visible[0] ?? null
   const upcoming = visible.slice(1, 4)
 
@@ -75,16 +103,27 @@ export function CoachWorkQueuePanel() {
   if (!current) {
     return (
       <div style={panelStyle}>
-        <p style={{ margin: 0, fontWeight: 700, fontSize: 18, color: colors.textPrimary }}>All caught up</p>
-        <p style={{ margin: '8px 0 0', color: colors.textMuted, fontSize: 14 }}>No pending tasks in your queue.</p>
+        <p style={{ margin: 0, fontWeight: 700, fontSize: 18, color: colors.textPrimary }}>
+          {filter === 'all' ? 'All caught up' : `No ${FILTER_LABELS[filter].toLowerCase()} in queue`}
+        </p>
+        <p style={{ margin: '8px 0 0', color: colors.textMuted, fontSize: 14 }}>
+          {filter === 'all'
+            ? 'No pending tasks in your queue.'
+            : 'Try another filter or check back later.'}
+        </p>
       </div>
     )
   }
 
   return (
-    <div style={panelStyle}>
+    <div className={motionClass.queueEnter} style={panelStyle} key={current.id}>
+      {filter !== 'all' && (
+        <p style={{ margin: '0 0 8px', fontSize: 12, color: colors.accent, fontWeight: 600 }}>
+          Filtered: {FILTER_LABELS[filter]}
+        </p>
+      )}
       <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-        Next Task
+        Next up
       </p>
       <button
         type="button"

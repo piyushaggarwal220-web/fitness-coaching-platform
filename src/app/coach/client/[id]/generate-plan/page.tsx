@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { brandTitle } from '@/lib/brand'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
@@ -217,7 +218,7 @@ export default function CoachGeneratePlanPage() {
     <CoachShell narrow>
           <Link href={`/coach/client/${client.id}`} style={s.backLink}>← Back to client</Link>
 
-          <h1 style={s.title}>AI coaching actions</h1>
+          <h1 style={s.title}>{brandTitle('AI coaching actions')}</h1>
           <p style={s.subtitle}>
             {client.name || client.email}
             {coach?.name ? ` · Coach ${coach.name}` : ''}

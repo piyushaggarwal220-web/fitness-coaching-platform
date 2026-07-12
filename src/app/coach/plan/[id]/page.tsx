@@ -13,10 +13,12 @@ import {
   deactivatePlan,
   formatPlanDate,
   getNextPlanVersion,
+  invalidatePlanEdit,
   planToForm,
   validatePlanForm,
 } from '@/lib/plans';
 import { requireCoach } from '@/lib/coach-session';
+import { PlanVersionHistory } from '@/components/coach/PlanVersionHistory';
 import type { Plan, PlanFormData, PlanWithClient } from '@/types/database';
 
 const supabase = createClient();
@@ -28,6 +30,7 @@ export default function CoachPlanDetailPage() {
 
   const [plan, setPlan] = useState<PlanWithClient | null>(null);
   const [history, setHistory] = useState<Plan[]>([]);
+  const [coachName, setCoachName] = useState<string | null>(null);
   const [form, setForm] = useState<PlanFormData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,6 +42,8 @@ export default function CoachPlanDetailPage() {
     const load = async () => {
       const coachData = await requireCoach(supabase, router);
       if (!coachData) return;
+
+      setCoachName(coachData.name ?? null);
 
       const { data: planData, error: planError } = await supabase
         .from('plans')
@@ -119,6 +124,7 @@ export default function CoachPlanDetailPage() {
     } else {
       setSuccess('Plan saved.');
       setPlan({ ...plan, ...form, updated_at: new Date().toISOString() });
+      invalidatePlanEdit(plan.client_id);
     }
     setSaving(false);
   };
@@ -255,28 +261,7 @@ export default function CoachPlanDetailPage() {
 
         <section style={styles.history}>
           <h2 style={styles.historyTitle}>Version history</h2>
-          {history.length === 0 ? (
-            <p style={styles.historyEmpty}>No other versions.</p>
-          ) : (
-            <div style={styles.historyList}>
-              {history.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  style={{
-                    ...styles.historyItem,
-                    ...(item.id === plan.id ? styles.historyItemCurrent : {}),
-                  }}
-                  onClick={() => item.id !== plan.id && router.push(`/coach/plan/${item.id}`)}
-                >
-                  <span>v{item.version} — {item.title}</span>
-                  <span style={item.active ? styles.badgeActive : styles.badgeInactive}>
-                    {item.active ? 'Active' : 'Inactive'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
+          <PlanVersionHistory plans={history} currentPlanId={plan.id} coachName={coachName} />
         </section>
     </CoachShell>
   );

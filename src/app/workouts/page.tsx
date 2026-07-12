@@ -10,8 +10,9 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
-import { mobileStyles } from '@/lib/mobile-styles';
+import { brandTitle } from '@/lib/brand';
 import { colors, spacing } from '@/lib/design-tokens';
+import { mobileStyles } from '@/lib/mobile-styles';
 import type { NewWorkoutForm, Workout } from '@/types/database';
 
 const supabase = createClient();
@@ -88,7 +89,7 @@ export default function Workouts() {
     <ClientShell title="Workouts">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[4], gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>Workouts</h1>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>{brandTitle('Workouts')}</h1>
           <p style={{ margin: '4px 0 0', color: colors.textSecondary }}>Log your training sessions</p>
         </div>
         <Button size="md" onClick={() => setShowForm(!showForm)}>

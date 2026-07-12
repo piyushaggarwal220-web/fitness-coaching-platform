@@ -17,6 +17,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { DrawerNav, type DrawerNavItem, DrawerMenuButton } from '@/components/ui/DrawerNav'
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode'
+import { BRAND_COACH_LABEL, BRAND_NAME } from '@/lib/brand'
 import { colors, spacing } from '@/lib/design-tokens'
 
 const supabase = createClient()
@@ -71,7 +72,7 @@ export default function CoachNavbar({ onMenuClick }: CoachNavbarProps) {
         <div style={styles.container}>
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
             <DrawerMenuButton onClick={openDrawer} />
-            <Link href="/coach/dashboard" style={styles.logo}>Coach Portal</Link>
+            <Link href="/coach/dashboard" style={styles.logo}>{BRAND_COACH_LABEL}</Link>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {user && <NotificationBell />}
@@ -85,7 +86,7 @@ export default function CoachNavbar({ onMenuClick }: CoachNavbarProps) {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         items={items}
-        title="Coach Menu"
+        title={`${BRAND_NAME} Coach`}
         subtitle="Work queue & clients"
       />
     </>

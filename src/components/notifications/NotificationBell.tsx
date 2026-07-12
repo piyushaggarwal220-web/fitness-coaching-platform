@@ -5,11 +5,14 @@ import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import type { UserNotification } from '@/types/database'
 import { colors, radius } from '@/lib/design-tokens'
+import { motionClass } from '@/lib/motion'
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<UserNotification[]>([])
   const [open, setOpen] = useState(false)
+  const [badgePop, setBadgePop] = useState(false)
+  const prevUnread = useRef(0)
   const ref = useRef<HTMLDivElement>(null)
 
   const fetchNotifications = async () => {
@@ -18,6 +21,16 @@ export function NotificationBell() {
     if (data.notifications) setNotifications(data.notifications)
     if (data.unreadCount != null) setUnreadCount(data.unreadCount)
   }
+
+  useEffect(() => {
+    if (unreadCount > prevUnread.current) {
+      setBadgePop(true)
+      const t = setTimeout(() => setBadgePop(false), 400)
+      prevUnread.current = unreadCount
+      return () => clearTimeout(t)
+    }
+    prevUnread.current = unreadCount
+  }, [unreadCount])
 
   useEffect(() => {
     void fetchNotifications()
@@ -56,15 +69,20 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        className={`btn-press ${badgePop ? motionClass.bellBounce : ''}`}
         style={styles.bell}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
         <Bell size={22} color={colors.textSecondary} />
-        {unreadCount > 0 && <span style={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
+        {unreadCount > 0 && (
+          <span className={badgePop ? motionClass.badgePop : ''} style={styles.badge}>
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
       </button>
 
       {open && (
-        <div style={styles.dropdown}>
+        <div className={motionClass.dropdownEnter} style={styles.dropdown}>
           <div style={styles.header}>
             <span style={{ fontWeight: 600, color: colors.textPrimary }}>Notifications</span>
             {unreadCount > 0 && (

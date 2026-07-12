@@ -1,6 +1,7 @@
 'use client'
 
 import { CoachShell } from '@/components/ui/CoachShell'
+import { brandTitle } from '@/lib/brand'
 import { CoachWorkQueuePanel } from '@/components/coach/CoachWorkQueuePanel'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { colors } from '@/lib/design-tokens'
@@ -8,7 +9,7 @@ import { colors } from '@/lib/design-tokens'
 export default function CoachQueuePage() {
   return (
     <CoachShell>
-      <h1 style={styles.title}>Work Queue</h1>
+      <h1 style={styles.title}>{brandTitle('Work Queue')}</h1>
       <p style={{ ...styles.subtitle, marginBottom: 24 }}>
         Prioritized tasks — complete each item to move to the next.
       </p>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { PromptImportPanel } from '@/components/admin/PromptImportPanel'
+import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { formatPromptCategory, listPromptLibrary } from '@/lib/admin/prompt-library'
 import { formatDate } from '@/lib/coach-utils'
@@ -95,7 +96,7 @@ export default function AdminPromptsPage() {
         <div style={s.containerWide}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
             <div>
-              <h1 style={s.title}>Prompt Library</h1>
+              <h1 style={s.title}>{brandTitle('Prompt Library')}</h1>
               <p style={s.subtitle}>
                 Source of truth for AI prompts · published prompts feed live generation
               </p>
