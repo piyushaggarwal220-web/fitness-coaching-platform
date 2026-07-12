@@ -1,3 +1,5 @@
+import { maybeAutoAssignCoach } from '@/lib/coach-assignment'
+import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -152,6 +154,21 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
 
     purchaseId = (purchase as Purchase).id
     logPurchaseStep('purchase_recorded', { userId, purchaseId })
+  }
+
+  const assignResult = await maybeAutoAssignCoach(userId, admin)
+  if (assignResult.coachId) {
+    logPurchaseStep('entitlement_granted', { userId, coachId: assignResult.coachId, coach_auto_assigned: true })
+    const { data: coach } = await admin.from('coaches').select('name').eq('id', assignResult.coachId).maybeSingle()
+    const welcome = NotificationTemplates.welcome()
+    await sendNotification({ userId, ...welcome })
+    if (coach?.name) {
+      const assigned = NotificationTemplates.coachAssigned(coach.name)
+      await sendNotification({ userId, ...assigned })
+    }
+  } else {
+    const welcome = NotificationTemplates.welcome()
+    await sendNotification({ userId, ...welcome })
   }
 
   logPurchaseStep('fulfillment_complete', { userId, purchaseId, isNewUser })

@@ -229,9 +229,10 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   const lines: string[] = ['## Onboarding Answers']
 
   if (data.goals) {
-    lines.push(
-      `Goals: target weight ${data.goals.targetWeight ?? '—'}, deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
-    )
+    const goalLine = data.goals.aiSelectedGoal
+      ? `Goals: AI-selected goal (${data.goals.inferredGoal ?? 'pending'}), deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
+      : `Goals: deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
+    lines.push(goalLine)
   }
   if (data.lifestyle) {
     lines.push(
@@ -247,7 +248,10 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   }
   if (data.medical) {
     lines.push(
-      `Medical intake: conditions ${data.medical.conditions ?? '—'}, pain ${data.medical.painDuringExercise ?? '—'}, medications ${data.medical.medications ?? '—'}`
+      `Medical intake: conditions ${data.medical.conditions ?? '—'}, pain ${data.medical.painDuringExercise ?? '—'}, medications ${data.medical.medications ?? '—'}, acne ${data.medical.acne ?? '—'}, hair loss ${data.medical.hairLoss ?? '—'}, sexual health ${data.medical.sexualHealth ?? '—'}`
+    )
+    lines.push(
+      'Note: Medical intake is informational only. Never diagnose conditions. Consider acne, hair loss, and sexual health when suggesting diet, supplements, recovery, or hormone-related recommendations.'
     )
   }
   if (data.diet) {

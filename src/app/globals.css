@@ -2,11 +2,16 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f8f9fa;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -15,6 +20,17 @@ a {
 
 button:hover {
   opacity: 0.9;
+}
+
+input, textarea, select {
+  font-size: 16px;
+}
+
+/* Mobile-first touch targets */
+@media (max-width: 767px) {
+  button, a[role="button"], input[type="submit"] {
+    min-height: 44px;
+  }
 }
 
 /* Responsive */

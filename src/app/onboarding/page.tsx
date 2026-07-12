@@ -8,6 +8,7 @@ import { ChipGroup, Field, MultiChipGroup, RadioCards } from '@/components/onboa
 import { onboardingStyles as s } from '@/components/onboarding/styles'
 import {
   ACTIVITY_OPTIONS,
+  ACNE_OPTIONS,
   authenticateClient,
   COOKING_OPTIONS,
   DAYS_PER_WEEK_OPTIONS,
@@ -15,10 +16,12 @@ import {
   EQUIPMENT_OPTIONS,
   FITNESS_GOAL_OPTIONS,
   formFromProfile,
+  formatMealTime24,
   GENDER_OPTIONS,
   getResumeStep,
   getSectionForStep,
   GOAL_DEADLINE_OPTIONS,
+  HAIR_LOSS_OPTIONS,
   INITIAL_ONBOARDING_FORM,
   isOnboardingComplete,
   MEAL_TIMING_OPTIONS,
@@ -28,6 +31,7 @@ import {
   PAIN_OPTIONS,
   PROTEIN_DAYS_OPTIONS,
   saveOnboardingProgress,
+  SEXUAL_HEALTH_OPTIONS,
   SLEEP_OPTIONS,
   STEPS_OPTIONS,
   STRUGGLE_OPTIONS,
@@ -58,12 +62,7 @@ const MEAL_TIMING_FIELD: Record<MealTimingKey, keyof OnboardingFormData> = {
 }
 
 function formatMealTime(value: string): string {
-  if (!value) return 'Not set'
-  const [hours, minutes] = value.split(':').map(Number)
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return value
-  const date = new Date()
-  date.setHours(hours, minutes, 0, 0)
-  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  return formatMealTime24(value)
 }
 
 function defaultMealsForTiming(form: OnboardingFormData): MealTimingKey[] {
@@ -412,16 +411,10 @@ function renderStep(
               onChange={(v) => update({ fitness_goal: v })}
             />
           </Field>
-          {['fat_loss', 'muscle_gain', 'recomposition'].includes(form.fitness_goal) && (
-            <Field label="Target weight (kg)" required>
-              <input
-                type="number"
-                value={form.target_weight}
-                onChange={(e) => update({ target_weight: e.target.value })}
-                style={s.input}
-                inputMode="decimal"
-              />
-            </Field>
+          {form.fitness_goal === 'ai_decide' && (
+            <p style={s.stepHint}>
+              No problem — we&apos;ll analyse your body stats, lifestyle, and photos to recommend the best goal for you.
+            </p>
           )}
         </div>
       )
@@ -593,6 +586,15 @@ function renderStep(
               onChange={(e) => update({ medical_notes: e.target.value })}
               style={s.textarea}
             />
+          </Field>
+          <Field label="Acne" required>
+            <ChipGroup options={ACNE_OPTIONS} value={form.acne_status} onChange={(v) => update({ acne_status: v })} />
+          </Field>
+          <Field label="Hair loss" required>
+            <ChipGroup options={HAIR_LOSS_OPTIONS} value={form.hair_loss_status} onChange={(v) => update({ hair_loss_status: v })} />
+          </Field>
+          <Field label="Sexual health" required>
+            <ChipGroup options={SEXUAL_HEALTH_OPTIONS} value={form.sexual_health_status} onChange={(v) => update({ sexual_health_status: v })} />
           </Field>
         </div>
       )
@@ -874,7 +876,10 @@ function renderStep(
       return (
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Progress photos</h2>
-          <p style={s.stepHint}>Front, side, and back photos give your coach a baseline. Photos are private to your coach.</p>
+          <div style={s.privacyNotice}>
+            Your photos are completely private and are never shared or published anywhere without your explicit permission.
+            They are used only by your assigned coach and our AI to create more accurate recommendations.
+          </div>
           <div style={s.photoGrid}>
             {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (
               <Field key={key} label={`${key.charAt(0).toUpperCase()}${key.slice(1)} photo`} required>

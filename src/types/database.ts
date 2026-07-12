@@ -46,6 +46,10 @@ export type OnboardingData = {
     targetWeight?: string | number | null
     deadline?: string | null
     biggestStruggle?: string | null
+    goalSelectionMethod?: 'user' | 'ai'
+    aiSelectedGoal?: boolean
+    userIndicatedUnsure?: boolean
+    inferredGoal?: string | null
   }
   lifestyle?: {
     occupation?: string | null
@@ -66,6 +70,9 @@ export type OnboardingData = {
     conditions?: string | null
     painDuringExercise?: string | null
     medications?: string | null
+    acne?: string | null
+    hairLoss?: string | null
+    sexualHealth?: string | null
   }
   diet?: {
     eggDaysPerWeek?: string | null
@@ -164,6 +171,9 @@ export type OnboardingFormData = {
   medical_notes: string
   pain_during_exercise: string
   medications: string
+  acne_status: string
+  hair_loss_status: string
+  sexual_health_status: string
   diet_preference: string
   egg_days: string
   chicken_days: string
@@ -552,4 +562,114 @@ export type PromptLibraryStats = {
   drafts: number
   published: number
   lastUpdated: string | null
+}
+
+// ─── Launch sprint types ───
+
+export type RedemptionCode = {
+  id: string
+  code: string
+  plan_slug: string
+  duration_months: number
+  max_redemptions: number
+  remaining_uses: number
+  expires_at: string | null
+  is_active: boolean
+  is_reusable: boolean
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type RedemptionUsage = {
+  id: string
+  code_id: string
+  user_id: string
+  redeemed_at: string
+}
+
+export type ConversationStatus = 'connecting' | 'active' | 'closed'
+export type MessageType = 'text' | 'image' | 'voice' | 'system'
+export type MessageSender = 'client' | 'coach' | 'system'
+
+export type CoachConversation = {
+  id: string
+  client_id: string
+  coach_id: string
+  status: ConversationStatus
+  unread_by_client: number
+  unread_by_coach: number
+  last_message_at: string | null
+  client_typing_at: string | null
+  coach_typing_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ConversationMessage = {
+  id: string
+  conversation_id: string
+  sender_type: MessageSender
+  sender_id: string | null
+  message_type: MessageType
+  content: string | null
+  media_url: string | null
+  media_duration_seconds: number | null
+  read_at: string | null
+  created_at: string
+}
+
+export type NotificationType =
+  | 'plan_delivered'
+  | 'coach_replied'
+  | 'weekly_checkin_reminder'
+  | 'support_reply'
+  | 'coach_assigned'
+  | 'welcome'
+  | 'progress_milestone'
+  | 'unread_chat'
+  | 'issue_update'
+  | 'plan_available'
+  | 'missed_checkin'
+
+export type UserNotification = {
+  id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  body: string
+  read_at: string | null
+  action_url: string | null
+  metadata: Record<string, unknown> | null
+  created_at: string
+}
+
+export type IssueStatus = 'open' | 'investigating' | 'resolved' | 'closed'
+export type IssueCategory = 'bug' | 'feature' | 'account' | 'billing' | 'other'
+
+export type IssueReport = {
+  id: string
+  client_id: string
+  category: IssueCategory | null
+  description: string
+  screenshot_url: string | null
+  system_info: Record<string, unknown> | null
+  status: IssueStatus
+  admin_notes: string | null
+  resolved_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type CoachRatingValue = 'very_helpful' | 'helpful' | 'needs_improvement'
+
+export type CoachReplyRating = {
+  id: string
+  message_id: string
+  client_id: string
+  coach_id: string
+  rating: CoachRatingValue
+  comment: string | null
+  created_at: string
 }

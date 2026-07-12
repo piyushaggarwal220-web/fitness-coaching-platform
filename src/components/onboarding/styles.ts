@@ -49,6 +49,16 @@ export const onboardingStyles: Record<string, CSSProperties> = {
   stepContent: { marginBottom: 8 },
   stepTitle: { margin: '0 0 6px 0', fontSize: 20, color: '#1a1a2e' },
   stepHint: { margin: '0 0 20px 0', color: '#666', fontSize: 14, lineHeight: 1.5 },
+  privacyNotice: {
+    margin: '0 0 20px 0',
+    padding: '14px 16px',
+    backgroundColor: '#f0f7ff',
+    border: '1px solid #cce0ff',
+    borderRadius: 10,
+    color: '#334155',
+    fontSize: 14,
+    lineHeight: 1.55,
+  },
   field: { marginBottom: 20 },
   label: { display: 'block', marginBottom: 8, fontWeight: 600, fontSize: 14, color: '#1a1a2e' },
   input: {

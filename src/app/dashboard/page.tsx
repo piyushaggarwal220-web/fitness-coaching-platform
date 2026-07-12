@@ -69,9 +69,14 @@ export default function Dashboard() {
         }
 
         if (!isOnboardingComplete(profileData)) {
-          router.push('/onboarding');
-          setLoading(false);
-          return;
+          const retry = await fetchClientProfile(supabase, result.user.id);
+          const retryProfile = retry.profile ?? profileData;
+          if (!isOnboardingComplete(retryProfile)) {
+            router.push('/onboarding');
+            setLoading(false);
+            return;
+          }
+          profileData = retryProfile;
         }
 
         setUser(result.user as User);
@@ -343,10 +348,10 @@ export default function Dashboard() {
               ➕ Log Workout
             </button>
             <button 
-              onClick={() => router.push('/progress')} 
+              onClick={() => router.push('/journey')} 
               style={{ padding: 15, backgroundColor: '#e94560', color: 'white', border: 'none', borderRadius: 8, fontSize: 16, cursor: 'pointer' }}
             >
-              📊 View Progress
+              📊 View Journey
             </button>
             <button 
               onClick={() => router.push('/checkin')} 

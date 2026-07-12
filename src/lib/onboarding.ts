@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { shouldBypassPaymentGuardClient } from '@/lib/dev-mode'
 import { hasClientEntitlement } from '@/lib/entitlements'
+import { inferFitnessGoal } from '@/lib/ai/goal-inference'
 import type {
   OnboardingData,
   OnboardingFormData,
@@ -38,6 +39,26 @@ export const FITNESS_GOAL_OPTIONS = [
   { value: 'recomposition', label: 'Recomposition' },
   { value: 'strength', label: 'Strength' },
   { value: 'athletic_performance', label: 'Athletic Performance' },
+  { value: 'ai_decide', label: "I'm not sure yet (Help me decide)" },
+] as const
+
+export const ACNE_OPTIONS = [
+  { value: 'never', label: 'Never had acne' },
+  { value: 'previously', label: 'Had acne previously' },
+  { value: 'currently', label: 'Currently have acne' },
+] as const
+
+export const HAIR_LOSS_OPTIONS = [
+  { value: 'never', label: 'Never experienced hair loss' },
+  { value: 'previously', label: 'Had hair loss previously' },
+  { value: 'currently', label: 'Currently experiencing hair loss' },
+] as const
+
+export const SEXUAL_HEALTH_OPTIONS = [
+  { value: 'no_issues', label: 'No issues' },
+  { value: 'previously', label: 'Previously experienced sexual issues' },
+  { value: 'currently', label: 'Currently experiencing sexual issues' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to answer' },
 ] as const
 
 export const GOAL_DEADLINE_OPTIONS = [
@@ -255,6 +276,9 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   medical_notes: '',
   pain_during_exercise: '',
   medications: '',
+  acne_status: '',
+  hair_loss_status: '',
+  sexual_health_status: '',
   diet_preference: '',
   egg_days: '',
   chicken_days: '',
@@ -328,6 +352,9 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     exercises_disliked: data.training?.exercisesDisliked ?? '',
     pain_during_exercise: data.medical?.painDuringExercise ?? '',
     medications: data.medical?.medications ?? '',
+    acne_status: data.medical?.acne ?? '',
+    hair_loss_status: data.medical?.hairLoss ?? '',
+    sexual_health_status: data.medical?.sexualHealth ?? '',
     egg_days: data.diet?.eggDaysPerWeek ?? '',
     chicken_days: data.diet?.chickenDaysPerWeek ?? '',
     fish_days: data.diet?.fishDaysPerWeek ?? '',
@@ -360,15 +387,23 @@ export function getResumeStep(profile: OnboardingProfile | null): number {
   return 0
 }
 
-export function buildOnboardingData(form: OnboardingFormData, resumeStep: number): OnboardingData {
+export function buildOnboardingData(
+  form: OnboardingFormData,
+  resumeStep: number,
+  options?: { inferredGoal?: string; aiSelectedGoal?: boolean }
+): OnboardingData {
+  const userUnsure = form.fitness_goal === 'ai_decide'
   return {
     version: 1,
     resumeStep,
     lastSavedAt: new Date().toISOString(),
     goals: {
-      targetWeight: form.target_weight || null,
       deadline: form.goal_deadline || null,
       biggestStruggle: form.biggest_struggle.trim() || null,
+      goalSelectionMethod: userUnsure || options?.aiSelectedGoal ? 'ai' : 'user',
+      aiSelectedGoal: userUnsure || options?.aiSelectedGoal ? true : undefined,
+      userIndicatedUnsure: userUnsure ? true : undefined,
+      inferredGoal: options?.inferredGoal ?? null,
     },
     lifestyle: {
       occupation: form.occupation || null,
@@ -389,6 +424,9 @@ export function buildOnboardingData(form: OnboardingFormData, resumeStep: number
       conditions: form.medical_notes.trim() || null,
       painDuringExercise: form.pain_during_exercise || null,
       medications: form.medications.trim() || null,
+      acne: form.acne_status || null,
+      hairLoss: form.hair_loss_status || null,
+      sexualHealth: form.sexual_health_status || null,
     },
     diet: {
       eggDaysPerWeek: form.egg_days || null,
@@ -441,6 +479,18 @@ export function buildProfilePayload(
   }
 ): Record<string, unknown> {
   const now = new Date().toISOString()
+
+  let resolvedGoal = form.fitness_goal || null
+  let aiSelectedGoal = false
+  let inferredGoal: string | undefined
+
+  if (options.complete && form.fitness_goal === 'ai_decide') {
+    const inference = inferFitnessGoal(form)
+    resolvedGoal = inference.goal
+    aiSelectedGoal = true
+    inferredGoal = inference.goal
+  }
+
   const payload: Record<string, unknown> = {
     id: userId,
     email: options.email ?? null,
@@ -449,14 +499,17 @@ export function buildProfilePayload(
     gender: form.gender || null,
     height: form.height ? Number(form.height) : null,
     weight: form.weight ? Number(form.weight) : null,
-    fitness_goal: form.fitness_goal || null,
+    fitness_goal: resolvedGoal,
     training_experience: form.training_experience || null,
     activity_level: form.activity_level || null,
     diet_preference: form.diet_preference || null,
     injuries: form.injuries.trim() || null,
     medical_notes: buildMedicalNotesForProfile(form),
     sleep_duration: form.sleep_duration || null,
-    onboarding_data: buildOnboardingData(form, options.resumeStep),
+    onboarding_data: buildOnboardingData(form, options.resumeStep, {
+      inferredGoal,
+      aiSelectedGoal,
+    }),
     updated_at: now,
   }
 
@@ -468,7 +521,10 @@ export function buildProfilePayload(
     payload.onboarding_complete = true
     payload.onboarding_completed_at = now
     payload.terms_accepted_at = now
-    payload.onboarding_data = buildOnboardingData(form, ONBOARDING_SCREEN_COUNT - 1)
+    payload.onboarding_data = buildOnboardingData(form, ONBOARDING_SCREEN_COUNT - 1, {
+      inferredGoal,
+      aiSelectedGoal,
+    })
   }
 
   return payload
@@ -484,8 +540,19 @@ function formatStruggle(value: string): string {
   return value.replace(/\|/g, ' — ')
 }
 
-function needsTargetWeight(goal: string): boolean {
-  return ['fat_loss', 'muscle_gain', 'recomposition'].includes(goal)
+function needsTargetWeight(_goal: string): boolean {
+  return false
+}
+
+/** Format HH:mm time string for display (24-hour clock). */
+export function formatMealTime24(value: string): string {
+  if (!value) return 'Not set'
+  const match = value.match(/^(\d{1,2}):(\d{2})/)
+  if (!match) return value
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return value
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
 
 function needsEquipment(location: string): boolean {
@@ -566,8 +633,12 @@ export function validateOnboardingStep(
     }
     case 10:
       return null
-    case 11:
+    case 11: {
+      if (!data.acne_status) return 'Please answer the acne question.'
+      if (!data.hair_loss_status) return 'Please answer the hair loss question.'
+      if (!data.sexual_health_status) return 'Please answer the sexual health question.'
       return null
+    }
     case 12: {
       if (!data.pain_during_exercise) return 'Please indicate if you experience pain during exercise.'
       return null
@@ -690,7 +761,6 @@ export function buildReviewSections(
       title: 'Goals',
       items: [
         { label: 'Primary goal', value: getOnboardingLabel('fitness_goal', form.fitness_goal) },
-        { label: 'Target weight', value: form.target_weight ? `${form.target_weight} kg` : 'Not specified' },
         { label: 'Deadline', value: getOnboardingLabel('goal_deadline', form.goal_deadline) },
         { label: 'Biggest struggle', value: formatStruggle(form.biggest_struggle) },
       ],
@@ -724,6 +794,9 @@ export function buildReviewSections(
       items: [
         { label: 'Injuries', value: form.injuries || 'None' },
         { label: 'Medical conditions', value: form.medical_notes || 'None' },
+        { label: 'Acne', value: ACNE_OPTIONS.find((o) => o.value === form.acne_status)?.label ?? 'Not set' },
+        { label: 'Hair loss', value: HAIR_LOSS_OPTIONS.find((o) => o.value === form.hair_loss_status)?.label ?? 'Not set' },
+        { label: 'Sexual health', value: SEXUAL_HEALTH_OPTIONS.find((o) => o.value === form.sexual_health_status)?.label ?? 'Not set' },
         { label: 'Pain during exercise', value: form.pain_during_exercise === 'none' ? 'No' : form.pain_during_exercise === 'yes' ? 'Yes' : 'Not set' },
         { label: 'Medications', value: form.medications || 'None' },
       ],
@@ -750,10 +823,10 @@ export function buildReviewSections(
         { label: 'Lunch', value: form.lunch },
         { label: 'Dinner', value: form.dinner },
         { label: 'Snacks', value: form.snacks },
-        { label: 'Breakfast time', value: form.timing_breakfast || 'Not set' },
-        { label: 'Lunch time', value: form.timing_lunch || 'Not set' },
-        { label: 'Dinner time', value: form.timing_dinner || 'Not set' },
-        { label: 'Snack time', value: form.timing_snacks || 'Not set' },
+        { label: 'Breakfast time', value: formatMealTime24(form.timing_breakfast) },
+        { label: 'Lunch time', value: formatMealTime24(form.timing_lunch) },
+        { label: 'Dinner time', value: formatMealTime24(form.timing_dinner) },
+        { label: 'Snack time', value: formatMealTime24(form.timing_snacks) },
       ],
     },
     {
@@ -868,7 +941,30 @@ type AuthResult = {
   profileError?: string
 }
 
-const PROFILE_FETCH_RETRY_DELAYS_MS = [0, 200, 500, 1000, 1500]
+const PROFILE_FETCH_RETRY_DELAYS_MS = [0, 200, 500, 1000, 1500, 2500]
+
+/** Ensure the Supabase client has a valid, refreshed auth session. */
+export async function ensureAuthSession(
+  supabase: SupabaseClient
+): Promise<{ user: { id: string; email?: string } | null }> {
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (user && !error) {
+    return { user: { id: user.id, email: user.email } }
+  }
+
+  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+  if (refreshData?.user && !refreshError) {
+    return { user: { id: refreshData.user.id, email: refreshData.user.email } }
+  }
+
+  const { data: { user: retryUser } } = await supabase.auth.getUser()
+  if (retryUser) {
+    return { user: { id: retryUser.id, email: retryUser.email } }
+  }
+
+  return { user: null }
+}
 
 export async function fetchClientProfile(
   supabase: SupabaseClient,
@@ -906,13 +1002,7 @@ export async function authenticateClient(
     requirePayment?: boolean
   }
 ): Promise<AuthResult | null> {
-  const { data: { session } } = await supabase.auth.getSession()
-  let user = session?.user ?? null
-
-  if (!user) {
-    const { data: { user: refreshedUser } } = await supabase.auth.getUser()
-    user = refreshedUser
-  }
+  const { user } = await ensureAuthSession(supabase)
 
   if (!user) {
     router.push('/login')
@@ -949,7 +1039,13 @@ export async function authenticateClient(
     return null
   }
 
-  if (options?.requireOnboarding && profile && !isOnboardingComplete(profile)) {
+  // Only redirect to onboarding when profile is loaded AND definitively incomplete.
+  // Never redirect when profile is still null (session/profile race after refresh).
+  if (
+    options?.requireOnboarding &&
+    profile &&
+    !isOnboardingComplete(profile)
+  ) {
     router.push('/onboarding')
     return null
   }
