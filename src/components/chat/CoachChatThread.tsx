@@ -45,6 +45,24 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   }, [fetchMessages])
 
   useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+
+    const updateViewport = () => {
+      document.documentElement.style.setProperty('--chat-vv-offset', `${Math.max(0, window.innerHeight - vv.height - vv.offsetTop)}px`)
+    }
+
+    vv.addEventListener('resize', updateViewport)
+    vv.addEventListener('scroll', updateViewport)
+    updateViewport()
+    return () => {
+      vv.removeEventListener('resize', updateViewport)
+      vv.removeEventListener('scroll', updateViewport)
+      document.documentElement.style.removeProperty('--chat-vv-offset')
+    }
+  }, [])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, imagePreview])
 
@@ -240,8 +258,26 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 }
 
 const styles: Record<string, CSSProperties> = {
-  wrapper: { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 400, background: `linear-gradient(180deg, ${colors.bgPrimary} 0%, ${colors.bgSecondary} 100%)` },
-  thread: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, padding: '16px 16px 8px', scrollBehavior: 'smooth' },
+  wrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    minHeight: 0,
+    height: '100%',
+    background: `linear-gradient(180deg, ${colors.bgPrimary} 0%, ${colors.bgSecondary} 100%)`,
+  },
+  thread: {
+    flex: 1,
+    minHeight: 0,
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    WebkitOverflowScrolling: 'touch',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    padding: '16px 16px 8px',
+    scrollBehavior: 'smooth',
+  },
   skeletonWrap: { display: 'flex', flexDirection: 'column', gap: 12 },
   empty: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 32 },
   systemMsg: { textAlign: 'center', color: colors.textMuted, fontSize: 12, padding: '6px 16px', fontStyle: 'italic', backgroundColor: colors.bgElevated, borderRadius: 999, alignSelf: 'center' },
@@ -266,22 +302,21 @@ const styles: Record<string, CSSProperties> = {
   meta: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, fontSize: 10, opacity: 0.75, marginTop: 6 },
   image: { maxWidth: '100%', borderRadius: 12, maxHeight: 240, display: 'block' },
   typing: { color: colors.textMuted, fontSize: 13, fontStyle: 'italic', padding: '4px 8px' },
-  error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: 10, borderRadius: 12, fontSize: 13, margin: '0 16px 8px' },
+  error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: 10, borderRadius: 12, fontSize: 13, margin: '0 16px 8px', flexShrink: 0 },
   inputBar: {
     display: 'flex',
     gap: 8,
     alignItems: 'center',
-    padding: '12px 16px calc(12px + env(safe-area-inset-bottom))',
+    flexShrink: 0,
+    padding: '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))',
     borderTop: `1px solid ${colors.divider}`,
     backgroundColor: colors.bgGlass,
     backdropFilter: 'blur(20px)',
-    position: 'sticky',
-    bottom: 0,
   },
   input: { flex: 1, minHeight: 44, padding: '10px 16px', border: `1px solid ${colors.borderSubtle}`, borderRadius: 24, fontSize: 16, outline: 'none', backgroundColor: colors.bgElevated, color: colors.textPrimary },
   sendBtn: { minHeight: 44, minWidth: 44, padding: 10, backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: '50%', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: shadows.accent },
   attachBtn: { minHeight: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: colors.bgElevated, borderRadius: '50%', border: `1px solid ${colors.borderSubtle}` },
-  imagePreviewBar: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: `1px solid ${colors.divider}`, backgroundColor: colors.bgCard },
+  imagePreviewBar: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: `1px solid ${colors.divider}`, backgroundColor: colors.bgCard, flexShrink: 0 },
   previewThumb: { width: 56, height: 56, borderRadius: 10, objectFit: 'cover' },
   previewCancel: { padding: '8px 12px', border: `1px solid ${colors.borderSubtle}`, borderRadius: 12, background: 'transparent', color: colors.textSecondary, cursor: 'pointer', fontSize: 13 },
   previewSend: { padding: '8px 14px', border: 'none', borderRadius: 12, backgroundColor: colors.accent, color: colors.textInverse, cursor: 'pointer', fontSize: 13, fontWeight: 600 },

@@ -15,9 +15,10 @@ export const mobileStyles = {
   } satisfies CSSProperties,
 
   pageNoNav: {
-    minHeight: '100vh',
+    minHeight: '100dvh',
     backgroundColor: colors.bgPrimary,
     padding: `${spacing[3]}px`,
+    paddingTop: `calc(${layout.topBarHeight}px + ${spacing[3]}px)`,
     paddingBottom: `max(${spacing[3]}px, env(safe-area-inset-bottom))`,
   } satisfies CSSProperties,
 

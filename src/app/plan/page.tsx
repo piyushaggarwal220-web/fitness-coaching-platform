@@ -6,14 +6,14 @@ import {
   Apple,
   ClipboardList,
   Dumbbell,
-  MessageSquare,
+  Footprints,
   Pill,
-  Activity,
 } from 'lucide-react';
 import { ClientShell } from '@/components/ui/ClientShell';
 import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatPlanDate } from '@/lib/plans';
+import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
 import { colors, spacing } from '@/lib/design-tokens';
@@ -95,13 +95,15 @@ export default function ClientPlanPage() {
     );
   }
 
-  const sections: { key: PlanSection; title: string; icon: React.ReactNode; content: string | null }[] = [
-    { key: 'diet', title: 'Diet', icon: <Apple size={20} />, content: plan.nutrition_plan },
-    { key: 'workout', title: 'Workout', icon: <Dumbbell size={20} />, content: plan.workout_plan },
-    { key: 'supplements', title: 'Supplements', icon: <Pill size={20} />, content: plan.supplement_plan },
-    { key: 'cardio', title: 'Cardio', icon: <Activity size={20} />, content: plan.cardio_plan },
-    { key: 'notes', title: 'Coach Notes', icon: <MessageSquare size={20} />, content: plan.coach_notes },
-  ];
+  const sections = resolvePlanSectionsFromPlan(plan)
+
+  const accordionItems = [
+    { key: 'diet' as const, title: 'Diet', icon: <Apple size={20} />, content: sections.diet },
+    { key: 'workout' as const, title: 'Workout', icon: <Dumbbell size={20} />, content: sections.workout },
+    { key: 'supplements' as const, title: 'Supplements', icon: <Pill size={20} color={colors.accent} />, content: sections.supplements },
+    { key: 'cardio' as const, title: 'Cardio', icon: <Footprints size={20} />, content: sections.cardio },
+    { key: 'notes' as const, title: 'Coach Notes', icon: <ClipboardList size={20} />, content: sections.coachNotes },
+  ].filter((item) => item.content.trim().length > 0)
 
   return (
     <ClientShell title="Plan">
@@ -135,28 +137,19 @@ export default function ClientPlanPage() {
 
       {/* Accordions */}
       <div>
-        {sections.map(({ key, title, icon, content }) => {
-          if (key === 'notes' && !content?.trim()) return null;
-          return (
-            <AccordionItem
-              key={key}
-              title={title}
-              icon={icon}
-              isOpen={expanded === key}
-              onToggle={() => toggle(key)}
-            >
-              {content?.trim() ? (
-                <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: colors.textSecondary, fontSize: 15, paddingBottom: spacing[2] }}>
-                  {content}
-                </div>
-              ) : (
-                <p style={{ margin: 0, color: colors.textMuted, fontSize: 14, paddingBottom: spacing[2] }}>
-                  Your coach hasn&apos;t added this section yet.
-                </p>
-              )}
-            </AccordionItem>
-          );
-        })}
+        {accordionItems.map(({ key, title, icon, content }) => (
+          <AccordionItem
+            key={key}
+            title={title}
+            icon={icon}
+            isOpen={expanded === key}
+            onToggle={() => toggle(key)}
+          >
+            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: colors.textSecondary, fontSize: 15, paddingBottom: spacing[2] }}>
+              {content}
+            </div>
+          </AccordionItem>
+        ))}
       </div>
     </ClientShell>
   );

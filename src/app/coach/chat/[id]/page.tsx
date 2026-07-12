@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
+import { chatLayoutStyles } from '@/lib/chat-layout'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
 import type { CoachConversation, ConversationMessage } from '@/types/database'
@@ -43,7 +44,7 @@ export default function CoachChatDetailPage() {
       setLoading(false)
     }
     void load()
-  }, [conversationId])
+  }, [conversationId, router])
 
   if (loading) {
     return <CoachShell loading narrow />
@@ -59,8 +60,8 @@ export default function CoachChatDetailPage() {
 
   return (
     <CoachShell narrow>
-      <h1 style={{ ...styles.title, fontSize: '1.25rem' }}>{clientName}</h1>
-      <div style={{ ...styles.card, padding: '12px 16px' }}>
+      <h1 style={{ ...styles.title, fontSize: '1.25rem', marginBottom: 12, flexShrink: 0 }}>{clientName}</h1>
+      <div style={chatLayoutStyles.coachViewport}>
         <CoachChatThread
           conversationId={conversation.id}
           coachId={conversation.coach_id}

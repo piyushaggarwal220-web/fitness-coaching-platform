@@ -22,6 +22,8 @@ type ClientShellProps = {
   hideBottomNav?: boolean
   hideTopBar?: boolean
   loading?: boolean
+  /** Full viewport height for chat — no page padding, fixed layout */
+  fullHeight?: boolean
 }
 
 const drawerItems = clientDrawerItems({
@@ -35,8 +37,23 @@ const drawerItems = clientDrawerItems({
   LifeBuoy,
 })
 
-export function ClientShell({ children, title, hideBottomNav = false, hideTopBar = false, loading }: ClientShellProps) {
+export function ClientShell({ children, title, hideBottomNav = false, hideTopBar = false, loading, fullHeight = false }: ClientShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const mainStyle = fullHeight
+    ? {
+        position: 'fixed' as const,
+        top: hideTopBar ? 'env(safe-area-inset-top, 0px)' : `calc(56px + env(safe-area-inset-top, 0px))`,
+        left: 0,
+        right: 0,
+        bottom: 'var(--chat-vv-offset, 0px)',
+        display: 'flex',
+        flexDirection: 'column' as const,
+        overflow: 'hidden',
+        backgroundColor: 'var(--bg-primary)',
+        zIndex: 50,
+      }
+    : (hideBottomNav ? mobileStyles.pageNoNav : mobileStyles.page)
 
   if (loading) {
     return (
@@ -57,12 +74,14 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
   return (
     <>
       {!hideTopBar && <TopBar title={title} onMenuClick={() => setDrawerOpen(true)} />}
-      <main style={hideBottomNav ? mobileStyles.pageNoNav : mobileStyles.page}>
-        <div style={mobileStyles.container} className="animate-fade-in">
-          {children}
-        </div>
+      <main style={mainStyle} className={fullHeight ? 'chat-main' : undefined}>
+        {fullHeight ? children : (
+          <div style={mobileStyles.container} className="animate-fade-in">
+            {children}
+          </div>
+        )}
       </main>
-      {!hideBottomNav && <BottomNav />}
+      {!hideBottomNav && !fullHeight && <BottomNav />}
       <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle="Your coaching hub" />
     </>
   )

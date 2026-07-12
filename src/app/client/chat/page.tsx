@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
@@ -45,31 +44,28 @@ export default function ClientChatPage() {
 
   if (loading) {
     return (
-      <ClientShell title="Chat" loading hideBottomNav>
+      <ClientShell title="Chat" loading hideBottomNav fullHeight>
         <span />
       </ClientShell>
     )
   }
 
   return (
-    <ClientShell title="Chat" hideBottomNav>
+    <ClientShell title="Chat" hideBottomNav fullHeight>
       {connecting && (
-        <p style={{ margin: '0 0 12px', fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>
+        <p style={{ margin: '8px 16px', fontSize: 14, color: colors.textMuted, textAlign: 'center', flexShrink: 0 }}>
           Connecting you with your coach...
         </p>
       )}
 
-      {error && <div style={mobileStyles.error}>{error}</div>}
+      {error && (
+        <div style={{ ...mobileStyles.error, margin: '8px 16px', flexShrink: 0 }}>
+          {error}
+        </div>
+      )}
 
       {conversation && (
-        <div style={{
-          borderRadius: 20,
-          border: `1px solid ${colors.borderSubtle}`,
-          overflow: 'hidden',
-          height: 'calc(100vh - 120px - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
-          maxHeight: 800,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-        }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <CoachChatThread
             conversationId={conversation.id}
             coachId={conversation.coach_id}

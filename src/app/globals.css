@@ -177,6 +177,18 @@ button, a[role="button"], input[type="submit"] {
   border-color: rgba(249, 115, 22, 0.15);
 }
 
+/* Chat viewport — mobile-safe flex scroll */
+.chat-main {
+  height: calc(100dvh - 56px - env(safe-area-inset-top, 0px));
+  max-height: calc(100dvh - 56px - env(safe-area-inset-top, 0px));
+}
+
+@supports (height: 100dvh) {
+  .chat-main {
+    height: calc(100dvh - 56px - env(safe-area-inset-top, 0px));
+  }
+}
+
 /* Skeleton loader */
 .skeleton {
   background: linear-gradient(

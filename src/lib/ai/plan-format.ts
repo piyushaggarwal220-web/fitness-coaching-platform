@@ -1,4 +1,5 @@
 import type { GeneratedPlan } from '@/lib/ai/generate-plan'
+import { applyParsedSectionsToFormData } from '@/lib/plan-section-parser'
 import type { PlanFormData } from '@/types/database'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -186,7 +187,7 @@ export function generatedPlanToFormData(
     .filter((line) => line !== null)
     .join('\n')
 
-  return {
+  return applyParsedSectionsToFormData({
     client_id: clientId,
     title: options?.title ?? 'AI Coaching Plan (Draft)',
     phase: options?.phase ?? 'Phase 1',
@@ -195,7 +196,7 @@ export function generatedPlanToFormData(
     cardio_plan: formatCardioSessions(generated.cardio_plan.sessions),
     supplement_plan: formatSupplementItems(generated.supplement_plan.items),
     coach_notes: generated.coach_notes.trim(),
-  }
+  })
 }
 
 export function generatedDietFormData(generated: GeneratedPlan, clientId: string): PlanFormData {
