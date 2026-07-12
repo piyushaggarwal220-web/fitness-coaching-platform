@@ -20,8 +20,9 @@
     "verify:launch": "tsx --env-file=.env.local scripts/verify-launch-features.ts",
     "verify:checkins": "tsx --env-file=.env.local scripts/verify-recurring-checkins.ts",
     "verify:plan-sections": "tsx scripts/verify-plan-section-parser.ts",
+    "verify:plan-metadata": "tsx scripts/verify-plan-metadata.ts",
     "verify:prompt-cache": "tsx scripts/verify-prompt-cache.ts",
-    "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:prompt-cache",
+    "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:plan-metadata && npm run verify:prompt-cache",
     "db:apply-pending": "node scripts/apply-pending-migrations.mjs",
     "prompts:import": "tsx --env-file=.env.local scripts/import-production-prompts.ts"
   },

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { sanitizeDraftFailureError } from '@/lib/ai/draft-error'
 import { getLatestDraftLogForCheckin } from '@/lib/ai/draft-workflow-log'
 import { loadLatestAiDraftForClient } from '@/lib/ai/weekly-plan-draft'
 import { createClient } from '@/lib/supabase/server'
@@ -56,7 +57,7 @@ export async function GET(request: Request) {
     draftPlanId: draft?.id ?? null,
     generationFailed,
     isGenerating,
-    failureError: generationFailed && log ? null : null,
+    failureError: generationFailed ? sanitizeDraftFailureError(log?.error) : null,
     checkinWeek: checkin?.coaching_week ?? null,
   })
 }

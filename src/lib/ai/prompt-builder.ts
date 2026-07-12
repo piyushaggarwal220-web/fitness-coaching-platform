@@ -2,6 +2,7 @@ import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
 import { getOnboardingLabel } from '@/lib/onboarding'
+import { clientCoachNotes } from '@/lib/plan-metadata'
 import type {
   AiKnowledge,
   AiKnowledgeCategory,
@@ -371,7 +372,7 @@ function buildActivePlanSection(plan: Plan | null | undefined): string {
     plan.workout_plan ? `### Workout\n${plan.workout_plan.trim()}` : null,
     plan.cardio_plan ? `### Cardio\n${plan.cardio_plan.trim()}` : null,
     plan.supplement_plan ? `### Supplements\n${plan.supplement_plan.trim()}` : null,
-    plan.coach_notes ? `### Coach Notes\n${plan.coach_notes.trim()}` : null,
+    plan.coach_notes ? `### Coach Notes\n${clientCoachNotes(plan.coach_notes)}` : null,
   ].filter((section): section is string => Boolean(section))
 
   return sections.join('\n\n')
@@ -428,7 +429,7 @@ function buildUpdatedDietSection(plan: Plan | null | undefined): string {
     `### Nutrition\n${plan.nutrition_plan.trim()}`,
     plan.cardio_plan ? `### Cardio\n${plan.cardio_plan.trim()}` : null,
     plan.supplement_plan ? `### Supplements\n${plan.supplement_plan.trim()}` : null,
-    plan.coach_notes ? `### Coach Notes\n${plan.coach_notes.trim()}` : null,
+    plan.coach_notes ? `### Coach Notes\n${clientCoachNotes(plan.coach_notes)}` : null,
   ].filter((section): section is string => Boolean(section))
 
   return sections.join('\n\n')

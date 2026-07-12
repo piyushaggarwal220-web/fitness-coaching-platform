@@ -1,5 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
+import {
+  clientCoachNotes,
+  formatPublishedPlanTitle,
+  isAiDraftTitle,
+  prepareCoachNotesForPublish,
+} from '@/lib/plan-metadata'
 import type { Plan, PlanFormData } from '@/types/database'
 
 export const INITIAL_PLAN_FORM: PlanFormData = {
@@ -87,6 +93,32 @@ export async function activatePlan(
     return { error: 'Cannot deliver plan: plan coach does not match assigned coach.' }
   }
 
+  const { data: fullPlan, error: planError } = await supabase
+    .from('plans')
+    .select('id, title, coach_notes, phase')
+    .eq('id', plan.id)
+    .maybeSingle()
+
+  if (planError) return { error: planError.message }
+  if (!fullPlan) return { error: 'Plan not found.' }
+
+  const { notes: publishNotes, error: notesError } = prepareCoachNotesForPublish(fullPlan.coach_notes)
+  if (notesError) return { error: notesError }
+
+  const { count: activeCount, error: activeCountError } = await supabase
+    .from('plans')
+    .select('*', { count: 'exact', head: true })
+    .eq('client_id', plan.client_id)
+    .eq('active', true)
+    .neq('id', plan.id)
+
+  if (activeCountError) return { error: activeCountError.message }
+
+  const isUpdate = (activeCount ?? 0) > 0
+  const publishedTitle = isAiDraftTitle(fullPlan.title)
+    ? formatPublishedPlanTitle(fullPlan, isUpdate)
+    : fullPlan.title.trim()
+
   const { error: deactivateError } = await supabase
     .from('plans')
     .update({ active: false, updated_at: new Date().toISOString() })
@@ -99,6 +131,8 @@ export async function activatePlan(
     .from('plans')
     .update({
       active: true,
+      title: publishedTitle,
+      coach_notes: publishNotes,
       delivered_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -137,7 +171,7 @@ export function planToForm(plan: Plan): PlanFormData {
     nutrition_plan: plan.nutrition_plan ?? '',
     cardio_plan: plan.cardio_plan ?? '',
     supplement_plan: plan.supplement_plan ?? '',
-    coach_notes: plan.coach_notes ?? '',
+    coach_notes: clientCoachNotes(plan.coach_notes),
   }
 }
 

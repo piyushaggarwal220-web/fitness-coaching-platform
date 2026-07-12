@@ -3,7 +3,7 @@
 import type { Plan } from '@/types/database'
 import { colors } from '@/lib/design-tokens'
 import { comparePlanSections, mergeNutritionHighlights } from '@/lib/plan-compare'
-import { stripPlanMeta } from '@/lib/plan-metadata'
+import { clientCoachNotes } from '@/lib/plan-metadata'
 import { aiActionStyles as s } from './styles'
 
 type PlanCompareDrawerProps = {
@@ -91,11 +91,11 @@ export function PlanCompareDrawer({
 
   const normalizedA = {
     ...planA,
-    coach_notes: stripPlanMeta(planA.coach_notes),
+    coach_notes: clientCoachNotes(planA.coach_notes),
   }
   const normalizedB = {
     ...planB,
-    coach_notes: stripPlanMeta(planB.coach_notes),
+    coach_notes: clientCoachNotes(planB.coach_notes),
   }
 
   const sections = comparePlanSections(normalizedA, normalizedB)

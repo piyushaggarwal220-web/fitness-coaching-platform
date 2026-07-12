@@ -1,3 +1,5 @@
+import { clientCoachNotes } from '@/lib/plan-metadata'
+
 export type CompareLine = {
   text: string
   changed: boolean
@@ -52,7 +54,11 @@ export function comparePlanSections(
     { label: 'Workout', a: planA.workout_plan ?? '', b: planB.workout_plan ?? '' },
     { label: 'Cardio', a: planA.cardio_plan ?? '', b: planB.cardio_plan ?? '' },
     { label: 'Supplements', a: planA.supplement_plan ?? '', b: planB.supplement_plan ?? '' },
-    { label: 'Coach Notes', a: planA.coach_notes ?? '', b: planB.coach_notes ?? '' },
+    {
+      label: 'Coach Notes',
+      a: clientCoachNotes(planA.coach_notes),
+      b: clientCoachNotes(planB.coach_notes),
+    },
   ]
 
   return sections.map(({ label, a, b }) => {

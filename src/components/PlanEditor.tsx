@@ -54,7 +54,7 @@ export function PlanEditor({ form, onChange, clients, clientLocked }: PlanEditor
         <textarea name="supplement_plan" value={form.supplement_plan} onChange={onChange} rows={4} style={styles.textarea} placeholder="Supplements, dosage, timing..." />
       </Field>
       <Field label="Coach notes">
-        <textarea name="coach_notes" value={form.coach_notes} onChange={onChange} rows={4} style={styles.textarea} placeholder="Private notes visible to client..." />
+        <textarea name="coach_notes" value={form.coach_notes} onChange={onChange} rows={4} style={styles.textarea} placeholder="Client-facing coaching message and priorities..." />
       </Field>
     </div>
   );

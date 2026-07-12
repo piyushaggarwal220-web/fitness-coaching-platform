@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { sanitizeDraftFailureError } from '@/lib/ai/draft-error'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { createClient } from '@/lib/supabase/server'
 
@@ -66,7 +67,11 @@ export async function POST(request: Request) {
 
   if (result.error) {
     return NextResponse.json(
-      { success: false, error: result.error, generationTimeMs: result.generationTimeMs },
+      {
+        success: false,
+        error: sanitizeDraftFailureError(result.error),
+        generationTimeMs: result.generationTimeMs,
+      },
       { status: 502 }
     )
   }

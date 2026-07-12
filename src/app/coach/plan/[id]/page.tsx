@@ -16,7 +16,8 @@ import {
   invalidatePlanEdit,
   planToForm,
   validatePlanForm,
-} from '@/lib/plans';
+} from '@/lib/plans'
+import { prepareCoachNotesForSave } from '@/lib/plan-metadata';
 import { requireCoach } from '@/lib/coach-session';
 import { PlanVersionHistory } from '@/components/coach/PlanVersionHistory';
 import type { Plan, PlanFormData, PlanWithClient } from '@/types/database';
@@ -114,7 +115,7 @@ export default function CoachPlanDetailPage() {
         nutrition_plan: form.nutrition_plan.trim() || null,
         cardio_plan: form.cardio_plan.trim() || null,
         supplement_plan: form.supplement_plan.trim() || null,
-        coach_notes: form.coach_notes.trim() || null,
+        coach_notes: prepareCoachNotesForSave(form.coach_notes, plan),
         updated_at: new Date().toISOString(),
       })
       .eq('id', plan.id);

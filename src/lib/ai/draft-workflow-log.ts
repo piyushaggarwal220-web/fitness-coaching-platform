@@ -99,7 +99,7 @@ export async function persistDraftGenerationLog(input: {
 export async function getLatestDraftLogForCheckin(
   clientId: string,
   checkinId: string
-): Promise<{ success: boolean; createdAt: string; action: string } | null> {
+): Promise<{ success: boolean; createdAt: string; action: string; error: string | null } | null> {
   try {
     const admin = createAdminClient()
     const { data } = await admin
@@ -116,10 +116,12 @@ export async function getLatestDraftLogForCheckin(
     })
 
     if (!row) return null
+    const output = row.rendered_output as { error?: string | null } | null
     return {
       success: row.success,
       createdAt: row.created_at as string,
       action: row.action as string,
+      error: output?.error ?? null,
     }
   } catch {
     return null

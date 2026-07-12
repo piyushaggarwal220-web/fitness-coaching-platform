@@ -21,6 +21,7 @@ import { mergePlanForms } from '@/lib/coach/ai-actions';
 import { runCoachAiAction } from '@/lib/coach/ai-action-client';
 import type { AiReasoningDisplay } from '@/lib/coach/ai-actions';
 import { activatePlan, getNextPlanVersion, INITIAL_PLAN_FORM, validatePlanForm } from '@/lib/plans';
+import { clientCoachNotes } from '@/lib/plan-metadata';
 import { createClient } from '@/lib/supabase/client';
 import { requireCoach } from '@/lib/coach-session';
 import type { ClientProfile, Coach, PlanFormData } from '@/types/database';
@@ -155,7 +156,7 @@ function CoachNewPlanForm() {
         nutrition_plan: form.nutrition_plan.trim() || null,
         cardio_plan: form.cardio_plan.trim() || null,
         supplement_plan: form.supplement_plan.trim() || null,
-        coach_notes: form.coach_notes.trim() || null,
+        coach_notes: clientCoachNotes(form.coach_notes).trim() || null,
         version,
         active: false,
         created_at: now,

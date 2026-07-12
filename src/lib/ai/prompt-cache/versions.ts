@@ -1,5 +1,6 @@
 import { createHash } from 'crypto'
 import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
+import { clientCoachNotes } from '@/lib/plan-metadata'
 import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
 
 export function hashContent(value: string): string {
@@ -110,7 +111,7 @@ export function planSectionVersion(
             workout_plan: plan.workout_plan,
             cardio_plan: plan.cardio_plan,
             supplement_plan: plan.supplement_plan,
-            coach_notes: plan.coach_notes,
+            coach_notes: clientCoachNotes(plan.coach_notes),
             updated_at: plan.updated_at,
           })
   return `${clientId}:v${hashContent(content ?? '')}`
@@ -131,7 +132,7 @@ export function checkinVersion(clientId: string, checkin: Checkin | null | undef
 }
 
 export function coachNotesVersion(clientId: string, notes: string | null | undefined): string {
-  return `${clientId}:v${hashContent(notes?.trim() ?? 'none')}`
+  return `${clientId}:v${hashContent(clientCoachNotes(notes) || 'none')}`
 }
 
 export function compiledPromptVersion(input: {

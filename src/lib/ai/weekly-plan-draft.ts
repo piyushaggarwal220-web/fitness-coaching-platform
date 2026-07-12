@@ -3,6 +3,7 @@
  * Triggered automatically after weekly check-in submission.
  * Stores inactive draft plans — never auto-publishes.
  */
+import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { generatePlan } from '@/lib/ai/generate-plan'
 import {
   logDraftWorkflow,
@@ -10,10 +11,11 @@ import {
 } from '@/lib/ai/draft-workflow-log'
 import { generatedDietFormData, generatedWorkoutFormData } from '@/lib/ai/plan-format'
 import { mergePlanForms } from '@/lib/coach/ai-actions'
-import { encodePlanMeta } from '@/lib/plan-metadata'
+import { encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
 import { getNextPlanVersion } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
+import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 function buildUpdatedDietPlanForPrompt(
   activePlan: Plan | null,
@@ -48,6 +50,111 @@ function buildUpdatedDietPlanForPrompt(
     supplement_plan: draftSupplements,
     workout_plan: base.workout_plan,
   }
+}
+
+export async function findAiDraftForCheckin(
+  supabase: SupabaseClient,
+  clientId: string,
+  checkinId: string
+): Promise<Plan | null> {
+  const { data: drafts } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('active', false)
+    .like('title', 'AI Draft%')
+    .order('updated_at', { ascending: false })
+    .limit(20)
+
+  const plans = (drafts ?? []) as Plan[]
+  return plans.find((plan) => planMatchesCheckin(plan, checkinId)) ?? null
+}
+
+function buildDraftContextPlan(
+  merged: PlanFormData,
+  clientId: string,
+  coachId: string,
+  coachingWeek: number,
+  activePlan: Plan | null
+): Plan {
+  const now = new Date().toISOString()
+  return {
+    id: 'draft-context',
+    client_id: clientId,
+    coach_id: coachId,
+    title: merged.title,
+    phase: merged.phase?.trim() || activePlan?.phase || null,
+    workout_plan: merged.workout_plan?.trim() || null,
+    nutrition_plan: merged.nutrition_plan?.trim() || null,
+    cardio_plan: merged.cardio_plan?.trim() || null,
+    supplement_plan: merged.supplement_plan?.trim() || null,
+    coach_notes: merged.coach_notes?.trim() || null,
+    version: activePlan?.version ?? 0,
+    active: false,
+    delivered_at: null,
+    updated_at: now,
+    created_at: now,
+  }
+}
+
+async function upsertWeeklyPlanDraft(input: {
+  admin: SupabaseClient
+  clientId: string
+  coachId: string
+  checkinId: string
+  coachingWeek: number
+  merged: PlanFormData
+  metaNotes: string | null
+  activePlan: Plan | null
+}): Promise<{ id: string; version: number }> {
+  const now = new Date().toISOString()
+  const existing = await findAiDraftForCheckin(input.admin, input.clientId, input.checkinId)
+
+  const fields = {
+    title: input.merged.title,
+    phase: input.merged.phase?.trim() || input.activePlan?.phase || null,
+    workout_plan: input.merged.workout_plan?.trim() || null,
+    nutrition_plan: input.merged.nutrition_plan?.trim() || null,
+    cardio_plan: input.merged.cardio_plan?.trim() || null,
+    supplement_plan: input.merged.supplement_plan?.trim() || null,
+    coach_notes: input.metaNotes,
+    updated_at: now,
+  }
+
+  if (existing) {
+    const { data: draft, error: updateError } = await input.admin
+      .from('plans')
+      .update(fields)
+      .eq('id', existing.id)
+      .select('id, version')
+      .single()
+
+    if (updateError || !draft) {
+      throw new Error(updateError?.message ?? 'Failed to update draft plan')
+    }
+
+    return { id: draft.id as string, version: draft.version as number }
+  }
+
+  const version = await getNextPlanVersion(input.admin, input.clientId)
+  const { data: draft, error: insertError } = await input.admin
+    .from('plans')
+    .insert({
+      client_id: input.clientId,
+      coach_id: input.coachId,
+      ...fields,
+      version,
+      active: false,
+      created_at: now,
+    })
+    .select('id, version')
+    .single()
+
+  if (insertError || !draft) {
+    throw new Error(insertError?.message ?? 'Failed to save draft plan')
+  }
+
+  return { id: draft.id as string, version: draft.version as number }
 }
 
 export async function generateWeeklyPlanDraft(input: {
@@ -141,6 +248,22 @@ export async function generateWeeklyPlanDraft(input: {
       }
     )
 
+    const draftContext = buildDraftContextPlan(
+      merged,
+      input.clientId,
+      input.coachId,
+      input.coachingWeek,
+      (activePlan as Plan | null) ?? null
+    )
+
+    const clientMessage = await ensureClientCoachMessage({
+      profile: profile as OnboardingProfile,
+      checkin: checkin as Checkin,
+      activePlan: (activePlan as Plan | null) ?? null,
+      draftPlan: draftContext,
+      mergedNotes: merged.coach_notes,
+    })
+
     const metaNotes = encodePlanMeta(
       {
         checkinId: input.checkinId,
@@ -148,35 +271,19 @@ export async function generateWeeklyPlanDraft(input: {
         generatedBy: 'ai',
         source: `Week ${input.coachingWeek} Check-in`,
       },
-      merged.coach_notes
+      clientMessage
     )
 
-    const version = await getNextPlanVersion(admin, input.clientId)
-    const now = new Date().toISOString()
-
-    const { data: draft, error: insertError } = await admin
-      .from('plans')
-      .insert({
-        client_id: input.clientId,
-        coach_id: input.coachId,
-        title: merged.title,
-        phase: merged.phase?.trim() || (activePlan as Plan | null)?.phase || null,
-        workout_plan: merged.workout_plan?.trim() || null,
-        nutrition_plan: merged.nutrition_plan?.trim() || null,
-        cardio_plan: merged.cardio_plan?.trim() || null,
-        supplement_plan: merged.supplement_plan?.trim() || null,
-        coach_notes: metaNotes,
-        version,
-        active: false,
-        created_at: now,
-        updated_at: now,
-      })
-      .select('id, version')
-      .single()
-
-    if (insertError || !draft) {
-      throw new Error(insertError?.message ?? 'Failed to save draft plan')
-    }
+    const draft = await upsertWeeklyPlanDraft({
+      admin,
+      clientId: input.clientId,
+      coachId: input.coachId,
+      checkinId: input.checkinId,
+      coachingWeek: input.coachingWeek,
+      merged,
+      metaNotes,
+      activePlan: (activePlan as Plan | null) ?? null,
+    })
 
     const generationTimeMs = Date.now() - started
     const finishEvent = trigger === 'retry' ? 'retry_finished' : 'draft_finished'
@@ -187,8 +294,8 @@ export async function generateWeeklyPlanDraft(input: {
       coachId: input.coachId,
       checkinId: input.checkinId,
       checkinWeek: input.coachingWeek,
-      planId: draft.id as string,
-      planVersion: draft.version as number,
+      planId: draft.id,
+      planVersion: draft.version,
       generationTimeMs,
       trigger,
     })
@@ -203,7 +310,7 @@ export async function generateWeeklyPlanDraft(input: {
       planVersion: `v${draft.version}`,
     })
 
-    return { planId: draft.id as string, error: null, generationTimeMs }
+    return { planId: draft.id, error: null, generationTimeMs }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Draft generation failed'
     const generationTimeMs = Date.now() - started
@@ -249,6 +356,11 @@ export async function loadLatestAiDraftForClient(
   checkinId?: string
 ): Promise<Plan | null> {
   const admin = createAdminClient()
+  if (checkinId) {
+    const linked = await findAiDraftForCheckin(admin, clientId, checkinId)
+    if (linked) return linked
+  }
+
   const { data: drafts } = await admin
     .from('plans')
     .select('*')
@@ -256,12 +368,8 @@ export async function loadLatestAiDraftForClient(
     .eq('active', false)
     .like('title', 'AI Draft%')
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(1)
+    .maybeSingle()
 
-  const plans = (drafts ?? []) as Plan[]
-  if (checkinId) {
-    const linked = plans.find((p) => p.coach_notes?.includes(checkinId))
-    if (linked) return linked
-  }
-  return plans[0] ?? null
+  return (drafts as Plan | null) ?? null
 }

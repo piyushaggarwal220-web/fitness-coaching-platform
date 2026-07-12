@@ -44,6 +44,73 @@ export function stripPlanMeta(notes: string | null | undefined): string {
   return notes.replace(/@@META\{.*?\}@@\n?/, '').trim()
 }
 
+export function isAiDraftTitle(title: string | null | undefined): boolean {
+  return (title ?? '').trim().startsWith('AI Draft')
+}
+
+export function extractWeekFromTitle(title: string | null | undefined): number | undefined {
+  const match = (title ?? '').match(/Week\s+(\d+)/i)
+  return match ? Number(match[1]) : undefined
+}
+
+export function planMatchesCheckin(
+  plan: Pick<Plan, 'coach_notes' | 'title' | 'phase'>,
+  checkinId: string
+): boolean {
+  return parsePlanMeta(plan).checkinId === checkinId
+}
+
+/** Client-facing coach notes for editors, comparison, and prompts. */
+export function clientCoachNotes(notes: string | null | undefined): string {
+  return stripPlanMeta(notes)
+}
+
+/** Re-attach internal metadata when saving an AI draft from the coach editor. */
+export function prepareCoachNotesForSave(
+  clientNotes: string,
+  plan: Pick<Plan, 'coach_notes' | 'title' | 'phase'>
+): string | null {
+  const trimmed = stripPlanMeta(clientNotes).trim()
+  if (!trimmed) return null
+
+  const meta = parsePlanMeta(plan)
+  if (meta.checkinId && isAiDraftTitle(plan.title)) {
+    return encodePlanMeta(meta, trimmed)
+  }
+
+  return trimmed
+}
+
+/** Strip metadata and validate before delivering a plan to the client. */
+export function prepareCoachNotesForPublish(notes: string | null | undefined): {
+  notes: string | null
+  error: string | null
+} {
+  const cleaned = stripPlanMeta(notes).trim()
+  if (!cleaned) {
+    return {
+      notes: null,
+      error: 'Cannot publish: Coach Notes must include a client-facing message.',
+    }
+  }
+  return { notes: cleaned, error: null }
+}
+
+export function formatPublishedPlanTitle(
+  plan: Pick<Plan, 'title' | 'coach_notes' | 'phase'>,
+  isUpdate: boolean
+): string {
+  if (!isAiDraftTitle(plan.title)) return plan.title.trim()
+
+  const meta = parsePlanMeta(plan)
+  const week = meta.week ?? extractWeekFromTitle(plan.title)
+  if (week) {
+    return isUpdate ? `Week ${week} Updated Plan` : `Week ${week} Plan`
+  }
+
+  return plan.title.replace(/^AI Draft\s*·\s*/i, '').trim() || 'Coaching Plan'
+}
+
 export type PlanVersionStatus = 'Active' | 'AI Draft' | 'Archived' | 'Draft'
 
 export function getPlanVersionStatus(plan: Plan): PlanVersionStatus {

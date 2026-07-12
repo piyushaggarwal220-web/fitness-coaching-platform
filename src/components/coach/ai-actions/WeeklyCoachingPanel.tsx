@@ -11,8 +11,8 @@ import {
   saveWorkoutRetryError,
 } from '@/lib/ai/plan-format'
 import { createClient } from '@/lib/supabase/client'
-import { activatePlan, getNextPlanVersion } from '@/lib/plans'
-import { encodePlanMeta } from '@/lib/plan-metadata'
+import { activatePlan, getNextPlanVersion, planToForm } from '@/lib/plans'
+import { clientCoachNotes, encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
 import { sendClientNotification } from '@/lib/notifications/client'
 import { useRouter } from 'next/navigation'
 import { colors } from '@/lib/design-tokens'
@@ -33,16 +33,7 @@ type WeeklyCoachingPanelProps = {
 }
 
 function planToCompareForm(plan: Plan): PlanFormData {
-  return {
-    client_id: plan.client_id,
-    title: plan.title,
-    phase: plan.phase ?? '',
-    workout_plan: plan.workout_plan ?? '',
-    nutrition_plan: plan.nutrition_plan ?? '',
-    cardio_plan: plan.cardio_plan ?? '',
-    supplement_plan: plan.supplement_plan ?? '',
-    coach_notes: plan.coach_notes ?? '',
-  }
+  return planToForm(plan)
 }
 
 async function findDraftForCheckin(clientId: string, checkinId: string): Promise<Plan | null> {
@@ -52,11 +43,11 @@ async function findDraftForCheckin(clientId: string, checkinId: string): Promise
     .eq('client_id', clientId)
     .eq('active', false)
     .like('title', 'AI Draft%')
-    .order('created_at', { ascending: false })
-    .limit(10)
+    .order('updated_at', { ascending: false })
+    .limit(20)
 
   const plans = (drafts ?? []) as Plan[]
-  const linked = plans.find((p) => p.coach_notes?.includes(checkinId))
+  const linked = plans.find((plan) => planMatchesCheckin(plan, checkinId))
   return linked ?? plans[0] ?? null
 }
 
@@ -80,6 +71,7 @@ export function WeeklyCoachingPanel({
   const [showCompare, setShowCompare] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [generationFailed, setGenerationFailed] = useState(false)
+  const [failureMessage, setFailureMessage] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [publishSuccess, setPublishSuccess] = useState(false)
 
@@ -106,9 +98,11 @@ export function WeeklyCoachingPanel({
         const data = (await res.json()) as {
           isGenerating?: boolean
           generationFailed?: boolean
+          failureError?: string | null
         }
         setIsGenerating(Boolean(data.isGenerating) && !draft)
         setGenerationFailed(Boolean(data.generationFailed) && !draft)
+        setFailureMessage(data.failureError?.trim() ?? '')
       }
     } catch {
       const submitted = checkinSubmittedAt ? new Date(checkinSubmittedAt).getTime() : 0
@@ -202,6 +196,39 @@ export function WeeklyCoachingPanel({
       }
     )
 
+    setStatus('Preparing client coach message…')
+
+    let clientMessage = clientCoachNotes(merged.coach_notes)
+    try {
+      const messageRes = await fetch('/api/coach/ai-draft/coach-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId,
+          checkinId,
+          mergedNotes: merged.coach_notes,
+          draftContext: {
+            title: merged.title,
+            phase: merged.phase,
+            workout_plan: merged.workout_plan,
+            nutrition_plan: merged.nutrition_plan,
+            cardio_plan: merged.cardio_plan,
+            supplement_plan: merged.supplement_plan,
+          },
+        }),
+      })
+      if (messageRes.ok) {
+        const messageData = (await messageRes.json()) as { coachNotes?: string }
+        if (messageData.coachNotes?.trim()) {
+          clientMessage = messageData.coachNotes.trim()
+        }
+      }
+    } catch {
+      if (!clientMessage) {
+        clientMessage = 'Great work this week — keep building on your consistency. Your coach will follow up with any adjustments.'
+      }
+    }
+
     const metaNotes = encodePlanMeta(
       {
         checkinId,
@@ -209,31 +236,51 @@ export function WeeklyCoachingPanel({
         generatedBy: 'ai',
         source: coachingWeek ? `Week ${coachingWeek} Check-in` : `${weekLabel} Check-in`,
       },
-      merged.coach_notes
+      clientMessage
     )
 
-    const version = await getNextPlanVersion(supabase, clientId)
     const now = new Date().toISOString()
+    const existingDraft = await findDraftForCheckin(clientId, checkinId)
+    const draftFields = {
+      title: merged.title,
+      phase: merged.phase?.trim() || activePlan?.phase || null,
+      workout_plan: merged.workout_plan?.trim() || null,
+      nutrition_plan: merged.nutrition_plan?.trim() || null,
+      cardio_plan: merged.cardio_plan?.trim() || null,
+      supplement_plan: merged.supplement_plan?.trim() || null,
+      coach_notes: metaNotes,
+      updated_at: now,
+    }
 
-    const { data: saved, error: saveError } = await supabase
-      .from('plans')
-      .insert({
-        client_id: clientId,
-        coach_id: coachId,
-        title: merged.title,
-        phase: merged.phase?.trim() || activePlan?.phase || null,
-        workout_plan: merged.workout_plan?.trim() || null,
-        nutrition_plan: merged.nutrition_plan?.trim() || null,
-        cardio_plan: merged.cardio_plan?.trim() || null,
-        supplement_plan: merged.supplement_plan?.trim() || null,
-        coach_notes: metaNotes,
-        version,
-        active: false,
-        created_at: now,
-        updated_at: now,
-      })
-      .select()
-      .single()
+    let saved: Plan | null = null
+    let saveError: { message: string } | null = null
+
+    if (existingDraft) {
+      const { data, error } = await supabase
+        .from('plans')
+        .update(draftFields)
+        .eq('id', existingDraft.id)
+        .select()
+        .single()
+      saved = (data as Plan | null) ?? null
+      saveError = error
+    } else {
+      const version = await getNextPlanVersion(supabase, clientId)
+      const { data, error } = await supabase
+        .from('plans')
+        .insert({
+          client_id: clientId,
+          coach_id: coachId,
+          ...draftFields,
+          version,
+          active: false,
+          created_at: now,
+        })
+        .select()
+        .single()
+      saved = (data as Plan | null) ?? null
+      saveError = error
+    }
 
     setBusy(false)
 
@@ -276,7 +323,9 @@ export function WeeklyCoachingPanel({
       if (!res.ok || !data.success) {
         setStatusVariant('error')
         setStatus(null)
-        setError(data.error ?? 'Retry failed. Please try again.')
+        const message = data.error ?? 'Retry failed. Please try again.'
+        setError(message)
+        setFailureMessage(message)
         setGenerationFailed(true)
         setRetrying(false)
         return
@@ -392,7 +441,7 @@ export function WeeklyCoachingPanel({
       ) : showFailure ? (
         <div>
           <p style={{ margin: '0 0 12px', fontSize: 14, color: colors.danger, fontWeight: 600 }}>
-            AI draft unavailable.
+            {failureMessage || 'AI draft unavailable.'}
           </p>
           <button
             type="button"
