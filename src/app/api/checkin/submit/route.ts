@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { buildCheckinSummary, buildScheduledCheckin, getCoachingWeek, getCoachingDay } from '@/lib/checkin-schedule'
+import { invalidatePromptCacheForClient } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -245,6 +246,8 @@ export async function POST(request: Request) {
       actionUrl: `/coach/checkin/${inserted.id}`,
     })
   }
+
+  invalidatePromptCacheForClient(user.id)
 
   return NextResponse.json({
     success: true,

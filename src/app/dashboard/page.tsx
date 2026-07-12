@@ -20,6 +20,7 @@ import { formatCheckinDate } from '@/lib/checkin';
 import { getClientCheckinSchedule } from '@/lib/checkin-schedule';
 import { formatPlanDate } from '@/lib/plans';
 import { authenticateClient, fetchClientProfile, getOnboardingLabel, isOnboardingComplete } from '@/lib/onboarding';
+import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { createClient } from '@/lib/supabase/client';
 import { colors, spacing } from '@/lib/design-tokens';
@@ -239,6 +240,11 @@ export default function Dashboard() {
         </p>
       </div>
 
+      {/* Plan delivery countdown */}
+      {profile && status?.onboardingComplete && status.coachAssigned && (
+        <PlanCountdownCard profile={profile} activePlan={activePlan} />
+      )}
+
       {/* Next check-in countdown */}
       {checkinSchedule?.countdownLabel && (
         <Card variant="glass" style={{ marginBottom: spacing[4] }}>
@@ -326,13 +332,13 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Coach & status */}
-      {status && status.nextAction && (
+      {/* Next step — only when actionable */}
+      {status && status.nextAction && status.nextActionHref && (
         <section style={{ marginBottom: spacing[5] }}>
           <h2 style={sectionHeading}>Next Step</h2>
-          <Card variant="elevated">
+          <Card variant="elevated" className="card-hover">
             <p style={{ margin: '0 0 12px', fontSize: 15, color: colors.textSecondary }}>{status.nextAction}</p>
-            <Button fullWidth onClick={() => router.push(status.nextActionHref)}>Continue</Button>
+            <Button fullWidth onClick={() => router.push(status.nextActionHref!)}>Continue</Button>
           </Card>
         </section>
       )}

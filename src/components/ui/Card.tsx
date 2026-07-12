@@ -24,10 +24,12 @@ const variantStyles: Record<CardVariant, CSSProperties> = {
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     border: `1px solid ${colors.borderSubtle}`,
+    boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
   },
   elevated: {
     backgroundColor: colors.bgElevated,
     border: `1px solid ${colors.borderSubtle}`,
+    boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
   },
 }
 

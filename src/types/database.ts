@@ -660,6 +660,7 @@ export type CoachConversation = {
   unread_by_client: number
   unread_by_coach: number
   last_message_at: string | null
+  last_message_preview: string | null
   client_typing_at: string | null
   coach_typing_at: string | null
   created_at: string

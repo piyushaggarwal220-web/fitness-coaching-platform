@@ -7,12 +7,16 @@ export type GenerateClaudeResponseParams = {
   model?: string
   maxTokens?: number
   temperature?: number
+  /** Enable Anthropic prompt caching on the system block */
+  enablePromptCaching?: boolean
 }
 
 export type GenerateClaudeResponseResult = {
   text: string
   inputTokens: number
   outputTokens: number
+  cacheCreationInputTokens?: number
+  cacheReadInputTokens?: number
   model: string
 }
 
@@ -67,20 +71,36 @@ export async function generateClaudeResponse(
   params: GenerateClaudeResponseParams
 ): Promise<GenerateClaudeResponseResult> {
   const client = new Anthropic({ apiKey: getApiKey() })
+  const useCache = params.enablePromptCaching !== false
 
   try {
     const response = await client.messages.create({
       model: params.model ?? DEFAULTS.DEFAULT_MODEL,
       max_tokens: params.maxTokens ?? DEFAULTS.DEFAULT_MAX_TOKENS,
       temperature: params.temperature ?? DEFAULTS.DEFAULT_TEMPERATURE,
-      system: params.systemPrompt,
+      system: useCache
+        ? [
+            {
+              type: 'text',
+              text: params.systemPrompt,
+              cache_control: { type: 'ephemeral' },
+            },
+          ]
+        : params.systemPrompt,
       messages: [{ role: 'user', content: params.userPrompt }],
     })
 
+    const usage = response.usage as Anthropic.Usage & {
+      cache_creation_input_tokens?: number
+      cache_read_input_tokens?: number
+    }
+
     return {
       text: extractText(response.content),
-      inputTokens: response.usage.input_tokens,
-      outputTokens: response.usage.output_tokens,
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+      cacheCreationInputTokens: usage.cache_creation_input_tokens,
+      cacheReadInputTokens: usage.cache_read_input_tokens,
       model: response.model,
     }
   } catch (err) {

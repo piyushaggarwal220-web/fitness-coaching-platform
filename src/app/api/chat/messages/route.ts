@@ -9,6 +9,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url)
   const conversationId = url.searchParams.get('conversationId')
+  const peek = url.searchParams.get('peek') === '1'
   if (!conversationId) return NextResponse.json({ error: 'conversationId required' }, { status: 400 })
 
   const { data, error } = await supabase
@@ -21,9 +22,24 @@ export async function GET(request: Request) {
 
   const { data: coachRow } = await supabase.from('coaches').select('id').eq('user_id', user.id).maybeSingle()
   const reader = coachRow ? 'coach' : 'client'
-  await markConversationRead(supabase, conversationId, reader)
 
-  return NextResponse.json({ messages: data })
+  if (!peek) {
+    await markConversationRead(supabase, conversationId, reader)
+  }
+
+  const { data: conv } = await supabase
+    .from('coach_conversations')
+    .select('client_typing_at, coach_typing_at')
+    .eq('id', conversationId)
+    .maybeSingle()
+
+  const typingField = reader === 'client' ? 'coach_typing_at' : 'client_typing_at'
+  const typingAt = conv?.[typingField as keyof typeof conv] as string | null
+  const peerTyping = typingAt
+    ? Date.now() - new Date(typingAt).getTime() < 5000
+    : false
+
+  return NextResponse.json({ messages: data, peerTyping })
 }
 
 export async function POST(request: Request) {

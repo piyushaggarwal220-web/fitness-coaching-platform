@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
+import { DrawerMenuButton } from '@/components/ui/DrawerNav'
 import { createClient } from '@/lib/supabase/client'
 import { colors, layout, spacing } from '@/lib/design-tokens'
 
@@ -13,9 +14,10 @@ const supabase = createClient()
 type TopBarProps = {
   title?: string
   showProfile?: boolean
+  onMenuClick?: () => void
 }
 
-export function TopBar({ title, showProfile = true }: TopBarProps) {
+export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
 
@@ -50,6 +52,7 @@ export function TopBar({ title, showProfile = true }: TopBarProps) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2], minWidth: 0 }}>
+        {onMenuClick && <DrawerMenuButton onClick={onMenuClick} />}
         {title ? (
           <h1 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {title}

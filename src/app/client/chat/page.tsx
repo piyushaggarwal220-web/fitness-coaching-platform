@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { authenticateClient } from '@/lib/onboarding'
 import { mobileStyles } from '@/lib/mobile-styles'
-import { colors, spacing } from '@/lib/design-tokens'
+import { colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
 import type { CoachConversation } from '@/types/database'
 
@@ -37,25 +38,21 @@ export default function ClientChatPage() {
 
       setConversation(data.conversation)
       setLoading(false)
-
-      if (data.conversation?.status === 'connecting') {
-        setTimeout(async () => {
-          const refresh = await fetch('/api/chat/conversations')
-          const refreshData = await refresh.json()
-          if (refreshData.conversation) setConversation(refreshData.conversation)
-          setConnecting(false)
-        }, 2000)
-      } else {
-        setConnecting(false)
-      }
+      setConnecting(false)
     }
     void init()
   }, [router])
 
-  if (loading) return <ClientShell title="Chat" loading />
+  if (loading) {
+    return (
+      <ClientShell title="Chat" loading hideBottomNav>
+        <span />
+      </ClientShell>
+    )
+  }
 
   return (
-    <ClientShell title="Chat">
+    <ClientShell title="Chat" hideBottomNav>
       {connecting && (
         <p style={{ margin: '0 0 12px', fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>
           Connecting you with your coach...
@@ -66,12 +63,12 @@ export default function ClientChatPage() {
 
       {conversation && (
         <div style={{
-          backgroundColor: colors.bgCard,
-          borderRadius: 16,
+          borderRadius: 20,
           border: `1px solid ${colors.borderSubtle}`,
           overflow: 'hidden',
-          height: 'calc(100vh - 180px)',
-          maxHeight: 700,
+          height: 'calc(100vh - 120px - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
+          maxHeight: 800,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
         }}>
           <CoachChatThread
             conversationId={conversation.id}

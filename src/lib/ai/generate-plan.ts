@@ -8,6 +8,7 @@ import {
 } from '@/lib/ai/complexity-score'
 import { getAllKnowledge } from '@/lib/ai/knowledge'
 import { buildPrompt } from '@/lib/ai/prompt-builder'
+import { getCachedPrompt } from '@/lib/ai/prompt-cache'
 import {
   formatLibraryPromptVersion,
   loadPublishedPromptsForAction,
@@ -18,6 +19,8 @@ import { profileToComplexityInput } from '@/lib/complexity/profile-input'
 import { getPromptCategoryForAction } from '@/lib/ai/workout-prompt-selection'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
+
+export { invalidatePromptCacheForClient, invalidatePromptCacheAll } from '@/lib/ai/prompt-cache'
 
 export type GeneratedWorkoutPlan = {
   overview: string
@@ -350,9 +353,10 @@ function buildPlanPrompts(
     }
     validationMode?: PlanValidationMode
     actionId?: CoachAiActionId
+    promptVersion?: string
   } = {}
 ) {
-  const base = buildPrompt({
+  const base = getCachedPrompt({
     profile,
     latestCheckin,
     complexityScore,
@@ -363,6 +367,11 @@ function buildPlanPrompts(
     actionId: options.actionId,
     actionTemplate: options.libraryPrompts?.actionTemplate ?? null,
     systemTemplate: options.libraryPrompts?.systemTemplate ?? null,
+    clientId: profile.id,
+    promptVersion: options.promptVersion,
+    planVersion: options.activePlan?.version,
+    checkinVersion: latestCheckin?.submitted_at,
+    onboardingVersion: profile.updated_at ?? profile.onboarding_completed_at ?? undefined,
   })
 
   const useLibraryTemplate = Boolean(options.libraryPrompts?.actionTemplate)
@@ -450,6 +459,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         libraryPrompts,
         validationMode,
         actionId: input.actionId,
+        promptVersion,
       }
     )
 

@@ -7,6 +7,8 @@ import { coachPageStyles } from '@/lib/coach-page-styles';
 import { createClient } from '@/lib/supabase/client';
 import { requireCoach } from '@/lib/coach-session';
 import { colors } from '@/lib/design-tokens';
+import { CoachConversationsSection } from '@/components/chat/CoachConversationsSection';
+import { CoachWorkQueuePanel } from '@/components/coach/CoachWorkQueuePanel';
 import type { ClientProfile, Coach, CoachStats } from '@/types/database';
 
 const supabase = createClient();
@@ -138,6 +140,23 @@ export default function CoachDashboard() {
             <div style={{ ...styles.statNumber, color: colors.danger }}>{clients.filter((c) => c.complexity_tier === 'high').length}</div>
             <div style={styles.statLabel}>High Complexity</div>
           </button>
+        </div>
+
+        <CoachWorkQueuePanel />
+
+        <div style={styles.checkinBanner}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>Client Conversations</h2>
+            <p style={{ margin: '6px 0 0 0', color: colors.textSecondary }}>
+              Unread messages and latest activity from your clients
+            </p>
+          </div>
+          <button style={styles.checkinBtn} onClick={() => router.push('/coach/chat')}>
+            All chats
+          </button>
+        </div>
+        <div style={{ ...styles.queueSection, marginBottom: 24, padding: 20 }}>
+          <CoachConversationsSection />
         </div>
 
         <div style={styles.checkinBanner}>

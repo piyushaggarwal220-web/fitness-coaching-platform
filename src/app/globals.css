@@ -9,11 +9,11 @@
   --bg-elevated: #1f1f23;
   --bg-glass: rgba(24, 24, 27, 0.72);
 
-  /* Accent — single emerald */
-  --accent: #34d399;
-  --accent-hover: #2dd4a8;
-  --accent-muted: rgba(52, 211, 153, 0.12);
-  --accent-glow: rgba(52, 211, 153, 0.25);
+  /* Accent — premium orange */
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --accent-muted: rgba(249, 115, 22, 0.12);
+  --accent-glow: rgba(249, 115, 22, 0.22);
 
   /* Semantic */
   --success: #22c55e;
@@ -147,6 +147,34 @@ button, a[role="button"], input[type="submit"] {
 
 .animate-fade-in {
   animation: fadeIn var(--transition-base) ease-out;
+}
+
+@keyframes slideInDrawer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.drawer-overlay {
+  animation: fadeOverlay var(--transition-base) ease-out;
+}
+
+.drawer-panel {
+  animation: slideInDrawer var(--transition-slow) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.card-hover {
+  transition: transform var(--transition-fast), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(249, 115, 22, 0.15);
 }
 
 /* Skeleton loader */

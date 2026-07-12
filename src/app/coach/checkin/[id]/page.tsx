@@ -8,6 +8,7 @@ import { CoachShell } from '@/components/ui/CoachShell';
 import { coachPageStyles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/design-tokens';
 import { requireCoach } from '@/lib/coach-session';
+import { sendNotification } from '@/lib/notifications/service'
 import {
   formatCheckinDate,
   formatWaistChange,
@@ -127,6 +128,14 @@ export default function CoachCheckinDetailPage() {
       setSubmitting(false);
       return;
     }
+
+    await sendNotification({
+      userId: checkin.client_id,
+      type: 'coach_replied',
+      title: 'Check-in reviewed',
+      body: 'Your coach has reviewed your check-in. View feedback in your journey.',
+      actionUrl: '/journey',
+    });
 
     setSuccess('Check-in marked as reviewed.');
     setCheckin({ ...checkin, reviewed: true, reviewed_at: new Date().toISOString(), coach_response: serializeCoachResponse(response) });

@@ -25,5 +25,26 @@ export async function assignCoachToClient(
     })
     .eq('id', clientId)
 
-  return { error: error?.message ?? null }
+  if (error) return { error: error.message }
+
+  if (coachId) {
+    const { data: openConvo } = await supabase
+      .from('coach_conversations')
+      .select('id, coach_id')
+      .eq('client_id', clientId)
+      .neq('status', 'closed')
+      .maybeSingle()
+
+    if (openConvo && openConvo.coach_id !== coachId) {
+      await supabase
+        .from('coach_conversations')
+        .update({
+          coach_id: coachId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', openConvo.id)
+    }
+  }
+
+  return { error: null }
 }

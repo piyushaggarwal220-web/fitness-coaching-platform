@@ -8,10 +8,10 @@ export const colors = {
   bgCard: '#18181b',
   bgElevated: '#1f1f23',
   bgGlass: 'rgba(24, 24, 27, 0.72)',
-  accent: '#34d399',
-  accentHover: '#2dd4a8',
-  accentMuted: 'rgba(52, 211, 153, 0.12)',
-  accentGlow: 'rgba(52, 211, 153, 0.25)',
+  accent: '#f97316',
+  accentHover: '#fb923c',
+  accentMuted: 'rgba(249, 115, 22, 0.12)',
+  accentGlow: 'rgba(249, 115, 22, 0.22)',
   success: '#22c55e',
   successMuted: 'rgba(34, 197, 94, 0.12)',
   warning: '#f59e0b',
@@ -55,7 +55,7 @@ export const shadows = {
   sm: '0 1px 2px rgba(0, 0, 0, 0.3)',
   md: '0 4px 16px rgba(0, 0, 0, 0.4)',
   lg: '0 8px 32px rgba(0, 0, 0, 0.5)',
-  accent: '0 4px 20px rgba(52, 211, 153, 0.25)',
+  accent: '0 4px 20px rgba(249, 115, 22, 0.22)',
 } as const
 
 export const typography = {
