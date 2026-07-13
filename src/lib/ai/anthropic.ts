@@ -7,7 +7,7 @@ export type GenerateClaudeResponseParams = {
   model?: string
   maxTokens?: number
   temperature?: number
-  /** Enable Anthropic prompt caching on the system block */
+  /** Enable Anthropic automatic prompt caching (default: true) */
   enablePromptCaching?: boolean
 }
 
@@ -78,29 +78,28 @@ export async function generateClaudeResponse(
       model: params.model ?? DEFAULTS.DEFAULT_MODEL,
       max_tokens: params.maxTokens ?? DEFAULTS.DEFAULT_MAX_TOKENS,
       temperature: params.temperature ?? DEFAULTS.DEFAULT_TEMPERATURE,
-      system: useCache
-        ? [
-            {
-              type: 'text',
-              text: params.systemPrompt,
-              cache_control: { type: 'ephemeral' },
-            },
-          ]
-        : params.systemPrompt,
+      ...(useCache ? { cache_control: { type: 'ephemeral' as const } } : {}),
+      system: params.systemPrompt,
       messages: [{ role: 'user', content: params.userPrompt }],
     })
 
-    const usage = response.usage as Anthropic.Usage & {
-      cache_creation_input_tokens?: number
-      cache_read_input_tokens?: number
+    const usage = response.usage
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Anthropic Cache Usage:', {
+        input_tokens: usage.input_tokens,
+        cache_creation_input_tokens: usage.cache_creation_input_tokens,
+        cache_read_input_tokens: usage.cache_read_input_tokens,
+        output_tokens: usage.output_tokens,
+      })
     }
 
     return {
       text: extractText(response.content),
       inputTokens: usage.input_tokens,
       outputTokens: usage.output_tokens,
-      cacheCreationInputTokens: usage.cache_creation_input_tokens,
-      cacheReadInputTokens: usage.cache_read_input_tokens,
+      cacheCreationInputTokens: usage.cache_creation_input_tokens ?? undefined,
+      cacheReadInputTokens: usage.cache_read_input_tokens ?? undefined,
       model: response.model,
     }
   } catch (err) {
