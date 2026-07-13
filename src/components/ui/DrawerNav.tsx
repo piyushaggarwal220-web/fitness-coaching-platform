@@ -190,12 +190,14 @@ export const clientDrawerItems = (icons: {
   Map: React.ComponentType<{ size?: number; color?: string }>
   ClipboardList: React.ComponentType<{ size?: number; color?: string }>
   Calendar: React.ComponentType<{ size?: number; color?: string }>
+  ListChecks: React.ComponentType<{ size?: number; color?: string }>
   MessageCircle: React.ComponentType<{ size?: number; color?: string }>
   User: React.ComponentType<{ size?: number; color?: string }>
   Settings: React.ComponentType<{ size?: number; color?: string }>
   LifeBuoy: React.ComponentType<{ size?: number; color?: string }>
 }): DrawerNavItem[] => [
   { href: '/dashboard', label: 'Dashboard', icon: <icons.Home size={20} /> },
+  { href: '/tracker', label: "Today's Tracker", icon: <icons.ListChecks size={20} /> },
   { href: '/journey', label: 'Journey', icon: <icons.Map size={20} /> },
   { href: '/plan', label: 'My Plan', icon: <icons.ClipboardList size={20} /> },
   { href: '/checkin', label: 'Check-ins', icon: <icons.Calendar size={20} /> },

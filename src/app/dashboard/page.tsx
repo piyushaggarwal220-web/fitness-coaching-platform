@@ -8,6 +8,7 @@ import {
   Calendar,
   ClipboardList,
   Dumbbell,
+  ListChecks,
   Map,
   MessageCircle,
   Timer,
@@ -402,6 +403,24 @@ export default function Dashboard() {
           <StatCard label="Check-ins" value={String(checkinCount)} icon={<Calendar size={18} />} />
         </div>
       </section>
+
+      {/* Daily tracker shortcut */}
+      {activePlan && (
+        <section style={{ marginBottom: spacing[5] }}>
+          <Card variant="glass" onClick={() => router.push('/tracker')} style={{ cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+              <ListChecks size={22} color={colors.accent} />
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>Today&apos;s Tracker</p>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textMuted }}>
+                  Meals, workout, water & more — all in one timeline
+                </p>
+              </div>
+              <ArrowRight size={20} color={colors.textMuted} />
+            </div>
+          </Card>
+        </section>
+      )}
 
       {/* Journey shortcut */}
       <section style={{ marginBottom: spacing[5] }}>

@@ -18,6 +18,7 @@ import {
   validatePlanForm,
 } from '@/lib/plans'
 import { prepareCoachNotesForSave } from '@/lib/plan-metadata';
+import { syncTrackerAfterPlanPublish } from '@/lib/daily-tracker/client-sync';
 import { requireCoach } from '@/lib/coach-session';
 import { PlanVersionHistory } from '@/components/coach/PlanVersionHistory';
 import type { Plan, PlanFormData, PlanWithClient } from '@/types/database';
@@ -137,6 +138,7 @@ export default function CoachPlanDetailPage() {
     const { error: activateError } = await activatePlan(supabase, plan);
     if (activateError) setError(activateError);
     else {
+      syncTrackerAfterPlanPublish(plan.client_id, plan.id);
       setSuccess('Plan delivered to client.');
       setPlan({ ...plan, active: true, delivered_at: new Date().toISOString() });
       setHistory((h) => h.map((p) => ({ ...p, active: p.id === plan.id })));

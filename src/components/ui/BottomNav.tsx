@@ -2,15 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Map, ClipboardList, MessageCircle, User } from 'lucide-react'
+import { Home, Map, ClipboardList, MessageCircle, ListChecks } from 'lucide-react'
 import { colors, layout, spacing } from '@/lib/design-tokens'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/journey', label: 'Journey', icon: Map },
+  { href: '/tracker', label: 'Tracker', icon: ListChecks },
   { href: '/plan', label: 'Plan', icon: ClipboardList },
   { href: '/client/chat', label: 'Chat', icon: MessageCircle },
-  { href: '/profile', label: 'Profile', icon: User },
+  { href: '/journey', label: 'Journey', icon: Map },
 ] as const
 
 export function BottomNav() {

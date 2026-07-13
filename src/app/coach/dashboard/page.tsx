@@ -12,6 +12,7 @@ import { colors } from '@/lib/design-tokens';
 import { CoachConversationsSection } from '@/components/chat/CoachConversationsSection';
 import { CoachWorkQueuePanel } from '@/components/coach/CoachWorkQueuePanel';
 import { CoachWorkSummaryCards } from '@/components/coach/CoachWorkSummaryCards';
+import { CoachTrackerAdherencePanel } from '@/components/coach/CoachTrackerAdherencePanel';
 import type { WorkQueueCounts, WorkQueueFilter } from '@/lib/coach-work-queue';
 import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
 import type { Checkin, ClientProfile, Coach, CoachStats } from '@/types/database';
@@ -179,6 +180,10 @@ export default function CoachDashboard() {
           onFilter={setQueueFilter}
         />
         <CoachWorkQueuePanel filter={queueFilter} onCountsChange={handleCountsChange} />
+
+        <div style={{ marginBottom: 24 }}>
+          <CoachTrackerAdherencePanel />
+        </div>
 
         <div style={styles.checkinBanner}>
           <div>

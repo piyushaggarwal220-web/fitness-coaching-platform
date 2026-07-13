@@ -12,6 +12,7 @@ import {
 } from '@/lib/ai/plan-format'
 import { createClient } from '@/lib/supabase/client'
 import { activatePlan, getNextPlanVersion, planToForm } from '@/lib/plans'
+import { syncTrackerAfterPlanPublish } from '@/lib/daily-tracker/client-sync'
 import { clientCoachNotes, encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
 import { sendClientNotification } from '@/lib/notifications/client'
 import { useRouter } from 'next/navigation'
@@ -377,6 +378,8 @@ export function WeeklyCoachingPanel({
       setPublishing(false)
       return
     }
+
+    syncTrackerAfterPlanPublish(clientId, draftPlan.id)
 
     void fetch('/api/coach/ai-draft/publish-log', {
       method: 'POST',

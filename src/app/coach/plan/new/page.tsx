@@ -22,6 +22,7 @@ import { runCoachAiAction } from '@/lib/coach/ai-action-client';
 import type { AiReasoningDisplay } from '@/lib/coach/ai-actions';
 import { activatePlan, getNextPlanVersion, INITIAL_PLAN_FORM, validatePlanForm } from '@/lib/plans';
 import { clientCoachNotes } from '@/lib/plan-metadata';
+import { syncTrackerAfterPlanPublish } from '@/lib/daily-tracker/client-sync';
 import { createClient } from '@/lib/supabase/client';
 import { requireCoach } from '@/lib/coach-session';
 import type { ClientProfile, Coach, PlanFormData } from '@/types/database';
@@ -178,6 +179,7 @@ function CoachNewPlanForm() {
         setSubmitting(false);
         return;
       }
+      syncTrackerAfterPlanPublish(created.client_id, created.id);
     }
 
     if (fromAi && form.client_id) {
