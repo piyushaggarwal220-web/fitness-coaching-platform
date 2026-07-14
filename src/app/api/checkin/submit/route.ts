@@ -3,7 +3,12 @@ import { requireApiUser } from '@/lib/api-auth'
 import { logApiDev } from '@/lib/api-dev-log'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
-import { buildCheckinSummary, resolveCheckinSubmissionSlot } from '@/lib/checkin-schedule'
+import {
+  buildCheckinSummary,
+  isWithinCheckinSubmissionWindow,
+  isCheckinSubmissionWindowClosed,
+  resolveCheckinSubmissionSlot,
+} from '@/lib/checkin-schedule'
 import {
   formatMidWeekCheckinChatMessage,
   formatWeeklyCheckinChatMessage,
@@ -148,14 +153,23 @@ export async function POST(request: Request) {
     }
 
     const today = new Date()
-    const dueStart = new Date(scheduled.dueDate)
-    dueStart.setHours(0, 0, 0, 0)
-    const todayStart = new Date(today)
-    todayStart.setHours(0, 0, 0, 0)
 
     if (!shouldBypassCheckinScheduleServer(request.headers.get('host'))) {
-      if (todayStart.getTime() !== dueStart.getTime()) {
-        return NextResponse.json({ success: false, error: 'This check-in is not available today.' }, { status: 403 })
+      if (isCheckinSubmissionWindowClosed(scheduled.dueDate, today)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'This check-in window has closed (48 hours). Please wait for your next scheduled check-in.',
+          },
+          { status: 403 }
+        )
+      }
+      if (!isWithinCheckinSubmissionWindow(scheduled.dueDate, today)) {
+        return NextResponse.json(
+          { success: false, error: 'This check-in is not available yet.' },
+          { status: 403 }
+        )
       }
     }
 

@@ -97,6 +97,23 @@ async function main() {
     fail('Dev schedule message missing')
   }
 
+  const jan4 = new Date('2026-01-04T10:00:00Z')
+  const stillOpenDayAfter = isCheckinAvailableToday(onboarding.toISOString(), 'mid_week', [], jan4)
+  if (stillOpenDayAfter) ok('48h window keeps Day 3 available the next calendar day')
+  else fail('Day after due should still be within 48h window')
+
+  const jan5 = new Date('2026-01-05T00:00:00Z')
+  const closedAfter48h = isCheckinAvailableToday(onboarding.toISOString(), 'mid_week', [], jan5)
+  if (!closedAfter48h) ok('Production blocks Day 3 after 48h window')
+  else fail('Day 3 should be closed 48h after due day starts')
+
+  const scheduleAfterMiss = getClientCheckinSchedule(onboarding.toISOString(), [], jan5)
+  if (scheduleAfterMiss.nextCheckin?.type === 'weekly' && scheduleAfterMiss.nextCheckin.coachingWeek === 1) {
+    ok('After missed mid-week window, next check-in advances to weekly')
+  } else {
+    fail('Next check-in after missed mid-week', JSON.stringify(scheduleAfterMiss.nextCheckin))
+  }
+
   const week1Complete = [
     { checkin_type: 'mid_week' as const, coaching_week: 1, coaching_day: 3 },
     { checkin_type: 'weekly' as const, coaching_week: 1, coaching_day: 7 },

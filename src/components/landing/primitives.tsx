@@ -1,13 +1,35 @@
 'use client'
 
 import {
+  useEffect,
   useRef,
+  useState,
   type CSSProperties,
   type ReactNode,
   type MouseEvent,
 } from 'react'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import {
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from 'framer-motion'
 import Link from 'next/link'
+
+function useIsCompactViewport() {
+  const [compact, setCompact] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 899px)')
+    const sync = () => setCompact(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  return compact
+}
 
 export function Reveal({
   children,
@@ -43,6 +65,9 @@ export function TiltCard({
   intensity?: number
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+  const compact = useIsCompactViewport()
+  const enabled = !reduceMotion && !compact
   const x = useMotionValue(0)
   const y = useMotionValue(0)
   const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [intensity, -intensity]), {
@@ -55,6 +80,7 @@ export function TiltCard({
   })
 
   const onMove = (e: MouseEvent<HTMLDivElement>) => {
+    if (!enabled) return
     const el = ref.current
     if (!el) return
     const rect = el.getBoundingClientRect()
@@ -71,7 +97,11 @@ export function TiltCard({
     <motion.div
       ref={ref}
       className={className}
-      style={{ ...style, rotateX, rotateY, transformPerspective: 900 }}
+      style={
+        enabled
+          ? { ...style, rotateX, rotateY, transformPerspective: 900 }
+          : style
+      }
       onMouseMove={onMove}
       onMouseLeave={onLeave}
     >
@@ -91,6 +121,14 @@ export function Floating({
   amplitude?: number
   duration?: number
 }) {
+  const reduceMotion = useReducedMotion()
+  const compact = useIsCompactViewport()
+  const enabled = !reduceMotion && !compact
+
+  if (!enabled) {
+    return <div className={className}>{children}</div>
+  }
+
   return (
     <motion.div
       className={className}

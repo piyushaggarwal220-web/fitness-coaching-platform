@@ -380,15 +380,17 @@ export default function Dashboard() {
                       <div>
                         <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, fontWeight: 600 }}>
                           {checkinSchedule.nextCheckinStatus === 'available'
-                            ? 'Available today'
+                            ? 'Available now (48h window)'
                             : checkinSchedule.nextCheckinStatus === 'missed'
-                              ? 'Overdue — complete now'
+                              ? 'Missed — wait for next'
                               : 'Available in'}
                         </p>
                         <p style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>
-                          {checkinSchedule.nextCheckinStatus === 'available' || checkinSchedule.nextCheckinStatus === 'missed'
+                          {checkinSchedule.nextCheckinStatus === 'available'
                             ? 'Now'
-                            : checkinSchedule.countdownDetailed ?? checkinSchedule.countdownLabel ?? 'Soon'}
+                            : checkinSchedule.nextCheckinStatus === 'missed'
+                              ? 'Closed'
+                              : checkinSchedule.countdownDetailed ?? checkinSchedule.countdownLabel ?? 'Soon'}
                         </p>
                       </div>
                     </div>
@@ -434,8 +436,13 @@ export default function Dashboard() {
                         }}>
                           {getCheckinStatusLabel(task.status)}
                         </span>
-                        {(task.status === 'available' || task.status === 'missed') && (
+                        {task.status === 'available' && (
                           <Button size="md" onClick={() => router.push(task.href)}>Start</Button>
+                        )}
+                        {task.status === 'missed' && (
+                          <span style={{ fontSize: 12, color: colors.textMuted, fontWeight: 600, maxWidth: 120, textAlign: 'right' }}>
+                            Window closed — wait for next
+                          </span>
                         )}
                       </div>
                     </div>

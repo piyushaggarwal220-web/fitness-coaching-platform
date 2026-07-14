@@ -298,7 +298,11 @@ export function Pricing() {
 
         <div className="lp-pricing-grid">
           {pricing.plans.map((plan, i) => (
-            <Reveal key={plan.slug} delay={i * 0.06}>
+            <Reveal
+              key={plan.slug}
+              delay={i * 0.06}
+              className={plan.popular ? 'lp-price-popular-wrap' : undefined}
+            >
               <Floating amplitude={plan.popular ? 7 : 4} duration={5 + i * 0.3}>
                 <TiltCard
                   className={`lp-card lp-price-card${plan.popular ? ' is-popular' : ''}`}

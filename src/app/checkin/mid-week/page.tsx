@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Slider, TextArea } from '@/components/ui/Input';
 import { INITIAL_MID_WEEK_FORM, validateMidWeekForm } from '@/lib/checkin';
-import { isCheckinAvailableToday } from '@/lib/checkin-schedule';
+import { getCheckinUnavailableReason, isCheckinAvailableToday } from '@/lib/checkin-schedule';
 import { brandTitle } from '@/lib/brand';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
@@ -30,6 +30,7 @@ export default function MidWeekCheckinPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [available, setAvailable] = useState(false);
+  const [unavailableReason, setUnavailableReason] = useState('');
 
   useEffect(() => {
     const init = async () => {
@@ -51,7 +52,18 @@ export default function MidWeekCheckinPage() {
       const onboardingAt = result.profile?.onboarding_completed_at;
       const bypassSchedule = shouldBypassCheckinScheduleClient();
       if (onboardingAt) {
-        setAvailable(isCheckinAvailableToday(onboardingAt, 'mid_week', rows, new Date(), { bypassSchedule }));
+        const isAvailable = isCheckinAvailableToday(onboardingAt, 'mid_week', rows, new Date(), { bypassSchedule });
+        setAvailable(isAvailable);
+        if (!isAvailable && !bypassSchedule) {
+          const reason = getCheckinUnavailableReason(onboardingAt, 'mid_week', rows, new Date());
+          setUnavailableReason(
+            reason === 'window_closed'
+              ? 'This Day 3 check-in window has closed (48 hours). Please wait for your next scheduled check-in.'
+              : reason === 'already_submitted'
+                ? 'You already submitted this Day 3 check-in.'
+                : 'Your Day 3 check-in is not available yet. Check your dashboard for the next scheduled check-in.'
+          );
+        }
       }
 
       setLoading(false);
@@ -130,7 +142,9 @@ export default function MidWeekCheckinPage() {
     return (
       <ClientShell title="Check-In" hideBottomNav>
         <h1 style={styles.title}>{brandTitle('Mid-Week Check-In')}</h1>
-        <div style={styles.infoBox}>Your Day 3 check-in is not available today.</div>
+        <div style={styles.infoBox}>
+          {unavailableReason || 'Your Day 3 check-in is not available.'}
+        </div>
         <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
       </ClientShell>
     );

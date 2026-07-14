@@ -13,7 +13,7 @@ import {
   uploadCheckinPhoto,
   validateWeeklyCheckinForm,
 } from '@/lib/checkin';
-import { isCheckinAvailableToday } from '@/lib/checkin-schedule';
+import { getCheckinUnavailableReason, isCheckinAvailableToday } from '@/lib/checkin-schedule';
 import { brandTitle } from '@/lib/brand';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
@@ -44,6 +44,7 @@ export default function CheckinPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [available, setAvailable] = useState(false);
+  const [unavailableReason, setUnavailableReason] = useState<string>('');
   const [currentSection, setCurrentSection] = useState<Section>('measurements');
   const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forward');
 
@@ -66,7 +67,20 @@ export default function CheckinPage() {
       const onboardingAt = result.profile?.onboarding_completed_at;
       const bypassSchedule = shouldBypassCheckinScheduleClient();
       if (onboardingAt) {
-        setAvailable(isCheckinAvailableToday(onboardingAt, 'weekly', rows, new Date(), { bypassSchedule }));
+        const isAvailable = isCheckinAvailableToday(onboardingAt, 'weekly', rows, new Date(), { bypassSchedule });
+        setAvailable(isAvailable);
+        if (!isAvailable && !bypassSchedule) {
+          const reason = getCheckinUnavailableReason(onboardingAt, 'weekly', rows, new Date());
+          setUnavailableReason(
+            reason === 'window_closed'
+              ? 'This weekly check-in window has closed (48 hours). Please wait for your next scheduled check-in.'
+              : reason === 'waiting_mid_week'
+                ? 'Complete your Day 3 mid-week check-in first (or wait if that window closed).'
+                : reason === 'already_submitted'
+                  ? 'You already submitted this weekly check-in.'
+                  : 'Your weekly check-in is not available yet. Check your dashboard for the next scheduled check-in.'
+          );
+        }
       }
       setLoading(false);
     };
@@ -198,7 +212,8 @@ export default function CheckinPage() {
       <ClientShell title="Check-In" hideBottomNav>
         <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>{brandTitle('Weekly Check-In')}</h1>
         <div style={mobileStyles.info}>
-          Your weekly check-in is not available today. Check your dashboard for the next scheduled check-in.
+          {unavailableReason ||
+            'Your weekly check-in is not available. Check your dashboard for the next scheduled check-in.'}
         </div>
         <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
       </ClientShell>
