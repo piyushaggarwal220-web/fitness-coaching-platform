@@ -117,7 +117,16 @@ export async function getOrCreateTodayTracker(
 
   if (existing) {
     const existingDay = rowToDay(existing as Record<string, unknown>)
-    const needsRebuild = existingDay.plan_version < plan.version
+    const existingHasWorkout = existingDay.snapshot.items.some((item) => item.type === 'workout')
+    const newHasWorkout = snapshot.items.some((item) => item.type === 'workout')
+    const existingHasMeals = existingDay.snapshot.items.some((item) => item.type === 'meal')
+    const newHasMeals = snapshot.items.some((item) => item.type === 'meal')
+    const needsRebuild =
+      existingDay.plan_version < plan.version ||
+      (newHasWorkout && !existingHasWorkout) ||
+      (newHasMeals && !existingHasMeals) ||
+      snapshot.items.length > existingDay.snapshot.items.length
+
     if (!needsRebuild) return { day: existingDay, error: null }
 
     const { scores, overall } = calculateTrackerScores(snapshot, existingDay.completion)

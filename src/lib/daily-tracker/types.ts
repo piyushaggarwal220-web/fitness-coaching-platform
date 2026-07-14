@@ -15,6 +15,13 @@ export type TrackerItemType =
   | 'sleep'
   | 'note'
 
+export type MealMacros = {
+  calories?: number
+  protein?: number
+  carbs?: number
+  fat?: number
+}
+
 export type TrackerMealItem = {
   id: string
   type: 'meal'
@@ -22,9 +29,20 @@ export type TrackerMealItem = {
   icon: string
   title: string
   foods: string
+  foodItems?: string[]
+  macros?: MealMacros
+  mealTime?: string
+  mealTimer?: string
+  notes?: string
   targetQuantity?: string
+  /** Plan diet day key, e.g. monday / day-1 */
+  dietDay?: string
+  /** Display label, e.g. Monday */
+  dietDayLabel?: string
   sortOrder: number
 }
+
+export type WorkoutExercisePhase = 'warmup' | 'main' | 'cooldown' | 'finisher' | 'mobility'
 
 export type TrackerExerciseItem = {
   id: string
@@ -32,8 +50,18 @@ export type TrackerExerciseItem = {
   targetSets: number
   targetReps: string
   targetWeight?: string
+  phase: WorkoutExercisePhase
+  restSeconds?: number
+  notes?: string
   previousBest?: { reps?: number; weight?: number }
   isPr?: boolean
+}
+
+export type WorkoutPhaseBlock = {
+  id: string
+  phase: WorkoutExercisePhase
+  label: string
+  exercises: TrackerExerciseItem[]
 }
 
 export type TrackerWorkoutItem = {
@@ -42,6 +70,11 @@ export type TrackerWorkoutItem = {
   period: TrackerPeriod
   icon: string
   title: string
+  dayLabel?: string
+  focus?: string
+  workoutNotes?: string
+  phases: WorkoutPhaseBlock[]
+  /** Flat list for scoring — all exercises across phases */
   exercises: TrackerExerciseItem[]
   sortOrder: number
 }
@@ -114,10 +147,12 @@ export type TrackerSnapshot = {
   planVersion: number
   planTitle: string
   items: TrackerSnapshotItem[]
+  /** Available diet day options from the plan (when multi-day) */
+  dietDays?: { key: string; label: string }[]
 }
 
 export type MealCompletion = { completed: boolean; notes?: string }
-export type ExerciseSetLog = { reps?: number; weight?: number; rpe?: number }
+export type ExerciseSetLog = { reps?: number; weight?: number; rpe?: number; completed?: boolean }
 export type ExerciseCompletion = {
   completed: boolean
   sets: ExerciseSetLog[]
@@ -126,11 +161,17 @@ export type ExerciseCompletion = {
 export type CardioCompletion = { actual: number; completed: boolean }
 export type SupplementCompletion = { completed: boolean }
 export type WaterCompletion = { ml: number }
+export type SleepQualityLabel = 'excellent' | 'good' | 'average' | 'poor'
+export type WakeFeeling = 'fresh' | 'okay' | 'tired'
+
 export type SleepCompletion = {
   bedtime?: string
+  wakeTime?: string
   hours?: number
   quality?: number
+  qualityLabel?: SleepQualityLabel
   energy?: number
+  wakeFeeling?: WakeFeeling
 }
 
 export type TrackerCompletion = {
@@ -140,6 +181,8 @@ export type TrackerCompletion = {
   supplements?: Record<string, SupplementCompletion>
   water?: WaterCompletion
   sleep?: SleepCompletion
+  /** Which plan diet day the client is following today. null clears the selection. */
+  selectedDietDay?: string | null
 }
 
 export type TrackerCategoryScores = {

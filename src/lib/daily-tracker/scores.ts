@@ -1,3 +1,4 @@
+import { areAllSetsComplete, getExerciseSets } from './exercise-utils'
 import type {
   TrackerCategoryScores,
   TrackerCompletion,
@@ -14,15 +15,26 @@ export function calculateTrackerScores(
   snapshot: TrackerSnapshot,
   completion: TrackerCompletion
 ): { scores: TrackerCategoryScores; overall: number } {
-  const meals = snapshot.items.filter((i) => i.type === 'meal')
+  const allMeals = snapshot.items.filter((i) => i.type === 'meal')
+  const hasDietDays = Boolean(snapshot.dietDays?.length) || allMeals.some((m) => m.type === 'meal' && m.dietDay)
+  const meals =
+    hasDietDays && completion.selectedDietDay
+      ? allMeals.filter((m) => m.type === 'meal' && m.dietDay === completion.selectedDietDay)
+      : hasDietDays
+        ? []
+        : allMeals
   const mealDone = meals.filter((m) => completion.meals?.[m.id]?.completed).length
-  const diet = pct(mealDone, meals.length)
+  const diet = meals.length > 0 ? pct(mealDone, meals.length) : hasDietDays ? 0 : pct(mealDone, allMeals.length)
 
   const workout = snapshot.items.find((i) => i.type === 'workout')
   let workoutScore = 100
   if (workout && workout.type === 'workout') {
     const total = workout.exercises.length
-    const done = workout.exercises.filter((ex) => completion.exercises?.[ex.id]?.completed).length
+    const done = workout.exercises.filter((ex) => {
+      const data = completion.exercises?.[ex.id]
+      if (data?.completed) return true
+      return areAllSetsComplete(ex, getExerciseSets(ex, data))
+    }).length
     workoutScore = pct(done, total)
   }
 
@@ -73,7 +85,7 @@ export function calculateTrackerScores(
   }
 
   const weights: { key: keyof TrackerCategoryScores; weight: number }[] = [
-    { key: 'diet', weight: meals.length > 0 ? 1 : 0 },
+    { key: 'diet', weight: allMeals.length > 0 ? 1 : 0 },
     { key: 'workout', weight: workout ? 1 : 0 },
     { key: 'water', weight: waterItem ? 1 : 0 },
     { key: 'supplements', weight: supps.length > 0 ? 1 : 0 },

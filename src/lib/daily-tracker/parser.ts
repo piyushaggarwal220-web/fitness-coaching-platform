@@ -13,6 +13,9 @@ import type {
   TrackerWaterItem,
   TrackerWorkoutItem,
   TrackerCompletion,
+  MealMacros,
+  WorkoutExercisePhase,
+  WorkoutPhaseBlock,
 } from './types'
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
@@ -21,119 +24,500 @@ function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48)
 }
 
-function parseMeals(diet: string): TrackerMealItem[] {
-  if (!diet.trim()) return []
-  const lines = diet.replace(/\r\n/g, '\n').split('\n')
+function parseMealMacros(text: string): { macros: MealMacros; cleaned: string } {
+  const macros: MealMacros = {}
+  let cleaned = text
+
+  const kcalMatch = text.match(/(?:~|≈|about\s*)?(\d{2,4})\s*(?:kcal|calories?)/i)
+  if (kcalMatch) macros.calories = Number(kcalMatch[1])
+
+  const proteinMatch = text.match(/(?:P|Protein)[:\s]+(\d+)\s*g/i)
+  if (proteinMatch) macros.protein = Number(proteinMatch[1])
+
+  const carbsMatch = text.match(/(?:C|Carbs?)[:\s]+(\d+)\s*g/i)
+  if (carbsMatch) macros.carbs = Number(carbsMatch[1])
+
+  const fatMatch = text.match(/(?:F|Fat)[:\s]+(\d+)\s*g/i)
+  if (fatMatch) macros.fat = Number(fatMatch[1])
+
+  cleaned = cleaned
+    .replace(/\(P:\s*\d+g\s*\|\s*C:\s*\d+g\s*\|\s*F:\s*\d+g\s*\|\s*~?\d+\s*kcal\)/gi, '')
+    .replace(/(?:~|≈)?\d{2,4}\s*(?:kcal|calories?)/gi, '')
+    .replace(/(?:P|Protein)[:\s]+\d+\s*g/gi, '')
+    .replace(/(?:C|Carbs?)[:\s]+\d+\s*g/gi, '')
+    .replace(/(?:F|Fat)[:\s]+\d+\s*g/gi, '')
+    .trim()
+
+  return { macros, cleaned }
+}
+
+function parseFoodItems(text: string): string[] {
+  const lines = text
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((l) => l.replace(/^[-*•]\s*/, '').trim())
+    .filter((l) => l.length > 0 && !/^(note|timing|time)\s*:/i.test(l))
+
+  if (lines.length > 1) return lines
+  if (lines.length === 1 && lines[0]!.includes(',')) {
+    return lines[0]!.split(',').map((s) => s.trim()).filter(Boolean)
+  }
+  return lines
+}
+
+function parseMealTime(text: string): { mealTime?: string; mealTimer?: string; notes?: string; body: string } {
+  let body = text
+  let mealTime: string | undefined
+  let mealTimer: string | undefined
+  let notes: string | undefined
+
+  const timeMatch = text.match(/(?:^|\n)\s*(?:time|timing)\s*:\s*(.+)/i)
+  if (timeMatch) {
+    mealTime = timeMatch[1]!.trim()
+    body = body.replace(timeMatch[0], '')
+  }
+
+  const timerMatch = text.match(/(\d+)\s*min(?:ute)?s?\s*(?:before|after|pre|post)/i)
+  if (timerMatch) mealTimer = timerMatch[0]
+
+  const noteMatch = text.match(/(?:^|\n)\s*note\s*:\s*(.+)/i)
+  if (noteMatch) {
+    notes = noteMatch[1]!.trim()
+    body = body.replace(noteMatch[0], '')
+  }
+
+  return { mealTime, mealTimer, notes, body: body.trim() }
+}
+
+function enrichMeal(meal: TrackerMealItem, foods: string): TrackerMealItem {
+  const { mealTime, mealTimer, notes, body } = parseMealTime(foods)
+  const { macros, cleaned } = parseMealMacros(body)
+  const foodItems = parseFoodItems(cleaned)
+  const hasMacros = Object.values(macros).some((v) => v != null)
+
+  return {
+    ...meal,
+    foods: cleaned || foods,
+    foodItems: foodItems.length > 0 ? foodItems : undefined,
+    macros: hasMacros ? macros : undefined,
+    mealTime,
+    mealTimer,
+    notes,
+  }
+}
+
+function stripMarkdownDecorators(value: string): string {
+  return value.replace(/^\*{1,2}|\*{1,2}$/g, '').replace(/^#{1,3}\s*/, '').trim()
+}
+
+const MEAL_NAME_PATTERN =
+  'breakfast|lunch|dinner|snack|late snack|evening snack|mid[- ]?morning|morning meal|evening meal|pre[- ]?workout|post[- ]?workout'
+
+function capitalizeLabel(value: string): string {
+  return value.replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function parseDietDayBlocks(diet: string): { key: string; label: string; body: string }[] {
+  const normalized = diet.replace(/\r\n/g, '\n')
+  const blocks = normalized.split(
+    /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b)/i
+  )
+
+  const days: { key: string; label: string; body: string }[] = []
+
+  for (const block of blocks) {
+    const lines = block.split('\n')
+    const first = stripMarkdownDecorators(lines[0]?.trim() ?? '')
+    const dayMatch = first.match(/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b/i)
+    if (!dayMatch) continue
+    const raw = dayMatch[1]!.toLowerCase().replace(/\s+/g, ' ')
+    const key = slug(raw)
+    const label = capitalizeLabel(raw)
+    const body = lines.slice(1).join('\n').trim()
+    if (!body) continue
+    days.push({ key, label, body })
+  }
+
+  if (days.length > 0) return days
+  return [{ key: 'default', label: 'Today', body: diet.trim() }]
+}
+
+function parseMealsInDay(
+  dietBody: string,
+  dayKey: string,
+  dayLabel: string
+): TrackerMealItem[] {
+  if (!dietBody.trim()) return []
+  const lines = dietBody.replace(/\r\n/g, '\n').split('\n')
   const meals: TrackerMealItem[] = []
-  const headers = /^(?:#{1,3}\s*)?(breakfast|lunch|dinner|snack|morning meal|evening meal|pre-workout|post-workout)\s*:?\s*$/i
+  const headers = new RegExp(
+    `^(?:\\*{0,2}|#{1,3}\\s*)?(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\))?\\s*:?\\s*\\*{0,2}\\s*$`,
+    'i'
+  )
   const periodMap: Record<string, TrackerPeriod> = {
     breakfast: 'morning',
     'morning meal': 'morning',
+    'mid-morning': 'morning',
+    'mid morning': 'morning',
     'pre-workout': 'morning',
+    'pre workout': 'morning',
     lunch: 'lunch',
     snack: 'afternoon',
+    'evening snack': 'evening',
+    'late snack': 'night',
     dinner: 'evening',
     'evening meal': 'evening',
     'post-workout': 'evening',
+    'post workout': 'evening',
   }
 
-  let current: { name: string; lines: string[] } | null = null
+  let current: { name: string; mealTime?: string; lines: string[] } | null = null
   const flush = () => {
     if (!current) return
     const foods = current.lines.join('\n').trim()
     if (!foods) return
     const key = current.name.toLowerCase()
     meals.push({
-      id: `meal-${slug(current.name)}`,
+      id: `meal-${dayKey}-${slug(current.name)}`,
       type: 'meal',
       period: periodMap[key] ?? 'lunch',
       icon: '🥗',
-      title: current.name.replace(/\b\w/g, (c) => c.toUpperCase()),
+      title: capitalizeLabel(current.name),
       foods,
+      mealTime: current.mealTime,
+      dietDay: dayKey === 'default' ? undefined : dayKey,
+      dietDayLabel: dayKey === 'default' ? undefined : dayLabel,
       sortOrder: meals.length,
     })
     current = null
   }
 
   for (const line of lines) {
-    const trimmed = line.trim()
-    const match = trimmed.match(headers)
+    const trimmed = stripMarkdownDecorators(line.trim())
+    const match = trimmed.match(headers) ?? line.trim().match(headers)
     if (match) {
       flush()
-      current = { name: match[1]!, lines: [] }
+      current = {
+        name: match[1]!,
+        mealTime: match[2]?.trim(),
+        lines: [],
+      }
+      continue
+    }
+    const inline = trimmed.match(
+      new RegExp(
+        `^(?:\\*{0,2}|#{1,3}\\s*)?(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\))?\\s*:\\s*(.+)`,
+        'i'
+      )
+    )
+    if (inline) {
+      flush()
+      const mealKey = inline[1]!.toLowerCase()
+      const foods = inline[3]!.trim()
+      meals.push(
+        enrichMeal(
+          {
+            id: `meal-${dayKey}-${slug(inline[1]!)}`,
+            type: 'meal',
+            period: periodMap[mealKey] ?? 'lunch',
+            icon: '🥗',
+            title: capitalizeLabel(inline[1]!),
+            foods,
+            mealTime: inline[2]?.trim(),
+            dietDay: dayKey === 'default' ? undefined : dayKey,
+            dietDayLabel: dayKey === 'default' ? undefined : dayLabel,
+            sortOrder: meals.length,
+          },
+          foods
+        )
+      )
+      current = null
       continue
     }
     if (current) current.lines.push(line)
   }
   flush()
 
-  if (meals.length === 0 && diet.trim()) {
-    meals.push({
-      id: 'meal-daily-nutrition',
-      type: 'meal',
-      period: 'morning',
-      icon: '🥗',
-      title: 'Daily Nutrition',
-      foods: diet.trim(),
-      sortOrder: 0,
-    })
+  return meals.map((m) => enrichMeal(m, m.foods))
+}
+
+function parseMeals(diet: string): {
+  meals: TrackerMealItem[]
+  dietDays: { key: string; label: string }[]
+} {
+  if (!diet.trim()) return { meals: [], dietDays: [] }
+
+  const dayBlocks = parseDietDayBlocks(diet)
+  const meals: TrackerMealItem[] = []
+  const dietDays: { key: string; label: string }[] = []
+
+  for (const day of dayBlocks) {
+    const dayMeals = parseMealsInDay(day.body, day.key, day.label)
+    if (dayMeals.length === 0) continue
+    meals.push(...dayMeals)
+    if (day.key !== 'default') {
+      dietDays.push({ key: day.key, label: day.label })
+    }
   }
 
-  return meals
+  // Fallback: whole diet has meal headers but no day headers matched usefully
+  if (meals.length === 0) {
+    const fallback = parseMealsInDay(diet, 'default', 'Today')
+    return { meals: fallback, dietDays: [] }
+  }
+
+  return { meals, dietDays }
+}
+
+const PHASE_HEADERS =
+  /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|working\s+sets?|strength|hypertrophy|accessory|accessories|compound|cool[- ]?down|post[- ]?workout|recovery|stretch(?:ing)?|finisher)\s*:?\s*$/i
+
+const PHASE_MAP: Record<string, WorkoutExercisePhase> = {
+  'warm-up': 'warmup',
+  warmup: 'warmup',
+  activation: 'warmup',
+  prep: 'warmup',
+  mobility: 'mobility',
+  main: 'main',
+  'main workout': 'main',
+  'working sets': 'main',
+  'working set': 'main',
+  strength: 'main',
+  hypertrophy: 'main',
+  accessory: 'main',
+  accessories: 'main',
+  compound: 'main',
+  cooldown: 'cooldown',
+  'cool-down': 'cooldown',
+  'post-workout': 'cooldown',
+  recovery: 'cooldown',
+  stretching: 'cooldown',
+  stretch: 'cooldown',
+  finisher: 'finisher',
+}
+
+const PHASE_LABELS: Record<WorkoutExercisePhase, string> = {
+  warmup: 'Warm-up',
+  mobility: 'Mobility',
+  main: 'Main Workout',
+  finisher: 'Finisher',
+  cooldown: 'Cool-down',
+}
+
+function capitalizeDay(value: string): string {
+  return value.replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: number): TrackerExerciseItem | null {
+  const trimmed = stripMarkdownDecorators(line.replace(/^[-*•]\s*/, '').trim())
+  if (!trimmed || trimmed.startsWith('#')) return null
+  // Skip day / phase headers — they are handled separately
+  if (/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(trimmed)) {
+    return null
+  }
+  if (PHASE_HEADERS.test(trimmed)) return null
+  // Skip multi-exercise core dump lines; handled by splitCoreExercises
+  if (/^core\s*:/i.test(trimmed) && /,/.test(trimmed)) return null
+
+  // AI coach format: "Barbell Bench Press: 5 sets x 5 reps (...)"
+  const setsReps =
+    /^(.+?)\s*:?\s*(\d+)\s*sets?\s*[x×]\s*(\d+(?:\s*-\s*\d+)?|AMRAP|\d+\s*s)(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$/i
+  // Compact format: "Bench Press 4x8 @ 60 kg"
+  const compact =
+    /^(.+?)\s+(\d+)\s*[x×]\s*(\d+(?:-\d+)?|AMRAP|\d+s)(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[-–—]\s*(.+))?/i
+
+  const match = trimmed.match(setsReps) ?? trimmed.match(compact)
+  if (!match) return null
+
+  let name = match[1]!.trim().replace(/:$/, '').trim()
+  // Drop leading labels like "Core: "
+  name = name.replace(/^(?:core|finisher|accessory)\s*:\s*/i, '').trim()
+  if (!name || name.length < 2) return null
+
+  const restMatch = trimmed.match(/(?:rest|rir)\s*[:.]?\s*(\d+)\s*s?/i)
+  const parenNotes = name.match(/^(.+?)\s*\((.+)\)$/)
+  const cleanName = parenNotes?.[1]?.trim() ?? name
+  const inlineNotes = parenNotes?.[2]?.trim() ?? match[5]?.trim()
+  const reps = match[3]!.replace(/\s+/g, '')
+
+  return {
+    id: `ex-${phase}-${slug(cleanName)}-${index}`,
+    name: cleanName,
+    targetSets: Number(match[2]),
+    targetReps: reps,
+    targetWeight: match[4] ? `${match[4]} kg` : undefined,
+    phase,
+    restSeconds: restMatch ? Number(restMatch[1]) : undefined,
+    notes: inlineNotes,
+  }
+}
+
+/** Split "Core: Move A 3 sets x 12, Move B 2 sets x 10" into separate exercise lines. */
+function expandCompositeExerciseLines(line: string): string[] {
+  const trimmed = stripMarkdownDecorators(line.replace(/^[-*•]\s*/, '').trim())
+  const coreMatch = trimmed.match(/^core\s*:\s*(.+)$/i)
+  if (!coreMatch || !coreMatch[1]!.includes(',')) return [line]
+  return coreMatch[1]!
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+}
+
+function parseWorkoutPhases(section: string): {
+  dayLabel?: string
+  focus?: string
+  workoutNotes?: string
+  phases: WorkoutPhaseBlock[]
+  exercises: TrackerExerciseItem[]
+} {
+  const lines = section.replace(/\r\n/g, '\n').split('\n')
+  const phaseBuckets = new Map<WorkoutExercisePhase, TrackerExerciseItem[]>()
+  const noteLines: string[] = []
+  let currentPhase: WorkoutExercisePhase = 'main'
+  let dayLabel: string | undefined
+  let focus: string | undefined
+  let headerConsumed = false
+  let exerciseIndex = 0
+
+  const addExercise = (ex: TrackerExerciseItem) => {
+    const list = phaseBuckets.get(ex.phase) ?? []
+    list.push(ex)
+    phaseBuckets.set(ex.phase, list)
+    exerciseIndex++
+  }
+
+  for (const rawLine of lines) {
+    const trimmed = stripMarkdownDecorators(rawLine.trim())
+    if (!trimmed) continue
+
+    if (!headerConsumed) {
+      const dayFocusMatch = trimmed.match(
+        /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\s*[-–—:]\s*(.+)/i
+      )
+      if (dayFocusMatch) {
+        dayLabel = capitalizeDay(dayFocusMatch[1]!)
+        focus = dayFocusMatch[2]!.trim().replace(/\*+$/, '').trim()
+        headerConsumed = true
+        continue
+      }
+      const dayOnly = trimmed.match(
+        /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\s*$/i
+      )
+      if (dayOnly) {
+        dayLabel = capitalizeDay(dayOnly[1]!)
+        headerConsumed = true
+        continue
+      }
+      const focusOnly = parseWorkoutFocus(section)
+      if (focusOnly && stripMarkdownDecorators(trimmed.replace(/^#{1,3}\s*/, '')) === focusOnly) {
+        focus = focusOnly
+        headerConsumed = true
+        continue
+      }
+      headerConsumed = true
+    }
+
+    const phaseMatch = trimmed.match(PHASE_HEADERS)
+    if (phaseMatch) {
+      const key = phaseMatch[1]!.toLowerCase().replace(/\s+/g, ' ')
+      currentPhase = PHASE_MAP[key] ?? 'main'
+      continue
+    }
+
+    let matchedExercise = false
+    for (const candidate of expandCompositeExerciseLines(trimmed)) {
+      const exercise = parseExerciseLine(candidate, currentPhase, exerciseIndex)
+      if (exercise) {
+        addExercise(exercise)
+        matchedExercise = true
+      }
+    }
+    if (matchedExercise) continue
+
+    if (!trimmed.startsWith('-') && !trimmed.startsWith('•') && trimmed.length > 10) {
+      noteLines.push(stripMarkdownDecorators(trimmed.replace(/^#{1,3}\s*/, '')))
+    }
+  }
+
+  const phaseOrder: WorkoutExercisePhase[] = ['warmup', 'mobility', 'main', 'finisher', 'cooldown']
+  const phases: WorkoutPhaseBlock[] = phaseOrder
+    .filter((p) => (phaseBuckets.get(p)?.length ?? 0) > 0)
+    .map((p) => ({
+      id: `phase-${p}`,
+      phase: p,
+      label: PHASE_LABELS[p],
+      exercises: phaseBuckets.get(p)!,
+    }))
+
+  const exercises = phases.flatMap((p) => p.exercises)
+
+  return {
+    dayLabel,
+    focus,
+    workoutNotes: noteLines.length > 0 ? noteLines.join('\n') : undefined,
+    phases,
+    exercises,
+  }
 }
 
 function parseExercises(text: string): TrackerExerciseItem[] {
-  const exercises: TrackerExerciseItem[] = []
-  const lines = text.replace(/\r\n/g, '\n').split('\n')
-  const pattern =
-    /^[-*•]?\s*(.+?)\s+(\d+)\s*[x×]\s*(\d+(?:-\d+)?)(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?/i
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const match = trimmed.match(pattern)
-    if (!match) continue
-    const name = match[1]!.trim()
-    exercises.push({
-      id: `ex-${slug(name)}`,
-      name,
-      targetSets: Number(match[2]),
-      targetReps: match[3]!,
-      targetWeight: match[4] ? `${match[4]} kg` : undefined,
-    })
-  }
-
-  return exercises
+  return parseWorkoutPhases(text).exercises
 }
 
 function pickWorkoutForToday(workoutText: string, referenceDate = new Date()): string {
   if (!workoutText.trim()) return ''
   const dayName = DAY_NAMES[referenceDate.getDay()]!
-  const blocks = workoutText.split(/\n(?=(?:#{1,3}\s*)?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b)/i)
+  const programDay = referenceDate.getDay() || 7 // Sunday → Day 7 if plan is Day 1–7 Mon-first
+  // Split on Day N / weekday headers even when wrapped in markdown bold (**Day 1 — ...**)
+  const blocks = workoutText.split(
+    /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b)/i
+  )
   if (blocks.length <= 1) return workoutText
 
   const match = blocks.find((block) => {
-    const first = block.split('\n')[0]?.toLowerCase() ?? ''
-    return first.includes(dayName) || first.includes(`day ${referenceDate.getDay() || 7}`)
+    const first = stripMarkdownDecorators(block.split('\n')[0] ?? '').toLowerCase()
+    return first.includes(dayName) || first.includes(`day ${programDay}`)
   })
-  return match?.trim() || blocks[0]!.trim()
+  return match?.trim() || blocks.find((b) => /day\s*\d+/i.test(b))?.trim() || blocks[0]!.trim()
+}
+
+function parseWorkoutFocus(section: string): string | undefined {
+  const firstLine = section.split('\n').find((l) => l.trim())?.trim() ?? ''
+  if (!firstLine) return undefined
+  const withoutDay = firstLine
+    .replace(/^#{1,3}\s*/, '')
+    .replace(
+      /^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*[-–—:]\s*/i,
+      ''
+    )
+    .trim()
+  if (!withoutDay || /^[-*•]/.test(withoutDay)) return undefined
+  if (/^\d+\s*[x×]/.test(withoutDay)) return undefined
+  return withoutDay
 }
 
 function parseWorkout(workout: string, referenceDate = new Date()): TrackerWorkoutItem | null {
   const section = pickWorkoutForToday(workout, referenceDate)
-  const exercises = parseExercises(section)
-  if (exercises.length === 0 && !section.trim()) return null
+  if (!section.trim()) return null
+
+  const parsed = parseWorkoutPhases(section)
+  if (parsed.exercises.length === 0) return null
+
+  const dayName = DAY_NAMES[referenceDate.getDay()]!
+  const dayLabel = parsed.dayLabel ?? capitalizeDay(dayName)
+  const focus = parsed.focus ?? parseWorkoutFocus(section)
 
   return {
     id: 'workout-today',
     type: 'workout',
     period: 'workout',
     icon: '🏋',
-    title: exercises.length > 0 ? "Today's Workout" : 'Training',
-    exercises:
-      exercises.length > 0
-        ? exercises
-        : [{ id: 'ex-session', name: 'Complete training session', targetSets: 1, targetReps: '1' }],
+    title: "Today's Workout",
+    dayLabel,
+    focus,
+    workoutNotes: parsed.workoutNotes,
+    phases: parsed.phases,
+    exercises: parsed.exercises,
     sortOrder: 50,
   }
 }
@@ -181,22 +565,51 @@ function parseCardio(cardio: string): TrackerCardioItem[] {
 function parseSupplements(supplements: string): TrackerSupplementItem[] {
   if (!supplements.trim()) return []
   const lines = supplements.replace(/\r\n/g, '\n').split('\n').map((l) => l.trim()).filter(Boolean)
-  return lines.map((line) => {
+  const periodHeaders = /^(?:#{1,3}\s*)?(morning|afternoon|evening|night|midday|am|pm)\s*:?\s*$/i
+  const periodFromHeader: Record<string, TrackerPeriod> = {
+    morning: 'morning',
+    am: 'morning',
+    midday: 'lunch',
+    afternoon: 'afternoon',
+    evening: 'evening',
+    pm: 'evening',
+    night: 'night',
+  }
+
+  let currentPeriod: TrackerPeriod = 'morning'
+  const items: TrackerSupplementItem[] = []
+
+  for (const line of lines) {
+    const periodMatch = line.match(periodHeaders)
+    if (periodMatch) {
+      const key = periodMatch[1]!.toLowerCase()
+      currentPeriod = periodFromHeader[key] ?? 'morning'
+      continue
+    }
+
     const lower = line.toLowerCase()
-    let period: TrackerPeriod = 'morning'
-    if (lower.includes('evening') || lower.includes('pm')) period = 'evening'
+    let period = currentPeriod
+    if (lower.includes('evening') || /\bpm\b/.test(lower)) period = 'evening'
     if (lower.includes('night') || lower.includes('bed')) period = 'night'
-    const doseMatch = line.match(/(\d+\s*(?:mg|g|iu|ml|scoop[s]?)[^.]*)/i)
-    return {
-      id: `supp-${slug(line)}`,
+    if (lower.includes('morning') || /\bam\b/.test(lower)) period = 'morning'
+
+    const cleaned = line.replace(/^[-*•]\s*/, '').trim()
+    if (!cleaned || periodHeaders.test(cleaned)) continue
+
+    const doseMatch = cleaned.match(/(\d+\s*(?:mg|g|iu|ml|scoop[s]?)[^.]*)/i)
+    const title = cleaned.split(/[-–—:]/)[0]?.trim() || cleaned
+    items.push({
+      id: `supp-${slug(title)}-${items.length}`,
       type: 'supplement',
       period,
       icon: '💊',
-      title: line.split(/[-–—:]/)[0]?.trim() || line,
+      title,
       dose: doseMatch?.[1],
-      sortOrder: period === 'morning' ? 5 : period === 'evening' ? 70 : 90,
-    }
-  })
+      sortOrder: period === 'morning' ? 5 + items.length : period === 'evening' ? 70 + items.length : 90 + items.length,
+    })
+  }
+
+  return items
 }
 
 function parseWaterTarget(
@@ -241,7 +654,8 @@ export function buildTrackerSnapshot(
   const sections = resolvePlanSectionsFromPlan(plan)
   const items: TrackerSnapshotItem[] = []
 
-  for (const meal of parseMeals(sections.diet)) items.push(meal)
+  const { meals, dietDays } = parseMeals(sections.diet)
+  for (const meal of meals) items.push(meal)
   const workout = parseWorkout(sections.workout, referenceDate)
   if (workout) items.push(workout)
   for (const cardio of parseCardio(sections.cardio)) items.push(cardio)
@@ -280,6 +694,7 @@ export function buildTrackerSnapshot(
     planVersion: plan.version,
     planTitle: plan.title,
     items,
+    dietDays: dietDays.length > 0 ? dietDays : undefined,
   }
 }
 
@@ -291,5 +706,11 @@ export function mergeCompletion(previous: TrackerCompletion, next: TrackerComple
     supplements: { ...previous.supplements, ...next.supplements },
     water: next.water ?? previous.water,
     sleep: { ...previous.sleep, ...next.sleep },
+    selectedDietDay:
+      next.selectedDietDay === null
+        ? undefined
+        : next.selectedDietDay !== undefined
+          ? next.selectedDietDay
+          : previous.selectedDietDay,
   }
 }

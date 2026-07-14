@@ -8,6 +8,7 @@ const MIGRATION_FILES = [
   'supabase/migrations/20260708200000_complexity_score_system.sql',
   'supabase/migrations/20260712100000_recurring_checkin_system.sql',
   'supabase/migrations/20260713100000_premium_polish_chat_fixes.sql',
+  'supabase/migrations/20260714120000_create_daily_tracker.sql',
 ]
 
 function loadEnvLocal() {
@@ -64,7 +65,10 @@ async function verifyCheckinSchema(admin) {
     .from('journey_entries')
     .select('id, client_id, checkin_id, entry_date, plan_version')
     .limit(0)
-  return !journeyError
+  if (journeyError) return false
+
+  const { error: trackerError } = await admin.from('daily_tracker_days').select('id').limit(0)
+  return !trackerError
 }
 
 async function main() {
