@@ -693,6 +693,7 @@ export function buildTrackerSnapshot(
     planId: plan.id,
     planVersion: plan.version,
     planTitle: plan.title,
+    planUpdatedAt: plan.updated_at,
     items,
     dietDays: dietDays.length > 0 ? dietDays : undefined,
   }

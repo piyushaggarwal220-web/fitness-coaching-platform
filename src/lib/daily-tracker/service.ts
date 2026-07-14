@@ -121,8 +121,15 @@ export async function getOrCreateTodayTracker(
     const newHasWorkout = snapshot.items.some((item) => item.type === 'workout')
     const existingHasMeals = existingDay.snapshot.items.some((item) => item.type === 'meal')
     const newHasMeals = snapshot.items.some((item) => item.type === 'meal')
+    const snapshotPlanStamp =
+      existingDay.snapshot.planUpdatedAt ?? existingDay.snapshot.generatedAt
+    const planEditedAfterSnapshot =
+      Boolean(plan.updated_at) &&
+      new Date(plan.updated_at).getTime() > new Date(snapshotPlanStamp).getTime()
     const needsRebuild =
       existingDay.plan_version < plan.version ||
+      existingDay.plan_id !== plan.id ||
+      planEditedAfterSnapshot ||
       (newHasWorkout && !existingHasWorkout) ||
       (newHasMeals && !existingHasMeals) ||
       snapshot.items.length > existingDay.snapshot.items.length

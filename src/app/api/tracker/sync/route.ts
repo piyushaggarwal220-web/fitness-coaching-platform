@@ -6,7 +6,7 @@ import type { OnboardingProfile, Plan } from '@/types/database'
 
 type Body = { clientId?: string; planId?: string }
 
-/** Rebuild today's tracker after plan publish (server-side, bypasses client RLS). */
+/** Rebuild today's tracker after plan publish or an active-plan edit (server-side, bypasses client RLS). */
 export async function POST(request: Request) {
   const supabase = await createClient()
   const {

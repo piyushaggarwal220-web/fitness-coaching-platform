@@ -124,9 +124,13 @@ export default function CoachPlanDetailPage() {
     if (updateError) {
       setError(updateError.message);
     } else {
-      setSuccess('Plan saved.');
-      setPlan({ ...plan, ...form, updated_at: new Date().toISOString() });
+      const savedAt = new Date().toISOString();
+      setSuccess(plan.active ? 'Plan saved. Tracker updated for today.' : 'Plan saved.');
+      setPlan({ ...plan, ...form, updated_at: savedAt });
       invalidatePlanEdit(plan.client_id);
+      if (plan.active) {
+        syncTrackerAfterPlanPublish(plan.client_id, plan.id);
+      }
     }
     setSaving(false);
   };
