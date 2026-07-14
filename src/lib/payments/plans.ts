@@ -28,6 +28,7 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
     amountPaise: 90000,
     durationMonths: 3,
     saveLabel: 'Save ₹600 vs monthly',
+    popular: true,
   },
   '6_months': {
     slug: '6_months',
@@ -36,7 +37,6 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
     amountPaise: 150000,
     durationMonths: 6,
     saveLabel: 'Save ₹1,500 vs monthly',
-    popular: true,
   },
   '12_months': {
     slug: '12_months',

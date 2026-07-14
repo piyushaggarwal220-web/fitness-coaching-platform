@@ -30,8 +30,8 @@ declare global {
 function CheckoutForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialPlan = searchParams.get('plan') ?? '6_months';
-  const plan = getCoachingPlan(initialPlan) ?? getCoachingPlan('6_months')!;
+  const initialPlan = searchParams.get('plan') ?? '3_months';
+  const plan = getCoachingPlan(initialPlan) ?? getCoachingPlan('3_months')!;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
