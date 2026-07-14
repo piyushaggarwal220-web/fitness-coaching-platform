@@ -9,11 +9,11 @@ import type { TodayTrackerView } from '@/lib/daily-tracker/types'
 export function TodayProgressHeader({ view }: { view: TodayTrackerView }) {
   const { day, greeting, schedule, streak } = view
   const scores = getCategoryDisplayScores(day)
-  const sections = splitSnapshot(day.snapshot)
+  const sections = splitSnapshot(day.snapshot, day.completion)
 
   const categories = [
     { key: 'diet', label: 'Diet', percent: scores.diet, show: sections.meals.length > 0 },
-    { key: 'workout', label: 'Workout', percent: scores.workout, show: sections.workout != null },
+    { key: 'workout', label: 'Workout', percent: scores.workout, show: sections.workouts.length > 0 },
     { key: 'water', label: 'Water', percent: scores.water, show: sections.water != null },
     { key: 'cardio', label: 'Cardio', percent: scores.cardio, show: sections.cardio.length > 0 },
     { key: 'supplements', label: 'Supplements', percent: scores.supplements, show: sections.supplements.length > 0 },

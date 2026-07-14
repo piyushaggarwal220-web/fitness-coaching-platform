@@ -12,7 +12,7 @@ import { SupplementsTrackerSection } from '@/components/tracker/SupplementsTrack
 import { TodayProgressHeader } from '@/components/tracker/TodayProgressHeader'
 import { TrackerFolder } from '@/components/tracker/TrackerPrimitives'
 import { WaterTrackerSection } from '@/components/tracker/WaterTrackerSection'
-import { WorkoutTrackerSection } from '@/components/tracker/WorkoutTrackerSection'
+import { WorkoutModule } from '@/components/tracker/modules/WorkoutModule'
 import { colors } from '@/lib/design-tokens'
 import { buildMotivationMessage, getCategoryDisplayScores, splitSnapshot } from '@/lib/daily-tracker/display'
 import type { DailyTrackerDay, TodayTrackerView, TrackerCompletion } from '@/lib/daily-tracker/types'
@@ -37,7 +37,10 @@ export function DailyTrackerClient({ initialView, initialError }: Props) {
 
   const day = view?.day ?? null
 
-  const sections = useMemo(() => (day ? splitSnapshot(day.snapshot) : null), [day])
+  const sections = useMemo(
+    () => (day ? splitSnapshot(day.snapshot, day.completion) : null),
+    [day]
+  )
   const scores = useMemo(() => (day ? getCategoryDisplayScores(day) : null), [day])
   const motivation = useMemo(() => (view ? buildMotivationMessage(view) : ''), [view])
 
@@ -87,7 +90,9 @@ export function DailyTrackerClient({ initialView, initialError }: Props) {
   const workoutSubtitle = sections.workout
     ? [sections.workout.dayLabel, sections.workout.focus].filter(Boolean).join(' · ') ||
       `${sections.workout.exercises.length} exercises`
-    : undefined
+    : sections.workouts.length > 1
+      ? "Choose which day's workout you're following"
+      : undefined
 
   return (
     <ClientShell title="Today's Tracker">
@@ -113,7 +118,7 @@ export function DailyTrackerClient({ initialView, initialError }: Props) {
         </TrackerFolder>
       )}
 
-      {sections.workout && (
+      {sections.workouts.length > 0 && (
         <TrackerFolder
           title="Workout Tracker"
           subtitle={workoutSubtitle}
@@ -122,8 +127,9 @@ export function DailyTrackerClient({ initialView, initialError }: Props) {
           defaultOpen
           staggerIndex={2}
         >
-          <WorkoutTrackerSection
-            workout={sections.workout}
+          <WorkoutModule
+            workouts={sections.workouts}
+            workoutDays={day.snapshot.workoutDays}
             completion={day.completion}
             workoutScore={scores.workout}
             saving={saving}

@@ -1,7 +1,9 @@
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser'
 import type { OnboardingProfile, Plan } from '@/types/database'
 import type {
+  MealMacros,
   TrackerCardioItem,
+  TrackerCompletion,
   TrackerExerciseItem,
   TrackerMealItem,
   TrackerNoteItem,
@@ -12,11 +14,10 @@ import type {
   TrackerSupplementItem,
   TrackerWaterItem,
   TrackerWorkoutItem,
-  TrackerCompletion,
-  MealMacros,
   WorkoutExercisePhase,
   WorkoutPhaseBlock,
 } from './types'
+import { DEFAULT_WARMUP_EXERCISES } from './exercise-utils'
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 
@@ -301,7 +302,7 @@ const PHASE_LABELS: Record<WorkoutExercisePhase, string> = {
   mobility: 'Mobility',
   main: 'Main Workout',
   finisher: 'Finisher',
-  cooldown: 'Cool-down',
+  cooldown: 'Post-Workout',
 }
 
 function capitalizeDay(value: string): string {
@@ -334,11 +335,19 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   name = name.replace(/^(?:core|finisher|accessory)\s*:\s*/i, '').trim()
   if (!name || name.length < 2) return null
 
-  const restMatch = trimmed.match(/(?:rest|rir)\s*[:.]?\s*(\d+)\s*s?/i)
+  const restMatch = trimmed.match(
+    /(?:rest|recover(?:y)?)\s*(?:for\s*)?(\d+)\s*(?:[-–]\s*\d+)?\s*(s|sec|secs|seconds|m|min|mins|minutes)?/i
+  )
   const parenNotes = name.match(/^(.+?)\s*\((.+)\)$/)
   const cleanName = parenNotes?.[1]?.trim() ?? name
   const inlineNotes = parenNotes?.[2]?.trim() ?? match[5]?.trim()
   const reps = match[3]!.replace(/\s+/g, '')
+  let restSeconds: number | undefined
+  if (restMatch) {
+    const amount = Number(restMatch[1])
+    const unit = (restMatch[2] ?? 's').toLowerCase()
+    restSeconds = /m/.test(unit) ? amount * 60 : amount
+  }
 
   return {
     id: `ex-${phase}-${slug(cleanName)}-${index}`,
@@ -347,7 +356,7 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     targetReps: reps,
     targetWeight: match[4] ? `${match[4]} kg` : undefined,
     phase,
-    restSeconds: restMatch ? Number(restMatch[1]) : undefined,
+    restSeconds,
     notes: inlineNotes,
   }
 }
@@ -464,21 +473,104 @@ function parseExercises(text: string): TrackerExerciseItem[] {
   return parseWorkoutPhases(text).exercises
 }
 
-function pickWorkoutForToday(workoutText: string, referenceDate = new Date()): string {
-  if (!workoutText.trim()) return ''
-  const dayName = DAY_NAMES[referenceDate.getDay()]!
-  const programDay = referenceDate.getDay() || 7 // Sunday → Day 7 if plan is Day 1–7 Mon-first
-  // Split on Day N / weekday headers even when wrapped in markdown bold (**Day 1 — ...**)
+function splitWorkoutDayBlocks(workoutText: string): { key: string; label: string; body: string }[] {
+  if (!workoutText.trim()) return []
+
   const blocks = workoutText.split(
     /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b)/i
   )
-  if (blocks.length <= 1) return workoutText
 
-  const match = blocks.find((block) => {
-    const first = stripMarkdownDecorators(block.split('\n')[0] ?? '').toLowerCase()
-    return first.includes(dayName) || first.includes(`day ${programDay}`)
-  })
-  return match?.trim() || blocks.find((b) => /day\s*\d+/i.test(b))?.trim() || blocks[0]!.trim()
+  const days: { key: string; label: string; body: string }[] = []
+  for (const block of blocks) {
+    const first = stripMarkdownDecorators(block.split('\n')[0] ?? '').trim()
+    const dayMatch = first.match(
+      /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b/i
+    )
+    if (!dayMatch) continue
+    const raw = dayMatch[1]!.toLowerCase().replace(/\s+/g, ' ')
+    days.push({ key: slug(raw), label: capitalizeLabel(raw), body: block.trim() })
+  }
+
+  if (days.length > 0) return days
+  return [{ key: 'default', label: 'Today', body: workoutText.trim() }]
+}
+
+/** Suggest which plan day matches the calendar weekday / Day N convention. */
+export function suggestedWorkoutDayKey(
+  days: { key: string; label: string }[],
+  referenceDate = new Date()
+): string | null {
+  if (days.length === 0) return null
+  const dayName = DAY_NAMES[referenceDate.getDay()]!
+  const programDay = referenceDate.getDay() || 7
+  return (
+    days.find((d) => d.key === dayName)?.key ??
+    days.find((d) => d.key === `day-${programDay}` || d.key === slug(`day ${programDay}`))?.key ??
+    days[0]!.key
+  )
+}
+
+function prefixIdsForWorkoutDay<T extends { id: string }>(items: T[], dayKey: string): T[] {
+  if (dayKey === 'default') return items
+  return items.map((item) => ({
+    ...item,
+    id: item.id.startsWith(`${dayKey}-`) ? item.id : `${dayKey}-${item.id}`,
+  }))
+}
+
+function parseWorkouts(workoutText: string): {
+  workouts: TrackerWorkoutItem[]
+  workoutDays: { key: string; label: string }[]
+} {
+  if (!workoutText.trim()) return { workouts: [], workoutDays: [] }
+
+  const sharedWarmup = extractSharedPhaseExercises(workoutText, 'warmup')
+  const sharedCooldown = extractSharedPhaseExercises(workoutText, 'cooldown')
+  const blocks = splitWorkoutDayBlocks(workoutText)
+  const workouts: TrackerWorkoutItem[] = []
+  const workoutDays: { key: string; label: string }[] = []
+
+  for (const day of blocks) {
+    const parsed = parseWorkoutPhases(day.body)
+    const merged = mergePhaseExercises(
+      parsed.phases,
+      parsed.exercises,
+      sharedWarmup,
+      sharedCooldown
+    )
+    if (merged.exercises.length === 0) continue
+
+    const phases = merged.phases.map((phase) => ({
+      ...phase,
+      id: day.key === 'default' ? phase.id : `${day.key}-${phase.id}`,
+      exercises: prefixIdsForWorkoutDay(phase.exercises, day.key),
+    }))
+    const exercises = prefixIdsForWorkoutDay(merged.exercises, day.key)
+    const dayLabel = parsed.dayLabel ?? day.label
+    const focus = parsed.focus ?? parseWorkoutFocus(day.body)
+
+    workouts.push({
+      id: day.key === 'default' ? 'workout-today' : `workout-${day.key}`,
+      type: 'workout',
+      period: 'workout',
+      icon: '🏋',
+      title: day.key === 'default' ? "Today's Workout" : `${dayLabel} Workout`,
+      dayLabel,
+      focus,
+      workoutNotes: parsed.workoutNotes,
+      workoutDay: day.key === 'default' ? undefined : day.key,
+      workoutDayLabel: day.key === 'default' ? undefined : day.label,
+      phases,
+      exercises,
+      sortOrder: 50,
+    })
+
+    if (day.key !== 'default') {
+      workoutDays.push({ key: day.key, label: day.label })
+    }
+  }
+
+  return { workouts, workoutDays }
 }
 
 function parseWorkoutFocus(section: string): string | undefined {
@@ -496,30 +588,162 @@ function parseWorkoutFocus(section: string): string | undefined {
   return withoutDay
 }
 
-function parseWorkout(workout: string, referenceDate = new Date()): TrackerWorkoutItem | null {
-  const section = pickWorkoutForToday(workout, referenceDate)
-  if (!section.trim()) return null
+function parseNarrativeMovementList(
+  blob: string,
+  phase: WorkoutExercisePhase,
+  idPrefix: string
+): TrackerExerciseItem[] {
+  const cleaned = blob
+    .replace(/\s+/g, ' ')
+    .replace(/^(?:before every session[^:]*:\s*|spend about[^:]*:\s*)/i, '')
+    .split(
+      /\b(?:Keep it flowing|Then before you hit|Here's how|Here is how|Target:)\b/i
+    )[0]!
+    .trim()
+  if (!cleaned) return []
 
-  const parsed = parseWorkoutPhases(section)
-  if (parsed.exercises.length === 0) return null
+  const parts = cleaned
+    .split(/,\s*(?:and\s+)?|(?:\s+and\s+)|;\s+|(?:\bthen\b\s+(?:move through\s+)?)/i)
+    .map((p) => p.replace(/\.$/, '').trim())
+    .filter((p) => p.length > 3 && p.length < 80)
 
-  const dayName = DAY_NAMES[referenceDate.getDay()]!
-  const dayLabel = parsed.dayLabel ?? capitalizeDay(dayName)
-  const focus = parsed.focus ?? parseWorkoutFocus(section)
+  const exercises: TrackerExerciseItem[] = []
+  let index = 0
 
-  return {
-    id: 'workout-today',
-    type: 'workout',
-    period: 'workout',
-    icon: '🏋',
-    title: "Today's Workout",
-    dayLabel,
-    focus,
-    workoutNotes: parsed.workoutNotes,
-    phases: parsed.phases,
-    exercises: parsed.exercises,
-    sortOrder: 50,
+  for (const part of parts) {
+    const duration = part.match(
+      /^(\d+)\s*(?:[-–]\s*(\d+))?\s*(?:minutes?|mins?|min)\s+(?:of\s+)?(.+)$/i
+    )
+    if (duration) {
+      const low = duration[1]!
+      const high = duration[2]
+      const name = duration[3]!
+        .replace(/\bon the treadmill\b/i, '')
+        .replace(/\bor\b.+$/i, (m) => m) // keep "walking or jogging"
+        .trim()
+      if (name.length < 3) continue
+      exercises.push({
+        id: `ex-${idPrefix}-${slug(name)}-${index}`,
+        name: capitalizeLabel(name),
+        targetSets: 1,
+        targetReps: high ? `${low}-${high} min` : `${low} min`,
+        phase,
+        restSeconds: 30,
+      })
+      index++
+      continue
+    }
+
+    const count = part.match(
+      /^(?:move through\s+)?(\d+)\s*(?:[-–]\s*(\d+))?\s+([A-Za-z][A-Za-z0-9 \-/]{1,40})$/i
+    )
+    if (count) {
+      const low = count[1]!
+      const high = count[2]
+      let name = count[3]!.trim()
+      name = name.replace(/^(?:of\s+)/i, '').replace(/\s+each(?:\s+\w+)?$/i, '').trim()
+      if (/^(easy|light|about|this|the|your)\b/i.test(name) && name.length < 12) continue
+      exercises.push({
+        id: `ex-${idPrefix}-${slug(name)}-${index}`,
+        name: capitalizeLabel(name),
+        targetSets: 1,
+        targetReps: high ? `${low}-${high}` : low,
+        phase,
+        restSeconds: phase === 'warmup' ? 20 : 30,
+      })
+      index++
+    }
   }
+
+  return exercises
+}
+
+/** Pull shared warm-up / post-workout blocks from the overall plan (outside day lists). */
+function extractSharedPhaseExercises(
+  fullWorkout: string,
+  phase: 'warmup' | 'cooldown'
+): TrackerExerciseItem[] {
+  const text = fullWorkout.replace(/\r\n/g, '\n')
+  const patterns =
+    phase === 'warmup'
+      ? [
+          /(?:before every session[^\n]*warmup|warmup routine|warm[- ]?up(?:\s+routine)?)[:\s]+([\s\S]+?)(?=\n\s*\n(?:here's how|here is how|\*\*day|day\s*\d+|monday|tuesday)|$)/i,
+          /(?:##\s*)?warmup[^\n]*\n([\s\S]+?)(?=\n\s*##|\n\s*\*\*day|\n\s*day\s*\d+|$)/i,
+        ]
+      : [
+          /(?:^|\n)(?:#{1,3}\s*|\*{0,2})?(?:post[- ]?workout|cool[- ]?down|cooldown)(?:\s+routine)?\*{0,2}\s*[:\-–—]\s*([\s\S]+?)(?=\n\s*(?:#{1,3}|\*{0,2})?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday|breakfast)|\n\s*\n\s*\n|$)/im,
+          /(?:##\s*)?(?:post[- ]?workout|cool[- ]?down|cooldown)[^\n]*\n([\s\S]+?)(?=\n\s*##|\n\s*\*\*day|\n\s*day\s*\d+|$)/i,
+        ]
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern)
+    if (!match?.[1]) continue
+
+    const block = match[1].trim()
+    // Prefer structured exercise lines inside the block
+    const structured = parseWorkoutPhases(
+      `${phase === 'warmup' ? 'Warm-up' : 'Post-Workout'}\n${block}`
+    ).exercises.filter((ex) => ex.phase === phase || ex.phase === 'main')
+
+    if (structured.length > 0) {
+      return structured
+        .filter((ex) => !/steps|intensity|rep ranges/i.test(ex.name))
+        .map((ex, idx) => ({
+          ...ex,
+          phase,
+          id: `ex-${phase}-shared-${slug(ex.name)}-${idx}`,
+          restSeconds: ex.restSeconds ?? (phase === 'warmup' ? 30 : 45),
+        }))
+    }
+
+    const narrative = parseNarrativeMovementList(block, phase, `${phase}-shared`)
+    if (narrative.length > 0) return narrative
+  }
+
+  return []
+}
+
+function mergePhaseExercises(
+  dayPhases: WorkoutPhaseBlock[],
+  dayExercises: TrackerExerciseItem[],
+  sharedWarmup: TrackerExerciseItem[],
+  sharedCooldown: TrackerExerciseItem[]
+): { phases: WorkoutPhaseBlock[]; exercises: TrackerExerciseItem[] } {
+  const byPhase = new Map<WorkoutExercisePhase, TrackerExerciseItem[]>()
+
+  const add = (ex: TrackerExerciseItem) => {
+    const list = byPhase.get(ex.phase) ?? []
+    list.push(ex)
+    byPhase.set(ex.phase, list)
+  }
+
+  for (const ex of sharedWarmup) add(ex)
+  for (const block of dayPhases) {
+    for (const ex of block.exercises) add(ex)
+  }
+  // Day exercises not already in blocks (shouldn't happen) + shared cooldown last
+  for (const ex of dayExercises) {
+    const exists = (byPhase.get(ex.phase) ?? []).some((e) => e.id === ex.id)
+    if (!exists) add(ex)
+  }
+  for (const ex of sharedCooldown) add(ex)
+
+  // Always include a warm-up block — use plan warmup when present, otherwise defaults
+  if ((byPhase.get('warmup')?.length ?? 0) === 0) {
+    for (const ex of DEFAULT_WARMUP_EXERCISES) add(ex)
+  }
+
+  const phaseOrder: WorkoutExercisePhase[] = ['warmup', 'mobility', 'main', 'finisher', 'cooldown']
+  const phases: WorkoutPhaseBlock[] = phaseOrder
+    .filter((p) => (byPhase.get(p)?.length ?? 0) > 0)
+    .map((p) => ({
+      id: `phase-${p}`,
+      phase: p,
+      label: PHASE_LABELS[p],
+      exercises: byPhase.get(p)!,
+    }))
+
+  return { phases, exercises: phases.flatMap((p) => p.exercises) }
 }
 
 function parseCardio(cardio: string): TrackerCardioItem[] {
@@ -656,8 +880,8 @@ export function buildTrackerSnapshot(
 
   const { meals, dietDays } = parseMeals(sections.diet)
   for (const meal of meals) items.push(meal)
-  const workout = parseWorkout(sections.workout, referenceDate)
-  if (workout) items.push(workout)
+  const { workouts, workoutDays } = parseWorkouts(sections.workout)
+  for (const workout of workouts) items.push(workout)
   for (const cardio of parseCardio(sections.cardio)) items.push(cardio)
   for (const supp of parseSupplements(sections.supplements)) items.push(supp)
 
@@ -696,6 +920,7 @@ export function buildTrackerSnapshot(
     planUpdatedAt: plan.updated_at,
     items,
     dietDays: dietDays.length > 0 ? dietDays : undefined,
+    workoutDays: workoutDays.length > 0 ? workoutDays : undefined,
   }
 }
 
@@ -713,5 +938,17 @@ export function mergeCompletion(previous: TrackerCompletion, next: TrackerComple
         : next.selectedDietDay !== undefined
           ? next.selectedDietDay
           : previous.selectedDietDay,
+    selectedWorkoutDay:
+      next.selectedWorkoutDay === null
+        ? undefined
+        : next.selectedWorkoutDay !== undefined
+          ? next.selectedWorkoutDay
+          : previous.selectedWorkoutDay,
+    workoutSession:
+      next.workoutSession === null
+        ? undefined
+        : next.workoutSession !== undefined
+          ? { ...previous.workoutSession, ...next.workoutSession }
+          : previous.workoutSession,
   }
 }

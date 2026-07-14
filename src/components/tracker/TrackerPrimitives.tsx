@@ -248,37 +248,48 @@ export function ExpandableRow({
         overflow: 'hidden',
       }}
     >
-      <button
-        type="button"
-        onClick={onToggle}
+      <div
         style={{
-          width: '100%',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
           padding: '14px 16px',
-          background: 'transparent',
-          border: 'none',
-          color: colors.textPrimary,
-          cursor: 'pointer',
-          textAlign: 'left',
         }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{title}</div>
-          {subtitle && <div style={{ marginTop: 4, fontSize: 12, color: colors.textMuted }}>{subtitle}</div>}
-        </div>
-        {right}
-        <ChevronDown
-          size={20}
-          color={colors.textMuted}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
           style={{
-            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: transition('fast', 'transform'),
-            flexShrink: 0,
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: 0,
+            background: 'transparent',
+            border: 'none',
+            color: colors.textPrimary,
+            cursor: 'pointer',
+            textAlign: 'left',
           }}
-        />
-      </button>
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>{title}</div>
+            {subtitle && <div style={{ marginTop: 4, fontSize: 12, color: colors.textMuted }}>{subtitle}</div>}
+          </div>
+          <ChevronDown
+            size={20}
+            color={colors.textMuted}
+            style={{
+              transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: transition('fast', 'transform'),
+              flexShrink: 0,
+            }}
+          />
+        </button>
+        {right}
+      </div>
       {expanded && (
         <div style={{ padding: '0 16px 16px', borderTop: `1px solid ${colors.borderSubtle}` }}>{children}</div>
       )}

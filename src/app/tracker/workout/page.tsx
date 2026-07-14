@@ -6,16 +6,18 @@ import { useTracker } from '@/components/tracker/context/TrackerContext'
 
 export default function WorkoutTrackerPage() {
   const { sections, day, scores, saving, patchCompletion } = useTracker()
+  const hasWorkouts = (sections?.workouts.length ?? 0) > 0
 
   return (
     <TrackerModulePage
       title="Workout Tracker"
-      isAvailable={Boolean(sections?.workout)}
-      emptyMessage="No exercises found for today in your active plan. Ensure your workout plan includes today's session with exercises formatted like: Bench Press 4x8 @ 60 kg"
+      isAvailable={hasWorkouts}
+      emptyMessage="No exercises found in your active plan. Ensure your workout plan includes day sessions with exercises formatted like: Bench Press 4x8 @ 60 kg"
     >
-      {sections?.workout && day && scores && (
+      {hasWorkouts && day && scores && sections && (
         <WorkoutModule
-          workout={sections.workout}
+          workouts={sections.workouts}
+          workoutDays={day.snapshot.workoutDays}
           completion={day.completion}
           workoutScore={scores.workout}
           saving={saving}

@@ -90,6 +90,56 @@ async function weeklyAverage(supabase: SupabaseClient, clientId: string): Promis
   return Math.round(values.reduce((a, b) => a + b, 0) / values.length)
 }
 
+function getWorkoutPhaseSignature(snapshot: {
+  items: DailyTrackerDay['snapshot']['items']
+  workoutDays?: DailyTrackerDay['snapshot']['workoutDays']
+}): string {
+  const workouts = snapshot.items.filter((item) => item.type === 'workout')
+  if (workouts.length === 0) return ''
+  return [
+    `n:${workouts.length}`,
+    `days:${(snapshot.workoutDays ?? []).map((d) => d.key).join(',')}`,
+    ...workouts.map((workout) => {
+      if (workout.type !== 'workout') return ''
+      const phases = workout.phases ?? []
+      return [
+        workout.workoutDay ?? 'default',
+        `ex:${workout.exercises.length}`,
+        ...phases.map((phase) => `${phase.phase}:${phase.exercises.length}`),
+      ].join('|')
+    }),
+  ].join(';')
+}
+
+function sanitizeCompletionForSnapshot(
+  completion: TrackerCompletion,
+  snapshot: DailyTrackerDay['snapshot']
+): TrackerCompletion {
+  const next: TrackerCompletion = { ...completion }
+
+  if (next.selectedDietDay) {
+    const days = snapshot.dietDays ?? []
+    const stillValid =
+      days.some((d) => d.key === next.selectedDietDay) ||
+      snapshot.items.some(
+        (item) => item.type === 'meal' && item.dietDay === next.selectedDietDay
+      )
+    if (!stillValid) next.selectedDietDay = undefined
+  }
+
+  if (next.selectedWorkoutDay) {
+    const days = snapshot.workoutDays ?? []
+    const stillValid =
+      days.some((d) => d.key === next.selectedWorkoutDay) ||
+      snapshot.items.some(
+        (item) => item.type === 'workout' && item.workoutDay === next.selectedWorkoutDay
+      )
+    if (!stillValid) next.selectedWorkoutDay = undefined
+  }
+
+  return next
+}
+
 export async function getOrCreateTodayTracker(
   supabase: SupabaseClient,
   clientId: string,
@@ -126,23 +176,28 @@ export async function getOrCreateTodayTracker(
     const planEditedAfterSnapshot =
       Boolean(plan.updated_at) &&
       new Date(plan.updated_at).getTime() > new Date(snapshotPlanStamp).getTime()
+    const workoutStructureChanged =
+      getWorkoutPhaseSignature(existingDay.snapshot) !== getWorkoutPhaseSignature(snapshot)
     const needsRebuild =
       existingDay.plan_version < plan.version ||
       existingDay.plan_id !== plan.id ||
       planEditedAfterSnapshot ||
+      workoutStructureChanged ||
       (newHasWorkout && !existingHasWorkout) ||
       (newHasMeals && !existingHasMeals) ||
       snapshot.items.length > existingDay.snapshot.items.length
 
     if (!needsRebuild) return { day: existingDay, error: null }
 
-    const { scores, overall } = calculateTrackerScores(snapshot, existingDay.completion)
+    const completion = sanitizeCompletionForSnapshot(existingDay.completion, snapshot)
+    const { scores, overall } = calculateTrackerScores(snapshot, completion)
     const { data: updated, error } = await supabase
       .from('daily_tracker_days')
       .update({
         plan_id: plan.id,
         plan_version: plan.version,
         snapshot,
+        completion,
         scores,
         overall_percent: overall,
         updated_at: now,
@@ -233,13 +288,15 @@ export async function refreshTodayTrackerAfterPlanPublish(
 
   if (existing) {
     const current = rowToDay(existing as Record<string, unknown>)
-    const { scores, overall } = calculateTrackerScores(snapshot, current.completion)
+    const completion = sanitizeCompletionForSnapshot(current.completion, snapshot)
+    const { scores, overall } = calculateTrackerScores(snapshot, completion)
     await supabase
       .from('daily_tracker_days')
       .update({
         plan_id: plan.id,
         plan_version: plan.version,
         snapshot,
+        completion,
         scores,
         overall_percent: overall,
         updated_at: now,
@@ -372,9 +429,19 @@ export async function loadClientAdherenceSummary(
   const rpes: number[] = []
 
   for (const day of days) {
+    const selectedWorkout = day.completion.selectedWorkoutDay
+    const hasWorkoutDays =
+      Boolean(day.snapshot.workoutDays?.length) ||
+      day.snapshot.items.some((i) => i.type === 'workout' && Boolean(i.workoutDay))
+
     for (const item of day.snapshot.items) {
       if (item.type === 'meal' && !day.completion.meals?.[item.id]?.completed) missedMeals++
       if (item.type === 'workout') {
+        if (hasWorkoutDays && item.workoutDay && item.workoutDay !== selectedWorkout) continue
+        if (hasWorkoutDays && !selectedWorkout) {
+          missedWorkouts++
+          continue
+        }
         const allDone = item.exercises.every((ex) => day.completion.exercises?.[ex.id]?.completed)
         if (!allDone) missedWorkouts++
       }

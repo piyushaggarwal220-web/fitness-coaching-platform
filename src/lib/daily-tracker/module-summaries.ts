@@ -26,7 +26,7 @@ function formatLiters(ml: number): string {
 }
 
 export function buildModuleSummaries(day: DailyTrackerDay): TrackerModuleSummary[] {
-  const sections = splitSnapshot(day.snapshot)
+  const sections = splitSnapshot(day.snapshot, day.completion)
   const scores = getCategoryDisplayScores(day)
   const { completion } = day
 
@@ -58,19 +58,36 @@ export function buildModuleSummaries(day: DailyTrackerDay): TrackerModuleSummary
     })
   }
 
-  if (sections.workout) {
-    const total = sections.workout.exercises.length
-    const done = sections.workout.exercises.filter((ex) => completion.exercises?.[ex.id]?.completed).length
-    const focus = sections.workout.focus ?? sections.workout.dayLabel ?? "Today's session"
-    modules.push({
-      id: 'workout',
-      title: 'Workout Tracker',
-      icon: '🏋️',
-      href: '/tracker/workout',
-      subtitle: `${focus} · ${done} / ${total} exercises`,
-      progress: scores.workout,
-      available: true,
-    })
+  if (sections.workouts.length > 0) {
+    const selected = completion.selectedWorkoutDay
+    const multiDay =
+      (day.snapshot.workoutDays?.length ?? 0) > 1 ||
+      sections.workouts.filter((w) => Boolean(w.workoutDay)).length > 1
+    const active = sections.workout
+    if (multiDay && !selected) {
+      modules.push({
+        id: 'workout',
+        title: 'Workout Tracker',
+        icon: '🏋️',
+        href: '/tracker/workout',
+        subtitle: "Choose which day's workout you're following",
+        progress: scores.workout,
+        available: true,
+      })
+    } else if (active) {
+      const total = active.exercises.length
+      const done = active.exercises.filter((ex) => completion.exercises?.[ex.id]?.completed).length
+      const focus = active.focus ?? active.dayLabel ?? "Today's session"
+      modules.push({
+        id: 'workout',
+        title: 'Workout Tracker',
+        icon: '🏋️',
+        href: '/tracker/workout',
+        subtitle: `${focus} · ${done} / ${total} exercises`,
+        progress: scores.workout,
+        available: true,
+      })
+    }
   }
 
   if (sections.water) {

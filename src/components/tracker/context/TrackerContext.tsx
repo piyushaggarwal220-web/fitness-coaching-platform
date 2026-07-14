@@ -76,7 +76,10 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
 
   const day = view?.day ?? null
 
-  const sections = useMemo(() => (day ? splitSnapshot(day.snapshot) : null), [day])
+  const sections = useMemo(
+    () => (day ? splitSnapshot(day.snapshot, day.completion) : null),
+    [day]
+  )
   const scores = useMemo(() => (day ? getCategoryDisplayScores(day) : null), [day])
 
   const patchCompletion = useCallback(

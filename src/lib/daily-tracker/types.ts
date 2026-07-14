@@ -73,6 +73,10 @@ export type TrackerWorkoutItem = {
   dayLabel?: string
   focus?: string
   workoutNotes?: string
+  /** Plan workout day key, e.g. monday / day-1 */
+  workoutDay?: string
+  /** Display label, e.g. Monday */
+  workoutDayLabel?: string
   phases: WorkoutPhaseBlock[]
   /** Flat list for scoring — all exercises across phases */
   exercises: TrackerExerciseItem[]
@@ -151,6 +155,8 @@ export type TrackerSnapshot = {
   items: TrackerSnapshotItem[]
   /** Available diet day options from the plan (when multi-day) */
   dietDays?: { key: string; label: string }[]
+  /** Available workout day options from the plan (when multi-day) */
+  workoutDays?: { key: string; label: string }[]
 }
 
 export type MealCompletion = { completed: boolean; notes?: string }
@@ -185,6 +191,14 @@ export type TrackerCompletion = {
   sleep?: SleepCompletion
   /** Which plan diet day the client is following today. null clears the selection. */
   selectedDietDay?: string | null
+  /** Which plan workout day the client is following today. null clears the selection. */
+  selectedWorkoutDay?: string | null
+  /** Explicitly saved workout session for the day */
+  workoutSession?: {
+    status?: 'in_progress' | 'saved'
+    savedAt?: string
+    durationSeconds?: number
+  } | null
 }
 
 export type TrackerCategoryScores = {

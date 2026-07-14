@@ -18,7 +18,7 @@ import {
   validatePlanForm,
 } from '@/lib/plans'
 import { prepareCoachNotesForSave } from '@/lib/plan-metadata';
-import { syncTrackerAfterPlanPublish } from '@/lib/daily-tracker/client-sync';
+import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-sync';
 import { requireCoach } from '@/lib/coach-session';
 import { PlanVersionHistory } from '@/components/coach/PlanVersionHistory';
 import type { Plan, PlanFormData, PlanWithClient } from '@/types/database';
@@ -93,6 +93,13 @@ export default function CoachPlanDetailPage() {
     setError('');
   };
 
+  const handleFormPatch = (patch: Partial<PlanFormData>) => {
+    if (!form) return;
+    setForm({ ...form, ...patch });
+    setError('');
+    setSuccess('AI revision applied to the editor. Save or deliver to update the client tracker.');
+  };
+
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     if (!form || !plan) return;
@@ -125,11 +132,17 @@ export default function CoachPlanDetailPage() {
       setError(updateError.message);
     } else {
       const savedAt = new Date().toISOString();
-      setSuccess(plan.active ? 'Plan saved. Tracker updated for today.' : 'Plan saved.');
       setPlan({ ...plan, ...form, updated_at: savedAt });
       invalidatePlanEdit(plan.client_id);
       if (plan.active) {
-        syncTrackerAfterPlanPublish(plan.client_id, plan.id);
+        const sync = await syncTrackerAfterPlanPublishAsync(plan.client_id, plan.id);
+        setSuccess(
+          sync.ok
+            ? 'Plan saved. Client daily tracker updated for today.'
+            : `Plan saved, but tracker sync failed: ${sync.error ?? 'unknown error'}. It will rebuild when the client opens Tracker.`
+        );
+      } else {
+        setSuccess('Plan saved. Deliver to client when ready so tracker uses this version.');
       }
     }
     setSaving(false);
@@ -142,8 +155,12 @@ export default function CoachPlanDetailPage() {
     const { error: activateError } = await activatePlan(supabase, plan);
     if (activateError) setError(activateError);
     else {
-      syncTrackerAfterPlanPublish(plan.client_id, plan.id);
-      setSuccess('Plan delivered to client.');
+      const sync = await syncTrackerAfterPlanPublishAsync(plan.client_id, plan.id);
+      setSuccess(
+        sync.ok
+          ? 'Plan delivered. Client tracker updated for today.'
+          : `Plan delivered, but tracker sync failed: ${sync.error ?? 'unknown error'}.`
+      );
       setPlan({ ...plan, active: true, delivered_at: new Date().toISOString() });
       setHistory((h) => h.map((p) => ({ ...p, active: p.id === plan.id })));
     }
@@ -260,7 +277,13 @@ export default function CoachPlanDetailPage() {
         </div>
 
         <form onSubmit={handleSave} style={styles.form}>
-          <PlanEditor form={form} onChange={handleChange} clientLocked />
+          <PlanEditor
+            form={form}
+            onChange={handleChange}
+            onFormPatch={handleFormPatch}
+            clientLocked
+            enableAiEdit
+          />
           <button type="submit" disabled={saving} style={styles.saveBtn}>
             {saving ? 'Saving...' : 'Save changes'}
           </button>

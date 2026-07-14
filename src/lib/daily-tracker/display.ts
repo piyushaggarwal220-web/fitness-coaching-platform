@@ -3,15 +3,19 @@ import type {
   TrackerCardioItem,
   TrackerCategoryScores,
   TrackerCompletion,
+  TrackerExerciseItem,
   TrackerSnapshot,
   TrackerSnapshotItem,
   TodayTrackerView,
   TrackerWorkoutItem,
   WorkoutPhaseBlock,
 } from './types'
+import { DEFAULT_WARMUP_EXERCISES } from './exercise-utils'
 
 export type TrackerSections = {
   meals: Extract<TrackerSnapshotItem, { type: 'meal' }>[]
+  workouts: Extract<TrackerSnapshotItem, { type: 'workout' }>[]
+  /** Active / sole workout for the day. Null when multi-day and nothing selected yet. */
   workout: Extract<TrackerSnapshotItem, { type: 'workout' }> | null
   steps: TrackerCardioItem | null
   cardio: TrackerCardioItem[]
@@ -21,11 +25,40 @@ export type TrackerSections = {
   coachNote: Extract<TrackerSnapshotItem, { type: 'note' }> | null
 }
 
-export function splitSnapshot(snapshot: TrackerSnapshot): TrackerSections {
+export function resolveActiveWorkout(
+  snapshot: TrackerSnapshot,
+  completion: Pick<TrackerCompletion, 'selectedWorkoutDay'>
+): TrackerWorkoutItem | null {
+  const workouts = snapshot.items
+    .filter((i): i is TrackerWorkoutItem => i.type === 'workout')
+    .map((w) => ensureWarmupPhase(normalizeWorkout(w)))
+
+  if (workouts.length === 0) return null
+
+  const multiDay =
+    (snapshot.workoutDays?.length ?? 0) > 1 ||
+    workouts.filter((w) => Boolean(w.workoutDay)).length > 1
+
+  if (!multiDay) return workouts[0] ?? null
+
+  const selected = completion.selectedWorkoutDay
+  if (!selected) return null
+  return workouts.find((w) => w.workoutDay === selected) ?? null
+}
+
+export function splitSnapshot(
+  snapshot: TrackerSnapshot,
+  completion?: Pick<TrackerCompletion, 'selectedWorkoutDay'>
+): TrackerSections {
   const meals = snapshot.items.filter((i): i is TrackerSections['meals'][number] => i.type === 'meal')
-  const workoutItem = snapshot.items.find((i) => i.type === 'workout')
-  const rawWorkout = workoutItem?.type === 'workout' ? workoutItem : null
-  const workout = rawWorkout ? normalizeWorkout(rawWorkout) : null
+  const workouts = snapshot.items
+    .filter((i): i is TrackerWorkoutItem => i.type === 'workout')
+    .map((w) => ensureWarmupPhase(normalizeWorkout(w)))
+  const workout = completion
+    ? resolveActiveWorkout(snapshot, completion)
+    : workouts.length <= 1
+      ? workouts[0] ?? null
+      : null
   const cardioAll = snapshot.items.filter((i): i is TrackerCardioItem => i.type === 'cardio')
   const steps = cardioAll.find((c) => c.unit === 'steps') ?? null
   const cardio = cardioAll.filter((c) => c.unit !== 'steps')
@@ -39,7 +72,7 @@ export function splitSnapshot(snapshot: TrackerSnapshot): TrackerSections {
   const noteItem = snapshot.items.find((i) => i.type === 'note')
   const coachNote = noteItem?.type === 'note' ? noteItem : null
 
-  return { meals, workout, steps, cardio, supplements, water, sleep, coachNote }
+  return { meals, workouts, workout, steps, cardio, supplements, water, sleep, coachNote }
 }
 
 /** Ensure legacy snapshots without phases still render correctly */
@@ -50,6 +83,24 @@ export function normalizeWorkout(workout: TrackerWorkoutItem): TrackerWorkoutIte
     { id: 'phase-main', phase: 'main', label: 'Main Workout', exercises },
   ]
   return { ...workout, exercises, phases }
+}
+
+/** Always keep a Warm-up section — plan warmup if present, otherwise defaults. */
+export function ensureWarmupPhase(workout: TrackerWorkoutItem): TrackerWorkoutItem {
+  const normalized = normalizeWorkout(workout)
+  const existingWarmup = normalized.phases.find((phase) => phase.phase === 'warmup')
+  if (existingWarmup && existingWarmup.exercises.length > 0) return normalized
+
+  const warmupExercises: TrackerExerciseItem[] = DEFAULT_WARMUP_EXERCISES
+  const warmupPhase: WorkoutPhaseBlock = {
+    id: 'phase-warmup',
+    phase: 'warmup',
+    label: 'Warm-up',
+    exercises: warmupExercises,
+  }
+  const phases = [warmupPhase, ...normalized.phases.filter((phase) => phase.phase !== 'warmup')]
+  const exercises = [...warmupExercises, ...normalized.exercises.filter((ex) => ex.phase !== 'warmup')]
+  return { ...normalized, phases, exercises }
 }
 
 function pct(completed: number, total: number): number {
@@ -157,17 +208,23 @@ export function buildMotivationMessage(view: TodayTrackerView): string {
   const { day } = view
   const scores = getCategoryDisplayScores(day)
   const overall = day.overall_percent ?? 0
-  const sections = splitSnapshot(day.snapshot)
+  const sections = splitSnapshot(day.snapshot, day.completion)
 
   if (overall >= 90) return '🔥 Outstanding day — you are crushing your plan.'
   if (overall >= 75) return '🔥 Great consistency. Keep this momentum going.'
 
-  const mealsLeft = sections.meals.filter((m) => !day.completion.meals?.[m.id]?.completed).length
+  const selectedDiet = day.completion.selectedDietDay
+  const mealsForToday = sections.meals.filter((m) => {
+    if (!m.dietDay) return true
+    if (!selectedDiet) return false
+    return m.dietDay === selectedDiet
+  })
+  const mealsLeft = mealsForToday.filter((m) => !day.completion.meals?.[m.id]?.completed).length
   if (mealsLeft === 1) return "🔥 You're only one meal away from 90%."
 
   const workout = sections.workout
   if (workout) {
-    const postWorkout = sections.meals.find((m) => /post[- ]?workout/i.test(m.title))
+    const postWorkout = mealsForToday.find((m) => /post[- ]?workout/i.test(m.title))
     const workoutDone = workout.exercises.every((ex) => day.completion.exercises?.[ex.id]?.completed)
     if (workoutDone && postWorkout && !day.completion.meals?.[postWorkout.id]?.completed) {
       return '🔥 Finish your post-workout meal for recovery.'

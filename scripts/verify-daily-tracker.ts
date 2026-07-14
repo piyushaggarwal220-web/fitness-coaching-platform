@@ -126,21 +126,71 @@ Leg Press: 3 sets x 10 reps
 // Tuesday → Day 2 in Mon-first numbered plans
 const tuesday = new Date('2026-07-14T12:00:00.000Z')
 const aiSnap = buildTrackerSnapshot(aiStylePlan, null, tuesday)
-const aiWorkout = aiSnap.items.find((i) => i.type === 'workout')
+const aiWorkouts = aiSnap.items.filter((i) => i.type === 'workout')
+assert('parses all AI workout days', aiWorkouts.length >= 2)
+assert('exposes workoutDays list', (aiSnap.workoutDays?.length ?? 0) >= 2)
+const aiDay2 = aiWorkouts.find((i) => i.type === 'workout' && i.workoutDay === 'day-2')
 assert(
   'parses AI sets x reps format',
-  aiWorkout?.type === 'workout' && aiWorkout.exercises.length >= 3
+  aiDay2?.type === 'workout' && aiDay2.exercises.length >= 3
 )
 assert(
-  'picks Day 2 for Tuesday',
-  aiWorkout?.type === 'workout' &&
-    (aiWorkout.dayLabel?.toLowerCase().includes('day 2') ||
-      aiWorkout.focus?.toLowerCase().includes('squat') === true)
+  'includes Day 2 squat session',
+  aiDay2?.type === 'workout' &&
+    (aiDay2.dayLabel?.toLowerCase().includes('day 2') ||
+      aiDay2.focus?.toLowerCase().includes('squat') === true)
 )
 assert(
   'parses Barbell Back Squat from AI format',
-  aiWorkout?.type === 'workout' &&
-    aiWorkout.exercises.some((ex) => /squat/i.test(ex.name) && ex.targetSets === 5)
+  aiDay2?.type === 'workout' &&
+    aiDay2.exercises.some((ex) => /squat/i.test(ex.name) && ex.targetSets === 5)
+)
+
+const warmupPlan: Plan = {
+  ...planV1,
+  id: 'plan-warmup',
+  workout_plan: `Before every session, spend about 10 minutes on this warmup: 2-3 minutes easy walking or light jogging on the treadmill, then move through 8-10 arm circles each direction, 10 bodyweight squats, 10 inchworms, 10 cat-cows, and 5 glute bridges.
+
+**Day 2 — Lower Power**
+Barbell Back Squat: 5 sets x 5 reps (rest 180s)
+Romanian Deadlift: 4 sets x 6 reps
+
+Post-workout: 30-60 seconds walk, then 10 hip flexor stretches each side, 10 chest openers.
+`,
+}
+
+const warmupSnap = buildTrackerSnapshot(warmupPlan, null, tuesday)
+const warmupWorkout = warmupSnap.items.find((i) => i.type === 'workout')
+assert(
+  'parses shared warm-up phase',
+  warmupWorkout?.type === 'workout' &&
+    warmupWorkout.phases.some((p) => p.phase === 'warmup' && p.exercises.length >= 3)
+)
+assert(
+  'parses post-workout phase',
+  warmupWorkout?.type === 'workout' &&
+    warmupWorkout.phases.some((p) => p.phase === 'cooldown' && p.exercises.length >= 1)
+)
+assert(
+  'parses explicit rest seconds',
+  warmupWorkout?.type === 'workout' &&
+    warmupWorkout.exercises.some((ex) => /squat/i.test(ex.name) && ex.restSeconds === 180)
+)
+
+const noWarmupPlan: Plan = {
+  ...planV1,
+  id: 'plan-no-warmup',
+  workout_plan: `**Day 2 — Lower Power**
+Barbell Back Squat: 5 sets x 5 reps
+Romanian Deadlift: 4 sets x 6 reps
+`,
+}
+const noWarmupSnap = buildTrackerSnapshot(noWarmupPlan, null, tuesday)
+const noWarmupWorkout = noWarmupSnap.items.find((i) => i.type === 'workout')
+assert(
+  'always includes default warm-up when plan has none',
+  noWarmupWorkout?.type === 'workout' &&
+    noWarmupWorkout.phases.some((p) => p.phase === 'warmup' && p.exercises.length >= 3)
 )
 
 const planV2: Plan = { ...planV1, version: 2, nutrition_plan: 'Breakfast\nGreek yogurt and berries\n\nLunch\nTuna salad' }

@@ -26,9 +26,19 @@ export function calculateTrackerScores(
   const mealDone = meals.filter((m) => completion.meals?.[m.id]?.completed).length
   const diet = meals.length > 0 ? pct(mealDone, meals.length) : hasDietDays ? 0 : pct(mealDone, allMeals.length)
 
-  const workout = snapshot.items.find((i) => i.type === 'workout')
+  const workoutItems = snapshot.items.filter((i): i is Extract<TrackerSnapshotItem, { type: 'workout' }> => i.type === 'workout')
+  const hasWorkoutDays =
+    Boolean(snapshot.workoutDays?.length) || workoutItems.some((w) => Boolean(w.workoutDay))
+  const workout =
+    hasWorkoutDays && completion.selectedWorkoutDay
+      ? workoutItems.find((w) => w.workoutDay === completion.selectedWorkoutDay)
+      : hasWorkoutDays
+        ? undefined
+        : workoutItems[0]
   let workoutScore = 100
-  if (workout && workout.type === 'workout') {
+  if (hasWorkoutDays && !completion.selectedWorkoutDay) {
+    workoutScore = 0
+  } else if (workout && workout.type === 'workout') {
     const total = workout.exercises.length
     const done = workout.exercises.filter((ex) => {
       const data = completion.exercises?.[ex.id]
@@ -86,7 +96,7 @@ export function calculateTrackerScores(
 
   const weights: { key: keyof TrackerCategoryScores; weight: number }[] = [
     { key: 'diet', weight: allMeals.length > 0 ? 1 : 0 },
-    { key: 'workout', weight: workout ? 1 : 0 },
+    { key: 'workout', weight: workoutItems.length > 0 ? 1 : 0 },
     { key: 'water', weight: waterItem ? 1 : 0 },
     { key: 'supplements', weight: supps.length > 0 ? 1 : 0 },
     { key: 'cardio', weight: cardioItems.length > 0 ? 1 : 0 },
@@ -104,7 +114,28 @@ export function calculateTrackerScores(
 }
 
 export function getTimelineProgress(snapshot: TrackerSnapshot, completion: TrackerCompletion): number {
-  const trackable = snapshot.items.filter((i) => i.type !== 'note')
+  const selectedDiet = completion.selectedDietDay
+  const selectedWorkout = completion.selectedWorkoutDay
+  const hasDietDays = Boolean(snapshot.dietDays?.length) || snapshot.items.some((i) => i.type === 'meal' && i.dietDay)
+  const hasWorkoutDays =
+    Boolean(snapshot.workoutDays?.length) || snapshot.items.some((i) => i.type === 'workout' && i.workoutDay)
+
+  const trackable = snapshot.items.filter((item) => {
+    if (item.type === 'note') return false
+    if (item.type === 'meal' && item.dietDay) {
+      if (!selectedDiet) return false
+      return item.dietDay === selectedDiet
+    }
+    if (item.type === 'workout') {
+      if (hasWorkoutDays) {
+        if (!selectedWorkout) return false
+        return item.workoutDay === selectedWorkout
+      }
+      return true
+    }
+    if (hasDietDays && item.type === 'meal' && !item.dietDay) return true
+    return true
+  })
   if (trackable.length === 0) return 0
 
   let done = 0

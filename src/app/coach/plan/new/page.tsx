@@ -22,7 +22,7 @@ import { runCoachAiAction } from '@/lib/coach/ai-action-client';
 import type { AiReasoningDisplay } from '@/lib/coach/ai-actions';
 import { activatePlan, getNextPlanVersion, INITIAL_PLAN_FORM, validatePlanForm } from '@/lib/plans';
 import { clientCoachNotes } from '@/lib/plan-metadata';
-import { syncTrackerAfterPlanPublish } from '@/lib/daily-tracker/client-sync';
+import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-sync';
 import { createClient } from '@/lib/supabase/client';
 import { requireCoach } from '@/lib/coach-session';
 import type { ClientProfile, Coach, PlanFormData } from '@/types/database';
@@ -132,6 +132,11 @@ function CoachNewPlanForm() {
     setError('');
   };
 
+  const handleFormPatch = (patch: Partial<PlanFormData>) => {
+    setForm({ ...form, ...patch });
+    setError('');
+  };
+
   const handleSave = async (deliver: boolean) => {
     const validationError = validatePlanForm(form);
     if (validationError) {
@@ -179,7 +184,7 @@ function CoachNewPlanForm() {
         setSubmitting(false);
         return;
       }
-      syncTrackerAfterPlanPublish(created.client_id, created.id);
+      await syncTrackerAfterPlanPublishAsync(created.client_id, created.id);
     }
 
     if (fromAi && form.client_id) {
@@ -243,7 +248,13 @@ function CoachNewPlanForm() {
         {error && <div style={styles.error}>{error}</div>}
 
         <div style={styles.form}>
-          <PlanEditor form={form} onChange={handleChange} clients={clients} />
+          <PlanEditor
+            form={form}
+            onChange={handleChange}
+            onFormPatch={handleFormPatch}
+            clients={clients}
+            enableAiEdit
+          />
 
           <div style={styles.actions}>
             <button
