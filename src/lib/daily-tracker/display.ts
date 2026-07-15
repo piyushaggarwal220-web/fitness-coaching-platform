@@ -152,7 +152,8 @@ export function computeWorkoutVolume(completion: TrackerCompletion): number {
   let volume = 0
   for (const ex of Object.values(completion.exercises ?? {})) {
     for (const set of ex.sets ?? []) {
-      if (set.reps != null && set.weight != null) {
+      // Strength volume only — timed/distance/reps-only do not contribute kg volume.
+      if (set.reps != null && set.weight != null && set.weight > 0) {
         volume += set.reps * set.weight
       }
     }

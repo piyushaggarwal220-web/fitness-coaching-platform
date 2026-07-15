@@ -20,7 +20,7 @@ const supabase = createClient();
 export default function Profile() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<ProfileForm>({ name: '', age: '', fitness_goal: '', weight: '', height: '' });
+  const [profile, setProfile] = useState<ProfileForm>({ name: '', age: '', fitness_goal: '', weight: '', height: '', phone: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -38,6 +38,7 @@ export default function Profile() {
           fitness_goal: result.profile.fitness_goal || '',
           weight: result.profile.weight != null ? String(result.profile.weight) : '',
           height: result.profile.height != null ? String(result.profile.height) : '',
+          phone: result.profile.phone || '',
         });
       }
       setLoading(false);
@@ -69,6 +70,7 @@ export default function Profile() {
         fitness_goal: profile.fitness_goal || null,
         weight,
         height,
+        phone: profile.phone.trim() || null,
         updated_at: new Date().toISOString(),
       });
 
@@ -116,6 +118,14 @@ export default function Profile() {
       <form onSubmit={handleSubmit}>
         <Card variant="elevated">
           <Input label="Full Name" type="text" name="name" value={profile.name} onChange={handleChange} placeholder="Enter your name" />
+          <Input
+            label="Phone"
+            type="tel"
+            name="phone"
+            value={profile.phone}
+            onChange={handleChange}
+            placeholder="+91 98765 43210"
+          />
           <Input label="Age" type="number" name="age" value={profile.age} onChange={handleChange} placeholder="Enter your age" />
 
           <div style={{ marginBottom: spacing[3] }}>

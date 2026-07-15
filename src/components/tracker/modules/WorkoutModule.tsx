@@ -13,9 +13,13 @@ import {
 import { colors, radius, spacing } from '@/lib/design-tokens'
 import {
   buildExercisePatch,
+  durationFromParts,
+  formatDurationInput,
+  formatExerciseTarget,
   formatRestClock,
   getCurrentExercise,
   getExerciseSets,
+  inferTrackingMode,
   resolveRestSeconds,
 } from '@/lib/daily-tracker/exercise-utils'
 import {
@@ -26,6 +30,7 @@ import {
 } from '@/lib/daily-tracker/display'
 import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
 import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
+import { ExerciseDemoButton } from '@/components/exercises/ExerciseDemoButton'
 
 type WorkoutDayOption = { key: string; label: string }
 
@@ -546,11 +551,13 @@ export function WorkoutModule({
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: 17 }}>{ex.name}</div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <div style={{ fontWeight: 800, fontSize: 17 }}>{ex.name}</div>
+                      <ExerciseDemoButton exerciseName={ex.name} />
+                    </div>
                     <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>
-                      {ex.targetSets} × {ex.targetReps}
-                      {ex.targetWeight ? ` @ ${ex.targetWeight}` : ''}
+                      {formatExerciseTarget(ex)}
                       {restSeconds > 0 ? ` · Rest ${formatRestClock(restSeconds)}` : ''}
                     </div>
                     {ex.notes && (
@@ -562,68 +569,209 @@ export function WorkoutModule({
                   {isDone && <Check size={24} color={colors.success} strokeWidth={3} />}
                 </div>
 
-                {sets.map((set, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      marginTop: 12,
-                      padding: 12,
-                      borderRadius: 12,
-                      background: colors.bgElevated,
-                      border: `1px solid ${set.completed ? 'rgba(34,197,94,0.2)' : colors.borderSubtle}`,
-                    }}
-                  >
-                    <div style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted, marginBottom: 8 }}>
-                      Set {idx + 1}
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
-                      <div>
-                        <label style={{ fontSize: 10, color: colors.textMuted }}>Weight (kg)</label>
-                        <input
-                          type="number"
-                          placeholder={defaultWeight || '—'}
-                          value={set.weight ?? ''}
-                          disabled={saving || isDone || set.completed}
-                          onChange={(e) =>
-                            updateSet(ex.id, ex, idx, { weight: Number(e.target.value) || undefined })
-                          }
-                          style={trackerInputStyle}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 10, color: colors.textMuted }}>Reps</label>
-                        <input
-                          type="number"
-                          placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
-                          value={set.reps ?? ''}
-                          disabled={saving || isDone || set.completed}
-                          onChange={(e) =>
-                            updateSet(ex.id, ex, idx, { reps: Number(e.target.value) || undefined })
-                          }
-                          style={trackerInputStyle}
-                        />
-                      </div>
+                {(() => {
+                  const mode = inferTrackingMode(ex)
+                  const doneBtn = (setCompleted: boolean, onClick: () => void) => (
+                    <button
+                      type="button"
+                      disabled={saving || isDone || setCompleted}
+                      onClick={onClick}
+                      style={{
+                        height: 48,
+                        padding: '0 14px',
+                        borderRadius: 12,
+                        border: 'none',
+                        background: setCompleted ? colors.successMuted : colors.accent,
+                        color: setCompleted ? colors.success : colors.textInverse,
+                        fontWeight: 700,
+                        fontSize: 13,
+                        cursor: setCompleted ? 'default' : 'pointer',
+                      }}
+                    >
+                      {setCompleted ? '✓' : 'Done'}
+                    </button>
+                  )
+
+                  if (mode === 'checkoff') {
+                    return (
                       <button
                         type="button"
-                        disabled={saving || isDone || set.completed}
-                        onClick={() => completeSet(ex.id, ex, idx)}
+                        disabled={saving || isDone}
+                        onClick={() => {
+                          const next = getExerciseSets(ex, exData).map((s, i) =>
+                            i === 0 ? { ...s, completed: true } : s
+                          )
+                          void onPatch({ exercises: { [ex.id]: buildExercisePatch(ex, exData, next) } })
+                          if (!sessionRunning && sessionStartedAt == null && elapsedMs === 0) {
+                            startSession()
+                          }
+                        }}
                         style={{
+                          marginTop: 12,
+                          width: '100%',
                           height: 48,
-                          padding: '0 14px',
                           borderRadius: 12,
                           border: 'none',
-                          background: set.completed ? colors.successMuted : colors.accent,
-                          color: set.completed ? colors.success : colors.textInverse,
+                          background: isDone ? colors.successMuted : colors.accent,
+                          color: isDone ? colors.success : colors.textInverse,
                           fontWeight: 700,
-                          fontSize: 13,
-                          cursor: set.completed ? 'default' : 'pointer',
+                          fontSize: 14,
+                          cursor: isDone ? 'default' : 'pointer',
                         }}
                       >
-                        {set.completed ? '✓' : 'Done'}
+                        {isDone ? '✓ Done' : 'Mark complete'}
                       </button>
-                    </div>
-                  </div>
-                ))}
+                    )
+                  }
+
+                  return sets.map((set, idx) => {
+                    const durParts = formatDurationInput(set.durationSeconds)
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          marginTop: 12,
+                          padding: 12,
+                          borderRadius: 12,
+                          background: colors.bgElevated,
+                          border: `1px solid ${set.completed ? 'rgba(34,197,94,0.2)' : colors.borderSubtle}`,
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted, marginBottom: 8 }}>
+                          {ex.targetSets > 1
+                            ? `Set ${idx + 1}`
+                            : mode === 'timed'
+                              ? 'Duration'
+                              : mode === 'distance'
+                                ? 'Distance'
+                                : 'Set'}
+                        </div>
+
+                        {mode === 'timed' && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
+                            <div>
+                              <label style={{ fontSize: 10, color: colors.textMuted }}>Minutes</label>
+                              <input
+                                type="number"
+                                min={0}
+                                placeholder={
+                                  ex.targetDurationSeconds != null
+                                    ? String(Math.floor(ex.targetDurationSeconds / 60) || '')
+                                    : '0'
+                                }
+                                value={durParts.minutes}
+                                disabled={saving || isDone || set.completed}
+                                onChange={(e) =>
+                                  updateSet(ex.id, ex, idx, {
+                                    durationSeconds: durationFromParts(e.target.value, durParts.seconds),
+                                  })
+                                }
+                                style={trackerInputStyle}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 10, color: colors.textMuted }}>Seconds</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={59}
+                                placeholder={
+                                  ex.targetDurationSeconds != null
+                                    ? String(ex.targetDurationSeconds % 60 || '')
+                                    : '0'
+                                }
+                                value={durParts.seconds}
+                                disabled={saving || isDone || set.completed}
+                                onChange={(e) =>
+                                  updateSet(ex.id, ex, idx, {
+                                    durationSeconds: durationFromParts(durParts.minutes, e.target.value),
+                                  })
+                                }
+                                style={trackerInputStyle}
+                              />
+                            </div>
+                            {doneBtn(Boolean(set.completed), () => completeSet(ex.id, ex, idx))}
+                          </div>
+                        )}
+
+                        {mode === 'distance' && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'end' }}>
+                            <div>
+                              <label style={{ fontSize: 10, color: colors.textMuted }}>Meters</label>
+                              <input
+                                type="number"
+                                min={0}
+                                placeholder={
+                                  ex.targetDistanceMeters != null ? String(ex.targetDistanceMeters) : '—'
+                                }
+                                value={set.distanceMeters ?? ''}
+                                disabled={saving || isDone || set.completed}
+                                onChange={(e) =>
+                                  updateSet(ex.id, ex, idx, {
+                                    distanceMeters: Number(e.target.value) || undefined,
+                                  })
+                                }
+                                style={trackerInputStyle}
+                              />
+                            </div>
+                            {doneBtn(Boolean(set.completed), () => completeSet(ex.id, ex, idx))}
+                          </div>
+                        )}
+
+                        {mode === 'reps_only' && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'end' }}>
+                            <div>
+                              <label style={{ fontSize: 10, color: colors.textMuted }}>Reps</label>
+                              <input
+                                type="number"
+                                placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
+                                value={set.reps ?? ''}
+                                disabled={saving || isDone || set.completed}
+                                onChange={(e) =>
+                                  updateSet(ex.id, ex, idx, { reps: Number(e.target.value) || undefined })
+                                }
+                                style={trackerInputStyle}
+                              />
+                            </div>
+                            {doneBtn(Boolean(set.completed), () => completeSet(ex.id, ex, idx))}
+                          </div>
+                        )}
+
+                        {mode === 'strength' && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
+                            <div>
+                              <label style={{ fontSize: 10, color: colors.textMuted }}>Weight (kg)</label>
+                              <input
+                                type="number"
+                                placeholder={defaultWeight || '—'}
+                                value={set.weight ?? ''}
+                                disabled={saving || isDone || set.completed}
+                                onChange={(e) =>
+                                  updateSet(ex.id, ex, idx, { weight: Number(e.target.value) || undefined })
+                                }
+                                style={trackerInputStyle}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 10, color: colors.textMuted }}>Reps</label>
+                              <input
+                                type="number"
+                                placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
+                                value={set.reps ?? ''}
+                                disabled={saving || isDone || set.completed}
+                                onChange={(e) =>
+                                  updateSet(ex.id, ex, idx, { reps: Number(e.target.value) || undefined })
+                                }
+                                style={trackerInputStyle}
+                              />
+                            </div>
+                            {doneBtn(Boolean(set.completed), () => completeSet(ex.id, ex, idx))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                })()}
               </div>
             )
           })}

@@ -9,6 +9,7 @@ export type ClientProfile = {
   id: string
   name: string | null
   email: string | null
+  phone?: string | null
   role?: 'client' | 'coach' | 'admin' | 'super_admin' | null
   coach_id: string | null
   fitness_goal: string | null
@@ -106,6 +107,7 @@ export type Profile = {
   id: string
   name: string | null
   email?: string | null
+  phone?: string | null
   role?: 'client' | 'coach' | 'admin' | 'super_admin' | null
   age: string | number | null
   fitness_goal: string | null
@@ -234,6 +236,7 @@ export type ProfileForm = {
   fitness_goal: string
   weight: string
   height: string
+  phone: string
 }
 
 export type NewWorkoutForm = {

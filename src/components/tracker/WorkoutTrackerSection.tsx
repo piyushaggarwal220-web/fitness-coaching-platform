@@ -15,6 +15,13 @@ import {
   getPhaseProgress,
   getWorkoutProgress,
 } from '@/lib/daily-tracker/display'
+import {
+  buildExercisePatch,
+  durationFromParts,
+  formatDurationInput,
+  formatExerciseTarget,
+  inferTrackingMode,
+} from '@/lib/daily-tracker/exercise-utils'
 import type {
   ExerciseCompletion,
   ExerciseSetLog,
@@ -93,9 +100,8 @@ function ExerciseCard({
           <div style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.25 }}>{ex.name}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6, fontSize: 13, color: colors.textMuted }}>
             <span style={{ fontWeight: 600, color: colors.textSecondary }}>
-              {ex.targetSets} sets × {ex.targetReps} reps
+              {formatExerciseTarget(ex)}
             </span>
-            {ex.targetWeight && <span>@ {ex.targetWeight}</span>}
             {ex.restSeconds != null && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <Clock size={12} /> {ex.restSeconds}s rest
@@ -110,103 +116,217 @@ function ExerciseCard({
 
       {(isActive || isDone) && (
         <div style={{ marginTop: spacing[3] }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '48px 1fr 1fr 1fr',
-              gap: 6,
-              marginBottom: 6,
-              fontSize: 10,
-              color: colors.textMuted,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              paddingLeft: 4,
-            }}
-          >
-            <span>Set</span>
-            <span>Reps</span>
-            <span>kg</span>
-            <span>RPE</span>
-          </div>
+          {(() => {
+            const mode = inferTrackingMode(ex)
+            const patchSets = (next: ExerciseSetLog[]) => {
+              void onPatch({
+                exercises: { [ex.id]: buildExercisePatch(ex, exData, next) },
+              })
+            }
 
-          {sets.map((set, idx) => (
-            <div
-              key={idx}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '48px 1fr 1fr 1fr',
-                gap: 6,
-                marginBottom: 8,
-                alignItems: 'center',
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: colors.bgElevated,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: 13,
-                }}
-              >
-                {idx + 1}
-              </div>
-              <input
-                placeholder={ex.targetReps}
-                type="number"
-                value={set.reps ?? ''}
-                disabled={saving || isDone}
-                onChange={(e) => {
-                  const next = [...sets]
-                  next[idx] = { ...next[idx], reps: Number(e.target.value) || undefined }
-                  void onPatch({ exercises: { [ex.id]: { completed: isDone, sets: next, notes: exData?.notes } } })
-                }}
-                style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
-              />
-              <input
-                placeholder={defaultWeight || '—'}
-                type="number"
-                value={set.weight ?? ''}
-                disabled={saving || isDone}
-                onChange={(e) => {
-                  const next = [...sets]
-                  next[idx] = { ...next[idx], weight: Number(e.target.value) || undefined }
-                  void onPatch({ exercises: { [ex.id]: { completed: isDone, sets: next, notes: exData?.notes } } })
-                }}
-                style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
-              />
-              <input
-                placeholder="—"
-                type="number"
-                min={1}
-                max={10}
-                value={set.rpe ?? ''}
-                disabled={saving || isDone}
-                onChange={(e) => {
-                  const next = [...sets]
-                  next[idx] = { ...next[idx], rpe: Number(e.target.value) || undefined }
-                  void onPatch({ exercises: { [ex.id]: { completed: isDone, sets: next, notes: exData?.notes } } })
-                }}
-                style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
-              />
-            </div>
-          ))}
+            if (mode === 'checkoff') {
+              return !isDone ? (
+                <Button
+                  fullWidth
+                  disabled={saving}
+                  onClick={() => {
+                    const next = sets.map((s, i) => (i === 0 ? { ...s, completed: true } : s))
+                    patchSets(next)
+                  }}
+                >
+                  Mark complete
+                </Button>
+              ) : null
+            }
 
-          {!isDone && (
-            <Button
-              fullWidth
-              disabled={saving}
-              onClick={() => {
-                void onPatch({ exercises: { [ex.id]: { completed: true, sets, notes: exData?.notes } } })
-              }}
-            >
-              Finish Exercise
-            </Button>
-          )}
+            const headers =
+              mode === 'timed'
+                ? ['Set', 'Min', 'Sec']
+                : mode === 'distance'
+                  ? ['Set', 'Meters']
+                  : mode === 'reps_only'
+                    ? ['Set', 'Reps']
+                    : ['Set', 'Reps', 'kg', 'RPE']
+
+            return (
+              <>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns:
+                      mode === 'timed'
+                        ? '48px 1fr 1fr'
+                        : mode === 'distance' || mode === 'reps_only'
+                          ? '48px 1fr'
+                          : '48px 1fr 1fr 1fr',
+                    gap: 6,
+                    marginBottom: 6,
+                    fontSize: 10,
+                    color: colors.textMuted,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    paddingLeft: 4,
+                  }}
+                >
+                  {headers.map((h) => (
+                    <span key={h}>{h}</span>
+                  ))}
+                </div>
+
+                {sets.map((set, idx) => {
+                  const dur = formatDurationInput(set.durationSeconds)
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns:
+                          mode === 'timed'
+                            ? '48px 1fr 1fr'
+                            : mode === 'distance' || mode === 'reps_only'
+                              ? '48px 1fr'
+                              : '48px 1fr 1fr 1fr',
+                        gap: 6,
+                        marginBottom: 8,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 8,
+                          background: colors.bgElevated,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 700,
+                          fontSize: 13,
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+                      {mode === 'timed' && (
+                        <>
+                          <input
+                            type="number"
+                            value={dur.minutes}
+                            disabled={saving || isDone}
+                            onChange={(e) => {
+                              const next = [...sets]
+                              next[idx] = {
+                                ...next[idx],
+                                durationSeconds: durationFromParts(e.target.value, dur.seconds),
+                              }
+                              patchSets(next)
+                            }}
+                            style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
+                          />
+                          <input
+                            type="number"
+                            value={dur.seconds}
+                            disabled={saving || isDone}
+                            onChange={(e) => {
+                              const next = [...sets]
+                              next[idx] = {
+                                ...next[idx],
+                                durationSeconds: durationFromParts(dur.minutes, e.target.value),
+                              }
+                              patchSets(next)
+                            }}
+                            style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
+                          />
+                        </>
+                      )}
+                      {mode === 'distance' && (
+                        <input
+                          type="number"
+                          placeholder={ex.targetDistanceMeters != null ? String(ex.targetDistanceMeters) : '—'}
+                          value={set.distanceMeters ?? ''}
+                          disabled={saving || isDone}
+                          onChange={(e) => {
+                            const next = [...sets]
+                            next[idx] = { ...next[idx], distanceMeters: Number(e.target.value) || undefined }
+                            patchSets(next)
+                          }}
+                          style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
+                        />
+                      )}
+                      {mode === 'reps_only' && (
+                        <input
+                          placeholder={ex.targetReps}
+                          type="number"
+                          value={set.reps ?? ''}
+                          disabled={saving || isDone}
+                          onChange={(e) => {
+                            const next = [...sets]
+                            next[idx] = { ...next[idx], reps: Number(e.target.value) || undefined }
+                            patchSets(next)
+                          }}
+                          style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
+                        />
+                      )}
+                      {mode === 'strength' && (
+                        <>
+                          <input
+                            placeholder={ex.targetReps}
+                            type="number"
+                            value={set.reps ?? ''}
+                            disabled={saving || isDone}
+                            onChange={(e) => {
+                              const next = [...sets]
+                              next[idx] = { ...next[idx], reps: Number(e.target.value) || undefined }
+                              patchSets(next)
+                            }}
+                            style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
+                          />
+                          <input
+                            placeholder={defaultWeight || '—'}
+                            type="number"
+                            value={set.weight ?? ''}
+                            disabled={saving || isDone}
+                            onChange={(e) => {
+                              const next = [...sets]
+                              next[idx] = { ...next[idx], weight: Number(e.target.value) || undefined }
+                              patchSets(next)
+                            }}
+                            style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
+                          />
+                          <input
+                            placeholder="—"
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={set.rpe ?? ''}
+                            disabled={saving || isDone}
+                            onChange={(e) => {
+                              const next = [...sets]
+                              next[idx] = { ...next[idx], rpe: Number(e.target.value) || undefined }
+                              patchSets(next)
+                            }}
+                            style={{ ...trackerInputStyle, minHeight: 44, padding: '10px 8px' }}
+                          />
+                        </>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {!isDone && (
+                  <Button
+                    fullWidth
+                    disabled={saving}
+                    onClick={() => {
+                      const next = sets.map((s) => ({ ...s, completed: true }))
+                      patchSets(next)
+                    }}
+                  >
+                    Finish Exercise
+                  </Button>
+                )}
+              </>
+            )
+          })()}
         </div>
       )}
 

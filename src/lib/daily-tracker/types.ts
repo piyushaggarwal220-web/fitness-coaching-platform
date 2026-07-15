@@ -44,6 +44,14 @@ export type TrackerMealItem = {
 
 export type WorkoutExercisePhase = 'warmup' | 'main' | 'cooldown' | 'finisher' | 'mobility'
 
+/** How the client should log this exercise in the workout tracker. */
+export type ExerciseTrackingMode =
+  | 'strength'
+  | 'reps_only'
+  | 'timed'
+  | 'distance'
+  | 'checkoff'
+
 export type TrackerExerciseItem = {
   id: string
   name: string
@@ -51,6 +59,10 @@ export type TrackerExerciseItem = {
   targetReps: string
   targetWeight?: string
   phase: WorkoutExercisePhase
+  /** When omitted, UI/parser infer from prescription text. */
+  trackingMode?: ExerciseTrackingMode
+  targetDurationSeconds?: number
+  targetDistanceMeters?: number
   restSeconds?: number
   notes?: string
   previousBest?: { reps?: number; weight?: number }
@@ -160,7 +172,14 @@ export type TrackerSnapshot = {
 }
 
 export type MealCompletion = { completed: boolean; notes?: string }
-export type ExerciseSetLog = { reps?: number; weight?: number; rpe?: number; completed?: boolean }
+export type ExerciseSetLog = {
+  reps?: number
+  weight?: number
+  rpe?: number
+  durationSeconds?: number
+  distanceMeters?: number
+  completed?: boolean
+}
 export type ExerciseCompletion = {
   completed: boolean
   sets: ExerciseSetLog[]

@@ -21,6 +21,7 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
   const [weight, setWeight] = useState(client.weight != null ? String(client.weight) : '')
   const [height, setHeight] = useState(client.height != null ? String(client.height) : '')
   const [fitnessGoal, setFitnessGoal] = useState(client.fitness_goal ?? '')
+  const [phone, setPhone] = useState(client.phone ?? '')
   const [injuries, setInjuries] = useState(client.injuries ?? '')
   const [medicalNotes, setMedicalNotes] = useState(client.medical_notes ?? '')
   const [saving, setSaving] = useState(false)
@@ -37,6 +38,7 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
         weight: weight ? Number(weight) : null,
         height: height ? Number(height) : null,
         fitness_goal: fitnessGoal || null,
+        phone: phone.trim() || null,
         injuries: injuries.trim() || null,
         medical_notes: medicalNotes.trim() || null,
         updated_at: new Date().toISOString(),
@@ -60,6 +62,7 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
       weight,
       height,
       fitness_goal: fitnessGoal,
+      phone: phone.trim() || null,
       injuries: injuries.trim() || null,
       medical_notes: medicalNotes.trim() || null,
     })
@@ -72,6 +75,16 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
       <h3 style={styles.title}>Update client metrics</h3>
       <p style={styles.hint}>Changes recalculate the complexity score automatically.</p>
       <div style={styles.grid}>
+        <label style={styles.field}>
+          Phone
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            style={pageStyles.input}
+            type="tel"
+            placeholder="+91 98765 43210"
+          />
+        </label>
         <label style={styles.field}>
           Age
           <input value={age} onChange={(e) => setAge(e.target.value)} style={pageStyles.input} type="number" />

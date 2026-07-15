@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import {
   Calendar,
   ClipboardList,
+  Dumbbell,
   Home,
   LifeBuoy,
   ListChecks,
@@ -38,6 +39,7 @@ const drawerItems = clientDrawerItems({
   Calendar,
   ListChecks,
   MessageCircle,
+  Dumbbell,
   User,
   Settings,
   LifeBuoy,

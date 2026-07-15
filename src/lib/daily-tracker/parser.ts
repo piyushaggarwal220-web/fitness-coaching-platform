@@ -17,7 +17,7 @@ import type {
   WorkoutExercisePhase,
   WorkoutPhaseBlock,
 } from './types'
-import { DEFAULT_WARMUP_EXERCISES } from './exercise-utils'
+import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 
@@ -349,7 +349,7 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     restSeconds = /m/.test(unit) ? amount * 60 : amount
   }
 
-  return {
+  return withTrackingMeta({
     id: `ex-${phase}-${slug(cleanName)}-${index}`,
     name: cleanName,
     targetSets: Number(match[2]),
@@ -358,7 +358,7 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     phase,
     restSeconds,
     notes: inlineNotes,
-  }
+  })
 }
 
 /** Split "Core: Move A 3 sets x 12, Move B 2 sets x 10" into separate exercise lines. */
@@ -622,14 +622,16 @@ function parseNarrativeMovementList(
         .replace(/\bor\b.+$/i, (m) => m) // keep "walking or jogging"
         .trim()
       if (name.length < 3) continue
-      exercises.push({
-        id: `ex-${idPrefix}-${slug(name)}-${index}`,
-        name: capitalizeLabel(name),
-        targetSets: 1,
-        targetReps: high ? `${low}-${high} min` : `${low} min`,
-        phase,
-        restSeconds: 30,
-      })
+      exercises.push(
+        withTrackingMeta({
+          id: `ex-${idPrefix}-${slug(name)}-${index}`,
+          name: capitalizeLabel(name),
+          targetSets: 1,
+          targetReps: high ? `${low}-${high} min` : `${low} min`,
+          phase,
+          restSeconds: 30,
+        })
+      )
       index++
       continue
     }
@@ -643,14 +645,16 @@ function parseNarrativeMovementList(
       let name = count[3]!.trim()
       name = name.replace(/^(?:of\s+)/i, '').replace(/\s+each(?:\s+\w+)?$/i, '').trim()
       if (/^(easy|light|about|this|the|your)\b/i.test(name) && name.length < 12) continue
-      exercises.push({
-        id: `ex-${idPrefix}-${slug(name)}-${index}`,
-        name: capitalizeLabel(name),
-        targetSets: 1,
-        targetReps: high ? `${low}-${high}` : low,
-        phase,
-        restSeconds: phase === 'warmup' ? 20 : 30,
-      })
+      exercises.push(
+        withTrackingMeta({
+          id: `ex-${idPrefix}-${slug(name)}-${index}`,
+          name: capitalizeLabel(name),
+          targetSets: 1,
+          targetReps: high ? `${low}-${high}` : low,
+          phase,
+          restSeconds: phase === 'warmup' ? 20 : 30,
+        })
+      )
       index++
     }
   }
