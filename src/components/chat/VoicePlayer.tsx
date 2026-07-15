@@ -29,10 +29,14 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
     if (!audio) return
     if (playing) {
       audio.pause()
-    } else {
-      void audio.play()
+      setPlaying(false)
+      return
     }
-    setPlaying(!playing)
+    void audio.play().then(() => {
+      setPlaying(true)
+    }).catch(() => {
+      setPlaying(false)
+    })
   }
 
   const cycleSpeed = () => {

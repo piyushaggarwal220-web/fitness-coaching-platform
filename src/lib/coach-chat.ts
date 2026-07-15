@@ -259,30 +259,35 @@ export async function sendChatMessage(
       })
       .eq('id', input.conversationId)
 
-    if (input.senderType === 'coach') {
-      await sendNotification({
-        userId: conv.client_id,
-        type: 'coach_replied',
-        title: 'Your coach replied',
-        body: messageType === 'voice' ? 'Sent a voice message' : (input.content?.slice(0, 100) ?? 'New message'),
-        actionUrl: '/client/chat',
-      })
-    } else {
-      const { data: coach } = await supabase
-        .from('coaches')
-        .select('user_id')
-        .eq('id', conv.coach_id)
-        .maybeSingle()
-
-      if (coach?.user_id) {
+    try {
+      if (input.senderType === 'coach') {
         await sendNotification({
-          userId: coach.user_id,
-          type: 'unread_chat',
-          title: 'New client message',
-          body: preview,
-          actionUrl: `/coach/chat/${input.conversationId}`,
+          userId: conv.client_id,
+          type: 'coach_replied',
+          title: 'Your coach replied',
+          body: messageType === 'voice' ? 'Sent a voice message' : (input.content?.slice(0, 100) ?? 'New message'),
+          actionUrl: '/client/chat',
         })
+      } else {
+        const { data: coach } = await supabase
+          .from('coaches')
+          .select('user_id')
+          .eq('id', conv.coach_id)
+          .maybeSingle()
+
+        if (coach?.user_id) {
+          await sendNotification({
+            userId: coach.user_id,
+            type: 'unread_chat',
+            title: 'New client message',
+            body: preview,
+            actionUrl: `/coach/chat/${input.conversationId}`,
+          })
+        }
       }
+    } catch (err) {
+      // Message is already persisted; don't fail send if notifications can't run.
+      console.error('[coach-chat] notification failed after send:', err)
     }
   }
 
