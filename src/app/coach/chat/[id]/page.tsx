@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
-import { chatLayoutStyles } from '@/lib/chat-layout'
 import { readApiJson } from '@/lib/api-response'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
@@ -63,14 +63,26 @@ export default function CoachChatDetailPage() {
 
   return (
     <CoachShell narrow>
-      <h1 style={{ ...styles.title, fontSize: '1.25rem', marginBottom: 12, flexShrink: 0 }}>{clientName}</h1>
-      <div style={chatLayoutStyles.coachViewport}>
-        <CoachChatThread
-          conversationId={conversation.id}
-          coachId={conversation.coach_id}
-          viewer="coach"
-          initialMessages={messages}
-        />
+      <div className="coach-chat-detail">
+        <div className="coach-chat-detail-header">
+          <Link href="/coach/chat" className="coach-chat-detail-back" aria-label="Back to conversations">
+            ←
+          </Link>
+          <h1>{clientName}</h1>
+        </div>
+
+        <h1 className="coach-chat-detail-desktop-title" style={{ ...styles.title, fontSize: '1.25rem', marginBottom: 12, flexShrink: 0 }}>
+          {clientName}
+        </h1>
+
+        <div className="coach-chat-detail-viewport">
+          <CoachChatThread
+            conversationId={conversation.id}
+            coachId={conversation.coach_id}
+            viewer="coach"
+            initialMessages={messages}
+          />
+        </div>
       </div>
     </CoachShell>
   )

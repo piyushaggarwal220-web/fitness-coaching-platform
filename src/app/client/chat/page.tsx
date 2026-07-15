@@ -65,7 +65,7 @@ export default function ClientChatPage() {
       )}
 
       {conversation && (
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', width: '100%' }}>
           <CoachChatThread
             conversationId={conversation.id}
             coachId={conversation.coach_id}

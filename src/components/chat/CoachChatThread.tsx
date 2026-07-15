@@ -163,8 +163,8 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const peerLabel = viewer === 'client' ? 'Coach' : 'Client'
 
   return (
-    <div style={styles.wrapper}>
-      <div ref={threadRef} style={styles.thread}>
+    <div className="coach-chat-thread" style={styles.wrapper}>
+      <div ref={threadRef} className="coach-chat-messages" style={styles.thread}>
         {loading && (
           <div style={styles.skeletonWrap}>
             {[1, 2, 3].map((i) => (
@@ -191,7 +191,11 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           if (isSystem) {
             const isCheckin = isCheckinSystemMessage(msg.content)
             return (
-              <div key={msg.id} style={isCheckin ? styles.checkinSystemMsg : styles.systemMsg}>
+              <div
+                key={msg.id}
+                className={isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'}
+                style={isCheckin ? styles.checkinSystemMsg : styles.systemMsg}
+              >
                 {isCheckin ? (
                   <pre style={styles.checkinContent}>{msg.content}</pre>
                 ) : (
@@ -202,18 +206,23 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           }
 
           return (
-            <div key={msg.id} className={motionClass.messageEnter} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
-              <div style={{ ...(isMine ? styles.bubbleMine : styles.bubbleOther) }}>
+            <div key={msg.id} className={motionClass.messageEnter} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '100%' }}>
+              <div
+                className={isMine ? 'coach-chat-bubble-mine' : 'coach-chat-bubble-other'}
+                style={{ ...(isMine ? styles.bubbleMine : styles.bubbleOther) }}
+              >
                 {msg.message_type === 'voice' && msg.media_url ? (
-                  <VoicePlayer
-                    url={msg.media_url}
-                    duration={msg.media_duration_seconds ?? undefined}
-                    fromCoach={msg.sender_type === 'coach'}
-                  />
+                  <div className="coach-chat-voice">
+                    <VoicePlayer
+                      url={msg.media_url}
+                      duration={msg.media_duration_seconds ?? undefined}
+                      fromCoach={msg.sender_type === 'coach'}
+                    />
+                  </div>
                 ) : msg.message_type === 'image' && msg.media_url ? (
                   <img src={msg.media_url} alt="Shared" style={styles.image} />
                 ) : (
-                  <div style={{ fontSize: 15, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                  <div className="coach-chat-bubble-text" style={{ fontSize: 15, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}</div>
                 )}
                 <div style={styles.meta}>
                   <span>{formatMessageTime(msg.created_at)}</span>
@@ -252,7 +261,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         </div>
       )}
 
-      <div className={motionClass.inputBarEnter} style={styles.inputBar}>
+      <div className={`coach-chat-input-bar ${motionClass.inputBarEnter}`} style={styles.inputBar}>
         <VoiceRecorder
           conversationId={conversationId}
           onSent={() => void fetchMessages()}
@@ -267,6 +276,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           onChange={(e) => { setInput(e.target.value); handleTyping() }}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage() } }}
           placeholder="Message..."
+          className="coach-chat-input"
           style={styles.input}
           disabled={sending}
         />
@@ -330,8 +340,7 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: shadows.accent,
   },
   bubbleOther: {
-    backgroundColor: colors.bgGlass,
-    backdropFilter: 'blur(12px)',
+    backgroundColor: colors.bgCard,
     color: colors.textPrimary,
     borderRadius: '20px 20px 20px 6px',
     padding: '10px 14px',
@@ -353,7 +362,7 @@ const styles: Record<string, CSSProperties> = {
     backgroundColor: colors.bgGlass,
     backdropFilter: 'blur(20px)',
   },
-  input: { flex: 1, minHeight: 44, padding: '10px 16px', border: `1px solid ${colors.borderSubtle}`, borderRadius: 24, fontSize: 16, outline: 'none', backgroundColor: colors.bgElevated, color: colors.textPrimary },
+  input: { flex: 1, minWidth: 0, minHeight: 44, padding: '10px 16px', border: `1px solid ${colors.borderSubtle}`, borderRadius: 24, fontSize: 16, outline: 'none', backgroundColor: colors.bgElevated, color: colors.textPrimary },
   sendBtn: { minHeight: 44, minWidth: 44, padding: 10, backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: '50%', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: shadows.accent },
   attachBtn: { minHeight: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: colors.bgElevated, borderRadius: '50%', border: `1px solid ${colors.borderSubtle}` },
   imagePreviewBar: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: `1px solid ${colors.divider}`, backgroundColor: colors.bgCard, flexShrink: 0 },

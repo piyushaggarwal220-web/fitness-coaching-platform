@@ -17,6 +17,7 @@ import { TopBar } from './TopBar'
 import { clientDrawerItems, DrawerMenuButton, DrawerNav } from './DrawerNav'
 import { BRAND_NAME } from '@/lib/brand'
 import { PageTransition } from '@/components/motion/PageTransition'
+import { layout } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
 
 type ClientShellProps = {
@@ -48,7 +49,9 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
   const mainStyle = fullHeight
     ? {
         position: 'fixed' as const,
-        top: hideTopBar ? 'env(safe-area-inset-top, 0px)' : `calc(56px + env(safe-area-inset-top, 0px))`,
+        top: hideTopBar
+          ? 'env(safe-area-inset-top, 0px)'
+          : `calc(${layout.topBarHeight}px + env(safe-area-inset-top, 0px))`,
         left: 0,
         right: 0,
         bottom: 'var(--chat-vv-offset, 0px)',
@@ -57,6 +60,10 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
         overflow: 'hidden',
         backgroundColor: 'var(--bg-primary)',
         zIndex: 50,
+        maxWidth: layout.maxWidthWide,
+        margin: '0 auto',
+        minHeight: 0,
+        width: '100%',
       }
     : (hideBottomNav ? mobileStyles.pageNoNav : mobileStyles.page)
 

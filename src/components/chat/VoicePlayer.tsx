@@ -99,7 +99,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    minWidth: 200,
+    minWidth: 0,
+    width: '100%',
     maxWidth: 280,
     padding: '8px 10px',
     borderRadius: 16,
@@ -109,7 +110,7 @@ const styles: Record<string, React.CSSProperties> = {
   coachVoice: {
     flexDirection: 'column',
     alignItems: 'stretch',
-    maxWidth: 300,
+    maxWidth: '100%',
     padding: 12,
   },
   coachLabel: {
