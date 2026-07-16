@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Play, X } from 'lucide-react'
+import { Play, Search, X } from 'lucide-react'
 import { readApiJson } from '@/lib/api-response'
 import { colors, radius, spacing } from '@/lib/design-tokens'
+import { trackerInputStyle } from '@/components/tracker/TrackerPrimitives'
 
 type DemoExercise = {
   id: string
@@ -17,6 +18,15 @@ type DemoExercise = {
   equipment?: string | null
 }
 
+type Candidate = {
+  id: string
+  title: string
+  slug?: string
+  muscleGroup?: string | null
+  equipment?: string | null
+  thumbnailUrl?: string | null
+}
+
 type Props = {
   /** Plan exercise name used to look up a matching demo video. */
   exerciseName: string
@@ -25,41 +35,115 @@ type Props = {
 
 export function ExerciseDemoButton({ exerciseName, compact = false }: Props) {
   const [open, setOpen] = useState(false)
+  const [picking, setPicking] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [demo, setDemo] = useState<DemoExercise | null>(null)
+  const [source, setSource] = useState<'override' | 'auto' | null>(null)
+  const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [pickSearch, setPickSearch] = useState('')
+  const [candidateLoading, setCandidateLoading] = useState(false)
+
+  const loadDemo = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/exercises/demo?name=${encodeURIComponent(exerciseName)}`, {
+        credentials: 'include',
+      })
+      const parsed = await readApiJson<{
+        exercise?: DemoExercise
+        source?: 'override' | 'auto'
+        error?: string
+      }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
+      if (!parsed.data.exercise?.videoUrl) {
+        throw new Error('No demo video found for this exercise')
+      }
+      setDemo(parsed.data.exercise)
+      setSource(parsed.data.source ?? 'auto')
+    } catch (err) {
+      setDemo(null)
+      setSource(null)
+      setError(err instanceof Error ? err.message : 'Could not load demo')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!open) return
+    setPicking(false)
+    setPickSearch(exerciseName)
+    void loadDemo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when sheet opens / name changes
+  }, [open, exerciseName])
+
+  useEffect(() => {
+    if (!open || !picking) return
 
     let cancelled = false
-    const load = async () => {
-      setLoading(true)
-      setError('')
-      try {
-        const res = await fetch(`/api/exercises/${encodeURIComponent(exerciseName)}?byName=1`, {
-          credentials: 'include',
-        })
-        const parsed = await readApiJson<{ exercise?: DemoExercise; error?: string }>(res)
-        if (!parsed.ok) throw new Error(parsed.error)
-        if (!parsed.data.exercise?.videoUrl) {
-          throw new Error('No demo video found for this exercise')
+    const t = window.setTimeout(() => {
+      void (async () => {
+        setCandidateLoading(true)
+        try {
+          const q = pickSearch.trim() || exerciseName
+          const res = await fetch(
+            `/api/exercises/demo?mode=candidates&name=${encodeURIComponent(q)}`,
+            { credentials: 'include' }
+          )
+          const parsed = await readApiJson<{ candidates?: Candidate[]; error?: string }>(res)
+          if (!parsed.ok) throw new Error(parsed.error)
+          if (!cancelled) setCandidates(parsed.data.candidates ?? [])
+        } catch (err) {
+          if (!cancelled) {
+            setCandidates([])
+            setError(err instanceof Error ? err.message : 'Search failed')
+          }
+        } finally {
+          if (!cancelled) setCandidateLoading(false)
         }
-        if (!cancelled) setDemo(parsed.data.exercise)
-      } catch (err) {
-        if (!cancelled) {
-          setDemo(null)
-          setError(err instanceof Error ? err.message : 'Could not load demo')
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    void load()
+      })()
+    }, 250)
+
     return () => {
       cancelled = true
+      window.clearTimeout(t)
     }
-  }, [open, exerciseName])
+  }, [open, picking, pickSearch, exerciseName])
+
+  const selectCandidate = async (candidate: Candidate) => {
+    setSaving(true)
+    setError('')
+    try {
+      const res = await fetch('/api/exercises/demo', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: exerciseName,
+          ymoveExerciseId: candidate.id,
+        }),
+      })
+      const parsed = await readApiJson<{ exercise?: DemoExercise; error?: string }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
+      if (!parsed.data.exercise?.videoUrl) throw new Error('Selected exercise has no video')
+      setDemo(parsed.data.exercise)
+      setSource('override')
+      setPicking(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save correction')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const close = () => {
+    setOpen(false)
+    setPicking(false)
+    setError('')
+  }
 
   return (
     <>
@@ -78,14 +162,20 @@ export function ExerciseDemoButton({ exerciseName, compact = false }: Props) {
           <div style={styles.sheet}>
             <div style={styles.sheetHeader}>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={styles.sheetTitle}>{demo?.title ?? exerciseName}</div>
-                {(demo?.muscleGroup || demo?.equipment) && (
+                <div style={styles.sheetTitle}>
+                  {picking ? 'Pick the correct video' : (demo?.title ?? exerciseName)}
+                </div>
+                {!picking && (demo?.muscleGroup || demo?.equipment) && (
                   <div style={styles.meta}>
                     {[demo.muscleGroup, demo.equipment].filter(Boolean).join(' · ')}
+                    {source === 'override' ? ' · Saved match' : ''}
                   </div>
                 )}
+                {picking && (
+                  <div style={styles.meta}>For plan exercise: {exerciseName}</div>
+                )}
               </div>
-              <button type="button" onClick={() => setOpen(false)} style={styles.close} aria-label="Close">
+              <button type="button" onClick={close} style={styles.close} aria-label="Close">
                 <X size={20} />
               </button>
             </div>
@@ -93,7 +183,7 @@ export function ExerciseDemoButton({ exerciseName, compact = false }: Props) {
             {loading && <p style={styles.status}>Loading demo…</p>}
             {error && !loading && <p style={styles.error}>{error}</p>}
 
-            {!loading && !error && demo?.videoUrl && (
+            {!picking && !loading && demo?.videoUrl && (
               <video
                 key={demo.videoUrl}
                 src={demo.videoUrl}
@@ -104,7 +194,7 @@ export function ExerciseDemoButton({ exerciseName, compact = false }: Props) {
               />
             )}
 
-            {!loading && demo?.instructions && demo.instructions.length > 0 && (
+            {!picking && !loading && demo?.instructions && demo.instructions.length > 0 && (
               <div style={styles.section}>
                 <div style={styles.sectionTitle}>Steps</div>
                 <ol style={styles.list}>
@@ -115,7 +205,7 @@ export function ExerciseDemoButton({ exerciseName, compact = false }: Props) {
               </div>
             )}
 
-            {!loading && demo?.importantPoints && demo.importantPoints.length > 0 && (
+            {!picking && !loading && demo?.importantPoints && demo.importantPoints.length > 0 && (
               <div style={styles.section}>
                 <div style={styles.sectionTitle}>Form tips</div>
                 <ul style={styles.list}>
@@ -123,6 +213,83 @@ export function ExerciseDemoButton({ exerciseName, compact = false }: Props) {
                     <li key={i}>{tip}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {!picking && !loading && (
+              <div style={styles.actions}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPicking(true)
+                    setPickSearch(exerciseName)
+                    setError('')
+                  }}
+                  style={styles.secondaryBtn}
+                >
+                  Wrong video? Fix match
+                </button>
+              </div>
+            )}
+
+            {picking && (
+              <div>
+                <div style={{ position: 'relative', marginBottom: spacing[3] }}>
+                  <Search
+                    size={16}
+                    color={colors.textMuted}
+                    style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+                  />
+                  <input
+                    value={pickSearch}
+                    onChange={(e) => setPickSearch(e.target.value)}
+                    placeholder="Search correct exercise…"
+                    style={{ ...trackerInputStyle, paddingLeft: 38, minHeight: 44 }}
+                    autoFocus
+                  />
+                </div>
+
+                {candidateLoading && <p style={styles.status}>Searching…</p>}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {candidates.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      disabled={saving}
+                      onClick={() => void selectCandidate(c)}
+                      style={styles.candidate}
+                    >
+                      <div style={styles.thumbWrap}>
+                        {c.thumbnailUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={c.thumbnailUrl} alt="" style={styles.thumb} />
+                        ) : (
+                          <Play size={16} color={colors.accent} />
+                        )}
+                      </div>
+                      <div style={{ minWidth: 0, textAlign: 'left' }}>
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>{c.title}</div>
+                        <div style={{ fontSize: 12, color: colors.textMuted, textTransform: 'capitalize' }}>
+                          {[c.muscleGroup, c.equipment].filter(Boolean).join(' · ')}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {!candidateLoading && candidates.length === 0 && (
+                  <p style={styles.status}>No matches. Try a simpler name like “bench press”.</p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setPicking(false)}
+                  style={{ ...styles.secondaryBtn, marginTop: spacing[3], width: '100%' }}
+                  disabled={saving}
+                >
+                  Back to video
+                </button>
               </div>
             )}
           </div>
@@ -243,5 +410,48 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textPrimary,
     fontSize: 14,
     lineHeight: 1.5,
+  },
+  actions: {
+    marginTop: spacing[4],
+    display: 'flex',
+    gap: 8,
+  },
+  secondaryBtn: {
+    padding: '10px 14px',
+    minHeight: 44,
+    borderRadius: 12,
+    border: `1px solid ${colors.borderSubtle}`,
+    background: colors.bgElevated,
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  candidate: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: 10,
+    borderRadius: 12,
+    border: `1px solid ${colors.borderSubtle}`,
+    background: colors.bgElevated,
+    cursor: 'pointer',
+    color: colors.textPrimary,
+  },
+  thumbWrap: {
+    width: 56,
+    height: 40,
+    borderRadius: 8,
+    overflow: 'hidden',
+    background: colors.bgCard,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  thumb: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
   },
 }

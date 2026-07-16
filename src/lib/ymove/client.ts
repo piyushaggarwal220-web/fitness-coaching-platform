@@ -1,5 +1,9 @@
 /** Server-only YMove Exercise Videos API client. Never import from client components. */
 
+import { cleanExerciseSearchQuery, scoreExerciseNameMatch } from './match'
+
+export { cleanExerciseSearchQuery, normalizeExerciseNameKey, scoreExerciseNameMatch } from './match'
+
 const YMOVE_BASE = 'https://exercise-api.ymove.app/api/v2'
 
 export type YMoveExerciseVideo = {
@@ -122,26 +126,46 @@ export async function getYMoveExercise(
 
 /** Best-effort match by exercise name for in-tracker demos. */
 export async function findYMoveExerciseByName(name: string): Promise<YMoveExercise | null> {
-  const cleaned = name.trim().replace(/\s*\(.*?\)\s*/g, ' ').replace(/\s+/g, ' ').trim()
+  const cleaned = cleanExerciseSearchQuery(name)
   if (!cleaned || cleaned.length < 2) return null
 
   const listed = await listYMoveExercises({
     search: cleaned,
-    pageSize: 8,
+    pageSize: 12,
     includeVideos: true,
     hasVideo: true,
   })
 
   if (!listed.data?.length) return null
 
-  const lower = cleaned.toLowerCase()
-  const exact = listed.data.find((ex) => ex.title.toLowerCase() === lower)
-  if (exact) return exact
+  let best: YMoveExercise | null = null
+  let bestScore = -1
+  for (const ex of listed.data) {
+    const score = scoreExerciseNameMatch(cleaned, ex.title)
+    if (score > bestScore) {
+      bestScore = score
+      best = ex
+    }
+  }
 
-  const starts = listed.data.find((ex) => ex.title.toLowerCase().startsWith(lower) || lower.startsWith(ex.title.toLowerCase()))
-  if (starts) return starts
+  // Reject very weak matches so the UI can show the picker instead of a nonsense video.
+  if (bestScore < 200) return listed.data[0] ?? null
+  return best
+}
 
-  return listed.data[0] ?? null
+export async function searchYMoveExerciseCandidates(name: string, limit = 10): Promise<YMoveExercise[]> {
+  const cleaned = cleanExerciseSearchQuery(name)
+  if (!cleaned) return []
+  const listed = await listYMoveExercises({
+    search: cleaned,
+    pageSize: limit,
+    includeVideos: false,
+    hasVideo: true,
+  })
+  const data = listed.data ?? []
+  return [...data].sort(
+    (a, b) => scoreExerciseNameMatch(cleaned, b.title) - scoreExerciseNameMatch(cleaned, a.title)
+  )
 }
 
 export function pickPrimaryVideo(ex: YMoveExercise): {
