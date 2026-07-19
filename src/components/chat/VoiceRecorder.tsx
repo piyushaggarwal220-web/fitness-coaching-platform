@@ -186,8 +186,6 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
         })
       if (uploadError) throw new Error(uploadError.message)
 
-      const { data: urlData } = supabase.storage.from('chat-voice').getPublicUrl(path)
-
       const res = await fetch('/api/chat/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -195,7 +193,7 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
         body: JSON.stringify({
           conversationId,
           messageType: 'voice',
-          mediaUrl: urlData.publicUrl,
+          mediaUrl: path,
           mediaDurationSeconds: preview.duration,
         }),
       })

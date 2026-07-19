@@ -1,9 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Download, Mic, Pause, Play } from 'lucide-react'
 import { colors } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
+import { createClient } from '@/lib/supabase/client'
+import { resolveStorageUrl } from '@/lib/storage/media-url'
 
 type VoicePlayerProps = {
   url: string
@@ -19,14 +21,26 @@ function formatTime(seconds: number): string {
 
 export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [currentTime, setCurrentTime] = useState(0)
   const [totalDuration, setTotalDuration] = useState(duration ?? 0)
 
+  useEffect(() => {
+    let cancelled = false
+    const supabase = createClient()
+    void resolveStorageUrl(supabase, 'chat-voice', url).then((signed) => {
+      if (!cancelled) setResolvedUrl(signed)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [url])
+
   const togglePlay = () => {
     const audio = audioRef.current
-    if (!audio) return
+    if (!audio || !resolvedUrl) return
     if (playing) {
       audio.pause()
       setPlaying(false)
@@ -72,16 +86,18 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
           <span>Voice reply from coach</span>
         </div>
       )}
-      <audio
-        ref={audioRef}
-        src={url}
-        preload="metadata"
-        onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
-        onLoadedMetadata={() => setTotalDuration(audioRef.current?.duration ?? duration ?? 0)}
-        onEnded={() => setPlaying(false)}
-        style={{ display: 'none' }}
-      />
-      <button type="button" onClick={togglePlay} className="btn-press" style={styles.playBtn} aria-label={playing ? 'Pause' : 'Play'}>
+      {resolvedUrl && (
+        <audio
+          ref={audioRef}
+          src={resolvedUrl}
+          preload="metadata"
+          onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
+          onLoadedMetadata={() => setTotalDuration(audioRef.current?.duration ?? duration ?? 0)}
+          onEnded={() => setPlaying(false)}
+          style={{ display: 'none' }}
+        />
+      )}
+      <button type="button" onClick={togglePlay} className="btn-press" style={styles.playBtn} aria-label={playing ? 'Pause' : 'Play'} disabled={!resolvedUrl}>
         {playing ? <Pause size={18} /> : <Play size={18} />}
       </button>
       <div style={styles.waveform}>{bars}</div>
@@ -91,9 +107,11 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
       <button type="button" onClick={cycleSpeed} style={styles.speedBtn}>
         {speed}x
       </button>
-      <a href={url} download style={styles.downloadBtn} aria-label="Download voice message">
-        <Download size={16} />
-      </a>
+      {resolvedUrl && (
+        <a href={resolvedUrl} download style={styles.downloadBtn} aria-label="Download voice message">
+          <Download size={16} />
+        </a>
+      )}
     </div>
   )
 }

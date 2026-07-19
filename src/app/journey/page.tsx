@@ -12,6 +12,7 @@ import { brandTitle } from '@/lib/brand'
 import { colors, spacing } from '@/lib/design-tokens'
 import { staggerClass, useCountUp } from '@/lib/motion'
 import { createClient } from '@/lib/supabase/client'
+import { StorageImage } from '@/components/ui/StorageImage'
 
 const supabase = createClient()
 
@@ -158,8 +159,7 @@ export default function JourneyPage() {
                       style={photoButtonStyle}
                       aria-label={`View ${photo.label ?? 'photo'}`}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo.url} alt={photo.label ?? 'Progress'} style={photoStyle} />
+                      <StorageImage progress src={photo.url} alt={photo.label ?? 'Progress'} style={photoStyle} />
                     </button>
                   ))}
                 </div>
@@ -215,8 +215,7 @@ export default function JourneyPage() {
                       className="motion-photo-zoom"
                       style={photoButtonStyle}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.url} alt={p.label} style={photoStyle} />
+                      <StorageImage progress src={p.url} alt={p.label ?? 'Progress'} style={photoStyle} />
                     </button>
                   ))}
                 </div>

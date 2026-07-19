@@ -860,17 +860,19 @@ export async function uploadOnboardingPhoto(
   file: File,
   label: 'front' | 'side' | 'back'
 ): Promise<string> {
-  const ext = file.name.split('.').pop() || 'jpg'
+  const { compressImageFile } = await import('@/lib/checkin')
+  const compressed = typeof window !== 'undefined' ? await compressImageFile(file) : file
+  const ext = compressed.name.split('.').pop() || 'jpg'
   const path = `${clientId}/${Date.now()}_${label}.${ext}`
 
   const { error } = await supabase.storage
     .from(ONBOARDING_PHOTO_BUCKET)
-    .upload(path, file, { upsert: false, contentType: file.type })
+    .upload(path, compressed, { upsert: false, contentType: compressed.type || 'image/jpeg' })
 
   if (error) throw new Error(`Photo upload failed (${label}): ${error.message}`)
 
-  const { data } = supabase.storage.from(ONBOARDING_PHOTO_BUCKET).getPublicUrl(path)
-  return data.publicUrl
+  // Store object path; display via signed URLs (bucket is private).
+  return path
 }
 
 export async function saveOnboardingProgress(

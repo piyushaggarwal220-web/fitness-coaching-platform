@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
 import { colors } from '@/lib/design-tokens';
+import { safeInternalPath } from '@/lib/safe-navigation';
 
 const supabase = createClient();
 
@@ -19,7 +20,7 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const sessionExpired = searchParams.get('expired') === '1';
-  const redirectTo = searchParams.get('redirect') || '/dashboard';
+  const redirectTo = safeInternalPath(searchParams.get('redirect'), '/dashboard');
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -49,7 +50,7 @@ function LoginForm() {
 
     router.refresh();
     const destination = profileError || !profile
-      ? redirectTo.startsWith('/') ? redirectTo : '/dashboard'
+      ? redirectTo
       : getClientPostAuthPath(profile, profileError ?? undefined);
     router.push(destination);
     setLoading(false);

@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { safeInternalPathOrNull } from '@/lib/safe-navigation'
 import type { NotificationType, UserNotification } from '@/types/database'
 
 export type NotificationPayload = {
@@ -37,7 +38,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<Us
       type: payload.type,
       title: payload.title,
       body: payload.body,
-      action_url: payload.actionUrl ?? null,
+      action_url: safeInternalPathOrNull(payload.actionUrl ?? null),
       metadata: payload.metadata ?? null,
       created_at: now,
     })

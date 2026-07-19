@@ -7,6 +7,7 @@ import type { UserNotification } from '@/types/database'
 import { colors, radius } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
+import { safeInternalPathOrNull } from '@/lib/safe-navigation'
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
@@ -98,14 +99,16 @@ export function NotificationBell() {
             {notifications.length === 0 ? (
               <div style={styles.empty}>No notifications yet</div>
             ) : (
-              notifications.slice(0, 20).map((n) => (
+              notifications.slice(0, 20).map((n) => {
+                const href = safeInternalPathOrNull(n.action_url)
+                return (
                 <div
                   key={n.id}
                   style={{ ...styles.item, ...(n.read_at ? {} : styles.unread) }}
                   onClick={() => { if (!n.read_at) void markRead(n.id) }}
                 >
-                  {n.action_url ? (
-                    <Link href={n.action_url} style={styles.itemLink} onClick={() => setOpen(false)}>
+                  {href ? (
+                    <Link href={href} style={styles.itemLink} onClick={() => setOpen(false)}>
                       <div style={styles.itemTitle}>{n.title}</div>
                       <div style={styles.itemBody}>{n.body}</div>
                       <div style={styles.itemTime}>{formatTime(n.created_at)}</div>
@@ -118,7 +121,7 @@ export function NotificationBell() {
                     </>
                   )}
                 </div>
-              ))
+              )})
             )}
           </div>
         </div>

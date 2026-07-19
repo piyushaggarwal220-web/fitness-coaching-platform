@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type TouchEvent } from 'react'
 import { X } from 'lucide-react'
 import { colors } from '@/lib/design-tokens'
+import { createClient } from '@/lib/supabase/client'
+import { resolveProgressPhotoUrl } from '@/lib/storage/media-url'
 
 export type GalleryPhoto = {
   url: string
@@ -30,11 +32,27 @@ export function PhotoGalleryViewer({
 }: PhotoGalleryViewerProps) {
   const [index, setIndex] = useState(initialIndex)
   const [scale, setScale] = useState(1)
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null)
   const touchStart = useRef<{ x: number; y: number; time: number; distance: number } | null>(null)
   const lastTap = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const current = photos[index]
+
+  useEffect(() => {
+    let cancelled = false
+    if (!current?.url) {
+      setResolvedUrl(null)
+      return
+    }
+    const supabase = createClient()
+    void resolveProgressPhotoUrl(supabase, current.url).then((url) => {
+      if (!cancelled) setResolvedUrl(url)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [current?.url])
 
   const goNext = useCallback(() => {
     if (photos.length <= 1) return
@@ -162,16 +180,20 @@ export function PhotoGalleryViewer({
         onTouchEnd={handleTouchEnd}
         onClick={handleDoubleTap}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={current.url}
-          alt={current.label ?? `Photo ${index + 1}`}
-          style={{
-            ...styles.image,
-            transform: `scale(${scale})`,
-          }}
-          draggable={false}
-        />
+        {resolvedUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={resolvedUrl}
+            alt={current.label ?? `Photo ${index + 1}`}
+            style={{
+              ...styles.image,
+              transform: `scale(${scale})`,
+            }}
+            draggable={false}
+          />
+        ) : (
+          <div style={{ color: colors.textMuted }}>Loading…</div>
+        )}
       </div>
 
       <div style={styles.footer}>

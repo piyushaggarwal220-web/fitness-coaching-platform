@@ -145,8 +145,8 @@ export async function uploadCheckinPhoto(
 
   if (error) throw new Error(`Photo upload failed (${label}): ${error.message}`)
 
-  const { data } = supabase.storage.from(CHECKIN_PHOTO_BUCKET).getPublicUrl(path)
-  return data.publicUrl
+  // Store object path; display via signed URLs (bucket is private).
+  return path
 }
 
 export function parseCoachResponse(raw: string | null): CoachCheckinResponse {

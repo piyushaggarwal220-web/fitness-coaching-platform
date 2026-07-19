@@ -55,8 +55,7 @@ export default function ReportIssuePage() {
         const path = `${auth.profile.id}/${Date.now()}_${screenshot.name}`
         const { error: uploadError } = await supabase.storage.from('issue-screenshots').upload(path, screenshot)
         if (uploadError) throw new Error(uploadError.message)
-        const { data: urlData } = supabase.storage.from('issue-screenshots').getPublicUrl(path)
-        screenshotUrl = urlData.publicUrl
+        screenshotUrl = path
       }
 
       const { error: submitError } = await createIssueReport(supabase, {

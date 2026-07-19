@@ -10,6 +10,7 @@ import { colors } from '@/lib/design-tokens';
 import { requireCoach } from '@/lib/coach-session';
 import { sendClientNotification } from '@/lib/notifications/client'
 import {
+  CHECKIN_PHOTO_BUCKET,
   formatCheckinDate,
   formatWaistChange,
   formatWeightChange,
@@ -19,6 +20,7 @@ import {
 import { getCheckinTypeLabel } from '@/lib/checkin-schedule';
 import { formatFitnessGoal } from '@/lib/coach-utils';
 import { WeeklyCoachingPanel } from '@/components/coach/ai-actions/WeeklyCoachingPanel';
+import { StorageImage } from '@/components/ui/StorageImage';
 import type { Checkin, CheckinWithClient, CoachCheckinResponse } from '@/types/database';
 
 const supabase = createClient();
@@ -333,8 +335,7 @@ function Photo({ label, url }: { label: string; url: string | null }) {
     <div style={styles.photoWrap}>
       <span style={styles.photoLabel}>{label}</span>
       {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt={`${label} progress`} style={styles.photo} />
+        <StorageImage bucket={CHECKIN_PHOTO_BUCKET} src={url} alt={`${label} progress`} style={styles.photo} />
       ) : (
         <div style={styles.noPhoto}>No photo</div>
       )}

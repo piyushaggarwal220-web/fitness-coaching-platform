@@ -8,6 +8,7 @@ import { isCheckinSystemMessage } from '@/lib/checkin-chat'
 import { CoachReplyRatingPrompt } from '@/components/chat/CoachReplyRating'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
+import { StorageImage } from '@/components/ui/StorageImage'
 import { colors, shadows } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
@@ -163,8 +164,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     const { error: uploadError } = await supabase.storage.from('chat-images').upload(path, imagePreview.file)
     if (uploadError) { setError(uploadError.message); return }
 
-    const { data: urlData } = supabase.storage.from('chat-images').getPublicUrl(path)
-    await sendMessage({ messageType: 'image', mediaUrl: urlData.publicUrl })
+    await sendMessage({ messageType: 'image', mediaUrl: path })
   }
 
   useEffect(() => () => {
@@ -231,7 +231,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                     />
                   </div>
                 ) : msg.message_type === 'image' && msg.media_url ? (
-                  <img src={msg.media_url} alt="Shared" style={styles.image} />
+                  <StorageImage bucket="chat-images" src={msg.media_url} alt="Shared" style={styles.image} />
                 ) : (
                   <div className="coach-chat-bubble-text" style={{ fontSize: 15, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}</div>
                 )}
