@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { editPlanSection, type PlanSectionKind } from '@/lib/ai/edit-plan-section'
+import {
+  complexityReviewBlockedMessage,
+  profileBlocksAiPlanWork,
+} from '@/lib/complexity/input-guards'
 import { createClient } from '@/lib/supabase/server'
+
+/** Section rewrites run a long Claude call. */
+export const maxDuration = 300
 
 type Body = {
   clientId?: string
@@ -51,13 +58,27 @@ export async function POST(request: Request) {
 
   const { data: client } = await supabase
     .from('profiles')
-    .select('id, name')
+    .select(
+      'id, name, age, height, weight, complexity_score, complexity_input_needs_review, complexity_input_review_reasons'
+    )
     .eq('id', clientId)
     .eq('coach_id', coach.id)
     .maybeSingle()
 
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+  }
+
+  const gate = profileBlocksAiPlanWork(client)
+  if (gate.blocked) {
+    return NextResponse.json(
+      {
+        error: complexityReviewBlockedMessage(gate.reasons),
+        code: 'complexity_input_needs_review',
+        reasons: gate.reasons,
+      },
+      { status: 422 }
+    )
   }
 
   try {

@@ -3,6 +3,7 @@
 import { useState, type CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
+import { evaluateComplexityInputs } from '@/lib/complexity/input-guards'
 import { FITNESS_GOAL_OPTIONS } from '@/lib/onboarding'
 import { colors } from '@/lib/design-tokens'
 import { coachPageStyles as pageStyles } from '@/lib/coach-page-styles'
@@ -31,16 +32,36 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
     setSaving(true)
     setMessage('')
 
+    const nextAge = age ? Number(age) : null
+    const nextWeight = weight ? Number(weight) : null
+    const nextHeight = height ? Number(height) : null
+    const guard = evaluateComplexityInputs(
+      {
+        age: nextAge,
+        weight: nextWeight,
+        height: nextHeight,
+        fitnessGoal,
+        injuries: injuries.trim() || null,
+        medicalNotes: medicalNotes.trim() || null,
+      },
+      {
+        previousDisplayScore:
+          typeof client.complexity_score === 'number' ? client.complexity_score : null,
+      }
+    )
+
     const { error } = await supabase
       .from('profiles')
       .update({
-        age: age ? Number(age) : null,
-        weight: weight ? Number(weight) : null,
-        height: height ? Number(height) : null,
+        age: nextAge,
+        weight: nextWeight,
+        height: nextHeight,
         fitness_goal: fitnessGoal || null,
         phone: phone.trim() || null,
         injuries: injuries.trim() || null,
         medical_notes: medicalNotes.trim() || null,
+        complexity_input_needs_review: guard.needsReview,
+        complexity_input_review_reasons: guard.needsReview ? guard.reasons : [],
         updated_at: new Date().toISOString(),
       })
       .eq('id', client.id)
@@ -51,10 +72,12 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
       return
     }
 
-    await requestComplexityRecalculation({
-      clientId: client.id,
-      trigger,
-    })
+    if (!guard.needsReview) {
+      await requestComplexityRecalculation({
+        clientId: client.id,
+        trigger,
+      })
+    }
 
     onSaved({
       ...client,
@@ -65,8 +88,14 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
       phone: phone.trim() || null,
       injuries: injuries.trim() || null,
       medical_notes: medicalNotes.trim() || null,
+      complexity_input_needs_review: guard.needsReview,
+      complexity_input_review_reasons: guard.needsReview ? guard.reasons : [],
     })
-    setMessage('Profile updated. Complexity score recalculated.')
+    setMessage(
+      guard.needsReview
+        ? 'Profile updated, but metrics look suspicious. AI plan work is blocked until the client confirms them on their profile.'
+        : 'Profile updated. Complexity score recalculated.'
+    )
     setSaving(false)
   }
 

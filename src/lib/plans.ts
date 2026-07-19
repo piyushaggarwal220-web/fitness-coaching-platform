@@ -206,3 +206,46 @@ export async function restorePlanAsDraft(
   if (error || !data) return { data: null, error: error?.message ?? 'Failed to restore plan' }
   return { data: data as Plan, error: null }
 }
+
+/**
+ * Persist an AI-generated plan as an inactive server draft so refresh/timeout
+ * does not lose completed LLM work sitting only in sessionStorage.
+ */
+export async function persistAiPlanDraft(
+  supabase: SupabaseClient,
+  input: {
+    clientId: string
+    coachId: string
+    form: PlanFormData
+    title?: string
+  }
+): Promise<{ data: Plan | null; error: string | null }> {
+  const version = await getNextPlanVersion(supabase, input.clientId)
+  const now = new Date().toISOString()
+  const titleBase = input.title?.trim() || input.form.title.trim() || 'Initial Plan'
+  const title = titleBase.startsWith('AI Draft') ? titleBase : `AI Draft · ${titleBase}`
+
+  const { data, error } = await supabase
+    .from('plans')
+    .insert({
+      client_id: input.clientId,
+      coach_id: input.coachId,
+      title,
+      phase: input.form.phase.trim() || null,
+      workout_plan: input.form.workout_plan.trim() || null,
+      nutrition_plan: input.form.nutrition_plan.trim() || null,
+      cardio_plan: input.form.cardio_plan.trim() || null,
+      supplement_plan: input.form.supplement_plan.trim() || null,
+      coach_notes: input.form.coach_notes.trim() || null,
+      version,
+      active: false,
+      created_at: now,
+      updated_at: now,
+    })
+    .select()
+    .single()
+
+  if (error || !data) return { data: null, error: error?.message ?? 'Failed to save AI draft' }
+  return { data: data as Plan, error: null }
+}
+

@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { CoachShell } from '@/components/ui/CoachShell';
 import { coachPageStyles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/design-tokens';
@@ -28,7 +28,9 @@ const supabase = createClient();
 export default function CoachPlanDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const planId = typeof params.id === 'string' ? params.id : '';
+  const openAiOnLoad = searchParams.get('ai') === '1';
 
   const [plan, setPlan] = useState<PlanWithClient | null>(null);
   const [history, setHistory] = useState<Plan[]>([]);
@@ -39,6 +41,9 @@ export default function CoachPlanDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [autoOpenAiSection, setAutoOpenAiSection] = useState<'nutrition' | 'workout' | null>(
+    openAiOnLoad ? 'nutrition' : null
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -77,6 +82,11 @@ export default function CoachPlanDetailPage() {
 
     load();
   }, [planId, router]);
+
+  useEffect(() => {
+    if (!openAiOnLoad) return;
+    setAutoOpenAiSection('nutrition');
+  }, [openAiOnLoad]);
 
   if (!planId) {
     return (
@@ -136,11 +146,13 @@ export default function CoachPlanDetailPage() {
       invalidatePlanEdit(plan.client_id);
       if (plan.active) {
         const sync = await syncTrackerAfterPlanPublishAsync(plan.client_id, plan.id);
-        setSuccess(
-          sync.ok
-            ? 'Plan saved. Client daily tracker updated for today.'
-            : `Plan saved, but tracker sync failed: ${sync.error ?? 'unknown error'}. It will rebuild when the client opens Tracker.`
-        );
+        if (sync.ok) {
+          setSuccess('Plan saved. Client daily tracker updated for today.');
+        } else {
+          setError(
+            `Plan saved, but tracker sync failed: ${sync.error ?? 'unknown error'}. Fix sync or have the client reopen Tracker so today’s snapshot rebuilds.`
+          );
+        }
       } else {
         setSuccess('Plan saved. Deliver to client when ready so tracker uses this version.');
       }
@@ -283,6 +295,8 @@ export default function CoachPlanDetailPage() {
             onFormPatch={handleFormPatch}
             clientLocked
             enableAiEdit
+            initialAiSection={autoOpenAiSection}
+            onInitialAiSectionConsumed={() => setAutoOpenAiSection(null)}
           />
           <button type="submit" disabled={saving} style={styles.saveBtn}>
             {saving ? 'Saving...' : 'Save changes'}

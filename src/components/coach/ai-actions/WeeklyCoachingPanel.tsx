@@ -12,7 +12,7 @@ import {
 } from '@/lib/ai/plan-format'
 import { createClient } from '@/lib/supabase/client'
 import { activatePlan, getNextPlanVersion, planToForm } from '@/lib/plans'
-import { syncTrackerAfterPlanPublish } from '@/lib/daily-tracker/client-sync'
+import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-sync'
 import { clientCoachNotes, encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
 import { sendClientNotification } from '@/lib/notifications/client'
 import { useRouter } from 'next/navigation'
@@ -48,8 +48,7 @@ async function findDraftForCheckin(clientId: string, checkinId: string): Promise
     .limit(20)
 
   const plans = (drafts ?? []) as Plan[]
-  const linked = plans.find((plan) => planMatchesCheckin(plan, checkinId))
-  return linked ?? plans[0] ?? null
+  return plans.find((plan) => planMatchesCheckin(plan, checkinId)) ?? null
 }
 
 export function WeeklyCoachingPanel({
@@ -379,7 +378,7 @@ export function WeeklyCoachingPanel({
       return
     }
 
-    syncTrackerAfterPlanPublish(clientId, draftPlan.id)
+    const sync = await syncTrackerAfterPlanPublishAsync(clientId, draftPlan.id)
 
     void fetch('/api/coach/ai-draft/publish-log', {
       method: 'POST',
@@ -404,8 +403,12 @@ export function WeeklyCoachingPanel({
     setActivePlan({ ...draftPlan, active: true, delivered_at: new Date().toISOString() })
     setDraftPlan(null)
     setPublishing(false)
-    setStatusVariant('success')
-    setStatus('Plan published to client.')
+    setStatusVariant(sync.ok ? 'success' : 'error')
+    setStatus(
+      sync.ok
+        ? 'Plan published to client. Today’s tracker updated.'
+        : `Plan published, but tracker sync failed: ${sync.error ?? 'unknown error'}. It will rebuild when the client opens Tracker.`
+    )
     setPublishSuccess(true)
     router.push(`/coach/plan/${draftPlan.id}`)
   }

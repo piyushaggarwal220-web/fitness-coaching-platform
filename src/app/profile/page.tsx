@@ -1,36 +1,44 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { type User } from '@supabase/supabase-js';
-import { useRouter } from 'next/navigation';
-import { LogOut } from 'lucide-react';
-import { ClientShell } from '@/components/ui/ClientShell';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { authenticateClient, FITNESS_GOAL_OPTIONS } from '@/lib/onboarding';
-import { requestComplexityRecalculation } from '@/lib/complexity/client';
-import { createClient } from '@/lib/supabase/client';
-import { mobileStyles } from '@/lib/mobile-styles';
-import { colors, spacing } from '@/lib/design-tokens';
-import type { ProfileForm } from '@/types/database';
+import { useEffect, useState } from 'react'
+import { type User } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation'
+import { LogOut } from 'lucide-react'
+import { ClientShell } from '@/components/ui/ClientShell'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { authenticateClient, FITNESS_GOAL_OPTIONS } from '@/lib/onboarding'
+import { requestComplexityRecalculation } from '@/lib/complexity/client'
+import {
+  evaluateComplexityInputs,
+  parseReviewReasons,
+} from '@/lib/complexity/input-guards'
+import { createClient } from '@/lib/supabase/client'
+import { mobileStyles } from '@/lib/mobile-styles'
+import { colors, spacing } from '@/lib/design-tokens'
+import type { ProfileForm } from '@/types/database'
 
-const supabase = createClient();
+const supabase = createClient()
 
 export default function Profile() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<ProfileForm>({ name: '', age: '', fitness_goal: '', weight: '', height: '', phone: '' });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<ProfileForm>({ name: '', age: '', fitness_goal: '', weight: '', height: '', phone: '' })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+  const [needsReview, setNeedsReview] = useState(false)
+  const [reviewReasons, setReviewReasons] = useState<string[]>([])
+  const [confirmMetrics, setConfirmMetrics] = useState(false)
+  const [previousDisplayScore, setPreviousDisplayScore] = useState<number | null>(null)
 
   useEffect(() => {
     const checkUser = async () => {
-      const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true });
-      if (!result) { setLoading(false); return; }
+      const result = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true })
+      if (!result) { setLoading(false); return }
 
-      setUser(result.user as User);
+      setUser(result.user as User)
       if (result.profile) {
         setProfile({
           name: result.profile.name || '',
@@ -39,28 +47,46 @@ export default function Profile() {
           weight: result.profile.weight != null ? String(result.profile.weight) : '',
           height: result.profile.height != null ? String(result.profile.height) : '',
           phone: result.profile.phone || '',
-        });
+        })
+        setNeedsReview(Boolean(result.profile.complexity_input_needs_review))
+        setReviewReasons(parseReviewReasons(result.profile.complexity_input_review_reasons))
+        setPreviousDisplayScore(
+          typeof result.profile.complexity_score === 'number' ? result.profile.complexity_score : null
+        )
       }
-      setLoading(false);
-    };
-    checkUser();
-  }, [router]);
+      setLoading(false)
+    }
+    checkUser()
+  }, [router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
-  };
+    setProfile({ ...profile, [e.target.name]: e.target.value })
+    setConfirmMetrics(false)
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!user) return;
+    e.preventDefault()
+    if (!user) return
 
-    setSaving(true);
-    setMessage('');
+    setSaving(true)
+    setMessage('')
 
-    const age = profile.age ? parseInt(profile.age, 10) : null;
-    const weight = profile.weight ? parseFloat(profile.weight) : null;
-    const height = profile.height ? parseFloat(profile.height) : null;
+    const age = profile.age ? parseInt(profile.age, 10) : null
+    const weight = profile.weight ? parseFloat(profile.weight) : null
+    const height = profile.height ? parseFloat(profile.height) : null
 
+    const guard = evaluateComplexityInputs(
+      { age, height, weight },
+      { previousDisplayScore }
+    )
+
+    // Suspicious metrics stay gated until the client explicitly confirms.
+    if (guard.needsReview && !confirmMetrics) {
+      setNeedsReview(true)
+      setReviewReasons(guard.reasons)
+    }
+
+    const stillNeedsReview = guard.needsReview && !confirmMetrics
     const { error } = await supabase
       .from('profiles')
       .upsert({
@@ -71,26 +97,37 @@ export default function Profile() {
         weight,
         height,
         phone: profile.phone.trim() || null,
+        complexity_input_needs_review: stillNeedsReview,
+        complexity_input_review_reasons: stillNeedsReview ? guard.reasons : [],
         updated_at: new Date().toISOString(),
-      });
+      })
 
     if (error) {
-      setMessage('Error saving profile: ' + error.message);
+      setMessage('Error saving profile: ' + error.message)
     } else {
-      await requestComplexityRecalculation({ trigger: 'profile_edit_client' });
-      setMessage('Profile saved successfully!');
+      setNeedsReview(stillNeedsReview)
+      setReviewReasons(stillNeedsReview ? guard.reasons : [])
+      setConfirmMetrics(false)
+      if (!stillNeedsReview) {
+        await requestComplexityRecalculation({ trigger: 'profile_edit_client' })
+      }
+      setMessage(
+        stillNeedsReview
+          ? 'Saved. Please confirm these details are correct — AI plan work stays paused until then.'
+          : 'Profile saved successfully!'
+      )
     }
-    setSaving(false);
-  };
+    setSaving(false)
+  }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-  };
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
-  const isError = message.toLowerCase().includes('error');
+  const isError = message.toLowerCase().includes('error') || message.toLowerCase().includes('re-check')
 
-  if (loading) return <ClientShell title="Profile" loading />;
+  if (loading) return <ClientShell title="Profile" loading />
 
   return (
     <ClientShell title="Profile">
@@ -110,6 +147,20 @@ export default function Profile() {
         </h1>
         <p style={{ margin: '6px 0 0', color: colors.textSecondary, fontSize: 15 }}>{user?.email}</p>
       </div>
+
+      {needsReview && (
+        <div style={{ ...mobileStyles.error, marginBottom: spacing[3] }}>
+          <strong>Please re-check your details</strong>
+          <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+            {(reviewReasons.length > 0 ? reviewReasons : ['Some metrics look incorrect.']).map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+          <p style={{ margin: '8px 0 0' }}>
+            AI plan updates stay paused until you confirm these values are right.
+          </p>
+        </div>
+      )}
 
       {message && (
         <div style={isError ? mobileStyles.error : mobileStyles.success}>{message}</div>
@@ -154,6 +205,26 @@ export default function Profile() {
             <Input label="Height (cm)" type="number" name="height" value={profile.height} onChange={handleChange} placeholder="175" />
           </div>
 
+          {(needsReview || reviewReasons.length > 0) && (
+            <label style={{
+              display: 'flex',
+              gap: 10,
+              alignItems: 'flex-start',
+              marginBottom: spacing[3],
+              fontSize: 14,
+              color: colors.textPrimary,
+              cursor: 'pointer',
+            }}>
+              <input
+                type="checkbox"
+                checked={confirmMetrics}
+                onChange={(e) => setConfirmMetrics(e.target.checked)}
+                style={{ marginTop: 3, width: 18, height: 18 }}
+              />
+              <span>I confirm these height, weight, and age values are correct.</span>
+            </label>
+          )}
+
           <Button type="submit" loading={saving} fullWidth>Save Profile</Button>
         </Card>
       </form>
@@ -164,5 +235,5 @@ export default function Profile() {
         </Button>
       </div>
     </ClientShell>
-  );
+  )
 }

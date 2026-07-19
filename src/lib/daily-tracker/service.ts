@@ -116,6 +116,16 @@ function sanitizeCompletionForSnapshot(
   snapshot: DailyTrackerDay['snapshot']
 ): TrackerCompletion {
   const next: TrackerCompletion = { ...completion }
+  const itemIds = new Set(snapshot.items.map((item) => item.id))
+  const exerciseIds = new Set(
+    snapshot.items.flatMap((item) => {
+      if (item.type !== 'workout') return [] as string[]
+      const fromPhases =
+        item.phases?.flatMap((phase) => phase.exercises.map((exercise) => exercise.id)) ?? []
+      const fromRoot = item.exercises?.map((exercise) => exercise.id) ?? []
+      return [...fromPhases, ...fromRoot]
+    })
+  )
 
   if (next.selectedDietDay) {
     const days = snapshot.dietDays ?? []
@@ -135,6 +145,38 @@ function sanitizeCompletionForSnapshot(
         (item) => item.type === 'workout' && item.workoutDay === next.selectedWorkoutDay
       )
     if (!stillValid) next.selectedWorkoutDay = undefined
+  }
+
+  if (next.meals) {
+    const meals: NonNullable<TrackerCompletion['meals']> = {}
+    for (const [id, value] of Object.entries(next.meals)) {
+      if (itemIds.has(id)) meals[id] = value
+    }
+    next.meals = meals
+  }
+
+  if (next.exercises) {
+    const exercises: NonNullable<TrackerCompletion['exercises']> = {}
+    for (const [id, value] of Object.entries(next.exercises)) {
+      if (exerciseIds.has(id) || itemIds.has(id)) exercises[id] = value
+    }
+    next.exercises = exercises
+  }
+
+  if (next.cardio) {
+    const cardio: NonNullable<TrackerCompletion['cardio']> = {}
+    for (const [id, value] of Object.entries(next.cardio)) {
+      if (itemIds.has(id)) cardio[id] = value
+    }
+    next.cardio = cardio
+  }
+
+  if (next.supplements) {
+    const supplements: NonNullable<TrackerCompletion['supplements']> = {}
+    for (const [id, value] of Object.entries(next.supplements)) {
+      if (itemIds.has(id)) supplements[id] = value
+    }
+    next.supplements = supplements
   }
 
   return next

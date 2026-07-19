@@ -70,7 +70,11 @@ function toClaudeResponseError(err: unknown): ClaudeResponseError {
 export async function generateClaudeResponse(
   params: GenerateClaudeResponseParams
 ): Promise<GenerateClaudeResponseResult> {
-  const client = new Anthropic({ apiKey: getApiKey() })
+  const client = new Anthropic({
+    apiKey: getApiKey(),
+    timeout: 180_000,
+    maxRetries: 1,
+  })
   const useCache = params.enablePromptCaching !== false
 
   try {
@@ -78,8 +82,15 @@ export async function generateClaudeResponse(
       model: params.model ?? DEFAULTS.DEFAULT_MODEL,
       max_tokens: params.maxTokens ?? DEFAULTS.DEFAULT_MAX_TOKENS,
       temperature: params.temperature ?? DEFAULTS.DEFAULT_TEMPERATURE,
-      ...(useCache ? { cache_control: { type: 'ephemeral' as const } } : {}),
-      system: params.systemPrompt,
+      system: useCache
+        ? [
+            {
+              type: 'text' as const,
+              text: params.systemPrompt,
+              cache_control: { type: 'ephemeral' as const },
+            },
+          ]
+        : params.systemPrompt,
       messages: [{ role: 'user', content: params.userPrompt }],
     })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { brandTitle } from '@/lib/brand'
@@ -17,16 +17,17 @@ import {
 } from '@/lib/ai/plan-format'
 import { getOnboardingLabel } from '@/lib/onboarding'
 import { formatFitnessGoal } from '@/lib/coach-utils'
-import { planToForm, restorePlanAsDraft } from '@/lib/plans'
+import { persistAiPlanDraft, planToForm, restorePlanAsDraft } from '@/lib/plans'
 import { ClientContextCard } from '@/components/coach/ai-actions/ClientContextCard'
 import { PlanCompareDrawer } from '@/components/coach/ai-actions/PlanCompareDrawer'
 import { PlanVersionList } from '@/components/coach/ai-actions/PlanVersionList'
 import { ActionCard, AiReasoningPanel, GenerationStatus, OptionalCoachNote } from '@/components/coach/ai-actions/shared'
 import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
-import type { Coach, OnboardingProfile, Plan } from '@/types/database'
+import type { Coach, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 
 const supabase = createClient()
+const GENERATION_TIMEOUT_MS = 4 * 60 * 1000
 
 export default function CoachGeneratePlanPage() {
   const router = useRouter()
@@ -40,10 +41,14 @@ export default function CoachGeneratePlanPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<CoachAiActionId | 'complete' | null>(null)
   const [status, setStatus] = useState<string | null>(null)
+  const [stepLabel, setStepLabel] = useState<string | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [error, setError] = useState('')
   const [reasoning, setReasoning] = useState<AiReasoningDisplay | null>(null)
   const [comparePlans, setComparePlans] = useState<[Plan, Plan] | null>(null)
   const [restoringId, setRestoringId] = useState<string | null>(null)
+  const startedAtRef = useRef<number | null>(null)
+  const abortRef = useRef(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -89,92 +94,181 @@ export default function CoachGeneratePlanPage() {
     if (clientId) void init()
   }, [clientId, router])
 
+  useEffect(() => {
+    if (!busy) {
+      startedAtRef.current = null
+      return undefined
+    }
+    startedAtRef.current = Date.now()
+    setElapsedSeconds(0)
+    const timer = setInterval(() => {
+      if (!startedAtRef.current) return
+      setElapsedSeconds(Math.floor((Date.now() - startedAtRef.current) / 1000))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [busy])
+
   const activePlan = plans.find((p) => p.active) ?? null
   const latestDraft = plans.find((p) => !p.active && !p.delivered_at) ?? null
 
-  const openEditor = (formData: Parameters<typeof savePlanDraftToSession>[1], ai?: AiReasoningDisplay | null) => {
+  const resetGenerationUi = () => {
+    setBusy(null)
+    setStatus(null)
+    setStepLabel(null)
+  }
+
+  const openEditor = (formData: PlanFormData, ai?: AiReasoningDisplay | null) => {
     savePlanDraftToSession(clientId, formData)
     if (ai) saveAiReasoningToSession(clientId, ai)
     router.push(`/coach/plan/new?clientId=${clientId}&fromAi=1`)
   }
 
+  const persistDraftSafely = async (formData: PlanFormData, title: string) => {
+    if (!coach || !client) return
+    const { error: persistError } = await persistAiPlanDraft(supabase, {
+      clientId: client.id,
+      coachId: coach.id,
+      form: formData,
+      title,
+    })
+    if (persistError) {
+      console.warn('[generate-plan] server draft persist failed:', persistError)
+    }
+  }
+
+  const withTimeout = async <T,>(promise: Promise<T>, label: string): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(
+              new Error(
+                `${label} is taking longer than 4 minutes. Check your connection and retry — a partial draft may already be saved.`
+              )
+            )
+          }, GENERATION_TIMEOUT_MS)
+        }),
+      ])
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }
+
   const runSingleAction = async (actionId: CoachAiActionId) => {
-    if (!client) return
+    if (!client || !coach) return
+    abortRef.current = false
     setBusy(actionId)
     setError('')
-    setStatus(`Generating ${actionId === 'initial_diet' ? 'diet plan' : 'workout plan'}…`)
+    const label = actionId === 'initial_diet' ? 'Diet' : 'Workout'
+    setStepLabel(`Step 1 of 1 · ${label}`)
+    setStatus(`Generating ${label.toLowerCase()} plan…`)
 
-    const result = await runCoachAiAction({ action: actionId, clientId: client.id, coachNote })
-    setBusy(null)
-    setStatus(null)
+    try {
+      const result = await withTimeout(
+        runCoachAiAction({ action: actionId, clientId: client.id, coachNote }),
+        `${label} generation`
+      )
 
-    if (!result.success || !result.formData) {
-      setError(result.error ?? 'Generation failed.')
-      return
-    }
+      if (abortRef.current) return
 
-    if (result.aiReasoning) setReasoning(result.aiReasoning)
+      if (!result.success || !result.formData) {
+        resetGenerationUi()
+        setError(result.error ?? 'Generation failed.')
+        return
+      }
 
-    openEditor(
-      {
+      if (result.aiReasoning) setReasoning(result.aiReasoning)
+
+      const formData = {
         ...result.formData,
         title: actionId === 'initial_diet' ? 'Diet Plan (Draft)' : 'Workout Plan (Draft)',
-      },
-      result.aiReasoning
-    )
+      }
+      await persistDraftSafely(formData, `AI Draft · ${formData.title}`)
+      resetGenerationUi()
+      openEditor(formData, result.aiReasoning)
+    } catch (err) {
+      resetGenerationUi()
+      setError(err instanceof Error ? err.message : 'Generation failed.')
+    }
   }
 
   const runCompletePlan = async () => {
-    if (!client) return
+    if (!client || !coach) return
+    abortRef.current = false
     setBusy('complete')
     setError('')
-
+    setStepLabel('Step 1 of 2 · Diet')
     setStatus('Generating diet plan…')
-    const dietResult = await runCoachAiAction({
-      action: 'initial_diet',
-      clientId: client.id,
-      coachNote,
-    })
 
-    if (!dietResult.success || !dietResult.formData) {
-      setBusy(null)
-      setStatus(null)
-      setError(dietResult.error ?? 'Diet plan generation failed.')
-      return
+    try {
+      const dietResult = await withTimeout(
+        runCoachAiAction({
+          action: 'initial_diet',
+          clientId: client.id,
+          coachNote,
+        }),
+        'Diet generation'
+      )
+
+      if (abortRef.current) return
+
+      if (!dietResult.success || !dietResult.formData) {
+        resetGenerationUi()
+        setError(dietResult.error ?? 'Diet plan generation failed.')
+        return
+      }
+
+      let merged = {
+        ...dietResult.formData,
+        title: 'Complete Coaching Plan (Draft)',
+      }
+      await persistDraftSafely(merged, 'AI Draft · Initial Diet')
+
+      setStepLabel('Step 2 of 2 · Workout')
+      setStatus('Diet ready · Generating workout plan…')
+      const workoutResult = await withTimeout(
+        runCoachAiAction({
+          action: 'initial_workout',
+          clientId: client.id,
+          coachNote,
+        }),
+        'Workout generation'
+      )
+
+      if (abortRef.current) return
+
+      if (workoutResult.aiReasoning) setReasoning(workoutResult.aiReasoning)
+
+      if (!workoutResult.success || !workoutResult.formData) {
+        savePlanDraftToSession(clientId, merged)
+        saveWorkoutRetryError(clientId, workoutResult.error ?? 'Workout plan generation failed.')
+        if (dietResult.aiReasoning) saveAiReasoningToSession(clientId, dietResult.aiReasoning)
+        resetGenerationUi()
+        router.push(`/coach/plan/new?clientId=${clientId}&fromAi=1&retryWorkout=1`)
+        return
+      }
+
+      merged = mergePlanForms(merged, {
+        workout_plan: workoutResult.formData.workout_plan,
+        cardio_plan: workoutResult.formData.cardio_plan,
+        coach_notes: [merged.coach_notes, workoutResult.formData.coach_notes].filter(Boolean).join('\n\n'),
+      })
+
+      await persistDraftSafely(merged, 'AI Draft · Initial Plan')
+      resetGenerationUi()
+      openEditor(merged, workoutResult.aiReasoning ?? dietResult.aiReasoning)
+    } catch (err) {
+      resetGenerationUi()
+      setError(err instanceof Error ? err.message : 'Generation failed.')
     }
+  }
 
-    let merged = {
-      ...dietResult.formData,
-      title: 'Complete Coaching Plan (Draft)',
-    }
-
-    setStatus('Diet ready · Generating workout plan…')
-    const workoutResult = await runCoachAiAction({
-      action: 'initial_workout',
-      clientId: client.id,
-      coachNote,
-    })
-
-    setBusy(null)
-    setStatus(null)
-
-    if (workoutResult.aiReasoning) setReasoning(workoutResult.aiReasoning)
-
-    if (!workoutResult.success || !workoutResult.formData) {
-      savePlanDraftToSession(clientId, merged)
-      saveWorkoutRetryError(clientId, workoutResult.error ?? 'Workout plan generation failed.')
-      if (dietResult.aiReasoning) saveAiReasoningToSession(clientId, dietResult.aiReasoning)
-      router.push(`/coach/plan/new?clientId=${clientId}&fromAi=1&retryWorkout=1`)
-      return
-    }
-
-    merged = mergePlanForms(merged, {
-      workout_plan: workoutResult.formData.workout_plan,
-      cardio_plan: workoutResult.formData.cardio_plan,
-      coach_notes: [merged.coach_notes, workoutResult.formData.coach_notes].filter(Boolean).join('\n\n'),
-    })
-
-    openEditor(merged, workoutResult.aiReasoning ?? dietResult.aiReasoning)
+  const cancelGeneration = () => {
+    abortRef.current = true
+    resetGenerationUi()
+    setError('Generation cancelled. You can retry anytime — any completed section may already be saved as a server draft.')
   }
 
   const handleRestore = async (plan: Plan) => {
@@ -214,6 +308,8 @@ export default function CoachGeneratePlanPage() {
 
   if (!client) return null
 
+  const metricsBlocked = Boolean(client.complexity_input_needs_review)
+
   return (
     <CoachShell narrow>
           <Link href={`/coach/client/${client.id}`} style={s.backLink}>← Back to client</Link>
@@ -223,6 +319,16 @@ export default function CoachGeneratePlanPage() {
             {client.name || client.email}
             {coach?.name ? ` · Coach ${coach.name}` : ''}
           </p>
+
+          {metricsBlocked && (
+            <div style={s.error}>
+              Client must confirm metrics before AI plan work.
+              {Array.isArray(client.complexity_input_review_reasons) &&
+              client.complexity_input_review_reasons.length > 0
+                ? ` ${client.complexity_input_review_reasons.join(' ')}`
+                : ''}
+            </div>
+          )}
 
           <ClientContextCard
             name={client.name || client.email || 'Client'}
@@ -249,7 +355,7 @@ export default function CoachGeneratePlanPage() {
               key={action.id}
               title={action.label}
               description={action.description}
-              disabled={busy !== null}
+              disabled={busy !== null || metricsBlocked}
               onClick={() => void runSingleAction(action.id)}
             />
           ))}
@@ -257,13 +363,40 @@ export default function CoachGeneratePlanPage() {
             title="Generate complete plan"
             description="Diet plan first, then workout plan — opens as one draft"
             primary
-            disabled={busy !== null}
+            disabled={busy !== null || metricsBlocked}
             onClick={() => void runCompletePlan()}
           />
 
           <OptionalCoachNote value={coachNote} onChange={setCoachNote} />
-          <GenerationStatus message={status} />
-          {error && <div style={s.error}>{error}</div>}
+          <GenerationStatus
+            message={status}
+            stepLabel={stepLabel}
+            elapsedSeconds={busy ? elapsedSeconds : null}
+          />
+          {busy && (
+            <button type="button" style={s.noteToggle} onClick={cancelGeneration}>
+              Cancel generation
+            </button>
+          )}
+          {error && (
+            <div style={s.error}>
+              {error}
+              {!busy && (
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    style={s.noteToggle}
+                    onClick={() => {
+                      setError('')
+                      void runCompletePlan()
+                    }}
+                  >
+                    Retry complete plan
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <AiReasoningPanel reasoning={reasoning} />
 
           <p style={s.sectionLabel}>Plan history</p>

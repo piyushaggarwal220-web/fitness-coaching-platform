@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { Copy, Phone } from 'lucide-react'
+import { Copy, Phone, Sparkles } from 'lucide-react'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
@@ -23,6 +23,7 @@ export default function CoachChatDetailPage() {
   const [messages, setMessages] = useState<ConversationMessage[]>([])
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState<string | null>(null)
+  const [activePlanId, setActivePlanId] = useState<string | null>(null)
   const [copyHint, setCopyHint] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -45,6 +46,15 @@ export default function CoachChatDetailPage() {
       setClientName(profile?.name ?? 'Client')
       setClientPhone(profile?.phone?.trim() ? profile.phone.trim() : null)
 
+      const { data: activePlan } = await supabase
+        .from('plans')
+        .select('id')
+        .eq('client_id', conv.client_id)
+        .eq('coach_id', coach.id)
+        .eq('active', true)
+        .maybeSingle()
+      setActivePlanId(activePlan?.id ?? null)
+
       const res = await fetch(`/api/chat/messages?conversationId=${conversationId}`, {
         credentials: 'include',
       })
@@ -65,6 +75,15 @@ export default function CoachChatDetailPage() {
       setCopyHint('Copy failed')
       window.setTimeout(() => setCopyHint(''), 2000)
     }
+  }
+
+  const openEditPlanWithAi = () => {
+    if (!conversation) return
+    if (activePlanId) {
+      router.push(`/coach/plan/${activePlanId}?ai=1`)
+      return
+    }
+    router.push(`/coach/client/${conversation.client_id}/generate-plan`)
   }
 
   if (loading) {
@@ -98,6 +117,13 @@ export default function CoachChatDetailPage() {
     </div>
   )
 
+  const editPlanBtn = (
+    <button type="button" onClick={openEditPlanWithAi} style={phoneStyles.editAiBtn}>
+      <Sparkles size={14} />
+      Edit plan with AI
+    </button>
+  )
+
   return (
     <CoachShell narrow>
       <div className="coach-chat-detail">
@@ -108,12 +134,18 @@ export default function CoachChatDetailPage() {
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 style={{ margin: 0 }}>{clientName}</h1>
             {phoneBlock}
+            <div style={{ marginTop: 8 }}>{editPlanBtn}</div>
           </div>
         </div>
 
         <div className="coach-chat-detail-desktop-title" style={{ marginBottom: 12, flexShrink: 0 }}>
-          <h1 style={{ ...styles.title, fontSize: '1.25rem', margin: 0 }}>{clientName}</h1>
-          <div style={{ marginTop: 6 }}>{phoneBlock}</div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ ...styles.title, fontSize: '1.25rem', margin: 0 }}>{clientName}</h1>
+              <div style={{ marginTop: 6 }}>{phoneBlock}</div>
+            </div>
+            {editPlanBtn}
+          </div>
         </div>
 
         <div className="coach-chat-detail-viewport">
@@ -162,5 +194,19 @@ const phoneStyles: Record<string, React.CSSProperties> = {
   missing: {
     fontSize: 13,
     color: colors.textMuted,
+  },
+  editAiBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    border: `1px solid ${colors.accent}`,
+    background: colors.accentMuted,
+    color: colors.accent,
+    borderRadius: 999,
+    padding: '6px 12px',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
 }

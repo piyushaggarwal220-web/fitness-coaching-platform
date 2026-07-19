@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ChangeEvent, type CSSProperties } from 'react';
+import { useEffect, useState, type ChangeEvent, type CSSProperties } from 'react';
 import {
   AiEditSectionButton,
   PlanSectionAiEditModal,
@@ -17,6 +17,9 @@ type PlanEditorProps = {
   clientLocked?: boolean;
   /** When set, shows Edit with AI on workout + nutrition */
   enableAiEdit?: boolean;
+  /** Open a section AI modal once on mount (e.g. from ?ai=1). */
+  initialAiSection?: PlanSectionKind | null;
+  onInitialAiSectionConsumed?: () => void;
 };
 
 export function PlanEditor({
@@ -26,10 +29,18 @@ export function PlanEditor({
   clients,
   clientLocked,
   enableAiEdit = false,
+  initialAiSection = null,
+  onInitialAiSectionConsumed,
 }: PlanEditorProps) {
   const [aiSection, setAiSection] = useState<PlanSectionKind | null>(null);
   const clientId = form.client_id?.trim() || '';
   const canAiEdit = enableAiEdit && Boolean(clientId) && Boolean(onFormPatch);
+
+  useEffect(() => {
+    if (!canAiEdit || !initialAiSection) return;
+    setAiSection(initialAiSection);
+    onInitialAiSectionConsumed?.();
+  }, [canAiEdit, initialAiSection, onInitialAiSectionConsumed]);
 
   return (
     <div style={localStyles.wrap}>

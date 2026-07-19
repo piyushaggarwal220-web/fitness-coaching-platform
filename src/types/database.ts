@@ -36,6 +36,9 @@ export type CoachClientDetail = ClientProfile & {
   medical_notes?: string | null
   complexity_previous_score?: number | null
   complexity_last_calculated_at?: string | null
+  complexity_input_needs_review?: boolean | null
+  complexity_input_review_reasons?: string[] | null
+  league_opt_in?: boolean | null
 }
 
 /** Structured coaching intake stored in profiles.onboarding_data */
@@ -141,6 +144,9 @@ export type Profile = {
   complexity_previous_score?: number | null
   complexity_previous_tier?: 'low' | 'medium' | 'high' | null
   complexity_score_change?: number | null
+  complexity_input_needs_review?: boolean | null
+  complexity_input_review_reasons?: string[] | null
+  league_opt_in?: boolean | null
 }
 
 export type OnboardingProfile = Profile

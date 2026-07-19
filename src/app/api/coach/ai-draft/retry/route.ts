@@ -3,6 +3,9 @@ import { sanitizeDraftFailureError } from '@/lib/ai/draft-error'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { createClient } from '@/lib/supabase/server'
 
+/** Retry runs the full weekly draft pipeline. */
+export const maxDuration = 300
+
 type Body = {
   clientId?: string
   checkinId?: string

@@ -340,36 +340,15 @@ export async function generateWeeklyPlanDraft(input: {
   }
 }
 
-/** @deprecated Use generateWeeklyPlanDraft */
-export async function autoGenerateWeeklyPlanDraft(input: {
-  clientId: string
-  coachId: string
-  checkinId: string
-  coachingWeek: number
-}): Promise<{ planId: string | null; error: string | null }> {
-  const result = await generateWeeklyPlanDraft({ ...input, trigger: 'auto' })
-  return { planId: result.planId, error: result.error }
-}
-
+/**
+ * Strictly resolves the AI draft linked to this check-in.
+ * No latest-draft fallback: "Ready" must never be faked by a stale draft
+ * from a previous week's check-in.
+ */
 export async function loadLatestAiDraftForClient(
   clientId: string,
-  checkinId?: string
+  checkinId: string
 ): Promise<Plan | null> {
   const admin = createAdminClient()
-  if (checkinId) {
-    const linked = await findAiDraftForCheckin(admin, clientId, checkinId)
-    if (linked) return linked
-  }
-
-  const { data: drafts } = await admin
-    .from('plans')
-    .select('*')
-    .eq('client_id', clientId)
-    .eq('active', false)
-    .like('title', 'AI Draft%')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  return (drafts as Plan | null) ?? null
+  return findAiDraftForCheckin(admin, clientId, checkinId)
 }

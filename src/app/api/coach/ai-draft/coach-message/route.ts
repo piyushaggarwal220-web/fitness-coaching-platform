@@ -3,6 +3,9 @@ import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { createClient } from '@/lib/supabase/server'
 import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
 
+/** Client coach-message generation calls Claude. */
+export const maxDuration = 300
+
 type Body = {
   clientId?: string
   checkinId?: string

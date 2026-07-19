@@ -108,20 +108,24 @@ export async function getLatestDraftLogForCheckin(
       .eq('client_id', clientId)
       .in('action', ['weekly_draft_auto', 'weekly_draft_retry', 'weekly_draft_manual'])
       .order('created_at', { ascending: false })
-      .limit(20)
+      .limit(50)
 
     const row = (data ?? []).find((entry) => {
-      const output = entry.rendered_output as { checkinId?: string } | null
-      return output?.checkinId === checkinId
+      const output = entry.rendered_output as
+        | { checkinId?: string; output?: { checkinId?: string }; error?: string | null }
+        | null
+      return output?.checkinId === checkinId || output?.output?.checkinId === checkinId
     })
 
     if (!row) return null
-    const output = row.rendered_output as { error?: string | null } | null
+    const output = row.rendered_output as
+      | { error?: string | null; output?: { error?: string | null } }
+      | null
     return {
       success: row.success,
       createdAt: row.created_at as string,
       action: row.action as string,
-      error: output?.error ?? null,
+      error: output?.error ?? output?.output?.error ?? null,
     }
   } catch {
     return null

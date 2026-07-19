@@ -47,9 +47,11 @@ export async function GET(request: Request) {
   const draft = await loadLatestAiDraftForClient(clientId, checkinId)
   const log = await getLatestDraftLogForCheckin(clientId, checkinId)
 
-  const generationFailed = !draft && log?.success === false
   const submittedAt = checkin?.submitted_at ? new Date(checkin.submitted_at).getTime() : 0
-  const recentSubmit = submittedAt > 0 && Date.now() - submittedAt < 12 * 60 * 1000
+  const elapsedMs = submittedAt > 0 ? Date.now() - submittedAt : 0
+  const recentSubmit = submittedAt > 0 && elapsedMs < 12 * 60 * 1000
+  const timedOutWithoutDraft = !draft && submittedAt > 0 && elapsedMs >= 12 * 60 * 1000
+  const generationFailed = !draft && (log?.success === false || timedOutWithoutDraft)
   const isGenerating = !draft && !generationFailed && recentSubmit
 
   return NextResponse.json({
@@ -57,7 +59,14 @@ export async function GET(request: Request) {
     draftPlanId: draft?.id ?? null,
     generationFailed,
     isGenerating,
-    failureError: generationFailed ? sanitizeDraftFailureError(log?.error) : null,
+    failureError: generationFailed
+      ? sanitizeDraftFailureError(
+          log?.error ??
+            (timedOutWithoutDraft
+              ? 'Draft generation timed out. Use Retry to generate again.'
+              : null)
+        )
+      : null,
     checkinWeek: checkin?.coaching_week ?? null,
   })
 }

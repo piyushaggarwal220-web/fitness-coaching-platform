@@ -33,8 +33,14 @@ export async function logAiGeneration(input: AiGenerationLogInput): Promise<void
   try {
     const admin = createAdminClient()
     const debug = isDebugAiEnabled()
+    const isDraftWorkflow = input.action.startsWith('weekly_draft_')
 
     const costs = calculateAiCostUsd(input.model, input.promptTokens, input.completionTokens)
+
+    // Draft workflow rows must always keep checkin linkage for status/retry UI.
+    // Full prompt dumps remain DEBUG_AI-only.
+    const shouldPersistRendered =
+      input.renderedOutput != null && (debug || isDraftWorkflow)
 
     const row = {
       client_id: input.clientId,
@@ -53,12 +59,17 @@ export async function logAiGeneration(input: AiGenerationLogInput): Promise<void
       output_cost_usd: costs.outputCostUsd,
       total_cost_usd: costs.totalCostUsd,
       raw_output: debug && input.rawOutput != null ? input.rawOutput : null,
-      rendered_output:
-        debug && (input.renderedOutput != null || input.cacheReport != null)
+      rendered_output: shouldPersistRendered
+        ? debug && input.cacheReport != null
           ? {
-              ...(input.renderedOutput != null ? { output: input.renderedOutput } : {}),
-              ...(input.cacheReport != null ? { promptCache: input.cacheReport } : {}),
+              ...(typeof input.renderedOutput === 'object' && input.renderedOutput != null
+                ? (input.renderedOutput as Record<string, unknown>)
+                : { output: input.renderedOutput }),
+              promptCache: input.cacheReport,
             }
+          : input.renderedOutput
+        : debug && input.cacheReport != null
+          ? { promptCache: input.cacheReport }
           : null,
       created_at: new Date().toISOString(),
     }

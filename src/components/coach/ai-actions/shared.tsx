@@ -78,20 +78,34 @@ export function OptionalCoachNote({
 export function GenerationStatus({
   message,
   variant = 'loading',
+  elapsedSeconds,
+  stepLabel,
 }: {
   message: string | null
   variant?: 'loading' | 'success' | 'error'
+  elapsedSeconds?: number | null
+  stepLabel?: string | null
 }) {
-  if (!message) return null
+  if (!message && !stepLabel) return null
 
   if (variant === 'success') {
-    return <SuccessState message={message} />
+    return <SuccessState message={message ?? 'Done'} />
   }
 
   if (variant === 'loading') {
+    const elapsed =
+      elapsedSeconds != null && elapsedSeconds >= 0
+        ? ` · ${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, '0')}`
+        : ''
     return (
       <div style={s.status}>
         <AiGenerationProgress active />
+        <div style={{ marginTop: 8, fontSize: 14, color: 'inherit' }}>
+          {stepLabel ? <strong>{stepLabel}</strong> : null}
+          {stepLabel && message ? ' — ' : null}
+          {message}
+          {elapsed}
+        </div>
       </div>
     )
   }

@@ -30,6 +30,7 @@ export default function CoachClientDetailPage() {
   const [coach, setCoach] = useState<Coach | null>(null);
   const [client, setClient] = useState<CoachClientDetail | null>(null);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -56,14 +57,24 @@ export default function CoachClientDetailPage() {
 
       setClient(clientData);
 
-      const { data: workoutsData } = await supabase
-        .from('workouts')
-        .select('*')
-        .eq('user_id', clientId)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const [{ data: workoutsData }, { data: activePlan }] = await Promise.all([
+        supabase
+          .from('workouts')
+          .select('*')
+          .eq('user_id', clientId)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('plans')
+          .select('id')
+          .eq('client_id', clientId)
+          .eq('coach_id', coachData.id)
+          .eq('active', true)
+          .maybeSingle(),
+      ]);
 
       setWorkouts(workoutsData ?? []);
+      setActivePlanId(activePlan?.id ?? null);
       setLoading(false);
     };
 
@@ -111,10 +122,29 @@ export default function CoachClientDetailPage() {
           <button style={styles.generateBtn} onClick={() => router.push(`/coach/client/${client.id}/generate-plan`)}>
             AI coaching actions
           </button>
-          <button style={styles.actionBtn} onClick={() => router.push(`/coach/plan/new?clientId=${client.id}`)}>
-            Create plan manually
-          </button>
+          {activePlanId ? (
+            <button
+              style={styles.actionBtn}
+              onClick={() => router.push(`/coach/plan/${activePlanId}?ai=1`)}
+            >
+              Edit delivered plan
+            </button>
+          ) : (
+            <button style={styles.actionBtn} onClick={() => router.push(`/coach/plan/new?clientId=${client.id}`)}>
+              Create plan manually
+            </button>
+          )}
         </div>
+
+        {client.complexity_input_needs_review && (
+          <div style={styles.reviewBanner}>
+            Client must confirm metrics before AI plan work.
+            {Array.isArray(client.complexity_input_review_reasons) &&
+            client.complexity_input_review_reasons.length > 0
+              ? ` ${client.complexity_input_review_reasons.join(' ')}`
+              : ''}
+          </div>
+        )}
 
         <div style={styles.statusRow}>
           <div style={styles.statusCard}>
@@ -211,6 +241,16 @@ const styles: Record<string, CSSProperties> = {
   actions: { display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
   generateBtn: coachPageStyles.primaryBtn,
   actionBtn: coachPageStyles.secondaryBtn,
+  reviewBanner: {
+    marginBottom: 16,
+    padding: '12px 14px',
+    borderRadius: 12,
+    border: `1px solid ${colors.warning}`,
+    backgroundColor: colors.warningMuted ?? colors.accentMuted,
+    color: colors.textPrimary,
+    fontSize: 14,
+    lineHeight: 1.45,
+  },
   statusRow: { display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
   statusCard: { ...coachPageStyles.card, marginBottom: 0, minWidth: 160, display: 'flex', flexDirection: 'column', gap: 8 },
   statusLabel: coachPageStyles.metaLabel,

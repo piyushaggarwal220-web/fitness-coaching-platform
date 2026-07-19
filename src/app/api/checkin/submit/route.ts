@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import { logApiDev } from '@/lib/api-dev-log'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
@@ -18,6 +18,9 @@ import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CheckinType } from '@/types/database'
+
+/** Allow long-running weekly draft generation after the response returns. */
+export const maxDuration = 300
 
 type MidWeekBody = {
   checkinType: 'mid_week'
@@ -342,13 +345,15 @@ export async function POST(request: Request) {
     }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
 
     if (body.checkinType === 'weekly') {
-      void generateWeeklyPlanDraft({
-        clientId: user.id,
-        coachId: profile.coach_id,
-        checkinId: inserted.id,
-        coachingWeek: scheduled.coachingWeek,
-        trigger: 'auto',
-      }).catch((err) => console.error('[checkin-submit] auto draft failed:', err))
+      after(() =>
+        generateWeeklyPlanDraft({
+          clientId: user.id,
+          coachId: profile.coach_id,
+          checkinId: inserted.id,
+          coachingWeek: scheduled.coachingWeek,
+          trigger: 'auto',
+        }).catch((err) => console.error('[checkin-submit] auto draft failed:', err))
+      )
     }
 
     logApiDev('checkin_submit_success', {
