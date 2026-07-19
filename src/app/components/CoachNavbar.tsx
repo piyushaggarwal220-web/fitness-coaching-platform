@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import {
   BarChart3,
   ClipboardList,
-  Dumbbell,
   LayoutDashboard,
   ListOrdered,
   MessageCircle,
@@ -29,7 +28,6 @@ const COACH_DRAWER_ITEMS: DrawerNavItem[] = [
   { href: '/coach/queue', label: 'Queue', icon: <ListOrdered size={20} /> },
   { href: '/coach/chat', label: 'Chats', icon: <MessageCircle size={20} /> },
   { href: '/coach/checkins', label: 'Check-ins', icon: <ClipboardList size={20} /> },
-  { href: '/coach/exercises', label: 'Exercise Videos', icon: <Dumbbell size={20} /> },
   { href: '/coach/analytics', label: 'Analytics', icon: <BarChart3 size={20} /> },
   { href: '/coach/dashboard', label: 'Profile', icon: <User size={20} /> },
 ]

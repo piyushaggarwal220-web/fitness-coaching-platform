@@ -30,7 +30,6 @@ import {
 } from '@/lib/daily-tracker/display'
 import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
 import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
-import { ExerciseDemoButton } from '@/components/exercises/ExerciseDemoButton'
 
 type WorkoutDayOption = { key: string; label: string }
 
@@ -554,7 +553,6 @@ export function WorkoutModule({
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <div style={{ fontWeight: 800, fontSize: 17 }}>{ex.name}</div>
-                      <ExerciseDemoButton exerciseName={ex.name} />
                     </div>
                     <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>
                       {formatExerciseTarget(ex)}
