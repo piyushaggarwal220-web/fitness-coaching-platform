@@ -12,7 +12,7 @@ export const coachPageStyles: Record<string, CSSProperties> = {
     fontSize: 'clamp(1.5rem, 4vw, 1.85rem)',
     fontWeight: 800,
     color: colors.textPrimary,
-    letterSpacing: '-0.03em',
+    letterSpacing: '-0.02em',
     lineHeight: 1.15,
   },
   subtitle: { margin: '0 0 24px 0', color: colors.textSecondary, fontSize: 15, lineHeight: 1.45 },

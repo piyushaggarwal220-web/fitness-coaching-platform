@@ -60,14 +60,18 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   useEffect(() => {
     let active = true
     let poll: ReturnType<typeof setInterval> | null = null
+    let coachId: string | null = null
 
-    const load = async () => {
-      const coach = await requireCoach(supabase, router)
-      if (!coach || !active) {
-        setLoading(false)
-        return
+    const load = async (reauth: boolean) => {
+      if (reauth || !coachId) {
+        const coach = await requireCoach(supabase, router)
+        if (!coach || !active) {
+          setLoading(false)
+          return
+        }
+        coachId = coach.id
       }
-      const queue = await getCoachWorkQueue(supabase, coach.id)
+      const queue = await getCoachWorkQueue(supabase, coachId)
       if (active) {
         setTasks(queue)
         onCountsChange?.(getWorkQueueCounts(queue))
@@ -75,8 +79,8 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
       }
     }
 
-    void load()
-    poll = setInterval(() => void load(), 8000)
+    void load(true)
+    poll = setInterval(() => void load(false), 15000)
     return () => {
       active = false
       if (poll) clearInterval(poll)

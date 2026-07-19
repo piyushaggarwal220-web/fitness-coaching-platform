@@ -25,6 +25,7 @@ import { formatPlanDate } from '@/lib/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
+import { LeagueDashboardCard } from '@/components/league/LeagueDashboardCard';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
 import { isItemComplete } from '@/lib/daily-tracker/scores';
@@ -33,6 +34,7 @@ import { createClient } from '@/lib/supabase/client';
 import { colors, spacing, typography } from '@/lib/design-tokens';
 import { mobileStyles } from '@/lib/mobile-styles';
 import type { Checkin, Coach, OnboardingProfile, Plan, Purchase, Workout } from '@/types/database';
+import type { LeagueStandingRow } from '@/lib/league/scoring';
 
 const supabase = createClient();
 
@@ -58,6 +60,10 @@ export default function Dashboard() {
   const [trackerSubtitle, setTrackerSubtitle] = useState('Meals, workout, water & more');
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [leagueMe, setLeagueMe] = useState<LeagueStandingRow | null>(null);
+  const [leagueOptIn, setLeagueOptIn] = useState(false);
+  const [leagueSeasonKey, setLeagueSeasonKey] = useState('');
+  const [leagueLoading, setLeagueLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [restoringSession, setRestoringSession] = useState(true);
@@ -92,15 +98,68 @@ export default function Dashboard() {
 
         const userId = result.user.id;
         const activity: ActivityItem[] = [];
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+        const coachId = profileData.coach_id;
 
-        const { data: checkinData, error: checkinError } = await supabase
-          .from('checkins')
-          .select('*')
-          .eq('client_id', userId)
-          .order('submitted_at', { ascending: false });
+        const [
+          checkinResult,
+          planResult,
+          purchaseResult,
+          workoutsResult,
+          weekWorkoutsResult,
+          coachResult,
+          convResult,
+        ] = await Promise.all([
+          supabase
+            .from('checkins')
+            .select('id, client_id, coach_id, checkin_type, submitted_at, coaching_week, weight, notes')
+            .eq('client_id', userId)
+            .order('submitted_at', { ascending: false }),
+          supabase
+            .from('plans')
+            .select('id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, workout_plan, nutrition_plan, cardio_plan, supplement_plan, coach_notes')
+            .eq('client_id', userId)
+            .eq('active', true)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('purchases')
+            .select('id, user_id, status, amount_paise, currency, created_at, plan_name, plan_slug')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('workouts')
+            .select('id, user_id, name, date, created_at, duration, calories')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(5),
+          supabase
+            .from('workouts')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .gte('date', weekAgoStr),
+          coachId
+            ? supabase.from('coaches').select('id, name, user_id, hard_cap').eq('id', coachId).maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          coachId
+            ? supabase.from('coach_conversations').select('unread_by_client').eq('client_id', userId).maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+        ]);
 
-        if (checkinError) throw new Error(checkinError.message);
-        const checkinList = (checkinData ?? []) as Checkin[];
+        if (checkinResult.error) throw new Error(checkinResult.error.message);
+        if (planResult.error) throw new Error(planResult.error.message);
+        if (purchaseResult.error) throw new Error(purchaseResult.error.message);
+        if (workoutsResult.error) throw new Error(workoutsResult.error.message);
+        if (weekWorkoutsResult.error) throw new Error(weekWorkoutsResult.error.message);
+        if (coachResult.error) throw new Error(coachResult.error.message);
+        if (convResult.error) throw new Error(convResult.error.message);
+
+        const checkinList = (checkinResult.data ?? []) as Checkin[];
         setAllCheckins(checkinList);
         const latestCheckin = checkinList[0] ?? null;
 
@@ -114,53 +173,12 @@ export default function Dashboard() {
           });
         }
 
-        const { data: planData, error: planError } = await supabase
-          .from('plans')
-          .select('*')
-          .eq('client_id', userId)
-          .eq('active', true)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (planError) throw new Error(planError.message);
+        const planData = planResult.data as Plan | null;
         setActivePlan(planData);
+        setPurchase(purchaseResult.data as Purchase | null);
+        setWeekWorkouts(weekWorkoutsResult.count ?? 0);
 
-        const { data: purchaseData, error: purchaseError } = await supabase
-          .from('purchases')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (purchaseError) throw new Error(purchaseError.message);
-        setPurchase(purchaseData);
-
-        const { data: workoutsData, error: workoutsError } = await supabase
-          .from('workouts')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (workoutsError) throw new Error(workoutsError.message);
-
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        const weekAgoStr = weekAgo.toISOString().slice(0, 10);
-
-        const { count: weekWorkoutCount, error: weekWorkoutsError } = await supabase
-          .from('workouts')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', userId)
-          .gte('date', weekAgoStr);
-
-        if (weekWorkoutsError) throw new Error(weekWorkoutsError.message);
-        setWeekWorkouts(weekWorkoutCount ?? 0);
-
-        const workouts = (workoutsData ?? []) as Workout[];
-
+        const workouts = (workoutsResult.data ?? []) as Workout[];
         for (const w of workouts.slice(0, 3)) {
           activity.push({
             id: `workout-${w.id}`,
@@ -170,7 +188,6 @@ export default function Dashboard() {
             href: '/workouts',
           });
         }
-
         setRecentActivity(activity.slice(0, 5));
 
         if (planData) {
@@ -182,23 +199,23 @@ export default function Dashboard() {
           }
         }
 
-        if (result.profile?.coach_id) {
-          const { data: coachData, error: coachError } = await supabase
-            .from('coaches')
-            .select('id, name, user_id, hard_cap')
-            .eq('id', result.profile.coach_id)
-            .maybeSingle();
-          if (coachError) throw new Error(coachError.message);
-          setCoach(coachData);
+        if (coachResult.data) setCoach(coachResult.data as Coach);
+        setUnreadMessages((convResult.data?.unread_by_client as number) ?? 0);
 
-          const { data: conv, error: convError } = await supabase
-            .from('coach_conversations')
-            .select('unread_by_client')
-            .eq('client_id', userId)
-            .maybeSingle();
-          if (convError) throw new Error(convError.message);
-          setUnreadMessages((conv?.unread_by_client as number) ?? 0);
-        }
+        void fetch('/api/league', { credentials: 'include' })
+          .then(async (res) => {
+            if (!res.ok) return
+            const json = await res.json() as {
+              optIn?: boolean
+              seasonKey?: string
+              me?: LeagueStandingRow | null
+            }
+            setLeagueOptIn(Boolean(json.optIn))
+            setLeagueSeasonKey(json.seasonKey ?? '')
+            setLeagueMe(json.me ?? null)
+          })
+          .catch(() => undefined)
+          .finally(() => setLeagueLoading(false))
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : 'Failed to load dashboard');
       } finally {
@@ -467,6 +484,13 @@ export default function Dashboard() {
           />
         </div>
       </section>
+
+      <LeagueDashboardCard
+        me={leagueMe}
+        optIn={leagueOptIn}
+        seasonKey={leagueSeasonKey || 'Current season'}
+        loading={leagueLoading}
+      />
 
       {/* Coach message — only when not already in bottom-nav duplicates */}
       {coach && (

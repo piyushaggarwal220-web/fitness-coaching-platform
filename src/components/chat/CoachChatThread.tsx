@@ -10,6 +10,7 @@ import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
 import { colors, shadows } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
+import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
 import { Check, CheckCheck, ImageIcon, Send } from 'lucide-react'
 
 type CoachChatThreadProps = {
@@ -30,6 +31,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const threadRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const lastPeerMessageIdRef = useRef<string | null>(null)
 
   const fetchMessages = useCallback(async (markRead = true) => {
     const res = await fetch(`/api/chat/messages?conversationId=${conversationId}${markRead ? '' : '&peek=1'}`, {
@@ -42,15 +44,24 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       return
     }
     if (parsed.data.messages) {
-      setMessages(parsed.data.messages)
+      const incoming = parsed.data.messages
+      const latestPeer = [...incoming].reverse().find((m) => m.sender_type !== viewer)
+      const latestPeerId = latestPeer?.id ?? 'none'
+      // Chime only on genuinely new peer messages, not on the initial load.
+      if (lastPeerMessageIdRef.current !== null && latestPeer && lastPeerMessageIdRef.current !== latestPeerId) {
+        playNotificationSound()
+      }
+      lastPeerMessageIdRef.current = latestPeerId
+      setMessages(incoming)
       setLoading(false)
     }
     if (typeof parsed.data.peerTyping === 'boolean') setPeerTyping(parsed.data.peerTyping)
-  }, [conversationId])
+  }, [conversationId, viewer])
 
   useEffect(() => {
+    prepareNotificationSound()
     void fetchMessages()
-    pollRef.current = setInterval(() => void fetchMessages(), 2500)
+    pollRef.current = setInterval(() => void fetchMessages(false), 8000)
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [fetchMessages])
 

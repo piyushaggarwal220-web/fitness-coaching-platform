@@ -46,26 +46,30 @@ export function CoachConversationsSection() {
   useEffect(() => {
     let active = true
     let poll: ReturnType<typeof setInterval> | null = null
+    let coachId: string | null = null
 
-    const load = async () => {
-      const coach = await requireCoach(supabase, router)
-      if (!coach || !active) { setLoading(false); return }
+    const load = async (reauth: boolean) => {
+      if (reauth || !coachId) {
+        const coach = await requireCoach(supabase, router)
+        if (!coach || !active) { setLoading(false); return }
+        coachId = coach.id
+      }
 
       const { data } = await supabase
         .from('coach_conversations')
-        .select('*, profiles:client_id(name, email)')
-        .eq('coach_id', coach.id)
+        .select('id, client_id, coach_id, status, last_message_at, last_message_preview, unread_by_coach, unread_by_client, profiles:client_id(name, email)')
+        .eq('coach_id', coachId)
         .neq('status', 'closed')
         .order('last_message_at', { ascending: false, nullsFirst: false })
 
       if (active) {
-        setConversations((data ?? []) as ConversationRow[])
+        setConversations((data ?? []) as unknown as ConversationRow[])
         setLoading(false)
       }
     }
 
-    void load()
-    poll = setInterval(() => void load(), 5000)
+    void load(true)
+    poll = setInterval(() => void load(false), 12000)
     return () => { active = false; if (poll) clearInterval(poll) }
   }, [router])
 

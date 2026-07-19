@@ -6,6 +6,7 @@ import { Bell } from 'lucide-react'
 import type { UserNotification } from '@/types/database'
 import { colors, radius } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
+import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
@@ -25,6 +26,7 @@ export function NotificationBell() {
   useEffect(() => {
     if (unreadCount > prevUnread.current) {
       setBadgePop(true)
+      playNotificationSound()
       const t = setTimeout(() => setBadgePop(false), 400)
       prevUnread.current = unreadCount
       return () => clearTimeout(t)
@@ -33,8 +35,9 @@ export function NotificationBell() {
   }, [unreadCount])
 
   useEffect(() => {
+    prepareNotificationSound()
     void fetchNotifications()
-    const interval = setInterval(() => void fetchNotifications(), 30000)
+    const interval = setInterval(() => void fetchNotifications(), 45000)
     return () => clearInterval(interval)
   }, [])
 

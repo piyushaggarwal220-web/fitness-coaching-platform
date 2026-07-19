@@ -4,13 +4,13 @@ import { useEffect, useState, type ReactNode } from 'react'
 import {
   Calendar,
   ClipboardList,
-  Dumbbell,
   Home,
   LifeBuoy,
   ListChecks,
   Map,
   MessageCircle,
   Settings,
+  Trophy,
   User,
 } from 'lucide-react'
 import { BottomNav } from './BottomNav'
@@ -39,7 +39,7 @@ const drawerItems = clientDrawerItems({
   Calendar,
   ListChecks,
   MessageCircle,
-  Dumbbell,
+  Trophy,
   User,
   Settings,
   LifeBuoy,

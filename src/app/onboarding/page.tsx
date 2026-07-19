@@ -179,6 +179,17 @@ export default function OnboardingPage() {
     }
   }, [step, form, mealsForTiming.length])
 
+  // Each step should start at the top; otherwise the previous step's scroll
+  // position carries over and new steps open scrolled below the heading.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const active = document.activeElement
+    if (active instanceof HTMLElement && active !== document.body) {
+      active.blur()
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [step])
+
   const mealTimingContext = { mealsForTiming, confirmedMeals: confirmedMealTimes }
 
   const handleNext = async () => {
