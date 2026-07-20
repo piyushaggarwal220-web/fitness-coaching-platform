@@ -2,6 +2,13 @@
 export function logPurchaseStep(
   step:
     | 'payment_verified'
+    | 'payment_record_started'
+    | 'payment_recorded'
+    | 'payment_record_failed'
+    | 'payment_already_claimed'
+    | 'claim_started'
+    | 'claim_complete'
+    | 'claim_failed'
     | 'fulfillment_started'
     | 'auth_user_created'
     | 'auth_user_exists'
@@ -16,7 +23,12 @@ export function logPurchaseStep(
     | 'fulfillment_failed'
     | 'automatic_sign_in_started'
     | 'automatic_sign_in_succeeded'
-    | 'automatic_sign_in_failed',
+    | 'automatic_sign_in_failed'
+    | 'webhook_missing_plan'
+    | 'webhook_amount_mismatch'
+    | 'webhook_missing_email'
+    | 'webhook_recorded'
+    | 'webhook_failed',
   details?: Record<string, unknown>
 ): void {
   const enabled =

@@ -9,10 +9,31 @@ import { CoachReplyRatingPrompt } from '@/components/chat/CoachReplyRating'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
 import { StorageImage } from '@/components/ui/StorageImage'
-import { colors, shadows } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
-import { Check, CheckCheck, ImageIcon, Send } from 'lucide-react'
+import { Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
+
+/** WhatsApp-like dark palette */
+const wa = {
+  bg: '#0b141a',
+  pattern: '#0b141a',
+  header: '#1f2c33',
+  incoming: '#202c33',
+  outgoing: '#005c4b',
+  text: '#e9edef',
+  textMuted: '#8696a0',
+  meta: '#ffffff99',
+  metaOutgoing: '#ffffff99',
+  tick: '#53bdeb',
+  tickSent: '#ffffff99',
+  inputBar: '#1f2c34',
+  input: '#2a3942',
+  send: '#00a884',
+  systemBg: '#182229',
+  systemText: '#8696a0',
+  danger: '#ea4335',
+  dangerBg: '#3a1d1d',
+}
 
 type CoachChatThreadProps = {
   conversationId: string
@@ -48,7 +69,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       const incoming = parsed.data.messages
       const latestPeer = [...incoming].reverse().find((m) => m.sender_type !== viewer)
       const latestPeerId = latestPeer?.id ?? 'none'
-      // Chime only on genuinely new peer messages, not on the initial load.
       if (lastPeerMessageIdRef.current !== null && latestPeer && lastPeerMessageIdRef.current !== latestPeerId) {
         playNotificationSound()
       }
@@ -172,24 +192,37 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   }, [imagePreview])
 
   const peerLabel = viewer === 'client' ? 'Coach' : 'Client'
+  const showSend = input.trim().length > 0 || Boolean(imagePreview)
 
   return (
-    <div className="coach-chat-thread" style={styles.wrapper}>
-      <div ref={threadRef} className="coach-chat-messages" style={styles.thread}>
+    <div className="coach-chat-thread wa-chat" style={styles.wrapper}>
+      <div ref={threadRef} className="coach-chat-messages wa-chat-messages" style={styles.thread}>
+        <div style={styles.wallpaper} aria-hidden />
+
         {loading && (
           <div style={styles.skeletonWrap}>
             {[1, 2, 3].map((i) => (
-              <div key={i} className="skeleton" style={{ height: 52, width: i % 2 === 0 ? '70%' : '55%', alignSelf: i % 2 === 0 ? 'flex-end' : 'flex-start', borderRadius: 20 }} />
+              <div
+                key={i}
+                style={{
+                  height: 44,
+                  width: i % 2 === 0 ? '62%' : '48%',
+                  alignSelf: i % 2 === 0 ? 'flex-end' : 'flex-start',
+                  borderRadius: 8,
+                  backgroundColor: i % 2 === 0 ? wa.outgoing : wa.incoming,
+                  opacity: 0.55,
+                }}
+              />
             ))}
           </div>
         )}
 
         {!loading && messages.length === 0 && (
           <div style={styles.empty}>
-            <p style={{ margin: 0, fontWeight: 600, color: colors.textPrimary }}>Start the conversation</p>
-            <p style={{ margin: '8px 0 0', fontSize: 14, color: colors.textMuted }}>
-              Send a message to your {viewer === 'client' ? 'coach' : 'client'}. Voice notes and photos are supported.
-            </p>
+            <div style={styles.emptyCard}>
+              Messages are end-to-end encrypted between you and your coach in this workspace.
+              Send a text, photo, or voice note to start.
+            </div>
           </div>
         )}
 
@@ -217,10 +250,23 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           }
 
           return (
-            <div key={msg.id} className={motionClass.messageEnter} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '100%' }}>
+            <div
+              key={msg.id}
+              className={motionClass.messageEnter}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: isMine ? 'flex-end' : 'flex-start',
+                maxWidth: '100%',
+                paddingInline: 4,
+              }}
+            >
               <div
                 className={isMine ? 'coach-chat-bubble-mine' : 'coach-chat-bubble-other'}
-                style={{ ...(isMine ? styles.bubbleMine : styles.bubbleOther) }}
+                style={{
+                  ...(isMine ? styles.bubbleMine : styles.bubbleOther),
+                  ...(msg.message_type === 'image' ? { padding: 4 } : null),
+                }}
               >
                 {msg.message_type === 'voice' && msg.media_url ? (
                   <div className="coach-chat-voice">
@@ -233,14 +279,24 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                 ) : msg.message_type === 'image' && msg.media_url ? (
                   <StorageImage bucket="chat-images" src={msg.media_url} alt="Shared" style={styles.image} />
                 ) : (
-                  <div className="coach-chat-bubble-text" style={{ fontSize: 15, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}</div>
+                  <div
+                    className="coach-chat-bubble-text"
+                    style={{
+                      fontSize: 14.5,
+                      lineHeight: 1.4,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      color: wa.text,
+                    }}
+                  >
+                    {msg.content}
+                  </div>
                 )}
-                <div style={styles.meta}>
+                <div style={{ ...styles.meta, color: isMine ? wa.metaOutgoing : wa.meta }}>
                   <span>{formatMessageTime(msg.created_at)}</span>
                   {isMine && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                      {msg.read_at ? <CheckCheck size={12} /> : <Check size={12} />}
-                      {msg.read_at ? 'Read' : 'Sent'}
+                    <span style={{ display: 'inline-flex', marginLeft: 2, color: msg.read_at ? wa.tick : wa.tickSent }}>
+                      {msg.read_at ? <CheckCheck size={14} strokeWidth={2.5} /> : <Check size={14} strokeWidth={2.5} />}
                     </span>
                   )}
                 </div>
@@ -253,7 +309,14 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         })}
 
         {peerTyping && (
-          <div style={styles.typing}>{peerLabel} is typing...</div>
+          <div style={styles.typingRow}>
+            <div style={styles.typingBubble}>
+              <span style={styles.typingDot} />
+              <span style={{ ...styles.typingDot, animationDelay: '0.15s' }} />
+              <span style={{ ...styles.typingDot, animationDelay: '0.3s' }} />
+            </div>
+            <span style={styles.typingLabel}>{peerLabel} is typing</span>
+          </div>
         )}
         <div ref={bottomRef} />
       </div>
@@ -263,37 +326,59 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       {imagePreview && (
         <div className={motionClass.inputBarEnter} style={styles.imagePreviewBar}>
           <img src={imagePreview.url} alt="Preview" style={styles.previewThumb} />
-          <button type="button" onClick={() => { URL.revokeObjectURL(imagePreview.url); setImagePreview(null) }} style={styles.previewCancel}>
+          <button
+            type="button"
+            onClick={() => { URL.revokeObjectURL(imagePreview.url); setImagePreview(null) }}
+            style={styles.previewCancel}
+          >
             Cancel
           </button>
           <button type="button" onClick={() => void uploadAndSendImage()} disabled={sending} style={styles.previewSend}>
-            Send photo
+            Send
           </button>
         </div>
       )}
 
       <div className={`coach-chat-input-bar ${motionClass.inputBarEnter}`} style={styles.inputBar}>
-        <VoiceRecorder
-          conversationId={conversationId}
-          onSent={() => void fetchMessages()}
-          onError={setError}
-        />
-        <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} id={`chat-image-${conversationId}`} />
-        <label htmlFor={`chat-image-${conversationId}`} style={styles.attachBtn} aria-label="Attach image">
-          <ImageIcon size={20} color={colors.textSecondary} />
-        </label>
-        <input
-          value={input}
-          onChange={(e) => { setInput(e.target.value); handleTyping() }}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage() } }}
-          placeholder="Message..."
-          className="coach-chat-input"
-          style={styles.input}
-          disabled={sending}
-        />
-        <button type="button" onClick={() => void sendMessage()} disabled={sending || !input.trim()} className="btn-press" style={styles.sendBtn} aria-label="Send">
-          <Send size={18} />
-        </button>
+        <div style={styles.composer}>
+          <span style={styles.composerIcon} aria-hidden>
+            <Smile size={22} color={wa.textMuted} />
+          </span>
+          <input
+            value={input}
+            onChange={(e) => { setInput(e.target.value); handleTyping() }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage() } }}
+            placeholder="Message"
+            className="coach-chat-input"
+            style={styles.input}
+            disabled={sending}
+          />
+          <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} id={`chat-image-${conversationId}`} />
+          <label htmlFor={`chat-image-${conversationId}`} style={styles.attachBtn} aria-label="Attach image">
+            <ImageIcon size={22} color={wa.textMuted} />
+          </label>
+        </div>
+
+        {showSend ? (
+          <button
+            type="button"
+            onClick={() => void sendMessage()}
+            disabled={sending || !input.trim()}
+            className="btn-press"
+            style={styles.sendBtn}
+            aria-label="Send"
+          >
+            <Send size={18} fill="currentColor" />
+          </button>
+        ) : (
+          <div style={styles.micWrap}>
+            <VoiceRecorder
+              conversationId={conversationId}
+              onSent={() => void fetchMessages()}
+              onError={setError}
+            />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -306,7 +391,8 @@ const styles: Record<string, CSSProperties> = {
     flex: 1,
     minHeight: 0,
     height: '100%',
-    background: `linear-gradient(180deg, ${colors.bgPrimary} 0%, ${colors.bgSecondary} 100%)`,
+    backgroundColor: wa.bg,
+    position: 'relative',
   },
   thread: {
     flex: 1,
@@ -316,68 +402,240 @@ const styles: Record<string, CSSProperties> = {
     WebkitOverflowScrolling: 'touch',
     display: 'flex',
     flexDirection: 'column',
-    gap: 10,
-    padding: '16px 16px 8px',
+    gap: 2,
+    padding: '8px 6px 10px',
     scrollBehavior: 'smooth',
+    position: 'relative',
+    zIndex: 1,
   },
-  skeletonWrap: { display: 'flex', flexDirection: 'column', gap: 12 },
-  empty: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 32 },
-  systemMsg: { textAlign: 'center', color: colors.textMuted, fontSize: 12, padding: '6px 16px', fontStyle: 'italic', backgroundColor: colors.bgElevated, borderRadius: 999, alignSelf: 'center' },
+  wallpaper: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 0,
+    pointerEvents: 'none',
+    opacity: 0.06,
+    backgroundImage:
+      'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'120\' viewBox=\'0 0 120 120\'%3E%3Cg fill=\'%23fff\' fill-opacity=\'0.9\'%3E%3Ccircle cx=\'10\' cy=\'10\' r=\'1.5\'/%3E%3Ccircle cx=\'60\' cy=\'30\' r=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'70\' r=\'1.2\'/%3E%3Ccircle cx=\'30\' cy=\'90\' r=\'1\'/%3E%3Ccircle cx=\'80\' cy=\'100\' r=\'1.4\'/%3E%3C/g%3E%3C/svg%3E")',
+    backgroundColor: wa.pattern,
+  },
+  skeletonWrap: { display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 4px', position: 'relative', zIndex: 1 },
+  empty: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    padding: 24,
+    position: 'relative',
+    zIndex: 1,
+  },
+  emptyCard: {
+    maxWidth: 320,
+    backgroundColor: wa.systemBg,
+    color: wa.systemText,
+    fontSize: 13,
+    lineHeight: 1.5,
+    padding: '10px 14px',
+    borderRadius: 8,
+    boxShadow: '0 1px 1px rgba(0,0,0,0.2)',
+  },
+  systemMsg: {
+    textAlign: 'center',
+    color: wa.systemText,
+    fontSize: 12.5,
+    padding: '6px 12px',
+    backgroundColor: wa.systemBg,
+    borderRadius: 8,
+    alignSelf: 'center',
+    margin: '6px 0',
+    maxWidth: '85%',
+    boxShadow: '0 1px 0.5px rgba(0,0,0,0.15)',
+    zIndex: 1,
+  },
   checkinSystemMsg: {
     alignSelf: 'center',
     width: '100%',
     maxWidth: 340,
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.borderSubtle}`,
-    borderRadius: 16,
-    padding: '14px 16px',
-    margin: '4px 0',
+    backgroundColor: wa.systemBg,
+    borderRadius: 8,
+    padding: '12px 14px',
+    margin: '6px 0',
+    boxShadow: '0 1px 0.5px rgba(0,0,0,0.15)',
+    zIndex: 1,
   },
   checkinContent: {
     margin: 0,
     fontFamily: 'inherit',
-    fontSize: 14,
-    lineHeight: 1.55,
-    color: colors.textPrimary,
+    fontSize: 13.5,
+    lineHeight: 1.5,
+    color: wa.text,
     whiteSpace: 'pre-wrap',
     textAlign: 'left',
   },
   bubbleMine: {
-    background: `linear-gradient(135deg, ${colors.accent} 0%, #ea580c 100%)`,
-    color: colors.textInverse,
-    borderRadius: '20px 20px 6px 20px',
-    padding: '10px 14px',
-    maxWidth: '82%',
-    boxShadow: shadows.accent,
+    backgroundColor: wa.outgoing,
+    color: wa.text,
+    borderRadius: '8px 8px 0 8px',
+    padding: '6px 8px 4px 9px',
+    maxWidth: '78%',
+    boxShadow: '0 1px 0.5px rgba(0,0,0,0.18)',
+    position: 'relative',
   },
   bubbleOther: {
-    backgroundColor: colors.bgCard,
-    color: colors.textPrimary,
-    borderRadius: '20px 20px 20px 6px',
-    padding: '10px 14px',
-    maxWidth: '82%',
-    border: `1px solid ${colors.borderSubtle}`,
-    boxShadow: shadows.sm,
+    backgroundColor: wa.incoming,
+    color: wa.text,
+    borderRadius: '8px 8px 8px 0',
+    padding: '6px 8px 4px 9px',
+    maxWidth: '78%',
+    boxShadow: '0 1px 0.5px rgba(0,0,0,0.18)',
+    position: 'relative',
   },
-  meta: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, fontSize: 10, opacity: 0.75, marginTop: 6 },
-  image: { maxWidth: '100%', borderRadius: 12, maxHeight: 240, display: 'block' },
-  typing: { color: colors.textMuted, fontSize: 13, fontStyle: 'italic', padding: '4px 8px' },
-  error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: 10, borderRadius: 12, fontSize: 13, margin: '0 16px 8px', flexShrink: 0 },
+  meta: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 3,
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 1,
+    paddingLeft: 8,
+  },
+  image: { maxWidth: '100%', borderRadius: 6, maxHeight: 280, display: 'block' },
+  typingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '4px 8px',
+    zIndex: 1,
+  },
+  typingBubble: {
+    display: 'flex',
+    gap: 3,
+    alignItems: 'center',
+    backgroundColor: wa.incoming,
+    borderRadius: 16,
+    padding: '10px 12px',
+    boxShadow: '0 1px 0.5px rgba(0,0,0,0.18)',
+  },
+  typingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: wa.textMuted,
+    display: 'inline-block',
+    animation: 'wa-typing 1.2s infinite ease-in-out',
+  },
+  typingLabel: { color: wa.textMuted, fontSize: 12 },
+  error: {
+    backgroundColor: wa.dangerBg,
+    color: wa.danger,
+    padding: 10,
+    borderRadius: 8,
+    fontSize: 13,
+    margin: '0 12px 8px',
+    flexShrink: 0,
+    zIndex: 2,
+  },
   inputBar: {
     display: 'flex',
     gap: 8,
-    alignItems: 'center',
+    alignItems: 'flex-end',
     flexShrink: 0,
-    padding: '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))',
-    borderTop: `1px solid ${colors.divider}`,
-    backgroundColor: colors.bgGlass,
-    backdropFilter: 'blur(20px)',
+    padding: '6px 8px calc(8px + env(safe-area-inset-bottom, 0px))',
+    backgroundColor: wa.inputBar,
+    zIndex: 2,
   },
-  input: { flex: 1, minWidth: 0, minHeight: 44, padding: '10px 16px', border: `1px solid ${colors.borderSubtle}`, borderRadius: 24, fontSize: 16, outline: 'none', backgroundColor: colors.bgElevated, color: colors.textPrimary },
-  sendBtn: { minHeight: 44, minWidth: 44, padding: 10, backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: '50%', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: shadows.accent },
-  attachBtn: { minHeight: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: colors.bgElevated, borderRadius: '50%', border: `1px solid ${colors.borderSubtle}` },
-  imagePreviewBar: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: `1px solid ${colors.divider}`, backgroundColor: colors.bgCard, flexShrink: 0 },
-  previewThumb: { width: 56, height: 56, borderRadius: 10, objectFit: 'cover' },
-  previewCancel: { padding: '8px 12px', border: `1px solid ${colors.borderSubtle}`, borderRadius: 12, background: 'transparent', color: colors.textSecondary, cursor: 'pointer', fontSize: 13 },
-  previewSend: { padding: '8px 14px', border: 'none', borderRadius: 12, backgroundColor: colors.accent, color: colors.textInverse, cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  composer: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: wa.input,
+    borderRadius: 24,
+    minHeight: 44,
+    padding: '4px 6px 4px 10px',
+  },
+  composerIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    flexShrink: 0,
+  },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 36,
+    padding: '8px 4px',
+    border: 'none',
+    borderRadius: 0,
+    fontSize: 16,
+    outline: 'none',
+    backgroundColor: 'transparent',
+    color: wa.text,
+  },
+  sendBtn: {
+    minHeight: 44,
+    minWidth: 44,
+    padding: 0,
+    backgroundColor: wa.send,
+    color: '#fff',
+    border: 'none',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+  },
+  micWrap: {
+    minHeight: 44,
+    minWidth: 44,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  attachBtn: {
+    minHeight: 36,
+    minWidth: 36,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  imagePreviewBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '10px 12px',
+    backgroundColor: wa.header,
+    flexShrink: 0,
+    zIndex: 2,
+  },
+  previewThumb: { width: 56, height: 56, borderRadius: 8, objectFit: 'cover' },
+  previewCancel: {
+    padding: '8px 12px',
+    border: 'none',
+    borderRadius: 20,
+    background: wa.input,
+    color: wa.text,
+    cursor: 'pointer',
+    fontSize: 13,
+  },
+  previewSend: {
+    padding: '8px 16px',
+    border: 'none',
+    borderRadius: 20,
+    backgroundColor: wa.send,
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    marginLeft: 'auto',
+  },
 }

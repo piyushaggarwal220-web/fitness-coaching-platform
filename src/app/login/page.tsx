@@ -9,6 +9,8 @@ import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
 import { colors } from '@/lib/design-tokens';
 import { safeInternalPath } from '@/lib/safe-navigation';
+import { sanitizeAuthPasswordError } from '@/lib/auth-password-errors';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 const supabase = createClient();
 
@@ -32,27 +34,27 @@ function LoginForm() {
       password: password,
     });
 
+    // Session can succeed even when Auth attaches a weak/leaked-password warning.
+    if (data.user) {
+      await supabase.auth.getSession();
+      const { profile, error: profileError } = await fetchClientProfile(supabase, data.user.id);
+      router.refresh();
+      const destination = profileError || !profile
+        ? redirectTo
+        : getClientPostAuthPath(profile, profileError ?? undefined);
+      router.push(destination);
+      setLoading(false);
+      return;
+    }
+
     if (loginError) {
-      setError(loginError.message);
+      const safe = sanitizeAuthPasswordError(loginError.message);
+      setError(safe ?? 'Unable to sign in. Check your email and password.');
       setLoading(false);
       return;
     }
 
-    if (!data.user) {
-      setError('Login failed. Please try again.');
-      setLoading(false);
-      return;
-    }
-
-    await supabase.auth.getSession();
-
-    const { profile, error: profileError } = await fetchClientProfile(supabase, data.user.id);
-
-    router.refresh();
-    const destination = profileError || !profile
-      ? redirectTo
-      : getClientPostAuthPath(profile, profileError ?? undefined);
-    router.push(destination);
+    setError('Login failed. Please try again.');
     setLoading(false);
   };
 
@@ -78,7 +80,7 @@ function LoginForm() {
 
         {error && <div style={authStyles.error}>{error}</div>}
 
-        <form onSubmit={handleLogin} style={authStyles.form}>
+        <form onSubmit={handleLogin} style={authStyles.form} autoComplete="off">
           <div style={authStyles.inputGroup}>
             <label style={authStyles.label}>Email</label>
             <input
@@ -87,19 +89,21 @@ function LoginForm() {
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               required
               style={authStyles.input}
-              autoComplete="email"
+              autoComplete="off"
+              name="user_email"
             />
           </div>
 
           <div style={authStyles.inputGroup}>
-            <label style={authStyles.label}>Password</label>
-            <input
-              type="password"
+            <label style={authStyles.label}>Access key</label>
+            <PasswordInput
               value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               required
-              style={authStyles.input}
-              autoComplete="current-password"
+              inputStyle={authStyles.input}
+              name="access_key"
+              aria-label="Password"
+              autoComplete="off"
             />
           </div>
 
@@ -111,6 +115,10 @@ function LoginForm() {
         <p style={authStyles.link}>
           Don&apos;t have an account?{' '}
           <Link href="/checkout?plan=6_months" style={authStyles.linkColor}>Get started</Link>
+        </p>
+        <p style={{ ...authStyles.link, marginTop: 8 }}>
+          Paid but haven&apos;t set up your account?{' '}
+          <Link href="/create-account" style={authStyles.linkColor}>Finish setup</Link>
         </p>
       </div>
     </div>

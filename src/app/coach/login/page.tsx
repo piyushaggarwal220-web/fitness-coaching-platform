@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 const supabase = createClient();
 
@@ -72,7 +73,15 @@ export default function CoachLogin() {
 
           <div style={authStyles.inputGroup}>
             <label style={authStyles.label}>Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={authStyles.input} autoComplete="current-password" />
+            <PasswordInput
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              inputStyle={authStyles.input}
+              name="passcode"
+              aria-label="Password"
+              autoComplete="off"
+            />
           </div>
 
           <button type="submit" disabled={loading} style={{ ...authStyles.button, opacity: loading ? 0.6 : 1 }} className="btn-press">

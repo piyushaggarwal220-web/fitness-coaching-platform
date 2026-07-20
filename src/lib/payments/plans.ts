@@ -11,40 +11,40 @@ export type CoachingPlan = {
   best?: boolean
 }
 
-/** Coaching plan catalog — amounts match landing page pricing. */
+/** Coaching plan catalog — amounts match storefront pricing. */
 export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
   '1_month': {
     slug: '1_month',
     name: '1 Month',
-    displayPrice: '₹500',
-    amountPaise: 50000,
+    displayPrice: '₹499',
+    amountPaise: 49900,
     durationMonths: 1,
     saveLabel: 'No commitment',
   },
   '3_months': {
     slug: '3_months',
     name: '3 Months',
-    displayPrice: '₹900',
-    amountPaise: 90000,
+    displayPrice: '₹999',
+    amountPaise: 99900,
     durationMonths: 3,
-    saveLabel: 'Save ₹600 vs monthly',
+    saveLabel: 'Save ₹498 vs monthly',
     popular: true,
   },
   '6_months': {
     slug: '6_months',
     name: '6 Months',
-    displayPrice: '₹1,500',
-    amountPaise: 150000,
+    displayPrice: '₹1,699',
+    amountPaise: 169900,
     durationMonths: 6,
-    saveLabel: 'Save ₹1,500 vs monthly',
+    saveLabel: 'Save ₹1,295 vs monthly',
   },
   '12_months': {
     slug: '12_months',
     name: '12 Months',
-    displayPrice: '₹2,400',
-    amountPaise: 240000,
+    displayPrice: '₹2,999',
+    amountPaise: 299900,
     durationMonths: 12,
-    saveLabel: 'Save ₹3,600 vs monthly',
+    saveLabel: 'Save ₹2,989 vs monthly',
     best: true,
   },
 }

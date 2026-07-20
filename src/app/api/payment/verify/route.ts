@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
-import { fulfillPurchase } from '@/lib/payments/fulfillment'
+import { recordCapturedPayment } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
-import { establishPurchaseSession } from '@/lib/payments/purchase-session'
 import { getCoachingPlan } from '@/lib/payments/plans'
 import {
   fetchRazorpayPayment,
@@ -13,7 +12,6 @@ type VerifyPaymentBody = {
   planSlug?: string
   email?: string
   name?: string
-  password?: string
   razorpay_order_id?: string
   razorpay_payment_id?: string
   razorpay_signature?: string
@@ -30,7 +28,6 @@ export async function POST(request: Request) {
   const plan = getCoachingPlan(body.planSlug)
   const email = body.email?.trim().toLowerCase()
   const name = body.name?.trim()
-  const password = body.password ?? ''
 
   if (!plan) {
     return NextResponse.json({ success: false, error: 'Invalid plan' }, { status: 400 })
@@ -40,12 +37,6 @@ export async function POST(request: Request) {
   }
   if (!name) {
     return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
-  }
-  if (password.length < 6) {
-    return NextResponse.json(
-      { success: false, error: 'Password must be at least 6 characters' },
-      { status: 400 }
-    )
   }
 
   const orderId = body.razorpay_order_id ?? ''
@@ -108,9 +99,8 @@ export async function POST(request: Request) {
   })
 
   try {
-    const result = await fulfillPurchase({
+    const result = await recordCapturedPayment({
       email,
-      password,
       name,
       plan,
       razorpayPaymentId: paymentId || `test_pay_${Date.now()}`,
@@ -118,34 +108,30 @@ export async function POST(request: Request) {
       amountPaise: plan.amountPaise,
     })
 
-    const session = await establishPurchaseSession(email, password)
-    if (!session.ok) {
-      logPurchaseStep('fulfillment_failed', {
-        step: 'automatic_sign_in',
-        email,
-        userId: result.userId,
-        error: session.error,
+    if (result.alreadyClaimed) {
+      return NextResponse.json({
+        success: true,
+        alreadyClaimed: true,
+        purchaseId: result.purchaseId,
+        redirectTo: '/login',
+        message: 'This payment already has an account. Please sign in.',
       })
+    }
+
+    if (!result.claimToken) {
       return NextResponse.json(
-        {
-          success: false,
-          error:
-            'Your payment was received but we could not sign you in automatically. Please contact support with your payment confirmation.',
-        },
+        { success: false, error: 'Payment recorded but setup token was missing' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      userId: result.userId,
       purchaseId: result.purchaseId,
-      isNewUser: result.isNewUser,
-      sessionEstablished: true,
-      redirectTo: '/onboarding',
+      redirectTo: `/create-account?token=${encodeURIComponent(result.claimToken)}`,
     })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to fulfill purchase'
+    const message = err instanceof Error ? err.message : 'Failed to record payment'
     logPurchaseStep('fulfillment_failed', { email, error: message })
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }

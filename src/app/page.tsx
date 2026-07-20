@@ -18,7 +18,7 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'LURVOX — Personal Fitness Coaching From ₹500',
+  title: 'LURVOX — Personal Fitness Coaching From ₹499',
   description:
     'Personalized workout plans, diet coaching, weekly reviews, and daily tracking. Premium coaching at an incredibly affordable price.',
 }

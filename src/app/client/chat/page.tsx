@@ -6,7 +6,6 @@ import { ClientShell } from '@/components/ui/ClientShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { authenticateClient } from '@/lib/onboarding'
 import { mobileStyles } from '@/lib/mobile-styles'
-import { colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
 import type { CoachConversation } from '@/types/database'
 
@@ -53,7 +52,7 @@ export default function ClientChatPage() {
   return (
     <ClientShell title="Chat" hideBottomNav fullHeight>
       {connecting && (
-        <p style={{ margin: '8px 16px', fontSize: 14, color: colors.textMuted, textAlign: 'center', flexShrink: 0 }}>
+        <p style={{ margin: '8px 16px', fontSize: 14, color: '#8696a0', textAlign: 'center', flexShrink: 0 }}>
           Connecting you with your coach...
         </p>
       )}

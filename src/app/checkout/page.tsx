@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
@@ -59,7 +60,6 @@ function CheckoutForm() {
         planSlug: plan.slug,
         email,
         name,
-        password,
         ...payload,
       }),
     });
@@ -69,22 +69,8 @@ function CheckoutForm() {
       throw new Error(verifyData.error ?? 'Payment verification failed');
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (!verifyData.sessionEstablished) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
-      });
-      if (signInError) {
-        throw new Error(
-          'Your payment was received but we could not sign you in automatically. Please use the login page or contact support.'
-        );
-      }
-    }
-
     router.refresh();
-    router.push(verifyData.redirectTo ?? '/onboarding');
+    router.push(verifyData.redirectTo ?? '/create-account');
   };
 
   const validateCode = async () => {
@@ -171,7 +157,7 @@ function CheckoutForm() {
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: 'Coaching Platform',
+        name: 'LURVOX',
         description: `${plan.name} coaching plan`,
         order_id: orderData.orderId,
         prefill: { name, email },
@@ -248,7 +234,7 @@ function CheckoutForm() {
                 backgroundColor: item.slug === plan.slug ? colors.accentMuted : colors.bgElevated,
               }}
             >
-              {item.name}
+              {item.name} · {item.displayPrice}
             </Link>
           ))}
         </div>
@@ -262,26 +248,40 @@ function CheckoutForm() {
           <label style={styles.label}>Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={styles.input} />
 
-          <label style={styles.label}>Create password (min 6 characters)</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            style={styles.input}
-          />
+          {showRedeem && redeemValid && (
+            <>
+              <label style={styles.label}>Create password (min 6 characters)</label>
+              <PasswordInput
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                inputStyle={styles.input}
+                name="redeem-passcode"
+                aria-label="Create password"
+                autoComplete="off"
+              />
+            </>
+          )}
 
           <button
             type="submit"
             disabled={loading || (showRedeem ? !redeemValid : (!testMode && !razorpayReady))}
             style={styles.payBtn}
           >
-            {loading ? 'Processing...' : showRedeem && redeemValid ? 'Redeem & Continue' : `Pay ${plan.displayPrice} securely`}
+            {loading
+              ? 'Processing...'
+              : showRedeem && redeemValid
+                ? 'Redeem & Continue'
+                : `Pay ${plan.displayPrice} securely`}
           </button>
         </form>
 
-        <p style={styles.secure}>Secure payments via Razorpay. You&apos;ll complete onboarding right after payment.</p>
+        <p style={styles.secure}>
+          Secure payments via Razorpay. After payment you&apos;ll create your account password.
+          {' '}
+          <Link href="/create-account" style={{ color: colors.accent }}>Already paid?</Link>
+        </p>
       </div>
 
       {!testMode && (
@@ -316,7 +316,7 @@ const styles: Record<string, CSSProperties> = {
   input: { padding: '14px 16px', border: `1px solid ${colors.borderSubtle}`, borderRadius: radius.sm, fontSize: 16, backgroundColor: colors.bgElevated, color: colors.textPrimary, minHeight: 56 },
   payBtn: { marginTop: spacing[3], padding: 16, backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: radius.md, fontSize: 17, fontWeight: 700, cursor: 'pointer', minHeight: 56 },
   error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[2] },
-  secure: { marginTop: spacing[3], fontSize: 13, color: colors.textMuted, textAlign: 'center' },
+  secure: { marginTop: spacing[3], fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 },
   loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: colors.textSecondary, backgroundColor: colors.bgPrimary },
   redeemLink: { background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: spacing[3], padding: '8px 0', minHeight: 44 },
   redeemBox: { backgroundColor: colors.accentMuted, padding: spacing[3], borderRadius: radius.sm, marginBottom: spacing[3] },

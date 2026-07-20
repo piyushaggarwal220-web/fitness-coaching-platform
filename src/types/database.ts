@@ -217,6 +217,9 @@ export type Purchase = {
   status: string
   customer_email: string
   customer_name: string | null
+  claim_token_hash?: string | null
+  claim_token_expires_at?: string | null
+  claimed_at?: string | null
   created_at: string
 }
 

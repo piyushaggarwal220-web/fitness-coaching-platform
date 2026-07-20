@@ -16,6 +16,12 @@ export type RazorpayPayment = {
   currency: string
   order_id: string
   email?: string
+  notes?: Record<string, string>
+}
+
+export type RazorpayOrderDetail = RazorpayOrder & {
+  notes?: Record<string, string>
+  status?: string
 }
 
 function getCredentials() {
@@ -78,6 +84,19 @@ export async function fetchRazorpayPayment(paymentId: string): Promise<RazorpayP
   return response.json() as Promise<RazorpayPayment>
 }
 
+export async function fetchRazorpayOrder(orderId: string): Promise<RazorpayOrderDetail> {
+  const response = await fetch(`${RAZORPAY_API_BASE}/orders/${orderId}`, {
+    headers: { Authorization: getAuthHeader() },
+  })
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(`Failed to fetch Razorpay order: ${body}`)
+  }
+
+  return response.json() as Promise<RazorpayOrderDetail>
+}
+
 export function verifyRazorpaySignature(
   orderId: string,
   paymentId: string,
@@ -87,6 +106,19 @@ export function verifyRazorpaySignature(
   const payload = `${orderId}|${paymentId}`
   const expected = createHmac('sha256', keySecret).update(payload).digest('hex')
 
+  try {
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
+  } catch {
+    return false
+  }
+}
+
+/** Verify Razorpay webhook signature (HMAC SHA256 of raw body). Env: RAZORPAY_WEBHOOK_SECRET */
+export function verifyRazorpayWebhookSignature(rawBody: string, signature: string): boolean {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET?.trim()
+  if (!secret || !signature) return false
+
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex')
   try {
     return timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
   } catch {

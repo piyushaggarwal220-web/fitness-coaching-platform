@@ -234,15 +234,26 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
       style={{ ...styles.micBtn, ...(recording ? styles.recording : {}) }}
       aria-label={recording ? 'Stop recording' : 'Record voice message'}
     >
-      {recording ? <Square size={18} color={colors.danger} fill={colors.danger} /> : <Mic size={20} color={colors.textSecondary} />}
+      {recording ? <Square size={18} color="#fff" fill="#fff" /> : <Mic size={22} color="#fff" />}
     </button>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  micBtn: { minHeight: 48, minWidth: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgElevated, border: `1px solid ${colors.borderSubtle}`, borderRadius: '50%', cursor: 'pointer' },
-  recording: { backgroundColor: colors.dangerMuted, borderColor: colors.danger },
+  micBtn: {
+    minHeight: 44,
+    minWidth: 44,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#00a884',
+    border: 'none',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+  },
+  recording: { backgroundColor: '#ea4335' },
   preview: { display: 'flex', alignItems: 'center', gap: 4 },
   smallBtn: { background: 'none', border: 'none', cursor: 'pointer', minWidth: 36, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  sendSmall: { padding: '6px 12px', backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: 16, fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 36 },
+  sendSmall: { padding: '6px 12px', backgroundColor: '#00a884', color: '#fff', border: 'none', borderRadius: 16, fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 36 },
 }

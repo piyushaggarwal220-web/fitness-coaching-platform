@@ -803,3 +803,30 @@ input[type="range"]::-moz-range-thumb {
 @media (min-width: 769px) {
   .navbar-mobile-btn { display: none !important; }
 }
+
+/* WhatsApp-style chat typing dots */
+@keyframes wa-typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+.wa-chat .coach-chat-input::placeholder {
+  color: #8696a0;
+}
+
+/* Masked password fields (avoid native type=password breach popups) */
+.lurvox-password-input {
+  -webkit-text-security: disc;
+  text-security: disc;
+}
+
+.chat-main {
+  background: #0b141a !important;
+}
+
+body:has(.wa-chat) header {
+  background: #1f2c33 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
