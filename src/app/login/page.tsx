@@ -102,7 +102,7 @@ function LoginForm() {
               required
               inputStyle={authStyles.input}
               name="access_key"
-              aria-label="Password"
+              aria-label="Access key"
               autoComplete="off"
             />
           </div>
