@@ -99,6 +99,9 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
   const now = new Date().toISOString()
   const includeAccessSource = await hasAccessSourceColumn()
 
+  const expiresAt = new Date()
+  expiresAt.setMonth(expiresAt.getMonth() + input.plan.durationMonths)
+
   const profilePayload: Record<string, unknown> = {
     id: userId,
     email,
@@ -106,6 +109,7 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
     role: 'client',
     payment_confirmed: true,
     onboarding_complete: false,
+    subscription_expires_at: expiresAt.toISOString(),
     updated_at: now,
   }
 

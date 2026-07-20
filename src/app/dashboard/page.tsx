@@ -25,8 +25,10 @@ import { formatPlanDate } from '@/lib/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
+import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
 import { LeagueDashboardCard } from '@/components/league/LeagueDashboardCard';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
+import { getActiveSubscription } from '@/lib/subscription';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
 import { isItemComplete } from '@/lib/daily-tracker/scores';
 import type { DailyTrackerDay, TrackerSnapshotItem } from '@/lib/daily-tracker/types';
@@ -229,6 +231,11 @@ export default function Dashboard() {
     ? getClientDashboardStatus({ profile, purchase, coach, activePlan })
     : null;
 
+  const subscription = getActiveSubscription(
+    purchase,
+    profile?.subscription_expires_at ?? null
+  );
+
   const checkinScheduleBypass = shouldBypassCheckinScheduleClient();
   const checkinSchedule = profile?.onboarding_completed_at
     ? getClientCheckinSchedule(profile.onboarding_completed_at, allCheckins, new Date(), {
@@ -272,6 +279,8 @@ export default function Dashboard() {
       {checkinScheduleBypass && (
         <DevelopmentModeBadge style={{ marginBottom: spacing[4] }} />
       )}
+
+      {subscription && <ActiveSubscriptionCard subscription={subscription} />}
 
       {/* Plan delivery countdown */}
       {profile && status?.onboardingComplete && status.coachAssigned && (

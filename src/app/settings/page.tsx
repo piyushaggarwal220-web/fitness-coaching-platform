@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard'
 import { authenticateClient } from '@/lib/onboarding'
+import { getActiveSubscription } from '@/lib/subscription'
 import { createClient } from '@/lib/supabase/client'
 import { colors, spacing } from '@/lib/design-tokens'
+import type { OnboardingProfile, Purchase } from '@/types/database'
 
 const supabase = createClient()
 
@@ -17,6 +20,8 @@ export default function ClientSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [leagueOptIn, setLeagueOptIn] = useState(false)
   const [message, setMessage] = useState('')
+  const [profile, setProfile] = useState<OnboardingProfile | null>(null)
+  const [purchase, setPurchase] = useState<Purchase | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -25,11 +30,27 @@ export default function ClientSettingsPage() {
         setLoading(false)
         return
       }
+      setProfile(result.profile)
       setLeagueOptIn(Boolean(result.profile.league_opt_in))
+
+      const { data } = await supabase
+        .from('purchases')
+        .select('id, user_id, status, amount_paise, currency, created_at, plan_name, plan_slug')
+        .eq('user_id', result.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      setPurchase((data as Purchase | null) ?? null)
       setLoading(false)
     }
     void load()
   }, [router])
+
+  const subscription = getActiveSubscription(
+    purchase,
+    profile?.subscription_expires_at ?? null
+  )
 
   const saveLeagueOptIn = async (optIn: boolean) => {
     setSaving(true)
@@ -55,6 +76,8 @@ export default function ClientSettingsPage() {
 
   return (
     <ClientShell title="Settings">
+      {subscription && <ActiveSubscriptionCard subscription={subscription} />}
+
       <Card variant="glass">
         <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 16 }}>Account</p>
         <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textSecondary }}>

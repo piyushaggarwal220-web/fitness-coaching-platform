@@ -128,6 +128,7 @@ export type Profile = {
   onboarding_data?: OnboardingData | null
   payment_confirmed?: boolean | null
   access_source?: 'purchase' | 'admin_trial' | null
+  subscription_expires_at?: string | null
   progress_photo_front?: string | null
   progress_photo_side?: string | null
   progress_photo_back?: string | null
