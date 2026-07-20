@@ -18,6 +18,12 @@ export function PasswordInput({
   name = 'access_key',
   ...props
 }: PasswordInputProps) {
+  const mergedStyle = {
+    ...inputStyle,
+    ...style,
+    WebkitTextSecurity: 'disc',
+  } as CSSProperties
+
   return (
     <input
       {...props}
@@ -33,11 +39,7 @@ export function PasswordInput({
       data-form-type="other"
       data-bwignore="true"
       className={['lurvox-password-input', className].filter(Boolean).join(' ')}
-      style={{
-        ...inputStyle,
-        ...style,
-        WebkitTextSecurity: 'disc',
-      }}
+      style={mergedStyle}
     />
   )
 }
