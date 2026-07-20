@@ -1,7 +1,8 @@
 import { hasClientEntitlement } from '@/lib/entitlements'
 import type { Coach, OnboardingProfile, Plan, Purchase } from '@/types/database'
 
-const PLAN_DELIVERY_HOURS = 48
+/** Plan delivery SLA after onboarding completes (hours). */
+export const PLAN_DELIVERY_HOURS = 24
 
 export type ClientDashboardStatus = {
   paymentConfirmed: boolean
@@ -13,6 +14,16 @@ export type ClientDashboardStatus = {
   nextAction: string | null
   nextActionHref: string | null
   showPlanCountdown: boolean
+  /** Plan is ready but client has not opened diet + workout yet */
+  showOpenPlanPrompt: boolean
+  /** Client opened diet + workout — put tracker at the top, hide plan CTA */
+  preferTrackerUpTop: boolean
+}
+
+export function hasOpenedDietAndWorkout(
+  plan: Pick<Plan, 'diet_opened_at' | 'workout_opened_at'> | null | undefined
+): boolean {
+  return Boolean(plan?.diet_opened_at && plan?.workout_opened_at)
 }
 
 export function getExpectedPlanDeliveryDate(
@@ -73,9 +84,14 @@ export function getClientDashboardStatus(params: {
   const coachAssigned = Boolean(profile.coach_id)
   const expectedDeliveryDate = getExpectedPlanDeliveryDate(profile)
   const planReady = isPlanFullyReady(activePlan, profile)
+  const openedCore = hasOpenedDietAndWorkout(activePlan)
+  const preferTrackerUpTop = planReady && openedCore
+  const showOpenPlanPrompt = planReady && !openedCore
 
   let planStatus = 'Not started'
-  if (planReady) {
+  if (preferTrackerUpTop) {
+    planStatus = `Active — ${activePlan!.title} (v${activePlan!.version})`
+  } else if (planReady) {
     planStatus = `Ready — ${activePlan!.title} (v${activePlan!.version})`
   } else if (activePlan) {
     planStatus = `Active — ${activePlan.title} (v${activePlan.version})`
@@ -98,17 +114,22 @@ export function getClientDashboardStatus(params: {
     nextAction = 'Complete your onboarding questionnaire'
     nextActionHref = '/onboarding'
   } else if (!coachAssigned) {
-    nextAction = 'Your coach will be assigned within 48 hours'
+    nextAction = 'Your coach is being assigned — usually within a few minutes'
     nextActionHref = null
   } else if (!planReady && !profile.plan_delivered) {
+    // Coach + countdown card handles this — avoid duplicate next-step CTA
     nextAction = null
     nextActionHref = null
     showPlanCountdown = true
-  } else if (planReady) {
-    nextAction = 'Review your coaching plan'
-    nextActionHref = '/plan'
+  } else if (showOpenPlanPrompt) {
+    // PlanCountdownCard prompts to open diet + workout — avoid duplicate next-step.
+    nextAction = null
+    nextActionHref = null
+  } else if (preferTrackerUpTop) {
+    nextAction = null
+    nextActionHref = null
   } else if (activePlan) {
-    nextAction = 'Review your coaching plan'
+    nextAction = 'Open your coaching plan'
     nextActionHref = '/plan'
   } else {
     nextAction = 'Submit your first weekly check-in'
@@ -119,11 +140,13 @@ export function getClientDashboardStatus(params: {
     paymentConfirmed,
     onboardingComplete,
     coachAssigned,
-    coachName: coach?.name ?? (profile.coach_id ? 'Assigned' : null),
+    coachName: coach?.name?.trim() || (profile.coach_id ? 'Your coach' : null),
     planStatus,
     expectedDelivery: formatExpectedDelivery(expectedDeliveryDate),
     nextAction,
     nextActionHref,
     showPlanCountdown,
+    showOpenPlanPrompt,
+    preferTrackerUpTop,
   }
 }

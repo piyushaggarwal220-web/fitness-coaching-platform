@@ -121,7 +121,7 @@ export default function Dashboard() {
             .order('submitted_at', { ascending: false }),
           supabase
             .from('plans')
-            .select('id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, workout_plan, nutrition_plan, cardio_plan, supplement_plan, coach_notes')
+            .select('id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, workout_plan, nutrition_plan, cardio_plan, supplement_plan, coach_notes, diet_opened_at, workout_opened_at')
             .eq('client_id', userId)
             .eq('active', true)
             .order('updated_at', { ascending: false })
@@ -282,13 +282,51 @@ export default function Dashboard() {
 
       {subscription && <ActiveSubscriptionCard subscription={subscription} />}
 
-      {/* Plan delivery countdown */}
-      {profile && status?.onboardingComplete && status.coachAssigned && (
-        <PlanCountdownCard profile={profile} activePlan={activePlan} />
+      {/* After plans opened: tracker leads the dashboard */}
+      {status?.preferTrackerUpTop && activePlan && (
+        <section style={{ marginBottom: spacing[7] }}>
+          <SectionHeader title="Today's Tracker" subtitle="Log today’s habits and stay consistent" />
+          <Card variant="elevated" onClick={() => router.push('/tracker')} style={{ cursor: 'pointer' }} className="card-hover">
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ListChecks size={22} color={colors.accent} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 17 }}>Open today&apos;s tracker</p>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
+                  {trackerSubtitle}
+                </p>
+              </div>
+              {todayTrackerPercent != null && (
+                <span style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: colors.accent,
+                  backgroundColor: colors.accentMuted,
+                  padding: '6px 10px',
+                  borderRadius: 999,
+                  flexShrink: 0,
+                }}>
+                  {todayTrackerPercent}%
+                </span>
+              )}
+              <ArrowRight size={20} color={colors.textMuted} />
+            </div>
+          </Card>
+        </section>
+      )}
+
+      {/* Coach assigned + 24h plan countdown (hidden once diet+workout opened) */}
+      {profile && status?.paymentConfirmed && (
+        <PlanCountdownCard
+          profile={profile}
+          activePlan={activePlan}
+          coachName={status.coachName ?? coach?.name}
+        />
       )}
 
       {/* Next step — lead with today’s action */}
-      {status && status.nextAction && (
+      {status && status.nextAction && !status.preferTrackerUpTop && (
         <section style={{ marginBottom: spacing[7] }}>
           <SectionHeader title="Next step" subtitle="What to do now" />
           <Card variant="elevated" className="card-hover">
@@ -304,16 +342,19 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Plan + daily tracking */}
+      {/* Plan (+ tracker when not already pinned at top) */}
       {(profile || activePlan) && (
         <section style={{ marginBottom: spacing[7] }}>
-          <SectionHeader title="Your plan" subtitle="Active coaching plan and daily tracking" />
+          <SectionHeader
+            title={status?.preferTrackerUpTop ? 'Your plan' : 'Your plan'}
+            subtitle={status?.preferTrackerUpTop ? 'Diet, workout, and coaching details' : 'Active coaching plan and daily tracking'}
+          />
 
           {profile && (
             <Card
               variant="glass"
               onClick={() => router.push('/plan')}
-              style={{ cursor: 'pointer', marginBottom: activePlan ? spacing[3] : 0 }}
+              style={{ cursor: 'pointer', marginBottom: !status?.preferTrackerUpTop && activePlan ? spacing[3] : 0 }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
                 <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -328,13 +369,18 @@ export default function Dashboard() {
                       v{activePlan.version} · Updated {formatPlanDate(activePlan.updated_at)}
                     </p>
                   )}
+                  {status?.coachName && (
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
+                      Coach: {status.coachName}
+                    </p>
+                  )}
                 </div>
                 <ArrowRight size={20} color={colors.textMuted} />
               </div>
             </Card>
           )}
 
-          {activePlan && (
+          {!status?.preferTrackerUpTop && activePlan && (
             <Card variant="glass" onClick={() => router.push('/tracker')} style={{ cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
                 <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

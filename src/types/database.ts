@@ -397,6 +397,8 @@ export type Plan = {
   version: number
   active: boolean
   delivered_at: string | null
+  diet_opened_at?: string | null
+  workout_opened_at?: string | null
   updated_at: string
   created_at: string
 }

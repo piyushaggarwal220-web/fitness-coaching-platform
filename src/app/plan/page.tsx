@@ -60,8 +60,43 @@ export default function ClientPlanPage() {
     load();
   }, [router]);
 
+  const markSectionOpened = async (section: 'diet' | 'workout') => {
+    if (!plan) return
+    const already =
+      (section === 'diet' && plan.diet_opened_at) ||
+      (section === 'workout' && plan.workout_opened_at)
+    if (already) return
+
+    const { error: rpcError } = await supabase.rpc('mark_plan_section_opened', {
+      p_plan_id: plan.id,
+      p_section: section,
+    })
+    if (rpcError) {
+      console.warn('Could not mark plan section opened', rpcError.message)
+      return
+    }
+
+    const now = new Date().toISOString()
+    setPlan((prev) =>
+      prev
+        ? {
+            ...prev,
+            diet_opened_at: section === 'diet' ? prev.diet_opened_at ?? now : prev.diet_opened_at,
+            workout_opened_at:
+              section === 'workout' ? prev.workout_opened_at ?? now : prev.workout_opened_at,
+          }
+        : prev
+    )
+  }
+
   const toggle = (section: PlanSection) => {
-    setExpanded((current) => (current === section ? null : section));
+    setExpanded((current) => {
+      const next = current === section ? null : section
+      if (next === 'diet' || next === 'workout') {
+        void markSectionOpened(next)
+      }
+      return next
+    })
   };
 
   if (loading) {
