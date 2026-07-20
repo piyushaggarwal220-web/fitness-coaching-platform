@@ -64,7 +64,7 @@ export const authStyles: Record<string, CSSProperties> = {
     cursor: 'pointer',
     marginTop: spacing[2],
     minHeight: 56,
-    boxShadow: '0 4px 20px rgba(52, 211, 153, 0.25)',
+    boxShadow: '0 4px 20px rgba(249, 115, 22, 0.28)',
   },
   error: {
     backgroundColor: colors.dangerMuted,

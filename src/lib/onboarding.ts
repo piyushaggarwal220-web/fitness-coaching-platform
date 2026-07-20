@@ -925,7 +925,7 @@ export function hasCompletedOnboarding(
 }
 
 export function isPaymentConfirmed(
-  profile: Pick<OnboardingProfile, 'payment_confirmed' | 'access_source'> | null
+  profile: Pick<OnboardingProfile, 'payment_confirmed' | 'access_source' | 'subscription_expires_at'> | null
 ): boolean {
   return hasClientEntitlement(profile)
 }

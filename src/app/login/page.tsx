@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { fetchClientProfile, getClientPostAuthPath } from '@/lib/onboarding';
+import { hasClientEntitlement } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/client';
 import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
@@ -22,6 +23,7 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const sessionExpired = searchParams.get('expired') === '1';
+  const linkedPurchase = searchParams.get('linked') === '1';
   const redirectTo = safeInternalPath(searchParams.get('redirect'), '/dashboard');
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -39,10 +41,32 @@ function LoginForm() {
       await supabase.auth.getSession();
       const { profile, error: profileError } = await fetchClientProfile(supabase, data.user.id);
       router.refresh();
-      const destination = profileError || !profile
-        ? redirectTo
+
+      const role = profile?.role;
+      if (role === 'coach') {
+        router.push('/coach');
+        setLoading(false);
+        return;
+      }
+      if (role === 'admin' || role === 'super_admin') {
+        router.push('/admin');
+        setLoading(false);
+        return;
+      }
+
+      const postAuth = profileError || !profile
+        ? '/dashboard'
         : getClientPostAuthPath(profile, profileError ?? undefined);
-      router.push(destination);
+
+      const canHonourRedirect =
+        Boolean(profile) &&
+        !profileError &&
+        hasClientEntitlement(profile) &&
+        profile?.onboarding_complete === true &&
+        redirectTo !== '/dashboard' &&
+        redirectTo !== '/login';
+
+      router.push(canHonourRedirect ? redirectTo : postAuth);
       setLoading(false);
       return;
     }
@@ -75,6 +99,20 @@ function LoginForm() {
             lineHeight: 1.5,
           }}>
             Your session expired. Please sign in again.
+          </div>
+        )}
+
+        {linkedPurchase && (
+          <div style={{
+            backgroundColor: colors.accentMuted,
+            color: colors.accent,
+            padding: '12px 16px',
+            borderRadius: 12,
+            fontSize: 14,
+            marginBottom: 16,
+            lineHeight: 1.5,
+          }}>
+            Payment linked to your existing account. Sign in with your current access key.
           </div>
         )}
 

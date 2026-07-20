@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import Navbar from '@/app/components/Navbar'
+import { ClientShell } from '@/components/ui/ClientShell'
 import { SupportThread } from '@/components/support/SupportThread'
 import { priorityBadgeStyle, statusBadgeStyle, supportStyles as s } from '@/components/support/styles'
 import { authenticateClient } from '@/lib/onboarding'
@@ -100,23 +100,15 @@ export default function ClientSupportDetailPage() {
   }
 
   if (loading) {
-    return (
-      <>
-        <Navbar />
-        <div style={s.loading}>Loading request…</div>
-      </>
-    )
+    return <ClientShell title="Support" loading hideBottomNav />
   }
 
   if (!request) {
     return (
-      <>
-        <Navbar />
-        <div style={s.container}>
-          <Link href="/client/support" style={s.backLink}>← Back to support</Link>
-          <div style={s.error}>{error || 'Request not found.'}</div>
-        </div>
-      </>
+      <ClientShell title="Support" hideBottomNav>
+        <Link href="/client/support" style={s.backLink}>← Back to support</Link>
+        <div style={s.error}>{error || 'Request not found.'}</div>
+      </ClientShell>
     )
   }
 
@@ -124,52 +116,49 @@ export default function ClientSupportDetailPage() {
   const priorityStyle = priorityBadgeStyle(request.priority)
 
   return (
-    <>
-      <Navbar />
-      <div style={s.page}>
-        <div style={s.containerNarrow}>
-          <Link href="/client/support" style={s.backLink}>← Back to support</Link>
+    <ClientShell title="Support" hideBottomNav>
+      <div style={{ ...s.containerNarrow, padding: 0, maxWidth: '100%' }}>
+        <Link href="/client/support" style={s.backLink}>← Back to support</Link>
 
-          <h1 style={s.title}>{request.title}</h1>
-          <div style={{ ...s.inboxMeta, marginBottom: 20 }}>
-            <span style={{ ...s.badge, ...statusBadgeStyle(request.status) }}>{formatSupportStatus(request.status)}</span>
-            <span>{formatSupportCategory(request.category)}</span>
-            {priorityStyle && (
-              <span style={{ ...s.badge, ...priorityStyle }}>{formatSupportPriority(request.priority)}</span>
-            )}
-            <span>Opened {formatSupportDate(request.created_at)}</span>
-          </div>
-
-          {error && <div style={s.error}>{error}</div>}
-
-          <div style={s.card}>
-            <SupportThread messages={messages} viewer="client" />
-          </div>
-
-          {request.status === 'closed' ? (
-            <p style={{ color: colors.textMuted, fontSize: 14 }}>This request is closed. No further replies.</p>
-          ) : !allowReply ? (
-            <p style={{ color: colors.textMuted, fontSize: 14 }}>Your coach will reply soon. You can respond after they message you.</p>
-          ) : (
-            <form onSubmit={(e) => void handleReply(e)} style={s.card}>
-              <label style={s.label} htmlFor="reply">Your reply</label>
-              <textarea
-                id="reply"
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                style={s.textarea}
-                rows={4}
-                required
-              />
-              <div style={s.actions}>
-                <button type="submit" disabled={sending} style={s.primaryBtn}>
-                  {sending ? 'Sending…' : 'Send reply'}
-                </button>
-              </div>
-            </form>
+        <h1 style={{ ...s.title, marginTop: 8 }}>{request.title}</h1>
+        <div style={{ ...s.inboxMeta, marginBottom: 20 }}>
+          <span style={{ ...s.badge, ...statusBadgeStyle(request.status) }}>{formatSupportStatus(request.status)}</span>
+          <span>{formatSupportCategory(request.category)}</span>
+          {priorityStyle && (
+            <span style={{ ...s.badge, ...priorityStyle }}>{formatSupportPriority(request.priority)}</span>
           )}
+          <span>Opened {formatSupportDate(request.created_at)}</span>
         </div>
+
+        {error && <div style={s.error}>{error}</div>}
+
+        <div style={s.card}>
+          <SupportThread messages={messages} viewer="client" />
+        </div>
+
+        {request.status === 'closed' ? (
+          <p style={{ color: colors.textMuted, fontSize: 14 }}>This request is closed. No further replies.</p>
+        ) : !allowReply ? (
+          <p style={{ color: colors.textMuted, fontSize: 14 }}>Your coach will reply soon. You can respond after they message you.</p>
+        ) : (
+          <form onSubmit={(e) => void handleReply(e)} style={s.card}>
+            <label style={s.label} htmlFor="reply">Your reply</label>
+            <textarea
+              id="reply"
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              style={s.textarea}
+              rows={4}
+              required
+            />
+            <div style={s.actions}>
+              <button type="submit" disabled={sending} style={s.primaryBtn}>
+                {sending ? 'Sending…' : 'Send reply'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
-    </>
+    </ClientShell>
   )
 }

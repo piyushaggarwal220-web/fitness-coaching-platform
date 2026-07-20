@@ -15,10 +15,12 @@ function CreateAccountForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')?.trim() ?? ''
+  const queryEmail = searchParams.get('email')?.trim() ?? ''
+  const queryPaymentId = searchParams.get('paymentId')?.trim() ?? ''
 
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [paymentId, setPaymentId] = useState('')
+  const [email, setEmail] = useState(queryEmail)
+  const [paymentId, setPaymentId] = useState(queryPaymentId)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [planName, setPlanName] = useState('')
@@ -100,6 +102,11 @@ function CreateAccountForm() {
           throw new Error('Please choose a different password and try again.')
         }
         throw new Error(raw)
+      }
+
+      if (data.needsLogin) {
+        router.push(data.redirectTo ?? '/login?linked=1')
+        return
       }
 
       if (!data.sessionEstablished) {

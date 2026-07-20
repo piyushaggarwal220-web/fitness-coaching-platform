@@ -1,14 +1,15 @@
 'use client'
 
-import type { CSSProperties, InputHTMLAttributes } from 'react'
+import { useEffect, useState, type CSSProperties, type InputHTMLAttributes } from 'react'
 
 type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   inputStyle?: CSSProperties
 }
 
 /**
- * Uses type="text" + CSS disc masking so Chrome/Edge do not treat this as a
+ * Prefer type="text" + CSS disc masking so Chrome/Edge do not treat this as a
  * password field (which triggers the "found in a data breach" warning).
+ * Falls back to type="password" when -webkit-text-security is unsupported (Firefox).
  */
 export function PasswordInput({
   inputStyle,
@@ -18,16 +19,27 @@ export function PasswordInput({
   name = 'access_key',
   ...props
 }: PasswordInputProps) {
+  const [maskSupported, setMaskSupported] = useState(true)
+
+  useEffect(() => {
+    const probe = document.createElement('input')
+    probe.style.setProperty('-webkit-text-security', 'disc')
+    document.body.appendChild(probe)
+    const supported = getComputedStyle(probe).getPropertyValue('-webkit-text-security').trim() === 'disc'
+    document.body.removeChild(probe)
+    setMaskSupported(supported)
+  }, [])
+
   const mergedStyle = {
     ...inputStyle,
     ...style,
-    WebkitTextSecurity: 'disc',
+    ...(maskSupported ? { WebkitTextSecurity: 'disc' } : null),
   } as CSSProperties
 
   return (
     <input
       {...props}
-      type="text"
+      type={maskSupported ? 'text' : 'password'}
       name={name}
       autoComplete={autoComplete}
       autoCapitalize="off"

@@ -18,7 +18,26 @@ export function CoachReplyRatingPrompt({ messageId, coachId }: CoachReplyRatingP
   const [selectedRating, setSelectedRating] = useState<CoachRatingValue | null>(null)
 
   useEffect(() => {
-    fetch(`/api/coach-ratings?messageId=${messageId}`).catch(() => {})
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/coach-ratings?messageId=${encodeURIComponent(messageId)}`, {
+          credentials: 'include',
+        })
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (data.rating) {
+          setRated(true)
+          setSelectedRating(data.rating.rating as CoachRatingValue)
+        }
+      } catch {
+        // Non-blocking — prompt still works without prior state.
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
   }, [messageId])
 
   const submit = async (rating: CoachRatingValue) => {

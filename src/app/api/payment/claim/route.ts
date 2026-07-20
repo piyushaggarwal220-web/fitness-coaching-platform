@@ -48,6 +48,19 @@ export async function POST(request: Request) {
       name: body.name,
     })
 
+    if (result.needsLogin) {
+      return NextResponse.json({
+        success: true,
+        userId: result.userId,
+        purchaseId: result.purchaseId,
+        isNewUser: false,
+        sessionEstablished: false,
+        needsLogin: true,
+        redirectTo: '/login?linked=1',
+        message: 'Payment linked to your existing account. Please sign in with your current password.',
+      })
+    }
+
     const session = await establishPurchaseSession(result.email, password)
     if (!session.ok) {
       logPurchaseStep('fulfillment_failed', {

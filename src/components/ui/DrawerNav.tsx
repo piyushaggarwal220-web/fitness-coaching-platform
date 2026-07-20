@@ -37,6 +37,15 @@ export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavPr
 
   useEffect(() => {
     if (!mounted) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mounted, onClose])
+
+  useEffect(() => {
+    if (!mounted) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }

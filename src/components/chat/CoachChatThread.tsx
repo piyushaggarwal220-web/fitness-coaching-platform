@@ -54,6 +54,8 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const lastPeerMessageIdRef = useRef<string | null>(null)
+  const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sendingRef = useRef(false)
 
   const fetchMessages = useCallback(async (markRead = true) => {
     const res = await fetch(`/api/chat/messages?conversationId=${conversationId}${markRead ? '' : '&peek=1'}`, {
@@ -109,6 +111,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   }, [messages, imagePreview])
 
   const sendMessage = async (opts?: { messageType?: string; mediaUrl?: string; mediaDurationSeconds?: number; content?: string }) => {
+    if (sendingRef.current) return
     const content = opts?.content ?? (opts?.mediaUrl ? input : input.trim())
     if (!content && !opts?.mediaUrl) return
 
@@ -125,6 +128,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       created_at: new Date().toISOString(),
     }
 
+    sendingRef.current = true
     setMessages((prev) => [...prev, optimistic])
     setSending(true)
     setError('')
@@ -152,17 +156,21 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       setError(err instanceof Error ? err.message : 'Send failed')
       if (!opts?.mediaUrl) setInput(content)
     } finally {
+      sendingRef.current = false
       setSending(false)
     }
   }
 
   const handleTyping = () => {
-    fetch('/api/chat/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ conversationId, typing: true }),
-    }).catch(() => {})
+    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current)
+    typingDebounceRef.current = setTimeout(() => {
+      fetch('/api/chat/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ conversationId, typing: true }),
+      }).catch(() => {})
+    }, 400)
   }
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,22 +182,43 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   }
 
   const uploadAndSendImage = async () => {
-    if (!imagePreview) return
+    if (!imagePreview || sendingRef.current) return
     const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const path = `${user.id}/${conversationId}/${Date.now()}_${imagePreview.file.name}`
-    const { error: uploadError } = await supabase.storage.from('chat-images').upload(path, imagePreview.file)
-    if (uploadError) { setError(uploadError.message); return }
+    sendingRef.current = true
+    setSending(true)
+    setError('')
 
-    await sendMessage({ messageType: 'image', mediaUrl: path })
+    try {
+      const path = `${user.id}/${conversationId}/${Date.now()}_${imagePreview.file.name}`
+      const { error: uploadError } = await supabase.storage.from('chat-images').upload(path, imagePreview.file)
+      if (uploadError) {
+        setError(uploadError.message)
+        return
+      }
+
+      sendingRef.current = false
+      await sendMessage({ messageType: 'image', mediaUrl: path })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Image upload failed')
+    } finally {
+      if (sendingRef.current) {
+        sendingRef.current = false
+        setSending(false)
+      }
+    }
   }
 
   useEffect(() => () => {
     if (imagePreview) URL.revokeObjectURL(imagePreview.url)
   }, [imagePreview])
+
+  useEffect(() => () => {
+    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current)
+  }, [])
 
   const peerLabel = viewer === 'client' ? 'Coach' : 'Client'
   const showSend = input.trim().length > 0 || Boolean(imagePreview)
@@ -220,7 +249,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         {!loading && messages.length === 0 && (
           <div style={styles.empty}>
             <div style={styles.emptyCard}>
-              Messages are end-to-end encrypted between you and your coach in this workspace.
+              Private coaching messages stay between you and your coach in this workspace.
               Send a text, photo, or voice note to start.
             </div>
           </div>
@@ -347,7 +376,13 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           <input
             value={input}
             onChange={(e) => { setInput(e.target.value); handleTyping() }}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage() } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                if (imagePreview) void uploadAndSendImage()
+                else void sendMessage()
+              }
+            }}
             placeholder="Message"
             className="coach-chat-input"
             style={styles.input}

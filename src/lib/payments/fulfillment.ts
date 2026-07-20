@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from 'crypto'
-import { maybeAutoAssignCoach } from '@/lib/coach-assignment'
+import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
@@ -27,6 +27,16 @@ export type RecordCapturedPaymentResult = {
   customerEmail: string
   customerName: string | null
   planSlug: string
+  razorpayPaymentId: string
+}
+
+export type ClaimPurchaseResult = {
+  userId: string
+  purchaseId: string
+  isNewUser: boolean
+  email: string
+  /** Existing account — password was not overwritten; user may need /login */
+  needsLogin?: boolean
 }
 
 export type ClaimPurchaseInput = {
@@ -35,13 +45,6 @@ export type ClaimPurchaseInput = {
   token?: string
   email?: string
   paymentId?: string
-}
-
-export type ClaimPurchaseResult = {
-  userId: string
-  purchaseId: string
-  isNewUser: boolean
-  email: string
 }
 
 /** @deprecated Prefer recordCapturedPayment + claimPurchaseWithPassword for checkout. */
@@ -157,12 +160,41 @@ export async function recordCapturedPayment(
       customerEmail: existingPurchase.customer_email,
       customerName: existingPurchase.customer_name,
       planSlug: existingPurchase.plan_slug,
+      razorpayPaymentId: existingPurchase.razorpay_payment_id,
+    }
+  }
+
+  const tokenStillValid =
+    Boolean(existingPurchase?.claim_token_hash) &&
+    Boolean(existingPurchase?.claim_token_expires_at) &&
+    new Date(existingPurchase!.claim_token_expires_at!).getTime() > Date.now()
+
+  if (existingPurchase && tokenStillValid) {
+    // Do not rotate tokens or rebind email — keeps the buyer's setup link working.
+    const lockedEmail = existingPurchase.customer_email.trim().toLowerCase()
+    if (email && lockedEmail && email !== lockedEmail) {
+      logPurchaseStep('payment_recorded', {
+        purchaseId: existingPurchase.id,
+        emailMismatchIgnored: true,
+      })
+    }
+
+    return {
+      purchaseId: existingPurchase.id,
+      claimToken: null,
+      alreadyClaimed: false,
+      customerEmail: existingPurchase.customer_email,
+      customerName: existingPurchase.customer_name || name || null,
+      planSlug: existingPurchase.plan_slug,
+      razorpayPaymentId: existingPurchase.razorpay_payment_id,
     }
   }
 
   const token = createClaimToken()
 
   if (existingPurchase) {
+    const lockedEmail = existingPurchase.customer_email.trim().toLowerCase()
+    const nextEmail = lockedEmail || email
     const { data: updated, error: updateError } = await admin
       .from('purchases')
       .update({
@@ -170,8 +202,8 @@ export async function recordCapturedPayment(
         plan_slug: input.plan.slug,
         plan_name: input.plan.name,
         amount_paise: input.amountPaise,
-        customer_email: email || existingPurchase.customer_email,
-        customer_name: name || existingPurchase.customer_name,
+        customer_email: nextEmail,
+        customer_name: existingPurchase.customer_name || name || null,
         status: 'captured',
         claim_token_hash: token.hash,
         claim_token_expires_at: token.expiresAt,
@@ -198,6 +230,7 @@ export async function recordCapturedPayment(
       customerEmail: (updated as Purchase).customer_email,
       customerName: (updated as Purchase).customer_name,
       planSlug: (updated as Purchase).plan_slug,
+      razorpayPaymentId: (updated as Purchase).razorpay_payment_id,
     }
   }
 
@@ -239,6 +272,25 @@ export async function recordCapturedPayment(
           customerEmail: racedPurchase.customer_email,
           customerName: racedPurchase.customer_name,
           planSlug: racedPurchase.plan_slug,
+          razorpayPaymentId: racedPurchase.razorpay_payment_id,
+        }
+      }
+
+      const racedTokenValid =
+        Boolean(racedPurchase.claim_token_hash) &&
+        Boolean(racedPurchase.claim_token_expires_at) &&
+        new Date(racedPurchase.claim_token_expires_at!).getTime() > Date.now()
+
+      if (racedTokenValid) {
+        // Keep the original claim link alive after verify/webhook race.
+        return {
+          purchaseId: racedPurchase.id,
+          claimToken: null,
+          alreadyClaimed: false,
+          customerEmail: racedPurchase.customer_email || email,
+          customerName: racedPurchase.customer_name || name || null,
+          planSlug: racedPurchase.plan_slug,
+          razorpayPaymentId: racedPurchase.razorpay_payment_id,
         }
       }
 
@@ -248,8 +300,8 @@ export async function recordCapturedPayment(
         .update({
           claim_token_hash: refreshToken.hash,
           claim_token_expires_at: refreshToken.expiresAt,
-          customer_email: email || racedPurchase.customer_email,
-          customer_name: name || racedPurchase.customer_name,
+          customer_email: racedPurchase.customer_email || email,
+          customer_name: racedPurchase.customer_name || name || null,
         })
         .eq('id', racedPurchase.id)
         .select('*')
@@ -266,6 +318,7 @@ export async function recordCapturedPayment(
         customerEmail: (updated as Purchase).customer_email,
         customerName: (updated as Purchase).customer_name,
         planSlug: (updated as Purchase).plan_slug,
+        razorpayPaymentId: (updated as Purchase).razorpay_payment_id,
       }
     }
 
@@ -282,6 +335,7 @@ export async function recordCapturedPayment(
     customerEmail: (purchase as Purchase).customer_email,
     customerName: (purchase as Purchase).customer_name,
     planSlug: (purchase as Purchase).plan_slug,
+    razorpayPaymentId: (purchase as Purchase).razorpay_payment_id,
   }
 }
 
@@ -405,11 +459,13 @@ export async function claimPurchaseWithPassword(
   logPurchaseStep('claim_started', { email, purchaseId: purchase.id })
 
   let isNewUser = false
+  let needsLogin = false
   let userId = await findAuthUserIdByEmail(admin, email)
 
   if (userId) {
+    // Never overwrite an existing account password (prevents takeover).
     logPurchaseStep('auth_user_exists', { email, userId })
-    await syncAuthCredentials(userId, email, password, name)
+    needsLogin = true
   } else {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
@@ -433,18 +489,37 @@ export async function claimPurchaseWithPassword(
 
   const now = new Date().toISOString()
   const includeAccessSource = await hasAccessSourceColumn()
-  const expiresAt = new Date()
-  expiresAt.setMonth(expiresAt.getMonth() + plan.durationMonths)
+  const planExpiry = new Date()
+  planExpiry.setMonth(planExpiry.getMonth() + plan.durationMonths)
+
+  const { data: existingProfile } = await admin
+    .from('profiles')
+    .select('role, onboarding_complete, subscription_expires_at, name')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const existingRole = existingProfile?.role as string | null | undefined
+  const preservePrivilegedRole = existingRole === 'coach' || existingRole === 'admin'
+  const existingExpiry = existingProfile?.subscription_expires_at
+    ? new Date(existingProfile.subscription_expires_at).getTime()
+    : 0
+  const nextExpiry = new Date(Math.max(planExpiry.getTime(), existingExpiry)).toISOString()
 
   const profilePayload: Record<string, unknown> = {
     id: userId,
     email,
-    name,
-    role: 'client',
+    name: existingProfile?.name || name,
     payment_confirmed: true,
-    onboarding_complete: false,
-    subscription_expires_at: expiresAt.toISOString(),
+    subscription_expires_at: nextExpiry,
     updated_at: now,
+  }
+
+  if (!preservePrivilegedRole) {
+    profilePayload.role = 'client'
+  }
+
+  if (isNewUser || existingProfile?.onboarding_complete == null) {
+    profilePayload.onboarding_complete = false
   }
 
   if (includeAccessSource) {
@@ -457,7 +532,7 @@ export async function claimPurchaseWithPassword(
     throw new Error(`Failed to create profile: ${profileError.message}`)
   }
 
-  const { error: claimError } = await admin
+  const { data: claimedRows, error: claimError } = await admin
     .from('purchases')
     .update({
       user_id: userId,
@@ -468,9 +543,13 @@ export async function claimPurchaseWithPassword(
     })
     .eq('id', purchase.id)
     .is('claimed_at', null)
+    .select('id')
 
   if (claimError) {
-    // If already claimed in a race, confirm ownership
+    throw new Error(claimError.message || 'Failed to claim purchase')
+  }
+
+  if (!claimedRows?.length) {
     const { data: after } = await admin
       .from('purchases')
       .select('user_id, claimed_at')
@@ -478,11 +557,11 @@ export async function claimPurchaseWithPassword(
       .maybeSingle()
 
     if (!after?.claimed_at || after.user_id !== userId) {
-      throw new Error(claimError.message || 'Failed to claim purchase')
+      throw new Error('This payment was already claimed. Please sign in.')
     }
   }
 
-  const assignResult = await maybeAutoAssignCoach(userId, admin)
+  const assignResult = await autoAssignCoachToClient(userId, admin)
   if (assignResult.coachId) {
     const { data: coach } = await admin
       .from('coaches')
@@ -500,9 +579,9 @@ export async function claimPurchaseWithPassword(
     await sendNotification({ userId, ...welcome })
   }
 
-  logPurchaseStep('claim_complete', { userId, purchaseId: purchase.id, isNewUser })
+  logPurchaseStep('claim_complete', { userId, purchaseId: purchase.id, isNewUser, needsLogin })
 
-  return { userId, purchaseId: purchase.id, isNewUser, email }
+  return { userId, purchaseId: purchase.id, isNewUser, email, needsLogin }
 }
 
 /** Combined path for redemption codes / scripts that still provide a password up front. */
@@ -528,13 +607,6 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
       throw new Error('Purchase is marked claimed but has no user')
     }
 
-    await syncAuthCredentials(
-      data.user_id,
-      recorded.customerEmail,
-      input.password,
-      input.name.trim()
-    )
-
     return {
       userId: data.user_id,
       purchaseId: recorded.purchaseId,
@@ -543,7 +615,18 @@ export async function fulfillPurchase(input: FulfillPurchaseInput): Promise<Fulf
   }
 
   if (!recorded.claimToken) {
-    throw new Error('Missing claim token for new purchase')
+    // Token already issued (webhook/verify race) — claim via email + payment id.
+    const claimed = await claimPurchaseWithPassword({
+      email: recorded.customerEmail,
+      paymentId: recorded.razorpayPaymentId,
+      password: input.password,
+      name: input.name,
+    })
+    return {
+      userId: claimed.userId,
+      purchaseId: claimed.purchaseId,
+      isNewUser: claimed.isNewUser,
+    }
   }
 
   const claimed = await claimPurchaseWithPassword({

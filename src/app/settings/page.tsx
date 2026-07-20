@@ -125,6 +125,24 @@ export default function ClientSettingsPage() {
           Contact support
         </Button>
       </Card>
+
+      <Card variant="glass" style={{ marginTop: spacing[3] }}>
+        <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 16 }}>Session</p>
+        <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textSecondary }}>
+          Sign out on this device. Your coaching data stays saved.
+        </p>
+        <Button
+          fullWidth
+          variant="secondary"
+          onClick={async () => {
+            await supabase.auth.signOut()
+            router.push('/login')
+            router.refresh()
+          }}
+        >
+          Sign out
+        </Button>
+      </Card>
     </ClientShell>
   )
 }

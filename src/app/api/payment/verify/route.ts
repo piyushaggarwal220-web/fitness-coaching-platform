@@ -26,22 +26,25 @@ export async function POST(request: Request) {
   }
 
   const plan = getCoachingPlan(body.planSlug)
-  const email = body.email?.trim().toLowerCase()
-  const name = body.name?.trim()
+  const clientEmail = body.email?.trim().toLowerCase() ?? ''
+  const clientName = body.name?.trim() ?? ''
 
   if (!plan) {
     return NextResponse.json({ success: false, error: 'Invalid plan' }, { status: 400 })
   }
-  if (!email) {
+  if (!clientEmail) {
     return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 })
   }
-  if (!name) {
+  if (!clientName) {
     return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
   }
 
   const orderId = body.razorpay_order_id ?? ''
   const paymentId = body.razorpay_payment_id ?? ''
   const signature = body.razorpay_signature ?? ''
+
+  let trustedEmail = clientEmail
+  let trustedName = clientName
 
   if (!shouldBypassPayment()) {
     if (!orderId || !paymentId || !signature) {
@@ -60,7 +63,7 @@ export async function POST(request: Request) {
 
     try {
       const payment = await fetchRazorpayPayment(paymentId)
-      if (payment.status !== 'captured' && payment.status !== 'authorized') {
+      if (payment.status !== 'captured') {
         return NextResponse.json(
           { success: false, error: `Payment not completed (status: ${payment.status})` },
           { status: 400 }
@@ -78,6 +81,20 @@ export async function POST(request: Request) {
           { status: 400 }
         )
       }
+
+      const noteEmail = payment.notes?.customer_email?.trim().toLowerCase()
+      const noteName = payment.notes?.customer_name?.trim()
+      const razorpayEmail = payment.email?.trim().toLowerCase()
+      trustedEmail = noteEmail || razorpayEmail || clientEmail
+      trustedName = noteName || clientName
+
+      if (noteEmail && noteEmail !== clientEmail) {
+        logPurchaseStep('payment_verified', {
+          emailBoundToNotes: true,
+          clientEmail,
+          noteEmail,
+        })
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Payment verification failed'
       return NextResponse.json({ success: false, error: message }, { status: 500 })
@@ -92,7 +109,7 @@ export async function POST(request: Request) {
   }
 
   logPurchaseStep('payment_verified', {
-    email,
+    email: trustedEmail,
     plan: plan.slug,
     paymentId: paymentId || 'test',
     testMode: shouldBypassPayment(),
@@ -100,8 +117,8 @@ export async function POST(request: Request) {
 
   try {
     const result = await recordCapturedPayment({
-      email,
-      name,
+      email: trustedEmail,
+      name: trustedName,
       plan,
       razorpayPaymentId: paymentId || `test_pay_${Date.now()}`,
       razorpayOrderId: orderId || `test_order_${Date.now()}`,
@@ -118,21 +135,27 @@ export async function POST(request: Request) {
       })
     }
 
-    if (!result.claimToken) {
-      return NextResponse.json(
-        { success: false, error: 'Payment recorded but setup token was missing' },
-        { status: 500 }
-      )
+    if (result.claimToken) {
+      return NextResponse.json({
+        success: true,
+        purchaseId: result.purchaseId,
+        redirectTo: `/create-account?token=${encodeURIComponent(result.claimToken)}`,
+      })
     }
 
+    // Token already issued — recover via email + payment id.
+    const params = new URLSearchParams({
+      email: result.customerEmail,
+      paymentId: result.razorpayPaymentId,
+    })
     return NextResponse.json({
       success: true,
       purchaseId: result.purchaseId,
-      redirectTo: `/create-account?token=${encodeURIComponent(result.claimToken)}`,
+      redirectTo: `/create-account?${params.toString()}`,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to record payment'
-    logPurchaseStep('fulfillment_failed', { email, error: message })
+    logPurchaseStep('fulfillment_failed', { email: trustedEmail, error: message })
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }

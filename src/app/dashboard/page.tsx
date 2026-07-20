@@ -288,12 +288,18 @@ export default function Dashboard() {
       )}
 
       {/* Next step — lead with today’s action */}
-      {status && status.nextAction && status.nextActionHref && (
+      {status && status.nextAction && (
         <section style={{ marginBottom: spacing[7] }}>
           <SectionHeader title="Next step" subtitle="What to do now" />
           <Card variant="elevated" className="card-hover">
             <p style={{ margin: '0 0 12px', fontSize: 15, color: colors.textSecondary, lineHeight: 1.5 }}>{status.nextAction}</p>
-            <Button fullWidth onClick={() => router.push(status.nextActionHref!)}>Continue</Button>
+            {status.nextActionHref ? (
+              <Button fullWidth onClick={() => router.push(status.nextActionHref!)}>Continue</Button>
+            ) : (
+              <p style={{ margin: 0, fontSize: 13, color: colors.textMuted, lineHeight: 1.45 }}>
+                We&apos;ll notify you as soon as your coach is ready.
+              </p>
+            )}
           </Card>
         </section>
       )}
