@@ -1,3 +1,5 @@
+import { getAppHost, getMarketingBaseUrl } from '@/lib/host-routing'
+
 export type PortalKey = 'admin' | 'coach' | 'client'
 
 const PORTAL_PATHS: Record<PortalKey, string> = {
@@ -11,11 +13,19 @@ export function resolveAppBaseUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim()
   if (explicit) return explicit.replace(/\/$/, '')
 
+  const appHost = getAppHost()
+  if (appHost) return `https://${appHost}`
+
   const vercel = process.env.VERCEL_URL?.trim()
   if (vercel) return `https://${vercel.replace(/\/$/, '')}`
 
   const port = process.env.PORT?.trim() || '3000'
   return `http://localhost:${port}`
+}
+
+/** Resolve the public marketing site URL (Shopify on www). */
+export function resolveMarketingBaseUrl(): string {
+  return getMarketingBaseUrl()
 }
 
 export function getPortalLoginUrl(portal: PortalKey, baseUrl = resolveAppBaseUrl()): string {

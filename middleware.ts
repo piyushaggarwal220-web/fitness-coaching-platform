@@ -1,9 +1,19 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { resolveProductionHostRedirect } from '@/lib/host-routing'
 import { warnIfTestModeEnvInProduction } from '@/lib/test-mode'
 
 export async function middleware(request: NextRequest) {
   warnIfTestModeEnvInProduction()
+
+  const hostRedirect = resolveProductionHostRedirect(
+    request.headers.get('host'),
+    request.nextUrl.pathname,
+    request.nextUrl.search
+  )
+  if (hostRedirect) {
+    return NextResponse.redirect(hostRedirect, 308)
+  }
 
   let supabaseResponse = NextResponse.next({ request })
 

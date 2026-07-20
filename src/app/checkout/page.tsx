@@ -8,9 +8,11 @@ import { brandTitle } from '@/lib/brand';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
+import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
 
 const supabase = createClient();
+const marketingBaseUrl = resolveMarketingBaseUrl();
 
 type RazorpayHandlerResponse = {
   razorpay_order_id: string;
@@ -196,7 +198,7 @@ function CheckoutForm() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <Link href="/" style={styles.backLink}>← Back to home</Link>
+        <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
         <h1 style={styles.title}>{brandTitle('Complete your purchase')}</h1>
         <p style={styles.subtitle}>
           {plan.name} plan · {plan.displayPrice} · {plan.saveLabel}
