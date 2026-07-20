@@ -137,6 +137,9 @@ export default function CoachCheckinDetailPage() {
       title: 'Check-in reviewed',
       body: 'Your coach has reviewed your check-in. View feedback in your journey.',
       actionUrl: '/journey',
+      metadata: {
+        messageSnippet: 'Your coach has reviewed your check-in. View feedback in your journey.',
+      },
     });
 
     setSuccess('Check-in marked as reviewed.');

@@ -398,6 +398,9 @@ export function WeeklyCoachingPanel({
       title: 'Your plan is ready',
       body: `Version ${draftPlan.version} of your coaching plan is now available.`,
       actionUrl: '/plan',
+      metadata: {
+        messageSnippet: `Version ${draftPlan.version} of your coaching plan is now available.`,
+      },
     })
 
     setActivePlan({ ...draftPlan, active: true, delivered_at: new Date().toISOString() })

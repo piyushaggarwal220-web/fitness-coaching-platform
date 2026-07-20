@@ -1,76 +1,139 @@
 /**
- * WhatsApp notification provider — stub ready for integration.
- * Register with registerChannelProvider() when a WhatsApp provider is configured.
+ * AiSensy WhatsApp campaign provider.
  *
- * Supported reminder types:
- * - weekly_checkin_reminder
- * - plan_available
- * - coach_replied
- * - missed_checkin
+ * POST https://backend.aisensy.com/campaign/t1/api/v2
+ *
+ * Env:
+ * - AISENSY_API_KEY (required to send)
+ * - AISENSY_CAMPAIGN_CHECKIN_DUE — weekly_checkin_reminder + mid_week_checkin_reminder
+ * - AISENSY_CAMPAIGN_MISSED_CHECKIN — missed_checkin (optional; skip if unset)
+ * - AISENSY_CAMPAIGN_PLAN_READY — plan_delivered / plan_available
+ * - AISENSY_CAMPAIGN_COACH_REPLIED — coach_replied
+ *
+ * templateParams order (stable — match AiSensy campaign variable slots):
+ * - check-in reminders: [firstName, checkinLabel]
+ * - plan / coach messages: [firstName, messageSnippet]
+ *
+ * Opt-in: MVP treats profiles.phone as consent for utility coaching templates
+ * (existing coaching relationship). No separate opt-in column.
+ *
+ * Deprecated: WHATSAPP_API_URL / WHATSAPP_API_KEY / WHATSAPP_PHONE_NUMBER_ID
+ * are no longer used. Prefer AiSensy env vars above.
  */
 
 import { registerChannelProvider } from '@/lib/notifications/service'
 import type { NotificationPayload } from '@/lib/notifications/service'
+import { normalizePhoneForWhatsApp } from '@/lib/phone'
+import type { NotificationType } from '@/types/database'
 
-const WHATSAPP_ENABLED_TYPES = new Set([
+const AISENSY_API_URL = 'https://backend.aisensy.com/campaign/t1/api/v2'
+
+const WHATSAPP_ENABLED_TYPES = new Set<NotificationType>([
   'weekly_checkin_reminder',
+  'mid_week_checkin_reminder',
   'plan_available',
   'coach_replied',
   'missed_checkin',
   'plan_delivered',
 ])
 
-export type WhatsAppProviderConfig = {
-  apiUrl?: string
-  apiKey?: string
-  phoneNumberId?: string
+type CampaignEnvKey =
+  | 'AISENSY_CAMPAIGN_CHECKIN_DUE'
+  | 'AISENSY_CAMPAIGN_MISSED_CHECKIN'
+  | 'AISENSY_CAMPAIGN_PLAN_READY'
+  | 'AISENSY_CAMPAIGN_COACH_REPLIED'
+
+const TYPE_TO_CAMPAIGN_ENV: Partial<Record<NotificationType, CampaignEnvKey>> = {
+  weekly_checkin_reminder: 'AISENSY_CAMPAIGN_CHECKIN_DUE',
+  mid_week_checkin_reminder: 'AISENSY_CAMPAIGN_CHECKIN_DUE',
+  missed_checkin: 'AISENSY_CAMPAIGN_MISSED_CHECKIN',
+  plan_delivered: 'AISENSY_CAMPAIGN_PLAN_READY',
+  plan_available: 'AISENSY_CAMPAIGN_PLAN_READY',
+  coach_replied: 'AISENSY_CAMPAIGN_COACH_REPLIED',
 }
 
-function getConfig(): WhatsAppProviderConfig {
-  return {
-    apiUrl: process.env.WHATSAPP_API_URL,
-    apiKey: process.env.WHATSAPP_API_KEY,
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
-  }
+function getApiKey(): string | undefined {
+  return process.env.AISENSY_API_KEY?.trim() || undefined
+}
+
+function getCampaignName(type: NotificationType): string | undefined {
+  const envKey = TYPE_TO_CAMPAIGN_ENV[type]
+  if (!envKey) return undefined
+  return process.env[envKey]?.trim() || undefined
 }
 
 export function isWhatsAppConfigured(): boolean {
-  const config = getConfig()
-  return Boolean(config.apiUrl && config.apiKey && config.phoneNumberId)
+  return Boolean(getApiKey())
 }
 
-async function sendWhatsAppMessage(
-  phone: string,
-  message: string
-): Promise<{ ok: boolean; error?: string }> {
-  const config = getConfig()
-  if (!isWhatsAppConfigured()) {
-    return { ok: false, error: 'WhatsApp not configured' }
+function firstNameFrom(name: string | null | undefined, fallback = 'there'): string {
+  const trimmed = name?.trim()
+  if (!trimmed) return fallback
+  return trimmed.split(/\s+/)[0] ?? fallback
+}
+
+function buildTemplateParams(
+  type: NotificationType,
+  payload: NotificationPayload,
+  profileName: string | null | undefined
+): string[] {
+  const firstName = firstNameFrom(
+    (payload.metadata?.firstName as string | undefined) ?? profileName
+  )
+  const meta = payload.metadata ?? {}
+
+  if (type === 'weekly_checkin_reminder' || type === 'mid_week_checkin_reminder') {
+    const checkinLabel =
+      (meta.checkinLabel as string | undefined) ??
+      (type === 'mid_week_checkin_reminder' ? 'Mid-week Check-in' : 'Weekly Check-in')
+    return [firstName, checkinLabel]
+  }
+
+  if (type === 'missed_checkin') {
+    const checkinLabel = (meta.checkinLabel as string | undefined) ?? 'Weekly Check-in'
+    return [firstName, checkinLabel]
+  }
+
+  const snippet =
+    (meta.messageSnippet as string | undefined) ??
+    payload.body.slice(0, 100) ??
+    payload.title
+  return [firstName, snippet]
+}
+
+async function sendAiSensyCampaign(input: {
+  campaignName: string
+  destination: string
+  userName: string
+  templateParams: string[]
+}): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = getApiKey()
+  if (!apiKey) {
+    return { ok: false, error: 'AISENSY_API_KEY not configured' }
   }
 
   try {
-    const response = await fetch(`${config.apiUrl}/messages`, {
+    const response = await fetch(AISENSY_API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        phone_number_id: config.phoneNumberId,
-        to: phone,
-        type: 'text',
-        text: { body: message },
+        apiKey,
+        campaignName: input.campaignName,
+        destination: input.destination,
+        userName: input.userName,
+        templateParams: input.templateParams,
+        source: 'lurvox-app',
       }),
     })
 
     if (!response.ok) {
       const text = await response.text()
-      return { ok: false, error: `WhatsApp API error: ${text}` }
+      return { ok: false, error: `AiSensy API error (${response.status}): ${text}` }
     }
 
     return { ok: true }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'WhatsApp send failed' }
+    return { ok: false, error: err instanceof Error ? err.message : 'AiSensy send failed' }
   }
 }
 
@@ -83,25 +146,49 @@ export function initWhatsAppProvider(): void {
         return { ok: true }
       }
 
-      if (!isWhatsAppConfigured()) {
-        console.log(`[whatsapp] Skipped (not configured): ${payload.type} → ${payload.userId}`)
+      const apiKey = getApiKey()
+      if (!apiKey) {
+        console.log(`[whatsapp] Skipped (AISENSY_API_KEY unset): ${payload.type} → ${payload.userId}`)
+        return { ok: true }
+      }
+
+      const campaignName = getCampaignName(payload.type)
+      if (!campaignName) {
+        console.log(
+          `[whatsapp] Skipped (campaign unset for ${payload.type}): ${payload.userId}`
+        )
         return { ok: true }
       }
 
       const admin = await import('@/lib/supabase/admin').then((m) => m.createAdminClient())
       const { data: profile } = await admin
         .from('profiles')
-        .select('phone')
+        .select('phone, name')
         .eq('id', payload.userId)
         .maybeSingle()
 
-      const phone = (profile as { phone?: string } | null)?.phone
-      if (!phone) {
-        return { ok: false, error: 'No phone number on profile' }
+      const row = profile as { phone?: string | null; name?: string | null } | null
+      const destination = normalizePhoneForWhatsApp(row?.phone)
+      if (!destination) {
+        console.log(`[whatsapp] Skipped (invalid/missing phone): ${payload.type} → ${payload.userId}`)
+        return { ok: true }
       }
 
-      const message = `${payload.title}\n\n${payload.body}`
-      return sendWhatsAppMessage(phone, message)
+      const userName = row?.name?.trim() || firstNameFrom(row?.name)
+      const templateParams = buildTemplateParams(payload.type, payload, row?.name)
+
+      const result = await sendAiSensyCampaign({
+        campaignName,
+        destination,
+        userName,
+        templateParams,
+      })
+
+      if (!result.ok) {
+        console.error(`[whatsapp] Send failed: ${payload.type} → ${payload.userId}: ${result.error}`)
+      }
+
+      return result
     },
   })
 }

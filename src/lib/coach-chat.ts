@@ -261,12 +261,15 @@ export async function sendChatMessage(
 
     try {
       if (input.senderType === 'coach') {
+        const replyBody =
+          messageType === 'voice' ? 'Sent a voice message' : (input.content?.slice(0, 100) ?? 'New message')
         await sendNotification({
           userId: conv.client_id,
           type: 'coach_replied',
           title: 'Your coach replied',
-          body: messageType === 'voice' ? 'Sent a voice message' : (input.content?.slice(0, 100) ?? 'New message'),
+          body: replyBody,
           actionUrl: '/client/chat',
+          metadata: { messageSnippet: replyBody },
         })
       } else {
         const { data: coach } = await supabase

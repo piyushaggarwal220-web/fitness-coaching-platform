@@ -30,8 +30,8 @@ export default function AdminNotificationsPage() {
             <div style={s.statValue}>{whatsappReady ? 'Configured' : 'Stub'}</div>
             <div style={s.statHint}>
               {whatsappReady
-                ? 'Provider connected via WHATSAPP_API_* env vars'
-                : 'Set WHATSAPP_API_URL, WHATSAPP_API_KEY, WHATSAPP_PHONE_NUMBER_ID'}
+                ? 'AiSensy connected via AISENSY_API_KEY'
+                : 'Set AISENSY_API_KEY + AISENSY_CAMPAIGN_* env vars'}
             </div>
           </div>
           <div style={s.statCard}>
@@ -62,9 +62,9 @@ export default function AdminNotificationsPage() {
           <h2 style={s.cardTitle}>WhatsApp Automation (Ready)</h2>
           <p style={{ fontSize: 14, color: '#666', lineHeight: 1.6 }}>
             The notification service dispatches to registered channel providers.
-            WhatsApp reminders for weekly check-in, plan available, coach replied, and missed check-in
-            are configured in <code>src/lib/notifications/whatsapp-provider.ts</code>.
-            Connect your WhatsApp Business API provider by setting environment variables.
+            WhatsApp via AiSensy covers check-in due, plan ready, and coach replied campaigns
+            in <code>src/lib/notifications/whatsapp-provider.ts</code>.
+            Set <code>AISENSY_API_KEY</code> and matching <code>AISENSY_CAMPAIGN_*</code> names.
           </p>
         </div>
       </div>

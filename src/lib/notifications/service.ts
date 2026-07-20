@@ -98,6 +98,9 @@ export const NotificationTemplates = {
     title: 'Your plan is ready!',
     body: `Your coaching plan "${planTitle}" has been delivered.`,
     actionUrl: '/plan',
+    metadata: {
+      messageSnippet: `Your coaching plan "${planTitle}" has been delivered.`,
+    },
   }),
   coachAssigned: (coachName: string) => ({
     type: 'coach_assigned' as NotificationType,
@@ -111,23 +114,37 @@ export const NotificationTemplates = {
     body: 'Complete your onboarding to get your personalized plan.',
     actionUrl: '/onboarding',
   }),
-  weeklyCheckinReminder: () => ({
+  weeklyCheckinReminder: (opts?: { checkinLabel?: string; coachingWeek?: number }) => ({
     type: 'weekly_checkin_reminder' as NotificationType,
     title: 'Weekly check-in due',
     body: 'Time for your weekly progress check-in. Keep your coach updated!',
     actionUrl: '/checkin',
+    metadata: {
+      checkinType: 'weekly' as const,
+      checkinLabel: opts?.checkinLabel ?? 'Weekly Check-in',
+      coachingWeek: opts?.coachingWeek ?? null,
+    },
   }),
   missedCheckin: () => ({
     type: 'missed_checkin' as NotificationType,
     title: 'Missed check-in',
     body: 'You missed your weekly check-in. Submit it when you can.',
     actionUrl: '/checkin',
+    metadata: {
+      checkinType: 'weekly' as const,
+      checkinLabel: 'Weekly Check-in',
+    },
   }),
-  midWeekCheckinReminder: () => ({
+  midWeekCheckinReminder: (opts?: { checkinLabel?: string; coachingWeek?: number }) => ({
     type: 'mid_week_checkin_reminder' as NotificationType,
     title: 'Mid-week check-in due',
     body: 'Complete your Day 3 accountability check-in for your coach.',
     actionUrl: '/checkin/mid-week',
+    metadata: {
+      checkinType: 'mid_week' as const,
+      checkinLabel: opts?.checkinLabel ?? 'Mid-week Check-in',
+      coachingWeek: opts?.coachingWeek ?? null,
+    },
   }),
   checkinSubmitted: (clientName: string, checkinType: 'mid_week' | 'weekly') => ({
     type: 'checkin_submitted' as NotificationType,
@@ -140,6 +157,9 @@ export const NotificationTemplates = {
     title: 'New plan available',
     body: 'Your coach has prepared an updated plan for you.',
     actionUrl: '/plan',
+    metadata: {
+      messageSnippet: 'Your coach has prepared an updated plan for you.',
+    },
   }),
   progressMilestone: (milestone: string) => ({
     type: 'progress_milestone' as NotificationType,
