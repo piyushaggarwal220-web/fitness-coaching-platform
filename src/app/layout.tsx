@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import "@/components/dev/dev-panel.css";
 import { DevPanelRoot } from "@/components/dev/DevPanelRoot";
+import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { initWhatsAppProvider } from "@/lib/notifications/whatsapp-provider";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 
@@ -36,6 +37,7 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body>
         {children}
+        <MetaPixel />
         <DevPanelRoot />
       </body>
     </html>

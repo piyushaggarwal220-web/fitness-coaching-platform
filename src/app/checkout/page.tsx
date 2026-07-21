@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, type CSSProperties, type FormEvent } from 'react';
+import { Suspense, useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
@@ -11,6 +11,7 @@ import { isPaymentBypassClient } from '@/lib/config';
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
@@ -48,6 +49,17 @@ function CheckoutForm() {
   const [validatingCode, setValidatingCode] = useState(false);
   const testMode = isPaymentBypassClient();
 
+  useEffect(() => {
+    if (testMode) return;
+    trackMetaEvent('InitiateCheckout', {
+      value: plan.amountPaise / 100,
+      currency: 'INR',
+      content_name: `${plan.name} coaching plan`,
+      content_ids: [plan.slug],
+      content_type: 'product',
+    });
+  }, [plan, testMode]);
+
   const completeVerification = async (payload: {
     razorpay_order_id: string;
     razorpay_payment_id: string;
@@ -67,6 +79,20 @@ function CheckoutForm() {
     const verifyData = await verifyRes.json();
     if (!verifyRes.ok || !verifyData.success) {
       throw new Error(verifyData.error ?? 'Payment verification failed');
+    }
+
+    if (!testMode) {
+      trackMetaEvent(
+        'Purchase',
+        {
+          value: plan.amountPaise / 100,
+          currency: 'INR',
+          content_name: `${plan.name} coaching plan`,
+          content_ids: [plan.slug],
+          content_type: 'product',
+        },
+        { eventID: `razorpay_${payload.razorpay_payment_id}` }
+      );
     }
 
     router.refresh();
