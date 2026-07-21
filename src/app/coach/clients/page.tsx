@@ -18,7 +18,7 @@ import { COMPLEXITY_TIER_COLORS, formatTierLabel } from '@/lib/complexity/displa
 import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
 import type { Checkin, ClientProfile, Coach } from '@/types/database';
 
-type CoachClientRow = ClientProfile & { onboarding_completed_at?: string | null };
+type CoachClientRow = ClientProfile;
 
 type SortOption = 'name' | 'highest' | 'lowest' | 'improved' | 'increased' | 'newest';
 
@@ -190,8 +190,8 @@ function CoachClientsContent() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filteredClients.map((client) => {
-                const summary = client.onboarding_completed_at
-                  ? getCoachClientCheckinSummary(client.id, client.onboarding_completed_at, checkins)
+                const summary = client.checkin_schedule_started_at
+                  ? getCoachClientCheckinSummary(client.id, client.checkin_schedule_started_at, checkins)
                   : null
 
                 return (
@@ -215,7 +215,9 @@ function CoachClientsContent() {
                       <span>
                         {summary?.nextCheckin
                           ? getCheckinTypeDisplayName(summary.nextCheckin.type)
-                          : '—'}
+                          : client.checkin_schedule_started_at
+                            ? '—'
+                            : 'Starts after first plan'}
                       </span>
                     </div>
                     <div style={styles.metaItem}>

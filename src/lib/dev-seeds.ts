@@ -173,6 +173,7 @@ export async function seedResetTestData(): Promise<SeedResult> {
     .update({
       onboarding_complete: false,
       plan_delivered: false,
+      checkin_schedule_started_at: null,
       checkin_awaiting: false,
       checkin_overdue: false,
       updated_at: new Date().toISOString(),

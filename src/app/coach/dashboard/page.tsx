@@ -18,7 +18,7 @@ import type { WorkQueueCounts, WorkQueueFilter } from '@/lib/coach-work-queue';
 import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
 import type { Checkin, ClientProfile, Coach, CoachStats } from '@/types/database';
 
-type CoachClientRow = ClientProfile & { onboarding_completed_at?: string | null };
+type CoachClientRow = ClientProfile;
 const supabase = createClient();
 
 function clientPriority(client: CoachClientRow): number {
@@ -283,8 +283,8 @@ export default function CoachDashboard() {
               <p style={styles.empty}>No clients assigned yet.</p>
             ) : (
               sortedClients.map((client) => {
-                const summary = client.onboarding_completed_at
-                  ? getCoachClientCheckinSummary(client.id, client.onboarding_completed_at, checkins)
+                const summary = client.checkin_schedule_started_at
+                  ? getCoachClientCheckinSummary(client.id, client.checkin_schedule_started_at, checkins)
                   : null;
 
                 return (

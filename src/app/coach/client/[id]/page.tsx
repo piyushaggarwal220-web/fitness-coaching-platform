@@ -18,6 +18,7 @@ import {
 import { ComplexityHistoryTimeline } from '@/components/complexity/ComplexityHistoryTimeline';
 import { ComplexityScoreCard } from '@/components/complexity/ComplexityScoreCard';
 import { CoachClientProfileEdit } from '@/components/coach/CoachClientProfileEdit';
+import { formatHeight } from '@/lib/height';
 import type { Coach, CoachClientDetail, Workout } from '@/types/database';
 
 const supabase = createClient();
@@ -192,7 +193,7 @@ export default function CoachClientDetailPage() {
             <InfoRow label="Name" value={client.name || '—'} />
             <InfoRow label="Email" value={client.email || '—'} />
             <InfoRow label="Age" value={client.age != null && client.age !== '' ? String(client.age) : '—'} />
-            <InfoRow label="Height" value={client.height != null && client.height !== '' ? `${client.height} cm` : '—'} />
+            <InfoRow label="Height" value={formatHeight(client.height)} />
             <InfoRow label="Weight" value={client.weight != null && client.weight !== '' ? `${client.weight} kg` : '—'} />
             <InfoRow label="Fitness goal" value={formatFitnessGoal(client.fitness_goal)} />
             <InfoRow label="Coach assignment" value={coach?.name || 'Assigned to you'} />

@@ -17,6 +17,7 @@ export type ClientProfile = {
   checkin_awaiting: boolean | null
   checkin_overdue: boolean | null
   plan_delivered: boolean | null
+  checkin_schedule_started_at?: string | null
   updated_at?: string | null
   complexity_score?: number | null
   complexity_tier?: 'low' | 'medium' | 'high' | null
@@ -138,6 +139,7 @@ export type Profile = {
   checkin_awaiting?: boolean | null
   checkin_overdue?: boolean | null
   plan_delivered?: boolean | null
+  checkin_schedule_started_at?: string | null
   complexity_score?: number | null
   complexity_raw_score?: number | null
   complexity_tier?: 'low' | 'medium' | 'high' | null
@@ -274,6 +276,7 @@ export type Checkin = {
   coaching_week: number | null
   coaching_day: number | null
   due_date: string | null
+  due_at: string | null
   weight: number | null
   waist: number | null
   progress_photo_front: string | null

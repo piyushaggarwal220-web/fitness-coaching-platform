@@ -7,6 +7,8 @@ import { evaluateComplexityInputs } from '@/lib/complexity/input-guards'
 import { FITNESS_GOAL_OPTIONS } from '@/lib/onboarding'
 import { colors } from '@/lib/design-tokens'
 import { coachPageStyles as pageStyles } from '@/lib/coach-page-styles'
+import { HeightInput } from '@/components/ui/HeightInput'
+import { parseHeightCm, validateHeightCm } from '@/lib/height'
 import type { CoachClientDetail } from '@/types/database'
 
 type CoachClientProfileEditProps = {
@@ -34,7 +36,13 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
 
     const nextAge = age ? Number(age) : null
     const nextWeight = weight ? Number(weight) : null
-    const nextHeight = height ? Number(height) : null
+    const heightError = validateHeightCm(height)
+    if (heightError) {
+      setMessage(heightError)
+      setSaving(false)
+      return
+    }
+    const nextHeight = parseHeightCm(height)
     const guard = evaluateComplexityInputs(
       {
         age: nextAge,
@@ -79,11 +87,12 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
       })
     }
 
+    setHeight(String(nextHeight))
     onSaved({
       ...client,
       age,
       weight,
-      height,
+      height: String(nextHeight),
       fitness_goal: fitnessGoal,
       phone: phone.trim() || null,
       injuries: injuries.trim() || null,
@@ -122,10 +131,13 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
           Weight (kg)
           <input value={weight} onChange={(e) => setWeight(e.target.value)} style={pageStyles.input} type="number" />
         </label>
-        <label style={styles.field}>
-          Height (cm)
-          <input value={height} onChange={(e) => setHeight(e.target.value)} style={pageStyles.input} type="number" />
-        </label>
+        <HeightInput
+          value={height}
+          onChange={setHeight}
+          required
+          fieldStyle={styles.heightField}
+          inputStyle={pageStyles.input}
+        />
         <label style={styles.field}>
           Fitness goal
           <select value={fitnessGoal} onChange={(e) => setFitnessGoal(e.target.value)} style={pageStyles.input}>
@@ -160,5 +172,6 @@ const styles: Record<string, CSSProperties> = {
   hint: { margin: '0 0 16px 0', fontSize: 13, color: colors.textSecondary },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 12 },
   field: { display: 'grid', gap: 6, fontSize: 14, color: colors.textSecondary },
+  heightField: { gridColumn: '1 / -1', marginBottom: 0 },
   message: { marginTop: 12, fontSize: 13, color: colors.success },
 }

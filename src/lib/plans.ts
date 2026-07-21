@@ -64,9 +64,32 @@ export async function syncPlanDeliveredFlag(
 
   if (countError) return { error: countError.message }
 
+  const { data: firstDeliveredPlan, error: deliveryError } = await supabase
+    .from('plans')
+    .select('delivered_at')
+    .eq('client_id', clientId)
+    .not('delivered_at', 'is', null)
+    .order('delivered_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  if (deliveryError) return { error: deliveryError.message }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('checkin_schedule_started_at')
+    .eq('id', clientId)
+    .maybeSingle()
+
+  if (profileError) return { error: profileError.message }
+
+  const firstDelivery = firstDeliveredPlan?.delivered_at ?? null
   const { error } = await supabase
     .from('profiles')
-    .update({ plan_delivered: (count ?? 0) > 0 })
+    .update({
+      plan_delivered: (count ?? 0) > 0,
+      checkin_schedule_started_at: profile?.checkin_schedule_started_at ?? firstDelivery,
+    })
     .eq('id', clientId)
 
   return { error: error?.message ?? null }
@@ -127,14 +150,15 @@ export async function activatePlan(
 
   if (deactivateError) return { error: deactivateError.message }
 
+  const deliveredAt = new Date().toISOString()
   const { error } = await supabase
     .from('plans')
     .update({
       active: true,
       title: publishedTitle,
       coach_notes: publishNotes,
-      delivered_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      delivered_at: deliveredAt,
+      updated_at: deliveredAt,
     })
     .eq('id', plan.id)
 

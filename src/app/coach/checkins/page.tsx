@@ -21,7 +21,7 @@ export default function CoachCheckinsPage() {
   const router = useRouter();
   const [coach, setCoach] = useState<Coach | null>(null);
   const [checkins, setCheckins] = useState<CheckinWithClient[]>([]);
-  const [clients, setClients] = useState<{ id: string; name: string | null; email: string | null; onboarding_completed_at: string | null }[]>([]);
+  const [clients, setClients] = useState<{ id: string; name: string | null; email: string | null; checkin_schedule_started_at: string | null }[]>([]);
   const [tab, setTab] = useState<Tab>('pending');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [clientFilter, setClientFilter] = useState('');
@@ -43,7 +43,7 @@ export default function CoachCheckinsPage() {
           .order('submitted_at', { ascending: false }),
         supabase
           .from('profiles')
-          .select('id, name, email, onboarding_completed_at')
+          .select('id, name, email, checkin_schedule_started_at')
           .eq('coach_id', coachData.id),
       ]);
 

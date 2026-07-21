@@ -191,10 +191,12 @@ export async function getOrCreateTodayTracker(
   if (!plan) {
     return { day: null, error: 'No active plan. Your coach will deliver your plan soon.' }
   }
+  if (!profile.checkin_schedule_started_at) {
+    return { day: null, error: 'Your coaching schedule will begin when your first plan is delivered.' }
+  }
 
   const logDate = todayDateString()
-  const onboardingAt = profile.onboarding_completed_at ?? profile.updated_at ?? new Date().toISOString()
-  const coachingDay = getCoachingDay(onboardingAt)
+  const coachingDay = getCoachingDay(profile.checkin_schedule_started_at)
   const coachingWeek = getCoachingWeek(coachingDay)
 
   const { data: existing } = await supabase
@@ -347,8 +349,9 @@ export async function refreshTodayTrackerAfterPlanPublish(
     return
   }
 
-  const onboardingAt = profile?.onboarding_completed_at ?? new Date().toISOString()
-  const coachingDay = getCoachingDay(onboardingAt)
+  const scheduleStartedAt = profile?.checkin_schedule_started_at
+  if (!scheduleStartedAt) return
+  const coachingDay = getCoachingDay(scheduleStartedAt)
   const coachingWeek = getCoachingWeek(coachingDay)
   const completion: TrackerCompletion = {}
   const { scores, overall } = calculateTrackerScores(snapshot, completion)
@@ -378,7 +381,7 @@ export async function loadTodayTrackerView(
   if (error || !day) return { view: null, error }
 
   const schedule = getClientCheckinSchedule(
-    profile.onboarding_completed_at ?? profile.updated_at ?? new Date().toISOString(),
+    profile.checkin_schedule_started_at,
     []
   )
   const streak = await computeStreak(supabase, clientId)

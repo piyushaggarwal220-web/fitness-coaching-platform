@@ -3,11 +3,12 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Camera, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { ClientShell } from '@/components/ui/ClientShell';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input, Slider, TextArea } from '@/components/ui/Input';
+import { PhotoSourceControl } from '@/components/ui/PhotoSourceControl';
 import {
   INITIAL_WEEKLY_FORM,
   uploadCheckinPhoto,
@@ -23,6 +24,7 @@ import { requestComplexityRecalculation } from '@/lib/complexity/client';
 import { SlideTransition, SuccessState } from '@/components/motion'
 import { mobileStyles } from '@/lib/mobile-styles';
 import { colors, spacing } from '@/lib/design-tokens';
+import { validatePhotoFiles } from '@/lib/photo';
 import type { Checkin, OnboardingProfile, Plan, WeeklyCheckinFormData } from '@/types/database';
 
 const supabase = createClient();
@@ -64,23 +66,23 @@ export default function CheckinPage() {
       setCheckins(rows);
       setActivePlan(planData);
 
-      const onboardingAt = result.profile?.onboarding_completed_at;
+      const scheduleStartedAt = result.profile?.checkin_schedule_started_at;
       const bypassSchedule = shouldBypassCheckinScheduleClient();
-      if (onboardingAt) {
-        const isAvailable = isCheckinAvailableToday(onboardingAt, 'weekly', rows, new Date(), { bypassSchedule });
-        setAvailable(isAvailable);
-        if (!isAvailable && !bypassSchedule) {
-          const reason = getCheckinUnavailableReason(onboardingAt, 'weekly', rows, new Date());
-          setUnavailableReason(
-            reason === 'window_closed'
+      const isAvailable = isCheckinAvailableToday(scheduleStartedAt, 'weekly', rows, new Date(), { bypassSchedule });
+      setAvailable(isAvailable);
+      if (!isAvailable) {
+        const reason = getCheckinUnavailableReason(scheduleStartedAt, 'weekly', rows, new Date());
+        setUnavailableReason(
+          reason === 'plan_not_delivered'
+            ? 'Your check-in schedule will begin when your coach delivers your first plan.'
+            : reason === 'window_closed'
               ? 'This weekly check-in window has closed (48 hours). Please wait for your next scheduled check-in.'
-              : reason === 'waiting_mid_week'
-                ? 'Complete your Day 3 mid-week check-in first (or wait if that window closed).'
-                : reason === 'already_submitted'
-                  ? 'You already submitted this weekly check-in.'
-                  : 'Your weekly check-in is not available yet. Check your dashboard for the next scheduled check-in.'
-          );
-        }
+            : reason === 'waiting_mid_week'
+              ? 'Complete your Day 3 mid-week check-in first (or wait if that window closed).'
+              : reason === 'already_submitted'
+                ? 'You already submitted this weekly check-in.'
+                : 'Your weekly check-in is not available yet. Check your dashboard for the next scheduled check-in.'
+        );
       }
       setLoading(false);
     };
@@ -92,13 +94,24 @@ export default function CheckinPage() {
     setError('');
   };
 
-  const handlePhoto = (key: PhotoKey) => (e: ChangeEvent<HTMLInputElement>) => {
-    setPhotos((prev) => ({ ...prev, [key]: e.target.files?.[0] ?? null }));
+  const handlePhoto = (key: PhotoKey) => (files: File[]) => {
+    const file = files[0] ?? null;
+    const validationError = file ? validatePhotoFiles([file]) : null;
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setPhotos((prev) => ({ ...prev, [key]: file }));
     setError('');
   };
 
-  const handleExtraPhotos = (e: ChangeEvent<HTMLInputElement>) => {
-    setExtraPhotos(Array.from(e.target.files ?? []));
+  const handleExtraPhotos = (files: File[]) => {
+    const validationError = validatePhotoFiles(files);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setExtraPhotos(files);
     setError('');
   };
 
@@ -286,15 +299,22 @@ export default function CheckinPage() {
             <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textMuted }}>Front, side, and back photos are required</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: spacing[3] }}>
               {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (
-                <PhotoField key={key} label={key.charAt(0).toUpperCase() + key.slice(1)} onChange={handlePhoto(key)} file={photos[key]} />
+                <PhotoSourceControl
+                  key={key}
+                  label={key.charAt(0).toUpperCase() + key.slice(1)}
+                  required
+                  onFiles={handlePhoto(key)}
+                  selectedText={photos[key]?.name}
+                />
               ))}
             </div>
             <div style={{ marginTop: spacing[4] }}>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500, color: colors.textSecondary }}>Optional extra photos</label>
-              <input type="file" accept="image/*" multiple onChange={handleExtraPhotos} style={{ width: '100%', fontSize: 14, color: colors.textSecondary }} />
-              {extraPhotos.length > 0 && (
-                <span style={{ display: 'block', marginTop: 8, fontSize: 13, color: colors.textMuted }}>{extraPhotos.length} extra photo(s) selected</span>
-              )}
+              <PhotoSourceControl
+                label="Optional extra photos"
+                multiple
+                onFiles={handleExtraPhotos}
+                selectedText={extraPhotos.length > 0 ? `${extraPhotos.length} extra photo(s) selected` : undefined}
+              />
             </div>
           </Card>
         )}
@@ -331,22 +351,6 @@ export default function CheckinPage() {
         <div style={{ height: 80 }} />
       </form>
     </ClientShell>
-  );
-}
-
-function PhotoField({ label, onChange, file }: { label: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void; file: File | null }) {
-  return (
-    <label style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: spacing[4], border: `2px dashed ${file ? colors.accent : colors.borderSubtle}`,
-      borderRadius: 16, cursor: 'pointer', minHeight: 120, backgroundColor: file ? colors.accentMuted : colors.bgElevated,
-      transition: 'border-color 150ms ease',
-    }}>
-      <Camera size={24} color={file ? colors.accent : colors.textMuted} />
-      <span style={{ marginTop: 8, fontSize: 14, fontWeight: 500, color: file ? colors.accent : colors.textSecondary }}>{label} *</span>
-      {file && <span style={{ marginTop: 4, fontSize: 11, color: colors.textMuted, textAlign: 'center', wordBreak: 'break-all' }}>{file.name}</span>}
-      <input type="file" accept="image/*" onChange={onChange} style={{ display: 'none' }} />
-    </label>
   );
 }
 

@@ -8,8 +8,10 @@ import { ClientShell } from '@/components/ui/ClientShell'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { HeightInput } from '@/components/ui/HeightInput'
 import { authenticateClient, FITNESS_GOAL_OPTIONS } from '@/lib/onboarding'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
+import { parseHeightCm, validateHeightCm } from '@/lib/height'
 import {
   evaluateComplexityInputs,
   parseReviewReasons,
@@ -73,7 +75,13 @@ export default function Profile() {
 
     const age = profile.age ? parseInt(profile.age, 10) : null
     const weight = profile.weight ? parseFloat(profile.weight) : null
-    const height = profile.height ? parseFloat(profile.height) : null
+    const heightError = validateHeightCm(profile.height)
+    if (heightError) {
+      setMessage(`Error saving profile: ${heightError}`)
+      setSaving(false)
+      return
+    }
+    const height = parseHeightCm(profile.height)
 
     const guard = evaluateComplexityInputs(
       { age, height, weight },
@@ -200,9 +208,16 @@ export default function Profile() {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[3] }}>
+          <div style={{ display: 'grid', gap: spacing[3] }}>
             <Input label="Weight (kg)" type="number" name="weight" value={profile.weight} onChange={handleChange} placeholder="70" />
-            <Input label="Height (cm)" type="number" name="height" value={profile.height} onChange={handleChange} placeholder="175" />
+            <HeightInput
+              value={profile.height}
+              onChange={(height) => {
+                setProfile((current) => ({ ...current, height }))
+                setConfirmMetrics(false)
+              }}
+              required
+            />
           </div>
 
           {(needsReview || reviewReasons.length > 0) && (

@@ -121,7 +121,7 @@ export async function POST(request: Request) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, name, email, coach_id, onboarding_completed_at, onboarding_complete')
+      .select('id, name, email, coach_id, onboarding_complete, checkin_schedule_started_at')
       .eq('id', user.id)
       .single()
 
@@ -133,11 +133,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'No coach assigned.' }, { status: 400 })
     }
 
-    if (!profile.onboarding_completed_at && !profile.onboarding_complete) {
+    if (!profile.onboarding_complete) {
       return NextResponse.json({ success: false, error: 'Complete onboarding first.' }, { status: 400 })
     }
 
-    const onboardingAt = profile.onboarding_completed_at ?? new Date().toISOString()
+    if (!profile.checkin_schedule_started_at) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Your check-in schedule will begin when your coach delivers your first plan.',
+        },
+        { status: 403 }
+      )
+    }
 
     const { data: existingCheckins } = await supabase
       .from('checkins')
@@ -146,7 +154,7 @@ export async function POST(request: Request) {
 
     const priorCheckins = existingCheckins ?? []
     const scheduled = resolveCheckinSubmissionSlot(
-      onboardingAt,
+      profile.checkin_schedule_started_at,
       body.checkinType as CheckinType,
       priorCheckins
     )
@@ -196,6 +204,7 @@ export async function POST(request: Request) {
       coaching_week: scheduled.coachingWeek,
       coaching_day: scheduled.coachingDay,
       due_date: dueDateStr,
+      due_at: scheduled.dueDate.toISOString(),
       diet_adherence: body.diet_adherence,
       workout_adherence: body.workout_adherence,
       energy_level: body.energy_level,

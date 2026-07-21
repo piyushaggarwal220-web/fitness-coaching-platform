@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { href: '/journey', label: 'Journey', icon: Map },
 ] as const
 
-export function BottomNav() {
+export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
   const pathname = usePathname()
 
   return (
@@ -59,7 +59,29 @@ export function BottomNav() {
             }}
             aria-current={active ? 'page' : undefined}
           >
-            <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+            <span style={{ position: 'relative', display: 'flex' }}>
+              <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+              {href === '/client/chat' && unreadChats > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: -8,
+                  right: -12,
+                  minWidth: 17,
+                  height: 17,
+                  padding: '0 4px',
+                  borderRadius: 999,
+                  backgroundColor: colors.accent,
+                  color: colors.textInverse,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 9,
+                  fontWeight: 700,
+                }}>
+                  {unreadChats > 9 ? '9+' : unreadChats}
+                </span>
+              )}
+            </span>
             <span style={{ fontSize: 11, fontWeight: active ? 600 : 500 }}>{label}</span>
           </Link>
         )

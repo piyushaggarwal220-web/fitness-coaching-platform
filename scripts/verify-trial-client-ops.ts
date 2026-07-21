@@ -130,8 +130,8 @@ async function main(): Promise<void> {
 
   const includeAccessSource = await hasAccessSourceColumn()
   const resetColumns = includeAccessSource
-    ? 'onboarding_complete, plan_delivered, payment_confirmed, access_source'
-    : 'onboarding_complete, plan_delivered, payment_confirmed'
+    ? 'onboarding_complete, plan_delivered, checkin_schedule_started_at, payment_confirmed, access_source'
+    : 'onboarding_complete, plan_delivered, checkin_schedule_started_at, payment_confirmed'
 
   const { data: afterReset } = await admin
     .from('profiles')
@@ -144,7 +144,12 @@ async function main(): Promise<void> {
     .select('id', { count: 'exact', head: true })
     .eq('client_id', fakeAccount.userId)
 
-  if (!afterReset?.onboarding_complete && !afterReset?.plan_delivered && (planCount ?? 0) === 0) {
+  if (
+    !afterReset?.onboarding_complete &&
+    !afterReset?.plan_delivered &&
+    !afterReset?.checkin_schedule_started_at &&
+    (planCount ?? 0) === 0
+  ) {
     pass('Coaching data cleared after reset')
   } else {
     fail('Coaching data cleared after reset', JSON.stringify({ afterReset, planCount }))

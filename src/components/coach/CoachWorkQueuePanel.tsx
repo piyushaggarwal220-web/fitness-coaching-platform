@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   filterWorkQueue,
@@ -14,6 +14,7 @@ import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
+import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
 
 const supabase = createClient()
 
@@ -50,42 +51,41 @@ type CoachWorkQueuePanelProps = {
 export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWorkQueuePanelProps) {
   const router = useRouter()
   const [tasks, setTasks] = useState<WorkQueueTask[]>([])
-  const [completed, setCompleted] = useState<Set<string>>(new Set())
+  const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
   const [loading, setLoading] = useState(true)
+  const [coachId, setCoachId] = useState<string | null>(null)
 
-  useEffect(() => {
-    setCompleted(loadCompleted())
-  }, [])
+  const load = useCallback(async () => {
+    if (!coachId) return
+    const queue = await getCoachWorkQueue(supabase, coachId)
+    setTasks(queue)
+    onCountsChange?.(getWorkQueueCounts(queue))
+    setLoading(false)
+  }, [coachId, onCountsChange])
 
   useEffect(() => {
     let active = true
-    let poll: ReturnType<typeof setInterval> | null = null
-    let coachId: string | null = null
-
-    const load = async (reauth: boolean) => {
-      if (reauth || !coachId) {
-        const coach = await requireCoach(supabase, router)
-        if (!coach || !active) {
-          setLoading(false)
-          return
-        }
-        coachId = coach.id
-      }
-      const queue = await getCoachWorkQueue(supabase, coachId)
-      if (active) {
-        setTasks(queue)
-        onCountsChange?.(getWorkQueueCounts(queue))
+    const authorize = async () => {
+      const coach = await requireCoach(supabase, router)
+      if (!active) return
+      if (!coach) {
         setLoading(false)
+        return
       }
+      setCoachId(coach.id)
+      const queue = await getCoachWorkQueue(supabase, coach.id)
+      if (!active) return
+      setTasks(queue)
+      onCountsChange?.(getWorkQueueCounts(queue))
+      setLoading(false)
     }
-
-    void load(true)
-    poll = setInterval(() => void load(false), 15000)
-    return () => {
-      active = false
-      if (poll) clearInterval(poll)
-    }
+    void authorize()
+    return () => { active = false }
   }, [router, onCountsChange])
+
+  // Realtime accelerates chat tasks; keep the original 15s fallback because
+  // plans, check-ins, profiles, and issues are not on this channel.
+  useCoachConversationRealtime(coachId, load, 15_000, 'work-queue')
 
   const filtered = filterWorkQueue(tasks, filter)
   const visible = filtered.filter((t) => !completed.has(t.id))

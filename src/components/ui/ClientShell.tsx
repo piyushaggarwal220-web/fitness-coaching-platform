@@ -20,6 +20,7 @@ import { BRAND_NAME } from '@/lib/brand'
 import { PageTransition } from '@/components/motion/PageTransition'
 import { layout } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
+import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
 
 type ClientShellProps = {
   children?: ReactNode
@@ -32,7 +33,7 @@ type ClientShellProps = {
   fullHeight?: boolean
 }
 
-const drawerItems = clientDrawerItems({
+const baseDrawerItems = clientDrawerItems({
   Home,
   Map,
   ClipboardList,
@@ -47,6 +48,10 @@ const drawerItems = clientDrawerItems({
 
 export function ClientShell({ children, title, hideBottomNav = false, hideTopBar = false, loading, loadingMessage, fullHeight = false }: ClientShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const unreadChats = useChatUnreadCount('client')
+  const drawerItems = baseDrawerItems.map((item) => (
+    item.href === '/client/chat' ? { ...item, badge: unreadChats } : item
+  ))
 
   const mainStyle = fullHeight
     ? {
@@ -87,7 +92,7 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
             </>
           )}
         </div>
-        {!hideBottomNav && <BottomNav />}
+        {!hideBottomNav && <BottomNav unreadChats={unreadChats} />}
         <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={`${BRAND_NAME} coaching hub`} />
       </>
     )
@@ -105,7 +110,7 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
           </PageTransition>
         )}
       </main>
-      {!hideBottomNav && !fullHeight && <BottomNav />}
+      {!hideBottomNav && !fullHeight && <BottomNav unreadChats={unreadChats} />}
       <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={`${BRAND_NAME} coaching hub`} />
     </>
   )

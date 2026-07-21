@@ -11,6 +11,7 @@ import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
 import { StorageImage } from '@/components/ui/StorageImage'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
+import { useSupabaseRealtimeRefresh } from '@/hooks/useSupabaseRealtime'
 import { Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
 
 /** WhatsApp-like dark palette */
@@ -51,7 +52,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
   const threadRef = useRef<HTMLDivElement>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const lastPeerMessageIdRef = useRef<string | null>(null)
   const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -84,9 +84,17 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   useEffect(() => {
     prepareNotificationSound()
     void fetchMessages()
-    pollRef.current = setInterval(() => void fetchMessages(false), 8000)
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [fetchMessages])
+
+  useSupabaseRealtimeRefresh({
+    channelName: `chat-thread:${conversationId}`,
+    subscriptions: [
+      { event: '*', table: 'conversation_messages', filter: `conversation_id=eq.${conversationId}` },
+      { event: 'UPDATE', table: 'coach_conversations', filter: `id=eq.${conversationId}` },
+    ],
+    onRefresh: fetchMessages,
+    pollIntervalMs: 45_000,
+  })
 
   useEffect(() => {
     const vv = window.visualViewport

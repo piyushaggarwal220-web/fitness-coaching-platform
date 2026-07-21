@@ -9,6 +9,8 @@ const MIGRATION_FILES = [
   'supabase/migrations/20260712100000_recurring_checkin_system.sql',
   'supabase/migrations/20260713100000_premium_polish_chat_fixes.sql',
   'supabase/migrations/20260714120000_create_daily_tracker.sql',
+  'supabase/migrations/20260721083954_enable_realtime_chat_notifications.sql',
+  'supabase/migrations/20260721143000_checkin_schedule_anchor.sql',
 ]
 
 function loadEnvLocal() {
@@ -57,9 +59,15 @@ async function tryPgConnection(connectionString) {
 async function verifyCheckinSchema(admin) {
   const { error: checkinError } = await admin
     .from('checkins')
-    .select('checkin_type, coaching_week, coaching_day, due_date, plan_version')
+    .select('checkin_type, coaching_week, coaching_day, due_date, due_at, plan_version')
     .limit(0)
   if (checkinError) return false
+
+  const { error: profileError } = await admin
+    .from('profiles')
+    .select('checkin_schedule_started_at')
+    .limit(0)
+  if (profileError) return false
 
   const { error: journeyError } = await admin
     .from('journey_entries')

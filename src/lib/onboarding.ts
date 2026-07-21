@@ -13,6 +13,7 @@ import { shouldBypassPaymentGuardClient } from '@/lib/dev-mode'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { inferFitnessGoal } from '@/lib/ai/goal-inference'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
+import { parseHeightCm, validateHeightCm } from '@/lib/height'
 import type {
   OnboardingData,
   OnboardingFormData,
@@ -507,7 +508,7 @@ export function buildProfilePayload(
     name: form.name.trim(),
     age: form.age ? Number(form.age) : null,
     gender: form.gender || null,
-    height: form.height ? Number(form.height) : null,
+    height: parseHeightCm(form.height),
     weight: form.weight ? Number(form.weight) : null,
     fitness_goal: resolvedGoal,
     training_experience: form.training_experience || null,
@@ -588,7 +589,8 @@ export function validateOnboardingStep(
     }
     case 1: {
       if (!data.gender) return 'Please select your gender.'
-      if (!data.height || Number(data.height) <= 0) return 'Enter a valid height in cm.'
+      const heightError = validateHeightCm(data.height)
+      if (heightError) return heightError
       if (!data.weight || Number(data.weight) <= 0) return 'Enter a valid weight in kg.'
       return null
     }
@@ -860,6 +862,9 @@ export async function uploadOnboardingPhoto(
   file: File,
   label: 'front' | 'side' | 'back'
 ): Promise<string> {
+  const { validatePhotoFile } = await import('@/lib/photo')
+  const validationError = validatePhotoFile(file)
+  if (validationError) throw new Error(validationError)
   const { compressImageFile } = await import('@/lib/checkin')
   const compressed = typeof window !== 'undefined' ? await compressImageFile(file) : file
   const ext = compressed.name.split('.').pop() || 'jpg'

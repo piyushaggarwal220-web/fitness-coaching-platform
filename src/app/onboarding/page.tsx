@@ -1,12 +1,15 @@
 'use client'
 
 import { brandTitle } from '@/lib/brand'
-import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { OnboardingReview } from '@/components/onboarding/OnboardingReview'
 import { ChipGroup, Field, MultiChipGroup, RadioCards } from '@/components/onboarding/inputs'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
+import { HeightInput } from '@/components/ui/HeightInput'
+import { PhotoSourceControl } from '@/components/ui/PhotoSourceControl'
+import { validatePhotoFiles } from '@/lib/photo'
 import {
   ACTIVITY_OPTIONS,
   ACNE_OPTIONS,
@@ -167,8 +170,15 @@ export default function OnboardingPage() {
     [userId, userEmail, form, photos, photoUrls]
   )
 
-  const handlePhotoChange = (key: PhotoKey) => (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null
+  const handlePhotoChange = (key: PhotoKey) => (files: File[]) => {
+    const file = files[0] ?? null
+    if (file) {
+      const validationError = validatePhotoFiles([file])
+      if (validationError) {
+        setError(validationError)
+        return
+      }
+    }
     setPhotos((prev) => ({ ...prev, [key]: file }))
     setError('')
   }
@@ -345,7 +355,7 @@ function renderStep(
   update: (patch: Partial<OnboardingFormData>) => void,
   photos: Record<PhotoKey, File | null>,
   photoUrls: SavedPhotoUrls,
-  onPhotoChange: (key: PhotoKey) => (e: ChangeEvent<HTMLInputElement>) => void,
+  onPhotoChange: (key: PhotoKey) => (files: File[]) => void,
   onEditSection: (step: number) => void,
   mealsForTiming: MealTimingKey[],
   setMealsForTiming: (meals: MealTimingKey[]) => void,
@@ -388,16 +398,14 @@ function renderStep(
           <Field label="Gender" required>
             <ChipGroup options={GENDER_OPTIONS} value={form.gender} onChange={(v) => update({ gender: v })} />
           </Field>
-          <div style={s.row}>
-            <Field label="Height (cm)" required>
-              <input
-                type="number"
-                value={form.height}
-                onChange={(e) => update({ height: e.target.value })}
-                style={s.input}
-                inputMode="decimal"
-              />
-            </Field>
+          <div style={{ display: 'grid', gap: 12 }}>
+            <HeightInput
+              value={form.height}
+              onChange={(height) => update({ height })}
+              required
+              fieldStyle={s.field}
+              inputStyle={s.input}
+            />
             <Field label="Weight (kg)" required>
               <input
                 type="number"
@@ -894,13 +902,17 @@ function renderStep(
           </div>
           <div style={s.photoGrid}>
             {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (
-              <Field key={key} label={`${key.charAt(0).toUpperCase()}${key.slice(1)} photo`} required>
-                <input type="file" accept="image/*" capture="environment" onChange={onPhotoChange(key)} style={s.input} />
+              <div key={key} style={s.field}>
+                <PhotoSourceControl
+                  label={`${key.charAt(0).toUpperCase()}${key.slice(1)} photo`}
+                  required
+                  onFiles={onPhotoChange(key)}
+                  selectedText={photos[key] ? `${photos[key]!.name} selected` : undefined}
+                />
                 {photoUrls[key] && !photos[key] && (
                   <p style={s.photoPreview}>Previously uploaded — select a new file to replace.</p>
                 )}
-                {photos[key] && <p style={s.photoPreview}>{photos[key]!.name} selected</p>}
-              </Field>
+              </div>
             ))}
           </div>
         </div>

@@ -57,7 +57,7 @@ type EligibleClient = {
   id: string
   name: string | null
   phone: string | null
-  onboarding_completed_at: string
+  checkin_schedule_started_at: string
   payment_confirmed: boolean | null
   access_source: 'purchase' | 'admin_trial' | null
   subscription_expires_at: string | null
@@ -93,10 +93,10 @@ export async function GET(request: Request) {
   const { data: profiles, error: profilesError } = await admin
     .from('profiles')
     .select(
-      'id, name, phone, onboarding_completed_at, payment_confirmed, access_source, subscription_expires_at'
+      'id, name, phone, checkin_schedule_started_at, payment_confirmed, access_source, subscription_expires_at'
     )
     .eq('role', 'client')
-    .not('onboarding_completed_at', 'is', null)
+    .not('checkin_schedule_started_at', 'is', null)
     .not('phone', 'is', null)
 
   if (profilesError) {
@@ -105,7 +105,7 @@ export async function GET(request: Request) {
   }
 
   const clients = ((profiles ?? []) as EligibleClient[]).filter((p) => {
-    if (!p.onboarding_completed_at) return false
+    if (!p.checkin_schedule_started_at) return false
     if (!normalizePhoneForWhatsApp(p.phone)) return false
     return hasClientEntitlement(p)
   })
@@ -139,7 +139,7 @@ export async function GET(request: Request) {
 
   for (const client of clients) {
     const schedule = getClientCheckinSchedule(
-      client.onboarding_completed_at,
+      client.checkin_schedule_started_at,
       checkinsByClient.get(client.id) ?? [],
       now
     )

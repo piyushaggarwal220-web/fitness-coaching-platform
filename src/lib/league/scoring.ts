@@ -5,10 +5,10 @@ export type LeagueTier = 'foundation' | 'steady' | 'momentum' | 'champion'
 export const LEAGUE_TIER_ORDER: LeagueTier[] = ['foundation', 'steady', 'momentum', 'champion']
 
 export const LEAGUE_TIER_LABELS: Record<LeagueTier, string> = {
-  foundation: 'Ember Camp',
-  steady: 'Iron Trail',
-  momentum: 'Summit Guard',
-  champion: 'Apex Vanguard',
+  foundation: 'Bronze',
+  steady: 'Silver',
+  momentum: 'Gold',
+  champion: 'Platinum',
 }
 
 export const LEAGUE_TIER_DETAILS: Record<LeagueTier, { short: string; color: string }> = {

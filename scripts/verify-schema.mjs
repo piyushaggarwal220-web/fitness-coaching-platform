@@ -29,6 +29,7 @@ const cols = [
   'onboarding_data',
   'coach_id',
   'plan_delivered',
+  'checkin_schedule_started_at',
   'checkin_awaiting',
   'checkin_overdue',
   'gender',

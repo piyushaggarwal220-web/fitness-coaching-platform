@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   Camera,
   CheckCircle2,
-  ChevronRight,
   ClipboardCheck,
   Flame,
   Info,
@@ -204,6 +203,21 @@ export default function LeaguePage() {
           </div>
         </section>
 
+        <section aria-labelledby="rewards-heading">
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 id="rewards-heading">Rewards</h2>
+            </div>
+            <LockKeyhole size={20} color={colors.textMuted} aria-hidden />
+          </div>
+          <div className={styles.board} aria-disabled="true">
+            <EmptyBoard
+              icon={<LockKeyhole size={24} />}
+              text="Prize money rewards are coming soon."
+            />
+          </div>
+        </section>
+
         <section aria-labelledby="mission-heading">
           <div className={styles.sectionHeader}>
             <div>
@@ -309,7 +323,7 @@ export default function LeaguePage() {
         <div className={styles.privacy}>
           <strong style={{ color: colors.textPrimary }}>Privacy stays in your control.</strong> League participation is optional.
           The board shows only first name and last initial inside your coach’s squad. Weight, measurements, photos, and tracker details are never shown.
-          {' '}<Link href="/settings" style={{ color: colors.accent, fontWeight: 700 }}>Manage privacy <ChevronRight size={12} style={{ verticalAlign: -2 }} /></Link>
+          {' '}Use the join or leave control above to manage participation.
         </div>
       </div>
     </ClientShell>

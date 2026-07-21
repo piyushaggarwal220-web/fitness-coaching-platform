@@ -19,6 +19,7 @@ import { DrawerNav, type DrawerNavItem, DrawerMenuButton } from '@/components/ui
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode'
 import { BRAND_COACH_LABEL, BRAND_NAME } from '@/lib/brand'
 import { colors, spacing } from '@/lib/design-tokens'
+import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
 
 const supabase = createClient()
 
@@ -40,6 +41,7 @@ export default function CoachNavbar({ onMenuClick }: CoachNavbarProps) {
   const router = useRouter()
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const unreadChats = useChatUnreadCount('coach')
 
   useEffect(() => {
     const getUser = async () => {
@@ -60,7 +62,9 @@ export default function CoachNavbar({ onMenuClick }: CoachNavbarProps) {
   }
 
   const items: DrawerNavItem[] = [
-    ...COACH_DRAWER_ITEMS,
+    ...COACH_DRAWER_ITEMS.map((item) => (
+      item.href === '/coach/chat' ? { ...item, badge: unreadChats } : item
+    )),
     ...(isDevToolkitEnabledClient()
       ? [{ href: '/admin/dev-tools', label: 'Dev Tools', icon: <BarChart3 size={20} /> }]
       : []),

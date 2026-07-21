@@ -11,6 +11,7 @@ export type DrawerNavItem = {
   href: string
   label: string
   icon: ReactNode
+  badge?: number
 }
 
 type DrawerNavProps = {
@@ -152,7 +153,24 @@ export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavPr
                 }}
               >
                 <span style={{ color: active ? colors.accent : colors.textMuted, display: 'flex' }}>{item.icon}</span>
-                {item.label}
+                <span style={{ flex: 1 }}>{item.label}</span>
+                {Boolean(item.badge) && (
+                  <span style={{
+                    minWidth: 22,
+                    height: 22,
+                    padding: '0 7px',
+                    borderRadius: 999,
+                    backgroundColor: colors.accent,
+                    color: colors.textInverse,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 700,
+                  }}>
+                    {item.badge! > 99 ? '99+' : item.badge}
+                  </span>
+                )}
               </Link>
             )
           })}

@@ -26,7 +26,6 @@ import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
-import { LeagueDashboardCard } from '@/components/league/LeagueDashboardCard';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { getActiveSubscription } from '@/lib/subscription';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
@@ -36,7 +35,6 @@ import { createClient } from '@/lib/supabase/client';
 import { colors, spacing, typography } from '@/lib/design-tokens';
 import { mobileStyles } from '@/lib/mobile-styles';
 import type { Checkin, Coach, OnboardingProfile, Plan, Purchase, Workout } from '@/types/database';
-import type { LeagueStandingRow } from '@/lib/league/scoring';
 
 const supabase = createClient();
 
@@ -48,11 +46,16 @@ type ActivityItem = {
   href: string;
 };
 
+type DashboardCheckin = Pick<
+  Checkin,
+  'id' | 'client_id' | 'checkin_type' | 'submitted_at' | 'coaching_week' | 'coaching_day' | 'reviewed'
+>;
+
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<OnboardingProfile | null>(null);
-  const [allCheckins, setAllCheckins] = useState<Checkin[]>([]);
+  const [allCheckins, setAllCheckins] = useState<DashboardCheckin[]>([]);
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [coach, setCoach] = useState<Coach | null>(null);
@@ -62,14 +65,17 @@ export default function Dashboard() {
   const [trackerSubtitle, setTrackerSubtitle] = useState('Meals, workout, water & more');
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-  const [leagueMe, setLeagueMe] = useState<LeagueStandingRow | null>(null);
-  const [leagueOptIn, setLeagueOptIn] = useState(false);
-  const [leagueSeasonKey, setLeagueSeasonKey] = useState('');
-  const [leagueLoading, setLeagueLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [restoringSession, setRestoringSession] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [scheduleNow, setScheduleNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!profile?.checkin_schedule_started_at) return;
+    const timer = window.setInterval(() => setScheduleNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, [profile?.checkin_schedule_started_at]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -116,7 +122,7 @@ export default function Dashboard() {
         ] = await Promise.all([
           supabase
             .from('checkins')
-            .select('id, client_id, coach_id, checkin_type, submitted_at, coaching_week, weight, notes')
+            .select('id, client_id, checkin_type, submitted_at, coaching_week, coaching_day, reviewed')
             .eq('client_id', userId)
             .order('submitted_at', { ascending: false }),
           supabase
@@ -161,7 +167,7 @@ export default function Dashboard() {
         if (coachResult.error) throw new Error(coachResult.error.message);
         if (convResult.error) throw new Error(convResult.error.message);
 
-        const checkinList = (checkinResult.data ?? []) as Checkin[];
+        const checkinList = (checkinResult.data ?? []) as DashboardCheckin[];
         setAllCheckins(checkinList);
         const latestCheckin = checkinList[0] ?? null;
 
@@ -203,21 +209,6 @@ export default function Dashboard() {
 
         if (coachResult.data) setCoach(coachResult.data as Coach);
         setUnreadMessages((convResult.data?.unread_by_client as number) ?? 0);
-
-        void fetch('/api/league', { credentials: 'include' })
-          .then(async (res) => {
-            if (!res.ok) return
-            const json = await res.json() as {
-              optIn?: boolean
-              seasonKey?: string
-              me?: LeagueStandingRow | null
-            }
-            setLeagueOptIn(Boolean(json.optIn))
-            setLeagueSeasonKey(json.seasonKey ?? '')
-            setLeagueMe(json.me ?? null)
-          })
-          .catch(() => undefined)
-          .finally(() => setLeagueLoading(false))
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : 'Failed to load dashboard');
       } finally {
@@ -237,13 +228,78 @@ export default function Dashboard() {
   );
 
   const checkinScheduleBypass = shouldBypassCheckinScheduleClient();
-  const checkinSchedule = profile?.onboarding_completed_at
-    ? getClientCheckinSchedule(profile.onboarding_completed_at, allCheckins, new Date(), {
+  const checkinSchedule = profile?.checkin_schedule_started_at
+    ? getClientCheckinSchedule(profile.checkin_schedule_started_at, allCheckins, scheduleNow, {
         bypassSchedule: checkinScheduleBypass,
       })
     : null;
 
   const firstName = profile?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
+  const planCard = profile ? (
+    <Card
+      variant="glass"
+      onClick={() => router.push('/plan')}
+      style={{ cursor: 'pointer' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ClipboardList size={22} color={colors.accent} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 17, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {activePlan ? activePlan.title : profile.plan_delivered ? 'Plan pending activation' : 'Plan in preparation'}
+          </p>
+          {activePlan && (
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
+              v{activePlan.version} · Updated {formatPlanDate(activePlan.updated_at)}
+            </p>
+          )}
+          {status?.coachName && (
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
+              Coach: {status.coachName}
+            </p>
+          )}
+        </div>
+        <ArrowRight size={20} color={colors.textMuted} />
+      </div>
+    </Card>
+  ) : null;
+  const trackerCard = activePlan ? (
+    <Card
+      variant={status?.preferTrackerUpTop ? 'elevated' : 'glass'}
+      onClick={() => router.push('/tracker')}
+      style={{ cursor: 'pointer' }}
+      className={status?.preferTrackerUpTop ? 'card-hover' : undefined}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ListChecks size={22} color={colors.accent} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 17 }}>
+            {status?.preferTrackerUpTop ? "Open today's tracker" : "Today's Tracker"}
+          </p>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
+            {trackerSubtitle}
+          </p>
+        </div>
+        {todayTrackerPercent != null && (
+          <span style={{
+            fontSize: 13,
+            fontWeight: 700,
+            color: colors.accent,
+            backgroundColor: colors.accentMuted,
+            padding: '6px 10px',
+            borderRadius: 999,
+            flexShrink: 0,
+          }}>
+            {todayTrackerPercent}%
+          </span>
+        )}
+        <ArrowRight size={20} color={colors.textMuted} />
+      </div>
+    </Card>
+  ) : null;
 
   return (
     <ClientShell
@@ -282,40 +338,6 @@ export default function Dashboard() {
 
       {subscription && <ActiveSubscriptionCard subscription={subscription} />}
 
-      {/* After plans opened: tracker leads the dashboard */}
-      {status?.preferTrackerUpTop && activePlan && (
-        <section style={{ marginBottom: spacing[7] }}>
-          <SectionHeader title="Today's Tracker" subtitle="Log today’s habits and stay consistent" />
-          <Card variant="elevated" onClick={() => router.push('/tracker')} style={{ cursor: 'pointer' }} className="card-hover">
-            <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ListChecks size={22} color={colors.accent} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: 17 }}>Open today&apos;s tracker</p>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-                  {trackerSubtitle}
-                </p>
-              </div>
-              {todayTrackerPercent != null && (
-                <span style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: colors.accent,
-                  backgroundColor: colors.accentMuted,
-                  padding: '6px 10px',
-                  borderRadius: 999,
-                  flexShrink: 0,
-                }}>
-                  {todayTrackerPercent}%
-                </span>
-              )}
-              <ArrowRight size={20} color={colors.textMuted} />
-            </div>
-          </Card>
-        </section>
-      )}
-
       {/* Coach assigned + 24h plan countdown (hidden once diet+workout opened) */}
       {profile && status?.paymentConfirmed && (
         <PlanCountdownCard
@@ -342,73 +364,28 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Plan (+ tracker when not already pinned at top) */}
+      {/* Keep plan and tracker together; tracker leads once daily tracking is preferred. */}
       {(profile || activePlan) && (
         <section style={{ marginBottom: spacing[7] }}>
           <SectionHeader
-            title={status?.preferTrackerUpTop ? 'Your plan' : 'Your plan'}
-            subtitle={status?.preferTrackerUpTop ? 'Diet, workout, and coaching details' : 'Active coaching plan and daily tracking'}
+            title="Plan & Tracker"
+            subtitle={status?.preferTrackerUpTop
+              ? 'Log today’s habits, then review your coaching plan'
+              : 'Your coaching plan and daily tracking'}
           />
-
-          {profile && (
-            <Card
-              variant="glass"
-              onClick={() => router.push('/plan')}
-              style={{ cursor: 'pointer', marginBottom: !status?.preferTrackerUpTop && activePlan ? spacing[3] : 0 }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-                <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ClipboardList size={22} color={colors.accent} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: 17, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {activePlan ? activePlan.title : profile.plan_delivered ? 'Plan pending activation' : 'Plan in preparation'}
-                  </p>
-                  {activePlan && (
-                    <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-                      v{activePlan.version} · Updated {formatPlanDate(activePlan.updated_at)}
-                    </p>
-                  )}
-                  {status?.coachName && (
-                    <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
-                      Coach: {status.coachName}
-                    </p>
-                  )}
-                </div>
-                <ArrowRight size={20} color={colors.textMuted} />
-              </div>
-            </Card>
-          )}
-
-          {!status?.preferTrackerUpTop && activePlan && (
-            <Card variant="glass" onClick={() => router.push('/tracker')} style={{ cursor: 'pointer' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-                <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ListChecks size={22} color={colors.accent} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: 17 }}>Today&apos;s Tracker</p>
-                  <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-                    {trackerSubtitle}
-                  </p>
-                </div>
-                {todayTrackerPercent != null && (
-                  <span style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: colors.accent,
-                    backgroundColor: colors.accentMuted,
-                    padding: '6px 10px',
-                    borderRadius: 999,
-                    flexShrink: 0,
-                  }}>
-                    {todayTrackerPercent}%
-                  </span>
-                )}
-                <ArrowRight size={20} color={colors.textMuted} />
-              </div>
-            </Card>
-          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
+            {status?.preferTrackerUpTop ? (
+              <>
+                {trackerCard}
+                {planCard}
+              </>
+            ) : (
+              <>
+                {planCard}
+                {trackerCard}
+              </>
+            )}
+          </div>
         </section>
       )}
 
@@ -545,13 +522,6 @@ export default function Dashboard() {
           />
         </div>
       </section>
-
-      <LeagueDashboardCard
-        me={leagueMe}
-        optIn={leagueOptIn}
-        seasonKey={leagueSeasonKey || 'Current season'}
-        loading={leagueLoading}
-      />
 
       {/* Coach message — only when not already in bottom-nav duplicates */}
       {coach && (

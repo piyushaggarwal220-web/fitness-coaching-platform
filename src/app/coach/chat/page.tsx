@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CoachShell } from '@/components/ui/CoachShell'
@@ -11,6 +11,7 @@ import { colors, shadows } from '@/lib/design-tokens'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
 import type { CoachConversation } from '@/types/database'
+import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
 
 const supabase = createClient()
 
@@ -18,32 +19,41 @@ export default function CoachChatListPage() {
   const router = useRouter()
   const [conversations, setConversations] = useState<(CoachConversation & { profiles?: { name: string; email: string } })[]>([])
   const [loading, setLoading] = useState(true)
+  const [coachId, setCoachId] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    if (!coachId) return
+    const { data } = await supabase
+      .from('coach_conversations')
+      .select('*, profiles:client_id(name, email)')
+      .eq('coach_id', coachId)
+      .neq('status', 'closed')
+      .order('last_message_at', { ascending: false, nullsFirst: false })
+
+    setConversations((data ?? []) as typeof conversations)
+    setLoading(false)
+  }, [coachId])
 
   useEffect(() => {
     let active = true
-    let poll: ReturnType<typeof setInterval> | null = null
-
-    const load = async () => {
+    const authorize = async () => {
       const coach = await requireCoach(supabase, router)
-      if (!coach || !active) { setLoading(false); return }
-
-      const { data } = await supabase
-        .from('coach_conversations')
-        .select('*, profiles:client_id(name, email)')
-        .eq('coach_id', coach.id)
-        .neq('status', 'closed')
-        .order('last_message_at', { ascending: false, nullsFirst: false })
-
-      if (active) {
-        setConversations((data ?? []) as typeof conversations)
+      if (!active) return
+      if (!coach) {
         setLoading(false)
+        return
       }
+      setCoachId(coach.id)
     }
-
-    void load()
-    poll = setInterval(() => void load(), 5000)
-    return () => { active = false; if (poll) clearInterval(poll) }
+    void authorize()
+    return () => { active = false }
   }, [router])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  useCoachConversationRealtime(coachId, load, 60_000, 'chat-list')
 
   if (loading) return <CoachShell loading />
 

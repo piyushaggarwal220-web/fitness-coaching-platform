@@ -127,13 +127,18 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
 
   const roster = clients ?? []
   if (roster.length === 0) {
-    await admin.from('league_standings').delete().eq('season_id', seasonRow.id).eq('coach_id', coachId)
+    const { error: deleteError } = await admin
+      .from('league_standings')
+      .delete()
+      .eq('season_id', seasonRow.id)
+      .eq('coach_id', coachId)
+    if (deleteError) throw new Error(deleteError.message)
     return { ...season, standings: [] }
   }
 
   const clientIds = roster.map((c) => c.id as string)
 
-  const [{ data: trackerDays }, { data: checkins }, { data: journeys }] = await Promise.all([
+  const [trackerResult, checkinResult, journeyResult] = await Promise.all([
     admin
       .from('daily_tracker_days')
       .select('client_id, log_date, overall_percent')
@@ -154,25 +159,32 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
       .lte('entry_date', season.endsOn),
   ])
 
+  const scoringError = trackerResult.error ?? checkinResult.error ?? journeyResult.error
+  if (scoringError) throw new Error(scoringError.message)
+
+  const trackerDays = trackerResult.data ?? []
+  const checkins = checkinResult.data ?? []
+  const journeys = journeyResult.data ?? []
+
   const scored = roster.map((client) => {
     const id = client.id as string
     const result = scoreClientForSeason(
       {
         clientId: id,
         displayName: leagueDisplayName(client.name as string | null),
-        trackerDays: (trackerDays ?? [])
+        trackerDays: trackerDays
           .filter((d) => d.client_id === id)
           .map((d) => ({
             logDate: d.log_date as string,
             overallPercent: (d.overall_percent as number | null) ?? null,
           })),
-        checkins: (checkins ?? [])
+        checkins: checkins
           .filter((c) => c.client_id === id)
           .map((c) => ({
             checkinType: c.checkin_type as string,
             submittedAt: c.submitted_at as string,
           })),
-        journeyPhotoDays: (journeys ?? [])
+        journeyPhotoDays: journeys
           .filter((j) => j.client_id === id)
           .filter((j) => {
             const extras = Array.isArray(j.extra_photos) ? j.extra_photos : []
@@ -214,7 +226,12 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
   }))
 
   // Replace coach season rows atomically enough for MVP.
-  await admin.from('league_standings').delete().eq('season_id', seasonRow.id).eq('coach_id', coachId)
+  const { error: deleteError } = await admin
+    .from('league_standings')
+    .delete()
+    .eq('season_id', seasonRow.id)
+    .eq('coach_id', coachId)
+  if (deleteError) throw new Error(deleteError.message)
   if (upserts.length > 0) {
     const { error } = await admin.from('league_standings').insert(upserts)
     if (error) throw new Error(error.message)

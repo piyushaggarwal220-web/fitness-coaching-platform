@@ -75,6 +75,7 @@ export async function resetTrialClient(clientId: string): Promise<ResetTrialClie
     onboarding_completed_at: null,
     onboarding_data: null,
     plan_delivered: false,
+    checkin_schedule_started_at: null,
     checkin_awaiting: false,
     checkin_overdue: false,
     age: null,

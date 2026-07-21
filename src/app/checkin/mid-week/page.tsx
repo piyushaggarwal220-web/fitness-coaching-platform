@@ -49,21 +49,21 @@ export default function MidWeekCheckinPage() {
       const rows = (data ?? []) as Pick<Checkin, 'checkin_type' | 'coaching_week'>[];
       setCheckins(rows);
 
-      const onboardingAt = result.profile?.onboarding_completed_at;
+      const scheduleStartedAt = result.profile?.checkin_schedule_started_at;
       const bypassSchedule = shouldBypassCheckinScheduleClient();
-      if (onboardingAt) {
-        const isAvailable = isCheckinAvailableToday(onboardingAt, 'mid_week', rows, new Date(), { bypassSchedule });
-        setAvailable(isAvailable);
-        if (!isAvailable && !bypassSchedule) {
-          const reason = getCheckinUnavailableReason(onboardingAt, 'mid_week', rows, new Date());
-          setUnavailableReason(
-            reason === 'window_closed'
+      const isAvailable = isCheckinAvailableToday(scheduleStartedAt, 'mid_week', rows, new Date(), { bypassSchedule });
+      setAvailable(isAvailable);
+      if (!isAvailable) {
+        const reason = getCheckinUnavailableReason(scheduleStartedAt, 'mid_week', rows, new Date());
+        setUnavailableReason(
+          reason === 'plan_not_delivered'
+            ? 'Your check-in schedule will begin when your coach delivers your first plan.'
+            : reason === 'window_closed'
               ? 'This Day 3 check-in window has closed (48 hours). Please wait for your next scheduled check-in.'
-              : reason === 'already_submitted'
-                ? 'You already submitted this Day 3 check-in.'
-                : 'Your Day 3 check-in is not available yet. Check your dashboard for the next scheduled check-in.'
-          );
-        }
+            : reason === 'already_submitted'
+              ? 'You already submitted this Day 3 check-in.'
+              : 'Your Day 3 check-in is not available yet. Check your dashboard for the next scheduled check-in.'
+        );
       }
 
       setLoading(false);

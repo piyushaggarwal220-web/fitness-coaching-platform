@@ -5,6 +5,7 @@ import type {
   MidWeekCheckinFormData,
   WeeklyCheckinFormData,
 } from '@/types/database'
+import { validatePhotoFile } from '@/lib/photo'
 
 export const CHECKIN_PHOTO_BUCKET = 'checkin-photos'
 export const CHECKIN_INTERVAL_DAYS = 7
@@ -100,7 +101,8 @@ export function validateCheckinForm(
 
 /** Compress image client-side before upload. Falls back to original on failure. */
 export async function compressImageFile(file: File): Promise<File> {
-  if (!file.type.startsWith('image/')) return file
+  const validationError = validatePhotoFile(file)
+  if (validationError) throw new Error(validationError)
 
   try {
     const bitmap = await createImageBitmap(file)
@@ -135,6 +137,8 @@ export async function uploadCheckinPhoto(
   file: File,
   label: string
 ): Promise<string> {
+  const validationError = validatePhotoFile(file)
+  if (validationError) throw new Error(validationError)
   const compressed = typeof window !== 'undefined' ? await compressImageFile(file) : file
   const ext = compressed.name.split('.').pop() || 'jpg'
   const path = `${clientId}/${Date.now()}_${label}.${ext}`

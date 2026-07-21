@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import type { UserNotification } from '@/types/database'
@@ -8,26 +8,39 @@ import { colors, radius } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
 import { safeInternalPathOrNull } from '@/lib/safe-navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useSupabaseRealtimeRefresh } from '@/hooks/useSupabaseRealtime'
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<UserNotification[]>([])
   const [open, setOpen] = useState(false)
   const [badgePop, setBadgePop] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const prevUnread = useRef(0)
+  const initializedUnread = useRef(false)
+  const soundOnNextIncrease = useRef(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     const res = await fetch('/api/notifications')
+    if (!res.ok) return
     const data = await res.json()
     if (data.notifications) setNotifications(data.notifications)
     if (data.unreadCount != null) setUnreadCount(data.unreadCount)
-  }
+  }, [])
 
   useEffect(() => {
-    if (unreadCount > prevUnread.current) {
+    if (!initializedUnread.current) {
+      initializedUnread.current = true
+      prevUnread.current = unreadCount
+      return
+    }
+
+    if (unreadCount > prevUnread.current && soundOnNextIncrease.current) {
       setBadgePop(true)
       playNotificationSound()
+      soundOnNextIncrease.current = false
       const t = setTimeout(() => setBadgePop(false), 400)
       prevUnread.current = unreadCount
       return () => clearTimeout(t)
@@ -37,10 +50,32 @@ export function NotificationBell() {
 
   useEffect(() => {
     prepareNotificationSound()
-    void fetchNotifications()
-    const interval = setInterval(() => void fetchNotifications(), 45000)
-    return () => clearInterval(interval)
-  }, [])
+    let active = true
+    const resolveUser = async () => {
+      const { data: { user } } = await createClient().auth.getUser()
+      if (!active) return
+      setUserId(user?.id ?? null)
+      if (user) void fetchNotifications()
+    }
+    void resolveUser()
+    return () => { active = false }
+  }, [fetchNotifications])
+
+  useSupabaseRealtimeRefresh({
+    channelName: `notifications:${userId ?? 'pending'}`,
+    subscriptions: userId
+      ? [
+          { event: 'INSERT', table: 'user_notifications', filter: `user_id=eq.${userId}` },
+          { event: 'UPDATE', table: 'user_notifications', filter: `user_id=eq.${userId}` },
+        ]
+      : [],
+    onEvent: (payload) => {
+      if (payload.eventType === 'INSERT') soundOnNextIncrease.current = true
+    },
+    onRefresh: fetchNotifications,
+    enabled: Boolean(userId),
+    pollIntervalMs: 60_000,
+  })
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

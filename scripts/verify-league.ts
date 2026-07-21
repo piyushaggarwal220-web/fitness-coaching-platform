@@ -25,7 +25,12 @@ assert.deepEqual(assignTiers([{ points: 100 }, { points: 75 }, { points: 50 }, {
   'foundation',
   'foundation',
 ])
-assert.equal(LEAGUE_TIER_LABELS.champion, 'Apex Vanguard')
+assert.deepEqual(LEAGUE_TIER_LABELS, {
+  foundation: 'Bronze',
+  steady: 'Silver',
+  momentum: 'Gold',
+  champion: 'Platinum',
+})
 
 const input = {
   clientId: 'test-client',

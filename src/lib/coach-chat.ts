@@ -309,6 +309,7 @@ export async function markConversationRead(
     .from('coach_conversations')
     .update({ [unreadField]: 0, updated_at: now })
     .eq('id', conversationId)
+    .gt(unreadField, 0)
 
   const senderType = reader === 'client' ? 'coach' : 'client'
   await supabase

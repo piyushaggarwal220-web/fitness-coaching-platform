@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import { logApiDev } from '@/lib/api-dev-log'
 import { markConversationRead, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET(request: Request) {
   try {
@@ -26,6 +27,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: 'conversationId required' }, { status: 400 })
     }
 
+    const { data: accessibleConversation, error: accessError } = await supabase
+      .from('coach_conversations')
+      .select('id')
+      .eq('id', conversationId)
+      .maybeSingle()
+
+    if (accessError || !accessibleConversation) {
+      return NextResponse.json({ success: false, error: 'Conversation not found' }, { status: 404 })
+    }
+
     const { data, error } = await supabase
       .from('conversation_messages')
       .select('*')
@@ -41,7 +52,9 @@ export async function GET(request: Request) {
     const reader = coachRow ? 'coach' : 'client'
 
     if (!peek) {
-      await markConversationRead(supabase, conversationId, reader)
+      // The message table intentionally has no broad client UPDATE policy:
+      // mark read only after the conversation RLS check above proves access.
+      await markConversationRead(createAdminClient(), conversationId, reader)
     }
 
     const { data: conv } = await supabase

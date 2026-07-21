@@ -12,6 +12,7 @@ import { ComplexityScoreCard } from '@/components/complexity/ComplexityScoreCard
 import { CoachClientProfileEdit } from '@/components/coach/CoachClientProfileEdit'
 import { createClient } from '@/lib/supabase/client'
 import { useAdminRole } from '@/lib/admin/use-admin-role'
+import { formatHeight } from '@/lib/height'
 import type { Coach, CoachClientDetail } from '@/types/database'
 
 const supabase = createClient()
@@ -171,6 +172,7 @@ export default function AdminClientDetailPage() {
             <div style={s.infoGrid}>
               <Info label="Goal" value={formatFitnessGoal(client.fitness_goal)} />
               <Info label="Age" value={client.age != null ? String(client.age) : '—'} />
+              <Info label="Height" value={formatHeight(client.height)} />
               <Info label="Weight" value={client.weight != null ? `${client.weight} kg` : '—'} />
               <Info label="Onboarding" value={client.onboarding_complete ? 'Complete' : 'Pending'} />
               <Info label="Plan" value={getPlanStatus(client)} />
