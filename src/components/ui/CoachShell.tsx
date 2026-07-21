@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react'
 import { PageTransition } from '@/components/motion/PageTransition'
 import CoachNavbar from '@/app/components/CoachNavbar'
-import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation'
 import { coachPageStyles } from '@/lib/coach-page-styles'
 
 type CoachShellProps = {
@@ -49,7 +48,6 @@ export function CoachShell({ children, loading, loadingMessage, narrow }: CoachS
           </div>
         </PageTransition>
       </div>
-      <NotificationActivationGate audience="coach" />
     </>
   )
 }
