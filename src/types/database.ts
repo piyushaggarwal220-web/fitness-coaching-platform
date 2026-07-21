@@ -219,6 +219,19 @@ export type Purchase = {
   status: string
   customer_email: string
   customer_name: string | null
+  customer_phone?: string | null
+  refund_policy_version?: string | null
+  refund_policy_acknowledged_at?: string | null
+  failure_code?: string | null
+  failure_description?: string | null
+  refunded_amount_paise?: number
+  razorpay_refund_id?: string | null
+  refunded_at?: string | null
+  subscription_status?: 'active' | 'cancelled' | 'refunded'
+  subscription_cancelled_at?: string | null
+  meta_purchase_status?: string | null
+  meta_purchase_sent_at?: string | null
+  meta_purchase_error?: string | null
   claim_token_hash?: string | null
   claim_token_expires_at?: string | null
   claimed_at?: string | null
@@ -547,6 +560,45 @@ export type PurchaseDetail = PurchaseWithProfile & {
   plans: Plan[]
   support_requests: SupportRequest[]
   checkins: Checkin[]
+  payment_operations: {
+    id: string
+    operation_type: string
+    status: string
+    requested_amount_paise: number | null
+    razorpay_refund_id: string | null
+    reason: string
+    error_message: string | null
+    created_at: string
+    completed_at: string | null
+    no_result_claimed?: boolean | null
+    evidence_summary?: string | null
+    eligibility_decision?: string | null
+    eligibility_due_count?: number | null
+    eligibility_on_time_count?: number | null
+    eligibility_percentage?: number | null
+  }[]
+  lifecycle_deliveries: {
+    id: string
+    kind: string
+    channel: string
+    status: string
+    attempt_count: number
+    last_error: string | null
+    sent_at: string | null
+    created_at: string
+  }[]
+  refund_eligibility: {
+    status: 'eligible' | 'ineligible' | 'pending'
+    dueCount: number
+    onTimeCount: number
+    lateCount: number
+    missingCount: number
+    openWindowCount: number
+    percentage: number
+    thresholdPercent: number
+    evaluatedAt: string
+    reason: string
+  }
 }
 
 export type AiGenerationLogWithRelations = AiGenerationLog & {
@@ -712,6 +764,8 @@ export type NotificationType =
   | 'issue_update'
   | 'plan_available'
   | 'missed_checkin'
+  | 'onboarding_reminder'
+  | 'photo_reminder'
 
 export type UserNotification = {
   id: string

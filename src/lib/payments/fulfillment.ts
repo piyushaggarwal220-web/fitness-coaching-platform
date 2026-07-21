@@ -14,6 +14,9 @@ const CLAIM_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
 export type RecordCapturedPaymentInput = {
   email: string
   name: string
+  phone?: string | null
+  refundPolicyVersion?: string | null
+  refundPolicyAcknowledgedAt?: string | null
   plan: CoachingPlan
   razorpayPaymentId: string
   razorpayOrderId: string
@@ -75,6 +78,28 @@ function createClaimToken(): { raw: string; hash: string; expiresAt: string } {
     hash: hashClaimToken(raw),
     expiresAt: new Date(Date.now() + CLAIM_TOKEN_TTL_MS).toISOString(),
   }
+}
+
+/** Rotate an unclaimed purchase's setup token. Raw tokens are returned once and never persisted. */
+export async function issuePurchaseClaimToken(purchaseId: string): Promise<string> {
+  const admin = createAdminClient()
+  const token = createClaimToken()
+  const { data, error } = await admin
+    .from('purchases')
+    .update({
+      claim_token_hash: token.hash,
+      claim_token_expires_at: token.expiresAt,
+    })
+    .eq('id', purchaseId)
+    .eq('status', 'captured')
+    .is('claimed_at', null)
+    .select('id')
+    .maybeSingle()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Purchase is not eligible for account setup')
+  }
+  return token.raw
 }
 
 function tokensEqual(a: string, b: string): boolean {
@@ -204,6 +229,10 @@ export async function recordCapturedPayment(
         amount_paise: input.amountPaise,
         customer_email: nextEmail,
         customer_name: existingPurchase.customer_name || name || null,
+        customer_phone: existingPurchase.customer_phone || input.phone || null,
+        refund_policy_version: existingPurchase.refund_policy_version || input.refundPolicyVersion || null,
+        refund_policy_acknowledged_at:
+          existingPurchase.refund_policy_acknowledged_at || input.refundPolicyAcknowledgedAt || null,
         status: 'captured',
         claim_token_hash: token.hash,
         claim_token_expires_at: token.expiresAt,
@@ -247,6 +276,9 @@ export async function recordCapturedPayment(
       status: 'captured',
       customer_email: email,
       customer_name: name || null,
+      customer_phone: input.phone || null,
+      refund_policy_version: input.refundPolicyVersion || null,
+      refund_policy_acknowledged_at: input.refundPolicyAcknowledgedAt || null,
       claim_token_hash: token.hash,
       claim_token_expires_at: token.expiresAt,
       claimed_at: null,

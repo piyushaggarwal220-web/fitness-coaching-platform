@@ -464,6 +464,12 @@ export type PurchaseListResult = {
   total: number
   page: number
   pageSize: number
+  counts: {
+    captured: number
+    failed: number
+    refunded: number
+    unclaimed: number
+  }
 }
 
 export async function listPurchases(params: PurchaseListParams): Promise<PurchaseListResult> {
@@ -477,7 +483,11 @@ export async function listPurchases(params: PurchaseListParams): Promise<Purchas
     .from('purchases')
     .select('*, profiles:user_id(name, email)', { count: 'exact' })
 
-  if (params.status && params.status !== 'all') {
+  if (params.status === 'unclaimed') {
+    query = query.eq('status', 'captured').is('claimed_at', null)
+  } else if (params.status === 'captured') {
+    query = query.eq('status', 'captured').not('claimed_at', 'is', null)
+  } else if (params.status && params.status !== 'all') {
     query = query.eq('status', params.status)
   }
   if (params.from) {
@@ -508,8 +518,28 @@ export async function listPurchases(params: PurchaseListParams): Promise<Purchas
   }
 
   const { data, error, count } = await query.range(from, to)
+  const [captured, failed, refunded, unclaimed] = await Promise.all([
+    admin
+      .from('purchases')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'captured')
+      .not('claimed_at', 'is', null),
+    admin.from('purchases').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
+    admin.from('purchases').select('id', { count: 'exact', head: true }).eq('status', 'refunded'),
+    admin
+      .from('purchases')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'captured')
+      .is('claimed_at', null),
+  ])
+  const counts = {
+    captured: captured.count ?? 0,
+    failed: failed.count ?? 0,
+    refunded: refunded.count ?? 0,
+    unclaimed: unclaimed.count ?? 0,
+  }
   if (error) {
-    return { rows: [], total: 0, page, pageSize }
+    return { rows: [], total: 0, page, pageSize, counts }
   }
 
   return {
@@ -517,5 +547,6 @@ export async function listPurchases(params: PurchaseListParams): Promise<Purchas
     total: count ?? 0,
     page,
     pageSize,
+    counts,
   }
 }

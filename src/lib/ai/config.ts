@@ -21,6 +21,7 @@ export const MODELS = {
 /** Default generation settings applied when callers omit optional params. */
 export const DEFAULTS = {
   DEFAULT_MODEL: readModelEnv('ANTHROPIC_DEFAULT_MODEL', MODELS.CLAUDE_SONNET),
+  FALLBACK_MODEL: readModelEnv('ANTHROPIC_FALLBACK_MODEL', MODELS.CLAUDE_HAIKU),
   DEFAULT_MAX_TOKENS: 1024,
   DEFAULT_TEMPERATURE: 0.7,
 } as const

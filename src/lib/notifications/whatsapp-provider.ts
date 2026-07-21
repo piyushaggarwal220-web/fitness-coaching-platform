@@ -9,6 +9,8 @@
  * - AISENSY_CAMPAIGN_MISSED_CHECKIN — missed_checkin (optional; skip if unset)
  * - AISENSY_CAMPAIGN_PLAN_READY — plan_delivered / plan_available
  * - AISENSY_CAMPAIGN_COACH_REPLIED — coach_replied
+ * - AISENSY_CAMPAIGN_ACCOUNT_SETUP — paid account setup recovery
+ * - AISENSY_CAMPAIGN_ONBOARDING_REMINDER — onboarding/photo reminders
  *
  * templateParams order (stable — match AiSensy campaign variable slots):
  * - check-in reminders: [firstName, checkinLabel]
@@ -101,7 +103,7 @@ function buildTemplateParams(
   return [firstName, snippet]
 }
 
-async function sendAiSensyCampaign(input: {
+export async function sendAiSensyCampaign(input: {
   campaignName: string
   destination: string
   userName: string
@@ -135,6 +137,27 @@ async function sendAiSensyCampaign(input: {
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'AiSensy send failed' }
   }
+}
+
+export async function sendDirectWhatsApp(input: {
+  campaignEnv: 'AISENSY_CAMPAIGN_ACCOUNT_SETUP' | 'AISENSY_CAMPAIGN_ONBOARDING_REMINDER'
+  phone: string | null | undefined
+  name: string | null | undefined
+  templateParams: string[]
+}): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+  const destination = normalizePhoneForWhatsApp(input.phone)
+  const campaignName = process.env[input.campaignEnv]?.trim()
+  if (!getApiKey() || !campaignName || !destination) {
+    console.info(`[whatsapp] Skipped direct lifecycle send (${input.campaignEnv})`)
+    return { ok: true, skipped: true }
+  }
+
+  return sendAiSensyCampaign({
+    campaignName,
+    destination,
+    userName: input.name?.trim() || firstNameFrom(input.name),
+    templateParams: input.templateParams,
+  })
 }
 
 /** Register the WhatsApp channel provider. Call once at app startup. */

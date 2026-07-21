@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isAdminRole } from '@/lib/roles'
 import { createClient } from '@/lib/supabase/server'
 import type { PurchaseDetail } from '@/types/database'
+import { getPurchaseRefundEligibility } from '@/lib/payments/admin-operations'
 
 type RouteParams = { params: Promise<{ id: string }> }
 
@@ -38,6 +39,19 @@ export async function GET(_request: Request, { params }: RouteParams) {
   let plans: PurchaseDetail['plans'] = []
   let support_requests: PurchaseDetail['support_requests'] = []
   let checkins: PurchaseDetail['checkins'] = []
+  const [operationsRes, deliveriesRes] = await Promise.all([
+    admin
+      .from('payment_operations')
+      .select('id, operation_type, status, requested_amount_paise, razorpay_refund_id, reason, error_message, created_at, completed_at, no_result_claimed, evidence_summary, eligibility_decision, eligibility_due_count, eligibility_on_time_count, eligibility_percentage')
+      .eq('purchase_id', id)
+      .order('created_at', { ascending: false }),
+    admin
+      .from('lifecycle_deliveries')
+      .select('id, kind, channel, status, attempt_count, last_error, sent_at, created_at')
+      .eq('purchase_id', id)
+      .order('created_at', { ascending: false }),
+  ])
+  const refundEligibility = await getPurchaseRefundEligibility(id)
 
   if (clientId) {
     const profileRow = purchase.profiles as { coach_id?: string | null } | null
@@ -67,6 +81,9 @@ export async function GET(_request: Request, { params }: RouteParams) {
     plans,
     support_requests,
     checkins,
+    payment_operations: (operationsRes.data ?? []) as PurchaseDetail['payment_operations'],
+    lifecycle_deliveries: (deliveriesRes.data ?? []) as PurchaseDetail['lifecycle_deliveries'],
+    refund_eligibility: refundEligibility,
   }
 
   return NextResponse.json({ purchase: detail })

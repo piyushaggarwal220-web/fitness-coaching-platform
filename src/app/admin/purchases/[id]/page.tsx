@@ -18,6 +18,12 @@ export default function AdminPurchaseDetailPage() {
   const [purchase, setPurchase] = useState<PurchaseDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [reason, setReason] = useState('')
+  const [refundAmount, setRefundAmount] = useState('')
+  const [operationMessage, setOperationMessage] = useState('')
+  const [operationBusy, setOperationBusy] = useState(false)
+  const [noResultClaimed, setNoResultClaimed] = useState(false)
+  const [evidenceSummary, setEvidenceSummary] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -40,6 +46,42 @@ export default function AdminPurchaseDetailPage() {
 
     void load()
   }, [purchaseId])
+
+  const runOperation = async (action: 'refund' | 'cancel' | 'resend_setup' | 'retry_meta') => {
+    if (!purchase || reason.trim().length < 8) {
+      setOperationMessage('Enter an operational reason of at least 8 characters.')
+      return
+    }
+    if ((action === 'refund' || action === 'cancel') && !window.confirm(`Confirm ${action}? This changes customer access.`)) {
+      return
+    }
+    setOperationBusy(true)
+    setOperationMessage('')
+    try {
+      const amountPaise =
+        action === 'refund' ? Math.round(Number(refundAmount) * 100) : undefined
+      const res = await fetch(`/api/admin/purchases/${purchase.id}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          reason,
+          idempotencyKey: crypto.randomUUID(),
+          amountPaise,
+          noResultClaimed,
+          evidenceSummary,
+        }),
+      })
+      const data = await res.json() as { success?: boolean; error?: string }
+      if (!res.ok || !data.success) throw new Error(data.error || 'Operation failed')
+      setOperationMessage('Operation completed successfully.')
+      window.location.reload()
+    } catch (operationError) {
+      setOperationMessage(operationError instanceof Error ? operationError.message : 'Operation failed')
+    } finally {
+      setOperationBusy(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -91,11 +133,22 @@ export default function AdminPurchaseDetailPage() {
               <Info label="Amount" value={formatInr(purchase.amount_paise / 100)} />
               <Info label="Currency" value={purchase.currency} />
               <Info label="Purchase Date" value={formatDate(purchase.created_at)} />
+              <Info
+                label="Refund Policy Acknowledged"
+                value={
+                  purchase.refund_policy_acknowledged_at
+                    ? `${purchase.refund_policy_version || 'version unknown'} · ${formatDate(purchase.refund_policy_acknowledged_at)}`
+                    : 'Not recorded'
+                }
+              />
             </div>
 
             <div style={s.card}>
               <h2 style={s.cardTitle}>Payment Information</h2>
               <Info label="Status" value={purchase.status} />
+              <Info label="Subscription" value={purchase.subscription_status || 'active'} />
+              <Info label="Refunded" value={formatInr((purchase.refunded_amount_paise ?? 0) / 100)} />
+              <Info label="Meta CAPI" value={purchase.meta_purchase_status || 'not attempted'} />
               <Info label="Razorpay Order ID" value={purchase.razorpay_order_id} />
               <Info label="Razorpay Payment ID" value={purchase.razorpay_payment_id} />
             </div>
@@ -110,6 +163,125 @@ export default function AdminPurchaseDetailPage() {
               )}
             </div>
           </div>
+
+          <div style={{ ...s.card, marginTop: 16 }}>
+            <h2 style={s.cardTitle}>Payment Operations</h2>
+            <p style={{ color: '#666', fontSize: 13 }}>
+              Refund and cancellation require super-admin access. Every action is idempotent and audited.
+            </p>
+            <div style={{ padding: 12, background: '#f7f7f7', borderRadius: 8, marginBottom: 12 }}>
+              <strong>Results-guarantee eligibility: {purchase.refund_eligibility.status}</strong>
+              <div>
+                {purchase.refund_eligibility.onTimeCount}/{purchase.refund_eligibility.dueCount} due check-ins on time
+                {' '}({purchase.refund_eligibility.percentage}%); threshold {purchase.refund_eligibility.thresholdPercent}%.
+              </div>
+              {purchase.refund_eligibility.openWindowCount > 0 && (
+                <div>{purchase.refund_eligibility.openWindowCount} submission window(s) are still open.</div>
+              )}
+              <div style={{ fontSize: 12, color: '#666' }}>{purchase.refund_eligibility.reason}</div>
+            </div>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
+              <input
+                type="checkbox"
+                checked={noResultClaimed}
+                onChange={(event) => setNoResultClaimed(event.target.checked)}
+              />
+              I reviewed the client&apos;s no-result claim and supporting evidence; this is not inferred from metrics.
+            </label>
+            <label style={s.infoLabel}>No-result evidence / review notes (required for refund)</label>
+            <textarea
+              value={evidenceSummary}
+              onChange={(event) => setEvidenceSummary(event.target.value)}
+              rows={4}
+              maxLength={2000}
+              placeholder="Document the client claim, evidence reviewed, dates, and reviewer conclusion."
+              style={{ ...s.searchInput, width: '100%', margin: '6px 0 12px' }}
+            />
+            <label style={s.infoLabel}>Reason (required)</label>
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={3}
+              maxLength={500}
+              style={{ ...s.searchInput, width: '100%', margin: '6px 0 12px' }}
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+              {!purchase.claimed_at && !purchase.user_id && purchase.status === 'captured' && (
+                <button type="button" disabled={operationBusy} onClick={() => void runOperation('resend_setup')} style={s.secondaryBtn}>
+                  Resend account setup
+                </button>
+              )}
+              {purchase.meta_purchase_status !== 'sent' && purchase.status === 'captured' && (
+                <button type="button" disabled={operationBusy} onClick={() => void runOperation('retry_meta')} style={s.secondaryBtn}>
+                  Retry Meta Purchase
+                </button>
+              )}
+              {purchase.status === 'captured' && (
+                <>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    max={(purchase.amount_paise - (purchase.refunded_amount_paise ?? 0)) / 100}
+                    value={refundAmount}
+                    onChange={(event) => setRefundAmount(event.target.value)}
+                    placeholder="Refund INR"
+                    style={{ ...s.searchInput, width: 150 }}
+                  />
+                  <button
+                    type="button"
+                    disabled={
+                      operationBusy ||
+                      !refundAmount ||
+                      purchase.refund_eligibility.status !== 'eligible' ||
+                      !noResultClaimed ||
+                      evidenceSummary.trim().length < 20
+                    }
+                    onClick={() => void runOperation('refund')}
+                    style={s.secondaryBtn}
+                  >
+                    Issue refund
+                  </button>
+                  {purchase.subscription_status === 'active' && (
+                    <button type="button" disabled={operationBusy} onClick={() => void runOperation('cancel')} style={s.secondaryBtn}>
+                      Cancel subscription
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+            {operationMessage && <div style={{ marginTop: 12, fontSize: 13 }}>{operationMessage}</div>}
+          </div>
+
+          <Section title="Operation Audit" empty={purchase.payment_operations.length === 0}>
+            {purchase.payment_operations.map((operation) => (
+              <div key={operation.id} style={listItemStyle}>
+                <strong>{operation.operation_type}</strong> · {operation.status}
+                {operation.requested_amount_paise ? ` · ${formatInr(operation.requested_amount_paise / 100)}` : ''}
+                <div style={{ fontSize: 12, color: '#888' }}>{operation.reason} · {formatDate(operation.created_at)}</div>
+                {operation.operation_type === 'refund' && operation.eligibility_due_count != null && (
+                  <div style={{ fontSize: 12, color: '#666' }}>
+                    Eligibility: {operation.eligibility_decision} · {operation.eligibility_on_time_count}/
+                    {operation.eligibility_due_count} on time ({operation.eligibility_percentage ?? 0}%)
+                    {' '}· No-result claim reviewed: {operation.no_result_claimed ? 'yes' : 'no'}
+                  </div>
+                )}
+                {operation.evidence_summary && (
+                  <div style={{ fontSize: 12, color: '#666' }}>Evidence: {operation.evidence_summary}</div>
+                )}
+                {operation.error_message && <div style={{ fontSize: 12, color: '#a33' }}>{operation.error_message}</div>}
+              </div>
+            ))}
+          </Section>
+
+          <Section title="Recovery Deliveries" empty={purchase.lifecycle_deliveries.length === 0}>
+            {purchase.lifecycle_deliveries.map((delivery) => (
+              <div key={delivery.id} style={listItemStyle}>
+                <strong>{delivery.kind}</strong> · {delivery.channel} · {delivery.status}
+                <div style={{ fontSize: 12, color: '#888' }}>{formatDate(delivery.sent_at || delivery.created_at)}</div>
+              </div>
+            ))}
+          </Section>
 
           <Section title="Generated Plans" empty={purchase.plans.length === 0}>
             {purchase.plans.map((plan) => (

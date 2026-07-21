@@ -78,6 +78,27 @@ export default function AdminPurchasesPage() {
 
           {error && <div style={s.error}>{error}</div>}
 
+          {result && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
+              {([
+                ['Captured', result.counts.captured, 'captured'],
+                ['Failed', result.counts.failed, 'failed'],
+                ['Refunded', result.counts.refunded, 'refunded'],
+                ['Unclaimed', result.counts.unclaimed, 'unclaimed'],
+              ] as const).map(([label, value, filter]) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => { setPage(1); setStatus(filter) }}
+                  style={{ ...s.card, padding: 16, textAlign: 'left', cursor: 'pointer' }}
+                >
+                  <div style={s.infoLabel}>{label}</div>
+                  <div style={{ fontSize: 26, fontWeight: 800 }}>{value}</div>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div style={s.toolbar}>
             <input
               type="search"
@@ -99,6 +120,9 @@ export default function AdminPurchasesPage() {
             >
               <option value="all">All statuses</option>
               <option value="captured">Captured</option>
+              <option value="failed">Failed</option>
+              <option value="refunded">Refunded</option>
+              <option value="unclaimed">Unclaimed</option>
             </select>
             <input type="date" value={from} onChange={(e) => { setPage(1); setFrom(e.target.value) }} style={s.select} />
             <input type="date" value={to} onChange={(e) => { setPage(1); setTo(e.target.value) }} style={s.select} />
@@ -140,7 +164,7 @@ export default function AdminPurchasesPage() {
                       <td style={s.td}>{formatInr(purchase.amount_paise / 100)}</td>
                       <td style={s.td}>
                         <span style={{ ...s.badge, ...(purchase.status === 'captured' ? s.badgeOk : s.badgeWarn) }}>
-                          {purchase.status}
+                          {purchase.status === 'captured' && !purchase.claimed_at ? 'unclaimed' : purchase.status}
                         </span>
                       </td>
                       <td style={s.td}>

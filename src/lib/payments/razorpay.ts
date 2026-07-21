@@ -16,7 +16,17 @@ export type RazorpayPayment = {
   currency: string
   order_id: string
   email?: string
+  contact?: string
   notes?: Record<string, string>
+}
+
+export type RazorpayRefund = {
+  id: string
+  payment_id: string
+  amount: number
+  currency: string
+  status: string
+  created_at: number
 }
 
 export type RazorpayOrderDetail = RazorpayOrder & {
@@ -95,6 +105,33 @@ export async function fetchRazorpayOrder(orderId: string): Promise<RazorpayOrder
   }
 
   return response.json() as Promise<RazorpayOrderDetail>
+}
+
+export async function createRazorpayRefund(params: {
+  paymentId: string
+  amountPaise: number
+  operationId: string
+  reason: string
+}): Promise<RazorpayRefund> {
+  const response = await fetch(`${RAZORPAY_API_BASE}/payments/${params.paymentId}/refund`, {
+    method: 'POST',
+    headers: {
+      Authorization: getAuthHeader(),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      amount: params.amountPaise,
+      notes: {
+        operation_id: params.operationId,
+        reason: params.reason.slice(0, 200),
+      },
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Razorpay refund failed (HTTP ${response.status})`)
+  }
+  return response.json() as Promise<RazorpayRefund>
 }
 
 export function verifyRazorpaySignature(

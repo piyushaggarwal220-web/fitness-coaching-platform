@@ -39,6 +39,7 @@ function CheckoutForm() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,6 +48,7 @@ function CheckoutForm() {
   const [redeemCode, setRedeemCode] = useState('');
   const [redeemValid, setRedeemValid] = useState<{ planName?: string } | null>(null);
   const [validatingCode, setValidatingCode] = useState(false);
+  const [refundPolicyAcknowledged, setRefundPolicyAcknowledged] = useState(false);
   const testMode = isPaymentBypassClient();
 
   useEffect(() => {
@@ -72,6 +74,7 @@ function CheckoutForm() {
         planSlug: plan.slug,
         email,
         name,
+        phone,
         ...payload,
       }),
     });
@@ -158,7 +161,13 @@ function CheckoutForm() {
       const orderRes = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planSlug: plan.slug, email, name }),
+        body: JSON.stringify({
+          planSlug: plan.slug,
+          email,
+          name,
+          phone,
+          refundPolicyAcknowledged,
+        }),
       });
 
       const orderData = await orderRes.json();
@@ -186,7 +195,7 @@ function CheckoutForm() {
         name: 'LURVOX',
         description: `${plan.name} coaching plan`,
         order_id: orderData.orderId,
-        prefill: { name, email },
+        prefill: { name, email, contact: phone },
         handler: async (response: RazorpayHandlerResponse) => {
           try {
             await completeVerification(response);
@@ -274,6 +283,17 @@ function CheckoutForm() {
           <label style={styles.label}>Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={styles.input} />
 
+          <label style={styles.label}>WhatsApp number</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+            placeholder="+91 98765 43210"
+            autoComplete="tel"
+            style={styles.input}
+          />
+
           {showRedeem && redeemValid && (
             <>
               <label style={styles.label}>Create password (min 6 characters)</label>
@@ -290,9 +310,32 @@ function CheckoutForm() {
             </>
           )}
 
+          {!showRedeem && (
+            <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>
+              <input
+                type="checkbox"
+                checked={refundPolicyAcknowledged}
+                onChange={(event) => setRefundPolicyAcknowledged(event.target.checked)}
+                required
+                style={{ marginTop: 3 }}
+              />
+              <span>
+                I read the <Link href="/refund-policy" target="_blank" style={{ color: colors.accent }}>Refund & Results Guarantee Policy</Link>.
+                The guarantee requires a documented no-result claim and at least 90% of due
+                check-ins submitted within each 48-hour window. This does not limit statutory rights.
+                {' '}See also the <Link href="/terms" target="_blank" style={{ color: colors.accent }}>Terms</Link>.
+              </span>
+            </label>
+          )}
+
           <button
             type="submit"
-            disabled={loading || (showRedeem ? !redeemValid : (!testMode && !razorpayReady))}
+            disabled={
+              loading ||
+              (showRedeem
+                ? !redeemValid
+                : !refundPolicyAcknowledged || (!testMode && !razorpayReady))
+            }
             style={styles.payBtn}
           >
             {loading

@@ -7,11 +7,14 @@ import {
   verifyRazorpaySignature,
 } from '@/lib/payments/razorpay'
 import { shouldBypassPayment } from '@/lib/config'
+import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
+import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
 
 type VerifyPaymentBody = {
   planSlug?: string
   email?: string
   name?: string
+  phone?: string
   razorpay_order_id?: string
   razorpay_payment_id?: string
   razorpay_signature?: string
@@ -45,6 +48,9 @@ export async function POST(request: Request) {
 
   let trustedEmail = clientEmail
   let trustedName = clientName
+  let trustedPhone = body.phone?.trim() || null
+  let refundPolicyVersion: string | null = shouldBypassPayment() ? '2026-07-21' : null
+  let refundPolicyAcknowledgedAt: string | null = shouldBypassPayment() ? new Date().toISOString() : null
 
   if (!shouldBypassPayment()) {
     if (!orderId || !paymentId || !signature) {
@@ -85,8 +91,12 @@ export async function POST(request: Request) {
       const noteEmail = payment.notes?.customer_email?.trim().toLowerCase()
       const noteName = payment.notes?.customer_name?.trim()
       const razorpayEmail = payment.email?.trim().toLowerCase()
+      const notePhone = payment.notes?.customer_phone?.trim()
       trustedEmail = noteEmail || razorpayEmail || clientEmail
       trustedName = noteName || clientName
+      trustedPhone = notePhone || payment.contact?.trim() || trustedPhone
+      refundPolicyVersion = payment.notes?.refund_policy_version?.trim() || null
+      refundPolicyAcknowledgedAt = payment.notes?.refund_policy_acknowledged_at?.trim() || null
 
       if (noteEmail && noteEmail !== clientEmail) {
         logPurchaseStep('payment_verified', {
@@ -119,11 +129,36 @@ export async function POST(request: Request) {
     const result = await recordCapturedPayment({
       email: trustedEmail,
       name: trustedName,
+      phone: trustedPhone,
+      refundPolicyVersion,
+      refundPolicyAcknowledgedAt,
       plan,
       razorpayPaymentId: paymentId || `test_pay_${Date.now()}`,
       razorpayOrderId: orderId || `test_order_${Date.now()}`,
       amountPaise: plan.amountPaise,
     })
+
+    await Promise.allSettled([
+      sendMetaPurchase({
+        purchaseId: result.purchaseId,
+        paymentId: result.razorpayPaymentId,
+        email: result.customerEmail,
+        phone: trustedPhone,
+        amountPaise: plan.amountPaise,
+        currency: 'INR',
+        planSlug: plan.slug,
+      }),
+      result.claimToken
+        ? sendAccountSetupRecovery({
+            purchaseId: result.purchaseId,
+            token: result.claimToken,
+            email: result.customerEmail,
+            phone: trustedPhone,
+            name: result.customerName,
+            stage: 'confirmed',
+          })
+        : Promise.resolve({ sent: 0, skipped: 1, failed: 0 }),
+    ])
 
     if (result.alreadyClaimed) {
       return NextResponse.json({

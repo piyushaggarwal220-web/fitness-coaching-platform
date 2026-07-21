@@ -7,6 +7,8 @@ type CreateOrderBody = {
   planSlug?: string
   email?: string
   name?: string
+  phone?: string
+  refundPolicyAcknowledged?: boolean
 }
 
 export async function POST(request: Request) {
@@ -29,6 +31,15 @@ export async function POST(request: Request) {
   if (!body.name?.trim()) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   }
+  if (!body.phone?.trim()) {
+    return NextResponse.json({ error: 'WhatsApp number is required' }, { status: 400 })
+  }
+  if (body.refundPolicyAcknowledged !== true) {
+    return NextResponse.json(
+      { error: 'Refund and results guarantee policy acknowledgement is required' },
+      { status: 400 }
+    )
+  }
 
   if (shouldBypassPayment()) {
     return NextResponse.json({
@@ -50,6 +61,9 @@ export async function POST(request: Request) {
         plan_slug: plan.slug,
         customer_email: body.email.trim().toLowerCase(),
         customer_name: body.name.trim(),
+        customer_phone: body.phone.trim(),
+        refund_policy_version: '2026-07-21',
+        refund_policy_acknowledged_at: new Date().toISOString(),
       },
     })
 
