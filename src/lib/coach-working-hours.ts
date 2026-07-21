@@ -46,7 +46,7 @@ export function getCoachWorkingHoursStatus(
 }
 
 export function addCoachWorkingTime(
-  startedAt: string | Date,
+  startedAt: string | number | Date,
   durationMs: number = COACH_RESPONSE_TARGET_MS
 ): Date {
   let cursor = new Date(startedAt)
