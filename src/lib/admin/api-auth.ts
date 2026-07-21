@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { isAdminRole, isSuperAdminRole } from '@/lib/roles'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/types/database'
+import { scheduleOpportunisticNotificationDrain } from '@/lib/notifications/drain'
 
 export type AdminApiProfile = Pick<Profile, 'id' | 'name' | 'email' | 'role'>
 
@@ -36,6 +37,7 @@ export async function requireAdminApi(): Promise<AdminApiAuthResult> {
     }
   }
 
+  scheduleOpportunisticNotificationDrain()
   return { ok: true, userId: user.id, profile: profile as AdminApiProfile }
 }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import { scheduleOpportunisticNotificationDrain } from '@/lib/notifications/drain'
 
 export type ApiAuthResult =
   | { ok: true; supabase: SupabaseClient; user: User }
@@ -16,16 +17,19 @@ export async function requireApiUser(): Promise<ApiAuthResult> {
   } = await supabase.auth.getUser()
 
   if (user && !error) {
+    scheduleOpportunisticNotificationDrain()
     return { ok: true, supabase, user }
   }
 
   const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
   if (refreshData?.user && !refreshError) {
+    scheduleOpportunisticNotificationDrain()
     return { ok: true, supabase, user: refreshData.user }
   }
 
   const { data: { user: retryUser } } = await supabase.auth.getUser()
   if (retryUser) {
+    scheduleOpportunisticNotificationDrain()
     return { ok: true, supabase, user: retryUser }
   }
 

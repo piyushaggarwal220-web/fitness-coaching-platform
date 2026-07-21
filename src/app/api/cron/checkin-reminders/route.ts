@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { getClientCheckinSchedule } from '@/lib/checkin-schedule'
-import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
+import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import type { Checkin, NotificationType } from '@/types/database'
 
 export const runtime = 'nodejs'

@@ -4,7 +4,7 @@ import {
   requireConversationParticipant,
   requireConversationParticipantForUser,
 } from '@/lib/chat-api-access'
-import { sendNotification } from '@/lib/notifications/service'
+import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CallRequestStatus } from '@/types/database'
 

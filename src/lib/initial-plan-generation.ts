@@ -10,7 +10,7 @@ import {
   ONBOARDING_SCREEN_COUNT,
   validateOnboardingStep,
 } from '@/lib/onboarding'
-import { sendNotification } from '@/lib/notifications/service'
+import { sendNotification } from '@/lib/notifications/dispatcher'
 import { persistAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'

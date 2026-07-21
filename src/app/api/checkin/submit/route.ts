@@ -15,7 +15,7 @@ import {
 } from '@/lib/checkin-chat'
 import { postCheckinToCoachChat } from '@/lib/coach-chat'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
-import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
+import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CheckinType } from '@/types/database'
 

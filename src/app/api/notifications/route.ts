@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { sendNotification } from '@/lib/notifications/service'
+import {
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '@/lib/notifications/service'
+import { sendNotification } from '@/lib/notifications/dispatcher'
+import { scheduleOpportunisticNotificationDrain } from '@/lib/notifications/drain'
 import { safeInternalPathOrNull } from '@/lib/safe-navigation'
 import type { NotificationType } from '@/types/database'
 
@@ -8,6 +13,7 @@ export async function GET(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  scheduleOpportunisticNotificationDrain()
 
   const url = new URL(request.url)
   const unreadOnly = url.searchParams.get('unread') === 'true'
@@ -37,25 +43,17 @@ export async function PATCH(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  scheduleOpportunisticNotificationDrain()
 
   const body = await request.json()
-  const now = new Date().toISOString()
 
   if (body.markAll) {
-    await supabase
-      .from('user_notifications')
-      .update({ read_at: now })
-      .eq('user_id', user.id)
-      .is('read_at', null)
+    await markAllNotificationsRead(user.id)
     return NextResponse.json({ ok: true })
   }
 
   if (body.notificationId) {
-    await supabase
-      .from('user_notifications')
-      .update({ read_at: now })
-      .eq('id', body.notificationId)
-      .eq('user_id', user.id)
+    await markNotificationRead(body.notificationId, user.id)
     return NextResponse.json({ ok: true })
   }
 

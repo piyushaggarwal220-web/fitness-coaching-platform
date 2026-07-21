@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdminApi } from '@/lib/admin/api-auth'
-import { updateIssueStatus } from '@/lib/issue-reports'
+import { updateIssueStatus } from '@/lib/issue-reports-server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { IssueStatus } from '@/types/database'
 

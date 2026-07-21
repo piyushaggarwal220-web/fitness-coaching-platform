@@ -1,7 +1,7 @@
 import 'server-only'
 import { sendDirectEmail } from '@/lib/notifications/email-provider'
 import { sendDirectWhatsApp } from '@/lib/notifications/whatsapp-provider'
-import { sendNotification } from '@/lib/notifications/service'
+import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NotificationType } from '@/types/database'
 

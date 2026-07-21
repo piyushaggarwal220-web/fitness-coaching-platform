@@ -207,12 +207,16 @@ async function finishJob(job: ClaimedJob, outcome: DeliveryOutcome, durationMs: 
   })
 }
 
-export async function processNotificationJobs(limit = 50): Promise<Record<string, number>> {
+export async function processNotificationJobs(
+  limit = 50,
+  eventId: string | null = null
+): Promise<Record<string, number>> {
   const admin = createAdminClient()
   const workerId = randomUUID()
   const { data, error } = await admin.rpc('claim_notification_jobs', {
     p_limit: Math.min(Math.max(limit, 1), 100),
     p_worker: workerId,
+    p_event_id: eventId,
   })
   if (error) throw new Error(`Could not claim notification jobs: ${error.message}`)
   const jobs = (data ?? []) as ClaimedJob[]
@@ -239,4 +243,19 @@ export async function processNotificationJobs(limit = 50): Promise<Record<string
     }
   }
   return counts
+}
+
+export async function acquireOpportunisticDrainLease(
+  leaseSeconds: number
+): Promise<boolean> {
+  const admin = createAdminClient()
+  const { data, error } = await admin.rpc('try_acquire_notification_drain_lease', {
+    p_lease_name: 'opportunistic',
+    p_interval_seconds: leaseSeconds,
+  })
+  if (error) {
+    console.error('[notifications] Could not acquire opportunistic drain lease:', error.message)
+    return false
+  }
+  return data === true
 }

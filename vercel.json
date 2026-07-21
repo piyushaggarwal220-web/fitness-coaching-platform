@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/notification-delivery",
-      "schedule": "* * * * *"
+      "schedule": "15 4 * * *"
     }
   ]
 }

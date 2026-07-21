@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { claimPurchaseWithPassword } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { establishPurchaseSession } from '@/lib/payments/purchase-session'
+import { scheduleOpportunisticNotificationDrain } from '@/lib/notifications/drain'
 
 type ClaimBody = {
   token?: string
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
       password,
       name: body.name,
     })
+    scheduleOpportunisticNotificationDrain()
 
     if (result.needsLogin) {
       return NextResponse.json({

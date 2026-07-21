@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { isCheckinSystemMessage } from '@/lib/checkin-chat'
-import { sendNotification } from '@/lib/notifications/service'
+import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type {
   CoachConversation,
