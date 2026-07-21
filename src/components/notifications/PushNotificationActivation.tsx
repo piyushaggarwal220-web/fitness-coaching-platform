@@ -158,7 +158,7 @@ const styles: Record<string, React.CSSProperties> = {
     inset: 0,
     zIndex: 1000,
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     padding: spacing[3],
     paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))',
