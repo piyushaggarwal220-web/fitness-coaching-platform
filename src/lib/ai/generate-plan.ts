@@ -137,6 +137,15 @@ const RETRY_INSTRUCTIONS = [
   'Escape all newlines inside JSON strings as \\n. Ensure the JSON parses cleanly.',
 ].join(' ')
 
+const CLIENT_FACING_PLAN_STYLE_INSTRUCTIONS = [
+  '# Client-Facing Writing Style',
+  'Write every client-facing plan field in natural, coach-written plain text.',
+  'Do not use Markdown formatting, asterisks, star bullets, or hyphen bullets.',
+  'Do not wrap headings or phrases in special formatting characters.',
+  'Use simple section titles and normal sentences. When listing items, place each item on its own line without a symbol prefix.',
+  'Keep the tone practical, personal, and human. Avoid robotic labels, filler, and AI-style commentary.',
+].join('\n')
+
 const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   '# Plan Output Format',
   'You MUST respond with ONLY valid JSON — no markdown fences, no commentary, no preamble.',
@@ -385,9 +394,13 @@ async function buildPlanPrompts(
     validationMode: options.validationMode,
   })
 
-  const systemPrompt = outputInstructions
-    ? `${base.systemPrompt}\n\n${outputInstructions}`
-    : base.systemPrompt
+  const systemPrompt = [
+    base.systemPrompt,
+    outputInstructions,
+    CLIENT_FACING_PLAN_STYLE_INSTRUCTIONS,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 
   const userPrompt = [
     base.userPrompt,

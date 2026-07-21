@@ -1,6 +1,7 @@
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { MODELS, LIMITS } from '@/lib/ai/config'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
+import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 
 export type PlanSectionKind = 'nutrition' | 'workout'
@@ -76,7 +77,9 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     'Rules:',
     '- Preserve useful structure: day headers (Monday / Day 1), meal names, exercise lines with sets×reps.',
     '- Make only the changes needed to satisfy the request — do not rewrite unrelated days unless asked.',
-    '- Keep language clear and coach-ready (plain text / markdown, not JSON).',
+    '- Keep language natural, human, and coach-ready in plain text, not JSON.',
+    '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
+    '- Use plain section titles and put list items on separate lines without symbol prefixes.',
     '- Do not invent unsafe extreme restrictions or medical claims.',
     '- Output ONLY the full revised plan text for that section — no preamble, no explanation.',
   ].join('\n')
@@ -108,7 +111,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
       mockText: buildMockRevision(input),
     })
 
-    const revisedText = extractRevisedText(response.text)
+    const revisedText = normalizeAiPlanProse(extractRevisedText(response.text))
     if (!revisedText) {
       throw new ClaudeResponseError('AI returned an empty revision.')
     }

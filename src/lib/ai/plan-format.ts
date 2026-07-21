@@ -6,6 +6,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+/** Remove common AI/Markdown decoration while preserving normal punctuation. */
+export function normalizeAiPlanProse(value: string): string {
+  return value
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => {
+      if (/^\s*[-*_]{3,}\s*$/.test(line)) return ''
+      return line
+        .replace(/^\s*#{1,6}\s*/, '')
+        .replace(/^\s*[-*•–—]\s+/, '')
+        .replace(/\*+/g, '')
+        .replace(/_{2,}/g, '')
+        .trimEnd()
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 function formatScalar(value: unknown): string {
   if (value == null) return ''
   if (typeof value === 'string') return value.trim()
@@ -176,26 +195,28 @@ export function generatedPlanToFormData(
     .trim()
 
   const mealsText = formatMeals(generated.nutrition_plan.meals)
-  const nutritionText = [
-    `Calories: ${generated.nutrition_plan.calories}`,
-    `Protein: ${generated.nutrition_plan.protein}g`,
-    `Carbs: ${generated.nutrition_plan.carbs}g`,
-    `Fat: ${generated.nutrition_plan.fat}g`,
-    mealsText ? '' : null,
-    mealsText || null,
-  ]
-    .filter((line) => line !== null)
-    .join('\n')
+  const nutritionText = normalizeAiPlanProse(
+    [
+      `Calories: ${generated.nutrition_plan.calories}`,
+      `Protein: ${generated.nutrition_plan.protein}g`,
+      `Carbs: ${generated.nutrition_plan.carbs}g`,
+      `Fat: ${generated.nutrition_plan.fat}g`,
+      mealsText ? '' : null,
+      mealsText || null,
+    ]
+      .filter((line) => line !== null)
+      .join('\n')
+  )
 
   return applyParsedSectionsToFormData({
     client_id: clientId,
     title: options?.title ?? 'AI Coaching Plan (Draft)',
     phase: options?.phase ?? 'Phase 1',
-    workout_plan: workoutText,
+    workout_plan: normalizeAiPlanProse(workoutText),
     nutrition_plan: nutritionText,
-    cardio_plan: formatCardioSessions(generated.cardio_plan.sessions),
-    supplement_plan: formatSupplementItems(generated.supplement_plan.items),
-    coach_notes: generated.coach_notes.trim(),
+    cardio_plan: normalizeAiPlanProse(formatCardioSessions(generated.cardio_plan.sessions)),
+    supplement_plan: normalizeAiPlanProse(formatSupplementItems(generated.supplement_plan.items)),
+    coach_notes: normalizeAiPlanProse(generated.coach_notes),
   })
 }
 

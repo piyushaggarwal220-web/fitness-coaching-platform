@@ -1,4 +1,5 @@
 import { resolvePlanSections } from '../src/lib/plan-section-parser'
+import { normalizeAiPlanProse } from '../src/lib/ai/plan-format'
 
 let failed = 0
 
@@ -91,6 +92,14 @@ const metaOnly = resolvePlanSections({
 })
 
 assert('meta-only coach notes become empty', metaOnly.coachNotes === '')
+
+const humanized = normalizeAiPlanProse(
+  '## Monday\n**Warm up**\n- Squats: 4 sets x 8 reps\n* Walk for 20 minutes\nUse a well-balanced meal.'
+)
+assert('removes markdown heading markers', !humanized.includes('#'))
+assert('removes asterisks from generated prose', !humanized.includes('*'))
+assert('removes hyphen and star bullet prefixes', humanized.includes('Squats: 4 sets x 8 reps\nWalk for 20 minutes'))
+assert('preserves normal in-sentence hyphens', humanized.includes('well-balanced'))
 
 if (failed > 0) {
   console.error(`\n${failed} plan parser checks failed`)
