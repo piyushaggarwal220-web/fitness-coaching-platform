@@ -9,8 +9,11 @@ import {
   buildScheduledCheckin,
   getCheckinUnavailableReason,
   getClientCheckinSchedule,
+  getCoachingDateKey,
   getCoachingDay,
+  getNextCoachingDayStart,
   getCheckinWindowEnd,
+  hasCoachingDayStarted,
   isCheckinAvailableToday,
   isWithinCheckinSubmissionWindow,
 } from '../src/lib/checkin-schedule'
@@ -44,6 +47,26 @@ function main() {
   check(
     'Pre-delivery reason is explicit',
     getCheckinUnavailableReason(null, 'weekly', []) === 'plan_not_delivered'
+  )
+
+  console.log('\nFirst coaching day:')
+  const deliveredAt = new Date('2026-01-01T12:34:56.789Z')
+  const firstDayStart = getNextCoachingDayStart(deliveredAt)
+  check(
+    'First day starts at the following midnight IST',
+    sameInstant(firstDayStart, '2026-01-01T18:30:00.000Z')
+  )
+  check(
+    'Schedule remains closed before midnight IST',
+    !hasCoachingDayStarted(firstDayStart, new Date('2026-01-01T18:29:59.999Z'))
+  )
+  check(
+    'Schedule opens exactly at midnight IST',
+    hasCoachingDayStarted(firstDayStart, new Date('2026-01-01T18:30:00.000Z'))
+  )
+  check(
+    'Tracker date keys use the India coaching date',
+    getCoachingDateKey(new Date('2026-01-01T18:30:00.000Z')) === '2026-01-02'
   )
 
   console.log('\nExact timestamps and windows:')
@@ -96,6 +119,28 @@ function main() {
     /checkin_schedule_started_at\s*=\s*COALESCE\(\s*p\.checkin_schedule_started_at,/m.test(migration)
   )
   check('Historical due_at backfill is present', migration.includes('UPDATE checkins c'))
+
+  const midnightMigration = readFileSync(
+    join(
+      process.cwd(),
+      'supabase/migrations/20260721164500_first_coaching_day_midnight.sql'
+    ),
+    'utf8'
+  )
+  check(
+    'Database derives the first day at next midnight IST',
+    midnightMigration.includes("date_trunc('day', $1 AT TIME ZONE 'Asia/Kolkata')")
+  )
+  check(
+    'Both privileged profile triggers use the midnight helper',
+    (midnightMigration.match(/first_coaching_day_start\(MIN\(/g) ?? []).length === 2
+  )
+
+  const plansSource = readFileSync(join(process.cwd(), 'src/lib/plans.ts'), 'utf8')
+  check(
+    'New first-plan deliveries anchor at next midnight',
+    plansSource.includes('getNextCoachingDayStart(firstDelivery)')
+  )
 
   check(
     'Submission API exists',

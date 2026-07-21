@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
+import { getNextCoachingDayStart } from '@/lib/checkin-schedule'
 import {
   clientCoachNotes,
   formatPublishedPlanTitle,
@@ -95,11 +96,13 @@ export async function syncPlanDeliveredFlag(
   if (profileError) return { error: profileError.message }
 
   const firstDelivery = firstDeliveredPlan?.delivered_at ?? null
+  const scheduleStartedAt = profile?.checkin_schedule_started_at ??
+    (firstDelivery ? getNextCoachingDayStart(firstDelivery).toISOString() : null)
   const { error } = await supabase
     .from('profiles')
     .update({
       plan_delivered: (count ?? 0) > 0,
-      checkin_schedule_started_at: profile?.checkin_schedule_started_at ?? firstDelivery,
+      checkin_schedule_started_at: scheduleStartedAt,
     })
     .eq('id', clientId)
 

@@ -5,6 +5,38 @@ export const WEEKLY_DAY = 7
 export const COACHING_WEEK_LENGTH = 7
 export const CHECKIN_SUBMISSION_WINDOW_MS = 48 * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
+const INDIA_TIME_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
+export const COACHING_TIME_ZONE = 'Asia/Kolkata'
+
+/** The first coaching day begins at midnight IST after initial plan delivery. */
+export function getNextCoachingDayStart(deliveredAt: string | Date): Date {
+  const delivered = anchorDate(deliveredAt)
+  const indiaTime = new Date(delivered.getTime() + INDIA_TIME_OFFSET_MS)
+  const nextLocalMidnightAsUtc = Date.UTC(
+    indiaTime.getUTCFullYear(),
+    indiaTime.getUTCMonth(),
+    indiaTime.getUTCDate() + 1
+  )
+  return new Date(nextLocalMidnightAsUtc - INDIA_TIME_OFFSET_MS)
+}
+
+export function hasCoachingDayStarted(
+  scheduleStartedAt: string | Date,
+  referenceDate: Date = new Date()
+): boolean {
+  return referenceDate.getTime() >= anchorDate(scheduleStartedAt).getTime()
+}
+
+export function getCoachingDateKey(referenceDate: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: COACHING_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(referenceDate)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
 
 export type CheckinTaskStatus = 'available' | 'completed' | 'missed' | 'upcoming' | 'awaiting_review'
 

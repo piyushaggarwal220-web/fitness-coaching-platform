@@ -86,5 +86,15 @@ const notificationRouteSource = readFileSync(
   'utf8'
 )
 assert.match(notificationRouteSource, /scheduleOpportunisticNotificationDrain\(\)/)
+const coachShellSource = readFileSync(
+  new URL('../src/components/ui/CoachShell.tsx', import.meta.url),
+  'utf8'
+)
+assert.match(coachShellSource, /<NotificationActivationGate audience="coach" \/>/)
+const coachDashboardSource = readFileSync(
+  new URL('../src/app/coach/dashboard/page.tsx', import.meta.url),
+  'utf8'
+)
+assert.match(coachDashboardSource, /<PushNotificationCard audience="coach" \/>/)
 
 console.log('Notification delivery policy verification passed.')

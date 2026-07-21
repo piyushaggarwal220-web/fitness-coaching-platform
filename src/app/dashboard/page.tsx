@@ -18,7 +18,12 @@ import { ClientShell } from '@/components/ui/ClientShell';
 import { Card, StatCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { formatCheckinDate } from '@/lib/checkin';
-import { getClientCheckinSchedule, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
+import {
+  getClientCheckinSchedule,
+  getCheckinStatusLabel,
+  getCheckinTypeDisplayName,
+  hasCoachingDayStarted,
+} from '@/lib/checkin-schedule';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { PushNotificationCard } from '@/components/notifications/PushNotificationActivation';
@@ -242,7 +247,11 @@ export default function Dashboard() {
   );
 
   const checkinScheduleBypass = shouldBypassCheckinScheduleClient();
-  const checkinSchedule = profile?.checkin_schedule_started_at
+  const coachingDayStarted = profile?.checkin_schedule_started_at
+    ? hasCoachingDayStarted(profile.checkin_schedule_started_at, scheduleNow)
+    : false;
+  const coachingDayPending = Boolean(profile?.checkin_schedule_started_at) && !coachingDayStarted;
+  const checkinSchedule = profile?.checkin_schedule_started_at && coachingDayStarted
     ? getClientCheckinSchedule(profile.checkin_schedule_started_at, allCheckins, scheduleNow, {
         bypassSchedule: checkinScheduleBypass,
       })
@@ -278,7 +287,21 @@ export default function Dashboard() {
       </div>
     </Card>
   ) : null;
-  const trackerCard = activePlan ? (
+  const trackerCard = activePlan && coachingDayPending ? (
+    <Card variant="glass">
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Timer size={22} color={colors.accent} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 17 }}>Your first day starts tomorrow</p>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
+            Daily tracking opens at 12:00 AM.
+          </p>
+        </div>
+      </div>
+    </Card>
+  ) : activePlan ? (
     <Card
       variant={status?.preferTrackerUpTop ? 'elevated' : 'glass'}
       onClick={() => router.push('/tracker')}

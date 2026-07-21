@@ -1,5 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { getClientCheckinSchedule, getCoachingDay, getCoachingWeek } from '@/lib/checkin-schedule'
+import {
+  getClientCheckinSchedule,
+  getCoachingDateKey,
+  getCoachingDay,
+  getCoachingWeek,
+  hasCoachingDayStarted,
+} from '@/lib/checkin-schedule'
 import type { OnboardingProfile, Plan } from '@/types/database'
 import { buildTrackerSnapshot, mergeCompletion } from './parser'
 import { averageRpe, calculateTrackerScores } from './scores'
@@ -12,7 +18,7 @@ import type {
 } from './types'
 
 function todayDateString(reference = new Date()): string {
-  return reference.toISOString().slice(0, 10)
+  return getCoachingDateKey(reference)
 }
 
 function greetingForHour(hour: number): string {
@@ -194,6 +200,12 @@ export async function getOrCreateTodayTracker(
   if (!profile.checkin_schedule_started_at) {
     return { day: null, error: 'Your coaching schedule will begin when your first plan is delivered.' }
   }
+  if (!hasCoachingDayStarted(profile.checkin_schedule_started_at)) {
+    return {
+      day: null,
+      error: 'Your first coaching day begins tomorrow at 12:00 AM.',
+    }
+  }
 
   const logDate = todayDateString()
   const coachingDay = getCoachingDay(profile.checkin_schedule_started_at)
@@ -319,6 +331,9 @@ export async function refreshTodayTrackerAfterPlanPublish(
   plan: Plan,
   profile?: OnboardingProfile | null
 ): Promise<void> {
+  const scheduleStartedAt = profile?.checkin_schedule_started_at
+  if (!scheduleStartedAt || !hasCoachingDayStarted(scheduleStartedAt)) return
+
   const logDate = todayDateString()
   const { data: existing } = await supabase
     .from('daily_tracker_days')
@@ -349,8 +364,6 @@ export async function refreshTodayTrackerAfterPlanPublish(
     return
   }
 
-  const scheduleStartedAt = profile?.checkin_schedule_started_at
-  if (!scheduleStartedAt) return
   const coachingDay = getCoachingDay(scheduleStartedAt)
   const coachingWeek = getCoachingWeek(coachingDay)
   const completion: TrackerCompletion = {}

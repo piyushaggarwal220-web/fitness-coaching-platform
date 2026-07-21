@@ -14,6 +14,7 @@ import { CoachConversationsSection } from '@/components/chat/CoachConversationsS
 import { CoachWorkQueuePanel } from '@/components/coach/CoachWorkQueuePanel';
 import { CoachWorkSummaryCards } from '@/components/coach/CoachWorkSummaryCards';
 import { CoachTrackerAdherencePanel } from '@/components/coach/CoachTrackerAdherencePanel';
+import { PushNotificationCard } from '@/components/notifications/PushNotificationActivation';
 import type { WorkQueueCounts, WorkQueueFilter } from '@/lib/coach-work-queue';
 import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
 import type { Checkin, ClientProfile, Coach, CoachStats } from '@/types/database';
@@ -163,6 +164,8 @@ export default function CoachDashboard() {
           Welcome back, {firstName}. Here&apos;s your coaching overview, sorted by what needs attention first.
         </p>
       </div>
+
+      <PushNotificationCard audience="coach" />
 
       {/* Overview */}
       <section style={coachPageStyles.section}>

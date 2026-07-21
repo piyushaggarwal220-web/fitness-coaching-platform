@@ -13,6 +13,8 @@ import {
 } from '@/lib/notifications/web-push-client'
 import { createClient } from '@/lib/supabase/client'
 
+type NotificationAudience = 'client' | 'coach'
+
 function useWebPushStatus() {
   const [status, setStatus] = useState<WebPushStatus>('checking')
 
@@ -35,7 +37,7 @@ function useWebPushStatus() {
   return { status, refresh }
 }
 
-function getStatusContent(status: WebPushStatus) {
+function getStatusContent(status: WebPushStatus, audience: NotificationAudience) {
   switch (status) {
     case 'enabled':
       return {
@@ -64,7 +66,9 @@ function getStatusContent(status: WebPushStatus) {
     default:
       return {
         label: status === 'checking' ? 'Checking…' : 'Not enabled',
-        detail: 'Turn on notifications so you do not miss coach messages, plan updates, and check-in reminders.',
+        detail: audience === 'coach'
+          ? 'Turn on notifications so you do not miss client messages, submitted check-ins, and plan alerts.'
+          : 'Turn on notifications so you do not miss coach messages, plan updates, and check-in reminders.',
         color: colors.warning,
         background: colors.warningMuted,
         icon: <BellRing size={22} color={colors.warning} />,
@@ -72,11 +76,15 @@ function getStatusContent(status: WebPushStatus) {
   }
 }
 
-export function PushNotificationCard() {
+export function PushNotificationCard({
+  audience = 'client',
+}: {
+  audience?: NotificationAudience
+}) {
   const { status, refresh } = useWebPushStatus()
   const [enabling, setEnabling] = useState(false)
   const [error, setError] = useState('')
-  const content = getStatusContent(status)
+  const content = getStatusContent(status, audience)
 
   const enable = async () => {
     setEnabling(true)
@@ -119,14 +127,18 @@ export function PushNotificationCard() {
   )
 }
 
-export function NotificationActivationGate() {
+export function NotificationActivationGate({
+  audience = 'client',
+}: {
+  audience?: NotificationAudience
+}) {
   const { status, refresh } = useWebPushStatus()
   const [userId, setUserId] = useState<string | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const [attempted, setAttempted] = useState(false)
   const [enabling, setEnabling] = useState(false)
   const [error, setError] = useState('')
-  const content = getStatusContent(status)
+  const content = getStatusContent(status, audience)
 
   useEffect(() => {
     let active = true
@@ -171,7 +183,9 @@ export function NotificationActivationGate() {
         <p style={styles.eyebrow}>Stay connected</p>
         <h1 id="notification-gate-title" style={styles.heading}>Turn on notifications</h1>
         <p style={styles.intro}>
-          Get important coach messages, plan updates, and check-in reminders even when the app is not open.
+          {audience === 'coach'
+            ? 'Get client messages, submitted check-ins, and plan alerts even when the coaching dashboard is not open.'
+            : 'Get important coach messages, plan updates, and check-in reminders even when the app is not open.'}
         </p>
 
         {(status === 'blocked' || status === 'unsupported') && (
