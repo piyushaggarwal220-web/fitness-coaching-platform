@@ -1,6 +1,11 @@
 import type { ConversationMessage } from '@/types/database'
+import {
+  addCoachWorkingTime,
+  COACH_RESPONSE_TARGET_MS,
+  getCoachWorkingHoursStatus,
+} from '@/lib/coach-working-hours'
 
-export const COACH_RESPONSE_TARGET_MS = 2 * 60 * 60 * 1000
+export { COACH_RESPONSE_TARGET_MS } from '@/lib/coach-working-hours'
 
 export function getCoachResponseTarget(messages: ConversationMessage[]): {
   startedAt: number
@@ -22,10 +27,14 @@ export function getCoachResponseTarget(messages: ConversationMessage[]): {
   )
   if (unanswered.length === 0) return null
 
-  const startedAt = new Date(unanswered[0].created_at).getTime()
+  const requestedAt = new Date(unanswered[0].created_at)
+  const workingHours = getCoachWorkingHoursStatus(requestedAt)
+  const startedAt = workingHours.isOpen
+    ? requestedAt.getTime()
+    : workingHours.nextOpensAt.getTime()
   return {
     startedAt,
-    deadline: startedAt + COACH_RESPONSE_TARGET_MS,
+    deadline: addCoachWorkingTime(startedAt, COACH_RESPONSE_TARGET_MS).getTime(),
     unansweredCount: unanswered.length,
   }
 }

@@ -73,8 +73,9 @@ export default function TermsPage() {
           You consent to receive service communications electronically through the app, email,
           telephone, or the contact details you provide, including account, payment, coaching, and
           safety messages. Availability and response times may vary. Chat response timers show a
-          service target, not emergency coverage or an absolute guarantee. Keep your contact details
-          current and contact emergency services—not chat—for urgent help.
+          service target during coach working hours, 9:00 AM to 6:00 PM India time, and pause
+          outside those hours. They are not emergency coverage or an absolute guarantee. Keep your
+          contact details current and contact emergency services—not chat—for urgent help.
         </p>
 
         <h2>7. Privacy and data handling</h2>

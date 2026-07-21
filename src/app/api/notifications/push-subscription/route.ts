@@ -24,6 +24,27 @@ export async function GET() {
   })
 }
 
+export async function PUT(request: Request) {
+  const auth = await requireApiUser()
+  if (!auth.ok) return auth.response
+  const body = await request.json().catch(() => null) as { endpoint?: string } | null
+  if (!body?.endpoint) {
+    return NextResponse.json({ registered: false })
+  }
+
+  const { count, error } = await auth.supabase
+    .from('push_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', auth.user.id)
+    .eq('endpoint', body.endpoint)
+    .is('disabled_at', null)
+
+  if (error) {
+    return NextResponse.json({ error: 'Could not verify push subscription' }, { status: 500 })
+  }
+  return NextResponse.json({ registered: (count ?? 0) > 0 })
+}
+
 export async function POST(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response

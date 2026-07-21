@@ -90,7 +90,36 @@ const coachDashboardSource = readFileSync(
   new URL('../src/app/coach/dashboard/page.tsx', import.meta.url),
   'utf8'
 )
-assert.match(coachDashboardSource, /<PushNotificationCard audience="coach" \/>/)
 assert.match(coachDashboardSource, /<NotificationActivationGate audience="coach" \/>/)
+assert.doesNotMatch(coachDashboardSource, /PushNotificationCard/)
+const clientDashboardSource = readFileSync(
+  new URL('../src/app/dashboard/page.tsx', import.meta.url),
+  'utf8'
+)
+assert.doesNotMatch(clientDashboardSource, /PushNotificationCard/)
+const notificationGateSource = readFileSync(
+  new URL('../src/components/notifications/PushNotificationActivation.tsx', import.meta.url),
+  'utf8'
+)
+assert.doesNotMatch(notificationGateSource, /Continue with in-app notifications/)
+assert.doesNotMatch(notificationGateSource, /notification-gate-dismissed/)
+assert.match(notificationGateSource, /Notification access is required to use the dashboard/)
+assert.match(notificationGateSource, /Checking notification access/)
+const pushSubscriptionRouteSource = readFileSync(
+  new URL('../src/app/api/notifications/push-subscription/route.ts', import.meta.url),
+  'utf8'
+)
+assert.match(pushSubscriptionRouteSource, /export async function PUT/)
+const webPushClientSource = readFileSync(
+  new URL('../src/lib/notifications/web-push-client.ts', import.meta.url),
+  'utf8'
+)
+assert.match(webPushClientSource, /method: 'PUT'/)
+const coachChatSource = readFileSync(
+  new URL('../src/lib/coach-chat.ts', import.meta.url),
+  'utf8'
+)
+assert.match(coachChatSource, /title: 'Coach working hours'/)
+assert.match(coachChatSource, /idempotencyKey: `coach-off-hours:/)
 
 console.log('Notification delivery policy verification passed.')

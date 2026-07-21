@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { isCheckinSystemMessage } from '@/lib/checkin-chat'
+import {
+  formatNextCoachWorkingHours,
+  getCoachWorkingHoursStatus,
+} from '@/lib/coach-working-hours'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type {
@@ -249,6 +253,23 @@ export async function sendChatMessage(
           idempotencyKey: `chat-message:${data.id}:client`,
         })
       } else {
+        const workingHours = getCoachWorkingHoursStatus(new Date(now))
+        if (!workingHours.isOpen) {
+          const nextWorkingHours = formatNextCoachWorkingHours(new Date(now))
+          await sendNotification({
+            userId: conv.client_id,
+            type: 'unread_chat',
+            title: 'Coach working hours',
+            body: `Coaches are available from 9:00 AM to 6:00 PM. Please wait until ${nextWorkingHours}; your 2-hour response countdown will start or resume then.`,
+            actionUrl: '/client/chat',
+            metadata: {
+              conversationId: input.conversationId,
+              nextWorkingHoursAt: workingHours.nextOpensAt.toISOString(),
+            },
+            idempotencyKey: `coach-off-hours:${conv.client_id}:${input.conversationId}:${workingHours.nextOpensAt.toISOString()}`,
+          })
+        }
+
         const { data: coach } = await supabase
           .from('coaches')
           .select('user_id')

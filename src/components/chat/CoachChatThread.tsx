@@ -13,6 +13,10 @@ import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
 import { useSupabaseRealtimeRefresh } from '@/hooks/useSupabaseRealtime'
 import { getCoachResponseTarget } from '@/lib/chat-response-target'
+import {
+  formatNextCoachWorkingHours,
+  getCoachWorkingHoursStatus,
+} from '@/lib/coach-working-hours'
 import { CalendarClock, Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
 
 /** WhatsApp-like dark palette */
@@ -340,6 +344,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const peerLabel = viewer === 'client' ? 'Coach' : 'Client'
   const showSend = input.trim().length > 0 || Boolean(imagePreview)
   const remainingMs = responseDeadline && now > 0 ? responseDeadline - now : null
+  const workingHours = now > 0 ? getCoachWorkingHoursStatus(new Date(now)) : null
   const presenceText = peerOnline
     ? `${peerLabel} is online`
     : peerLastSeenAt
@@ -372,7 +377,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         )}
       </div>
 
-      {viewer === 'client' && remainingMs !== null && (
+      {viewer === 'client' && remainingMs !== null && workingHours?.isOpen && (
         <div style={{
           ...styles.responseTarget,
           color: remainingMs > 0 ? wa.textMuted : '#ffb4a9',
@@ -382,6 +387,14 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
             : `Coach response target is overdue by ${formatDuration(Math.abs(remainingMs))}`}
           {' '}· This is a service target, not an emergency or absolute guarantee.
           {(responseTarget?.unansweredCount ?? 0) > 1 && ' Additional messages do not restart the timer.'}
+        </div>
+      )}
+
+      {viewer === 'client' && responseTarget && workingHours && !workingHours.isOpen && (
+        <div style={styles.responseTarget}>
+          Coach working hours are 9:00 AM to 6:00 PM. Please wait until{' '}
+          {formatNextCoachWorkingHours(new Date(now))}. The 2-hour response countdown
+          starts or resumes during working hours.
         </div>
       )}
 

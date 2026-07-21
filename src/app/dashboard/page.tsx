@@ -26,7 +26,6 @@ import {
 } from '@/lib/checkin-schedule';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
-import { PushNotificationCard } from '@/components/notifications/PushNotificationActivation';
 import { formatPlanDate } from '@/lib/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
@@ -348,8 +347,6 @@ export default function Dashboard() {
           {loadError}
         </div>
       )}
-
-      <PushNotificationCard />
 
       {generationJob && !activePlan && (
         <div style={{

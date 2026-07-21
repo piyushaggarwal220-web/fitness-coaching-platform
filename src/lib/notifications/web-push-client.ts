@@ -48,7 +48,24 @@ export async function getWebPushStatus(): Promise<WebPushStatus> {
     const subscription = registration
       ? await registration.pushManager.getSubscription()
       : null
-    return resolveWebPushStatus(true, Notification.permission, Boolean(subscription))
+    if (!subscription || Notification.permission !== 'granted') {
+      return resolveWebPushStatus(true, Notification.permission, false)
+    }
+
+    const response = await fetch('/api/notifications/push-subscription', {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: subscription.endpoint }),
+    })
+    const result = await response.json().catch(() => null) as {
+      registered?: boolean
+    } | null
+    return resolveWebPushStatus(
+      true,
+      Notification.permission,
+      response.ok && result?.registered === true
+    )
   } catch {
     return resolveWebPushStatus(true, Notification.permission, false)
   }
