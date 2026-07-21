@@ -10,6 +10,8 @@ import {
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getOrderPolicyAcknowledgement } from '@/lib/payments/policy-acknowledgement'
+import { isCurrentPolicyAcknowledgement } from '@/lib/policies'
 
 /**
  * Razorpay webhook — records captured payments when the browser never reaches /verify.
@@ -178,8 +180,10 @@ export async function POST(request: Request) {
           customer_email: failedEmail,
           customer_name: failedNotes.customer_name || null,
           customer_phone: failedNotes.customer_phone || payment.contact || null,
+          terms_policy_version: failedNotes.terms_policy_version || null,
           refund_policy_version: failedNotes.refund_policy_version || null,
-          refund_policy_acknowledged_at: failedNotes.refund_policy_acknowledged_at || null,
+          refund_policy_acknowledged_at: failedNotes.policy_acknowledged_at || null,
+          policy_acknowledged_at: failedNotes.policy_acknowledged_at || null,
           failure_code: entity?.error_code || null,
           failure_description: entity?.error_description?.slice(0, 500) || null,
         },
@@ -236,12 +240,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing customer email' }, { status: 422 })
     }
 
+    const policyAcknowledgement = await getOrderPolicyAcknowledgement(
+      createAdminClient(),
+      payment.order_id
+    )
+    if (!isCurrentPolicyAcknowledgement(policyAcknowledgement)) {
+      logPurchaseStep('webhook_missing_policy_agreement', { paymentId, orderId: payment.order_id })
+      return NextResponse.json(
+        { success: false, error: 'Current Terms and Refund Policy agreement is required' },
+        { status: 422 }
+      )
+    }
+
     const result = await recordCapturedPayment({
       email,
       name,
       phone,
-      refundPolicyVersion: notes.refund_policy_version || null,
-      refundPolicyAcknowledgedAt: notes.refund_policy_acknowledged_at || null,
+      termsPolicyVersion: policyAcknowledgement.termsVersion,
+      refundPolicyVersion: policyAcknowledgement.refundPolicyVersion,
+      policyAcknowledgedAt: policyAcknowledgement.acknowledgedAt,
+      policyAckIpHash: policyAcknowledgement.ipHash,
       plan,
       razorpayPaymentId: payment.id,
       razorpayOrderId: payment.order_id,

@@ -62,6 +62,10 @@ export type GeneratePlanInput = {
   activePlan?: Plan | null
   /** Newly generated diet context for weekly workout updates. */
   updatedDietPlan?: Plan | null
+  progressImages?: {
+    mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+    data: string
+  }[]
 }
 
 export type PlanValidationMode = 'full' | 'workout_focus' | 'nutrition_focus' | 'minimal'
@@ -483,6 +487,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         maxTokens: LIMITS.MAX_PLAN_TOKENS,
         temperature: DEFAULTS.DEFAULT_TEMPERATURE,
         mockText,
+        images: input.progressImages,
       })
     } catch (err) {
       if (err instanceof ClaudeResponseError) {

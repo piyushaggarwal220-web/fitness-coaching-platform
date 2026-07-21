@@ -15,8 +15,10 @@ export type RecordCapturedPaymentInput = {
   email: string
   name: string
   phone?: string | null
+  termsPolicyVersion?: string | null
   refundPolicyVersion?: string | null
-  refundPolicyAcknowledgedAt?: string | null
+  policyAcknowledgedAt?: string | null
+  policyAckIpHash?: string | null
   plan: CoachingPlan
   razorpayPaymentId: string
   razorpayOrderId: string
@@ -230,9 +232,13 @@ export async function recordCapturedPayment(
         customer_email: nextEmail,
         customer_name: existingPurchase.customer_name || name || null,
         customer_phone: existingPurchase.customer_phone || input.phone || null,
+        terms_policy_version: existingPurchase.terms_policy_version || input.termsPolicyVersion || null,
         refund_policy_version: existingPurchase.refund_policy_version || input.refundPolicyVersion || null,
         refund_policy_acknowledged_at:
-          existingPurchase.refund_policy_acknowledged_at || input.refundPolicyAcknowledgedAt || null,
+          existingPurchase.refund_policy_acknowledged_at || input.policyAcknowledgedAt || null,
+        policy_acknowledged_at:
+          existingPurchase.policy_acknowledged_at || input.policyAcknowledgedAt || null,
+        policy_ack_ip_hash: existingPurchase.policy_ack_ip_hash || input.policyAckIpHash || null,
         status: 'captured',
         claim_token_hash: token.hash,
         claim_token_expires_at: token.expiresAt,
@@ -277,8 +283,11 @@ export async function recordCapturedPayment(
       customer_email: email,
       customer_name: name || null,
       customer_phone: input.phone || null,
+      terms_policy_version: input.termsPolicyVersion || null,
       refund_policy_version: input.refundPolicyVersion || null,
-      refund_policy_acknowledged_at: input.refundPolicyAcknowledgedAt || null,
+      refund_policy_acknowledged_at: input.policyAcknowledgedAt || null,
+      policy_acknowledged_at: input.policyAcknowledgedAt || null,
+      policy_ack_ip_hash: input.policyAckIpHash || null,
       claim_token_hash: token.hash,
       claim_token_expires_at: token.expiresAt,
       claimed_at: null,

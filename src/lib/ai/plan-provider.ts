@@ -10,6 +10,10 @@ export type PlanProviderCallParams = {
   maxTokens: number
   temperature: number
   mockText?: string
+  images?: {
+    mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+    data: string
+  }[]
 }
 
 export type PlanProviderCallResult = {
@@ -64,6 +68,7 @@ export async function callPlanProvider(
     model: params.model,
     maxTokens: params.maxTokens,
     temperature: params.temperature ?? DEFAULTS.DEFAULT_TEMPERATURE,
+    images: params.images,
   })
 
   return {

@@ -27,6 +27,7 @@ export function logPurchaseStep(
     | 'webhook_missing_plan'
     | 'webhook_amount_mismatch'
     | 'webhook_missing_email'
+    | 'webhook_missing_policy_agreement'
     | 'webhook_recorded'
     | 'webhook_failed',
   details?: Record<string, unknown>

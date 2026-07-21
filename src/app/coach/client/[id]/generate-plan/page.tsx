@@ -25,6 +25,7 @@ import { ActionCard, AiReasoningPanel, GenerationStatus, OptionalCoachNote } fro
 import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
 import type { Coach, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
+import type { InitialPlanGenerationJob } from '@/lib/initial-plan-generation'
 
 const supabase = createClient()
 const GENERATION_TIMEOUT_MS = 4 * 60 * 1000
@@ -47,6 +48,8 @@ export default function CoachGeneratePlanPage() {
   const [reasoning, setReasoning] = useState<AiReasoningDisplay | null>(null)
   const [comparePlans, setComparePlans] = useState<[Plan, Plan] | null>(null)
   const [restoringId, setRestoringId] = useState<string | null>(null)
+  const [backgroundJob, setBackgroundJob] = useState<InitialPlanGenerationJob | null>(null)
+  const [retryingBackground, setRetryingBackground] = useState(false)
   const startedAtRef = useRef<number | null>(null)
   const abortRef = useRef(false)
 
@@ -70,11 +73,18 @@ export default function CoachGeneratePlanPage() {
         .eq('client_id', clientId)
         .eq('coach_id', coachData.id)
         .order('version', { ascending: false })
+      const { data: generationJob } = await supabase
+        .from('initial_plan_generation_jobs')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('coach_id', coachData.id)
+        .maybeSingle()
 
       return {
         coach: coachData,
         client: clientData as OnboardingProfile,
         plans: (plansData as Plan[]) ?? [],
+        generationJob: generationJob as InitialPlanGenerationJob | null,
       }
     }
 
@@ -89,6 +99,7 @@ export default function CoachGeneratePlanPage() {
       setCoach(result.coach)
       setClient(result.client)
       setPlans(result.plans)
+      setBackgroundJob(result.generationJob)
       setLoading(false)
     }
     if (clientId) void init()
@@ -284,6 +295,25 @@ export default function CoachGeneratePlanPage() {
     router.push(`/coach/plan/new?clientId=${clientId}&fromAi=1`)
   }
 
+  const retryBackgroundGeneration = async () => {
+    if (!backgroundJob || backgroundJob.status !== 'failed') return
+    setRetryingBackground(true)
+    setError('')
+    const response = await fetch('/api/coach/plan-generation/retry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ jobId: backgroundJob.id }),
+    })
+    const result = await response.json()
+    setRetryingBackground(false)
+    if (!response.ok) {
+      setError(result.error ?? 'Could not retry background generation.')
+      return
+    }
+    setBackgroundJob({ ...backgroundJob, status: 'queued', error_code: null, error_message: null })
+  }
+
   if (!clientId) {
     return (
       <CoachShell narrow>
@@ -327,6 +357,40 @@ export default function CoachGeneratePlanPage() {
               client.complexity_input_review_reasons.length > 0
                 ? ` ${client.complexity_input_review_reasons.join(' ')}`
                 : ''}
+            </div>
+          )}
+
+          {backgroundJob && (
+            <div style={backgroundJob.status === 'failed' ? s.error : s.card}>
+              <strong>
+                {backgroundJob.status === 'ready'
+                  ? 'Ready for coach note/review'
+                  : backgroundJob.status === 'generating'
+                    ? 'AI diet and workout generation in progress'
+                    : backgroundJob.status === 'queued'
+                      ? 'AI diet and workout generation queued'
+                      : 'Background generation failed'}
+              </strong>
+              {backgroundJob.status === 'ready' && backgroundJob.draft_plan_id && (
+                <div style={{ marginTop: 10 }}>
+                  <Link href={`/coach/plan/${backgroundJob.draft_plan_id}`} style={s.noteToggle}>
+                    Review draft, add note, and deliver
+                  </Link>
+                </div>
+              )}
+              {backgroundJob.status === 'failed' && (
+                <div style={{ marginTop: 10 }}>
+                  <span>{backgroundJob.error_message ?? 'Generation failed safely.'}</span>
+                  <button
+                    type="button"
+                    style={{ ...s.noteToggle, marginLeft: 8 }}
+                    disabled={retryingBackground}
+                    onClick={() => void retryBackgroundGeneration()}
+                  >
+                    {retryingBackground ? 'Queueing…' : 'Retry background generation'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

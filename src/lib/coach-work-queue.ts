@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export type WorkQueueTaskType =
   | 'initial_plan'
   | 'checkin_review'
+  | 'call_request'
   | 'unread_chat'
   | 'issue_report'
   | 'other'
@@ -22,6 +23,7 @@ export type WorkQueueTask = {
 const PRIORITY: Record<WorkQueueTaskType, number> = {
   initial_plan: 1,
   checkin_review: 2,
+  call_request: 2,
   unread_chat: 3,
   issue_report: 4,
   other: 5,
@@ -49,19 +51,42 @@ export async function getCoachWorkQueue(
   const clientNameById = new Map(
     (clients ?? []).map((c) => [c.id, c.name || c.email || 'Client'])
   )
+  const { data: generationJobs } = await supabase
+    .from('initial_plan_generation_jobs')
+    .select('id, client_id, status, draft_plan_id, error_message, queued_at, updated_at')
+    .eq('coach_id', coachId)
+  const generationByClient = new Map(
+    (generationJobs ?? []).map((job) => [job.client_id, job])
+  )
 
   for (const client of clients ?? []) {
     if (!client.plan_delivered) {
+      const generation = generationByClient.get(client.id)
+      const title =
+        generation?.status === 'ready'
+          ? 'Ready for coach note/review'
+          : generation?.status === 'generating'
+            ? 'AI plan is generating'
+            : generation?.status === 'queued'
+              ? 'AI plan generation queued'
+              : generation?.status === 'failed'
+                ? 'AI plan generation failed'
+                : 'Create Initial Plan'
+      const href = generation?.status === 'ready' && generation.draft_plan_id
+        ? `/coach/plan/${generation.draft_plan_id}`
+        : `/coach/client/${client.id}/generate-plan`
       tasks.push({
         id: `plan-${client.id}`,
         type: 'initial_plan',
-        title: 'Create Initial Plan',
-        subtitle: clientNameById.get(client.id) ?? 'Client',
-        href: `/coach/client/${client.id}/generate-plan`,
+        title,
+        subtitle: generation?.status === 'failed'
+          ? `${clientNameById.get(client.id) ?? 'Client'} · ${generation.error_message ?? 'Retry available'}`
+          : clientNameById.get(client.id) ?? 'Client',
+        href,
         clientId: client.id,
         clientName: clientNameById.get(client.id),
         priority: PRIORITY.initial_plan,
-        createdAt: client.created_at ?? new Date().toISOString(),
+        createdAt: generation?.queued_at ?? client.created_at ?? new Date().toISOString(),
       })
     }
   }
@@ -85,6 +110,30 @@ export async function getCoachWorkQueue(
       clientName: name,
       priority: PRIORITY.checkin_review,
       createdAt: checkin.submitted_at,
+    })
+  }
+
+  const { data: callRequests } = await supabase
+    .from('call_requests')
+    .select('id, conversation_id, client_id, status, requested_at, scheduled_for')
+    .eq('coach_id', coachId)
+    .in('status', ['requested', 'scheduled'])
+    .order('requested_at', { ascending: true })
+
+  for (const request of callRequests ?? []) {
+    const name = clientNameById.get(request.client_id) ?? 'Client'
+    tasks.push({
+      id: `call-${request.id}`,
+      type: 'call_request',
+      title: request.status === 'scheduled' ? `Scheduled call with ${name}` : `Call requested by ${name}`,
+      subtitle: request.scheduled_for
+        ? new Date(request.scheduled_for).toLocaleString('en-IN')
+        : 'Open chat to schedule or resolve',
+      href: `/coach/chat/${request.conversation_id}`,
+      clientId: request.client_id,
+      clientName: name,
+      priority: PRIORITY.call_request,
+      createdAt: request.requested_at,
     })
   }
 
@@ -162,6 +211,7 @@ export type WorkQueueFilter = WorkQueueTaskType | 'all'
 export type WorkQueueCounts = {
   initial_plan: number
   checkin_review: number
+  call_request: number
   unread_chat: number
   issue_report: number
   other: number
@@ -172,6 +222,7 @@ export function getWorkQueueCounts(tasks: WorkQueueTask[]): WorkQueueCounts {
   const counts: WorkQueueCounts = {
     initial_plan: 0,
     checkin_review: 0,
+    call_request: 0,
     unread_chat: 0,
     issue_report: 0,
     other: 0,

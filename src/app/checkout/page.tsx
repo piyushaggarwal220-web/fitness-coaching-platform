@@ -48,7 +48,7 @@ function CheckoutForm() {
   const [redeemCode, setRedeemCode] = useState('');
   const [redeemValid, setRedeemValid] = useState<{ planName?: string } | null>(null);
   const [validatingCode, setValidatingCode] = useState(false);
-  const [refundPolicyAcknowledged, setRefundPolicyAcknowledged] = useState(false);
+  const [policyAgreementAccepted, setPolicyAgreementAccepted] = useState(false);
   const testMode = isPaymentBypassClient();
 
   useEffect(() => {
@@ -166,7 +166,7 @@ function CheckoutForm() {
           email,
           name,
           phone,
-          refundPolicyAcknowledged,
+          policyAgreementAccepted,
         }),
       });
 
@@ -314,16 +314,19 @@ function CheckoutForm() {
             <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>
               <input
                 type="checkbox"
-                checked={refundPolicyAcknowledged}
-                onChange={(event) => setRefundPolicyAcknowledged(event.target.checked)}
+                checked={policyAgreementAccepted}
+                onChange={(event) => setPolicyAgreementAccepted(event.target.checked)}
                 required
+                aria-describedby="checkout-policy-agreement"
                 style={{ marginTop: 3 }}
               />
-              <span>
-                I read the <Link href="/refund-policy" target="_blank" style={{ color: colors.accent }}>Refund & Results Guarantee Policy</Link>.
-                The guarantee requires a documented no-result claim and at least 90% of due
-                check-ins submitted within each 48-hour window. This does not limit statutory rights.
-                {' '}See also the <Link href="/terms" target="_blank" style={{ color: colors.accent }}>Terms</Link>.
+              <span id="checkout-policy-agreement">
+                I have read and agree to the{' '}
+                <Link href="/terms" target="_blank" style={{ color: colors.accent }}>Terms &amp; Conditions</Link>
+                {' '}and{' '}
+                <Link href="/refund-policy" target="_blank" style={{ color: colors.accent }}>Refund Policy</Link>.
+                The results guarantee requires a documented no-result claim and at least 90% of
+                due check-ins submitted within each 48-hour window. Statutory rights still apply.
               </span>
             </label>
           )}
@@ -334,7 +337,7 @@ function CheckoutForm() {
               loading ||
               (showRedeem
                 ? !redeemValid
-                : !refundPolicyAcknowledged || (!testMode && !razorpayReady))
+                : !policyAgreementAccepted || (!testMode && !razorpayReady))
             }
             style={styles.payBtn}
           >

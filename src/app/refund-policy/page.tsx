@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { brandTitle } from '@/lib/brand'
 import { colors, radius, spacing } from '@/lib/design-tokens'
+import { REFUND_POLICY_VERSION } from '@/lib/policies'
 
 export const metadata = {
   title: brandTitle('Refund & Results Guarantee Policy'),
@@ -12,6 +13,7 @@ export default function RefundPolicyPage() {
       <article style={{ maxWidth: 760, margin: '0 auto', background: colors.bgCard, border: `1px solid ${colors.borderSubtle}`, borderRadius: radius.lg, padding: spacing[6], lineHeight: 1.7 }}>
         <Link href="/checkout" style={{ color: colors.accent }}>← Back to checkout</Link>
         <h1>Refund & Results Guarantee Policy</h1>
+        <p><strong>Version:</strong> {REFUND_POLICY_VERSION} · <strong>Effective:</strong> 21 July 2026</p>
         <p>
           Our coaching results guarantee applies only when both requirements below are verified.
           It is separate from any refund or remedy required by applicable law.
@@ -49,6 +51,13 @@ export default function RefundPolicyPage() {
           This coaching results guarantee does not limit rights that cannot legally be excluded.
           Nothing here creates a blanket no-refund rule or removes statutory remedies for
           defective services, misrepresentation, unauthorized payments, or other protected claims.
+        </p>
+
+        <h2>Cancellation</h2>
+        <p>
+          You may request cancellation through the support channel in the platform. Cancellation
+          ends future service or renewal where applicable but does not itself guarantee a refund.
+          We assess any refund under this policy and any mandatory rights that apply.
         </p>
       </article>
     </main>

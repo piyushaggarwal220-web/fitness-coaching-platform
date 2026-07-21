@@ -35,6 +35,7 @@ import { createClient } from '@/lib/supabase/client';
 import { colors, spacing, typography } from '@/lib/design-tokens';
 import { mobileStyles } from '@/lib/mobile-styles';
 import type { Checkin, Coach, OnboardingProfile, Plan, Purchase, Workout } from '@/types/database';
+import type { InitialPlanGenerationJob } from '@/lib/initial-plan-generation';
 
 const supabase = createClient();
 
@@ -70,6 +71,7 @@ export default function Dashboard() {
   const [restoringSession, setRestoringSession] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [scheduleNow, setScheduleNow] = useState(() => new Date());
+  const [generationJob, setGenerationJob] = useState<InitialPlanGenerationJob | null>(null);
 
   useEffect(() => {
     if (!profile?.checkin_schedule_started_at) return;
@@ -119,6 +121,7 @@ export default function Dashboard() {
           weekWorkoutsResult,
           coachResult,
           convResult,
+          generationResult,
         ] = await Promise.all([
           supabase
             .from('checkins')
@@ -157,6 +160,11 @@ export default function Dashboard() {
           coachId
             ? supabase.from('coach_conversations').select('unread_by_client').eq('client_id', userId).maybeSingle()
             : Promise.resolve({ data: null, error: null }),
+          supabase
+            .from('initial_plan_generation_jobs')
+            .select('*')
+            .eq('client_id', userId)
+            .maybeSingle(),
         ]);
 
         if (checkinResult.error) throw new Error(checkinResult.error.message);
@@ -166,6 +174,7 @@ export default function Dashboard() {
         if (weekWorkoutsResult.error) throw new Error(weekWorkoutsResult.error.message);
         if (coachResult.error) throw new Error(coachResult.error.message);
         if (convResult.error) throw new Error(convResult.error.message);
+        if (generationResult.error) throw new Error(generationResult.error.message);
 
         const checkinList = (checkinResult.data ?? []) as DashboardCheckin[];
         setAllCheckins(checkinList);
@@ -209,6 +218,7 @@ export default function Dashboard() {
 
         if (coachResult.data) setCoach(coachResult.data as Coach);
         setUnreadMessages((convResult.data?.unread_by_client as number) ?? 0);
+        setGenerationJob(generationResult.data as InitialPlanGenerationJob | null);
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : 'Failed to load dashboard');
       } finally {
@@ -309,6 +319,31 @@ export default function Dashboard() {
       {loadError && (
         <div style={{ ...mobileStyles.error, marginBottom: spacing[4] }}>
           {loadError}
+        </div>
+      )}
+
+      {generationJob && !activePlan && (
+        <div style={{
+          marginBottom: spacing[4],
+          padding: spacing[3],
+          borderRadius: 14,
+          backgroundColor: generationJob.status === 'failed' ? colors.dangerMuted : colors.accentMuted,
+          color: generationJob.status === 'failed' ? colors.danger : colors.textPrimary,
+          fontSize: 14,
+          lineHeight: 1.5,
+        }}>
+          <strong>
+            {generationJob.status === 'queued'
+              ? 'Your AI diet and workout draft is queued.'
+              : generationJob.status === 'generating'
+                ? 'Your AI diet and workout draft is being prepared.'
+                : generationJob.status === 'ready'
+                  ? 'Your draft is ready for your coach’s note and review.'
+                  : 'Draft generation needs coach attention.'}
+          </strong>
+          <div>
+            Nothing is delivered until your coach reviews it and explicitly sends it.
+          </div>
         </div>
       )}
 

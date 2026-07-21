@@ -185,7 +185,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (step === 19 && mealsForTiming.length === 0) {
-      setMealsForTiming(defaultMealsForTiming(form))
+      queueMicrotask(() => setMealsForTiming(defaultMealsForTiming(form)))
     }
   }, [step, form, mealsForTiming.length])
 
@@ -237,6 +237,18 @@ export default function OnboardingPage() {
     try {
       await persistProgress(ONBOARDING_SCREEN_COUNT - 1, true)
       await requestComplexityRecalculation({ trigger: 'onboarding_complete' })
+      const generationResponse = await fetch('/api/onboarding/complete-generation', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const generationResult = await generationResponse.json()
+      if (!generationResponse.ok) {
+        throw new Error(
+          generationResult.error
+            ? `Intake saved, but plan generation could not be queued: ${generationResult.error}`
+            : 'Intake saved, but plan generation could not be queued.'
+        )
+      }
       router.push('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete onboarding')

@@ -24,6 +24,7 @@ const FILTER_LABELS: Record<WorkQueueFilter, string> = {
   all: 'All tasks',
   initial_plan: 'Initial Plans',
   checkin_review: 'Weekly Reviews',
+  call_request: 'Call Requests',
   unread_chat: 'Unread Chats',
   issue_report: 'Issue Reports',
   other: 'Everything Else',

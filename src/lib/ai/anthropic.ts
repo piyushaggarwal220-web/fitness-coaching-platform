@@ -9,6 +9,10 @@ export type GenerateClaudeResponseParams = {
   temperature?: number
   /** Enable Anthropic automatic prompt caching (default: true) */
   enablePromptCaching?: boolean
+  images?: {
+    mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+    data: string
+  }[]
 }
 
 export type GenerateClaudeResponseResult = {
@@ -139,7 +143,22 @@ export async function generateClaudeResponse(
                 },
               ]
             : params.systemPrompt,
-          messages: [{ role: 'user', content: params.userPrompt }],
+          messages: [{
+            role: 'user',
+            content: params.images?.length
+              ? [
+                  ...params.images.map((image) => ({
+                    type: 'image' as const,
+                    source: {
+                      type: 'base64' as const,
+                      media_type: image.mediaType,
+                      data: image.data,
+                    },
+                  })),
+                  { type: 'text' as const, text: params.userPrompt },
+                ]
+              : params.userPrompt,
+          }],
         })
 
         const usage = response.usage

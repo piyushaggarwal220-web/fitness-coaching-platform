@@ -25,7 +25,9 @@
     "verify:plan-metadata": "tsx scripts/verify-plan-metadata.ts",
     "verify:daily-tracker": "tsx scripts/verify-daily-tracker.ts",
     "verify:prompt-cache": "tsx scripts/verify-prompt-cache.ts",
-    "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:payment-operations && npm run verify:refund-eligibility && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:plan-metadata && npm run verify:daily-tracker && npm run verify:prompt-cache",
+    "verify:chat-policy": "tsx scripts/verify-chat-policy-workflow.ts",
+    "verify:initial-plan-generation": "tsx scripts/verify-initial-plan-generation.ts",
+    "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:payment-operations && npm run verify:refund-eligibility && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:plan-metadata && npm run verify:daily-tracker && npm run verify:prompt-cache && npm run verify:chat-policy && npm run verify:initial-plan-generation",
     "db:apply-pending": "node scripts/apply-pending-migrations.mjs",
     "prompts:import": "tsx --env-file=.env.local scripts/import-production-prompts.ts"
   },

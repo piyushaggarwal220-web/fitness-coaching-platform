@@ -28,33 +28,22 @@ async function insertSystemMessage(
 ): Promise<void> {
   const admin = createAdminClient()
   const now = new Date().toISOString()
+  const { data: conversation } = options?.incrementCoachUnread
+    ? await admin
+        .from('coach_conversations')
+        .select('client_id')
+        .eq('id', conversationId)
+        .single()
+    : { data: null }
 
   await admin.from('conversation_messages').insert({
     conversation_id: conversationId,
-    sender_type: 'system' as MessageSender,
+    sender_type: (options?.incrementCoachUnread ? 'client' : 'system') as MessageSender,
+    sender_id: options?.incrementCoachUnread ? conversation?.client_id ?? null : null,
     message_type: 'system' as MessageType,
     content,
     created_at: now,
   })
-
-  if (options?.incrementCoachUnread) {
-    const { data: conv } = await admin
-      .from('coach_conversations')
-      .select('unread_by_coach')
-      .eq('id', conversationId)
-      .single()
-
-    await admin
-      .from('coach_conversations')
-      .update({
-        unread_by_coach: ((conv?.unread_by_coach as number) ?? 0) + 1,
-        last_message_at: now,
-        last_message_preview: content.slice(0, 120),
-        updated_at: now,
-        status: 'active',
-      })
-      .eq('id', conversationId)
-  }
 }
 
 async function syncConversationCoach(
@@ -237,7 +226,6 @@ export async function sendChatMessage(
 
   if (error || !data) return { data: null, error: error?.message ?? 'Failed to send message.' }
 
-  const unreadField = input.senderType === 'client' ? 'unread_by_coach' : 'unread_by_client'
   const preview = messagePreview(messageType, input.content)
 
   const { data: conv } = await supabase
@@ -247,18 +235,6 @@ export async function sendChatMessage(
     .single()
 
   if (conv) {
-    const currentUnread = conv[unreadField as keyof typeof conv] as number
-    await supabase
-      .from('coach_conversations')
-      .update({
-        [unreadField]: (currentUnread ?? 0) + 1,
-        last_message_at: now,
-        last_message_preview: preview,
-        updated_at: now,
-        status: 'active',
-      })
-      .eq('id', input.conversationId)
-
     try {
       if (input.senderType === 'coach') {
         const replyBody =
@@ -300,24 +276,20 @@ export async function sendChatMessage(
 export async function markConversationRead(
   supabase: SupabaseClient,
   conversationId: string,
-  reader: 'client' | 'coach'
+  reader: 'client' | 'coach',
+  readThrough: string | null
 ): Promise<void> {
+  if (!readThrough) return
   const now = new Date().toISOString()
-  const unreadField = reader === 'client' ? 'unread_by_client' : 'unread_by_coach'
-
-  await supabase
-    .from('coach_conversations')
-    .update({ [unreadField]: 0, updated_at: now })
-    .eq('id', conversationId)
-    .gt(unreadField, 0)
-
   const senderType = reader === 'client' ? 'coach' : 'client'
   await supabase
     .from('conversation_messages')
     .update({ read_at: now })
     .eq('conversation_id', conversationId)
     .eq('sender_type', senderType)
+    .lte('created_at', readThrough)
     .is('read_at', null)
+
 }
 
 export async function setTypingIndicator(

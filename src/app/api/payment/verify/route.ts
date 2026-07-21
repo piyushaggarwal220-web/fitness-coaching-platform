@@ -4,11 +4,18 @@ import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { getCoachingPlan } from '@/lib/payments/plans'
 import {
   fetchRazorpayPayment,
+  fetchRazorpayOrder,
   verifyRazorpaySignature,
 } from '@/lib/payments/razorpay'
 import { shouldBypassPayment } from '@/lib/config'
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
+import { getOrderPolicyAcknowledgement } from '@/lib/payments/policy-acknowledgement'
+import {
+  isCurrentPolicyAcknowledgement,
+  type CheckoutPolicyAcknowledgement,
+} from '@/lib/policies'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 type VerifyPaymentBody = {
   planSlug?: string
@@ -49,11 +56,32 @@ export async function POST(request: Request) {
   let trustedEmail = clientEmail
   let trustedName = clientName
   let trustedPhone = body.phone?.trim() || null
-  let refundPolicyVersion: string | null = shouldBypassPayment() ? '2026-07-21' : null
-  let refundPolicyAcknowledgedAt: string | null = shouldBypassPayment() ? new Date().toISOString() : null
+  let policyAcknowledgement: CheckoutPolicyAcknowledgement | null = null
+
+  if (!orderId) {
+    return NextResponse.json(
+      { success: false, error: 'Payment order id is required' },
+      { status: 400 }
+    )
+  }
+
+  try {
+    policyAcknowledgement = await getOrderPolicyAcknowledgement(createAdminClient(), orderId)
+  } catch (err) {
+    return NextResponse.json(
+      { success: false, error: err instanceof Error ? err.message : 'Could not verify agreement' },
+      { status: 500 }
+    )
+  }
+  if (!isCurrentPolicyAcknowledgement(policyAcknowledgement)) {
+    return NextResponse.json(
+      { success: false, error: 'Current Terms and Refund Policy agreement is required' },
+      { status: 400 }
+    )
+  }
 
   if (!shouldBypassPayment()) {
-    if (!orderId || !paymentId || !signature) {
+    if (!paymentId || !signature) {
       return NextResponse.json(
         { success: false, error: 'Payment verification fields are required' },
         { status: 400 }
@@ -88,16 +116,21 @@ export async function POST(request: Request) {
         )
       }
 
-      const noteEmail = payment.notes?.customer_email?.trim().toLowerCase()
-      const noteName = payment.notes?.customer_name?.trim()
+      const order = await fetchRazorpayOrder(orderId)
+      if (order.amount !== plan.amountPaise) {
+        return NextResponse.json(
+          { success: false, error: 'Payment order amount mismatch' },
+          { status: 400 }
+        )
+      }
+      const trustedNotes = { ...(order.notes ?? {}), ...(payment.notes ?? {}) }
+      const noteEmail = trustedNotes.customer_email?.trim().toLowerCase()
+      const noteName = trustedNotes.customer_name?.trim()
       const razorpayEmail = payment.email?.trim().toLowerCase()
-      const notePhone = payment.notes?.customer_phone?.trim()
+      const notePhone = trustedNotes.customer_phone?.trim()
       trustedEmail = noteEmail || razorpayEmail || clientEmail
       trustedName = noteName || clientName
       trustedPhone = notePhone || payment.contact?.trim() || trustedPhone
-      refundPolicyVersion = payment.notes?.refund_policy_version?.trim() || null
-      refundPolicyAcknowledgedAt = payment.notes?.refund_policy_acknowledged_at?.trim() || null
-
       if (noteEmail && noteEmail !== clientEmail) {
         logPurchaseStep('payment_verified', {
           emailBoundToNotes: true,
@@ -130,8 +163,10 @@ export async function POST(request: Request) {
       email: trustedEmail,
       name: trustedName,
       phone: trustedPhone,
-      refundPolicyVersion,
-      refundPolicyAcknowledgedAt,
+      termsPolicyVersion: policyAcknowledgement.termsVersion,
+      refundPolicyVersion: policyAcknowledgement.refundPolicyVersion,
+      policyAcknowledgedAt: policyAcknowledgement.acknowledgedAt,
+      policyAckIpHash: policyAcknowledgement.ipHash,
       plan,
       razorpayPaymentId: paymentId || `test_pay_${Date.now()}`,
       razorpayOrderId: orderId || `test_order_${Date.now()}`,

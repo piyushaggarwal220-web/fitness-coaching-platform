@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import type { ConversationMessage } from '@/types/database'
+import type { CallRequest, CallRequestStatus, ConversationMessage } from '@/types/database'
 import { readApiJson } from '@/lib/api-response'
 import { formatMessageTime } from '@/lib/coach-chat-ui'
 import { isCheckinSystemMessage } from '@/lib/checkin-chat'
@@ -12,7 +12,8 @@ import { StorageImage } from '@/components/ui/StorageImage'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
 import { useSupabaseRealtimeRefresh } from '@/hooks/useSupabaseRealtime'
-import { Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
+import { getCoachResponseTarget } from '@/lib/chat-response-target'
+import { CalendarClock, Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
 
 /** WhatsApp-like dark palette */
 const wa = {
@@ -43,12 +44,26 @@ type CoachChatThreadProps = {
   initialMessages?: ConversationMessage[]
 }
 
+function formatDuration(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  return `${hours}h ${minutes}m ${seconds}s`
+}
+
 export function CoachChatThread({ conversationId, coachId, viewer, initialMessages = [] }: CoachChatThreadProps) {
   const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [peerTyping, setPeerTyping] = useState(false)
+  const [peerOnline, setPeerOnline] = useState(false)
+  const [peerLastSeenAt, setPeerLastSeenAt] = useState<string | null>(null)
+  const [callRequests, setCallRequests] = useState<CallRequest[]>([])
+  const [callRequestBusy, setCallRequestBusy] = useState(false)
+  const [scheduledFor, setScheduledFor] = useState('')
+  const [now, setNow] = useState(0)
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
   const threadRef = useRef<HTMLDivElement>(null)
@@ -61,7 +76,13 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     const res = await fetch(`/api/chat/messages?conversationId=${conversationId}${markRead ? '' : '&peek=1'}`, {
       credentials: 'include',
     })
-    const parsed = await readApiJson<{ messages?: ConversationMessage[]; peerTyping?: boolean; error?: string }>(res)
+    const parsed = await readApiJson<{
+      messages?: ConversationMessage[]
+      peerTyping?: boolean
+      callRequests?: CallRequest[]
+      peerLastSeenAt?: string | null
+      error?: string
+    }>(res)
     if (!parsed.ok) {
       setError(parsed.error)
       setLoading(false)
@@ -79,22 +100,110 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       setLoading(false)
     }
     if (typeof parsed.data.peerTyping === 'boolean') setPeerTyping(parsed.data.peerTyping)
+    if (parsed.data.callRequests) setCallRequests(parsed.data.callRequests)
+    if ('peerLastSeenAt' in parsed.data) setPeerLastSeenAt(parsed.data.peerLastSeenAt ?? null)
   }, [conversationId, viewer])
 
   useEffect(() => {
     prepareNotificationSound()
-    void fetchMessages()
+    queueMicrotask(() => void fetchMessages())
   }, [fetchMessages])
 
   useSupabaseRealtimeRefresh({
-    channelName: `chat-thread:${conversationId}`,
+    channelName: `chat:${conversationId}`,
     subscriptions: [
       { event: '*', table: 'conversation_messages', filter: `conversation_id=eq.${conversationId}` },
       { event: 'UPDATE', table: 'coach_conversations', filter: `id=eq.${conversationId}` },
+      { event: '*', table: 'call_requests', filter: `conversation_id=eq.${conversationId}` },
     ],
     onRefresh: fetchMessages,
     pollIntervalMs: 45_000,
+    presence: {
+      key: `${viewer}:${conversationId}`,
+      payload: { role: viewer, onlineAt: new Date().toISOString() },
+      onSync: (state) => {
+        const peerRole = viewer === 'client' ? 'coach' : 'client'
+        const present = Object.values(state)
+          .flat()
+          .some((entry) => (entry as { role?: string }).role === peerRole)
+        setPeerOnline(present)
+        if (!present) void fetchMessages(false)
+      },
+      heartbeat: () => fetch('/api/chat/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ conversationId }),
+      }).then(() => undefined),
+    },
   })
+
+  const responseTarget = getCoachResponseTarget(messages)
+  const responseDeadline = responseTarget?.deadline ?? null
+
+  useEffect(() => {
+    if (viewer !== 'client' || !responseDeadline) return
+    const initialTick = window.setTimeout(() => setNow(Date.now()), 0)
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000)
+    return () => {
+      window.clearTimeout(initialTick)
+      window.clearInterval(timer)
+    }
+  }, [responseDeadline, viewer])
+
+  const activeCallRequest = callRequests.find(
+    (request) => request.status === 'requested' || request.status === 'scheduled'
+  )
+
+  const createCallRequest = async () => {
+    if (callRequestBusy) return
+    setCallRequestBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/api/chat/call-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ conversationId }),
+      })
+      const parsed = await readApiJson<{ request?: CallRequest }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
+      await fetchMessages(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not request a call')
+    } finally {
+      setCallRequestBusy(false)
+    }
+  }
+
+  const updateCallRequest = async (status: CallRequestStatus) => {
+    if (!activeCallRequest || callRequestBusy) return
+    if (status === 'scheduled' && !scheduledFor) {
+      setError('Choose a call date and time first')
+      return
+    }
+    setCallRequestBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/api/chat/call-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          requestId: activeCallRequest.id,
+          status,
+          scheduledFor: status === 'scheduled' ? new Date(scheduledFor).toISOString() : undefined,
+        }),
+      })
+      const parsed = await readApiJson<{ request?: CallRequest }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
+      await fetchMessages(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update call request')
+    } finally {
+      setCallRequestBusy(false)
+    }
+  }
 
   useEffect(() => {
     const vv = window.visualViewport
@@ -230,9 +339,68 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
   const peerLabel = viewer === 'client' ? 'Coach' : 'Client'
   const showSend = input.trim().length > 0 || Boolean(imagePreview)
+  const remainingMs = responseDeadline && now > 0 ? responseDeadline - now : null
+  const presenceText = peerOnline
+    ? `${peerLabel} is online`
+    : peerLastSeenAt
+      ? `${peerLabel} last online ${new Date(peerLastSeenAt).toLocaleString('en-IN', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        })}`
+      : `${peerLabel} is offline`
 
   return (
     <div className="coach-chat-thread wa-chat" style={styles.wrapper}>
+      <div style={styles.contextBar}>
+        <span style={{ color: peerOnline ? '#53d769' : wa.textMuted }}>{presenceText}</span>
+        {viewer === 'client' && (
+          <button
+            type="button"
+            onClick={() => activeCallRequest
+              ? void updateCallRequest('cancelled')
+              : void createCallRequest()}
+            disabled={callRequestBusy}
+            style={styles.bookCallBtn}
+          >
+            <CalendarClock size={15} />
+            {activeCallRequest
+              ? activeCallRequest.status === 'scheduled'
+                ? `Call scheduled ${new Date(activeCallRequest.scheduled_for!).toLocaleString('en-IN')}`
+                : 'Call requested · Cancel'
+              : 'Book a call'}
+          </button>
+        )}
+      </div>
+
+      {viewer === 'client' && remainingMs !== null && (
+        <div style={{
+          ...styles.responseTarget,
+          color: remainingMs > 0 ? wa.textMuted : '#ffb4a9',
+        }}>
+          {remainingMs > 0
+            ? `Coach response target: ${formatDuration(remainingMs)} remaining`
+            : `Coach response target is overdue by ${formatDuration(Math.abs(remainingMs))}`}
+          {' '}· This is a service target, not an emergency or absolute guarantee.
+          {(responseTarget?.unansweredCount ?? 0) > 1 && ' Additional messages do not restart the timer.'}
+        </div>
+      )}
+
+      {viewer === 'coach' && activeCallRequest && (
+        <div style={styles.callRequestPanel}>
+          <strong>Call request: {activeCallRequest.status}</strong>
+          <input
+            type="datetime-local"
+            value={scheduledFor}
+            onChange={(event) => setScheduledFor(event.target.value)}
+            style={styles.scheduleInput}
+          />
+          <button type="button" onClick={() => void updateCallRequest('scheduled')} disabled={callRequestBusy} style={styles.callAction}>Schedule</button>
+          <button type="button" onClick={() => void updateCallRequest('completed')} disabled={callRequestBusy} style={styles.callAction}>Complete</button>
+          <button type="button" onClick={() => void updateCallRequest('declined')} disabled={callRequestBusy} style={styles.callAction}>Decline</button>
+          <button type="button" onClick={() => void updateCallRequest('cancelled')} disabled={callRequestBusy} style={styles.callAction}>Cancel</button>
+        </div>
+      )}
+
       <div ref={threadRef} className="coach-chat-messages wa-chat-messages" style={styles.thread}>
         <div style={styles.wallpaper} aria-hidden />
 
@@ -436,6 +604,68 @@ const styles: Record<string, CSSProperties> = {
     height: '100%',
     backgroundColor: wa.bg,
     position: 'relative',
+  },
+  contextBar: {
+    minHeight: 42,
+    padding: '6px 10px',
+    backgroundColor: wa.header,
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    fontSize: 12,
+    flexWrap: 'wrap',
+    flexShrink: 0,
+  },
+  bookCallBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    border: '1px solid rgba(255,255,255,0.18)',
+    borderRadius: 999,
+    background: wa.input,
+    color: wa.text,
+    padding: '7px 11px',
+    fontSize: 12,
+    cursor: 'pointer',
+  },
+  responseTarget: {
+    padding: '7px 12px',
+    backgroundColor: wa.systemBg,
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    fontSize: 11.5,
+    lineHeight: 1.4,
+    flexShrink: 0,
+  },
+  callRequestPanel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 7,
+    padding: '8px 10px',
+    backgroundColor: wa.systemBg,
+    color: wa.text,
+    fontSize: 12,
+    flexWrap: 'wrap',
+    flexShrink: 0,
+  },
+  scheduleInput: {
+    minHeight: 34,
+    border: '1px solid rgba(255,255,255,0.18)',
+    borderRadius: 7,
+    background: wa.input,
+    color: wa.text,
+    padding: '4px 7px',
+  },
+  callAction: {
+    minHeight: 34,
+    border: 'none',
+    borderRadius: 7,
+    background: wa.send,
+    color: '#fff',
+    padding: '5px 9px',
+    cursor: 'pointer',
+    fontWeight: 600,
   },
   thread: {
     flex: 1,

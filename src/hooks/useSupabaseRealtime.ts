@@ -22,6 +22,12 @@ type UseRealtimeRefreshOptions = {
   onEvent?: (payload: RealtimeChangePayload) => void
   enabled?: boolean
   pollIntervalMs?: number
+  presence?: {
+    key: string
+    payload: Record<string, string>
+    onSync: (presences: Record<string, unknown[]>) => void
+    heartbeat?: () => void | Promise<void>
+  }
 }
 
 /**
@@ -35,10 +41,12 @@ export function useSupabaseRealtimeRefresh({
   onEvent,
   enabled = true,
   pollIntervalMs = 60_000,
+  presence,
 }: UseRealtimeRefreshOptions) {
   const refreshRef = useRef(onRefresh)
   const eventRef = useRef(onEvent)
   const subscriptionsKey = JSON.stringify(subscriptions)
+  const presenceRef = useRef(presence)
 
   useEffect(() => {
     refreshRef.current = onRefresh
@@ -47,6 +55,10 @@ export function useSupabaseRealtimeRefresh({
   useEffect(() => {
     eventRef.current = onEvent
   }, [onEvent])
+
+  useEffect(() => {
+    presenceRef.current = presence
+  }, [presence])
 
   useEffect(() => {
     if (!enabled) return
@@ -86,7 +98,18 @@ export function useSupabaseRealtimeRefresh({
       }, 100)
     }
 
-    let channel = supabase.channel(channelName)
+    const configuredPresence = presenceRef.current
+    let channel = supabase.channel(
+      channelName,
+      configuredPresence
+        ? { config: { private: true, presence: { key: configuredPresence.key } } }
+        : undefined
+    )
+    if (configuredPresence) {
+      channel = channel.on('presence', { event: 'sync' }, () => {
+        presenceRef.current?.onSync(channel.presenceState() as Record<string, unknown[]>)
+      })
+    }
     for (const subscription of configuredSubscriptions) {
       channel = channel.on(
         'postgres_changes',
@@ -105,6 +128,10 @@ export function useSupabaseRealtimeRefresh({
 
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
+        if (configuredPresence) {
+          void channel.track(configuredPresence.payload)
+          void configuredPresence.heartbeat?.()
+        }
         if (subscribedOnce) requestRefresh()
         subscribedOnce = true
       }
@@ -119,14 +146,21 @@ export function useSupabaseRealtimeRefresh({
     window.addEventListener('online', refreshWhenOnline)
 
     const poll = window.setInterval(requestRefresh, pollIntervalMs)
+    const heartbeat = configuredPresence
+      ? window.setInterval(() => {
+          if (document.visibilityState === 'visible') void configuredPresence.heartbeat?.()
+        }, 60_000)
+      : null
 
     return () => {
       active = false
       if (refreshTimer) clearTimeout(refreshTimer)
       window.clearInterval(poll)
+      if (heartbeat) window.clearInterval(heartbeat)
       document.removeEventListener('visibilitychange', refreshWhenVisible)
       window.removeEventListener('focus', refreshWhenVisible)
       window.removeEventListener('online', refreshWhenOnline)
+      if (configuredPresence) void channel.untrack()
       void supabase.removeChannel(channel)
     }
   }, [channelName, enabled, pollIntervalMs, subscriptionsKey])
@@ -212,6 +246,14 @@ export function useCoachConversationRealtime(
       ? [{
           event: '*',
           table: 'coach_conversations',
+          filter: `coach_id=eq.${coachId}`,
+        }, {
+          event: '*',
+          table: 'call_requests',
+          filter: `coach_id=eq.${coachId}`,
+        }, {
+          event: '*',
+          table: 'initial_plan_generation_jobs',
           filter: `coach_id=eq.${coachId}`,
         }]
       : [],

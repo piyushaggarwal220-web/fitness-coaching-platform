@@ -2,13 +2,18 @@ import { NextResponse } from 'next/server'
 import { getCoachingPlan } from '@/lib/payments/plans'
 import { shouldBypassPayment } from '@/lib/config'
 import { createRazorpayOrder, getRazorpayKeyId } from '@/lib/payments/razorpay'
+import {
+  createPolicyAcknowledgement,
+  storeOrderPolicyAcknowledgement,
+} from '@/lib/payments/policy-acknowledgement'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 type CreateOrderBody = {
   planSlug?: string
   email?: string
   name?: string
   phone?: string
-  refundPolicyAcknowledged?: boolean
+  policyAgreementAccepted?: boolean
 }
 
 export async function POST(request: Request) {
@@ -34,17 +39,29 @@ export async function POST(request: Request) {
   if (!body.phone?.trim()) {
     return NextResponse.json({ error: 'WhatsApp number is required' }, { status: 400 })
   }
-  if (body.refundPolicyAcknowledged !== true) {
+  if (body.policyAgreementAccepted !== true) {
     return NextResponse.json(
-      { error: 'Refund and results guarantee policy acknowledgement is required' },
+      { error: 'You must agree to the Terms and Refund Policy before payment' },
       { status: 400 }
     )
   }
 
+  const acknowledgement = createPolicyAcknowledgement(request)
+  const admin = createAdminClient()
+
   if (shouldBypassPayment()) {
+    const orderId = `test_order_${Date.now()}`
+    try {
+      await storeOrderPolicyAcknowledgement(admin, orderId, acknowledgement)
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : 'Failed to record agreement' },
+        { status: 500 }
+      )
+    }
     return NextResponse.json({
       testMode: true,
-      orderId: `test_order_${Date.now()}`,
+      orderId,
       amount: plan.amountPaise,
       currency: 'INR',
       keyId: 'test',
@@ -62,10 +79,12 @@ export async function POST(request: Request) {
         customer_email: body.email.trim().toLowerCase(),
         customer_name: body.name.trim(),
         customer_phone: body.phone.trim(),
-        refund_policy_version: '2026-07-21',
-        refund_policy_acknowledged_at: new Date().toISOString(),
+        terms_policy_version: acknowledgement.termsVersion,
+        refund_policy_version: acknowledgement.refundPolicyVersion,
+        policy_acknowledged_at: acknowledgement.acknowledgedAt,
       },
     })
+    await storeOrderPolicyAcknowledgement(admin, order.id, acknowledgement)
 
     return NextResponse.json({
       testMode: false,

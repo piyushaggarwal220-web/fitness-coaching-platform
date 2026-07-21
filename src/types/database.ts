@@ -3,6 +3,7 @@ export type Coach = {
   user_id: string
   name: string | null
   hard_cap: number | null
+  last_seen_at?: string | null
 }
 
 export type ClientProfile = {
@@ -19,6 +20,7 @@ export type ClientProfile = {
   plan_delivered: boolean | null
   checkin_schedule_started_at?: string | null
   updated_at?: string | null
+  last_seen_at?: string | null
   complexity_score?: number | null
   complexity_tier?: 'low' | 'medium' | 'high' | null
   complexity_previous_score?: number | null
@@ -222,6 +224,9 @@ export type Purchase = {
   customer_phone?: string | null
   refund_policy_version?: string | null
   refund_policy_acknowledged_at?: string | null
+  terms_policy_version?: string | null
+  policy_acknowledged_at?: string | null
+  policy_ack_ip_hash?: string | null
   failure_code?: string | null
   failure_description?: string | null
   refunded_amount_paise?: number
@@ -750,6 +755,28 @@ export type ConversationMessage = {
   created_at: string
 }
 
+export type CallRequestStatus =
+  | 'requested'
+  | 'scheduled'
+  | 'completed'
+  | 'declined'
+  | 'cancelled'
+
+export type CallRequest = {
+  id: string
+  conversation_id: string
+  client_id: string
+  coach_id: string
+  status: CallRequestStatus
+  requested_at: string
+  scheduled_for: string | null
+  coach_note: string | null
+  updated_by: string
+  resolved_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type NotificationType =
   | 'plan_delivered'
   | 'coach_replied'
@@ -766,6 +793,10 @@ export type NotificationType =
   | 'missed_checkin'
   | 'onboarding_reminder'
   | 'photo_reminder'
+  | 'call_requested'
+  | 'call_request_updated'
+  | 'initial_plan_draft_ready'
+  | 'initial_plan_generation_failed'
 
 export type UserNotification = {
   id: string

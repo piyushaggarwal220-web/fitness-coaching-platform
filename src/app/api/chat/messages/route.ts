@@ -54,12 +54,13 @@ export async function GET(request: Request) {
     if (!peek) {
       // The message table intentionally has no broad client UPDATE policy:
       // mark read only after the conversation RLS check above proves access.
-      await markConversationRead(createAdminClient(), conversationId, reader)
+      const readThrough = data.at(-1)?.created_at ?? null
+      await markConversationRead(createAdminClient(), conversationId, reader, readThrough)
     }
 
     const { data: conv } = await supabase
       .from('coach_conversations')
-      .select('client_typing_at, coach_typing_at')
+      .select('client_id, coach_id, client_typing_at, coach_typing_at')
       .eq('id', conversationId)
       .maybeSingle()
 
@@ -69,7 +70,36 @@ export async function GET(request: Request) {
       ? Date.now() - new Date(typingAt).getTime() < 5000
       : false
 
-    return NextResponse.json({ success: true, messages: data, peerTyping })
+    const admin = createAdminClient()
+    const [{ data: callRequests }, peerLastSeenAt] = await Promise.all([
+      supabase
+        .from('call_requests')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: false })
+        .limit(10),
+      reader === 'client'
+        ? admin
+            .from('coaches')
+            .select('last_seen_at')
+            .eq('id', conv?.coach_id)
+            .maybeSingle()
+            .then(({ data: coach }) => coach?.last_seen_at ?? null)
+        : admin
+            .from('profiles')
+            .select('last_seen_at')
+            .eq('id', conv?.client_id)
+            .maybeSingle()
+            .then(({ data: profile }) => profile?.last_seen_at ?? null),
+    ])
+
+    return NextResponse.json({
+      success: true,
+      messages: data,
+      peerTyping,
+      callRequests: callRequests ?? [],
+      peerLastSeenAt,
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to load messages'
     logApiDev('chat_messages_get_exception', { error: message })

@@ -19,6 +19,11 @@ export const INITIAL_PLAN_FORM: PlanFormData = {
   coach_notes: '',
 }
 
+export const AI_DRAFT_DELIVERY_STATE = {
+  active: false,
+  delivered_at: null,
+} as const
+
 export function validatePlanForm(data: PlanFormData): string | null {
   if (!data.client_id) return 'Please select a client.'
   if (!data.title.trim()) return 'Plan title is required.'
@@ -220,7 +225,7 @@ export async function restorePlanAsDraft(
       supplement_plan: plan.supplement_plan,
       coach_notes: plan.coach_notes,
       version,
-      active: false,
+      ...AI_DRAFT_DELIVERY_STATE,
       created_at: now,
       updated_at: now,
     })
@@ -262,7 +267,7 @@ export async function persistAiPlanDraft(
       supplement_plan: input.form.supplement_plan.trim() || null,
       coach_notes: input.form.coach_notes.trim() || null,
       version,
-      active: false,
+      ...AI_DRAFT_DELIVERY_STATE,
       created_at: now,
       updated_at: now,
     })
