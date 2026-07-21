@@ -10,6 +10,7 @@ import { playNotificationSound, prepareNotificationSound } from '@/lib/notificat
 import { safeInternalPathOrNull } from '@/lib/safe-navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useSupabaseRealtimeRefresh } from '@/hooks/useSupabaseRealtime'
+import { canUseWebPush, enableWebPush } from '@/lib/notifications/web-push-client'
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
@@ -17,6 +18,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [badgePop, setBadgePop] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [showPushEnable, setShowPushEnable] = useState(false)
   const prevUnread = useRef(0)
   const initializedUnread = useRef(false)
   const soundOnNextIncrease = useRef(false)
@@ -54,6 +56,7 @@ export function NotificationBell() {
     const resolveUser = async () => {
       const { data: { user } } = await createClient().auth.getUser()
       if (!active) return
+      setShowPushEnable(canUseWebPush() && Notification.permission !== 'granted')
       setUserId(user?.id ?? null)
       if (user) void fetchNotifications()
     }
@@ -124,7 +127,11 @@ export function NotificationBell() {
         <div className={motionClass.dropdownEnter} style={styles.dropdown}>
           <div style={styles.header}>
             <span style={{ fontWeight: 600, color: colors.textPrimary }}>Notifications</span>
-            {unreadCount > 0 && (
+            {showPushEnable ? (
+              <button type="button" onClick={async () => setShowPushEnable(!(await enableWebPush()))} style={styles.markAll}>
+                Enable push
+              </button>
+            ) : unreadCount > 0 && (
               <button type="button" onClick={() => void markAllRead()} style={styles.markAll}>
                 Mark all read
               </button>

@@ -28,6 +28,7 @@
     "verify:chat-policy": "tsx scripts/verify-chat-policy-workflow.ts",
     "verify:chat-access": "tsx scripts/verify-chat-access-regression.ts",
     "verify:initial-plan-generation": "tsx scripts/verify-initial-plan-generation.ts",
+    "verify:notifications": "tsx scripts/verify-notification-delivery.ts",
     "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:payment-operations && npm run verify:refund-eligibility && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:plan-metadata && npm run verify:daily-tracker && npm run verify:prompt-cache && npm run verify:chat-policy && npm run verify:chat-access && npm run verify:initial-plan-generation",
     "db:apply-pending": "node scripts/apply-pending-migrations.mjs",
     "prompts:import": "tsx --env-file=.env.local scripts/import-production-prompts.ts"
@@ -37,6 +38,7 @@
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
+    "@types/web-push": "^3.6.4",
     "chart.js": "^4.5.1",
     "framer-motion": "^12.42.2",
     "inngest": "^4.7.0",
@@ -47,6 +49,7 @@
     "react-dom": "19.2.4",
     "react-icons": "^5.6.0",
     "resend": "^6.14.0",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },

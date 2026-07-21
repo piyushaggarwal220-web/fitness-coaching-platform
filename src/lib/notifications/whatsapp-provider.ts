@@ -108,7 +108,7 @@ export async function sendAiSensyCampaign(input: {
   destination: string
   userName: string
   templateParams: string[]
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; providerMessageId?: string }> {
   const apiKey = getApiKey()
   if (!apiKey) {
     return { ok: false, error: 'AISENSY_API_KEY not configured' }
@@ -133,10 +133,44 @@ export async function sendAiSensyCampaign(input: {
       return { ok: false, error: `AiSensy API error (${response.status}): ${text}` }
     }
 
-    return { ok: true }
+    const result = await response.json().catch(() => null) as
+      | { messageId?: string; id?: string; data?: { messageId?: string } }
+      | null
+    return {
+      ok: true,
+      providerMessageId: result?.messageId ?? result?.id ?? result?.data?.messageId,
+    }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'AiSensy send failed' }
   }
+}
+
+/** Worker-only cost-controlled WhatsApp delivery. Channel policy is enforced before this call. */
+export async function sendNotificationWhatsApp(
+  payload: NotificationPayload
+): Promise<{ ok: boolean; skipped?: boolean; error?: string; providerMessageId?: string }> {
+  if (!WHATSAPP_ENABLED_TYPES.has(payload.type)) {
+    return { ok: true, skipped: true }
+  }
+  const campaignName = getCampaignName(payload.type)
+  if (!getApiKey() || !campaignName) {
+    return { ok: true, skipped: true, error: 'AiSensy provider or campaign is not configured' }
+  }
+  const admin = await import('@/lib/supabase/admin').then((m) => m.createAdminClient())
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('phone, name')
+    .eq('id', payload.userId)
+    .maybeSingle()
+  const row = profile as { phone?: string | null; name?: string | null } | null
+  const destination = normalizePhoneForWhatsApp(row?.phone)
+  if (!destination) return { ok: true, skipped: true, error: 'Recipient has no valid phone' }
+  return sendAiSensyCampaign({
+    campaignName,
+    destination,
+    userName: row?.name?.trim() || firstNameFrom(row?.name),
+    templateParams: buildTemplateParams(payload.type, payload, row?.name),
+  })
 }
 
 export async function sendDirectWhatsApp(input: {

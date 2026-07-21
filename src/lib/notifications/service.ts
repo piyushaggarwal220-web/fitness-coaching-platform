@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { safeInternalPathOrNull } from '@/lib/safe-navigation'
 import type { NotificationType, UserNotification } from '@/types/database'
+import { createHash } from 'node:crypto'
 
 export type NotificationPayload = {
   userId: string
@@ -9,9 +10,11 @@ export type NotificationPayload = {
   body: string
   actionUrl?: string
   metadata?: Record<string, unknown>
+  idempotencyKey?: string
+  priority?: 'low' | 'normal' | 'high' | 'critical'
 }
 
-export type NotificationChannel = 'in_app' | 'email' | 'whatsapp' | 'push'
+export type NotificationChannel = 'in_app' | 'email' | 'whatsapp' | 'web_push'
 
 export type ChannelProvider = {
   channel: NotificationChannel
@@ -26,22 +29,51 @@ export function registerChannelProvider(provider: ChannelProvider): void {
   else channelProviders.push(provider)
 }
 
-/** Create in-app notification and dispatch to registered channel providers. */
+function defaultIdempotencyKey(payload: NotificationPayload): string {
+  const identifiers = ['messageId', 'checkinId', 'callRequestId', 'planId', 'purchaseId']
+    .map((key) => payload.metadata?.[key])
+    .filter(Boolean)
+    .join(':')
+  const bucket = Math.floor(Date.now() / (5 * 60_000))
+  const source = `${payload.userId}:${payload.type}:${identifiers || bucket}:${payload.title}:${payload.actionUrl ?? ''}`
+  return `notification:${createHash('sha256').update(source).digest('hex')}`
+}
+
+/** Persist an event, create in-app delivery immediately, and queue every other channel. */
 export async function sendNotification(payload: NotificationPayload): Promise<UserNotification | null> {
   const admin = createAdminClient()
   const now = new Date().toISOString()
+  const actionUrl = safeInternalPathOrNull(payload.actionUrl ?? null)
+  const idempotencyKey = payload.idempotencyKey?.trim() || defaultIdempotencyKey(payload)
+
+  const { data: eventId, error: enqueueError } = await admin.rpc('enqueue_notification_event', {
+    p_user_id: payload.userId,
+    p_event_type: payload.type,
+    p_title: payload.title,
+    p_body: payload.body,
+    p_action_url: actionUrl,
+    p_metadata: payload.metadata ?? {},
+    p_idempotency_key: idempotencyKey,
+    p_priority: payload.priority ?? null,
+  })
+
+  if (enqueueError || !eventId) {
+    console.error('[notifications] Failed to enqueue event:', enqueueError?.message)
+    return null
+  }
 
   const { data, error } = await admin
     .from('user_notifications')
-    .insert({
+    .upsert({
       user_id: payload.userId,
       type: payload.type,
       title: payload.title,
       body: payload.body,
-      action_url: safeInternalPathOrNull(payload.actionUrl ?? null),
+      action_url: actionUrl,
       metadata: payload.metadata ?? null,
+      delivery_event_id: eventId,
       created_at: now,
-    })
+    }, { onConflict: 'delivery_event_id' })
     .select()
     .single()
 
@@ -52,31 +84,45 @@ export async function sendNotification(payload: NotificationPayload): Promise<Us
 
   const notification = data as UserNotification
 
-  for (const provider of channelProviders) {
-    try {
-      await provider.send({ ...payload, notificationId: notification.id })
-    } catch (err) {
-      console.error(`[notifications] ${provider.channel} dispatch failed:`, err)
-    }
-  }
+  await Promise.all([
+    admin.from('notification_events').update({ in_app_notification_id: notification.id }).eq('id', eventId),
+    admin.from('notification_jobs').update({
+      state: 'delivered',
+      sent_at: now,
+      delivered_at: now,
+      updated_at: now,
+    }).eq('event_id', eventId).eq('channel', 'in_app'),
+  ])
 
   return notification
 }
 
 export async function markNotificationRead(notificationId: string, userId: string): Promise<void> {
   const admin = createAdminClient()
-  await admin
+  const readAt = new Date().toISOString()
+  const { data } = await admin
     .from('user_notifications')
-    .update({ read_at: new Date().toISOString() })
+    .update({ read_at: readAt })
     .eq('id', notificationId)
     .eq('user_id', userId)
+    .select('delivery_event_id')
+    .maybeSingle()
+  if (data?.delivery_event_id) {
+    await admin.from('notification_jobs').update({ read_at: readAt }).eq('event_id', data.delivery_event_id)
+  }
 }
 
 export async function markAllNotificationsRead(userId: string): Promise<void> {
   const admin = createAdminClient()
+  const readAt = new Date().toISOString()
   await admin
     .from('user_notifications')
-    .update({ read_at: new Date().toISOString() })
+    .update({ read_at: readAt })
+    .eq('user_id', userId)
+    .is('read_at', null)
+  await admin
+    .from('notification_jobs')
+    .update({ read_at: readAt })
     .eq('user_id', userId)
     .is('read_at', null)
 }

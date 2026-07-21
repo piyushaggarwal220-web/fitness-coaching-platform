@@ -186,8 +186,6 @@ export async function sendOnboardingReminder(input: {
   const isPhoto = input.photosMissing
   const kind = isPhoto ? `photo_reminder_${input.stage}` : `onboarding_reminder_${input.stage}`
   const actionUrl = '/onboarding'
-  const url = `${appBaseUrl()}${actionUrl}`
-  const greeting = firstName(input.name)
   const title = isPhoto ? 'Upload your progress photos' : 'Complete your coaching onboarding'
   const body = isPhoto
     ? 'Upload your front, side, and back photos so your coach can personalize your plan.'
@@ -202,37 +200,18 @@ export async function sendOnboardingReminder(input: {
         channel: 'in_app',
         dedupeKey: `${input.userId}:${kind}:in_app`,
       },
-      async () => ({ ok: Boolean(await sendNotification({ userId: input.userId, type, title, body, actionUrl })) })
-    ),
-    deliverOnce(
-      {
-        userId: input.userId,
-        kind,
-        channel: 'email',
-        dedupeKey: `${input.userId}:${kind}:email`,
-      },
-      () =>
-        sendDirectEmail({
-          to: input.email,
-          subject: title,
-          text: `Hi ${greeting}, ${body} Continue here: ${url}`,
-          html: `<p>Hi ${escapeHtml(greeting)},</p><p>${escapeHtml(body)}</p><p><a href="${escapeHtml(url)}">Continue onboarding</a></p>`,
-        })
-    ),
-    deliverOnce(
-      {
-        userId: input.userId,
-        kind,
-        channel: 'whatsapp',
-        dedupeKey: `${input.userId}:${kind}:whatsapp`,
-      },
-      () =>
-        sendDirectWhatsApp({
-          campaignEnv: 'AISENSY_CAMPAIGN_ONBOARDING_REMINDER',
-          phone: input.phone,
-          name: input.name,
-          templateParams: [greeting, isPhoto ? 'Upload progress photos' : 'Complete onboarding', url],
-        })
+      async () => ({
+        ok: Boolean(await sendNotification({
+          userId: input.userId,
+          type,
+          title,
+          body,
+          actionUrl,
+          idempotencyKey: `lifecycle:${input.userId}:${kind}`,
+          priority: isPhoto ? 'normal' : 'high',
+          metadata: { lifecycleStage: input.stage, photosMissing: isPhoto },
+        })),
+      })
     ),
   ])
 

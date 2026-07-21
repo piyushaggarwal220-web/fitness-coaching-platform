@@ -245,7 +245,8 @@ export async function sendChatMessage(
           title: 'Your coach replied',
           body: replyBody,
           actionUrl: '/client/chat',
-          metadata: { messageSnippet: replyBody },
+          metadata: { messageSnippet: replyBody, messageId: data.id, conversationId: input.conversationId },
+          idempotencyKey: `chat-message:${data.id}:client`,
         })
       } else {
         const { data: coach } = await supabase
@@ -261,6 +262,8 @@ export async function sendChatMessage(
             title: 'New client message',
             body: preview,
             actionUrl: `/coach/chat/${input.conversationId}`,
+            metadata: { messageId: data.id, conversationId: input.conversationId },
+            idempotencyKey: `chat-message:${data.id}:coach`,
           })
         }
       }

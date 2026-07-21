@@ -15,7 +15,7 @@ export function isEmailConfigured(): boolean {
 /** Server-only email delivery. Missing configuration is a safe, observable skip. */
 export async function sendDirectEmail(
   message: DirectEmail
-): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+): Promise<{ ok: boolean; skipped?: boolean; error?: string; providerMessageId?: string }> {
   const apiKey = process.env.RESEND_API_KEY?.trim()
   const from = process.env.NOTIFICATION_FROM_EMAIL?.trim()
   if (!apiKey || !from) {
@@ -25,14 +25,16 @@ export async function sendDirectEmail(
 
   try {
     const resend = new Resend(apiKey)
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from,
       to: message.to,
       subject: message.subject,
       text: message.text,
       html: message.html,
     })
-    return error ? { ok: false, error: error.message } : { ok: true }
+    return error
+      ? { ok: false, error: error.message }
+      : { ok: true, providerMessageId: data?.id }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Email send failed' }
   }

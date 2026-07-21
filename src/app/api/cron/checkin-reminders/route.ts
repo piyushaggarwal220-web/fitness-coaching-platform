@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { getClientCheckinSchedule } from '@/lib/checkin-schedule'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
-import { normalizePhoneForWhatsApp } from '@/lib/phone'
 import type { Checkin, NotificationType } from '@/types/database'
 
 export const runtime = 'nodejs'
@@ -97,7 +96,6 @@ export async function GET(request: Request) {
     )
     .eq('role', 'client')
     .not('checkin_schedule_started_at', 'is', null)
-    .not('phone', 'is', null)
 
   if (profilesError) {
     console.error('[cron/checkin-reminders] profiles query failed:', profilesError.message)
@@ -106,7 +104,6 @@ export async function GET(request: Request) {
 
   const clients = ((profiles ?? []) as EligibleClient[]).filter((p) => {
     if (!p.checkin_schedule_started_at) return false
-    if (!normalizePhoneForWhatsApp(p.phone)) return false
     return hasClientEntitlement(p)
   })
 
@@ -175,6 +172,7 @@ export async function GET(request: Request) {
       const notification = await sendNotification({
         userId: client.id,
         ...template,
+        idempotencyKey: `checkin-due:${client.id}:${task.type}:${task.coachingWeek}:${startIso}`,
         metadata: {
           ...template.metadata,
           firstName: client.name?.trim()?.split(/\s+/)[0] ?? undefined,
