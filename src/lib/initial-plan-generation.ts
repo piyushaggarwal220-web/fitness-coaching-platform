@@ -6,18 +6,28 @@ import { logAiGeneration } from '@/lib/ai/trace-log'
 import { mergePlanForms } from '@/lib/coach/ai-actions'
 import { profileBlocksAiPlanWork } from '@/lib/complexity/input-guards'
 import {
-  formFromProfile,
-  ONBOARDING_SCREEN_COUNT,
-  validateOnboardingStep,
-} from '@/lib/onboarding'
+  canRetryInitialGeneration,
+  INITIAL_GENERATION_CLAIM_STATUS,
+  shouldStartInitialGeneration,
+  STALE_GENERATION_MS,
+  validateAuthoritativeOnboarding,
+  validatePersistedOnboardingAnswers,
+  type InitialPlanGenerationStatus,
+} from '@/lib/initial-plan-generation-policy'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { persistAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
 
-export type InitialPlanGenerationStatus = 'queued' | 'generating' | 'ready' | 'failed'
-export const INITIAL_GENERATION_CLAIM_STATUS: InitialPlanGenerationStatus = 'queued'
-export const STALE_GENERATION_MS = 10 * 60 * 1000
+export {
+  canRetryInitialGeneration,
+  INITIAL_GENERATION_CLAIM_STATUS,
+  shouldStartInitialGeneration,
+  STALE_GENERATION_MS,
+  validateAuthoritativeOnboarding,
+  validatePersistedOnboardingAnswers,
+}
+export type { InitialPlanGenerationStatus }
 
 export type InitialPlanGenerationJob = {
   id: string
@@ -33,47 +43,6 @@ export type InitialPlanGenerationJob = {
   completed_at: string | null
   failed_at: string | null
   updated_at: string
-}
-
-export function shouldStartInitialGeneration(status: InitialPlanGenerationStatus): boolean {
-  return status === INITIAL_GENERATION_CLAIM_STATUS
-}
-
-export function canRetryInitialGeneration(
-  status: InitialPlanGenerationStatus,
-  startedAt?: string | null,
-  now = Date.now()
-): boolean {
-  if (status === 'failed') return true
-  return status === 'generating' &&
-    Boolean(startedAt) &&
-    now - new Date(startedAt!).getTime() >= STALE_GENERATION_MS
-}
-
-export function validateAuthoritativeOnboarding(profile: OnboardingProfile): string | null {
-  if (!profile.onboarding_complete || !profile.onboarding_completed_at) {
-    return 'Onboarding is not complete.'
-  }
-  if (!profile.coach_id) return 'A coach must be assigned before generation.'
-
-  const form = formFromProfile(profile)
-  const photoUrls = {
-    front: profile.progress_photo_front ?? null,
-    side: profile.progress_photo_side ?? null,
-    back: profile.progress_photo_back ?? null,
-  }
-  const meals = (['breakfast', 'lunch', 'dinner', 'snacks'] as const).filter(
-    (meal) => Boolean(form[`timing_${meal}`])
-  )
-
-  for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
-    const error = validateOnboardingStep(step, form, undefined, photoUrls, {
-      mealsForTiming: meals,
-      confirmedMeals: meals,
-    })
-    if (error) return error
-  }
-  return null
 }
 
 export async function enqueueInitialPlanGeneration(
@@ -141,17 +110,19 @@ async function loadProgressImages(
 
   for (const path of paths) {
     const { data, error } = await admin.storage.from('onboarding-photos').download(path)
-    if (error || !data) throw new Error('A required onboarding photo could not be loaded.')
+    if (error || !data) throw new Error('An uploaded onboarding photo could not be loaded.')
     const mediaType = data.type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
     if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mediaType)) {
-      throw new Error('A required onboarding photo has an unsupported format.')
+      throw new Error('An uploaded onboarding photo has an unsupported format.')
     }
     images.push({
       mediaType,
       data: Buffer.from(await data.arrayBuffer()).toString('base64'),
     })
   }
-  if (images.length !== 3) throw new Error('All three onboarding photos are required.')
+  if (profile.gender !== 'female' && images.length !== 3) {
+    throw new Error('All three onboarding photos are required.')
+  }
   return images
 }
 

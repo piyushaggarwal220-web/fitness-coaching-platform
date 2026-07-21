@@ -1,13 +1,21 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { issuePurchaseClaimToken } from '@/lib/payments/fulfillment'
+import {
+  canRetryInitialGeneration,
+  processInitialPlanGeneration,
+  retryInitialPlanGeneration,
+  type InitialPlanGenerationJob,
+} from '@/lib/initial-plan-generation'
 import {
   sendAccountSetupRecovery,
   sendOnboardingReminder,
 } from '@/lib/notifications/lifecycle'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300
 
 function authorizeCron(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim()
@@ -25,18 +33,50 @@ function reminderStage(createdAt: string, now: number): string | null {
   return null
 }
 
+async function scheduleInitialPlanRecovery(admin: SupabaseClient): Promise<void> {
+  const { data, error } = await admin
+    .from('initial_plan_generation_jobs')
+    .select('*')
+    .in('status', ['queued', 'generating'])
+    .order('queued_at', { ascending: true })
+    .limit(10)
+
+  if (error) {
+    console.error('[cron/lifecycle-reminders] generation recovery query failed:', error.message)
+    return
+  }
+
+  let recoverable: InitialPlanGenerationJob | null = null
+  for (const row of (data ?? []) as InitialPlanGenerationJob[]) {
+    if (row.status === 'queued') {
+      recoverable = row
+      break
+    }
+    if (canRetryInitialGeneration(row.status, row.started_at)) {
+      recoverable = await retryInitialPlanGeneration(admin, row)
+      if (recoverable) break
+    }
+  }
+
+  if (recoverable) {
+    const jobId = recoverable.id
+    after(() => processInitialPlanGeneration(jobId))
+  }
+}
+
 export async function GET(request: Request) {
   if (!authorizeCron(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const admin = createAdminClient()
+  await scheduleInitialPlanRecovery(admin)
   const now = Date.now()
   const cutoff = new Date(now - 24 * 3_600_000).toISOString()
   const { data: purchases, error } = await admin
     .from('purchases')
     .select(
-      'id, user_id, customer_email, customer_phone, customer_name, claimed_at, created_at, profiles:user_id(id, email, phone, name, onboarding_complete, progress_photo_front, progress_photo_side, progress_photo_back, payment_confirmed)'
+      'id, user_id, customer_email, customer_phone, customer_name, claimed_at, created_at, profiles:user_id(id, email, phone, name, gender, onboarding_complete, progress_photo_front, progress_photo_side, progress_photo_back, payment_confirmed)'
     )
     .eq('status', 'captured')
     .lt('created_at', cutoff)
@@ -98,6 +138,7 @@ export async function GET(request: Request) {
       email?: string | null
       phone?: string | null
       name?: string | null
+      gender?: string | null
       onboarding_complete?: boolean | null
       progress_photo_front?: string | null
       progress_photo_side?: string | null
@@ -108,6 +149,7 @@ export async function GET(request: Request) {
 
     const photosMissing =
       stage !== 'day_1' &&
+      profile.gender !== 'female' &&
       (!profile.progress_photo_front || !profile.progress_photo_side || !profile.progress_photo_back)
     try {
       const result = await sendOnboardingReminder({

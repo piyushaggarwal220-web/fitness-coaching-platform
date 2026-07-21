@@ -128,7 +128,11 @@ export function NotificationBell() {
           <div style={styles.header}>
             <span style={{ fontWeight: 600, color: colors.textPrimary }}>Notifications</span>
             {showPushEnable ? (
-              <button type="button" onClick={async () => setShowPushEnable(!(await enableWebPush()))} style={styles.markAll}>
+              <button
+                type="button"
+                onClick={async () => setShowPushEnable(!(await enableWebPush()).ok)}
+                style={styles.markAll}
+              >
                 Enable push
               </button>
             ) : unreadCount > 0 && (

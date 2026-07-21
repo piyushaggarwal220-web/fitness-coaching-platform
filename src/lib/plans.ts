@@ -24,6 +24,12 @@ export const AI_DRAFT_DELIVERY_STATE = {
   delivered_at: null,
 } as const
 
+export function hasAuthoritativeOnboardingCompletion(profile: {
+  onboarding_complete?: boolean | null
+} | null): boolean {
+  return profile?.onboarding_complete === true
+}
+
 export function validatePlanForm(data: PlanFormData): string | null {
   if (!data.client_id) return 'Please select a client.'
   if (!data.title.trim()) return 'Plan title is required.'
@@ -106,12 +112,15 @@ export async function activatePlan(
 ): Promise<{ error: string | null }> {
   const { data: client, error: clientError } = await supabase
     .from('profiles')
-    .select('onboarding_complete, coach_id')
+    .select('onboarding_complete, onboarding_completed_at, terms_accepted_at, coach_id')
     .eq('id', plan.client_id)
     .maybeSingle()
 
   if (clientError) return { error: clientError.message }
-  if (!client?.onboarding_complete) {
+  if (!client) {
+    return { error: 'Cannot deliver plan: client profile could not be verified.' }
+  }
+  if (!hasAuthoritativeOnboardingCompletion(client)) {
     return { error: 'Cannot deliver plan: client has not completed onboarding.' }
   }
   if (!client.coach_id) {

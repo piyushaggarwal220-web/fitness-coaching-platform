@@ -11,6 +11,13 @@ import {
   isHobbyCompatibleDailyCron,
   notificationDrainPlan,
 } from '../src/lib/notifications/drain-policy'
+import { resolveWebPushStatus } from '../src/lib/notifications/web-push-client'
+
+assert.equal(resolveWebPushStatus(false, 'default', false), 'unsupported')
+assert.equal(resolveWebPushStatus(true, 'denied', false), 'blocked')
+assert.equal(resolveWebPushStatus(true, 'default', false), 'not-enabled')
+assert.equal(resolveWebPushStatus(true, 'granted', false), 'not-enabled')
+assert.equal(resolveWebPushStatus(true, 'granted', true), 'enabled')
 
 const coachReply = getCostPolicy('coach_replied')
 assert.deepEqual(coachReply.immediate, ['in_app', 'web_push'])

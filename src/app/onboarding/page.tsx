@@ -9,6 +9,7 @@ import { ChipGroup, Field, MultiChipGroup, RadioCards } from '@/components/onboa
 import { onboardingStyles as s } from '@/components/onboarding/styles'
 import { HeightInput } from '@/components/ui/HeightInput'
 import { PhotoSourceControl } from '@/components/ui/PhotoSourceControl'
+import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation'
 import { validatePhotoFiles } from '@/lib/photo'
 import {
   ACTIVITY_OPTIONS,
@@ -235,11 +236,14 @@ export default function OnboardingPage() {
     setSubmitting(true)
     setError('')
     try {
-      await persistProgress(ONBOARDING_SCREEN_COUNT - 1, true)
-      await requestComplexityRecalculation({ trigger: 'onboarding_complete' })
+      // Persist the final answers first, but let the authenticated server route
+      // own the completion flags and generation queue transition.
+      await persistProgress(ONBOARDING_SCREEN_COUNT - 1)
       const generationResponse = await fetch('/api/onboarding/complete-generation', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({ termsAccepted: form.terms_accepted }),
       })
       const generationResult = await generationResponse.json()
       if (!generationResponse.ok) {
@@ -249,6 +253,7 @@ export default function OnboardingPage() {
             : 'Intake saved, but plan generation could not be queued.'
         )
       }
+      await requestComplexityRecalculation({ trigger: 'onboarding_complete' })
       router.push('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete onboarding')
@@ -271,6 +276,7 @@ export default function OnboardingPage() {
 
   return (
     <div style={s.page}>
+      <NotificationActivationGate />
       <div style={s.card}>
         <div style={s.header}>
           <h1 style={s.title}>{brandTitle('Coaching intake')}</h1>
@@ -904,20 +910,22 @@ function renderStep(
         </div>
       )
 
-    case 21:
+    case 21: {
+      const photosOptional = form.gender === 'female'
       return (
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Progress photos</h2>
           <div style={s.privacyNotice}>
             Your photos are completely private and are never shared or published anywhere without your explicit permission.
             They are used only by your assigned coach and our AI to create more accurate recommendations.
+            {photosOptional && ' Photos are optional for female clients, and you can continue without uploading them.'}
           </div>
           <div style={s.photoGrid}>
             {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (
               <div key={key} style={s.field}>
                 <PhotoSourceControl
                   label={`${key.charAt(0).toUpperCase()}${key.slice(1)} photo`}
-                  required
+                  required={!photosOptional}
                   onFiles={onPhotoChange(key)}
                   selectedText={photos[key] ? `${photos[key]!.name} selected` : undefined}
                 />
@@ -929,6 +937,7 @@ function renderStep(
           </div>
         </div>
       )
+    }
 
     case 22:
       return (

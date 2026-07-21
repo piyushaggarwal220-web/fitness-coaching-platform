@@ -4,13 +4,16 @@ import {
   INITIAL_GENERATION_CLAIM_STATUS,
   shouldStartInitialGeneration,
   validateAuthoritativeOnboarding,
-} from '../src/lib/initial-plan-generation'
+} from '../src/lib/initial-plan-generation-policy'
 import {
   buildProfilePayload,
   INITIAL_ONBOARDING_FORM,
   ONBOARDING_SCREEN_COUNT,
 } from '../src/lib/onboarding'
-import { AI_DRAFT_DELIVERY_STATE } from '../src/lib/plans'
+import {
+  AI_DRAFT_DELIVERY_STATE,
+  hasAuthoritativeOnboardingCompletion,
+} from '../src/lib/plans'
 import type { OnboardingFormData, OnboardingProfile } from '../src/types/database'
 
 const form: OnboardingFormData = {
@@ -71,6 +74,16 @@ assert.match(
   validateAuthoritativeOnboarding({ ...complete, progress_photo_back: null }),
   /back progress photo/i
 )
+assert.equal(
+  validateAuthoritativeOnboarding({
+    ...complete,
+    gender: 'female',
+    progress_photo_front: null,
+    progress_photo_side: null,
+    progress_photo_back: null,
+  }),
+  null
+)
 
 assert.equal(INITIAL_GENERATION_CLAIM_STATUS, 'queued')
 assert.equal(shouldStartInitialGeneration('queued'), true)
@@ -79,8 +92,16 @@ assert.equal(shouldStartInitialGeneration('ready'), false)
 assert.equal(canRetryInitialGeneration('failed'), true)
 assert.equal(canRetryInitialGeneration('generating'), false)
 assert.deepEqual(AI_DRAFT_DELIVERY_STATE, { active: false, delivered_at: null })
+assert.equal(
+  hasAuthoritativeOnboardingCompletion({
+    onboarding_complete: true,
+  }),
+  true,
+  'delivery must accept the same authoritative completion flag as the database trigger'
+)
 
-console.log('✓ incomplete onboarding and missing photos are gated')
+console.log('✓ incomplete onboarding and required photos are gated while female photos remain optional')
 console.log('✓ duplicate workers only claim queued jobs')
 console.log('✓ only failed jobs are retryable')
 console.log('✓ generated plans remain inactive, undelivered drafts')
+console.log('✓ delivery uses the authoritative onboarding completion flag')

@@ -712,6 +712,7 @@ export function validateOnboardingStep(
       return null
     }
     case 21: {
+      if (data.gender === 'female') return null
       const hasFront = photos?.front || savedPhotoUrls?.front
       const hasSide = photos?.side || savedPhotoUrls?.side
       const hasBack = photos?.back || savedPhotoUrls?.back

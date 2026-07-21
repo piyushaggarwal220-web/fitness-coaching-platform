@@ -21,6 +21,7 @@ import { formatCheckinDate } from '@/lib/checkin';
 import { getClientCheckinSchedule, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
+import { PushNotificationCard } from '@/components/notifications/PushNotificationActivation';
 import { formatPlanDate } from '@/lib/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
@@ -82,7 +83,10 @@ export default function Dashboard() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const result = await authenticateClient(supabase, router, { requirePayment: true });
+        const result = await authenticateClient(supabase, router, {
+          requireOnboarding: true,
+          requirePayment: true,
+        });
         setRestoringSession(false);
         if (!result) {
           setLoading(false);
@@ -321,6 +325,8 @@ export default function Dashboard() {
           {loadError}
         </div>
       )}
+
+      <PushNotificationCard />
 
       {generationJob && !activePlan && (
         <div style={{
