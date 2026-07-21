@@ -146,12 +146,6 @@ CREATE TABLE notification_budget_settings (
 );
 INSERT INTO notification_budget_settings (singleton) VALUES (true) ON CONFLICT DO NOTHING;
 
-CREATE TABLE notification_drain_leases (
-  lease_name text PRIMARY KEY,
-  available_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
 ALTER TABLE user_notifications
   ADD COLUMN IF NOT EXISTS delivery_event_id uuid REFERENCES notification_events(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS delivered_at timestamptz NOT NULL DEFAULT now();
@@ -173,7 +167,6 @@ ALTER TABLE notification_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_budget_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notification_drain_leases ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users read own notification preferences" ON notification_preferences FOR SELECT
   USING (auth.uid() = user_id);
@@ -196,8 +189,7 @@ CREATE POLICY "Admins read notification attempts" ON notification_attempts FOR S
 CREATE POLICY "Admins manage notification budget" ON notification_budget_settings FOR ALL
   USING (public.is_platform_admin()) WITH CHECK (public.is_platform_admin());
 
-REVOKE ALL ON notification_events, notification_jobs, notification_attempts,
-  notification_budget_settings, notification_drain_leases FROM anon, authenticated;
+REVOKE ALL ON notification_events, notification_jobs, notification_attempts, notification_budget_settings FROM anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.enqueue_notification_event(
   p_user_id uuid,
@@ -268,11 +260,7 @@ BEGIN
   RETURN v_event_id;
 END $$;
 
-CREATE OR REPLACE FUNCTION public.claim_notification_jobs(
-  p_limit integer,
-  p_worker uuid,
-  p_event_id uuid DEFAULT NULL
-)
+CREATE OR REPLACE FUNCTION public.claim_notification_jobs(p_limit integer, p_worker uuid)
 RETURNS SETOF notification_jobs
 LANGUAGE plpgsql
 SET search_path = public, pg_temp
@@ -289,7 +277,6 @@ BEGIN
       OR (j.state = 'claimed' AND j.claimed_at < now() - interval '10 minutes')
     )
     AND e.acted_at IS NULL
-    AND (p_event_id IS NULL OR j.event_id = p_event_id)
     AND (j.channel NOT IN ('email','whatsapp') OR n.read_at IS NULL)
     ORDER BY j.priority DESC, j.next_attempt_at, j.created_at
     FOR UPDATE OF j SKIP LOCKED
@@ -301,30 +288,6 @@ BEGIN
   FROM candidates c
   WHERE j.id = c.id
   RETURNING j.*;
-END $$;
-
-CREATE OR REPLACE FUNCTION public.try_acquire_notification_drain_lease(
-  p_lease_name text,
-  p_interval_seconds integer
-) RETURNS boolean
-LANGUAGE plpgsql
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_acquired boolean := false;
-BEGIN
-  INSERT INTO notification_drain_leases (lease_name, available_at, updated_at)
-  VALUES (
-    p_lease_name,
-    now() + make_interval(secs => LEAST(GREATEST(p_interval_seconds, 5), 3600)),
-    now()
-  )
-  ON CONFLICT (lease_name) DO UPDATE SET
-    available_at = EXCLUDED.available_at,
-    updated_at = now()
-  WHERE notification_drain_leases.available_at <= now()
-  RETURNING true INTO v_acquired;
-  RETURN COALESCE(v_acquired, false);
 END $$;
 
 CREATE OR REPLACE FUNCTION public.can_send_whatsapp(p_job_id uuid)
@@ -359,10 +322,8 @@ BEGIN
 END $$;
 
 REVOKE ALL ON FUNCTION public.enqueue_notification_event(uuid, notification_type, text, text, text, jsonb, text, notification_priority) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.claim_notification_jobs(integer, uuid, uuid) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.try_acquire_notification_drain_lease(text, integer) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.claim_notification_jobs(integer, uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.can_send_whatsapp(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.enqueue_notification_event(uuid, notification_type, text, text, text, jsonb, text, notification_priority) TO service_role;
-GRANT EXECUTE ON FUNCTION public.claim_notification_jobs(integer, uuid, uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.try_acquire_notification_drain_lease(text, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_notification_jobs(integer, uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.can_send_whatsapp(uuid) TO service_role;
