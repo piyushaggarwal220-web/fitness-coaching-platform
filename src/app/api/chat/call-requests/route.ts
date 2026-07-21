@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
+import {
+  requireConversationParticipant,
+  requireConversationParticipantForUser,
+} from '@/lib/chat-api-access'
 import { sendNotification } from '@/lib/notifications/service'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CallRequestStatus } from '@/types/database'
@@ -20,46 +24,26 @@ const ALLOWED_TRANSITIONS: Record<CallRequestStatus, Set<CallRequestStatus>> = {
   cancelled: new Set(),
 }
 
-async function conversationAccess(conversationId: string) {
-  const auth = await requireApiUser()
-  if (!auth.ok) return { auth, conversation: null, coach: null }
-
-  const { data: conversation } = await auth.supabase
-    .from('coach_conversations')
-    .select('id, client_id, coach_id')
-    .eq('id', conversationId)
-    .maybeSingle()
-  if (!conversation) return { auth, conversation: null, coach: null }
-
-  const { data: coach } = await auth.supabase
-    .from('coaches')
-    .select('id, user_id')
-    .eq('user_id', auth.user.id)
-    .maybeSingle()
-
-  return { auth, conversation, coach }
-}
-
 export async function GET(request: Request) {
   const conversationId = new URL(request.url).searchParams.get('conversationId')?.trim()
   if (!conversationId) {
     return NextResponse.json({ error: 'conversationId required' }, { status: 400 })
   }
 
-  const access = await conversationAccess(conversationId)
-  if (!access.auth.ok) return access.auth.response
-  if (!access.conversation) {
-    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
-  }
+  const access = await requireConversationParticipant(conversationId)
+  if (!access.ok) return access.response
 
-  const { data, error } = await access.auth.supabase
+  const { data, error } = await access.admin
     .from('call_requests')
     .select('*')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .limit(10)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[call-requests] list failed', { conversationId, error: error.message })
+    return NextResponse.json({ error: 'Call requests are temporarily unavailable. Please retry.' }, { status: 500 })
+  }
   return NextResponse.json({ requests: data ?? [] })
 }
 
@@ -70,16 +54,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'conversationId required' }, { status: 400 })
   }
 
-  const access = await conversationAccess(conversationId)
-  if (!access.auth.ok) return access.auth.response
-  if (!access.conversation) {
-    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
-  }
-  if (access.coach || access.conversation.client_id !== access.auth.user.id) {
+  const access = await requireConversationParticipant(conversationId)
+  if (!access.ok) return access.response
+  if (access.participant.viewer !== 'client') {
     return NextResponse.json({ error: 'Only the client can request a call' }, { status: 403 })
   }
 
-  const admin = createAdminClient()
+  const { admin, participant, userId } = access
   const { data: existing } = await admin
     .from('call_requests')
     .select('*')
@@ -93,10 +74,10 @@ export async function POST(request: Request) {
     .from('call_requests')
     .insert({
       conversation_id: conversationId,
-      client_id: access.conversation.client_id,
-      coach_id: access.conversation.coach_id,
+      client_id: participant.conversation.client_id,
+      coach_id: participant.conversation.coach_id,
       status: 'requested',
-      updated_by: access.auth.user.id,
+      updated_by: userId,
       requested_at: now,
       created_at: now,
       updated_at: now,
@@ -114,20 +95,21 @@ export async function POST(request: Request) {
         .single()
       return NextResponse.json({ request: raced, deduplicated: true })
     }
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('[call-requests] create failed', { conversationId, error: error.message })
+    return NextResponse.json({ error: 'Call request could not be created. Please retry.' }, { status: 500 })
   }
 
   await admin.from('call_request_events').insert({
     call_request_id: created.id,
     from_status: null,
     to_status: 'requested',
-    actor_user_id: access.auth.user.id,
+    actor_user_id: userId,
   })
 
   const { data: coach } = await admin
     .from('coaches')
     .select('user_id')
-    .eq('id', access.conversation.coach_id)
+    .eq('id', participant.conversation.coach_id)
     .single()
   if (coach?.user_id) {
     await sendNotification({
@@ -144,6 +126,8 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireApiUser()
+  if (!auth.ok) return auth.response
   const body = await request.json().catch(() => null) as {
     requestId?: string
     status?: CallRequestStatus
@@ -162,15 +146,17 @@ export async function PATCH(request: Request) {
     .maybeSingle()
   if (!current) return NextResponse.json({ error: 'Call request not found' }, { status: 404 })
 
-  const access = await conversationAccess(current.conversation_id)
-  if (!access.auth.ok) return access.auth.response
-  if (!access.conversation) {
-    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
-  }
+  const access = await requireConversationParticipantForUser(
+    current.conversation_id,
+    auth.user.id
+  )
+  if (!access.ok) return access.response
 
-  const isCoach = access.coach?.id === current.coach_id
+  const isCoach =
+    access.participant.viewer === 'coach' &&
+    access.participant.coachId === current.coach_id
   const isClientCancelling =
-    access.auth.user.id === current.client_id &&
+    access.userId === current.client_id &&
     body.status === 'cancelled' &&
     (current.status === 'requested' || current.status === 'scheduled')
   if (!isCoach && !isClientCancelling) {
@@ -202,7 +188,7 @@ export async function PATCH(request: Request) {
       status: body.status,
       scheduled_for: scheduledFor,
       coach_note: body.note?.trim().slice(0, 500) || current.coach_note,
-      updated_by: access.auth.user.id,
+      updated_by: access.userId,
       resolved_at: resolvedAt,
       updated_at: now,
     })
@@ -210,14 +196,17 @@ export async function PATCH(request: Request) {
     .eq('updated_at', current.updated_at)
     .select()
     .maybeSingle()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[call-requests] update failed', { requestId: current.id, error: error.message })
+    return NextResponse.json({ error: 'Call request could not be updated. Please retry.' }, { status: 500 })
+  }
   if (!updated) return NextResponse.json({ error: 'Request changed; refresh and retry' }, { status: 409 })
 
   await admin.from('call_request_events').insert({
     call_request_id: current.id,
     from_status: current.status,
     to_status: body.status,
-    actor_user_id: access.auth.user.id,
+    actor_user_id: access.userId,
     scheduled_for: scheduledFor,
     note: body.note?.trim().slice(0, 500) || null,
   })

@@ -1,43 +1,31 @@
 import { NextResponse } from 'next/server'
-import { requireApiUser } from '@/lib/api-auth'
 import { logApiDev } from '@/lib/api-dev-log'
 import { markConversationRead, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { requireConversationParticipant } from '@/lib/chat-api-access'
 
 export async function GET(request: Request) {
   try {
-    const auth = await requireApiUser()
-    if (!auth.ok) {
-      logApiDev('chat_messages_get_auth_failed', { sessionFound: false })
-      return auth.response
-    }
-
-    const { supabase, user } = auth
     const url = new URL(request.url)
     const conversationId = url.searchParams.get('conversationId')
     const peek = url.searchParams.get('peek') === '1'
-
-    logApiDev('chat_messages_get', {
-      userId: user.id,
-      conversationId,
-      peek,
-    })
-
     if (!conversationId) {
       return NextResponse.json({ success: false, error: 'conversationId required' }, { status: 400 })
     }
 
-    const { data: accessibleConversation, error: accessError } = await supabase
-      .from('coach_conversations')
-      .select('id')
-      .eq('id', conversationId)
-      .maybeSingle()
-
-    if (accessError || !accessibleConversation) {
-      return NextResponse.json({ success: false, error: 'Conversation not found' }, { status: 404 })
+    const access = await requireConversationParticipant(conversationId)
+    if (!access.ok) {
+      logApiDev('chat_messages_get_auth_failed', { sessionFound: false })
+      return access.response
     }
 
-    const { data, error } = await supabase
+    logApiDev('chat_messages_get', {
+      userId: access.userId,
+      conversationId,
+      peek,
+    })
+
+    const { admin, participant } = access
+    const { data, error } = await admin
       .from('conversation_messages')
       .select('*')
       .eq('conversation_id', conversationId)
@@ -45,34 +33,29 @@ export async function GET(request: Request) {
 
     if (error) {
       logApiDev('chat_messages_get_query_failed', { conversationId, error: error.message })
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+      return NextResponse.json(
+        { success: false, error: 'Messages are temporarily unavailable. Please retry.' },
+        { status: 500 }
+      )
     }
 
-    const { data: coachRow } = await supabase.from('coaches').select('id').eq('user_id', user.id).maybeSingle()
-    const reader = coachRow ? 'coach' : 'client'
+    const reader = participant.viewer
 
     if (!peek) {
-      // The message table intentionally has no broad client UPDATE policy:
-      // mark read only after the conversation RLS check above proves access.
       const readThrough = data.at(-1)?.created_at ?? null
-      await markConversationRead(createAdminClient(), conversationId, reader, readThrough)
+      await markConversationRead(admin, conversationId, reader, readThrough)
     }
 
-    const { data: conv } = await supabase
-      .from('coach_conversations')
-      .select('client_id, coach_id, client_typing_at, coach_typing_at')
-      .eq('id', conversationId)
-      .maybeSingle()
-
     const typingField = reader === 'client' ? 'coach_typing_at' : 'client_typing_at'
-    const typingAt = conv?.[typingField as keyof typeof conv] as string | null
+    const typingAt = participant.conversation[
+      typingField as keyof typeof participant.conversation
+    ] as string | null
     const peerTyping = typingAt
       ? Date.now() - new Date(typingAt).getTime() < 5000
       : false
 
-    const admin = createAdminClient()
-    const [{ data: callRequests }, peerLastSeenAt] = await Promise.all([
-      supabase
+    const [{ data: callRequests, error: callRequestError }, peerResult] = await Promise.all([
+      admin
         .from('call_requests')
         .select('*')
         .eq('conversation_id', conversationId)
@@ -82,16 +65,21 @@ export async function GET(request: Request) {
         ? admin
             .from('coaches')
             .select('last_seen_at')
-            .eq('id', conv?.coach_id)
+            .eq('id', participant.conversation.coach_id)
             .maybeSingle()
-            .then(({ data: coach }) => coach?.last_seen_at ?? null)
         : admin
             .from('profiles')
             .select('last_seen_at')
-            .eq('id', conv?.client_id)
-            .maybeSingle()
-            .then(({ data: profile }) => profile?.last_seen_at ?? null),
+            .eq('id', participant.conversation.client_id)
+            .maybeSingle(),
     ])
+    if (callRequestError || peerResult.error) {
+      return NextResponse.json(
+        { success: false, error: 'Chat metadata is temporarily unavailable. Please retry.' },
+        { status: 500 }
+      )
+    }
+    const peerLastSeenAt = peerResult.data?.last_seen_at ?? null
 
     return NextResponse.json({
       success: true,
@@ -115,14 +103,6 @@ export async function POST(request: Request) {
       hasCookie: Boolean(request.headers.get('cookie')),
     })
 
-    const auth = await requireApiUser()
-    if (!auth.ok) {
-      logApiDev('chat_messages_post_auth_failed', { sessionFound: false })
-      return auth.response
-    }
-
-    const { supabase, user } = auth
-
     let body: {
       conversationId?: string
       content?: string
@@ -143,24 +123,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'conversationId required' }, { status: 400 })
     }
 
-    const { data: coachRow } = await supabase.from('coaches').select('id').eq('user_id', user.id).maybeSingle()
+    const access = await requireConversationParticipant(conversationId)
+    if (!access.ok) {
+      logApiDev('chat_messages_post_auth_failed', { sessionFound: false })
+      return access.response
+    }
+    const { admin, participant, userId } = access
 
     if (body.typing) {
-      await setTypingIndicator(supabase, conversationId, coachRow ? 'coach' : 'client')
+      await setTypingIndicator(admin, conversationId, participant.viewer)
       return NextResponse.json({ success: true })
     }
 
-    const senderType = coachRow ? ('coach' as const) : ('client' as const)
-    const senderId = coachRow ? coachRow.id : user.id
+    const senderType = participant.viewer
+    const senderId = senderType === 'coach' ? participant.coachId : userId
 
     logApiDev('chat_messages_post_send', {
-      userId: user.id,
-      coachId: coachRow?.id ?? null,
+      userId,
+      coachId: senderType === 'coach' ? participant.coachId : null,
       conversationId,
       senderType,
     })
 
-    const { data, error } = await sendChatMessage(supabase, {
+    const { data, error } = await sendChatMessage(admin, {
       conversationId,
       senderType,
       senderId,
@@ -172,7 +157,10 @@ export async function POST(request: Request) {
 
     if (error) {
       logApiDev('chat_messages_post_failed', { conversationId, error })
-      return NextResponse.json({ success: false, error }, { status: 400 })
+      return NextResponse.json(
+        { success: false, error: 'Message could not be sent right now. Please retry.' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ success: true, message: data })

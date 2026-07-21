@@ -8,12 +8,8 @@ import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { readApiJson } from '@/lib/api-response'
-import { requireCoach } from '@/lib/coach-session'
-import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/design-tokens'
 import type { CoachConversation, ConversationMessage } from '@/types/database'
-
-const supabase = createClient()
 
 export default function CoachChatDetailPage() {
   const params = useParams()
@@ -26,44 +22,84 @@ export default function CoachChatDetailPage() {
   const [activePlanId, setActivePlanId] = useState<string | null>(null)
   const [copyHint, setCopyHint] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [loadStatus, setLoadStatus] = useState<number | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    let active = true
     const load = async () => {
-      const coach = await requireCoach(supabase, router)
-      if (!coach) { setLoading(false); return }
+      setLoading(true)
+      setLoadError('')
+      setLoadStatus(null)
+      const delays = [0, 350, 900]
+      for (let attempt = 0; attempt < delays.length; attempt += 1) {
+        if (delays[attempt]) await new Promise((resolve) => setTimeout(resolve, delays[attempt]))
+        try {
+          const detailResponse = await fetch(`/api/chat/conversations/${conversationId}`, {
+            credentials: 'include',
+            cache: 'no-store',
+          })
+          const detail = await readApiJson<{
+            conversation?: CoachConversation
+            viewer?: 'client' | 'coach'
+            client?: { name?: string; phone?: string | null }
+            activePlanId?: string | null
+          }>(detailResponse)
 
-      const { data: conv } = await supabase
-        .from('coach_conversations')
-        .select('*, profiles:client_id(name, phone)')
-        .eq('id', conversationId)
-        .eq('coach_id', coach.id)
-        .maybeSingle()
+          if (!detail.ok) {
+            const retryable = detailResponse.status >= 500 && attempt < delays.length - 1
+            if (retryable) continue
+            if (!active) return
+            setLoadStatus(detailResponse.status)
+            setLoadError(detail.error)
+            setLoading(false)
+            return
+          }
+          if (!detail.data.conversation || detail.data.viewer !== 'coach') {
+            if (!active) return
+            setLoadStatus(403)
+            setLoadError('Coach access to this conversation was not confirmed.')
+            setLoading(false)
+            return
+          }
 
-      if (!conv) { setLoading(false); return }
+          const messageResponse = await fetch(
+            `/api/chat/messages?conversationId=${conversationId}`,
+            { credentials: 'include', cache: 'no-store' }
+          )
+          const messageResult = await readApiJson<{ messages?: ConversationMessage[] }>(messageResponse)
+          if (!messageResult.ok) {
+            const retryable = messageResponse.status >= 500 && attempt < delays.length - 1
+            if (retryable) continue
+            if (!active) return
+            setLoadStatus(messageResponse.status)
+            setLoadError(messageResult.error)
+            setLoading(false)
+            return
+          }
 
-      setConversation(conv as CoachConversation)
-      const profile = conv.profiles as { name?: string; phone?: string | null } | null
-      setClientName(profile?.name ?? 'Client')
-      setClientPhone(profile?.phone?.trim() ? profile.phone.trim() : null)
-
-      const { data: activePlan } = await supabase
-        .from('plans')
-        .select('id')
-        .eq('client_id', conv.client_id)
-        .eq('coach_id', coach.id)
-        .eq('active', true)
-        .maybeSingle()
-      setActivePlanId(activePlan?.id ?? null)
-
-      const res = await fetch(`/api/chat/messages?conversationId=${conversationId}`, {
-        credentials: 'include',
-      })
-      const parsed = await readApiJson<{ messages?: ConversationMessage[] }>(res)
-      if (parsed.ok && parsed.data.messages) setMessages(parsed.data.messages)
-      setLoading(false)
+          if (!active) return
+          setConversation(detail.data.conversation)
+          setClientName(detail.data.client?.name ?? 'Client')
+          const phone = detail.data.client?.phone?.trim()
+          setClientPhone(phone || null)
+          setActivePlanId(detail.data.activePlanId ?? null)
+          setMessages(messageResult.data.messages ?? [])
+          setLoading(false)
+          return
+        } catch {
+          if (attempt < delays.length - 1) continue
+          if (!active) return
+          setLoadStatus(500)
+          setLoadError('Chat could not be loaded right now. Please check your connection and retry.')
+          setLoading(false)
+        }
+      }
     }
-    void load()
-  }, [conversationId, router])
+    queueMicrotask(() => void load())
+    return () => { active = false }
+  }, [conversationId, reloadKey])
 
   const copyPhone = async () => {
     if (!clientPhone) return
@@ -93,7 +129,26 @@ export default function CoachChatDetailPage() {
   if (!conversation) {
     return (
       <CoachShell narrow>
-        <p style={styles.emptyText}>Conversation not found.</p>
+        <div style={{ ...styles.emptyText, display: 'grid', gap: 12 }}>
+          <strong>
+            {loadStatus === 404
+              ? 'Conversation not found.'
+              : loadStatus === 403
+                ? 'You do not have access to this conversation.'
+                : 'Chat is temporarily unavailable.'}
+          </strong>
+          <span>{loadError}</span>
+          {(loadStatus === null || loadStatus >= 500 || loadStatus === 401) && (
+            <button
+              type="button"
+              onClick={() => setReloadKey((value) => value + 1)}
+              style={phoneStyles.copyBtn}
+            >
+              Retry
+            </button>
+          )}
+          <Link href="/coach/chat" style={{ color: colors.accent }}>Back to conversations</Link>
+        </div>
       </CoachShell>
     )
   }

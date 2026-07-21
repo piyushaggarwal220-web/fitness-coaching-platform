@@ -1,25 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireApiUser } from '@/lib/api-auth'
-import { createAdminClient } from '@/lib/supabase/admin'
-
-async function context(conversationId: string) {
-  const auth = await requireApiUser()
-  if (!auth.ok) return { auth, conversation: null, coach: null }
-
-  const { data: conversation } = await auth.supabase
-    .from('coach_conversations')
-    .select('id, client_id, coach_id')
-    .eq('id', conversationId)
-    .maybeSingle()
-  if (!conversation) return { auth, conversation: null, coach: null }
-
-  const { data: coach } = await auth.supabase
-    .from('coaches')
-    .select('id, user_id, last_seen_at')
-    .eq('user_id', auth.user.id)
-    .maybeSingle()
-  return { auth, conversation, coach }
-}
+import { requireConversationParticipant } from '@/lib/chat-api-access'
 
 export async function GET(request: Request) {
   const conversationId = new URL(request.url).searchParams.get('conversationId')?.trim()
@@ -27,27 +7,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'conversationId required' }, { status: 400 })
   }
 
-  const value = await context(conversationId)
-  if (!value.auth.ok) return value.auth.response
-  if (!value.conversation) {
-    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
-  }
-
-  const admin = createAdminClient()
-  if (value.coach) {
-    const { data: profile } = await admin
+  const access = await requireConversationParticipant(conversationId)
+  if (!access.ok) return access.response
+  const { admin, participant } = access
+  if (participant.viewer === 'coach') {
+    const { data: profile, error } = await admin
       .from('profiles')
       .select('last_seen_at')
-      .eq('id', value.conversation.client_id)
-      .single()
+      .eq('id', participant.conversation.client_id)
+      .maybeSingle()
+    if (error) return NextResponse.json({ error: 'Presence is temporarily unavailable.' }, { status: 500 })
     return NextResponse.json({ viewer: 'coach', peerLastSeenAt: profile?.last_seen_at ?? null })
   }
 
-  const { data: coach } = await admin
+  const { data: coach, error } = await admin
     .from('coaches')
     .select('last_seen_at')
-    .eq('id', value.conversation.coach_id)
-    .single()
+    .eq('id', participant.conversation.coach_id)
+    .maybeSingle()
+  if (error) return NextResponse.json({ error: 'Presence is temporarily unavailable.' }, { status: 500 })
   return NextResponse.json({ viewer: 'client', peerLastSeenAt: coach?.last_seen_at ?? null })
 }
 
@@ -58,28 +36,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'conversationId required' }, { status: 400 })
   }
 
-  const value = await context(conversationId)
-  if (!value.auth.ok) return value.auth.response
-  if (!value.conversation) {
-    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
-  }
-
-  const admin = createAdminClient()
+  const access = await requireConversationParticipant(conversationId)
+  if (!access.ok) return access.response
+  const { admin, participant, userId } = access
   const now = new Date()
-  if (value.coach) {
-    const previous = value.coach.last_seen_at ? new Date(value.coach.last_seen_at).getTime() : 0
+  if (participant.viewer === 'coach') {
+    const { data: coach, error } = await admin
+      .from('coaches')
+      .select('last_seen_at')
+      .eq('id', participant.coachId)
+      .maybeSingle()
+    if (error) return NextResponse.json({ error: 'Presence is temporarily unavailable.' }, { status: 500 })
+    const previous = coach?.last_seen_at ? new Date(coach.last_seen_at).getTime() : 0
     if (now.getTime() - previous > 60_000) {
-      await admin.from('coaches').update({ last_seen_at: now.toISOString() }).eq('id', value.coach.id)
+      const { error: updateError } = await admin
+        .from('coaches')
+        .update({ last_seen_at: now.toISOString() })
+        .eq('id', participant.coachId)
+      if (updateError) return NextResponse.json({ error: 'Presence is temporarily unavailable.' }, { status: 500 })
     }
   } else {
-    const { data: profile } = await admin
+    const { data: profile, error } = await admin
       .from('profiles')
       .select('last_seen_at')
-      .eq('id', value.auth.user.id)
-      .single()
+      .eq('id', userId)
+      .maybeSingle()
+    if (error) return NextResponse.json({ error: 'Presence is temporarily unavailable.' }, { status: 500 })
     const previous = profile?.last_seen_at ? new Date(profile.last_seen_at).getTime() : 0
     if (now.getTime() - previous > 60_000) {
-      await admin.from('profiles').update({ last_seen_at: now.toISOString() }).eq('id', value.auth.user.id)
+      const { error: updateError } = await admin
+        .from('profiles')
+        .update({ last_seen_at: now.toISOString() })
+        .eq('id', userId)
+      if (updateError) return NextResponse.json({ error: 'Presence is temporarily unavailable.' }, { status: 500 })
     }
   }
 

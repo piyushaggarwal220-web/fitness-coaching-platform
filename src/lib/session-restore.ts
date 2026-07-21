@@ -210,27 +210,50 @@ export function isDefinitivelyOnboardingIncomplete(
   return profile.onboarding_complete !== true && !profile.onboarding_completed_at
 }
 
+export type RoleDetectionResult = {
+  role: ResolvedRole
+  error: string | null
+  definitive: boolean
+}
+
+export function resolveDetectedRole(input: {
+  profile: Pick<OnboardingProfile, 'role'> | null
+  profileError: string | null
+  coach: Coach | null
+  coachError: string | null
+}): RoleDetectionResult {
+  const { profile, profileError, coach, coachError } = input
+  if (profile && isAdminRole(profile.role)) {
+    return { role: 'admin', error: null, definitive: true }
+  }
+  if (profile?.role === 'coach') {
+    return { role: 'coach', error: coachError, definitive: true }
+  }
+  if (coach) {
+    return { role: 'coach', error: null, definitive: true }
+  }
+  if (profileError || coachError) {
+    return {
+      role: 'client',
+      error: profileError ?? coachError,
+      definitive: false,
+    }
+  }
+  return { role: 'client', error: null, definitive: true }
+}
+
 export async function detectUserRole(
   supabase: SupabaseClient,
   userId: string
-): Promise<ResolvedRole> {
-  const [{ profile }, { coach }] = await Promise.all([
+): Promise<RoleDetectionResult> {
+  const [{ profile, error: profileError }, { coach, error: coachError }] = await Promise.all([
     fetchAdminProfile(supabase, userId),
     fetchCoachRecord(supabase, userId),
   ])
 
-  if (profile && isAdminRole(profile.role)) {
-    logSessionRestore('role_resolved', { userId, role: 'admin' })
-    return 'admin'
-  }
-
-  if (coach) {
-    logSessionRestore('role_resolved', { userId, role: 'coach' })
-    return 'coach'
-  }
-
-  logSessionRestore('role_resolved', { userId, role: 'client' })
-  return 'client'
+  const result = resolveDetectedRole({ profile, profileError, coach, coachError })
+  logSessionRestore('role_resolved', { userId, role: result.role })
+  return result
 }
 
 export function getRoleHomePath(role: ResolvedRole): string {
@@ -282,7 +305,17 @@ export async function restoreSession(
     return { status: 'unauthenticated' }
   }
 
-  const role = await detectUserRole(supabase, user.id)
+  const detection = await detectUserRole(supabase, user.id)
+  const role = detection.role
+
+  if (detection.error && !detection.definitive) {
+    logSessionRestore('profile_unavailable', {
+      userId: user.id,
+      role,
+      error: detection.error,
+    })
+    return { status: 'profile_unavailable', user, role, profileError: detection.error }
+  }
 
   if (role === 'coach') {
     const { coach, error } = await fetchCoachRecord(supabase, user.id)
@@ -293,7 +326,12 @@ export async function restoreSession(
       logSessionRestore('profile_unavailable', { userId: user.id, role, error })
       return { status: 'profile_unavailable', user, role, profileError: error }
     }
-    return { status: 'unauthenticated' }
+    return {
+      status: 'profile_unavailable',
+      user,
+      role,
+      profileError: 'Coach profile is temporarily unavailable.',
+    }
   }
 
   if (role === 'admin') {
