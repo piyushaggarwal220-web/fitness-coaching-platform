@@ -234,7 +234,8 @@ export function MeasurementScroller(
     kind: Extract<NumberScrollerPreset, 'chest' | 'thigh' | 'navel' | 'weight'>
   }
 ) {
-  return <NumberScroller {...props} preset={props.kind} />
+  const { kind, ...rest } = props
+  return <NumberScroller {...rest} preset={kind} />
 }
 
 const styles: Record<string, CSSProperties> = {
