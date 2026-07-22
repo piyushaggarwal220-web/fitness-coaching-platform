@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Download, X } from 'lucide-react'
+import { Download, Share, X } from 'lucide-react'
 import { colors, radius, spacing } from '@/lib/design-tokens'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
+
+type PromptMode = 'android' | 'ios'
 
 const DISMISS_KEY = 'pwa-install-dismissed-at'
 const DISMISS_MS = 7 * 24 * 60 * 60 * 1000
@@ -23,19 +25,42 @@ function wasDismissedRecently(): boolean {
   }
 }
 
-/** Optional install banner — never blocks the app. */
+function isStandaloneDisplay(): boolean {
+  if (window.matchMedia('(display-mode: standalone)').matches) return true
+  // iOS Safari home-screen apps set this legacy flag.
+  const nav = window.navigator as Navigator & { standalone?: boolean }
+  return nav.standalone === true
+}
+
+function isIosDevice(): boolean {
+  const ua = window.navigator.userAgent
+  const iOS = /iPad|iPhone|iPod/.test(ua)
+  // iPadOS 13+ may report as Mac with touch.
+  const iPadOs = window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1
+  return iOS || iPadOs
+}
+
+/** Optional install banner — never blocks the app. Supports Android install + iOS tip. */
 export function PwaInstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
+  const [mode, setMode] = useState<PromptMode | null>(null)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (wasDismissedRecently()) return
-    if (window.matchMedia('(display-mode: standalone)').matches) return
+    if (isStandaloneDisplay()) return
+
+    if (isIosDevice()) {
+      setMode('ios')
+      setVisible(true)
+      return
+    }
 
     const onPrompt = (event: Event) => {
       event.preventDefault()
       setDeferred(event as BeforeInstallPromptEvent)
+      setMode('android')
       setVisible(true)
     }
 
@@ -51,6 +76,7 @@ export function PwaInstallPrompt() {
     }
     setVisible(false)
     setDeferred(null)
+    setMode(null)
   }
 
   const install = async () => {
@@ -59,21 +85,39 @@ export function PwaInstallPrompt() {
     await deferred.userChoice
     setVisible(false)
     setDeferred(null)
+    setMode(null)
   }
 
-  if (!visible || !deferred) return null
+  if (!visible || !mode) return null
+  if (mode === 'android' && !deferred) return null
 
   return (
     <div role="dialog" aria-label="Install Lurvox app" style={styles.banner}>
       <div style={styles.copy}>
-        <strong style={styles.title}>Install Lurvox</strong>
-        <span style={styles.detail}>Add to your home screen for faster access.</span>
+        <strong style={styles.title}>
+          {mode === 'ios' ? 'Add Lurvox to Home Screen' : 'Install Lurvox'}
+        </strong>
+        {mode === 'ios' ? (
+          <span style={styles.detail}>
+            Tap <Share size={12} style={styles.inlineIcon} aria-hidden /> Share, then{' '}
+            <strong style={styles.emphasis}>Add to Home Screen</strong> for the app experience.
+          </span>
+        ) : (
+          <span style={styles.detail}>Add to your home screen for faster access.</span>
+        )}
       </div>
       <div style={styles.actions}>
-        <button type="button" onClick={() => void install()} style={styles.installBtn}>
-          <Download size={16} />
-          Install
-        </button>
+        {mode === 'android' && (
+          <button type="button" onClick={() => void install()} style={styles.installBtn}>
+            <Download size={16} />
+            Install
+          </button>
+        )}
+        {mode === 'ios' && (
+          <button type="button" onClick={dismiss} style={styles.installBtn}>
+            Got it
+          </button>
+        )}
         <button type="button" onClick={dismiss} style={styles.closeBtn} aria-label="Dismiss">
           <X size={18} />
         </button>
@@ -104,7 +148,7 @@ const styles: Record<string, React.CSSProperties> = {
   copy: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 2,
+    gap: 4,
     minWidth: 0,
   },
   title: {
@@ -114,7 +158,16 @@ const styles: Record<string, React.CSSProperties> = {
   detail: {
     color: colors.textSecondary,
     fontSize: 12,
-    lineHeight: 1.4,
+    lineHeight: 1.45,
+  },
+  emphasis: {
+    color: colors.textPrimary,
+    fontWeight: 700,
+  },
+  inlineIcon: {
+    display: 'inline',
+    verticalAlign: 'text-bottom',
+    margin: '0 2px',
   },
   actions: {
     display: 'flex',
@@ -135,6 +188,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     fontSize: 13,
     cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   closeBtn: {
     display: 'inline-flex',
