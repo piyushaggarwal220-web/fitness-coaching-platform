@@ -16,7 +16,7 @@ import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-syn
 import { clientCoachNotes, encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
 import { sendClientNotification } from '@/lib/notifications/client'
 import { useRouter } from 'next/navigation'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 import { AiGenerationStatusBadge } from '@/components/coach/AiGenerationStatusBadge'
 import { AiReasoningPanel, GenerationStatus, OptionalCoachNote } from './shared'
 import { PlanCompareDrawer } from './PlanCompareDrawer'

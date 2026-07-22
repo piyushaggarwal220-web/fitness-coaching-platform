@@ -3,7 +3,7 @@
 import { formatPlanDate } from '@/lib/plans'
 import type { Plan } from '@/types/database'
 import { useRouter } from 'next/navigation'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 import { aiActionStyles as s } from './styles'
 
 type PlanVersionListProps = {

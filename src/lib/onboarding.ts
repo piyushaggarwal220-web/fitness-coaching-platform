@@ -270,6 +270,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   goal_deadline: '',
   biggest_struggle: '',
   occupation: '',
+  work_school_schedule: '',
   activity_level: '',
   daily_steps: '',
   sleep_duration: '',
@@ -351,6 +352,7 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     goal_deadline: data.goals?.deadline ?? '',
     biggest_struggle: data.goals?.biggestStruggle ?? '',
     occupation: data.lifestyle?.occupation ?? '',
+    work_school_schedule: data.lifestyle?.workSchoolSchedule ?? '',
     daily_steps: data.lifestyle?.dailySteps ?? '',
     stress_level: data.lifestyle?.stressLevel ?? '',
     water_intake: data.lifestyle?.waterIntake ?? '',
@@ -418,6 +420,7 @@ export function buildOnboardingData(
     },
     lifestyle: {
       occupation: form.occupation || null,
+      workSchoolSchedule: form.work_school_schedule.trim() || null,
       dailySteps: form.daily_steps || null,
       stressLevel: form.stress_level || null,
       waterIntake: form.water_intake || null,
@@ -613,6 +616,9 @@ export function validateOnboardingStep(
     }
     case 4: {
       if (!data.occupation) return 'Please select your occupation.'
+      if (!data.work_school_schedule.trim()) {
+        return 'Please describe your work, school, or college schedule.'
+      }
       if (!data.activity_level) return 'Please select your activity level.'
       return null
     }
@@ -782,6 +788,10 @@ export function buildReviewSections(
       title: 'Lifestyle',
       items: [
         { label: 'Occupation', value: getOnboardingLabel('occupation', form.occupation) },
+        {
+          label: 'Work / school schedule',
+          value: form.work_school_schedule.trim() || 'Not set',
+        },
         { label: 'Activity level', value: getOnboardingLabel('activity_level', form.activity_level) },
         { label: 'Daily steps', value: getOnboardingLabel('daily_steps', form.daily_steps) },
         { label: 'Sleep', value: getOnboardingLabel('sleep_duration', form.sleep_duration) },

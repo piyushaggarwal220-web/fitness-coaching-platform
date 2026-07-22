@@ -3,7 +3,7 @@
 import { useEffect, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { CoachShell } from '@/components/ui/CoachShell';
-import { colors } from '@/lib/design-tokens';
+import { colors } from '@/lib/coach-theme';
 
 const errorBox: CSSProperties = {
   backgroundColor: colors.dangerMuted,

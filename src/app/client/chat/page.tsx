@@ -14,34 +14,44 @@ const supabase = createClient()
 export default function ClientChatPage() {
   const router = useRouter()
   const [conversation, setConversation] = useState<CoachConversation | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [authReady, setAuthReady] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     const init = async () => {
       const auth = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true })
-      if (!auth?.profile) { setLoading(false); return }
-
-      setConnecting(true)
-      const res = await fetch('/api/chat/conversations', { method: 'POST' })
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error ?? 'Failed to start conversation')
-        setLoading(false)
-        setConnecting(false)
+      if (!auth?.profile) {
+        setAuthReady(true)
         return
       }
 
-      setConversation(data.conversation)
-      setLoading(false)
-      setConnecting(false)
+      setAuthReady(true)
+      setConnecting(true)
+
+      try {
+        const res = await fetch('/api/chat/conversations', {
+          method: 'POST',
+          credentials: 'include',
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+          setError(data.error ?? 'Failed to start conversation')
+          return
+        }
+
+        setConversation(data.conversation)
+      } catch {
+        setError('Failed to start conversation')
+      } finally {
+        setConnecting(false)
+      }
     }
     void init()
   }, [router])
 
-  if (loading) {
+  if (!authReady) {
     return (
       <ClientShell title="Chat" loading hideBottomNav fullHeight>
         <span />
@@ -51,10 +61,17 @@ export default function ClientChatPage() {
 
   return (
     <ClientShell title="Chat" hideBottomNav fullHeight>
-      {connecting && (
-        <p style={{ margin: '8px 16px', fontSize: 14, color: '#8696a0', textAlign: 'center', flexShrink: 0 }}>
-          Connecting you with your coach...
-        </p>
+      {connecting && !conversation && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: '#0b141a' }}>
+          <p style={{ margin: '12px 16px', fontSize: 13, color: '#8696a0', textAlign: 'center', flexShrink: 0 }}>
+            Connecting you with your coach...
+          </p>
+          <div style={{ flex: 1, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="skeleton" style={{ height: 44, width: '62%', borderRadius: 8, alignSelf: 'flex-start', opacity: 0.35 }} />
+            <div className="skeleton" style={{ height: 52, width: '70%', borderRadius: 8, alignSelf: 'flex-end', opacity: 0.35 }} />
+            <div className="skeleton" style={{ height: 40, width: '48%', borderRadius: 8, alignSelf: 'flex-start', opacity: 0.35 }} />
+          </div>
+        </div>
       )}
 
       {error && (

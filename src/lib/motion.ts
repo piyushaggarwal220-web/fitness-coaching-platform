@@ -22,6 +22,8 @@ export const motionClass = {
   cardEnter: 'motion-card-enter',
   cardInteractive: 'motion-card-interactive',
   messageEnter: 'motion-message-enter',
+  messageEnterMine: 'motion-message-enter-mine',
+  messageEnterTheirs: 'motion-message-enter-theirs',
   emptyEnter: 'motion-empty-enter',
   dropdownEnter: 'motion-dropdown-enter',
   badgePop: 'motion-badge-pop',

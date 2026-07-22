@@ -18,7 +18,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { DrawerNav, type DrawerNavItem, DrawerMenuButton } from '@/components/ui/DrawerNav'
 import { isDevToolkitEnabledClient } from '@/lib/dev-mode'
 import { BRAND_COACH_LABEL, BRAND_NAME } from '@/lib/brand'
-import { colors, spacing } from '@/lib/design-tokens'
+import { colors, spacing } from '@/lib/coach-theme'
 import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
 
 const supabase = createClient()
@@ -96,6 +96,7 @@ export default function CoachNavbar({ onMenuClick }: CoachNavbarProps) {
         items={items}
         title={`${BRAND_NAME} Coach`}
         subtitle="Work queue & clients"
+        theme="light"
       />
     </>
   )
@@ -112,6 +113,7 @@ const styles: Record<string, CSSProperties> = {
     position: 'sticky',
     top: 0,
     zIndex: 100,
+    boxShadow: '0 1px 0 rgba(24,24,27,0.04)',
   },
   container: { maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   logo: { color: colors.textPrimary, fontSize: 'clamp(16px, 4vw, 20px)', fontWeight: 800, textDecoration: 'none', letterSpacing: '-0.02em' },

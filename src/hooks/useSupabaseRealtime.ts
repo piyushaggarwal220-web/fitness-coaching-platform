@@ -166,12 +166,13 @@ export function useSupabaseRealtimeRefresh({
   }, [channelName, enabled, pollIntervalMs, subscriptionsKey])
 }
 
-export function useChatUnreadCount(viewer: 'client' | 'coach') {
+export function useChatUnreadCount(viewer: 'client' | 'coach', enabled = true) {
   const [ownerId, setOwnerId] = useState<string | null>(null)
   const [count, setCount] = useState(0)
   const supabaseRef = useRef(createClient())
 
   useEffect(() => {
+    if (!enabled) return
     let active = true
 
     const resolveOwner = async () => {
@@ -194,10 +195,10 @@ export function useChatUnreadCount(viewer: 'client' | 'coach') {
 
     void resolveOwner()
     return () => { active = false }
-  }, [viewer])
+  }, [viewer, enabled])
 
   const refresh = useCallback(async () => {
-    if (!ownerId) return
+    if (!enabled || !ownerId) return
     const unreadColumn = viewer === 'client' ? 'unread_by_client' : 'unread_by_coach'
     const ownerColumn = viewer === 'client' ? 'client_id' : 'coach_id'
     const { data } = await supabaseRef.current
@@ -211,7 +212,7 @@ export function useChatUnreadCount(viewer: 'client' | 'coach') {
       0
     )
     setCount(nextCount)
-  }, [ownerId, viewer])
+  }, [enabled, ownerId, viewer])
 
   useEffect(() => {
     void refresh()
@@ -227,8 +228,8 @@ export function useChatUnreadCount(viewer: 'client' | 'coach') {
         }]
       : [],
     onRefresh: refresh,
-    enabled: Boolean(ownerId),
-    pollIntervalMs: 60_000,
+    enabled: enabled && Boolean(ownerId),
+    pollIntervalMs: 90_000,
   })
 
   return count

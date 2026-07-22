@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { PageTransition } from '@/components/motion/PageTransition'
 import CoachNavbar from '@/app/components/CoachNavbar'
 import { coachPageStyles } from '@/lib/coach-page-styles'
+import { colors } from '@/lib/coach-theme'
 
 type CoachShellProps = {
   children?: ReactNode
@@ -17,12 +18,12 @@ export function CoachShell({ children, loading, loadingMessage, narrow }: CoachS
 
   if (loading) {
     return (
-      <>
+      <div className="coach-portal" data-coach-theme="light">
         <CoachNavbar />
         <div style={coachPageStyles.page}>
           <div style={containerStyle}>
             {loadingMessage ? (
-              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 15, textAlign: 'center', paddingTop: 48 }}>
+              <p style={{ margin: 0, color: colors.textMuted, fontSize: 15, textAlign: 'center', paddingTop: 48 }}>
                 {loadingMessage}
               </p>
             ) : (
@@ -34,12 +35,12 @@ export function CoachShell({ children, loading, loadingMessage, narrow }: CoachS
             )}
           </div>
         </div>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
+    <div className="coach-portal" data-coach-theme="light">
       <CoachNavbar />
       <div style={coachPageStyles.page}>
         <PageTransition>
@@ -48,6 +49,6 @@ export function CoachShell({ children, loading, loadingMessage, narrow }: CoachS
           </div>
         </PageTransition>
       </div>
-    </>
+    </div>
   )
 }

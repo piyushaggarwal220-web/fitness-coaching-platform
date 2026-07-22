@@ -1,7 +1,7 @@
 'use client'
 
 import type { Plan } from '@/types/database'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 import { comparePlanSections, mergeNutritionHighlights } from '@/lib/plan-compare'
 import { clientCoachNotes } from '@/lib/plan-metadata'
 import { aiActionStyles as s } from './styles'

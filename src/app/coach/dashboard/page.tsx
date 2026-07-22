@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { requireCoach } from '@/lib/coach-session';
 import { brandTitle } from '@/lib/brand';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
-import { colors, spacing } from '@/lib/design-tokens';
+import { colors, spacing } from '@/lib/coach-theme';
 import { CoachWorkSummaryCards } from '@/components/coach/CoachWorkSummaryCards';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';

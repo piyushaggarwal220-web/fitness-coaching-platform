@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { colors, spacing, radius } from '@/lib/design-tokens'
+import { colors, spacing, radius } from '@/lib/coach-theme'
 
 export const aiActionStyles: Record<string, CSSProperties> = {
   page: { minHeight: '100vh', backgroundColor: colors.bgPrimary },

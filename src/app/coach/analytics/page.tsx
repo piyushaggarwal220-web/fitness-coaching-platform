@@ -7,7 +7,7 @@ import { brandTitle } from '@/lib/brand'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 
 const supabase = createClient()
 

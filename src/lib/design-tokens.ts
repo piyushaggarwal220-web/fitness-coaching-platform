@@ -26,6 +26,31 @@ export const colors = {
   borderSubtle: 'rgba(255, 255, 255, 0.08)',
 } as const
 
+/** Light theme — coach portal only (client/admin stay on dark `colors`). */
+export const coachColors = {
+  bgPrimary: '#ffffff',
+  bgSecondary: '#f4f4f5',
+  bgCard: '#ffffff',
+  bgElevated: '#f4f4f5',
+  bgGlass: 'rgba(255, 255, 255, 0.92)',
+  accent: '#ea580c',
+  accentHover: '#f97316',
+  accentMuted: 'rgba(234, 88, 12, 0.1)',
+  accentGlow: 'rgba(234, 88, 12, 0.16)',
+  success: '#16a34a',
+  successMuted: 'rgba(22, 163, 74, 0.12)',
+  warning: '#d97706',
+  warningMuted: 'rgba(217, 119, 6, 0.12)',
+  danger: '#dc2626',
+  dangerMuted: 'rgba(220, 38, 38, 0.1)',
+  textPrimary: '#18181b',
+  textSecondary: '#3f3f46',
+  textMuted: '#71717a',
+  textInverse: '#ffffff',
+  divider: 'rgba(24, 24, 27, 0.08)',
+  borderSubtle: 'rgba(24, 24, 27, 0.12)',
+} as const
+
 export const spacing = {
   1: 8,
   2: 12,

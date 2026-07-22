@@ -56,6 +56,25 @@ function formatDuration(milliseconds: number): string {
   return `${hours}h ${minutes}m ${seconds}s`
 }
 
+function messagesVisuallyEqual(a: ConversationMessage[], b: ConversationMessage[]): boolean {
+  if (a === b) return true
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i]
+    const right = b[i]
+    if (
+      left.id !== right.id ||
+      left.read_at !== right.read_at ||
+      left.content !== right.content ||
+      left.media_url !== right.media_url ||
+      left.message_type !== right.message_type
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
 export function CoachChatThread({ conversationId, coachId, viewer, initialMessages = [] }: CoachChatThreadProps) {
   const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages)
   const [input, setInput] = useState('')
@@ -75,6 +94,10 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const lastPeerMessageIdRef = useRef<string | null>(null)
   const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sendingRef = useRef(false)
+  const stickToBottomRef = useRef(true)
+  const scrollBehaviorRef = useRef<'auto' | 'smooth'>('auto')
+  const animatedIdsRef = useRef<Set<string>>(new Set(initialMessages.map((m) => m.id)))
+  const historyReadyRef = useRef(initialMessages.length > 0)
 
   const fetchMessages = useCallback(async (markRead = true) => {
     const res = await fetch(`/api/chat/messages?conversationId=${conversationId}${markRead ? '' : '&peek=1'}`, {
@@ -98,9 +121,37 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       const latestPeerId = latestPeer?.id ?? 'none'
       if (lastPeerMessageIdRef.current !== null && latestPeer && lastPeerMessageIdRef.current !== latestPeerId) {
         playNotificationSound()
+        if (stickToBottomRef.current) {
+          scrollBehaviorRef.current = 'smooth'
+        }
       }
       lastPeerMessageIdRef.current = latestPeerId
-      setMessages(incoming)
+      setMessages((prev) => {
+        const temps = prev.filter((m) => m.id.startsWith('temp-'))
+        const consumedTemps = new Set<string>()
+        const merged = incoming.map((msg) => {
+          const matchedTemp = temps.find((temp) =>
+            !consumedTemps.has(temp.id) &&
+            temp.sender_type === msg.sender_type &&
+            temp.content === msg.content &&
+            Math.abs(new Date(msg.created_at).getTime() - new Date(temp.created_at).getTime()) < 60_000
+          )
+          if (matchedTemp) {
+            consumedTemps.add(matchedTemp.id)
+            // Avoid a second enter animation when temp → server id.
+            animatedIdsRef.current.add(msg.id)
+          }
+          return msg
+        })
+        const leftoverTemps = temps.filter((temp) => !consumedTemps.has(temp.id))
+        const next = leftoverTemps.length ? [...merged, ...leftoverTemps] : merged
+        if (!historyReadyRef.current) {
+          next.forEach((m) => animatedIdsRef.current.add(m.id))
+          historyReadyRef.current = true
+        }
+        if (messagesVisuallyEqual(prev, next)) return prev
+        return next
+      })
       setLoading(false)
     }
     if (typeof parsed.data.peerTyping === 'boolean') setPeerTyping(parsed.data.peerTyping)
@@ -121,7 +172,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       { event: '*', table: 'call_requests', filter: `conversation_id=eq.${conversationId}` },
     ],
     onRefresh: fetchMessages,
-    pollIntervalMs: 45_000,
+    pollIntervalMs: 90_000,
     presence: {
       key: `${viewer}:${conversationId}`,
       payload: { role: viewer, onlineAt: new Date().toISOString() },
@@ -131,7 +182,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           .flat()
           .some((entry) => (entry as { role?: string }).role === peerRole)
         setPeerOnline(present)
-        if (!present) void fetchMessages(false)
       },
       heartbeat: () => fetch('/api/chat/presence', {
         method: 'POST',
@@ -148,7 +198,8 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   useEffect(() => {
     if (viewer !== 'client' || !responseDeadline) return
     const initialTick = window.setTimeout(() => setNow(Date.now()), 0)
-    const timer = window.setInterval(() => setNow(Date.now()), 1_000)
+    const tickMs = responseDeadline - Date.now() > 5 * 60_000 ? 5_000 : 1_000
+    const timer = window.setInterval(() => setNow(Date.now()), tickMs)
     return () => {
       window.clearTimeout(initialTick)
       window.clearInterval(timer)
@@ -228,8 +279,28 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   }, [])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, imagePreview])
+    if (!stickToBottomRef.current) return
+    const behavior = scrollBehaviorRef.current
+    scrollBehaviorRef.current = 'smooth'
+    const frame = window.requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior, block: 'end' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [messages, imagePreview, peerTyping])
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      for (const msg of messages) animatedIdsRef.current.add(msg.id)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [messages])
+
+  const handleThreadScroll = () => {
+    const el = threadRef.current
+    if (!el) return
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    stickToBottomRef.current = distanceFromBottom < 100
+  }
 
   const sendMessage = async (opts?: { messageType?: string; mediaUrl?: string; mediaDurationSeconds?: number; content?: string }) => {
     if (sendingRef.current) return
@@ -250,6 +321,8 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     }
 
     sendingRef.current = true
+    stickToBottomRef.current = true
+    scrollBehaviorRef.current = 'auto'
     setMessages((prev) => [...prev, optimistic])
     setSending(true)
     setError('')
@@ -291,7 +364,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         credentials: 'include',
         body: JSON.stringify({ conversationId, typing: true }),
       }).catch(() => {})
-    }, 400)
+    }, 280)
   }
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -414,7 +487,12 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         </div>
       )}
 
-      <div ref={threadRef} className="coach-chat-messages wa-chat-messages" style={styles.thread}>
+      <div
+        ref={threadRef}
+        className="coach-chat-messages wa-chat-messages"
+        style={styles.thread}
+        onScroll={handleThreadScroll}
+      >
         <div style={styles.wallpaper} aria-hidden />
 
         {loading && (
@@ -449,13 +527,14 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
             (viewer === 'client' && msg.sender_type === 'client') ||
             (viewer === 'coach' && msg.sender_type === 'coach')
           const isSystem = msg.sender_type === 'system' || msg.message_type === 'system'
+          const shouldAnimate = historyReadyRef.current && !animatedIdsRef.current.has(msg.id)
 
           if (isSystem) {
             const isCheckin = isCheckinSystemMessage(msg.content)
             return (
               <div
                 key={msg.id}
-                className={isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'}
+                className={`${isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'}${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
                 style={isCheckin ? styles.checkinSystemMsg : styles.systemMsg}
               >
                 {isCheckin ? (
@@ -470,7 +549,11 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           return (
             <div
               key={msg.id}
-              className={motionClass.messageEnter}
+              className={
+                shouldAnimate
+                  ? (isMine ? motionClass.messageEnterMine : motionClass.messageEnterTheirs)
+                  : undefined
+              }
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -527,7 +610,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         })}
 
         {peerTyping && (
-          <div style={styles.typingRow}>
+          <div className={motionClass.messageEnterTheirs} style={styles.typingRow}>
             <div style={styles.typingBubble}>
               <span style={styles.typingDot} />
               <span style={{ ...styles.typingDot, animationDelay: '0.15s' }} />
@@ -542,7 +625,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       {error && <div className={motionClass.shake} style={styles.error}>{error}</div>}
 
       {imagePreview && (
-        <div className={motionClass.inputBarEnter} style={styles.imagePreviewBar}>
+        <div style={styles.imagePreviewBar}>
           <img src={imagePreview.url} alt="Preview" style={styles.previewThumb} />
           <button
             type="button"
@@ -557,7 +640,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         </div>
       )}
 
-      <div className={`coach-chat-input-bar ${motionClass.inputBarEnter}`} style={styles.inputBar}>
+      <div className="coach-chat-input-bar" style={styles.inputBar}>
         <div style={styles.composer}>
           <span style={styles.composerIcon} aria-hidden>
             <Smile size={22} color={wa.textMuted} />
@@ -688,9 +771,9 @@ const styles: Record<string, CSSProperties> = {
     WebkitOverflowScrolling: 'touch',
     display: 'flex',
     flexDirection: 'column',
-    gap: 2,
+    gap: 3,
     padding: '8px 6px 10px',
-    scrollBehavior: 'smooth',
+    scrollBehavior: 'auto',
     position: 'relative',
     zIndex: 1,
   },
@@ -876,6 +959,7 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: 'center',
     flexShrink: 0,
     boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+    transition: 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1), opacity 120ms ease',
   },
   micWrap: {
     minHeight: 44,

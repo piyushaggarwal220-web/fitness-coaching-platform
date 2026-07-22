@@ -1,7 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 import type { WorkQueueCounts, WorkQueueFilter } from '@/lib/coach-work-queue'
 
 type CoachWorkSummaryCardsProps = {

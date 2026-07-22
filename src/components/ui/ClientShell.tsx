@@ -48,7 +48,13 @@ const baseDrawerItems = clientDrawerItems({
 
 export function ClientShell({ children, title, hideBottomNav = false, hideTopBar = false, loading, loadingMessage, fullHeight = false }: ClientShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const unreadChats = useChatUnreadCount('client')
+  /** Defer badge polling so first paint of each section is not blocked. */
+  const [unreadReady, setUnreadReady] = useState(false)
+  useEffect(() => {
+    const timer = window.setTimeout(() => setUnreadReady(true), 900)
+    return () => window.clearTimeout(timer)
+  }, [])
+  const unreadChats = useChatUnreadCount('client', unreadReady)
   const drawerItems = baseDrawerItems.map((item) => (
     item.href === '/client/chat' ? { ...item, badge: unreadChats } : item
   ))

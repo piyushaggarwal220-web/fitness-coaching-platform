@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { CoachShell } from '@/components/ui/CoachShell';
 import { coachPageStyles } from '@/lib/coach-page-styles';
-import { colors } from '@/lib/design-tokens';
+import { colors } from '@/lib/coach-theme';
 import { PlanEditor } from '@/components/PlanEditor';
 import {
   activatePlan,

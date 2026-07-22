@@ -498,6 +498,19 @@ function renderStep(
           <Field label="Occupation" required>
             <ChipGroup options={OCCUPATION_OPTIONS} value={form.occupation} onChange={(v) => update({ occupation: v })} />
           </Field>
+          <Field
+            label="Work, school, or college schedule"
+            required
+            hint="Tell us your typical day — class timings, office hours, shifts, commute, or free days."
+          >
+            <textarea
+              value={form.work_school_schedule}
+              onChange={(e) => update({ work_school_schedule: e.target.value })}
+              placeholder="e.g. College Mon–Fri 9am–2pm, commute until 3pm. Free evenings after 6. Sundays off."
+              rows={5}
+              style={s.textarea}
+            />
+          </Field>
           <Field label="Daily activity level" required>
             <ChipGroup options={ACTIVITY_OPTIONS} value={form.activity_level} onChange={(v) => update({ activity_level: v })} />
           </Field>

@@ -1,10 +1,10 @@
-/** Shared coach portal page styles */
+/** Shared coach portal page styles (light theme) */
 
 import type { CSSProperties } from 'react'
-import { colors, spacing, radius } from './design-tokens'
+import { colors, spacing, radius } from './coach-theme'
 
 export const coachPageStyles: Record<string, CSSProperties> = {
-  page: { minHeight: '100vh', backgroundColor: colors.bgPrimary },
+  page: { minHeight: '100vh', backgroundColor: colors.bgPrimary, color: colors.textPrimary },
   container: { maxWidth: 1200, margin: '0 auto', padding: `${spacing[4]}px ${spacing[3]}px` },
   containerNarrow: { maxWidth: 800, margin: '0 auto', padding: `${spacing[4]}px ${spacing[3]}px` },
   title: {
@@ -37,7 +37,7 @@ export const coachPageStyles: Record<string, CSSProperties> = {
   loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', color: colors.textSecondary, backgroundColor: colors.bgPrimary },
   error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[3], fontSize: 14 },
   success: { backgroundColor: colors.successMuted, color: colors.success, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[3], fontSize: 14 },
-  card: { backgroundColor: colors.bgCard, border: `1px solid ${colors.borderSubtle}`, borderRadius: radius.md, padding: spacing[4], marginBottom: spacing[3] },
+  card: { backgroundColor: colors.bgCard, border: `1px solid ${colors.borderSubtle}`, borderRadius: radius.md, padding: spacing[4], marginBottom: spacing[3], boxShadow: '0 1px 2px rgba(24,24,27,0.04)' },
   empty: { textAlign: 'center', color: colors.textMuted, padding: `${spacing[6]}px 0` },
   searchInput: {
     flex: '1 1 220px',
@@ -87,7 +87,7 @@ export const coachPageStyles: Record<string, CSSProperties> = {
     borderRadius: radius.sm,
     fontSize: 16,
     boxSizing: 'border-box',
-    backgroundColor: colors.bgElevated,
+    backgroundColor: '#fff',
     color: colors.textPrimary,
     minHeight: 56,
   },
@@ -98,7 +98,7 @@ export const coachPageStyles: Record<string, CSSProperties> = {
     borderRadius: radius.sm,
     fontSize: 16,
     boxSizing: 'border-box',
-    backgroundColor: colors.bgElevated,
+    backgroundColor: '#fff',
     color: colors.textPrimary,
     fontFamily: 'inherit',
     resize: 'vertical',

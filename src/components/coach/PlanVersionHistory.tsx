@@ -9,7 +9,7 @@ import {
   parsePlanMeta,
 } from '@/lib/plan-metadata'
 import { formatPlanDate } from '@/lib/plans'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 import type { Plan } from '@/types/database'
 
 type PlanVersionHistoryProps = {

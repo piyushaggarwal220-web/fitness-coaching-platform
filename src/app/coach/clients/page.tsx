@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CoachShell } from '@/components/ui/CoachShell';
 import { brandTitle } from '@/lib/brand';
 import { coachPageStyles as styles } from '@/lib/coach-page-styles';
-import { colors } from '@/lib/design-tokens';
+import { colors } from '@/lib/coach-theme';
 import { requireCoach } from '@/lib/coach-session';
 import {
   coachBadgeStyles,

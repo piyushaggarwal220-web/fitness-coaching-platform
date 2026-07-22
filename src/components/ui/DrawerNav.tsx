@@ -4,7 +4,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { X } from 'lucide-react'
-import { colors, spacing } from '@/lib/design-tokens'
+import { colors as darkColors, spacing } from '@/lib/design-tokens'
+import { colors as lightColors } from '@/lib/coach-theme'
 import { staggerClass } from '@/lib/motion'
 
 export type DrawerNavItem = {
@@ -20,12 +21,14 @@ type DrawerNavProps = {
   items: DrawerNavItem[]
   title: string
   subtitle?: string
+  theme?: 'dark' | 'light'
 }
 
-export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavProps) {
+export function DrawerNav({ open, onClose, items, title, subtitle, theme = 'dark' }: DrawerNavProps) {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
+  const colors = theme === 'light' ? lightColors : darkColors
 
   useEffect(() => {
     if (open) {
@@ -81,7 +84,7 @@ export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavPr
         style={{
           flex: 1,
           border: 'none',
-          backgroundColor: 'rgba(0,0,0,0.55)',
+          backgroundColor: theme === 'light' ? 'rgba(24,24,27,0.35)' : 'rgba(0,0,0,0.55)',
           backdropFilter: 'blur(4px)',
           cursor: 'pointer',
         }}
@@ -92,7 +95,7 @@ export function DrawerNav({ open, onClose, items, title, subtitle }: DrawerNavPr
           width: 'min(320px, 85vw)',
           backgroundColor: colors.bgSecondary,
           borderRight: `1px solid ${colors.divider}`,
-          boxShadow: '8px 0 40px rgba(0,0,0,0.45)',
+          boxShadow: theme === 'light' ? '8px 0 40px rgba(24,24,27,0.12)' : '8px 0 40px rgba(0,0,0,0.45)',
           display: 'flex',
           flexDirection: 'column',
           padding: `${spacing[4]}px ${spacing[3]}px`,

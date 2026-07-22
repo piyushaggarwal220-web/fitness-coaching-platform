@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { ClientProfile } from '@/types/database'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 
 export const FITNESS_GOAL_LABELS: Record<string, string> = {
   lose_weight: 'Lose Weight',

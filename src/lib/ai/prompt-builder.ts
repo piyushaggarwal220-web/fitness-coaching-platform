@@ -237,7 +237,7 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   }
   if (data.lifestyle) {
     lines.push(
-      `Lifestyle: occupation ${data.lifestyle.occupation ?? '—'}, steps ${data.lifestyle.dailySteps ?? '—'}, stress ${data.lifestyle.stressLevel ?? '—'}, water ${data.lifestyle.waterIntake ?? '—'}`
+      `Lifestyle: occupation ${data.lifestyle.occupation ?? '—'}, schedule ${data.lifestyle.workSchoolSchedule ?? '—'}, steps ${data.lifestyle.dailySteps ?? '—'}, stress ${data.lifestyle.stressLevel ?? '—'}, water ${data.lifestyle.waterIntake ?? '—'}`
     )
   }
   if (data.training) {

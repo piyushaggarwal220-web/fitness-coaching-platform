@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { colors, spacing } from '@/lib/design-tokens'
+import { colors, spacing } from '@/lib/coach-theme'
 import { coachPageStyles } from '@/lib/coach-page-styles'
 
 type AdherenceRow = {

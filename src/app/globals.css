@@ -148,7 +148,7 @@ button, a[role="button"], input[type="submit"] {
 }
 
 @keyframes pageEnter {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0.96; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -207,8 +207,18 @@ button, a[role="button"], input[type="submit"] {
 }
 
 @keyframes messageEnter {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes messageEnterMine {
+  from { opacity: 0; transform: translate(8px, 10px) scale(0.94); }
+  to { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+
+@keyframes messageEnterTheirs {
+  from { opacity: 0; transform: translate(-8px, 10px) scale(0.94); }
+  to { opacity: 1; transform: translate(0, 0) scale(1); }
 }
 
 @keyframes badgePop {
@@ -276,9 +286,9 @@ button, a[role="button"], input[type="submit"] {
   to { opacity: 1; }
 }
 
-/* Page transitions */
+/* Page transitions — keep light so browsing feels instant */
 .motion-page-enter {
-  animation: pageEnter var(--duration-medium) var(--ease-out) both;
+  animation: pageEnter 140ms var(--ease-out) both;
 }
 
 .animate-fade-in {
@@ -377,7 +387,18 @@ button, a[role="button"], input[type="submit"] {
 
 /* Chat */
 .motion-message-enter {
-  animation: messageEnter var(--duration-normal) var(--ease-out) both;
+  animation: messageEnter 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.motion-message-enter-mine {
+  animation: messageEnterMine 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.motion-message-enter-theirs {
+  animation: messageEnterTheirs 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
 }
 
 .motion-input-bar-enter {
@@ -506,6 +527,55 @@ button, a[role="button"], input[type="submit"] {
 .accordion-content {
   overflow: hidden;
   transition: max-height var(--duration-slow) var(--ease-out), opacity var(--duration-normal) var(--ease-out);
+}
+
+/* ─── Coach portal light theme (scoped — client/admin stay dark) ─── */
+.coach-portal {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f4f5;
+  --bg-card: #ffffff;
+  --bg-elevated: #f4f4f5;
+  --bg-glass: rgba(255, 255, 255, 0.92);
+  --accent: #ea580c;
+  --accent-hover: #f97316;
+  --accent-muted: rgba(234, 88, 12, 0.1);
+  --accent-glow: rgba(234, 88, 12, 0.16);
+  --success: #16a34a;
+  --success-muted: rgba(22, 163, 74, 0.12);
+  --warning: #d97706;
+  --warning-muted: rgba(217, 119, 6, 0.12);
+  --danger: #dc2626;
+  --danger-muted: rgba(220, 38, 38, 0.1);
+  --text-primary: #18181b;
+  --text-secondary: #3f3f46;
+  --text-muted: #71717a;
+  --text-inverse: #ffffff;
+  --divider: rgba(24, 24, 27, 0.08);
+  --border-subtle: rgba(24, 24, 27, 0.12);
+  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --shadow-md: 0 4px 16px rgba(24, 24, 27, 0.08);
+  --shadow-lg: 0 8px 32px rgba(24, 24, 27, 0.1);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+}
+
+.coach-portal .skeleton {
+  background: linear-gradient(90deg, #e4e4e7 0%, #f4f4f5 50%, #e4e4e7 100%);
+  background-size: 200% 100%;
+}
+
+.coach-portal .coach-chat-detail {
+  background: var(--bg-primary);
+}
+
+.coach-portal .coach-chat-detail-header {
+  background: var(--bg-glass);
+  border-bottom-color: var(--divider);
+}
+
+.coach-portal .coach-chat-detail-header h1 {
+  color: var(--text-primary) !important;
 }
 
 /* Reduced motion */
@@ -810,6 +880,18 @@ input[type="range"]::-moz-range-thumb {
   30% { transform: translateY(-3px); opacity: 1; }
 }
 
+.wa-chat-messages {
+  scroll-behavior: auto;
+}
+
+.coach-chat-bubble-mine {
+  transform-origin: bottom right;
+}
+
+.coach-chat-bubble-other {
+  transform-origin: bottom left;
+}
+
 .wa-chat .coach-chat-input::placeholder {
   color: #8696a0;
 }
@@ -818,6 +900,11 @@ input[type="range"]::-moz-range-thumb {
 .lurvox-password-input {
   -webkit-text-security: disc;
   text-security: disc;
+}
+
+.lurvox-password-input.lurvox-password-visible {
+  -webkit-text-security: none;
+  text-security: none;
 }
 
 .chat-main {

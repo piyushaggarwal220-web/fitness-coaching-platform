@@ -60,6 +60,7 @@ const SAMPLE_FORM = {
   goal_deadline: '12_weeks',
   biggest_struggle: 'nutrition|Weekend cravings',
   occupation: 'desk_job',
+  work_school_schedule: 'Office 10am–7pm Mon–Fri, commute ~45 min. Free evenings after 8pm.',
   activity_level: 'sedentary',
   daily_steps: '3000_6000',
   sleep_duration: '6_to_7',
@@ -111,6 +112,7 @@ function buildOnboardingData(form, resumeStep) {
     },
     lifestyle: {
       occupation: form.occupation,
+      workSchoolSchedule: form.work_school_schedule,
       dailySteps: form.daily_steps,
       stressLevel: form.stress_level,
       waterIntake: form.water_intake,

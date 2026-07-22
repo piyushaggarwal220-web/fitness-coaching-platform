@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 import { coachPageStyles } from '@/lib/coach-page-styles'
-import { spacing } from '@/lib/design-tokens'
+import { spacing } from '@/lib/coach-theme'
 
 type Props = {
   title: string

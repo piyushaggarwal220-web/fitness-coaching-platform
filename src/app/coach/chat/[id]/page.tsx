@@ -8,7 +8,7 @@ import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { readApiJson } from '@/lib/api-response'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 import type { CoachConversation, ConversationMessage } from '@/types/database'
 
 export default function CoachChatDetailPage() {

@@ -165,6 +165,11 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     goal_deadline: pick(['8_weeks', '12_weeks', '16_weeks', '24_weeks']),
     biggest_struggle: struggle.value,
     occupation: pick(OCCUPATION_OPTIONS).value,
+    work_school_schedule: pick([
+      'Office 10am–7pm Mon–Fri, commute ~45 min each way. Free evenings after 8pm. Sundays off.',
+      'College classes 9am–2pm weekdays. Study till 5pm. Gym preferred mornings before class.',
+      'Night shift 10pm–6am four days a week. Sleep mid-morning. Free afternoons on off days.',
+    ]),
     activity_level: pick(ACTIVITY_OPTIONS).value,
     daily_steps: pick(STEPS_OPTIONS).value,
     sleep_duration: pick(SLEEP_OPTIONS).value,

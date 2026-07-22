@@ -1,6 +1,6 @@
 'use client'
 
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 import type { AiGenerationStatusInfo } from '@/lib/ai/draft-status'
 import { motionClass } from '@/lib/motion'
 

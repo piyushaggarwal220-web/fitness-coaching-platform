@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { GenerationStatus } from '@/components/coach/ai-actions/shared'
 import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
 import { Button } from '@/components/ui/Button'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { colors, radius, spacing } from '@/lib/coach-theme'
 import type { PlanSectionKind } from '@/lib/ai/edit-plan-section'
 
 type Props = {

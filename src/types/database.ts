@@ -60,6 +60,7 @@ export type OnboardingData = {
   }
   lifestyle?: {
     occupation?: string | null
+    workSchoolSchedule?: string | null
     dailySteps?: string | null
     stressLevel?: string | null
     waterIntake?: string | null
@@ -167,6 +168,7 @@ export type OnboardingFormData = {
   goal_deadline: string
   biggest_struggle: string
   occupation: string
+  work_school_schedule: string
   activity_level: string
   daily_steps: string
   sleep_duration: string

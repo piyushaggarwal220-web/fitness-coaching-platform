@@ -8,7 +8,7 @@ import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { formatRelativeActivity } from '@/lib/coach-chat-ui'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 import type { CoachConversation } from '@/types/database'
 import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
 

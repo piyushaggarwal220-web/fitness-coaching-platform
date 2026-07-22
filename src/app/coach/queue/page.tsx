@@ -4,7 +4,7 @@ import { CoachShell } from '@/components/ui/CoachShell'
 import { brandTitle } from '@/lib/brand'
 import { CoachWorkQueuePanel } from '@/components/coach/CoachWorkQueuePanel'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
-import { colors } from '@/lib/design-tokens'
+import { colors } from '@/lib/coach-theme'
 
 export default function CoachQueuePage() {
   return (
