@@ -38,6 +38,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Only failed generation jobs can be retried' }, { status: 409 })
   }
 
-  after(() => processInitialPlanGeneration(queued.id))
+  after(() =>
+    processInitialPlanGeneration(queued.id).catch((err) => {
+      console.error(
+        '[coach/plan-generation/retry] background generation failed:',
+        err instanceof Error ? err.message : err
+      )
+    })
+  )
   return NextResponse.json({ success: true, status: queued.status }, { status: 202 })
 }

@@ -123,9 +123,6 @@ export async function activatePlan(
   if (!client) {
     return { error: 'Cannot deliver plan: client profile could not be verified.' }
   }
-  if (!hasAuthoritativeOnboardingCompletion(client)) {
-    return { error: 'Cannot deliver plan: client has not completed onboarding.' }
-  }
   if (!client.coach_id) {
     return { error: 'Cannot deliver plan: client has no assigned coach.' }
   }

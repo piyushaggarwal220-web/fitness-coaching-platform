@@ -1,9 +1,5 @@
-import {
-  formFromProfile,
-  ONBOARDING_SCREEN_COUNT,
-  validateOnboardingStep,
-} from '@/lib/onboarding'
 import { hasAuthoritativeOnboardingCompletion } from '@/lib/plans'
+import { validateOnboardingAnswersForProfile } from '@/lib/onboarding'
 import type { OnboardingProfile } from '@/types/database'
 
 export type InitialPlanGenerationStatus = 'queued' | 'generating' | 'ready' | 'failed'
@@ -27,29 +23,14 @@ export function canRetryInitialGeneration(
 
 export function validatePersistedOnboardingAnswers(
   profile: OnboardingProfile,
-  options?: { termsAccepted?: boolean }
+  options?: { termsAccepted?: boolean; requireCoach?: boolean }
 ): string | null {
-  if (!profile.coach_id) return 'A coach must be assigned before generation.'
-
-  const form = formFromProfile(profile)
-  if (options?.termsAccepted) form.terms_accepted = true
-  const photoUrls = {
-    front: profile.progress_photo_front ?? null,
-    side: profile.progress_photo_side ?? null,
-    back: profile.progress_photo_back ?? null,
+  if (options?.requireCoach !== false && !profile.coach_id) {
+    return 'A coach must be assigned before generation.'
   }
-  const meals = (['breakfast', 'lunch', 'dinner', 'snacks'] as const).filter(
-    (meal) => Boolean(form[`timing_${meal}`])
-  )
-
-  for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
-    const error = validateOnboardingStep(step, form, undefined, photoUrls, {
-      mealsForTiming: meals,
-      confirmedMeals: meals,
-    })
-    if (error) return error
-  }
-  return null
+  return validateOnboardingAnswersForProfile(profile, {
+    termsAccepted: options?.termsAccepted ?? Boolean(profile.terms_accepted_at),
+  })
 }
 
 export function validateAuthoritativeOnboarding(profile: OnboardingProfile): string | null {

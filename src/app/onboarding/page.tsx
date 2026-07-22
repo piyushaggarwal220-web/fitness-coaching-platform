@@ -27,8 +27,8 @@ import {
   getSectionForStep,
   GOAL_DEADLINE_OPTIONS,
   HAIR_LOSS_OPTIONS,
+  hasFinishedRequiredOnboardingAnswers,
   INITIAL_ONBOARDING_FORM,
-  isOnboardingComplete,
   MEAL_TIMING_OPTIONS,
   OCCUPATION_OPTIONS,
   ONBOARDING_SCREEN_COUNT,
@@ -116,7 +116,7 @@ export default function OnboardingPage() {
         return
       }
 
-      if (result.profile && isOnboardingComplete(result.profile)) {
+      if (result.profile && hasFinishedRequiredOnboardingAnswers(result.profile)) {
         router.replace('/dashboard')
         return
       }
@@ -969,6 +969,8 @@ function renderStep(
           <div style={s.privacyNotice}>
             Your photos are completely private and are never shared or published anywhere without your explicit permission.
             They are used only by your assigned coach and our AI to create more accurate recommendations.
+            {!photosOptional &&
+              ' Front, side, and back photos are required — after you submit the final review, your AI diet and workout draft starts automatically.'}
             {photosOptional && ' Photos are optional for female clients, and you can continue without uploading them.'}
           </div>
           <div style={s.photoGrid}>

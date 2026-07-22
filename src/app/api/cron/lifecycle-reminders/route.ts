@@ -33,7 +33,7 @@ function reminderStage(createdAt: string, now: number): string | null {
   return null
 }
 
-async function scheduleInitialPlanRecovery(admin: SupabaseClient): Promise<void> {
+async function scheduleInitialPlanRecovery(admin: SupabaseClient): Promise<number> {
   const { data, error } = await admin
     .from('initial_plan_generation_jobs')
     .select('*')
@@ -43,25 +43,35 @@ async function scheduleInitialPlanRecovery(admin: SupabaseClient): Promise<void>
 
   if (error) {
     console.error('[cron/lifecycle-reminders] generation recovery query failed:', error.message)
-    return
+    return 0
   }
 
-  let recoverable: InitialPlanGenerationJob | null = null
+  const toStart: string[] = []
   for (const row of (data ?? []) as InitialPlanGenerationJob[]) {
+    if (toStart.length >= 5) break
     if (row.status === 'queued') {
-      recoverable = row
-      break
+      toStart.push(row.id)
+      continue
     }
     if (canRetryInitialGeneration(row.status, row.started_at)) {
-      recoverable = await retryInitialPlanGeneration(admin, row)
-      if (recoverable) break
+      const recoverable = await retryInitialPlanGeneration(admin, row)
+      if (recoverable) toStart.push(recoverable.id)
     }
   }
 
-  if (recoverable) {
-    const jobId = recoverable.id
-    after(() => processInitialPlanGeneration(jobId))
+  for (const jobId of toStart) {
+    after(() =>
+      processInitialPlanGeneration(jobId).catch((err) => {
+        console.error(
+          '[cron/lifecycle-reminders] generation recovery failed:',
+          jobId,
+          err instanceof Error ? err.message : err
+        )
+      })
+    )
   }
+
+  return toStart.length
 }
 
 export async function GET(request: Request) {
@@ -70,7 +80,7 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient()
-  await scheduleInitialPlanRecovery(admin)
+  const recoveredJobs = await scheduleInitialPlanRecovery(admin)
   const now = Date.now()
   const cutoff = new Date(now - 24 * 3_600_000).toISOString()
   const { data: purchases, error } = await admin
@@ -172,7 +182,7 @@ export async function GET(request: Request) {
     }
   }
 
-  const summary = { checked: purchases?.length ?? 0, sent, failed, skipped }
+  const summary = { checked: purchases?.length ?? 0, sent, failed, skipped, recoveredJobs }
   console.info('[cron/lifecycle-reminders]', summary)
   return NextResponse.json(summary)
 }

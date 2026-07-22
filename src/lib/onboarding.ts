@@ -4,7 +4,6 @@ import {
   ensureAuthSession,
   fetchClientProfile,
   getRoleHomePath,
-  isDefinitivelyOnboardingIncomplete,
   isOnboardingComplete,
   redirectToLogin,
   restoreSession,
@@ -395,11 +394,40 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
   }
 }
 
+function mealTimingContextFromForm(form: OnboardingFormData): {
+  mealsForTiming: string[]
+  confirmedMeals: string[]
+} {
+  const mealsForTiming: string[] = ['breakfast', 'lunch', 'dinner']
+  const snacks = form.snacks.trim().toLowerCase()
+  if (form.timing_snacks || (snacks && snacks !== 'none')) {
+    mealsForTiming.push('snacks')
+  }
+  // Persisted timings count as confirmed when re-validating a saved profile.
+  return { mealsForTiming, confirmedMeals: mealsForTiming }
+}
+
 export function getResumeStep(profile: OnboardingProfile | null): number {
-  if (profile?.onboarding_complete) {
+  if (!profile) return 0
+
+  if (profile.onboarding_complete && hasFinishedRequiredOnboardingAnswers(profile)) {
     return ONBOARDING_SCREEN_COUNT - 1
   }
-  const step = profile?.onboarding_data?.resumeStep
+
+  // Flag alone is not enough — resume at the first missing required answer.
+  const form = formFromProfile(profile)
+  const photoUrls = {
+    front: profile.progress_photo_front ?? null,
+    side: profile.progress_photo_side ?? null,
+    back: profile.progress_photo_back ?? null,
+  }
+  const mealTimingContext = mealTimingContextFromForm(form)
+  for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
+    const error = validateOnboardingStep(step, form, undefined, photoUrls, mealTimingContext)
+    if (error) return step
+  }
+
+  const step = profile.onboarding_data?.resumeStep
   if (typeof step === 'number' && step >= 0 && step < ONBOARDING_SCREEN_COUNT) {
     return step
   }
@@ -957,6 +985,38 @@ export function hasCompletedOnboarding(
   return isOnboardingComplete(profile)
 }
 
+/** Validates every required onboarding step against persisted profile answers. */
+export function validateOnboardingAnswersForProfile(
+  profile: OnboardingProfile,
+  options?: { termsAccepted?: boolean }
+): string | null {
+  const form = formFromProfile(profile)
+  if (options?.termsAccepted || profile.terms_accepted_at) form.terms_accepted = true
+  const photoUrls = {
+    front: profile.progress_photo_front ?? null,
+    side: profile.progress_photo_side ?? null,
+    back: profile.progress_photo_back ?? null,
+  }
+  const meals = mealTimingContextFromForm(form)
+
+  for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
+    const error = validateOnboardingStep(step, form, undefined, photoUrls, meals)
+    if (error) return error
+  }
+  return null
+}
+
+/**
+ * Client app access requires the completion flag plus every required answer
+ * (including photos for male clients and terms).
+ */
+export function hasFinishedRequiredOnboardingAnswers(profile: OnboardingProfile): boolean {
+  if (profile.onboarding_complete !== true) return false
+  return validateOnboardingAnswersForProfile(profile, {
+    termsAccepted: Boolean(profile.terms_accepted_at),
+  }) === null
+}
+
 export function isPaymentConfirmed(
   profile: Pick<OnboardingProfile, 'payment_confirmed' | 'access_source' | 'subscription_expires_at'> | null
 ): boolean {
@@ -976,7 +1036,7 @@ export function getClientPostAuthPath(
     return '/checkout?plan=6_months'
   }
 
-  if (isDefinitivelyOnboardingIncomplete(profile)) {
+  if (!hasFinishedRequiredOnboardingAnswers(profile)) {
     return '/onboarding'
   }
 
@@ -1035,12 +1095,12 @@ export async function authenticateClient(
     return null
   }
 
-  if (options?.redirectIfOnboarded && profile && isOnboardingComplete(profile)) {
+  if (options?.redirectIfOnboarded && profile && hasFinishedRequiredOnboardingAnswers(profile)) {
     router.push('/dashboard')
     return null
   }
 
-  if (options?.requireOnboarding && profile && isDefinitivelyOnboardingIncomplete(profile)) {
+  if (options?.requireOnboarding && profile && !hasFinishedRequiredOnboardingAnswers(profile)) {
     router.push('/onboarding')
     return null
   }

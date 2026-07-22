@@ -111,7 +111,12 @@ export function getClientDashboardStatus(params: {
     nextAction = 'Complete payment to activate your account'
     nextActionHref = '/checkout?plan=6_months'
   } else if (!onboardingComplete) {
-    nextAction = 'Complete your onboarding questionnaire'
+    const needsPhotos =
+      profile.gender !== 'female' &&
+      (!profile.progress_photo_front || !profile.progress_photo_side || !profile.progress_photo_back)
+    nextAction = needsPhotos
+      ? 'Upload front, side, and back photos to finish onboarding — your AI diet and workout draft starts automatically after that.'
+      : 'Finish onboarding (review & submit) so your AI diet and workout draft can start automatically.'
     nextActionHref = '/onboarding'
   } else if (!coachAssigned) {
     nextAction = 'Your coach is being assigned — usually within a few minutes'

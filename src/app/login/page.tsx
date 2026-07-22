@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { fetchClientProfile, getClientPostAuthPath } from '@/lib/onboarding';
+import { fetchClientProfile, getClientPostAuthPath, hasFinishedRequiredOnboardingAnswers } from '@/lib/onboarding';
 import { hasClientEntitlement } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/client';
 import { BRAND_NAME, brandTitle } from '@/lib/brand';
@@ -62,7 +62,7 @@ function LoginForm() {
         Boolean(profile) &&
         !profileError &&
         hasClientEntitlement(profile) &&
-        profile?.onboarding_complete === true &&
+        hasFinishedRequiredOnboardingAnswers(profile) &&
         redirectTo !== '/dashboard' &&
         redirectTo !== '/login';
 

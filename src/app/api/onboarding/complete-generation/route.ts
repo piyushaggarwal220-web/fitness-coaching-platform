@@ -107,7 +107,14 @@ export async function POST(request: Request) {
   }
 
   if (shouldStartInitialGeneration(job.status)) {
-    after(() => processInitialPlanGeneration(job.id))
+    after(() =>
+      processInitialPlanGeneration(job.id).catch((err) => {
+        console.error(
+          '[onboarding/complete-generation] background generation failed:',
+          err instanceof Error ? err.message : err
+        )
+      })
+    )
   }
 
   return NextResponse.json({

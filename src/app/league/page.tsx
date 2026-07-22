@@ -55,7 +55,7 @@ export default function LeaguePage() {
 
   useEffect(() => {
     let cancelled = false
-    authenticateClient(supabase, router, { requirePayment: true })
+    authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true })
       .then(async (auth) => {
         if (!auth) return null
         const response = await fetch('/api/league', { credentials: 'include' })
