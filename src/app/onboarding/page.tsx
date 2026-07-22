@@ -37,6 +37,8 @@ import {
   ONBOARDING_SECTIONS,
   PAIN_OPTIONS,
   PROTEIN_DAYS_OPTIONS,
+  proteinDaysNeedWeekdays,
+  allWeekdayValues,
   saveOnboardingProgress,
   SEXUAL_HEALTH_OPTIONS,
   SLEEP_OPTIONS,
@@ -50,6 +52,7 @@ import {
   validateOnboardingStep,
   waitForOnboardingCompletion,
   WATER_OPTIONS,
+  WEEKDAY_OPTIONS,
   WHEY_OPTIONS,
   WORKOUT_DURATION_OPTIONS,
   WORKOUT_TIME_OPTIONS,
@@ -759,7 +762,22 @@ function renderStep(
               name="diet_preference"
               options={DIET_OPTIONS}
               value={form.diet_preference}
-              onChange={(v) => update({ diet_preference: v })}
+              onChange={(v) =>
+                update({
+                  diet_preference: v,
+                  ...(v !== 'non_vegetarian'
+                    ? {
+                        chicken_days: '',
+                        fish_days: '',
+                        chicken_allowed_days: [],
+                        fish_allowed_days: [],
+                      }
+                    : null),
+                  ...(v !== 'eggetarian' && v !== 'non_vegetarian'
+                    ? { egg_allowed_days: [] }
+                    : null),
+                })
+              }
             />
           </Field>
         </div>
@@ -770,16 +788,83 @@ function renderStep(
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Protein sources</h2>
           <Field label="Egg days per week">
-            <ChipGroup options={PROTEIN_DAYS_OPTIONS} value={form.egg_days} onChange={(v) => update({ egg_days: v })} />
+            <ChipGroup
+              options={PROTEIN_DAYS_OPTIONS}
+              value={form.egg_days}
+              onChange={(v) =>
+                update({
+                  egg_days: v,
+                  egg_allowed_days: proteinDaysNeedWeekdays(v)
+                    ? v === '7'
+                      ? allWeekdayValues()
+                      : form.egg_allowed_days
+                    : [],
+                })
+              }
+            />
           </Field>
+          {proteinDaysNeedWeekdays(form.egg_days) &&
+            (form.diet_preference === 'eggetarian' || form.diet_preference === 'non_vegetarian') && (
+              <Field label="Which days can you eat eggs?" required hint="Select all days that work for you">
+                <MultiChipGroup
+                  options={WEEKDAY_OPTIONS}
+                  values={form.egg_allowed_days}
+                  onChange={(egg_allowed_days) => update({ egg_allowed_days })}
+                />
+              </Field>
+            )}
           {form.diet_preference === 'non_vegetarian' && (
             <>
               <Field label="Chicken days per week">
-                <ChipGroup options={PROTEIN_DAYS_OPTIONS} value={form.chicken_days} onChange={(v) => update({ chicken_days: v })} />
+                <ChipGroup
+                  options={PROTEIN_DAYS_OPTIONS}
+                  value={form.chicken_days}
+                  onChange={(v) =>
+                    update({
+                      chicken_days: v,
+                      chicken_allowed_days: proteinDaysNeedWeekdays(v)
+                        ? v === '7'
+                          ? allWeekdayValues()
+                          : form.chicken_allowed_days
+                        : [],
+                    })
+                  }
+                />
               </Field>
+              {proteinDaysNeedWeekdays(form.chicken_days) && (
+                <Field label="Which days can you eat chicken?" required hint="Select all days that work for you">
+                  <MultiChipGroup
+                    options={WEEKDAY_OPTIONS}
+                    values={form.chicken_allowed_days}
+                    onChange={(chicken_allowed_days) => update({ chicken_allowed_days })}
+                  />
+                </Field>
+              )}
               <Field label="Fish days per week">
-                <ChipGroup options={PROTEIN_DAYS_OPTIONS} value={form.fish_days} onChange={(v) => update({ fish_days: v })} />
+                <ChipGroup
+                  options={PROTEIN_DAYS_OPTIONS}
+                  value={form.fish_days}
+                  onChange={(v) =>
+                    update({
+                      fish_days: v,
+                      fish_allowed_days: proteinDaysNeedWeekdays(v)
+                        ? v === '7'
+                          ? allWeekdayValues()
+                          : form.fish_allowed_days
+                        : [],
+                    })
+                  }
+                />
               </Field>
+              {proteinDaysNeedWeekdays(form.fish_days) && (
+                <Field label="Which days can you eat fish?" required hint="Select all days that work for you">
+                  <MultiChipGroup
+                    options={WEEKDAY_OPTIONS}
+                    values={form.fish_allowed_days}
+                    onChange={(fish_allowed_days) => update({ fish_allowed_days })}
+                  />
+                </Field>
+              )}
             </>
           )}
           <Field label="Do you use whey protein?" required>

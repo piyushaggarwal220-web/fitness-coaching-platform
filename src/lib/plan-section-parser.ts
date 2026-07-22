@@ -40,11 +40,18 @@ function isMeaningful(value: string): boolean {
 }
 
 function matchHeaderLine(trimmed: string): SectionKey | null {
+  const cleaned = trimmed
+    .replace(/^\*{1,2}\s*/, '')
+    .replace(/\s*\*{1,2}$/, '')
+    .replace(/^_{1,2}\s*/, '')
+    .replace(/\s*_{1,2}$/, '')
+    .trim()
+
   for (const { key, regex } of HEADER_PATTERNS) {
-    if (regex.test(trimmed)) return key
+    if (regex.test(cleaned) || regex.test(trimmed)) return key
   }
 
-  const inline = trimmed.match(
+  const inline = cleaned.match(
     /^(?:.*?:\s*)?(diet|nutrition|meal\s*plan|workout|training|supplements?|cardio|coach\s*notes?)\s*:?\s*$/i
   )
   if (!inline) return null
@@ -54,6 +61,27 @@ function matchHeaderLine(trimmed: string): SectionKey | null {
   if (label.includes('supplement')) return 'supplements'
   if (label.includes('cardio')) return 'cardio'
   return 'coachNotes'
+}
+
+/** Peel trailing Cardio:/Supplements: blocks even when they are not standalone headers. */
+function stripInlineSectionBlocks(text: string, keysToRemove: SectionKey[]): string {
+  if (!text.trim() || keysToRemove.length === 0) return text.trim()
+
+  const patterns: Partial<Record<SectionKey, RegExp>> = {
+    cardio:
+      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:cardio(?:\s*(?:plan|this\s+week))?|conditioning|steps)\s*:?\s*\*{0,2}\s*(?:\n|$).*/gis,
+    supplements:
+      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?supplements?(?:\s*plan)?\s*:?\s*\*{0,2}\s*(?:\n|$).*/gis,
+    coachNotes:
+      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:coach\s*notes?|coaching\s*notes?)\s*:?\s*\*{0,2}\s*(?:\n|$).*/gis,
+  }
+
+  let result = text
+  for (const key of keysToRemove) {
+    const pattern = patterns[key]
+    if (pattern) result = result.replace(pattern, '\n')
+  }
+  return result.replace(/\n{3,}/g, '\n\n').trim()
 }
 
 /** Split prose on known section headers (case-insensitive, markdown-tolerant). */
@@ -156,18 +184,6 @@ export function resolvePlanSections(input: {
   const fromNutrition = splitPlanTextByHeaders(nutrition)
   const fromWorkout = splitPlanTextByHeaders(workout)
 
-  const supplements = pickSection(
-    supplementsExplicit,
-    fromNutrition.supplements ?? '',
-    fromWorkout.supplements ?? ''
-  )
-
-  const cardio = pickSection(
-    cardioExplicit,
-    fromNutrition.cardio ?? '',
-    fromWorkout.cardio ?? ''
-  )
-
   const coachNotes = pickSection(
     notesExplicit,
     fromNutrition.coachNotes ?? '',
@@ -181,6 +197,7 @@ export function resolvePlanSections(input: {
   if (fromNutrition.supplements || fromNutrition.cardio || fromNutrition.coachNotes) {
     diet = stripEmbeddedSections(nutrition, ['supplements', 'cardio', 'coachNotes'])
   }
+  diet = stripInlineSectionBlocks(diet, ['supplements', 'cardio', 'coachNotes'])
 
   let workoutText = pickSection(
     workout,
@@ -189,12 +206,28 @@ export function resolvePlanSections(input: {
   if (fromWorkout.cardio || fromWorkout.coachNotes || fromWorkout.supplements) {
     workoutText = stripEmbeddedSections(workout, ['cardio', 'coachNotes', 'supplements'])
   }
+  workoutText = stripInlineSectionBlocks(workoutText, ['cardio', 'coachNotes', 'supplements'])
+
+  const cardio = pickSection(
+    cardioExplicit,
+    fromNutrition.cardio ?? '',
+    fromWorkout.cardio ?? '',
+    extractInlineSection(nutrition, 'cardio'),
+    extractInlineSection(workout, 'cardio')
+  )
+  const supplements = pickSection(
+    supplementsExplicit,
+    fromNutrition.supplements ?? '',
+    fromWorkout.supplements ?? '',
+    extractInlineSection(nutrition, 'supplements'),
+    extractInlineSection(workout, 'supplements')
+  )
 
   if (!isMeaningful(diet) && isMeaningful(nutrition) && !fromNutrition.supplements && !fromNutrition.cardio) {
-    diet = nutrition
+    diet = stripInlineSectionBlocks(nutrition, ['supplements', 'cardio', 'coachNotes'])
   }
   if (!isMeaningful(workoutText) && isMeaningful(workout) && !fromWorkout.cardio && !fromWorkout.coachNotes) {
-    workoutText = workout
+    workoutText = stripInlineSectionBlocks(workout, ['cardio', 'coachNotes', 'supplements'])
   }
 
   return {
@@ -204,6 +237,16 @@ export function resolvePlanSections(input: {
     cardio: cardio.trim(),
     coachNotes: coachNotes.trim(),
   }
+}
+
+function extractInlineSection(text: string, key: 'cardio' | 'supplements'): string {
+  if (!text.trim()) return ''
+  const pattern =
+    key === 'cardio'
+      ? /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:cardio(?:\s*(?:plan|this\s+week))?|conditioning|steps)\s*:?\s*\*{0,2}\s*([\s\S]*?)(?=(?:\n\s*(?:\*{0,2}|#{1,3}\s*)?(?:diet|nutrition|workout|training|supplements?|coach\s*notes?)\b)|\s*$)/i
+      : /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?supplements?(?:\s*plan)?\s*:?\s*\*{0,2}\s*([\s\S]*?)(?=(?:\n\s*(?:\*{0,2}|#{1,3}\s*)?(?:diet|nutrition|workout|training|cardio|coach\s*notes?)\b)|\s*$)/i
+  const match = text.match(pattern)
+  return match?.[1]?.trim() ?? ''
 }
 
 export function resolvePlanSectionsFromPlan(plan: Plan | PlanFormData): ParsedPlanSections {

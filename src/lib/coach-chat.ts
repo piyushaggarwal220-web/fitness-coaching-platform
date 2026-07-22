@@ -86,6 +86,60 @@ async function syncConversationCoach(
   return updated as CoachConversation
 }
 
+export type CoachConversationListItem = CoachConversation & {
+  profiles: { name: string | null; email: string | null } | null
+}
+
+/** Service-role list of open conversations for a coach (used by coach portal APIs). */
+export async function listCoachConversations(
+  coachId: string
+): Promise<{ data: CoachConversationListItem[] | null; error: string | null }> {
+  const admin = createAdminClient()
+  const { data: conversations, error } = await admin
+    .from('coach_conversations')
+    .select('*')
+    .eq('coach_id', coachId)
+    .neq('status', 'closed')
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+
+  if (error) {
+    return { data: null, error: error.message }
+  }
+
+  const rows = (conversations ?? []) as CoachConversation[]
+  if (rows.length === 0) {
+    return { data: [], error: null }
+  }
+
+  const clientIds = [...new Set(rows.map((row) => row.client_id))]
+  const { data: profiles, error: profileError } = await admin
+    .from('profiles')
+    .select('id, name, email')
+    .in('id', clientIds)
+
+  if (profileError) {
+    return { data: null, error: profileError.message }
+  }
+
+  const profileById = new Map(
+    (profiles ?? []).map((profile) => [
+      profile.id as string,
+      {
+        name: (profile.name as string | null) ?? null,
+        email: (profile.email as string | null) ?? null,
+      },
+    ])
+  )
+
+  return {
+    data: rows.map((row) => ({
+      ...row,
+      profiles: profileById.get(row.client_id) ?? null,
+    })),
+    error: null,
+  }
+}
+
 export async function getOrCreateConversation(
   supabase: SupabaseClient,
   clientId: string

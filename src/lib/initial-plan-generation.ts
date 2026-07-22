@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { generatedDietFormData, generatedWorkoutFormData } from '@/lib/ai/plan-format'
+import { generatedCardioFormData, generatedDietFormData, generatedSupplementFormData, generatedWorkoutFormData } from '@/lib/ai/plan-format'
 import { generatePlan } from '@/lib/ai/generate-plan'
 import { selectKnowledgeCategories } from '@/lib/ai/prompt-builder'
 import { logAiGeneration } from '@/lib/ai/trace-log'
-import { mergePlanForms } from '@/lib/coach/ai-actions'
+import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-actions'
 import { profileBlocksAiPlanWork } from '@/lib/complexity/input-guards'
 import {
   canRetryInitialGeneration,
@@ -166,14 +166,25 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
 
     const images = await loadProgressImages(admin, profile)
     const knowledgeRefs = selectKnowledgeCategories(profile)
-    const runSection = async (actionId: 'initial_diet' | 'initial_workout') => {
+    const runSection = async (
+      actionId: 'initial_diet' | 'initial_workout' | 'initial_cardio' | 'initial_supplements'
+    ) => {
       const startedAt = Date.now()
+      const validationMode =
+        actionId === 'initial_diet'
+          ? 'nutrition_focus'
+          : actionId === 'initial_workout'
+            ? 'workout_focus'
+            : actionId === 'initial_cardio'
+              ? 'cardio_focus'
+              : 'supplements_focus'
       try {
         const result = await generatePlan({
           profile,
           actionId,
-          validationMode: actionId === 'initial_diet' ? 'nutrition_focus' : 'workout_focus',
+          validationMode,
           progressImages: images,
+          coachInstructions: buildActionCoachInstructions(actionId, {}),
         })
         await logAiGeneration({
           clientId: profile.id,
@@ -211,11 +222,16 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
 
     const dietResult = await runSection('initial_diet')
     const workoutResult = await runSection('initial_workout')
+    const cardioResult = await runSection('initial_cardio')
+    const supplementResult = await runSection('initial_supplements')
     const diet = generatedDietFormData(dietResult.generatedPlan, profile.id)
     const workout = generatedWorkoutFormData(workoutResult.generatedPlan, profile.id)
+    const cardio = generatedCardioFormData(cardioResult.generatedPlan, profile.id)
+    const supplements = generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
     const form: PlanFormData = mergePlanForms(diet, {
       workout_plan: workout.workout_plan,
-      cardio_plan: workout.cardio_plan || diet.cardio_plan,
+      cardio_plan: cardio.cardio_plan,
+      supplement_plan: supplements.supplement_plan,
       // Keep the client-facing coach note empty: delivery is blocked until a
       // coach reviews the draft and adds their own note.
       coach_notes: '',
@@ -260,7 +276,7 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
         userId: coach.user_id,
         type: 'initial_plan_draft_ready',
         title: 'AI plan draft ready for review',
-        body: 'Diet and workout drafts are ready. Add your coach note, review, and explicitly deliver.',
+        body: 'Diet, workout, cardio, and supplement drafts are ready. Add your coach note, review, and explicitly deliver.',
         actionUrl: `/coach/plan/${persisted.data.id}`,
         metadata: { jobId: job.id, planId: persisted.data.id, clientId: profile.id },
       })

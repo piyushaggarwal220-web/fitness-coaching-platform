@@ -626,10 +626,32 @@ button, a[role="button"], input[type="submit"] {
   flex-shrink: 0;
 }
 
+/*
+ * Coach portal is light-themed (--bg-card: #fff). Never paint WhatsApp light text
+ * (#e9edef) onto white incoming bubbles — use dark text that stays readable.
+ */
 .coach-chat-bubble-other {
-  background-color: var(--bg-card) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+.coach-portal .coach-chat-bubble-other,
+.coach-portal .coach-chat-bubble-other.coach-incoming-readable {
+  background-color: #ffffff !important;
+  color: #111b21 !important;
+  border: 1px solid rgba(24, 24, 27, 0.12);
+  box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.12);
+}
+
+.coach-portal .coach-chat-bubble-other .coach-chat-bubble-text,
+.coach-portal .coach-incoming-readable .coach-chat-bubble-text {
+  color: #111b21 !important;
+  -webkit-text-fill-color: #111b21 !important;
+}
+
+.coach-portal .coach-chat-bubble-other .coach-chat-bubble-meta,
+.coach-portal .coach-incoming-readable .coach-chat-bubble-meta {
+  color: rgba(17, 27, 33, 0.55) !important;
 }
 
 .coach-chat-detail {

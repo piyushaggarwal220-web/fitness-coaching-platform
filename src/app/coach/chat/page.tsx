@@ -1,59 +1,17 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { brandTitle } from '@/lib/brand'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { formatRelativeActivity } from '@/lib/coach-chat-ui'
 import { colors, shadows } from '@/lib/coach-theme'
-import { requireCoach } from '@/lib/coach-session'
-import { createClient } from '@/lib/supabase/client'
-import type { CoachConversation } from '@/types/database'
-import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
-
-const supabase = createClient()
+import { useCoachConversationList } from '@/hooks/useCoachConversationList'
 
 export default function CoachChatListPage() {
-  const router = useRouter()
-  const [conversations, setConversations] = useState<(CoachConversation & { profiles?: { name: string; email: string } })[]>([])
-  const [loading, setLoading] = useState(true)
-  const [coachId, setCoachId] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    if (!coachId) return
-    const { data } = await supabase
-      .from('coach_conversations')
-      .select('*, profiles:client_id(name, email)')
-      .eq('coach_id', coachId)
-      .neq('status', 'closed')
-      .order('last_message_at', { ascending: false, nullsFirst: false })
-
-    setConversations((data ?? []) as typeof conversations)
-    setLoading(false)
-  }, [coachId])
-
-  useEffect(() => {
-    let active = true
-    const authorize = async () => {
-      const coach = await requireCoach(supabase, router)
-      if (!active) return
-      if (!coach) {
-        setLoading(false)
-        return
-      }
-      setCoachId(coach.id)
-    }
-    void authorize()
-    return () => { active = false }
-  }, [router])
-
-  useEffect(() => {
-    void load()
-  }, [load])
-
-  useCoachConversationRealtime(coachId, load, 60_000, 'chat-list')
+  const { conversations, loading, error, retry, reload } = useCoachConversationList({
+    realtimeScope: 'chat-list',
+  })
 
   if (loading) return <CoachShell loading />
 
@@ -62,14 +20,40 @@ export default function CoachChatListPage() {
       <h1 style={styles.title}>{brandTitle('Client Conversations')}</h1>
       <p style={styles.subtitle}>Active coaching conversations with your clients.</p>
 
-      {conversations.length === 0 ? (
+      {error ? (
+        <div style={styles.empty}>
+          <p style={{ margin: '0 0 8px', fontWeight: 600, color: colors.textPrimary }}>
+            Conversations could not be loaded
+          </p>
+          <p style={{ margin: '0 0 12px', fontSize: 14 }}>{error}</p>
+          <button
+            type="button"
+            onClick={() => {
+              if (error.toLowerCase().includes('session')) retry()
+              else reload()
+            }}
+            style={{
+              border: `1px solid ${colors.accent}`,
+              background: colors.accentMuted,
+              color: colors.accent,
+              borderRadius: 999,
+              padding: '8px 14px',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      ) : conversations.length === 0 ? (
         <div style={styles.empty}>
           <p style={{ margin: '0 0 8px', fontWeight: 600, color: colors.textPrimary }}>No active conversations yet</p>
           <p style={{ margin: 0, fontSize: 14 }}>Clients will appear here when they start a chat.</p>
         </div>
       ) : (
         conversations.map((conv) => {
-          const profile = conv.profiles as { name?: string; email?: string } | undefined
+          const profile = conv.profiles
           const name = profile?.name || profile?.email || 'Client'
           const unread = (conv.unread_by_coach ?? 0) > 0
           return (

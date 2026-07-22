@@ -4,8 +4,6 @@ import type { OnboardingProfile, PromptLibraryCategory } from '@/types/database'
 /** Workout programming environment derived from client onboarding. */
 export type WorkoutEnvironment = 'gym' | 'home'
 
-const WORKOUT_ACTIONS = new Set<CoachAiActionId>(['initial_workout', 'review_update_workout'])
-
 export const GYM_WORKOUT_PROMPT_CATEGORIES = {
   initial: 'initial_workout',
   weekly: 'weekly_workout_update',
@@ -17,7 +15,11 @@ export const HOME_WORKOUT_PROMPT_CATEGORIES = {
 } as const satisfies Record<'initial' | 'weekly', PromptLibraryCategory>
 
 export function isWorkoutCoachAction(actionId: CoachAiActionId): boolean {
-  return WORKOUT_ACTIONS.has(actionId)
+  return actionId === 'initial_workout' || actionId === 'review_update_workout'
+}
+
+export function isCardioCoachAction(actionId: CoachAiActionId): boolean {
+  return actionId === 'initial_cardio' || actionId === 'review_update_cardio'
 }
 
 /**
@@ -35,10 +37,12 @@ export function resolveWorkoutEnvironment(
 }
 
 export function resolveWorkoutPromptCategory(
-  actionId: 'initial_workout' | 'review_update_workout',
+  actionId: 'initial_workout' | 'review_update_workout' | 'initial_cardio' | 'review_update_cardio',
   environment: WorkoutEnvironment
 ): PromptLibraryCategory {
-  if (actionId === 'initial_workout') {
+  const initial =
+    actionId === 'initial_workout' || actionId === 'initial_cardio'
+  if (initial) {
     return environment === 'home'
       ? HOME_WORKOUT_PROMPT_CATEGORIES.initial
       : GYM_WORKOUT_PROMPT_CATEGORIES.initial
@@ -61,18 +65,29 @@ export function getPromptCategoryForAction(
   actionId: CoachAiActionId,
   profile?: OnboardingProfile | null
 ): PromptLibraryCategory {
-  if (actionId === 'initial_workout' || actionId === 'review_update_workout') {
+  if (
+    actionId === 'initial_workout' ||
+    actionId === 'review_update_workout' ||
+    actionId === 'initial_cardio' ||
+    actionId === 'review_update_cardio'
+  ) {
     const environment = resolveWorkoutEnvironment(profile ?? {})
     return resolveWorkoutPromptCategory(actionId, environment)
   }
 
   const staticMap: Record<
-    Exclude<CoachAiActionId, 'initial_workout' | 'review_update_workout'>,
+    Exclude<
+      CoachAiActionId,
+      'initial_workout' | 'review_update_workout' | 'initial_cardio' | 'review_update_cardio'
+    >,
     PromptLibraryCategory
   > = {
     initial_diet: 'initial_diet',
     review_update_diet: 'weekly_diet_update',
+    // Reuse diet library context; output format forces supplement-only JSON.
+    initial_supplements: 'initial_diet',
+    review_update_supplements: 'weekly_diet_update',
   }
 
-  return staticMap[actionId as Exclude<CoachAiActionId, 'initial_workout' | 'review_update_workout'>]
+  return staticMap[actionId]
 }

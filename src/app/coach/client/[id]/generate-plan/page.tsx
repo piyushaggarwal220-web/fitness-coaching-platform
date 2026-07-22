@@ -172,7 +172,14 @@ export default function CoachGeneratePlanPage() {
     abortRef.current = false
     setBusy(actionId)
     setError('')
-    const label = actionId === 'initial_diet' ? 'Diet' : 'Workout'
+    const label =
+      actionId === 'initial_diet'
+        ? 'Diet'
+        : actionId === 'initial_workout'
+          ? 'Workout'
+          : actionId === 'initial_cardio'
+            ? 'Cardio'
+            : 'Supplements'
     setStepLabel(`Step 1 of 1 · ${label}`)
     setStatus(`Generating ${label.toLowerCase()} plan…`)
 
@@ -194,7 +201,14 @@ export default function CoachGeneratePlanPage() {
 
       const formData = {
         ...result.formData,
-        title: actionId === 'initial_diet' ? 'Diet Plan (Draft)' : 'Workout Plan (Draft)',
+        title:
+          actionId === 'initial_diet'
+            ? 'Diet Plan (Draft)'
+            : actionId === 'initial_workout'
+              ? 'Workout Plan (Draft)'
+              : actionId === 'initial_cardio'
+                ? 'Cardio Plan (Draft)'
+                : 'Supplement Plan (Draft)',
       }
       await persistDraftSafely(formData, `AI Draft · ${formData.title}`)
       resetGenerationUi()
@@ -210,7 +224,7 @@ export default function CoachGeneratePlanPage() {
     abortRef.current = false
     setBusy('complete')
     setError('')
-    setStepLabel('Step 1 of 2 · Diet')
+    setStepLabel('Step 1 of 4 · Diet')
     setStatus('Generating diet plan…')
 
     try {
@@ -237,7 +251,7 @@ export default function CoachGeneratePlanPage() {
       }
       await persistDraftSafely(merged, 'AI Draft · Initial Diet')
 
-      setStepLabel('Step 2 of 2 · Workout')
+      setStepLabel('Step 2 of 4 · Workout')
       setStatus('Diet ready · Generating workout plan…')
       const workoutResult = await withTimeout(
         runCoachAiAction({
@@ -263,13 +277,68 @@ export default function CoachGeneratePlanPage() {
 
       merged = mergePlanForms(merged, {
         workout_plan: workoutResult.formData.workout_plan,
-        cardio_plan: workoutResult.formData.cardio_plan,
         coach_notes: [merged.coach_notes, workoutResult.formData.coach_notes].filter(Boolean).join('\n\n'),
+      })
+      await persistDraftSafely(merged, 'AI Draft · Diet + Workout')
+
+      setStepLabel('Step 3 of 4 · Cardio')
+      setStatus('Workout ready · Generating cardio plan…')
+      const cardioResult = await withTimeout(
+        runCoachAiAction({
+          action: 'initial_cardio',
+          clientId: client.id,
+          coachNote,
+        }),
+        'Cardio generation'
+      )
+
+      if (abortRef.current) return
+
+      if (!cardioResult.success || !cardioResult.formData) {
+        savePlanDraftToSession(clientId, merged)
+        resetGenerationUi()
+        setError(cardioResult.error ?? 'Cardio plan generation failed. Diet and workout draft saved.')
+        return
+      }
+
+      merged = mergePlanForms(merged, {
+        cardio_plan: cardioResult.formData.cardio_plan,
+      })
+      await persistDraftSafely(merged, 'AI Draft · Diet + Workout + Cardio')
+
+      setStepLabel('Step 4 of 4 · Supplements')
+      setStatus('Cardio ready · Generating supplement plan…')
+      const supplementResult = await withTimeout(
+        runCoachAiAction({
+          action: 'initial_supplements',
+          clientId: client.id,
+          coachNote,
+        }),
+        'Supplement generation'
+      )
+
+      if (abortRef.current) return
+
+      if (!supplementResult.success || !supplementResult.formData) {
+        savePlanDraftToSession(clientId, merged)
+        resetGenerationUi()
+        setError(supplementResult.error ?? 'Supplement plan generation failed. Other sections saved.')
+        return
+      }
+
+      merged = mergePlanForms(merged, {
+        supplement_plan: supplementResult.formData.supplement_plan,
       })
 
       await persistDraftSafely(merged, 'AI Draft · Initial Plan')
       resetGenerationUi()
-      openEditor(merged, workoutResult.aiReasoning ?? dietResult.aiReasoning)
+      openEditor(
+        merged,
+        supplementResult.aiReasoning ??
+          cardioResult.aiReasoning ??
+          workoutResult.aiReasoning ??
+          dietResult.aiReasoning
+      )
     } catch (err) {
       resetGenerationUi()
       setError(err instanceof Error ? err.message : 'Generation failed.')

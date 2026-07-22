@@ -2,14 +2,17 @@ import { NextResponse } from 'next/server'
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { getLastCompileReport } from '@/lib/ai/prompt-cache'
 import {
+  generatedCardioFormData,
   generatedDietFormData,
   generatedPlanToFormData,
+  generatedSupplementFormData,
   generatedWorkoutFormData,
 } from '@/lib/ai/plan-format'
 import { generatePlan, GeneratePlanError, type PlanValidationMode } from '@/lib/ai/generate-plan'
 import { selectKnowledgeCategories } from '@/lib/ai/prompt-builder'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 import {
+  buildActionCoachInstructions,
   buildAiReasoningDisplay,
   getCoachAiAction,
   isCoachAiActionId,
@@ -48,6 +51,12 @@ function actionValidationMode(
     case 'initial_diet':
     case 'review_update_diet':
       return 'nutrition_focus'
+    case 'initial_cardio':
+    case 'review_update_cardio':
+      return 'cardio_focus'
+    case 'initial_supplements':
+    case 'review_update_supplements':
+      return 'supplements_focus'
     default:
       return 'full'
   }
@@ -94,7 +103,12 @@ function buildUpdatedDietPlanForPrompt(
 }
 
 function isWeeklyUpdateAction(actionId: CoachAiActionId): boolean {
-  return actionId === 'review_update_diet' || actionId === 'review_update_workout'
+  return (
+    actionId === 'review_update_diet' ||
+    actionId === 'review_update_workout' ||
+    actionId === 'review_update_cardio' ||
+    actionId === 'review_update_supplements'
+  )
 }
 
 export async function POST(request: Request) {
@@ -259,10 +273,18 @@ export async function POST(request: Request) {
   }
 
   try {
+    const actionInstructions = isLegacyFullPlan
+      ? coachNote
+      : buildActionCoachInstructions(actionId, {
+          coachNote,
+          activePlan,
+          checkin,
+        })
+
     const result = await generatePlan({
       profile: profile as OnboardingProfile,
       latestCheckin: checkinForPrompt,
-      coachInstructions: coachNote,
+      coachInstructions: actionInstructions,
       validationMode: actionValidationMode(actionId, isLegacyFullPlan),
       actionId: isLegacyFullPlan ? undefined : actionId,
       activePlan,
@@ -288,8 +310,6 @@ export async function POST(request: Request) {
         const active = planToForm(activePlan)
         formData = mergePlanForms(active, {
           nutrition_plan: diet.nutrition_plan,
-          cardio_plan: diet.cardio_plan,
-          supplement_plan: diet.supplement_plan,
           coach_notes: diet.coach_notes,
           title: `${active.title} (Diet update draft)`,
         })
@@ -313,12 +333,33 @@ export async function POST(request: Request) {
         formData = mergePlanForms(active, {
           ...(dietFromDraft ?? {}),
           workout_plan: workout.workout_plan,
-          cardio_plan: workout.cardio_plan || dietFromDraft?.cardio_plan,
           coach_notes: workout.coach_notes,
           title: `${active.title} (Workout update draft)`,
         })
       } else {
         formData = workout
+      }
+    } else if (actionId === 'initial_cardio' || actionId === 'review_update_cardio') {
+      const cardio = generatedCardioFormData(result.generatedPlan, clientId)
+      if (activePlan && actionId === 'review_update_cardio') {
+        const active = planToForm(activePlan)
+        formData = mergePlanForms(active, {
+          cardio_plan: cardio.cardio_plan,
+          title: `${active.title} (Cardio update draft)`,
+        })
+      } else {
+        formData = cardio
+      }
+    } else if (actionId === 'initial_supplements' || actionId === 'review_update_supplements') {
+      const supplements = generatedSupplementFormData(result.generatedPlan, clientId)
+      if (activePlan && actionId === 'review_update_supplements') {
+        const active = planToForm(activePlan)
+        formData = mergePlanForms(active, {
+          supplement_plan: supplements.supplement_plan,
+          title: `${active.title} (Supplement update draft)`,
+        })
+      } else {
+        formData = supplements
       }
     } else {
       formData = generatedPlanToFormData(result.generatedPlan, clientId)

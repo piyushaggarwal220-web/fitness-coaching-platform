@@ -5,13 +5,18 @@ import {
 } from '@/lib/ai/workout-prompt-selection'
 import type { OnboardingProfile, PromptLibraryCategory } from '@/types/database'
 
-/** Diet coach actions → static Prompt Library category. Workout actions resolve dynamically. */
+/** Diet / supplement coach actions → static Prompt Library category. Workout/cardio resolve dynamically. */
 export const COACH_ACTION_PROMPT_CATEGORY: Record<
-  Exclude<CoachAiActionId, 'initial_workout' | 'review_update_workout'>,
+  Exclude<
+    CoachAiActionId,
+    'initial_workout' | 'review_update_workout' | 'initial_cardio' | 'review_update_cardio'
+  >,
   PromptLibraryCategory
 > = {
   initial_diet: 'initial_diet',
   review_update_diet: 'weekly_diet_update',
+  initial_supplements: 'initial_diet',
+  review_update_supplements: 'weekly_diet_update',
 }
 
 export type PublishedLibraryPrompt = {

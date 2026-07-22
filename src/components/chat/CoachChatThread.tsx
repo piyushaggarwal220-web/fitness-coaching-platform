@@ -19,8 +19,8 @@ import {
 } from '@/lib/coach-working-hours'
 import { CalendarClock, Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
 
-/** WhatsApp-like dark palette */
-const wa = {
+/** WhatsApp-like dark palette (client portal) */
+const waDark = {
   bg: '#0b141a',
   pattern: '#0b141a',
   header: '#1f2c33',
@@ -40,6 +40,36 @@ const wa = {
   danger: '#ea4335',
   dangerBg: '#3a1d1d',
 }
+
+/**
+ * Coach portal light theme paints incoming bubbles white via --bg-card.
+ * Pair that with dark text so client replies stay readable.
+ */
+const waCoach = {
+  ...waDark,
+  incoming: '#ffffff',
+  incomingText: '#111b21',
+  metaIncoming: 'rgba(17,27,33,0.55)',
+}
+
+/** Injected with the JS bundle so a cached globals.css cannot leave light-on-white text. */
+const COACH_INCOMING_BUBBLE_CSS = `
+.coach-chat-thread .coach-incoming-readable {
+  background-color: #ffffff !important;
+  color: #111b21 !important;
+  border: 1px solid rgba(24,24,27,0.12) !important;
+}
+.coach-chat-thread .coach-incoming-readable .coach-chat-bubble-text {
+  color: #111b21 !important;
+  -webkit-text-fill-color: #111b21 !important;
+}
+.coach-chat-thread .coach-incoming-readable .coach-chat-bubble-meta {
+  color: rgba(17,27,33,0.55) !important;
+}
+`
+
+/** Module styles always use the dark chat chrome; incoming contrast is overridden per-viewer. */
+const wa = waDark
 
 type CoachChatThreadProps = {
   conversationId: string
@@ -76,6 +106,9 @@ function messagesVisuallyEqual(a: ConversationMessage[], b: ConversationMessage[
 }
 
 export function CoachChatThread({ conversationId, coachId, viewer, initialMessages = [] }: CoachChatThreadProps) {
+  const palette = viewer === 'coach' ? waCoach : waDark
+  const incomingText = viewer === 'coach' ? waCoach.incomingText : waDark.text
+  const incomingMeta = viewer === 'coach' ? waCoach.metaIncoming : waDark.meta
   const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -429,6 +462,9 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
   return (
     <div className="coach-chat-thread wa-chat" style={styles.wrapper}>
+      {viewer === 'coach' ? (
+        <style dangerouslySetInnerHTML={{ __html: COACH_INCOMING_BUBBLE_CSS }} />
+      ) : null}
       <div style={styles.contextBar}>
         <span style={{ color: peerOnline ? '#53d769' : wa.textMuted }}>{presenceText}</span>
         {viewer === 'client' && (
@@ -505,7 +541,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                   width: i % 2 === 0 ? '62%' : '48%',
                   alignSelf: i % 2 === 0 ? 'flex-end' : 'flex-start',
                   borderRadius: 8,
-                  backgroundColor: i % 2 === 0 ? wa.outgoing : wa.incoming,
+                  backgroundColor: i % 2 === 0 ? palette.outgoing : palette.incoming,
                   opacity: 0.55,
                 }}
               />
@@ -563,9 +599,27 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
               }}
             >
               <div
-                className={isMine ? 'coach-chat-bubble-mine' : 'coach-chat-bubble-other'}
+                className={
+                  isMine
+                    ? 'coach-chat-bubble-mine'
+                    : viewer === 'coach'
+                      ? 'coach-chat-bubble-other coach-incoming-readable'
+                      : 'coach-chat-bubble-other'
+                }
+                ref={(el) => {
+                  if (!el || isMine || viewer !== 'coach') return
+                  // Beat any cached light-theme rule that pairs white bubbles with WA light text.
+                  el.style.setProperty('background-color', '#ffffff', 'important')
+                  el.style.setProperty('color', '#111b21', 'important')
+                }}
                 style={{
                   ...(isMine ? styles.bubbleMine : styles.bubbleOther),
+                  ...(!isMine
+                    ? {
+                        backgroundColor: palette.incoming,
+                        color: incomingText,
+                      }
+                    : null),
                   ...(msg.message_type === 'image' ? { padding: 4 } : null),
                 }}
               >
@@ -573,8 +627,10 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                   <div className="coach-chat-voice">
                     <VoicePlayer
                       url={msg.media_url}
+                      conversationId={conversationId}
                       duration={msg.media_duration_seconds ?? undefined}
                       fromCoach={msg.sender_type === 'coach'}
+                      lightBubble={viewer === 'coach' && !isMine}
                     />
                   </div>
                 ) : msg.message_type === 'image' && msg.media_url ? (
@@ -582,21 +638,33 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                 ) : (
                   <div
                     className="coach-chat-bubble-text"
+                    ref={(el) => {
+                      if (!el || isMine || viewer !== 'coach') return
+                      el.style.setProperty('color', '#111b21', 'important')
+                      el.style.setProperty('-webkit-text-fill-color', '#111b21', 'important')
+                    }}
                     style={{
                       fontSize: 14.5,
                       lineHeight: 1.4,
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
-                      color: wa.text,
+                      color: isMine ? palette.text : incomingText,
                     }}
                   >
                     {msg.content}
                   </div>
                 )}
-                <div style={{ ...styles.meta, color: isMine ? wa.metaOutgoing : wa.meta }}>
+                <div
+                  className="coach-chat-bubble-meta"
+                  ref={(el) => {
+                    if (!el || isMine || viewer !== 'coach') return
+                    el.style.setProperty('color', 'rgba(17,27,33,0.55)', 'important')
+                  }}
+                  style={{ ...styles.meta, color: isMine ? palette.metaOutgoing : incomingMeta }}
+                >
                   <span>{formatMessageTime(msg.created_at)}</span>
                   {isMine && (
-                    <span style={{ display: 'inline-flex', marginLeft: 2, color: msg.read_at ? wa.tick : wa.tickSent }}>
+                    <span style={{ display: 'inline-flex', marginLeft: 2, color: msg.read_at ? palette.tick : palette.tickSent }}>
                       {msg.read_at ? <CheckCheck size={14} strokeWidth={2.5} /> : <Check size={14} strokeWidth={2.5} />}
                     </span>
                   )}

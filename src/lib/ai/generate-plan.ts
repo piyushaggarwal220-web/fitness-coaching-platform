@@ -68,7 +68,13 @@ export type GeneratePlanInput = {
   }[]
 }
 
-export type PlanValidationMode = 'full' | 'workout_focus' | 'nutrition_focus' | 'minimal'
+export type PlanValidationMode =
+  | 'full'
+  | 'workout_focus'
+  | 'nutrition_focus'
+  | 'cardio_focus'
+  | 'supplements_focus'
+  | 'minimal'
 
 export type GeneratePlanResult = {
   generatedPlan: GeneratedPlan
@@ -155,8 +161,10 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   '- Set nutrition_plan.calories, protein, carbs, and fat to the rounded AVERAGE daily totals from the 7-day plan (sum each day, divide by 7). NEVER use 0 or placeholder values.',
   '- Header macros MUST match the meal plan: if meals show (P: Xg | C: Yg | F: Zg | ~K kcal) lines, totals must reflect those sums.',
   '- Include a clear daily average line in the prose, e.g. "Daily averages: ~1850 kcal | P: 130g | C: 200g | F: 55g" matching the header fields.',
+  '- Diet text must contain ONLY food / nutrition. Never include Cardio, Steps, Conditioning, or Supplements sections in the diet prose.',
   '- Set workout_plan.overview to "N/A" and workout_plan.days to [].',
-  '- cardio_plan.sessions and supplement_plan.items may be [].',
+  '- cardio_plan.sessions MUST be [].',
+  '- supplement_plan.items MUST be [].',
   '- coach_notes must be an empty string or under 200 characters.',
 ].join('\n')
 
@@ -169,10 +177,39 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   '- workout_plan.overview must include exercises, sets, reps, and weekly structure — not internal coach analysis.',
   '- Use "sets x reps" format (e.g. 4 sets x 8 reps) — the letter x, not special symbols.',
   '- workout_plan.days may be [] when the prose already contains the daily structure.',
+  '- Workout text must contain ONLY strength / resistance training. Never include a Cardio, Steps, Conditioning, or Supplements section.',
   '- Set nutrition_plan calories/protein/carbs/fat to 0 and nutrition_plan.meals to [].',
-  '- cardio_plan.sessions and supplement_plan.items may be [].',
+  '- cardio_plan.sessions MUST be [].',
+  '- supplement_plan.items MUST be [].',
   '- coach_notes must be an empty string or under 200 characters.',
   '- Escape all newlines inside JSON string values as \\n. Never use literal line breaks inside JSON strings.',
+].join('\n')
+
+const LIBRARY_CARDIO_OUTPUT_INSTRUCTIONS = [
+  '# Plan Output Format',
+  'You MUST respond with ONLY valid JSON — no markdown fences, no commentary, no preamble.',
+  'The JSON must match this exact top-level structure:',
+  PLAN_JSON_SCHEMA,
+  '- Put the full client-facing cardio plan in cardio_plan.sessions (non-empty).',
+  '- Each session object should include type/name, duration, frequency, and optional intensity/notes.',
+  '- Cover walking/steps, LISS, and any HIIT or conditioning appropriate for the client.',
+  '- Set workout_plan.overview to "N/A" and workout_plan.days to [].',
+  '- Set nutrition_plan calories/protein/carbs/fat to 0 and nutrition_plan.meals to [].',
+  '- supplement_plan.items MUST be [].',
+  '- coach_notes must be an empty string or under 200 characters.',
+].join('\n')
+
+const LIBRARY_SUPPLEMENT_OUTPUT_INSTRUCTIONS = [
+  '# Plan Output Format',
+  'You MUST respond with ONLY valid JSON — no markdown fences, no commentary, no preamble.',
+  'The JSON must match this exact top-level structure:',
+  PLAN_JSON_SCHEMA,
+  '- Put the full client-facing supplement plan in supplement_plan.items (non-empty unless truly none are appropriate).',
+  '- Each item should include name, dose/dosage, and optional notes (timing, optional vs required).',
+  '- Set workout_plan.overview to "N/A" and workout_plan.days to [].',
+  '- Set nutrition_plan calories/protein/carbs/fat to 0 and nutrition_plan.meals to [].',
+  '- cardio_plan.sessions MUST be [].',
+  '- coach_notes must be an empty string or under 200 characters.',
 ].join('\n')
 
 function resolvePlanOutputInstructions(options: {
@@ -190,6 +227,12 @@ function resolvePlanOutputInstructions(options: {
     case 'initial_workout':
     case 'review_update_workout':
       return LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS
+    case 'initial_cardio':
+    case 'review_update_cardio':
+      return LIBRARY_CARDIO_OUTPUT_INSTRUCTIONS
+    case 'initial_supplements':
+    case 'review_update_supplements':
+      return LIBRARY_SUPPLEMENT_OUTPUT_INSTRUCTIONS
     default:
       return PLAN_OUTPUT_INSTRUCTIONS
   }
@@ -232,8 +275,16 @@ export function validateGeneratedPlan(
 ): { plan: GeneratedPlan | null; error: string | null } {
   const mode = options?.mode ?? 'full'
   const allowPlaceholderNutrition =
-    mode === 'workout_focus' || mode === 'nutrition_focus' || mode === 'minimal'
-  const allowPlaceholderWorkout = mode === 'nutrition_focus' || mode === 'minimal'
+    mode === 'workout_focus' ||
+    mode === 'nutrition_focus' ||
+    mode === 'cardio_focus' ||
+    mode === 'supplements_focus' ||
+    mode === 'minimal'
+  const allowPlaceholderWorkout =
+    mode === 'nutrition_focus' ||
+    mode === 'cardio_focus' ||
+    mode === 'supplements_focus' ||
+    mode === 'minimal'
   if (!isRecord(value)) {
     return { plan: null, error: 'Response is not a JSON object.' }
   }
@@ -285,10 +336,16 @@ export function validateGeneratedPlan(
   const cardio = value.cardio_plan
   if (!isRecord(cardio)) return { plan: null, error: 'Missing or invalid cardio_plan.' }
   if (!isArray(cardio.sessions)) return { plan: null, error: 'cardio_plan.sessions must be an array.' }
+  if (mode === 'cardio_focus' && cardio.sessions.length === 0) {
+    return { plan: null, error: 'cardio_plan.sessions must include at least one cardio session.' }
+  }
 
   const supplements = value.supplement_plan
   if (!isRecord(supplements)) return { plan: null, error: 'Missing or invalid supplement_plan.' }
   if (!isArray(supplements.items)) return { plan: null, error: 'supplement_plan.items must be an array.' }
+  if (mode === 'supplements_focus' && supplements.items.length === 0) {
+    return { plan: null, error: 'supplement_plan.items must include at least one supplement recommendation.' }
+  }
 
   if (!isString(value.coach_notes)) {
     return { plan: null, error: 'coach_notes must be a string.' }

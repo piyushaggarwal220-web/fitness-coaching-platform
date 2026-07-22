@@ -1,8 +1,7 @@
--- chat-voice was privatized in harden_security_entitlements_storage without
--- restoring a SELECT policy. createSignedUrl requires SELECT, so playback
--- failed for both coaches and clients even though uploads still worked.
--- Qualify objects.name explicitly: a JOIN to coaches makes bare `name` resolve
--- to coaches.name and breaks the coach conversation-id check.
+-- Fix coach voice playback: unqualified `name` inside the coaches JOIN was
+-- resolved to coaches.name, so the conversation-id check never matched the
+-- storage object path. createSignedUrl requires SELECT, so coaches could not
+-- play client voice notes. Always qualify as objects.name.
 
 DROP POLICY IF EXISTS "Users read voice notes in conversations" ON storage.objects;
 CREATE POLICY "Users read voice notes in conversations"

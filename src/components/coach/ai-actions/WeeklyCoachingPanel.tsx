@@ -182,6 +182,56 @@ export function WeeklyCoachingPanel({
       return
     }
 
+    setStatus('Workout ready. Generating updated cardio…')
+    const cardioResult = await runCoachAiAction({
+      action: 'review_update_cardio',
+      clientId,
+      checkinId,
+      coachNote,
+      draftPlanContext: {
+        ...dietResult.formData,
+        workout_plan: workoutResult.formData.workout_plan,
+      },
+    })
+
+    if (!cardioResult.success || !cardioResult.formData) {
+      const partial = mergePlanForms(dietResult.formData, {
+        workout_plan: workoutResult.formData.workout_plan,
+      })
+      savePlanDraftToSession(clientId, partial)
+      setBusy(false)
+      setStatus(null)
+      setError(cardioResult.error ?? 'Cardio update failed. Diet and workout draft saved.')
+      setGenerationFailed(true)
+      return
+    }
+
+    setStatus('Cardio ready. Generating updated supplements…')
+    const supplementResult = await runCoachAiAction({
+      action: 'review_update_supplements',
+      clientId,
+      checkinId,
+      coachNote,
+      draftPlanContext: {
+        ...dietResult.formData,
+        workout_plan: workoutResult.formData.workout_plan,
+        cardio_plan: cardioResult.formData.cardio_plan,
+      },
+    })
+
+    if (!supplementResult.success || !supplementResult.formData) {
+      const partial = mergePlanForms(dietResult.formData, {
+        workout_plan: workoutResult.formData.workout_plan,
+        cardio_plan: cardioResult.formData.cardio_plan,
+      })
+      savePlanDraftToSession(clientId, partial)
+      setBusy(false)
+      setStatus(null)
+      setError(supplementResult.error ?? 'Supplement update failed. Other drafts saved.')
+      setGenerationFailed(true)
+      return
+    }
+
     const merged = mergePlanForms(
       {
         ...dietResult.formData,
@@ -189,7 +239,8 @@ export function WeeklyCoachingPanel({
       },
       {
         workout_plan: workoutResult.formData.workout_plan,
-        cardio_plan: workoutResult.formData.cardio_plan,
+        cardio_plan: cardioResult.formData.cardio_plan,
+        supplement_plan: supplementResult.formData.supplement_plan,
         coach_notes: [dietResult.formData.coach_notes, workoutResult.formData.coach_notes]
           .filter(Boolean)
           .join('\n\n'),

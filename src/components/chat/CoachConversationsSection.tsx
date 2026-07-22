@@ -1,22 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { CoachShell } from '@/components/ui/CoachShell'
-import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { formatRelativeActivity } from '@/lib/coach-chat-ui'
-import { requireCoach } from '@/lib/coach-session'
-import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/coach-theme'
-import type { CoachConversation } from '@/types/database'
-import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
-
-const supabase = createClient()
-
-type ConversationRow = CoachConversation & {
-  profiles?: { name: string; email: string }
-}
+import { useCoachConversationList } from '@/hooks/useCoachConversationList'
 
 function ClientAvatar({ name }: { name: string }) {
   const initial = (name.trim()[0] ?? 'C').toUpperCase()
@@ -41,43 +29,9 @@ function ClientAvatar({ name }: { name: string }) {
 
 export function CoachConversationsSection() {
   const router = useRouter()
-  const [conversations, setConversations] = useState<ConversationRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [coachId, setCoachId] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    if (!coachId) return
-    const { data } = await supabase
-      .from('coach_conversations')
-      .select('id, client_id, coach_id, status, last_message_at, last_message_preview, unread_by_coach, unread_by_client, profiles:client_id(name, email)')
-      .eq('coach_id', coachId)
-      .neq('status', 'closed')
-      .order('last_message_at', { ascending: false, nullsFirst: false })
-
-    setConversations((data ?? []) as unknown as ConversationRow[])
-    setLoading(false)
-  }, [coachId])
-
-  useEffect(() => {
-    let active = true
-    const authorize = async () => {
-      const coach = await requireCoach(supabase, router)
-      if (!active) return
-      if (!coach) {
-        setLoading(false)
-        return
-      }
-      setCoachId(coach.id)
-    }
-    void authorize()
-    return () => { active = false }
-  }, [router])
-
-  useEffect(() => {
-    void load()
-  }, [load])
-
-  useCoachConversationRealtime(coachId, load, 60_000, 'conversation-section')
+  const { conversations, loading, error, retry, reload } = useCoachConversationList({
+    realtimeScope: 'conversation-section',
+  })
 
   if (loading) {
     return (
@@ -85,6 +39,34 @@ export function CoachConversationsSection() {
         {[1, 2].map((i) => (
           <div key={i} className="skeleton" style={{ height: 72, borderRadius: 16 }} />
         ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ display: 'grid', gap: 8, padding: '8px 0' }}>
+        <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>{error}</p>
+        <button
+          type="button"
+          onClick={() => {
+            if (error.toLowerCase().includes('session')) retry()
+            else reload()
+          }}
+          style={{
+            justifySelf: 'start',
+            border: `1px solid ${colors.accent}`,
+            background: colors.accentMuted,
+            color: colors.accent,
+            borderRadius: 999,
+            padding: '6px 12px',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Retry
+        </button>
       </div>
     )
   }
@@ -107,7 +89,7 @@ export function CoachConversationsSection() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {unreadFirst.slice(0, 6).map((conv) => {
-        const profile = conv.profiles as { name?: string; email?: string } | undefined
+        const profile = conv.profiles
         const name = profile?.name || profile?.email || 'Client'
         const unread = (conv.unread_by_coach ?? 0) > 0
         return (

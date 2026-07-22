@@ -225,6 +225,8 @@ export function generatedDietFormData(generated: GeneratedPlan, clientId: string
   return {
     ...full,
     workout_plan: '',
+    cardio_plan: '',
+    supplement_plan: '',
   }
 }
 
@@ -233,7 +235,28 @@ export function generatedWorkoutFormData(generated: GeneratedPlan, clientId: str
   return {
     ...full,
     nutrition_plan: '',
+    cardio_plan: '',
     supplement_plan: '',
+  }
+}
+
+export function generatedCardioFormData(generated: GeneratedPlan, clientId: string): PlanFormData {
+  const full = generatedPlanToFormData(generated, clientId, { title: 'Cardio Plan (Draft)' })
+  return {
+    ...full,
+    workout_plan: '',
+    nutrition_plan: '',
+    supplement_plan: '',
+  }
+}
+
+export function generatedSupplementFormData(generated: GeneratedPlan, clientId: string): PlanFormData {
+  const full = generatedPlanToFormData(generated, clientId, { title: 'Supplement Plan (Draft)' })
+  return {
+    ...full,
+    workout_plan: '',
+    nutrition_plan: '',
+    cardio_plan: '',
   }
 }
 

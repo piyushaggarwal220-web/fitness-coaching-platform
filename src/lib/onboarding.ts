@@ -202,6 +202,42 @@ export const PROTEIN_DAYS_OPTIONS = [
   { value: 'na', label: 'N/A' },
 ] as const
 
+export const WEEKDAY_OPTIONS = [
+  { value: 'monday', label: 'Mon' },
+  { value: 'tuesday', label: 'Tue' },
+  { value: 'wednesday', label: 'Wed' },
+  { value: 'thursday', label: 'Thu' },
+  { value: 'friday', label: 'Fri' },
+  { value: 'saturday', label: 'Sat' },
+  { value: 'sunday', label: 'Sun' },
+] as const
+
+const WEEKDAY_ORDER = WEEKDAY_OPTIONS.map((o) => o.value)
+const WEEKDAY_LABELS = Object.fromEntries(WEEKDAY_OPTIONS.map((o) => [o.value, o.label]))
+
+/** True when the client should pick specific weekdays for that protein. */
+export function proteinDaysNeedWeekdays(daysPerWeek: string): boolean {
+  return Boolean(daysPerWeek && daysPerWeek !== '0' && daysPerWeek !== 'na')
+}
+
+export function allWeekdayValues(): string[] {
+  return WEEKDAY_OPTIONS.map((o) => o.value)
+}
+
+export function formatProteinWeekdays(days: string[] | null | undefined): string {
+  if (!days || days.length === 0) return 'Not set'
+  return [...days]
+    .sort((a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b))
+    .map((d) => WEEKDAY_LABELS[d] ?? d)
+    .join(', ')
+}
+
+function normalizeWeekdayList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const allowed = new Set<string>(WEEKDAY_ORDER)
+  return raw.filter((d): d is string => typeof d === 'string' && allowed.has(d))
+}
+
 export const WHEY_OPTIONS = [
   { value: 'yes', label: 'Yes' },
   { value: 'no', label: 'No' },
@@ -298,6 +334,9 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   egg_days: '',
   chicken_days: '',
   fish_days: '',
+  egg_allowed_days: [],
+  chicken_allowed_days: [],
+  fish_allowed_days: [],
   whey_protein: '',
   food_allergies: '',
   foods_disliked: '',
@@ -377,6 +416,9 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     egg_days: data.diet?.eggDaysPerWeek ?? '',
     chicken_days: data.diet?.chickenDaysPerWeek ?? '',
     fish_days: data.diet?.fishDaysPerWeek ?? '',
+    egg_allowed_days: normalizeWeekdayList(data.diet?.eggAllowedDays),
+    chicken_allowed_days: normalizeWeekdayList(data.diet?.chickenAllowedDays),
+    fish_allowed_days: normalizeWeekdayList(data.diet?.fishAllowedDays),
     whey_protein: data.diet?.wheyProtein ?? '',
     food_allergies: data.diet?.allergies ?? '',
     foods_disliked: data.diet?.foodsDisliked ?? '',
@@ -522,6 +564,12 @@ export function buildOnboardingData(
       eggDaysPerWeek: form.egg_days || null,
       chickenDaysPerWeek: form.chicken_days || null,
       fishDaysPerWeek: form.fish_days || null,
+      eggAllowedDays:
+        form.egg_allowed_days.length > 0 ? normalizeWeekdayList(form.egg_allowed_days) : null,
+      chickenAllowedDays:
+        form.chicken_allowed_days.length > 0 ? normalizeWeekdayList(form.chicken_allowed_days) : null,
+      fishAllowedDays:
+        form.fish_allowed_days.length > 0 ? normalizeWeekdayList(form.fish_allowed_days) : null,
       wheyProtein: form.whey_protein || null,
       allergies: form.food_allergies.trim() || null,
       foodsDisliked: form.foods_disliked.trim() || null,
@@ -763,6 +811,19 @@ export function validateOnboardingStep(
     }
     case 14: {
       if (!data.whey_protein) return 'Please indicate whey protein usage.'
+      const eatsEggs =
+        data.diet_preference === 'eggetarian' || data.diet_preference === 'non_vegetarian'
+      if (eatsEggs && proteinDaysNeedWeekdays(data.egg_days) && data.egg_allowed_days.length === 0) {
+        return 'Select which days of the week you can eat eggs.'
+      }
+      if (data.diet_preference === 'non_vegetarian') {
+        if (proteinDaysNeedWeekdays(data.chicken_days) && data.chicken_allowed_days.length === 0) {
+          return 'Select which days of the week you can eat chicken.'
+        }
+        if (proteinDaysNeedWeekdays(data.fish_days) && data.fish_allowed_days.length === 0) {
+          return 'Select which days of the week you can eat fish.'
+        }
+      }
       return null
     }
     case 15:
@@ -928,8 +989,11 @@ export function buildReviewSections(
       items: [
         { label: 'Diet type', value: getOnboardingLabel('diet_preference', form.diet_preference) },
         { label: 'Egg days/week', value: form.egg_days || 'N/A' },
+        { label: 'Egg days', value: formatProteinWeekdays(form.egg_allowed_days) },
         { label: 'Chicken days/week', value: form.chicken_days || 'N/A' },
+        { label: 'Chicken days', value: formatProteinWeekdays(form.chicken_allowed_days) },
         { label: 'Fish days/week', value: form.fish_days || 'N/A' },
+        { label: 'Fish days', value: formatProteinWeekdays(form.fish_allowed_days) },
         { label: 'Whey protein', value: getOnboardingLabel('whey_protein', form.whey_protein) },
         { label: 'Allergies', value: form.food_allergies || 'None' },
         { label: 'Foods disliked', value: form.foods_disliked || 'None' },

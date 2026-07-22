@@ -7,6 +7,7 @@ export function resolveAppendOrderForAction(
 ): PromptContextSectionKey[] {
   switch (actionId) {
     case 'initial_workout':
+    case 'initial_cardio':
       return [
         'hardConstraints',
         'clientDetails',
@@ -17,6 +18,7 @@ export function resolveAppendOrderForAction(
         'complexity',
       ]
     case 'review_update_diet':
+    case 'review_update_supplements':
       return [
         'hardConstraints',
         'clientDetails',
@@ -29,6 +31,7 @@ export function resolveAppendOrderForAction(
         'complexity',
       ]
     case 'review_update_workout':
+    case 'review_update_cardio':
       return [
         'hardConstraints',
         'clientDetails',

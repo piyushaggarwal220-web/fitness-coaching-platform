@@ -3,13 +3,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { Download, Mic, Pause, Play } from 'lucide-react'
 import { motionClass } from '@/lib/motion'
+import { readApiJson } from '@/lib/api-response'
 import { createClient } from '@/lib/supabase/client'
 import { resolveStorageUrl } from '@/lib/storage/media-url'
 
 type VoicePlayerProps = {
   url: string
+  conversationId?: string
   duration?: number
   fromCoach?: boolean
+  /** Use dark controls when the parent bubble is white/light (coach portal). */
+  lightBubble?: boolean
 }
 
 function formatTime(seconds: number): string {
@@ -18,7 +22,34 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerProps) {
+async function resolveVoicePlaybackUrl(
+  url: string,
+  conversationId?: string
+): Promise<string | null> {
+  if (conversationId) {
+    const params = new URLSearchParams({
+      conversationId,
+      path: url,
+    })
+    const response = await fetch(`/api/chat/voice-url?${params}`, {
+      credentials: 'include',
+      cache: 'no-store',
+    })
+    const parsed = await readApiJson<{ url?: string }>(response)
+    if (parsed.ok && parsed.data.url) return parsed.data.url
+  }
+
+  const supabase = createClient()
+  return resolveStorageUrl(supabase, 'chat-voice', url)
+}
+
+export function VoicePlayer({
+  url,
+  conversationId,
+  duration,
+  fromCoach = false,
+  lightBubble = false,
+}: VoicePlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null)
   const [loadError, setLoadError] = useState(false)
@@ -34,8 +65,7 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
     setPlaying(false)
     setCurrentTime(0)
 
-    const supabase = createClient()
-    void resolveStorageUrl(supabase, 'chat-voice', url).then((signed) => {
+    void resolveVoicePlaybackUrl(url, conversationId).then((signed) => {
       if (cancelled) return
       if (!signed) {
         setLoadError(true)
@@ -47,7 +77,7 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
     return () => {
       cancelled = true
     }
-  }, [url])
+  }, [url, conversationId])
 
   const togglePlay = () => {
     const audio = audioRef.current
@@ -72,6 +102,11 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
     if (audioRef.current) audioRef.current.playbackRate = next
   }
 
+  const inactiveBar = lightBubble ? 'rgba(17,27,33,0.22)' : 'rgba(233,237,239,0.35)'
+  const mutedFg = lightBubble ? 'rgba(17,27,33,0.55)' : 'rgba(233,237,239,0.7)'
+  const controlFg = lightBubble ? 'rgba(17,27,33,0.75)' : 'rgba(233,237,239,0.85)'
+  const controlBg = lightBubble ? 'rgba(17,27,33,0.06)' : 'rgba(255,255,255,0.08)'
+
   const bars = Array.from({ length: 24 }, (_, i) => {
     const h = 8 + Math.sin(i * 0.8) * 12 + (i % 3) * 4
     const active = totalDuration > 0 && i / 24 <= currentTime / totalDuration
@@ -83,7 +118,7 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
           width: 3,
           height: h,
           borderRadius: 2,
-          backgroundColor: active ? '#00a884' : 'rgba(233,237,239,0.35)',
+          backgroundColor: active ? '#00a884' : inactiveBar,
           transition: 'background-color 180ms ease',
           animationDelay: playing ? `${i * 40}ms` : undefined,
         }}
@@ -102,8 +137,8 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
       {resolvedUrl && (
         <audio
           ref={audioRef}
-          src={resolvedUrl}
           preload="metadata"
+          crossOrigin="anonymous"
           onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
           onLoadedMetadata={() => setTotalDuration(audioRef.current?.duration ?? duration ?? 0)}
           onEnded={() => setPlaying(false)}
@@ -111,23 +146,24 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
             setPlaying(false)
             setLoadError(true)
           }}
-          // Keep in layout but invisible — display:none breaks playback on some mobile browsers.
           style={styles.hiddenAudio}
-        />
+        >
+          <source src={resolvedUrl} type={resolvedUrl.includes('.webm') ? 'audio/webm' : 'audio/mp4'} />
+        </audio>
       )}
       <div style={styles.controlsRow}>
         <button type="button" onClick={togglePlay} className="btn-press" style={styles.playBtn} aria-label={playing ? 'Pause' : 'Play'} disabled={!resolvedUrl}>
           {playing ? <Pause size={18} /> : <Play size={18} />}
         </button>
         <div style={styles.waveform}>{bars}</div>
-        <span style={styles.time}>
+        <span style={{ ...styles.time, color: mutedFg }}>
           {formatTime(currentTime)} / {formatTime(totalDuration)}
         </span>
-        <button type="button" onClick={cycleSpeed} style={styles.speedBtn}>
+        <button type="button" onClick={cycleSpeed} style={{ ...styles.speedBtn, background: controlBg, color: controlFg }}>
           {speed}x
         </button>
         {resolvedUrl && (
-          <a href={resolvedUrl} download style={styles.downloadBtn} aria-label="Download voice message">
+          <a href={resolvedUrl} download style={{ ...styles.downloadBtn, color: mutedFg }} aria-label="Download voice message">
             <Download size={16} />
           </a>
         )}

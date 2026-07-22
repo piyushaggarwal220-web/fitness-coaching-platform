@@ -44,7 +44,7 @@ export type PromptBuilderInput = {
   knowledgeEntries: AiKnowledge[]
   coachInstructions?: string | null
   activePlan?: Plan | null
-  /** Newly generated diet for weekly workout updates (nutrition/cardio/supplements). */
+  /** Newly generated diet for weekly workout updates (nutrition only). */
   updatedDietPlan?: Plan | null
   actionId?: CoachAiActionId
   /** Published Prompt Library template for the action (user prompt). */
@@ -305,13 +305,37 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
     lines.push(
       '- VEGETARIAN: No chicken, fish, mutton, prawn, or eggs in any meal. Use dal, paneer, soya, chana, dairy, nuts only.'
     )
+  } else if (profile.diet_preference === 'vegan') {
+    lines.push(
+      '- VEGAN: No animal products — no chicken, fish, eggs, dairy, whey, honey. Use plant proteins only.'
+    )
+  } else if (profile.diet_preference === 'eggetarian') {
+    const eggDays = diet?.eggDaysPerWeek ?? '0'
+    const eggWeekdays = (diet?.eggAllowedDays ?? []).filter(Boolean)
+    lines.push(
+      `- EGGETARIAN: Eggs only as animal protein — no chicken, fish, mutton, or prawn. Eggs ${eggDays} days/week${
+        eggWeekdays.length > 0 ? ` on: ${eggWeekdays.join(', ')}` : ''
+      } — schedule egg meals only on those weekdays.`
+    )
   } else if (profile.diet_preference === 'non_vegetarian') {
     const eggDays = diet?.eggDaysPerWeek ?? '0'
     const chickenDays = diet?.chickenDaysPerWeek ?? '0'
     const fishDays = diet?.fishDaysPerWeek ?? '0'
+    const eggWeekdays = (diet?.eggAllowedDays ?? []).filter(Boolean)
+    const chickenWeekdays = (diet?.chickenAllowedDays ?? []).filter(Boolean)
+    const fishWeekdays = (diet?.fishAllowedDays ?? []).filter(Boolean)
     lines.push(
-      `- NON-VEGETARIAN day rules: eggs ${eggDays} days/week, chicken ${chickenDays} days/week, fish ${fishDays} days/week — respect exactly.`
+      `- NON-VEGETARIAN day counts: eggs ${eggDays}/week, chicken ${chickenDays}/week, fish ${fishDays}/week — respect exactly.`
     )
+    if (eggWeekdays.length > 0) {
+      lines.push(`- Eggs allowed only on: ${eggWeekdays.join(', ')}.`)
+    }
+    if (chickenWeekdays.length > 0) {
+      lines.push(`- Chicken allowed only on: ${chickenWeekdays.join(', ')}. Do not schedule chicken on other weekdays.`)
+    }
+    if (fishWeekdays.length > 0) {
+      lines.push(`- Fish allowed only on: ${fishWeekdays.join(', ')}. Do not schedule fish on other weekdays.`)
+    }
   }
 
   if (diet?.allergies?.trim() && diet.allergies.toLowerCase() !== 'none') {
@@ -627,6 +651,7 @@ function hasSubstantiveContext(section: string): boolean {
 function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSections)[] {
   switch (actionId) {
     case 'initial_workout':
+    case 'initial_cardio':
       return [
         'hardConstraints',
         'clientDetails',
@@ -637,6 +662,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
         'complexity',
       ]
     case 'review_update_diet':
+    case 'review_update_supplements':
       return [
         'hardConstraints',
         'clientDetails',
@@ -649,6 +675,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
         'complexity',
       ]
     case 'review_update_workout':
+    case 'review_update_cardio':
       return [
         'hardConstraints',
         'clientDetails',

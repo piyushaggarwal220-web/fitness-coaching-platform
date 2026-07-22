@@ -91,6 +91,12 @@ export type OnboardingData = {
     eggDaysPerWeek?: string | null
     chickenDaysPerWeek?: string | null
     fishDaysPerWeek?: string | null
+    /** Weekdays the client can eat eggs (e.g. monday). */
+    eggAllowedDays?: string[] | null
+    /** Weekdays the client can eat chicken. */
+    chickenAllowedDays?: string[] | null
+    /** Weekdays the client can eat fish. */
+    fishAllowedDays?: string[] | null
     wheyProtein?: string | null
     allergies?: string | null
     foodsDisliked?: string | null
@@ -203,6 +209,9 @@ export type OnboardingFormData = {
   egg_days: string
   chicken_days: string
   fish_days: string
+  egg_allowed_days: string[]
+  chicken_allowed_days: string[]
+  fish_allowed_days: string[]
   whey_protein: string
   food_allergies: string
   foods_disliked: string

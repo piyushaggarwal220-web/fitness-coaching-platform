@@ -114,7 +114,6 @@ function CoachNewPlanForm() {
 
     const merged = mergePlanForms(form, {
       workout_plan: result.formData.workout_plan,
-      cardio_plan: result.formData.cardio_plan,
       coach_notes: [form.coach_notes, result.formData.coach_notes].filter(Boolean).join('\n\n'),
       title: 'Complete Coaching Plan (Draft)',
     });

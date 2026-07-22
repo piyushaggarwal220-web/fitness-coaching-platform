@@ -9,8 +9,8 @@ import {
   logDraftWorkflow,
   persistDraftGenerationLog,
 } from '@/lib/ai/draft-workflow-log'
-import { generatedDietFormData, generatedWorkoutFormData } from '@/lib/ai/plan-format'
-import { mergePlanForms } from '@/lib/coach/ai-actions'
+import { generatedCardioFormData, generatedDietFormData, generatedSupplementFormData, generatedWorkoutFormData } from '@/lib/ai/plan-format'
+import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-actions'
 import { encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
 import { getNextPlanVersion } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -209,32 +209,71 @@ export async function generateWeeklyPlanDraft(input: {
       .limit(1)
       .maybeSingle()
 
+    const active = (activePlan as Plan | null) ?? null
+    const checkinTyped = checkin as Checkin
+
     const dietResult = await generatePlan({
       profile: profile as OnboardingProfile,
-      latestCheckin: checkin as Checkin,
+      latestCheckin: checkinTyped,
       actionId: 'review_update_diet',
-      activePlan: (activePlan as Plan | null) ?? null,
+      activePlan: active,
       validationMode: 'nutrition_focus',
+      coachInstructions: buildActionCoachInstructions('review_update_diet', {
+        activePlan: active,
+        checkin: checkinTyped,
+      }),
     })
 
     const dietForm = generatedDietFormData(dietResult.generatedPlan, input.clientId)
     const updatedDietContext = buildUpdatedDietPlanForPrompt(
-      (activePlan as Plan | null) ?? null,
+      active,
       dietForm.nutrition_plan,
-      dietForm.cardio_plan || null,
-      dietForm.supplement_plan || null
+      null,
+      null
     )
 
     const workoutResult = await generatePlan({
       profile: profile as OnboardingProfile,
-      latestCheckin: checkin as Checkin,
+      latestCheckin: checkinTyped,
       actionId: 'review_update_workout',
-      activePlan: (activePlan as Plan | null) ?? null,
+      activePlan: active,
       updatedDietPlan: updatedDietContext,
       validationMode: 'workout_focus',
+      coachInstructions: buildActionCoachInstructions('review_update_workout', {
+        activePlan: active,
+        checkin: checkinTyped,
+      }),
+    })
+
+    const cardioResult = await generatePlan({
+      profile: profile as OnboardingProfile,
+      latestCheckin: checkinTyped,
+      actionId: 'review_update_cardio',
+      activePlan: active,
+      updatedDietPlan: updatedDietContext,
+      validationMode: 'cardio_focus',
+      coachInstructions: buildActionCoachInstructions('review_update_cardio', {
+        activePlan: active,
+        checkin: checkinTyped,
+      }),
+    })
+
+    const supplementResult = await generatePlan({
+      profile: profile as OnboardingProfile,
+      latestCheckin: checkinTyped,
+      actionId: 'review_update_supplements',
+      activePlan: active,
+      updatedDietPlan: updatedDietContext,
+      validationMode: 'supplements_focus',
+      coachInstructions: buildActionCoachInstructions('review_update_supplements', {
+        activePlan: active,
+        checkin: checkinTyped,
+      }),
     })
 
     const workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, input.clientId)
+    const cardioForm = generatedCardioFormData(cardioResult.generatedPlan, input.clientId)
+    const supplementForm = generatedSupplementFormData(supplementResult.generatedPlan, input.clientId)
     const merged = mergePlanForms(
       {
         ...dietForm,
@@ -243,7 +282,8 @@ export async function generateWeeklyPlanDraft(input: {
       },
       {
         workout_plan: workoutForm.workout_plan,
-        cardio_plan: workoutForm.cardio_plan || dietForm.cardio_plan,
+        cardio_plan: cardioForm.cardio_plan,
+        supplement_plan: supplementForm.supplement_plan,
         coach_notes: [dietForm.coach_notes, workoutForm.coach_notes].filter(Boolean).join('\n\n'),
       }
     )

@@ -3,8 +3,12 @@ import type { Checkin, Plan, PlanFormData } from '@/types/database'
 export type CoachAiActionId =
   | 'initial_diet'
   | 'initial_workout'
+  | 'initial_cardio'
+  | 'initial_supplements'
   | 'review_update_diet'
   | 'review_update_workout'
+  | 'review_update_cardio'
+  | 'review_update_supplements'
 
 export type CoachAiActionScope = 'initial' | 'weekly'
 
@@ -31,6 +35,20 @@ export const INITIAL_PLAN_ACTIONS: CoachAiActionDefinition[] = [
     scope: 'initial',
     requiresCheckin: false,
   },
+  {
+    id: 'initial_cardio',
+    label: 'Generate cardio plan',
+    description: 'Standalone cardio and step targets — not part of the workout plan',
+    scope: 'initial',
+    requiresCheckin: false,
+  },
+  {
+    id: 'initial_supplements',
+    label: 'Generate supplement plan',
+    description: 'Standalone supplement suggestions — not part of the diet plan',
+    scope: 'initial',
+    requiresCheckin: false,
+  },
 ]
 
 export const WEEKLY_COACHING_ACTIONS: CoachAiActionDefinition[] = [
@@ -45,6 +63,20 @@ export const WEEKLY_COACHING_ACTIONS: CoachAiActionDefinition[] = [
     id: 'review_update_workout',
     label: 'Update workout',
     description: 'Adjust training based on performance and recovery',
+    scope: 'weekly',
+    requiresCheckin: true,
+  },
+  {
+    id: 'review_update_cardio',
+    label: 'Update cardio',
+    description: 'Adjust cardio and steps based on the latest check-in',
+    scope: 'weekly',
+    requiresCheckin: true,
+  },
+  {
+    id: 'review_update_supplements',
+    label: 'Update supplements',
+    description: 'Adjust supplements based on the latest check-in',
     scope: 'weekly',
     requiresCheckin: true,
   },
@@ -68,7 +100,7 @@ function appendNote(base: string, coachNote?: string | null): string {
   return parts.join('\n\n')
 }
 
-function planContext(plan: Plan | null, fields: ('nutrition' | 'workout')[]): string {
+function planContext(plan: Plan | null, fields: ('nutrition' | 'workout' | 'cardio' | 'supplements')[]): string {
   if (!plan) return ''
   const lines: string[] = ['Current active plan context:']
   if (fields.includes('nutrition') && plan.nutrition_plan) {
@@ -76,6 +108,12 @@ function planContext(plan: Plan | null, fields: ('nutrition' | 'workout')[]): st
   }
   if (fields.includes('workout') && plan.workout_plan) {
     lines.push(`Workout (v${plan.version}):\n${plan.workout_plan.slice(0, 1200)}`)
+  }
+  if (fields.includes('cardio') && plan.cardio_plan) {
+    lines.push(`Cardio (v${plan.version}):\n${plan.cardio_plan.slice(0, 800)}`)
+  }
+  if (fields.includes('supplements') && plan.supplement_plan) {
+    lines.push(`Supplements (v${plan.version}):\n${plan.supplement_plan.slice(0, 800)}`)
   }
   return lines.length > 1 ? lines.join('\n\n') : ''
 }
@@ -111,9 +149,11 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Generate a personalized diet plan for this client.',
-          'Prioritize nutrition_plan, supplement_plan, and cardio_plan.',
+          'Prioritize nutrition_plan only (calories, macros, meals).',
+          'Do NOT include cardio, conditioning, steps, or supplements in the diet text.',
+          'Leave cardio_plan.sessions and supplement_plan.items as empty arrays.',
           'Align meals with their reported eating pattern and meal timings.',
-          'For workout_plan set overview to "Workout plan pending" and days to an empty array.',
+          'For workout_plan set overview to "N/A" and days to an empty array.',
         ].join(' '),
         coachNote
       )
@@ -121,10 +161,34 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Generate a personalized workout plan for this client.',
-          'Prioritize workout_plan and cardio_plan sessions.',
+          'Prioritize workout_plan only (strength / resistance training).',
+          'Do NOT include a Cardio, Steps, Conditioning, or Supplements section in the workout text.',
+          'Leave cardio_plan.sessions and supplement_plan.items as empty arrays — those are separate plans.',
           'Respect training days, equipment, injuries, and experience level.',
           'For nutrition_plan use minimal placeholder macros (0) and empty meals array.',
           'Set coach_notes to a brief summary of training priorities only.',
+        ].join(' '),
+        coachNote
+      )
+    case 'initial_cardio':
+      return appendNote(
+        [
+          'Generate a standalone cardio plan for this client.',
+          'Put all cardio, steps, walking, LISS, HIIT, and conditioning in cardio_plan.sessions only.',
+          'Do NOT put cardio inside workout_plan or nutrition_plan.',
+          'Set workout_plan.overview to "N/A", nutrition meals to [], and supplement_plan.items to [].',
+          'Match frequency and intensity to their goal, schedule, and recovery.',
+        ].join(' '),
+        coachNote
+      )
+    case 'initial_supplements':
+      return appendNote(
+        [
+          'Generate a standalone supplement plan for this client.',
+          'Put all supplement recommendations in supplement_plan.items only.',
+          'Do NOT put supplements inside nutrition_plan or workout_plan.',
+          'Set workout_plan.overview to "N/A", nutrition meals to [], and cardio_plan.sessions to [].',
+          'Respect diet preference, current supplements, budget, and medical notes (informational only).',
         ].join(' '),
         coachNote
       )
@@ -134,8 +198,9 @@ export function buildActionCoachInstructions(
           'Update the diet plan based on the latest check-in.',
           checkin ? checkinContext(checkin) : '',
           planContext(activePlan ?? null, ['nutrition']),
-          'Adjust nutrition_plan, supplements, and cardio as needed.',
-          'Keep workout_plan minimal with overview "Unchanged this week" and days [].',
+          'Adjust nutrition_plan only.',
+          'Do NOT include cardio or supplements in the diet text; leave those JSON arrays empty.',
+          'Keep workout_plan minimal with overview "N/A" and days [].',
         ]
           .filter(Boolean)
           .join('\n\n'),
@@ -147,8 +212,35 @@ export function buildActionCoachInstructions(
           'Update the workout plan based on the latest check-in.',
           checkin ? checkinContext(checkin) : '',
           planContext(activePlan ?? null, ['workout']),
-          'Adjust workout_plan and cardio sessions.',
+          'Adjust workout_plan only (strength / resistance training).',
+          'Do NOT include Cardio or Supplements sections in the workout text; leave those JSON arrays empty.',
           'Keep nutrition_plan with placeholder macros and empty meals.',
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+        coachNote
+      )
+    case 'review_update_cardio':
+      return appendNote(
+        [
+          'Update the cardio plan based on the latest check-in.',
+          checkin ? checkinContext(checkin) : '',
+          planContext(activePlan ?? null, ['cardio', 'workout']),
+          'Put updates only in cardio_plan.sessions.',
+          'Do not modify diet or workout content.',
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+        coachNote
+      )
+    case 'review_update_supplements':
+      return appendNote(
+        [
+          'Update the supplement plan based on the latest check-in.',
+          checkin ? checkinContext(checkin) : '',
+          planContext(activePlan ?? null, ['supplements', 'nutrition']),
+          'Put updates only in supplement_plan.items.',
+          'Do not modify diet or workout content.',
         ]
           .filter(Boolean)
           .join('\n\n'),
