@@ -59,7 +59,7 @@ function LoginForm() {
         : getClientPostAuthPath(profile, profileError ?? undefined);
 
       const canHonourRedirect =
-        Boolean(profile) &&
+        profile != null &&
         !profileError &&
         hasClientEntitlement(profile) &&
         hasFinishedRequiredOnboardingAnswers(profile) &&
