@@ -21,6 +21,7 @@ function formatTime(seconds: number): string {
 export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [currentTime, setCurrentTime] = useState(0)
@@ -28,9 +29,20 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
 
   useEffect(() => {
     let cancelled = false
+    setResolvedUrl(null)
+    setLoadError(false)
+    setPlaying(false)
+    setCurrentTime(0)
+
     const supabase = createClient()
     void resolveStorageUrl(supabase, 'chat-voice', url).then((signed) => {
-      if (!cancelled) setResolvedUrl(signed)
+      if (cancelled) return
+      if (!signed) {
+        setLoadError(true)
+        setResolvedUrl(null)
+        return
+      }
+      setResolvedUrl(signed)
     })
     return () => {
       cancelled = true
@@ -47,8 +59,10 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
     }
     void audio.play().then(() => {
       setPlaying(true)
+      setLoadError(false)
     }).catch(() => {
       setPlaying(false)
+      setLoadError(true)
     })
   }
 
@@ -93,23 +107,35 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
           onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
           onLoadedMetadata={() => setTotalDuration(audioRef.current?.duration ?? duration ?? 0)}
           onEnded={() => setPlaying(false)}
-          style={{ display: 'none' }}
+          onError={() => {
+            setPlaying(false)
+            setLoadError(true)
+          }}
+          // Keep in layout but invisible — display:none breaks playback on some mobile browsers.
+          style={styles.hiddenAudio}
         />
       )}
-      <button type="button" onClick={togglePlay} className="btn-press" style={styles.playBtn} aria-label={playing ? 'Pause' : 'Play'} disabled={!resolvedUrl}>
-        {playing ? <Pause size={18} /> : <Play size={18} />}
-      </button>
-      <div style={styles.waveform}>{bars}</div>
-      <span style={styles.time}>
-        {formatTime(currentTime)} / {formatTime(totalDuration)}
-      </span>
-      <button type="button" onClick={cycleSpeed} style={styles.speedBtn}>
-        {speed}x
-      </button>
-      {resolvedUrl && (
-        <a href={resolvedUrl} download style={styles.downloadBtn} aria-label="Download voice message">
-          <Download size={16} />
-        </a>
+      <div style={styles.controlsRow}>
+        <button type="button" onClick={togglePlay} className="btn-press" style={styles.playBtn} aria-label={playing ? 'Pause' : 'Play'} disabled={!resolvedUrl}>
+          {playing ? <Pause size={18} /> : <Play size={18} />}
+        </button>
+        <div style={styles.waveform}>{bars}</div>
+        <span style={styles.time}>
+          {formatTime(currentTime)} / {formatTime(totalDuration)}
+        </span>
+        <button type="button" onClick={cycleSpeed} style={styles.speedBtn}>
+          {speed}x
+        </button>
+        {resolvedUrl && (
+          <a href={resolvedUrl} download style={styles.downloadBtn} aria-label="Download voice message">
+            <Download size={16} />
+          </a>
+        )}
+      </div>
+      {loadError && (
+        <div style={styles.errorText} role="status">
+          Unable to load this voice message. Refresh and try again.
+        </div>
       )}
     </div>
   )
@@ -118,8 +144,9 @@ export function VoicePlayer({ url, duration, fromCoach = false }: VoicePlayerPro
 const styles: Record<string, React.CSSProperties> = {
   container: {
     display: 'flex',
-    alignItems: 'center',
-    gap: 8,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 6,
     minWidth: 0,
     width: '100%',
     maxWidth: 260,
@@ -129,8 +156,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
   },
   coachVoice: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
     maxWidth: '100%',
     padding: '2px 0',
   },
@@ -143,7 +168,20 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#00a884',
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
-    marginBottom: 6,
+  },
+  controlsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 0,
+    width: '100%',
+  },
+  hiddenAudio: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0,
+    pointerEvents: 'none',
   },
   playBtn: {
     width: 34,
@@ -186,5 +224,10 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     color: 'rgba(233,237,239,0.65)',
     padding: 4,
+  },
+  errorText: {
+    fontSize: 11,
+    color: '#f87171',
+    lineHeight: 1.35,
   },
 }

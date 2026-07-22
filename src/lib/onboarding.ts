@@ -4,6 +4,7 @@ import {
   ensureAuthSession,
   fetchClientProfile,
   getRoleHomePath,
+  isDefinitivelyOnboardingIncomplete,
   isOnboardingComplete,
   redirectToLogin,
   restoreSession,
@@ -394,15 +395,36 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
   }
 }
 
-function mealTimingContextFromForm(form: OnboardingFormData): {
+const MEAL_TIMING_KEYS = ['breakfast', 'lunch', 'dinner', 'snacks'] as const
+
+function mealTimingContextFromForm(
+  form: OnboardingFormData,
+  persistedMealsForTiming?: Array<'breakfast' | 'lunch' | 'dinner' | 'snacks'> | null
+): {
   mealsForTiming: string[]
   confirmedMeals: string[]
 } {
-  const mealsForTiming: string[] = ['breakfast', 'lunch', 'dinner']
-  const snacks = form.snacks.trim().toLowerCase()
-  if (form.timing_snacks || (snacks && snacks !== 'none')) {
-    mealsForTiming.push('snacks')
+  const timingByMeal: Record<(typeof MEAL_TIMING_KEYS)[number], string> = {
+    breakfast: form.timing_breakfast,
+    lunch: form.timing_lunch,
+    dinner: form.timing_dinner,
+    snacks: form.timing_snacks,
   }
+
+  let mealsForTiming: string[] = []
+  if (persistedMealsForTiming && persistedMealsForTiming.length > 0) {
+    mealsForTiming = persistedMealsForTiming.filter((meal) => MEAL_TIMING_KEYS.includes(meal))
+  } else {
+    // Prefer meals that already have a saved time so we never bounce a completed
+    // client for a meal they intentionally deselected in the wizard.
+    mealsForTiming = MEAL_TIMING_KEYS.filter((meal) => timingByMeal[meal].trim())
+    if (mealsForTiming.length === 0) {
+      mealsForTiming = ['breakfast', 'lunch', 'dinner']
+      const snacks = form.snacks.trim().toLowerCase()
+      if (snacks && snacks !== 'none') mealsForTiming.push('snacks')
+    }
+  }
+
   // Persisted timings count as confirmed when re-validating a saved profile.
   return { mealsForTiming, confirmedMeals: mealsForTiming }
 }
@@ -424,7 +446,10 @@ export function getResumeStep(
     side: profile.progress_photo_side ?? null,
     back: profile.progress_photo_back ?? null,
   }
-  const mealTimingContext = mealTimingContextFromForm(form)
+  const mealTimingContext = mealTimingContextFromForm(
+    form,
+    parseOnboardingData(profile.onboarding_data)?.eatingPattern?.mealsForTiming
+  )
   const requireNewFields =
     options?.requireBodyMeasurements ?? shouldRequireOnboardingBodyMeasurements(profile)
   for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
@@ -445,7 +470,11 @@ export function getResumeStep(
 export function buildOnboardingData(
   form: OnboardingFormData,
   resumeStep: number,
-  options?: { inferredGoal?: string; aiSelectedGoal?: boolean }
+  options?: {
+    inferredGoal?: string
+    aiSelectedGoal?: boolean
+    mealsForTiming?: Array<'breakfast' | 'lunch' | 'dinner' | 'snacks'>
+  }
 ): OnboardingData {
   const userUnsure = form.fitness_goal === 'ai_decide'
   return {
@@ -505,6 +534,10 @@ export function buildOnboardingData(
       lunch: form.lunch.trim() || null,
       dinner: form.dinner.trim() || null,
       snacks: form.snacks.trim() || null,
+      mealsForTiming:
+        options?.mealsForTiming && options.mealsForTiming.length > 0
+          ? options.mealsForTiming
+          : null,
       timings: {
         breakfast: form.timing_breakfast || null,
         lunch: form.timing_lunch || null,
@@ -537,6 +570,7 @@ export function buildProfilePayload(
     resumeStep: number
     complete?: boolean
     photoUrls?: SavedPhotoUrls
+    mealsForTiming?: Array<'breakfast' | 'lunch' | 'dinner' | 'snacks'>
   }
 ): Record<string, unknown> {
   const now = new Date().toISOString()
@@ -550,6 +584,12 @@ export function buildProfilePayload(
     resolvedGoal = inference.goal
     aiSelectedGoal = true
     inferredGoal = inference.goal
+  }
+
+  const onboardingDataOptions = {
+    inferredGoal,
+    aiSelectedGoal,
+    mealsForTiming: options.mealsForTiming,
   }
 
   const payload: Record<string, unknown> = {
@@ -567,10 +607,7 @@ export function buildProfilePayload(
     injuries: form.injuries.trim() || null,
     medical_notes: buildMedicalNotesForProfile(form),
     sleep_duration: form.sleep_duration || null,
-    onboarding_data: buildOnboardingData(form, options.resumeStep, {
-      inferredGoal,
-      aiSelectedGoal,
-    }),
+    onboarding_data: buildOnboardingData(form, options.resumeStep, onboardingDataOptions),
     updated_at: now,
   }
 
@@ -582,10 +619,7 @@ export function buildProfilePayload(
     payload.onboarding_complete = true
     payload.onboarding_completed_at = now
     payload.terms_accepted_at = now
-    payload.onboarding_data = buildOnboardingData(form, ONBOARDING_SCREEN_COUNT - 1, {
-      inferredGoal,
-      aiSelectedGoal,
-    })
+    payload.onboarding_data = buildOnboardingData(form, ONBOARDING_SCREEN_COUNT - 1, onboardingDataOptions)
   }
 
   return payload
@@ -965,6 +999,7 @@ export async function saveOnboardingProgress(
     step: number
     photoUrls?: SavedPhotoUrls
     complete?: boolean
+    mealsForTiming?: Array<'breakfast' | 'lunch' | 'dinner' | 'snacks'>
   }
 ): Promise<void> {
   // Always persist answer updates — even if onboarding was already marked complete.
@@ -974,6 +1009,7 @@ export async function saveOnboardingProgress(
     resumeStep: options.complete ? ONBOARDING_SCREEN_COUNT - 1 : options.step,
     complete: options.complete,
     photoUrls: options.photoUrls,
+    mealsForTiming: options.mealsForTiming,
   })
 
   // Never clear an existing completion flag from a mid-flow autosave.
@@ -1051,7 +1087,10 @@ export function validateOnboardingAnswersForProfile(
     side: profile.progress_photo_side ?? null,
     back: profile.progress_photo_back ?? null,
   }
-  const meals = mealTimingContextFromForm(form)
+  const meals = mealTimingContextFromForm(
+    form,
+    parseOnboardingData(profile.onboarding_data)?.eatingPattern?.mealsForTiming
+  )
   const requireNewFields = shouldRequireNewOnboardingFields(profile)
   const requireBodyMeasurements = options?.requireBodyMeasurements ?? requireNewFields
   const requireWorkSchoolSchedule = options?.requireWorkSchoolSchedule ?? requireNewFields
@@ -1067,14 +1106,63 @@ export function validateOnboardingAnswersForProfile(
 }
 
 /**
- * Client app access requires the completion flag plus every required answer
- * (including photos for male clients and terms).
+ * True when the server completion flag is set and every required answer still
+ * validates. Used for plan generation / intake quality — not for route guards.
+ * Route access must trust {@link isOnboardingComplete} so a fresh completion
+ * is never bounced by a stale re-read or meal-timing asymmetry.
  */
 export function hasFinishedRequiredOnboardingAnswers(profile: OnboardingProfile): boolean {
   if (profile.onboarding_complete !== true) return false
   return validateOnboardingAnswersForProfile(profile, {
     termsAccepted: Boolean(profile.terms_accepted_at),
   }) === null
+}
+
+/** Poll until the browser can see the server-written completion flag. */
+export async function waitForOnboardingCompletion(
+  supabase: SupabaseClient,
+  userId: string,
+  options?: { attempts?: number; delayMs?: number }
+): Promise<OnboardingProfile | null> {
+  const attempts = options?.attempts ?? 8
+  const delayMs = options?.delayMs ?? 250
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+    const { profile } = await fetchClientProfile(supabase, userId)
+    if (profile && isOnboardingComplete(profile)) {
+      return profile
+    }
+  }
+  return null
+}
+
+const ONBOARDING_JUST_COMPLETED_KEY = 'onboarding_just_completed'
+
+export function markOnboardingJustCompleted(): void {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.setItem(ONBOARDING_JUST_COMPLETED_KEY, String(Date.now()))
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function consumeOnboardingJustCompleted(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const raw = sessionStorage.getItem(ONBOARDING_JUST_COMPLETED_KEY)
+    if (!raw) return false
+    sessionStorage.removeItem(ONBOARDING_JUST_COMPLETED_KEY)
+    const stampedAt = Number(raw)
+    if (!Number.isFinite(stampedAt)) return true
+    // Only honour a recent handoff (2 minutes).
+    return Date.now() - stampedAt < 2 * 60 * 1000
+  } catch {
+    return false
+  }
 }
 
 export function isPaymentConfirmed(
@@ -1096,7 +1184,9 @@ export function getClientPostAuthPath(
     return '/checkout?plan=6_months'
   }
 
-  if (!hasFinishedRequiredOnboardingAnswers(profile)) {
+  // Trust the server completion flag for routing. Full answer re-validation is
+  // for generation quality, not for bouncing clients who just finished intake.
+  if (!isOnboardingComplete(profile)) {
     return '/onboarding'
   }
 
@@ -1155,12 +1245,28 @@ export async function authenticateClient(
     return null
   }
 
-  if (options?.redirectIfOnboarded && profile && hasFinishedRequiredOnboardingAnswers(profile)) {
+  if (options?.redirectIfOnboarded && profile && isOnboardingComplete(profile)) {
     router.push('/dashboard')
     return null
   }
 
-  if (options?.requireOnboarding && profile && !hasFinishedRequiredOnboardingAnswers(profile)) {
+  if (options?.requireOnboarding && profile && isDefinitivelyOnboardingIncomplete(profile)) {
+    // Right after submit, a stale read can still look incomplete. Re-poll briefly
+    // when this navigation is the onboarding → dashboard handoff.
+    if (consumeOnboardingJustCompleted()) {
+      const confirmed = await waitForOnboardingCompletion(supabase, user.id, {
+        attempts: 6,
+        delayMs: 300,
+      })
+      if (confirmed) {
+        return { user, profile: confirmed }
+      }
+    } else {
+      const { profile: refreshed } = await fetchClientProfile(supabase, user.id)
+      if (refreshed && isOnboardingComplete(refreshed)) {
+        return { user, profile: refreshed }
+      }
+    }
     router.push('/onboarding')
     return null
   }

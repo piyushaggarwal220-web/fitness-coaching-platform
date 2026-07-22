@@ -28,8 +28,9 @@ import {
   getSectionForStep,
   GOAL_DEADLINE_OPTIONS,
   HAIR_LOSS_OPTIONS,
-  hasFinishedRequiredOnboardingAnswers,
   INITIAL_ONBOARDING_FORM,
+  isOnboardingComplete,
+  markOnboardingJustCompleted,
   MEAL_TIMING_OPTIONS,
   OCCUPATION_OPTIONS,
   ONBOARDING_SCREEN_COUNT,
@@ -47,6 +48,7 @@ import {
   TRAINING_OPTIONS,
   uploadOnboardingPhoto,
   validateOnboardingStep,
+  waitForOnboardingCompletion,
   WATER_OPTIONS,
   WHEY_OPTIONS,
   WORKOUT_DURATION_OPTIONS,
@@ -120,7 +122,7 @@ export default function OnboardingPage() {
         return
       }
 
-      if (result.profile && hasFinishedRequiredOnboardingAnswers(result.profile)) {
+      if (result.profile && isOnboardingComplete(result.profile)) {
         router.replace('/dashboard')
         return
       }
@@ -137,6 +139,23 @@ export default function OnboardingPage() {
           side: result.profile.progress_photo_side ?? null,
           back: result.profile.progress_photo_back ?? null,
         })
+        const savedMeals = result.profile.onboarding_data?.eatingPattern?.mealsForTiming
+        if (savedMeals && savedMeals.length > 0) {
+          setMealsForTiming(savedMeals)
+          setConfirmedMealTimes(
+            savedMeals.filter((meal) => {
+              const timing =
+                meal === 'breakfast'
+                  ? result.profile!.onboarding_data?.eatingPattern?.timings?.breakfast
+                  : meal === 'lunch'
+                    ? result.profile!.onboarding_data?.eatingPattern?.timings?.lunch
+                    : meal === 'dinner'
+                      ? result.profile!.onboarding_data?.eatingPattern?.timings?.dinner
+                      : result.profile!.onboarding_data?.eatingPattern?.timings?.snacks
+              return Boolean(timing)
+            })
+          )
+        }
       }
       setLoading(false)
     }
@@ -163,6 +182,7 @@ export default function OnboardingPage() {
           step: nextStep,
           photoUrls: urls,
           complete,
+          mealsForTiming,
         })
 
         if (photos.front || photos.side || photos.back) {
@@ -174,7 +194,7 @@ export default function OnboardingPage() {
         setSaving(false)
       }
     },
-    [userId, userEmail, form, photos, photoUrls]
+    [userId, userEmail, form, photos, photoUrls, mealsForTiming]
   )
 
   const handlePhotoChange = (key: PhotoKey) => (files: File[]) => {
@@ -277,7 +297,11 @@ export default function OnboardingPage() {
         )
       }
       await requestComplexityRecalculation({ trigger: 'onboarding_complete' })
-      router.push('/dashboard')
+      // Wait until the browser can see the server-written completion flag so the
+      // dashboard guard does not bounce the client back to these questions.
+      await waitForOnboardingCompletion(supabase, userId)
+      markOnboardingJustCompleted()
+      router.replace('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete onboarding')
       setSubmitting(false)

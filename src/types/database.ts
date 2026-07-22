@@ -103,6 +103,8 @@ export type OnboardingData = {
     lunch?: string | null
     dinner?: string | null
     snacks?: string | null
+    /** Meals the client chose to set times for (wizard step). */
+    mealsForTiming?: Array<'breakfast' | 'lunch' | 'dinner' | 'snacks'> | null
     timings?: {
       breakfast?: string | null
       lunch?: string | null
