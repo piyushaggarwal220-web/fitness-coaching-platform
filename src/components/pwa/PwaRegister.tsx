@@ -1,11 +1,16 @@
 'use client'
 
 import { useEffect } from 'react'
+import { bindInstallPromptCapture } from '@/lib/pwa-install'
 
-/** Registers the Lurvox service worker for PWA install + offline shell + push. */
+/** Registers the Lurvox service worker + captures Chrome install events early. */
 export function PwaRegister() {
   useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
+    const unbind = bindInstallPromptCapture()
+
+    if (!('serviceWorker' in navigator)) {
+      return () => { unbind() }
+    }
 
     const register = () => {
       void navigator.serviceWorker.register('/notification-sw.js', { scope: '/' }).catch(() => {
@@ -15,6 +20,8 @@ export function PwaRegister() {
 
     if (document.readyState === 'complete') register()
     else window.addEventListener('load', register, { once: true })
+
+    return () => { unbind() }
   }, [])
 
   return null

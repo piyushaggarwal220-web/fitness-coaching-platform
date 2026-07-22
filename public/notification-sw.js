@@ -1,6 +1,6 @@
 /* Lurvox service worker — push notifications + offline shell */
 
-const SHELL_CACHE = 'lurvox-shell-v1'
+const SHELL_CACHE = 'lurvox-shell-v2'
 const SHELL_URLS = [
   '/offline.html',
   '/manifest.webmanifest',

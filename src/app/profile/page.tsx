@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { HeightInput } from '@/components/ui/HeightInput'
 import { authenticateClient, FITNESS_GOAL_OPTIONS } from '@/lib/onboarding'
+import { InstallAppCard } from '@/components/pwa/InstallAppCard'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
 import { parseHeightCm, validateHeightCm } from '@/lib/height'
 import {
@@ -155,6 +156,8 @@ export default function Profile() {
         </h1>
         <p style={{ margin: '6px 0 0', color: colors.textSecondary, fontSize: 15 }}>{user?.email}</p>
       </div>
+
+      <InstallAppCard />
 
       {needsReview && (
         <div style={{ ...mobileStyles.error, marginBottom: spacing[3] }}>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { BellOff, BellRing, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { colors, radius, spacing } from '@/lib/design-tokens'
@@ -33,10 +34,9 @@ function wasDismissedToday(): boolean {
 function markDismissedToday() {
   try {
     window.localStorage.setItem(DISMISS_STORAGE_KEY, String(Date.now()))
-    // Clear older nudge key so it cannot resurface on other pages.
     window.localStorage.removeItem('notification-nudge-dismissed-at')
   } catch {
-    // Ignore storage failures (private mode, quota, etc.)
+    // Ignore storage failures
   }
 }
 
@@ -62,7 +62,6 @@ function getStatusContent(status: WebPushStatus, audience: NotificationAudience)
   switch (status) {
     case 'enabled':
       return {
-        label: 'Enabled',
         detail: 'This browser is subscribed to coaching reminders.',
         color: colors.success,
         background: colors.successMuted,
@@ -70,7 +69,6 @@ function getStatusContent(status: WebPushStatus, audience: NotificationAudience)
       }
     case 'blocked':
       return {
-        label: 'Blocked',
         detail: 'Allow notifications in this site’s browser or device settings, then come back and try again. You can keep using the app without them.',
         color: colors.danger,
         background: colors.dangerMuted,
@@ -78,7 +76,6 @@ function getStatusContent(status: WebPushStatus, audience: NotificationAudience)
       }
     case 'unsupported':
       return {
-        label: 'Unavailable',
         detail: 'This browser cannot use web push. You can keep using the app with in-app alerts. On iPhone or iPad, add the site to your Home Screen for the best chance of push support.',
         color: colors.warning,
         background: colors.warningMuted,
@@ -86,7 +83,6 @@ function getStatusContent(status: WebPushStatus, audience: NotificationAudience)
       }
     default:
       return {
-        label: status === 'checking' ? 'Checking…' : 'Not enabled',
         detail: audience === 'coach'
           ? 'Turn on notifications so you do not miss client messages, submitted check-ins, and plan alerts.'
           : 'Turn on notifications so you do not miss coach messages, plan updates, and check-in reminders.',
@@ -97,7 +93,11 @@ function getStatusContent(status: WebPushStatus, audience: NotificationAudience)
   }
 }
 
-/** Full-screen optional prompt — mount only on home dashboards so it is not shown on every section. */
+/**
+ * Optional push prompt for home dashboards only.
+ * - Never shows a “Checking…” screen
+ * - Marks once-per-day as soon as it opens, so other sections never re-trigger it
+ */
 export function NotificationActivationGate({
   audience = 'client',
 }: {
@@ -107,10 +107,14 @@ export function NotificationActivationGate({
   const [userId, setUserId] = useState<string | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [enabling, setEnabling] = useState(false)
-  const [dismissed, setDismissed] = useState(true)
-  const [ready, setReady] = useState(false)
+  const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [error, setError] = useState('')
   const content = getStatusContent(status, audience)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -123,34 +127,37 @@ export function NotificationActivationGate({
   }, [])
 
   useEffect(() => {
-    setDismissed(wasDismissedToday())
-    setReady(true)
-  }, [])
+    if (!authChecked || !userId) return
+    if (status === 'checking' || status === 'enabled') return
+    if (wasDismissedToday()) {
+      setOpen(false)
+      return
+    }
+    // Claim today's slot immediately — prevents re-shows on remount / other pages.
+    markDismissedToday()
+    setOpen(true)
+  }, [authChecked, userId, status])
 
   const enable = async () => {
     setEnabling(true)
     setError('')
     const result = await enableWebPush()
     if (!result.ok) setError(result.error)
-    else markDismissedToday()
+    else setOpen(false)
     await refresh()
     setEnabling(false)
   }
 
   const dismiss = () => {
     markDismissedToday()
-    setDismissed(true)
+    setOpen(false)
   }
 
-  if (!ready) return null
-  if (authChecked && !userId) return null
-  if (userId && status === 'enabled') return null
-  if (dismissed) return null
+  if (!mounted || !open) return null
 
-  const checking = !authChecked || status === 'checking'
   const canEnable = status !== 'unsupported'
 
-  return (
+  return createPortal(
     <div style={styles.backdrop}>
       <section
         role="dialog"
@@ -161,7 +168,7 @@ export function NotificationActivationGate({
         <div style={{ ...styles.largeIcon, backgroundColor: content.background }}>{content.icon}</div>
         <p style={styles.eyebrow}>Stay connected</p>
         <h1 id="notification-gate-title" style={styles.heading}>
-          {checking ? 'Checking notification access…' : 'Turn on notifications'}
+          Turn on notifications
         </h1>
         <p style={styles.intro}>
           {audience === 'coach'
@@ -176,26 +183,25 @@ export function NotificationActivationGate({
         )}
         {error && <div role="alert" style={styles.error}>{error}</div>}
 
-        {!checking && (
-          <div style={styles.actions}>
-            {canEnable && (
-              <Button fullWidth loading={enabling} onClick={() => void enable()}>
-                <BellRing size={19} />
-                {status === 'blocked' ? 'Check permission again' : 'Enable notifications'}
-              </Button>
-            )}
-            <button type="button" onClick={dismiss} style={styles.skipBtn}>
-              Not now — continue without notifications
-            </button>
-          </div>
-        )}
+        <div style={styles.actions}>
+          {canEnable && (
+            <Button fullWidth loading={enabling} onClick={() => void enable()}>
+              <BellRing size={19} />
+              {status === 'blocked' ? 'Check permission again' : 'Enable notifications'}
+            </Button>
+          )}
+          <button type="button" onClick={dismiss} style={styles.skipBtn}>
+            Not now — continue without notifications
+          </button>
+        </div>
 
         <p style={styles.footnote}>
           Notifications are optional. You can enable them later from the bell icon.
-          We will only ask again once per day if you skip.
+          We only ask once per day.
         </p>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

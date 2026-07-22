@@ -33,6 +33,7 @@ import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
 import { LeagueHomeCard } from '@/components/league/LeagueHomeCard';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
+import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { getActiveSubscription } from '@/lib/subscription';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
@@ -416,6 +417,7 @@ export default function Dashboard() {
       )}
 
       <NotificationActivationGate />
+      <PwaInstallPrompt />
 
       {/* Next step — lead with today’s action */}
       {status && status.nextAction && !status.preferTrackerUpTop && (

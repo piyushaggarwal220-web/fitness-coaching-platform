@@ -105,7 +105,7 @@ assert.match(notificationGateSource, /Not now — continue without notifications
 assert.match(notificationGateSource, /notification-prompt-dismissed-at/)
 assert.match(notificationGateSource, /Notifications are optional/)
 assert.match(notificationGateSource, /once per day/)
-assert.match(notificationGateSource, /Checking notification access/)
+assert.doesNotMatch(notificationGateSource, /Checking notification access/)
 assert.doesNotMatch(notificationGateSource, /notification-nudge-dismissed-at/)
 const clientShellSource = readFileSync(
   new URL('../src/components/ui/ClientShell.tsx', import.meta.url),
@@ -118,6 +118,13 @@ const clientDashboardSourceForGate = readFileSync(
 )
 assert.match(clientDashboardSourceForGate, /NotificationActivationGate/)
 assert.match(clientDashboardSourceForGate, /LeagueHomeCard/)
+assert.match(clientDashboardSourceForGate, /PwaInstallPrompt/)
+const rootLayoutSource = readFileSync(
+  new URL('../src/app/layout.tsx', import.meta.url),
+  'utf8'
+)
+assert.doesNotMatch(rootLayoutSource, /PwaInstallPrompt/)
+assert.match(rootLayoutSource, /PwaRegister/)
 const pushSubscriptionRouteSource = readFileSync(
   new URL('../src/app/api/notifications/push-subscription/route.ts', import.meta.url),
   'utf8'

@@ -13,6 +13,7 @@ import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { colors, spacing } from '@/lib/design-tokens';
 import { CoachWorkSummaryCards } from '@/components/coach/CoachWorkSummaryCards';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
+import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 import type { WorkQueueCounts, WorkQueueFilter } from '@/lib/coach-work-queue';
 import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
 import type { Checkin, ClientProfile, Coach, CoachStats } from '@/types/database';
@@ -186,6 +187,7 @@ export default function CoachDashboard() {
       </div>
 
       <NotificationActivationGate audience="coach" />
+      <PwaInstallPrompt />
 
       {/* Overview */}
       <section style={coachPageStyles.section}>

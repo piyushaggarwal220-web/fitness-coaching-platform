@@ -4,7 +4,6 @@ import "./globals.css";
 import "@/components/dev/dev-panel.css";
 import { DevPanelRoot } from "@/components/dev/DevPanelRoot";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
-import { PwaInstallPrompt } from "@/components/pwa/PwaInstallPrompt";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
 import { initWhatsAppProvider } from "@/lib/notifications/whatsapp-provider";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
@@ -59,7 +58,6 @@ export default function RootLayout({
       <body>
         {children}
         <PwaRegister />
-        <PwaInstallPrompt />
         <MetaPixel />
         <DevPanelRoot />
       </body>

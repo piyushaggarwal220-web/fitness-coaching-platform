@@ -3,120 +3,84 @@
 import { useEffect, useState } from 'react'
 import { Download, Share, X } from 'lucide-react'
 import { colors, layout, radius, spacing } from '@/lib/design-tokens'
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
+import {
+  getDeferredInstall,
+  isIosDevice,
+  isStandaloneDisplay,
+  manualInstallCopy,
+  markInstallDismissedToday,
+  triggerNativeInstall,
+  wasInstallDismissedToday,
+} from '@/lib/pwa-install'
 
 type PromptMode = 'ios' | 'native' | 'manual'
 
-const DISMISS_KEY = 'pwa-install-dismissed-at'
-const DISMISS_MS = 7 * 24 * 60 * 60 * 1000
-const FALLBACK_DELAY_MS = 1200
-
-function wasDismissedRecently(): boolean {
-  try {
-    const raw = window.localStorage.getItem(DISMISS_KEY)
-    if (!raw) return false
-    const at = Number(raw)
-    return Number.isFinite(at) && Date.now() - at < DISMISS_MS
-  } catch {
-    return false
-  }
-}
-
-function isStandaloneDisplay(): boolean {
-  if (window.matchMedia('(display-mode: standalone)').matches) return true
-  const nav = window.navigator as Navigator & { standalone?: boolean }
-  return nav.standalone === true
-}
-
-function isIosDevice(): boolean {
-  const ua = window.navigator.userAgent
-  const iOS = /iPad|iPhone|iPod/.test(ua)
-  const iPadOs = window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1
-  return iOS || iPadOs
-}
-
-function isAndroidDevice(): boolean {
-  return /Android/i.test(window.navigator.userAgent)
-}
-
-function manualInstallCopy(): string {
-  if (isAndroidDevice()) {
-    return 'Open Chrome menu (⋮) → Install app or Add to Home screen.'
-  }
-  return 'In Chrome, open the address-bar install icon, or Menu → Cast, save, and share → Install page as app.'
-}
-
-/** Optional install banner — never blocks the app. */
+/**
+ * Install tip — mount only on home dashboards.
+ * Marks “seen today” as soon as it opens so remounts stay quiet.
+ */
 export function PwaInstallPrompt() {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
   const [mode, setMode] = useState<PromptMode | null>(null)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (wasDismissedRecently()) return
     if (isStandaloneDisplay()) return
+    if (wasInstallDismissedToday()) return
+
+    const open = (next: PromptMode) => {
+      // Claim the once-per-day slot immediately so remounts stay quiet.
+      markInstallDismissedToday()
+      setMode(next)
+      setVisible(true)
+    }
 
     if (isIosDevice()) {
-      setMode('ios')
-      setVisible(true)
+      open('ios')
       return
     }
 
-    let settled = false
-
-    const showNative = (event: Event) => {
-      event.preventDefault()
-      settled = true
-      setDeferred(event as BeforeInstallPromptEvent)
-      setMode('native')
-      setVisible(true)
+    if (getDeferredInstall()) {
+      open('native')
+      return
     }
 
-    window.addEventListener('beforeinstallprompt', showNative)
+    const onAvailable = () => {
+      if (wasInstallDismissedToday()) return
+      open('native')
+    }
+    window.addEventListener('lurvox-install-available', onAvailable)
 
-    // Chrome often delays or skips beforeinstallprompt — still show a how-to card.
     const fallbackTimer = window.setTimeout(() => {
-      if (settled || wasDismissedRecently() || isStandaloneDisplay()) return
-      setMode('manual')
-      setVisible(true)
-    }, FALLBACK_DELAY_MS)
+      if (wasInstallDismissedToday() || isStandaloneDisplay()) return
+      if (getDeferredInstall()) open('native')
+      else open('manual')
+    }, 800)
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', showNative)
+      window.removeEventListener('lurvox-install-available', onAvailable)
       window.clearTimeout(fallbackTimer)
     }
   }, [])
 
   const dismiss = () => {
-    try {
-      window.localStorage.setItem(DISMISS_KEY, String(Date.now()))
-    } catch {
-      // ignore
-    }
+    markInstallDismissedToday()
     setVisible(false)
-    setDeferred(null)
     setMode(null)
   }
 
   const install = async () => {
-    if (!deferred) return
-    await deferred.prompt()
-    await deferred.userChoice
+    const outcome = await triggerNativeInstall()
+    if (outcome === 'unavailable') {
+      setMode('manual')
+      return
+    }
     dismiss()
   }
 
   if (!visible || !mode) return null
 
-  const title =
-    mode === 'ios'
-      ? 'Add Lurvox to Home Screen'
-      : 'Install Lurvox app'
-
+  const title = mode === 'ios' ? 'Add Lurvox to Home Screen' : 'Install Lurvox app'
   const detail =
     mode === 'ios' ? (
       <span style={styles.detail}>
@@ -126,7 +90,7 @@ export function PwaInstallPrompt() {
     ) : mode === 'manual' ? (
       <span style={styles.detail}>{manualInstallCopy()}</span>
     ) : (
-      <span style={styles.detail}>Add to your home screen for faster access and alerts.</span>
+      <span style={styles.detail}>Add to your home screen for faster access.</span>
     )
 
   return (
@@ -160,8 +124,7 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'fixed',
     left: spacing[3],
     right: spacing[3],
-    // Above bottom nav + room for the notification nudge card underneath when both show.
-    bottom: `calc(${layout.bottomNavHeight}px + 100px + env(safe-area-inset-bottom, 0px))`,
+    bottom: `calc(${layout.bottomNavHeight}px + ${spacing[3]}px + env(safe-area-inset-bottom, 0px))`,
     zIndex: 1100,
     display: 'flex',
     alignItems: 'center',
