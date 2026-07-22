@@ -212,8 +212,10 @@ export const WEEKDAY_OPTIONS = [
   { value: 'sunday', label: 'Sun' },
 ] as const
 
-const WEEKDAY_ORDER = WEEKDAY_OPTIONS.map((o) => o.value)
-const WEEKDAY_LABELS = Object.fromEntries(WEEKDAY_OPTIONS.map((o) => [o.value, o.label]))
+const WEEKDAY_ORDER: string[] = WEEKDAY_OPTIONS.map((o) => o.value)
+const WEEKDAY_LABELS: Record<string, string> = Object.fromEntries(
+  WEEKDAY_OPTIONS.map((o) => [o.value, o.label])
+)
 
 /** True when the client should pick specific weekdays for that protein. */
 export function proteinDaysNeedWeekdays(daysPerWeek: string): boolean {
