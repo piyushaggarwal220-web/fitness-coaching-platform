@@ -1,10 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
-import { deactivatePlan } from '@/lib/plans'
 
 /**
  * Repair impossible client workflow states at the database level.
- * - plan_delivered without onboarding → deactivate plans
  * - payment_confirmed without access_source → tag admin_trial or purchase
  */
 export async function repairClientWorkflowConsistency(clientId: string): Promise<void> {
@@ -33,18 +31,5 @@ export async function repairClientWorkflowConsistency(clientId: string): Promise
         updated_at: new Date().toISOString(),
       })
       .eq('id', clientId)
-  }
-
-  if (profile.plan_delivered && !profile.onboarding_complete) {
-    const { data: activePlans } = await admin
-      .from('plans')
-      .select('id, client_id')
-      .eq('client_id', clientId)
-      .eq('active', true)
-
-    for (const plan of activePlans ?? []) {
-      const { error: deactivateError } = await deactivatePlan(admin, plan)
-      if (deactivateError) throw new Error(deactivateError)
-    }
   }
 }
