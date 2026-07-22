@@ -69,11 +69,11 @@ function stripInlineSectionBlocks(text: string, keysToRemove: SectionKey[]): str
 
   const patterns: Partial<Record<SectionKey, RegExp>> = {
     cardio:
-      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:cardio(?:\s*(?:plan|this\s+week))?|conditioning|steps)\s*:?\s*\*{0,2}\s*(?:\n|$).*/gis,
+      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:cardio(?:\s*(?:plan|this\s+week))?|conditioning|steps)\s*:?\s*\*{0,2}\s*(?:\n|[\t ]*).*/gi,
     supplements:
-      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?supplements?(?:\s*plan)?\s*:?\s*\*{0,2}\s*(?:\n|$).*/gis,
+      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?supplements?(?:\s*plan)?\s*:?\s*\*{0,2}\s*(?:\n|[\t ]*).*/gi,
     coachNotes:
-      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:coach\s*notes?|coaching\s*notes?)\s*:?\s*\*{0,2}\s*(?:\n|$).*/gis,
+      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:coach\s*notes?|coaching\s*notes?)\s*:?\s*\*{0,2}\s*(?:\n|[\t ]*).*/gi,
   }
 
   let result = text
