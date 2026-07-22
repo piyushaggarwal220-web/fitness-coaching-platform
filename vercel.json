@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/lifecycle-reminders",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 3 * * *"
     },
     {
       "path": "/api/cron/notification-delivery",
