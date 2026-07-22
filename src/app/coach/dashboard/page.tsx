@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { CoachShell } from '@/components/ui/CoachShell';
 import { CoachSectionHeader } from '@/components/coach/CoachSectionHeader';
@@ -10,17 +11,32 @@ import { requireCoach } from '@/lib/coach-session';
 import { brandTitle } from '@/lib/brand';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { colors, spacing } from '@/lib/design-tokens';
-import { CoachConversationsSection } from '@/components/chat/CoachConversationsSection';
-import { CoachWorkQueuePanel } from '@/components/coach/CoachWorkQueuePanel';
 import { CoachWorkSummaryCards } from '@/components/coach/CoachWorkSummaryCards';
-import { CoachTrackerAdherencePanel } from '@/components/coach/CoachTrackerAdherencePanel';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import type { WorkQueueCounts, WorkQueueFilter } from '@/lib/coach-work-queue';
 import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
 import type { Checkin, ClientProfile, Coach, CoachStats } from '@/types/database';
 
+const panelFallback = (
+  <div className="skeleton" style={{ height: 140, borderRadius: 16, marginTop: 8 }} />
+);
+
+const CoachWorkQueuePanel = dynamic(
+  () => import('@/components/coach/CoachWorkQueuePanel').then((m) => ({ default: m.CoachWorkQueuePanel })),
+  { loading: () => panelFallback, ssr: false },
+);
+const CoachTrackerAdherencePanel = dynamic(
+  () => import('@/components/coach/CoachTrackerAdherencePanel').then((m) => ({ default: m.CoachTrackerAdherencePanel })),
+  { loading: () => panelFallback, ssr: false },
+);
+const CoachConversationsSection = dynamic(
+  () => import('@/components/chat/CoachConversationsSection').then((m) => ({ default: m.CoachConversationsSection })),
+  { loading: () => panelFallback, ssr: false },
+);
+
 type CoachClientRow = ClientProfile;
 const supabase = createClient();
+const ROSTER_PREVIEW_LIMIT = 8;
 
 function clientPriority(client: CoachClientRow): number {
   if (client.checkin_overdue) return 0;
@@ -57,6 +73,11 @@ export default function CoachDashboard() {
     });
   }, [clients]);
 
+  const previewClients = useMemo(
+    () => sortedClients.slice(0, ROSTER_PREVIEW_LIMIT),
+    [sortedClients],
+  );
+
   useEffect(() => {
     const checkCoach = async () => {
       setError('');
@@ -70,62 +91,61 @@ export default function CoachDashboard() {
 
       setCoach(coachData);
 
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('profiles')
-        .select('id, name, email, plan_delivered, checkin_awaiting, checkin_overdue, checkin_schedule_started_at, complexity_score, complexity_tier')
-        .eq('coach_id', coachData.id);
+      const [clientsResult, pendingCheckinsResult, activePlansResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, name, email, plan_delivered, checkin_awaiting, checkin_overdue, checkin_schedule_started_at, complexity_score, complexity_tier')
+          .eq('coach_id', coachData.id),
+        supabase
+          .from('checkins')
+          .select('*', { count: 'exact', head: true })
+          .eq('coach_id', coachData.id)
+          .eq('reviewed', false),
+        supabase
+          .from('plans')
+          .select('*', { count: 'exact', head: true })
+          .eq('coach_id', coachData.id)
+          .eq('active', true),
+      ]);
 
-      if (clientsError) {
+      if (clientsResult.error) {
         setError('Failed to load dashboard data. Please try again.');
         setLoading(false);
         return;
       }
 
-      if (clientsData) {
-        setClients(clientsData);
-        const total = clientsData.length;
-        const awaiting = clientsData.filter(c => c.checkin_awaiting === true).length;
-        const overdue = clientsData.filter(c => c.checkin_overdue === true).length;
-        const newClients = clientsData.filter(c => c.plan_delivered === false).length;
-        setStats({ total, awaiting, overdue, new: newClients });
+      const clientsData = clientsResult.data ?? [];
+      setClients(clientsData);
+      const total = clientsData.length;
+      const awaiting = clientsData.filter(c => c.checkin_awaiting === true).length;
+      const overdue = clientsData.filter(c => c.checkin_overdue === true).length;
+      const newClients = clientsData.filter(c => c.plan_delivered === false).length;
+      setStats({ total, awaiting, overdue, new: newClients });
 
-        const clientIds = clientsData.map((c) => c.id);
-        if (clientIds.length > 0) {
-          const { data: checkinData } = await supabase
-            .from('checkins')
-            .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed, submitted_at')
-            .in('client_id', clientIds);
-          setCheckins((checkinData ?? []) as Checkin[]);
-        }
+      const clientIds = clientsData.map((c) => c.id);
+      if (clientIds.length > 0) {
+        const { data: checkinData } = await supabase
+          .from('checkins')
+          .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed, submitted_at')
+          .in('client_id', clientIds);
+        setCheckins((checkinData ?? []) as Checkin[]);
       }
 
-      const { count, error: checkinsError } = await supabase
-        .from('checkins')
-        .select('*', { count: 'exact', head: true })
-        .eq('coach_id', coachData.id)
-        .eq('reviewed', false);
-
-      if (checkinsError) {
+      if (pendingCheckinsResult.error) {
         setError('Failed to load check-in counts.');
         setLoading(false);
         return;
       }
 
-      setPendingCheckins(count ?? 0);
+      setPendingCheckins(pendingCheckinsResult.count ?? 0);
 
-      const { count: activePlanCount, error: plansError } = await supabase
-        .from('plans')
-        .select('*', { count: 'exact', head: true })
-        .eq('coach_id', coachData.id)
-        .eq('active', true);
-
-      if (plansError) {
+      if (activePlansResult.error) {
         setError('Failed to load plan counts.');
         setLoading(false);
         return;
       }
 
-      setPlansDelivered(activePlanCount ?? 0);
+      setPlansDelivered(activePlansResult.count ?? 0);
       setLoading(false);
     };
     checkCoach();
@@ -285,7 +305,7 @@ export default function CoachDashboard() {
             {sortedClients.length === 0 ? (
               <p style={styles.empty}>No clients assigned yet.</p>
             ) : (
-              sortedClients.map((client) => {
+              previewClients.map((client) => {
                 const summary = client.checkin_schedule_started_at
                   ? getCoachClientCheckinSummary(client.id, client.checkin_schedule_started_at, checkins)
                   : null;

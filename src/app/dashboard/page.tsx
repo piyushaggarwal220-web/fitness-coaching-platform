@@ -135,10 +135,11 @@ export default function Dashboard() {
             .from('checkins')
             .select('id, client_id, checkin_type, submitted_at, coaching_week, coaching_day, reviewed')
             .eq('client_id', userId)
-            .order('submitted_at', { ascending: false }),
+            .order('submitted_at', { ascending: false })
+            .limit(24),
           supabase
             .from('plans')
-            .select('id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, workout_plan, nutrition_plan, cardio_plan, supplement_plan, coach_notes, diet_opened_at, workout_opened_at')
+            .select('id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, diet_opened_at, workout_opened_at')
             .eq('client_id', userId)
             .eq('active', true)
             .order('updated_at', { ascending: false })
@@ -170,7 +171,7 @@ export default function Dashboard() {
             : Promise.resolve({ data: null, error: null }),
           supabase
             .from('initial_plan_generation_jobs')
-            .select('*')
+            .select('id, client_id, status, error_message, updated_at')
             .eq('client_id', userId)
             .maybeSingle(),
         ]);
@@ -215,21 +216,23 @@ export default function Dashboard() {
         }
         setRecentActivity(activity.slice(0, 5));
 
-        if (planData) {
-          const { view } = await loadTodayTrackerView(supabase, userId, profileData);
-          if (view) {
-            setTrackerStreak(view.streak);
-            setTodayTrackerPercent(view.day.overall_percent ?? 0);
-            setTrackerSubtitle(getTrackerHomeSummary(view.day));
-          }
-        }
-
         if (coachResult.data) setCoach(coachResult.data as Coach);
         setUnreadMessages((convResult.data?.unread_by_client as number) ?? 0);
         setGenerationJob(generationResult.data as InitialPlanGenerationJob | null);
+
+        // Paint the dashboard first; tracker summary can fill in afterwards.
+        setLoading(false);
+
+        if (planData) {
+          void loadTodayTrackerView(supabase, userId, profileData).then(({ view }) => {
+            if (!view) return;
+            setTrackerStreak(view.streak);
+            setTodayTrackerPercent(view.day.overall_percent ?? 0);
+            setTrackerSubtitle(getTrackerHomeSummary(view.day));
+          });
+        }
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : 'Failed to load dashboard');
-      } finally {
         setLoading(false);
       }
     };
