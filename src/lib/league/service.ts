@@ -68,7 +68,7 @@ async function loadClientLeagueInput(
       .lte('log_date', season.endsOn),
     admin
       .from('checkins')
-      .select('checkin_type, submitted_at')
+      .select('checkin_type, submitted_at, chest, thigh, navel')
       .eq('client_id', clientId)
       .gte('submitted_at', `${season.startsOn}T00:00:00.000Z`)
       .lte('submitted_at', `${season.endsOn}T23:59:59.999Z`),
@@ -93,6 +93,7 @@ async function loadClientLeagueInput(
     checkins: (checkinResult.data ?? []).map((entry) => ({
       checkinType: entry.checkin_type as string,
       submittedAt: entry.submitted_at as string,
+      hasMeasurements: Boolean(entry.chest && entry.thigh && entry.navel),
     })),
     journeyPhotoDays: (journeyResult.data ?? [])
       .filter((entry) => {
@@ -147,7 +148,7 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
       .lte('log_date', season.endsOn),
     admin
       .from('checkins')
-      .select('client_id, checkin_type, submitted_at')
+      .select('client_id, checkin_type, submitted_at, chest, thigh, navel')
       .in('client_id', clientIds)
       .gte('submitted_at', `${season.startsOn}T00:00:00.000Z`)
       .lte('submitted_at', `${season.endsOn}T23:59:59.999Z`),
@@ -183,6 +184,7 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
           .map((c) => ({
             checkinType: c.checkin_type as string,
             submittedAt: c.submitted_at as string,
+            hasMeasurements: Boolean(c.chest && c.thigh && c.navel),
           })),
         journeyPhotoDays: journeys
           .filter((j) => j.client_id === id)

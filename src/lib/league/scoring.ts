@@ -26,7 +26,7 @@ export type LeagueScoreBreakdown = {
 }
 
 export type LeagueMission = {
-  id: 'daily-log' | 'three-day-rhythm' | 'weekly-checkin' | 'progress-memory'
+  id: 'daily-log' | 'three-day-rhythm' | 'weekly-checkin' | 'progress-memory' | 'body-tape'
   title: string
   description: string
   cadence: 'Daily' | 'Weekly' | 'Season'
@@ -47,7 +47,7 @@ export type LeagueClientScoreInput = {
   clientId: string
   displayName: string
   trackerDays: Array<{ logDate: string; overallPercent: number | null }>
-  checkins: Array<{ checkinType: string; submittedAt: string }>
+  checkins: Array<{ checkinType: string; submittedAt: string; hasMeasurements?: boolean }>
   journeyPhotoDays: string[]
 }
 
@@ -156,7 +156,10 @@ export function scoreClientForSeason(
     const day = c.submittedAt.slice(0, 10)
     if (!dateInRange(day, season.startsOn, season.endsOn)) continue
     if (c.checkinType === 'mid_week') checkins += 5
-    else if (c.checkinType === 'weekly') checkins += 8
+    else if (c.checkinType === 'weekly') {
+      checkins += 8
+      if (c.hasMeasurements) checkins += 3
+    }
   }
 
   let photos = 0
@@ -242,6 +245,11 @@ export function getLeagueMissions(
     entry.submittedAt.slice(0, 10) <= weekEndKey &&
     dateInRange(entry.submittedAt.slice(0, 10), season.startsOn, season.endsOn)
   ))
+  const measurementsDone = input.checkins.some((entry) => (
+    entry.checkinType === 'weekly' &&
+    entry.hasMeasurements &&
+    dateInRange(entry.submittedAt.slice(0, 10), season.startsOn, season.endsOn)
+  ))
   const photoDone = input.journeyPhotoDays.some((entry) => dateInRange(entry, season.startsOn, season.endsOn))
 
   return [
@@ -270,13 +278,24 @@ export function getLeagueMissions(
     {
       id: 'weekly-checkin',
       title: 'Send the field report',
-      description: 'Submit a weekly check-in this week.',
+      description: 'Submit a weekly check-in with photos this week.',
       cadence: 'Weekly',
       progress: weeklyCheckinDone ? 1 : 0,
       target: 1,
       completed: weeklyCheckinDone,
       href: '/checkin',
-      pointsHint: 'Weekly check-in adds 8 pts',
+      pointsHint: 'Weekly check-in +8 · photos +2/day',
+    },
+    {
+      id: 'body-tape',
+      title: 'Log the tape',
+      description: 'Log chest, thigh, and navel measurements on a weekly check-in.',
+      cadence: 'Season',
+      progress: measurementsDone ? 1 : 0,
+      target: 1,
+      completed: measurementsDone,
+      href: '/checkin',
+      pointsHint: 'Full measurements add +3 pts',
     },
     {
       id: 'progress-memory',

@@ -29,6 +29,8 @@ export const INITIAL_MID_WEEK_FORM: MidWeekCheckinFormData = {
   sleep_quality: '',
   stress_level: '',
   hunger_level: '',
+  adherence_wins: '',
+  adherence_struggles: '',
   pain_injuries: '',
   questions_for_coach: '',
   additional_comments: '',
@@ -36,6 +38,9 @@ export const INITIAL_MID_WEEK_FORM: MidWeekCheckinFormData = {
 
 export const INITIAL_WEEKLY_FORM: WeeklyCheckinFormData = {
   weight: '',
+  chest: '',
+  thigh: '',
+  navel: '',
   diet_adherence: '',
   workout_adherence: '',
   energy_level: '',
@@ -43,6 +48,8 @@ export const INITIAL_WEEKLY_FORM: WeeklyCheckinFormData = {
   stress_level: '',
   hunger_level: '',
   motivation_level: '',
+  progress_rating: '',
+  progress_notes: '',
   digestion: '',
   pain_injuries: '',
   cardio_completed: '',
@@ -61,6 +68,8 @@ export function validateMidWeekForm(data: MidWeekCheckinFormData): string | null
   if (!isScoreValid(data.sleep_quality)) return 'Sleep quality must be between 1 and 10.'
   if (!isScoreValid(data.stress_level)) return 'Stress must be between 1 and 10.'
   if (!isScoreValid(data.hunger_level)) return 'Hunger must be between 1 and 10.'
+  if (!data.adherence_wins.trim()) return 'Tell us what is helping you stick to the plan.'
+  if (!data.adherence_struggles.trim()) return 'Tell us where adherence slipped this week.'
   return null
 }
 
@@ -69,6 +78,9 @@ export function validateWeeklyCheckinForm(
   photos: { front: File | null; side: File | null; back: File | null }
 ): string | null {
   if (!data.weight || Number(data.weight) <= 0) return 'Enter a valid weight in kg.'
+  if (!data.chest || Number(data.chest) <= 0) return 'Enter your chest measurement in cm.'
+  if (!data.thigh || Number(data.thigh) <= 0) return 'Enter your thigh measurement in cm.'
+  if (!data.navel || Number(data.navel) <= 0) return 'Enter your belly (navel) measurement in cm.'
   if (!isScoreValid(data.diet_adherence)) return 'Diet adherence must be between 1 and 10.'
   if (!isScoreValid(data.workout_adherence)) return 'Workout adherence must be between 1 and 10.'
   if (!isScoreValid(data.energy_level)) return 'Energy must be between 1 and 10.'
@@ -76,6 +88,8 @@ export function validateWeeklyCheckinForm(
   if (!isScoreValid(data.stress_level)) return 'Stress must be between 1 and 10.'
   if (!isScoreValid(data.hunger_level)) return 'Hunger must be between 1 and 10.'
   if (!isScoreValid(data.motivation_level)) return 'Motivation must be between 1 and 10.'
+  if (!isScoreValid(data.progress_rating)) return 'Rate your progress between 1 and 10.'
+  if (!data.progress_notes.trim()) return 'Describe your progress compared to last week.'
   if (!photos.front) return 'Front progress photo is required.'
   if (!photos.side) return 'Side progress photo is required.'
   if (!photos.back) return 'Back progress photo is required.'

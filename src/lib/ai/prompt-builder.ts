@@ -136,6 +136,9 @@ function buildClientProfileSection(profile: OnboardingProfile): string {
     `- Gender: ${getOnboardingLabel('gender', profile.gender)}`,
     `- Height: ${formatValue(profile.height)} cm`,
     `- Weight: ${formatValue(profile.weight)} kg`,
+    `- Chest: ${formatValue(profile.onboarding_data?.measurements?.chest)} cm`,
+    `- Thigh: ${formatValue(profile.onboarding_data?.measurements?.thigh)} cm`,
+    `- Belly (navel): ${formatValue(profile.onboarding_data?.measurements?.navel)} cm`,
     `- Fitness goal: ${getOnboardingLabel('fitness_goal', profile.fitness_goal)}`,
     `- Training experience: ${getOnboardingLabel('training_experience', profile.training_experience)}`,
     `- Activity level: ${getOnboardingLabel('activity_level', profile.activity_level)}`,
@@ -152,11 +155,19 @@ function buildCheckinSection(checkin: Checkin): string {
     '## Latest Check-In',
     `- Submitted: ${checkin.submitted_at}`,
     `- Weight: ${formatValue(checkin.weight)} kg`,
-    `- Waist: ${formatValue(checkin.waist)} cm`,
+    `- Chest: ${formatValue(checkin.chest)} cm`,
+    `- Thigh: ${formatValue(checkin.thigh)} cm`,
+    `- Belly (navel): ${formatValue(checkin.navel ?? checkin.waist)} cm`,
+    `- Progress rating: ${formatValue(checkin.progress_rating)}/10`,
+    `- Progress notes: ${hasMeaningfulText(checkin.progress_notes) ? checkin.progress_notes!.trim() : 'None'}`,
     `- Energy level: ${formatValue(checkin.energy_level)}/10`,
     `- Hunger level: ${formatValue(checkin.hunger_level)}/10`,
+    `- Diet adherence: ${formatValue(checkin.diet_adherence)}/10`,
+    `- Workout adherence: ${formatValue(checkin.workout_adherence)}/10`,
     `- Training performance: ${formatValue(checkin.training_performance)}/10`,
     `- Adherence score: ${formatValue(checkin.adherence_score)}/10`,
+    `- Adherence wins: ${hasMeaningfulText(checkin.adherence_wins) ? checkin.adherence_wins!.trim() : 'None'}`,
+    `- Adherence struggles: ${hasMeaningfulText(checkin.adherence_struggles) ? checkin.adherence_struggles!.trim() : 'None'}`,
     `- Notes: ${hasMeaningfulText(checkin.notes) ? checkin.notes!.trim() : 'None'}`,
   ]
   return lines.join('\n')
@@ -238,6 +249,11 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   if (data.lifestyle) {
     lines.push(
       `Lifestyle: occupation ${data.lifestyle.occupation ?? '—'}, schedule ${data.lifestyle.workSchoolSchedule ?? '—'}, steps ${data.lifestyle.dailySteps ?? '—'}, stress ${data.lifestyle.stressLevel ?? '—'}, water ${data.lifestyle.waterIntake ?? '—'}`
+    )
+  }
+  if (data.measurements) {
+    lines.push(
+      `Body measurements: chest ${data.measurements.chest ?? '—'} cm, thigh ${data.measurements.thigh ?? '—'} cm, belly at navel ${data.measurements.navel ?? '—'} cm`
     )
   }
   if (data.training) {

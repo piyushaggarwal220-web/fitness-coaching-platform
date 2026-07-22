@@ -65,6 +65,11 @@ export type OnboardingData = {
     stressLevel?: string | null
     waterIntake?: string | null
   }
+  measurements?: {
+    chest?: string | null
+    thigh?: string | null
+    navel?: string | null
+  }
   training?: {
     location?: string | null
     daysPerWeek?: string | number | null
@@ -163,6 +168,9 @@ export type OnboardingFormData = {
   gender: string
   height: string
   weight: string
+  chest: string
+  thigh: string
+  navel: string
   fitness_goal: string
   target_weight: string
   goal_deadline: string
@@ -299,6 +307,9 @@ export type Checkin = {
   due_at: string | null
   weight: number | null
   waist: number | null
+  chest: number | null
+  thigh: number | null
+  navel: number | null
   progress_photo_front: string | null
   progress_photo_side: string | null
   progress_photo_back: string | null
@@ -315,6 +326,10 @@ export type Checkin = {
   pain_injuries: string | null
   questions_for_coach: string | null
   cardio_completed: string | null
+  progress_rating: number | null
+  progress_notes: string | null
+  adherence_wins: string | null
+  adherence_struggles: string | null
   extra_photos: string[] | null
   plan_version: number | null
   notes: string | null
@@ -381,6 +396,8 @@ export type MidWeekCheckinFormData = {
   sleep_quality: string
   stress_level: string
   hunger_level: string
+  adherence_wins: string
+  adherence_struggles: string
   pain_injuries: string
   questions_for_coach: string
   additional_comments: string
@@ -388,6 +405,9 @@ export type MidWeekCheckinFormData = {
 
 export type WeeklyCheckinFormData = {
   weight: string
+  chest: string
+  thigh: string
+  navel: string
   diet_adherence: string
   workout_adherence: string
   energy_level: string
@@ -395,6 +415,8 @@ export type WeeklyCheckinFormData = {
   stress_level: string
   hunger_level: string
   motivation_level: string
+  progress_rating: string
+  progress_notes: string
   digestion: string
   pain_injuries: string
   cardio_completed: string

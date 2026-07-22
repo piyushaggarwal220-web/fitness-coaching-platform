@@ -6,6 +6,7 @@ import { Flag, MessageCircle, Scale, Trophy } from 'lucide-react'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { Card, StatCard } from '@/components/ui/Card'
 import { PhotoGalleryViewer, type GalleryPhoto } from '@/components/journey/PhotoGalleryViewer'
+import { PhotoCompareStrip } from '@/components/journey/PhotoCompareStrip'
 import { authenticateClient } from '@/lib/onboarding'
 import { loadProgressJourney, type ProgressJourneyData, type JourneyWeeklyEntry } from '@/lib/progress-journey'
 import { brandTitle } from '@/lib/brand'
@@ -58,7 +59,9 @@ export default function JourneyPage() {
   if (loading) return <ClientShell title="Journey" loading />
   if (!data) return null
 
-  const { stats, milestones, weeklyEntries, weightHistory, progressPhotos, coachComments, recentWorkouts } = data
+  const { stats, milestones, weeklyEntries, weightHistory, progressPhotos, coachComments, recentWorkouts, measurements } = data
+  const latest = weeklyEntries[weeklyEntries.length - 1] ?? null
+  const prior = weeklyEntries.length > 1 ? weeklyEntries[weeklyEntries.length - 2] : null
 
   return (
     <ClientShell title="Journey">
@@ -79,6 +82,45 @@ export default function JourneyPage() {
           Every step forward counts
         </p>
       </div>
+
+      {latest && prior && (
+        <section style={{ marginBottom: spacing[5] }}>
+          <h2 style={sectionHeading}>Progress compare</h2>
+          <Card variant="elevated">
+            <PhotoCompareStrip
+              previous={{
+                label: prior.coachingWeek != null ? `Week ${prior.coachingWeek}` : 'Earlier',
+                front: prior.photos.front,
+                side: prior.photos.side,
+                back: prior.photos.back,
+              }}
+              current={{
+                label: latest.coachingWeek != null ? `Week ${latest.coachingWeek}` : 'Latest',
+                front: latest.photos.front,
+                side: latest.photos.side,
+                back: latest.photos.back,
+              }}
+            />
+          </Card>
+        </section>
+      )}
+
+      {measurements.length > 0 && (
+        <section style={{ marginBottom: spacing[5] }}>
+          <h2 style={sectionHeading}><Scale size={14} style={{ display: 'inline', marginRight: 6 }} />Tape measurements</h2>
+          <Card variant="elevated">
+            {measurements.slice().reverse().slice(0, 6).map((m) => (
+              <div key={m.date} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10, fontSize: 13, color: colors.textSecondary }}>
+                <span style={{ fontWeight: 600, color: colors.textPrimary, minWidth: 88 }}>{new Date(m.date).toLocaleDateString()}</span>
+                {m.weight != null && <span>Wt {m.weight} kg</span>}
+                {m.chest != null && <span>Chest {m.chest} cm</span>}
+                {m.thigh != null && <span>Thigh {m.thigh} cm</span>}
+                {m.navel != null && <span>Navel {m.navel} cm</span>}
+              </div>
+            ))}
+          </Card>
+        </section>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: spacing[2], marginBottom: spacing[5] }}>
         <StatCard label="Weeks Active" value={String(stats.weeksActive)} staggerIndex={0} />

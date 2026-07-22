@@ -197,9 +197,12 @@ export default function CoachCheckinDetailPage() {
             <section style={styles.card}>
               <h2 style={styles.cardTitle}>Measurements</h2>
               <InfoRow label="Weight" value={formatWeightChange(checkin.weight, previous?.weight ?? null)} />
-              {checkin.waist != null && (
-                <InfoRow label="Waist" value={formatWaistChange(checkin.waist, previous?.waist ?? null)} />
-              )}
+              <InfoRow label="Chest" value={formatWaistChange(checkin.chest, previous?.chest ?? null)} />
+              <InfoRow label="Thigh" value={formatWaistChange(checkin.thigh, previous?.thigh ?? null)} />
+              <InfoRow
+                label="Belly (navel)"
+                value={formatWaistChange(checkin.navel ?? checkin.waist, previous?.navel ?? previous?.waist ?? null)}
+              />
               {checkin.plan_version != null && (
                 <InfoRow label="Plan version" value={`v${checkin.plan_version}`} />
               )}
@@ -215,8 +218,30 @@ export default function CoachCheckinDetailPage() {
             <InfoRow label="Stress" value={String(checkin.stress_level ?? '—')} />
             <InfoRow label="Hunger" value={String(checkin.hunger_level ?? '—')} />
             {isWeekly && <InfoRow label="Motivation" value={String(checkin.motivation_level ?? '—')} />}
+            {isWeekly && <InfoRow label="Progress" value={String(checkin.progress_rating ?? '—')} />}
           </section>
         </div>
+
+        {!isWeekly && checkin.adherence_wins && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Adherence wins</h2>
+            <p style={styles.notes}>{checkin.adherence_wins}</p>
+          </section>
+        )}
+
+        {!isWeekly && checkin.adherence_struggles && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Adherence slips</h2>
+            <p style={styles.notes}>{checkin.adherence_struggles}</p>
+          </section>
+        )}
+
+        {isWeekly && checkin.progress_notes && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Progress notes</h2>
+            <p style={styles.notes}>{checkin.progress_notes}</p>
+          </section>
+        )}
 
         {checkin.pain_injuries && (
           <section style={styles.card}>

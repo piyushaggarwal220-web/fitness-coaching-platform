@@ -433,6 +433,44 @@ function renderStep(
                 inputMode="decimal"
               />
             </Field>
+            <Field
+              label="Body measurements (cm)"
+              required
+              hint="Measure with a soft tape. Belly = around the waist at navel height."
+            >
+              <div style={{ display: 'grid', gap: 10 }}>
+                <input
+                  type="number"
+                  value={form.chest}
+                  onChange={(e) => update({ chest: e.target.value })}
+                  placeholder="Chest (cm)"
+                  style={s.input}
+                  inputMode="decimal"
+                  min={1}
+                  step="0.1"
+                />
+                <input
+                  type="number"
+                  value={form.thigh}
+                  onChange={(e) => update({ thigh: e.target.value })}
+                  placeholder="Thigh (cm)"
+                  style={s.input}
+                  inputMode="decimal"
+                  min={1}
+                  step="0.1"
+                />
+                <input
+                  type="number"
+                  value={form.navel}
+                  onChange={(e) => update({ navel: e.target.value })}
+                  placeholder="Belly at navel (cm)"
+                  style={s.input}
+                  inputMode="decimal"
+                  min={1}
+                  step="0.1"
+                />
+              </div>
+            </Field>
           </div>
         </div>
       )

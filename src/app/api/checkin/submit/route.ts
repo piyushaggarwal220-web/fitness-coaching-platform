@@ -30,6 +30,8 @@ type MidWeekBody = {
   sleep_quality: number
   stress_level: number
   hunger_level: number
+  adherence_wins?: string | null
+  adherence_struggles?: string | null
   pain_injuries?: string | null
   questions_for_coach?: string | null
   additional_comments?: string | null
@@ -38,6 +40,9 @@ type MidWeekBody = {
 type WeeklyBody = {
   checkinType: 'weekly'
   weight: number
+  chest: number
+  thigh: number
+  navel: number
   diet_adherence: number
   workout_adherence: number
   energy_level: number
@@ -45,6 +50,8 @@ type WeeklyBody = {
   stress_level: number
   hunger_level: number
   motivation_level: number
+  progress_rating: number
+  progress_notes?: string | null
   digestion?: string | null
   pain_injuries?: string | null
   cardio_completed?: string | null
@@ -70,10 +77,15 @@ function validateBody(body: SubmitBody): string | null {
     if (!isScore(body.sleep_quality)) return 'Invalid sleep quality.'
     if (!isScore(body.stress_level)) return 'Invalid stress level.'
     if (!isScore(body.hunger_level)) return 'Invalid hunger level.'
+    if (!body.adherence_wins?.trim()) return 'Adherence wins are required.'
+    if (!body.adherence_struggles?.trim()) return 'Adherence struggles are required.'
     return null
   }
 
   if (!body.weight || body.weight <= 0) return 'Invalid weight.'
+  if (!body.chest || body.chest <= 0) return 'Invalid chest measurement.'
+  if (!body.thigh || body.thigh <= 0) return 'Invalid thigh measurement.'
+  if (!body.navel || body.navel <= 0) return 'Invalid belly (navel) measurement.'
   if (!isScore(body.diet_adherence)) return 'Invalid diet adherence.'
   if (!isScore(body.workout_adherence)) return 'Invalid workout adherence.'
   if (!isScore(body.energy_level)) return 'Invalid energy level.'
@@ -81,6 +93,8 @@ function validateBody(body: SubmitBody): string | null {
   if (!isScore(body.stress_level)) return 'Invalid stress level.'
   if (!isScore(body.hunger_level)) return 'Invalid hunger level.'
   if (!isScore(body.motivation_level)) return 'Invalid motivation level.'
+  if (!isScore(body.progress_rating)) return 'Invalid progress rating.'
+  if (!body.progress_notes?.trim()) return 'Progress notes are required.'
   if (!body.progress_photo_front || !body.progress_photo_side || !body.progress_photo_back) {
     return 'Progress photos are required.'
   }
@@ -222,6 +236,8 @@ export async function POST(request: Request) {
     if (body.checkinType === 'mid_week') {
       insertRow = {
         ...baseRow,
+        adherence_wins: body.adherence_wins ?? null,
+        adherence_struggles: body.adherence_struggles ?? null,
         questions_for_coach: body.questions_for_coach ?? null,
         notes: body.additional_comments ?? null,
       }
@@ -229,7 +245,13 @@ export async function POST(request: Request) {
       insertRow = {
         ...baseRow,
         weight: body.weight,
+        chest: body.chest,
+        thigh: body.thigh,
+        navel: body.navel,
+        waist: body.navel,
         motivation_level: body.motivation_level,
+        progress_rating: body.progress_rating,
+        progress_notes: body.progress_notes ?? null,
         digestion: body.digestion ?? null,
         cardio_completed: body.cardio_completed ?? null,
         notes: body.additional_notes ?? null,
@@ -327,18 +349,25 @@ export async function POST(request: Request) {
             energyLevel: body.energy_level,
             sleepQuality: body.sleep_quality,
             stressLevel: body.stress_level,
+            adherenceWins: body.adherence_wins,
+            adherenceStruggles: body.adherence_struggles,
             painInjuries: body.pain_injuries,
             questionsForCoach: body.questions_for_coach,
           })
         : formatWeeklyCheckinChatMessage({
             coachingWeek: scheduled.coachingWeek,
             weight: body.weight,
+            chest: body.chest,
+            thigh: body.thigh,
+            navel: body.navel,
             dietAdherence: body.diet_adherence,
             workoutAdherence: body.workout_adherence,
             energyLevel: body.energy_level,
             sleepQuality: body.sleep_quality,
             stressLevel: body.stress_level,
             motivationLevel: body.motivation_level,
+            progressRating: body.progress_rating,
+            progressNotes: body.progress_notes,
             painInjuries: body.pain_injuries,
             notes: body.additional_notes,
             photoCount,

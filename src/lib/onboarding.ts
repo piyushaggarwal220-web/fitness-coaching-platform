@@ -265,6 +265,9 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   gender: '',
   height: '',
   weight: '',
+  chest: '',
+  thigh: '',
+  navel: '',
   fitness_goal: '',
   target_weight: '',
   goal_deadline: '',
@@ -356,6 +359,9 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     daily_steps: data.lifestyle?.dailySteps ?? '',
     stress_level: data.lifestyle?.stressLevel ?? '',
     water_intake: data.lifestyle?.waterIntake ?? '',
+    chest: data.measurements?.chest ?? '',
+    thigh: data.measurements?.thigh ?? '',
+    navel: data.measurements?.navel ?? '',
     training_location: data.training?.location ?? '',
     training_days_per_week: data.training?.daysPerWeek != null ? String(data.training.daysPerWeek) : '',
     workout_duration: data.training?.durationMinutes ?? '',
@@ -424,6 +430,11 @@ export function buildOnboardingData(
       dailySteps: form.daily_steps || null,
       stressLevel: form.stress_level || null,
       waterIntake: form.water_intake || null,
+    },
+    measurements: {
+      chest: form.chest.trim() || null,
+      thigh: form.thigh.trim() || null,
+      navel: form.navel.trim() || null,
     },
     training: {
       location: form.training_location || null,
@@ -595,6 +606,9 @@ export function validateOnboardingStep(
       const heightError = validateHeightCm(data.height)
       if (heightError) return heightError
       if (!data.weight || Number(data.weight) <= 0) return 'Enter a valid weight in kg.'
+      if (!data.chest || Number(data.chest) <= 0) return 'Enter your chest measurement in cm.'
+      if (!data.thigh || Number(data.thigh) <= 0) return 'Enter your thigh measurement in cm.'
+      if (!data.navel || Number(data.navel) <= 0) return 'Enter your belly (navel) measurement in cm.'
       return null
     }
     case 2: {
@@ -774,6 +788,9 @@ export function buildReviewSections(
         { label: 'Gender', value: getOnboardingLabel('gender', form.gender) },
         { label: 'Height', value: `${form.height} cm` },
         { label: 'Weight', value: `${form.weight} kg` },
+        { label: 'Chest', value: form.chest ? `${form.chest} cm` : 'Not set' },
+        { label: 'Thigh', value: form.thigh ? `${form.thigh} cm` : 'Not set' },
+        { label: 'Belly (navel)', value: form.navel ? `${form.navel} cm` : 'Not set' },
       ],
     },
     {

@@ -1,4 +1,4 @@
-import type { Checkin, CheckinType } from '@/types/database'
+import type { CheckinType } from '@/types/database'
 
 export function formatMidWeekCheckinChatMessage(input: {
   coachingWeek: number
@@ -7,6 +7,8 @@ export function formatMidWeekCheckinChatMessage(input: {
   energyLevel: number
   sleepQuality: number
   stressLevel: number
+  adherenceWins?: string | null
+  adherenceStruggles?: string | null
   painInjuries?: string | null
   questionsForCoach?: string | null
 }): string {
@@ -22,6 +24,14 @@ export function formatMidWeekCheckinChatMessage(input: {
     `Stress: ${input.stressLevel}/10`,
   ]
 
+  if (input.adherenceWins?.trim()) {
+    lines.push('', 'Adherence wins', input.adherenceWins.trim())
+  }
+
+  if (input.adherenceStruggles?.trim()) {
+    lines.push('', 'Adherence slips', input.adherenceStruggles.trim())
+  }
+
   if (input.painInjuries?.trim()) {
     lines.push('', 'Pain', input.painInjuries.trim())
   }
@@ -36,12 +46,17 @@ export function formatMidWeekCheckinChatMessage(input: {
 export function formatWeeklyCheckinChatMessage(input: {
   coachingWeek: number
   weight: number
+  chest?: number | null
+  thigh?: number | null
+  navel?: number | null
   dietAdherence: number
   workoutAdherence: number
   energyLevel: number
   sleepQuality: number
   stressLevel: number
   motivationLevel?: number | null
+  progressRating?: number | null
+  progressNotes?: string | null
   painInjuries?: string | null
   notes?: string | null
   questionsForCoach?: string | null
@@ -54,15 +69,30 @@ export function formatWeeklyCheckinChatMessage(input: {
     `Week ${input.coachingWeek}`,
     '',
     `Weight: ${input.weight} kg`,
+  ]
+
+  if (input.chest != null) lines.push(`Chest: ${input.chest} cm`)
+  if (input.thigh != null) lines.push(`Thigh: ${input.thigh} cm`)
+  if (input.navel != null) lines.push(`Belly (navel): ${input.navel} cm`)
+
+  lines.push(
     `Diet: ${input.dietAdherence}/10`,
     `Workout: ${input.workoutAdherence}/10`,
     `Energy: ${input.energyLevel}/10`,
     `Sleep: ${input.sleepQuality}/10`,
     `Stress: ${input.stressLevel}/10`,
-  ]
+  )
 
   if (input.motivationLevel != null) {
     lines.push(`Motivation: ${input.motivationLevel}/10`)
+  }
+
+  if (input.progressRating != null) {
+    lines.push(`Progress: ${input.progressRating}/10`)
+  }
+
+  if (input.progressNotes?.trim()) {
+    lines.push('', 'Progress notes', input.progressNotes.trim())
   }
 
   if (input.photoCount > 0) {
@@ -81,7 +111,9 @@ export function formatWeeklyCheckinChatMessage(input: {
     lines.push('', 'Question', input.questionsForCoach.trim())
   }
 
-  lines.push('', `View journey: ${input.journeyUrl ?? '/journey'}`)
+  if (input.journeyUrl) {
+    lines.push('', `Journey: ${input.journeyUrl}`)
+  }
 
   return lines.join('\n')
 }

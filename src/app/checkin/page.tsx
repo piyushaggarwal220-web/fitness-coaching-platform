@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input, Slider, TextArea } from '@/components/ui/Input';
 import { PhotoSourceControl } from '@/components/ui/PhotoSourceControl';
+import { PhotoCompareStrip } from '@/components/journey/PhotoCompareStrip';
 import {
   INITIAL_WEEKLY_FORM,
   uploadCheckinPhoto,
@@ -30,8 +31,15 @@ import type { Checkin, OnboardingProfile, Plan, WeeklyCheckinFormData } from '@/
 const supabase = createClient();
 
 type PhotoKey = 'front' | 'side' | 'back';
-const SECTIONS = ['measurements', 'scores', 'notes', 'photos'] as const;
+const SECTIONS = ['measurements', 'scores', 'progress', 'photos'] as const;
 type Section = typeof SECTIONS[number];
+
+type PreviousPhotos = {
+  front: string | null
+  side: string | null
+  back: string | null
+  label: string
+}
 
 export default function CheckinPage() {
   const router = useRouter();
@@ -40,7 +48,9 @@ export default function CheckinPage() {
   const [checkins, setCheckins] = useState<Pick<Checkin, 'checkin_type' | 'coaching_week'>[]>([]);
   const [form, setForm] = useState<WeeklyCheckinFormData>(INITIAL_WEEKLY_FORM);
   const [photos, setPhotos] = useState<Record<PhotoKey, File | null>>({ front: null, side: null, back: null });
+  const [photoPreviews, setPhotoPreviews] = useState<Partial<Record<PhotoKey, string>>>({});
   const [extraPhotos, setExtraPhotos] = useState<File[]>([]);
+  const [previousPhotos, setPreviousPhotos] = useState<PreviousPhotos | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -57,14 +67,42 @@ export default function CheckinPage() {
       setProfile(result.profile);
 
       const userId = result.user.id;
-      const [{ data: checkinRows }, { data: planData }] = await Promise.all([
+      const [{ data: checkinRows }, { data: planData }, { data: lastWeekly }] = await Promise.all([
         supabase.from('checkins').select('checkin_type, coaching_week').eq('client_id', userId),
         supabase.from('plans').select('*').eq('client_id', userId).eq('active', true).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase
+          .from('checkins')
+          .select('progress_photo_front, progress_photo_side, progress_photo_back, coaching_week, submitted_at')
+          .eq('client_id', userId)
+          .eq('checkin_type', 'weekly')
+          .order('submitted_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       const rows = (checkinRows ?? []) as Pick<Checkin, 'checkin_type' | 'coaching_week'>[];
       setCheckins(rows);
       setActivePlan(planData);
+
+      if (lastWeekly?.progress_photo_front || lastWeekly?.progress_photo_side || lastWeekly?.progress_photo_back) {
+        setPreviousPhotos({
+          front: lastWeekly.progress_photo_front,
+          side: lastWeekly.progress_photo_side,
+          back: lastWeekly.progress_photo_back,
+          label: lastWeekly.coaching_week != null ? `Week ${lastWeekly.coaching_week}` : 'Last week',
+        })
+      }
+
+      // Prefill girths from onboarding baseline when available
+      const m = result.profile?.onboarding_data?.measurements
+      if (m) {
+        setForm((prev) => ({
+          ...prev,
+          chest: prev.chest || m.chest || '',
+          thigh: prev.thigh || m.thigh || '',
+          navel: prev.navel || m.navel || '',
+        }))
+      }
 
       const scheduleStartedAt = result.profile?.checkin_schedule_started_at;
       const bypassSchedule = shouldBypassCheckinScheduleClient();
@@ -88,6 +126,18 @@ export default function CheckinPage() {
     };
     init();
   }, [router]);
+
+  useEffect(() => {
+    const urls: Partial<Record<PhotoKey, string>> = {}
+    for (const key of ['front', 'side', 'back'] as PhotoKey[]) {
+      const file = photos[key]
+      if (file) urls[key] = URL.createObjectURL(file)
+    }
+    setPhotoPreviews(urls)
+    return () => {
+      Object.values(urls).forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [photos]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -165,6 +215,9 @@ export default function CheckinPage() {
         body: JSON.stringify({
           checkinType: 'weekly',
           weight: Number(form.weight),
+          chest: Number(form.chest),
+          thigh: Number(form.thigh),
+          navel: Number(form.navel),
           diet_adherence: Number(form.diet_adherence),
           workout_adherence: Number(form.workout_adherence),
           energy_level: Number(form.energy_level),
@@ -172,6 +225,8 @@ export default function CheckinPage() {
           stress_level: Number(form.stress_level),
           hunger_level: Number(form.hunger_level),
           motivation_level: Number(form.motivation_level),
+          progress_rating: Number(form.progress_rating),
+          progress_notes: form.progress_notes.trim(),
           digestion: form.digestion || null,
           pain_injuries: form.pain_injuries || null,
           cardio_completed: form.cardio_completed || null,
@@ -192,11 +247,11 @@ export default function CheckinPage() {
 
       await requestComplexityRecalculation({ trigger: 'weekly_checkin', checkinId: data.checkinId })
 
-      setSuccess('Weekly check-in submitted! Your coach will review it and update your plan.');
+      setSuccess('Weekly check-in submitted! Photos + measurements earn league points.');
       setForm(INITIAL_WEEKLY_FORM);
       setPhotos({ front: null, side: null, back: null });
       setExtraPhotos([]);
-      setTimeout(() => router.push('/dashboard'), 2000);
+      setTimeout(() => router.push('/league'), 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit check-in.');
     } finally {
@@ -267,6 +322,12 @@ export default function CheckinPage() {
           <Card variant="elevated">
             <h2 style={sectionTitle}>Measurements</h2>
             <Input label="Weight (kg) *" type="number" name="weight" value={form.weight} onChange={handleChange} min={1} step="0.1" required />
+            <Input label="Chest (cm) *" type="number" name="chest" value={form.chest} onChange={handleChange} min={1} step="0.1" required />
+            <Input label="Thigh (cm) *" type="number" name="thigh" value={form.thigh} onChange={handleChange} min={1} step="0.1" required />
+            <Input label="Belly at navel (cm) *" type="number" name="navel" value={form.navel} onChange={handleChange} min={1} step="0.1" required />
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.textMuted }}>
+              Measure with a soft tape — belly is the circumference at navel height.
+            </p>
           </Card>
         )}
 
@@ -280,23 +341,41 @@ export default function CheckinPage() {
             <Slider label="Stress" name="stress_level" value={form.stress_level || '5'} onChange={handleChange} />
             <Slider label="Hunger" name="hunger_level" value={form.hunger_level || '5'} onChange={handleChange} />
             <Slider label="Motivation" name="motivation_level" value={form.motivation_level || '5'} onChange={handleChange} />
-          </Card>
-        )}
-
-        {currentSection === 'notes' && (
-          <Card variant="elevated">
-            <h2 style={sectionTitle}>Additional Details</h2>
             <Input label="Digestion" name="digestion" value={form.digestion} onChange={handleChange} placeholder="How has digestion been?" />
             <TextArea label="Pain / injuries" name="pain_injuries" value={form.pain_injuries} onChange={handleChange} rows={2} placeholder="Any pain or injuries this week?" />
             <Input label="Cardio completed" name="cardio_completed" value={form.cardio_completed} onChange={handleChange} placeholder="e.g. 3 sessions, 45 min total" />
-            <TextArea label="Additional notes" name="additional_notes" value={form.additional_notes} onChange={handleChange} rows={4} placeholder="Wins, struggles, questions..." />
+            <TextArea label="Additional notes" name="additional_notes" value={form.additional_notes} onChange={handleChange} rows={3} placeholder="Wins, struggles, questions..." />
+          </Card>
+        )}
+
+        {currentSection === 'progress' && (
+          <Card variant="elevated">
+            <h2 style={sectionTitle}>Progress vs last week</h2>
+            <Slider label="Overall progress" name="progress_rating" value={form.progress_rating || '5'} onChange={handleChange} />
+            <TextArea
+              label="What changed since last week? *"
+              name="progress_notes"
+              value={form.progress_notes}
+              onChange={handleChange}
+              rows={4}
+              placeholder="Shape, strength, clothes fit, energy, anything you notice in the mirror..."
+              required
+            />
+            <PhotoCompareStrip
+              previous={previousPhotos}
+              current={{ label: 'This week', front: null, side: null, back: null }}
+              currentPreviewUrls={photoPreviews}
+            />
+            <p style={{ margin: `${spacing[3]}px 0 0`, fontSize: 13, color: colors.textMuted }}>
+              Add this week’s photos in the next step to finish the side-by-side compare.
+            </p>
           </Card>
         )}
 
         {currentSection === 'photos' && (
           <Card variant="elevated">
             <h2 style={sectionTitle}>Progress Photos</h2>
-            <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textMuted }}>Front, side, and back photos are required</p>
+            <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textMuted }}>Front, side, and back photos are required — compare with last week below.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: spacing[3] }}>
               {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (
                 <PhotoSourceControl
@@ -316,6 +395,11 @@ export default function CheckinPage() {
                 selectedText={extraPhotos.length > 0 ? `${extraPhotos.length} extra photo(s) selected` : undefined}
               />
             </div>
+            <PhotoCompareStrip
+              previous={previousPhotos}
+              current={{ label: 'This week', front: null, side: null, back: null }}
+              currentPreviewUrls={photoPreviews}
+            />
           </Card>
         )}
         </SlideTransition>

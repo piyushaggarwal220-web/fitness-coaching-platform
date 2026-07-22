@@ -105,6 +105,8 @@ export default function MidWeekCheckinPage() {
           sleep_quality: Number(form.sleep_quality),
           stress_level: Number(form.stress_level),
           hunger_level: Number(form.hunger_level),
+          adherence_wins: form.adherence_wins.trim(),
+          adherence_struggles: form.adherence_struggles.trim(),
           pain_injuries: form.pain_injuries || null,
           questions_for_coach: form.questions_for_coach || null,
           additional_comments: form.additional_comments || null,
@@ -114,9 +116,9 @@ export default function MidWeekCheckinPage() {
       const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)
       if (!parsed.ok) throw new Error(parsed.error)
 
-      setSuccess('Day 3 check-in submitted! Your coach has been notified.');
+      setSuccess('Day 3 check-in submitted! +5 league points when the season refreshes.');
       setForm(INITIAL_MID_WEEK_FORM);
-      setTimeout(() => router.push('/dashboard'), 2000);
+      setTimeout(() => router.push('/league'), 1800);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit check-in.');
     } finally {
@@ -154,14 +156,14 @@ export default function MidWeekCheckinPage() {
     <ClientShell title="Check-In" hideBottomNav>
         {devMode && <DevelopmentModeBadge />}
         <h1 style={styles.title}>{brandTitle('Mid-Week Check-In')}</h1>
-        <p style={styles.subtitle}>Day 3 accountability check-in — questions only, no photos.</p>
+        <p style={styles.subtitle}>Day 3 adherence check — how well are you sticking to the plan?</p>
 
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 
         <form onSubmit={handleSubmit}>
           <Card variant="elevated">
-            <h2 style={styles.sectionTitle}>How is your week going? (1–10)</h2>
+            <h2 style={styles.sectionTitle}>Adherence this week (1–10)</h2>
             <Slider label="Diet adherence" name="diet_adherence" value={form.diet_adherence || '5'} onChange={handleChange} />
             <Slider label="Workout adherence" name="workout_adherence" value={form.workout_adherence || '5'} onChange={handleChange} />
             <Slider label="Energy" name="energy_level" value={form.energy_level || '5'} onChange={handleChange} />
@@ -171,6 +173,25 @@ export default function MidWeekCheckinPage() {
           </Card>
 
           <Card variant="elevated">
+            <h2 style={styles.sectionTitle}>Adherence details</h2>
+            <TextArea
+              label="What’s helping you stick to the plan? *"
+              name="adherence_wins"
+              value={form.adherence_wins}
+              onChange={handleChange}
+              rows={3}
+              placeholder="e.g. Meal prep on Sunday, morning gym slot, coach accountability..."
+              required
+            />
+            <TextArea
+              label="Where did adherence slip? *"
+              name="adherence_struggles"
+              value={form.adherence_struggles}
+              onChange={handleChange}
+              rows={3}
+              placeholder="e.g. Missed 1 workout, late-night snacking, skipped steps..."
+              required
+            />
             <TextArea label="Any pain or injuries?" name="pain_injuries" value={form.pain_injuries} onChange={handleChange} rows={3} placeholder="Describe any pain, soreness, or injuries..." />
             <TextArea label="Any questions for your coach?" name="questions_for_coach" value={form.questions_for_coach} onChange={handleChange} rows={3} placeholder="Questions for your coach..." />
             <TextArea label="Additional comments" name="additional_comments" value={form.additional_comments} onChange={handleChange} rows={3} placeholder="Anything else your coach should know..." />

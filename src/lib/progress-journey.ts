@@ -28,6 +28,9 @@ export type WeightEntry = {
 export type MeasurementEntry = {
   date: string
   waist: number | null
+  chest: number | null
+  thigh: number | null
+  navel: number | null
   weight: number | null
 }
 
@@ -201,7 +204,10 @@ export async function loadProgressJourney(
 
     measurements.push({
       date: entry.entry_date,
-      waist: checkin?.waist ?? null,
+      waist: checkin?.navel ?? checkin?.waist ?? null,
+      chest: checkin?.chest ?? null,
+      thigh: checkin?.thigh ?? null,
+      navel: checkin?.navel ?? checkin?.waist ?? null,
       weight: entry.weight,
     })
 
