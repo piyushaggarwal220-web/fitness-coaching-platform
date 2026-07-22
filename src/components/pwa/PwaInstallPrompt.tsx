@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { Download, Share, X } from 'lucide-react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { colors, layout, radius, spacing } from '@/lib/design-tokens'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-type PromptMode = 'android' | 'ios'
+type PromptMode = 'ios' | 'native' | 'manual'
 
 const DISMISS_KEY = 'pwa-install-dismissed-at'
 const DISMISS_MS = 7 * 24 * 60 * 60 * 1000
+const FALLBACK_DELAY_MS = 1200
 
 function wasDismissedRecently(): boolean {
   try {
@@ -27,7 +28,6 @@ function wasDismissedRecently(): boolean {
 
 function isStandaloneDisplay(): boolean {
   if (window.matchMedia('(display-mode: standalone)').matches) return true
-  // iOS Safari home-screen apps set this legacy flag.
   const nav = window.navigator as Navigator & { standalone?: boolean }
   return nav.standalone === true
 }
@@ -35,12 +35,22 @@ function isStandaloneDisplay(): boolean {
 function isIosDevice(): boolean {
   const ua = window.navigator.userAgent
   const iOS = /iPad|iPhone|iPod/.test(ua)
-  // iPadOS 13+ may report as Mac with touch.
   const iPadOs = window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1
   return iOS || iPadOs
 }
 
-/** Optional install banner — never blocks the app. Supports Android install + iOS tip. */
+function isAndroidDevice(): boolean {
+  return /Android/i.test(window.navigator.userAgent)
+}
+
+function manualInstallCopy(): string {
+  if (isAndroidDevice()) {
+    return 'Open Chrome menu (⋮) → Install app or Add to Home screen.'
+  }
+  return 'In Chrome, open the address-bar install icon, or Menu → Cast, save, and share → Install page as app.'
+}
+
+/** Optional install banner — never blocks the app. */
 export function PwaInstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
   const [mode, setMode] = useState<PromptMode | null>(null)
@@ -57,15 +67,29 @@ export function PwaInstallPrompt() {
       return
     }
 
-    const onPrompt = (event: Event) => {
+    let settled = false
+
+    const showNative = (event: Event) => {
       event.preventDefault()
+      settled = true
       setDeferred(event as BeforeInstallPromptEvent)
-      setMode('android')
+      setMode('native')
       setVisible(true)
     }
 
-    window.addEventListener('beforeinstallprompt', onPrompt)
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt)
+    window.addEventListener('beforeinstallprompt', showNative)
+
+    // Chrome often delays or skips beforeinstallprompt — still show a how-to card.
+    const fallbackTimer = window.setTimeout(() => {
+      if (settled || wasDismissedRecently() || isStandaloneDisplay()) return
+      setMode('manual')
+      setVisible(true)
+    }, FALLBACK_DELAY_MS)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', showNative)
+      window.clearTimeout(fallbackTimer)
+    }
   }, [])
 
   const dismiss = () => {
@@ -83,37 +107,42 @@ export function PwaInstallPrompt() {
     if (!deferred) return
     await deferred.prompt()
     await deferred.userChoice
-    setVisible(false)
-    setDeferred(null)
-    setMode(null)
+    dismiss()
   }
 
   if (!visible || !mode) return null
-  if (mode === 'android' && !deferred) return null
+
+  const title =
+    mode === 'ios'
+      ? 'Add Lurvox to Home Screen'
+      : 'Install Lurvox app'
+
+  const detail =
+    mode === 'ios' ? (
+      <span style={styles.detail}>
+        Tap <Share size={12} style={styles.inlineIcon} aria-hidden /> Share, then{' '}
+        <strong style={styles.emphasis}>Add to Home Screen</strong>.
+      </span>
+    ) : mode === 'manual' ? (
+      <span style={styles.detail}>{manualInstallCopy()}</span>
+    ) : (
+      <span style={styles.detail}>Add to your home screen for faster access and alerts.</span>
+    )
 
   return (
     <div role="dialog" aria-label="Install Lurvox app" style={styles.banner}>
       <div style={styles.copy}>
-        <strong style={styles.title}>
-          {mode === 'ios' ? 'Add Lurvox to Home Screen' : 'Install Lurvox'}
-        </strong>
-        {mode === 'ios' ? (
-          <span style={styles.detail}>
-            Tap <Share size={12} style={styles.inlineIcon} aria-hidden /> Share, then{' '}
-            <strong style={styles.emphasis}>Add to Home Screen</strong> for the app experience.
-          </span>
-        ) : (
-          <span style={styles.detail}>Add to your home screen for faster access.</span>
-        )}
+        <strong style={styles.title}>{title}</strong>
+        {detail}
       </div>
       <div style={styles.actions}>
-        {mode === 'android' && (
+        {mode === 'native' && (
           <button type="button" onClick={() => void install()} style={styles.installBtn}>
             <Download size={16} />
             Install
           </button>
         )}
-        {mode === 'ios' && (
+        {(mode === 'ios' || mode === 'manual') && (
           <button type="button" onClick={dismiss} style={styles.installBtn}>
             Got it
           </button>
@@ -131,8 +160,9 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'fixed',
     left: spacing[3],
     right: spacing[3],
-    bottom: `calc(${spacing[3]}px + env(safe-area-inset-bottom, 0px))`,
-    zIndex: 900,
+    // Above bottom nav + room for the notification nudge card underneath when both show.
+    bottom: `calc(${layout.bottomNavHeight}px + 100px + env(safe-area-inset-bottom, 0px))`,
+    zIndex: 1100,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',

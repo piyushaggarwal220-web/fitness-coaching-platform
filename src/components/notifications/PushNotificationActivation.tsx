@@ -1,9 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { BellOff, BellRing, CheckCircle2 } from 'lucide-react'
+import { BellOff, BellRing, CheckCircle2, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { colors, layout, radius, spacing } from '@/lib/design-tokens'
 import {
   enableWebPush,
   getWebPushStatus,
@@ -15,24 +15,26 @@ import { createClient } from '@/lib/supabase/client'
 type NotificationAudience = 'client' | 'coach'
 
 const DISMISS_STORAGE_KEY = 'notification-prompt-dismissed-at'
+const NUDGE_DISMISS_KEY = 'notification-nudge-dismissed-at'
 const DISMISS_COOLDOWN_MS = 24 * 60 * 60 * 1000
+const NUDGE_COOLDOWN_MS = 12 * 60 * 60 * 1000
 
-function wasDismissedToday(): boolean {
+function readDismissed(key: string, cooldownMs: number): boolean {
   if (typeof window === 'undefined') return false
   try {
-    const raw = window.localStorage.getItem(DISMISS_STORAGE_KEY)
+    const raw = window.localStorage.getItem(key)
     if (!raw) return false
     const dismissedAt = Number(raw)
     if (!Number.isFinite(dismissedAt)) return false
-    return Date.now() - dismissedAt < DISMISS_COOLDOWN_MS
+    return Date.now() - dismissedAt < cooldownMs
   } catch {
     return false
   }
 }
 
-function markDismissedToday() {
+function markDismissed(key: string) {
   try {
-    window.localStorage.setItem(DISMISS_STORAGE_KEY, String(Date.now()))
+    window.localStorage.setItem(key, String(Date.now()))
   } catch {
     // Ignore storage failures (private mode, quota, etc.)
   }
@@ -104,7 +106,8 @@ export function NotificationActivationGate({
   const [userId, setUserId] = useState<string | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [enabling, setEnabling] = useState(false)
-  const [dismissed, setDismissed] = useState(true)
+  const [gateDismissed, setGateDismissed] = useState(true)
+  const [nudgeDismissed, setNudgeDismissed] = useState(true)
   const [error, setError] = useState('')
   const content = getStatusContent(status, audience)
 
@@ -119,7 +122,8 @@ export function NotificationActivationGate({
   }, [])
 
   useEffect(() => {
-    setDismissed(wasDismissedToday())
+    setGateDismissed(readDismissed(DISMISS_STORAGE_KEY, DISMISS_COOLDOWN_MS))
+    setNudgeDismissed(readDismissed(NUDGE_DISMISS_KEY, NUDGE_COOLDOWN_MS))
   }, [])
 
   const enable = async () => {
@@ -131,17 +135,53 @@ export function NotificationActivationGate({
     setEnabling(false)
   }
 
-  const dismiss = () => {
-    markDismissedToday()
-    setDismissed(true)
+  const dismissGate = () => {
+    markDismissed(DISMISS_STORAGE_KEY)
+    setGateDismissed(true)
+  }
+
+  const dismissNudge = () => {
+    markDismissed(NUDGE_DISMISS_KEY)
+    setNudgeDismissed(true)
   }
 
   if (authChecked && !userId) return null
   if (userId && status === 'enabled') return null
-  if (dismissed) return null
 
   const checking = !authChecked || status === 'checking'
   const canEnable = status !== 'unsupported'
+  const showFullGate = !gateDismissed
+  const showNudge = gateDismissed && !nudgeDismissed && !checking
+
+  if (!showFullGate && !showNudge) return null
+
+  if (showNudge) {
+    return (
+      <div role="dialog" aria-label="Enable notifications" style={styles.nudge}>
+        <div style={styles.nudgeCopy}>
+          <strong style={styles.nudgeTitle}>Turn on notifications</strong>
+          <span style={styles.nudgeDetail}>
+            {status === 'blocked'
+              ? 'Notifications are blocked in browser settings.'
+              : status === 'unsupported'
+                ? 'This browser cannot receive push alerts.'
+                : 'Get coach messages and reminders even when the app is closed.'}
+          </span>
+          {error && <span style={styles.nudgeError}>{error}</span>}
+        </div>
+        <div style={styles.nudgeActions}>
+          {canEnable && (
+            <button type="button" onClick={() => void enable()} style={styles.nudgeEnable} disabled={enabling}>
+              {enabling ? '…' : status === 'blocked' ? 'Retry' : 'Enable'}
+            </button>
+          )}
+          <button type="button" onClick={dismissNudge} style={styles.nudgeClose} aria-label="Dismiss">
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={styles.backdrop}>
@@ -177,7 +217,7 @@ export function NotificationActivationGate({
                 {status === 'blocked' ? 'Check permission again' : 'Enable notifications'}
               </Button>
             )}
-            <button type="button" onClick={dismiss} style={styles.skipBtn}>
+            <button type="button" onClick={dismissGate} style={styles.skipBtn}>
               Not now — continue without notifications
             </button>
           </div>
@@ -285,5 +325,72 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     lineHeight: 1.45,
     textAlign: 'left',
+  },
+  nudge: {
+    position: 'fixed',
+    left: spacing[3],
+    right: spacing[3],
+    bottom: `calc(${layout.bottomNavHeight}px + ${spacing[3]}px + env(safe-area-inset-bottom, 0px))`,
+    zIndex: 1090,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[2],
+    padding: spacing[3],
+    borderRadius: radius.md,
+    border: `1px solid ${colors.borderSubtle}`,
+    backgroundColor: colors.bgCard,
+    boxShadow: '0 12px 40px rgba(0,0,0,0.45)',
+    maxWidth: 480,
+    margin: '0 auto',
+  },
+  nudgeCopy: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    minWidth: 0,
+  },
+  nudgeTitle: {
+    color: colors.textPrimary,
+    fontSize: 14,
+  },
+  nudgeDetail: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 1.4,
+  },
+  nudgeError: {
+    color: colors.danger,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  nudgeActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  nudgeEnable: {
+    minHeight: 40,
+    padding: '8px 14px',
+    borderRadius: radius.sm,
+    border: 'none',
+    backgroundColor: colors.accent,
+    color: colors.textInverse,
+    fontWeight: 700,
+    fontSize: 13,
+    cursor: 'pointer',
+  },
+  nudgeClose: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.borderSubtle}`,
+    backgroundColor: colors.bgElevated,
+    color: colors.textSecondary,
+    cursor: 'pointer',
   },
 }
