@@ -187,7 +187,16 @@ export function DrawerNav({ open, onClose, items, title, subtitle, theme = 'dark
   )
 }
 
-export function DrawerMenuButton({ onClick, label = 'Open menu' }: { onClick: () => void; label?: string }) {
+export function DrawerMenuButton({
+  onClick,
+  label = 'Open menu',
+  theme = 'dark',
+}: {
+  onClick: () => void
+  label?: string
+  theme?: 'dark' | 'light'
+}) {
+  const palette = theme === 'light' ? lightColors : darkColors
   return (
     <button
       type="button"
@@ -198,9 +207,9 @@ export function DrawerMenuButton({ onClick, label = 'Open menu' }: { onClick: ()
         width: 40,
         height: 40,
         borderRadius: 12,
-        border: `1px solid ${colors.borderSubtle}`,
-        backgroundColor: colors.bgElevated,
-        color: colors.textPrimary,
+        border: `1px solid ${palette.borderSubtle}`,
+        backgroundColor: palette.bgElevated,
+        color: palette.textPrimary,
         fontSize: 18,
         fontWeight: 700,
         cursor: 'pointer',

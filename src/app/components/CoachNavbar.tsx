@@ -75,7 +75,7 @@ export default function CoachNavbar({ onMenuClick }: CoachNavbarProps) {
       <nav style={styles.navbar}>
         <div style={styles.container}>
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
-            <DrawerMenuButton onClick={openDrawer} />
+            <DrawerMenuButton onClick={openDrawer} theme="light" />
             <Link href="/coach/dashboard" style={styles.logo}>{BRAND_COACH_LABEL}</Link>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
