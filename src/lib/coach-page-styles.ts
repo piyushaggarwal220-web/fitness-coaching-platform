@@ -27,7 +27,7 @@ export const coachPageStyles: Record<string, CSSProperties> = {
   sectionSubtitle: {
     margin: '6px 0 0',
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.textSecondary,
     lineHeight: 1.4,
   },
   section: {
@@ -109,7 +109,7 @@ export const coachPageStyles: Record<string, CSSProperties> = {
   clientMain: { flex: 1 },
   clientMeta: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: spacing[2] },
   metaItem: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14, color: colors.textPrimary },
-  metaLabel: { fontSize: 12, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' },
+  metaLabel: { fontSize: 12, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 },
   emptyTitle: { fontWeight: 600, fontSize: 18, marginBottom: 8, color: colors.textPrimary, margin: '0 0 8px' },
-  emptyText: { color: colors.textMuted, margin: 0 },
+  emptyText: { color: colors.textSecondary, margin: 0 },
 }

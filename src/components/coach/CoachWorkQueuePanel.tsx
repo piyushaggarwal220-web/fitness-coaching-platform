@@ -84,9 +84,8 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     return () => { active = false }
   }, [router, onCountsChange])
 
-  // Realtime accelerates chat tasks; keep the original 15s fallback because
-  // plans, check-ins, profiles, and issues are not on this channel.
-  useCoachConversationRealtime(coachId, load, 15_000, 'work-queue')
+  // Realtime accelerates chat tasks; 45s fallback covers plans/check-ins/profiles.
+  useCoachConversationRealtime(coachId, load, 45_000, 'work-queue')
 
   const filtered = filterWorkQueue(tasks, filter)
   const visible = filtered.filter((t) => !completed.has(t.id))

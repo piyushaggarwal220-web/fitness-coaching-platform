@@ -79,6 +79,10 @@ export default function CoachNavbar({ onMenuClick }: CoachNavbarProps) {
             <Link href="/coach/dashboard" style={styles.logo}>{BRAND_COACH_LABEL}</Link>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Link href="/coach/clients" style={styles.clientsLink} aria-label="Clients">
+              <Users size={18} />
+              <span className="coach-clients-nav-label" style={styles.clientsLabel}>Clients</span>
+            </Link>
             {user && <NotificationBell />}
             <button type="button" onClick={() => void handleLogout()} style={styles.logoutCompact}>
               Logout
@@ -111,6 +115,23 @@ const styles: Record<string, CSSProperties> = {
   },
   container: { maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   logo: { color: colors.textPrimary, fontSize: 'clamp(16px, 4vw, 20px)', fontWeight: 800, textDecoration: 'none', letterSpacing: '-0.02em' },
+  clientsLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 40,
+    padding: '8px 12px',
+    borderRadius: 12,
+    border: `1px solid ${colors.borderSubtle}`,
+    backgroundColor: colors.bgElevated,
+    color: colors.textPrimary,
+    textDecoration: 'none',
+    fontSize: 13,
+    fontWeight: 700,
+  },
+  clientsLabel: {
+    display: 'inline',
+  },
   logoutCompact: {
     backgroundColor: colors.bgElevated,
     color: colors.textSecondary,

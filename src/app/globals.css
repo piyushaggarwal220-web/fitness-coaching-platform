@@ -21,10 +21,10 @@
   --danger: #ef4444;
   --danger-muted: rgba(239, 68, 68, 0.12);
 
-  /* Text */
+  /* Text — secondary/muted kept brighter for readable contrast on dark UI */
   --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --text-secondary: #c4c4cc;
+  --text-muted: #a1a1aa;
   --text-inverse: #09090b;
 
   /* Borders & dividers */
@@ -829,4 +829,10 @@ body:has(.wa-chat) header {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+@media (max-width: 420px) {
+  .coach-clients-nav-label {
+    display: none !important;
+  }
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { Copy, Phone, Sparkles } from 'lucide-react'
+import { Copy, Phone, Sparkles, UserRound } from 'lucide-react'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
@@ -179,6 +179,13 @@ export default function CoachChatDetailPage() {
     </button>
   )
 
+  const profileLink = (
+    <Link href={`/coach/client/${conversation.client_id}`} style={phoneStyles.profileBtn}>
+      <UserRound size={14} />
+      View profile
+    </Link>
+  )
+
   return (
     <CoachShell narrow>
       <div className="coach-chat-detail">
@@ -189,7 +196,10 @@ export default function CoachChatDetailPage() {
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 style={{ margin: 0 }}>{clientName}</h1>
             {phoneBlock}
-            <div style={{ marginTop: 8 }}>{editPlanBtn}</div>
+            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {profileLink}
+              {editPlanBtn}
+            </div>
           </div>
         </div>
 
@@ -199,7 +209,10 @@ export default function CoachChatDetailPage() {
               <h1 style={{ ...styles.title, fontSize: '1.25rem', margin: 0 }}>{clientName}</h1>
               <div style={{ marginTop: 6 }}>{phoneBlock}</div>
             </div>
-            {editPlanBtn}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {profileLink}
+              {editPlanBtn}
+            </div>
           </div>
         </div>
 
@@ -262,6 +275,20 @@ const phoneStyles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     fontWeight: 600,
     cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
+  profileBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    border: `1px solid ${colors.borderSubtle}`,
+    background: colors.bgElevated,
+    color: colors.textPrimary,
+    borderRadius: 999,
+    padding: '6px 12px',
+    fontSize: 13,
+    fontWeight: 600,
+    textDecoration: 'none',
     whiteSpace: 'nowrap',
   },
 }

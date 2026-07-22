@@ -101,9 +101,10 @@ const notificationGateSource = readFileSync(
   new URL('../src/components/notifications/PushNotificationActivation.tsx', import.meta.url),
   'utf8'
 )
-assert.doesNotMatch(notificationGateSource, /Continue with in-app notifications/)
-assert.doesNotMatch(notificationGateSource, /notification-gate-dismissed/)
-assert.match(notificationGateSource, /Notification access is required to use the dashboard/)
+assert.match(notificationGateSource, /Not now — continue without notifications/)
+assert.match(notificationGateSource, /notification-prompt-dismissed-at/)
+assert.match(notificationGateSource, /Notifications are optional/)
+assert.match(notificationGateSource, /once per day/)
 assert.match(notificationGateSource, /Checking notification access/)
 const pushSubscriptionRouteSource = readFileSync(
   new URL('../src/app/api/notifications/push-subscription/route.ts', import.meta.url),

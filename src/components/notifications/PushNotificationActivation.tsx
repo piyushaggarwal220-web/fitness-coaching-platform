@@ -14,6 +14,30 @@ import { createClient } from '@/lib/supabase/client'
 
 type NotificationAudience = 'client' | 'coach'
 
+const DISMISS_STORAGE_KEY = 'notification-prompt-dismissed-at'
+const DISMISS_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+function wasDismissedToday(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const raw = window.localStorage.getItem(DISMISS_STORAGE_KEY)
+    if (!raw) return false
+    const dismissedAt = Number(raw)
+    if (!Number.isFinite(dismissedAt)) return false
+    return Date.now() - dismissedAt < DISMISS_COOLDOWN_MS
+  } catch {
+    return false
+  }
+}
+
+function markDismissedToday() {
+  try {
+    window.localStorage.setItem(DISMISS_STORAGE_KEY, String(Date.now()))
+  } catch {
+    // Ignore storage failures (private mode, quota, etc.)
+  }
+}
+
 function useWebPushStatus() {
   const [status, setStatus] = useState<WebPushStatus>('checking')
 
@@ -24,12 +48,8 @@ function useWebPushStatus() {
   useEffect(() => {
     void refresh()
     window.addEventListener(WEB_PUSH_STATUS_CHANGED_EVENT, refresh)
-    window.addEventListener('focus', refresh)
-    document.addEventListener('visibilitychange', refresh)
     return () => {
       window.removeEventListener(WEB_PUSH_STATUS_CHANGED_EVENT, refresh)
-      window.removeEventListener('focus', refresh)
-      document.removeEventListener('visibilitychange', refresh)
     }
   }, [refresh])
 
@@ -49,7 +69,7 @@ function getStatusContent(status: WebPushStatus, audience: NotificationAudience)
     case 'blocked':
       return {
         label: 'Blocked',
-        detail: 'Allow notifications in this site’s browser or device settings, then come back and try again.',
+        detail: 'Allow notifications in this site’s browser or device settings, then come back and try again. You can keep using the app without them.',
         color: colors.danger,
         background: colors.dangerMuted,
         icon: <BellOff size={22} color={colors.danger} />,
@@ -57,7 +77,7 @@ function getStatusContent(status: WebPushStatus, audience: NotificationAudience)
     case 'unsupported':
       return {
         label: 'Unavailable',
-        detail: 'This browser cannot use web push. On iPhone or iPad, add the site to your Home Screen and open it there.',
+        detail: 'This browser cannot use web push. You can keep using the app with in-app alerts. On iPhone or iPad, add the site to your Home Screen for the best chance of push support.',
         color: colors.warning,
         background: colors.warningMuted,
         icon: <BellOff size={22} color={colors.warning} />,
@@ -84,6 +104,7 @@ export function NotificationActivationGate({
   const [userId, setUserId] = useState<string | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [enabling, setEnabling] = useState(false)
+  const [dismissed, setDismissed] = useState(true)
   const [error, setError] = useState('')
   const content = getStatusContent(status, audience)
 
@@ -97,6 +118,10 @@ export function NotificationActivationGate({
     return () => { active = false }
   }, [])
 
+  useEffect(() => {
+    setDismissed(wasDismissedToday())
+  }, [])
+
   const enable = async () => {
     setEnabling(true)
     setError('')
@@ -106,9 +131,17 @@ export function NotificationActivationGate({
     setEnabling(false)
   }
 
+  const dismiss = () => {
+    markDismissedToday()
+    setDismissed(true)
+  }
+
   if (authChecked && !userId) return null
   if (userId && status === 'enabled') return null
+  if (dismissed) return null
+
   const checking = !authChecked || status === 'checking'
+  const canEnable = status !== 'unsupported'
 
   return (
     <div style={styles.backdrop}>
@@ -137,15 +170,22 @@ export function NotificationActivationGate({
         {error && <div role="alert" style={styles.error}>{error}</div>}
 
         {!checking && (
-          <Button fullWidth loading={enabling} onClick={() => void enable()}>
-            <BellRing size={19} />
-            {status === 'blocked' ? 'Check permission again' : 'Enable notifications'}
-          </Button>
+          <div style={styles.actions}>
+            {canEnable && (
+              <Button fullWidth loading={enabling} onClick={() => void enable()}>
+                <BellRing size={19} />
+                {status === 'blocked' ? 'Check permission again' : 'Enable notifications'}
+              </Button>
+            )}
+            <button type="button" onClick={dismiss} style={styles.skipBtn}>
+              Not now — continue without notifications
+            </button>
+          </div>
         )}
 
         <p style={styles.footnote}>
-          Notification access is required to use the dashboard. If permission is blocked,
-          allow notifications in your browser or device settings, then try again.
+          Notifications are optional. You can enable them later from the bell icon.
+          We will only ask again once per day if you skip.
         </p>
       </section>
     </div>
@@ -212,6 +252,23 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     lineHeight: 1.5,
     textAlign: 'left',
+  },
+  actions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  skipBtn: {
+    width: '100%',
+    minHeight: 48,
+    padding: '12px 16px',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.borderSubtle}`,
+    backgroundColor: colors.bgElevated,
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
   },
   footnote: {
     margin: '12px 0 0',

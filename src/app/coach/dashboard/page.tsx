@@ -72,7 +72,7 @@ export default function CoachDashboard() {
 
       const { data: clientsData, error: clientsError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, email, plan_delivered, checkin_awaiting, checkin_overdue, checkin_schedule_started_at, complexity_score, complexity_tier')
         .eq('coach_id', coachData.id);
 
       if (clientsError) {

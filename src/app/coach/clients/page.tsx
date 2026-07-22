@@ -54,7 +54,7 @@ function CoachClientsContent() {
 
       const { data: clientsData, error: clientsError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, email, fitness_goal, plan_delivered, checkin_awaiting, checkin_overdue, checkin_schedule_started_at, complexity_score, complexity_tier, complexity_score_change, complexity_last_calculated_at')
         .eq('coach_id', coachData.id)
         .order('name', { ascending: true });
 
@@ -201,9 +201,23 @@ function CoachClientsContent() {
                   style={{ ...styles.listItem, flexDirection: 'column', alignItems: 'stretch' }}
                   onClick={() => router.push(`/coach/client/${client.id}`)}
                 >
-                  <div style={styles.clientMain}>
-                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4, color: colors.textPrimary }}>{client.name || 'Unnamed client'}</div>
-                    <div style={{ color: colors.textSecondary, fontSize: 14 }}>{client.email || 'No email'}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={styles.clientMain}>
+                      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4, color: colors.textPrimary }}>{client.name || 'Unnamed client'}</div>
+                      <div style={{ color: colors.textSecondary, fontSize: 14 }}>{client.email || 'No email'}</div>
+                    </div>
+                    <span style={{
+                      flexShrink: 0,
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      border: `1px solid ${colors.borderSubtle}`,
+                      backgroundColor: colors.bgCard,
+                      color: colors.accent,
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}>
+                      View profile
+                    </span>
                   </div>
                   <div style={styles.clientMeta}>
                     <div style={styles.metaItem}>
