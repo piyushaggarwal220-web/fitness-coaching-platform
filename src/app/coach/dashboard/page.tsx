@@ -35,7 +35,18 @@ const CoachConversationsSection = dynamic(
   { loading: () => panelFallback, ssr: false },
 );
 
-type CoachClientRow = ClientProfile;
+type CoachClientRow = Pick<
+  ClientProfile,
+  | 'id'
+  | 'name'
+  | 'email'
+  | 'plan_delivered'
+  | 'checkin_awaiting'
+  | 'checkin_overdue'
+  | 'checkin_schedule_started_at'
+  | 'complexity_score'
+  | 'complexity_tier'
+>;
 const supabase = createClient();
 const ROSTER_PREVIEW_LIMIT = 8;
 
@@ -115,7 +126,7 @@ export default function CoachDashboard() {
         return;
       }
 
-      const clientsData = clientsResult.data ?? [];
+      const clientsData = (clientsResult.data ?? []) as CoachClientRow[];
       setClients(clientsData);
       const total = clientsData.length;
       const awaiting = clientsData.filter(c => c.checkin_awaiting === true).length;

@@ -18,7 +18,21 @@ import { COMPLEXITY_TIER_COLORS, formatTierLabel } from '@/lib/complexity/displa
 import { getCoachClientCheckinSummary, getCheckinStatusLabel, getCheckinTypeDisplayName } from '@/lib/checkin-schedule';
 import type { Checkin, ClientProfile, Coach } from '@/types/database';
 
-type CoachClientRow = ClientProfile;
+type CoachClientRow = Pick<
+  ClientProfile,
+  | 'id'
+  | 'name'
+  | 'email'
+  | 'fitness_goal'
+  | 'plan_delivered'
+  | 'checkin_awaiting'
+  | 'checkin_overdue'
+  | 'checkin_schedule_started_at'
+  | 'complexity_score'
+  | 'complexity_tier'
+  | 'complexity_score_change'
+  | 'complexity_last_calculated_at'
+>;
 
 type SortOption = 'name' | 'highest' | 'lowest' | 'improved' | 'increased' | 'newest';
 
@@ -64,7 +78,7 @@ function CoachClientsContent() {
         return;
       }
 
-      setClients(clientsData ?? []);
+      setClients((clientsData ?? []) as CoachClientRow[]);
 
       const clientIds = (clientsData ?? []).map((c) => c.id);
       if (clientIds.length > 0) {
