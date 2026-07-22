@@ -436,7 +436,7 @@ function renderStep(
             <Field
               label="Body measurements (cm)"
               required
-              hint="Measure with a soft tape. Belly = around the waist at navel height."
+              hint="Measure with a soft tape. Belly = around the waist at navel height. If you don’t have a tape yet, pick one up from a hardware store, then come back and fill these in — your onboarding progress is saved automatically."
             >
               <div style={{ display: 'grid', gap: 10 }}>
                 <input
