@@ -19,6 +19,7 @@ import {
   DAYS_PER_WEEK_OPTIONS,
   DIET_OPTIONS,
   EQUIPMENT_OPTIONS,
+  findFirstIncompleteOnboardingStep,
   FITNESS_GOAL_OPTIONS,
   formFromProfile,
   formatMealTime24,
@@ -207,7 +208,10 @@ export default function OnboardingPage() {
   }, [step])
 
   const mealTimingContext = { mealsForTiming, confirmedMeals: confirmedMealTimes }
-  const stepOptions = { requireBodyMeasurements }
+  const stepOptions = {
+    requireBodyMeasurements,
+    requireWorkSchoolSchedule: requireBodyMeasurements,
+  }
 
   const handleNext = async () => {
     const validationError = validateOnboardingStep(
@@ -239,16 +243,15 @@ export default function OnboardingPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const validationError = validateOnboardingStep(
-      step,
+    const incomplete = findFirstIncompleteOnboardingStep(
       form,
-      photos,
       photoUrls,
       mealTimingContext,
       stepOptions
     )
-    if (validationError) {
-      setError(validationError)
+    if (incomplete) {
+      setError(incomplete.error)
+      setStep(incomplete.step)
       return
     }
     if (!userId) return

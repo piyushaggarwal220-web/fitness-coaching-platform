@@ -17,6 +17,20 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
+async function clientHasDeliveredPlan(
+  admin: ReturnType<typeof createAdminClient>,
+  clientId: string,
+  planDeliveredFlag: boolean | null | undefined
+): Promise<boolean> {
+  if (planDeliveredFlag === true) return true
+  const { count } = await admin
+    .from('plans')
+    .select('id', { count: 'exact', head: true })
+    .eq('client_id', clientId)
+    .not('delivered_at', 'is', null)
+  return (count ?? 0) > 0
+}
+
 export async function POST(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
@@ -38,9 +52,21 @@ export async function POST(request: Request) {
 
   const persistedProfile = profile as OnboardingProfile
   const termsAccepted = Boolean(profile.terms_accepted_at) || body?.termsAccepted === true
-  const validationError = validatePersistedOnboardingAnswers(persistedProfile, { termsAccepted })
-  if (validationError) {
-    return NextResponse.json({ error: validationError }, { status: 422 })
+  const alreadyHasPlan = await clientHasDeliveredPlan(
+    admin,
+    auth.user.id,
+    persistedProfile.plan_delivered
+  )
+
+  // Clients who already received a plan do not need AI generation queued again.
+  // Still require terms, but do not block completion on newly added intake fields.
+  if (!alreadyHasPlan) {
+    const validationError = validatePersistedOnboardingAnswers(persistedProfile, { termsAccepted })
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 422 })
+    }
+  } else if (!termsAccepted) {
+    return NextResponse.json({ error: 'You must accept the terms to complete onboarding.' }, { status: 422 })
   }
 
   // Completion is privileged workflow state. Finalize it on the authenticated
@@ -82,6 +108,15 @@ export async function POST(request: Request) {
   }
 
   await invalidateForEvent('onboarding_submitted', auth.user.id)
+
+  if (alreadyHasPlan) {
+    return NextResponse.json({
+      success: true,
+      status: 'skipped',
+      reason: 'plan_already_delivered',
+      deduplicated: true,
+    })
+  }
 
   // The unique client job makes retries idempotent. This call is deliberately
   // after the verified completion write so generation never sees stale flags.

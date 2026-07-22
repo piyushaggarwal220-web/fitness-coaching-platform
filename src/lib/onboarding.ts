@@ -425,11 +425,12 @@ export function getResumeStep(
     back: profile.progress_photo_back ?? null,
   }
   const mealTimingContext = mealTimingContextFromForm(form)
-  const requireBodyMeasurements =
+  const requireNewFields =
     options?.requireBodyMeasurements ?? shouldRequireOnboardingBodyMeasurements(profile)
   for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
     const error = validateOnboardingStep(step, form, undefined, photoUrls, mealTimingContext, {
-      requireBodyMeasurements,
+      requireBodyMeasurements: requireNewFields,
+      requireWorkSchoolSchedule: requireNewFields,
     })
     if (error) return step
   }
@@ -631,6 +632,8 @@ export function validateOnboardingStep(
   options?: {
     /** New clients only — existing delivered-plan clients log tape in weekly check-ins. */
     requireBodyMeasurements?: boolean
+    /** New clients only — schedule field was added after many existing clients finished. */
+    requireWorkSchoolSchedule?: boolean
   }
 ): string | null {
   switch (step) {
@@ -675,7 +678,7 @@ export function validateOnboardingStep(
     }
     case 4: {
       if (!data.occupation) return 'Please select your occupation.'
-      if (!data.work_school_schedule.trim()) {
+      if (options?.requireWorkSchoolSchedule !== false && !data.work_school_schedule.trim()) {
         return 'Please describe your work, school, or college schedule.'
       }
       if (!data.activity_level) return 'Please select your activity level.'
@@ -964,18 +967,8 @@ export async function saveOnboardingProgress(
     complete?: boolean
   }
 ): Promise<void> {
-  if (!options.complete) {
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('onboarding_complete')
-      .eq('id', userId)
-      .maybeSingle()
-
-    if (existing?.onboarding_complete) {
-      return
-    }
-  }
-
+  // Always persist answer updates — even if onboarding was already marked complete.
+  // New required fields (schedule, tape) must be writable when clients return to finish.
   const payload = buildProfilePayload(form, userId, {
     email: options.email,
     resumeStep: options.complete ? ONBOARDING_SCREEN_COUNT - 1 : options.step,
@@ -983,9 +976,14 @@ export async function saveOnboardingProgress(
     photoUrls: options.photoUrls,
   })
 
-  const { error } = options.complete
-    ? await supabase.from('profiles').upsert(payload)
-    : await supabase.from('profiles').update(payload).eq('id', userId)
+  // Never clear an existing completion flag from a mid-flow autosave.
+  if (!options.complete) {
+    delete payload.onboarding_complete
+    delete payload.onboarding_completed_at
+    delete payload.terms_accepted_at
+  }
+
+  const { error } = await supabase.from('profiles').upsert(payload)
 
   if (error) throw new Error(error.message)
 
@@ -1002,17 +1000,49 @@ export function hasCompletedOnboarding(
   return isOnboardingComplete(profile)
 }
 
-/** Tape measurements are for first-time onboarding or weekly check-ins — not existing delivered clients. */
-export function shouldRequireOnboardingBodyMeasurements(
+/** New intake fields are optional for clients who already have a delivered plan. */
+export function shouldRequireNewOnboardingFields(
   profile: Pick<OnboardingProfile, 'plan_delivered'> | null | undefined
 ): boolean {
   return profile?.plan_delivered !== true
 }
 
+/** Tape measurements are for first-time onboarding or weekly check-ins — not existing delivered clients. */
+export function shouldRequireOnboardingBodyMeasurements(
+  profile: Pick<OnboardingProfile, 'plan_delivered'> | null | undefined
+): boolean {
+  return shouldRequireNewOnboardingFields(profile)
+}
+
+/** Find the first onboarding step that still fails validation. */
+export function findFirstIncompleteOnboardingStep(
+  form: OnboardingFormData,
+  photoUrls?: SavedPhotoUrls,
+  mealTimingContext?: {
+    mealsForTiming: string[]
+    confirmedMeals: string[]
+  },
+  options?: {
+    requireBodyMeasurements?: boolean
+    requireWorkSchoolSchedule?: boolean
+  }
+): { step: number; error: string } | null {
+  const meals = mealTimingContext ?? mealTimingContextFromForm(form)
+  for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
+    const error = validateOnboardingStep(step, form, undefined, photoUrls, meals, options)
+    if (error) return { step, error }
+  }
+  return null
+}
+
 /** Validates every required onboarding step against persisted profile answers. */
 export function validateOnboardingAnswersForProfile(
   profile: OnboardingProfile,
-  options?: { termsAccepted?: boolean; requireBodyMeasurements?: boolean }
+  options?: {
+    termsAccepted?: boolean
+    requireBodyMeasurements?: boolean
+    requireWorkSchoolSchedule?: boolean
+  }
 ): string | null {
   const form = formFromProfile(profile)
   if (options?.termsAccepted || profile.terms_accepted_at) form.terms_accepted = true
@@ -1022,12 +1052,14 @@ export function validateOnboardingAnswersForProfile(
     back: profile.progress_photo_back ?? null,
   }
   const meals = mealTimingContextFromForm(form)
-  const requireBodyMeasurements =
-    options?.requireBodyMeasurements ?? shouldRequireOnboardingBodyMeasurements(profile)
+  const requireNewFields = shouldRequireNewOnboardingFields(profile)
+  const requireBodyMeasurements = options?.requireBodyMeasurements ?? requireNewFields
+  const requireWorkSchoolSchedule = options?.requireWorkSchoolSchedule ?? requireNewFields
 
   for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
     const error = validateOnboardingStep(step, form, undefined, photoUrls, meals, {
       requireBodyMeasurements,
+      requireWorkSchoolSchedule,
     })
     if (error) return error
   }
