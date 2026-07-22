@@ -31,6 +31,8 @@ import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
+import { LeagueHomeCard } from '@/components/league/LeagueHomeCard';
+import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { getActiveSubscription } from '@/lib/subscription';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
@@ -402,6 +404,8 @@ export default function Dashboard() {
 
       {subscription && <ActiveSubscriptionCard subscription={subscription} />}
 
+      <LeagueHomeCard />
+
       {/* Coach assigned + 24h plan countdown (hidden once diet+workout opened) */}
       {profile && status?.paymentConfirmed && (
         <PlanCountdownCard
@@ -410,6 +414,8 @@ export default function Dashboard() {
           coachName={status.coachName ?? coach?.name}
         />
       )}
+
+      <NotificationActivationGate />
 
       {/* Next step — lead with today’s action */}
       {status && status.nextAction && !status.preferTrackerUpTop && (

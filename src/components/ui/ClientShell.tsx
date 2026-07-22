@@ -21,7 +21,6 @@ import { PageTransition } from '@/components/motion/PageTransition'
 import { layout } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
-import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation'
 
 type ClientShellProps = {
   children?: ReactNode
@@ -113,7 +112,6 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
       </main>
       {!hideBottomNav && !fullHeight && <BottomNav unreadChats={unreadChats} />}
       <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={`${BRAND_NAME} coaching hub`} />
-      <NotificationActivationGate />
     </>
   )
 }
