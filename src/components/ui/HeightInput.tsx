@@ -11,6 +11,7 @@ import {
   parseHeightCm,
   validateHeightCm,
 } from '@/lib/height'
+import { NumberScroller } from '@/components/ui/MeasurementScroller'
 
 type HeightUnit = 'cm' | 'imperial'
 
@@ -39,7 +40,6 @@ export function HeightInput({
   label = 'Height',
   required = false,
   disabled = false,
-  inputStyle,
   fieldStyle,
 }: HeightInputProps) {
   const id = useId()
@@ -68,16 +68,9 @@ export function HeightInput({
     const feetValue = Number(nextFeet || 0)
     const inchesValue = Number(nextInches || 0)
     if (Number.isFinite(feetValue) && Number.isFinite(inchesValue)) {
-      onChange(String(imperialHeightToStoredCm(feetValue, inchesValue)))
+      const normalized = normalizeFeetInches(feetValue, inchesValue)
+      onChange(String(imperialHeightToStoredCm(normalized.feet, normalized.inches)))
     }
-  }
-
-  const normalizeImperialInputs = () => {
-    if (feet === '' && inches === '') return
-    const normalized = normalizeFeetInches(Number(feet || 0), Number(inches || 0))
-    setFeet(String(normalized.feet))
-    setInches(String(normalized.inches))
-    onChange(String(imperialHeightToStoredCm(normalized.feet, normalized.inches)))
   }
 
   const validationError = value ? validateHeightCm(value) : null
@@ -97,65 +90,33 @@ export function HeightInput({
       </div>
 
       {unit === 'cm' ? (
-        <div style={styles.inputWrap}>
-          <input
-            id={`${id}-cm`}
-            type="number"
-            inputMode="numeric"
-            min={MIN_HEIGHT_CM}
-            max={MAX_HEIGHT_CM}
-            step={1}
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            onBlur={() => {
-              const heightCm = parseHeightCm(value)
-              if (heightCm != null) onChange(String(heightCm))
-            }}
-            required={required}
-            aria-describedby={`${id}-hint`}
-            aria-invalid={Boolean(validationError)}
-            style={{ ...styles.input, ...inputStyle }}
-          />
-          <span style={styles.suffix}>cm</span>
-        </div>
+        <NumberScroller
+          label="Centimeters"
+          preset="height"
+          value={value}
+          onChange={onChange}
+          required={required}
+        />
       ) : (
         <div style={styles.imperialGrid}>
-          <label style={styles.subLabel}>
-            Feet
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1}
-              value={feet}
-              onChange={(event) => updateImperial(event.target.value, inches)}
-              onBlur={normalizeImperialInputs}
-              required={required}
-              aria-describedby={`${id}-hint`}
-              aria-invalid={Boolean(validationError)}
-              style={{ ...styles.input, ...inputStyle }}
-            />
-          </label>
-          <label style={styles.subLabel}>
-            Inches
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1}
-              value={inches}
-              onChange={(event) => updateImperial(feet, event.target.value)}
-              onBlur={normalizeImperialInputs}
-              required={required}
-              aria-describedby={`${id}-hint`}
-              aria-invalid={Boolean(validationError)}
-              style={{ ...styles.input, ...inputStyle }}
-            />
-          </label>
+          <NumberScroller
+            label="Feet"
+            preset="feet"
+            value={feet}
+            onChange={(next) => updateImperial(next, inches || '0')}
+            required={required}
+          />
+          <NumberScroller
+            label="Inches"
+            preset="inches"
+            value={inches}
+            onChange={(next) => updateImperial(feet || '0', next)}
+            required={required}
+          />
         </div>
       )}
       <p id={`${id}-hint`} style={{ ...styles.hint, ...(validationError ? styles.error : {}) }} aria-live="polite">
-        {validationError ?? `Accepted range: ${MIN_HEIGHT_CM}–${MAX_HEIGHT_CM} cm.`}
+        {validationError ?? 'Scroll the wheel — no typing needed.'}
       </p>
     </fieldset>
   )
@@ -176,21 +137,7 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
   },
   unitButtonActive: { borderColor: colors.accent, backgroundColor: colors.accentMuted, color: colors.accent, fontWeight: 600 },
-  inputWrap: { position: 'relative' },
-  input: {
-    width: '100%',
-    minHeight: 56,
-    padding: `${spacing[2]}px ${spacing[3]}px`,
-    border: `1px solid ${colors.borderSubtle}`,
-    borderRadius: radius.sm,
-    boxSizing: 'border-box',
-    fontSize: 16,
-    backgroundColor: colors.bgElevated,
-    color: colors.textPrimary,
-  },
-  suffix: { position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: colors.textMuted, pointerEvents: 'none' },
-  imperialGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[2] },
-  subLabel: { display: 'grid', gap: 6, fontSize: 13, color: colors.textMuted },
+  imperialGrid: { display: 'grid', gap: spacing[3] },
   hint: { margin: '6px 0 0', fontSize: 12, color: colors.textMuted },
   error: { color: colors.danger },
 }

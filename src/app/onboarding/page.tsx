@@ -38,6 +38,7 @@ import {
   saveOnboardingProgress,
   SEXUAL_HEALTH_OPTIONS,
   SLEEP_OPTIONS,
+  shouldRequireOnboardingBodyMeasurements,
   STEPS_OPTIONS,
   STRUGGLE_OPTIONS,
   STRESS_OPTIONS,
@@ -53,6 +54,7 @@ import {
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
 import type { OnboardingFormData } from '@/types/database'
 import type { SavedPhotoUrls } from '@/lib/onboarding'
+import { MeasurementScroller, NumberScroller } from '@/components/ui/MeasurementScroller'
 
 const supabase = createClient()
 
@@ -101,6 +103,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState('')
   const [mealsForTiming, setMealsForTiming] = useState<MealTimingKey[]>(['breakfast', 'lunch', 'dinner'])
   const [confirmedMealTimes, setConfirmedMealTimes] = useState<MealTimingKey[]>([])
+  const [requireBodyMeasurements, setRequireBodyMeasurements] = useState(true)
 
   useEffect(() => {
     const init = async () => {
@@ -124,8 +127,10 @@ export default function OnboardingPage() {
       setUserId(result.user.id)
       setUserEmail(result.user.email ?? null)
       if (result.profile) {
+        const needsMeasurements = shouldRequireOnboardingBodyMeasurements(result.profile)
+        setRequireBodyMeasurements(needsMeasurements)
         setForm(formFromProfile(result.profile))
-        setStep(getResumeStep(result.profile))
+        setStep(getResumeStep(result.profile, { requireBodyMeasurements: needsMeasurements }))
         setPhotoUrls({
           front: result.profile.progress_photo_front ?? null,
           side: result.profile.progress_photo_side ?? null,
@@ -202,9 +207,17 @@ export default function OnboardingPage() {
   }, [step])
 
   const mealTimingContext = { mealsForTiming, confirmedMeals: confirmedMealTimes }
+  const stepOptions = { requireBodyMeasurements }
 
   const handleNext = async () => {
-    const validationError = validateOnboardingStep(step, form, photos, photoUrls, mealTimingContext)
+    const validationError = validateOnboardingStep(
+      step,
+      form,
+      photos,
+      photoUrls,
+      mealTimingContext,
+      stepOptions
+    )
     if (validationError) {
       setError(validationError)
       return
@@ -226,7 +239,14 @@ export default function OnboardingPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const validationError = validateOnboardingStep(step, form, photos, photoUrls, mealTimingContext)
+    const validationError = validateOnboardingStep(
+      step,
+      form,
+      photos,
+      photoUrls,
+      mealTimingContext,
+      stepOptions
+    )
     if (validationError) {
       setError(validationError)
       return
@@ -310,6 +330,10 @@ export default function OnboardingPage() {
           ))}
         </div>
 
+        <p style={s.progressSavedNotice}>
+          You can always come back later — your progress is saved automatically.
+        </p>
+
         {error && <div style={{ ...s.error, marginTop: 20 }}>{error}</div>}
 
         <form
@@ -328,7 +352,8 @@ export default function OnboardingPage() {
             mealsForTiming,
             setMealsForTiming,
             confirmedMealTimes,
-            setConfirmedMealTimes
+            setConfirmedMealTimes,
+            requireBodyMeasurements
           )}
 
           <div style={{ height: 72 }} />
@@ -378,7 +403,8 @@ function renderStep(
   mealsForTiming: MealTimingKey[],
   setMealsForTiming: (meals: MealTimingKey[]) => void,
   confirmedMealTimes: MealTimingKey[],
-  setConfirmedMealTimes: (meals: MealTimingKey[] | ((prev: MealTimingKey[]) => MealTimingKey[])) => void
+  setConfirmedMealTimes: (meals: MealTimingKey[] | ((prev: MealTimingKey[]) => MealTimingKey[])) => void,
+  requireBodyMeasurements: boolean
 ) {
   switch (step) {
     case 0:
@@ -395,17 +421,13 @@ function renderStep(
               autoComplete="name"
             />
           </Field>
-          <Field label="Age" required>
-            <input
-              type="number"
-              value={form.age}
-              onChange={(e) => update({ age: e.target.value })}
-              min={13}
-              max={100}
-              style={s.input}
-              inputMode="numeric"
-            />
-          </Field>
+          <NumberScroller
+            label="Age"
+            preset="age"
+            value={form.age}
+            onChange={(age) => update({ age })}
+            required
+          />
         </div>
       )
 
@@ -424,53 +446,48 @@ function renderStep(
               fieldStyle={s.field}
               inputStyle={s.input}
             />
-            <Field label="Weight (kg)" required>
-              <input
-                type="number"
-                value={form.weight}
-                onChange={(e) => update({ weight: e.target.value })}
-                style={s.input}
-                inputMode="decimal"
-              />
-            </Field>
-            <Field
-              label="Body measurements (cm)"
+            <NumberScroller
+              label="Weight"
+              preset="weight"
+              value={form.weight}
+              onChange={(weight) => update({ weight })}
               required
-              hint="Measure with a soft tape. Belly = around the waist at navel height. If you don’t have a tape yet, pick one up from a hardware store, then come back and fill these in — your onboarding progress is saved automatically."
-            >
-              <div style={{ display: 'grid', gap: 10 }}>
-                <input
-                  type="number"
-                  value={form.chest}
-                  onChange={(e) => update({ chest: e.target.value })}
-                  placeholder="Chest (cm)"
-                  style={s.input}
-                  inputMode="decimal"
-                  min={1}
-                  step="0.1"
-                />
-                <input
-                  type="number"
-                  value={form.thigh}
-                  onChange={(e) => update({ thigh: e.target.value })}
-                  placeholder="Thigh (cm)"
-                  style={s.input}
-                  inputMode="decimal"
-                  min={1}
-                  step="0.1"
-                />
-                <input
-                  type="number"
-                  value={form.navel}
-                  onChange={(e) => update({ navel: e.target.value })}
-                  placeholder="Belly at navel (cm)"
-                  style={s.input}
-                  inputMode="decimal"
-                  min={1}
-                  step="0.1"
-                />
-              </div>
-            </Field>
+            />
+            {requireBodyMeasurements ? (
+              <Field
+                label="Body measurements"
+                required
+                hint="Scroll each wheel to your soft-tape reading (whole cm). Belly = around the waist at navel height. No tape yet? Buy one from a hardware store and come back later."
+              >
+                <div style={{ display: 'grid', gap: 16 }}>
+                  <MeasurementScroller
+                    label="Chest"
+                    kind="chest"
+                    value={form.chest}
+                    onChange={(chest) => update({ chest })}
+                    required
+                  />
+                  <MeasurementScroller
+                    label="Thigh"
+                    kind="thigh"
+                    value={form.thigh}
+                    onChange={(thigh) => update({ thigh })}
+                    required
+                  />
+                  <MeasurementScroller
+                    label="Belly at navel"
+                    kind="navel"
+                    value={form.navel}
+                    onChange={(navel) => update({ navel })}
+                    required
+                  />
+                </div>
+              </Field>
+            ) : (
+              <p style={s.stepHint}>
+                Tape measurements are not needed here — you already have a plan. Log chest, thigh, and belly at navel on your weekly check-in instead.
+              </p>
+            )}
           </div>
         </div>
       )
@@ -778,16 +795,14 @@ function renderStep(
               style={s.textarea}
             />
           </Field>
-          <Field label="Monthly food budget" required hint="Enter your own monthly food budget in rupees.">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={form.monthly_food_budget}
-              onChange={(e) => update({ monthly_food_budget: e.target.value })}
-              placeholder="e.g. 8000"
-              style={s.input}
-            />
-          </Field>
+          <NumberScroller
+            label="Monthly food budget"
+            preset="food_budget"
+            value={form.monthly_food_budget}
+            onChange={(monthly_food_budget) => update({ monthly_food_budget })}
+            required
+            hint="Scroll to your monthly food budget in rupees."
+          />
           <Field label="Cooking ability" required>
             <ChipGroup options={COOKING_OPTIONS} value={form.cooking_ability} onChange={(v) => update({ cooking_ability: v })} />
           </Field>

@@ -77,10 +77,10 @@ export function validateWeeklyCheckinForm(
   data: WeeklyCheckinFormData,
   photos: { front: File | null; side: File | null; back: File | null }
 ): string | null {
-  if (!data.weight || Number(data.weight) <= 0) return 'Enter a valid weight in kg.'
-  if (!data.chest || Number(data.chest) <= 0) return 'Enter your chest measurement in cm.'
-  if (!data.thigh || Number(data.thigh) <= 0) return 'Enter your thigh measurement in cm.'
-  if (!data.navel || Number(data.navel) <= 0) return 'Enter your belly (navel) measurement in cm.'
+  if (!data.weight || Number(data.weight) <= 0) return 'Scroll to select your weight.'
+  if (!data.chest || Number(data.chest) <= 0) return 'Scroll to select your chest measurement.'
+  if (!data.thigh || Number(data.thigh) <= 0) return 'Scroll to select your thigh measurement.'
+  if (!data.navel || Number(data.navel) <= 0) return 'Scroll to select your belly (navel) measurement.'
   if (!isScoreValid(data.diet_adherence)) return 'Diet adherence must be between 1 and 10.'
   if (!isScoreValid(data.workout_adherence)) return 'Workout adherence must be between 1 and 10.'
   if (!isScoreValid(data.energy_level)) return 'Energy must be between 1 and 10.'

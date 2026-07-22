@@ -407,7 +407,10 @@ function mealTimingContextFromForm(form: OnboardingFormData): {
   return { mealsForTiming, confirmedMeals: mealsForTiming }
 }
 
-export function getResumeStep(profile: OnboardingProfile | null): number {
+export function getResumeStep(
+  profile: OnboardingProfile | null,
+  options?: { requireBodyMeasurements?: boolean }
+): number {
   if (!profile) return 0
 
   if (profile.onboarding_complete && hasFinishedRequiredOnboardingAnswers(profile)) {
@@ -422,8 +425,12 @@ export function getResumeStep(profile: OnboardingProfile | null): number {
     back: profile.progress_photo_back ?? null,
   }
   const mealTimingContext = mealTimingContextFromForm(form)
+  const requireBodyMeasurements =
+    options?.requireBodyMeasurements ?? shouldRequireOnboardingBodyMeasurements(profile)
   for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
-    const error = validateOnboardingStep(step, form, undefined, photoUrls, mealTimingContext)
+    const error = validateOnboardingStep(step, form, undefined, photoUrls, mealTimingContext, {
+      requireBodyMeasurements,
+    })
     if (error) return step
   }
 
@@ -620,23 +627,33 @@ export function validateOnboardingStep(
   mealTimingContext?: {
     mealsForTiming: string[]
     confirmedMeals: string[]
+  },
+  options?: {
+    /** New clients only — existing delivered-plan clients log tape in weekly check-ins. */
+    requireBodyMeasurements?: boolean
   }
 ): string | null {
   switch (step) {
     case 0: {
       if (!data.name.trim()) return 'Please enter your name.'
       const age = Number(data.age)
-      if (!data.age || Number.isNaN(age) || age < 13 || age > 100) return 'Enter a valid age (13–100).'
+      if (!data.age || Number.isNaN(age) || age < 13 || age > 100) {
+        return 'Scroll to select your age (13–100).'
+      }
       return null
     }
     case 1: {
       if (!data.gender) return 'Please select your gender.'
       const heightError = validateHeightCm(data.height)
       if (heightError) return heightError
-      if (!data.weight || Number(data.weight) <= 0) return 'Enter a valid weight in kg.'
-      if (!data.chest || Number(data.chest) <= 0) return 'Enter your chest measurement in cm.'
-      if (!data.thigh || Number(data.thigh) <= 0) return 'Enter your thigh measurement in cm.'
-      if (!data.navel || Number(data.navel) <= 0) return 'Enter your belly (navel) measurement in cm.'
+      if (!data.weight || Number(data.weight) <= 0) return 'Scroll to select your weight.'
+      if (options?.requireBodyMeasurements !== false) {
+        if (!data.chest || Number(data.chest) <= 0) return 'Scroll to select your chest measurement.'
+        if (!data.thigh || Number(data.thigh) <= 0) return 'Scroll to select your thigh measurement.'
+        if (!data.navel || Number(data.navel) <= 0) {
+          return 'Scroll to select your belly (navel) measurement.'
+        }
+      }
       return null
     }
     case 2: {
@@ -714,7 +731,7 @@ export function validateOnboardingStep(
     case 15:
       return null
     case 16: {
-      if (!data.monthly_food_budget.trim()) return 'Please enter your monthly food budget.'
+      if (!data.monthly_food_budget.trim()) return 'Scroll to select your monthly food budget.'
       if (!data.cooking_ability) return 'Please select your cooking ability.'
       return null
     }
@@ -985,10 +1002,17 @@ export function hasCompletedOnboarding(
   return isOnboardingComplete(profile)
 }
 
+/** Tape measurements are for first-time onboarding or weekly check-ins — not existing delivered clients. */
+export function shouldRequireOnboardingBodyMeasurements(
+  profile: Pick<OnboardingProfile, 'plan_delivered'> | null | undefined
+): boolean {
+  return profile?.plan_delivered !== true
+}
+
 /** Validates every required onboarding step against persisted profile answers. */
 export function validateOnboardingAnswersForProfile(
   profile: OnboardingProfile,
-  options?: { termsAccepted?: boolean }
+  options?: { termsAccepted?: boolean; requireBodyMeasurements?: boolean }
 ): string | null {
   const form = formFromProfile(profile)
   if (options?.termsAccepted || profile.terms_accepted_at) form.terms_accepted = true
@@ -998,9 +1022,13 @@ export function validateOnboardingAnswersForProfile(
     back: profile.progress_photo_back ?? null,
   }
   const meals = mealTimingContextFromForm(form)
+  const requireBodyMeasurements =
+    options?.requireBodyMeasurements ?? shouldRequireOnboardingBodyMeasurements(profile)
 
   for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
-    const error = validateOnboardingStep(step, form, undefined, photoUrls, meals)
+    const error = validateOnboardingStep(step, form, undefined, photoUrls, meals, {
+      requireBodyMeasurements,
+    })
     if (error) return error
   }
   return null

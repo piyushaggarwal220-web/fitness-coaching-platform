@@ -8,6 +8,7 @@ import { FITNESS_GOAL_OPTIONS } from '@/lib/onboarding'
 import { colors } from '@/lib/coach-theme'
 import { coachPageStyles as pageStyles } from '@/lib/coach-page-styles'
 import { HeightInput } from '@/components/ui/HeightInput'
+import { NumberScroller } from '@/components/ui/MeasurementScroller'
 import { parseHeightCm, validateHeightCm } from '@/lib/height'
 import type { CoachClientDetail } from '@/types/database'
 
@@ -123,14 +124,22 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
             placeholder="+91 98765 43210"
           />
         </label>
-        <label style={styles.field}>
-          Age
-          <input value={age} onChange={(e) => setAge(e.target.value)} style={pageStyles.input} type="number" />
-        </label>
-        <label style={styles.field}>
-          Weight (kg)
-          <input value={weight} onChange={(e) => setWeight(e.target.value)} style={pageStyles.input} type="number" />
-        </label>
+        <div style={styles.field}>
+          <NumberScroller
+            label="Age"
+            preset="age"
+            value={age}
+            onChange={setAge}
+          />
+        </div>
+        <div style={styles.field}>
+          <NumberScroller
+            label="Weight"
+            preset="weight"
+            value={weight}
+            onChange={setWeight}
+          />
+        </div>
         <HeightInput
           value={height}
           onChange={setHeight}

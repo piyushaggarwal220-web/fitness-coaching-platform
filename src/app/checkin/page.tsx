@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input, Slider, TextArea } from '@/components/ui/Input';
 import { PhotoSourceControl } from '@/components/ui/PhotoSourceControl';
+import { MeasurementScroller, NumberScroller } from '@/components/ui/MeasurementScroller';
 import { PhotoCompareStrip } from '@/components/journey/PhotoCompareStrip';
 import {
   INITIAL_WEEKLY_FORM,
@@ -321,12 +322,38 @@ export default function CheckinPage() {
         {currentSection === 'measurements' && (
           <Card variant="elevated">
             <h2 style={sectionTitle}>Measurements</h2>
-            <Input label="Weight (kg) *" type="number" name="weight" value={form.weight} onChange={handleChange} min={1} step="0.1" required />
-            <Input label="Chest (cm) *" type="number" name="chest" value={form.chest} onChange={handleChange} min={1} step="0.1" required />
-            <Input label="Thigh (cm) *" type="number" name="thigh" value={form.thigh} onChange={handleChange} min={1} step="0.1" required />
-            <Input label="Belly at navel (cm) *" type="number" name="navel" value={form.navel} onChange={handleChange} min={1} step="0.1" required />
+            <NumberScroller
+              label="Weight"
+              preset="weight"
+              value={form.weight}
+              onChange={(weight) => setForm((prev) => ({ ...prev, weight }))}
+              required
+            />
+            <div style={{ display: 'grid', gap: 16, marginTop: 8 }}>
+              <MeasurementScroller
+                label="Chest"
+                kind="chest"
+                value={form.chest}
+                onChange={(chest) => setForm((prev) => ({ ...prev, chest }))}
+                required
+              />
+              <MeasurementScroller
+                label="Thigh"
+                kind="thigh"
+                value={form.thigh}
+                onChange={(thigh) => setForm((prev) => ({ ...prev, thigh }))}
+                required
+              />
+              <MeasurementScroller
+                label="Belly at navel"
+                kind="navel"
+                value={form.navel}
+                onChange={(navel) => setForm((prev) => ({ ...prev, navel }))}
+                required
+              />
+            </div>
             <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.textMuted }}>
-              Measure with a soft tape — belly is the circumference at navel height.
+              Scroll each wheel to your soft-tape reading — belly is the circumference at navel height.
             </p>
           </Card>
         )}
