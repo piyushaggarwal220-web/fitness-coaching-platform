@@ -282,8 +282,8 @@ export default function CoachGeneratePlanPage() {
       await persistDraftSafely(merged, 'AI Draft · Diet + Workout')
 
       // Soft-fail cardio/supplements: diet + workout must still open for review.
-      let cardioReasoning: string | undefined
-      let supplementReasoning: string | undefined
+      let cardioReasoning: AiReasoningDisplay | undefined
+      let supplementReasoning: AiReasoningDisplay | undefined
       const softFailNotes: string[] = []
 
       setStepLabel('Step 3 of 4 · Cardio')
