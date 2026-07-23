@@ -69,8 +69,8 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
         phone: phone.trim() || null,
         injuries: injuries.trim() || null,
         medical_notes: medicalNotes.trim() || null,
-        complexity_input_needs_review: guard.needsReview,
-        complexity_input_review_reasons: guard.needsReview ? guard.reasons : [],
+        complexity_input_needs_review: false,
+        complexity_input_review_reasons: [],
         updated_at: new Date().toISOString(),
       })
       .eq('id', client.id)
@@ -81,12 +81,10 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
       return
     }
 
-    if (!guard.needsReview) {
-      await requestComplexityRecalculation({
-        clientId: client.id,
-        trigger,
-      })
-    }
+    await requestComplexityRecalculation({
+      clientId: client.id,
+      trigger,
+    })
 
     setHeight(String(nextHeight))
     onSaved({
@@ -98,12 +96,12 @@ export function CoachClientProfileEdit({ client, onSaved, trigger = 'profile_edi
       phone: phone.trim() || null,
       injuries: injuries.trim() || null,
       medical_notes: medicalNotes.trim() || null,
-      complexity_input_needs_review: guard.needsReview,
-      complexity_input_review_reasons: guard.needsReview ? guard.reasons : [],
+      complexity_input_needs_review: false,
+      complexity_input_review_reasons: [],
     })
     setMessage(
       guard.needsReview
-        ? 'Profile updated, but metrics look suspicious. AI plan work is blocked until the client confirms them on their profile.'
+        ? 'Profile updated and acknowledged by coach. Complexity score recalculated — double-check metrics if drafts look off.'
         : 'Profile updated. Complexity score recalculated.'
     )
     setSaving(false)

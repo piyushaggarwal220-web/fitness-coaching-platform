@@ -435,8 +435,9 @@ export default function CoachGeneratePlanPage() {
           </p>
 
           {metricsBlocked && (
-            <div style={s.error}>
-              Client must confirm metrics before AI plan work.
+            <div style={s.card}>
+              Metrics look unusual on this client profile (height/weight/age). You can still generate and
+              deliver plans — double-check numbers if the draft looks off.
               {Array.isArray(client.complexity_input_review_reasons) &&
               client.complexity_input_review_reasons.length > 0
                 ? ` ${client.complexity_input_review_reasons.join(' ')}`
@@ -503,7 +504,7 @@ export default function CoachGeneratePlanPage() {
               key={action.id}
               title={action.label}
               description={action.description}
-              disabled={busy !== null || metricsBlocked}
+              disabled={busy !== null}
               onClick={() => void runSingleAction(action.id)}
             />
           ))}
@@ -511,7 +512,7 @@ export default function CoachGeneratePlanPage() {
             title="Generate complete plan"
             description="Diet plan first, then workout plan — opens as one draft"
             primary
-            disabled={busy !== null || metricsBlocked}
+            disabled={busy !== null}
             onClick={() => void runCompletePlan()}
           />
 

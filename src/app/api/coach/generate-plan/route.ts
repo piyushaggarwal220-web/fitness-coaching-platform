@@ -19,10 +19,6 @@ import {
   mergePlanForms,
   type CoachAiActionId,
 } from '@/lib/coach/ai-actions'
-import {
-  complexityReviewBlockedMessage,
-  profileBlocksAiPlanWork,
-} from '@/lib/complexity/input-guards'
 import { createClient } from '@/lib/supabase/server'
 import { planToForm } from '@/lib/plans'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
@@ -167,19 +163,6 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { success: false, error: 'Client not found or not assigned to you' },
       { status: 404 }
-    )
-  }
-
-  const gate = profileBlocksAiPlanWork(profile as OnboardingProfile)
-  if (gate.blocked) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: complexityReviewBlockedMessage(gate.reasons),
-        code: 'complexity_input_needs_review',
-        reasons: gate.reasons,
-      },
-      { status: 422 }
     )
   }
 

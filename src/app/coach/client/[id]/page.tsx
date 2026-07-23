@@ -139,7 +139,8 @@ export default function CoachClientDetailPage() {
 
         {client.complexity_input_needs_review && (
           <div style={styles.reviewBanner}>
-            Client must confirm metrics before AI plan work.
+            Metrics look unusual (height/weight/age). AI plan work is still available — verify numbers
+            before delivering if drafts look off.
             {Array.isArray(client.complexity_input_review_reasons) &&
             client.complexity_input_review_reasons.length > 0
               ? ` ${client.complexity_input_review_reasons.join(' ')}`
