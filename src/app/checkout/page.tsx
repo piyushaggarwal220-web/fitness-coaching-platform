@@ -8,7 +8,7 @@ import { brandTitle } from '@/lib/brand';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
-import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
+import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
@@ -168,7 +168,9 @@ function CheckoutForm() {
       setEmailDelivery(delivery);
 
       if (delivery === 'magic_link' && !data.emailVerified) {
-        const redirectTo = `${window.location.origin}/checkout/confirm-email?vid=${encodeURIComponent(data.verificationId)}&plan=${encodeURIComponent(plan.slug)}`;
+        // Always use the public app origin — never localhost (emails open on other devices).
+        const appOrigin = resolveAuthEmailRedirectOrigin(window.location.origin);
+        const redirectTo = `${appOrigin}/checkout/confirm-email?vid=${encodeURIComponent(data.verificationId)}&plan=${encodeURIComponent(plan.slug)}`;
         const { error: otpError } = await supabase.auth.signInWithOtp({
           email: email.trim().toLowerCase(),
           options: {
