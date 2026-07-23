@@ -2,7 +2,9 @@ import { randomBytes, randomInt } from 'node:crypto'
 import {
   ACTIVITY_OPTIONS,
   DIET_OPTIONS,
+  DIET_VARIETY_OPTIONS,
   FITNESS_GOAL_OPTIONS,
+  FLUX_CAPACITY_OPTIONS,
   GENDER_OPTIONS,
   OCCUPATION_OPTIONS,
   SLEEP_OPTIONS,
@@ -178,6 +180,8 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     sleep_duration: pick(SLEEP_OPTIONS).value,
     stress_level: pick(STRESS_OPTIONS).value,
     water_intake: pick(WATER_OPTIONS).value,
+    flux_capacity: pick(FLUX_CAPACITY_OPTIONS).value,
+    diet_variety: pick(DIET_VARIETY_OPTIONS).value,
     training_location: trainingLocation,
     training_experience: pick(TRAINING_OPTIONS).value,
     training_days_per_week: String(randomInt(3, 6)),
