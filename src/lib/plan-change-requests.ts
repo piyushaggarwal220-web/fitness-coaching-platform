@@ -306,7 +306,7 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
     const { data: draft, error: draftError } = await persistAiPlanDraft(admin, {
       clientId: request.client_id,
       coachId: request.coach_id,
-      form: { ...merged, coach_notes: metaNotes },
+      form: { ...merged, coach_notes: metaNotes ?? '' },
       title: 'AI Draft · Client request',
     })
 
