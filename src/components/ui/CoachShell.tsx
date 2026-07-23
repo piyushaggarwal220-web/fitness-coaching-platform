@@ -11,9 +11,17 @@ type CoachShellProps = {
   loading?: boolean
   loadingMessage?: string
   narrow?: boolean
+  /** Full-viewport chat layout — skips PageTransition so fixed chat is not trapped in a transformed ancestor. */
+  fullHeight?: boolean
 }
 
-export function CoachShell({ children, loading, loadingMessage, narrow }: CoachShellProps) {
+export function CoachShell({
+  children,
+  loading,
+  loadingMessage,
+  narrow,
+  fullHeight = false,
+}: CoachShellProps) {
   const containerStyle = narrow ? coachPageStyles.containerNarrow : coachPageStyles.container
 
   if (loading) {
@@ -35,6 +43,15 @@ export function CoachShell({ children, loading, loadingMessage, narrow }: CoachS
             )}
           </div>
         </div>
+      </div>
+    )
+  }
+
+  if (fullHeight) {
+    return (
+      <div className="coach-portal coach-portal-chat" data-coach-theme="light">
+        <CoachNavbar />
+        {children}
       </div>
     )
   }

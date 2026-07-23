@@ -183,7 +183,9 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
           profile,
           actionId,
           validationMode,
-          progressImages: images,
+          // Skip heavy image payloads on cardio/supplements to stay under Vercel time limits.
+          progressImages:
+            actionId === 'initial_diet' || actionId === 'initial_workout' ? images : undefined,
           coachInstructions: buildActionCoachInstructions(actionId, {}),
         })
         await logAiGeneration({
@@ -220,18 +222,33 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       }
     }
 
+    const runOptionalSection = async (
+      actionId: 'initial_cardio' | 'initial_supplements'
+    ) => {
+      try {
+        return await runSection(actionId)
+      } catch {
+        // Soft-fail: diet + workout drafts must still be saved for coach review.
+        return null
+      }
+    }
+
     const dietResult = await runSection('initial_diet')
     const workoutResult = await runSection('initial_workout')
-    const cardioResult = await runSection('initial_cardio')
-    const supplementResult = await runSection('initial_supplements')
+    const cardioResult = await runOptionalSection('initial_cardio')
+    const supplementResult = await runOptionalSection('initial_supplements')
     const diet = generatedDietFormData(dietResult.generatedPlan, profile.id)
     const workout = generatedWorkoutFormData(workoutResult.generatedPlan, profile.id)
-    const cardio = generatedCardioFormData(cardioResult.generatedPlan, profile.id)
-    const supplements = generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
+    const cardio = cardioResult
+      ? generatedCardioFormData(cardioResult.generatedPlan, profile.id)
+      : null
+    const supplements = supplementResult
+      ? generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
+      : null
     const form: PlanFormData = mergePlanForms(diet, {
       workout_plan: workout.workout_plan,
-      cardio_plan: cardio.cardio_plan,
-      supplement_plan: supplements.supplement_plan,
+      cardio_plan: cardio?.cardio_plan ?? '',
+      supplement_plan: supplements?.supplement_plan ?? '',
       // Keep the client-facing coach note empty: delivery is blocked until a
       // coach reviews the draft and adds their own note.
       coach_notes: '',

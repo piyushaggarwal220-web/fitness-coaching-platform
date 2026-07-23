@@ -245,35 +245,49 @@ export async function generateWeeklyPlanDraft(input: {
       }),
     })
 
-    const cardioResult = await generatePlan({
-      profile: profile as OnboardingProfile,
-      latestCheckin: checkinTyped,
-      actionId: 'review_update_cardio',
-      activePlan: active,
-      updatedDietPlan: updatedDietContext,
-      validationMode: 'cardio_focus',
-      coachInstructions: buildActionCoachInstructions('review_update_cardio', {
+    let cardioForm = {
+      cardio_plan: active?.cardio_plan?.trim() || '',
+    }
+    try {
+      const cardioResult = await generatePlan({
+        profile: profile as OnboardingProfile,
+        latestCheckin: checkinTyped,
+        actionId: 'review_update_cardio',
         activePlan: active,
-        checkin: checkinTyped,
-      }),
-    })
+        updatedDietPlan: updatedDietContext,
+        validationMode: 'cardio_focus',
+        coachInstructions: buildActionCoachInstructions('review_update_cardio', {
+          activePlan: active,
+          checkin: checkinTyped,
+        }),
+      })
+      cardioForm = generatedCardioFormData(cardioResult.generatedPlan, input.clientId)
+    } catch {
+      // Keep existing cardio if the dedicated step fails.
+    }
 
-    const supplementResult = await generatePlan({
-      profile: profile as OnboardingProfile,
-      latestCheckin: checkinTyped,
-      actionId: 'review_update_supplements',
-      activePlan: active,
-      updatedDietPlan: updatedDietContext,
-      validationMode: 'supplements_focus',
-      coachInstructions: buildActionCoachInstructions('review_update_supplements', {
+    let supplementForm = {
+      supplement_plan: active?.supplement_plan?.trim() || '',
+    }
+    try {
+      const supplementResult = await generatePlan({
+        profile: profile as OnboardingProfile,
+        latestCheckin: checkinTyped,
+        actionId: 'review_update_supplements',
         activePlan: active,
-        checkin: checkinTyped,
-      }),
-    })
+        updatedDietPlan: updatedDietContext,
+        validationMode: 'supplements_focus',
+        coachInstructions: buildActionCoachInstructions('review_update_supplements', {
+          activePlan: active,
+          checkin: checkinTyped,
+        }),
+      })
+      supplementForm = generatedSupplementFormData(supplementResult.generatedPlan, input.clientId)
+    } catch {
+      // Keep existing supplements if the dedicated step fails.
+    }
 
     const workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, input.clientId)
-    const cardioForm = generatedCardioFormData(cardioResult.generatedPlan, input.clientId)
-    const supplementForm = generatedSupplementFormData(supplementResult.generatedPlan, input.clientId)
     const merged = mergePlanForms(
       {
         ...dietForm,

@@ -123,7 +123,7 @@ export default function CoachChatDetailPage() {
   }
 
   if (loading) {
-    return <CoachShell loading narrow />
+    return <CoachShell loading narrow fullHeight />
   }
 
   if (!conversation) {
@@ -187,7 +187,7 @@ export default function CoachChatDetailPage() {
   )
 
   return (
-    <CoachShell narrow>
+    <CoachShell narrow fullHeight>
       <div className="coach-chat-detail">
         <div className="coach-chat-detail-header">
           <Link href="/coach/chat" className="coach-chat-detail-back" aria-label="Back to conversations">

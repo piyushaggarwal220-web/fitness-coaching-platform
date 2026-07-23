@@ -212,6 +212,27 @@ const LIBRARY_SUPPLEMENT_OUTPUT_INSTRUCTIONS = [
   '- coach_notes must be an empty string or under 200 characters.',
 ].join('\n')
 
+function dedicatedSupportPlanTemplate(actionId?: CoachAiActionId): string | null {
+  if (actionId === 'initial_cardio' || actionId === 'review_update_cardio') {
+    return [
+      'Create a standalone cardio / steps / conditioning plan for this client.',
+      'Fill cardio_plan.sessions with concrete sessions (type, duration, frequency, intensity).',
+      'Do not write a strength workout or diet.',
+      'Leave workout_plan overview as N/A, nutrition meals empty, and supplement_plan.items empty.',
+    ].join(' ')
+  }
+  if (actionId === 'initial_supplements' || actionId === 'review_update_supplements') {
+    return [
+      'Create a standalone supplement plan for this client.',
+      'Fill supplement_plan.items with name, dose, and timing notes.',
+      'If no supplements are appropriate, return items: [] and explain nothing else.',
+      'Do not write a diet meal plan or workout.',
+      'Leave workout_plan overview as N/A, nutrition meals empty, and cardio_plan.sessions empty.',
+    ].join(' ')
+  }
+  return null
+}
+
 function resolvePlanOutputInstructions(options: {
   useLibraryTemplate: boolean
   actionId?: CoachAiActionId
@@ -336,16 +357,11 @@ export function validateGeneratedPlan(
   const cardio = value.cardio_plan
   if (!isRecord(cardio)) return { plan: null, error: 'Missing or invalid cardio_plan.' }
   if (!isArray(cardio.sessions)) return { plan: null, error: 'cardio_plan.sessions must be an array.' }
-  if (mode === 'cardio_focus' && cardio.sessions.length === 0) {
-    return { plan: null, error: 'cardio_plan.sessions must include at least one cardio session.' }
-  }
 
   const supplements = value.supplement_plan
   if (!isRecord(supplements)) return { plan: null, error: 'Missing or invalid supplement_plan.' }
   if (!isArray(supplements.items)) return { plan: null, error: 'supplement_plan.items must be an array.' }
-  if (mode === 'supplements_focus' && supplements.items.length === 0) {
-    return { plan: null, error: 'supplement_plan.items must include at least one supplement recommendation.' }
-  }
+  // Empty cardio/supplement arrays are allowed; dedicated support prompts still push for content.
 
   if (!isString(value.coach_notes)) {
     return { plan: null, error: 'coach_notes must be a string.' }
@@ -509,13 +525,19 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         `No published Prompt Library entry for category "${category}" (action "${input.actionId}"). Publish the prompt in Admin → Prompt Library.`
       )
     }
+    const dedicatedActionTemplate = dedicatedSupportPlanTemplate(input.actionId)
     libraryPrompts = {
-      actionTemplate: loaded.action.promptBody,
+      // Cardio/supplements reuse diet/workout library categories for context only —
+      // replace the action body so it does not instruct empty cardio/supplement arrays.
+      actionTemplate: dedicatedActionTemplate ?? loaded.action.promptBody,
       systemTemplate: loaded.system?.promptBody ?? null,
     }
     promptVersion = formatLibraryPromptVersion(loaded.action)
     if (loaded.system) {
       promptVersion = `${promptVersion}+${formatLibraryPromptVersion(loaded.system)}`
+    }
+    if (dedicatedActionTemplate) {
+      promptVersion = `${promptVersion}+support-plan-v1`
     }
   }
 

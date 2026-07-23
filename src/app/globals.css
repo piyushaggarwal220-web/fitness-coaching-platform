@@ -149,7 +149,7 @@ button, a[role="button"], input[type="submit"] {
 
 @keyframes pageEnter {
   from { opacity: 0.96; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes cardEnter {
@@ -576,6 +576,24 @@ button, a[role="button"], input[type="submit"] {
 
 .coach-portal .coach-chat-detail-header h1 {
   color: var(--text-primary) !important;
+}
+
+/* Full-height coach chat: no PageTransition wrapper, so fixed mobile panel binds to the viewport. */
+.coach-portal-chat {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+@media (min-width: 900px) {
+  .coach-portal-chat .coach-chat-detail {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: calc(100vh - 80px);
+  }
 }
 
 /* Reduced motion */
