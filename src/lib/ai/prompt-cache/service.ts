@@ -278,6 +278,7 @@ function sectionsFromBlocks(
     coachNotes: mapSection('coach-notes', fresh.coachNotes),
     knowledge: mapSection('knowledge-base', fresh.knowledge),
     complexity: mapSection('complexity', fresh.complexity),
+    mesocycle: fresh.mesocycle,
   }
 }
 
