@@ -6,7 +6,11 @@ import {
   createPolicyAcknowledgement,
   storeOrderPolicyAcknowledgement,
 } from '@/lib/payments/policy-acknowledgement'
-import { assertCheckoutContactsVerified } from '@/lib/payments/checkout-otp'
+import {
+  assertCheckoutContactsVerified,
+  normalizeCheckoutEmail,
+  normalizeCheckoutPhone,
+} from '@/lib/payments/checkout-otp'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 type CreateOrderBody = {
@@ -23,38 +27,51 @@ export async function POST(request: Request) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON body', missing: ['Valid request body'] }, { status: 400 })
   }
 
   const plan = getCoachingPlan(body.planSlug)
   if (!plan) {
-    return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid plan selected', missing: ['A valid plan'] }, { status: 400 })
   }
 
-  if (!body.email?.trim()) {
-    return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+  const missing: string[] = []
+  if (!body.name?.trim()) missing.push('Full name')
+  if (!body.email?.trim()) missing.push('Email')
+  else if (!normalizeCheckoutEmail(body.email).includes('@')) missing.push('A valid email address')
+  if (!body.phone?.trim()) missing.push('WhatsApp number')
+  else if (!normalizeCheckoutPhone(body.phone)) missing.push('A valid WhatsApp number (e.g. +91 98765 43210)')
+  if (body.policyAgreementAccepted !== true) missing.push('Agree to Terms & Refund Policy')
+
+  if (!shouldBypassPayment()) {
+    if (!body.verificationId?.trim()) {
+      missing.push('Email verification (tap Send verification email, then open the link)')
+    }
   }
 
-  if (!body.name?.trim()) {
-    return NextResponse.json({ error: 'Name is required' }, { status: 400 })
-  }
-  if (!body.phone?.trim()) {
-    return NextResponse.json({ error: 'WhatsApp number is required' }, { status: 400 })
-  }
-  if (body.policyAgreementAccepted !== true) {
+  if (missing.length > 0) {
     return NextResponse.json(
-      { error: 'You must agree to the Terms and Refund Policy before payment' },
+      {
+        error: `Before you can pay, complete: ${missing.join('; ')}`,
+        missing,
+      },
       { status: 400 }
     )
   }
 
   const contactCheck = await assertCheckoutContactsVerified({
     verificationId: body.verificationId,
-    email: body.email,
-    phone: body.phone,
+    email: body.email!,
+    phone: body.phone!,
   })
   if (!contactCheck.ok) {
-    return NextResponse.json({ error: contactCheck.error }, { status: contactCheck.status })
+    return NextResponse.json(
+      {
+        error: contactCheck.error,
+        missing: ['Email verification (tap Send verification email, then open the link)'],
+      },
+      { status: contactCheck.status }
+    )
   }
 
   const acknowledgement = createPolicyAcknowledgement(request)
@@ -87,9 +104,9 @@ export async function POST(request: Request) {
       receipt,
       notes: {
         plan_slug: plan.slug,
-        customer_email: body.email.trim().toLowerCase(),
-        customer_name: body.name.trim(),
-        customer_phone: body.phone.trim(),
+        customer_email: body.email!.trim().toLowerCase(),
+        customer_name: body.name!.trim(),
+        customer_phone: body.phone!.trim(),
         terms_policy_version: acknowledgement.termsVersion,
         refund_policy_version: acknowledgement.refundPolicyVersion,
         policy_acknowledged_at: acknowledgement.acknowledgedAt,

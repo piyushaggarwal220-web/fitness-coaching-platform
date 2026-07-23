@@ -53,6 +53,7 @@ export async function POST(request: Request) {
     success: true,
     verificationId: result.verificationId,
     channel: result.channel,
+    delivery: result.delivery,
     emailVerified: result.emailVerified,
     ...(result.bypassCode ? { bypassCode: result.bypassCode } : {}),
   })

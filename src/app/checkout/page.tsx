@@ -52,17 +52,56 @@ function CheckoutForm() {
   const [verificationId, setVerificationId] = useState('');
   const [emailCode, setEmailCode] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
+  const [emailDelivery, setEmailDelivery] = useState<'code' | 'magic_link' | null>(null);
+  const [emailLinkSent, setEmailLinkSent] = useState(false);
+  const [missingItems, setMissingItems] = useState<string[]>([]);
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
   const paymentSucceededRef = useRef(false);
   const testMode = isPaymentBypassClient();
-  const contactsVerified = testMode || emailVerified;
 
   const resetVerification = () => {
     setVerificationId('');
     setEmailCode('');
     setEmailVerified(false);
+    setEmailDelivery(null);
+    setEmailLinkSent(false);
   };
+
+  useEffect(() => {
+    const vid = searchParams.get('vid')?.trim() ?? '';
+    const verified = searchParams.get('emailVerified') === '1';
+    if (vid) setVerificationId(vid);
+    if (verified && vid) {
+      setEmailVerified(true);
+      setEmailLinkSent(true);
+      setEmailDelivery('magic_link');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (testMode || emailVerified || !verificationId || emailDelivery !== 'magic_link') return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          `/api/payment/verification-status?verificationId=${encodeURIComponent(verificationId)}`
+        );
+        const data = await res.json();
+        if (!cancelled && data.emailVerified) {
+          setEmailVerified(true);
+        }
+      } catch {
+        // ignore transient poll errors
+      }
+    };
+    const id = window.setInterval(() => void poll(), 4000);
+    void poll();
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [testMode, emailVerified, verificationId, emailDelivery]);
 
   useEffect(() => {
     if (testMode) return;
@@ -75,10 +114,37 @@ function CheckoutForm() {
     });
   }, [plan, testMode]);
 
+  const getMissingRequirements = (): string[] => {
+    const missing: string[] = [];
+    if (!name.trim()) missing.push('Full name');
+    if (!email.trim()) missing.push('Email');
+    else if (!email.includes('@')) missing.push('A valid email address');
+    if (!phone.trim()) missing.push('WhatsApp number');
+    if (!showRedeem && !testMode && !emailVerified) {
+      missing.push(
+        emailLinkSent
+          ? 'Open the verification link in your email (check spam too)'
+          : 'Verify your email (tap “Send verification email”)'
+      );
+    }
+    if (!showRedeem && !policyAgreementAccepted) {
+      missing.push('Tick the box to agree to Terms & Refund Policy');
+    }
+    if (!showRedeem && !testMode && !razorpayReady) {
+      missing.push('Wait for the payment form to finish loading');
+    }
+    return missing;
+  };
+
   const sendEmailOtp = async () => {
     setError('');
-    if (!email.trim() || !phone.trim()) {
-      setError('Enter email and WhatsApp number first');
+    setMissingItems([]);
+    const precheck: string[] = [];
+    if (!email.trim()) precheck.push('Email');
+    if (!phone.trim()) precheck.push('WhatsApp number');
+    if (precheck.length) {
+      setMissingItems(precheck);
+      setError(`Before sending verification, fill in: ${precheck.join('; ')}`);
       return;
     }
     setSendingEmailOtp(true);
@@ -95,14 +161,31 @@ function CheckoutForm() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Failed to send code');
+      if (!res.ok) throw new Error(data.error ?? 'Failed to send verification email');
       setVerificationId(data.verificationId);
       setEmailVerified(Boolean(data.emailVerified));
-      if (typeof data.bypassCode === 'string' && data.bypassCode) {
+      const delivery = data.delivery === 'code' ? 'code' : 'magic_link';
+      setEmailDelivery(delivery);
+
+      if (delivery === 'magic_link' && !data.emailVerified) {
+        const redirectTo = `${window.location.origin}/checkout/confirm-email?vid=${encodeURIComponent(data.verificationId)}&plan=${encodeURIComponent(plan.slug)}`;
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          email: email.trim().toLowerCase(),
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: redirectTo,
+          },
+        });
+        if (otpError) throw new Error(otpError.message);
+        setEmailLinkSent(true);
+      } else if (typeof data.bypassCode === 'string' && data.bypassCode) {
         setEmailCode(data.bypassCode);
+        setEmailLinkSent(true);
+      } else if (delivery === 'code') {
+        setEmailLinkSent(true);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send code');
+      setError(err instanceof Error ? err.message : 'Failed to send verification email');
     } finally {
       setSendingEmailOtp(false);
     }
@@ -230,6 +313,16 @@ function CheckoutForm() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setMissingItems([]);
+
+    const missing = getMissingRequirements();
+    if (missing.length > 0) {
+      setMissingItems(missing);
+      setError(`Before you can pay, complete these steps:`);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -248,6 +341,10 @@ function CheckoutForm() {
 
       const orderData = await orderRes.json();
       if (!orderRes.ok) {
+        if (Array.isArray(orderData.missing) && orderData.missing.length > 0) {
+          setMissingItems(orderData.missing);
+          setError('Before you can pay, complete these steps:');
+        }
         throw new Error(orderData.error ?? 'Failed to create order');
       }
 
@@ -367,10 +464,21 @@ function CheckoutForm() {
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
+        {missingItems.length > 0 && (
+          <ul style={styles.missingList}>
+            {missingItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        )}
 
-        <form onSubmit={showRedeem && redeemValid ? handleRedeem : handleSubmit} style={styles.form}>
+        <form
+          onSubmit={showRedeem && redeemValid ? handleRedeem : handleSubmit}
+          style={styles.form}
+          noValidate
+        >
           <label style={styles.label}>Full name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} required style={styles.input} />
+          <input value={name} onChange={(e) => setName(e.target.value)} style={styles.input} />
 
           <label style={styles.label}>Email</label>
           <input
@@ -380,7 +488,6 @@ function CheckoutForm() {
               setEmail(e.target.value);
               resetVerification();
             }}
-            required
             style={styles.input}
           />
 
@@ -392,7 +499,6 @@ function CheckoutForm() {
               setPhone(e.target.value);
               resetVerification();
             }}
-            required
             placeholder="+91 98765 43210"
             autoComplete="tel"
             style={styles.input}
@@ -401,19 +507,11 @@ function CheckoutForm() {
           {!showRedeem && !testMode && (
             <div style={styles.otpBox}>
               <p style={styles.otpHint}>
-                Verify your email before paying. We&apos;ll send a code (expires in 15 minutes).
+                Verify your email before paying. We email a secure link — open it on this phone to continue.
               </p>
               <div style={styles.otpStatus}>
-                Email {emailVerified ? '✓ verified' : 'not verified'}
+                Email {emailVerified ? '✓ verified' : emailLinkSent ? 'link sent — check inbox/spam' : 'not verified'}
               </div>
-              <input
-                value={emailCode}
-                onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                placeholder="Code from email"
-                inputMode="numeric"
-                disabled={emailVerified}
-                style={styles.otpInput}
-              />
               <div style={styles.otpBtnRow}>
                 <button
                   type="button"
@@ -421,22 +519,51 @@ function CheckoutForm() {
                   disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
                   style={styles.otpBtn}
                 >
-                  {sendingEmailOtp ? 'Sending…' : emailVerified ? 'Verified' : 'Send code'}
+                  {sendingEmailOtp
+                    ? 'Sending…'
+                    : emailVerified
+                      ? 'Verified'
+                      : emailLinkSent
+                        ? 'Resend email'
+                        : 'Send verification email'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => void verifyEmailOtp()}
-                  disabled={
-                    verifyingEmailOtp ||
-                    emailVerified ||
-                    emailCode.length < 6 ||
-                    !verificationId
-                  }
-                  style={styles.otpBtn}
-                >
-                  {verifyingEmailOtp ? 'Checking…' : 'Verify'}
-                </button>
+                {emailLinkSent && !emailVerified && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!verificationId) return;
+                      const res = await fetch(
+                        `/api/payment/verification-status?verificationId=${encodeURIComponent(verificationId)}`
+                      );
+                      const data = await res.json();
+                      if (data.emailVerified) setEmailVerified(true);
+                      else setError('Not verified yet. Open the newest link in your email, then tap this again.');
+                    }}
+                    style={styles.otpBtnSecondary}
+                  >
+                    I’ve opened the link
+                  </button>
+                )}
               </div>
+              {emailDelivery === 'code' && !emailVerified && (
+                <>
+                  <input
+                    value={emailCode}
+                    onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    placeholder="Code from email"
+                    inputMode="numeric"
+                    style={styles.otpInput}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void verifyEmailOtp()}
+                    disabled={verifyingEmailOtp || emailCode.length < 6 || !verificationId}
+                    style={styles.otpBtn}
+                  >
+                    {verifyingEmailOtp ? 'Checking…' : 'Verify code'}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -465,7 +592,6 @@ function CheckoutForm() {
                 type="checkbox"
                 checked={policyAgreementAccepted}
                 onChange={(event) => setPolicyAgreementAccepted(event.target.checked)}
-                required
                 aria-describedby="checkout-policy-agreement"
                 style={{ marginTop: 3 }}
               />
@@ -482,14 +608,7 @@ function CheckoutForm() {
 
           <button
             type="submit"
-            disabled={
-              loading ||
-              (showRedeem
-                ? !redeemValid
-                : !policyAgreementAccepted ||
-                  !contactsVerified ||
-                  (!testMode && !razorpayReady))
-            }
+            disabled={loading || (showRedeem && !redeemValid)}
             style={styles.payBtn}
           >
             {loading
@@ -579,6 +698,15 @@ const styles: Record<string, CSSProperties> = {
     boxSizing: 'border-box',
   },
   error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[2] },
+  missingList: {
+    margin: '0 0 12px',
+    padding: '12px 12px 12px 28px',
+    backgroundColor: colors.warningMuted,
+    color: colors.warning,
+    borderRadius: radius.sm,
+    fontSize: 14,
+    lineHeight: 1.45,
+  },
   secure: { marginTop: spacing[3], fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 },
   loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: colors.textSecondary, backgroundColor: colors.bgPrimary },
   redeemLink: { background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: spacing[3], padding: '8px 0', minHeight: 44 },
@@ -638,7 +766,19 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     minHeight: 48,
-    flex: '1 1 120px',
+    flex: '1 1 140px',
+    boxSizing: 'border-box',
+  },
+  otpBtnSecondary: {
+    padding: '12px 14px',
+    backgroundColor: colors.bgCard,
+    color: colors.textPrimary,
+    border: `1px solid ${colors.borderSubtle}`,
+    borderRadius: radius.sm,
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: 48,
+    flex: '1 1 140px',
     boxSizing: 'border-box',
   },
   hint: { margin: '0 0 4px', fontSize: 13, color: colors.textMuted, lineHeight: 1.4 },
