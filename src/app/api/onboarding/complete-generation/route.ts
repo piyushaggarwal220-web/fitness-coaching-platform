@@ -118,25 +118,25 @@ export async function POST(request: Request) {
     })
   }
 
-  // The unique client job makes retries idempotent. This call is deliberately
-  // after the verified completion write so generation never sees stale flags.
   const result = await enqueueInitialPlanGeneration(admin, completedProfile)
   if (result.error || !result.job) {
     console.error(
       '[onboarding/complete-generation] queue rejected:',
       result.error ?? 'job unavailable'
     )
-    // Completion already stuck — still tell the client they can use the app.
-    // Cron backfill will retry missing jobs for onboarded clients.
-    return NextResponse.json({
-      success: true,
-      status: 'completed_without_queue',
-      warning: result.error ?? 'Could not queue generation',
-      deduplicated: false,
-    }, { status: 202 })
+    return NextResponse.json({ error: result.error ?? 'Could not queue generation' }, { status: 422 })
   }
 
   let job = result.job
+  if (job.status === 'ready' && job.draft_plan_id) {
+    return NextResponse.json({
+      success: true,
+      status: 'ready',
+      deduplicated: result.deduplicated,
+      draftPlanId: job.draft_plan_id,
+    })
+  }
+
   if (
     result.deduplicated &&
     canRetryInitialGeneration(job.status, job.started_at)

@@ -78,24 +78,9 @@ export async function getCoachWorkQueue(
   }
 
   for (const client of clients ?? []) {
-    if (client.plan_delivered) continue
-
-    // Clients often save most intake answers before the final submit. Auto-gen
-    // only starts after that submit — show waiting, not "Create Initial Plan".
-    if (!client.onboarding_complete) {
-      tasks.push({
-        id: `plan-${client.id}`,
-        type: 'initial_plan',
-        title: 'Waiting for client to finish onboarding',
-        subtitle: clientNameById.get(client.id) ?? 'Client',
-        href: `/coach/client/${client.id}`,
-        clientId: client.id,
-        clientName: clientNameById.get(client.id),
-        priority: PRIORITY.other,
-        createdAt: client.created_at ?? new Date().toISOString(),
-      })
-      continue
-    }
+    // Only surface plan work after onboarding completion is persisted.
+    // Incomplete clients never reach the dashboard, so they are not queue work.
+    if (client.plan_delivered || !client.onboarding_complete) continue
 
     const generation = generationByClient.get(client.id)
     const draft = latestDraftByClient.get(client.id)
@@ -104,16 +89,14 @@ export async function getCoachWorkQueue(
     const title =
       generation?.status === 'ready' || readyDraftId
         ? 'Ready for coach note/review'
-        : generation?.status === 'generating'
-          ? 'AI plan is generating'
-          : generation?.status === 'queued'
-            ? 'AI plan generation queued'
-            : generation?.status === 'failed'
-              ? 'AI plan generation failed'
-              : 'Create Initial Plan'
+        : generation?.status === 'failed'
+          ? 'AI plan generation failed'
+          : 'AI plan is generating'
     const href = readyDraftId
       ? `/coach/plan/${readyDraftId}`
-      : `/coach/client/${client.id}/generate-plan`
+      : generation?.status === 'failed'
+        ? `/coach/client/${client.id}/generate-plan`
+        : `/coach/client/${client.id}`
     tasks.push({
       id: `plan-${client.id}`,
       type: 'initial_plan',

@@ -226,6 +226,34 @@ export default function Dashboard() {
         // Paint the dashboard first; tracker summary can fill in afterwards.
         setLoading(false);
 
+        // If intake just finished but auto-gen never started, kick it again.
+        const job = generationResult.data as InitialPlanGenerationJob | null
+        const needsEnsure =
+          profileData.onboarding_complete &&
+          !profileData.plan_delivered &&
+          !planData &&
+          (!job || job.status === 'queued' || job.status === 'failed')
+        if (needsEnsure) {
+          void fetch('/api/onboarding/ensure-generation', {
+            method: 'POST',
+            credentials: 'include',
+          })
+            .then(async (res) => {
+              if (!res.ok) return
+              const body = (await res.json().catch(() => null)) as
+                | { status?: string }
+                | null
+              if (!body?.status) return
+              const { data: refreshed } = await supabase
+                .from('initial_plan_generation_jobs')
+                .select('id, client_id, status, error_message, updated_at')
+                .eq('client_id', userId)
+                .maybeSingle()
+              if (refreshed) setGenerationJob(refreshed as InitialPlanGenerationJob)
+            })
+            .catch(() => {})
+        }
+
         if (planData) {
           void loadTodayTrackerView(supabase, userId, profileData).then(({ view }) => {
             if (!view) return;
