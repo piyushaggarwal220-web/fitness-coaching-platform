@@ -1,12 +1,17 @@
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 import http from 'node:http'
+import os from 'node:os'
+import path from 'node:path'
 import { spawn } from 'node:child_process'
 
-const STORE = '9uwyq1-0j.myshopify.com'
+const STORE = process.env.SHOPIFY_STORE || '9uwyq1-0j.myshopify.com'
 const CLIENT_ID = '7e9cb568cfd431c538f36d1ad3f2b4f6'
 const PORT = 13387
 const REDIRECT = `http://127.0.0.1:${PORT}/auth/callback`
+const tempDir = process.env.TMPDIR || process.env.TEMP || process.env.TMP || os.tmpdir()
+const authUrlPath = process.env.SHOPIFY_AUTH_URL_PATH || path.join(tempDir, 'shopify-auth-url.txt')
+const tokenPath = process.env.SHOPIFY_AUTH_TOKEN_PATH || path.join(tempDir, 'shopify-auth-token.json')
 const SCOPES = [
   'read_products',
   'write_products',
@@ -58,8 +63,10 @@ const params = new URLSearchParams({
 })
 
 const authUrl = `https://${STORE}/admin/oauth/authorize?${params.toString()}`
-fs.writeFileSync(process.env.TEMP + '\\shopify-auth-url.txt', authUrl)
+fs.writeFileSync(authUrlPath, authUrl)
 console.log('AUTH_URL=' + authUrl)
+console.log('AUTH_URL_FILE=' + authUrlPath)
+console.log('TOKEN_FILE=' + tokenPath)
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -78,7 +85,7 @@ const server = http.createServer(async (req, res) => {
     if (err) throw new Error(err)
     if (!code) throw new Error('Missing code')
     if (gotState !== state) throw new Error('State mismatch')
-    if (shop && !shop.includes('9uwyq1-0j')) throw new Error('Shop mismatch: ' + shop)
+    if (shop && shop !== STORE) throw new Error('Shop mismatch: ' + shop)
 
     const tokenRes = await fetch(`https://${STORE}/admin/oauth/access_token`, {
       method: 'POST',
@@ -93,10 +100,7 @@ const server = http.createServer(async (req, res) => {
     const text = await tokenRes.text()
     if (!tokenRes.ok) throw new Error(`Token exchange failed: ${tokenRes.status} ${text}`)
     const token = JSON.parse(text)
-    fs.writeFileSync(
-      process.env.TEMP + '\\shopify-auth-token.json',
-      JSON.stringify(token, null, 2)
-    )
+    fs.writeFileSync(tokenPath, JSON.stringify(token, null, 2))
     res.writeHead(200, { 'Content-Type': 'text/html' })
     res.end(
       '<html><body style="font-family:sans-serif;padding:40px"><h1>Connected</h1><p>You can close this tab and return to Cursor.</p></body></html>'
@@ -113,7 +117,21 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log('Listening on', REDIRECT)
-  spawn('cmd', ['/c', 'start', '', authUrl], { detached: true, stdio: 'ignore' }).unref()
+  const opener =
+    process.platform === 'win32'
+      ? ['cmd', ['/c', 'start', '', authUrl]]
+      : process.platform === 'darwin'
+        ? ['open', [authUrl]]
+        : ['xdg-open', [authUrl]]
+  try {
+    const child = spawn(opener[0], opener[1], { detached: true, stdio: 'ignore' })
+    child.on('error', () => {
+      // The URL is printed above for headless environments.
+    })
+    child.unref()
+  } catch {
+    // The URL is printed above for headless environments.
+  }
 })
 
 setTimeout(() => {
