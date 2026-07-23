@@ -1,9 +1,11 @@
 import { after, NextResponse } from 'next/server'
 import { issuePurchaseClaimToken } from '@/lib/payments/fulfillment'
 import {
+  backfillMissingInitialPlanJobs,
   canRetryInitialGeneration,
   processInitialPlanGeneration,
   retryInitialPlanGeneration,
+  shouldStartInitialGeneration,
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
 import {
@@ -56,6 +58,14 @@ async function scheduleInitialPlanRecovery(admin: SupabaseClient): Promise<numbe
     if (canRetryInitialGeneration(row.status, row.started_at)) {
       const recoverable = await retryInitialPlanGeneration(admin, row)
       if (recoverable) toStart.push(recoverable.id)
+    }
+  }
+
+  // Also create jobs for onboarded clients who never got a queue row.
+  if (toStart.length < 5) {
+    const backfilled = await backfillMissingInitialPlanJobs(admin, 5 - toStart.length)
+    for (const job of backfilled) {
+      if (shouldStartInitialGeneration(job.status)) toStart.push(job.id)
     }
   }
 

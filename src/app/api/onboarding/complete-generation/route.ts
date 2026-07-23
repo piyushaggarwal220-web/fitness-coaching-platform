@@ -126,7 +126,14 @@ export async function POST(request: Request) {
       '[onboarding/complete-generation] queue rejected:',
       result.error ?? 'job unavailable'
     )
-    return NextResponse.json({ error: result.error ?? 'Could not queue generation' }, { status: 422 })
+    // Completion already stuck — still tell the client they can use the app.
+    // Cron backfill will retry missing jobs for onboarded clients.
+    return NextResponse.json({
+      success: true,
+      status: 'completed_without_queue',
+      warning: result.error ?? 'Could not queue generation',
+      deduplicated: false,
+    }, { status: 202 })
   }
 
   let job = result.job

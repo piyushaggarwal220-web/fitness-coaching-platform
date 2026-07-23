@@ -352,3 +352,50 @@ export async function retryInitialPlanGeneration(
     .maybeSingle()
   return (data as InitialPlanGenerationJob | null) ?? null
 }
+
+/**
+ * Clients can end up onboarded with no generation job when completion succeeded
+ * but enqueue failed, or when an older completion path skipped the queue.
+ * Backfill those so the coach queue can show generating → ready without a
+ * manual AI click.
+ */
+export async function backfillMissingInitialPlanJobs(
+  admin: SupabaseClient,
+  limit = 5
+): Promise<InitialPlanGenerationJob[]> {
+  const { data: clients, error } = await admin
+    .from('profiles')
+    .select('*')
+    .eq('onboarding_complete', true)
+    .eq('plan_delivered', false)
+    .not('coach_id', 'is', null)
+    .order('onboarding_completed_at', { ascending: true })
+    .limit(40)
+
+  if (error || !clients?.length) return []
+
+  const clientIds = clients.map((c) => c.id)
+  const [{ data: existingJobs }, { data: deliveredPlans }] = await Promise.all([
+    admin.from('initial_plan_generation_jobs').select('client_id').in('client_id', clientIds),
+    admin
+      .from('plans')
+      .select('client_id')
+      .in('client_id', clientIds)
+      .not('delivered_at', 'is', null),
+  ])
+  const hasJob = new Set((existingJobs ?? []).map((j) => j.client_id))
+  const hasDelivered = new Set((deliveredPlans ?? []).map((p) => p.client_id))
+
+  const started: InitialPlanGenerationJob[] = []
+  for (const row of clients) {
+    if (started.length >= limit) break
+    if (hasJob.has(row.id) || hasDelivered.has(row.id)) continue
+    const profile = row as OnboardingProfile
+    const result = await enqueueInitialPlanGeneration(admin, profile)
+    if (!result.job || result.error) continue
+    if (shouldStartInitialGeneration(result.job.status) || result.deduplicated) {
+      started.push(result.job)
+    }
+  }
+  return started
+}

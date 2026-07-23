@@ -44,7 +44,7 @@ export async function getCoachWorkQueue(
 
   const { data: clients } = await supabase
     .from('profiles')
-    .select('id, name, email, plan_delivered, checkin_awaiting, created_at')
+    .select('id, name, email, plan_delivered, onboarding_complete, checkin_awaiting, created_at')
     .eq('coach_id', coachId)
 
   const clientIds = (clients ?? []).map((c) => c.id)
@@ -59,36 +59,74 @@ export async function getCoachWorkQueue(
     (generationJobs ?? []).map((job) => [job.client_id, job])
   )
 
+  const pendingPlanClientIds = (clients ?? [])
+    .filter((c) => !c.plan_delivered && c.onboarding_complete)
+    .map((c) => c.id)
+  const latestDraftByClient = new Map<string, { id: string; created_at: string }>()
+  if (pendingPlanClientIds.length > 0) {
+    const { data: undeliveredDrafts } = await supabase
+      .from('plans')
+      .select('id, client_id, created_at')
+      .in('client_id', pendingPlanClientIds)
+      .is('delivered_at', null)
+      .order('created_at', { ascending: false })
+    for (const draft of undeliveredDrafts ?? []) {
+      if (!latestDraftByClient.has(draft.client_id)) {
+        latestDraftByClient.set(draft.client_id, { id: draft.id, created_at: draft.created_at })
+      }
+    }
+  }
+
   for (const client of clients ?? []) {
-    if (!client.plan_delivered) {
-      const generation = generationByClient.get(client.id)
-      const title =
-        generation?.status === 'ready'
-          ? 'Ready for coach note/review'
-          : generation?.status === 'generating'
-            ? 'AI plan is generating'
-            : generation?.status === 'queued'
-              ? 'AI plan generation queued'
-              : generation?.status === 'failed'
-                ? 'AI plan generation failed'
-                : 'Create Initial Plan'
-      const href = generation?.status === 'ready' && generation.draft_plan_id
-        ? `/coach/plan/${generation.draft_plan_id}`
-        : `/coach/client/${client.id}/generate-plan`
+    if (client.plan_delivered) continue
+
+    // Clients often save most intake answers before the final submit. Auto-gen
+    // only starts after that submit — show waiting, not "Create Initial Plan".
+    if (!client.onboarding_complete) {
       tasks.push({
         id: `plan-${client.id}`,
         type: 'initial_plan',
-        title,
-        subtitle: generation?.status === 'failed'
-          ? `${clientNameById.get(client.id) ?? 'Client'} · ${generation.error_message ?? 'Retry available'}`
-          : clientNameById.get(client.id) ?? 'Client',
-        href,
+        title: 'Waiting for client to finish onboarding',
+        subtitle: clientNameById.get(client.id) ?? 'Client',
+        href: `/coach/client/${client.id}`,
         clientId: client.id,
         clientName: clientNameById.get(client.id),
-        priority: PRIORITY.initial_plan,
-        createdAt: generation?.queued_at ?? client.created_at ?? new Date().toISOString(),
+        priority: PRIORITY.other,
+        createdAt: client.created_at ?? new Date().toISOString(),
       })
+      continue
     }
+
+    const generation = generationByClient.get(client.id)
+    const draft = latestDraftByClient.get(client.id)
+    const readyDraftId =
+      (generation?.status === 'ready' && generation.draft_plan_id) || draft?.id || null
+    const title =
+      generation?.status === 'ready' || readyDraftId
+        ? 'Ready for coach note/review'
+        : generation?.status === 'generating'
+          ? 'AI plan is generating'
+          : generation?.status === 'queued'
+            ? 'AI plan generation queued'
+            : generation?.status === 'failed'
+              ? 'AI plan generation failed'
+              : 'Create Initial Plan'
+    const href = readyDraftId
+      ? `/coach/plan/${readyDraftId}`
+      : `/coach/client/${client.id}/generate-plan`
+    tasks.push({
+      id: `plan-${client.id}`,
+      type: 'initial_plan',
+      title,
+      subtitle: generation?.status === 'failed'
+        ? `${clientNameById.get(client.id) ?? 'Client'} · ${generation.error_message ?? 'Retry available'}`
+        : clientNameById.get(client.id) ?? 'Client',
+      href,
+      clientId: client.id,
+      clientName: clientNameById.get(client.id),
+      priority: PRIORITY.initial_plan,
+      createdAt: generation?.queued_at ?? draft?.created_at ?? client.created_at ?? new Date().toISOString(),
+    })
   }
 
   const { data: pendingCheckins } = await supabase

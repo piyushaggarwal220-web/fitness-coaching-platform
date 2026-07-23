@@ -281,63 +281,78 @@ export default function CoachGeneratePlanPage() {
       })
       await persistDraftSafely(merged, 'AI Draft · Diet + Workout')
 
+      // Soft-fail cardio/supplements: diet + workout must still open for review.
+      let cardioReasoning: string | undefined
+      let supplementReasoning: string | undefined
+      const softFailNotes: string[] = []
+
       setStepLabel('Step 3 of 4 · Cardio')
       setStatus('Workout ready · Generating cardio plan…')
-      const cardioResult = await withTimeout(
-        runCoachAiAction({
-          action: 'initial_cardio',
-          clientId: client.id,
-          coachNote,
-        }),
-        'Cardio generation'
-      )
-
-      if (abortRef.current) return
-
-      if (!cardioResult.success || !cardioResult.formData) {
-        savePlanDraftToSession(clientId, merged)
-        resetGenerationUi()
-        setError(cardioResult.error ?? 'Cardio plan generation failed. Diet and workout draft saved.')
-        return
+      try {
+        const cardioResult = await withTimeout(
+          runCoachAiAction({
+            action: 'initial_cardio',
+            clientId: client.id,
+            coachNote,
+          }),
+          'Cardio generation'
+        )
+        if (abortRef.current) return
+        if (cardioResult.success && cardioResult.formData?.cardio_plan) {
+          merged = mergePlanForms(merged, {
+            cardio_plan: cardioResult.formData.cardio_plan,
+          })
+          cardioReasoning = cardioResult.aiReasoning
+          await persistDraftSafely(merged, 'AI Draft · Diet + Workout + Cardio')
+        } else {
+          softFailNotes.push(cardioResult.error ?? 'Cardio section skipped')
+        }
+      } catch (cardioErr) {
+        softFailNotes.push(
+          cardioErr instanceof Error ? cardioErr.message : 'Cardio section skipped'
+        )
       }
 
-      merged = mergePlanForms(merged, {
-        cardio_plan: cardioResult.formData.cardio_plan,
-      })
-      await persistDraftSafely(merged, 'AI Draft · Diet + Workout + Cardio')
+      if (abortRef.current) return
 
       setStepLabel('Step 4 of 4 · Supplements')
-      setStatus('Cardio ready · Generating supplement plan…')
-      const supplementResult = await withTimeout(
-        runCoachAiAction({
-          action: 'initial_supplements',
-          clientId: client.id,
-          coachNote,
-        }),
-        'Supplement generation'
-      )
-
-      if (abortRef.current) return
-
-      if (!supplementResult.success || !supplementResult.formData) {
-        savePlanDraftToSession(clientId, merged)
-        resetGenerationUi()
-        setError(supplementResult.error ?? 'Supplement plan generation failed. Other sections saved.')
-        return
+      setStatus('Generating supplement plan…')
+      try {
+        const supplementResult = await withTimeout(
+          runCoachAiAction({
+            action: 'initial_supplements',
+            clientId: client.id,
+            coachNote,
+          }),
+          'Supplement generation'
+        )
+        if (abortRef.current) return
+        if (supplementResult.success && supplementResult.formData?.supplement_plan) {
+          merged = mergePlanForms(merged, {
+            supplement_plan: supplementResult.formData.supplement_plan,
+          })
+          supplementReasoning = supplementResult.aiReasoning
+        } else {
+          softFailNotes.push(supplementResult.error ?? 'Supplements section skipped')
+        }
+      } catch (suppErr) {
+        softFailNotes.push(
+          suppErr instanceof Error ? suppErr.message : 'Supplements section skipped'
+        )
       }
 
-      merged = mergePlanForms(merged, {
-        supplement_plan: supplementResult.formData.supplement_plan,
-      })
+      if (abortRef.current) return
 
       await persistDraftSafely(merged, 'AI Draft · Initial Plan')
       resetGenerationUi()
+      if (softFailNotes.length > 0) {
+        setError(
+          `Diet and workout are ready. Optional sections need a retry: ${softFailNotes.join(' · ')}`
+        )
+      }
       openEditor(
         merged,
-        supplementResult.aiReasoning ??
-          cardioResult.aiReasoning ??
-          workoutResult.aiReasoning ??
-          dietResult.aiReasoning
+        supplementReasoning ?? cardioReasoning ?? workoutResult.aiReasoning ?? dietResult.aiReasoning
       )
     } catch (err) {
       resetGenerationUi()
