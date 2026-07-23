@@ -1,14 +1,17 @@
 import 'server-only'
 import { createHash, randomInt, timingSafeEqual } from 'crypto'
+import { createClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizePhoneForWhatsApp } from '@/lib/phone'
-import { sendDirectEmail } from '@/lib/notifications/email-provider'
+import { isEmailConfigured, sendDirectEmail } from '@/lib/notifications/email-provider'
 import { shouldBypassPayment } from '@/lib/config'
 
 const OTP_TTL_MS = 15 * 60 * 1000
 const RESEND_COOLDOWN_MS = 45 * 1000
 const MAX_SENDS_PER_CHANNEL = 5
 const MAX_VERIFY_ATTEMPTS = 8
+/** Marker stored instead of a code hash when Supabase Auth sends the email OTP. */
+const SUPABASE_AUTH_OTP_MARKER = 'supabase_auth_otp'
 
 /** WhatsApp OTP is intentionally disabled until the provider campaign is ready. */
 export type CheckoutOtpChannel = 'email'
@@ -53,6 +56,19 @@ function hashIp(ip: string | null): string | null {
   if (!ip) return null
   const salt = process.env.POLICY_ACK_IP_SALT?.trim() || 'checkout-otp'
   return createHash('sha256').update(`${salt}:${ip}`).digest('hex')
+}
+
+function createEphemeralAuthClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  if (!url || !anonKey) return null
+  return createClient(url, anonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  })
 }
 
 export function normalizeCheckoutEmail(email: string): string {
@@ -117,6 +133,49 @@ export async function assertCheckoutContactsVerified(input: {
   return { ok: true }
 }
 
+async function sendViaSupabaseAuthOtp(email: string): Promise<{ ok: boolean; error?: string }> {
+  const auth = createEphemeralAuthClient()
+  if (!auth) {
+    return { ok: false, error: 'Auth email client is not configured' }
+  }
+
+  const { error } = await auth.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: true,
+    },
+  })
+
+  if (error) {
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
+async function verifyViaSupabaseAuthOtp(
+  email: string,
+  code: string
+): Promise<{ ok: boolean; error?: string }> {
+  const auth = createEphemeralAuthClient()
+  if (!auth) {
+    return { ok: false, error: 'Auth email client is not configured' }
+  }
+
+  const { error } = await auth.auth.verifyOtp({
+    email,
+    token: code,
+    type: 'email',
+  })
+
+  // Drop any session created by verify — checkout is still pre-account.
+  await auth.auth.signOut().catch(() => undefined)
+
+  if (error) {
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
 export async function sendCheckoutOtp(input: {
   channel: CheckoutOtpChannel
   email: string
@@ -142,6 +201,14 @@ export async function sendCheckoutOtp(input: {
   }
   if (!phone) {
     return { ok: false, error: 'Valid WhatsApp number is required', status: 400 }
+  }
+
+  if (input.channel !== 'email') {
+    return {
+      ok: false,
+      error: 'WhatsApp verification is temporarily unavailable. Use email verification.',
+      status: 400,
+    }
   }
 
   const admin = createAdminClient()
@@ -177,9 +244,7 @@ export async function sendCheckoutOtp(input: {
     row = data as VerificationRow
   }
 
-  const sendCount =
-    input.channel === 'email' ? row.email_send_count : row.phone_send_count
-  if (sendCount >= MAX_SENDS_PER_CHANNEL) {
+  if (row.email_send_count >= MAX_SENDS_PER_CHANNEL) {
     return {
       ok: false,
       error: 'Too many code requests. Try again later or refresh checkout.',
@@ -187,10 +252,8 @@ export async function sendCheckoutOtp(input: {
     }
   }
 
-  const lastSentAt =
-    input.channel === 'email' ? row.last_email_sent_at : row.last_phone_sent_at
-  if (lastSentAt) {
-    const elapsed = now - new Date(lastSentAt).getTime()
+  if (row.last_email_sent_at) {
+    const elapsed = now - new Date(row.last_email_sent_at).getTime()
     if (elapsed < RESEND_COOLDOWN_MS) {
       return {
         ok: false,
@@ -201,47 +264,53 @@ export async function sendCheckoutOtp(input: {
   }
 
   const bypass = shouldBypassPayment()
-  let sendOk = true
-  let sendError: string | undefined
+  let emailCodeHash = codeHash
+  let bypassCode: string | undefined = bypass ? code : undefined
 
-  if (input.channel !== 'email') {
-    return {
-      ok: false,
-      error: 'WhatsApp verification is temporarily unavailable. Use email verification.',
-      status: 400,
+  if (isEmailConfigured()) {
+    const result = await sendDirectEmail({
+      to: email,
+      subject: 'Your LURVOX checkout verification code',
+      text: `Your LURVOX verification code is ${code}. It expires in 15 minutes.`,
+      html: `<p>Your LURVOX verification code is <strong>${code}</strong>.</p><p>It expires in 15 minutes.</p>`,
+    })
+    if (!result.ok || result.skipped) {
+      if (!bypass) {
+        return {
+          ok: false,
+          error: result.error ?? 'Failed to send email code',
+          status: 502,
+        }
+      }
     }
-  }
-
-  const result = await sendDirectEmail({
-    to: email,
-    subject: 'Your LURVOX checkout verification code',
-    text: `Your LURVOX verification code is ${code}. It expires in 15 minutes.`,
-    html: `<p>Your LURVOX verification code is <strong>${code}</strong>.</p><p>It expires in 15 minutes.</p>`,
-  })
-  sendOk = result.ok && !result.skipped
-  sendError = result.skipped ? 'Email delivery is not configured' : result.error
-
-  if (!sendOk && !bypass) {
-    return {
-      ok: false,
-      error: sendError ?? 'Failed to send email code',
-      status: 502,
+  } else {
+    const supabaseSend = await sendViaSupabaseAuthOtp(email)
+    if (!supabaseSend.ok) {
+      if (!bypass) {
+        return {
+          ok: false,
+          error:
+            supabaseSend.error ??
+            'Could not send verification email. Please try again in a minute.',
+          status: 502,
+        }
+      }
     }
-  }
-
-  const patch = {
-    email_code_hash: codeHash,
-    email_verified_at: null,
-    email_send_count: row.email_send_count + 1,
-    email_attempt_count: 0,
-    last_email_sent_at: new Date().toISOString(),
-    expires_at: expiresAt,
-    updated_at: new Date().toISOString(),
+    emailCodeHash = SUPABASE_AUTH_OTP_MARKER
+    bypassCode = undefined
   }
 
   const { data: updated, error: updateError } = await admin
     .from('checkout_contact_verifications')
-    .update(patch)
+    .update({
+      email_code_hash: emailCodeHash,
+      email_verified_at: null,
+      email_send_count: row.email_send_count + 1,
+      email_attempt_count: 0,
+      last_email_sent_at: new Date().toISOString(),
+      expires_at: expiresAt,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', row.id)
     .select('*')
     .single()
@@ -255,7 +324,7 @@ export async function sendCheckoutOtp(input: {
     ok: true,
     verificationId: next.id,
     channel: 'email',
-    bypassCode: bypass ? code : undefined,
+    bypassCode,
     emailVerified: Boolean(next.email_verified_at),
     phoneVerified: Boolean(next.phone_verified_at),
   }
@@ -284,8 +353,8 @@ export async function verifyCheckoutOtp(input: {
   }
 
   const code = input.code.trim()
-  if (!/^\d{6}$/.test(code)) {
-    return { ok: false, error: 'Enter the 6-digit code', status: 400 }
+  if (!/^\d{6,8}$/.test(code)) {
+    return { ok: false, error: 'Enter the code from your email', status: 400 }
   }
 
   const row = await getVerification(input.verificationId.trim())
@@ -308,17 +377,39 @@ export async function verifyCheckoutOtp(input: {
   }
 
   const admin = createAdminClient()
-  const matches = safeEqualHex(hashOtp(code), expectedHash)
+  let matches = false
 
-  if (!matches) {
-    await admin
-      .from('checkout_contact_verifications')
-      .update({
-        email_attempt_count: attemptCount + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', row.id)
-    return { ok: false, error: 'Incorrect code', status: 400 }
+  if (expectedHash === SUPABASE_AUTH_OTP_MARKER) {
+    const verified = await verifyViaSupabaseAuthOtp(row.email, code)
+    matches = verified.ok
+    if (!matches) {
+      await admin
+        .from('checkout_contact_verifications')
+        .update({
+          email_attempt_count: attemptCount + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', row.id)
+      return {
+        ok: false,
+        error: verified.error?.includes('expired')
+          ? 'Code expired. Request a new one.'
+          : 'Incorrect code',
+        status: 400,
+      }
+    }
+  } else {
+    matches = safeEqualHex(hashOtp(code), expectedHash)
+    if (!matches) {
+      await admin
+        .from('checkout_contact_verifications')
+        .update({
+          email_attempt_count: attemptCount + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', row.id)
+      return { ok: false, error: 'Incorrect code', status: 400 }
+    }
   }
 
   const verifiedAt = new Date().toISOString()

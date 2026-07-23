@@ -330,12 +330,12 @@ function CheckoutForm() {
         ) : (
           <div style={styles.redeemBox}>
             <h3 style={{ margin: '0 0 12px', fontSize: 16 }}>Redeem your code</h3>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
               <input
                 value={redeemCode}
                 onChange={(e) => { setRedeemCode(e.target.value); setRedeemValid(null); }}
                 placeholder="Enter redemption code"
-                style={{ ...styles.input, flex: 1 }}
+                style={{ ...styles.input, flex: '1 1 160px', minWidth: 0 }}
               />
               <button type="button" onClick={() => void validateCode()} disabled={validatingCode} style={styles.validateBtn}>
                 {validatingCode ? '...' : 'Validate'}
@@ -401,37 +401,40 @@ function CheckoutForm() {
           {!showRedeem && !testMode && (
             <div style={styles.otpBox}>
               <p style={styles.otpHint}>
-                Verify your email before paying. We&apos;ll send a 6-digit code (expires in 15 minutes).
+                Verify your email before paying. We&apos;ll send a code (expires in 15 minutes).
               </p>
               <div style={styles.otpStatus}>
                 Email {emailVerified ? '✓ verified' : 'not verified'}
               </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                <input
-                  value={emailCode}
-                  onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="Email code"
-                  inputMode="numeric"
-                  disabled={emailVerified}
-                  style={{ ...styles.input, flex: 1, minHeight: 48 }}
-                />
+              <input
+                value={emailCode}
+                onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                placeholder="Code from email"
+                inputMode="numeric"
+                disabled={emailVerified}
+                style={styles.otpInput}
+              />
+              <div style={styles.otpBtnRow}>
                 <button
                   type="button"
                   onClick={() => void sendEmailOtp()}
                   disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
                   style={styles.otpBtn}
                 >
-                  {sendingEmailOtp ? '...' : emailVerified ? 'Done' : 'Send'}
+                  {sendingEmailOtp ? 'Sending…' : emailVerified ? 'Verified' : 'Send code'}
                 </button>
                 <button
                   type="button"
                   onClick={() => void verifyEmailOtp()}
                   disabled={
-                    verifyingEmailOtp || emailVerified || emailCode.length !== 6 || !verificationId
+                    verifyingEmailOtp ||
+                    emailVerified ||
+                    emailCode.length < 6 ||
+                    !verificationId
                   }
                   style={styles.otpBtn}
                 >
-                  {verifyingEmailOtp ? '...' : 'Verify'}
+                  {verifyingEmailOtp ? 'Checking…' : 'Verify'}
                 </button>
               </div>
             </div>
@@ -523,24 +526,75 @@ export default function CheckoutPage() {
 }
 
 const styles: Record<string, CSSProperties> = {
-  page: { minHeight: '100vh', backgroundColor: colors.bgPrimary, padding: `${spacing[6]}px ${spacing[3]}px` },
-  card: { maxWidth: 520, margin: '0 auto', backgroundColor: colors.bgCard, borderRadius: radius.lg, padding: spacing[6], border: `1px solid ${colors.borderSubtle}` },
+  page: {
+    minHeight: '100vh',
+    backgroundColor: colors.bgPrimary,
+    padding: `${spacing[4]}px ${spacing[2]}px`,
+    overflowX: 'hidden',
+    boxSizing: 'border-box',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 520,
+    margin: '0 auto',
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
+    padding: spacing[4],
+    border: `1px solid ${colors.borderSubtle}`,
+    boxSizing: 'border-box',
+  },
   backLink: { color: colors.textMuted, textDecoration: 'none', fontSize: 14 },
   title: { margin: '16px 0 8px', fontSize: 28, color: colors.textPrimary, fontWeight: 800, letterSpacing: '-0.02em' },
   subtitle: { margin: '0 0 20px', color: colors.textSecondary },
   testBanner: { backgroundColor: colors.warningMuted, color: colors.warning, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[3], fontSize: 14 },
   planPicker: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: spacing[4] },
   planChip: { padding: '8px 14px', borderRadius: 999, border: `1px solid ${colors.borderSubtle}`, textDecoration: 'none', color: colors.textPrimary, fontSize: 14, backgroundColor: colors.bgElevated },
-  form: { display: 'flex', flexDirection: 'column', gap: 10 },
+  form: { display: 'flex', flexDirection: 'column', gap: 10, width: '100%', minWidth: 0 },
   label: { fontWeight: 600, fontSize: 14, marginTop: 8, color: colors.textSecondary },
-  input: { padding: '14px 16px', border: `1px solid ${colors.borderSubtle}`, borderRadius: radius.sm, fontSize: 16, backgroundColor: colors.bgElevated, color: colors.textPrimary, minHeight: 56 },
-  payBtn: { marginTop: spacing[3], padding: 16, backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: radius.md, fontSize: 17, fontWeight: 700, cursor: 'pointer', minHeight: 56 },
+  input: {
+    padding: '14px 16px',
+    border: `1px solid ${colors.borderSubtle}`,
+    borderRadius: radius.sm,
+    fontSize: 16,
+    backgroundColor: colors.bgElevated,
+    color: colors.textPrimary,
+    minHeight: 56,
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    minWidth: 0,
+  },
+  payBtn: {
+    marginTop: spacing[3],
+    padding: 16,
+    backgroundColor: colors.accent,
+    color: colors.textInverse,
+    border: 'none',
+    borderRadius: radius.md,
+    fontSize: 17,
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: 56,
+    width: '100%',
+    boxSizing: 'border-box',
+  },
   error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[2] },
   secure: { marginTop: spacing[3], fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 },
   loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: colors.textSecondary, backgroundColor: colors.bgPrimary },
   redeemLink: { background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: spacing[3], padding: '8px 0', minHeight: 44 },
-  redeemBox: { backgroundColor: colors.accentMuted, padding: spacing[3], borderRadius: radius.sm, marginBottom: spacing[3] },
-  validateBtn: { padding: '12px 16px', backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: radius.sm, fontWeight: 600, cursor: 'pointer', minHeight: 48, whiteSpace: 'nowrap' },
+  redeemBox: { backgroundColor: colors.accentMuted, padding: spacing[3], borderRadius: radius.sm, marginBottom: spacing[3], boxSizing: 'border-box', width: '100%' },
+  validateBtn: {
+    padding: '12px 16px',
+    backgroundColor: colors.accent,
+    color: colors.textInverse,
+    border: 'none',
+    borderRadius: radius.sm,
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: 48,
+    whiteSpace: 'nowrap',
+    flex: '0 0 auto',
+  },
   validBanner: { backgroundColor: colors.successMuted, color: colors.success, padding: 10, borderRadius: radius.sm, fontSize: 14, marginBottom: 8 },
   backToPay: { background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 13, padding: '8px 0', minHeight: 44 },
   otpBox: {
@@ -552,11 +606,31 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
+    width: '100%',
+    boxSizing: 'border-box',
+    minWidth: 0,
   },
   otpHint: { margin: 0, fontSize: 13, color: colors.textSecondary, lineHeight: 1.4 },
   otpStatus: { fontSize: 13, fontWeight: 600, color: colors.textSecondary },
+  otpInput: {
+    padding: '14px 16px',
+    border: `1px solid ${colors.borderSubtle}`,
+    borderRadius: radius.sm,
+    fontSize: 16,
+    backgroundColor: colors.bgCard,
+    color: colors.textPrimary,
+    minHeight: 48,
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+  otpBtnRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 8,
+    width: '100%',
+  },
   otpBtn: {
-    padding: '10px 12px',
+    padding: '12px 14px',
     backgroundColor: colors.accent,
     color: colors.textInverse,
     border: 'none',
@@ -564,7 +638,8 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     minHeight: 48,
-    whiteSpace: 'nowrap',
+    flex: '1 1 120px',
+    boxSizing: 'border-box',
   },
   hint: { margin: '0 0 4px', fontSize: 13, color: colors.textMuted, lineHeight: 1.4 },
 };

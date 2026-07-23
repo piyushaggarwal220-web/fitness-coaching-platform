@@ -9,7 +9,16 @@ export type DirectEmail = {
 }
 
 export function isEmailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY?.trim() && process.env.NOTIFICATION_FROM_EMAIL?.trim())
+  return Boolean(process.env.RESEND_API_KEY?.trim() && resolveFromAddress())
+}
+
+function resolveFromAddress(): string | null {
+  const from =
+    process.env.NOTIFICATION_FROM_EMAIL?.trim() ||
+    process.env.EMAIL_FROM?.trim() ||
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    ''
+  return from || null
 }
 
 /** Server-only email delivery. Missing configuration is a safe, observable skip. */
@@ -17,7 +26,7 @@ export async function sendDirectEmail(
   message: DirectEmail
 ): Promise<{ ok: boolean; skipped?: boolean; error?: string; providerMessageId?: string }> {
   const apiKey = process.env.RESEND_API_KEY?.trim()
-  const from = process.env.NOTIFICATION_FROM_EMAIL?.trim()
+  const from = resolveFromAddress()
   if (!apiKey || !from) {
     console.info('[email] Skipped: RESEND_API_KEY or NOTIFICATION_FROM_EMAIL is unset')
     return { ok: true, skipped: true }
