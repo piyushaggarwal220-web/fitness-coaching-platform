@@ -10,7 +10,6 @@ import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
-import { PasswordInput } from '@/components/ui/PasswordInput';
 import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
 
 const supabase = createClient();
@@ -39,15 +38,11 @@ function CheckoutForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [error, setError] = useState('');
   const [razorpayReady, setRazorpayReady] = useState(false);
   const [showRedeem, setShowRedeem] = useState(false);
-  const [redeemCode, setRedeemCode] = useState('');
-  const [redeemValid, setRedeemValid] = useState<{ planName?: string } | null>(null);
-  const [validatingCode, setValidatingCode] = useState(false);
   const [policyAgreementAccepted, setPolicyAgreementAccepted] = useState(false);
   const [verificationId, setVerificationId] = useState('');
   const [emailCode, setEmailCode] = useState('');
@@ -120,17 +115,17 @@ function CheckoutForm() {
     if (!email.trim()) missing.push('Email');
     else if (!email.includes('@')) missing.push('A valid email address');
     if (!phone.trim()) missing.push('WhatsApp number');
-    if (!showRedeem && !testMode && !emailVerified) {
+    if (!testMode && !emailVerified) {
       missing.push(
         emailLinkSent
           ? 'Open the verification link in your email (check spam too)'
           : 'Verify your email (tap “Send verification email”)'
       );
     }
-    if (!showRedeem && !policyAgreementAccepted) {
+    if (!policyAgreementAccepted) {
       missing.push('Tick the box to agree to Terms & Refund Policy');
     }
-    if (!showRedeem && !testMode && !razorpayReady) {
+    if (!testMode && !razorpayReady) {
       missing.push('Wait for the payment form to finish loading');
     }
     return missing;
@@ -263,55 +258,6 @@ function CheckoutForm() {
     continueAfterPayment(verifyData.redirectTo ?? '/create-account');
   };
 
-  const validateCode = async () => {
-    if (!redeemCode.trim()) return;
-    setValidatingCode(true);
-    setError('');
-    try {
-      const res = await fetch('/api/redemption/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: redeemCode }),
-      });
-      const data = await res.json();
-      if (!data.valid) throw new Error(data.error ?? 'Invalid code');
-      setRedeemValid({ planName: data.planName });
-    } catch (err) {
-      setRedeemValid(null);
-      setError(err instanceof Error ? err.message : 'Invalid code');
-    } finally {
-      setValidatingCode(false);
-    }
-  };
-
-  const handleRedeem = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/redemption/redeem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: redeemCode, email, name, password }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error ?? 'Redemption failed');
-
-      if (!data.sessionEstablished) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        });
-        if (signInError) throw new Error('Account created but sign-in failed. Please log in.');
-      }
-
-      continueAfterPayment(data.redirectTo ?? '/onboarding');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Redemption failed');
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -428,27 +374,21 @@ function CheckoutForm() {
           </button>
         ) : (
           <div style={styles.redeemBox}>
-            <h3 style={{ margin: '0 0 12px', fontSize: 16 }}>Redeem your code</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-              <input
-                value={redeemCode}
-                onChange={(e) => { setRedeemCode(e.target.value); setRedeemValid(null); }}
-                placeholder="Enter redemption code"
-                style={{ ...styles.input, flex: '1 1 160px', minWidth: 0 }}
-              />
-              <button type="button" onClick={() => void validateCode()} disabled={validatingCode} style={styles.validateBtn}>
-                {validatingCode ? '...' : 'Validate'}
-              </button>
-            </div>
-            {redeemValid && (
-              <div style={styles.validBanner}>✓ Valid code — {redeemValid.planName} plan</div>
-            )}
-            <button type="button" onClick={() => { setShowRedeem(false); setRedeemCode(''); setRedeemValid(null); }} style={styles.backToPay}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Have an enrollment code?</h3>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
+              Old members and offline payments use a personal code. You&apos;ll confirm your email, set a
+              password, then complete onboarding.
+            </p>
+            <a href="/enroll" style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}>
+              Continue to enrollment →
+            </a>
+            <button type="button" onClick={() => setShowRedeem(false)} style={styles.backToPay}>
               ← Back to payment
             </button>
           </div>
         )}
 
+        {!showRedeem && (
         <div style={styles.planPicker}>
           {COACHING_PLAN_LIST.map((item) => (
             <Link
@@ -464,6 +404,7 @@ function CheckoutForm() {
             </Link>
           ))}
         </div>
+        )}
 
         {error && <div style={styles.error}>{error}</div>}
         {missingItems.length > 0 && (
@@ -474,8 +415,9 @@ function CheckoutForm() {
           </ul>
         )}
 
+        {!showRedeem && (
         <form
-          onSubmit={showRedeem && redeemValid ? handleRedeem : handleSubmit}
+          onSubmit={handleSubmit}
           style={styles.form}
           noValidate
         >
@@ -506,7 +448,7 @@ function CheckoutForm() {
             style={styles.input}
           />
 
-          {!showRedeem && !testMode && (
+          {!testMode && (
             <div style={styles.otpBox}>
               <p style={styles.otpHint}>
                 Verify your email before paying. We email a secure link — open it on this phone to continue.
@@ -569,62 +511,40 @@ function CheckoutForm() {
             </div>
           )}
 
-          {showRedeem && redeemValid && (
-            <>
-              <label style={styles.label}>Create your login password (min 6 characters)</label>
-              <p style={styles.hint}>
-                This is a normal password you will type when signing in — not a phone passkey / Face ID.
-              </p>
-              <PasswordInput
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                inputStyle={styles.input}
-                name="redeem-password"
-                aria-label="Create login password"
-                autoComplete="new-password"
-              />
-            </>
-          )}
-
-          {!showRedeem && (
-            <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>
-              <input
-                type="checkbox"
-                checked={policyAgreementAccepted}
-                onChange={(event) => setPolicyAgreementAccepted(event.target.checked)}
-                aria-describedby="checkout-policy-agreement"
-                style={{ marginTop: 3 }}
-              />
-              <span id="checkout-policy-agreement">
-                I have read and agree to the{' '}
-                <Link href="/terms" target="_blank" style={{ color: colors.accent }}>Terms &amp; Conditions</Link>
-                {' '}and{' '}
-                <Link href="/refund-policy" target="_blank" style={{ color: colors.accent }}>Refund Policy</Link>.
-                The results guarantee requires a documented no-result claim and at least 90% of
-                due check-ins submitted within each 48-hour window. Statutory rights still apply.
-              </span>
-            </label>
-          )}
+          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>
+            <input
+              type="checkbox"
+              checked={policyAgreementAccepted}
+              onChange={(event) => setPolicyAgreementAccepted(event.target.checked)}
+              aria-describedby="checkout-policy-agreement"
+              style={{ marginTop: 3 }}
+            />
+            <span id="checkout-policy-agreement">
+              I have read and agree to the{' '}
+              <Link href="/terms" target="_blank" style={{ color: colors.accent }}>Terms &amp; Conditions</Link>
+              {' '}and{' '}
+              <Link href="/refund-policy" target="_blank" style={{ color: colors.accent }}>Refund Policy</Link>.
+              The results guarantee requires a documented no-result claim and at least 90% of
+              due check-ins submitted within each 48-hour window. Statutory rights still apply.
+            </span>
+          </label>
 
           <button
             type="submit"
-            disabled={loading || (showRedeem && !redeemValid)}
+            disabled={loading}
             style={styles.payBtn}
           >
-            {loading
-              ? 'Processing...'
-              : showRedeem && redeemValid
-                ? 'Redeem & Continue'
-                : `Pay ${plan.displayPrice} securely`}
+            {loading ? 'Processing...' : `Pay ${plan.displayPrice} securely`}
           </button>
         </form>
+        )}
 
         <p style={styles.secure}>
           Secure payments via Razorpay. After payment you&apos;ll create your login password (not a passkey).
           {' '}
           <Link href="/create-account" style={{ color: colors.accent }}>Already paid?</Link>
+          {' · '}
+          <Link href="/enroll" style={{ color: colors.accent }}>Enrollment code</Link>
         </p>
       </div>
 

@@ -106,20 +106,39 @@ export function selectKnowledgeCategories(profile: ProfileForSelection): AiKnowl
   return Array.from(selected).sort()
 }
 
-/** Filter and order knowledge entries to match selected categories. */
+/** Filter and order knowledge entries to match selected categories.
+ * When multiple active versions share the same title+category, keep the highest version only.
+ */
 export function filterKnowledgeEntries(
   entries: AiKnowledge[],
   categories: AiKnowledgeCategory[]
 ): AiKnowledge[] {
   const categorySet = new Set(categories)
 
-  return entries
+  const sorted = entries
     .filter((entry) => entry.active && categorySet.has(entry.category))
     .sort((a, b) => {
       const categoryCompare = a.category.localeCompare(b.category)
       if (categoryCompare !== 0) return categoryCompare
+      const titleCompare = a.title.localeCompare(b.title)
+      if (titleCompare !== 0) return titleCompare
       return b.version - a.version
     })
+
+  const seen = new Set<string>()
+  const deduped: AiKnowledge[] = []
+  for (const entry of sorted) {
+    const key = `${entry.category}::${entry.title.trim().toLowerCase()}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(entry)
+  }
+
+  return deduped.sort((a, b) => {
+    const categoryCompare = a.category.localeCompare(b.category)
+    if (categoryCompare !== 0) return categoryCompare
+    return b.version - a.version
+  })
 }
 
 /** Rough token estimate (~4 characters per token for English prose). */

@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { FounderAnalyticsPanel } from '@/components/admin/analytics/FounderAnalyticsPanel'
-import { ComplexityAnalyticsPanel } from '@/components/admin/analytics/ComplexityAnalyticsPanel'
-import { PromptCacheAnalyticsPanel } from '@/components/admin/analytics/PromptCacheAnalyticsPanel'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { AdminStatCard } from '@/components/admin/AdminStatCard'
 import { brandTitle } from '@/lib/brand'
@@ -168,14 +166,6 @@ export default function AdminDashboardPage() {
 
           <FounderAnalyticsPanel />
 
-          <div style={{ marginTop: 24 }}>
-            <PromptCacheAnalyticsPanel />
-          </div>
-
-          <div style={{ marginTop: 24 }}>
-            <ComplexityAnalyticsPanel />
-          </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginTop: 24 }}>
             <div style={s.card}>
               <h2 style={s.cardTitle}>Recent Activity</h2>
@@ -253,7 +243,8 @@ export default function AdminDashboardPage() {
 
           <div style={{ ...s.toolbar, marginTop: 8 }}>
             <Link href="/admin/clients" style={s.linkBtn}>Manage clients →</Link>
-            <Link href="/admin/coaches" style={s.linkBtn}>View coaches →</Link>
+            <Link href="/admin/redemption-codes" style={s.linkBtn}>Enrollment codes →</Link>
+            <Link href="/admin/purchases" style={s.linkBtn}>Purchases →</Link>
           </div>
         </div>
       </div>

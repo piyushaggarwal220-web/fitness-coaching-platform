@@ -124,10 +124,10 @@ export async function generateClaudeResponse(
 
   for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
     const model = models[modelIndex]
-    const configuredAttempts = Number.parseInt(process.env.ANTHROPIC_MAX_ATTEMPTS || '3', 10)
+    const configuredAttempts = Number.parseInt(process.env.ANTHROPIC_MAX_ATTEMPTS || '2', 10)
     const attempts = Number.isFinite(configuredAttempts)
-      ? Math.max(1, Math.min(4, configuredAttempts))
-      : 3
+      ? Math.max(1, Math.min(3, configuredAttempts))
+      : 2
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
       try {
         const response = await client.messages.create({

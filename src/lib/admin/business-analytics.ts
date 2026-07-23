@@ -53,15 +53,37 @@ export type AiCostMetrics = {
 }
 
 export type ProfitMetrics = {
+  /** Gross captured Razorpay revenue (lifetime) */
   revenueInr: number
+  /** Lifetime refunded amount from captured purchases */
+  refundsInr: number
+  /** Gross − refunds */
+  netSalesInr: number
   razorpayFeesInr: number
   aiCostInr: number
+  /** Net sales − estimated Razorpay fees */
   netRevenueInr: number
+  /** Net revenue − AI cost (operating profit estimate) */
   grossProfitInr: number
+  operatingProfitInr: number
   grossMarginPercent: number | null
   aiCostPercent: number | null
   paymentFeePercent: number | null
   avgProfitPerClientInr: number | null
+  /** Clarifies that fees/FX are estimates */
+  notes: string
+}
+
+export type EnrollmentFinanceMetrics = {
+  codesIssued: number
+  codesActive: number
+  codesRedeemed: number
+  usesRemaining: number
+  paidClients: number
+  enrollmentClients: number
+  trialClients: number
+  seatsExpiringIn30Days: number
+  pendingOnboarding: number
 }
 
 export type PlatformStatusMetrics = {
@@ -93,11 +115,15 @@ export type BusinessAnalytics = {
   support: SupportMetrics
   aiCosts: AiCostMetrics
   profit: ProfitMetrics
+  enrollment: EnrollmentFinanceMetrics
   platform: PlatformStatusMetrics
   charts: ChartSeries
 }
 
-type PurchaseRow = Pick<Purchase, 'id' | 'user_id' | 'amount_paise' | 'created_at' | 'status'>
+type PurchaseRow = Pick<
+  Purchase,
+  'id' | 'user_id' | 'amount_paise' | 'created_at' | 'status' | 'refunded_amount_paise'
+>
 type AiLogRow = Pick<
   AiGenerationLog,
   | 'id'
@@ -217,8 +243,11 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
     aiLogsRes,
     aiLogsLifetimeRes,
     storageRes,
+    codesRes,
+    usagesRes,
+    clientProfilesRes,
   ] = await Promise.all([
-    admin.from('purchases').select('id, user_id, amount_paise, created_at, status').order('created_at', { ascending: false }),
+    admin.from('purchases').select('id, user_id, amount_paise, created_at, status, refunded_amount_paise').order('created_at', { ascending: false }),
     admin.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'client'),
     admin.from('plans').select('client_id').eq('active', true),
     admin.from('plans').select('id', { count: 'exact', head: true }),
@@ -241,6 +270,12 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
       .order('created_at', { ascending: false })
       .limit(5000),
     admin.storage.listBuckets(),
+    admin.from('redemption_codes').select('id, is_active, remaining_uses, max_redemptions'),
+    admin.from('redemption_usages').select('id', { count: 'exact', head: true }),
+    admin
+      .from('profiles')
+      .select('id, access_source, payment_confirmed, onboarding_complete, subscription_expires_at')
+      .eq('role', 'client'),
   ])
 
   const purchases = (purchasesRes.data ?? []) as PurchaseRow[]
@@ -356,29 +391,77 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
   }
 
   const lifetimeRevenueInr = revenue.lifetimeInr
+  const refundsInr =
+    Math.round(
+      (purchases
+        .filter((p) => p.status === 'captured' || p.status === 'refunded')
+        .reduce((sum, p) => sum + (p.refunded_amount_paise ?? 0), 0) /
+        100) *
+        100
+    ) / 100
+  const netSalesInr = Math.round((lifetimeRevenueInr - refundsInr) * 100) / 100
   const razorpayFeesInr = purchases
     .filter((p) => p.status === 'captured')
-    .reduce((sum, p) => sum + calculateRazorpayFeeInr(p.amount_paise), 0)
+    .reduce((sum, p) => sum + calculateRazorpayFeeInr(Math.max(0, p.amount_paise - (p.refunded_amount_paise ?? 0))), 0)
   const aiCostInr = usdToInr(aiCosts.lifetimeUsd)
-  const netRevenueInr = Math.round((lifetimeRevenueInr - razorpayFeesInr) * 100) / 100
-  const grossProfitInr = Math.round((netRevenueInr - aiCostInr) * 100) / 100
+  const netRevenueInr = Math.round((netSalesInr - razorpayFeesInr) * 100) / 100
+  const operatingProfitInr = Math.round((netRevenueInr - aiCostInr) * 100) / 100
+  const grossProfitInr = operatingProfitInr
+
+  const clientProfiles = (clientProfilesRes.data ?? []) as {
+    id: string
+    access_source: string | null
+    payment_confirmed: boolean | null
+    onboarding_complete: boolean | null
+    subscription_expires_at: string | null
+  }[]
+  const in30 = new Date(now)
+  in30.setDate(in30.getDate() + 30)
+  const codes = (codesRes.data ?? []) as {
+    id: string
+    is_active: boolean
+    remaining_uses: number
+    max_redemptions: number
+  }[]
+
+  const enrollment: EnrollmentFinanceMetrics = {
+    codesIssued: codes.length,
+    codesActive: codes.filter((c) => c.is_active && c.remaining_uses > 0).length,
+    codesRedeemed: usagesRes.count ?? 0,
+    usesRemaining: codes.reduce((sum, c) => sum + (c.is_active ? c.remaining_uses : 0), 0),
+    paidClients: clientProfiles.filter((p) => p.access_source === 'purchase' && p.payment_confirmed).length,
+    enrollmentClients: clientProfiles.filter(
+      (p) => p.access_source === 'enrollment_code' && p.payment_confirmed
+    ).length,
+    trialClients: clientProfiles.filter((p) => p.access_source === 'admin_trial').length,
+    seatsExpiringIn30Days: clientProfiles.filter((p) => {
+      if (!p.payment_confirmed || !p.subscription_expires_at) return false
+      const exp = new Date(p.subscription_expires_at).getTime()
+      return exp >= now.getTime() && exp <= in30.getTime()
+    }).length,
+    pendingOnboarding: clientProfiles.filter((p) => p.onboarding_complete === false).length,
+  }
 
   const profit: ProfitMetrics = {
     revenueInr: lifetimeRevenueInr,
+    refundsInr,
+    netSalesInr,
     razorpayFeesInr: Math.round(razorpayFeesInr * 100) / 100,
     aiCostInr,
     netRevenueInr,
     grossProfitInr,
+    operatingProfitInr,
     grossMarginPercent:
-      lifetimeRevenueInr > 0 ? Math.round((grossProfitInr / lifetimeRevenueInr) * 1000) / 10 : null,
-    aiCostPercent:
-      lifetimeRevenueInr > 0 ? Math.round((aiCostInr / lifetimeRevenueInr) * 1000) / 10 : null,
+      netSalesInr > 0 ? Math.round((operatingProfitInr / netSalesInr) * 1000) / 10 : null,
+    aiCostPercent: netSalesInr > 0 ? Math.round((aiCostInr / netSalesInr) * 1000) / 10 : null,
     paymentFeePercent:
-      lifetimeRevenueInr > 0 ? Math.round((razorpayFeesInr / lifetimeRevenueInr) * 1000) / 10 : null,
+      netSalesInr > 0 ? Math.round((razorpayFeesInr / netSalesInr) * 1000) / 10 : null,
     avgProfitPerClientInr:
       customers.totalCustomers > 0
-        ? Math.round((grossProfitInr / customers.totalCustomers) * 100) / 100
+        ? Math.round((operatingProfitInr / customers.totalCustomers) * 100) / 100
         : null,
+    notes:
+      'Revenue = captured Razorpay only (₹0 enrollment redemptions excluded). Fees estimate ~2% domestic. AI USD→INR uses configured FX rate.',
   }
 
   const latencies = aiLogs.map((l) => l.latency_ms).filter((v): v is number => typeof v === 'number')
@@ -446,7 +529,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
     }))
   )
 
-  return { revenue, customers, plans, support, aiCosts, profit, platform, charts }
+  return { revenue, customers, plans, support, aiCosts, profit, enrollment, platform, charts }
 }
 
 export type PurchaseListParams = {

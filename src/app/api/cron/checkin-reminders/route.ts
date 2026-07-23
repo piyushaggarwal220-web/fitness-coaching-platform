@@ -58,7 +58,7 @@ type EligibleClient = {
   phone: string | null
   checkin_schedule_started_at: string
   payment_confirmed: boolean | null
-  access_source: 'purchase' | 'admin_trial' | null
+  access_source: 'purchase' | 'admin_trial' | 'enrollment_code' | null
   subscription_expires_at: string | null
 }
 

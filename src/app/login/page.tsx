@@ -153,6 +153,8 @@ function LoginForm() {
         <p style={authStyles.link}>
           Don&apos;t have an account?{' '}
           <Link href="/checkout?plan=6_months" style={authStyles.linkColor}>Get started</Link>
+          {' · '}
+          <Link href="/enroll" style={authStyles.linkColor}>Have a code?</Link>
         </p>
         <p style={{ ...authStyles.link, marginTop: 8 }}>
           Paid but haven&apos;t set up your account?{' '}

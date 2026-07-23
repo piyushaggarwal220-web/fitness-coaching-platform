@@ -2,6 +2,7 @@
  * Ensure AI-generated drafts include a client-facing coach message.
  * Uses the published coach_message prompt when diet/workout notes are empty.
  */
+import { MODELS } from '@/lib/ai/config'
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { calculateComplexityScore } from '@/lib/ai/complexity-score'
 import { getAllKnowledge } from '@/lib/ai/knowledge'
@@ -88,7 +89,8 @@ export async function generateClientCoachMessage(input: {
   const response = await callPlanProvider(providerMode, {
     systemPrompt: system,
     userPrompt,
-    model: complexityScore.recommendedModel,
+    // Coach notes are short and template-backed — Haiku is enough.
+    model: MODELS.CLAUDE_HAIKU,
     maxTokens: 1024,
     temperature: 0.4,
     mockText,

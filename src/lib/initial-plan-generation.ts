@@ -183,9 +183,9 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
           profile,
           actionId,
           validationMode,
-          // Skip heavy image payloads on cardio/supplements to stay under Vercel time limits.
-          progressImages:
-            actionId === 'initial_diet' || actionId === 'initial_workout' ? images : undefined,
+          // Vision is expensive — send progress photos on diet only (macros/body-comp).
+          // Workout still gets measurements + onboarding text.
+          progressImages: actionId === 'initial_diet' ? images : undefined,
           coachInstructions: buildActionCoachInstructions(actionId, {}),
         })
         await logAiGeneration({

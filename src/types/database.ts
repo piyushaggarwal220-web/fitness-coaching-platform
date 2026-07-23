@@ -154,7 +154,7 @@ export type Profile = {
   onboarding_completed_at?: string | null
   onboarding_data?: OnboardingData | null
   payment_confirmed?: boolean | null
-  access_source?: 'purchase' | 'admin_trial' | null
+  access_source?: 'purchase' | 'admin_trial' | 'enrollment_code' | null
   subscription_expires_at?: string | null
   progress_photo_front?: string | null
   progress_photo_side?: string | null
@@ -757,6 +757,8 @@ export type RedemptionCode = {
   max_redemptions: number
   remaining_uses: number
   expires_at: string | null
+  membership_expires_at: string | null
+  member_label: string | null
   is_active: boolean
   is_reusable: boolean
   notes: string | null

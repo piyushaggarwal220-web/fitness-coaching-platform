@@ -1,5 +1,5 @@
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
-import { DEFAULTS, LIMITS } from '@/lib/ai/config'
+import { DEFAULTS, LIMITS, isSupportPlanAction, resolvePlanGenerationModel } from '@/lib/ai/config'
 import { buildMockGeneratedPlan } from '@/lib/ai/mock-plan-provider'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import {
@@ -506,12 +506,18 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     throw new GeneratePlanError(`Failed to load knowledge base: ${knowledgeError}`)
   }
 
-  const model = complexityScore.recommendedModel
+  const model = resolvePlanGenerationModel({
+    actionId: input.actionId,
+    recommendedModel: complexityScore.recommendedModel,
+  })
+  const supportSection = isSupportPlanAction(input.actionId)
   let totalInputTokens = 0
   let totalOutputTokens = 0
   let lastValidationError = 'Unknown validation error.'
   let lastRawResponse = ''
-  const maxAttempts = providerMode === 'mock' ? 1 : 2
+  // Support sections soft-fail upstream — one attempt avoids a second expensive call.
+  const maxAttempts = providerMode === 'mock' ? 1 : supportSection ? 1 : 2
+  const maxTokens = supportSection ? LIMITS.MAX_SUPPORT_PLAN_TOKENS : LIMITS.MAX_PLAN_TOKENS
   const validationMode = input.validationMode ?? 'full'
 
   let libraryPrompts: { actionTemplate: string; systemTemplate: string | null } | undefined
@@ -576,7 +582,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         systemPrompt: prompts.systemPrompt,
         userPrompt: prompts.userPrompt,
         model,
-        maxTokens: LIMITS.MAX_PLAN_TOKENS,
+        maxTokens,
         temperature: DEFAULTS.DEFAULT_TEMPERATURE,
         mockText,
         images: input.progressImages,

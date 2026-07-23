@@ -1,6 +1,6 @@
 import type { Profile } from '@/types/database'
 
-export type AccessSource = 'purchase' | 'admin_trial'
+export type AccessSource = 'purchase' | 'admin_trial' | 'enrollment_code'
 
 export type EntitlementProfile = Pick<Profile, 'payment_confirmed' | 'access_source' | 'subscription_expires_at'>
 
