@@ -148,6 +148,41 @@ export const WATER_OPTIONS = [
   { value: 'over_3L', label: '3 L+' },
 ] as const
 
+/**
+ * How hard to push higher food intake + higher training/steps together (metabolic flux).
+ * Used to scale calorie targets and output without one-sided crash cuts.
+ */
+export const FLUX_CAPACITY_OPTIONS = [
+  {
+    value: 'steady',
+    label: 'Steady — keep food and training comfortable',
+  },
+  {
+    value: 'build_up',
+    label: 'Build up — eat more and move more as I adapt',
+  },
+  {
+    value: 'high_flux',
+    label: 'High flux — push harder on both food and training',
+  },
+] as const
+
+/** How much meal variety the client wants across the week. */
+export const DIET_VARIETY_OPTIONS = [
+  {
+    value: 'same_daily',
+    label: 'Same every day — repeat meals I can stick to',
+  },
+  {
+    value: 'fifty_fifty',
+    label: '50/50 — some repeat days, some variety',
+  },
+  {
+    value: 'different_daily',
+    label: 'Different every day — more variety across the week',
+  },
+] as const
+
 export const TRAINING_LOCATION_OPTIONS = [
   { value: 'gym', label: 'Gym' },
   { value: 'home', label: 'Home' },
@@ -284,6 +319,8 @@ export const ONBOARDING_LABELS: Record<string, Record<string, string>> = {
   daily_steps: Object.fromEntries(STEPS_OPTIONS.map((o) => [o.value, o.label])),
   stress_level: Object.fromEntries(STRESS_OPTIONS.map((o) => [o.value, o.label])),
   water_intake: Object.fromEntries(WATER_OPTIONS.map((o) => [o.value, o.label])),
+  flux_capacity: Object.fromEntries(FLUX_CAPACITY_OPTIONS.map((o) => [o.value, o.label])),
+  diet_variety: Object.fromEntries(DIET_VARIETY_OPTIONS.map((o) => [o.value, o.label])),
   training_location: Object.fromEntries(TRAINING_LOCATION_OPTIONS.map((o) => [o.value, o.label])),
   workout_duration: Object.fromEntries(WORKOUT_DURATION_OPTIONS.map((o) => [o.value, o.label])),
   preferred_workout_time: Object.fromEntries(WORKOUT_TIME_OPTIONS.map((o) => [o.value, o.label])),
@@ -317,6 +354,8 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   sleep_duration: '',
   stress_level: '',
   water_intake: '',
+  flux_capacity: '',
+  diet_variety: '',
   training_location: '',
   training_experience: '',
   training_days_per_week: '',
@@ -400,6 +439,8 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     daily_steps: data.lifestyle?.dailySteps ?? '',
     stress_level: data.lifestyle?.stressLevel ?? '',
     water_intake: data.lifestyle?.waterIntake ?? '',
+    flux_capacity: data.lifestyle?.fluxCapacity ?? '',
+    diet_variety: data.lifestyle?.dietVariety ?? '',
     chest: data.measurements?.chest ?? '',
     thigh: data.measurements?.thigh ?? '',
     navel: data.measurements?.navel ?? '',
@@ -500,6 +541,8 @@ export function getResumeStep(
     const error = validateOnboardingStep(step, form, undefined, photoUrls, mealTimingContext, {
       requireBodyMeasurements: requireNewFields,
       requireWorkSchoolSchedule: requireNewFields,
+      requireFluxCapacity: requireNewFields,
+      requireDietVariety: requireNewFields,
     })
     if (error) return step
   }
@@ -539,6 +582,8 @@ export function buildOnboardingData(
       dailySteps: form.daily_steps || null,
       stressLevel: form.stress_level || null,
       waterIntake: form.water_intake || null,
+      fluxCapacity: form.flux_capacity || null,
+      dietVariety: form.diet_variety || null,
     },
     measurements: {
       chest: form.chest.trim() || null,
@@ -718,6 +763,10 @@ export function validateOnboardingStep(
     requireBodyMeasurements?: boolean
     /** New clients only — schedule field was added after many existing clients finished. */
     requireWorkSchoolSchedule?: boolean
+    /** New clients only — flux capacity was added after early clients finished. */
+    requireFluxCapacity?: boolean
+    /** New clients only — diet variety preference. */
+    requireDietVariety?: boolean
   }
 ): string | null {
   switch (step) {
@@ -776,6 +825,9 @@ export function validateOnboardingStep(
     case 6: {
       if (!data.stress_level) return 'Please select your stress level.'
       if (!data.water_intake) return 'Please select your water intake.'
+      if (options?.requireFluxCapacity !== false && !data.flux_capacity) {
+        return 'Please choose how hard we should push food and training together.'
+      }
       return null
     }
     case 7: {
@@ -809,6 +861,9 @@ export function validateOnboardingStep(
     }
     case 13: {
       if (!data.diet_preference) return 'Please select your diet type.'
+      if (options?.requireDietVariety !== false && !data.diet_variety) {
+        return 'Please choose how much meal variety you want across the week.'
+      }
       return null
     }
     case 14: {
@@ -959,6 +1014,10 @@ export function buildReviewSections(
         { label: 'Sleep', value: getOnboardingLabel('sleep_duration', form.sleep_duration) },
         { label: 'Stress', value: getOnboardingLabel('stress_level', form.stress_level) },
         { label: 'Water intake', value: getOnboardingLabel('water_intake', form.water_intake) },
+        {
+          label: 'Food + training push',
+          value: getOnboardingLabel('flux_capacity', form.flux_capacity),
+        },
       ],
     },
     {
@@ -990,6 +1049,7 @@ export function buildReviewSections(
       title: 'Diet',
       items: [
         { label: 'Diet type', value: getOnboardingLabel('diet_preference', form.diet_preference) },
+        { label: 'Meal variety', value: getOnboardingLabel('diet_variety', form.diet_variety) },
         { label: 'Egg days/week', value: form.egg_days || 'N/A' },
         { label: 'Egg days', value: formatProteinWeekdays(form.egg_allowed_days) },
         { label: 'Chicken days/week', value: form.chicken_days || 'N/A' },
@@ -1127,6 +1187,8 @@ export function findFirstIncompleteOnboardingStep(
   options?: {
     requireBodyMeasurements?: boolean
     requireWorkSchoolSchedule?: boolean
+    requireFluxCapacity?: boolean
+    requireDietVariety?: boolean
   }
 ): { step: number; error: string } | null {
   const meals = mealTimingContext ?? mealTimingContextFromForm(form)
@@ -1144,6 +1206,8 @@ export function validateOnboardingAnswersForProfile(
     termsAccepted?: boolean
     requireBodyMeasurements?: boolean
     requireWorkSchoolSchedule?: boolean
+    requireFluxCapacity?: boolean
+    requireDietVariety?: boolean
   }
 ): string | null {
   const form = formFromProfile(profile)
@@ -1160,11 +1224,15 @@ export function validateOnboardingAnswersForProfile(
   const requireNewFields = shouldRequireNewOnboardingFields(profile)
   const requireBodyMeasurements = options?.requireBodyMeasurements ?? requireNewFields
   const requireWorkSchoolSchedule = options?.requireWorkSchoolSchedule ?? requireNewFields
+  const requireFluxCapacity = options?.requireFluxCapacity ?? requireNewFields
+  const requireDietVariety = options?.requireDietVariety ?? requireNewFields
 
   for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
     const error = validateOnboardingStep(step, form, undefined, photoUrls, meals, {
       requireBodyMeasurements,
       requireWorkSchoolSchedule,
+      requireFluxCapacity,
+      requireDietVariety,
     })
     if (error) return error
   }

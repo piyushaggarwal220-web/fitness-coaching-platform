@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   filterWorkQueue,
   getCoachWorkQueue,
@@ -23,6 +23,7 @@ const COMPLETED_KEY = 'coach-queue-completed'
 const FILTER_LABELS: Record<WorkQueueFilter, string> = {
   all: 'All tasks',
   initial_plan: 'Initial Plans',
+  plan_change_request: 'Client Edits',
   checkin_review: 'Weekly Reviews',
   call_request: 'Call Requests',
   unread_chat: 'Unread Chats',
@@ -44,6 +45,13 @@ function saveCompleted(ids: Set<string>) {
   sessionStorage.setItem(COMPLETED_KEY, JSON.stringify([...ids]))
 }
 
+/** Keep queue context when opening chat from dashboard or /coach/queue. */
+function withQueueReturn(href: string, returnTo: string): string {
+  if (!href.startsWith('/coach/chat/')) return href
+  const sep = href.includes('?') ? '&' : '?'
+  return `${href}${sep}returnTo=${encodeURIComponent(returnTo)}`
+}
+
 type CoachWorkQueuePanelProps = {
   filter?: WorkQueueFilter
   onCountsChange?: (counts: WorkQueueCounts) => void
@@ -51,6 +59,18 @@ type CoachWorkQueuePanelProps = {
 
 export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWorkQueuePanelProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const returnTo = pathname.startsWith('/coach/queue')
+    ? '/coach/queue'
+    : pathname.startsWith('/coach/dashboard')
+      ? '/coach/dashboard'
+      : '/coach/queue'
+  const openTask = useCallback(
+    (href: string) => {
+      router.push(withQueueReturn(href, returnTo))
+    },
+    [router, returnTo]
+  )
   const [tasks, setTasks] = useState<WorkQueueTask[]>([])
   const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
   const [loading, setLoading] = useState(true)
@@ -131,7 +151,7 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
       </p>
       <button
         type="button"
-        onClick={() => router.push(current.href)}
+        onClick={() => openTask(current.href)}
         className="card-hover"
         style={{
           marginTop: 12,
@@ -148,7 +168,7 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
         <p style={{ margin: '6px 0 0', fontSize: 14, color: colors.textSecondary }}>{current.subtitle}</p>
       </button>
       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <button type="button" onClick={() => router.push(current.href)} style={primaryBtn}>
+        <button type="button" onClick={() => openTask(current.href)} style={primaryBtn}>
           Start
         </button>
         <button type="button" onClick={handleComplete} style={secondaryBtn}>
@@ -161,7 +181,7 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
           {upcoming.map((task) => (
             <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderTop: `1px solid ${colors.divider}` }}>
               <span style={{ color: colors.textMuted }}>↓</span>
-              <button type="button" onClick={() => router.push(task.href)} style={{ background: 'none', border: 'none', padding: 0, color: colors.textSecondary, cursor: 'pointer', fontSize: 14, textAlign: 'left' }}>
+              <button type="button" onClick={() => openTask(task.href)} style={{ background: 'none', border: 'none', padding: 0, color: colors.textSecondary, cursor: 'pointer', fontSize: 14, textAlign: 'left' }}>
                 {task.title} — {task.subtitle}
               </button>
             </div>

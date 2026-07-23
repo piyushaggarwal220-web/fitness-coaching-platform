@@ -18,9 +18,11 @@ import {
   COOKING_OPTIONS,
   DAYS_PER_WEEK_OPTIONS,
   DIET_OPTIONS,
+  DIET_VARIETY_OPTIONS,
   EQUIPMENT_OPTIONS,
   findFirstIncompleteOnboardingStep,
   FITNESS_GOAL_OPTIONS,
+  FLUX_CAPACITY_OPTIONS,
   formFromProfile,
   formatMealTime24,
   GENDER_OPTIONS,
@@ -234,6 +236,8 @@ export default function OnboardingPage() {
   const stepOptions = {
     requireBodyMeasurements,
     requireWorkSchoolSchedule: requireBodyMeasurements,
+    requireFluxCapacity: requireBodyMeasurements,
+    requireDietVariety: requireBodyMeasurements,
   }
 
   const handleNext = async () => {
@@ -625,6 +629,18 @@ function renderStep(
           <Field label="Water intake per day" required>
             <ChipGroup options={WATER_OPTIONS} value={form.water_intake} onChange={(v) => update({ water_intake: v })} />
           </Field>
+          <Field
+            label="Food + training push"
+            required
+            hint="Best results usually come from eating more food while also training and walking more (higher energy in + higher energy out). How hard should we push that for you?"
+          >
+            <RadioCards
+              name="flux_capacity"
+              options={FLUX_CAPACITY_OPTIONS}
+              value={form.flux_capacity}
+              onChange={(v) => update({ flux_capacity: v })}
+            />
+          </Field>
         </div>
       )
 
@@ -778,6 +794,18 @@ function renderStep(
                     : null),
                 })
               }
+            />
+          </Field>
+          <Field
+            label="Meal variety across the week"
+            required
+            hint="Should your diet chart stay the same each day, mix repeat + variety days, or change every day?"
+          >
+            <RadioCards
+              name="diet_variety"
+              options={DIET_VARIETY_OPTIONS}
+              value={form.diet_variety}
+              onChange={(v) => update({ diet_variety: v })}
             />
           </Field>
         </div>

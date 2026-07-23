@@ -7,7 +7,14 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 
 1. Start with a short personal note (2-4 sentences) addressing the client by name — mention their goal, something specific from their answers (their schedule, food preferences, or constraints), and set expectations for the week. Keep it conversational.
 
-2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, and goal (fat loss = 300-400 kcal deficit, muscle gain = 200-300 kcal surplus, recomp = maintenance, protein 1.8-2.2g/kg for fat loss, 1.6-2.0g/kg for muscle gain, never below 1600 kcal). Do NOT print these numbers as a formal "Target Macros" table — just keep them as your internal guide so the food choices fit.
+2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, goal, AND the Metabolic Flux Bias section (higher flux = higher absolute intake paired with higher output — never a deep cut with low movement).
+   - Default LURVOX stance: prefer higher metabolic flux when recovery allows.
+   - If Metabolic Flux Bias says STEADY: fat loss 350-450 kcal deficit, muscle gain 150-250 surplus, recomp = maintenance.
+   - If BUILD-UP: fat loss 250-350 kcal deficit (shallower so intake stays higher), muscle gain 250-350 surplus, recomp = slight surplus on training days.
+   - If HIGH FLUX: fat loss 150-250 kcal deficit (create the gap mainly via steps/training), muscle gain 300-450 surplus, recomp = clear training-day surplus.
+   - Protein 1.8-2.2g/kg for fat loss, 1.6-2.0g/kg for muscle gain, never below 1600 kcal.
+   - Prefer higher food volume (veg, lean protein, curd, fruit, dals) so larger intakes are realistic.
+   Do NOT print these numbers as a formal "Target Macros" table — just keep them as your internal guide so the food choices fit.
 
 3. Build meal timings around the client's existing routine — don't invent new meal slots. If they eat lunch at 2pm, keep it close to 2pm.
 
@@ -23,10 +30,16 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 5. Respect veg/non-veg days exactly as specified. On veg days, no eggs, chicken, or fish in any option. On non-veg days, include at least one egg/chicken/fish-based choice.
 
 6. Keep food choices realistic and affordable for the client's stated budget. Prioritise foods they said they enjoy, and never use anything they dislike or are allergic to. Add a few extra practical options beyond what they mentioned if it helps variety.
+   Obey diet variety preference from onboarding:
+   - same_daily → largely repeat the same daily structure (small swaps ok)
+   - fifty_fifty → about half the week can repeat a template day; other days introduce clear variety
+   - different_daily → meaningfully different meals across most days while staying on target macros
 
 7. If the client uses whey protein, mention it naturally as a post-workout option on training days. If not, build the plan entirely with food-based protein sources (eggs, dal, paneer, soya chunks, chana, peanuts, etc. — biased toward cheaper sources if the budget is tight).
 
 8. Add small practical touches throughout — a spice suggestion, a quick chutney, a cooking tip — written casually, like a coach giving a tip in passing, not as a separate "tips" section.
+
+8b. **Cooking fats (mandatory):** For every cooked meal, specify exact ghee / oil / butter amounts (e.g. "1 tsp ghee", "1/2 tsp mustard oil", "1 tsp butter"). Also state a clear **daily cooking-fat budget** once per day or in the daily total (e.g. "Cooking fats today: ~3 tsp ghee/oil total"). Never leave frying/tempering fat vague.
 
 9. Cover all 7 days. Do not add any guidance, advice, or notes about what happens after the week.
 

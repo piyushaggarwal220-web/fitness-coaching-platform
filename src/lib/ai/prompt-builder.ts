@@ -4,6 +4,7 @@ import {
   resolveMesocycle,
   summarizePriorSplit,
 } from '@/lib/ai/mesocycle'
+import { buildMetabolicFluxSection } from '@/lib/ai/metabolic-flux'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
 import { getOnboardingLabel } from '@/lib/onboarding'
@@ -266,7 +267,7 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   }
   if (data.lifestyle) {
     lines.push(
-      `Lifestyle: occupation ${data.lifestyle.occupation ?? '—'}, schedule ${data.lifestyle.workSchoolSchedule ?? '—'}, steps ${data.lifestyle.dailySteps ?? '—'}, stress ${data.lifestyle.stressLevel ?? '—'}, water ${data.lifestyle.waterIntake ?? '—'}`
+      `Lifestyle: occupation ${data.lifestyle.occupation ?? '—'}, schedule ${data.lifestyle.workSchoolSchedule ?? '—'}, steps ${data.lifestyle.dailySteps ?? '—'}, stress ${data.lifestyle.stressLevel ?? '—'}, water ${data.lifestyle.waterIntake ?? '—'}, flux capacity ${data.lifestyle.fluxCapacity ?? '—'}, diet variety ${data.lifestyle.dietVariety ?? '—'}`
     )
   }
   if (data.measurements) {
@@ -291,7 +292,7 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   }
   if (data.diet) {
     lines.push(
-      `Diet habits: allergies ${data.diet.allergies ?? '—'}, dislikes ${data.diet.foodsDisliked ?? '—'}, favorites ${data.diet.favoriteFoods ?? '—'}, budget ${data.diet.monthlyFoodBudget ?? '—'}`
+      `Diet habits: allergies ${data.diet.allergies ?? '—'}, dislikes ${data.diet.foodsDisliked ?? '—'}, favorites ${data.diet.favoriteFoods ?? '—'}, budget ${data.diet.monthlyFoodBudget ?? '—'}, meal variety preference ${data.lifestyle?.dietVariety ?? '—'}`
     )
   }
   if (data.eatingPattern) {
@@ -496,6 +497,7 @@ function buildUpdatedDietSection(plan: Plan | null | undefined): string {
 export type PromptContextSections = {
   clientDetails: string
   onboarding: string
+  metabolicFlux: string
   hardConstraints: string
   trainingPreferences: string
   activePlan: string
@@ -514,6 +516,7 @@ export type PromptContextSectionKey = keyof PromptContextSections
 const SECTION_LABELS: Record<PromptContextSectionKey, string> = {
   clientDetails: 'Client Profile',
   onboarding: 'Onboarding',
+  metabolicFlux: 'Metabolic Flux Bias',
   hardConstraints: 'Hard Constraints',
   trainingPreferences: 'Training Preferences',
   activePlan: 'Current Active Plan',
@@ -585,6 +588,7 @@ export function buildPromptContextSections(
   return {
     clientDetails: buildClientProfileSection(input.profile),
     onboarding: buildOnboardingSection(input.profile.onboarding_data),
+    metabolicFlux: buildMetabolicFluxSection(input.profile),
     hardConstraints: buildHardConstraintsSection(input.profile),
     trainingPreferences: buildTrainingPreferencesSection(input.profile),
     activePlan: buildActivePlanSection(input.activePlan),
@@ -609,6 +613,9 @@ const PLACEHOLDER_ALIASES: Record<string, keyof PromptContextSections> = {
   '[PASTE CLIENT DETAILS HERE]': 'clientDetails',
   '[ONBOARDING ANSWERS]': 'onboarding',
   '[ONBOARDING DATA]': 'onboarding',
+  '[METABOLIC FLUX]': 'metabolicFlux',
+  '[METABOLIC FLUX BIAS]': 'metabolicFlux',
+  '[FLUX BIAS]': 'metabolicFlux',
   '[HARD CONSTRAINTS]': 'hardConstraints',
   '[NON-NEGOTIABLE CONSTRAINTS]': 'hardConstraints',
   '[TRAINING PREFERENCES]': 'trainingPreferences',
@@ -677,6 +684,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
     case 'initial_cardio':
       return [
         'hardConstraints',
+        'metabolicFlux',
         'clientDetails',
         'onboarding',
         'trainingPreferences',
@@ -689,6 +697,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
     case 'review_update_supplements':
       return [
         'hardConstraints',
+        'metabolicFlux',
         'clientDetails',
         'onboarding',
         'activeDiet',
@@ -702,6 +711,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
     case 'review_update_cardio':
       return [
         'hardConstraints',
+        'metabolicFlux',
         'clientDetails',
         'onboarding',
         'trainingPreferences',
@@ -717,6 +727,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
     default:
       return [
         'hardConstraints',
+        'metabolicFlux',
         'clientDetails',
         'onboarding',
         'coachNotes',

@@ -9,6 +9,7 @@ import {
   Footprints,
   Pill,
 } from 'lucide-react';
+import { PlanChangeRequestPanel } from '@/components/plan/PlanChangeRequestPanel';
 import { ClientShell } from '@/components/ui/ClientShell';
 import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -187,6 +188,8 @@ export default function ClientPlanPage() {
           </AccordionItem>
         ))}
       </div>
+
+      <PlanChangeRequestPanel />
     </ClientShell>
   );
 }

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type WorkQueueTaskType =
   | 'initial_plan'
+  | 'plan_change_request'
   | 'checkin_review'
   | 'call_request'
   | 'unread_chat'
@@ -22,6 +23,7 @@ export type WorkQueueTask = {
 
 const PRIORITY: Record<WorkQueueTaskType, number> = {
   initial_plan: 1,
+  plan_change_request: 1,
   checkin_review: 2,
   call_request: 2,
   unread_chat: 3,
@@ -109,6 +111,35 @@ export async function getCoachWorkQueue(
       clientName: clientNameById.get(client.id),
       priority: PRIORITY.initial_plan,
       createdAt: generation?.queued_at ?? draft?.created_at ?? client.created_at ?? new Date().toISOString(),
+    })
+  }
+
+  const { data: planChangeRequests } = await supabase
+    .from('plan_change_requests')
+    .select('id, client_id, status, draft_plan_id, scope, locked_at, draft_ready_at, error_message')
+    .eq('coach_id', coachId)
+    .in('status', ['generating', 'draft_ready', 'in_review'])
+    .order('locked_at', { ascending: true })
+
+  for (const change of planChangeRequests ?? []) {
+    const name = clientNameById.get(change.client_id) ?? 'Client'
+    const ready = change.status === 'draft_ready' || change.status === 'in_review'
+    tasks.push({
+      id: `plan-change-${change.id}`,
+      type: 'plan_change_request',
+      title: ready
+        ? 'Client plan change ready for review'
+        : change.status === 'generating'
+          ? 'Client plan change generating'
+          : 'Client plan change request',
+      subtitle: `${name} · ${change.scope}${change.error_message ? ` · ${change.error_message}` : ''}`,
+      href: change.draft_plan_id
+        ? `/coach/plan/${change.draft_plan_id}`
+        : `/coach/client/${change.client_id}`,
+      clientId: change.client_id,
+      clientName: name,
+      priority: PRIORITY.plan_change_request,
+      createdAt: change.draft_ready_at ?? change.locked_at,
     })
   }
 
@@ -212,6 +243,7 @@ export type WorkQueueFilter = WorkQueueTaskType | 'all'
 
 export type WorkQueueCounts = {
   initial_plan: number
+  plan_change_request: number
   checkin_review: number
   call_request: number
   unread_chat: number
@@ -223,6 +255,7 @@ export type WorkQueueCounts = {
 export function getWorkQueueCounts(tasks: WorkQueueTask[]): WorkQueueCounts {
   const counts: WorkQueueCounts = {
     initial_plan: 0,
+    plan_change_request: 0,
     checkin_review: 0,
     call_request: 0,
     unread_chat: 0,

@@ -64,6 +64,16 @@ export type OnboardingData = {
     dailySteps?: string | null
     stressLevel?: string | null
     waterIntake?: string | null
+    /**
+     * Willingness for higher energy-in + higher energy-out coaching.
+     * steady | build_up | high_flux
+     */
+    fluxCapacity?: string | null
+    /**
+     * Diet variety preference across the week.
+     * same_daily | fifty_fifty | different_daily
+     */
+    dietVariety?: string | null
   }
   measurements?: {
     chest?: string | null
@@ -190,6 +200,10 @@ export type OnboardingFormData = {
   sleep_duration: string
   stress_level: string
   water_intake: string
+  /** steady | build_up | high_flux — how hard to push food + training together */
+  flux_capacity: string
+  /** same_daily | fifty_fifty | different_daily */
+  diet_variety: string
   training_location: string
   training_experience: string
   training_days_per_week: string

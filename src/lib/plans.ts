@@ -178,6 +178,16 @@ export async function activatePlan(
 
   if (error) return { error: error.message }
 
+  await supabase
+    .from('plan_change_requests')
+    .update({
+      status: 'approved',
+      resolved_at: deliveredAt,
+      updated_at: deliveredAt,
+    })
+    .eq('draft_plan_id', plan.id)
+    .in('status', ['generating', 'draft_ready', 'in_review'])
+
   void invalidateForEvent('plan_activated', plan.client_id)
   return syncPlanDeliveredFlag(supabase, plan.client_id)
 }

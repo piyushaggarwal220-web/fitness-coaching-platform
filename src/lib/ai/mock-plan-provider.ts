@@ -1,5 +1,6 @@
 import type { Checkin, OnboardingProfile } from '@/types/database'
 import type { GeneratedPlan } from '@/lib/ai/generate-plan'
+import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
 import { getOnboardingLabel } from '@/lib/onboarding'
 
 function num(value: number | string | null | undefined, fallback: number): number {
@@ -18,12 +19,15 @@ export function buildMockGeneratedPlan(
   const training = getOnboardingLabel('training_experience', profile.training_experience)
   const diet = getOnboardingLabel('diet_preference', profile.diet_preference)
   const weight = num(profile.weight, 70)
-  const calories = Math.round(weight * 30)
+  const flux = resolveMetabolicFluxPlan(profile)
+  const calorieFactor =
+    flux.level === 'high_flux' ? 34 : flux.level === 'build_up' ? 32 : 30
+  const calories = Math.round(weight * calorieFactor)
   const protein = Math.round(weight * 2)
 
   const checkinNote = latestCheckin
     ? `Latest check-in: energy ${latestCheckin.energy_level ?? '—'}/10, adherence ${latestCheckin.adherence_score ?? '—'}/10.`
-    : 'No check-in data yet — conservative starting targets.'
+    : 'No check-in data yet — starting from onboarding flux bias.'
 
   const coachNote = coachInstructions?.trim()
     ? `Coach notes: ${coachInstructions.trim()}`
@@ -31,7 +35,7 @@ export function buildMockGeneratedPlan(
 
   return {
     workout_plan: {
-      overview: `${name}'s ${goal.toLowerCase()} program (${training} level). 4 training days + optional recovery.`,
+      overview: `${name}'s ${goal.toLowerCase()} program (${training} level, ${flux.label}). 4 training days + optional recovery.`,
       days: [
         { day: 'Monday', focus: 'Upper push', exercises: ['Bench press 4x8', 'Overhead press 3x10', 'Triceps pushdown 3x12'] },
         { day: 'Wednesday', focus: 'Lower', exercises: ['Squat 4x8', 'Romanian deadlift 3x10', 'Walking lunges 3x12'] },
@@ -64,6 +68,6 @@ export function buildMockGeneratedPlan(
         { name: 'Vitamin D3', dose: '1000–2000 IU', notes: 'If deficient / limited sun' },
       ],
     },
-    coach_notes: [coachNote, checkinNote, `Goal: ${goal}. Diet preference: ${diet}.`].join('\n\n'),
+    coach_notes: [coachNote, checkinNote, `Goal: ${goal}. Diet preference: ${diet}. Flux: ${flux.label}.`].join('\n\n'),
   }
 }

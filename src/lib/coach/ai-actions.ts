@@ -150,6 +150,9 @@ export function buildActionCoachInstructions(
         [
           'Generate a personalized diet plan for this client.',
           'Prioritize nutrition_plan only (calories, macros, meals).',
+          'Follow Metabolic Flux Bias: pair higher absolute food intake with higher output — avoid deep deficits with low movement.',
+          'Always specify exact ghee/oil/butter amounts for cooked meals and a daily cooking-fat total.',
+          'Obey the client meal-variety preference (same daily / 50-50 / different daily).',
           'Do NOT include cardio, conditioning, steps, or supplements in the diet text.',
           'Leave cardio_plan.sessions and supplement_plan.items as empty arrays.',
           'Align meals with their reported eating pattern and meal timings.',
@@ -163,6 +166,7 @@ export function buildActionCoachInstructions(
           'Generate a personalized workout plan for this client.',
           'Opening mesocycle week 1: invent a COMPLETELY UNIQUE muscle-shock split for this client — not a stock PPL/upper-lower/bro template.',
           'Use BASE (lowest) volume for week 1 of the mesocycle.',
+          'Follow Metabolic Flux Bias for session density and daily step targets within hard day/duration caps.',
           'Prioritize workout_plan only (strength / resistance training).',
           'Do NOT include a Cardio, Steps, Conditioning, or Supplements section in the workout text.',
           'Leave cardio_plan.sessions and supplement_plan.items as empty arrays — those are separate plans.',
@@ -177,6 +181,7 @@ export function buildActionCoachInstructions(
         [
           'Generate a standalone cardio plan for this client.',
           'Put all cardio, steps, walking, LISS, HIIT, and conditioning in cardio_plan.sessions only.',
+          'Follow Metabolic Flux Bias: raise sustainable steps/NEAT with higher food intake; prefer walks/LISS over punishing HIIT when pushing flux.',
           'Do NOT put cardio inside workout_plan or nutrition_plan.',
           'Set workout_plan.overview to "N/A", nutrition meals to [], and supplement_plan.items to [].',
           'Match frequency and intensity to their goal, schedule, and recovery.',
@@ -201,6 +206,8 @@ export function buildActionCoachInstructions(
           checkin ? checkinContext(checkin) : '',
           planContext(activePlan ?? null, ['nutrition']),
           'Adjust nutrition_plan only.',
+          'Always specify exact ghee/oil/butter amounts for cooked meals and a daily cooking-fat total.',
+          'Obey the client meal-variety preference (same daily / 50-50 / different daily).',
           'Do NOT include cardio or supplements in the diet text; leave those JSON arrays empty.',
           'Keep workout_plan minimal with overview "N/A" and days [].',
         ]

@@ -33,6 +33,8 @@ const form: OnboardingFormData = {
   sleep_duration: '7_8',
   stress_level: 'moderate',
   water_intake: '2_3',
+  flux_capacity: 'build_up',
+  diet_variety: 'fifty_fifty',
   training_location: 'gym',
   training_experience: 'beginner',
   training_days_per_week: '4',

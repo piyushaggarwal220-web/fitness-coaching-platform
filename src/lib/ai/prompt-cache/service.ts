@@ -268,6 +268,7 @@ function sectionsFromBlocks(
   return {
     clientDetails: mapSection('client-profile', fresh.clientDetails),
     onboarding: mapSection('onboarding', fresh.onboarding),
+    metabolicFlux: fresh.metabolicFlux,
     hardConstraints: mapSection('hard-constraints', fresh.hardConstraints),
     trainingPreferences: mapSection('training-preferences', fresh.trainingPreferences),
     activePlan: mapSection('active-plan', fresh.activePlan),

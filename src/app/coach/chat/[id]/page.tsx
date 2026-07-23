@@ -1,20 +1,34 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Copy, Phone, Sparkles, UserRound } from 'lucide-react'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { readApiJson } from '@/lib/api-response'
+import { safeInternalPath } from '@/lib/safe-navigation'
 import { colors } from '@/lib/coach-theme'
 import type { CoachConversation, ConversationMessage } from '@/types/database'
 
-export default function CoachChatDetailPage() {
+function resolveChatBackHref(returnToRaw: string | null): { href: string; label: string } {
+  const href = safeInternalPath(returnToRaw, '/coach/chat')
+  if (href.startsWith('/coach/queue')) {
+    return { href: '/coach/queue', label: 'Back to queue' }
+  }
+  if (href.startsWith('/coach/dashboard')) {
+    return { href: '/coach/dashboard', label: 'Back to dashboard' }
+  }
+  return { href: '/coach/chat', label: 'Back to conversations' }
+}
+
+function CoachChatDetailInner() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const conversationId = params.id as string
+  const back = resolveChatBackHref(searchParams.get('returnTo'))
   const [conversation, setConversation] = useState<CoachConversation | null>(null)
   const [messages, setMessages] = useState<ConversationMessage[]>([])
   const [clientName, setClientName] = useState('')
@@ -147,7 +161,7 @@ export default function CoachChatDetailPage() {
               Retry
             </button>
           )}
-          <Link href="/coach/chat" style={{ color: colors.accent }}>Back to conversations</Link>
+          <Link href={back.href} style={{ color: colors.accent }}>{back.label}</Link>
         </div>
       </CoachShell>
     )
@@ -190,7 +204,7 @@ export default function CoachChatDetailPage() {
     <CoachShell narrow fullHeight>
       <div className="coach-chat-detail">
         <div className="coach-chat-detail-header">
-          <Link href="/coach/chat" className="coach-chat-detail-back" aria-label="Back to conversations">
+          <Link href={back.href} className="coach-chat-detail-back" aria-label={back.label}>
             ←
           </Link>
           <div style={{ minWidth: 0, flex: 1 }}>
@@ -226,6 +240,14 @@ export default function CoachChatDetailPage() {
         </div>
       </div>
     </CoachShell>
+  )
+}
+
+export default function CoachChatDetailPage() {
+  return (
+    <Suspense fallback={<CoachShell loading narrow fullHeight />}>
+      <CoachChatDetailInner />
+    </Suspense>
   )
 }
 

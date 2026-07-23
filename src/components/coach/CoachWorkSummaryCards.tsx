@@ -12,6 +12,7 @@ type CoachWorkSummaryCardsProps = {
 
 const CARDS: { key: WorkQueueFilter; label: string; countKey: keyof WorkQueueCounts }[] = [
   { key: 'initial_plan', label: 'Initial Plans', countKey: 'initial_plan' },
+  { key: 'plan_change_request', label: 'Client Edits', countKey: 'plan_change_request' },
   { key: 'checkin_review', label: 'Weekly Reviews', countKey: 'checkin_review' },
   { key: 'call_request', label: 'Call Requests', countKey: 'call_request' },
   { key: 'unread_chat', label: 'Unread Chats', countKey: 'unread_chat' },

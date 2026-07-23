@@ -10,9 +10,11 @@ export function resolveAppendOrderForAction(
     case 'initial_cardio':
       return [
         'hardConstraints',
+        'metabolicFlux',
         'clientDetails',
         'onboarding',
         'trainingPreferences',
+        'mesocycle',
         'coachNotes',
         'knowledge',
         'complexity',
@@ -21,6 +23,7 @@ export function resolveAppendOrderForAction(
     case 'review_update_supplements':
       return [
         'hardConstraints',
+        'metabolicFlux',
         'clientDetails',
         'onboarding',
         'activeDiet',
@@ -34,12 +37,14 @@ export function resolveAppendOrderForAction(
     case 'review_update_cardio':
       return [
         'hardConstraints',
+        'metabolicFlux',
         'clientDetails',
         'onboarding',
         'trainingPreferences',
         'activeWorkout',
         'activeDiet',
         'updatedDiet',
+        'mesocycle',
         'checkin',
         'coachNotes',
         'knowledge',
@@ -48,6 +53,7 @@ export function resolveAppendOrderForAction(
     default:
       return [
         'hardConstraints',
+        'metabolicFlux',
         'clientDetails',
         'onboarding',
         'coachNotes',

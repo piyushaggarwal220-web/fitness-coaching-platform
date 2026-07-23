@@ -393,16 +393,14 @@ export default function Dashboard() {
           lineHeight: 1.5,
         }}>
           <strong>
-            {generationJob.status === 'queued'
-              ? 'Your AI diet and workout draft is queued.'
-              : generationJob.status === 'generating'
-                ? 'Your AI diet and workout draft is being prepared.'
-                : generationJob.status === 'ready'
-                  ? 'Your draft is ready for your coach’s note and review.'
-                  : 'Draft generation needs coach attention.'}
+            {generationJob.status === 'queued' || generationJob.status === 'generating'
+              ? 'Your coach is preparing your personalized plan.'
+              : generationJob.status === 'ready'
+                ? 'Your coach is reviewing your plan and will share it with you soon.'
+                : 'Your coach is working on your plan. Please check back shortly.'}
           </strong>
           <div>
-            Nothing is delivered until your coach reviews it and explicitly sends it.
+            Your plan appears here only after your coach reviews and sends it.
           </div>
         </div>
       )}
