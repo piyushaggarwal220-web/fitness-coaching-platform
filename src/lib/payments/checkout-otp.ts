@@ -3,7 +3,6 @@ import { createHash, randomInt, timingSafeEqual } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizePhoneForWhatsApp } from '@/lib/phone'
 import { sendDirectEmail } from '@/lib/notifications/email-provider'
-import { sendDirectWhatsApp } from '@/lib/notifications/whatsapp-provider'
 import { shouldBypassPayment } from '@/lib/config'
 
 const OTP_TTL_MS = 15 * 60 * 1000
@@ -11,7 +10,8 @@ const RESEND_COOLDOWN_MS = 45 * 1000
 const MAX_SENDS_PER_CHANNEL = 5
 const MAX_VERIFY_ATTEMPTS = 8
 
-export type CheckoutOtpChannel = 'email' | 'whatsapp'
+/** WhatsApp OTP is intentionally disabled until the provider campaign is ready. */
+export type CheckoutOtpChannel = 'email'
 
 type VerificationRow = {
   id: string
@@ -88,7 +88,7 @@ export async function assertCheckoutContactsVerified(input: {
 
   const verificationId = input.verificationId?.trim()
   if (!verificationId) {
-    return { ok: false, error: 'Verify your email and WhatsApp before paying', status: 400 }
+    return { ok: false, error: 'Verify your email before paying', status: 400 }
   }
 
   const email = normalizeCheckoutEmail(input.email)
@@ -99,17 +99,17 @@ export async function assertCheckoutContactsVerified(input: {
 
   const row = await getVerification(verificationId)
   if (!row || isExpired(row)) {
-    return { ok: false, error: 'Verification expired. Request new codes.', status: 400 }
+    return { ok: false, error: 'Verification expired. Request a new email code.', status: 400 }
   }
 
   if (row.email !== email || row.phone_e164 !== phone) {
     return { ok: false, error: 'Contact details do not match verified session', status: 400 }
   }
 
-  if (!row.email_verified_at || !row.phone_verified_at) {
+  if (!row.email_verified_at) {
     return {
       ok: false,
-      error: 'Both email and WhatsApp must be verified before payment',
+      error: 'Verify your email before payment',
       status: 400,
     }
   }
@@ -204,58 +204,40 @@ export async function sendCheckoutOtp(input: {
   let sendOk = true
   let sendError: string | undefined
 
-  if (input.channel === 'email') {
-    const result = await sendDirectEmail({
-      to: email,
-      subject: 'Your LURVOX checkout verification code',
-      text: `Your LURVOX verification code is ${code}. It expires in 15 minutes.`,
-      html: `<p>Your LURVOX verification code is <strong>${code}</strong>.</p><p>It expires in 15 minutes.</p>`,
-    })
-    sendOk = result.ok && !result.skipped
-    sendError = result.skipped
-      ? 'Email delivery is not configured'
-      : result.error
-  } else {
-    const result = await sendDirectWhatsApp({
-      campaignEnv: 'AISENSY_CAMPAIGN_CHECKOUT_OTP',
-      phone,
-      name: input.name ?? email,
-      templateParams: [code],
-    })
-    sendOk = result.ok && !result.skipped
-    sendError = result.skipped
-      ? 'WhatsApp OTP campaign is not configured'
-      : result.error
+  if (input.channel !== 'email') {
+    return {
+      ok: false,
+      error: 'WhatsApp verification is temporarily unavailable. Use email verification.',
+      status: 400,
+    }
   }
+
+  const result = await sendDirectEmail({
+    to: email,
+    subject: 'Your LURVOX checkout verification code',
+    text: `Your LURVOX verification code is ${code}. It expires in 15 minutes.`,
+    html: `<p>Your LURVOX verification code is <strong>${code}</strong>.</p><p>It expires in 15 minutes.</p>`,
+  })
+  sendOk = result.ok && !result.skipped
+  sendError = result.skipped ? 'Email delivery is not configured' : result.error
 
   if (!sendOk && !bypass) {
     return {
       ok: false,
-      error: sendError ?? `Failed to send ${input.channel} code`,
+      error: sendError ?? 'Failed to send email code',
       status: 502,
     }
   }
 
-  const patch =
-    input.channel === 'email'
-      ? {
-          email_code_hash: codeHash,
-          email_verified_at: null,
-          email_send_count: row.email_send_count + 1,
-          email_attempt_count: 0,
-          last_email_sent_at: new Date().toISOString(),
-          expires_at: expiresAt,
-          updated_at: new Date().toISOString(),
-        }
-      : {
-          phone_code_hash: codeHash,
-          phone_verified_at: null,
-          phone_send_count: row.phone_send_count + 1,
-          phone_attempt_count: 0,
-          last_phone_sent_at: new Date().toISOString(),
-          expires_at: expiresAt,
-          updated_at: new Date().toISOString(),
-        }
+  const patch = {
+    email_code_hash: codeHash,
+    email_verified_at: null,
+    email_send_count: row.email_send_count + 1,
+    email_attempt_count: 0,
+    last_email_sent_at: new Date().toISOString(),
+    expires_at: expiresAt,
+    updated_at: new Date().toISOString(),
+  }
 
   const { data: updated, error: updateError } = await admin
     .from('checkout_contact_verifications')
@@ -272,7 +254,7 @@ export async function sendCheckoutOtp(input: {
   return {
     ok: true,
     verificationId: next.id,
-    channel: input.channel,
+    channel: 'email',
     bypassCode: bypass ? code : undefined,
     emailVerified: Boolean(next.email_verified_at),
     phoneVerified: Boolean(next.phone_verified_at),
@@ -293,6 +275,14 @@ export async function verifyCheckoutOtp(input: {
     }
   | { ok: false; error: string; status: number }
 > {
+  if (input.channel !== 'email') {
+    return {
+      ok: false,
+      error: 'WhatsApp verification is temporarily unavailable. Use email verification.',
+      status: 400,
+    }
+  }
+
   const code = input.code.trim()
   if (!/^\d{6}$/.test(code)) {
     return { ok: false, error: 'Enter the 6-digit code', status: 400 }
@@ -300,11 +290,10 @@ export async function verifyCheckoutOtp(input: {
 
   const row = await getVerification(input.verificationId.trim())
   if (!row || isExpired(row)) {
-    return { ok: false, error: 'Verification expired. Request new codes.', status: 400 }
+    return { ok: false, error: 'Verification expired. Request a new email code.', status: 400 }
   }
 
-  const attemptCount =
-    input.channel === 'email' ? row.email_attempt_count : row.phone_attempt_count
+  const attemptCount = row.email_attempt_count
   if (attemptCount >= MAX_VERIFY_ATTEMPTS) {
     return {
       ok: false,
@@ -313,8 +302,7 @@ export async function verifyCheckoutOtp(input: {
     }
   }
 
-  const expectedHash =
-    input.channel === 'email' ? row.email_code_hash : row.phone_code_hash
+  const expectedHash = row.email_code_hash
   if (!expectedHash) {
     return { ok: false, error: 'Request a code first', status: 400 }
   }
@@ -323,34 +311,24 @@ export async function verifyCheckoutOtp(input: {
   const matches = safeEqualHex(hashOtp(code), expectedHash)
 
   if (!matches) {
-    const attemptPatch =
-      input.channel === 'email'
-        ? { email_attempt_count: attemptCount + 1, updated_at: new Date().toISOString() }
-        : { phone_attempt_count: attemptCount + 1, updated_at: new Date().toISOString() }
     await admin
       .from('checkout_contact_verifications')
-      .update(attemptPatch)
+      .update({
+        email_attempt_count: attemptCount + 1,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', row.id)
     return { ok: false, error: 'Incorrect code', status: 400 }
   }
 
   const verifiedAt = new Date().toISOString()
-  const verifyPatch =
-    input.channel === 'email'
-      ? {
-          email_verified_at: verifiedAt,
-          email_code_hash: null,
-          updated_at: verifiedAt,
-        }
-      : {
-          phone_verified_at: verifiedAt,
-          phone_code_hash: null,
-          updated_at: verifiedAt,
-        }
-
   const { data: updated, error } = await admin
     .from('checkout_contact_verifications')
-    .update(verifyPatch)
+    .update({
+      email_verified_at: verifiedAt,
+      email_code_hash: null,
+      updated_at: verifiedAt,
+    })
     .eq('id', row.id)
     .select('*')
     .single()
@@ -361,12 +339,11 @@ export async function verifyCheckoutOtp(input: {
 
   const next = updated as VerificationRow
   const emailVerified = Boolean(next.email_verified_at)
-  const phoneVerified = Boolean(next.phone_verified_at)
   return {
     ok: true,
     verificationId: next.id,
     emailVerified,
-    phoneVerified,
-    bothVerified: emailVerified && phoneVerified,
+    phoneVerified: Boolean(next.phone_verified_at),
+    bothVerified: emailVerified,
   }
 }

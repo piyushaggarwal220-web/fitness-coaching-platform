@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { brandTitle } from '@/lib/brand'
 import { createClient } from '@/lib/supabase/client'
 import { colors, spacing, radius } from '@/lib/design-tokens'
@@ -12,7 +12,6 @@ import { PasswordInput } from '@/components/ui/PasswordInput'
 const supabase = createClient()
 
 function CreateAccountForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')?.trim() ?? ''
   const queryEmail = searchParams.get('email')?.trim() ?? ''
@@ -105,7 +104,7 @@ function CreateAccountForm() {
       }
 
       if (data.needsLogin) {
-        router.push(data.redirectTo ?? '/login?linked=1')
+        window.location.assign(data.redirectTo ?? '/login?linked=1')
         return
       }
 
@@ -121,8 +120,7 @@ function CreateAccountForm() {
         }
       }
 
-      router.refresh()
-      router.push(data.redirectTo ?? '/onboarding')
+      window.location.assign(data.redirectTo ?? '/onboarding')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create account')
       setLoading(false)
@@ -135,8 +133,8 @@ function CreateAccountForm() {
         <h1 style={styles.title}>{brandTitle('Create your account')}</h1>
         <p style={styles.subtitle}>
           {planName
-            ? `Payment received for ${planName}. Set a password to continue.`
-            : 'Set your password to unlock onboarding. If you left after paying, use your email and Razorpay payment ID.'}
+            ? `Payment received for ${planName}. Create your login password to continue.`
+            : 'Create your login password to unlock onboarding. If you left after paying, use your email and Razorpay payment ID.'}
         </p>
 
         {lookingUp && <p style={styles.hint}>Checking your payment…</p>}
@@ -184,32 +182,35 @@ function CreateAccountForm() {
               autoComplete="name"
             />
 
-            <label style={styles.label}>Create access key (min 6 characters)</label>
+            <label style={styles.label}>Create your login password (min 6 characters)</label>
+            <p style={styles.hint}>
+              Important: this is a normal password you type when signing in — not a phone passkey, Face ID, or fingerprint.
+            </p>
             <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
               inputStyle={styles.input}
-              name="new_access_key"
-              aria-label="Create password"
-              autoComplete="off"
+              name="new_password"
+              aria-label="Create login password"
+              autoComplete="new-password"
             />
 
-            <label style={styles.label}>Confirm access key</label>
+            <label style={styles.label}>Confirm your login password</label>
             <PasswordInput
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={6}
               inputStyle={styles.input}
-              name="confirm_access_key"
-              aria-label="Confirm password"
-              autoComplete="off"
+              name="confirm_password"
+              aria-label="Confirm login password"
+              autoComplete="new-password"
             />
 
             <button type="submit" disabled={loading} style={styles.button}>
-              {loading ? 'Creating account…' : 'Create account & continue'}
+              {loading ? 'Creating account…' : 'Save password & continue'}
             </button>
           </form>
         )}

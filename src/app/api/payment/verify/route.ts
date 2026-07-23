@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { recordCapturedPayment } from '@/lib/payments/fulfillment'
+import { recordCapturedPayment, issuePurchaseClaimToken } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { getCoachingPlan } from '@/lib/payments/plans'
 import {
@@ -205,15 +205,26 @@ export async function POST(request: Request) {
       })
     }
 
-    if (result.claimToken) {
+    let claimToken = result.claimToken
+    if (!claimToken) {
+      // Browser just paid — mint a fresh setup token so the buyer continues
+      // without typing their Razorpay payment ID.
+      try {
+        claimToken = await issuePurchaseClaimToken(result.purchaseId)
+      } catch {
+        claimToken = null
+      }
+    }
+
+    if (claimToken) {
       return NextResponse.json({
         success: true,
         purchaseId: result.purchaseId,
-        redirectTo: `/create-account?token=${encodeURIComponent(result.claimToken)}`,
+        redirectTo: `/create-account?token=${encodeURIComponent(claimToken)}`,
       })
     }
 
-    // Token already issued — recover via email + payment id.
+    // Fallback if token minting failed — recover via email + payment id.
     const params = new URLSearchParams({
       email: result.customerEmail,
       paymentId: result.razorpayPaymentId,

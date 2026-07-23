@@ -112,7 +112,7 @@ function LoginForm() {
             marginBottom: 16,
             lineHeight: 1.5,
           }}>
-            Payment linked to your existing account. Sign in with your current access key.
+            Payment linked to your existing account. Sign in with your current login password.
           </div>
         )}
 
@@ -133,15 +133,15 @@ function LoginForm() {
           </div>
 
           <div style={authStyles.inputGroup}>
-            <label style={authStyles.label}>Access key</label>
+            <label style={authStyles.label}>Login password</label>
             <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               inputStyle={authStyles.input}
-              name="access_key"
-              aria-label="Access key"
-              autoComplete="off"
+              name="password"
+              aria-label="Login password"
+              autoComplete="current-password"
             />
           </div>
 

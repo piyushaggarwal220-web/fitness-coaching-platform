@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { verifyCheckoutOtp, type CheckoutOtpChannel } from '@/lib/payments/checkout-otp'
+import { verifyCheckoutOtp } from '@/lib/payments/checkout-otp'
 
 type Body = {
-  channel?: CheckoutOtpChannel
+  channel?: string
   code?: string
   verificationId?: string
 }
@@ -15,15 +15,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  if (body.channel !== 'email' && body.channel !== 'whatsapp') {
-    return NextResponse.json({ error: 'channel must be email or whatsapp' }, { status: 400 })
+  if (body.channel === 'whatsapp') {
+    return NextResponse.json(
+      { error: 'WhatsApp verification is temporarily unavailable. Use email.' },
+      { status: 400 }
+    )
+  }
+  if (body.channel !== 'email') {
+    return NextResponse.json({ error: 'channel must be email' }, { status: 400 })
   }
   if (!body.code?.trim() || !body.verificationId?.trim()) {
     return NextResponse.json({ error: 'code and verificationId are required' }, { status: 400 })
   }
 
   const result = await verifyCheckoutOtp({
-    channel: body.channel,
+    channel: 'email',
     code: body.code,
     verificationId: body.verificationId,
   })
@@ -36,7 +42,6 @@ export async function POST(request: Request) {
     success: true,
     verificationId: result.verificationId,
     emailVerified: result.emailVerified,
-    phoneVerified: result.phoneVerified,
     bothVerified: result.bothVerified,
   })
 }

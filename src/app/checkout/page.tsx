@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { Suspense, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { brandTitle } from '@/lib/brand';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
@@ -32,7 +32,6 @@ declare global {
 }
 
 function CheckoutForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const initialPlan = searchParams.get('plan') ?? '3_months';
   const plan = getCoachingPlan(initialPlan) ?? getCoachingPlan('3_months')!;
@@ -42,6 +41,7 @@ function CheckoutForm() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [error, setError] = useState('');
   const [razorpayReady, setRazorpayReady] = useState(false);
   const [showRedeem, setShowRedeem] = useState(false);
@@ -51,22 +51,17 @@ function CheckoutForm() {
   const [policyAgreementAccepted, setPolicyAgreementAccepted] = useState(false);
   const [verificationId, setVerificationId] = useState('');
   const [emailCode, setEmailCode] = useState('');
-  const [phoneCode, setPhoneCode] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
-  const [sendingPhoneOtp, setSendingPhoneOtp] = useState(false);
   const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
-  const [verifyingPhoneOtp, setVerifyingPhoneOtp] = useState(false);
+  const paymentSucceededRef = useRef(false);
   const testMode = isPaymentBypassClient();
-  const contactsVerified = testMode || (emailVerified && phoneVerified);
+  const contactsVerified = testMode || emailVerified;
 
   const resetVerification = () => {
     setVerificationId('');
     setEmailCode('');
-    setPhoneCode('');
     setEmailVerified(false);
-    setPhoneVerified(false);
   };
 
   useEffect(() => {
@@ -80,20 +75,19 @@ function CheckoutForm() {
     });
   }, [plan, testMode]);
 
-  const sendOtp = async (channel: 'email' | 'whatsapp') => {
+  const sendEmailOtp = async () => {
     setError('');
     if (!email.trim() || !phone.trim()) {
       setError('Enter email and WhatsApp number first');
       return;
     }
-    if (channel === 'email') setSendingEmailOtp(true);
-    else setSendingPhoneOtp(true);
+    setSendingEmailOtp(true);
     try {
       const res = await fetch('/api/payment/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          channel,
+          channel: 'email',
           email,
           phone,
           name,
@@ -104,44 +98,45 @@ function CheckoutForm() {
       if (!res.ok) throw new Error(data.error ?? 'Failed to send code');
       setVerificationId(data.verificationId);
       setEmailVerified(Boolean(data.emailVerified));
-      setPhoneVerified(Boolean(data.phoneVerified));
       if (typeof data.bypassCode === 'string' && data.bypassCode) {
-        if (channel === 'email') setEmailCode(data.bypassCode);
-        else setPhoneCode(data.bypassCode);
+        setEmailCode(data.bypassCode);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send code');
     } finally {
-      if (channel === 'email') setSendingEmailOtp(false);
-      else setSendingPhoneOtp(false);
+      setSendingEmailOtp(false);
     }
   };
 
-  const verifyOtp = async (channel: 'email' | 'whatsapp') => {
+  const verifyEmailOtp = async () => {
     setError('');
     if (!verificationId) {
       setError('Send a code first');
       return;
     }
-    const code = channel === 'email' ? emailCode : phoneCode;
-    if (channel === 'email') setVerifyingEmailOtp(true);
-    else setVerifyingPhoneOtp(true);
+    setVerifyingEmailOtp(true);
     try {
       const res = await fetch('/api/payment/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel, code, verificationId }),
+        body: JSON.stringify({ channel: 'email', code: emailCode, verificationId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Invalid code');
       setEmailVerified(Boolean(data.emailVerified));
-      setPhoneVerified(Boolean(data.phoneVerified));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed');
     } finally {
-      if (channel === 'email') setVerifyingEmailOtp(false);
-      else setVerifyingPhoneOtp(false);
+      setVerifyingEmailOtp(false);
     }
+  };
+
+  const continueAfterPayment = (redirectTo: string) => {
+    paymentSucceededRef.current = true;
+    setPaymentConfirmed(true);
+    setLoading(true);
+    // Hard navigation so Razorpay modal dismiss cannot leave the user stuck on checkout.
+    window.location.assign(redirectTo);
   };
 
   const completeVerification = async (payload: {
@@ -180,8 +175,7 @@ function CheckoutForm() {
       );
     }
 
-    router.refresh();
-    router.push(verifyData.redirectTo ?? '/create-account');
+    continueAfterPayment(verifyData.redirectTo ?? '/create-account');
   };
 
   const validateCode = async () => {
@@ -226,8 +220,7 @@ function CheckoutForm() {
         if (signInError) throw new Error('Account created but sign-in failed. Please log in.');
       }
 
-      router.refresh();
-      router.push(data.redirectTo ?? '/onboarding');
+      continueAfterPayment(data.redirectTo ?? '/onboarding');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Redemption failed');
       setLoading(false);
@@ -281,6 +274,7 @@ function CheckoutForm() {
         prefill: { name, email, contact: phone },
         handler: async (response: RazorpayHandlerResponse) => {
           try {
+            setLoading(true);
             await completeVerification(response);
           } catch (err) {
             const message = err instanceof Error ? err.message : 'Verification failed';
@@ -288,7 +282,11 @@ function CheckoutForm() {
             setLoading(false);
           }
         },
-        modal: { ondismiss: () => setLoading(false) },
+        modal: {
+          ondismiss: () => {
+            if (!paymentSucceededRef.current) setLoading(false);
+          },
+        },
       });
 
       rzp.open();
@@ -298,6 +296,17 @@ function CheckoutForm() {
       setLoading(false);
     }
   };
+
+  if (paymentConfirmed) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.card}>
+          <h1 style={styles.title}>{brandTitle('Payment confirmed')}</h1>
+          <p style={styles.subtitle}>Taking you to create your login password…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.page}>
@@ -392,95 +401,57 @@ function CheckoutForm() {
           {!showRedeem && !testMode && (
             <div style={styles.otpBox}>
               <p style={styles.otpHint}>
-                Verify email and WhatsApp before paying. Codes expire in 15 minutes.
+                Verify your email before paying. We&apos;ll send a 6-digit code (expires in 15 minutes).
               </p>
-
-              <div style={styles.otpRow}>
-                <div style={{ flex: 1 }}>
-                  <div style={styles.otpStatus}>
-                    Email {emailVerified ? '✓ verified' : 'not verified'}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                    <input
-                      value={emailCode}
-                      onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="Email code"
-                      inputMode="numeric"
-                      disabled={emailVerified}
-                      style={{ ...styles.input, flex: 1, minHeight: 48 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void sendOtp('email')}
-                      disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
-                      style={styles.otpBtn}
-                    >
-                      {sendingEmailOtp ? '...' : emailVerified ? 'Done' : 'Send'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void verifyOtp('email')}
-                      disabled={
-                        verifyingEmailOtp || emailVerified || emailCode.length !== 6 || !verificationId
-                      }
-                      style={styles.otpBtn}
-                    >
-                      {verifyingEmailOtp ? '...' : 'Verify'}
-                    </button>
-                  </div>
-                </div>
+              <div style={styles.otpStatus}>
+                Email {emailVerified ? '✓ verified' : 'not verified'}
               </div>
-
-              <div style={styles.otpRow}>
-                <div style={{ flex: 1 }}>
-                  <div style={styles.otpStatus}>
-                    WhatsApp {phoneVerified ? '✓ verified' : 'not verified'}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                    <input
-                      value={phoneCode}
-                      onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="WhatsApp code"
-                      inputMode="numeric"
-                      disabled={phoneVerified}
-                      style={{ ...styles.input, flex: 1, minHeight: 48 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void sendOtp('whatsapp')}
-                      disabled={sendingPhoneOtp || phoneVerified || !email.trim() || !phone.trim()}
-                      style={styles.otpBtn}
-                    >
-                      {sendingPhoneOtp ? '...' : phoneVerified ? 'Done' : 'Send'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void verifyOtp('whatsapp')}
-                      disabled={
-                        verifyingPhoneOtp || phoneVerified || phoneCode.length !== 6 || !verificationId
-                      }
-                      style={styles.otpBtn}
-                    >
-                      {verifyingPhoneOtp ? '...' : 'Verify'}
-                    </button>
-                  </div>
-                </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                <input
+                  value={emailCode}
+                  onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Email code"
+                  inputMode="numeric"
+                  disabled={emailVerified}
+                  style={{ ...styles.input, flex: 1, minHeight: 48 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => void sendEmailOtp()}
+                  disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
+                  style={styles.otpBtn}
+                >
+                  {sendingEmailOtp ? '...' : emailVerified ? 'Done' : 'Send'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void verifyEmailOtp()}
+                  disabled={
+                    verifyingEmailOtp || emailVerified || emailCode.length !== 6 || !verificationId
+                  }
+                  style={styles.otpBtn}
+                >
+                  {verifyingEmailOtp ? '...' : 'Verify'}
+                </button>
               </div>
             </div>
           )}
 
           {showRedeem && redeemValid && (
             <>
-              <label style={styles.label}>Create password (min 6 characters)</label>
+              <label style={styles.label}>Create your login password (min 6 characters)</label>
+              <p style={styles.hint}>
+                This is a normal password you will type when signing in — not a phone passkey / Face ID.
+              </p>
               <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
                 inputStyle={styles.input}
-                name="redeem-passcode"
-                aria-label="Create password"
-                autoComplete="off"
+                name="redeem-password"
+                aria-label="Create login password"
+                autoComplete="new-password"
               />
             </>
           )}
@@ -527,7 +498,7 @@ function CheckoutForm() {
         </form>
 
         <p style={styles.secure}>
-          Secure payments via Razorpay. After payment you&apos;ll create your account password.
+          Secure payments via Razorpay. After payment you&apos;ll create your login password (not a passkey).
           {' '}
           <Link href="/create-account" style={{ color: colors.accent }}>Already paid?</Link>
         </p>
@@ -580,10 +551,9 @@ const styles: Record<string, CSSProperties> = {
     backgroundColor: colors.bgElevated,
     display: 'flex',
     flexDirection: 'column',
-    gap: 12,
+    gap: 8,
   },
   otpHint: { margin: 0, fontSize: 13, color: colors.textSecondary, lineHeight: 1.4 },
-  otpRow: { display: 'flex', flexDirection: 'column', gap: 4 },
   otpStatus: { fontSize: 13, fontWeight: 600, color: colors.textSecondary },
   otpBtn: {
     padding: '10px 12px',
@@ -596,4 +566,5 @@ const styles: Record<string, CSSProperties> = {
     minHeight: 48,
     whiteSpace: 'nowrap',
   },
+  hint: { margin: '0 0 4px', fontSize: 13, color: colors.textMuted, lineHeight: 1.4 },
 };
