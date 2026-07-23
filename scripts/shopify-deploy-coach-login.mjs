@@ -1,48 +1,27 @@
 import fs from 'node:fs'
-import path from 'node:path'
+import {
+  getShopifyAccessToken,
+  gql,
+  resolveFromScript,
+  SHOPIFY_API_VERSION,
+  SHOPIFY_STORE,
+} from './shopify-utils.mjs'
 
-const STORE = '9uwyq1-0j.myshopify.com'
-const API = `https://${STORE}/admin/api/2025-01/graphql.json`
 const COACH_LOGIN_URL = 'https://app.lurvox.in/coach/login'
 const SECTION_FILENAME = 'sections/lurvox-coach-login.liquid'
 const FOOTER_FILENAME = 'sections/footer-group.json'
-const tokenPath = path.join(process.env.TEMP, 'shopify-auth-token.json')
-
-if (!fs.existsSync(tokenPath)) {
-  throw new Error('Shopify auth token not found. Run: node scripts/shopify-pkce-auth.mjs')
-}
-
-const token = JSON.parse(fs.readFileSync(tokenPath, 'utf8'))
-const sectionLiquid = fs.readFileSync(
-  path.join('C:/Users/DELL/coaching-platform/scripts/lurvox-coach-login.liquid'),
-  'utf8'
-)
-
-async function gql(query, variables = {}) {
-  const response = await fetch(API, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': token.access_token,
-    },
-    body: JSON.stringify({ query, variables }),
-  })
-  const json = await response.json()
-  if (!response.ok || json.errors) {
-    throw new Error(JSON.stringify(json.errors || json, null, 2))
-  }
-  return json.data
-}
+const accessToken = getShopifyAccessToken()
+const sectionLiquid = fs.readFileSync(resolveFromScript('lurvox-coach-login.liquid'), 'utf8')
 
 async function restUpsert(themeId, key, value) {
   const numericThemeId = themeId.split('/').pop()
   const response = await fetch(
-    `https://${STORE}/admin/api/2025-01/themes/${numericThemeId}/assets.json`,
+    `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/themes/${numericThemeId}/assets.json`,
     {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': token.access_token,
+        'X-Shopify-Access-Token': accessToken,
       },
       body: JSON.stringify({ asset: { key, value } }),
     }
