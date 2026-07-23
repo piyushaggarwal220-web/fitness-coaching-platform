@@ -30,6 +30,10 @@
     "verify:initial-plan-generation": "tsx scripts/verify-initial-plan-generation.ts",
     "verify:notifications": "tsx scripts/verify-notification-delivery.ts",
     "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:payment-operations && npm run verify:refund-eligibility && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:plan-metadata && npm run verify:daily-tracker && npm run verify:prompt-cache && npm run verify:chat-policy && npm run verify:chat-access && npm run verify:initial-plan-generation",
+    "shopify:auth": "node scripts/shopify-pkce-auth.mjs",
+    "shopify:backup:coach-login": "node scripts/shopify-backup-coach-login.mjs",
+    "shopify:deploy:coach-login": "node scripts/shopify-deploy-coach-login.mjs",
+    "shopify:add:coach-menu-item": "node scripts/shopify-add-coach-menu-item.mjs",
     "db:apply-pending": "node scripts/apply-pending-migrations.mjs",
     "prompts:import": "tsx --env-file=.env.local scripts/import-production-prompts.ts"
   },

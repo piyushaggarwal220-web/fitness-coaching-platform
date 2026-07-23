@@ -1,38 +1,23 @@
-import fs from 'node:fs'
 import path from 'node:path'
 
-const STORE = '9uwyq1-0j.myshopify.com'
-const API = `https://${STORE}/admin/api/2025-01/graphql.json`
-const COACH_LOGIN_URL = 'https://app.lurvox.in/coach/login'
-const SECTION_FILENAME = 'sections/lurvox-coach-login.liquid'
-const FOOTER_FILENAME = 'sections/footer-group.json'
-const tokenPath = path.join(process.env.TEMP, 'shopify-auth-token.json')
+import {
+  COACH_LOGIN_URL,
+  FOOTER_FILENAME,
+  SECTION_FILENAME,
+  STORE,
+  createBackupDirectory,
+  getShopAndMainTheme,
+  getThemeFiles,
+  gql,
+  loadAuthToken,
+  parseThemeJson,
+  readCoachSectionSource,
+  writeBackupFiles,
+  writeBackupMetadata,
+} from './shopify-common.mjs'
 
-if (!fs.existsSync(tokenPath)) {
-  throw new Error('Shopify auth token not found. Run: node scripts/shopify-pkce-auth.mjs')
-}
-
-const token = JSON.parse(fs.readFileSync(tokenPath, 'utf8'))
-const sectionLiquid = fs.readFileSync(
-  path.join('C:/Users/DELL/coaching-platform/scripts/lurvox-coach-login.liquid'),
-  'utf8'
-)
-
-async function gql(query, variables = {}) {
-  const response = await fetch(API, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': token.access_token,
-    },
-    body: JSON.stringify({ query, variables }),
-  })
-  const json = await response.json()
-  if (!response.ok || json.errors) {
-    throw new Error(JSON.stringify(json.errors || json, null, 2))
-  }
-  return json.data
-}
+const token = loadAuthToken()
+const sectionLiquid = readCoachSectionSource()
 
 async function restUpsert(themeId, key, value) {
   const numericThemeId = themeId.split('/').pop()
@@ -52,36 +37,24 @@ async function restUpsert(themeId, key, value) {
   }
 }
 
-function parseThemeJson(content) {
-  const jsonStart = content.indexOf('{')
-  if (jsonStart < 0) throw new Error(`${FOOTER_FILENAME} does not contain JSON`)
-  return JSON.parse(content.slice(jsonStart))
-}
+const { destinationUrl, mainTheme } = await getShopAndMainTheme(token)
+const currentFiles = await getThemeFiles(token, mainTheme.id, [SECTION_FILENAME, FOOTER_FILENAME])
+if (!currentFiles[FOOTER_FILENAME]) throw new Error(`Could not read ${FOOTER_FILENAME}`)
 
-const storeData = await gql(`{
-  shop { primaryDomain { url } }
-  themes(first: 20) { nodes { id name role } }
-}`)
-const mainTheme = storeData.themes.nodes.find((theme) => theme.role === 'MAIN')
-if (!mainTheme) throw new Error('No live MAIN theme found')
+const backupDirectory = createBackupDirectory('coach-login-predeploy')
+writeBackupFiles(backupDirectory, currentFiles)
+writeBackupMetadata(backupDirectory, {
+  createdAt: new Date().toISOString(),
+  destinationUrl,
+  theme: mainTheme,
+  files: Object.entries(currentFiles).map(([filename, content]) => ({
+    filename,
+    present: typeof content === 'string',
+    bytes: typeof content === 'string' ? Buffer.byteLength(content, 'utf8') : 0,
+  })),
+})
 
-const current = await gql(
-  `query themeFooter($id: ID!, $filenames: [String!]!) {
-    theme(id: $id) {
-      files(filenames: $filenames, first: 5) {
-        nodes {
-          filename
-          body { ... on OnlineStoreThemeFileBodyText { content } }
-        }
-      }
-    }
-  }`,
-  { id: mainTheme.id, filenames: [FOOTER_FILENAME] }
-)
-const footerNode = current.theme.files.nodes.find((node) => node.filename === FOOTER_FILENAME)
-if (!footerNode?.body?.content) throw new Error(`Could not read ${FOOTER_FILENAME}`)
-
-const footer = parseThemeJson(footerNode.body.content)
+const footer = parseThemeJson(currentFiles[FOOTER_FILENAME])
 footer.sections ||= {}
 footer.order ||= []
 footer.sections.lurvox_coach_login = {
@@ -100,6 +73,7 @@ footer.order.push('lurvox_coach_login')
 const footerContent = `${JSON.stringify(footer, null, 2)}\n`
 
 const upload = await gql(
+  token,
   `mutation deployCoachLogin($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
     themeFilesUpsert(themeId: $themeId, files: $files) {
       upsertedThemeFiles { filename }
@@ -126,6 +100,7 @@ if (upload.themeFilesUpsert.userErrors?.length) {
 }
 
 const verification = await gql(
+  token,
   `query verifyCoachLogin($id: ID!, $filenames: [String!]!) {
     theme(id: $id) {
       files(filenames: $filenames, first: 5) {
@@ -150,7 +125,6 @@ const fileVerified =
   verifiedSettings?.enabled === true &&
   order[order.length - 1] === 'lurvox_coach_login'
 
-const destinationUrl = storeData.shop.primaryDomain.url
 let storefrontVerified = false
 let storefrontStatus = null
 let deploymentMethod = 'GraphQL'
@@ -218,6 +192,8 @@ console.log(
     {
       theme: { id: mainTheme.id, name: mainTheme.name, role: mainTheme.role },
       destinationUrl,
+      backupDirectory,
+      backupDirectoryRelativeToRepo: path.relative(process.cwd(), backupDirectory),
       loginUrl: COACH_LOGIN_URL,
       deploymentMethod,
       uploadedFiles: upload.themeFilesUpsert.upsertedThemeFiles.map((file) => file.filename),

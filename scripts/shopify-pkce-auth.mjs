@@ -3,7 +3,8 @@ import crypto from 'node:crypto'
 import http from 'node:http'
 import { spawn } from 'node:child_process'
 
-const STORE = '9uwyq1-0j.myshopify.com'
+import { STORE, getAuthTokenPath, getAuthUrlPath } from './shopify-common.mjs'
+
 const CLIENT_ID = '7e9cb568cfd431c538f36d1ad3f2b4f6'
 const PORT = 13387
 const REDIRECT = `http://127.0.0.1:${PORT}/auth/callback`
@@ -58,8 +59,24 @@ const params = new URLSearchParams({
 })
 
 const authUrl = `https://${STORE}/admin/oauth/authorize?${params.toString()}`
-fs.writeFileSync(process.env.TEMP + '\\shopify-auth-url.txt', authUrl)
+fs.writeFileSync(getAuthUrlPath(), authUrl)
 console.log('AUTH_URL=' + authUrl)
+
+function maybeOpenAuthUrl(url) {
+  const launchers = {
+    win32: ['cmd', ['/c', 'start', '', url]],
+    darwin: ['open', [url]],
+    linux: ['xdg-open', [url]],
+  }
+  const launcher = launchers[process.platform]
+  if (!launcher) return
+
+  try {
+    const child = spawn(launcher[0], launcher[1], { detached: true, stdio: 'ignore' })
+    child.on('error', () => {})
+    child.unref()
+  } catch {}
+}
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -93,10 +110,7 @@ const server = http.createServer(async (req, res) => {
     const text = await tokenRes.text()
     if (!tokenRes.ok) throw new Error(`Token exchange failed: ${tokenRes.status} ${text}`)
     const token = JSON.parse(text)
-    fs.writeFileSync(
-      process.env.TEMP + '\\shopify-auth-token.json',
-      JSON.stringify(token, null, 2)
-    )
+    fs.writeFileSync(getAuthTokenPath(), JSON.stringify(token, null, 2))
     res.writeHead(200, { 'Content-Type': 'text/html' })
     res.end(
       '<html><body style="font-family:sans-serif;padding:40px"><h1>Connected</h1><p>You can close this tab and return to Cursor.</p></body></html>'
@@ -113,7 +127,9 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log('Listening on', REDIRECT)
-  spawn('cmd', ['/c', 'start', '', authUrl], { detached: true, stdio: 'ignore' }).unref()
+  console.log('Auth URL saved to', getAuthUrlPath())
+  console.log('Auth token will be written to', getAuthTokenPath())
+  maybeOpenAuthUrl(authUrl)
 })
 
 setTimeout(() => {
