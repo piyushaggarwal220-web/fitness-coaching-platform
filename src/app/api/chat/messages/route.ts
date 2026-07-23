@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { logApiDev } from '@/lib/api-dev-log'
 import { markConversationRead, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
 import { requireConversationParticipant } from '@/lib/chat-api-access'
+import { hasClientEntitlement } from '@/lib/entitlements'
 
 export async function GET(request: Request) {
   try {
@@ -129,6 +130,24 @@ export async function POST(request: Request) {
       return access.response
     }
     const { admin, participant, userId } = access
+
+    if (participant.viewer === 'client') {
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('payment_confirmed, access_source, subscription_expires_at')
+        .eq('id', userId)
+        .maybeSingle()
+      if (!hasClientEntitlement(profile)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Your coaching plan has ended. Renew to continue chatting.',
+            code: 'entitlement_expired',
+          },
+          { status: 403 }
+        )
+      }
+    }
 
     if (body.typing) {
       await setTypingIndicator(admin, conversationId, participant.viewer)

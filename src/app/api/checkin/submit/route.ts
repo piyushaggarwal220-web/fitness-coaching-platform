@@ -1,5 +1,5 @@
 import { NextResponse, after } from 'next/server'
-import { requireApiUser } from '@/lib/api-auth'
+import { requireEntitledClientApiUser } from '@/lib/client-entitlement-guard'
 import { logApiDev } from '@/lib/api-dev-log'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
       hasCookie: Boolean(request.headers.get('cookie')),
     })
 
-    const auth = await requireApiUser()
+    const auth = await requireEntitledClientApiUser()
     if (!auth.ok) {
       logApiDev('checkin_submit_auth_failed', { sessionFound: false })
       return auth.response

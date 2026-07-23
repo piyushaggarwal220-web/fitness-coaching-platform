@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { updateTrackerCompletion, type TrackerCompletion } from '@/lib/daily-tracker'
-import { createClient } from '@/lib/supabase/server'
+import { requireEntitledClientApiUser } from '@/lib/client-entitlement-guard'
 
 type Body = {
   dayId?: string
@@ -8,14 +8,8 @@ type Body = {
 }
 
 export async function PATCH(request: Request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-  }
+  const auth = await requireEntitledClientApiUser()
+  if (!auth.ok) return auth.response
 
   let body: Body
   try {
@@ -29,7 +23,12 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'dayId and completion are required' }, { status: 400 })
   }
 
-  const { day, error } = await updateTrackerCompletion(supabase, user.id, dayId, body.completion)
+  const { day, error } = await updateTrackerCompletion(
+    auth.supabase,
+    auth.user.id,
+    dayId,
+    body.completion
+  )
 
   if (error || !day) {
     return NextResponse.json({ error: error ?? 'Update failed' }, { status: 400 })

@@ -1,4 +1,9 @@
 import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
+import {
+  formatMesocyclePromptSection,
+  resolveMesocycle,
+  summarizePriorSplit,
+} from '@/lib/ai/mesocycle'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
 import { getOnboardingLabel } from '@/lib/onboarding'
@@ -154,6 +159,9 @@ function buildCheckinSection(checkin: Checkin): string {
   const lines = [
     '## Latest Check-In',
     `- Submitted: ${checkin.submitted_at}`,
+    `- Coaching week: ${formatValue(checkin.coaching_week)}`,
+    `- Coaching day: ${formatValue(checkin.coaching_day)}`,
+    `- Check-in type: ${formatValue(checkin.checkin_type)}`,
     `- Weight: ${formatValue(checkin.weight)} kg`,
     `- Chest: ${formatValue(checkin.chest)} cm`,
     `- Thigh: ${formatValue(checkin.thigh)} cm`,
@@ -171,6 +179,16 @@ function buildCheckinSection(checkin: Checkin): string {
     `- Notes: ${hasMeaningfulText(checkin.notes) ? checkin.notes!.trim() : 'None'}`,
   ]
   return lines.join('\n')
+}
+
+function buildMesocycleSection(
+  checkin: Checkin | null | undefined,
+  activePlan: Plan | null | undefined
+): string {
+  const week = checkin?.coaching_week ?? 1
+  const meso = resolveMesocycle(week)
+  const prior = summarizePriorSplit(activePlan?.workout_plan)
+  return formatMesocyclePromptSection(meso, prior)
 }
 
 function buildComplexitySection(complexityScore: ComplexityScoreResult): string {
@@ -485,6 +503,7 @@ export type PromptContextSections = {
   activeWorkout: string
   updatedDiet: string
   checkin: string
+  mesocycle: string
   coachNotes: string
   knowledge: string
   complexity: string
@@ -502,6 +521,7 @@ const SECTION_LABELS: Record<PromptContextSectionKey, string> = {
   activeWorkout: 'Current Active Workout',
   updatedDiet: 'Newly Generated Updated Diet',
   checkin: 'Weekly Check-in',
+  mesocycle: 'Training Mesocycle',
   coachNotes: 'Coach Notes',
   knowledge: 'Knowledge Base',
   complexity: 'Complexity Score',
@@ -574,6 +594,7 @@ export function buildPromptContextSections(
     checkin: input.latestCheckin
       ? buildCheckinSection(input.latestCheckin)
       : '## Latest Check-In\nNo check-in provided for this request.',
+    mesocycle: buildMesocycleSection(input.latestCheckin, input.activePlan),
     coachNotes: hasMeaningfulText(input.coachInstructions)
       ? ['## Coach Notes', input.coachInstructions!.trim()].join('\n')
       : '## Coach Notes\nNone provided.',
@@ -605,6 +626,8 @@ const PLACEHOLDER_ALIASES: Record<string, keyof PromptContextSections> = {
   '[CHECK-IN]': 'checkin',
   '[LATEST CHECK-IN]': 'checkin',
   '[CHECK IN]': 'checkin',
+  '[MESOCYCLE]': 'mesocycle',
+  '[TRAINING MESOCYCLE]': 'mesocycle',
   '[COACH NOTES]': 'coachNotes',
   '[COACH INSTRUCTIONS]': 'coachNotes',
   '[KNOWLEDGE BASE]': 'knowledge',
@@ -657,6 +680,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
         'clientDetails',
         'onboarding',
         'trainingPreferences',
+        'mesocycle',
         'coachNotes',
         'knowledge',
         'complexity',
@@ -684,6 +708,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
         'activeWorkout',
         'activeDiet',
         'updatedDiet',
+        'mesocycle',
         'checkin',
         'coachNotes',
         'knowledge',
@@ -753,10 +778,12 @@ function buildUserPrompt(
   profile: OnboardingProfile,
   latestCheckin: Checkin | null | undefined,
   complexityScore: ComplexityScoreResult,
-  coachInstructions: string | null | undefined
+  coachInstructions: string | null | undefined,
+  activePlan?: Plan | null
 ): string {
   const sections = [
     buildClientProfileSection(profile),
+    buildMesocycleSection(latestCheckin, activePlan),
     latestCheckin ? buildCheckinSection(latestCheckin) : null,
     buildComplexitySection(complexityScore),
     hasMeaningfulText(coachInstructions)
@@ -789,7 +816,8 @@ export function buildPrompt(input: PromptBuilderInput): PromptBuilderResult {
     input.profile,
     input.latestCheckin,
     input.complexityScore,
-    input.coachInstructions
+    input.coachInstructions,
+    input.activePlan
   )
 
   return {

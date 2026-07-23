@@ -161,6 +161,8 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Generate a personalized workout plan for this client.',
+          'Opening mesocycle week 1: invent a COMPLETELY UNIQUE muscle-shock split for this client — not a stock PPL/upper-lower/bro template.',
+          'Use BASE (lowest) volume for week 1 of the mesocycle.',
           'Prioritize workout_plan only (strength / resistance training).',
           'Do NOT include a Cardio, Steps, Conditioning, or Supplements section in the workout text.',
           'Leave cardio_plan.sessions and supplement_plan.items as empty arrays — those are separate plans.',
@@ -209,9 +211,11 @@ export function buildActionCoachInstructions(
     case 'review_update_workout':
       return appendNote(
         [
-          'Update the workout plan based on the latest check-in.',
+          'Update the workout plan based on the latest check-in and Training Mesocycle context.',
           checkin ? checkinContext(checkin) : '',
           planContext(activePlan ?? null, ['workout']),
+          'Obey mesocycle rules: week 1 of a month = NEW unique split + base volume; weeks 2–4 = same split with rising volume; after week 4 reset.',
+          'Do not mention the week number to the client.',
           'Adjust workout_plan only (strength / resistance training).',
           'Do NOT include Cardio or Supplements sections in the workout text; leave those JSON arrays empty.',
           'Keep nutrition_plan with placeholder macros and empty meals.',

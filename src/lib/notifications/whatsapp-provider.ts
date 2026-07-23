@@ -174,7 +174,10 @@ export async function sendNotificationWhatsApp(
 }
 
 export async function sendDirectWhatsApp(input: {
-  campaignEnv: 'AISENSY_CAMPAIGN_ACCOUNT_SETUP' | 'AISENSY_CAMPAIGN_ONBOARDING_REMINDER'
+  campaignEnv:
+    | 'AISENSY_CAMPAIGN_ACCOUNT_SETUP'
+    | 'AISENSY_CAMPAIGN_ONBOARDING_REMINDER'
+    | 'AISENSY_CAMPAIGN_CHECKOUT_OTP'
   phone: string | null | undefined
   name: string | null | undefined
   templateParams: string[]

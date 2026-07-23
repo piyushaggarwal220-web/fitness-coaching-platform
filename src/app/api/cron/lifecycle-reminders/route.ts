@@ -8,6 +8,7 @@ import {
   shouldStartInitialGeneration,
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
+import { revokeExpiredClientSubscriptions } from '@/lib/client-entitlement-guard'
 import {
   sendAccountSetupRecovery,
   sendOnboardingReminder,
@@ -90,6 +91,7 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient()
+  const revokedSubscriptions = await revokeExpiredClientSubscriptions(50)
   const recoveredJobs = await scheduleInitialPlanRecovery(admin)
   const now = Date.now()
   const cutoff = new Date(now - 24 * 3_600_000).toISOString()
@@ -192,7 +194,14 @@ export async function GET(request: Request) {
     }
   }
 
-  const summary = { checked: purchases?.length ?? 0, sent, failed, skipped, recoveredJobs }
+  const summary = {
+    checked: purchases?.length ?? 0,
+    sent,
+    failed,
+    skipped,
+    recoveredJobs,
+    revokedSubscriptions,
+  }
   console.info('[cron/lifecycle-reminders]', summary)
   return NextResponse.json(summary)
 }

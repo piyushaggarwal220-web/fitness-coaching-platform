@@ -49,7 +49,25 @@ function CheckoutForm() {
   const [redeemValid, setRedeemValid] = useState<{ planName?: string } | null>(null);
   const [validatingCode, setValidatingCode] = useState(false);
   const [policyAgreementAccepted, setPolicyAgreementAccepted] = useState(false);
+  const [verificationId, setVerificationId] = useState('');
+  const [emailCode, setEmailCode] = useState('');
+  const [phoneCode, setPhoneCode] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
+  const [sendingPhoneOtp, setSendingPhoneOtp] = useState(false);
+  const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
+  const [verifyingPhoneOtp, setVerifyingPhoneOtp] = useState(false);
   const testMode = isPaymentBypassClient();
+  const contactsVerified = testMode || (emailVerified && phoneVerified);
+
+  const resetVerification = () => {
+    setVerificationId('');
+    setEmailCode('');
+    setPhoneCode('');
+    setEmailVerified(false);
+    setPhoneVerified(false);
+  };
 
   useEffect(() => {
     if (testMode) return;
@@ -61,6 +79,70 @@ function CheckoutForm() {
       content_type: 'product',
     });
   }, [plan, testMode]);
+
+  const sendOtp = async (channel: 'email' | 'whatsapp') => {
+    setError('');
+    if (!email.trim() || !phone.trim()) {
+      setError('Enter email and WhatsApp number first');
+      return;
+    }
+    if (channel === 'email') setSendingEmailOtp(true);
+    else setSendingPhoneOtp(true);
+    try {
+      const res = await fetch('/api/payment/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel,
+          email,
+          phone,
+          name,
+          verificationId: verificationId || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to send code');
+      setVerificationId(data.verificationId);
+      setEmailVerified(Boolean(data.emailVerified));
+      setPhoneVerified(Boolean(data.phoneVerified));
+      if (typeof data.bypassCode === 'string' && data.bypassCode) {
+        if (channel === 'email') setEmailCode(data.bypassCode);
+        else setPhoneCode(data.bypassCode);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send code');
+    } finally {
+      if (channel === 'email') setSendingEmailOtp(false);
+      else setSendingPhoneOtp(false);
+    }
+  };
+
+  const verifyOtp = async (channel: 'email' | 'whatsapp') => {
+    setError('');
+    if (!verificationId) {
+      setError('Send a code first');
+      return;
+    }
+    const code = channel === 'email' ? emailCode : phoneCode;
+    if (channel === 'email') setVerifyingEmailOtp(true);
+    else setVerifyingPhoneOtp(true);
+    try {
+      const res = await fetch('/api/payment/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel, code, verificationId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Invalid code');
+      setEmailVerified(Boolean(data.emailVerified));
+      setPhoneVerified(Boolean(data.phoneVerified));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      if (channel === 'email') setVerifyingEmailOtp(false);
+      else setVerifyingPhoneOtp(false);
+    }
+  };
 
   const completeVerification = async (payload: {
     razorpay_order_id: string;
@@ -167,6 +249,7 @@ function CheckoutForm() {
           name,
           phone,
           policyAgreementAccepted,
+          verificationId: verificationId || undefined,
         }),
       });
 
@@ -281,18 +364,110 @@ function CheckoutForm() {
           <input value={name} onChange={(e) => setName(e.target.value)} required style={styles.input} />
 
           <label style={styles.label}>Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={styles.input} />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              resetVerification();
+            }}
+            required
+            style={styles.input}
+          />
 
           <label style={styles.label}>WhatsApp number</label>
           <input
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              resetVerification();
+            }}
             required
             placeholder="+91 98765 43210"
             autoComplete="tel"
             style={styles.input}
           />
+
+          {!showRedeem && !testMode && (
+            <div style={styles.otpBox}>
+              <p style={styles.otpHint}>
+                Verify email and WhatsApp before paying. Codes expire in 15 minutes.
+              </p>
+
+              <div style={styles.otpRow}>
+                <div style={{ flex: 1 }}>
+                  <div style={styles.otpStatus}>
+                    Email {emailVerified ? '✓ verified' : 'not verified'}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                    <input
+                      value={emailCode}
+                      onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="Email code"
+                      inputMode="numeric"
+                      disabled={emailVerified}
+                      style={{ ...styles.input, flex: 1, minHeight: 48 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void sendOtp('email')}
+                      disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
+                      style={styles.otpBtn}
+                    >
+                      {sendingEmailOtp ? '...' : emailVerified ? 'Done' : 'Send'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void verifyOtp('email')}
+                      disabled={
+                        verifyingEmailOtp || emailVerified || emailCode.length !== 6 || !verificationId
+                      }
+                      style={styles.otpBtn}
+                    >
+                      {verifyingEmailOtp ? '...' : 'Verify'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.otpRow}>
+                <div style={{ flex: 1 }}>
+                  <div style={styles.otpStatus}>
+                    WhatsApp {phoneVerified ? '✓ verified' : 'not verified'}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                    <input
+                      value={phoneCode}
+                      onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="WhatsApp code"
+                      inputMode="numeric"
+                      disabled={phoneVerified}
+                      style={{ ...styles.input, flex: 1, minHeight: 48 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void sendOtp('whatsapp')}
+                      disabled={sendingPhoneOtp || phoneVerified || !email.trim() || !phone.trim()}
+                      style={styles.otpBtn}
+                    >
+                      {sendingPhoneOtp ? '...' : phoneVerified ? 'Done' : 'Send'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void verifyOtp('whatsapp')}
+                      disabled={
+                        verifyingPhoneOtp || phoneVerified || phoneCode.length !== 6 || !verificationId
+                      }
+                      style={styles.otpBtn}
+                    >
+                      {verifyingPhoneOtp ? '...' : 'Verify'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showRedeem && redeemValid && (
             <>
@@ -337,7 +512,9 @@ function CheckoutForm() {
               loading ||
               (showRedeem
                 ? !redeemValid
-                : !policyAgreementAccepted || (!testMode && !razorpayReady))
+                : !policyAgreementAccepted ||
+                  !contactsVerified ||
+                  (!testMode && !razorpayReady))
             }
             style={styles.payBtn}
           >
@@ -395,4 +572,28 @@ const styles: Record<string, CSSProperties> = {
   validateBtn: { padding: '12px 16px', backgroundColor: colors.accent, color: colors.textInverse, border: 'none', borderRadius: radius.sm, fontWeight: 600, cursor: 'pointer', minHeight: 48, whiteSpace: 'nowrap' },
   validBanner: { backgroundColor: colors.successMuted, color: colors.success, padding: 10, borderRadius: radius.sm, fontSize: 14, marginBottom: 8 },
   backToPay: { background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 13, padding: '8px 0', minHeight: 44 },
+  otpBox: {
+    marginTop: 8,
+    padding: spacing[3],
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.borderSubtle}`,
+    backgroundColor: colors.bgElevated,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  otpHint: { margin: 0, fontSize: 13, color: colors.textSecondary, lineHeight: 1.4 },
+  otpRow: { display: 'flex', flexDirection: 'column', gap: 4 },
+  otpStatus: { fontSize: 13, fontWeight: 600, color: colors.textSecondary },
+  otpBtn: {
+    padding: '10px 12px',
+    backgroundColor: colors.accent,
+    color: colors.textInverse,
+    border: 'none',
+    borderRadius: radius.sm,
+    fontWeight: 600,
+    cursor: 'pointer',
+    minHeight: 48,
+    whiteSpace: 'nowrap',
+  },
 };

@@ -6,6 +6,7 @@ import {
   createPolicyAcknowledgement,
   storeOrderPolicyAcknowledgement,
 } from '@/lib/payments/policy-acknowledgement'
+import { assertCheckoutContactsVerified } from '@/lib/payments/checkout-otp'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 type CreateOrderBody = {
@@ -14,6 +15,7 @@ type CreateOrderBody = {
   name?: string
   phone?: string
   policyAgreementAccepted?: boolean
+  verificationId?: string
 }
 
 export async function POST(request: Request) {
@@ -44,6 +46,15 @@ export async function POST(request: Request) {
       { error: 'You must agree to the Terms and Refund Policy before payment' },
       { status: 400 }
     )
+  }
+
+  const contactCheck = await assertCheckoutContactsVerified({
+    verificationId: body.verificationId,
+    email: body.email,
+    phone: body.phone,
+  })
+  if (!contactCheck.ok) {
+    return NextResponse.json({ error: contactCheck.error }, { status: contactCheck.status })
   }
 
   const acknowledgement = createPolicyAcknowledgement(request)
