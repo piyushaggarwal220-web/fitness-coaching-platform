@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { serializeCoachResponse } from '@/lib/checkin'
-import { markConversationRead } from '@/lib/coach-chat'
 import type { WorkQueueTask } from '@/lib/coach-work-queue'
 
 export type ResolveWorkQueueResult = {
@@ -8,6 +7,20 @@ export type ResolveWorkQueueResult = {
   error?: string
   /** Task left the queue on the server; safe to drop from UI permanently. */
   resolved: boolean
+}
+
+async function markCoachMessagesRead(
+  supabase: SupabaseClient,
+  conversationId: string,
+  readThrough: string
+): Promise<void> {
+  await supabase
+    .from('conversation_messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .eq('sender_type', 'client')
+    .lte('created_at', readThrough)
+    .is('read_at', null)
 }
 
 /**
@@ -46,7 +59,7 @@ export async function resolveWorkQueueTask(
 
       const readThrough = unread?.[0]?.created_at ?? null
       if (readThrough) {
-        await markConversationRead(supabase, conversationId, 'coach', readThrough)
+        await markCoachMessagesRead(supabase, conversationId, readThrough)
       }
 
       const { error } = await supabase
