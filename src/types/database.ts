@@ -176,6 +176,9 @@ export type Profile = {
   complexity_input_needs_review?: boolean | null
   complexity_input_review_reasons?: string[] | null
   league_opt_in?: boolean | null
+  league_division?: string | null
+  avatar_path?: string | null
+  profile_settings_edited_at?: string | null
 }
 
 export type OnboardingProfile = Profile

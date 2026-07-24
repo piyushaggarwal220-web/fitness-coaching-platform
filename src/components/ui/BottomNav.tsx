@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Map, ClipboardList, MessageCircle, ListChecks } from 'lucide-react'
+import { Home, Map, ClipboardList, MessageCircle, ListChecks, Trophy } from 'lucide-react'
 import { colors, layout, spacing } from '@/lib/design-tokens'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: Home },
   { href: '/tracker', label: 'Tracker', icon: ListChecks },
   { href: '/plan', label: 'Plan', icon: ClipboardList },
+  { href: '/league', label: 'League', icon: Trophy },
   { href: '/client/chat', label: 'Chat', icon: MessageCircle },
   { href: '/journey', label: 'Journey', icon: Map },
 ] as const
@@ -50,7 +51,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 4,
-              minWidth: 56,
+              minWidth: 48,
               minHeight: 56,
               padding: `${spacing[1]}px`,
               color: active ? colors.accent : colors.textMuted,
@@ -82,7 +83,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
                 </span>
               )}
             </span>
-            <span style={{ fontSize: 11, fontWeight: active ? 600 : 500 }}>{label}</span>
+            <span style={{ fontSize: 10, fontWeight: active ? 600 : 500 }}>{label}</span>
           </Link>
         )
       })}

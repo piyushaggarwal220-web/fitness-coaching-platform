@@ -1,21 +1,91 @@
-/** Consistency League — points from tracker adherence + on-time check-ins. */
+/** Consistency League — monthly seasons, ladder divisions, top 10% promote. */
 
-export type LeagueTier = 'foundation' | 'steady' | 'momentum' | 'champion'
+export type LeagueTier =
+  | 'bronze'
+  | 'silver'
+  | 'gold'
+  | 'platinum'
+  | 'diamond'
+  | 'crazy_1'
+  | 'crazy_2'
+  | 'crazy_3'
+  | 'world'
 
-export const LEAGUE_TIER_ORDER: LeagueTier[] = ['foundation', 'steady', 'momentum', 'champion']
+/** Playable ladder (world is display-only / coming soon). */
+export const LEAGUE_LADDER: LeagueTier[] = [
+  'bronze',
+  'silver',
+  'gold',
+  'platinum',
+  'diamond',
+  'crazy_1',
+  'crazy_2',
+  'crazy_3',
+]
+
+export const LEAGUE_TIER_ORDER: LeagueTier[] = [...LEAGUE_LADDER, 'world']
 
 export const LEAGUE_TIER_LABELS: Record<LeagueTier, string> = {
-  foundation: 'Bronze',
-  steady: 'Silver',
-  momentum: 'Gold',
-  champion: 'Platinum',
+  bronze: 'Bronze',
+  silver: 'Silver',
+  gold: 'Gold',
+  platinum: 'Platinum',
+  diamond: 'Diamond',
+  crazy_1: 'Crazy 1',
+  crazy_2: 'Crazy 2',
+  crazy_3: 'Crazy 3',
+  world: 'World Leaderboard',
 }
 
-export const LEAGUE_TIER_DETAILS: Record<LeagueTier, { short: string; color: string }> = {
-  foundation: { short: 'Build your base', color: '#fb923c' },
-  steady: { short: 'Consistency takes hold', color: '#a3a3a3' },
-  momentum: { short: 'Momentum is visible', color: '#facc15' },
-  champion: { short: 'Lead by example', color: '#c084fc' },
+export const LEAGUE_TIER_DETAILS: Record<
+  LeagueTier,
+  { short: string; color: string; reward: string }
+> = {
+  bronze: {
+    short: 'Start strong',
+    color: '#fb923c',
+    reward: 'Top 10% earn a virtual certificate and advance to Silver',
+  },
+  silver: {
+    short: 'Consistency grows',
+    color: '#a3a3a3',
+    reward: 'Top 10% earn a virtual certificate and advance to Gold',
+  },
+  gold: {
+    short: 'Elite habit',
+    color: '#facc15',
+    reward: 'Top 10% earn a virtual certificate and advance to Platinum',
+  },
+  platinum: {
+    short: 'Trophy territory',
+    color: '#e5e7eb',
+    reward: 'Top 10% win a physical trophy and advance to Diamond',
+  },
+  diamond: {
+    short: 'Champion form',
+    color: '#67e8f9',
+    reward: 'Top 10% win a physical trophy and advance to Crazy 1',
+  },
+  crazy_1: {
+    short: 'Prize money tier',
+    color: '#f472b6',
+    reward: 'Top 10% earn prize money and advance to Crazy 2',
+  },
+  crazy_2: {
+    short: 'Higher stakes',
+    color: '#c084fc',
+    reward: 'Top 10% earn prize money and advance to Crazy 3',
+  },
+  crazy_3: {
+    short: 'Final arena',
+    color: '#ef4444',
+    reward: 'Top 10% earn prize money — World Leaderboard coming soon',
+  },
+  world: {
+    short: 'Coming soon',
+    color: '#38bdf8',
+    reward: 'Global board — launching soon',
+  },
 }
 
 export type LeagueScoreBreakdown = {
@@ -60,26 +130,20 @@ export type LeagueStandingRow = {
   rank: number
   isSelf?: boolean
   breakdown?: LeagueScoreBreakdown
+  avatarPath?: string | null
+  promotionZone?: boolean
 }
 
-/** 4-week seasons aligned to Monday starts (UTC date strings). */
+/** Calendar-month seasons (UTC). */
 export function getCurrentLeagueSeason(reference = new Date()): LeagueSeasonWindow {
-  const utc = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), reference.getUTCDate()))
-  const day = utc.getUTCDay() // 0 Sun … 6 Sat
-  const mondayOffset = day === 0 ? -6 : 1 - day
-  utc.setUTCDate(utc.getUTCDate() + mondayOffset)
-
-  // Pack Mondays into blocks of 4 weeks from a fixed epoch Monday.
-  const epoch = Date.UTC(2026, 0, 5) // 2026-01-05 was a Monday
-  const weeksSinceEpoch = Math.floor((utc.getTime() - epoch) / (7 * 24 * 60 * 60 * 1000))
-  const block = Math.floor(weeksSinceEpoch / 4)
-  const start = new Date(epoch + block * 4 * 7 * 24 * 60 * 60 * 1000)
-  const end = new Date(start.getTime() + (4 * 7 - 1) * 24 * 60 * 60 * 1000)
-
+  const y = reference.getUTCFullYear()
+  const m = reference.getUTCMonth()
+  const start = new Date(Date.UTC(y, m, 1))
+  const end = new Date(Date.UTC(y, m + 1, 0))
   const startsOn = start.toISOString().slice(0, 10)
   const endsOn = end.toISOString().slice(0, 10)
   return {
-    seasonKey: `S${startsOn}`,
+    seasonKey: `${y}-${String(m + 1).padStart(2, '0')}`,
     startsOn,
     endsOn,
   }
@@ -106,10 +170,6 @@ export function dailyTrackerPoints(overallPercent: number | null | undefined): n
   return Math.max(0, Math.min(10, Math.floor(overallPercent / 10)))
 }
 
-/**
- * Consecutive calendar-day streak ending today (or last scored day)
- * for days with overall_percent >= 60.
- */
 export function computeCalendarStreak(
   trackerByDate: Map<string, number | null>,
   endsOn: string
@@ -129,7 +189,6 @@ export function computeCalendarStreak(
   return streak
 }
 
-/** Streak bonus: +1 per consecutive qualifying day, max +7 per week of season. */
 export function streakBonusPoints(streakDays: number, seasonDayCount: number): number {
   const weekCap = Math.ceil(seasonDayCount / 7) * 7
   return Math.min(streakDays, weekCap, 7 * Math.ceil(seasonDayCount / 7))
@@ -183,16 +242,40 @@ export function scoreClientForSeason(
   }
 }
 
-export function assignTiers(sortedByPointsDesc: { points: number }[]): LeagueTier[] {
+/** Normalize legacy tier names stored before the ladder rename. */
+export function normalizeLeagueTier(raw: string | null | undefined): LeagueTier {
+  const value = (raw ?? 'bronze').toLowerCase()
+  const legacy: Record<string, LeagueTier> = {
+    foundation: 'bronze',
+    steady: 'silver',
+    momentum: 'gold',
+    champion: 'platinum',
+  }
+  if (legacy[value]) return legacy[value]
+  if ((LEAGUE_TIER_ORDER as string[]).includes(value)) return value as LeagueTier
+  return 'bronze'
+}
+
+/**
+ * Within a division standings list (already sorted by points desc),
+ * mark every row with the same division tier and flag top 10% for promotion.
+ */
+export function assignDivisionStandings(
+  sortedByPointsDesc: { points: number }[],
+  division: LeagueTier
+): Array<{ tier: LeagueTier; promotionZone: boolean }> {
   const n = sortedByPointsDesc.length
   if (n === 0) return []
-  return sortedByPointsDesc.map((_, index) => {
-    const percentile = n === 1 ? 1 : 1 - index / (n - 1)
-    if (percentile >= 0.95 || index === 0 && n >= 5) return 'champion'
-    if (percentile >= 0.75) return 'momentum'
-    if (percentile >= 0.4) return 'steady'
-    return 'foundation'
-  })
+  const promoteCount = Math.max(1, Math.ceil(n * 0.1))
+  return sortedByPointsDesc.map((_, index) => ({
+    tier: division,
+    promotionZone: index < promoteCount,
+  }))
+}
+
+/** @deprecated Use assignDivisionStandings — kept for callers during migration. */
+export function assignTiers(sortedByPointsDesc: { points: number }[]): LeagueTier[] {
+  return assignDivisionStandings(sortedByPointsDesc, 'bronze').map((row) => row.tier)
 }
 
 export function leagueDisplayName(name: string | null | undefined): string {
@@ -203,16 +286,24 @@ export function leagueDisplayName(name: string | null | undefined): string {
   return `${parts[0]} ${parts[parts.length - 1][0]?.toUpperCase()}.`
 }
 
-export function pointsToNextTier(tier: LeagueTier, points: number, standings: LeagueStandingRow[]): number | null {
-  const idx = LEAGUE_TIER_ORDER.indexOf(tier)
-  if (idx < 0 || idx >= LEAGUE_TIER_ORDER.length - 1) return null
-  const next = LEAGUE_TIER_ORDER[idx + 1]
-  const nextFloor = standings
-    .filter((s) => s.tier === next)
+export function pointsToNextTier(
+  tier: LeagueTier,
+  points: number,
+  standings: LeagueStandingRow[]
+): number | null {
+  const promoteFloor = standings
+    .filter((s) => s.promotionZone)
     .map((s) => s.points)
     .sort((a, b) => a - b)[0]
-  if (nextFloor == null) return null
-  return Math.max(0, nextFloor - points)
+  if (promoteFloor == null) return null
+  if (standings.find((s) => s.tier === tier && s.promotionZone && s.points === points)) return 0
+  return Math.max(0, promoteFloor - points)
+}
+
+export function nextLeagueDivision(current: LeagueTier): LeagueTier | null {
+  const idx = LEAGUE_LADDER.indexOf(current)
+  if (idx < 0 || idx >= LEAGUE_LADDER.length - 1) return null
+  return LEAGUE_LADDER[idx + 1]
 }
 
 export function getLeagueMissions(
@@ -231,25 +322,28 @@ export function getLeagueMissions(
 
   const qualifyingDays = new Set(
     input.trackerDays
-      .filter((entry) => (
-        entry.logDate >= weekStart &&
-        entry.logDate <= weekEndKey &&
-        (entry.overallPercent ?? 0) >= 60
-      ))
+      .filter(
+        (entry) =>
+          entry.logDate >= weekStart &&
+          entry.logDate <= weekEndKey &&
+          (entry.overallPercent ?? 0) >= 60
+      )
       .map((entry) => entry.logDate)
   )
   const todayPercent = input.trackerDays.find((entry) => entry.logDate === today)?.overallPercent ?? 0
-  const weeklyCheckinDone = input.checkins.some((entry) => (
-    entry.checkinType === 'weekly' &&
-    entry.submittedAt.slice(0, 10) >= weekStart &&
-    entry.submittedAt.slice(0, 10) <= weekEndKey &&
-    dateInRange(entry.submittedAt.slice(0, 10), season.startsOn, season.endsOn)
-  ))
-  const measurementsDone = input.checkins.some((entry) => (
-    entry.checkinType === 'weekly' &&
-    entry.hasMeasurements &&
-    dateInRange(entry.submittedAt.slice(0, 10), season.startsOn, season.endsOn)
-  ))
+  const weeklyCheckinDone = input.checkins.some(
+    (entry) =>
+      entry.checkinType === 'weekly' &&
+      entry.submittedAt.slice(0, 10) >= weekStart &&
+      entry.submittedAt.slice(0, 10) <= weekEndKey &&
+      dateInRange(entry.submittedAt.slice(0, 10), season.startsOn, season.endsOn)
+  )
+  const measurementsDone = input.checkins.some(
+    (entry) =>
+      entry.checkinType === 'weekly' &&
+      entry.hasMeasurements &&
+      dateInRange(entry.submittedAt.slice(0, 10), season.startsOn, season.endsOn)
+  )
   const photoDone = input.journeyPhotoDays.some((entry) => dateInRange(entry, season.startsOn, season.endsOn))
 
   return [

@@ -18,6 +18,7 @@ import {
 import { ComplexityHistoryTimeline } from '@/components/complexity/ComplexityHistoryTimeline';
 import { ComplexityScoreCard } from '@/components/complexity/ComplexityScoreCard';
 import { CoachClientProfileEdit } from '@/components/coach/CoachClientProfileEdit';
+import { CoachClientJourneyPanel } from '@/components/coach/CoachClientJourneyPanel';
 import { formatHeight } from '@/lib/height';
 import type { Coach, CoachClientDetail, Workout } from '@/types/database';
 
@@ -202,6 +203,8 @@ export default function CoachClientDetailPage() {
           </div>
           <CoachClientProfileEdit client={client} onSaved={setClient} />
         </div>
+
+        <CoachClientJourneyPanel clientId={client.id} />
 
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>Recent workouts</h2>

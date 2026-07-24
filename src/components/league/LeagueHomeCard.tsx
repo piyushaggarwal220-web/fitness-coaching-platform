@@ -8,6 +8,7 @@ import { colors, spacing } from '@/lib/design-tokens'
 import {
   LEAGUE_TIER_DETAILS,
   LEAGUE_TIER_LABELS,
+  normalizeLeagueTier,
   type LeagueStandingRow,
   type LeagueTier,
 } from '@/lib/league/scoring'
@@ -16,6 +17,7 @@ type LeaguePayload = {
   optIn: boolean
   me: LeagueStandingRow | null
   standings: LeagueStandingRow[]
+  division?: LeagueTier
 }
 
 /** Compact Consistency League summary for the client home dashboard. */
@@ -35,24 +37,41 @@ export function LeagueHomeCard() {
       .catch(() => {
         if (active) setError(true)
       })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [])
 
   if (error) return null
 
-  const tier = (data?.me?.tier ?? 'foundation') as LeagueTier
+  const tier = normalizeLeagueTier(data?.me?.tier ?? data?.division ?? 'bronze')
   const tierColor = LEAGUE_TIER_DETAILS[tier].color
   const loading = !data
 
   return (
     <section style={{ marginBottom: spacing[7] }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: spacing[3] }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: spacing[3],
+        }}
+      >
         <div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.02em' }}>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: 18,
+              fontWeight: 800,
+              color: colors.textPrimary,
+              letterSpacing: '-0.02em',
+            }}
+          >
             Consistency League
           </h2>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
-            Season standings with your coach&apos;s squad
+            Monthly ladder · top 10% advance
           </p>
         </div>
       </div>
@@ -64,48 +83,46 @@ export function LeagueHomeCard() {
         style={{ cursor: 'pointer' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-          <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: 14,
-            backgroundColor: `${tierColor}22`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              backgroundColor: `${tierColor}22`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
             <Trophy size={22} color={tierColor} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             {loading ? (
-              <>
-                <div className="skeleton" style={{ height: 18, width: '55%', borderRadius: 8, marginBottom: 8 }} />
-                <div className="skeleton" style={{ height: 13, width: '40%', borderRadius: 8 }} />
-              </>
+              <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Loading standings…</p>
             ) : !data.optIn ? (
               <>
                 <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
-                  Join this season
+                  Join {LEAGUE_TIER_LABELS[tier]}
                 </p>
                 <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
-                  Opt in to climb the squad ranks
+                  Opt in to climb with your coach&apos;s squad
                 </p>
               </>
             ) : (
               <>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
+                <p style={{ margin: 0, fontWeight: 800, color: colors.textPrimary, fontSize: 16 }}>
                   {LEAGUE_TIER_LABELS[tier]}
                   {data.me?.rank ? ` · #${data.me.rank}` : ''}
                 </p>
                 <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
-                  {data.me?.points ?? 0} pts
+                  {data.me?.points ?? 0} pts this month
                   {data.me?.streakDays ? ` · ${data.me.streakDays}d streak` : ''}
-                  {data.standings.length ? ` · ${data.standings.length} in squad` : ''}
                 </p>
               </>
             )}
           </div>
-          <ArrowRight size={20} color={colors.textMuted} />
+          <ArrowRight size={18} color={colors.textMuted} />
         </div>
       </Card>
     </section>

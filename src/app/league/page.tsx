@@ -22,9 +22,12 @@ import { authenticateClient } from '@/lib/onboarding'
 import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/design-tokens'
 import {
+  LEAGUE_LADDER,
   LEAGUE_TIER_DETAILS,
   LEAGUE_TIER_LABELS,
   LEAGUE_TIER_ORDER,
+  nextLeagueDivision,
+  normalizeLeagueTier,
   pointsToNextTier,
   type LeagueMission,
   type LeagueStandingRow,
@@ -44,6 +47,8 @@ type LeaguePayload = {
   standings: LeagueStandingRow[]
   coachId: string | null
   missions: LeagueMission[]
+  division?: LeagueTier
+  worldLeaderboardStatus?: 'coming_soon'
 }
 
 export default function LeaguePage() {
@@ -104,21 +109,20 @@ export default function LeaguePage() {
 
   if (loading) return <ClientShell title="League" loading />
 
-  const tier = (data?.me?.tier ?? 'foundation') as LeagueTier
-  const tierIndex = LEAGUE_TIER_ORDER.indexOf(tier)
-  const nextTier = tierIndex < LEAGUE_TIER_ORDER.length - 1 ? LEAGUE_TIER_ORDER[tierIndex + 1] : null
+  const tier = normalizeLeagueTier(data?.me?.tier ?? data?.division ?? 'bronze')
+  const tierIndex = LEAGUE_LADDER.indexOf(tier === 'world' ? 'crazy_3' : tier)
+  const nextDivision = nextLeagueDivision(tier === 'world' ? 'crazy_3' : tier)
   const pointsNeeded = data?.me && data.optIn
     ? pointsToNextTier(tier, data.me.points, data.standings)
     : null
   const currentTierFloor = data?.standings
-    .filter((row) => row.tier === tier)
     .reduce((floor, row) => Math.min(floor, row.points), data?.me?.points ?? 0) ?? 0
   const nextFloor = pointsNeeded != null && data?.me ? data.me.points + pointsNeeded : null
   const rankProgress = nextFloor != null && data?.me && nextFloor > currentTierFloor
     ? Math.max(4, Math.min(100, ((data.me.points - currentTierFloor) / (nextFloor - currentTierFloor)) * 100))
-    : tier === 'champion' ? 100 : 12
+    : data?.me?.promotionZone ? 100 : 12
   const daysRemaining = data ? remainingDays(data.endsOn) : 0
-  const promotionCount = Math.max(1, Math.ceil((data?.standings.length ?? 0) * 0.25))
+  const promotionCount = Math.max(1, Math.ceil((data?.standings.length ?? 0) * 0.1))
   const completedMissions = data?.missions.filter((mission) => mission.completed).length ?? 0
 
   return (
@@ -131,10 +135,10 @@ export default function LeaguePage() {
         )}
 
         <section className={styles.hero} aria-labelledby="league-rank-heading">
-          <p className={styles.eyebrow}>Season expedition · {daysRemaining} days left</p>
+          <p className={styles.eyebrow}>Monthly league · {daysRemaining} days left</p>
           <h1 id="league-rank-heading" className={styles.heroTitle}>{LEAGUE_TIER_LABELS[tier]}</h1>
           <p className={styles.heroSub}>
-            {LEAGUE_TIER_DETAILS[tier].short}. Every tracker log and check-in moves your season forward.
+            {LEAGUE_TIER_DETAILS[tier].short}. Top 10% this month advance to the next league.
           </p>
 
           <div className={styles.heroStats}>
@@ -156,17 +160,17 @@ export default function LeaguePage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 7, fontSize: 11, fontWeight: 700 }}>
               <span>{LEAGUE_TIER_LABELS[tier]}</span>
               <span style={{ color: colors.textMuted }}>
-                {nextTier
+                {nextDivision
                   ? pointsNeeded != null
-                    ? `${pointsNeeded} pts to ${LEAGUE_TIER_LABELS[nextTier]}`
-                    : `${LEAGUE_TIER_LABELS[nextTier]} line forms with your squad`
-                  : 'Top tier reached'}
+                    ? `${pointsNeeded} pts to top 10% → ${LEAGUE_TIER_LABELS[nextDivision]}`
+                    : `Top 10% advance to ${LEAGUE_TIER_LABELS[nextDivision]}`
+                  : 'Highest playable league — World board coming soon'}
               </span>
             </div>
             <div
               className={styles.progressTrack}
               role="progressbar"
-              aria-label={nextTier ? `Progress toward ${LEAGUE_TIER_LABELS[nextTier]}` : 'Top tier progress'}
+              aria-label={nextDivision ? `Progress toward promotion to ${LEAGUE_TIER_LABELS[nextDivision]}` : 'Promotion zone'}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(rankProgress)}
@@ -179,24 +183,31 @@ export default function LeaguePage() {
         <section aria-labelledby="rank-path-heading">
           <div className={styles.sectionHeader}>
             <div>
-              <h2 id="rank-path-heading">Rank trail</h2>
-              <p>Your tier shifts with the opted-in squad each season</p>
+              <h2 id="rank-path-heading">League ladder</h2>
+              <p>Each league lasts one month · top 10% promote</p>
             </div>
             <Shield size={21} color={LEAGUE_TIER_DETAILS[tier].color} aria-hidden />
           </div>
           <div className={styles.rankPath}>
             {LEAGUE_TIER_ORDER.map((rankTier, index) => {
-              const stateClass = index === tierIndex
-                ? styles.rankNodeActive
-                : index < tierIndex
-                  ? styles.rankNodePassed
-                  : ''
+              const playableIndex = LEAGUE_LADDER.indexOf(rankTier === 'world' ? 'crazy_3' : rankTier)
+              const stateClass =
+                rankTier === 'world'
+                  ? ''
+                  : playableIndex === tierIndex
+                    ? styles.rankNodeActive
+                    : playableIndex < tierIndex
+                      ? styles.rankNodePassed
+                      : ''
               return (
                 <div key={rankTier} className={`${styles.rankNode} ${stateClass}`}>
                   <div className={styles.rankBadge}>
                     <span><Trophy size={18} aria-hidden /></span>
                   </div>
-                  <span className={styles.rankLabel}>{LEAGUE_TIER_LABELS[rankTier]}</span>
+                  <span className={styles.rankLabel}>
+                    {LEAGUE_TIER_LABELS[rankTier]}
+                    {rankTier === 'world' ? ' · soon' : ''}
+                  </span>
                 </div>
               )
             })}
@@ -207,14 +218,17 @@ export default function LeaguePage() {
           <div className={styles.sectionHeader}>
             <div>
               <h2 id="rewards-heading">Rewards</h2>
+              <p>{LEAGUE_TIER_DETAILS[tier].reward}</p>
             </div>
             <LockKeyhole size={20} color={colors.textMuted} aria-hidden />
           </div>
-          <div className={styles.board} aria-disabled="true">
-            <EmptyBoard
-              icon={<LockKeyhole size={24} />}
-              text="Prize money rewards are coming soon."
-            />
+          <div className={styles.board}>
+            <div style={{ padding: 14, display: 'grid', gap: 10, fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
+              <div><strong style={{ color: colors.textPrimary }}>Bronze → Gold:</strong> virtual certificate for top 10%</div>
+              <div><strong style={{ color: colors.textPrimary }}>Platinum &amp; Diamond:</strong> physical trophy for top 10%</div>
+              <div><strong style={{ color: colors.textPrimary }}>Crazy 1–3:</strong> prize money for top 10%</div>
+              <div><strong style={{ color: colors.accent }}>World Leaderboard:</strong> coming soon</div>
+            </div>
           </div>
         </section>
 
@@ -254,7 +268,7 @@ export default function LeaguePage() {
           <div className={styles.sectionHeader}>
             <div>
               <h2 id="standings-heading">Season board</h2>
-              <p>{data?.optIn ? 'Green edge marks the promotion zone' : 'Private until you choose to join'}</p>
+              <p>{data?.optIn ? 'Green edge marks the top 10% promotion zone' : 'Private until you choose to join'}</p>
             </div>
             <Users size={21} color={colors.accent} aria-hidden />
           </div>
@@ -283,7 +297,7 @@ export default function LeaguePage() {
                   className={[
                     styles.boardRow,
                     row.isSelf ? styles.boardRowSelf : '',
-                    row.rank <= promotionCount ? styles.promotionRow : '',
+                    row.promotionZone || row.rank <= promotionCount ? styles.promotionRow : '',
                   ].filter(Boolean).join(' ')}
                 >
                   <span className={styles.rankNumber}>{row.rank <= 3 ? rankMark(row.rank) : `#${row.rank}`}</span>

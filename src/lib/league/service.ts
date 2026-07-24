@@ -1,10 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
-  assignTiers,
+  assignDivisionStandings,
   getCurrentLeagueSeason,
   getLeagueMissions,
   leagueDisplayName,
+  normalizeLeagueTier,
   scoreClientForSeason,
   type LeagueClientScoreInput,
   type LeagueMission,
@@ -120,7 +121,7 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
 
   const { data: clients, error: clientsError } = await admin
     .from('profiles')
-    .select('id, name, league_opt_in')
+    .select('id, name, league_opt_in, league_division, avatar_path')
     .eq('coach_id', coachId)
     .eq('league_opt_in', true)
 
@@ -203,17 +204,39 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
       points: result.points,
       streakDays: result.streakDays,
       breakdown: result.breakdown,
+      division: normalizeLeagueTier(client.league_division as string | null),
+      avatarPath: (client.avatar_path as string | null) ?? null,
     }
   })
 
-  scored.sort((a, b) => b.points - a.points || a.displayName.localeCompare(b.displayName))
-  const tiers = assignTiers(scored)
+  // Rank within each division so top 10% promote fairly.
+  const byDivision = new Map<LeagueTier, typeof scored>()
+  for (const row of scored) {
+    const list = byDivision.get(row.division) ?? []
+    list.push(row)
+    byDivision.set(row.division, list)
+  }
 
-  const standings: LeagueStandingRow[] = scored.map((row, index) => ({
-    ...row,
-    tier: tiers[index] as LeagueTier,
-    rank: index + 1,
-  }))
+  const standings: LeagueStandingRow[] = []
+  for (const [division, rows] of byDivision) {
+    rows.sort((a, b) => b.points - a.points || a.displayName.localeCompare(b.displayName))
+    const assigned = assignDivisionStandings(rows, division)
+    rows.forEach((row, index) => {
+      standings.push({
+        clientId: row.clientId,
+        displayName: row.displayName,
+        points: row.points,
+        streakDays: row.streakDays,
+        breakdown: row.breakdown,
+        tier: assigned[index].tier,
+        promotionZone: assigned[index].promotionZone,
+        rank: index + 1,
+        avatarPath: row.avatarPath,
+      })
+    })
+  }
+
+  standings.sort((a, b) => b.points - a.points || a.displayName.localeCompare(b.displayName))
 
   const now = new Date().toISOString()
   const upserts = standings.map((row) => ({
@@ -227,7 +250,6 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
     updated_at: now,
   }))
 
-  // Replace coach season rows atomically enough for MVP.
   const { error: deleteError } = await admin
     .from('league_standings')
     .delete()
@@ -254,13 +276,17 @@ export async function getLeagueSnapshotForClient(
   standings: LeagueStandingRow[]
   coachId: string | null
   missions: LeagueMission[]
+  division: LeagueTier
+  worldLeaderboardStatus: 'coming_soon'
 }> {
   const season = getCurrentLeagueSeason()
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, name, coach_id, league_opt_in')
+    .select('id, name, coach_id, league_opt_in, league_division, avatar_path')
     .eq('id', clientId)
     .maybeSingle()
+
+  const myDivision = normalizeLeagueTier(profile?.league_division as string | null)
 
   if (!profile?.coach_id) {
     return {
@@ -272,17 +298,22 @@ export async function getLeagueSnapshotForClient(
       standings: [],
       coachId: null,
       missions: [],
+      division: myDivision,
+      worldLeaderboardStatus: 'coming_soon' as const,
     }
   }
 
   const recomputed = await recomputeCoachLeagueStandings(profile.coach_id as string)
-  const standings = recomputed.standings.map((row) => ({
-    ...row,
-    isSelf: row.clientId === clientId,
-  }))
+  const divisionStandings = recomputed.standings
+    .filter((row) => row.tier === myDivision)
+    .map((row, index) => ({
+      ...row,
+      rank: index + 1,
+      isSelf: row.clientId === clientId,
+    }))
 
   let me =
-    standings.find((s) => s.clientId === clientId) ??
+    divisionStandings.find((s) => s.clientId === clientId) ??
     (profile.league_opt_in
       ? null
       : {
@@ -290,9 +321,10 @@ export async function getLeagueSnapshotForClient(
           displayName: leagueDisplayName(profile.name as string | null),
           points: 0,
           streakDays: 0,
-          tier: 'foundation' as LeagueTier,
+          tier: myDivision,
           rank: 0,
           isSelf: true,
+          avatarPath: (profile.avatar_path as string | null) ?? null,
         })
 
   const admin = createAdminClient()
@@ -301,7 +333,6 @@ export async function getLeagueSnapshotForClient(
   const personal = scoreClientForSeason(personalInput, season)
   const missions = getLeagueMissions(personalInput, season)
 
-  // Private members still receive a personal score without entering peer standings.
   if (!profile.league_opt_in) {
     return {
       optIn: false,
@@ -310,22 +341,29 @@ export async function getLeagueSnapshotForClient(
       endsOn: recomputed.endsOn,
       me: {
         clientId,
-        displayName: leagueDisplayName(profile.name as string | null),
+        displayName,
         points: personal.points,
         streakDays: personal.streakDays,
-        tier: 'foundation',
+        tier: myDivision,
         rank: 0,
         isSelf: true,
         breakdown: personal.breakdown,
+        avatarPath: (profile.avatar_path as string | null) ?? null,
       },
       standings: [],
       coachId: profile.coach_id as string,
       missions,
+      division: myDivision,
+      worldLeaderboardStatus: 'coming_soon' as const,
     }
   }
 
   if (me) {
-    me = { ...me, breakdown: personal.breakdown }
+    me = {
+      ...me,
+      breakdown: personal.breakdown,
+      avatarPath: me.avatarPath ?? ((profile.avatar_path as string | null) ?? null),
+    }
   }
 
   return {
@@ -334,8 +372,10 @@ export async function getLeagueSnapshotForClient(
     startsOn: recomputed.startsOn,
     endsOn: recomputed.endsOn,
     me: me ?? null,
-    standings,
+    standings: divisionStandings,
     coachId: profile.coach_id as string,
     missions,
+    division: myDivision,
+    worldLeaderboardStatus: 'coming_soon' as const,
   }
 }

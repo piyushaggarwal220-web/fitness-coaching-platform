@@ -69,7 +69,10 @@ export function isPlanFullyReady(
   if (!activePlan) return false
   const hasDiet = Boolean(activePlan.nutrition_plan?.trim())
   const hasWorkout = Boolean(activePlan.workout_plan?.trim())
-  return hasDiet && hasWorkout && profile.plan_delivered === true
+  // Content is authoritative: once diet + workout exist on the active plan, stop showing "preparing".
+  if (hasDiet && hasWorkout) return true
+  // Fallback for edge cases where delivery flag flipped but sections are still hydrating.
+  return profile.plan_delivered === true && (hasDiet || hasWorkout)
 }
 
 export function getClientDashboardStatus(params: {

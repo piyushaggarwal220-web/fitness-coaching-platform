@@ -28,6 +28,7 @@ type PlanSection = 'diet' | 'workout' | 'supplements' | 'cardio' | 'notes';
 export default function ClientPlanPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [planDelivered, setPlanDelivered] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<PlanSection | null>(null);
@@ -39,6 +40,8 @@ export default function ClientPlanPage() {
         setLoading(false);
         return;
       }
+
+      setPlanDelivered(result.profile?.plan_delivered === true);
 
       const { data, error: planError } = await supabase
         .from('plans')
@@ -124,7 +127,11 @@ export default function ClientPlanPage() {
         <EmptyState
           icon={<ClipboardListIcon />}
           title="No active plan yet"
-          description="Your coach is preparing your personalised plan. Check back soon."
+          description={
+            planDelivered
+              ? 'Your plan was delivered. If sections look empty, refresh or message your coach.'
+              : 'Your coach is preparing your personalised plan. Check back soon.'
+          }
           actionLabel="Back to dashboard"
           onAction={() => router.push('/dashboard')}
         />

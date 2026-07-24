@@ -382,7 +382,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {generationJob && !activePlan && (
+      {generationJob && !activePlan && profile?.plan_delivered !== true && (
         <div style={{
           marginBottom: spacing[4],
           padding: spacing[3],
