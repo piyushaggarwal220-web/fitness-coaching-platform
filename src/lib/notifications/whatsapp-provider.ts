@@ -103,6 +103,11 @@ function buildTemplateParams(
   return [firstName, snippet]
 }
 
+/** AiSensy expects digits with country code, no leading +. */
+function toAiSensyDestination(phone: string): string {
+  return phone.replace(/\D/g, '')
+}
+
 export async function sendAiSensyCampaign(input: {
   campaignName: string
   destination: string
@@ -114,14 +119,19 @@ export async function sendAiSensyCampaign(input: {
     return { ok: false, error: 'AISENSY_API_KEY not configured' }
   }
 
+  const destination = toAiSensyDestination(input.destination)
+  if (destination.length < 10) {
+    return { ok: false, error: 'Invalid AiSensy destination phone' }
+  }
+
   try {
     const response = await fetch(AISENSY_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         apiKey,
-        campaignName: input.campaignName,
-        destination: input.destination,
+        campaignName: input.campaignName.trim(),
+        destination,
         userName: input.userName,
         templateParams: input.templateParams,
         source: 'lurvox-app',
@@ -130,7 +140,10 @@ export async function sendAiSensyCampaign(input: {
 
     if (!response.ok) {
       const text = await response.text()
-      return { ok: false, error: `AiSensy API error (${response.status}): ${text}` }
+      return {
+        ok: false,
+        error: humanizeAiSensyError(response.status, text, input.campaignName.trim()),
+      }
     }
 
     const result = await response.json().catch(() => null) as
@@ -142,6 +155,38 @@ export async function sendAiSensyCampaign(input: {
     }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'AiSensy send failed' }
+  }
+}
+
+function humanizeAiSensyError(status: number, body: string, campaignName: string): string {
+  const lower = body.toLowerCase()
+  if (status === 401 || lower.includes('unauthorized')) {
+    return 'AiSensy API key is invalid or revoked. Paste a fresh Project API key into AISENSY_API_KEY and redeploy.'
+  }
+  if (lower.includes('campaign does not exist')) {
+    return `AiSensy campaign "${campaignName}" was not found. Use the exact campaign name from the AiSensy dashboard in the matching AISENSY_CAMPAIGN_* env var.`
+  }
+  return `AiSensy API error (${status}): ${body}`
+}
+
+/** Admin/diagnostic: which AiSensy pieces are configured (no secret values). */
+export function getAiSensyConfigStatus(): {
+  apiKeyConfigured: boolean
+  campaigns: Record<string, boolean>
+} {
+  return {
+    apiKeyConfigured: Boolean(getApiKey()),
+    campaigns: {
+      AISENSY_CAMPAIGN_CHECKIN_DUE: Boolean(process.env.AISENSY_CAMPAIGN_CHECKIN_DUE?.trim()),
+      AISENSY_CAMPAIGN_MISSED_CHECKIN: Boolean(process.env.AISENSY_CAMPAIGN_MISSED_CHECKIN?.trim()),
+      AISENSY_CAMPAIGN_PLAN_READY: Boolean(process.env.AISENSY_CAMPAIGN_PLAN_READY?.trim()),
+      AISENSY_CAMPAIGN_COACH_REPLIED: Boolean(process.env.AISENSY_CAMPAIGN_COACH_REPLIED?.trim()),
+      AISENSY_CAMPAIGN_ACCOUNT_SETUP: Boolean(process.env.AISENSY_CAMPAIGN_ACCOUNT_SETUP?.trim()),
+      AISENSY_CAMPAIGN_ONBOARDING_REMINDER: Boolean(
+        process.env.AISENSY_CAMPAIGN_ONBOARDING_REMINDER?.trim()
+      ),
+      AISENSY_CAMPAIGN_CHECKOUT_OTP: Boolean(process.env.AISENSY_CAMPAIGN_CHECKOUT_OTP?.trim()),
+    },
   }
 }
 

@@ -30,6 +30,13 @@ type Operations = {
 export default function AdminNotificationsPage() {
   const [data, setData] = useState<Operations | null>(null)
   const [state, setState] = useState('all')
+  const [aisensyPhone, setAisensyPhone] = useState('')
+  const [aisensyBusy, setAisensyBusy] = useState(false)
+  const [aisensyResult, setAisensyResult] = useState<string>('')
+  const [aisensyConfig, setAisensyConfig] = useState<{
+    apiKeyConfigured: boolean
+    campaigns: Record<string, boolean>
+  } | null>(null)
   const load = useCallback(async () => {
     const response = await fetch(`/api/admin/notification-operations?state=${state}`)
     if (response.ok) setData(await response.json())
@@ -39,6 +46,16 @@ export default function AdminNotificationsPage() {
     void fetch(`/api/admin/notification-operations?state=${state}`)
       .then((response) => response.ok ? response.json() : null)
       .then((result) => { if (active && result) setData(result) })
+    void fetch('/api/admin/aisensy-test')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((result) => {
+        if (active && result) {
+          setAisensyConfig({
+            apiKeyConfigured: Boolean(result.apiKeyConfigured),
+            campaigns: result.campaigns ?? {},
+          })
+        }
+      })
     return () => { active = false }
   }, [state])
 
@@ -59,6 +76,28 @@ export default function AdminNotificationsPage() {
       body: JSON.stringify({ whatsappEnabled: !data.budget.whatsapp_enabled }),
     })
     void load()
+  }
+
+  const testAiSensy = async () => {
+    setAisensyBusy(true)
+    setAisensyResult('')
+    try {
+      const res = await fetch('/api/admin/aisensy-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: aisensyPhone }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.ok) {
+        setAisensyResult(json.error ?? 'AiSensy test failed')
+      } else {
+        setAisensyResult(`Sent via ${json.usedCampaignEnv}${json.providerMessageId ? ` (${json.providerMessageId})` : ''}`)
+      }
+      if (json.config) setAisensyConfig(json.config)
+    } catch {
+      setAisensyResult('AiSensy test request failed')
+    }
+    setAisensyBusy(false)
   }
 
   return (
@@ -101,6 +140,41 @@ export default function AdminNotificationsPage() {
               `${provider}: ${ready ? 'configured' : 'missing (safe skip)'}`
             ).join(' · ')}
           </p>
+        </div>
+
+        <div style={s.card}>
+          <h2 style={s.cardTitle}>AiSensy connection test</h2>
+          <p style={{ fontSize: 13, color: '#666', marginTop: 0 }}>
+            API key: {aisensyConfig ? (aisensyConfig.apiKeyConfigured ? 'set' : 'missing') : '…'}
+            {' · '}
+            Campaigns:{' '}
+            {aisensyConfig
+              ? Object.entries(aisensyConfig.campaigns)
+                  .map(([k, v]) => `${k.replace('AISENSY_CAMPAIGN_', '')}:${v ? 'on' : 'off'}`)
+                  .join(' ')
+              : '…'}
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <input
+              value={aisensyPhone}
+              onChange={(e) => setAisensyPhone(e.target.value)}
+              placeholder="+91 98765 43210"
+              style={s.searchInput}
+            />
+            <button
+              type="button"
+              style={s.primaryBtn}
+              disabled={aisensyBusy || !aisensyPhone.trim()}
+              onClick={() => void testAiSensy()}
+            >
+              {aisensyBusy ? 'Sending…' : 'Send test WhatsApp'}
+            </button>
+          </div>
+          {aisensyResult && (
+            <p style={{ fontSize: 13, marginBottom: 0, color: aisensyResult.startsWith('Sent') ? '#067647' : '#b42318' }}>
+              {aisensyResult}
+            </p>
+          )}
         </div>
 
         <div style={s.card}>
