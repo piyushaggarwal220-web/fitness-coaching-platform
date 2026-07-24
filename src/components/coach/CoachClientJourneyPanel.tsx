@@ -146,7 +146,7 @@ export function CoachClientJourneyPanel({ clientId }: { clientId: string }) {
                     <StorageImage
                       src={photos[0].url}
                       progress
-                      alt={photos[0].label}
+                      alt={photos[0].label ?? 'Progress photo'}
                       style={styles.thumb}
                     />
                     <span style={styles.photoDate}>{entry.date}</span>
@@ -201,7 +201,7 @@ export function CoachClientJourneyPanel({ clientId }: { clientId: string }) {
                           <StorageImage
                             src={photo.url}
                             progress
-                            alt={photo.label}
+                            alt={photo.label ?? 'Progress photo'}
                             style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8 }}
                           />
                         </button>
