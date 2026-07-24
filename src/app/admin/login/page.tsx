@@ -22,7 +22,10 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError('')
 
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
 
     if (loginError) {
       setError(loginError.message)

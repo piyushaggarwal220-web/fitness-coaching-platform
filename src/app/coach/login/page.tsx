@@ -23,7 +23,7 @@ export default function CoachLogin() {
     setError('');
 
     const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim().toLowerCase(),
       password,
     });
 
@@ -88,6 +88,10 @@ export default function CoachLogin() {
             {loading ? 'Logging in...' : 'Sign in'}
           </button>
         </form>
+
+        <p style={{ ...authStyles.link, marginTop: 10 }}>
+          <Link href="/forgot-password" style={authStyles.linkColor}>Forgot password?</Link>
+        </p>
 
         <p style={authStyles.link}>
           Not a coach? <Link href="/login" style={authStyles.linkColor}>Client login</Link>

@@ -229,6 +229,10 @@ function CreateAccountForm() {
               <Link href="/login" style={styles.link}>
                 Sign in
               </Link>
+              {' · '}
+              <Link href="/forgot-password" style={styles.link}>
+                Forgot password
+              </Link>
             </>
           )}
         </p>

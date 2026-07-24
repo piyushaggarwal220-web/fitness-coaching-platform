@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { fetchClientProfile, getClientPostAuthPath, isOnboardingComplete } from '@/lib/onboarding';
@@ -72,10 +72,18 @@ function LoginForm() {
     }
 
     if (loginError) {
-      const safe = sanitizeAuthPasswordError(loginError.message);
-      setError(safe ?? 'Unable to sign in. Check your email and password.');
-      setLoading(false);
-      return;
+      const raw = loginError.message || ''
+      const looksInvalid = /invalid login credentials|invalid_credentials|email not confirmed/i.test(raw)
+      if (looksInvalid) {
+        setError(
+          'Email or password is incorrect. If you just paid, use the password you set on Create account — or reset it below.'
+        )
+      } else {
+        const safe = sanitizeAuthPasswordError(raw)
+        setError(safe ?? 'Unable to sign in. Check your email and password.')
+      }
+      setLoading(false)
+      return
     }
 
     setError('Login failed. Please try again.');
@@ -112,7 +120,13 @@ function LoginForm() {
             marginBottom: 16,
             lineHeight: 1.5,
           }}>
-            Payment linked to your existing account. Sign in with your current login password.
+            Payment linked to your account. Sign in with your login password. If this password never worked, use Forgot password below to set a new one.
+          </div>
+        )}
+
+        {searchParams.get('error') === 'auth_callback' && (
+          <div style={authStyles.error}>
+            That email link expired or was already used. Request a new password reset.
           </div>
         )}
 
@@ -144,6 +158,12 @@ function LoginForm() {
               autoComplete="current-password"
             />
           </div>
+
+          <p style={{ margin: '-4px 0 12px', textAlign: 'right', fontSize: 13 }}>
+            <Link href="/forgot-password" style={authStyles.linkColor}>
+              Forgot password?
+            </Link>
+          </p>
 
           <button type="submit" disabled={loading} style={{ ...authStyles.button, opacity: loading ? 0.6 : 1 }} className="btn-press">
             {loading ? 'Logging in...' : 'Sign in'}

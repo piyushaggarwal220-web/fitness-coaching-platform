@@ -59,7 +59,8 @@ export async function POST(request: Request) {
         sessionEstablished: false,
         needsLogin: true,
         redirectTo: '/login?linked=1',
-        message: 'Payment linked to your existing account. Please sign in with your current password.',
+        message:
+          'Payment linked to your existing account. Sign in with your current password, or use Forgot password if it never worked.',
       })
     }
 

@@ -502,11 +502,40 @@ export async function claimPurchaseWithPassword(
   let isNewUser = false
   let needsLogin = false
   let userId = await findAuthUserIdByEmail(admin, email)
+  const claimedViaToken = Boolean(input.token?.trim())
+
+  const { data: existingProfile } = userId
+    ? await admin
+        .from('profiles')
+        .select('role, onboarding_complete, subscription_expires_at, name')
+        .eq('id', userId)
+        .maybeSingle()
+    : { data: null }
 
   if (userId) {
-    // Never overwrite an existing account password (prevents takeover).
-    logPurchaseStep('auth_user_exists', { email, userId })
-    needsLogin = true
+    // Checkout magic-link / OTP often creates an Auth user with NO password.
+    // Create-account then asked for a password but we used to skip writing it
+    // (needsLogin), so login failed with "Invalid login credentials".
+    //
+    // Safe to set password when:
+    // - Claim token proves email ownership (same pattern as enrollment), OR
+    // - This is first-time client setup (not yet onboarded).
+    // Keep needsLogin for receipt-only claims against already-onboarded accounts
+    // (anti-takeover: pay with someone else's email + your payment id).
+    const isFirstTimeClientSetup = existingProfile?.onboarding_complete !== true
+    if (claimedViaToken || isFirstTimeClientSetup) {
+      await syncAuthCredentials(userId, email, password, name)
+      needsLogin = false
+      logPurchaseStep('auth_password_synced', {
+        email,
+        userId,
+        claimedViaToken,
+        isFirstTimeClientSetup,
+      })
+    } else {
+      needsLogin = true
+      logPurchaseStep('auth_user_exists_needs_login', { email, userId })
+    }
   } else {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
@@ -532,12 +561,6 @@ export async function claimPurchaseWithPassword(
   const includeAccessSource = await hasAccessSourceColumn()
   const planExpiry = new Date()
   planExpiry.setMonth(planExpiry.getMonth() + plan.durationMonths)
-
-  const { data: existingProfile } = await admin
-    .from('profiles')
-    .select('role, onboarding_complete, subscription_expires_at, name')
-    .eq('id', userId)
-    .maybeSingle()
 
   const existingRole = existingProfile?.role as string | null | undefined
   const preservePrivilegedRole = existingRole === 'coach' || existingRole === 'admin'
