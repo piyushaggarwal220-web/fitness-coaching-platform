@@ -12,6 +12,8 @@ export function logPurchaseStep(
     | 'fulfillment_started'
     | 'auth_user_created'
     | 'auth_user_exists'
+    | 'auth_user_exists_needs_login'
+    | 'auth_password_synced'
     | 'auth_user_create_failed'
     | 'password_sync'
     | 'password_sync_failed'
