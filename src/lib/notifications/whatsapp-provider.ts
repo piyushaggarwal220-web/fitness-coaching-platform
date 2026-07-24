@@ -35,6 +35,7 @@ const WHATSAPP_ENABLED_TYPES = new Set<NotificationType>([
   'mid_week_checkin_reminder',
   'plan_available',
   'coach_replied',
+  'unread_chat',
   'missed_checkin',
   'plan_delivered',
 ])
@@ -52,6 +53,8 @@ const TYPE_TO_CAMPAIGN_ENV: Partial<Record<NotificationType, CampaignEnvKey>> = 
   plan_delivered: 'AISENSY_CAMPAIGN_PLAN_READY',
   plan_available: 'AISENSY_CAMPAIGN_PLAN_READY',
   coach_replied: 'AISENSY_CAMPAIGN_COACH_REPLIED',
+  // Cost policy escalates unread chat to WhatsApp; reuse coach-reply campaign slots.
+  unread_chat: 'AISENSY_CAMPAIGN_COACH_REPLIED',
 }
 
 function getApiKey(): string | undefined {
