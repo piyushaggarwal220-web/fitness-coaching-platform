@@ -333,7 +333,31 @@ export type StartEnrollmentResult = {
   emailSkipped?: boolean
 }
 
-export async function startEnrollment(input: StartEnrollmentInput): Promise<StartEnrollmentResult> {
+export type CreateEnrollmentInviteInput = StartEnrollmentInput & {
+  /** Admin path: return a shareable link even when email delivery fails. */
+  allowLinkWithoutEmail?: boolean
+}
+
+export type CreateEnrollmentInviteResult = {
+  ok: true
+  email: string
+  link: string
+  emailSent: boolean
+  membershipExpiresAt: string | null
+  emailError?: string
+}
+
+async function buildEnrollmentInvite(
+  input: StartEnrollmentInput
+): Promise<{
+  email: string
+  name: string
+  link: string
+  membershipExpiresAt: string | null
+  subject: string
+  text: string
+  html: string
+}> {
   const admin = createAdminClient()
   const email = input.email.trim().toLowerCase()
   const name = input.name.trim()
@@ -396,26 +420,86 @@ ${membershipLabel ? `<p>Your membership access runs until <strong>${membershipLa
 <p><a href="${link}">Confirm email &amp; set password</a></p>
 <p style="color:#666;font-size:13px">This link expires in 24 hours.</p>`
 
+  return {
+    email,
+    name,
+    link,
+    membershipExpiresAt: validation.membershipExpiresAt ?? null,
+    subject,
+    text,
+    html,
+  }
+}
+
+/** Admin / recovery: create invite link and attempt email delivery. */
+export async function createEnrollmentInvite(
+  input: CreateEnrollmentInviteInput
+): Promise<CreateEnrollmentInviteResult> {
+  const invite = await buildEnrollmentInvite(input)
+
   if (!isEmailConfigured()) {
-    // Dev / misconfigured: still return ok but include skipped so UI can show the link in non-prod only via logs
-    console.info('[enroll] Email not configured. Enrollment link:', link)
-    const sent = await sendDirectEmail({ to: email, subject, text, html })
+    console.info('[enroll] Email not configured. Enrollment link:', invite.link)
+    if (!input.allowLinkWithoutEmail) {
+      throw new Error(
+        'Enrollment email is not configured on the server. Ask your coach for an invite link, or contact support.'
+      )
+    }
     return {
       ok: true,
-      email,
-      membershipExpiresAt: validation.membershipExpiresAt ?? null,
-      emailSkipped: sent.skipped ?? true,
+      email: invite.email,
+      link: invite.link,
+      emailSent: false,
+      membershipExpiresAt: invite.membershipExpiresAt,
+      emailError: 'RESEND_API_KEY / NOTIFICATION_FROM_EMAIL missing',
     }
   }
 
-  const sent = await sendDirectEmail({ to: email, subject, text, html })
-  if (!sent.ok) throw new Error(sent.error ?? 'Failed to send confirmation email')
+  const sent = await sendDirectEmail({
+    to: invite.email,
+    subject: invite.subject,
+    text: invite.text,
+    html: invite.html,
+  })
+
+  if (sent.skipped || !sent.ok) {
+    console.info('[enroll] Email send failed or skipped. Link:', invite.link, sent.error)
+    if (!input.allowLinkWithoutEmail) {
+      throw new Error(
+        sent.error
+          ? `Could not send confirmation email: ${sent.error}`
+          : 'Could not send confirmation email. Please try again or ask your coach for an invite link.'
+      )
+    }
+    return {
+      ok: true,
+      email: invite.email,
+      link: invite.link,
+      emailSent: false,
+      membershipExpiresAt: invite.membershipExpiresAt,
+      emailError: sent.error ?? 'Email skipped',
+    }
+  }
 
   return {
     ok: true,
-    email,
-    membershipExpiresAt: validation.membershipExpiresAt ?? null,
-    emailSkipped: sent.skipped,
+    email: invite.email,
+    link: invite.link,
+    emailSent: true,
+    membershipExpiresAt: invite.membershipExpiresAt,
+  }
+}
+
+export async function startEnrollment(input: StartEnrollmentInput): Promise<StartEnrollmentResult> {
+  const invite = await createEnrollmentInvite({
+    ...input,
+    allowLinkWithoutEmail: false,
+  })
+
+  return {
+    ok: true,
+    email: invite.email,
+    membershipExpiresAt: invite.membershipExpiresAt,
+    emailSkipped: !invite.emailSent,
   }
 }
 

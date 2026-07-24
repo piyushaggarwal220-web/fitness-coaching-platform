@@ -16,6 +16,15 @@ export default function AdminEnrollmentCodesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [emailConfigured, setEmailConfigured] = useState<boolean | null>(null)
+  const [invite, setInvite] = useState({ code: '', name: '', email: '' })
+  const [inviteBusy, setInviteBusy] = useState(false)
+  const [inviteResult, setInviteResult] = useState<{
+    link: string
+    emailSent: boolean
+    emailError?: string
+  } | null>(null)
+  const [copied, setCopied] = useState(false)
   const [form, setForm] = useState({
     code: '',
     planSlug: '6_months',
@@ -28,15 +37,61 @@ export default function AdminEnrollmentCodesPage() {
   })
 
   const load = async () => {
-    const res = await fetch('/api/admin/redemption-codes')
-    const data = await res.json()
+    const [codesRes, emailRes] = await Promise.all([
+      fetch('/api/admin/redemption-codes'),
+      fetch('/api/admin/enrollment-invite'),
+    ])
+    const data = await codesRes.json()
     if (data.codes) setCodes(data.codes)
+    const emailData = await emailRes.json().catch(() => null)
+    if (typeof emailData?.emailConfigured === 'boolean') {
+      setEmailConfigured(emailData.emailConfigured)
+    }
     setLoading(false)
   }
 
   useEffect(() => {
     void load()
   }, [])
+
+  const handleCreateInvite = async (e: FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setInviteResult(null)
+    setCopied(false)
+    setInviteBusy(true)
+    try {
+      const res = await fetch('/api/admin/enrollment-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invite),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Could not create invite link')
+        setInviteBusy(false)
+        return
+      }
+      setInviteResult({
+        link: data.link,
+        emailSent: Boolean(data.emailSent),
+        emailError: data.emailError,
+      })
+    } catch {
+      setError('Could not create invite link')
+    }
+    setInviteBusy(false)
+  }
+
+  const copyInviteLink = async () => {
+    if (!inviteResult?.link) return
+    try {
+      await navigator.clipboard.writeText(inviteResult.link)
+      setCopied(true)
+    } catch {
+      setError('Could not copy. Select the link manually.')
+    }
+  }
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault()
@@ -99,7 +154,20 @@ export default function AdminEnrollmentCodesPage() {
         <p style={s.subtitle}>
           Create exact codes for old / offline members (e.g. z36). Each code has a membership end date.
           Members enroll at <code>/enroll</code> → confirm email → set password → onboarding.
+          If email is offline, generate an invite link below and WhatsApp it.
         </p>
+
+        {emailConfigured === false && (
+          <div style={{ ...s.error, marginBottom: 16 }}>
+            Enrollment emails are not configured on the server (missing Resend). Use “Create invite link”
+            and send it on WhatsApp until email is set up.
+          </div>
+        )}
+        {emailConfigured === true && (
+          <p style={{ color: '#86efac', fontSize: 13, marginBottom: 16 }}>
+            Email delivery is configured — /enroll confirmation emails can send.
+          </p>
+        )}
 
         <div style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="button" onClick={() => setShowForm(!showForm)} style={s.primaryBtn}>
@@ -112,6 +180,84 @@ export default function AdminEnrollmentCodesPage() {
 
         {error && <div style={s.error}>{error}</div>}
 
+        <form onSubmit={(e) => void handleCreateInvite(e)} style={{ ...s.card, marginBottom: 20 }}>
+          <h2 style={{ margin: '0 0 8px', fontSize: 16 }}>Create invite link (WhatsApp / email)</h2>
+          <p style={{ margin: '0 0 12px', color: '#aaa', fontSize: 13, lineHeight: 1.45 }}>
+            Use this when the member does not receive the verification email. Copy the link and send it
+            on WhatsApp. Link expires in 24 hours.
+          </p>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 12,
+            }}
+          >
+            <label>
+              Enrollment code
+              <input
+                value={invite.code}
+                onChange={(e) => setInvite({ ...invite, code: e.target.value })}
+                required
+                style={s.searchInput}
+                placeholder="z36"
+                list="enrollment-code-options"
+              />
+              <datalist id="enrollment-code-options">
+                {codes.filter((c) => c.is_active).map((c) => (
+                  <option key={c.id} value={c.code} />
+                ))}
+              </datalist>
+            </label>
+            <label>
+              Member name
+              <input
+                value={invite.name}
+                onChange={(e) => setInvite({ ...invite, name: e.target.value })}
+                required
+                style={s.searchInput}
+              />
+            </label>
+            <label>
+              Member email
+              <input
+                type="email"
+                value={invite.email}
+                onChange={(e) => setInvite({ ...invite, email: e.target.value })}
+                required
+                style={s.searchInput}
+              />
+            </label>
+          </div>
+          <button type="submit" disabled={inviteBusy} style={{ ...s.primaryBtn, marginTop: 12 }}>
+            {inviteBusy ? 'Creating…' : 'Create invite link'}
+          </button>
+          {inviteResult && (
+            <div style={{ marginTop: 14 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 13, color: inviteResult.emailSent ? '#86efac' : '#fbbf24' }}>
+                {inviteResult.emailSent
+                  ? 'Email sent. You can still copy the link as backup.'
+                  : `Email not sent${inviteResult.emailError ? ` (${inviteResult.emailError})` : ''}. Copy and WhatsApp this link:`}
+              </p>
+              <code
+                style={{
+                  display: 'block',
+                  padding: 12,
+                  background: '#111',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  wordBreak: 'break-all',
+                  color: '#ddd',
+                }}
+              >
+                {inviteResult.link}
+              </code>
+              <button type="button" onClick={() => void copyInviteLink()} style={{ ...s.secondaryBtn, marginTop: 10 }}>
+                {copied ? 'Copied' : 'Copy link'}
+              </button>
+            </div>
+          )}
+        </form>
         {showForm && (
           <form onSubmit={(e) => void handleCreate(e)} style={{ ...s.card, marginBottom: 20 }}>
             <div

@@ -71,7 +71,18 @@ function EnrollInner() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(typeof data.error === 'string' ? data.error : 'Could not start enrollment')
+        setError(
+          typeof data.error === 'string'
+            ? data.error
+            : 'Could not send confirmation email. Ask your coach for an invite link.'
+        )
+        setLoading(false)
+        return
+      }
+      if (data.emailSkipped) {
+        setError(
+          'Confirmation email could not be sent right now. Ask your coach to WhatsApp you an invite link.'
+        )
         setLoading(false)
         return
       }
@@ -89,7 +100,10 @@ function EnrollInner() {
           <h1 style={styles.title}>{brandTitle('Check your email')}</h1>
           <p style={styles.subtitle}>
             We sent a confirmation link to <strong>{email}</strong>. Open it to confirm your email and
-            set your password. You&apos;ll go straight to onboarding after that.
+            set your password. Check spam/junk if you do not see it within a few minutes.
+          </p>
+          <p style={{ ...styles.subtitle, marginTop: 0 }}>
+            Still nothing? Ask your coach to send you an invite link on WhatsApp.
           </p>
           <Link href="/login" style={styles.link}>
             Already have an account? Log in
