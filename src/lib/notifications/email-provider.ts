@@ -41,10 +41,27 @@ export async function sendDirectEmail(
       text: message.text,
       html: message.html,
     })
-    return error
-      ? { ok: false, error: error.message }
-      : { ok: true, providerMessageId: data?.id }
+    if (error) {
+      return { ok: false, error: humanizeResendError(error.message, from) }
+    }
+    return { ok: true, providerMessageId: data?.id }
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Email send failed' }
+    const raw = error instanceof Error ? error.message : 'Email send failed'
+    return { ok: false, error: humanizeResendError(raw, from) }
   }
+}
+
+function humanizeResendError(message: string, from: string): string {
+  const lower = message.toLowerCase()
+  if (
+    lower.includes('only send testing emails') ||
+    lower.includes('only send emails to your own') ||
+    lower.includes('verify a domain')
+  ) {
+    return (
+      'Email is still in Resend test mode. Set NOTIFICATION_FROM_EMAIL to an address on your verified domain ' +
+      `(e.g. LURVOX <onboarding@lurvox.in>), not ${from.includes('resend.dev') ? '@resend.dev' : 'a test sender'}, then redeploy.`
+    )
+  }
+  return message
 }
