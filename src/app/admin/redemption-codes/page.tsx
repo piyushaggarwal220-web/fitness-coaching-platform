@@ -319,6 +319,9 @@ export default function AdminEnrollmentCodesPage() {
                   onChange={(e) => setForm({ ...form, maxRedemptions: Number(e.target.value) })}
                   style={s.searchInput}
                 />
+                <span style={{ display: 'block', color: '#888', fontSize: 12, marginTop: 4 }}>
+                  How many people can redeem this code (usually 1).
+                </span>
               </label>
               <label>
                 Code redeem-by (optional)
@@ -365,7 +368,7 @@ export default function AdminEnrollmentCodesPage() {
                   <th style={s.th}>Code</th>
                   <th style={s.th}>Member</th>
                   <th style={s.th}>Membership ends</th>
-                  <th style={s.th}>Uses</th>
+                  <th style={s.th}>Redeemed</th>
                   <th style={s.th}>Redeemed by</th>
                   <th style={s.th}>Status</th>
                   <th style={s.th}>Created</th>
@@ -375,6 +378,8 @@ export default function AdminEnrollmentCodesPage() {
               <tbody>
                 {codes.map((c) => {
                   const usages = c.redemption_usages ?? []
+                  const used = Math.max(usages.length, c.max_redemptions - c.remaining_uses)
+                  const full = c.remaining_uses <= 0
                   return (
                     <tr key={c.id}>
                       <td style={s.td}>
@@ -383,7 +388,10 @@ export default function AdminEnrollmentCodesPage() {
                       <td style={s.td}>{c.member_label || c.notes || '—'}</td>
                       <td style={s.td}>{formatDate(c.membership_expires_at)}</td>
                       <td style={s.td}>
-                        {c.remaining_uses}/{c.max_redemptions}
+                        {used}/{c.max_redemptions} used
+                        <div style={{ color: full ? '#f87171' : '#86efac', fontSize: 12, marginTop: 2 }}>
+                          {full ? 'Full' : `${c.remaining_uses} left`}
+                        </div>
                       </td>
                       <td style={s.td}>
                         {usages.length === 0
