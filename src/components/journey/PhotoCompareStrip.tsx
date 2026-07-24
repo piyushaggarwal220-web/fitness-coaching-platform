@@ -40,7 +40,7 @@ export function PhotoCompareStrip({ previous, current, currentPreviewUrls }: Pho
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={prevUrl} alt={`Previous ${angle}`} style={styles.img} />
                     ) : (
-                      <StorageImage bucket="checkin-photos" src={prevUrl} alt={`Previous ${angle}`} style={styles.img} />
+                      <StorageImage progress src={prevUrl} alt={`Previous ${angle}`} style={styles.img} />
                     )
                   ) : (
                     <span style={styles.empty}>No prior</span>
@@ -53,7 +53,7 @@ export function PhotoCompareStrip({ previous, current, currentPreviewUrls }: Pho
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={nextUrl} alt={`Current ${angle}`} style={styles.img} />
                     ) : (
-                      <StorageImage bucket="checkin-photos" src={nextUrl} alt={`Current ${angle}`} style={styles.img} />
+                      <StorageImage progress src={nextUrl} alt={`Current ${angle}`} style={styles.img} />
                     )
                   ) : (
                     <span style={styles.empty}>Add photo</span>

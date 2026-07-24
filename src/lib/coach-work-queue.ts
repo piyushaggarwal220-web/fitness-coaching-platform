@@ -79,10 +79,29 @@ export async function getCoachWorkQueue(
     }
   }
 
+  const pendingContentClientIds = (clients ?? [])
+    .filter((c) => !c.plan_delivered && c.onboarding_complete)
+    .map((c) => c.id)
+  const activePlanReadyByClient = new Set<string>()
+  if (pendingContentClientIds.length > 0) {
+    const { data: activePlans } = await supabase
+      .from('plans')
+      .select('client_id, nutrition_plan, workout_plan')
+      .in('client_id', pendingContentClientIds)
+      .eq('is_active', true)
+    for (const plan of activePlans ?? []) {
+      if (plan.nutrition_plan?.trim() && plan.workout_plan?.trim()) {
+        activePlanReadyByClient.add(plan.client_id)
+      }
+    }
+  }
+
   for (const client of clients ?? []) {
     // Only surface plan work after onboarding completion is persisted.
     // Incomplete clients never reach the dashboard, so they are not queue work.
     if (client.plan_delivered || !client.onboarding_complete) continue
+    // Content is authoritative: diet + workout on the active plan means the queue item is done.
+    if (activePlanReadyByClient.has(client.id)) continue
 
     const generation = generationByClient.get(client.id)
     const draft = latestDraftByClient.get(client.id)

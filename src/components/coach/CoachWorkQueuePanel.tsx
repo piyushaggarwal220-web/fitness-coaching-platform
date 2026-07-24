@@ -10,6 +10,7 @@ import {
   type WorkQueueFilter,
   type WorkQueueTask,
 } from '@/lib/coach-work-queue'
+import { resolveWorkQueueTask } from '@/lib/coach-work-queue-resolve'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/coach-theme'
@@ -34,7 +35,7 @@ const FILTER_LABELS: Record<WorkQueueFilter, string> = {
 function loadCompleted(): Set<string> {
   if (typeof window === 'undefined') return new Set()
   try {
-    const raw = sessionStorage.getItem(COMPLETED_KEY)
+    const raw = localStorage.getItem(COMPLETED_KEY) ?? sessionStorage.getItem(COMPLETED_KEY)
     return new Set(raw ? JSON.parse(raw) as string[] : [])
   } catch {
     return new Set()
@@ -42,7 +43,17 @@ function loadCompleted(): Set<string> {
 }
 
 function saveCompleted(ids: Set<string>) {
-  sessionStorage.setItem(COMPLETED_KEY, JSON.stringify([...ids]))
+  const payload = JSON.stringify([...ids])
+  localStorage.setItem(COMPLETED_KEY, payload)
+  sessionStorage.setItem(COMPLETED_KEY, payload)
+}
+
+function pruneCompleted(ids: Set<string>, queue: WorkQueueTask[]): Set<string> {
+  if (ids.size === 0) return ids
+  const openIds = new Set(queue.map((t) => t.id))
+  const next = new Set([...ids].filter((id) => openIds.has(id)))
+  if (next.size !== ids.size) saveCompleted(next)
+  return next
 }
 
 /** Keep queue context when opening chat from dashboard or /coach/queue. */
@@ -74,15 +85,26 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const [tasks, setTasks] = useState<WorkQueueTask[]>([])
   const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
   const [loading, setLoading] = useState(true)
+  const [completing, setCompleting] = useState(false)
+  const [completeError, setCompleteError] = useState('')
   const [coachId, setCoachId] = useState<string | null>(null)
+
+  const applyQueue = useCallback((queue: WorkQueueTask[]) => {
+    setTasks(queue)
+    setCompleted((prev) => {
+      const pruned = pruneCompleted(prev, queue)
+      const visible = queue.filter((t) => !pruned.has(t.id))
+      onCountsChange?.(getWorkQueueCounts(visible))
+      return pruned
+    })
+  }, [onCountsChange])
 
   const load = useCallback(async () => {
     if (!coachId) return
     const queue = await getCoachWorkQueue(supabase, coachId)
-    setTasks(queue)
-    onCountsChange?.(getWorkQueueCounts(queue))
+    applyQueue(queue)
     setLoading(false)
-  }, [coachId, onCountsChange])
+  }, [coachId, applyQueue])
 
   useEffect(() => {
     let active = true
@@ -96,13 +118,12 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
       setCoachId(coach.id)
       const queue = await getCoachWorkQueue(supabase, coach.id)
       if (!active) return
-      setTasks(queue)
-      onCountsChange?.(getWorkQueueCounts(queue))
+      applyQueue(queue)
       setLoading(false)
     }
     void authorize()
     return () => { active = false }
-  }, [router, onCountsChange])
+  }, [router, applyQueue])
 
   // Realtime accelerates chat tasks; 45s fallback covers plans/check-ins/profiles.
   useCoachConversationRealtime(coachId, load, 45_000, 'work-queue')
@@ -112,12 +133,28 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const current = visible[0] ?? null
   const upcoming = visible.slice(1, 4)
 
-  const handleComplete = () => {
-    if (!current) return
+  const handleComplete = async () => {
+    if (!current || completing) return
+    setCompleting(true)
+    setCompleteError('')
+
+    const result = await resolveWorkQueueTask(supabase, current)
+    if (!result.ok) {
+      setCompleteError(result.error ?? 'Could not complete this task.')
+      setCompleting(false)
+      return
+    }
+
     const next = new Set(completed)
     next.add(current.id)
     setCompleted(next)
     saveCompleted(next)
+    setTasks((prev) => prev.filter((t) => t.id !== current.id))
+    onCountsChange?.(getWorkQueueCounts(visible.filter((t) => t.id !== current.id)))
+    setCompleting(false)
+
+    // Refresh from server so counts stay accurate after DB resolution.
+    void load()
   }
 
   if (loading) {
@@ -171,10 +208,13 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
         <button type="button" onClick={() => openTask(current.href)} style={primaryBtn}>
           Start
         </button>
-        <button type="button" onClick={handleComplete} style={secondaryBtn}>
-          Complete
+        <button type="button" onClick={() => void handleComplete()} disabled={completing} style={secondaryBtn}>
+          {completing ? 'Saving…' : 'Complete'}
         </button>
       </div>
+      {completeError ? (
+        <p style={{ margin: '10px 0 0', color: '#ef4444', fontSize: 13 }}>{completeError}</p>
+      ) : null}
       {upcoming.length > 0 && (
         <div style={{ marginTop: 20 }}>
           <p style={{ margin: '0 0 10px', fontSize: 12, color: colors.textMuted, fontWeight: 600 }}>Up next</p>
