@@ -78,10 +78,11 @@ export async function GET(request: Request) {
             .maybeSingle(),
     ])
     if (callRequestError || peerResult.error) {
-      return NextResponse.json(
-        { success: false, error: 'Chat metadata is temporarily unavailable. Please retry.' },
-        { status: 500 }
-      )
+      console.error('[chat-messages] metadata soft-fail', {
+        conversationId,
+        callRequestError: callRequestError?.message,
+        peerError: peerResult.error?.message,
+      })
     }
     const peerLastSeenAt = peerResult.data?.last_seen_at ?? null
 

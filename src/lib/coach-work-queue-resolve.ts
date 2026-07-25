@@ -74,12 +74,29 @@ export async function resolveWorkQueueTask(
 
       const readThrough = unread?.[0]?.created_at ?? null
       if (readThrough) {
-        await markConversationRead(admin, conversationId, 'coach', readThrough)
+        const mark = await markConversationRead(admin, conversationId, 'coach', readThrough)
+        if (mark.error) {
+          return { ok: false, resolved: false, error: mark.error.message }
+        }
+      }
+
+      const { count, error: countError } = await admin
+        .from('conversation_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId)
+        .eq('sender_type', 'client')
+        .is('read_at', null)
+
+      if (countError) {
+        return { ok: false, resolved: false, error: countError.message }
       }
 
       const { error } = await admin
         .from('coach_conversations')
-        .update({ unread_by_coach: 0, updated_at: new Date().toISOString() })
+        .update({
+          unread_by_coach: count ?? 0,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', conversationId)
         .eq('coach_id', coachId)
 

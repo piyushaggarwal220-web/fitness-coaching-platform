@@ -69,7 +69,9 @@ function CoachChatDetailInner() {
           }>(detailResponse)
 
           if (!detail.ok) {
-            const retryable = detailResponse.status >= 500 && attempt < delays.length - 1
+            const retryable =
+              (detailResponse.status >= 500 || detailResponse.status === 401) &&
+              attempt < delays.length - 1
             if (retryable) continue
             if (!active) return
             setLoadStatus(detailResponse.status)
@@ -87,7 +89,9 @@ function CoachChatDetailInner() {
 
           const messageResult = await readApiJson<{ messages?: ConversationMessage[] }>(messageResponse)
           if (!messageResult.ok) {
-            const retryable = messageResponse.status >= 500 && attempt < delays.length - 1
+            const retryable =
+              (messageResponse.status >= 500 || messageResponse.status === 401) &&
+              attempt < delays.length - 1
             if (retryable) continue
             if (!active) return
             setLoadStatus(messageResponse.status)

@@ -17,39 +17,62 @@ export default function ClientChatPage() {
   const [authReady, setAuthReady] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    let active = true
     const init = async () => {
+      setError('')
       const auth = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true })
+      if (!active) return
+      setAuthReady(true)
+
       if (!auth?.profile) {
-        setAuthReady(true)
+        setError('Your chat could not be opened right now. Please retry.')
         return
       }
 
-      setAuthReady(true)
       setConnecting(true)
 
-      try {
-        const res = await fetch('/api/chat/conversations', {
-          method: 'POST',
-          credentials: 'include',
-        })
-        const data = await res.json()
+      // Session cookies can still be refreshing right after navigation, so retry transient failures.
+      const delays = [0, 400, 1000]
+      for (let attempt = 0; attempt < delays.length; attempt += 1) {
+        if (delays[attempt]) await new Promise((resolve) => setTimeout(resolve, delays[attempt]))
+        try {
+          const res = await fetch('/api/chat/conversations', {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store',
+          })
+          const data = await res.json().catch(() => null)
 
-        if (!res.ok) {
-          setError(data.error ?? 'Failed to start conversation')
+          if (!res.ok) {
+            const retryable =
+              (res.status >= 500 || res.status === 401) && attempt < delays.length - 1
+            if (retryable) continue
+            if (!active) return
+            setError(data?.error ?? 'Failed to start conversation')
+            setConnecting(false)
+            return
+          }
+
+          if (!active) return
+          setConversation(data.conversation)
+          setConnecting(false)
           return
+        } catch {
+          if (attempt < delays.length - 1) continue
+          if (!active) return
+          setError('Failed to start conversation. Please check your connection and retry.')
+          setConnecting(false)
         }
-
-        setConversation(data.conversation)
-      } catch {
-        setError('Failed to start conversation')
-      } finally {
-        setConnecting(false)
       }
     }
     void init()
-  }, [router])
+    return () => {
+      active = false
+    }
+  }, [router, reloadKey])
 
   if (!authReady) {
     return (
@@ -74,9 +97,30 @@ export default function ClientChatPage() {
         </div>
       )}
 
-      {error && (
-        <div style={{ ...mobileStyles.error, margin: '8px 16px', flexShrink: 0 }}>
-          {error}
+      {error && !conversation && (
+        <div style={{ margin: '8px 16px', flexShrink: 0 }}>
+          <div style={mobileStyles.error}>{error}</div>
+          <button
+            type="button"
+            onClick={() => {
+              setConversation(null)
+              setReloadKey((key) => key + 1)
+            }}
+            style={{
+              marginTop: 12,
+              width: '100%',
+              minHeight: 48,
+              borderRadius: 12,
+              border: 'none',
+              background: '#f97316',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Retry opening chat
+          </button>
         </div>
       )}
 

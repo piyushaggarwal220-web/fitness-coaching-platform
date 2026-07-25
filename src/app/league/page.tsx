@@ -217,7 +217,7 @@ export default function LeaguePage() {
             <Shield size={21} color={LEAGUE_TIER_DETAILS[tier].color} aria-hidden />
           </div>
           <div className={styles.rankPath}>
-            {LEAGUE_TIER_ORDER.map((rankTier, index) => {
+            {LEAGUE_TIER_ORDER.map((rankTier) => {
               const playableIndex = LEAGUE_LADDER.indexOf(rankTier === 'world' ? 'crazy_3' : rankTier)
               const stateClass =
                 rankTier === 'world'

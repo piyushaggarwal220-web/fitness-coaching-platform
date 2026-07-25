@@ -356,11 +356,11 @@ export async function markConversationRead(
   conversationId: string,
   reader: 'client' | 'coach',
   readThrough: string | null
-): Promise<void> {
-  if (!readThrough) return
+): Promise<{ error: { message: string } | null }> {
+  if (!readThrough) return { error: null }
   const now = new Date().toISOString()
   const senderType = reader === 'client' ? 'coach' : 'client'
-  await supabase
+  const { error } = await supabase
     .from('conversation_messages')
     .update({ read_at: now })
     .eq('conversation_id', conversationId)
@@ -368,6 +368,7 @@ export async function markConversationRead(
     .lte('created_at', readThrough)
     .is('read_at', null)
 
+  return { error: error ? { message: error.message } : null }
 }
 
 export async function setTypingIndicator(

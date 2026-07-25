@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   filterWorkQueue,
@@ -19,6 +19,16 @@ import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
 const supabase = createClient()
 
 const COMPLETED_KEY = 'coach-queue-completed'
+/** Cap stored completions so localStorage stays bounded. */
+const COMPLETED_MAX = 400
+
+/**
+ * A completed task stays hidden forever. The only exception is work that is
+ * genuinely new — e.g. a client sends another message on a conversation the
+ * coach already cleared — which arrives with a newer `createdAt`.
+ */
+type CompletedEntry = { createdAt: string | null; completedAt: number }
+type CompletedMap = Map<string, CompletedEntry>
 
 const FILTER_LABELS: Record<WorkQueueFilter, string> = {
   all: 'All tasks',
@@ -31,28 +41,67 @@ const FILTER_LABELS: Record<WorkQueueFilter, string> = {
   other: 'Everything Else',
 }
 
-function loadCompleted(): Set<string> {
-  if (typeof window === 'undefined') return new Set()
+function loadCompleted(): CompletedMap {
+  if (typeof window === 'undefined') return new Map()
   try {
     const raw = localStorage.getItem(COMPLETED_KEY) ?? sessionStorage.getItem(COMPLETED_KEY)
-    return new Set(raw ? JSON.parse(raw) as string[] : [])
+    if (!raw) return new Map()
+    const parsed = JSON.parse(raw) as unknown
+
+    // Legacy format: plain array of ids.
+    if (Array.isArray(parsed)) {
+      return new Map(
+        parsed
+          .filter((id): id is string => typeof id === 'string')
+          .map((id) => [id, { createdAt: null, completedAt: 0 }])
+      )
+    }
+
+    if (parsed && typeof parsed === 'object') {
+      const entries = Object.entries((parsed as { items?: Record<string, CompletedEntry> }).items ?? {})
+      return new Map(
+        entries.map(([id, entry]) => [
+          id,
+          {
+            createdAt: typeof entry?.createdAt === 'string' ? entry.createdAt : null,
+            completedAt: typeof entry?.completedAt === 'number' ? entry.completedAt : 0,
+          },
+        ])
+      )
+    }
   } catch {
-    return new Set()
+    return new Map()
+  }
+  return new Map()
+}
+
+function saveCompleted(map: CompletedMap) {
+  const entries = [...map.entries()].sort((a, b) => a[1].completedAt - b[1].completedAt)
+  const trimmed = entries.length > COMPLETED_MAX ? entries.slice(entries.length - COMPLETED_MAX) : entries
+  const payload = JSON.stringify({ v: 2, items: Object.fromEntries(trimmed) })
+  try {
+    localStorage.setItem(COMPLETED_KEY, payload)
+    sessionStorage.setItem(COMPLETED_KEY, payload)
+  } catch {
+    // Storage full or blocked — suppression falls back to in-memory only.
   }
 }
 
-function saveCompleted(ids: Set<string>) {
-  const payload = JSON.stringify([...ids])
-  localStorage.setItem(COMPLETED_KEY, payload)
-  sessionStorage.setItem(COMPLETED_KEY, payload)
+function withTaskCompleted(map: CompletedMap, task: WorkQueueTask): CompletedMap {
+  const next = new Map(map)
+  next.set(task.id, { createdAt: task.createdAt ?? null, completedAt: Date.now() })
+  return next
 }
 
-function pruneCompleted(ids: Set<string>, queue: WorkQueueTask[]): Set<string> {
-  if (ids.size === 0) return ids
-  const openIds = new Set(queue.map((t) => t.id))
-  const next = new Set([...ids].filter((id) => openIds.has(id)))
-  if (next.size !== ids.size) saveCompleted(next)
-  return next
+function isTaskCompleted(task: WorkQueueTask, map: CompletedMap): boolean {
+  const entry = map.get(task.id)
+  if (!entry) return false
+  if (!entry.createdAt) return true
+  const taskAt = Date.parse(task.createdAt)
+  const doneAt = Date.parse(entry.createdAt)
+  if (!Number.isFinite(taskAt) || !Number.isFinite(doneAt)) return true
+  // Newer activity on the same record is fresh work, so let it back in.
+  return taskAt <= doneAt
 }
 
 /** Keep queue context when opening chat from dashboard or /coach/queue. */
@@ -82,7 +131,8 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     [router, returnTo]
   )
   const [tasks, setTasks] = useState<WorkQueueTask[]>([])
-  const [completed, setCompleted] = useState<Set<string>>(loadCompleted)
+  const [completed, setCompleted] = useState<CompletedMap>(loadCompleted)
+  const completedRef = useRef<CompletedMap>(completed)
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(false)
   const [completeError, setCompleteError] = useState('')
@@ -90,13 +140,13 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
 
   const applyQueue = useCallback((queue: WorkQueueTask[]) => {
     setTasks(queue)
-    setCompleted((prev) => {
-      const pruned = pruneCompleted(prev, queue)
-      const visible = queue.filter((t) => !pruned.has(t.id))
-      onCountsChange?.(getWorkQueueCounts(visible))
-      return pruned
-    })
+    const visible = queue.filter((task) => !isTaskCompleted(task, completedRef.current))
+    onCountsChange?.(getWorkQueueCounts(visible))
   }, [onCountsChange])
+
+  useEffect(() => {
+    completedRef.current = completed
+  }, [completed])
 
   const load = useCallback(async () => {
     if (!coachId) return
@@ -128,7 +178,7 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   useCoachConversationRealtime(coachId, load, 20_000, 'work-queue')
 
   const filtered = filterWorkQueue(tasks, filter)
-  const visible = filtered.filter((t) => !completed.has(t.id))
+  const visible = filtered.filter((task) => !isTaskCompleted(task, completed))
   const current = visible[0] ?? null
   const upcoming = visible.slice(1, 4)
 
@@ -152,15 +202,17 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
       return
     }
 
-    const next = new Set(completed)
-    next.add(current.id)
+    const next = withTaskCompleted(completed, current)
+    completedRef.current = next
     setCompleted(next)
     saveCompleted(next)
     setTasks((prev) => prev.filter((t) => t.id !== current.id))
-    onCountsChange?.(getWorkQueueCounts(visible.filter((t) => t.id !== current.id)))
+    const remaining = visible.filter((t) => t.id !== current.id)
+    onCountsChange?.(getWorkQueueCounts(remaining))
     setCompleting(false)
 
     // Refresh from server so counts stay accurate after DB resolution.
+    // Completed ids stay in localStorage so tasks do not reappear.
     void load()
   }
 
