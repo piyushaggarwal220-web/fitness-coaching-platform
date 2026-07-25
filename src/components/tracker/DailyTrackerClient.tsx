@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { CardioTrackerSection } from '@/components/tracker/CardioTrackerSection'
@@ -29,6 +29,8 @@ export function DailyTrackerClient({ initialView, initialError }: Props) {
   const [view, setView] = useState(initialView)
   const [error, setError] = useState(initialError ?? '')
   const [saving, setSaving] = useState(false)
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const pendingSavesRef = useRef(0)
 
   useEffect(() => {
     setView(initialView)
@@ -45,24 +47,36 @@ export function DailyTrackerClient({ initialView, initialError }: Props) {
   const motivation = useMemo(() => (view ? buildMotivationMessage(view) : ''), [view])
 
   const patchCompletion = useCallback(
-    async (patch: TrackerCompletion) => {
-      if (!day) return
+    (patch: TrackerCompletion): Promise<void> => {
+      if (!day) return Promise.resolve()
+      const dayId = day.id
+      pendingSavesRef.current += 1
       setSaving(true)
-      try {
-        const res = await fetch('/api/tracker/update', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dayId: day.id, completion: patch }),
-        })
-        const data = (await res.json()) as { day?: DailyTrackerDay; error?: string }
-        if (!res.ok || !data.day) {
-          setError(data.error ?? 'Failed to save progress')
-          return
+
+      const save = async () => {
+        try {
+          const res = await fetch('/api/tracker/update', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dayId, completion: patch }),
+          })
+          const data = (await res.json()) as { day?: DailyTrackerDay; error?: string }
+          if (!res.ok || !data.day) {
+            setError(data.error ?? 'Failed to save progress')
+            return
+          }
+          setView((current) => (current ? { ...current, day: data.day! } : current))
+        } catch {
+          setError('Failed to save progress')
         }
-        setView((current) => (current ? { ...current, day: data.day! } : current))
-      } finally {
-        setSaving(false)
       }
+
+      const operation = saveQueueRef.current.then(save, save)
+      saveQueueRef.current = operation
+      return operation.finally(() => {
+        pendingSavesRef.current -= 1
+        if (pendingSavesRef.current === 0) setSaving(false)
+      })
     },
     [day]
   )
