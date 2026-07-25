@@ -7,11 +7,29 @@ import {
 
 export { COACH_RESPONSE_TARGET_MS } from '@/lib/coach-working-hours'
 
-export function getCoachResponseTarget(messages: ConversationMessage[]): {
+export type CoachResponseTarget = {
   startedAt: number
   deadline: number
   unansweredCount: number
-} | null {
+}
+
+export function getCoachResponseTargetFromAnchor(
+  firstUnansweredAt: string | number | Date,
+  unansweredCount: number
+): CoachResponseTarget {
+  const requestedAt = new Date(firstUnansweredAt)
+  const workingHours = getCoachWorkingHoursStatus(requestedAt)
+  const startedAt = workingHours.isOpen
+    ? requestedAt.getTime()
+    : workingHours.nextOpensAt.getTime()
+  return {
+    startedAt,
+    deadline: addCoachWorkingTime(startedAt, COACH_RESPONSE_TARGET_MS).getTime(),
+    unansweredCount,
+  }
+}
+
+export function getCoachResponseTarget(messages: ConversationMessage[]): CoachResponseTarget | null {
   const latestCoachAt = messages.reduce(
     (latest, message) =>
       message.sender_type === 'coach'
@@ -27,14 +45,5 @@ export function getCoachResponseTarget(messages: ConversationMessage[]): {
   )
   if (unanswered.length === 0) return null
 
-  const requestedAt = new Date(unanswered[0].created_at)
-  const workingHours = getCoachWorkingHoursStatus(requestedAt)
-  const startedAt = workingHours.isOpen
-    ? requestedAt.getTime()
-    : workingHours.nextOpensAt.getTime()
-  return {
-    startedAt,
-    deadline: addCoachWorkingTime(startedAt, COACH_RESPONSE_TARGET_MS).getTime(),
-    unansweredCount: unanswered.length,
-  }
+  return getCoachResponseTargetFromAnchor(unanswered[0].created_at, unanswered.length)
 }

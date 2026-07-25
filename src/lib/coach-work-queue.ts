@@ -255,7 +255,25 @@ export async function getCoachWorkQueue(
     }
   }
 
-  return sortTasks(tasks)
+  const { data: completedRows } = await supabase
+    .from('coach_work_queue_completions')
+    .select('task_id, task_created_at')
+    .eq('coach_id', coachId)
+
+  const completionByTaskId = new Map(
+    (completedRows ?? []).map((row) => [
+      row.task_id as string,
+      row.task_created_at as string | null,
+    ])
+  )
+  return sortTasks(tasks.filter((task) => {
+    if (!completionByTaskId.has(task.id)) return true
+    const completedSourceAt = completionByTaskId.get(task.id)
+    if (!completedSourceAt) return false
+    const taskAt = Date.parse(task.createdAt)
+    const completedAt = Date.parse(completedSourceAt)
+    return Number.isFinite(taskAt) && Number.isFinite(completedAt) && taskAt > completedAt
+  }))
 }
 
 export type WorkQueueFilter = WorkQueueTaskType | 'all'

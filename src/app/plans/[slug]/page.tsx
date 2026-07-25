@@ -88,7 +88,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
           </a>
         </div>
         <a href={`${marketingBase}/pages/talk-to-a-coach`} style={styles.headerLink}>
-          <span aria-hidden>💬</span> Talk to a coach
+          Talk to a coach
         </a>
       </header>
 
@@ -119,9 +119,9 @@ export default async function PlanLandingPage({ params }: PageProps) {
           {plan.slug === '12_months' ? (
             <p style={styles.leagueExtra}>{PLAN_LEAGUE_CALLOUT.twelveMonthExtra}</p>
           ) : (
-            <Link href="/plans/12-months" style={styles.leagueLink}>
+            <a href="/plans/12-months" style={styles.leagueLink}>
               See the 12-month plan for Crazy League →
-            </Link>
+            </a>
           )}
         </aside>
 
@@ -221,19 +221,10 @@ const styles: Record<string, CSSProperties> = {
     textDecoration: 'none',
   },
   headerLink: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '9px 14px',
-    borderRadius: 999,
     fontSize: 13,
-    fontWeight: 700,
-    color: '#fff7ed',
-    background: 'linear-gradient(180deg, #fb923c 0%, #f97316 100%)',
-    border: '1px solid rgba(249, 115, 22, 0.65)',
-    boxShadow: '0 8px 22px rgba(249, 115, 22, 0.32)',
+    fontWeight: 600,
+    color: '#a1a1aa',
     textDecoration: 'none',
-    whiteSpace: 'nowrap',
     flexShrink: 0,
   },
   main: {

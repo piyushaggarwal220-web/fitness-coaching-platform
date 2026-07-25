@@ -12,8 +12,12 @@ import { StorageImage } from '@/components/ui/StorageImage'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
 import { useSupabaseRealtimeRefresh } from '@/hooks/useSupabaseRealtime'
-import { getCoachResponseTarget } from '@/lib/chat-response-target'
 import {
+  getCoachResponseTarget,
+  type CoachResponseTarget,
+} from '@/lib/chat-response-target'
+import {
+  COACH_RESPONSE_TARGET_HOURS,
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
 } from '@/lib/coach-working-hours'
@@ -116,6 +120,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [peerTyping, setPeerTyping] = useState(false)
   const [peerOnline, setPeerOnline] = useState(false)
   const [peerLastSeenAt, setPeerLastSeenAt] = useState<string | null>(null)
+  const [serverResponseTarget, setServerResponseTarget] = useState<CoachResponseTarget | null>(null)
   const [callRequests, setCallRequests] = useState<CallRequest[]>([])
   const [callRequestBusy, setCallRequestBusy] = useState(false)
   const [scheduledFor, setScheduledFor] = useState('')
@@ -141,6 +146,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       peerTyping?: boolean
       callRequests?: CallRequest[]
       peerLastSeenAt?: string | null
+      responseTarget?: CoachResponseTarget | null
       error?: string
     }>(res)
     if (!parsed.ok) {
@@ -190,6 +196,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     if (typeof parsed.data.peerTyping === 'boolean') setPeerTyping(parsed.data.peerTyping)
     if (parsed.data.callRequests) setCallRequests(parsed.data.callRequests)
     if ('peerLastSeenAt' in parsed.data) setPeerLastSeenAt(parsed.data.peerLastSeenAt ?? null)
+    if ('responseTarget' in parsed.data) setServerResponseTarget(parsed.data.responseTarget ?? null)
   }, [conversationId, viewer])
 
   useEffect(() => {
@@ -230,7 +237,9 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     },
   })
 
-  const responseTarget = getCoachResponseTarget(messages)
+  // The API computes this from the complete conversation, so the clock stays
+  // anchored even when the visible thread only contains the latest 100 messages.
+  const responseTarget = serverResponseTarget ?? getCoachResponseTarget(messages)
   const responseDeadline = responseTarget?.deadline ?? null
 
   useEffect(() => {
@@ -507,7 +516,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       {viewer === 'client' && responseTarget && workingHours && !workingHours.isOpen && (
         <div style={styles.responseTarget}>
           Coach working hours are 9:00 AM to 6:00 PM. Please wait until{' '}
-          {formatNextCoachWorkingHours(new Date(now))}. The 2-hour response countdown
+          {formatNextCoachWorkingHours(new Date(now))}. The {COACH_RESPONSE_TARGET_HOURS}-hour response countdown
           starts or resumes during working hours.
         </div>
       )}

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { logApiDev } from '@/lib/api-dev-log'
 import { markConversationRead, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
 import { requireConversationParticipant } from '@/lib/chat-api-access'
+import { getCoachResponseTargetFromAnchor } from '@/lib/chat-response-target'
 import { hasClientEntitlement } from '@/lib/entitlements'
 
 export async function GET(request: Request) {
@@ -58,7 +59,11 @@ export async function GET(request: Request) {
       ? Date.now() - new Date(typingAt).getTime() < 5000
       : false
 
-    const [{ data: callRequests, error: callRequestError }, peerResult] = await Promise.all([
+    const [
+      { data: callRequests, error: callRequestError },
+      peerResult,
+      { data: latestCoachMessages, error: latestCoachError },
+    ] = await Promise.all([
       admin
         .from('call_requests')
         .select('*')
@@ -76,15 +81,46 @@ export async function GET(request: Request) {
             .select('last_seen_at')
             .eq('id', participant.conversation.client_id)
             .maybeSingle(),
+      admin
+        .from('conversation_messages')
+        .select('created_at')
+        .eq('conversation_id', conversationId)
+        .eq('sender_type', 'coach')
+        .neq('message_type', 'system')
+        .order('created_at', { ascending: false })
+        .limit(1),
     ])
-    if (callRequestError || peerResult.error) {
-      console.error('[chat-messages] metadata soft-fail', {
-        conversationId,
-        callRequestError: callRequestError?.message,
-        peerError: peerResult.error?.message,
-      })
+    if (callRequestError || peerResult.error || latestCoachError) {
+      return NextResponse.json(
+        { success: false, error: 'Chat metadata is temporarily unavailable. Please retry.' },
+        { status: 500 }
+      )
     }
     const peerLastSeenAt = peerResult.data?.last_seen_at ?? null
+    const latestCoachAt = latestCoachMessages?.[0]?.created_at ?? null
+    let unansweredQuery = admin
+      .from('conversation_messages')
+      .select('created_at', { count: 'exact' })
+      .eq('conversation_id', conversationId)
+      .eq('sender_type', 'client')
+      .neq('message_type', 'system')
+      .order('created_at', { ascending: true })
+      .limit(1)
+    if (latestCoachAt) unansweredQuery = unansweredQuery.gt('created_at', latestCoachAt)
+    const {
+      data: firstUnanswered,
+      count: unansweredCount,
+      error: responseTargetError,
+    } = await unansweredQuery
+    if (responseTargetError) {
+      return NextResponse.json(
+        { success: false, error: 'Chat response timer is temporarily unavailable. Please retry.' },
+        { status: 500 }
+      )
+    }
+    const responseTarget = firstUnanswered?.[0]?.created_at
+      ? getCoachResponseTargetFromAnchor(firstUnanswered[0].created_at, unansweredCount ?? 1)
+      : null
 
     return NextResponse.json({
       success: true,
@@ -92,6 +128,7 @@ export async function GET(request: Request) {
       peerTyping,
       callRequests: callRequests ?? [],
       peerLastSeenAt,
+      responseTarget,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to load messages'

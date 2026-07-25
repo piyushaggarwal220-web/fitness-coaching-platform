@@ -33,5 +33,29 @@ export async function POST(request: Request) {
     )
   }
 
+  const { error: completionError } = await admin
+    .from('coach_work_queue_completions')
+    .upsert(
+      {
+        coach_id: coach.id,
+        task_id: task.id,
+        task_type: task.type,
+        task_created_at: task.createdAt,
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: 'coach_id,task_id' }
+    )
+
+  if (completionError) {
+    return NextResponse.json(
+      {
+        ok: false,
+        resolved: result.resolved,
+        error: 'Task was completed, but its queue state could not be saved. Please retry.',
+      },
+      { status: 500 }
+    )
+  }
+
   return NextResponse.json({ ok: true, resolved: result.resolved })
 }

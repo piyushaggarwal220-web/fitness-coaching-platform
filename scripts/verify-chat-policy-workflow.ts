@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { getCoachResponseTarget, COACH_RESPONSE_TARGET_MS } from '../src/lib/chat-response-target'
+import { getCoachResponseTarget } from '../src/lib/chat-response-target'
 import {
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
@@ -37,7 +37,11 @@ const target = getCoachResponseTarget([
 ])
 assert(target)
 assert.equal(target.startedAt, Date.parse(first), 'first unanswered message anchors the target')
-assert.equal(target.deadline, Date.parse(first) + COACH_RESPONSE_TARGET_MS)
+assert.equal(
+  target.deadline,
+  Date.parse('2026-07-22T04:00:00.000Z'),
+  'eight working hours remain anchored to the first unanswered message'
+)
 assert.equal(target.unansweredCount, 2, 'additional messages share the active target')
 
 const beforeHours = getCoachResponseTarget([
@@ -45,7 +49,7 @@ const beforeHours = getCoachResponseTarget([
 ])
 assert(beforeHours)
 assert.equal(beforeHours.startedAt, Date.parse('2026-07-21T03:30:00.000Z'))
-assert.equal(beforeHours.deadline, Date.parse('2026-07-21T05:30:00.000Z'))
+assert.equal(beforeHours.deadline, Date.parse('2026-07-21T11:30:00.000Z'))
 
 const nearClose = getCoachResponseTarget([
   message('near-close', 'client', '2026-07-21T11:30:00.000Z'),
@@ -54,7 +58,7 @@ assert(nearClose)
 assert.equal(nearClose.startedAt, Date.parse('2026-07-21T11:30:00.000Z'))
 assert.equal(
   nearClose.deadline,
-  Date.parse('2026-07-22T04:30:00.000Z'),
+  Date.parse('2026-07-22T10:30:00.000Z'),
   'response countdown pauses at 6 PM and resumes at 9 AM IST'
 )
 
@@ -63,7 +67,7 @@ const afterHours = getCoachResponseTarget([
 ])
 assert(afterHours)
 assert.equal(afterHours.startedAt, Date.parse('2026-07-22T03:30:00.000Z'))
-assert.equal(afterHours.deadline, Date.parse('2026-07-22T05:30:00.000Z'))
+assert.equal(afterHours.deadline, Date.parse('2026-07-22T11:30:00.000Z'))
 assert.equal(getCoachWorkingHoursStatus(new Date(first)).isOpen, true)
 assert.equal(getCoachWorkingHoursStatus(new Date('2026-07-21T13:00:00.000Z')).isOpen, false)
 assert.equal(
@@ -75,7 +79,7 @@ const yearRollover = getCoachResponseTarget([
 ])
 assert(yearRollover)
 assert.equal(yearRollover.startedAt, Date.parse('2027-01-01T03:30:00.000Z'))
-assert.equal(yearRollover.deadline, Date.parse('2027-01-01T05:30:00.000Z'))
+assert.equal(yearRollover.deadline, Date.parse('2027-01-01T11:30:00.000Z'))
 
 assert.equal(
   getCoachResponseTarget([

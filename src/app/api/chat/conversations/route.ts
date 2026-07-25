@@ -1,25 +1,34 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/api-auth'
 import { getOrCreateConversation } from '@/lib/coach-chat'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireApiUser()
+  if (!auth.ok) return auth.response
 
-  const { data, error, isNew } = await getOrCreateConversation(supabase, user.id)
-  if (error) return NextResponse.json({ error }, { status: 400 })
+  const { data, error, isNew } = await getOrCreateConversation(createAdminClient(), auth.user.id)
+  if (error || !data) {
+    return NextResponse.json(
+      { error: error ?? 'Conversation could not be opened.' },
+      { status: 503 }
+    )
+  }
 
   return NextResponse.json({ conversation: data, isNew })
 }
 
 export async function POST() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireApiUser()
+  if (!auth.ok) return auth.response
 
-  const { data, error, isNew } = await getOrCreateConversation(supabase, user.id)
-  if (error) return NextResponse.json({ error }, { status: 400 })
+  const { data, error, isNew } = await getOrCreateConversation(createAdminClient(), auth.user.id)
+  if (error || !data) {
+    return NextResponse.json(
+      { error: error ?? 'Conversation could not be opened.' },
+      { status: 503 }
+    )
+  }
 
   return NextResponse.json({ conversation: data, isNew })
 }

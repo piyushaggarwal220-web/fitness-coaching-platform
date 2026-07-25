@@ -40,7 +40,7 @@ export async function resolveWorkQueueTask(
 
       const { error } = await admin
         .from('call_requests')
-        .update({ status: 'completed', updated_at: now })
+        .update({ status: 'completed', resolved_at: now, updated_at: now })
         .eq('id', requestId)
         .eq('coach_id', coachId)
 
@@ -91,16 +91,24 @@ export async function resolveWorkQueueTask(
         return { ok: false, resolved: false, error: countError.message }
       }
 
+      const remainingUnread = count ?? 0
       const { error } = await admin
         .from('coach_conversations')
         .update({
-          unread_by_coach: count ?? 0,
+          unread_by_coach: remainingUnread,
           updated_at: new Date().toISOString(),
         })
         .eq('id', conversationId)
         .eq('coach_id', coachId)
 
       if (error) return { ok: false, resolved: false, error: error.message }
+      if (remainingUnread > 0) {
+        return {
+          ok: false,
+          resolved: false,
+          error: 'Unread messages are still open. Open the chat and try Completed again.',
+        }
+      }
       return { ok: true, resolved: true }
     }
 

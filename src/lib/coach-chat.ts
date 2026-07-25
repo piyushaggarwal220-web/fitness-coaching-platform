@@ -144,12 +144,16 @@ export async function getOrCreateConversation(
   supabase: SupabaseClient,
   clientId: string
 ): Promise<{ data: CoachConversation | null; error: string | null; isNew: boolean }> {
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('coach_conversations')
     .select('*')
     .eq('client_id', clientId)
     .neq('status', 'closed')
     .maybeSingle()
+
+  if (existingError) {
+    return { data: null, error: existingError.message, isNew: false }
+  }
 
   if (existing) {
     const synced = await syncConversationCoach(

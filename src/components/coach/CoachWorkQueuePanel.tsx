@@ -19,14 +19,8 @@ import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
 const supabase = createClient()
 
 const COMPLETED_KEY = 'coach-queue-completed'
-/** Cap stored completions so localStorage stays bounded. */
 const COMPLETED_MAX = 400
 
-/**
- * A completed task stays hidden forever. The only exception is work that is
- * genuinely new — e.g. a client sends another message on a conversation the
- * coach already cleared — which arrives with a newer `createdAt`.
- */
 type CompletedEntry = { createdAt: string | null; completedAt: number }
 type CompletedMap = Map<string, CompletedEntry>
 
@@ -47,8 +41,6 @@ function loadCompleted(): CompletedMap {
     const raw = localStorage.getItem(COMPLETED_KEY) ?? sessionStorage.getItem(COMPLETED_KEY)
     if (!raw) return new Map()
     const parsed = JSON.parse(raw) as unknown
-
-    // Legacy format: plain array of ids.
     if (Array.isArray(parsed)) {
       return new Map(
         parsed
@@ -56,7 +48,6 @@ function loadCompleted(): CompletedMap {
           .map((id) => [id, { createdAt: null, completedAt: 0 }])
       )
     }
-
     if (parsed && typeof parsed === 'object') {
       const entries = Object.entries((parsed as { items?: Record<string, CompletedEntry> }).items ?? {})
       return new Map(
@@ -83,7 +74,7 @@ function saveCompleted(map: CompletedMap) {
     localStorage.setItem(COMPLETED_KEY, payload)
     sessionStorage.setItem(COMPLETED_KEY, payload)
   } catch {
-    // Storage full or blocked — suppression falls back to in-memory only.
+    // Storage can be unavailable; the in-memory map still covers this session.
   }
 }
 
@@ -100,7 +91,6 @@ function isTaskCompleted(task: WorkQueueTask, map: CompletedMap): boolean {
   const taskAt = Date.parse(task.createdAt)
   const doneAt = Date.parse(entry.createdAt)
   if (!Number.isFinite(taskAt) || !Number.isFinite(doneAt)) return true
-  // Newer activity on the same record is fresh work, so let it back in.
   return taskAt <= doneAt
 }
 
@@ -207,12 +197,10 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     setCompleted(next)
     saveCompleted(next)
     setTasks((prev) => prev.filter((t) => t.id !== current.id))
-    const remaining = visible.filter((t) => t.id !== current.id)
-    onCountsChange?.(getWorkQueueCounts(remaining))
+    onCountsChange?.(getWorkQueueCounts(visible.filter((t) => t.id !== current.id)))
     setCompleting(false)
 
     // Refresh from server so counts stay accurate after DB resolution.
-    // Completed ids stay in localStorage so tasks do not reappear.
     void load()
   }
 
@@ -269,7 +257,7 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
         </button>
         {current.type !== 'plan_change_request' ? (
           <button type="button" onClick={() => void handleComplete()} disabled={completing} style={secondaryBtn}>
-            {completing ? 'Saving…' : 'Complete'}
+            {completing ? 'Saving…' : 'Completed'}
           </button>
         ) : null}
       </div>

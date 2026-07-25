@@ -3,7 +3,7 @@
  *  1. Homepage "CHOOSE YOUR PLAN" CTAs (middle + bottom) pointed at a dead
  *     anchor (/#shopify-section-blocks_C9E4qf). Point them at the 12-month plan page.
  *  2. Deploy the persistent 8-hour urgency countdown (localStorage-backed).
- *  3. Highlight the "Talk to a coach" CTAs (header icon action + mobile floating bar).
+ *  3. Highlight "Talk to a coach" using typography + colour only.
  *
  * Requires Shopify auth token at %TEMP%/shopify-auth-token.json
  */
@@ -84,14 +84,50 @@ console.log('cta link fixes:', ctaFixes)
 /* ------------------------------------------------------------------ */
 const planBlockKey = 'blocks/ai_gen_block_361650c.liquid'
 const localPlanBlock = path.join(process.cwd(), 'scripts/tmp-cta-blocks-ai_gen_block_361650c.liquid')
-let planLiquid = fs.existsSync(localPlanBlock)
-  ? fs.readFileSync(localPlanBlock, 'utf8')
-  : await getAsset(planBlockKey)
+let planLiquid = await getAsset(planBlockKey)
 if (!planLiquid) throw new Error('plan selector liquid not found')
 
 if (!planLiquid.includes('lurvox-urgency-countdown-end-v1')) {
-  throw new Error('local plan selector liquid is missing the persistent countdown patch')
+  planLiquid = planLiquid.replace(
+    `        const hours = parseInt(this.countdownElement.getAttribute('data-countdown-end')) || 8;
+        const endTime = new Date().getTime() + (hours * 60 * 60 * 1000);`,
+    `        const hours = parseInt(this.countdownElement.getAttribute('data-countdown-end')) || 8;
+        const storageKey = 'lurvox-urgency-countdown-end-v1';
+        const duration = hours * 60 * 60 * 1000;
+        const rawStored = window.localStorage.getItem(storageKey);
+        const stored = rawStored === null ? NaN : Number(rawStored);
+        const endTime = Number.isFinite(stored) ? stored : Date.now() + duration;
+        if (!Number.isFinite(stored)) {
+          window.localStorage.setItem(storageKey, String(endTime));
+        }`
+  )
 }
+planLiquid = planLiquid
+  .replace(
+    'if (Number.isFinite(parsed) && parsed > Date.now()) {',
+    'if (Number.isFinite(parsed)) {'
+  )
+  .replace(
+    `          if (distance < 0) {
+            endTime = now + durationMs;
+            try {
+              localStorage.setItem(storageKey, String(endTime));
+            } catch (e) {}
+            distance = endTime - now;
+          }`,
+    `          if (distance < 0) {
+            this.countdownElement.textContent = '00:00:00';
+            clearInterval(this.countdownInterval);
+            return;
+          }`
+  )
+if (!planLiquid.includes('lurvox-urgency-countdown-end-v1')) {
+  throw new Error('Could not install persistent countdown patch')
+}
+
+planLiquid = planLiquid
+  .replace(/\s*assign plan_default_key = 'plan_' \| append: i \| append: '_default'/, '')
+  .replace(/\s*assign plan_default = block\.settings\[plan_default_key\]/, '')
 
 planLiquid = planLiquid.replace(
   '<a href="#" class="ai-transformation-plan-cta-{{ ai_gen_id }}" data-cta-button>',
@@ -99,7 +135,7 @@ planLiquid = planLiquid.replace(
 )
 
 /* ------------------------------------------------------------------ */
-/* 3. Talk-to-a-coach highlight: floating bar                          */
+/* 3. Talk-to-a-coach: typography + colour only                        */
 /* ------------------------------------------------------------------ */
 const fabKey = 'sections/mobile-floating-bar.liquid'
 let fab = await getAsset(fabKey)
@@ -110,68 +146,61 @@ fab = fab.replace(
   '<span class="lurvox-fab__label">Talk To A Coach</span>'
 )
 
-if (!fab.includes('/* lurvox-talk-pulse */')) {
+const fabTypography = `    /* lurvox-talk-typography-only */
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary {
+      background: transparent !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+      color: #ff6200 !important;
+      animation: none !important;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary svg {
+      color: #ff6200 !important;
+    }
+`
+fab = fab.replace(
+  /    \/\* lurvox-talk-(?:pulse|typography-only) \*\/[\s\S]*?(?=    #lurvox-fab-\{\{ section\.id \}\} \.lurvox-fab__btn:hover \{)/,
+  fabTypography
+)
+if (!fab.includes('/* lurvox-talk-typography-only */')) {
   fab = fab.replace(
     '    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:hover {',
-    `    /* lurvox-talk-pulse */
-    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary {
-      position: relative;
-      animation: lurvox-talk-pulse-{{ section.id }} 2.6s ease-in-out infinite;
-    }
-
-    @keyframes lurvox-talk-pulse-{{ section.id }} {
-      0%,
-      100% {
-        box-shadow: 0 10px 28px rgba(255, 98, 0, 0.28);
-      }
-      50% {
-        box-shadow:
-          0 10px 28px rgba(255, 98, 0, 0.45),
-          0 0 0 4px rgba(255, 98, 0, 0.18);
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary {
-        animation: none;
-      }
-    }
-
-    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:hover {`
+    `${fabTypography}    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:hover {`
   )
 }
 
 /* ------------------------------------------------------------------ */
-/* 4. Talk-to-a-coach highlight: header icon action gets a label pill   */
+/* 4. Header action label: typography + colour, no pill/pulse            */
 /* ------------------------------------------------------------------ */
 const layoutKey = 'layout/theme.liquid'
 let layout = await getAsset(layoutKey)
 if (!layout) throw new Error('layout/theme.liquid not found')
 
 const TALK_MARK = 'lurvox-talk-cta-highlight'
-if (!layout.includes(TALK_MARK)) {
-  const injection = `
-  {%- comment -%} ${TALK_MARK} {%- endcomment -%}
+const injection = `
+  {%- comment -%} ${TALK_MARK} · typography-only {%- endcomment -%}
   <style>
     a.header-actions__action[href*="talk-to-a-coach"] {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 14px;
-      border-radius: 999px;
-      color: #ffffff;
-      background: linear-gradient(180deg, #ff7a1a 0%, #ff6200 100%);
-      box-shadow: 0 8px 22px rgba(255, 98, 0, 0.32);
-      font-weight: 700;
-      letter-spacing: -0.01em;
+      padding: 0;
+      border-radius: 0;
+      color: #ff6200 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      font-weight: 800;
+      letter-spacing: 0.02em;
       line-height: 1;
       text-decoration: none;
-      animation: lurvox-talk-cta-pulse 2.6s ease-in-out infinite;
+      animation: none !important;
     }
 
     a.header-actions__action[href*="talk-to-a-coach"] .svg-wrapper,
     a.header-actions__action[href*="talk-to-a-coach"] svg {
-      color: #ffffff;
+      color: #ff6200 !important;
     }
 
     a.header-actions__action[href*="talk-to-a-coach"] .lurvox-talk-cta__label {
@@ -179,21 +208,9 @@ if (!layout.includes(TALK_MARK)) {
       white-space: nowrap;
     }
 
-    @keyframes lurvox-talk-cta-pulse {
-      0%,
-      100% {
-        box-shadow: 0 8px 22px rgba(255, 98, 0, 0.32);
-      }
-      50% {
-        box-shadow:
-          0 8px 22px rgba(255, 98, 0, 0.45),
-          0 0 0 4px rgba(255, 98, 0, 0.16);
-      }
-    }
-
     @media screen and (max-width: 749px) {
       a.header-actions__action[href*="talk-to-a-coach"] {
-        padding: 7px 11px;
+        padding: 0;
       }
 
       a.header-actions__action[href*="talk-to-a-coach"] .lurvox-talk-cta__label {
@@ -201,11 +218,6 @@ if (!layout.includes(TALK_MARK)) {
       }
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      a.header-actions__action[href*="talk-to-a-coach"] {
-        animation: none;
-      }
-    }
   </style>
   <script>
     (function () {
@@ -229,6 +241,11 @@ if (!layout.includes(TALK_MARK)) {
     })();
   </script>
 `
+layout = layout.replace(
+  /\s*\{%- comment -%\} lurvox-talk-cta-highlight[\s\S]*?<\/script>\s*/,
+  `\n${injection}\n`
+)
+if (!layout.includes(`${TALK_MARK} · typography-only`)) {
   if (!layout.includes('</body>')) throw new Error('layout has no </body>')
   layout = layout.replace('</body>', `${injection}</body>`)
 }

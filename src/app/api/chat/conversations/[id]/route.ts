@@ -15,7 +15,7 @@ export async function GET(
   if (!access.ok) return access.response
 
   const { admin, participant } = access
-  const [{ data: profile, error: profileError }, planResult] =
+  const [{ data: profile, error: profileError }, { data: activePlan, error: planError }] =
     await Promise.all([
       admin
         .from('profiles')
@@ -28,24 +28,20 @@ export async function GET(
         .eq('client_id', participant.conversation.client_id)
         .eq('coach_id', participant.conversation.coach_id)
         .eq('active', true)
-        .order('updated_at', { ascending: false })
-        .limit(1),
+        .maybeSingle(),
     ])
 
-  if (profileError) {
-    console.error('[chat-conversation] profile lookup failed', {
+  if (profileError || planError) {
+    console.error('[chat-conversation] metadata lookup failed', {
       conversationId,
-      profileError: profileError.message,
+      profileError: profileError?.message,
+      planError: planError?.message,
     })
+    return NextResponse.json(
+      { error: 'Conversation details are temporarily unavailable. Please retry.' },
+      { status: 500 }
+    )
   }
-  if (planResult.error) {
-    console.error('[chat-conversation] plan lookup failed', {
-      conversationId,
-      planError: planResult.error.message,
-    })
-  }
-
-  const activePlan = planResult.data?.[0] ?? null
 
   return NextResponse.json({
     conversation: participant.conversation,

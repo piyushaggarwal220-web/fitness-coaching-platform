@@ -23,32 +23,47 @@ export default function ClientChatPage() {
     let active = true
     const init = async () => {
       setError('')
+      setConversation(null)
+      setConnecting(true)
+      setAuthReady(false)
+
       const auth = await authenticateClient(supabase, router, { requireOnboarding: true, requirePayment: true })
       if (!active) return
-      setAuthReady(true)
 
-      if (!auth?.profile) {
+      // authenticateClient returns null when it already redirected (login/checkout/onboarding).
+      if (!auth) {
+        setConnecting(false)
+        return
+      }
+      if (!auth.profile) {
+        setAuthReady(true)
         setError('Your chat could not be opened right now. Please retry.')
+        setConnecting(false)
         return
       }
 
-      setConnecting(true)
+      setAuthReady(true)
 
       // Session cookies can still be refreshing right after navigation, so retry transient failures.
       const delays = [0, 400, 1000]
       for (let attempt = 0; attempt < delays.length; attempt += 1) {
         if (delays[attempt]) await new Promise((resolve) => setTimeout(resolve, delays[attempt]))
         try {
+          const controller = new AbortController()
+          const timeout = window.setTimeout(() => controller.abort(), 12_000)
           const res = await fetch('/api/chat/conversations', {
             method: 'POST',
             credentials: 'include',
             cache: 'no-store',
+            signal: controller.signal,
           })
+          window.clearTimeout(timeout)
           const data = await res.json().catch(() => null)
 
           if (!res.ok) {
             const retryable =
-              (res.status >= 500 || res.status === 401) && attempt < delays.length - 1
+              (res.status >= 500 || res.status === 401 || res.status === 503) &&
+              attempt < delays.length - 1
             if (retryable) continue
             if (!active) return
             setError(data?.error ?? 'Failed to start conversation')
@@ -74,7 +89,7 @@ export default function ClientChatPage() {
     }
   }, [router, reloadKey])
 
-  if (!authReady) {
+  if (!authReady && !error) {
     return (
       <ClientShell title="Chat" loading hideBottomNav fullHeight>
         <span />
