@@ -771,8 +771,11 @@ export function validateOnboardingStep(
     requireFluxCapacity?: boolean
     /** New clients only — diet variety preference. */
     requireDietVariety?: boolean
+    /** Number wheels that the user has explicitly confirmed. */
+    confirmedScrollers?: string[]
   }
 ): string | null {
+  const confirmedScrollers = new Set(options?.confirmedScrollers ?? [])
   switch (step) {
     case 0: {
       if (!data.name.trim()) return 'Please enter your name.'
@@ -780,13 +783,22 @@ export function validateOnboardingStep(
       if (!data.age || Number.isNaN(age) || age < 13 || age > 100) {
         return 'Scroll to select your age (13–100).'
       }
+      if (options?.confirmedScrollers != null && !confirmedScrollers.has('age')) {
+        return 'Confirm your age after scrolling to your number.'
+      }
       return null
     }
     case 1: {
       if (!data.gender) return 'Please select your gender.'
       const heightError = validateHeightCm(data.height)
       if (heightError) return heightError
+      if (options?.confirmedScrollers != null && !confirmedScrollers.has('height')) {
+        return 'Confirm your height after scrolling to your number.'
+      }
       if (!data.weight || Number(data.weight) <= 0) return 'Scroll to select your weight.'
+      if (options?.confirmedScrollers != null && !confirmedScrollers.has('weight')) {
+        return 'Confirm your weight after scrolling to your number.'
+      }
       // Catch impossible BMI / out-of-range metrics before intake completes.
       // Auto plan generation hard-blocks on the same rules.
       const metricsGuard = evaluateComplexityInputs({
@@ -799,9 +811,18 @@ export function validateOnboardingStep(
       }
       if (options?.requireBodyMeasurements !== false) {
         if (!data.chest || Number(data.chest) <= 0) return 'Scroll to select your chest measurement.'
+        if (options?.confirmedScrollers != null && !confirmedScrollers.has('chest')) {
+          return 'Confirm your chest measurement after scrolling.'
+        }
         if (!data.thigh || Number(data.thigh) <= 0) return 'Scroll to select your thigh measurement.'
+        if (options?.confirmedScrollers != null && !confirmedScrollers.has('thigh')) {
+          return 'Confirm your thigh measurement after scrolling.'
+        }
         if (!data.navel || Number(data.navel) <= 0) {
           return 'Scroll to select your belly (navel) measurement.'
+        }
+        if (options?.confirmedScrollers != null && !confirmedScrollers.has('navel')) {
+          return 'Confirm your belly measurement after scrolling.'
         }
       }
       return null
@@ -901,6 +922,9 @@ export function validateOnboardingStep(
       return null
     case 16: {
       if (!data.monthly_food_budget.trim()) return 'Scroll to select your monthly food budget.'
+      if (options?.confirmedScrollers != null && !confirmedScrollers.has('monthly_food_budget')) {
+        return 'Confirm your monthly food budget after scrolling.'
+      }
       if (!data.cooking_ability) return 'Please select your cooking ability.'
       return null
     }

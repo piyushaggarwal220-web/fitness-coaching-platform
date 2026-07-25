@@ -23,6 +23,9 @@ type HeightInputProps = {
   disabled?: boolean
   inputStyle?: CSSProperties
   fieldStyle?: CSSProperties
+  requireConfirm?: boolean
+  confirmed?: boolean
+  onConfirm?: () => void
 }
 
 function imperialHeightToStoredCm(feet: number, inches: number): number {
@@ -41,6 +44,9 @@ export function HeightInput({
   required = false,
   disabled = false,
   fieldStyle,
+  requireConfirm = false,
+  confirmed = false,
+  onConfirm,
 }: HeightInputProps) {
   const id = useId()
   const [unit, setUnit] = useState<HeightUnit>('cm')
@@ -96,6 +102,9 @@ export function HeightInput({
           value={value}
           onChange={onChange}
           required={required}
+          requireConfirm={requireConfirm}
+          confirmed={confirmed}
+          onConfirm={onConfirm}
         />
       ) : (
         <div style={styles.imperialGrid}>
@@ -105,6 +114,9 @@ export function HeightInput({
             value={feet}
             onChange={(next) => updateImperial(next, inches || '0')}
             required={required}
+            requireConfirm={requireConfirm}
+            confirmed={confirmed}
+            onConfirm={onConfirm}
           />
           <NumberScroller
             label="Inches"
@@ -112,11 +124,16 @@ export function HeightInput({
             value={inches}
             onChange={(next) => updateImperial(feet || '0', next)}
             required={required}
+            requireConfirm={requireConfirm}
+            confirmed={confirmed}
+            onConfirm={onConfirm}
           />
         </div>
       )}
       <p id={`${id}-hint`} style={{ ...styles.hint, ...(validationError ? styles.error : {}) }} aria-live="polite">
-        {validationError ?? 'Scroll the wheel — no typing needed.'}
+        {validationError ?? (requireConfirm
+          ? 'Scroll to your height, then tap Confirm.'
+          : 'Scroll the wheel — no typing needed.')}
       </p>
     </fieldset>
   )

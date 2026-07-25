@@ -256,6 +256,116 @@ export async function getOrCreateConversation(
   return { data: updated as CoachConversation, error: null, isNew: true }
 }
 
+/**
+ * Coach-initiated get-or-create: only for clients assigned to this coach.
+ * Does not auto-assign a different coach.
+ */
+export async function getOrCreateConversationForCoach(
+  supabase: SupabaseClient,
+  coachId: string,
+  clientId: string
+): Promise<{ data: CoachConversation | null; error: string | null; isNew: boolean }> {
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, coach_id')
+    .eq('id', clientId)
+    .maybeSingle()
+
+  if (profileError) {
+    return { data: null, error: profileError.message, isNew: false }
+  }
+  if (!profile) {
+    return { data: null, error: 'Client not found.', isNew: false }
+  }
+  if (profile.coach_id !== coachId) {
+    return { data: null, error: 'Client is not assigned to you.', isNew: false }
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from('coach_conversations')
+    .select('*')
+    .eq('client_id', clientId)
+    .neq('status', 'closed')
+    .maybeSingle()
+
+  if (existingError) {
+    return { data: null, error: existingError.message, isNew: false }
+  }
+
+  if (existing) {
+    const synced = await syncConversationCoach(
+      supabase,
+      existing as CoachConversation,
+      clientId
+    )
+    if (synced.coach_id !== coachId) {
+      return { data: null, error: 'Conversation belongs to another coach.', isNew: false }
+    }
+    return { data: synced, error: null, isNew: false }
+  }
+
+  const now = new Date().toISOString()
+  const { data: conversation, error } = await supabase
+    .from('coach_conversations')
+    .insert({
+      client_id: clientId,
+      coach_id: coachId,
+      status: 'connecting' as ConversationStatus,
+      created_at: now,
+      updated_at: now,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    if (error.code === '23505') {
+      const { data: raced } = await supabase
+        .from('coach_conversations')
+        .select('*')
+        .eq('client_id', clientId)
+        .neq('status', 'closed')
+        .maybeSingle()
+      if (raced) {
+        return { data: raced as CoachConversation, error: null, isNew: false }
+      }
+    }
+    return { data: null, error: error.message ?? 'Failed to start conversation.', isNew: false }
+  }
+
+  if (!conversation) {
+    return { data: null, error: 'Failed to start conversation.', isNew: false }
+  }
+
+  const { data: coach } = await supabase
+    .from('coaches')
+    .select('name')
+    .eq('id', coachId)
+    .maybeSingle()
+
+  const coachName = coach?.name ?? 'Your coach'
+
+  await supabase
+    .from('coach_conversations')
+    .update({
+      status: 'active',
+      last_message_preview: `${coachName} started this conversation.`,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', conversation.id)
+
+  await insertSystemMessage(
+    conversation.id,
+    `${coachName} started this conversation.`
+  )
+
+  const updated = {
+    ...conversation,
+    status: 'active' as ConversationStatus,
+    last_message_preview: `${coachName} started this conversation.`,
+  }
+  return { data: updated as CoachConversation, error: null, isNew: true }
+}
+
 export async function sendChatMessage(
   supabase: SupabaseClient,
   input: {

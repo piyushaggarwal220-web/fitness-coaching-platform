@@ -74,7 +74,7 @@ export function CoachConversationsSection() {
   if (conversations.length === 0) {
     return (
       <p style={{ margin: 0, color: colors.textMuted, fontSize: 14, padding: '8px 0' }}>
-        No conversations yet. Clients appear here when they message you.
+        No conversations yet. Tap Message a client in Chat to text anyone first.
       </p>
     )
   }

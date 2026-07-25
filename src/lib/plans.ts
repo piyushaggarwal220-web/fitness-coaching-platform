@@ -189,7 +189,29 @@ export async function activatePlan(
     .in('status', ['generating', 'draft_ready', 'in_review'])
 
   void invalidateForEvent('plan_activated', plan.client_id)
-  return syncPlanDeliveredFlag(supabase, plan.client_id)
+  const delivered = await syncPlanDeliveredFlag(supabase, plan.client_id)
+  if (delivered.error) return delivered
+
+  // Keep today's tracker in sync with the plan the client was just given.
+  try {
+    const [{ data: activePlan }, { data: profile }] = await Promise.all([
+      supabase.from('plans').select('*').eq('id', plan.id).maybeSingle(),
+      supabase.from('profiles').select('*').eq('id', plan.client_id).maybeSingle(),
+    ])
+    if (activePlan) {
+      const { refreshTodayTrackerAfterPlanPublish } = await import('@/lib/daily-tracker/service')
+      await refreshTodayTrackerAfterPlanPublish(
+        supabase,
+        plan.client_id,
+        activePlan,
+        profile
+      )
+    }
+  } catch (err) {
+    console.error('[activatePlan] tracker refresh failed', err)
+  }
+
+  return { error: null }
 }
 
 export async function deactivatePlan(

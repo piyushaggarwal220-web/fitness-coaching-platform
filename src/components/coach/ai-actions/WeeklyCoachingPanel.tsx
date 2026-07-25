@@ -18,7 +18,7 @@ import { sendClientNotification } from '@/lib/notifications/client'
 import { useRouter } from 'next/navigation'
 import { colors } from '@/lib/coach-theme'
 import { AiGenerationStatusBadge } from '@/components/coach/AiGenerationStatusBadge'
-import { AiReasoningPanel, GenerationStatus, OptionalCoachNote } from './shared'
+import { AiReasoningPanel, GenerationStatus, MessageClientButton, OptionalCoachNote } from './shared'
 import { PlanCompareDrawer } from './PlanCompareDrawer'
 import { aiActionStyles as s } from './styles'
 import type { Plan, PlanFormData } from '@/types/database'
@@ -503,15 +503,21 @@ export function WeeklyCoachingPanel({
           <p style={{ margin: '0 0 12px', fontSize: 14, color: colors.danger, fontWeight: 600 }}>
             {failureMessage || 'AI draft unavailable.'}
           </p>
-          <button
-            type="button"
-            disabled={retrying || busy}
-            onClick={() => void retryDraft()}
-            style={primaryBtnStyle(retrying || busy)}
-            className="btn-press"
-          >
-            {retrying ? 'Retrying…' : 'Retry AI Draft'}
-          </button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+            <button
+              type="button"
+              disabled={retrying || busy}
+              onClick={() => void retryDraft()}
+              style={primaryBtnStyle(retrying || busy)}
+              className="btn-press"
+            >
+              {retrying ? 'Retrying…' : 'Retry AI Draft'}
+            </button>
+            <MessageClientButton
+              clientId={clientId}
+              label="Message client about the delay"
+            />
+          </div>
         </div>
       ) : (
         <button

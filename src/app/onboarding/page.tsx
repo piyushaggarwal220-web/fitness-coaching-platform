@@ -111,6 +111,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState('')
   const [mealsForTiming, setMealsForTiming] = useState<MealTimingKey[]>(['breakfast', 'lunch', 'dinner'])
   const [confirmedMealTimes, setConfirmedMealTimes] = useState<MealTimingKey[]>([])
+  const [confirmedScrollers, setConfirmedScrollers] = useState<string[]>([])
   const [requireBodyMeasurements, setRequireBodyMeasurements] = useState(true)
 
   useEffect(() => {
@@ -139,6 +140,16 @@ export default function OnboardingPage() {
         setRequireBodyMeasurements(needsMeasurements)
         setForm(formFromProfile(result.profile))
         setStep(getResumeStep(result.profile, { requireBodyMeasurements: needsMeasurements }))
+        const resumed = formFromProfile(result.profile)
+        const preConfirmed: string[] = []
+        if (resumed.age) preConfirmed.push('age')
+        if (resumed.height) preConfirmed.push('height')
+        if (resumed.weight) preConfirmed.push('weight')
+        if (resumed.chest) preConfirmed.push('chest')
+        if (resumed.thigh) preConfirmed.push('thigh')
+        if (resumed.navel) preConfirmed.push('navel')
+        if (resumed.monthly_food_budget) preConfirmed.push('monthly_food_budget')
+        setConfirmedScrollers(preConfirmed)
         setPhotoUrls({
           front: result.profile.progress_photo_front ?? null,
           side: result.profile.progress_photo_side ?? null,
@@ -169,6 +180,16 @@ export default function OnboardingPage() {
 
   const updateForm = useCallback((patch: Partial<OnboardingFormData>) => {
     setForm((prev) => ({ ...prev, ...patch }))
+    setError('')
+    const scrollerKeys = ['age', 'height', 'weight', 'chest', 'thigh', 'navel', 'monthly_food_budget'] as const
+    const cleared = scrollerKeys.filter((key) => key in patch)
+    if (cleared.length > 0) {
+      setConfirmedScrollers((prev) => prev.filter((key) => !cleared.includes(key as typeof cleared[number])))
+    }
+  }, [])
+
+  const confirmScroller = useCallback((key: string) => {
+    setConfirmedScrollers((prev) => (prev.includes(key) ? prev : [...prev, key]))
     setError('')
   }, [])
 
@@ -238,6 +259,7 @@ export default function OnboardingPage() {
     requireWorkSchoolSchedule: requireBodyMeasurements,
     requireFluxCapacity: requireBodyMeasurements,
     requireDietVariety: requireBodyMeasurements,
+    confirmedScrollers,
   }
 
   const handleNext = async () => {
@@ -387,7 +409,9 @@ export default function OnboardingPage() {
             setMealsForTiming,
             confirmedMealTimes,
             setConfirmedMealTimes,
-            requireBodyMeasurements
+            requireBodyMeasurements,
+            confirmedScrollers,
+            confirmScroller
           )}
 
           <div style={{ height: 72 }} />
@@ -438,7 +462,9 @@ function renderStep(
   setMealsForTiming: (meals: MealTimingKey[]) => void,
   confirmedMealTimes: MealTimingKey[],
   setConfirmedMealTimes: (meals: MealTimingKey[] | ((prev: MealTimingKey[]) => MealTimingKey[])) => void,
-  requireBodyMeasurements: boolean
+  requireBodyMeasurements: boolean,
+  confirmedScrollers: string[],
+  confirmScroller: (key: string) => void
 ) {
   switch (step) {
     case 0:
@@ -461,6 +487,9 @@ function renderStep(
             value={form.age}
             onChange={(age) => update({ age })}
             required
+            requireConfirm
+            confirmed={confirmedScrollers.includes('age')}
+            onConfirm={() => confirmScroller('age')}
           />
         </div>
       )
@@ -479,6 +508,9 @@ function renderStep(
               required
               fieldStyle={s.field}
               inputStyle={s.input}
+              requireConfirm
+              confirmed={confirmedScrollers.includes('height')}
+              onConfirm={() => confirmScroller('height')}
             />
             <NumberScroller
               label="Weight"
@@ -486,6 +518,9 @@ function renderStep(
               value={form.weight}
               onChange={(weight) => update({ weight })}
               required
+              requireConfirm
+              confirmed={confirmedScrollers.includes('weight')}
+              onConfirm={() => confirmScroller('weight')}
             />
             {requireBodyMeasurements ? (
               <Field
@@ -500,6 +535,9 @@ function renderStep(
                     value={form.chest}
                     onChange={(chest) => update({ chest })}
                     required
+                    requireConfirm
+                    confirmed={confirmedScrollers.includes('chest')}
+                    onConfirm={() => confirmScroller('chest')}
                   />
                   <MeasurementScroller
                     label="Thigh"
@@ -507,6 +545,9 @@ function renderStep(
                     value={form.thigh}
                     onChange={(thigh) => update({ thigh })}
                     required
+                    requireConfirm
+                    confirmed={confirmedScrollers.includes('thigh')}
+                    onConfirm={() => confirmScroller('thigh')}
                   />
                   <MeasurementScroller
                     label="Belly at navel"
@@ -514,6 +555,9 @@ function renderStep(
                     value={form.navel}
                     onChange={(navel) => update({ navel })}
                     required
+                    requireConfirm
+                    confirmed={confirmedScrollers.includes('navel')}
+                    onConfirm={() => confirmScroller('navel')}
                   />
                 </div>
               </Field>
@@ -953,7 +997,10 @@ function renderStep(
             value={form.monthly_food_budget}
             onChange={(monthly_food_budget) => update({ monthly_food_budget })}
             required
-            hint="Scroll to your monthly food budget in rupees."
+            requireConfirm
+            confirmed={confirmedScrollers.includes('monthly_food_budget')}
+            onConfirm={() => confirmScroller('monthly_food_budget')}
+            hint="Scroll to your monthly food budget in rupees, then confirm."
           />
           <Field label="Cooking ability" required>
             <ChipGroup options={COOKING_OPTIONS} value={form.cooking_ability} onChange={(v) => update({ cooking_ability: v })} />

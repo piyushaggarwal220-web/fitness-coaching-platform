@@ -35,6 +35,10 @@ type NumberScrollerBaseProps = {
   min?: number
   max?: number
   step?: number
+  /** When true, user must tap Confirm after scrolling before the value counts. */
+  requireConfirm?: boolean
+  confirmed?: boolean
+  onConfirm?: () => void
 }
 
 type NumberScrollerProps =
@@ -100,7 +104,16 @@ function formatDisplay(value: number, unit: string): string {
 
 /** Wheel-style picker — scroll to choose a number (no typing). */
 export function NumberScroller(props: NumberScrollerProps) {
-  const { label, value, onChange, required = false, hint } = props
+  const {
+    label,
+    value,
+    onChange,
+    required = false,
+    hint,
+    requireConfirm = false,
+    confirmed = false,
+    onConfirm,
+  } = props
   const range = resolveRange(props)
   const options = useMemo(
     () => buildOptions(range.min, range.max, range.step),
@@ -109,7 +122,12 @@ export function NumberScroller(props: NumberScrollerProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const settlingRef = useRef(false)
   const skipScrollSyncRef = useRef(false)
+  const userInteractedRef = useRef(false)
   const selected = parseSelected(value, options)
+
+  const markInteracted = () => {
+    userInteractedRef.current = true
+  }
 
   const scrollToValue = (next: number, behavior: ScrollBehavior = 'auto') => {
     const el = listRef.current
@@ -134,6 +152,8 @@ export function NumberScroller(props: NumberScrollerProps) {
   }, [selected])
 
   const commitValue = (next: number) => {
+    // Ignore ambient scroll events until the user actually touches the wheel.
+    if (!userInteractedRef.current && !value.trim()) return
     if (String(next) === value) return
     skipScrollSyncRef.current = true
     onChange(String(next))
@@ -142,6 +162,7 @@ export function NumberScroller(props: NumberScrollerProps) {
   const commitFromScroll = () => {
     const el = listRef.current
     if (!el || settlingRef.current) return
+    if (!userInteractedRef.current && !value.trim()) return
     const index = Math.round(el.scrollTop / ITEM_HEIGHT)
     const clamped = Math.max(0, Math.min(options.length - 1, index))
     const next = options[clamped]
@@ -157,6 +178,8 @@ export function NumberScroller(props: NumberScrollerProps) {
     commitValue(next)
   }
 
+  const needsConfirm = requireConfirm && Boolean(value.trim()) && !confirmed
+
   return (
     <div style={styles.wrap}>
       <style>{`
@@ -168,7 +191,9 @@ export function NumberScroller(props: NumberScrollerProps) {
           {required ? ' *' : ''}
         </span>
         <span style={styles.value}>
-          {selected != null ? formatDisplay(selected, range.unit) : 'Scroll to select'}
+          {selected != null
+            ? `${formatDisplay(selected, range.unit)}${requireConfirm && !confirmed ? ' · confirm below' : ''}`
+            : 'Scroll to select'}
         </span>
       </div>
       {hint ? <p style={styles.hint}>{hint}</p> : null}
@@ -183,6 +208,9 @@ export function NumberScroller(props: NumberScrollerProps) {
           aria-label={label}
           tabIndex={0}
           style={styles.list}
+          onPointerDown={markInteracted}
+          onTouchStart={markInteracted}
+          onWheel={markInteracted}
           onScroll={() => {
             if (settlingRef.current) return
             const el = listRef.current
@@ -206,6 +234,7 @@ export function NumberScroller(props: NumberScrollerProps) {
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => {
+                  markInteracted()
                   commitValue(n)
                   scrollToValue(n, 'smooth')
                 }}
@@ -221,8 +250,20 @@ export function NumberScroller(props: NumberScrollerProps) {
           <div style={{ height: ITEM_HEIGHT * 2 }} aria-hidden />
         </div>
       </div>
+      {needsConfirm ? (
+        <button
+          type="button"
+          onClick={() => onConfirm?.()}
+          style={styles.confirmBtn}
+        >
+          Confirm {selected != null ? formatDisplay(selected, range.unit) : label}
+        </button>
+      ) : null}
+      {requireConfirm && confirmed && selected != null ? (
+        <p style={styles.confirmed}>Confirmed · {formatDisplay(selected, range.unit)}</p>
+      ) : null}
       {!selected && required ? (
-        <p style={styles.prompt}>Scroll the wheel and stop on your number.</p>
+        <p style={styles.prompt}>Scroll the wheel and stop on your number, then confirm.</p>
       ) : null}
     </div>
   )
@@ -340,5 +381,22 @@ const styles: Record<string, CSSProperties> = {
     margin: 0,
     fontSize: 12,
     color: colors.textMuted,
+  },
+  confirmBtn: {
+    marginTop: 4,
+    padding: '10px 14px',
+    borderRadius: radius.md,
+    border: `1px solid ${colors.accent}`,
+    backgroundColor: colors.accentMuted,
+    color: colors.accent,
+    fontWeight: 700,
+    fontSize: 14,
+    cursor: 'pointer',
+  },
+  confirmed: {
+    margin: 0,
+    fontSize: 12,
+    fontWeight: 600,
+    color: colors.success,
   },
 }

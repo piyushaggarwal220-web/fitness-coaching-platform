@@ -2,8 +2,11 @@
 
 import type { AiReasoningDisplay } from '@/lib/coach/ai-actions'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AiGenerationProgress } from '@/components/motion/AiGenerationProgress'
 import { SuccessState } from '@/components/motion/SuccessState'
+import { openCoachChatWithClient } from '@/lib/coach-open-chat'
+import { colors } from '@/lib/coach-theme'
 import { motionClass } from '@/lib/motion'
 import { aiActionStyles as s } from './styles'
 
@@ -140,5 +143,55 @@ export function ActionCard({
       <p style={s.actionTitle}>{title}</p>
       <p style={s.actionDesc}>{description}</p>
     </button>
+  )
+}
+
+/** When AI can't generate, let the coach tell the client directly. */
+export function MessageClientButton({
+  clientId,
+  label = 'Message client',
+}: {
+  clientId: string
+  label?: string
+}) {
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <button
+        type="button"
+        disabled={busy || !clientId}
+        onClick={() => {
+          void (async () => {
+            setBusy(true)
+            setError('')
+            const result = await openCoachChatWithClient(clientId)
+            setBusy(false)
+            if ('error' in result) {
+              setError(result.error)
+              return
+            }
+            router.push(result.href)
+          })()
+        }}
+        style={{
+          ...s.noteToggle,
+          color: colors.accent,
+          fontWeight: 700,
+          textDecoration: 'none',
+          border: `1px solid ${colors.accent}`,
+          borderRadius: 999,
+          padding: '8px 14px',
+          marginBottom: 0,
+        }}
+      >
+        {busy ? 'Opening chat…' : label}
+      </button>
+      {error ? (
+        <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.danger }}>{error}</p>
+      ) : null}
+    </div>
   )
 }

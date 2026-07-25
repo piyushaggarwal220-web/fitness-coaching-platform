@@ -19,6 +19,7 @@ import { ComplexityHistoryTimeline } from '@/components/complexity/ComplexityHis
 import { ComplexityScoreCard } from '@/components/complexity/ComplexityScoreCard';
 import { CoachClientProfileEdit } from '@/components/coach/CoachClientProfileEdit';
 import { CoachClientJourneyPanel } from '@/components/coach/CoachClientJourneyPanel';
+import { openCoachChatWithClient } from '@/lib/coach-open-chat';
 import { formatHeight } from '@/lib/height';
 import type { Coach, CoachClientDetail, Workout } from '@/types/database';
 
@@ -35,6 +36,7 @@ export default function CoachClientDetailPage() {
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [messaging, setMessaging] = useState(false);
 
   useEffect(() => {
     const loadClient = async () => {
@@ -123,6 +125,25 @@ export default function CoachClientDetailPage() {
         <div style={styles.actions}>
           <button style={styles.generateBtn} onClick={() => router.push(`/coach/client/${client.id}/generate-plan`)}>
             AI coaching actions
+          </button>
+          <button
+            style={styles.actionBtn}
+            disabled={messaging}
+            onClick={() => {
+              void (async () => {
+                setMessaging(true)
+                setError('')
+                const result = await openCoachChatWithClient(client.id)
+                setMessaging(false)
+                if ('error' in result) {
+                  setError(result.error)
+                  return
+                }
+                router.push(result.href)
+              })()
+            }}
+          >
+            {messaging ? 'Opening chat…' : 'Message client'}
           </button>
           {activePlanId ? (
             <button

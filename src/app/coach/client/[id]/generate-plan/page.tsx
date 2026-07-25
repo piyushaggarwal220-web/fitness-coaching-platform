@@ -21,7 +21,7 @@ import { persistAiPlanDraft, planToForm, restorePlanAsDraft } from '@/lib/plans'
 import { ClientContextCard } from '@/components/coach/ai-actions/ClientContextCard'
 import { PlanCompareDrawer } from '@/components/coach/ai-actions/PlanCompareDrawer'
 import { PlanVersionList } from '@/components/coach/ai-actions/PlanVersionList'
-import { ActionCard, AiReasoningPanel, GenerationStatus, OptionalCoachNote } from '@/components/coach/ai-actions/shared'
+import { ActionCard, AiReasoningPanel, GenerationStatus, MessageClientButton, OptionalCoachNote } from '@/components/coach/ai-actions/shared'
 import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
 import type { Coach, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
@@ -440,11 +440,16 @@ export default function CoachGeneratePlanPage() {
           {metricsBlocked && (
             <div style={s.error}>
               Auto plan generation is blocked until height, weight, and age look realistic.
-              Fix metrics on the client profile, then retry background generation.
+              Fix metrics on the client profile, then retry background generation — or message the
+              client now so they know what is going on.
               {Array.isArray(client.complexity_input_review_reasons) &&
               client.complexity_input_review_reasons.length > 0
                 ? ` ${client.complexity_input_review_reasons.join(' ')}`
                 : ''}
+              <MessageClientButton
+                clientId={client.id}
+                label="Message client about metrics"
+              />
             </div>
           )}
 
@@ -469,14 +474,20 @@ export default function CoachGeneratePlanPage() {
               {backgroundJob.status === 'failed' && (
                 <div style={{ marginTop: 10 }}>
                   <span>{backgroundJob.error_message ?? 'Generation failed safely.'}</span>
-                  <button
-                    type="button"
-                    style={{ ...s.noteToggle, marginLeft: 8 }}
-                    disabled={retryingBackground}
-                    onClick={() => void retryBackgroundGeneration()}
-                  >
-                    {retryingBackground ? 'Queueing…' : 'Retry background generation'}
-                  </button>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginTop: 8 }}>
+                    <button
+                      type="button"
+                      style={s.noteToggle}
+                      disabled={retryingBackground}
+                      onClick={() => void retryBackgroundGeneration()}
+                    >
+                      {retryingBackground ? 'Queueing…' : 'Retry background generation'}
+                    </button>
+                    <MessageClientButton
+                      clientId={client.id}
+                      label="Message client about the delay"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -537,7 +548,7 @@ export default function CoachGeneratePlanPage() {
             <div style={s.error}>
               {error}
               {!busy && (
-                <div style={{ marginTop: 8 }}>
+                <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
                   <button
                     type="button"
                     style={s.noteToggle}
@@ -548,6 +559,10 @@ export default function CoachGeneratePlanPage() {
                   >
                     Retry complete plan
                   </button>
+                  <MessageClientButton
+                    clientId={client.id}
+                    label="Message client about the issue"
+                  />
                 </div>
               )}
             </div>

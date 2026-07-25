@@ -117,6 +117,31 @@ function getWorkoutPhaseSignature(snapshot: {
   ].join(';')
 }
 
+/** Detect meal/workout/cardio edits that keep the same item count. */
+function snapshotContentFingerprint(snapshot: DailyTrackerDay['snapshot']): string {
+  return snapshot.items
+    .map((item) => {
+      if (item.type === 'meal') {
+        const foods = Array.isArray(item.foods) ? item.foods.join(',') : String(item.foods ?? '')
+        return `meal:${item.id}:${item.title}:${foods}:${item.mealTime ?? ''}`
+      }
+      if (item.type === 'workout') {
+        const names = (item.exercises ?? [])
+          .map((ex) => `${ex.name}:${ex.targetSets}:${ex.targetReps}`)
+          .join(',')
+        return `workout:${item.id}:${item.title}:${names}`
+      }
+      if (item.type === 'cardio') {
+        return `cardio:${item.id}:${item.title}:${item.target ?? ''}:${item.unit ?? ''}`
+      }
+      if (item.type === 'supplement') {
+        return `supp:${item.id}:${item.title}:${item.dose ?? ''}`
+      }
+      return `${item.type}:${item.id}:${'title' in item ? item.title : ''}`
+    })
+    .join('|')
+}
+
 function sanitizeCompletionForSnapshot(
   completion: TrackerCompletion,
   snapshot: DailyTrackerDay['snapshot']
@@ -234,14 +259,17 @@ export async function getOrCreateTodayTracker(
       new Date(plan.updated_at).getTime() > new Date(snapshotPlanStamp).getTime()
     const workoutStructureChanged =
       getWorkoutPhaseSignature(existingDay.snapshot) !== getWorkoutPhaseSignature(snapshot)
+    const contentChanged =
+      snapshotContentFingerprint(existingDay.snapshot) !== snapshotContentFingerprint(snapshot)
     const needsRebuild =
       existingDay.plan_version < plan.version ||
       existingDay.plan_id !== plan.id ||
       planEditedAfterSnapshot ||
       workoutStructureChanged ||
+      contentChanged ||
       (newHasWorkout && !existingHasWorkout) ||
       (newHasMeals && !existingHasMeals) ||
-      snapshot.items.length > existingDay.snapshot.items.length
+      snapshot.items.length !== existingDay.snapshot.items.length
 
     if (!needsRebuild) return { day: existingDay, error: null }
 
