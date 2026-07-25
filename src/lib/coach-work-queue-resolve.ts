@@ -157,6 +157,29 @@ export async function resolveWorkQueueTask(
 
     case 'issue_report': {
       const issueId = task.id.replace(/^issue-/, '')
+      const { data: issue, error: loadError } = await admin
+        .from('issue_reports')
+        .select('id, client_id, status')
+        .eq('id', issueId)
+        .maybeSingle()
+
+      if (loadError || !issue) {
+        return { ok: false, resolved: false, error: loadError?.message ?? 'Issue report not found.' }
+      }
+
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('id, coach_id')
+        .eq('id', issue.client_id)
+        .maybeSingle()
+
+      if (!profile || profile.coach_id !== coachId) {
+        return { ok: false, resolved: false, error: 'Issue report is not assigned to you.' }
+      }
+      if (issue.status === 'resolved' || issue.status === 'closed') {
+        return { ok: true, resolved: true }
+      }
+
       const now = new Date().toISOString()
       const { error } = await admin
         .from('issue_reports')
@@ -236,11 +259,23 @@ export async function resolveWorkQueueTask(
     }
 
     case 'plan_change_request': {
-      return {
-        ok: false,
-        resolved: false,
-        error: 'Open Start to review and deliver the plan change.',
+      // Delivery still happens on the plan page. Completing here records a durable
+      // queue dismissal so the coach can clear finished review work from the queue.
+      const changeId = task.id.replace(/^plan-change-/, '')
+      const { data: change, error: loadError } = await admin
+        .from('plan_change_requests')
+        .select('id, coach_id, status')
+        .eq('id', changeId)
+        .maybeSingle()
+
+      if (loadError || !change) {
+        return { ok: false, resolved: false, error: loadError?.message ?? 'Plan change request not found.' }
       }
+      if (change.coach_id !== coachId) {
+        return { ok: false, resolved: false, error: 'Plan change request is not assigned to you.' }
+      }
+
+      return { ok: true, resolved: true }
     }
 
     default:
