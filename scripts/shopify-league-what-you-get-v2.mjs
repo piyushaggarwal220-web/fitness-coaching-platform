@@ -13,7 +13,7 @@ import path from 'node:path'
 
 const STORE = '9uwyq1-0j.myshopify.com'
 const API = `https://${STORE}/admin/api/2025-01/graphql.json`
-const LEAGUE_PATH = '/pages/consistency-league'
+const LEAGUE_PATH = '/pages/league'
 const token = JSON.parse(
   fs.readFileSync(path.join(process.env.TEMP, 'shopify-auth-token.json'), 'utf8')
 )
