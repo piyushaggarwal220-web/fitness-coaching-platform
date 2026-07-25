@@ -5,6 +5,9 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { brandTitle } from '@/lib/brand'
 import { colors, spacing, radius } from '@/lib/design-tokens'
+import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
+
+const marketingBaseUrl = resolveMarketingBaseUrl()
 
 function EnrollInner() {
   const searchParams = useSearchParams()
@@ -97,6 +100,9 @@ function EnrollInner() {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
+          <a href={marketingBaseUrl} style={styles.backLink}>
+            ← Back to home
+          </a>
           <h1 style={styles.title}>{brandTitle('Check your email')}</h1>
           <p style={styles.subtitle}>
             We sent a confirmation link to <strong>{email}</strong>. Open it to confirm your email and
@@ -116,6 +122,9 @@ function EnrollInner() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
+        <a href={marketingBaseUrl} style={styles.backLink}>
+          ← Back to home
+        </a>
         <h1 style={styles.title}>{brandTitle('Member enrollment')}</h1>
         <p style={styles.subtitle}>
           Have a personal code from your coach? Enter it below to join the web platform. You&apos;ll
@@ -203,8 +212,16 @@ const styles: Record<string, CSSProperties> = {
     border: `1px solid ${colors.borderSubtle}`,
     padding: spacing[6],
   },
-  title: { margin: 0, fontSize: 24, color: colors.textPrimary },
+  title: { margin: '12px 0 0', fontSize: 24, color: colors.textPrimary },
   subtitle: { margin: `${spacing[2]} 0 ${spacing[4]}`, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 },
+  backLink: {
+    display: 'inline-block',
+    marginBottom: 4,
+    color: colors.textMuted,
+    textDecoration: 'none',
+    fontSize: 14,
+    fontWeight: 600,
+  },
   form: { display: 'flex', flexDirection: 'column', gap: spacing[3] },
   label: { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: colors.textSecondary },
   input: {

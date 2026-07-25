@@ -7,6 +7,9 @@ import { PasswordInput } from '@/components/ui/PasswordInput'
 import { brandTitle } from '@/lib/brand'
 import { createClient } from '@/lib/supabase/client'
 import { colors, spacing, radius } from '@/lib/design-tokens'
+import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
+
+const marketingBaseUrl = resolveMarketingBaseUrl()
 
 function SetPasswordInner() {
   const router = useRouter()
@@ -96,6 +99,9 @@ function SetPasswordInner() {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
+          <a href={marketingBaseUrl} style={styles.backLink}>
+            ← Back to home
+          </a>
           <h1 style={styles.title}>{brandTitle('Confirming email…')}</h1>
           <p style={styles.subtitle}>One moment while we verify your enrollment link.</p>
         </div>
@@ -107,6 +113,9 @@ function SetPasswordInner() {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
+          <a href={marketingBaseUrl} style={styles.backLink}>
+            ← Back to home
+          </a>
           <h1 style={styles.title}>{brandTitle('Link expired')}</h1>
           <p style={styles.subtitle}>{error}</p>
           <Link href="/enroll" style={styles.link}>
@@ -120,6 +129,9 @@ function SetPasswordInner() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
+        <a href={marketingBaseUrl} style={styles.backLink}>
+          ← Back to home
+        </a>
         <h1 style={styles.title}>{brandTitle('Set your password')}</h1>
         <p style={styles.subtitle}>
           Email confirmed for <strong>{email}</strong>
@@ -193,8 +205,16 @@ const styles: Record<string, CSSProperties> = {
     border: `1px solid ${colors.borderSubtle}`,
     padding: spacing[6],
   },
-  title: { margin: 0, fontSize: 24, color: colors.textPrimary },
+  title: { margin: '12px 0 0', fontSize: 24, color: colors.textPrimary },
   subtitle: { margin: `${spacing[2]} 0 ${spacing[4]}`, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 },
+  backLink: {
+    display: 'inline-block',
+    marginBottom: 4,
+    color: colors.textMuted,
+    textDecoration: 'none',
+    fontSize: 14,
+    fontWeight: 600,
+  },
   form: { display: 'flex', flexDirection: 'column', gap: spacing[3] },
   label: { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: colors.textSecondary },
   input: {

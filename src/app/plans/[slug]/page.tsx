@@ -58,11 +58,34 @@ export default async function PlanLandingPage({ params }: PageProps) {
 
   return (
     <div className={`${display.variable} ${body.variable}`} style={styles.page}>
+      <style>{`
+        .plan-page-title {
+          margin: 10px 0 0;
+          font-family: var(--font-plan-body), system-ui, sans-serif;
+          font-size: clamp(1.5rem, 5vw, 2.35rem);
+          font-weight: 700;
+          line-height: 1.25;
+          letter-spacing: -0.02em;
+          color: #fafafa;
+          max-width: 100%;
+        }
+        @media (max-width: 480px) {
+          .plan-page-title {
+            font-size: 1.45rem;
+            letter-spacing: -0.015em;
+          }
+        }
+      `}</style>
       <div style={styles.atmosphere} aria-hidden />
       <header style={styles.header}>
-        <a href={marketingBase} style={styles.brand}>
-          LURV<span style={{ color: '#f97316' }}>OX</span>
-        </a>
+        <div style={styles.headerLeft}>
+          <a href={marketingBase} style={styles.backHome}>
+            ← Home
+          </a>
+          <a href={marketingBase} style={styles.brand}>
+            LURV<span style={{ color: '#f97316' }}>OX</span>
+          </a>
+        </div>
         <a href={`${marketingBase}/pages/talk-to-a-coach`} style={styles.headerLink}>
           Talk to a coach
         </a>
@@ -70,10 +93,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
 
       <main style={styles.main}>
         <p style={styles.eyebrow}>{copy.eyebrow}</p>
-        <h1 style={styles.title}>
-          {plan.name}
-          <span style={styles.titleAccent}> coaching</span>
-        </h1>
+        <h1 className="plan-page-title">{plan.name} plan</h1>
         <p style={styles.promise}>{copy.promise}</p>
 
         <div style={styles.priceBlock}>
@@ -135,7 +155,7 @@ const styles: Record<string, CSSProperties> = {
     background: '#0a0a0b',
     color: '#fafafa',
     position: 'relative',
-    overflow: 'hidden',
+    overflowX: 'hidden',
     fontFamily: 'var(--font-plan-body), system-ui, sans-serif',
   },
   atmosphere: {
@@ -154,15 +174,28 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '20px 24px',
+    gap: 12,
+    padding: '16px 20px',
     maxWidth: 720,
     margin: '0 auto',
   },
+  headerLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    minWidth: 0,
+  },
+  backHome: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#a1a1aa',
+    textDecoration: 'none',
+  },
   brand: {
     fontFamily: 'var(--font-plan-display), sans-serif',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 800,
-    letterSpacing: '0.06em',
+    letterSpacing: '0.04em',
     color: '#fafafa',
     textDecoration: 'none',
   },
@@ -171,53 +204,44 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     color: '#a1a1aa',
     textDecoration: 'none',
+    flexShrink: 0,
   },
   main: {
     position: 'relative',
     zIndex: 1,
     maxWidth: 720,
     margin: '0 auto',
-    padding: '32px 24px 64px',
+    padding: '24px 20px 64px',
+    boxSizing: 'border-box',
+    width: '100%',
   },
   eyebrow: {
     margin: 0,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
-    letterSpacing: '0.16em',
+    letterSpacing: '0.14em',
     textTransform: 'uppercase',
     color: '#f97316',
   },
-  title: {
-    margin: '12px 0 0',
-    fontFamily: 'var(--font-plan-display), sans-serif',
-    fontSize: 'clamp(2.4rem, 8vw, 3.6rem)',
-    fontWeight: 800,
-    lineHeight: 1.05,
-    letterSpacing: '-0.03em',
-  },
-  titleAccent: {
-    color: '#c4c4cc',
-    fontWeight: 600,
-  },
   promise: {
-    margin: '16px 0 0',
+    margin: '14px 0 0',
     maxWidth: 480,
-    fontSize: 17,
+    fontSize: 16,
     lineHeight: 1.5,
     color: '#c4c4cc',
   },
   priceBlock: {
-    marginTop: 28,
+    marginTop: 24,
     display: 'flex',
     flexWrap: 'wrap',
     alignItems: 'baseline',
-    gap: '8px 16px',
+    gap: '8px 14px',
   },
   price: {
     margin: 0,
-    fontFamily: 'var(--font-plan-display), sans-serif',
-    fontSize: 40,
-    fontWeight: 800,
+    fontFamily: 'var(--font-plan-body), sans-serif',
+    fontSize: 'clamp(1.65rem, 5.5vw, 2.25rem)',
+    fontWeight: 700,
     letterSpacing: '-0.02em',
   },
   save: {
@@ -242,8 +266,8 @@ const styles: Record<string, CSSProperties> = {
   },
   cta: {
     display: 'inline-flex',
-    marginTop: 28,
-    padding: '16px 28px',
+    marginTop: 24,
+    padding: '14px 22px',
     borderRadius: 14,
     background: '#f97316',
     color: '#09090b',
@@ -253,14 +277,14 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: '0 8px 28px rgba(249,115,22,0.35)',
   },
   inclusions: {
-    marginTop: 48,
-    paddingTop: 32,
+    marginTop: 40,
+    paddingTop: 28,
     borderTop: '1px solid rgba(255,255,255,0.08)',
   },
   sectionTitle: {
     margin: 0,
     fontFamily: 'var(--font-plan-display), sans-serif',
-    fontSize: 22,
+    fontSize: 'clamp(1.15rem, 4vw, 1.35rem)',
     fontWeight: 700,
   },
   list: {
@@ -284,7 +308,7 @@ const styles: Record<string, CSSProperties> = {
     flexShrink: 0,
   },
   siblings: {
-    marginTop: 40,
+    marginTop: 36,
   },
   siblingsLabel: {
     margin: 0,

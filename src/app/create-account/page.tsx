@@ -8,8 +8,10 @@ import { createClient } from '@/lib/supabase/client'
 import { colors, spacing, radius } from '@/lib/design-tokens'
 import { isLeakedPasswordAuthError } from '@/lib/auth-password-errors'
 import { PasswordInput } from '@/components/ui/PasswordInput'
+import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
 
 const supabase = createClient()
+const marketingBaseUrl = resolveMarketingBaseUrl()
 
 function CreateAccountForm() {
   const searchParams = useSearchParams()
@@ -138,6 +140,9 @@ function CreateAccountForm() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
+        <a href={marketingBaseUrl} style={styles.backLink}>
+          ← Back to home
+        </a>
         <h1 style={styles.title}>{brandTitle('Create your account')}</h1>
         <p style={styles.subtitle}>
           {planName
@@ -272,11 +277,19 @@ const styles: Record<string, CSSProperties> = {
     border: `1px solid ${colors.borderSubtle}`,
   },
   title: {
-    margin: '0 0 8px',
+    margin: '12px 0 8px',
     fontSize: 28,
     color: colors.textPrimary,
     fontWeight: 800,
     letterSpacing: '-0.02em',
+  },
+  backLink: {
+    display: 'inline-block',
+    marginBottom: 4,
+    color: colors.textMuted,
+    textDecoration: 'none',
+    fontSize: 14,
+    fontWeight: 600,
   },
   subtitle: { margin: '0 0 20px', color: colors.textSecondary, lineHeight: 1.5 },
   form: { display: 'flex', flexDirection: 'column', gap: 10 },

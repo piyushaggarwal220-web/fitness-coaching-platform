@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { brandTitle } from '@/lib/brand'
 import { createClient } from '@/lib/supabase/client'
 import { colors, spacing, radius } from '@/lib/design-tokens'
+import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
+
+const marketingBaseUrl = resolveMarketingBaseUrl()
 
 function ConfirmEmailInner() {
   const router = useRouter()
@@ -74,6 +77,9 @@ function ConfirmEmailInner() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
+        <a href={marketingBaseUrl} style={styles.backLink}>
+          ← Back to home
+        </a>
         <h1 style={styles.title}>{brandTitle(failed ? 'Verification needed' : 'Verifying email')}</h1>
         <p style={styles.subtitle}>{message}</p>
         {failed && (
@@ -112,8 +118,16 @@ const styles: Record<string, CSSProperties> = {
     border: `1px solid ${colors.borderSubtle}`,
     boxSizing: 'border-box',
   },
-  title: { margin: '0 0 8px', fontSize: 24, fontWeight: 800, color: colors.textPrimary },
+  title: { margin: '12px 0 8px', fontSize: 24, fontWeight: 800, color: colors.textPrimary },
   subtitle: { margin: 0, color: colors.textSecondary, lineHeight: 1.5 },
+  backLink: {
+    display: 'inline-block',
+    marginBottom: 4,
+    color: colors.textMuted,
+    textDecoration: 'none',
+    fontSize: 14,
+    fontWeight: 600,
+  },
   link: {
     display: 'inline-block',
     marginTop: 16,

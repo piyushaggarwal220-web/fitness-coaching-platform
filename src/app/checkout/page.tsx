@@ -398,6 +398,7 @@ function CheckoutForm() {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
+          <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
           <h1 style={styles.title}>{brandTitle('Payment confirmed')}</h1>
           <p style={styles.subtitle}>Taking you to create your login password…</p>
         </div>
@@ -656,8 +657,15 @@ const styles: Record<string, CSSProperties> = {
     border: `1px solid ${colors.borderSubtle}`,
     boxSizing: 'border-box',
   },
-  backLink: { color: colors.textMuted, textDecoration: 'none', fontSize: 14 },
-  title: { margin: '16px 0 8px', fontSize: 28, color: colors.textPrimary, fontWeight: 800, letterSpacing: '-0.02em' },
+  backLink: {
+    display: 'inline-block',
+    color: colors.textMuted,
+    textDecoration: 'none',
+    fontSize: 14,
+    fontWeight: 600,
+    marginBottom: 4,
+  },
+  title: { margin: '12px 0 8px', fontSize: 28, color: colors.textPrimary, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 },
   subtitle: { margin: '0 0 20px', color: colors.textSecondary },
   testBanner: { backgroundColor: colors.warningMuted, color: colors.warning, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[3], fontSize: 14 },
   planPicker: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: spacing[4] },
