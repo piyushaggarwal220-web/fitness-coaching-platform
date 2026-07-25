@@ -421,7 +421,7 @@ function Photo({
 }: {
   label: string
   url: string | null
-  onOpen: (url: string) => void
+  onOpen: (url: string, previewUrl?: string) => void
 }) {
   return (
     <div style={styles.photoWrap}>
@@ -429,7 +429,11 @@ function Photo({
       {url ? (
         <button
           type="button"
-          onClick={() => onOpen(url)}
+          onClick={(e) => {
+            const img = e.currentTarget.querySelector('img')
+            const previewUrl = img?.currentSrc || img?.src || undefined
+            onOpen(url, previewUrl)
+          }}
           style={{
             display: 'block',
             width: '100%',
@@ -451,7 +455,7 @@ function Photo({
         <div style={styles.noPhoto}>No photo</div>
       )}
     </div>
-  );
+  )
 }
 
 const styles: Record<string, CSSProperties> = {
