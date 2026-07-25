@@ -20,6 +20,7 @@ import {
 import { getCheckinTypeLabel } from '@/lib/checkin-schedule';
 import { formatFitnessGoal } from '@/lib/coach-utils';
 import { WeeklyCoachingPanel } from '@/components/coach/ai-actions/WeeklyCoachingPanel';
+import { PhotoGalleryViewer, type GalleryPhoto } from '@/components/journey/PhotoGalleryViewer';
 import { StorageImage } from '@/components/ui/StorageImage';
 import type { Checkin, CheckinWithClient, CoachCheckinResponse } from '@/types/database';
 
@@ -38,6 +39,7 @@ export default function CoachCheckinDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [gallery, setGallery] = useState<{ photos: GalleryPhoto[]; index: number } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -164,7 +166,28 @@ export default function CoachCheckinDetailPage() {
 
   const isWeekly = checkin.checkin_type === 'weekly';
   const extraPhotos = Array.isArray(checkin.extra_photos) ? checkin.extra_photos : [];
+  const progressGallery: GalleryPhoto[] = [
+    checkin.progress_photo_front
+      ? { url: checkin.progress_photo_front, label: 'Front', bucket: CHECKIN_PHOTO_BUCKET }
+      : null,
+    checkin.progress_photo_side
+      ? { url: checkin.progress_photo_side, label: 'Side', bucket: CHECKIN_PHOTO_BUCKET }
+      : null,
+    checkin.progress_photo_back
+      ? { url: checkin.progress_photo_back, label: 'Back', bucket: CHECKIN_PHOTO_BUCKET }
+      : null,
+    ...extraPhotos.map((url, i) => ({
+      url,
+      label: `Extra ${i + 1}`,
+      bucket: CHECKIN_PHOTO_BUCKET,
+    })),
+  ].filter((photo): photo is NonNullable<typeof photo> => Boolean(photo))
 
+  const openProgressPhoto = (url: string) => {
+    const index = progressGallery.findIndex((photo) => photo.url === url)
+    if (index < 0) return
+    setGallery({ photos: progressGallery, index })
+  }
   return (
     <CoachShell narrow>
         <Link href="/coach/checkins" style={styles.backLink}>← Back to check-ins</Link>
@@ -282,16 +305,33 @@ export default function CoachCheckinDetailPage() {
           <section style={styles.card}>
             <h2 style={styles.cardTitle}>Progress photos</h2>
             <div style={styles.photoGrid}>
-              <Photo label="Front" url={checkin.progress_photo_front} />
-              <Photo label="Side" url={checkin.progress_photo_side} />
-              <Photo label="Back" url={checkin.progress_photo_back} />
+              <Photo
+                label="Front"
+                url={checkin.progress_photo_front}
+                onOpen={openProgressPhoto}
+              />
+              <Photo
+                label="Side"
+                url={checkin.progress_photo_side}
+                onOpen={openProgressPhoto}
+              />
+              <Photo
+                label="Back"
+                url={checkin.progress_photo_back}
+                onOpen={openProgressPhoto}
+              />
             </div>
             {extraPhotos.length > 0 && (
               <div style={{ marginTop: 16 }}>
                 <h3 style={{ fontSize: 14, marginBottom: 8 }}>Extra photos</h3>
                 <div style={styles.photoGrid}>
                   {extraPhotos.map((url, i) => (
-                    <Photo key={i} label={`Extra ${i + 1}`} url={url} />
+                    <Photo
+                      key={i}
+                      label={`Extra ${i + 1}`}
+                      url={url}
+                      onOpen={openProgressPhoto}
+                    />
                   ))}
                 </div>
               </div>
@@ -345,6 +385,19 @@ export default function CoachCheckinDetailPage() {
             )}
           </form>
         </section>
+      {gallery ? (
+        <PhotoGalleryViewer
+          photos={gallery.photos}
+          initialIndex={gallery.index}
+          bucket={CHECKIN_PHOTO_BUCKET}
+          meta={{
+            weekNumber: checkin.coaching_week,
+            date: checkin.submitted_at,
+            weight: typeof checkin.weight === 'number' ? checkin.weight : checkin.weight ? Number(checkin.weight) : null,
+          }}
+          onClose={() => setGallery(null)}
+        />
+      ) : null}
     </CoachShell>
   );
 }
@@ -358,12 +411,39 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Photo({ label, url }: { label: string; url: string | null }) {
+function Photo({
+  label,
+  url,
+  onOpen,
+}: {
+  label: string
+  url: string | null
+  onOpen: (url: string) => void
+}) {
   return (
     <div style={styles.photoWrap}>
       <span style={styles.photoLabel}>{label}</span>
       {url ? (
-        <StorageImage bucket={CHECKIN_PHOTO_BUCKET} src={url} alt={`${label} progress`} style={styles.photo} />
+        <button
+          type="button"
+          onClick={() => onOpen(url)}
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: 0,
+            border: 'none',
+            background: 'none',
+            cursor: 'zoom-in',
+          }}
+          aria-label={`Open ${label} photo`}
+        >
+          <StorageImage
+            bucket={CHECKIN_PHOTO_BUCKET}
+            src={url}
+            alt={`${label} progress`}
+            style={styles.photo}
+          />
+        </button>
       ) : (
         <div style={styles.noPhoto}>No photo</div>
       )}

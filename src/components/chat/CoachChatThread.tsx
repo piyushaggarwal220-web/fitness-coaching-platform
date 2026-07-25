@@ -9,6 +9,7 @@ import { CoachReplyRatingPrompt } from '@/components/chat/CoachReplyRating'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
 import { StorageImage } from '@/components/ui/StorageImage'
+import { PhotoGalleryViewer, type GalleryPhoto } from '@/components/journey/PhotoGalleryViewer'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
 import { useSupabaseRealtimeRefresh } from '@/hooks/useSupabaseRealtime'
@@ -127,6 +128,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [now, setNow] = useState(0)
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
+  const [gallery, setGallery] = useState<{ photos: GalleryPhoto[]; index: number } | null>(null)
   const threadRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const lastPeerMessageIdRef = useRef<string | null>(null)
@@ -648,7 +650,40 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                     />
                   </div>
                 ) : msg.message_type === 'image' && msg.media_url ? (
-                  <StorageImage bucket="chat-images" src={msg.media_url} alt="Shared" style={styles.image} />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const imageMsgs = messages.filter(
+                        (m) => m.message_type === 'image' && Boolean(m.media_url)
+                      )
+                      const photos: GalleryPhoto[] = imageMsgs.map((m) => ({
+                        url: m.media_url!,
+                        label: 'Chat photo',
+                        bucket: 'chat-images',
+                      }))
+                      const index = Math.max(
+                        0,
+                        imageMsgs.findIndex((m) => m.id === msg.id)
+                      )
+                      setGallery({ photos, index })
+                    }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: 0,
+                      border: 'none',
+                      background: 'none',
+                      cursor: 'zoom-in',
+                    }}
+                    aria-label="Open image"
+                  >
+                    <StorageImage
+                      bucket="chat-images"
+                      src={msg.media_url}
+                      alt="Shared"
+                      style={styles.image}
+                    />
+                  </button>
                 ) : (
                   <div
                     className="coach-chat-bubble-text"
@@ -769,6 +804,15 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           </div>
         )}
       </div>
+
+      {gallery ? (
+        <PhotoGalleryViewer
+          photos={gallery.photos}
+          initialIndex={gallery.index}
+          bucket="chat-images"
+          onClose={() => setGallery(null)}
+        />
+      ) : null}
     </div>
   )
 }

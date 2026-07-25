@@ -4,11 +4,13 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Touc
 import { X } from 'lucide-react'
 import { colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
-import { resolveProgressPhotoUrl } from '@/lib/storage/media-url'
+import { resolveProgressPhotoUrl, resolveStorageUrl } from '@/lib/storage/media-url'
 
 export type GalleryPhoto = {
   url: string
   label?: string
+  /** Storage bucket when not a progress/check-in photo. */
+  bucket?: string
 }
 
 export type GalleryMeta = {
@@ -21,6 +23,8 @@ type PhotoGalleryViewerProps = {
   photos: GalleryPhoto[]
   initialIndex?: number
   meta?: GalleryMeta
+  /** Default bucket for photos that omit `photo.bucket` (e.g. chat-images). */
+  bucket?: string
   onClose: () => void
 }
 
@@ -28,6 +32,7 @@ export function PhotoGalleryViewer({
   photos,
   initialIndex = 0,
   meta,
+  bucket,
   onClose,
 }: PhotoGalleryViewerProps) {
   const [index, setIndex] = useState(initialIndex)
@@ -46,13 +51,17 @@ export function PhotoGalleryViewer({
       return
     }
     const supabase = createClient()
-    void resolveProgressPhotoUrl(supabase, current.url).then((url) => {
+    const resolveBucket = current.bucket ?? bucket
+    const resolve = resolveBucket
+      ? resolveStorageUrl(supabase, resolveBucket, current.url)
+      : resolveProgressPhotoUrl(supabase, current.url)
+    void resolve.then((url) => {
       if (!cancelled) setResolvedUrl(url)
     })
     return () => {
       cancelled = true
     }
-  }, [current?.url])
+  }, [current?.url, current?.bucket, bucket])
 
   const goNext = useCallback(() => {
     if (photos.length <= 1) return
