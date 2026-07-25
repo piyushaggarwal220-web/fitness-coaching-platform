@@ -898,6 +898,18 @@ function renderStep(
           <Field label="Do you use whey protein?" required>
             <ChipGroup options={WHEY_OPTIONS} value={form.whey_protein} onChange={(v) => update({ whey_protein: v })} />
           </Field>
+          <Field
+            label="Any days or situations where you can’t follow the options above?"
+            hint="Optional — e.g. Tue office lunch is veg only, travel on weekends, can’t cook Thu"
+          >
+            <textarea
+              value={form.diet_custom_notes}
+              onChange={(e) => update({ diet_custom_notes: e.target.value })}
+              rows={3}
+              placeholder="Write exceptions here…"
+              style={s.textarea}
+            />
+          </Field>
         </div>
       )
 

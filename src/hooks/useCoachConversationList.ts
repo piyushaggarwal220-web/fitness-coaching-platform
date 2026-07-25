@@ -17,7 +17,7 @@ type UseCoachConversationListOptions = {
 
 export function useCoachConversationList({
   realtimeScope,
-  pollIntervalMs = 60_000,
+  pollIntervalMs = 20_000,
 }: UseCoachConversationListOptions) {
   const router = useRouter()
   const [conversations, setConversations] = useState<CoachConversationListItem[]>([])

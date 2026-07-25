@@ -129,11 +129,16 @@ function parseDietDayBlocks(diet: string): { key: string; label: string; body: s
   for (const block of blocks) {
     const lines = block.split('\n')
     const first = stripMarkdownDecorators(lines[0]?.trim() ?? '')
-    const dayMatch = first.match(/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b/i)
+    const dayMatch = first.match(
+      /^(?:(day\s*\d+)|(monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b(?:\s*[(\[–—:-]+\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday))?/i
+    )
     if (!dayMatch) continue
-    const raw = dayMatch[1]!.toLowerCase().replace(/\s+/g, ' ')
+    const dayToken = (dayMatch[1] || dayMatch[2] || '').toLowerCase().replace(/\s+/g, ' ')
+    const weekdayHint = dayMatch[3]?.toLowerCase()
+    // Prefer calendar weekday key when present (e.g. "DAY 1 (Monday)") so Today matches.
+    const raw = weekdayHint || dayToken
     const key = slug(raw)
-    const label = capitalizeLabel(raw)
+    const label = capitalizeLabel(weekdayHint ? `${dayToken} (${weekdayHint})` : dayToken)
     const body = lines.slice(1).join('\n').trim()
     if (!body) continue
     days.push({ key, label, body })
@@ -484,11 +489,13 @@ function splitWorkoutDayBlocks(workoutText: string): { key: string; label: strin
   for (const block of blocks) {
     const first = stripMarkdownDecorators(block.split('\n')[0] ?? '').trim()
     const dayMatch = first.match(
-      /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b/i
+      /^(?:(day\s*\d+)|(monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b(?:\s*[(\[–—:-]+\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday))?/i
     )
     if (!dayMatch) continue
-    const raw = dayMatch[1]!.toLowerCase().replace(/\s+/g, ' ')
-    days.push({ key: slug(raw), label: capitalizeLabel(raw), body: block.trim() })
+    const dayToken = (dayMatch[1] || dayMatch[2] || '').toLowerCase().replace(/\s+/g, ' ')
+    const weekdayHint = dayMatch[3]?.toLowerCase()
+    const raw = weekdayHint || dayToken
+    days.push({ key: slug(raw), label: capitalizeLabel(weekdayHint ? `${dayToken} (${weekdayHint})` : dayToken), body: block.trim() })
   }
 
   if (days.length > 0) return days

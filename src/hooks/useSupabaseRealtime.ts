@@ -40,7 +40,7 @@ export function useSupabaseRealtimeRefresh({
   onRefresh,
   onEvent,
   enabled = true,
-  pollIntervalMs = 60_000,
+  pollIntervalMs = 20_000,
   presence,
 }: UseRealtimeRefreshOptions) {
   const refreshRef = useRef(onRefresh)
@@ -229,7 +229,7 @@ export function useChatUnreadCount(viewer: 'client' | 'coach', enabled = true) {
       : [],
     onRefresh: refresh,
     enabled: enabled && Boolean(ownerId),
-    pollIntervalMs: 90_000,
+    pollIntervalMs: 20_000,
   })
 
   return count
@@ -238,7 +238,7 @@ export function useChatUnreadCount(viewer: 'client' | 'coach', enabled = true) {
 export function useCoachConversationRealtime(
   coachId: string | null,
   onRefresh: () => void | Promise<void>,
-  pollIntervalMs = 60_000,
+  pollIntervalMs = 20_000,
   scope = 'refresh'
 ) {
   useSupabaseRealtimeRefresh({

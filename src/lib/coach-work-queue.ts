@@ -88,7 +88,7 @@ export async function getCoachWorkQueue(
       .from('plans')
       .select('client_id, nutrition_plan, workout_plan')
       .in('client_id', pendingContentClientIds)
-      .eq('is_active', true)
+      .eq('active', true)
     for (const plan of activePlans ?? []) {
       if (plan.nutrition_plan?.trim() && plan.workout_plan?.trim()) {
         activePlanReadyByClient.add(plan.client_id)

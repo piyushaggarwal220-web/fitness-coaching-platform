@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Pause, Play, Save, Square } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { RestTimer } from '@/components/tracker/RestTimer'
@@ -87,6 +87,7 @@ export function WorkoutModule({
   const selectedKey = completion.selectedWorkoutDay ?? null
   const selectedDay = days.find((d) => d.key === selectedKey) ?? null
   const suggestion = suggestedWorkoutDayKey(days)
+  const autoSelectedRef = useRef(false)
 
   const workout = useMemo(() => {
     if (workouts.length === 0) return null
@@ -171,6 +172,12 @@ export function WorkoutModule({
   )
 
   useEffect(() => {
+    if (!multiDay || selectedKey || !suggestion || saving || autoSelectedRef.current) return
+    autoSelectedRef.current = true
+    selectWorkoutDay(suggestion)
+  }, [multiDay, selectedKey, suggestion, saving, selectWorkoutDay])
+
+  useEffect(() => {
     if (!sessionRunning || sessionStartedAt == null) return
 
     const tick = () => {
@@ -215,14 +222,17 @@ export function WorkoutModule({
             Workout day
           </p>
           <h2 style={{ margin: '8px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Which day&apos;s workout are you following?
+            {suggestion ? "Loading today's workout…" : "Which day's workout are you following?"}
           </h2>
-          <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-            Your plan has different sessions for different days. Pick today&apos;s workout and we&apos;ll
-            load that session.
-          </p>
+          {!suggestion && (
+            <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
+              Your plan has different sessions for different days. Pick today&apos;s workout and we&apos;ll
+              load that session.
+            </p>
+          )}
         </div>
 
+        {!suggestion && (
         <div style={{ display: 'grid', gap: 10 }}>
           {days.map((day) => {
             const option = workouts.find((w) => w.workoutDay === day.key)
@@ -264,6 +274,7 @@ export function WorkoutModule({
             )
           })}
         </div>
+        )}
       </div>
     )
   }

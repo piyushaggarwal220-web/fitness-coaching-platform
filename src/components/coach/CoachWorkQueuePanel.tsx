@@ -10,7 +10,6 @@ import {
   type WorkQueueFilter,
   type WorkQueueTask,
 } from '@/lib/coach-work-queue'
-import { resolveWorkQueueTask } from '@/lib/coach-work-queue-resolve'
 import { requireCoach } from '@/lib/coach-session'
 import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/coach-theme'
@@ -125,8 +124,8 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     return () => { active = false }
   }, [router, applyQueue])
 
-  // Realtime accelerates chat tasks; 45s fallback covers plans/check-ins/profiles.
-  useCoachConversationRealtime(coachId, load, 45_000, 'work-queue')
+  // Realtime accelerates chat tasks; 20s fallback covers plans/check-ins/profiles.
+  useCoachConversationRealtime(coachId, load, 20_000, 'work-queue')
 
   const filtered = filterWorkQueue(tasks, filter)
   const visible = filtered.filter((t) => !completed.has(t.id))
@@ -138,9 +137,17 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     setCompleting(true)
     setCompleteError('')
 
-    const result = await resolveWorkQueueTask(supabase, current)
-    if (!result.ok) {
-      setCompleteError(result.error ?? 'Could not complete this task.')
+    const res = await fetch('/api/coach/work-queue/resolve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ task: current }),
+    })
+    const result = (await res.json().catch(() => null)) as
+      | { ok?: boolean; error?: string }
+      | null
+    if (!res.ok || !result?.ok) {
+      setCompleteError(result?.error ?? 'Could not complete this task.')
       setCompleting(false)
       return
     }
@@ -208,9 +215,11 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
         <button type="button" onClick={() => openTask(current.href)} style={primaryBtn}>
           Start
         </button>
-        <button type="button" onClick={() => void handleComplete()} disabled={completing} style={secondaryBtn}>
-          {completing ? 'Saving…' : 'Complete'}
-        </button>
+        {current.type !== 'plan_change_request' ? (
+          <button type="button" onClick={() => void handleComplete()} disabled={completing} style={secondaryBtn}>
+            {completing ? 'Saving…' : 'Complete'}
+          </button>
+        ) : null}
       </div>
       {completeError ? (
         <p style={{ margin: '10px 0 0', color: '#ef4444', fontSize: 13 }}>{completeError}</p>

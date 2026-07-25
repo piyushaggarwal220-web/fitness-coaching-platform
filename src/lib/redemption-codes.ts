@@ -1,7 +1,7 @@
 import 'server-only'
 import { createHmac, timingSafeEqual, randomBytes } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { maybeAutoAssignCoach } from '@/lib/coach-assignment'
+import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { getCoachingPlan, type CoachingPlanSlug } from '@/lib/payments/plans'
 import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
 import { isEmailConfigured, sendDirectEmail } from '@/lib/notifications/email-provider'
@@ -302,7 +302,7 @@ async function grantEnrollmentAccess(input: {
     }
   }
 
-  await maybeAutoAssignCoach(userId, admin)
+  await autoAssignCoachToClient(userId, admin)
 
   const plan = getCoachingPlan(codeRow.plan_slug as CoachingPlanSlug)
   await admin.from('purchases').insert({

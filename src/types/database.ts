@@ -113,6 +113,8 @@ export type OnboardingData = {
     favoriteFoods?: string | null
     monthlyFoodBudget?: string | null
     cookingAbility?: string | null
+    /** Free-text exceptions when chip/weekday options don't fit. */
+    customNotes?: string | null
   }
   eatingPattern?: {
     breakfast?: string | null
@@ -233,6 +235,7 @@ export type OnboardingFormData = {
   food_allergies: string
   foods_disliked: string
   favorite_foods: string
+  diet_custom_notes: string
   monthly_food_budget: string
   cooking_ability: string
   breakfast: string

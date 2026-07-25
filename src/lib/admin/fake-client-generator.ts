@@ -208,6 +208,7 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     food_allergies: pick(ALLERGIES),
     foods_disliked: pick(['Bitter gourd', 'Mushrooms', 'Olives', 'None']),
     favorite_foods: pick(['Chicken, rice, dal', 'Paneer, roti, salad', 'Fish, vegetables, oats']),
+    diet_custom_notes: '',
     monthly_food_budget: String(pick([6000, 8000, 10000, 12000, 15000])),
     cooking_ability: pick(['basic', 'intermediate', 'advanced']),
     breakfast: pick(MEALS.breakfast),

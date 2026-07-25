@@ -14,6 +14,7 @@ import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
+const PAYMENT_SUCCESS_KEY = 'lurvox_checkout_success_redirect';
 
 type RazorpayHandlerResponse = {
   razorpay_order_id: string;
@@ -53,6 +54,11 @@ function CheckoutForm() {
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
   const paymentSucceededRef = useRef(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const policyRef = useRef<HTMLLabelElement>(null);
+  const verifyRef = useRef<HTMLDivElement>(null);
   const testMode = isPaymentBypassClient();
 
   const resetVerification = () => {
@@ -62,6 +68,19 @@ function CheckoutForm() {
     setEmailDelivery(null);
     setEmailLinkSent(false);
   };
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(PAYMENT_SUCCESS_KEY);
+      if (stored) {
+        paymentSucceededRef.current = true;
+        setPaymentConfirmed(true);
+        window.location.replace(stored);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
 
   useEffect(() => {
     const vid = searchParams.get('vid')?.trim() ?? '';
@@ -129,6 +148,30 @@ function CheckoutForm() {
       missing.push('Wait for the payment form to finish loading');
     }
     return missing;
+  };
+
+  const liveMissing = getMissingRequirements();
+
+  const focusFirstMissing = () => {
+    if (!name.trim()) {
+      nameRef.current?.focus();
+      return;
+    }
+    if (!email.trim() || !email.includes('@')) {
+      emailRef.current?.focus();
+      return;
+    }
+    if (!phone.trim()) {
+      phoneRef.current?.focus();
+      return;
+    }
+    if (!testMode && !emailVerified) {
+      verifyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (!policyAgreementAccepted) {
+      policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
   const sendEmailOtp = async () => {
@@ -215,8 +258,16 @@ function CheckoutForm() {
     paymentSucceededRef.current = true;
     setPaymentConfirmed(true);
     setLoading(true);
-    // Hard navigation so Razorpay modal dismiss cannot leave the user stuck on checkout.
-    window.location.assign(redirectTo);
+    const target = redirectTo.startsWith('http')
+      ? redirectTo
+      : `${window.location.origin}${redirectTo.startsWith('/') ? redirectTo : `/${redirectTo}`}`;
+    try {
+      sessionStorage.setItem(PAYMENT_SUCCESS_KEY, target);
+    } catch {
+      // ignore
+    }
+    // replace so browser Back cannot return to an unfinished checkout
+    window.location.replace(target);
   };
 
   const completeVerification = async (payload: {
@@ -268,6 +319,7 @@ function CheckoutForm() {
       setMissingItems(missing);
       setError(`Before you can pay, complete these steps:`);
       setLoading(false);
+      focusFirstMissing();
       return;
     }
 
@@ -407,7 +459,17 @@ function CheckoutForm() {
         )}
 
         {error && <div style={styles.error}>{error}</div>}
-        {missingItems.length > 0 && (
+        {!showRedeem && liveMissing.length > 0 && (
+          <div style={styles.todoBox}>
+            <p style={styles.todoTitle}>Still to do before paying</p>
+            <ul style={styles.todoList}>
+              {liveMissing.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {missingItems.length > 0 && error && (
           <ul style={styles.missingList}>
             {missingItems.map((item) => (
               <li key={item}>{item}</li>
@@ -422,10 +484,16 @@ function CheckoutForm() {
           noValidate
         >
           <label style={styles.label}>Full name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} style={styles.input} />
+          <input
+            ref={nameRef}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={styles.input}
+          />
 
           <label style={styles.label}>Email</label>
           <input
+            ref={emailRef}
             type="email"
             value={email}
             onChange={(e) => {
@@ -437,6 +505,7 @@ function CheckoutForm() {
 
           <label style={styles.label}>WhatsApp number</label>
           <input
+            ref={phoneRef}
             type="tel"
             value={phone}
             onChange={(e) => {
@@ -449,7 +518,7 @@ function CheckoutForm() {
           />
 
           {!testMode && (
-            <div style={styles.otpBox}>
+            <div ref={verifyRef} style={styles.otpBox}>
               <p style={styles.otpHint}>
                 Verify your email before paying. We email a secure link — open it on this phone to continue.
               </p>
@@ -511,7 +580,10 @@ function CheckoutForm() {
             </div>
           )}
 
-          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>
+          <label
+            ref={policyRef}
+            style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, fontSize: 13, lineHeight: 1.5 }}
+          >
             <input
               type="checkbox"
               checked={policyAgreementAccepted}
@@ -628,6 +700,28 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: radius.sm,
     fontSize: 14,
     lineHeight: 1.45,
+  },
+  todoBox: {
+    margin: '0 0 16px',
+    padding: '14px 16px',
+    backgroundColor: colors.accentMuted,
+    border: `1px solid rgba(249,115,22,0.25)`,
+    borderRadius: radius.sm,
+  },
+  todoTitle: {
+    margin: '0 0 8px',
+    fontSize: 13,
+    fontWeight: 700,
+    color: colors.accent,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase' as const,
+  },
+  todoList: {
+    margin: 0,
+    paddingLeft: 18,
+    fontSize: 14,
+    lineHeight: 1.5,
+    color: colors.textSecondary,
   },
   secure: { marginTop: spacing[3], fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 },
   loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: colors.textSecondary, backgroundColor: colors.bgPrimary },

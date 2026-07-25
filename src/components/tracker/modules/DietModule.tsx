@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import {
   CompletionToggle,
@@ -9,6 +9,7 @@ import {
   ProgressBar,
 } from '@/components/tracker/TrackerPrimitives'
 import { colors, radius, spacing } from '@/lib/design-tokens'
+import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
 import type { TrackerCompletion, TrackerMealItem } from '@/lib/daily-tracker/types'
 
 type DietDayOption = { key: string; label: string }
@@ -31,19 +32,19 @@ function deriveDietDays(meals: TrackerMealItem[], explicit?: DietDayOption[]): D
   return Array.from(map.entries()).map(([key, label]) => ({ key, label }))
 }
 
-function suggestedDayKey(days: DietDayOption[]): string | null {
-  if (days.length === 0) return null
-  const weekday = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][
-    new Date().getDay()
-  ]!
-  return days.find((d) => d.key === weekday)?.key ?? days[0]!.key
-}
-
 export function DietModule({ meals, dietDays, completion, dietScore, saving, onPatch }: Props) {
   const days = useMemo(() => deriveDietDays(meals, dietDays), [meals, dietDays])
   const multiDay = days.length > 1
   const selectedKey = completion.selectedDietDay ?? null
   const selectedDay = days.find((d) => d.key === selectedKey) ?? null
+  const suggestion = suggestedWorkoutDayKey(days)
+  const autoSelectedRef = useRef(false)
+
+  useEffect(() => {
+    if (!multiDay || selectedKey || !suggestion || saving || autoSelectedRef.current) return
+    autoSelectedRef.current = true
+    void onPatch({ selectedDietDay: suggestion })
+  }, [multiDay, selectedKey, suggestion, saving, onPatch])
 
   const visibleMeals = useMemo(() => {
     if (!multiDay) return meals
@@ -53,7 +54,6 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
 
   const [expanded, setExpanded] = useState<string | null>(null)
   const done = visibleMeals.filter((m) => completion.meals?.[m.id]?.completed).length
-  const suggestion = suggestedDayKey(days)
 
   if (multiDay && !selectedKey) {
     return (
@@ -80,14 +80,17 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
             Diet day
           </p>
           <h2 style={{ margin: '8px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Which day&apos;s diet are you following?
+            {suggestion ? "Loading today's diet…" : "Which day's diet are you following?"}
           </h2>
-          <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-            Your plan has different meals for different days. Pick today&apos;s schedule and we&apos;ll show those
-            meals.
-          </p>
+          {!suggestion && (
+            <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
+              Your plan has different meals for different days. Pick today&apos;s schedule and we&apos;ll show those
+              meals.
+            </p>
+          )}
         </div>
 
+        {!suggestion && (
         <div style={{ display: 'grid', gap: 10 }}>
           {days.map((day) => {
             const isSuggested = day.key === suggestion
@@ -120,6 +123,7 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
             )
           })}
         </div>
+        )}
       </div>
     )
   }

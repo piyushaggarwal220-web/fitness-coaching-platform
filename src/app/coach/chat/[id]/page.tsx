@@ -50,10 +50,17 @@ function CoachChatDetailInner() {
       for (let attempt = 0; attempt < delays.length; attempt += 1) {
         if (delays[attempt]) await new Promise((resolve) => setTimeout(resolve, delays[attempt]))
         try {
-          const detailResponse = await fetch(`/api/chat/conversations/${conversationId}`, {
-            credentials: 'include',
-            cache: 'no-store',
-          })
+          const [detailResponse, messageResponse] = await Promise.all([
+            fetch(`/api/chat/conversations/${conversationId}`, {
+              credentials: 'include',
+              cache: 'no-store',
+            }),
+            fetch(`/api/chat/messages?conversationId=${conversationId}`, {
+              credentials: 'include',
+              cache: 'no-store',
+            }),
+          ])
+
           const detail = await readApiJson<{
             conversation?: CoachConversation
             viewer?: 'client' | 'coach'
@@ -78,10 +85,6 @@ function CoachChatDetailInner() {
             return
           }
 
-          const messageResponse = await fetch(
-            `/api/chat/messages?conversationId=${conversationId}`,
-            { credentials: 'include', cache: 'no-store' }
-          )
           const messageResult = await readApiJson<{ messages?: ConversationMessage[] }>(messageResponse)
           if (!messageResult.ok) {
             const retryable = messageResponse.status >= 500 && attempt < delays.length - 1

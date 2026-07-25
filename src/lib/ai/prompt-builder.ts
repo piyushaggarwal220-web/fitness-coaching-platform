@@ -385,6 +385,11 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
   if (diet?.monthlyFoodBudget?.trim()) {
     lines.push(`- Monthly food budget: ₹${diet.monthlyFoodBudget} — stay within this; prioritize affordable staples.`)
   }
+  if (diet?.customNotes?.trim()) {
+    lines.push(
+      `- Diet day exceptions (MUST respect): ${diet.customNotes.trim()} — adjust meals on those days/situations; do not ignore.`
+    )
+  }
 
   if (environment === 'home') {
     lines.push(

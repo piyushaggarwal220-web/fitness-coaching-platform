@@ -29,6 +29,14 @@ function CreateAccountForm() {
   const [mode, setMode] = useState<'token' | 'receipt'>(token ? 'token' : 'receipt')
 
   useEffect(() => {
+    try {
+      sessionStorage.removeItem('lurvox_checkout_success_redirect')
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  useEffect(() => {
     if (!token) {
       setLookingUp(false)
       return
@@ -104,7 +112,7 @@ function CreateAccountForm() {
       }
 
       if (data.needsLogin) {
-        window.location.assign(data.redirectTo ?? '/login?linked=1')
+        window.location.replace(data.redirectTo ?? '/login?linked=1')
         return
       }
 
@@ -120,7 +128,7 @@ function CreateAccountForm() {
         }
       }
 
-      window.location.assign(data.redirectTo ?? '/onboarding')
+      window.location.replace(data.redirectTo ?? '/onboarding')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create account')
       setLoading(false)

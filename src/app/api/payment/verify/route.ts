@@ -16,6 +16,7 @@ import {
   type CheckoutPolicyAcknowledgement,
 } from '@/lib/policies'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveAppBaseUrl } from '@/lib/admin/portal-urls'
 
 type VerifyPaymentBody = {
   planSlug?: string
@@ -196,11 +197,12 @@ export async function POST(request: Request) {
     ])
 
     if (result.alreadyClaimed) {
+      const appBase = resolveAppBaseUrl().replace(/\/$/, '')
       return NextResponse.json({
         success: true,
         alreadyClaimed: true,
         purchaseId: result.purchaseId,
-        redirectTo: '/login',
+        redirectTo: `${appBase}/login`,
         message: 'This payment already has an account. Please sign in.',
       })
     }
@@ -216,11 +218,13 @@ export async function POST(request: Request) {
       }
     }
 
+    const appBase = resolveAppBaseUrl().replace(/\/$/, '')
+
     if (claimToken) {
       return NextResponse.json({
         success: true,
         purchaseId: result.purchaseId,
-        redirectTo: `/create-account?token=${encodeURIComponent(claimToken)}`,
+        redirectTo: `${appBase}/create-account?token=${encodeURIComponent(claimToken)}`,
       })
     }
 
@@ -232,7 +236,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       purchaseId: result.purchaseId,
-      redirectTo: `/create-account?${params.toString()}`,
+      redirectTo: `${appBase}/create-account?${params.toString()}`,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to record payment'

@@ -492,6 +492,9 @@ export default function CoachGeneratePlanPage() {
               <span>Goal: {formatFitnessGoal(client.fitness_goal)}</span>
               <span>Training: {getOnboardingLabel('training_experience', client.training_experience)}</span>
               <span>Diet: {getOnboardingLabel('diet_preference', client.diet_preference)}</span>
+              {client.onboarding_data?.diet?.customNotes?.trim() ? (
+                <span>Diet exceptions: {client.onboarding_data.diet.customNotes.trim()}</span>
+              ) : null}
               <span>
                 Age / weight: {client.age ?? '—'} yrs · {client.weight ?? '—'} kg
               </span>

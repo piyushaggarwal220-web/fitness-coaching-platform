@@ -30,7 +30,8 @@ export async function GET(request: Request) {
       .from('conversation_messages')
       .select('*')
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(100)
 
     if (error) {
       logApiDev('chat_messages_get_query_failed', { conversationId, error: error.message })
@@ -40,10 +41,12 @@ export async function GET(request: Request) {
       )
     }
 
+    const chronological = [...(data ?? [])].reverse()
+
     const reader = participant.viewer
 
     if (!peek) {
-      const readThrough = data.at(-1)?.created_at ?? null
+      const readThrough = chronological.at(-1)?.created_at ?? null
       await markConversationRead(admin, conversationId, reader, readThrough)
     }
 
@@ -84,7 +87,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      messages: data,
+      messages: chronological,
       peerTyping,
       callRequests: callRequests ?? [],
       peerLastSeenAt,

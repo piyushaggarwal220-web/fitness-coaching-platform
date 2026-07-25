@@ -112,7 +112,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(initialMessages.length === 0)
   const [peerTyping, setPeerTyping] = useState(false)
   const [peerOnline, setPeerOnline] = useState(false)
   const [peerLastSeenAt, setPeerLastSeenAt] = useState<string | null>(null)
@@ -194,8 +194,13 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
   useEffect(() => {
     prepareNotificationSound()
+    if (initialMessages.length > 0) {
+      // Seeded from the parent page — only refresh metadata (calls, presence, unread).
+      queueMicrotask(() => void fetchMessages(false))
+      return
+    }
     queueMicrotask(() => void fetchMessages())
-  }, [fetchMessages])
+  }, [fetchMessages, initialMessages.length])
 
   useSupabaseRealtimeRefresh({
     channelName: `chat:${conversationId}`,
@@ -205,7 +210,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       { event: '*', table: 'call_requests', filter: `conversation_id=eq.${conversationId}` },
     ],
     onRefresh: fetchMessages,
-    pollIntervalMs: 90_000,
+    pollIntervalMs: 15_000,
     presence: {
       key: `${viewer}:${conversationId}`,
       payload: { role: viewer, onlineAt: new Date().toISOString() },

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 import { brandTitle } from '@/lib/brand'
 import { createClient } from '@/lib/supabase/client'
 import { colors, spacing, radius } from '@/lib/design-tokens'
@@ -128,26 +129,28 @@ function SetPasswordInner() {
         <form onSubmit={(e) => void handleSubmit(e)} style={styles.form}>
           <label style={styles.label}>
             Password
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
               autoComplete="new-password"
-              style={styles.input}
+              inputStyle={styles.input}
+              name="new_password"
+              aria-label="Create login password"
             />
           </label>
           <label style={styles.label}>
             Confirm password
-            <input
-              type="password"
+            <PasswordInput
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               required
               minLength={6}
               autoComplete="new-password"
-              style={styles.input}
+              inputStyle={styles.input}
+              name="confirm_password"
+              aria-label="Confirm login password"
             />
           </label>
           <button type="submit" disabled={loading} style={styles.button}>
