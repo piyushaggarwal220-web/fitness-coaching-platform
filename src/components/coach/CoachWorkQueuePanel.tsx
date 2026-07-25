@@ -124,7 +124,7 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const [completed, setCompleted] = useState<CompletedMap>(loadCompleted)
   const completedRef = useRef<CompletedMap>(completed)
   const [loading, setLoading] = useState(true)
-  const [completing, setCompleting] = useState(false)
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
   const [completeError, setCompleteError] = useState('')
   const [coachId, setCoachId] = useState<string | null>(null)
 
@@ -172,33 +172,34 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const current = visible[0] ?? null
   const upcoming = visible.slice(1, 4)
 
-  const handleComplete = async () => {
-    if (!current || completing) return
-    setCompleting(true)
+  const handleComplete = async (task: WorkQueueTask) => {
+    if (!task || completingTaskId) return
+    setCompletingTaskId(task.id)
     setCompleteError('')
 
     const res = await fetch('/api/coach/work-queue/resolve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ task: current }),
+      body: JSON.stringify({ task }),
     })
     const result = (await res.json().catch(() => null)) as
       | { ok?: boolean; error?: string }
       | null
     if (!res.ok || !result?.ok) {
       setCompleteError(result?.error ?? 'Could not complete this task.')
-      setCompleting(false)
+      setCompletingTaskId(null)
       return
     }
 
-    const next = withTaskCompleted(completed, current)
+    const next = withTaskCompleted(completed, task)
     completedRef.current = next
     setCompleted(next)
     saveCompleted(next)
-    setTasks((prev) => prev.filter((t) => t.id !== current.id))
-    onCountsChange?.(getWorkQueueCounts(visible.filter((t) => t.id !== current.id)))
-    setCompleting(false)
+    const remaining = visible.filter((t) => t.id !== task.id)
+    setTasks((prev) => prev.filter((t) => t.id !== task.id))
+    onCountsChange?.(getWorkQueueCounts(remaining))
+    setCompletingTaskId(null)
 
     // Refresh from server so counts stay accurate after DB resolution.
     void load()
@@ -252,14 +253,26 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
         <p style={{ margin: '6px 0 0', fontSize: 14, color: colors.textSecondary }}>{current.subtitle}</p>
       </button>
       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <button type="button" onClick={() => openTask(current.href)} style={primaryBtn}>
+        <button
+          type="button"
+          onClick={() => openTask(current.href)}
+          disabled={completingTaskId === current.id}
+          style={primaryBtn}
+        >
           Start
         </button>
-        {current.type !== 'plan_change_request' ? (
-          <button type="button" onClick={() => void handleComplete()} disabled={completing} style={secondaryBtn}>
-            {completing ? 'Saving…' : 'Completed'}
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => void handleComplete(current)}
+          disabled={Boolean(completingTaskId)}
+          style={{
+            ...secondaryBtn,
+            opacity: completingTaskId && completingTaskId !== current.id ? 0.6 : 1,
+            cursor: completingTaskId ? 'wait' : 'pointer',
+          }}
+        >
+          {completingTaskId === current.id ? 'Saving…' : 'Complete'}
+        </button>
       </div>
       {completeError ? (
         <p style={{ margin: '10px 0 0', color: '#ef4444', fontSize: 13 }}>{completeError}</p>
@@ -268,10 +281,40 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
         <div style={{ marginTop: 20 }}>
           <p style={{ margin: '0 0 10px', fontSize: 12, color: colors.textMuted, fontWeight: 600 }}>Up next</p>
           {upcoming.map((task) => (
-            <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderTop: `1px solid ${colors.divider}` }}>
+            <div
+              key={task.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 0',
+                borderTop: `1px solid ${colors.divider}`,
+              }}
+            >
               <span style={{ color: colors.textMuted }}>↓</span>
-              <button type="button" onClick={() => openTask(task.href)} style={{ background: 'none', border: 'none', padding: 0, color: colors.textSecondary, cursor: 'pointer', fontSize: 14, textAlign: 'left' }}>
+              <button
+                type="button"
+                onClick={() => openTask(task.href)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: colors.textSecondary,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  textAlign: 'left',
+                  flex: 1,
+                }}
+              >
                 {task.title} — {task.subtitle}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleComplete(task)}
+                disabled={Boolean(completingTaskId)}
+                style={upcomingCompleteBtn}
+              >
+                {completingTaskId === task.id ? 'Saving…' : 'Complete'}
               </button>
             </div>
           ))}
@@ -310,4 +353,16 @@ const secondaryBtn: CSSProperties = {
   fontWeight: 600,
   cursor: 'pointer',
   fontSize: 15,
+}
+
+const upcomingCompleteBtn: CSSProperties = {
+  padding: '6px 10px',
+  backgroundColor: colors.bgElevated,
+  color: colors.textPrimary,
+  border: `1px solid ${colors.borderSubtle}`,
+  borderRadius: 10,
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontSize: 12,
+  flexShrink: 0,
 }
