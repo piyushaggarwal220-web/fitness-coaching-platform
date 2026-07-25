@@ -30,7 +30,11 @@ export async function sendMetaPurchase(
   input: MetaPurchaseInput
 ): Promise<{ ok: boolean; skipped?: boolean; eventId: string; error?: string }> {
   const eventId = metaPurchaseEventId(input.paymentId)
-  const pixelId = process.env.META_PIXEL_ID?.trim() || process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
+  const pixelId =
+    process.env.META_PIXEL_ID?.trim() ||
+    process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() ||
+    // Lurvox production pixel — matches the browser-side default.
+    '1195395326212201'
   const accessToken = process.env.META_CONVERSIONS_API_TOKEN?.trim()
   const apiVersion = process.env.META_CONVERSIONS_API_VERSION?.trim() || 'v22.0'
   const admin = createAdminClient()

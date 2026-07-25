@@ -1,6 +1,9 @@
 import Script from 'next/script'
 
-const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()
+/** Lurvox Meta Pixel — env var wins so staging can override or disable. */
+const DEFAULT_META_PIXEL_ID = '1195395326212201'
+
+const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || DEFAULT_META_PIXEL_ID
 const validPixelId = pixelId && /^\d+$/.test(pixelId) ? pixelId : null
 
 export function MetaPixel() {
