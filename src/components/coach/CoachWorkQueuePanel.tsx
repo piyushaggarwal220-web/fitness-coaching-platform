@@ -125,6 +125,7 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const completedRef = useRef<CompletedMap>(completed)
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(false)
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
   const [completeError, setCompleteError] = useState('')
   const [coachId, setCoachId] = useState<string | null>(null)
 
@@ -170,18 +171,19 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const filtered = filterWorkQueue(tasks, filter)
   const visible = filtered.filter((task) => !isTaskCompleted(task, completed))
   const current = visible[0] ?? null
-  const upcoming = visible.slice(1, 4)
+  const upcoming = visible.slice(1)
 
-  const handleComplete = async () => {
-    if (!current || completing) return
+  const handleComplete = async (task: WorkQueueTask) => {
+    if (completing) return
     setCompleting(true)
     setCompleteError('')
+    setCompletingTaskId(task.id)
 
     const res = await fetch('/api/coach/work-queue/resolve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ task: current }),
+      body: JSON.stringify({ task }),
     })
     const result = (await res.json().catch(() => null)) as
       | { ok?: boolean; error?: string }
@@ -189,16 +191,18 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     if (!res.ok || !result?.ok) {
       setCompleteError(result?.error ?? 'Could not complete this task.')
       setCompleting(false)
+      setCompletingTaskId(null)
       return
     }
 
-    const next = withTaskCompleted(completed, current)
+    const next = withTaskCompleted(completed, task)
     completedRef.current = next
     setCompleted(next)
     saveCompleted(next)
-    setTasks((prev) => prev.filter((t) => t.id !== current.id))
-    onCountsChange?.(getWorkQueueCounts(visible.filter((t) => t.id !== current.id)))
+    setTasks((prev) => prev.filter((t) => t.id !== task.id))
+    onCountsChange?.(getWorkQueueCounts(visible.filter((t) => t.id !== task.id)))
     setCompleting(false)
+    setCompletingTaskId(null)
 
     // Refresh from server so counts stay accurate after DB resolution.
     void load()
@@ -251,12 +255,17 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
         <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>{current.title}</p>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: colors.textSecondary }}>{current.subtitle}</p>
       </button>
-      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+      <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
         <button type="button" onClick={() => openTask(current.href)} style={primaryBtn}>
           Start
         </button>
-        <button type="button" onClick={() => void handleComplete()} disabled={completing} style={secondaryBtn}>
-          {completing ? 'Saving…' : 'Completed'}
+        <button
+          type="button"
+          onClick={() => void handleComplete(current)}
+          disabled={completing}
+          style={completeBtn}
+        >
+          {completingTaskId === current.id ? 'Saving…' : 'Mark complete'}
         </button>
       </div>
       {completeError ? (
@@ -264,13 +273,52 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
       ) : null}
       {upcoming.length > 0 && (
         <div style={{ marginTop: 20 }}>
-          <p style={{ margin: '0 0 10px', fontSize: 12, color: colors.textMuted, fontWeight: 600 }}>Up next</p>
+          <p style={{ margin: '0 0 10px', fontSize: 12, color: colors.textMuted, fontWeight: 600 }}>
+            Up next ({upcoming.length})
+          </p>
           {upcoming.map((task) => (
-            <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderTop: `1px solid ${colors.divider}` }}>
-              <span style={{ color: colors.textMuted }}>↓</span>
-              <button type="button" onClick={() => openTask(task.href)} style={{ background: 'none', border: 'none', padding: 0, color: colors.textSecondary, cursor: 'pointer', fontSize: 14, textAlign: 'left' }}>
+            <div
+              key={task.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 0',
+                borderTop: `1px solid ${colors.divider}`,
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ color: colors.textMuted, flexShrink: 0 }}>↓</span>
+              <button
+                type="button"
+                onClick={() => openTask(task.href)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: colors.textSecondary,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  textAlign: 'left',
+                  flex: '1 1 160px',
+                  minWidth: 0,
+                }}
+              >
                 {task.title} — {task.subtitle}
               </button>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button type="button" onClick={() => openTask(task.href)} style={rowStartBtn}>
+                  Start
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleComplete(task)}
+                  disabled={completing}
+                  style={rowCompleteBtn}
+                >
+                  {completingTaskId === task.id ? 'Saving…' : 'Complete'}
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -289,6 +337,7 @@ const panelStyle: CSSProperties = {
 
 const primaryBtn: CSSProperties = {
   flex: 1,
+  minWidth: 120,
   padding: '12px 16px',
   backgroundColor: colors.accent,
   color: colors.textInverse,
@@ -299,13 +348,37 @@ const primaryBtn: CSSProperties = {
   fontSize: 15,
 }
 
-const secondaryBtn: CSSProperties = {
+const completeBtn: CSSProperties = {
+  flex: 1,
+  minWidth: 140,
   padding: '12px 16px',
-  backgroundColor: colors.bgElevated,
-  color: colors.textPrimary,
-  border: `1px solid ${colors.borderSubtle}`,
+  backgroundColor: colors.successMuted,
+  color: colors.success,
+  border: `1px solid ${colors.success}`,
   borderRadius: 12,
-  fontWeight: 600,
+  fontWeight: 700,
   cursor: 'pointer',
   fontSize: 15,
+}
+
+const rowStartBtn: CSSProperties = {
+  padding: '8px 12px',
+  backgroundColor: colors.accent,
+  color: colors.textInverse,
+  border: 'none',
+  borderRadius: 10,
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontSize: 13,
+}
+
+const rowCompleteBtn: CSSProperties = {
+  padding: '8px 12px',
+  backgroundColor: colors.successMuted,
+  color: colors.success,
+  border: `1px solid ${colors.success}`,
+  borderRadius: 10,
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontSize: 13,
 }
