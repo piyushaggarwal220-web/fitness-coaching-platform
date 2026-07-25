@@ -74,7 +74,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   }, [router])
 
   useEffect(() => {
-    void load()
+    queueMicrotask(() => void load())
   }, [load])
 
   const day = view?.day ?? null
