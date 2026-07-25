@@ -255,11 +255,9 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
         <button type="button" onClick={() => openTask(current.href)} style={primaryBtn}>
           Start
         </button>
-        {current.type !== 'plan_change_request' ? (
-          <button type="button" onClick={() => void handleComplete()} disabled={completing} style={secondaryBtn}>
-            {completing ? 'Saving…' : 'Completed'}
-          </button>
-        ) : null}
+        <button type="button" onClick={() => void handleComplete()} disabled={completing} style={secondaryBtn}>
+          {completing ? 'Saving…' : 'Completed'}
+        </button>
       </div>
       {completeError ? (
         <p style={{ margin: '10px 0 0', color: '#ef4444', fontSize: 13 }}>{completeError}</p>

@@ -236,11 +236,69 @@ export async function resolveWorkQueueTask(
     }
 
     case 'plan_change_request': {
-      return {
-        ok: false,
-        resolved: false,
-        error: 'Open Start to review and deliver the plan change.',
+      const requestId = task.id.replace(/^plan-change-/, '')
+      const now = new Date().toISOString()
+      const { data: existing, error: loadError } = await admin
+        .from('plan_change_requests')
+        .select('id, coach_id, client_id, status, draft_plan_id')
+        .eq('id', requestId)
+        .maybeSingle()
+
+      if (loadError || !existing) {
+        return {
+          ok: false,
+          resolved: false,
+          error: loadError?.message ?? 'Plan change request not found.',
+        }
       }
+      if (existing.coach_id !== coachId) {
+        return { ok: false, resolved: false, error: 'Plan change request is not assigned to you.' }
+      }
+      if (['approved', 'declined', 'cancelled', 'failed'].includes(existing.status)) {
+        return { ok: true, resolved: true }
+      }
+
+      if (existing.draft_plan_id) {
+        const { data: draft } = await admin
+          .from('plans')
+          .select('id, client_id, coach_id, nutrition_plan, workout_plan, delivered_at, active')
+          .eq('id', existing.draft_plan_id)
+          .maybeSingle()
+
+        if (draft?.nutrition_plan?.trim() && draft?.workout_plan?.trim()) {
+          if (!draft.active || !draft.delivered_at) {
+            const { error: activateError } = await activatePlan(admin, {
+              id: draft.id,
+              client_id: draft.client_id,
+              coach_id: draft.coach_id ?? coachId,
+            })
+            if (activateError) return { ok: false, resolved: false, error: activateError }
+          } else {
+            await admin
+              .from('plan_change_requests')
+              .update({ status: 'approved', resolved_at: now, updated_at: now })
+              .eq('id', requestId)
+              .in('status', ['generating', 'draft_ready', 'in_review'])
+          }
+          return { ok: true, resolved: true }
+        }
+      }
+
+      // Coach finished outside the draft flow (or closed while still generating).
+      const { error } = await admin
+        .from('plan_change_requests')
+        .update({
+          status: 'cancelled',
+          resolved_at: now,
+          updated_at: now,
+          error_message: 'Closed from coach work queue.',
+        })
+        .eq('id', requestId)
+        .eq('coach_id', coachId)
+        .in('status', ['generating', 'draft_ready', 'in_review'])
+
+      if (error) return { ok: false, resolved: false, error: error.message }
+      return { ok: true, resolved: true }
     }
 
     default:

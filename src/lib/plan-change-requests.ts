@@ -323,6 +323,8 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
         error_message: null,
       })
       .eq('id', request.id)
+      // Don't reopen a request the coach already completed/cancelled from the queue.
+      .eq('status', 'generating')
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Generation failed'
     console.error('[plan-change] process failed', requestId, message)
@@ -335,5 +337,6 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
         updated_at: new Date().toISOString(),
       })
       .eq('id', requestId)
+      .eq('status', 'generating')
   }
 }
