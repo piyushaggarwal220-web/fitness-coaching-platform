@@ -13,6 +13,7 @@ import { shouldBypassPaymentGuardClient } from '@/lib/dev-mode'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { inferFitnessGoal } from '@/lib/ai/goal-inference'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
+import { evaluateComplexityInputs } from '@/lib/complexity/input-guards'
 import { parseHeightCm, validateHeightCm } from '@/lib/height'
 import type {
   OnboardingData,
@@ -786,6 +787,16 @@ export function validateOnboardingStep(
       const heightError = validateHeightCm(data.height)
       if (heightError) return heightError
       if (!data.weight || Number(data.weight) <= 0) return 'Scroll to select your weight.'
+      // Catch impossible BMI / out-of-range metrics before intake completes.
+      // Auto plan generation hard-blocks on the same rules.
+      const metricsGuard = evaluateComplexityInputs({
+        age: data.age,
+        height: data.height,
+        weight: data.weight,
+      })
+      if (!metricsGuard.ok) {
+        return metricsGuard.reasons[0] ?? 'Please re-check height, weight, and age.'
+      }
       if (options?.requireBodyMeasurements !== false) {
         if (!data.chest || Number(data.chest) <= 0) return 'Scroll to select your chest measurement.'
         if (!data.thigh || Number(data.thigh) <= 0) return 'Scroll to select your thigh measurement.'

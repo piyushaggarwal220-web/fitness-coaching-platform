@@ -130,7 +130,28 @@ function safeFailure(error: unknown): { code: string; message: string } {
   const text = error instanceof Error ? error.message : ''
   if (/not configured/i.test(text)) return { code: 'configuration', message: 'AI generation is not configured.' }
   if (/photo/i.test(text)) return { code: 'photo_unavailable', message: 'A required onboarding photo could not be processed.' }
-  if (/validation|schema|json/i.test(text)) return { code: 'validation', message: 'The generated draft did not pass validation.' }
+  // Metrics / onboarding gates — must run before the generic "validation" matcher,
+  // because those messages also contain the word "validation".
+  if (/coach review|height|weight|age|bmi|metrics/i.test(text)) {
+    return {
+      code: 'metrics_review',
+      message:
+        text.replace(/^Onboarding validation (failed|requires coach review):?\s*/i, '').trim() ||
+        'Height, weight, or age looks incorrect. Fix metrics, then retry.',
+    }
+  }
+  if (/onboarding is not complete/i.test(text)) {
+    return { code: 'onboarding_incomplete', message: 'Onboarding is not complete.' }
+  }
+  if (/schema|json|did not pass validation|invalid generated/i.test(text)) {
+    return { code: 'validation', message: 'The generated draft did not pass validation.' }
+  }
+  if (/validation failed/i.test(text)) {
+    return {
+      code: 'onboarding_incomplete',
+      message: text.replace(/^Onboarding validation failed:\s*/i, '').trim() || 'Onboarding answers are incomplete.',
+    }
+  }
   return { code: 'generation_failed', message: 'AI draft generation failed. A coach can retry safely.' }
 }
 
@@ -160,8 +181,22 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
     const profile = profileData as OnboardingProfile
     const gateError = validateAuthoritativeOnboarding(profile)
     if (gateError) throw new Error(`Onboarding validation failed: ${gateError}`)
-    if (profileBlocksAiPlanWork(profile).blocked) {
-      throw new Error('Onboarding validation requires coach review.')
+    const metricsGate = profileBlocksAiPlanWork(profile)
+    if (metricsGate.blocked) {
+      const reasons =
+        metricsGate.reasons.length > 0
+          ? metricsGate.reasons.join(' ')
+          : 'Height, weight, or age looks incorrect.'
+      // Persist so coach UI shows the metrics banner even when the flag was never set at intake.
+      await admin
+        .from('profiles')
+        .update({
+          complexity_input_needs_review: true,
+          complexity_input_review_reasons: metricsGate.reasons,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', profile.id)
+      throw new Error(`Onboarding validation requires coach review: ${reasons}`)
     }
 
     const images = await loadProgressImages(admin, profile)

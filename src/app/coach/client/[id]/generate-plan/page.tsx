@@ -422,7 +422,10 @@ export default function CoachGeneratePlanPage() {
 
   if (!client) return null
 
-  const metricsBlocked = Boolean(client.complexity_input_needs_review)
+  const metricsBlocked =
+    Boolean(client.complexity_input_needs_review) ||
+    (Array.isArray(client.complexity_input_review_reasons) &&
+      client.complexity_input_review_reasons.length > 0)
 
   return (
     <CoachShell narrow>
@@ -435,9 +438,9 @@ export default function CoachGeneratePlanPage() {
           </p>
 
           {metricsBlocked && (
-            <div style={s.card}>
-              Metrics look unusual on this client profile (height/weight/age). You can still generate and
-              deliver plans — double-check numbers if the draft looks off.
+            <div style={s.error}>
+              Auto plan generation is blocked until height, weight, and age look realistic.
+              Fix metrics on the client profile, then retry background generation.
               {Array.isArray(client.complexity_input_review_reasons) &&
               client.complexity_input_review_reasons.length > 0
                 ? ` ${client.complexity_input_review_reasons.join(' ')}`
