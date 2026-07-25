@@ -112,7 +112,6 @@ export function WorkoutModule({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [exerciseDrafts, setExerciseDrafts] = useState(() => completion.exercises ?? {})
-  const exerciseDraftsRef = useRef(exerciseDrafts)
   const effectiveCompletion = useMemo(
     () => ({ ...completion, exercises: exerciseDrafts }),
     [completion, exerciseDrafts]
@@ -338,14 +337,12 @@ export function WorkoutModule({
   }
 
   const saveExerciseDraft = (exId: string, nextData: ExerciseCompletion) => {
-    const nextDrafts = { ...exerciseDraftsRef.current, [exId]: nextData }
-    exerciseDraftsRef.current = nextDrafts
-    setExerciseDrafts(nextDrafts)
+    setExerciseDrafts((current) => ({ ...current, [exId]: nextData }))
     void onPatch({ exercises: { [exId]: nextData } })
   }
 
   const updateSet = (exId: string, ex: TrackerExerciseItem, setIdx: number, patch: Partial<ExerciseSetLog>) => {
-    const data = exerciseDraftsRef.current[exId]
+    const data = exerciseDrafts[exId]
     const sets = getExerciseSets(ex, data)
     const next = [...sets]
     next[setIdx] = { ...next[setIdx], ...patch }
@@ -353,7 +350,7 @@ export function WorkoutModule({
   }
 
   const completeSet = (exId: string, ex: TrackerExerciseItem, setIdx: number) => {
-    const data = exerciseDraftsRef.current[exId]
+    const data = exerciseDrafts[exId]
     const sets = getExerciseSets(ex, data)
     const next = [...sets]
     next[setIdx] = { ...next[setIdx], completed: true }
