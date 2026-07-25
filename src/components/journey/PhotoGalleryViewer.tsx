@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type TouchEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
@@ -11,6 +12,8 @@ export type GalleryPhoto = {
   label?: string
   /** Storage bucket when not a progress/check-in photo. */
   bucket?: string
+  /** Already-signed URL from a visible thumbnail — shown immediately. */
+  previewUrl?: string
 }
 
 export type GalleryMeta = {
@@ -37,7 +40,11 @@ export function PhotoGalleryViewer({
 }: PhotoGalleryViewerProps) {
   const [index, setIndex] = useState(initialIndex)
   const [scale, setScale] = useState(1)
-  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null)
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(
+    () => photos[initialIndex]?.previewUrl ?? null
+  )
+  const [loadError, setLoadError] = useState('')
+  const [mounted, setMounted] = useState(false)
   const touchStart = useRef<{ x: number; y: number; time: number; distance: number } | null>(null)
   const lastTap = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -45,23 +52,53 @@ export function PhotoGalleryViewer({
   const current = photos[index]
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
     let cancelled = false
     if (!current?.url) {
       setResolvedUrl(null)
+      setLoadError('No photo available.')
       return
     }
+
+    // Show thumbnail URL immediately while we (re)sign if needed.
+    if (current.previewUrl) {
+      setResolvedUrl(current.previewUrl)
+    } else if (current.url.startsWith('https://') || current.url.startsWith('blob:')) {
+      setResolvedUrl(current.url)
+    } else {
+      setResolvedUrl(null)
+    }
+    setLoadError('')
+
     const supabase = createClient()
     const resolveBucket = current.bucket ?? bucket
     const resolve = resolveBucket
       ? resolveStorageUrl(supabase, resolveBucket, current.url)
       : resolveProgressPhotoUrl(supabase, current.url)
-    void resolve.then((url) => {
-      if (!cancelled) setResolvedUrl(url)
-    })
+
+    void resolve
+      .then((url) => {
+        if (cancelled) return
+        if (url) {
+          setResolvedUrl(url)
+          setLoadError('')
+        } else if (!current.previewUrl && !current.url.startsWith('https://')) {
+          setLoadError('Could not load this photo.')
+        }
+      })
+      .catch(() => {
+        if (!cancelled && !current.previewUrl) {
+          setLoadError('Could not load this photo.')
+        }
+      })
+
     return () => {
       cancelled = true
     }
-  }, [current?.url, current?.bucket, bucket])
+  }, [current?.url, current?.bucket, current?.previewUrl, bucket])
 
   const goNext = useCallback(() => {
     if (photos.length <= 1) return
@@ -82,10 +119,11 @@ export function PhotoGalleryViewer({
       if (e.key === 'ArrowLeft') goPrev()
     }
     window.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
+      document.body.style.overflow = prevOverflow
     }
   }, [onClose, goNext, goPrev])
 
@@ -153,9 +191,9 @@ export function PhotoGalleryViewer({
     lastTap.current = now
   }
 
-  if (!current) return null
+  if (!current || !mounted) return null
 
-  return (
+  const overlay = (
     <div style={styles.overlay} role="dialog" aria-modal="true" aria-label="Photo gallery">
       <div style={styles.header}>
         <div>
@@ -177,7 +215,7 @@ export function PhotoGalleryViewer({
           )}
         </div>
         <button type="button" onClick={onClose} style={styles.closeBtn} aria-label="Close gallery">
-          <X size={22} color={colors.textPrimary} />
+          <X size={22} color="#fafafa" />
         </button>
       </div>
 
@@ -199,9 +237,15 @@ export function PhotoGalleryViewer({
               transform: `scale(${scale})`,
             }}
             draggable={false}
+            onError={() => {
+              setLoadError('Could not display this photo.')
+              setResolvedUrl(null)
+            }}
           />
         ) : (
-          <div style={{ color: colors.textMuted }}>Loading…</div>
+          <div style={styles.status}>
+            {loadError || 'Loading…'}
+          </div>
         )}
       </div>
 
@@ -226,17 +270,20 @@ export function PhotoGalleryViewer({
       )}
     </div>
   )
+
+  return createPortal(overlay, document.body)
 }
 
 const styles: Record<string, CSSProperties> = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    zIndex: 9999,
+    width: '100vw',
+    height: '100dvh',
+    zIndex: 100000,
     backgroundColor: '#000000',
     display: 'flex',
     flexDirection: 'column',
-    animation: 'fadeIn 200ms ease-out',
   },
   header: {
     display: 'flex',
@@ -254,12 +301,12 @@ const styles: Record<string, CSSProperties> = {
     margin: 0,
     fontSize: 18,
     fontWeight: 700,
-    color: colors.textPrimary,
+    color: '#fafafa',
   },
   metaSub: {
     margin: '4px 0 0',
     fontSize: 14,
-    color: colors.textSecondary,
+    color: '#c4c4cc',
   },
   metaWeight: {
     margin: '4px 0 0',
@@ -268,7 +315,7 @@ const styles: Record<string, CSSProperties> = {
     color: colors.accent,
   },
   closeBtn: {
-    background: 'rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.15)',
     border: 'none',
     borderRadius: '50%',
     width: 44,
@@ -280,18 +327,32 @@ const styles: Record<string, CSSProperties> = {
   },
   stage: {
     flex: 1,
+    minHeight: 0,
+    width: '100%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     touchAction: 'none',
+    padding: '72px 16px 80px',
+    boxSizing: 'border-box',
   },
   image: {
     maxWidth: '100%',
     maxHeight: '100%',
+    width: 'auto',
+    height: 'auto',
     objectFit: 'contain',
     transition: 'transform 150ms ease-out',
     userSelect: 'none',
+    display: 'block',
+  },
+  status: {
+    color: '#fafafa',
+    fontSize: 15,
+    fontWeight: 600,
+    textAlign: 'center',
+    padding: 24,
   },
   footer: {
     position: 'absolute',
@@ -303,15 +364,16 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     background: 'linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%)',
+    zIndex: 2,
   },
   label: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: '#c4c4cc',
     textTransform: 'capitalize',
   },
   counter: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: '#a1a1aa',
   },
   nav: {
     position: 'absolute',
@@ -322,7 +384,7 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: '50%',
     border: 'none',
     background: 'rgba(255,255,255,0.12)',
-    color: colors.textPrimary,
+    color: '#fafafa',
     fontSize: 28,
     cursor: 'pointer',
     zIndex: 2,

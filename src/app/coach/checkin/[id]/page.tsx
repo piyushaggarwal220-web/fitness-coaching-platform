@@ -183,10 +183,13 @@ export default function CoachCheckinDetailPage() {
     })),
   ].filter((photo): photo is NonNullable<typeof photo> => Boolean(photo))
 
-  const openProgressPhoto = (url: string) => {
+  const openProgressPhoto = (url: string, previewUrl?: string) => {
     const index = progressGallery.findIndex((photo) => photo.url === url)
     if (index < 0) return
-    setGallery({ photos: progressGallery, index })
+    const photos = progressGallery.map((photo, i) =>
+      i === index && previewUrl ? { ...photo, previewUrl } : photo
+    )
+    setGallery({ photos, index })
   }
   return (
     <CoachShell narrow>

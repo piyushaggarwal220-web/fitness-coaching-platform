@@ -652,7 +652,9 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                 ) : msg.message_type === 'image' && msg.media_url ? (
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(e) => {
+                      const img = e.currentTarget.querySelector('img')
+                      const previewUrl = img?.currentSrc || img?.src || undefined
                       const imageMsgs = messages.filter(
                         (m) => m.message_type === 'image' && Boolean(m.media_url)
                       )
@@ -660,6 +662,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                         url: m.media_url!,
                         label: 'Chat photo',
                         bucket: 'chat-images',
+                        previewUrl: m.id === msg.id ? previewUrl : undefined,
                       }))
                       const index = Math.max(
                         0,
