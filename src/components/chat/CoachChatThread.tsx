@@ -789,11 +789,14 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         {showSend ? (
           <button
             type="button"
-            onClick={() => void sendMessage()}
-            disabled={sending || !input.trim()}
+            onClick={() => {
+              if (imagePreview) void uploadAndSendImage()
+              else void sendMessage()
+            }}
+            disabled={sending}
             className="btn-press"
             style={styles.sendBtn}
-            aria-label="Send"
+            aria-label={imagePreview ? 'Send image' : 'Send message'}
           >
             <Send size={18} fill="currentColor" />
           </button>
