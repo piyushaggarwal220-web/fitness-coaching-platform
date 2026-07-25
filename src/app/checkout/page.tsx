@@ -414,6 +414,11 @@ function CheckoutForm() {
         <p style={styles.subtitle}>
           {plan.name} plan · {plan.displayPrice} · {plan.saveLabel}
         </p>
+        <p style={styles.leagueNote}>
+          {plan.slug === '12_months'
+            ? 'Includes free Consistency League entry and Crazy League eligibility for prize money up to ₹5,000.'
+            : 'Includes free Consistency League entry (certificates & trophies). Crazy League prize money up to ₹5,000 requires the 12-month plan.'}
+        </p>
 
         {testMode && (
           <div style={styles.testBanner}>
@@ -666,7 +671,17 @@ const styles: Record<string, CSSProperties> = {
     marginBottom: 4,
   },
   title: { margin: '12px 0 8px', fontSize: 28, color: colors.textPrimary, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 },
-  subtitle: { margin: '0 0 20px', color: colors.textSecondary },
+  subtitle: { margin: '0 0 12px', color: colors.textSecondary },
+  leagueNote: {
+    margin: '0 0 20px',
+    padding: '10px 12px',
+    borderRadius: 10,
+    backgroundColor: 'rgba(249,115,22,0.08)',
+    border: `1px solid ${colors.borderSubtle}`,
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 1.45,
+  },
   testBanner: { backgroundColor: colors.warningMuted, color: colors.warning, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[3], fontSize: 14 },
   planPicker: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: spacing[4] },
   planChip: { padding: '8px 14px', borderRadius: 999, border: `1px solid ${colors.borderSubtle}`, textDecoration: 'none', color: colors.textPrimary, fontSize: 14, backgroundColor: colors.bgElevated },

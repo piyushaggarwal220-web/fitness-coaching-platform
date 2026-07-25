@@ -67,19 +67,19 @@ export const LEAGUE_TIER_DETAILS: Record<
     reward: 'Top 10% win a physical trophy and advance to Crazy 1',
   },
   crazy_1: {
-    short: 'Prize money tier',
+    short: 'Prize money tier · 12-month plan',
     color: '#f472b6',
-    reward: 'Top 10% earn prize money and advance to Crazy 2',
+    reward: 'Top 10% earn prize money up to ₹5,000 and advance to Crazy 2 (12-month members only)',
   },
   crazy_2: {
-    short: 'Higher stakes',
+    short: 'Higher stakes · 12-month plan',
     color: '#c084fc',
-    reward: 'Top 10% earn prize money and advance to Crazy 3',
+    reward: 'Top 10% earn prize money up to ₹5,000 and advance to Crazy 3 (12-month members only)',
   },
   crazy_3: {
-    short: 'Final arena',
+    short: 'Final arena · 12-month plan',
     color: '#ef4444',
-    reward: 'Top 10% earn prize money — World Leaderboard coming soon',
+    reward: 'Top 10% earn prize money up to ₹5,000 — World Leaderboard coming soon (12-month members only)',
   },
   world: {
     short: 'Coming soon',

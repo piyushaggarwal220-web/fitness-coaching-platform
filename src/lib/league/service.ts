@@ -1,6 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
+  clampDivisionForCrazyEligibility,
+  isCrazyLeagueEligible,
+  nextEligibleLeagueDivision,
+} from '@/lib/league/eligibility'
+import { getActiveSubscription } from '@/lib/subscription'
+import {
   assignDivisionStandings,
   getCurrentLeagueSeason,
   getLeagueMissions,
@@ -12,6 +18,111 @@ import {
   type LeagueStandingRow,
   type LeagueTier,
 } from '@/lib/league/scoring'
+
+async function loadCrazyEligibilityByClientId(
+  admin: ReturnType<typeof createAdminClient>,
+  clientIds: string[]
+): Promise<Map<string, boolean>> {
+  const eligible = new Map<string, boolean>()
+  for (const id of clientIds) eligible.set(id, false)
+  if (clientIds.length === 0) return eligible
+
+  const { data: purchases, error } = await admin
+    .from('purchases')
+    .select('user_id, plan_slug, plan_name, created_at, status')
+    .in('user_id', clientIds)
+    .eq('status', 'captured')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+
+  const { data: profiles, error: profileError } = await admin
+    .from('profiles')
+    .select('id, subscription_expires_at')
+    .in('id', clientIds)
+
+  if (profileError) throw new Error(profileError.message)
+
+  const expiryById = new Map(
+    (profiles ?? []).map((p) => [p.id as string, (p.subscription_expires_at as string | null) ?? null])
+  )
+
+  const seen = new Set<string>()
+  for (const purchase of purchases ?? []) {
+    const userId = purchase.user_id as string
+    if (seen.has(userId)) continue
+    seen.add(userId)
+    const subscription = getActiveSubscription(purchase, expiryById.get(userId) ?? null)
+    eligible.set(
+      userId,
+      Boolean(subscription?.status === 'active' && isCrazyLeagueEligible(subscription.planSlug))
+    )
+  }
+
+  return eligible
+}
+
+/** Hard-block: demote Crazy divisions when the client is not on an active 12-month plan. */
+async function enforceCrazyDivisionEligibility(
+  admin: ReturnType<typeof createAdminClient>,
+  clientId: string,
+  division: LeagueTier,
+  crazyEligible: boolean
+): Promise<LeagueTier> {
+  const clamped = clampDivisionForCrazyEligibility(division, crazyEligible)
+  if (clamped === division) return division
+
+  const { error } = await admin
+    .from('profiles')
+    .update({
+      league_division: clamped,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', clientId)
+
+  if (error) throw new Error(error.message)
+  return clamped
+}
+
+/**
+ * Promote a client one division when they finish in the top 10%.
+ * Hard-blocks Crazy entry without an active 12-month plan.
+ */
+export async function promoteClientLeagueDivision(clientId: string): Promise<{
+  from: LeagueTier
+  to: LeagueTier | null
+  blockedByCrazyGate: boolean
+}> {
+  const admin = createAdminClient()
+  const { data: profile, error } = await admin
+    .from('profiles')
+    .select('id, league_division, subscription_expires_at')
+    .eq('id', clientId)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  if (!profile) throw new Error('Client not found')
+
+  const from = normalizeLeagueTier(profile.league_division as string | null)
+  const eligibility = await loadCrazyEligibilityByClientId(admin, [clientId])
+  const crazyEligible = eligibility.get(clientId) ?? false
+  const { next, blockedByCrazyGate } = nextEligibleLeagueDivision(from, crazyEligible)
+
+  if (!next) {
+    return { from, to: null, blockedByCrazyGate }
+  }
+
+  const { error: updateError } = await admin
+    .from('profiles')
+    .update({
+      league_division: next,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', clientId)
+
+  if (updateError) throw new Error(updateError.message)
+  return { from, to: next, blockedByCrazyGate: false }
+}
 
 async function ensureSeason(
   admin: ReturnType<typeof createAdminClient>,
@@ -139,6 +250,7 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
   }
 
   const clientIds = roster.map((c) => c.id as string)
+  const crazyEligibility = await loadCrazyEligibilityByClientId(admin, clientIds)
 
   const [trackerResult, checkinResult, journeyResult] = await Promise.all([
     admin
@@ -168,46 +280,52 @@ export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
   const checkins = checkinResult.data ?? []
   const journeys = journeyResult.data ?? []
 
-  const scored = roster.map((client) => {
-    const id = client.id as string
-    const result = scoreClientForSeason(
-      {
+  const scored = await Promise.all(
+    roster.map(async (client) => {
+      const id = client.id as string
+      const crazyEligible = crazyEligibility.get(id) ?? false
+      const rawDivision = normalizeLeagueTier(client.league_division as string | null)
+      const division = await enforceCrazyDivisionEligibility(admin, id, rawDivision, crazyEligible)
+
+      const result = scoreClientForSeason(
+        {
+          clientId: id,
+          displayName: leagueDisplayName(client.name as string | null),
+          trackerDays: trackerDays
+            .filter((d) => d.client_id === id)
+            .map((d) => ({
+              logDate: d.log_date as string,
+              overallPercent: (d.overall_percent as number | null) ?? null,
+            })),
+          checkins: checkins
+            .filter((c) => c.client_id === id)
+            .map((c) => ({
+              checkinType: c.checkin_type as string,
+              submittedAt: c.submitted_at as string,
+              hasMeasurements: Boolean(c.chest && c.thigh && c.navel),
+            })),
+          journeyPhotoDays: journeys
+            .filter((j) => j.client_id === id)
+            .filter((j) => {
+              const extras = Array.isArray(j.extra_photos) ? j.extra_photos : []
+              return Boolean(j.photo_front || j.photo_side || j.photo_back || extras.length > 0)
+            })
+            .map((j) => j.entry_date as string),
+        },
+        season
+      )
+
+      return {
         clientId: id,
         displayName: leagueDisplayName(client.name as string | null),
-        trackerDays: trackerDays
-          .filter((d) => d.client_id === id)
-          .map((d) => ({
-            logDate: d.log_date as string,
-            overallPercent: (d.overall_percent as number | null) ?? null,
-          })),
-        checkins: checkins
-          .filter((c) => c.client_id === id)
-          .map((c) => ({
-            checkinType: c.checkin_type as string,
-            submittedAt: c.submitted_at as string,
-            hasMeasurements: Boolean(c.chest && c.thigh && c.navel),
-          })),
-        journeyPhotoDays: journeys
-          .filter((j) => j.client_id === id)
-          .filter((j) => {
-            const extras = Array.isArray(j.extra_photos) ? j.extra_photos : []
-            return Boolean(j.photo_front || j.photo_side || j.photo_back || extras.length > 0)
-          })
-          .map((j) => j.entry_date as string),
-      },
-      season
-    )
-
-    return {
-      clientId: id,
-      displayName: leagueDisplayName(client.name as string | null),
-      points: result.points,
-      streakDays: result.streakDays,
-      breakdown: result.breakdown,
-      division: normalizeLeagueTier(client.league_division as string | null),
-      avatarPath: (client.avatar_path as string | null) ?? null,
-    }
-  })
+        points: result.points,
+        streakDays: result.streakDays,
+        breakdown: result.breakdown,
+        division,
+        avatarPath: (client.avatar_path as string | null) ?? null,
+      }
+    })
+  )
 
   // Rank within each division so top 10% promote fairly.
   const byDivision = new Map<LeagueTier, typeof scored>()
@@ -277,16 +395,37 @@ export async function getLeagueSnapshotForClient(
   coachId: string | null
   missions: LeagueMission[]
   division: LeagueTier
+  crazyEligible: boolean
+  planSlug: string | null
+  crazyGateBlocked: boolean
   worldLeaderboardStatus: 'coming_soon'
 }> {
   const season = getCurrentLeagueSeason()
+  const admin = createAdminClient()
+  const eligibilityMap = await loadCrazyEligibilityByClientId(admin, [clientId])
+  const crazyEligible = eligibilityMap.get(clientId) ?? false
+
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, name, coach_id, league_opt_in, league_division, avatar_path')
+    .select('id, name, coach_id, league_opt_in, league_division, avatar_path, subscription_expires_at')
     .eq('id', clientId)
     .maybeSingle()
 
-  const myDivision = normalizeLeagueTier(profile?.league_division as string | null)
+  const { data: latestPurchase } = await admin
+    .from('purchases')
+    .select('plan_slug, plan_name, created_at, status')
+    .eq('user_id', clientId)
+    .eq('status', 'captured')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const planSlug = (latestPurchase?.plan_slug as string | null) ?? null
+  const rawDivision = normalizeLeagueTier(profile?.league_division as string | null)
+  const myDivision = profile
+    ? await enforceCrazyDivisionEligibility(admin, clientId, rawDivision, crazyEligible)
+    : rawDivision
+  const crazyGateBlocked = !crazyEligible
 
   if (!profile?.coach_id) {
     return {
@@ -299,6 +438,9 @@ export async function getLeagueSnapshotForClient(
       coachId: null,
       missions: [],
       division: myDivision,
+      crazyEligible,
+      planSlug,
+      crazyGateBlocked,
       worldLeaderboardStatus: 'coming_soon' as const,
     }
   }
@@ -327,7 +469,6 @@ export async function getLeagueSnapshotForClient(
           avatarPath: (profile.avatar_path as string | null) ?? null,
         })
 
-  const admin = createAdminClient()
   const displayName = leagueDisplayName(profile.name as string | null)
   const personalInput = await loadClientLeagueInput(admin, clientId, displayName, season)
   const personal = scoreClientForSeason(personalInput, season)
@@ -354,6 +495,9 @@ export async function getLeagueSnapshotForClient(
       coachId: profile.coach_id as string,
       missions,
       division: myDivision,
+      crazyEligible,
+      planSlug,
+      crazyGateBlocked,
       worldLeaderboardStatus: 'coming_soon' as const,
     }
   }
@@ -376,6 +520,9 @@ export async function getLeagueSnapshotForClient(
     coachId: profile.coach_id as string,
     missions,
     division: myDivision,
+    crazyEligible,
+    planSlug,
+    crazyGateBlocked,
     worldLeaderboardStatus: 'coming_soon' as const,
   }
 }

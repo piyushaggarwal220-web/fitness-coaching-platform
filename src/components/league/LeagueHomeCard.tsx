@@ -71,7 +71,7 @@ export function LeagueHomeCard() {
             Consistency League
           </h2>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
-            Monthly ladder · top 10% advance
+            Free entry · Crazy prizes need 12-month plan
           </p>
         </div>
       </div>

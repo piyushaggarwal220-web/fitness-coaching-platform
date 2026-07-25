@@ -7,6 +7,7 @@ import { brandTitle } from '@/lib/brand'
 import {
   ALL_PLAN_PAGE_PATHS,
   PLAN_INCLUSIONS,
+  PLAN_LEAGUE_CALLOUT,
   PLAN_PAGE_COPY,
   planPathForSlug,
   resolvePlanFromPath,
@@ -112,6 +113,18 @@ export default async function PlanLandingPage({ params }: PageProps) {
           Continue to checkout →
         </a>
 
+        <aside style={styles.leagueCallout} aria-label="Consistency League">
+          <p style={styles.leagueEyebrow}>{PLAN_LEAGUE_CALLOUT.title}</p>
+          <p style={styles.leagueBody}>{PLAN_LEAGUE_CALLOUT.body}</p>
+          {plan.slug === '12_months' ? (
+            <p style={styles.leagueExtra}>{PLAN_LEAGUE_CALLOUT.twelveMonthExtra}</p>
+          ) : (
+            <a href="/plans/12-months" style={styles.leagueLink}>
+              See the 12-month plan for Crazy League →
+            </a>
+          )}
+        </aside>
+
         <section style={styles.inclusions}>
           <h2 style={styles.sectionTitle}>Everything included</h2>
           <ul style={styles.list}>
@@ -123,6 +136,14 @@ export default async function PlanLandingPage({ params }: PageProps) {
                 {item}
               </li>
             ))}
+            {plan.slug === '12_months' && (
+              <li style={styles.listItem}>
+                <span style={styles.check} aria-hidden>
+                  ✓
+                </span>
+                Crazy League eligibility — prize money up to ₹5,000
+              </li>
+            )}
           </ul>
         </section>
 
@@ -275,6 +296,42 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 16,
     textDecoration: 'none',
     boxShadow: '0 8px 28px rgba(249,115,22,0.35)',
+  },
+  leagueCallout: {
+    marginTop: 28,
+    padding: '18px 18px 16px',
+    borderRadius: 16,
+    border: '1px solid rgba(249,115,22,0.28)',
+    background: 'rgba(249,115,22,0.08)',
+  },
+  leagueEyebrow: {
+    margin: 0,
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase' as const,
+    color: '#fb923c',
+  },
+  leagueBody: {
+    margin: '8px 0 0',
+    fontSize: 14,
+    lineHeight: 1.5,
+    color: '#d4d4d8',
+  },
+  leagueExtra: {
+    margin: '10px 0 0',
+    fontSize: 14,
+    lineHeight: 1.45,
+    fontWeight: 600,
+    color: '#fafafa',
+  },
+  leagueLink: {
+    display: 'inline-block',
+    marginTop: 10,
+    fontSize: 14,
+    fontWeight: 700,
+    color: '#fb923c',
+    textDecoration: 'none',
   },
   inclusions: {
     marginTop: 40,

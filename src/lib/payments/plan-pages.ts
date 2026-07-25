@@ -29,23 +29,27 @@ export const PLAN_PAGE_COPY: Record<
 > = {
   '1_month': {
     eyebrow: 'The Foundation',
-    promise: 'Start with a full coaching month — personal plan, weekly reviews, and daily tracking.',
+    promise:
+      'Start with a full coaching month — personal plan, weekly reviews, daily tracking, and free Consistency League entry.',
     bestFor: 'Trying coaching for the first time or testing the fit.',
   },
   '3_months': {
     eyebrow: 'Momentum',
-    promise: 'Enough runway for real body change, with a coach adjusting every week.',
+    promise:
+      'Enough runway for real body change, with a coach adjusting every week — plus free Consistency League entry.',
     bestFor: 'People ready to commit and build lasting habits.',
   },
   '6_months': {
     eyebrow: 'Transformation',
-    promise: 'Deep coaching so plateaus get fixed — not abandoned.',
+    promise:
+      'Deep coaching so plateaus get fixed — not abandoned. Free Consistency League entry included.',
     bestFor: 'Serious fat loss or rebuild goals that need consistency.',
   },
   '12_months': {
     eyebrow: 'Full Journey',
-    promise: 'A year of accountability at the lowest monthly rate.',
-    bestFor: 'Long-term change with the best value per month.',
+    promise:
+      'A year of accountability at the lowest monthly rate — and the only plan that unlocks Crazy League prize money up to ₹5,000.',
+    bestFor: 'Long-term change with best value and Crazy League eligibility.',
   },
 }
 
@@ -57,7 +61,16 @@ export const PLAN_INCLUSIONS = [
   'Daily trackers: workout, diet, water, sleep, steps, supplements',
   'Progress photos, measurements, and journey timeline',
   'Weekly plan updates based on your real progress',
+  'Free Consistency League entry — climb for certificates & trophies',
 ] as const
+
+export const PLAN_LEAGUE_CALLOUT = {
+  title: 'Consistency League — included free',
+  body:
+    'Every coaching plan includes free league entry. Track, check in, climb for certificates and physical trophies. Crazy League — where top finishers can win prize money up to ₹5,000 — requires the 12-month plan.',
+  twelveMonthExtra:
+    'Your 12-month plan unlocks Crazy League eligibility for prize money up to ₹5,000 when you reach those tiers.',
+} as const
 
 export const ALL_PLAN_PAGE_PATHS = Object.keys(PLAN_PAGE_PATHS) as PlanPagePath[]
 

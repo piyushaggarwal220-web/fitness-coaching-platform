@@ -26,13 +26,13 @@ import {
   LEAGUE_TIER_DETAILS,
   LEAGUE_TIER_LABELS,
   LEAGUE_TIER_ORDER,
-  nextLeagueDivision,
   normalizeLeagueTier,
   pointsToNextTier,
   type LeagueMission,
   type LeagueStandingRow,
   type LeagueTier,
 } from '@/lib/league/scoring'
+import { CRAZY_GATE_COPY, nextEligibleLeagueDivision } from '@/lib/league/eligibility'
 import { useRouter } from 'next/navigation'
 import styles from './league.module.css'
 
@@ -48,6 +48,9 @@ type LeaguePayload = {
   coachId: string | null
   missions: LeagueMission[]
   division?: LeagueTier
+  crazyEligible?: boolean
+  crazyGateBlocked?: boolean
+  planSlug?: string | null
   worldLeaderboardStatus?: 'coming_soon'
 }
 
@@ -110,8 +113,10 @@ export default function LeaguePage() {
   if (loading) return <ClientShell title="League" loading />
 
   const tier = normalizeLeagueTier(data?.me?.tier ?? data?.division ?? 'bronze')
+  const crazyEligible = data?.crazyEligible ?? false
+  const { next: eligibleNext, blockedByCrazyGate } = nextEligibleLeagueDivision(tier, crazyEligible)
   const tierIndex = LEAGUE_LADDER.indexOf(tier === 'world' ? 'crazy_3' : tier)
-  const nextDivision = nextLeagueDivision(tier === 'world' ? 'crazy_3' : tier)
+  const nextDivision = eligibleNext
   const pointsNeeded = data?.me && data.optIn
     ? pointsToNextTier(tier, data.me.points, data.standings)
     : null
@@ -124,6 +129,7 @@ export default function LeaguePage() {
   const daysRemaining = data ? remainingDays(data.endsOn) : 0
   const promotionCount = Math.max(1, Math.ceil((data?.standings.length ?? 0) * 0.1))
   const completedMissions = data?.missions.filter((mission) => mission.completed).length ?? 0
+  const showCrazyGate = Boolean(data?.crazyGateBlocked) || blockedByCrazyGate
 
   return (
     <ClientShell title="Consistency League">
@@ -140,6 +146,26 @@ export default function LeaguePage() {
           <p className={styles.heroSub}>
             {LEAGUE_TIER_DETAILS[tier].short}. Top 10% this month advance to the next league.
           </p>
+          {showCrazyGate && (
+            <div
+              style={{
+                marginTop: 14,
+                padding: '12px 14px',
+                borderRadius: 12,
+                border: `1px solid ${colors.borderSubtle}`,
+                background: 'rgba(249,115,22,0.08)',
+                fontSize: 13,
+                lineHeight: 1.45,
+                color: colors.textSecondary,
+              }}
+            >
+              <strong style={{ color: colors.textPrimary }}>Free league entry.</strong>{' '}
+              {CRAZY_GATE_COPY.long}{' '}
+              <Link href={CRAZY_GATE_COPY.upgradeHref} style={{ color: colors.accent, fontWeight: 700 }}>
+                {CRAZY_GATE_COPY.upgradeCta} →
+              </Link>
+            </div>
+          )}
 
           <div className={styles.heroStats}>
             <div className={styles.heroStat}>
@@ -160,11 +186,13 @@ export default function LeaguePage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 7, fontSize: 11, fontWeight: 700 }}>
               <span>{LEAGUE_TIER_LABELS[tier]}</span>
               <span style={{ color: colors.textMuted }}>
-                {nextDivision
-                  ? pointsNeeded != null
-                    ? `${pointsNeeded} pts to top 10% → ${LEAGUE_TIER_LABELS[nextDivision]}`
-                    : `Top 10% advance to ${LEAGUE_TIER_LABELS[nextDivision]}`
-                  : 'Highest playable league — World board coming soon'}
+                {blockedByCrazyGate
+                  ? 'Crazy League locked · 12-month plan required'
+                  : nextDivision
+                    ? pointsNeeded != null
+                      ? `${pointsNeeded} pts to top 10% → ${LEAGUE_TIER_LABELS[nextDivision]}`
+                      : `Top 10% advance to ${LEAGUE_TIER_LABELS[nextDivision]}`
+                    : 'Highest playable league — World board coming soon'}
               </span>
             </div>
             <div
@@ -224,9 +252,14 @@ export default function LeaguePage() {
           </div>
           <div className={styles.board}>
             <div style={{ padding: 14, display: 'grid', gap: 10, fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
+              <div><strong style={{ color: colors.textPrimary }}>Free with every plan:</strong> Consistency League entry — climb for certificates and trophies</div>
               <div><strong style={{ color: colors.textPrimary }}>Bronze → Gold:</strong> virtual certificate for top 10%</div>
               <div><strong style={{ color: colors.textPrimary }}>Platinum &amp; Diamond:</strong> physical trophy for top 10%</div>
-              <div><strong style={{ color: colors.textPrimary }}>Crazy 1–3:</strong> prize money for top 10%</div>
+              <div>
+                <strong style={{ color: colors.textPrimary }}>Crazy 1–3:</strong> prize money up to ₹5,000 for top 10%
+                {' · '}
+                <span style={{ color: colors.accent, fontWeight: 700 }}>12-month plan required</span>
+              </div>
               <div><strong style={{ color: colors.accent }}>World Leaderboard:</strong> coming soon</div>
             </div>
           </div>
