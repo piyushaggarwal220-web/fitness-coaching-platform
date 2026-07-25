@@ -88,6 +88,8 @@ export function WorkoutModule({
   const selectedDay = days.find((d) => d.key === selectedKey) ?? null
   const suggestion = suggestedWorkoutDayKey(days)
   const autoSelectedRef = useRef(false)
+  /** When true, skip auto-suggest and show the day picker (Change day). */
+  const [manualDayPick, setManualDayPick] = useState(false)
 
   const workout = useMemo(() => {
     if (workouts.length === 0) return null
@@ -163,6 +165,12 @@ export function WorkoutModule({
       setRest(null)
       setConfirmSaveOpen(false)
       setSaveMessage('')
+      if (key === null) {
+        setManualDayPick(true)
+        autoSelectedRef.current = true
+      } else {
+        setManualDayPick(false)
+      }
       void onPatch({
         selectedWorkoutDay: key,
         workoutSession: null,
@@ -172,10 +180,12 @@ export function WorkoutModule({
   )
 
   useEffect(() => {
-    if (!multiDay || selectedKey || !suggestion || saving || autoSelectedRef.current) return
+    if (!multiDay || selectedKey || !suggestion || saving || manualDayPick || autoSelectedRef.current) {
+      return
+    }
     autoSelectedRef.current = true
     selectWorkoutDay(suggestion)
-  }, [multiDay, selectedKey, suggestion, saving, selectWorkoutDay])
+  }, [multiDay, selectedKey, suggestion, saving, manualDayPick, selectWorkoutDay])
 
   useEffect(() => {
     if (!sessionRunning || sessionStartedAt == null) return
@@ -198,6 +208,7 @@ export function WorkoutModule({
   }, [sessionRunning, sessionStartedAt])
 
   if (multiDay && !selectedKey) {
+    const showPicker = manualDayPick || !suggestion
     return (
       <div>
         <div
@@ -222,9 +233,11 @@ export function WorkoutModule({
             Workout day
           </p>
           <h2 style={{ margin: '8px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
-            {suggestion ? "Loading today's workout…" : "Which day's workout are you following?"}
+            {showPicker
+              ? "Which day's workout are you following?"
+              : "Loading today's workout…"}
           </h2>
-          {!suggestion && (
+          {showPicker && (
             <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
               Your plan has different sessions for different days. Pick today&apos;s workout and we&apos;ll
               load that session.
@@ -232,7 +245,7 @@ export function WorkoutModule({
           )}
         </div>
 
-        {!suggestion && (
+        {showPicker && (
         <div style={{ display: 'grid', gap: 10 }}>
           {days.map((day) => {
             const option = workouts.find((w) => w.workoutDay === day.key)

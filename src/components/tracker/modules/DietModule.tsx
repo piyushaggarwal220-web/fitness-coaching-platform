@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import {
   CompletionToggle,
@@ -39,12 +39,29 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
   const selectedDay = days.find((d) => d.key === selectedKey) ?? null
   const suggestion = suggestedWorkoutDayKey(days)
   const autoSelectedRef = useRef(false)
+  /** When true, skip auto-suggest and show the day picker (Change day). */
+  const [manualDayPick, setManualDayPick] = useState(false)
+
+  const selectDietDay = useCallback(
+    (key: string | null) => {
+      if (key === null) {
+        setManualDayPick(true)
+        autoSelectedRef.current = true
+      } else {
+        setManualDayPick(false)
+      }
+      void onPatch({ selectedDietDay: key })
+    },
+    [onPatch]
+  )
 
   useEffect(() => {
-    if (!multiDay || selectedKey || !suggestion || saving || autoSelectedRef.current) return
+    if (!multiDay || selectedKey || !suggestion || saving || manualDayPick || autoSelectedRef.current) {
+      return
+    }
     autoSelectedRef.current = true
-    void onPatch({ selectedDietDay: suggestion })
-  }, [multiDay, selectedKey, suggestion, saving, onPatch])
+    selectDietDay(suggestion)
+  }, [multiDay, selectedKey, suggestion, saving, manualDayPick, selectDietDay])
 
   const visibleMeals = useMemo(() => {
     if (!multiDay) return meals
@@ -56,6 +73,7 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
   const done = visibleMeals.filter((m) => completion.meals?.[m.id]?.completed).length
 
   if (multiDay && !selectedKey) {
+    const showPicker = manualDayPick || !suggestion
     return (
       <div>
         <div
@@ -80,9 +98,9 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
             Diet day
           </p>
           <h2 style={{ margin: '8px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
-            {suggestion ? "Loading today's diet…" : "Which day's diet are you following?"}
+            {showPicker ? "Which day's diet are you following?" : "Loading today's diet…"}
           </h2>
-          {!suggestion && (
+          {showPicker && (
             <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
               Your plan has different meals for different days. Pick today&apos;s schedule and we&apos;ll show those
               meals.
@@ -90,7 +108,7 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
           )}
         </div>
 
-        {!suggestion && (
+        {showPicker && (
         <div style={{ display: 'grid', gap: 10 }}>
           {days.map((day) => {
             const isSuggested = day.key === suggestion
@@ -99,7 +117,7 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
                 key={day.key}
                 type="button"
                 disabled={saving}
-                onClick={() => void onPatch({ selectedDietDay: day.key })}
+                onClick={() => selectDietDay(day.key)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -151,7 +169,7 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
           <Button
             variant="secondary"
             disabled={saving}
-            onClick={() => void onPatch({ selectedDietDay: null })}
+            onClick={() => selectDietDay(null)}
           >
             Change day
           </Button>
