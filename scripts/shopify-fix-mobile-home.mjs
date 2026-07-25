@@ -187,22 +187,37 @@ function patchGallery(content) {
 function patchPlans(content) {
   return replaceOrInsertBeforeEndstyle(
     content,
-    'lurvox-mobile-plan-cards-v1',
+    'lurvox-mobile-plan-cards-v2',
     `  @media screen and (max-width: 749px) {
     .ai-transformation-plan-card-inner-{{ ai_gen_id }} {
-      grid-template-columns: 1fr !important;
+      grid-template-columns: minmax(0, 1fr) auto !important;
       gap: 12px !important;
-      align-items: start !important;
+      align-items: center !important;
     }
 
     .ai-transformation-plan-card-right-{{ ai_gen_id }} {
-      width: 100% !important;
-      max-width: none !important;
-      align-items: flex-start !important;
-      text-align: left !important;
-      flex-direction: row !important;
-      flex-wrap: wrap !important;
-      gap: 8px 12px !important;
+      width: auto !important;
+      max-width: 42% !important;
+      align-items: flex-end !important;
+      text-align: right !important;
+      flex-direction: column !important;
+      flex-wrap: nowrap !important;
+      gap: 6px !important;
+    }
+
+    .ai-transformation-plan-card-pricing-{{ ai_gen_id }} {
+      align-items: flex-end !important;
+      text-align: right !important;
+    }
+
+    .ai-transformation-plan-card-original-price-{{ ai_gen_id }},
+    .ai-transformation-plan-card-price-{{ ai_gen_id }},
+    .ai-transformation-plan-card-monthly-{{ ai_gen_id }} {
+      text-align: right !important;
+    }
+
+    .ai-transformation-plan-card-price-{{ ai_gen_id }} {
+      font-size: 24px !important;
     }
 
     .ai-transformation-plan-card-footer-{{ ai_gen_id }} {
