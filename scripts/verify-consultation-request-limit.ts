@@ -64,6 +64,11 @@ assert.match(migration, /request_count >= 2/)
 assert.match(migration, /ENABLE ROW LEVEL SECURITY/)
 assert.match(migration, /REVOKE ALL ON TABLE public\.consultation_requests FROM anon, authenticated/)
 assert.match(migration, /UNIQUE \(idempotency_key\)/)
+assert.ok(
+  migration.indexOf('WHERE idempotency_key = NEW.idempotency_key') <
+    migration.indexOf('IF request_count >= 2'),
+  'Idempotent retries must be recognized before enforcing the lifetime cap'
+)
 
 const browserScript = await readFile(
   new URL('./shopify-talk-to-coach-limit.js', import.meta.url),
@@ -106,6 +111,8 @@ function runBrowserScript(response: {
   const form = {
     dataset: {} as Record<string, string>,
     hidden: false,
+    style: { display: '' },
+    setAttribute() {},
     parentNode: {
       insertBefore(node: typeof status) {
         status = node

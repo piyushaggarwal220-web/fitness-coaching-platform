@@ -54,6 +54,16 @@ BEGIN
     pg_catalog.hashtextextended(NEW.person_key, 0)
   );
 
+  -- Let the unique constraint handle a replay of an accepted request. This
+  -- keeps a retry idempotent even when it races with the second submission.
+  IF EXISTS (
+    SELECT 1
+    FROM public.consultation_requests
+    WHERE idempotency_key = NEW.idempotency_key
+  ) THEN
+    RETURN NEW;
+  END IF;
+
   SELECT count(*)
   INTO request_count
   FROM public.consultation_requests

@@ -100,6 +100,8 @@
         message ||
         'You have used both Talk to a coach submissions. Please use WhatsApp for further help.'
       form.hidden = true
+      form.style.display = 'none'
+      form.setAttribute('aria-hidden', 'true')
     }
 
     var storedCount = readCount()
