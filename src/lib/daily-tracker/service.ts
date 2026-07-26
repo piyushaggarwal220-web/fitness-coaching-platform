@@ -9,6 +9,7 @@ import {
 import type { OnboardingProfile, Plan } from '@/types/database'
 import { buildTrackerSnapshot, mergeCompletion } from './parser'
 import { averageRpe, calculateTrackerScores } from './scores'
+import { resolveTrackerDateSelection } from './date'
 import type {
   DailyTrackerDay,
   TodayTrackerView,
@@ -213,10 +214,11 @@ function sanitizeCompletionForSnapshot(
   return next
 }
 
-export async function getOrCreateTodayTracker(
+export async function getOrCreateTrackerForDate(
   supabase: SupabaseClient,
   clientId: string,
-  profile: OnboardingProfile
+  profile: OnboardingProfile,
+  requestedDate?: string | null
 ): Promise<{ day: DailyTrackerDay | null; error: string | null }> {
   const plan = await getActivePlan(supabase, clientId)
   if (!plan) {
@@ -232,8 +234,19 @@ export async function getOrCreateTodayTracker(
     }
   }
 
-  const logDate = todayDateString()
-  const coachingDay = getCoachingDay(profile.checkin_schedule_started_at)
+  const { selection, error: dateError } = resolveTrackerDateSelection(
+    requestedDate,
+    profile.checkin_schedule_started_at
+  )
+  if (dateError || !selection) {
+    return { day: null, error: dateError ?? 'Tracker date is unavailable.' }
+  }
+
+  const logDate = selection.selectedDate
+  const coachingDay = getCoachingDay(
+    profile.checkin_schedule_started_at,
+    selection.referenceDate
+  )
   const coachingWeek = getCoachingWeek(coachingDay)
 
   const { data: existing } = await supabase
@@ -243,11 +256,14 @@ export async function getOrCreateTodayTracker(
     .eq('log_date', logDate)
     .maybeSingle()
 
-  const snapshot = buildTrackerSnapshot(plan, profile)
-  const now = new Date().toISOString()
-
   if (existing) {
     const existingDay = rowToDay(existing as Record<string, unknown>)
+    if (logDate !== todayDateString()) {
+      return { day: existingDay, error: null }
+    }
+
+    const snapshot = buildTrackerSnapshot(plan, profile, selection.referenceDate)
+    const now = new Date().toISOString()
     const existingHasWorkout = existingDay.snapshot.items.some((item) => item.type === 'workout')
     const newHasWorkout = snapshot.items.some((item) => item.type === 'workout')
     const existingHasMeals = existingDay.snapshot.items.some((item) => item.type === 'meal')
@@ -294,6 +310,8 @@ export async function getOrCreateTodayTracker(
     return { day: rowToDay(updated as Record<string, unknown>), error: null }
   }
 
+  const snapshot = buildTrackerSnapshot(plan, profile, selection.referenceDate)
+  const now = new Date().toISOString()
   const completion: TrackerCompletion = {}
   const { scores, overall } = calculateTrackerScores(snapshot, completion)
 
@@ -320,6 +338,14 @@ export async function getOrCreateTodayTracker(
   return { day: rowToDay(inserted as Record<string, unknown>), error: null }
 }
 
+export async function getOrCreateTodayTracker(
+  supabase: SupabaseClient,
+  clientId: string,
+  profile: OnboardingProfile
+): Promise<{ day: DailyTrackerDay | null; error: string | null }> {
+  return getOrCreateTrackerForDate(supabase, clientId, profile)
+}
+
 export async function updateTrackerCompletion(
   supabase: SupabaseClient,
   clientId: string,
@@ -340,6 +366,9 @@ export async function updateTrackerCompletion(
 
     const existingRow = existing as Record<string, unknown>
     const current = rowToDay(existingRow)
+    if (current.log_date > todayDateString()) {
+      return { day: null, error: 'Future tracker dates cannot be updated.' }
+    }
     const completion = mergeCompletion(current.completion, patch)
     const { scores, overall } = calculateTrackerScores(current.snapshot, completion)
     const previousUpdatedAt = String(existingRow.updated_at)
@@ -426,13 +455,25 @@ export async function refreshTodayTrackerAfterPlanPublish(
   })
 }
 
-export async function loadTodayTrackerView(
+export async function loadTrackerViewForDate(
   supabase: SupabaseClient,
   clientId: string,
-  profile: OnboardingProfile
+  profile: OnboardingProfile,
+  requestedDate?: string | null
 ): Promise<{ view: TodayTrackerView | null; error: string | null }> {
-  const { day, error } = await getOrCreateTodayTracker(supabase, clientId, profile)
+  const { day, error } = await getOrCreateTrackerForDate(
+    supabase,
+    clientId,
+    profile,
+    requestedDate
+  )
   if (error || !day) return { view: null, error }
+
+  const { selection, error: dateError } = resolveTrackerDateSelection(
+    day.log_date,
+    profile.checkin_schedule_started_at!
+  )
+  if (dateError || !selection) return { view: null, error: dateError }
 
   const schedule = getClientCheckinSchedule(
     profile.checkin_schedule_started_at,
@@ -444,6 +485,12 @@ export async function loadTodayTrackerView(
   return {
     view: {
       day,
+      dateNavigation: {
+        selectedDate: selection.selectedDate,
+        minDate: selection.minDate,
+        maxDate: selection.maxDate,
+        isToday: selection.selectedDate === selection.maxDate,
+      },
       schedule: {
         coachingDay: day.coaching_day ?? schedule.coachingDay,
         coachingWeek: day.coaching_week ?? schedule.activeCoachingWeek,
@@ -456,6 +503,14 @@ export async function loadTodayTrackerView(
     },
     error: null,
   }
+}
+
+export async function loadTodayTrackerView(
+  supabase: SupabaseClient,
+  clientId: string,
+  profile: OnboardingProfile
+): Promise<{ view: TodayTrackerView | null; error: string | null }> {
+  return loadTrackerViewForDate(supabase, clientId, profile)
 }
 
 export async function loadTrackerHistory(

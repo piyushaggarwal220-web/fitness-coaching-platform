@@ -20,6 +20,7 @@ type Props = {
   completion: TrackerCompletion
   dietScore: number
   saving: boolean
+  logDate: string
   onPatch: (patch: TrackerCompletion) => Promise<void>
 }
 
@@ -32,12 +33,12 @@ function deriveDietDays(meals: TrackerMealItem[], explicit?: DietDayOption[]): D
   return Array.from(map.entries()).map(([key, label]) => ({ key, label }))
 }
 
-export function DietModule({ meals, dietDays, completion, dietScore, saving, onPatch }: Props) {
+export function DietModule({ meals, dietDays, completion, dietScore, saving, logDate, onPatch }: Props) {
   const days = useMemo(() => deriveDietDays(meals, dietDays), [meals, dietDays])
   const multiDay = days.length > 1
   const selectedKey = completion.selectedDietDay ?? null
   const selectedDay = days.find((d) => d.key === selectedKey) ?? null
-  const suggestion = suggestedWorkoutDayKey(days)
+  const suggestion = suggestedWorkoutDayKey(days, logDate)
   const autoSelectedRef = useRef(false)
   /** When true, skip auto-suggest and show the day picker (Change day). */
   const [manualDayPick, setManualDayPick] = useState(false)

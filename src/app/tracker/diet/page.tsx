@@ -22,6 +22,7 @@ export default function DietTrackerPage() {
           completion={day.completion}
           dietScore={scores.diet}
           saving={saving}
+          logDate={day.log_date}
           onPatch={patchCompletion}
         />
       )}

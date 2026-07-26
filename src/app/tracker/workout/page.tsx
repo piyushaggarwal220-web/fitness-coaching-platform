@@ -21,6 +21,7 @@ export default function WorkoutTrackerPage() {
           completion={day.completion}
           workoutScore={scores.workout}
           saving={saving}
+          logDate={day.log_date}
           onPatch={patchCompletion}
         />
       )}

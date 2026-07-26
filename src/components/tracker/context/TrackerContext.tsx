@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { authenticateClient } from '@/lib/onboarding'
 import { createClient } from '@/lib/supabase/client'
+import { getCoachingDateKey } from '@/lib/checkin-schedule'
 import { getCategoryDisplayScores, splitSnapshot, type TrackerSections } from '@/lib/daily-tracker/display'
 import type {
   DailyTrackerDay,
@@ -31,6 +32,8 @@ type TrackerContextValue = {
   loading: boolean
   saving: boolean
   error: string | null
+  selectedDate: string
+  setSelectedDate: (date: string) => void
   patchCompletion: (patch: TrackerCompletion) => Promise<void>
   refresh: () => Promise<void>
 }
@@ -43,10 +46,12 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [selectedDate, setSelectedDateState] = useState(() => getCoachingDateKey())
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
   const pendingSavesRef = useRef(0)
 
   const load = useCallback(async () => {
+    setLoading(true)
     const result = await authenticateClient(supabase, router, {
       requireOnboarding: true,
       requirePayment: true,
@@ -57,7 +62,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const res = await fetch('/api/tracker/today')
+      const res = await fetch(`/api/tracker/today?date=${encodeURIComponent(selectedDate)}`)
       const data = (await res.json()) as { view?: TodayTrackerView; error?: string }
       if (!res.ok) {
         setError(data.error ?? 'Failed to load tracker')
@@ -71,7 +76,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       setView(null)
     }
     setLoading(false)
-  }, [router])
+  }, [router, selectedDate])
 
   useEffect(() => {
     queueMicrotask(() => void load())
@@ -84,6 +89,13 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     [day]
   )
   const scores = useMemo(() => (day ? getCategoryDisplayScores(day) : null), [day])
+  const setSelectedDate = useCallback(
+    (date: string) => {
+      if (date === selectedDate || saving) return
+      setSelectedDateState(date)
+    },
+    [saving, selectedDate]
+  )
 
   const patchCompletion = useCallback(
     (patch: TrackerCompletion): Promise<void> => {
@@ -128,6 +140,8 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     loading,
     saving,
     error,
+    selectedDate,
+    setSelectedDate,
     patchCompletion,
     refresh: load,
   }

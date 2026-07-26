@@ -22,7 +22,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           textTransform: 'uppercase',
         }}
       >
-        {view.greeting}
+        {view.dateNavigation.isToday ? view.greeting : 'Daily progress'}
       </p>
       <h1
         style={{
@@ -54,11 +54,11 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           percent={view.day.overall_percent ?? 0}
           size={140}
           stroke={11}
-          label="Today's Progress"
+          label={view.dateNavigation.isToday ? "Today's Progress" : 'Selected Day'}
         />
         <div style={{ textAlign: 'center', fontSize: 13, color: colors.textMuted }}>
           Day {view.schedule.coachingDay} · Week {view.schedule.coachingWeek}
-          {view.streak > 0 && (
+          {view.dateNavigation.isToday && view.streak > 0 && (
             <div style={{ color: colors.accent, marginTop: 4 }}>{view.streak}-day streak</div>
           )}
         </div>

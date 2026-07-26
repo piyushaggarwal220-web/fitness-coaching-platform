@@ -18,6 +18,7 @@ import type {
   WorkoutPhaseBlock,
 } from './types'
 import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
+import { trackerWeekdayIndex } from './date'
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 
@@ -505,11 +506,16 @@ function splitWorkoutDayBlocks(workoutText: string): { key: string; label: strin
 /** Suggest which plan day matches the calendar weekday / Day N convention. */
 export function suggestedWorkoutDayKey(
   days: { key: string; label: string }[],
-  referenceDate = new Date()
+  referenceDate: Date | string = new Date()
 ): string | null {
   if (days.length === 0) return null
-  const dayName = DAY_NAMES[referenceDate.getDay()]!
-  const programDay = referenceDate.getDay() || 7
+  const weekday =
+    typeof referenceDate === 'string'
+      ? trackerWeekdayIndex(referenceDate)
+      : referenceDate.getDay()
+  const dayIndex = weekday ?? new Date().getDay()
+  const dayName = DAY_NAMES[dayIndex]!
+  const programDay = dayIndex || 7
   return (
     days.find((d) => d.key === dayName)?.key ??
     days.find((d) => d.key === `day-${programDay}` || d.key === slug(`day ${programDay}`))?.key ??

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { loadTodayTrackerView } from '@/lib/daily-tracker'
+import { loadTrackerViewForDate } from '@/lib/daily-tracker'
 import { createClient } from '@/lib/supabase/server'
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -22,7 +22,13 @@ export async function GET() {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   }
 
-  const { view, error } = await loadTodayTrackerView(supabase, user.id, profile)
+  const requestedDate = new URL(request.url).searchParams.get('date')
+  const { view, error } = await loadTrackerViewForDate(
+    supabase,
+    user.id,
+    profile,
+    requestedDate
+  )
 
   if (error || !view) {
     return NextResponse.json({ error: error ?? 'Tracker unavailable' }, { status: 404 })

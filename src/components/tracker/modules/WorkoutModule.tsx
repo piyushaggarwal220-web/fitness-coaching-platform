@@ -45,6 +45,7 @@ type Props = {
   completion: TrackerCompletion
   workoutScore: number
   saving: boolean
+  logDate: string
   onPatch: (patch: TrackerCompletion) => Promise<void>
 }
 
@@ -86,13 +87,14 @@ export function WorkoutModule({
   completion,
   workoutScore,
   saving,
+  logDate,
   onPatch,
 }: Props) {
   const days = useMemo(() => deriveWorkoutDays(workouts, workoutDays), [workouts, workoutDays])
   const multiDay = days.length > 1
   const selectedKey = completion.selectedWorkoutDay ?? null
   const selectedDay = days.find((d) => d.key === selectedKey) ?? null
-  const suggestion = suggestedWorkoutDayKey(days)
+  const suggestion = suggestedWorkoutDayKey(days, logDate)
   const autoSelectedRef = useRef(false)
   /** When true, skip auto-suggest and show the day picker (Change day). */
   const [manualDayPick, setManualDayPick] = useState(false)
