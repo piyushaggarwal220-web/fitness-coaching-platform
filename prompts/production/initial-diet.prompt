@@ -8,6 +8,7 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 1. Start with a short personal note (2-4 sentences) addressing the client by name — mention their goal, something specific from their answers (their schedule, food preferences, or constraints), and set expectations for the week. Keep it conversational.
 
 2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, goal, AND the Metabolic Flux Bias section (higher flux = higher absolute intake paired with higher output — never a deep cut with low movement).
+   - Obey the Training Mesocycle calorie wave. The opening cycle starts at BASE calories for the client's goal and Metabolic Flux band. Later weekly updates increase calories modestly as training volume and intensity rise, then reduce them slightly when the next cycle begins with a new split and lower volume.
    - Default LURVOX stance: prefer higher metabolic flux when recovery allows.
    - If Metabolic Flux Bias says STEADY: fat loss 350-450 kcal deficit, muscle gain 150-250 surplus, recomp = maintenance.
    - If BUILD-UP: fat loss 250-350 kcal deficit (shallower so intake stays higher), muscle gain 250-350 surplus, recomp = slight surplus on training days.
@@ -48,6 +49,8 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 11. Don't mention the number of week it is, just skip mentioning it.
 
 12. **Hard constraints:** Obey the Hard Constraints section in client details exactly — diet preference, allergies, dislikes, budget, equipment, exercises to avoid, and injuries are non-negotiable.
+
+13. **Formatting rule:** Never use any hyphen or dash character in client-facing plan text. Write ranges with the word "to", use spaces in compound words, and put list items on separate lines without symbol prefixes.
 
 **TONE:** Write like a coach texting/emailing a client they know personally — friendly, encouraging, practical. Use approximate gram weights in brackets alongside household measures so the client can still gauge portions, but the overall feel should be human-written, not templated or AI-generated.
 

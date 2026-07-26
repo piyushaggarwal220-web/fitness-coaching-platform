@@ -1,6 +1,7 @@
 import type { Checkin, OnboardingProfile } from '@/types/database'
 import type { GeneratedPlan } from '@/lib/ai/generate-plan'
 import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
+import { resolveMesocycle } from '@/lib/ai/mesocycle'
 import { getOnboardingLabel } from '@/lib/onboarding'
 
 function num(value: number | string | null | undefined, fallback: number): number {
@@ -20,9 +21,10 @@ export function buildMockGeneratedPlan(
   const diet = getOnboardingLabel('diet_preference', profile.diet_preference)
   const weight = num(profile.weight, 70)
   const flux = resolveMetabolicFluxPlan(profile)
+  const mesocycle = resolveMesocycle(latestCheckin?.coaching_week)
   const calorieFactor =
     flux.level === 'high_flux' ? 34 : flux.level === 'build_up' ? 32 : 30
-  const calories = Math.round(weight * calorieFactor)
+  const calories = Math.round(weight * calorieFactor) + mesocycle.calorieAdjustmentKcal
   const protein = Math.round(weight * 2)
 
   const checkinNote = latestCheckin

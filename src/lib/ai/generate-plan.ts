@@ -144,12 +144,14 @@ const RETRY_INSTRUCTIONS = [
 ].join(' ')
 
 const CLIENT_FACING_PLAN_STYLE_INSTRUCTIONS = [
-  '# Client-Facing Writing Style',
-  'Write every client-facing plan field in natural, coach-written plain text.',
-  'Do not use Markdown formatting, asterisks, star bullets, or hyphen bullets.',
+  '# Client Facing Writing Style',
+  'Write every client facing plan field in natural, coach written plain text.',
+  'Do not use Markdown formatting, asterisks, bullets, or symbol prefixes.',
+  'Never use a hyphen, dash, minus, or horizontal rule character anywhere in client facing plan fields.',
+  'Write numeric ranges with the word to, such as 8 to 12 reps. Write compound words with spaces, such as warm up and post workout.',
   'Do not wrap headings or phrases in special formatting characters.',
   'Use simple section titles and normal sentences. When listing items, place each item on its own line without a symbol prefix.',
-  'Keep the tone practical, personal, and human. Avoid robotic labels, filler, and AI-style commentary.',
+  'Keep the tone practical, personal, and human. Avoid robotic labels, filler, and artificial sounding commentary.',
 ].join('\n')
 
 const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [

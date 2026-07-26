@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -42,6 +43,8 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const pendingSavesRef = useRef(0)
 
   const load = useCallback(async () => {
     const result = await authenticateClient(supabase, router, {
@@ -71,7 +74,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   }, [router])
 
   useEffect(() => {
-    void load()
+    queueMicrotask(() => void load())
   }, [load])
 
   const day = view?.day ?? null
@@ -83,24 +86,36 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const scores = useMemo(() => (day ? getCategoryDisplayScores(day) : null), [day])
 
   const patchCompletion = useCallback(
-    async (patch: TrackerCompletion) => {
-      if (!day) return
+    (patch: TrackerCompletion): Promise<void> => {
+      if (!day) return Promise.resolve()
+      const dayId = day.id
+      pendingSavesRef.current += 1
       setSaving(true)
-      try {
-        const res = await fetch('/api/tracker/update', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dayId: day.id, completion: patch }),
-        })
-        const data = (await res.json()) as { day?: DailyTrackerDay; error?: string }
-        if (!res.ok || !data.day) {
-          setError(data.error ?? 'Failed to save progress')
-          return
+
+      const save = async () => {
+        try {
+          const res = await fetch('/api/tracker/update', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dayId, completion: patch }),
+          })
+          const data = (await res.json()) as { day?: DailyTrackerDay; error?: string }
+          if (!res.ok || !data.day) {
+            setError(data.error ?? 'Failed to save progress')
+            return
+          }
+          setView((current) => (current ? { ...current, day: data.day! } : current))
+        } catch {
+          setError('Failed to save progress')
         }
-        setView((current) => (current ? { ...current, day: data.day! } : current))
-      } finally {
-        setSaving(false)
       }
+
+      const operation = saveQueueRef.current.then(save, save)
+      saveQueueRef.current = operation
+      return operation.finally(() => {
+        pendingSavesRef.current -= 1
+        if (pendingSavesRef.current === 0) setSaving(false)
+      })
     },
     [day]
   )

@@ -162,7 +162,7 @@ function resolveMembershipExpiresAt(codeRow: {
 export type RedeemCodeInput = {
   code: string
   email: string
-  password: string
+  password?: string
   name: string
   userId?: string
 }
@@ -173,6 +173,104 @@ export type RedeemCodeResult = {
   redirectTo: string
 }
 
+async function restoreReservedUse(
+  admin: SupabaseClient,
+  codeId: string
+): Promise<void> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data: current } = await admin
+      .from('redemption_codes')
+      .select('remaining_uses, max_redemptions')
+      .eq('id', codeId)
+      .maybeSingle()
+
+    if (!current) return
+    const restored = Math.min(current.max_redemptions, current.remaining_uses + 1)
+    const { data: updated } = await admin
+      .from('redemption_codes')
+      .update({ remaining_uses: restored, updated_at: new Date().toISOString() })
+      .eq('id', codeId)
+      .eq('remaining_uses', current.remaining_uses)
+      .select('id')
+      .maybeSingle()
+
+    if (updated) return
+  }
+}
+
+/**
+ * Reserve one use before granting access. The compare-and-swap update prevents
+ * concurrent requests from consuming the same final use.
+ */
+async function reserveRedemptionUse(
+  admin: SupabaseClient,
+  codeId: string,
+  userId: string
+): Promise<boolean> {
+  const { data: existingUsage, error: existingUsageError } = await admin
+    .from('redemption_usages')
+    .select('id')
+    .eq('code_id', codeId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (existingUsageError) throw new Error(`Failed to check redemption: ${existingUsageError.message}`)
+  if (existingUsage) return false
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data: current, error: loadError } = await admin
+      .from('redemption_codes')
+      .select('id, remaining_uses, max_redemptions, is_active, expires_at, membership_expires_at')
+      .eq('id', codeId)
+      .maybeSingle()
+
+    if (loadError || !current) throw new Error(loadError?.message ?? 'Code is no longer available.')
+    if (!current.is_active || current.remaining_uses <= 0) {
+      throw new Error('Code is no longer available.')
+    }
+    if (current.expires_at && new Date(current.expires_at).getTime() < Date.now()) {
+      throw new Error('This enrollment code has expired.')
+    }
+    if (
+      current.membership_expires_at &&
+      new Date(current.membership_expires_at).getTime() < Date.now()
+    ) {
+      throw new Error('This membership code has already expired.')
+    }
+
+    const now = new Date().toISOString()
+    const { data: reserved, error: reserveError } = await admin
+      .from('redemption_codes')
+      .update({
+        remaining_uses: current.remaining_uses - 1,
+        updated_at: now,
+      })
+      .eq('id', codeId)
+      .eq('is_active', true)
+      .eq('remaining_uses', current.remaining_uses)
+      .select('id')
+      .maybeSingle()
+
+    if (reserveError) throw new Error(`Failed to reserve redemption: ${reserveError.message}`)
+    if (!reserved) continue
+
+    const { error: usageError } = await admin.from('redemption_usages').insert({
+      code_id: codeId,
+      user_id: userId,
+    })
+
+    if (!usageError) return true
+
+    await restoreReservedUse(admin, codeId)
+    if (usageError.code === '23505' || usageError.message.includes('duplicate')) {
+      return false
+    }
+    throw new Error(`Failed to record redemption: ${usageError.message}`)
+  }
+
+  throw new Error('Code availability changed. Please try again.')
+}
+
 /** Grants access for an already-authenticated or newly-created user (legacy checkout redeem). */
 export async function redeemCode(input: RedeemCodeInput): Promise<RedeemCodeResult> {
   const admin = createAdminClient()
@@ -181,7 +279,9 @@ export async function redeemCode(input: RedeemCodeInput): Promise<RedeemCodeResu
   const name = input.name.trim()
   const password = input.password
 
-  if (password.length < 6) throw new Error('Password must be at least 6 characters')
+  if (!input.userId && (!password || password.length < 6)) {
+    throw new Error('Password must be at least 6 characters')
+  }
 
   const validation = await validateRedemptionCode(normalized, admin)
   if (!validation.valid || !validation.code) {
@@ -205,11 +305,11 @@ export async function redeemCode(input: RedeemCodeInput): Promise<RedeemCodeResu
     const existingId = await findAuthUserIdByEmail(admin, email)
 
     if (existingId) {
-      userId = existingId
+      throw new Error('An account with this email already exists. Sign in before redeeming this code.')
     } else {
       const { data: created, error: createError } = await admin.auth.admin.createUser({
         email,
-        password,
+        password: password!,
         email_confirm: true,
         user_metadata: { name },
       })
@@ -219,12 +319,6 @@ export async function redeemCode(input: RedeemCodeInput): Promise<RedeemCodeResu
       userId = created.user.id
       isNewUser = true
     }
-
-    await admin.auth.admin.updateUserById(userId, {
-      password,
-      email_confirm: true,
-      user_metadata: { name },
-    })
   }
 
   await grantEnrollmentAccess({
@@ -246,61 +340,42 @@ async function grantEnrollmentAccess(input: {
   codeRow: RedemptionCode
 }): Promise<void> {
   const { admin, userId, email, name, codeRow } = input
-  const expiresAt = resolveMembershipExpiresAt(codeRow)
   const now = new Date().toISOString()
 
-  const { error: profileError } = await admin.from('profiles').upsert({
+  const { data: existingProfile } = await admin
+    .from('profiles')
+    .select('subscription_expires_at')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const { error: baseProfileError } = await admin.from('profiles').upsert({
     id: userId,
     email,
     name,
-    role: 'client',
-    payment_confirmed: true,
-    access_source: 'enrollment_code',
-    onboarding_complete: false,
-    onboarding_completed_at: null,
-    plan_delivered: false,
-    subscription_expires_at: expiresAt.toISOString(),
     updated_at: now,
   })
+  if (baseProfileError) {
+    throw new Error(`Failed to prepare enrollment profile: ${baseProfileError.message}`)
+  }
+
+  const consumed = await reserveRedemptionUse(admin, codeRow.id, userId)
+  const expiresAt =
+    !consumed && existingProfile?.subscription_expires_at
+      ? new Date(existingProfile.subscription_expires_at)
+      : resolveMembershipExpiresAt(codeRow)
+
+  const { error: profileError } = await admin.from('profiles').update({
+    email,
+    name,
+    payment_confirmed: true,
+    access_source: 'enrollment_code',
+    subscription_expires_at: expiresAt.toISOString(),
+    updated_at: now,
+  }).eq('id', userId)
 
   if (profileError) throw new Error(`Failed to grant entitlement: ${profileError.message}`)
 
-  const { error: usageError } = await admin.from('redemption_usages').insert({
-    code_id: codeRow.id,
-    user_id: userId,
-  })
-
-  if (usageError && !usageError.message.includes('duplicate')) {
-    throw new Error(`Failed to record redemption: ${usageError.message}`)
-  }
-
-  if (!codeRow.is_reusable) {
-    await admin
-      .from('redemption_codes')
-      .update({
-        remaining_uses: Math.max(0, codeRow.remaining_uses - 1),
-        updated_at: now,
-      })
-      .eq('id', codeRow.id)
-  } else {
-    const { count } = await admin
-      .from('redemption_usages')
-      .select('*', { count: 'exact', head: true })
-      .eq('code_id', codeRow.id)
-
-    const used = count ?? 0
-    if (used >= codeRow.max_redemptions) {
-      await admin
-        .from('redemption_codes')
-        .update({ remaining_uses: 0, updated_at: now })
-        .eq('id', codeRow.id)
-    } else {
-      await admin
-        .from('redemption_codes')
-        .update({ remaining_uses: codeRow.max_redemptions - used, updated_at: now })
-        .eq('id', codeRow.id)
-    }
-  }
+  if (!consumed) return
 
   await autoAssignCoachToClient(userId, admin)
 
@@ -529,7 +604,6 @@ export async function completeEnrollment(
     .select('*')
     .eq('id', payload.codeId)
     .eq('is_active', true)
-    .gt('remaining_uses', 0)
     .maybeSingle()
 
   if (error || !codeRow) throw new Error('This enrollment code is no longer available.')
@@ -567,37 +641,13 @@ export async function completeEnrollment(
     })
   }
 
-  // Avoid double-redeem if they already used this code
-  const { data: existingUsage } = await admin
-    .from('redemption_usages')
-    .select('id')
-    .eq('code_id', codeRow.id)
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if (!existingUsage) {
-    await grantEnrollmentAccess({
-      admin,
-      userId,
-      email,
-      name,
-      codeRow: codeRow as RedemptionCode,
-    })
-  } else {
-    // Ensure profile still has entitlement + pending onboarding
-    const expiresAt = resolveMembershipExpiresAt(codeRow as RedemptionCode)
-    await admin.from('profiles').upsert({
-      id: userId,
-      email,
-      name,
-      role: 'client',
-      payment_confirmed: true,
-      access_source: 'enrollment_code',
-      onboarding_complete: false,
-      subscription_expires_at: expiresAt.toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-  }
+  await grantEnrollmentAccess({
+    admin,
+    userId,
+    email,
+    name,
+    codeRow: codeRow as RedemptionCode,
+  })
 
   void isNewUser
   return { userId, email, redirectTo: '/onboarding' }

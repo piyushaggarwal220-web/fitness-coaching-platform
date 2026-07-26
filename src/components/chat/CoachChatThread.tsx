@@ -136,8 +136,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const sendingRef = useRef(false)
   const stickToBottomRef = useRef(true)
   const scrollBehaviorRef = useRef<'auto' | 'smooth'>('auto')
-  const animatedIdsRef = useRef<Set<string>>(new Set(initialMessages.map((m) => m.id)))
-  const historyReadyRef = useRef(initialMessages.length > 0)
 
   const fetchMessages = useCallback(async (markRead = true) => {
     const res = await fetch(`/api/chat/messages?conversationId=${conversationId}${markRead ? '' : '&peek=1'}`, {
@@ -179,17 +177,11 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           )
           if (matchedTemp) {
             consumedTemps.add(matchedTemp.id)
-            // Avoid a second enter animation when temp → server id.
-            animatedIdsRef.current.add(msg.id)
           }
           return msg
         })
         const leftoverTemps = temps.filter((temp) => !consumedTemps.has(temp.id))
         const next = leftoverTemps.length ? [...merged, ...leftoverTemps] : merged
-        if (!historyReadyRef.current) {
-          next.forEach((m) => animatedIdsRef.current.add(m.id))
-          historyReadyRef.current = true
-        }
         if (messagesVisuallyEqual(prev, next)) return prev
         return next
       })
@@ -336,13 +328,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     })
     return () => window.cancelAnimationFrame(frame)
   }, [messages, imagePreview, peerTyping])
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      for (const msg of messages) animatedIdsRef.current.add(msg.id)
-    })
-    return () => window.cancelAnimationFrame(frame)
-  }, [messages])
 
   const handleThreadScroll = () => {
     const el = threadRef.current
@@ -579,14 +564,13 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
             (viewer === 'client' && msg.sender_type === 'client') ||
             (viewer === 'coach' && msg.sender_type === 'coach')
           const isSystem = msg.sender_type === 'system' || msg.message_type === 'system'
-          const shouldAnimate = historyReadyRef.current && !animatedIdsRef.current.has(msg.id)
 
           if (isSystem) {
             const isCheckin = isCheckinSystemMessage(msg.content)
             return (
               <div
                 key={msg.id}
-                className={`${isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'}${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
+                className={`${isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'} ${motionClass.messageEnter}`}
                 style={isCheckin ? styles.checkinSystemMsg : styles.systemMsg}
               >
                 {isCheckin ? (
@@ -601,11 +585,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           return (
             <div
               key={msg.id}
-              className={
-                shouldAnimate
-                  ? (isMine ? motionClass.messageEnterMine : motionClass.messageEnterTheirs)
-                  : undefined
-              }
+              className={isMine ? motionClass.messageEnterMine : motionClass.messageEnterTheirs}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -789,11 +769,14 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         {showSend ? (
           <button
             type="button"
-            onClick={() => void sendMessage()}
-            disabled={sending || !input.trim()}
+            onClick={() => {
+              if (imagePreview) void uploadAndSendImage()
+              else void sendMessage()
+            }}
+            disabled={sending}
             className="btn-press"
             style={styles.sendBtn}
-            aria-label="Send"
+            aria-label={imagePreview ? 'Send image' : 'Send message'}
           >
             <Send size={18} fill="currentColor" />
           </button>
