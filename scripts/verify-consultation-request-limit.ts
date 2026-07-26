@@ -54,6 +54,7 @@ assert.equal(
   true
 )
 
+async function verifyIntegration() {
 const migration = await readFile(
   new URL('../supabase/migrations/20260726151544_limit_consultation_requests.sql', import.meta.url),
   'utf8'
@@ -227,3 +228,9 @@ assert.equal(alreadyExhausted.form.hidden, true)
 assert.equal(alreadyExhausted.fetchCalls.length, 0)
 
 console.log('Consultation request lifetime limit verification passed.')
+}
+
+verifyIntegration().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})
