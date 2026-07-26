@@ -11,3 +11,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 3. A credible fat loss stall on genuinely low intake must not trigger another automatic calorie cut. Audit adherence first, then use a gradual reverse diet toward a sustainable intake and reassess.
 4. Weight gain plans must not force oversized surpluses or uncomfortable food volume. Progress intake only when appetite, digestion, recovery, and weight trend support it.
 5. Progress photo instructions must require opaque athletic clothing and explicitly reject nude, partially nude, or see through photos.
+
+## Consultation invariant
+
+The public `Talk to a coach` form permits at most two successful lifetime submissions per normalized WhatsApp number. Enforce this atomically in the database; browser state is only a user experience hint and must never be the source of truth.
