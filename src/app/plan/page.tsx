@@ -14,6 +14,7 @@ import { ClientShell } from '@/components/ui/ClientShell';
 import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BRAND_NAME } from '@/lib/brand'
+import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
 import { formatPlanDate } from '@/lib/plans';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
@@ -139,7 +140,16 @@ export default function ClientPlanPage() {
     );
   }
 
-  const sections = resolvePlanSectionsFromPlan(plan)
+  const resolvedSections = resolvePlanSectionsFromPlan(plan)
+  const sections = {
+    diet: normalizeAiPlanProse(resolvedSections.diet),
+    workout: normalizeAiPlanProse(resolvedSections.workout),
+    supplements: normalizeAiPlanProse(resolvedSections.supplements),
+    cardio: normalizeAiPlanProse(resolvedSections.cardio),
+    coachNotes: normalizeAiPlanProse(resolvedSections.coachNotes),
+  }
+  const displayTitle = normalizeAiPlanProse(plan.title)
+  const displayPhase = normalizeAiPlanProse(plan.phase ?? '')
 
   const accordionItems = [
     { key: 'diet' as const, title: 'Diet', icon: <Apple size={20} />, content: sections.diet },
@@ -165,9 +175,9 @@ export default function ClientPlanPage() {
           {BRAND_NAME} · Your Plan
         </p>
         <h1 style={{ margin: '8px 0 0', fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-          {plan.title}
+          {displayTitle}
         </h1>
-        {plan.phase && <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 16 }}>{plan.phase}</p>}
+        {displayPhase && <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 16 }}>{displayPhase}</p>}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2], marginTop: spacing[4], alignItems: 'center' }}>
           <span style={{ backgroundColor: colors.accentMuted, color: colors.accent, padding: '4px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
             v{plan.version}

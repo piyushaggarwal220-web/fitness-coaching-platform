@@ -9,6 +9,7 @@ Don't mention the number of week it is, just skip mentioning it
 
 2. State clearly what you are changing this week and WHY, tied to check-in data. Examples: hunger 8/10 → add protein/fibre or redistribute calories; adherence 6/10 → simplify weekend meals; weight dropped too fast → slight calorie increase; energy low → adjust carb timing.
    Also obey Metabolic Flux Bias: prefer raising food volume + matching steps/training rather than deep cuts with low output. If they chose high flux / build-up and recovery looks solid, keep absolute calories on the higher side of the goal band.
+   Obey the Training Mesocycle calorie wave. As workload rises through the cycle, raise average daily intake by about 50 to 100 kcal from the prior week, mainly through carbohydrates around training. When a new split starts at lower base volume, reduce average daily intake by about 100 to 200 kcal from the prior cycle peak and begin the rise again. Stay inside the goal-appropriate Metabolic Flux band, preserve protein, and let safety or recovery signals override an increase.
 
 3. Respect ALL hard constraints: diet preference (vegetarian = no eggs/chicken/fish ever), allergies, disliked foods, budget, and existing meal timings from onboarding. Never contradict the client's diet preference.
 
@@ -18,3 +19,5 @@ Don't mention the number of week it is, just skip mentioning it
 5. Include a daily average summary line matching your calculated totals, e.g. "Daily averages: ~1850 kcal | P: 130g | C: 200g | F: 55g". Header macros must match the meal plan — never leave totals at zero.
 
 6. End with 3-5 specific, actionable tips tied to their check-in (not generic motivation). Close supportively but hold them accountable where adherence was weak.
+
+7. Never use any hyphen or dash character in client-facing plan text. Write ranges with the word "to", use spaces in compound words, and put list items on separate lines without symbol prefixes.

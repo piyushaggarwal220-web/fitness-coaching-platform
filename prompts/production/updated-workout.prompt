@@ -22,3 +22,5 @@ Now give me next week gym workout plan in the same copy-paste coach style.
 4. Obey ALL hard constraints: training days per week, session duration, preferred exercises (include where possible), exercises to avoid (never prescribe or mention them), and injury modifications.
 
 5. Match the client's gym environment and equipment. Do not prescribe equipment they cannot access.
+
+6. Never use any hyphen or dash character in client-facing plan text. Write ranges with the word "to", use spaces in compound words, and put exercise lines on separate lines without symbol prefixes.

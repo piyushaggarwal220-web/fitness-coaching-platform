@@ -704,6 +704,17 @@ function hasSubstantiveContext(section: string): boolean {
 
 function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSections)[] {
   switch (actionId) {
+    case 'initial_diet':
+      return [
+        'hardConstraints',
+        'metabolicFlux',
+        'clientDetails',
+        'onboarding',
+        'mesocycle',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
     case 'initial_workout':
     case 'initial_cardio':
       return [
@@ -718,6 +729,19 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
         'complexity',
       ]
     case 'review_update_diet':
+      return [
+        'hardConstraints',
+        'metabolicFlux',
+        'clientDetails',
+        'onboarding',
+        'activeDiet',
+        'activeWorkout',
+        'mesocycle',
+        'checkin',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
     case 'review_update_supplements':
       return [
         'hardConstraints',

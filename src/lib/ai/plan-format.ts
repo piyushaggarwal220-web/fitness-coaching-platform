@@ -6,19 +6,35 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/** Remove common AI/Markdown decoration while preserving normal punctuation. */
+export const CLIENT_PLAN_DASH_PATTERN = /[-‐‑‒–—―−]/
+const CLIENT_PLAN_DASH_GLOBAL_PATTERN = /[-‐‑‒–—―−]/g
+const CLIENT_PLAN_NUMERIC_RANGE_PATTERN = /(\d)\s*[-‐‑‒–—―−]\s*(?=\d)/g
+
+export function containsClientPlanDash(value: string): boolean {
+  return CLIENT_PLAN_DASH_PATTERN.test(value)
+}
+
+/**
+ * Normalize client plan copy to plain text and enforce the product rule that
+ * no hyphen or dash character may appear in client-facing plan content.
+ */
 export function normalizeAiPlanProse(value: string): string {
   return value
     .replace(/\r\n/g, '\n')
     .split('\n')
     .map((line) => {
-      if (/^\s*[-*_]{3,}\s*$/.test(line)) return ''
+      if (/^\s*(?:[-‐‑‒–—―−*_]\s*){3,}$/.test(line)) return ''
       return line
         .replace(/^\s*#{1,6}\s*/, '')
-        .replace(/^\s*[-*•–—]\s+/, '')
+        .replace(/^\s*[-‐‑‒–—―−*•]\s+/, '')
         .replace(/\*+/g, '')
         .replace(/_{2,}/g, '')
-        .trimEnd()
+        .replace(CLIENT_PLAN_NUMERIC_RANGE_PATTERN, '$1 to ')
+        .replace(/^[-‐‑‒–—―−]\s*(\d)/, 'minus $1')
+        .replace(/([:(]\s*)[-‐‑‒–—―−]\s*(\d)/g, '$1minus $2')
+        .replace(CLIENT_PLAN_DASH_GLOBAL_PATTERN, ' ')
+        .replace(/[ \t]{2,}/g, ' ')
+        .trim()
     })
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
