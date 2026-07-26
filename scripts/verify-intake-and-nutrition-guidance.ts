@@ -94,20 +94,27 @@ assert.match(built.userPrompt, /never force an oversized surplus/i)
 assert.match(built.userPrompt, /Never claim that metabolism is broken, damaged, fixed, or repaired/i)
 console.log('PASS AI context receives intake history and conservative calorie adjustment guardrails')
 
-const [initialDietPrompt, updatedDietPrompt] = await Promise.all([
-  readFile('prompts/production/initial-diet.prompt', 'utf8'),
-  readFile('prompts/production/updated-diet.prompt', 'utf8'),
-])
-for (const prompt of [initialDietPrompt, updatedDietPrompt]) {
-  assert.match(prompt, /low intake/i)
-  assert.match(prompt, /50 to 100 kcal/i)
-  assert.match(prompt, /never force an oversized surplus/i)
-  assert.match(prompt, /metabolism is broken/i)
+async function verifyProductionPrompts(): Promise<void> {
+  const [initialDietPrompt, updatedDietPrompt] = await Promise.all([
+    readFile('prompts/production/initial-diet.prompt', 'utf8'),
+    readFile('prompts/production/updated-diet.prompt', 'utf8'),
+  ])
+  for (const prompt of [initialDietPrompt, updatedDietPrompt]) {
+    assert.match(prompt, /low intake/i)
+    assert.match(prompt, /50 to 100 kcal/i)
+    assert.match(prompt, /never force an oversized surplus/i)
+    assert.match(prompt, /metabolism is broken/i)
+  }
+  console.log('PASS production diet prompts preserve reverse dieting and gradual surplus rules')
 }
-console.log('PASS production diet prompts preserve reverse dieting and gradual surplus rules')
 
 assert.match(PROGRESS_PHOTO_PRIVACY_NOTICE, /never shared or published without your explicit permission/i)
 assert.match(PROGRESS_PHOTO_CLOTHING_GUIDANCE, /keeps your chest and groin covered/i)
 assert.match(PROGRESS_PHOTO_CLOTHING_GUIDANCE, /Do not upload nude, partially nude, or see through photos/i)
 assert.match(PROGRESS_PHOTO_CAPTURE_GUIDANCE, /same outfit, lighting, and camera distance/i)
 console.log('PASS progress photo guidance is private, clothed, and comparison ready')
+
+verifyProductionPrompts().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})
