@@ -5,6 +5,7 @@ import { type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import {
   ArrowRight,
+  BellRing,
   Calendar,
   ChevronDown,
   ClipboardList,
@@ -289,6 +290,8 @@ export default function Dashboard() {
         bypassSchedule: checkinScheduleBypass,
       })
     : null;
+  const dueCheckinTask =
+    checkinSchedule?.todayTasks.find((task) => task.status === 'available') ?? null;
 
   const firstName = profile?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
   const planCard = profile ? (
@@ -427,6 +430,37 @@ export default function Dashboard() {
 
       {checkinScheduleBypass && (
         <DevelopmentModeBadge style={{ marginBottom: spacing[4] }} />
+      )}
+
+      {dueCheckinTask && (
+        <Card
+          variant="elevated"
+          style={{
+            marginBottom: spacing[5],
+            border: `1px solid ${colors.accent}`,
+            boxShadow: `0 16px 40px ${colors.accentMuted}`,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing[3] }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <BellRing size={22} color={colors.accent} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ ...eyebrowLabel, color: colors.accent }}>Check-in notification</p>
+              <h2 style={{ margin: '5px 0 0', fontSize: 20, fontWeight: 800, color: colors.textPrimary }}>
+                {getCheckinTypeDisplayName(dueCheckinTask.type)} is due
+              </h2>
+              <p style={{ margin: '7px 0 14px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
+                {dueCheckinTask.type === 'mid_week'
+                  ? 'Share your update within 48 hours. Your coach will reply in chat and no new plan will be created.'
+                  : 'Share your weekly progress within 48 hours so your coach can review your next plan update.'}
+              </p>
+              <Button fullWidth onClick={() => router.push(dueCheckinTask.href)}>
+                Complete check-in
+              </Button>
+            </div>
+          </div>
+        </Card>
       )}
 
       {subscription && <ActiveSubscriptionCard subscription={subscription} />}

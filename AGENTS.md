@@ -15,3 +15,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Consultation invariant
 
 The public `Talk to a coach` form permits at most two successful lifetime submissions per normalized WhatsApp number. Enforce this atomically in the database; browser state is only a user experience hint and must never be the source of truth.
+
+## Check-in invariants
+
+1. A mid-week check-in never creates a plan or plan draft. Its summary belongs in coach chat, and the coach completes it by replying in that chat.
+2. When a mid-week or weekly check-in becomes due, show a prominent dashboard card and enqueue one in-app and web push reminder for that coaching week and check-in type.

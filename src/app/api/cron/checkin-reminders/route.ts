@@ -29,29 +29,6 @@ function authorizeCron(request: Request): boolean {
   return false
 }
 
-/** Start/end of the current calendar day in Asia/Kolkata, as UTC ISO strings. */
-function getIstDayBoundsUtc(now = new Date()): { startIso: string; endIso: string } {
-  const istParts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(now)
-
-  const year = Number(istParts.find((p) => p.type === 'year')?.value)
-  const month = Number(istParts.find((p) => p.type === 'month')?.value)
-  const day = Number(istParts.find((p) => p.type === 'day')?.value)
-
-  // IST = UTC+05:30 → midnight IST = 18:30 previous UTC day
-  const startUtcMs = Date.UTC(year, month - 1, day, 0, 0, 0) - (5 * 60 + 30) * 60 * 1000
-  const endUtcMs = startUtcMs + 24 * 60 * 60 * 1000
-
-  return {
-    startIso: new Date(startUtcMs).toISOString(),
-    endIso: new Date(endUtcMs).toISOString(),
-  }
-}
-
 type EligibleClient = {
   id: string
   name: string | null
@@ -62,22 +39,17 @@ type EligibleClient = {
   subscription_expires_at: string | null
 }
 
-async function alreadySentToday(
+async function alreadySentForSlot(
   admin: ReturnType<typeof createAdminClient>,
-  userId: string,
-  type: NotificationType,
-  startIso: string,
-  endIso: string
+  idempotencyKey: string
 ): Promise<boolean> {
-  const { count } = await admin
-    .from('user_notifications')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('type', type)
-    .gte('created_at', startIso)
-    .lt('created_at', endIso)
+  const { data } = await admin
+    .from('notification_events')
+    .select('id')
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle()
 
-  return (count ?? 0) > 0
+  return Boolean(data)
 }
 
 export async function GET(request: Request) {
@@ -87,7 +59,6 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient()
   const now = new Date()
-  const { startIso, endIso } = getIstDayBoundsUtc(now)
 
   const { data: profiles, error: profilesError } = await admin
     .from('profiles')
@@ -151,10 +122,12 @@ export async function GET(request: Request) {
     for (const task of dueTasks) {
       const type: NotificationType =
         task.type === 'mid_week' ? 'mid_week_checkin_reminder' : 'weekly_checkin_reminder'
+      const idempotencyKey =
+        `checkin-due:${client.id}:${task.type}:${task.coachingWeek}`
 
-      if (await alreadySentToday(admin, client.id, type, startIso, endIso)) {
+      if (await alreadySentForSlot(admin, idempotencyKey)) {
         skipped += 1
-        details.push({ userId: client.id, type, result: 'skipped', reason: 'already_sent_today' })
+        details.push({ userId: client.id, type, result: 'skipped', reason: 'already_sent_for_slot' })
         continue
       }
 
@@ -172,7 +145,7 @@ export async function GET(request: Request) {
       const notification = await sendNotification({
         userId: client.id,
         ...template,
-        idempotencyKey: `checkin-due:${client.id}:${task.type}:${task.coachingWeek}:${startIso}`,
+        idempotencyKey,
         metadata: {
           ...template.metadata,
           firstName: client.name?.trim()?.split(/\s+/)[0] ?? undefined,
