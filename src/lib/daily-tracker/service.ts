@@ -326,31 +326,44 @@ export async function updateTrackerCompletion(
   dayId: string,
   patch: TrackerCompletion
 ): Promise<{ day: DailyTrackerDay | null; error: string | null }> {
-  const { data: existing, error: loadError } = await supabase
-    .from('daily_tracker_days')
-    .select('*')
-    .eq('id', dayId)
-    .eq('client_id', clientId)
-    .single()
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data: existing, error: loadError } = await supabase
+      .from('daily_tracker_days')
+      .select('*')
+      .eq('id', dayId)
+      .eq('client_id', clientId)
+      .single()
 
-  if (loadError || !existing) {
-    return { day: null, error: loadError?.message ?? 'Tracker day not found' }
+    if (loadError || !existing) {
+      return { day: null, error: loadError?.message ?? 'Tracker day not found' }
+    }
+
+    const existingRow = existing as Record<string, unknown>
+    const current = rowToDay(existingRow)
+    const completion = mergeCompletion(current.completion, patch)
+    const { scores, overall } = calculateTrackerScores(current.snapshot, completion)
+    const previousUpdatedAt = String(existingRow.updated_at)
+    const previousUpdatedAtMs = new Date(previousUpdatedAt).getTime()
+    const nextUpdatedAt = new Date(
+      Math.max(Date.now(), Number.isFinite(previousUpdatedAtMs) ? previousUpdatedAtMs + 1 : 0)
+    ).toISOString()
+
+    const { data: updated, error } = await supabase
+      .from('daily_tracker_days')
+      .update({ completion, scores, overall_percent: overall, updated_at: nextUpdatedAt })
+      .eq('id', dayId)
+      .eq('client_id', clientId)
+      .eq('updated_at', previousUpdatedAt)
+      .select()
+      .maybeSingle()
+
+    if (error) return { day: null, error: error.message }
+    if (updated) {
+      return { day: rowToDay(updated as Record<string, unknown>), error: null }
+    }
   }
 
-  const current = rowToDay(existing as Record<string, unknown>)
-  const completion = mergeCompletion(current.completion, patch)
-  const { scores, overall } = calculateTrackerScores(current.snapshot, completion)
-  const now = new Date().toISOString()
-
-  const { data: updated, error } = await supabase
-    .from('daily_tracker_days')
-    .update({ completion, scores, overall_percent: overall, updated_at: now })
-    .eq('id', dayId)
-    .select()
-    .single()
-
-  if (error || !updated) return { day: null, error: error?.message ?? 'Failed to update tracker' }
-  return { day: rowToDay(updated as Record<string, unknown>), error: null }
+  return { day: null, error: 'Tracker changed too quickly. Please retry.' }
 }
 
 export async function refreshTodayTrackerAfterPlanPublish(

@@ -50,7 +50,7 @@ import {
   STRESS_OPTIONS,
   TRAINING_LOCATION_OPTIONS,
   TRAINING_OPTIONS,
-  uploadOnboardingPhoto,
+  uploadPendingOnboardingPhotos,
   validateOnboardingStep,
   waitForOnboardingCompletion,
   WATER_OPTIONS,
@@ -198,10 +198,24 @@ export default function OnboardingPage() {
       if (!userId) return
       setSaving(true)
       try {
-        const urls = { ...photoUrls }
-        if (photos.front) urls.front = await uploadOnboardingPhoto(supabase, userId, photos.front, 'front')
-        if (photos.side) urls.side = await uploadOnboardingPhoto(supabase, userId, photos.side, 'side')
-        if (photos.back) urls.back = await uploadOnboardingPhoto(supabase, userId, photos.back, 'back')
+        const urls = await uploadPendingOnboardingPhotos(
+          supabase,
+          userId,
+          photos,
+          photoUrls,
+          async (label, path, uploadedUrls) => {
+            setPhotoUrls((previous) => ({ ...previous, [label]: path }))
+            setPhotos((previous) => ({ ...previous, [label]: null }))
+            await saveOnboardingProgress(supabase, userId, form, {
+              email: userEmail,
+              // Keep resume on Photos until every required upload has succeeded.
+              step,
+              photoUrls: uploadedUrls,
+              complete: false,
+              mealsForTiming,
+            })
+          }
+        )
 
         await saveOnboardingProgress(supabase, userId, form, {
           email: userEmail,
@@ -220,7 +234,7 @@ export default function OnboardingPage() {
         setSaving(false)
       }
     },
-    [userId, userEmail, form, photos, photoUrls, mealsForTiming]
+    [userId, userEmail, form, photos, photoUrls, mealsForTiming, step]
   )
 
   const handlePhotoChange = (key: PhotoKey) => (files: File[]) => {
