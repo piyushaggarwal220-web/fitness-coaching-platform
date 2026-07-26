@@ -50,6 +50,7 @@ import {
   STRESS_OPTIONS,
   TRAINING_LOCATION_OPTIONS,
   TRAINING_OPTIONS,
+  TRAINING_TENURE_OPTIONS,
   uploadPendingOnboardingPhotos,
   validateOnboardingStep,
   waitForOnboardingCompletion,
@@ -63,6 +64,12 @@ import { requestComplexityRecalculation } from '@/lib/complexity/client'
 import type { OnboardingFormData } from '@/types/database'
 import type { SavedPhotoUrls } from '@/lib/onboarding'
 import { MeasurementScroller, NumberScroller } from '@/components/ui/MeasurementScroller'
+import {
+  PROGRESS_PHOTO_CAPTURE_GUIDANCE,
+  PROGRESS_PHOTO_CLOTHING_GUIDANCE,
+  PROGRESS_PHOTO_POSE_GUIDANCE,
+  PROGRESS_PHOTO_PRIVACY_NOTICE,
+} from '@/lib/progress-photo-guidance'
 
 const supabase = createClient()
 
@@ -717,6 +724,16 @@ function renderStep(
               onChange={(v) => update({ training_experience: v })}
             />
           </Field>
+          <Field
+            label="How long have you been training consistently?"
+            hint="Optional. Include your total consistent training history, not only your current routine."
+          >
+            <ChipGroup
+              options={TRAINING_TENURE_OPTIONS}
+              value={form.training_tenure}
+              onChange={(v) => update({ training_tenure: v })}
+            />
+          </Field>
         </div>
       )
 
@@ -990,6 +1007,17 @@ function renderStep(
               style={s.textarea}
             />
           </Field>
+          <Field
+            label="Have you followed a diet that did not work for you?"
+            hint="Optional. Tell us what you tried, how long you followed it, and why it felt unsuccessful or unsustainable."
+          >
+            <textarea
+              value={form.previous_diet_attempts}
+              onChange={(e) => update({ previous_diet_attempts: e.target.value })}
+              placeholder="For example: a very low calorie diet for 3 months caused low energy and the weight returned. Write None if not applicable."
+              style={s.textarea}
+            />
+          </Field>
         </div>
       )
 
@@ -1195,11 +1223,19 @@ function renderStep(
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Progress photos</h2>
           <div style={s.privacyNotice}>
-            Your photos are completely private and are never shared or published anywhere without your explicit permission.
-            They are used only by your assigned coach and our AI to create more accurate recommendations.
-            {!photosOptional &&
-              ' Front, side, and back photos are required — after you submit the final review, your AI diet and workout draft starts automatically.'}
-            {photosOptional && ' Photos are optional for female clients, and you can continue without uploading them.'}
+            <p style={{ margin: '0 0 10px' }}>{PROGRESS_PHOTO_PRIVACY_NOTICE}</p>
+            <p style={{ margin: '0 0 10px' }}>{PROGRESS_PHOTO_CLOTHING_GUIDANCE}</p>
+            <p style={{ margin: '0 0 8px' }}>{PROGRESS_PHOTO_CAPTURE_GUIDANCE}</p>
+            <ul style={{ margin: '0 0 10px', paddingLeft: 20 }}>
+              {PROGRESS_PHOTO_POSE_GUIDANCE.map((guidance) => (
+                <li key={guidance}>{guidance}</li>
+              ))}
+            </ul>
+            <p style={{ margin: 0 }}>
+              {!photosOptional &&
+                'Front, side, and back photos are required. After you submit the final review, your AI diet and workout draft starts automatically.'}
+              {photosOptional && 'Photos are optional for female clients, and you can continue without uploading them.'}
+            </p>
           </div>
           <div style={s.photoGrid}>
             {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (

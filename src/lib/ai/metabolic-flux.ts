@@ -18,6 +18,15 @@ export type MetabolicFluxPlan = {
   outputGuidance: string
 }
 
+export const NUTRITION_ADJUSTMENT_GUARDRAILS = [
+  'Low intake stall: for fat loss or recomposition, if reported intake is already genuinely low and scale and measurement trends have not changed for at least two consecutive weeks, first audit adherence, weekends, cooking fats, liquid calories, steps, sleep, and water or sodium changes.',
+  'When adherence is high and intake remains low, do not cut calories again. Use a gradual reverse diet toward a more sustainable intake by raising the average daily target by 50 to 100 kcal for the next week, mainly through protein or carbohydrates, then hold and reassess weight average, measurements, energy, hunger, and training before another increase.',
+  'Never claim that metabolism is broken, damaged, fixed, or repaired. Describe the goal as improving energy availability, adherence, recovery, and tolerance for a sustainable intake. Escalate persistent dizziness, menstrual disruption, faintness, or other low energy availability concerns to a qualified clinician.',
+  'Weight gain: never force an oversized surplus or uncomfortable food volume. Start at the lower end of the surplus range. If appetite or digestion is poor, hold the target or temporarily reduce it by 100 to 150 kcal, use modest energy dense portions, and let appetite, digestion, and training tolerance adapt.',
+  'Increase a weight gain target only after reviewing at least two weeks of weight trend and recovery. Aim for gradual gain around 0.25 to 0.5 kg per week rather than forcing food to hit a theoretical number.',
+  'These safety rules override the default flux and mesocycle calorie wave. Hold a scheduled increase when appetite, digestion, recovery, or clinical warning signs make it inappropriate.',
+].join(' ')
+
 const LEVEL_RANK: Record<MetabolicFluxLevel, number> = {
   steady: 0,
   build_up: 1,
@@ -113,7 +122,7 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
     build_up: [
       'Calorie bias: BUILD-UP toward higher metabolic flux (eat more while moving more).',
       'Fat loss: shallower 250–350 kcal deficit so absolute intake stays higher while steps/training rise.',
-      'Muscle gain: 250–350 kcal surplus with enough carbs around training.',
+      'Muscle gain: begin with a 150–300 kcal surplus and increase only when weight trend, appetite, digestion, and recovery support it.',
       'Recomp: slight surplus on training days / maintenance on rest (~±100 kcal).',
       'Prefer higher-volume meals (veg, lean protein, dairy/curd, fruit) so the client can eat more without feeling restricted.',
       'Floor ≥1600 kcal.',
@@ -121,10 +130,9 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
     high_flux: [
       'Calorie bias: HIGH FLUX — higher energy-in paired with higher energy-out.',
       'Fat loss: mild 150–250 kcal deficit (keep intake relatively high; create the gap mainly via steps/training).',
-      'Muscle gain: assertive 300–450 kcal surplus with high meal volume.',
+      'Muscle gain: begin with a 200–350 kcal surplus, use the upper end only when trend and tolerance support it, and never force uncomfortable food volume.',
       'Recomp: clear training-day surplus (~200–300) and near-maintenance rest days.',
-      'Use denser + higher-volume foods so hitting calories is realistic; never below 1600 kcal.',
-      'If hunger is low, spread calories across more feedings rather than cutting the target.',
+      'Use practical energy dense foods and smaller feedings when appetite is low; never below 1600 kcal.',
     ].join(' '),
   }
 
@@ -171,6 +179,7 @@ export function buildMetabolicFluxSection(profile: OnboardingProfile): string {
       ? `- Safety dampeners applied: ${plan.dampenReasons.join('; ')}`
       : '- Safety dampeners applied: none',
     `- Diet: ${plan.dietGuidance}`,
+    `- Nutrition adjustment guardrails: ${NUTRITION_ADJUSTMENT_GUARDRAILS}`,
     `- Training/steps/cardio: ${plan.outputGuidance}`,
   ].join('\n')
 }

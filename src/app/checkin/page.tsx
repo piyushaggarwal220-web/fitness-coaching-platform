@@ -27,6 +27,12 @@ import { SlideTransition, SuccessState } from '@/components/motion'
 import { mobileStyles } from '@/lib/mobile-styles';
 import { colors, spacing } from '@/lib/design-tokens';
 import { validatePhotoFiles } from '@/lib/photo';
+import {
+  PROGRESS_PHOTO_CAPTURE_GUIDANCE,
+  PROGRESS_PHOTO_CLOTHING_GUIDANCE,
+  PROGRESS_PHOTO_POSE_GUIDANCE,
+  PROGRESS_PHOTO_PRIVACY_NOTICE,
+} from '@/lib/progress-photo-guidance';
 import type { Checkin, OnboardingProfile, Plan, WeeklyCheckinFormData } from '@/types/database';
 
 const supabase = createClient();
@@ -402,7 +408,17 @@ export default function CheckinPage() {
         {currentSection === 'photos' && (
           <Card variant="elevated">
             <h2 style={sectionTitle}>Progress Photos</h2>
-            <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textMuted }}>Front, side, and back photos are required — compare with last week below.</p>
+            <p style={{ margin: '0 0 8px', fontSize: 14, color: colors.textMuted }}>{PROGRESS_PHOTO_PRIVACY_NOTICE}</p>
+            <p style={{ margin: '0 0 8px', fontSize: 14, color: colors.textMuted }}>{PROGRESS_PHOTO_CLOTHING_GUIDANCE}</p>
+            <p style={{ margin: '0 0 8px', fontSize: 14, color: colors.textMuted }}>{PROGRESS_PHOTO_CAPTURE_GUIDANCE}</p>
+            <ul style={{ margin: '0 0 16px', paddingLeft: 20, fontSize: 14, color: colors.textMuted }}>
+              {PROGRESS_PHOTO_POSE_GUIDANCE.map((guidance) => (
+                <li key={guidance}>{guidance}</li>
+              ))}
+            </ul>
+            <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textMuted }}>
+              Front, side, and back photos are required. Compare them with last week below.
+            </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: spacing[3] }}>
               {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (
                 <PhotoSourceControl

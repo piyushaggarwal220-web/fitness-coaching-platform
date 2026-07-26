@@ -108,6 +108,15 @@ export const TRAINING_OPTIONS = [
   { value: 'advanced', label: 'Advanced' },
 ] as const
 
+export const TRAINING_TENURE_OPTIONS = [
+  { value: 'not_started', label: 'Not training yet' },
+  { value: 'under_6_months', label: 'Less than 6 months' },
+  { value: '6_to_12_months', label: '6 to 12 months' },
+  { value: '1_to_2_years', label: '1 to 2 years' },
+  { value: '2_to_5_years', label: '2 to 5 years' },
+  { value: '5_plus_years', label: 'More than 5 years' },
+] as const
+
 export const ACTIVITY_OPTIONS = [
   { value: 'sedentary', label: 'Sedentary' },
   { value: 'lightly_active', label: 'Lightly Active' },
@@ -324,6 +333,7 @@ export const ONBOARDING_LABELS: Record<string, Record<string, string>> = {
   flux_capacity: Object.fromEntries(FLUX_CAPACITY_OPTIONS.map((o) => [o.value, o.label])),
   diet_variety: Object.fromEntries(DIET_VARIETY_OPTIONS.map((o) => [o.value, o.label])),
   training_location: Object.fromEntries(TRAINING_LOCATION_OPTIONS.map((o) => [o.value, o.label])),
+  training_tenure: Object.fromEntries(TRAINING_TENURE_OPTIONS.map((o) => [o.value, o.label])),
   workout_duration: Object.fromEntries(WORKOUT_DURATION_OPTIONS.map((o) => [o.value, o.label])),
   preferred_workout_time: Object.fromEntries(WORKOUT_TIME_OPTIONS.map((o) => [o.value, o.label])),
   whey_protein: Object.fromEntries(WHEY_OPTIONS.map((o) => [o.value, o.label])),
@@ -360,6 +370,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   diet_variety: '',
   training_location: '',
   training_experience: '',
+  training_tenure: '',
   training_days_per_week: '',
   workout_duration: '',
   preferred_workout_time: '',
@@ -385,6 +396,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   foods_disliked: '',
   favorite_foods: '',
   diet_custom_notes: '',
+  previous_diet_attempts: '',
   monthly_food_budget: '',
   cooking_ability: '',
   breakfast: '',
@@ -448,6 +460,7 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     thigh: data.measurements?.thigh ?? '',
     navel: data.measurements?.navel ?? '',
     training_location: data.training?.location ?? '',
+    training_tenure: data.training?.trainingTenure ?? '',
     training_days_per_week: data.training?.daysPerWeek != null ? String(data.training.daysPerWeek) : '',
     workout_duration: data.training?.durationMinutes ?? '',
     preferred_workout_time: data.training?.preferredTime ?? '',
@@ -470,6 +483,7 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     foods_disliked: data.diet?.foodsDisliked ?? '',
     favorite_foods: data.diet?.favoriteFoods ?? '',
     diet_custom_notes: data.diet?.customNotes ?? '',
+    previous_diet_attempts: data.diet?.previousDietAttempts ?? '',
     monthly_food_budget: data.diet?.monthlyFoodBudget ?? '',
     cooking_ability: data.diet?.cookingAbility ?? '',
     breakfast: data.eatingPattern?.breakfast ?? '',
@@ -596,6 +610,7 @@ export function buildOnboardingData(
     },
     training: {
       location: form.training_location || null,
+      trainingTenure: form.training_tenure || null,
       daysPerWeek: form.training_days_per_week || null,
       durationMinutes: form.workout_duration || null,
       preferredTime: form.preferred_workout_time || null,
@@ -626,6 +641,7 @@ export function buildOnboardingData(
       foodsDisliked: form.foods_disliked.trim() || null,
       favoriteFoods: form.favorite_foods.trim() || null,
       customNotes: form.diet_custom_notes.trim() || null,
+      previousDietAttempts: form.previous_diet_attempts.trim() || null,
       monthlyFoodBudget: form.monthly_food_budget || null,
       cookingAbility: form.cooking_ability || null,
     },
@@ -1064,6 +1080,7 @@ export function buildReviewSections(
       items: [
         { label: 'Location', value: getOnboardingLabel('training_location', form.training_location) },
         { label: 'Experience', value: getOnboardingLabel('training_experience', form.training_experience) },
+        { label: 'Training history', value: getOnboardingLabel('training_tenure', form.training_tenure) },
         { label: 'Days per week', value: form.training_days_per_week || 'Not set' },
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
@@ -1100,6 +1117,7 @@ export function buildReviewSections(
         { label: 'Foods disliked', value: form.foods_disliked || 'None' },
         { label: 'Favourite foods', value: form.favorite_foods || 'None' },
         { label: 'Diet exceptions', value: form.diet_custom_notes || 'None' },
+        { label: 'Previous diet attempts', value: form.previous_diet_attempts || 'None' },
         { label: 'Monthly budget', value: form.monthly_food_budget || 'Not set' },
         { label: 'Cooking ability', value: getOnboardingLabel('cooking_ability', form.cooking_ability) },
       ],
