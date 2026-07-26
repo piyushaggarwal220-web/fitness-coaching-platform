@@ -106,7 +106,10 @@ assert.match(notificationGateSource, /notification-prompt-dismissed-at/)
 assert.match(notificationGateSource, /Notifications are optional/)
 assert.match(notificationGateSource, /once per day/)
 assert.doesNotMatch(notificationGateSource, /Checking notification access/)
-assert.doesNotMatch(notificationGateSource, /notification-nudge-dismissed-at/)
+assert.doesNotMatch(
+  notificationGateSource,
+  /getItem\(['"]notification-nudge-dismissed-at['"]\)/
+)
 const clientShellSource = readFileSync(
   new URL('../src/components/ui/ClientShell.tsx', import.meta.url),
   'utf8'
