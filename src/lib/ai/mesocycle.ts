@@ -6,15 +6,33 @@ export type MesocycleContext = {
   mesocycleIndex: number
   /** Human-readable volume guidance for prompts. */
   volumeGuidance: string
+  /** Human-readable calorie wave guidance paired with the training load. */
+  calorieGuidance: string
+  /** Deterministic adjustment from the cycle's base intake. */
+  calorieAdjustmentKcal: number
   /** Whether this week should open a brand-new split. */
   requiresNewSplit: boolean
 }
 
 const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
-  1: 'BASE volume — lowest of the month. Establish the split, leave 2–3 reps in reserve on compounds.',
-  2: 'BUILD volume — ~10–15% above week 1 (add a set or a few reps on main lifts).',
-  3: 'PUSH volume — ~10–15% above week 2. Keep form strict; still leave ~1–2 RIR on compounds.',
-  4: 'PEAK volume — highest of the month (~10–15% above week 3). Hardest productive week before the reset.',
+  1: 'BASE volume, the lowest of the cycle. Establish the split and leave 2 to 3 reps in reserve on compounds.',
+  2: 'BUILD volume, about 10 to 15 percent above the prior week by adding a set or a few reps on main lifts.',
+  3: 'PUSH volume, about 10 to 15 percent above the prior week. Keep form strict and leave 1 to 2 reps in reserve on compounds.',
+  4: 'PEAK volume, the highest of the cycle and about 10 to 15 percent above the prior week.',
+}
+
+const CALORIES_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
+  1: 'BASE calorie intake. At a new cycle reset, reduce average daily intake by about 100 to 200 kcal from the prior peak because the new split starts at lower volume. In the opening cycle, use the calculated goal appropriate baseline.',
+  2: 'Increase average daily intake by about 50 to 100 kcal above the prior week to support the higher training workload.',
+  3: 'Increase average daily intake by another 50 to 100 kcal above the prior week, mainly through carbohydrates around training.',
+  4: 'Increase average daily intake by another 50 to 100 kcal above the prior week for peak workload, while staying inside the goal appropriate calorie band.',
+}
+
+const CALORIE_ADJUSTMENT_BY_WEEK: Record<1 | 2 | 3 | 4, number> = {
+  1: 0,
+  2: 60,
+  3: 120,
+  4: 180,
 }
 
 /**
@@ -30,6 +48,8 @@ export function resolveMesocycle(coachingWeek: number | null | undefined): Mesoc
     weekInMesocycle,
     mesocycleIndex,
     volumeGuidance: VOLUME_BY_WEEK[weekInMesocycle],
+    calorieGuidance: CALORIES_BY_WEEK[weekInMesocycle],
+    calorieAdjustmentKcal: CALORIE_ADJUSTMENT_BY_WEEK[weekInMesocycle],
     requiresNewSplit: weekInMesocycle === 1,
   }
 }
@@ -37,7 +57,7 @@ export function resolveMesocycle(coachingWeek: number | null | undefined): Mesoc
 /** Truncate prior workout text so the model can rotate away from the last split. */
 export function summarizePriorSplit(workoutPlan: string | null | undefined, maxLen = 900): string {
   const text = workoutPlan?.trim()
-  if (!text) return 'No prior workout on file — invent a fresh opening split.'
+  if (!text) return 'No prior workout on file. Invent a fresh opening split.'
   if (text.length <= maxLen) return text
   return `${text.slice(0, maxLen)}…`
 }
@@ -47,16 +67,18 @@ export function formatMesocyclePromptSection(
   priorSplitSummary: string
 ): string {
   return [
-    '## Training Mesocycle (authoritative — obey this)',
-    `- Coaching week: ${meso.coachingWeek}`,
-    `- Mesocycle (month index): ${meso.mesocycleIndex}`,
-    `- Week within mesocycle: ${meso.weekInMesocycle} of 4`,
-    `- Volume target: ${meso.volumeGuidance}`,
+    '## Training Mesocycle and Calorie Wave',
+    `Coaching week: ${meso.coachingWeek}`,
+    `Mesocycle index: ${meso.mesocycleIndex}`,
+    `Position in cycle: ${meso.weekInMesocycle} of 4`,
+    `Volume target: ${meso.volumeGuidance}`,
+    `Calorie target: ${meso.calorieGuidance}`,
+    'Calorie safety rule: keep the wave inside the goal appropriate Metabolic Flux band. Preserve protein and adjust mostly carbohydrates. Check in safety signals may require holding the increase.',
     meso.requiresNewSplit
-      ? '- Split rule: NEW unique split this week (month start / reset). Do not recycle last month\'s day structure.'
-      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Only progress volume/load per the week target.',
+      ? 'Split rule: Create a new unique split this cycle. Do not recycle the prior cycle day structure.'
+      : 'Split rule: Keep the same split established at the start of this cycle. Progress workload according to the volume target.',
     '',
-    '### Prior workout / split hint (rotate away when a new split is required)',
+    '### Prior workout and split context',
     priorSplitSummary,
   ].join('\n')
 }

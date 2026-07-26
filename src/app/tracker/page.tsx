@@ -1,6 +1,7 @@
 'use client'
 
 import { TrackerHub } from '@/components/tracker/hub/TrackerHub'
+import { TrackerDateSelector } from '@/components/tracker/TrackerDateSelector'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -10,7 +11,7 @@ import { useRouter } from 'next/navigation'
 
 export default function TrackerPage() {
   const router = useRouter()
-  const { loading, error, view } = useTracker()
+  const { loading, error, view, saving, selectedDate, setSelectedDate } = useTracker()
 
   if (loading) {
     return <ClientShell title="Tracker" loading />
@@ -36,6 +37,13 @@ export default function TrackerPage() {
 
   return (
     <ClientShell title="Tracker">
+      <TrackerDateSelector
+        value={selectedDate}
+        min={view.dateNavigation.minDate}
+        max={view.dateNavigation.maxDate}
+        disabled={saving}
+        onChange={setSelectedDate}
+      />
       <TrackerHub view={view} />
     </ClientShell>
   )

@@ -1,5 +1,8 @@
 import { resolvePlanSections } from '../src/lib/plan-section-parser'
-import { normalizeAiPlanProse } from '../src/lib/ai/plan-format'
+import {
+  containsClientPlanDash,
+  normalizeAiPlanProse,
+} from '../src/lib/ai/plan-format'
 
 let failed = 0
 
@@ -94,12 +97,18 @@ const metaOnly = resolvePlanSections({
 assert('meta-only coach notes become empty', metaOnly.coachNotes === '')
 
 const humanized = normalizeAiPlanProse(
-  '## Monday\n**Warm up**\n- Squats: 4 sets x 8 reps\n* Walk for 20 minutes\nUse a well-balanced meal.'
+  '## Monday — Lower\n**Warm-up**\n- Squats: 4 sets x 8–12 reps\n* Walk for 20 minutes\nUse a well-balanced post‑workout meal.\nCalorie adjustment: -150 kcal.'
 )
 assert('removes markdown heading markers', !humanized.includes('#'))
 assert('removes asterisks from generated prose', !humanized.includes('*'))
-assert('removes hyphen and star bullet prefixes', humanized.includes('Squats: 4 sets x 8 reps\nWalk for 20 minutes'))
-assert('preserves normal in-sentence hyphens', humanized.includes('well-balanced'))
+assert(
+  'removes hyphen and star bullet prefixes',
+  humanized.includes('Squats: 4 sets x 8 to 12 reps\nWalk for 20 minutes')
+)
+assert('rewrites numeric ranges with the word to', humanized.includes('8 to 12 reps'))
+assert('rewrites compound words with spaces', humanized.includes('well balanced post workout'))
+assert('preserves negative meaning without a minus character', humanized.includes('minus 150 kcal'))
+assert('removes every client plan hyphen and dash character', !containsClientPlanDash(humanized))
 
 if (failed > 0) {
   console.error(`\n${failed} plan parser checks failed`)

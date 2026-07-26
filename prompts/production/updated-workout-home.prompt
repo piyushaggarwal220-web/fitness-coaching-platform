@@ -21,3 +21,5 @@ Now give me next week home workout plan in the same copy-paste coach style.
 3. Progression based on check-in: strong week → progress reps/tempo/band tension or advance split; missed sessions → simplify; poor sleep → reduce volume/deload.
 
 4. Obey hard constraints: training days, session duration, preferred exercises, exercises to avoid, injuries, and available home equipment only.
+
+5. Never use any hyphen or dash character in client-facing plan text. Write ranges with the word "to", use spaces in compound words, and put exercise lines on separate lines without symbol prefixes.

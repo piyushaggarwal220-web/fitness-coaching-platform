@@ -1,4 +1,11 @@
-import { buildTrackerSnapshot } from '../src/lib/daily-tracker/parser'
+import {
+  resolveTrackerDateSelection,
+  shiftTrackerDateKey,
+} from '../src/lib/daily-tracker/date'
+import {
+  buildTrackerSnapshot,
+  suggestedWorkoutDayKey,
+} from '../src/lib/daily-tracker/parser'
 import { calculateTrackerScores } from '../src/lib/daily-tracker/scores'
 import type { Plan } from '../src/types/database'
 
@@ -66,6 +73,38 @@ assert('parses supplements', snapV1.items.some((i) => i.type === 'supplement'))
 assert('includes water target', snapV1.items.some((i) => i.type === 'water'))
 assert('includes sleep', snapV1.items.some((i) => i.type === 'sleep'))
 assert('snapshot version matches plan', snapV1.planVersion === 1)
+
+const scheduleStart = '2026-07-10T18:30:00.000Z'
+const trackerNow = new Date('2026-07-14T10:00:00.000Z')
+const defaultDate = resolveTrackerDateSelection(undefined, scheduleStart, trackerNow)
+assert('tracker date defaults to today in IST', defaultDate.selection?.selectedDate === '2026-07-14')
+assert('tracker date starts on first coaching day', defaultDate.selection?.minDate === '2026-07-11')
+assert(
+  'tracker accepts a past coaching date',
+  resolveTrackerDateSelection('2026-07-12', scheduleStart, trackerNow).selection?.selectedDate ===
+    '2026-07-12'
+)
+assert(
+  'tracker rejects future dates',
+  resolveTrackerDateSelection('2026-07-15', scheduleStart, trackerNow).error ===
+    'Future tracker dates are not available.'
+)
+assert(
+  'tracker rejects dates before coaching starts',
+  resolveTrackerDateSelection('2026-07-10', scheduleStart, trackerNow).error ===
+    'Choose a date on or after your first coaching day.'
+)
+assert('tracker previous day navigation is calendar safe', shiftTrackerDateKey('2026-03-01', -1) === '2026-02-28')
+assert(
+  'plan day suggestion follows selected tracker date',
+  suggestedWorkoutDayKey(
+    [
+      { key: 'monday', label: 'Monday' },
+      { key: 'tuesday', label: 'Tuesday' },
+    ],
+    '2026-07-14'
+  ) === 'tuesday'
+)
 
 const multiDayDietPlan: Plan = {
   ...planV1,

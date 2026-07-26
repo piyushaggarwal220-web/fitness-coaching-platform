@@ -29,7 +29,13 @@ import {
   getWorkoutProgress,
 } from '@/lib/daily-tracker/display'
 import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
-import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
+import type {
+  ExerciseCompletion,
+  ExerciseSetLog,
+  TrackerCompletion,
+  TrackerExerciseItem,
+  TrackerWorkoutItem,
+} from '@/lib/daily-tracker/types'
 
 type WorkoutDayOption = { key: string; label: string }
 
@@ -39,6 +45,7 @@ type Props = {
   completion: TrackerCompletion
   workoutScore: number
   saving: boolean
+  logDate: string
   onPatch: (patch: TrackerCompletion) => Promise<void>
 }
 
@@ -80,13 +87,14 @@ export function WorkoutModule({
   completion,
   workoutScore,
   saving,
+  logDate,
   onPatch,
 }: Props) {
   const days = useMemo(() => deriveWorkoutDays(workouts, workoutDays), [workouts, workoutDays])
   const multiDay = days.length > 1
   const selectedKey = completion.selectedWorkoutDay ?? null
   const selectedDay = days.find((d) => d.key === selectedKey) ?? null
-  const suggestion = suggestedWorkoutDayKey(days)
+  const suggestion = suggestedWorkoutDayKey(days, logDate)
   const autoSelectedRef = useRef(false)
   /** When true, skip auto-suggest and show the day picker (Change day). */
   const [manualDayPick, setManualDayPick] = useState(false)
@@ -105,12 +113,17 @@ export function WorkoutModule({
   const [autoStopped, setAutoStopped] = useState(false)
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const [exerciseDrafts, setExerciseDrafts] = useState(() => completion.exercises ?? {})
+  const effectiveCompletion = useMemo(
+    () => ({ ...completion, exercises: exerciseDrafts }),
+    [completion, exerciseDrafts]
+  )
 
-  const progress = getWorkoutProgress(workout, completion)
-  const volume = computeWorkoutVolume(completion)
-  const remainingMin = estimateRemainingMinutes(workout, completion)
+  const progress = getWorkoutProgress(workout, effectiveCompletion)
+  const volume = computeWorkoutVolume(effectiveCompletion)
+  const remainingMin = estimateRemainingMinutes(workout, effectiveCompletion)
   const currentEx = workout
-    ? getCurrentExercise(workout.exercises, completion.exercises)
+    ? getCurrentExercise(workout.exercises, effectiveCompletion.exercises)
     : null
   const sessionTitle = workout
     ? [workout.dayLabel, workout.focus].filter(Boolean).join(' · ')
@@ -130,7 +143,7 @@ export function WorkoutModule({
     }
     const warmupBlock = workout.phases.find((phase) => phase.phase === 'warmup')
     const warmupDone =
-      warmupBlock?.exercises.every((ex) => completion.exercises?.[ex.id]?.completed) ?? true
+      warmupBlock?.exercises.every((ex) => effectiveCompletion.exercises?.[ex.id]?.completed) ?? true
     return {
       warmup: hasWarmup && !warmupDone,
       mobility: true,
@@ -138,7 +151,7 @@ export function WorkoutModule({
       finisher: true,
       cooldown: progress.percent >= 70,
     } as const
-  }, [workout, completion.exercises, progress.percent, hasWarmup])
+  }, [workout, effectiveCompletion.exercises, progress.percent, hasWarmup])
 
   const stopSession = useCallback(() => {
     setSessionRunning(false)
@@ -325,20 +338,25 @@ export function WorkoutModule({
     }
   }
 
+  const saveExerciseDraft = (exId: string, nextData: ExerciseCompletion) => {
+    setExerciseDrafts((current) => ({ ...current, [exId]: nextData }))
+    void onPatch({ exercises: { [exId]: nextData } })
+  }
+
   const updateSet = (exId: string, ex: TrackerExerciseItem, setIdx: number, patch: Partial<ExerciseSetLog>) => {
-    const data = completion.exercises?.[exId]
+    const data = exerciseDrafts[exId]
     const sets = getExerciseSets(ex, data)
     const next = [...sets]
     next[setIdx] = { ...next[setIdx], ...patch }
-    void onPatch({ exercises: { [exId]: buildExercisePatch(ex, data, next) } })
+    saveExerciseDraft(exId, buildExercisePatch(ex, data, next))
   }
 
   const completeSet = (exId: string, ex: TrackerExerciseItem, setIdx: number) => {
-    const data = completion.exercises?.[exId]
+    const data = exerciseDrafts[exId]
     const sets = getExerciseSets(ex, data)
     const next = [...sets]
     next[setIdx] = { ...next[setIdx], completed: true }
-    void onPatch({ exercises: { [exId]: buildExercisePatch(ex, data, next) } })
+    saveExerciseDraft(exId, buildExercisePatch(ex, data, next))
     if (!sessionRunning && sessionStartedAt == null && elapsedMs === 0) {
       startSession()
     }
@@ -544,8 +562,8 @@ export function WorkoutModule({
         <TrackerPhaseFolder
           key={block.id}
           title={block.label}
-          subtitle={`${getPhaseProgress(block, completion).completed}/${block.exercises.length} exercises`}
-          progress={getPhaseProgress(block, completion).percent}
+          subtitle={`${getPhaseProgress(block, effectiveCompletion).completed}/${block.exercises.length} exercises`}
+          progress={getPhaseProgress(block, effectiveCompletion).percent}
           defaultOpen={
             block.phase === 'warmup' ||
             phaseDefaults[block.phase] ||
@@ -553,7 +571,7 @@ export function WorkoutModule({
           }
         >
           {block.exercises.map((ex) => {
-            const exData = completion.exercises?.[ex.id]
+            const exData = effectiveCompletion.exercises?.[ex.id]
             const sets = getExerciseSets(ex, exData)
             const isDone = Boolean(exData?.completed)
             const isCurrent = currentEx?.id === ex.id
@@ -596,7 +614,7 @@ export function WorkoutModule({
                   const doneBtn = (setCompleted: boolean, onClick: () => void) => (
                     <button
                       type="button"
-                      disabled={saving || isDone || setCompleted}
+                      disabled={isDone || setCompleted}
                       onClick={onClick}
                       style={{
                         height: 48,
@@ -618,12 +636,12 @@ export function WorkoutModule({
                     return (
                       <button
                         type="button"
-                        disabled={saving || isDone}
+                        disabled={isDone}
                         onClick={() => {
                           const next = getExerciseSets(ex, exData).map((s, i) =>
                             i === 0 ? { ...s, completed: true } : s
                           )
-                          void onPatch({ exercises: { [ex.id]: buildExercisePatch(ex, exData, next) } })
+                          saveExerciseDraft(ex.id, buildExercisePatch(ex, exData, next))
                           if (!sessionRunning && sessionStartedAt == null && elapsedMs === 0) {
                             startSession()
                           }
@@ -682,7 +700,7 @@ export function WorkoutModule({
                                     : '0'
                                 }
                                 value={durParts.minutes}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, {
                                     durationSeconds: durationFromParts(e.target.value, durParts.seconds),
@@ -703,7 +721,7 @@ export function WorkoutModule({
                                     : '0'
                                 }
                                 value={durParts.seconds}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, {
                                     durationSeconds: durationFromParts(durParts.minutes, e.target.value),
@@ -727,7 +745,7 @@ export function WorkoutModule({
                                   ex.targetDistanceMeters != null ? String(ex.targetDistanceMeters) : '—'
                                 }
                                 value={set.distanceMeters ?? ''}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, {
                                     distanceMeters: Number(e.target.value) || undefined,
@@ -748,7 +766,7 @@ export function WorkoutModule({
                                 type="number"
                                 placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
                                 value={set.reps ?? ''}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, { reps: Number(e.target.value) || undefined })
                                 }
@@ -767,7 +785,7 @@ export function WorkoutModule({
                                 type="number"
                                 placeholder={defaultWeight || '—'}
                                 value={set.weight ?? ''}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, { weight: Number(e.target.value) || undefined })
                                 }
@@ -780,7 +798,7 @@ export function WorkoutModule({
                                 type="number"
                                 placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
                                 value={set.reps ?? ''}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, { reps: Number(e.target.value) || undefined })
                                 }

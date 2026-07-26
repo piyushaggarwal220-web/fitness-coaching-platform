@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { ProgressRing } from '@/components/tracker/ProgressRing'
 import { trackerInputStyle } from '@/components/tracker/TrackerPrimitives'
@@ -17,13 +17,21 @@ type Props = {
   onPatch: (patch: TrackerCompletion) => Promise<void>
 }
 
-export function WaterModule({ water, completion, waterScore, saving, onPatch }: Props) {
+export function WaterModule({ water, completion, waterScore, onPatch }: Props) {
   const [customOpen, setCustomOpen] = useState(false)
   const [customMl, setCustomMl] = useState('')
-  const currentMl = completion.water?.ml ?? 0
-  const percent = Math.min(100, waterScore)
+  const initialMl = completion.water?.ml ?? 0
+  const [currentMl, setCurrentMl] = useState(initialMl)
+  const currentMlRef = useRef(initialMl)
+  const percent =
+    water.targetMl > 0 ? Math.min(100, (currentMl / water.targetMl) * 100) : Math.min(100, waterScore)
 
-  const add = (ml: number) => void onPatch({ water: { ml: currentMl + ml } })
+  const add = (ml: number) => {
+    const nextMl = currentMlRef.current + ml
+    currentMlRef.current = nextMl
+    setCurrentMl(nextMl)
+    void onPatch({ water: { ml: nextMl } })
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: spacing[4] }}>
@@ -37,7 +45,7 @@ export function WaterModule({ water, completion, waterScore, saving, onPatch }: 
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, width: '100%' }}>
         {QUICK.map((ml) => (
-          <Button key={ml} variant="secondary" disabled={saving} onClick={() => add(ml)}>
+          <Button key={ml} variant="secondary" onClick={() => add(ml)}>
             +{ml >= 1000 ? '1 L' : `${ml} ml`}
           </Button>
         ))}
@@ -53,7 +61,7 @@ export function WaterModule({ water, completion, waterScore, saving, onPatch }: 
             style={{ ...trackerInputStyle, flex: 1 }}
           />
           <Button
-            disabled={!customMl || saving}
+            disabled={!customMl}
             onClick={() => {
               add(Number(customMl) || 0)
               setCustomMl('')
@@ -64,7 +72,7 @@ export function WaterModule({ water, completion, waterScore, saving, onPatch }: 
           </Button>
         </div>
       ) : (
-        <Button variant="ghost" fullWidth disabled={saving} onClick={() => setCustomOpen(true)}>
+        <Button variant="ghost" fullWidth onClick={() => setCustomOpen(true)}>
           Custom amount
         </Button>
       )}

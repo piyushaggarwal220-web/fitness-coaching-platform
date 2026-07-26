@@ -8,12 +8,16 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 1. Start with a short personal note (2-4 sentences) addressing the client by name — mention their goal, something specific from their answers (their schedule, food preferences, or constraints), and set expectations for the week. Keep it conversational.
 
 2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, goal, AND the Metabolic Flux Bias section (higher flux = higher absolute intake paired with higher output — never a deep cut with low movement).
+   - Obey the Training Mesocycle calorie wave. The opening cycle starts at BASE calories for the client's goal and Metabolic Flux band. Later weekly updates increase calories modestly as training volume and intensity rise, then reduce them slightly when the next cycle begins with a new split and lower volume.
    - Default LURVOX stance: prefer higher metabolic flux when recovery allows.
    - If Metabolic Flux Bias says STEADY: fat loss 350-450 kcal deficit, muscle gain 150-250 surplus, recomp = maintenance.
-   - If BUILD-UP: fat loss 250-350 kcal deficit (shallower so intake stays higher), muscle gain 250-350 surplus, recomp = slight surplus on training days.
-   - If HIGH FLUX: fat loss 150-250 kcal deficit (create the gap mainly via steps/training), muscle gain 300-450 surplus, recomp = clear training-day surplus.
+   - If BUILD-UP: fat loss 250-350 kcal deficit (shallower so intake stays higher), muscle gain begins with a 150-300 surplus, recomp = slight surplus on training days.
+   - If HIGH FLUX: fat loss 150-250 kcal deficit (create the gap mainly via steps/training), muscle gain begins with a 200-350 surplus and uses the upper end only when appetite, digestion, recovery, and weight trend support it, recomp = clear training-day surplus.
    - Protein 1.8-2.2g/kg for fat loss, 1.6-2.0g/kg for muscle gain, never below 1600 kcal.
    - Prefer higher food volume (veg, lean protein, curd, fruit, dals) so larger intakes are realistic.
+   - Use the client's previous diet attempts as context. Do not repeat an approach they found ineffective or unsustainable.
+   - Low intake stall: if the client reports eating very little without losing weight, first audit adherence, weekends, cooking fats, liquid calories, steps, sleep, and water or sodium changes. If intake still appears genuinely low, do not cut again. Raise the average daily target gradually by 50 to 100 kcal for the next week, then hold and reassess before another increase. Never claim their metabolism is broken or repaired.
+   - Weight gain: never force an oversized surplus or uncomfortable food volume. Start at the lower end, use modest energy dense portions when appetite is low, and let appetite, digestion, and training tolerance adapt before increasing.
    Do NOT print these numbers as a formal "Target Macros" table — just keep them as your internal guide so the food choices fit.
 
 3. Build meal timings around the client's existing routine — don't invent new meal slots. If they eat lunch at 2pm, keep it close to 2pm.
@@ -48,6 +52,8 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 11. Don't mention the number of week it is, just skip mentioning it.
 
 12. **Hard constraints:** Obey the Hard Constraints section in client details exactly — diet preference, allergies, dislikes, budget, equipment, exercises to avoid, and injuries are non-negotiable.
+
+13. **Formatting rule:** Never use any hyphen or dash character in client-facing plan text. Write ranges with the word "to", use spaces in compound words, and put list items on separate lines without symbol prefixes.
 
 **TONE:** Write like a coach texting/emailing a client they know personally — friendly, encouraging, practical. Use approximate gram weights in brackets alongside household measures so the client can still gauge portions, but the overall feel should be human-written, not templated or AI-generated.
 

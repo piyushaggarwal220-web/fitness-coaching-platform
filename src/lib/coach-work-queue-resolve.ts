@@ -116,7 +116,7 @@ export async function resolveWorkQueueTask(
       const checkinId = task.id.replace(/^checkin-/, '')
       const { data: checkin, error: loadError } = await admin
         .from('checkins')
-        .select('id, client_id, reviewed, coach_response, coach_id')
+        .select('id, client_id, reviewed, coach_response, coach_id, checkin_type')
         .eq('id', checkinId)
         .maybeSingle()
 
@@ -127,6 +127,13 @@ export async function resolveWorkQueueTask(
         return { ok: false, resolved: false, error: 'Check-in is not assigned to you.' }
       }
       if (checkin.reviewed) return { ok: true, resolved: true }
+      if (checkin.checkin_type === 'mid_week') {
+        return {
+          ok: false,
+          resolved: false,
+          error: 'Reply to this mid-week check-in in coach chat to complete it.',
+        }
+      }
 
       const now = new Date().toISOString()
       const { error } = await admin
@@ -157,6 +164,30 @@ export async function resolveWorkQueueTask(
 
     case 'issue_report': {
       const issueId = task.id.replace(/^issue-/, '')
+      const { data: issue, error: issueError } = await admin
+        .from('issue_reports')
+        .select('id, client_id')
+        .eq('id', issueId)
+        .maybeSingle()
+
+      if (issueError || !issue) {
+        return { ok: false, resolved: false, error: issueError?.message ?? 'Issue report not found.' }
+      }
+
+      const { data: profile, error: profileError } = await admin
+        .from('profiles')
+        .select('coach_id')
+        .eq('id', issue.client_id)
+        .maybeSingle()
+
+      if (profileError || !profile || profile.coach_id !== coachId) {
+        return {
+          ok: false,
+          resolved: false,
+          error: profileError?.message ?? 'Issue report is not assigned to you.',
+        }
+      }
+
       const now = new Date().toISOString()
       const { error } = await admin
         .from('issue_reports')
@@ -167,6 +198,7 @@ export async function resolveWorkQueueTask(
           admin_notes: 'Resolved from coach work queue.',
         })
         .eq('id', issueId)
+        .eq('client_id', issue.client_id)
 
       if (error) return { ok: false, resolved: false, error: error.message }
       return { ok: true, resolved: true }

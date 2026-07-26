@@ -247,6 +247,12 @@ export type DailyTrackerDay = {
 
 export type TodayTrackerView = {
   day: DailyTrackerDay
+  dateNavigation: {
+    selectedDate: string
+    minDate: string
+    maxDate: string
+    isToday: boolean
+  }
   schedule: {
     coachingDay: number
     coachingWeek: number

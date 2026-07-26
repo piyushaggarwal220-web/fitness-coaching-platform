@@ -7,10 +7,12 @@ export function formatMidWeekCheckinChatMessage(input: {
   energyLevel: number
   sleepQuality: number
   stressLevel: number
+  hungerLevel: number
   adherenceWins?: string | null
   adherenceStruggles?: string | null
   painInjuries?: string | null
   questionsForCoach?: string | null
+  additionalComments?: string | null
 }): string {
   const lines = [
     '📋 Mid Week Check-in',
@@ -22,6 +24,7 @@ export function formatMidWeekCheckinChatMessage(input: {
     `Energy: ${input.energyLevel}/10`,
     `Sleep: ${input.sleepQuality}/10`,
     `Stress: ${input.stressLevel}/10`,
+    `Hunger: ${input.hungerLevel}/10`,
   ]
 
   if (input.adherenceWins?.trim()) {
@@ -39,6 +42,12 @@ export function formatMidWeekCheckinChatMessage(input: {
   if (input.questionsForCoach?.trim()) {
     lines.push('', 'Question', input.questionsForCoach.trim())
   }
+
+  if (input.additionalComments?.trim()) {
+    lines.push('', 'Additional comments', input.additionalComments.trim())
+  }
+
+  lines.push('', 'Coach reply requested', 'Please send a short response in this chat. No plan update is needed.')
 
   return lines.join('\n')
 }

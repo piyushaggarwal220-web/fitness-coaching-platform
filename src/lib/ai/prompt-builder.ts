@@ -298,7 +298,7 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
     const favorite = data.training.favoriteExercises?.trim()
     const disliked = data.training.exercisesDisliked?.trim()
     lines.push(
-      `Training: location ${data.training.location ?? '—'}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
+      `Training: location ${data.training.location ?? '—'}, training history ${getOnboardingLabel('training_tenure', data.training.trainingTenure)}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
     )
   }
   if (data.medical) {
@@ -312,6 +312,9 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   if (data.diet) {
     lines.push(
       `Diet habits: allergies ${data.diet.allergies ?? '—'}, dislikes ${data.diet.foodsDisliked ?? '—'}, favorites ${data.diet.favoriteFoods ?? '—'}, budget ${data.diet.monthlyFoodBudget ?? '—'}, meal variety preference ${data.lifestyle?.dietVariety ?? '—'}`
+    )
+    lines.push(
+      `Previous diet attempts that felt ineffective or unsustainable: ${data.diet.previousDietAttempts?.trim() || 'None reported'}`
     )
   }
   if (data.eatingPattern) {
@@ -436,6 +439,7 @@ function buildTrainingPreferencesSection(profile: OnboardingProfile): string {
     `- Favorite exercises / exercises to include: ${training?.favoriteExercises?.trim() || 'None specified'}`,
     `- Exercises to avoid: ${training?.exercisesDisliked?.trim() || 'None specified'}`,
     `- Training experience: ${getOnboardingLabel('training_experience', profile.training_experience)}`,
+    `- Consistent training history: ${getOnboardingLabel('training_tenure', training?.trainingTenure)}`,
   ]
 
   return lines.join('\n')
@@ -704,6 +708,17 @@ function hasSubstantiveContext(section: string): boolean {
 
 function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSections)[] {
   switch (actionId) {
+    case 'initial_diet':
+      return [
+        'hardConstraints',
+        'metabolicFlux',
+        'clientDetails',
+        'onboarding',
+        'mesocycle',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
     case 'initial_workout':
     case 'initial_cardio':
       return [
@@ -718,6 +733,19 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
         'complexity',
       ]
     case 'review_update_diet':
+      return [
+        'hardConstraints',
+        'metabolicFlux',
+        'clientDetails',
+        'onboarding',
+        'activeDiet',
+        'activeWorkout',
+        'mesocycle',
+        'checkin',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
     case 'review_update_supplements':
       return [
         'hardConstraints',

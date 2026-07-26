@@ -82,6 +82,8 @@ export type OnboardingData = {
   }
   training?: {
     location?: string | null
+    /** Total time the client has trained consistently. */
+    trainingTenure?: string | null
     daysPerWeek?: string | number | null
     durationMinutes?: string | null
     preferredTime?: string | null
@@ -115,6 +117,8 @@ export type OnboardingData = {
     cookingAbility?: string | null
     /** Free-text exceptions when chip/weekday options don't fit. */
     customNotes?: string | null
+    /** Previous diet approaches that felt ineffective or unsustainable. */
+    previousDietAttempts?: string | null
   }
   eatingPattern?: {
     breakfast?: string | null
@@ -211,6 +215,7 @@ export type OnboardingFormData = {
   diet_variety: string
   training_location: string
   training_experience: string
+  training_tenure: string
   training_days_per_week: string
   workout_duration: string
   preferred_workout_time: string
@@ -236,6 +241,7 @@ export type OnboardingFormData = {
   foods_disliked: string
   favorite_foods: string
   diet_custom_notes: string
+  previous_diet_attempts: string
   monthly_food_budget: string
   cooking_ability: string
   breakfast: string
@@ -808,6 +814,7 @@ export type ConversationMessage = {
   content: string | null
   media_url: string | null
   media_duration_seconds: number | null
+  source_checkin_id: string | null
   read_at: string | null
   created_at: string
 }

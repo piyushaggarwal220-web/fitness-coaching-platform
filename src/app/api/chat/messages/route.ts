@@ -5,6 +5,8 @@ import { requireConversationParticipant } from '@/lib/chat-api-access'
 import { getCoachResponseTargetFromAnchor } from '@/lib/chat-response-target'
 import { hasClientEntitlement } from '@/lib/entitlements'
 
+const USER_MESSAGE_TYPES = new Set(['text', 'voice', 'image'])
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
@@ -195,6 +197,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true })
     }
 
+    const messageType = body.messageType ?? 'text'
+    if (!USER_MESSAGE_TYPES.has(messageType)) {
+      return NextResponse.json(
+        { success: false, error: 'Unsupported message type' },
+        { status: 400 }
+      )
+    }
+
     const senderType = participant.viewer
     const senderId = senderType === 'coach' ? participant.coachId : userId
 
@@ -209,7 +219,7 @@ export async function POST(request: Request) {
       conversationId,
       senderType,
       senderId,
-      messageType: (body.messageType as 'text' | 'voice' | 'image' | 'system' | undefined) ?? 'text',
+      messageType: messageType as 'text' | 'voice' | 'image',
       content: body.content,
       mediaUrl: body.mediaUrl,
       mediaDurationSeconds: body.mediaDurationSeconds,

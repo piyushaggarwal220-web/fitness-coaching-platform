@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
+import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
 import { getNextCoachingDayStart } from '@/lib/checkin-schedule'
 import {
   clientCoachNotes,
@@ -132,7 +133,9 @@ export async function activatePlan(
 
   const { data: fullPlan, error: planError } = await supabase
     .from('plans')
-    .select('id, title, coach_notes, phase')
+    .select(
+      'id, title, coach_notes, phase, workout_plan, nutrition_plan, cardio_plan, supplement_plan'
+    )
     .eq('id', plan.id)
     .maybeSingle()
 
@@ -169,8 +172,21 @@ export async function activatePlan(
     .from('plans')
     .update({
       active: true,
-      title: publishedTitle,
-      coach_notes: publishNotes,
+      title: normalizeAiPlanProse(publishedTitle),
+      phase: fullPlan.phase ? normalizeAiPlanProse(fullPlan.phase) : null,
+      workout_plan: fullPlan.workout_plan
+        ? normalizeAiPlanProse(fullPlan.workout_plan)
+        : null,
+      nutrition_plan: fullPlan.nutrition_plan
+        ? normalizeAiPlanProse(fullPlan.nutrition_plan)
+        : null,
+      cardio_plan: fullPlan.cardio_plan
+        ? normalizeAiPlanProse(fullPlan.cardio_plan)
+        : null,
+      supplement_plan: fullPlan.supplement_plan
+        ? normalizeAiPlanProse(fullPlan.supplement_plan)
+        : null,
+      coach_notes: publishNotes ? normalizeAiPlanProse(publishNotes) : null,
       delivered_at: deliveredAt,
       updated_at: deliveredAt,
     })

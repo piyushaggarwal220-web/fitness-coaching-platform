@@ -133,6 +133,7 @@ export function DailyTrackerClient({ initialView, initialError }: Props) {
             completion={day.completion}
             workoutScore={scores.workout}
             saving={saving}
+            logDate={day.log_date}
             onPatch={patchCompletion}
           />
         </TrackerFolder>

@@ -6,6 +6,17 @@ export function resolveAppendOrderForAction(
   actionId?: CoachAiActionId
 ): PromptContextSectionKey[] {
   switch (actionId) {
+    case 'initial_diet':
+      return [
+        'hardConstraints',
+        'metabolicFlux',
+        'clientDetails',
+        'onboarding',
+        'mesocycle',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
     case 'initial_workout':
     case 'initial_cardio':
       return [
@@ -20,6 +31,19 @@ export function resolveAppendOrderForAction(
         'complexity',
       ]
     case 'review_update_diet':
+      return [
+        'hardConstraints',
+        'metabolicFlux',
+        'clientDetails',
+        'onboarding',
+        'activeDiet',
+        'activeWorkout',
+        'mesocycle',
+        'checkin',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
     case 'review_update_supplements':
       return [
         'hardConstraints',
