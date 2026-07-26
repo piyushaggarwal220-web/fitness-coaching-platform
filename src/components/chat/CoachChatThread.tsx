@@ -350,6 +350,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       content: content || null,
       media_url: opts?.mediaUrl ?? null,
       media_duration_seconds: opts?.mediaDurationSeconds ?? null,
+      source_checkin_id: null,
       read_at: null,
       created_at: new Date().toISOString(),
     }

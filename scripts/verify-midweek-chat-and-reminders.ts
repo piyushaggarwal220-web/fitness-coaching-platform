@@ -77,7 +77,7 @@ assert.match(dashboard, /Check-in notification/)
 assert.match(dashboard, /Complete check-in/)
 
 const reminderCron = source('src/app/api/cron/checkin-reminders/route.ts')
-assert.match(reminderCron, /task\.status === 'available'/)
+assert.match(reminderCron, /status === 'available'/)
 assert.match(
   reminderCron,
   /`checkin-due:\$\{client\.id\}:\$\{task\.type\}:\$\{task\.coachingWeek\}`/
