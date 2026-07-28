@@ -30,7 +30,7 @@ export function parsePlanMeta(plan: Pick<Plan, 'title' | 'coach_notes' | 'phase'
     }
   }
 
-  const isAi = plan.title.startsWith('AI Draft')
+  const isAi = isAiDraftTitle(plan.title)
   const weekMatch = plan.title.match(/Week\s+(\d+)/i)
   return {
     generatedBy: isAi ? 'ai' : 'coach',
@@ -45,7 +45,8 @@ export function stripPlanMeta(notes: string | null | undefined): string {
 }
 
 export function isAiDraftTitle(title: string | null | undefined): boolean {
-  return (title ?? '').trim().startsWith('AI Draft')
+  const raw = (title ?? '').trim()
+  return /^AI\b/i.test(raw)
 }
 
 export function extractWeekFromTitle(title: string | null | undefined): number | undefined {
@@ -100,7 +101,7 @@ export function formatPublishedPlanTitle(
   plan: Pick<Plan, 'title' | 'coach_notes' | 'phase'>,
   isUpdate: boolean
 ): string {
-  if (!isAiDraftTitle(plan.title)) return plan.title.trim()
+  if (!isAiDraftTitle(plan.title)) return clientFacingPlanTitle(plan.title)
 
   const meta = parsePlanMeta(plan)
   const week = meta.week ?? extractWeekFromTitle(plan.title)
@@ -108,14 +109,31 @@ export function formatPublishedPlanTitle(
     return isUpdate ? `Week ${week} Updated Plan` : `Week ${week} Plan`
   }
 
-  return plan.title.replace(/^AI Draft\s*·\s*/i, '').trim() || 'Coaching Plan'
+  return clientFacingPlanTitle(plan.title)
+}
+
+/** Never show internal AI draft wording on client surfaces. */
+export function clientFacingPlanTitle(title: string | null | undefined): string {
+  const raw = (title ?? '').trim()
+  if (!raw) return 'Coaching Plan'
+
+  let cleaned = raw
+    .replace(/^AI Draft\s*·\s*/i, '')
+    .replace(/^AI\s+/i, '')
+    .replace(/\bAI\b/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+
+  cleaned = cleaned.replace(/\(\s*Draft\s*\)\s*$/i, '').trim()
+
+  return cleaned || 'Coaching Plan'
 }
 
 export type PlanVersionStatus = 'Active' | 'AI Draft' | 'Archived' | 'Draft'
 
 export function getPlanVersionStatus(plan: Plan): PlanVersionStatus {
   if (plan.active) return 'Active'
-  if (plan.title.startsWith('AI Draft')) return 'AI Draft'
+  if (isAiDraftTitle(plan.title)) return 'AI Draft'
   if (plan.delivered_at) return 'Archived'
   return 'Draft'
 }
@@ -123,7 +141,7 @@ export function getPlanVersionStatus(plan: Plan): PlanVersionStatus {
 export function formatGeneratedFrom(meta: PlanMeta, plan: Plan): string {
   if (meta.source) return meta.source
   if (meta.week) return `Week ${meta.week} Check-in`
-  if (plan.title.startsWith('AI Draft')) return plan.title.replace('AI Draft · ', '')
+  if (isAiDraftTitle(plan.title)) return clientFacingPlanTitle(plan.title)
   return 'Manual edit'
 }
 

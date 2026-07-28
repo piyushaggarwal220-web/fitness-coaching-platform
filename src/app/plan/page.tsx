@@ -15,6 +15,7 @@ import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
+import { clientFacingPlanTitle } from '@/lib/plan-metadata';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
@@ -165,7 +166,7 @@ export default function ClientPlanPage() {
           {BRAND_NAME} · Your Plan
         </p>
         <h1 style={{ margin: '8px 0 0', fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-          {plan.title}
+          {clientFacingPlanTitle(plan.title)}
         </h1>
         {plan.phase && <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 16 }}>{plan.phase}</p>}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2], marginTop: spacing[4], alignItems: 'center' }}>

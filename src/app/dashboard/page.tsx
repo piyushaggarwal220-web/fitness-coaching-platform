@@ -29,6 +29,7 @@ import {
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { formatPlanDate } from '@/lib/plans';
+import { clientFacingPlanTitle } from '@/lib/plan-metadata';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
@@ -307,7 +308,7 @@ export default function Dashboard() {
     {
       key: 'plan',
       title: 'Plan',
-      subtitle: activePlan ? `${activePlan.title} · v${activePlan.version}` : 'Open your coaching plan',
+      subtitle: activePlan ? `${clientFacingPlanTitle(activePlan.title)} · v${activePlan.version}` : 'Open your coaching plan',
       href: '/plan',
       icon: ClipboardList,
       badge: activePlan ? 'Ready' : null,
@@ -392,7 +393,7 @@ export default function Dashboard() {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontWeight: 700, fontSize: 17, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {activePlan ? activePlan.title : profile.plan_delivered ? 'Plan pending activation' : 'Plan in preparation'}
+            {activePlan ? clientFacingPlanTitle(activePlan.title) : profile.plan_delivered ? 'Plan pending activation' : 'Plan in preparation'}
           </p>
           {activePlan && (
             <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>

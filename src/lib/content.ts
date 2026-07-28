@@ -301,7 +301,7 @@ export const pricing = {
 export const affordability = {
   headline: 'Why Are We So Affordable?',
   body: [
-    'Our coaches use AI-assisted tools behind the scenes to automate repetitive work such as plan generation and progress analysis.',
+    'Our coaches use advanced tools behind the scenes to automate repetitive work such as plan preparation and progress analysis.',
     'That means coaches spend more time helping clients instead of doing paperwork.',
     'The result is premium coaching at a fraction of the traditional cost.',
   ],

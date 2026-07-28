@@ -1,4 +1,5 @@
 import { hasClientEntitlement } from '@/lib/entitlements'
+import { clientFacingPlanTitle } from '@/lib/plan-metadata'
 import type { Coach, OnboardingProfile, Plan, Purchase } from '@/types/database'
 
 /** Plan delivery SLA after onboarding completes (hours). */
@@ -93,11 +94,11 @@ export function getClientDashboardStatus(params: {
 
   let planStatus = 'Not started'
   if (preferTrackerUpTop) {
-    planStatus = `Active — ${activePlan!.title} (v${activePlan!.version})`
+    planStatus = `Active — ${clientFacingPlanTitle(activePlan!.title)} (v${activePlan!.version})`
   } else if (planReady) {
-    planStatus = `Ready — ${activePlan!.title} (v${activePlan!.version})`
+    planStatus = `Ready — ${clientFacingPlanTitle(activePlan!.title)} (v${activePlan!.version})`
   } else if (activePlan) {
-    planStatus = `Active — ${activePlan.title} (v${activePlan.version})`
+    planStatus = `Active — ${clientFacingPlanTitle(activePlan.title)} (v${activePlan.version})`
   } else if (profile.plan_delivered) {
     planStatus = 'Delivered — awaiting activation'
   } else if (onboardingComplete) {
@@ -118,8 +119,8 @@ export function getClientDashboardStatus(params: {
       profile.gender !== 'female' &&
       (!profile.progress_photo_front || !profile.progress_photo_side || !profile.progress_photo_back)
     nextAction = needsPhotos
-      ? 'Upload front, side, and back photos to finish onboarding — your AI diet and workout draft starts automatically after that.'
-      : 'Finish onboarding (review & submit) so your AI diet and workout draft can start automatically.'
+      ? 'Upload front, side, and back photos to finish onboarding — your personalized diet and workout plan will start being prepared after that.'
+      : 'Finish onboarding (review & submit) so your coach can start preparing your personalized diet and workout plan.'
     nextActionHref = '/onboarding'
   } else if (!coachAssigned) {
     nextAction = 'Your coach is being assigned — usually within a few minutes'

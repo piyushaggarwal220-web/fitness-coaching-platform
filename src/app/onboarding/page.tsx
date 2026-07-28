@@ -322,8 +322,8 @@ export default function OnboardingPage() {
       if (!generationResponse.ok) {
         throw new Error(
           generationResult.error
-            ? `Intake saved, but plan generation could not be queued: ${generationResult.error}`
-            : 'Intake saved, but plan generation could not be queued.'
+            ? `Intake saved, but your plan could not be started yet: ${generationResult.error}`
+            : 'Intake saved, but your plan could not be started yet. Please try again or message support.'
         )
       }
       await requestComplexityRecalculation({ trigger: 'onboarding_complete' })
@@ -1208,10 +1208,10 @@ function renderStep(
             comfortable with.
             {' '}
             Your photos are completely private and are never shared or published anywhere without
-            your explicit permission. They are used only by your assigned coach and our AI to create
-            more accurate recommendations.
+            your explicit permission. They are used only by your assigned coach to create more
+            accurate recommendations.
             {!photosOptional &&
-              ' Front, side, and back photos are required — after you submit the final review, your AI diet and workout draft starts automatically.'}
+              ' Front, side, and back photos are required — after you submit the final review, your personalized diet and workout plan starts being prepared.'}
             {photosOptional && ' Photos are optional for female clients, and you can continue without uploading them.'}
           </div>
           <div style={s.photoGrid}>

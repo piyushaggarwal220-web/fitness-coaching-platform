@@ -187,7 +187,7 @@ export default function Profile() {
       }
       setMessage(
         stillNeedsReview
-          ? 'Saved. Please confirm these details are correct — AI plan work stays paused until then. Next edit unlocks in 7 days.'
+          ? 'Saved. Please confirm these details are correct — plan preparation stays paused until then. Next edit unlocks in 7 days.'
           : 'Profile saved. You can edit settings again in 7 days.'
       )
     }
