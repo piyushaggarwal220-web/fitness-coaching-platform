@@ -845,6 +845,7 @@ export type NotificationType =
   | 'coach_replied'
   | 'weekly_checkin_reminder'
   | 'mid_week_checkin_reminder'
+  | 'tracker_reminder'
   | 'checkin_submitted'
   | 'support_reply'
   | 'coach_assigned'

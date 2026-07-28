@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasClientEntitlement } from '@/lib/entitlements'
-import { getClientCheckinSchedule } from '@/lib/checkin-schedule'
+import { getClientCheckinSchedule, getCoachingDateKey, hasCoachingDayStarted } from '@/lib/checkin-schedule'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import type { Checkin, NotificationType } from '@/types/database'
 
@@ -62,6 +62,14 @@ type EligibleClient = {
   subscription_expires_at: string | null
 }
 
+type TrackerDaySummary = {
+  client_id: string
+  log_date: string
+  overall_percent: number | null
+  coaching_day: number | null
+  coaching_week: number | null
+}
+
 async function alreadySentToday(
   admin: ReturnType<typeof createAdminClient>,
   userId: string,
@@ -88,6 +96,7 @@ export async function GET(request: Request) {
   const admin = createAdminClient()
   const now = new Date()
   const { startIso, endIso } = getIstDayBoundsUtc(now)
+  const todayKey = getCoachingDateKey(now)
 
   const { data: profiles, error: profilesError } = await admin
     .from('profiles')
@@ -130,6 +139,43 @@ export async function GET(request: Request) {
     }
   }
 
+  const activePlanClientIds = new Set<string>()
+  if (clientIds.length > 0) {
+    const { data: activePlans, error: planError } = await admin
+      .from('plans')
+      .select('client_id')
+      .in('client_id', clientIds)
+      .eq('active', true)
+
+    if (planError) {
+      console.error('[cron/checkin-reminders] active plans query failed:', planError.message)
+      return NextResponse.json({ error: planError.message }, { status: 500 })
+    }
+
+    for (const row of activePlans ?? []) {
+      const clientId = (row as { client_id?: string | null }).client_id
+      if (clientId) activePlanClientIds.add(clientId)
+    }
+  }
+
+  const trackerByClient = new Map<string, TrackerDaySummary>()
+  if (clientIds.length > 0) {
+    const { data: trackerDays, error: trackerError } = await admin
+      .from('daily_tracker_days')
+      .select('client_id, log_date, overall_percent, coaching_day, coaching_week')
+      .in('client_id', clientIds)
+      .eq('log_date', todayKey)
+
+    if (trackerError) {
+      console.error('[cron/checkin-reminders] tracker query failed:', trackerError.message)
+      return NextResponse.json({ error: trackerError.message }, { status: 500 })
+    }
+
+    for (const row of (trackerDays ?? []) as TrackerDaySummary[]) {
+      trackerByClient.set(row.client_id, row)
+    }
+  }
+
   let sent = 0
   let skipped = 0
   const details: { userId: string; type: NotificationType; result: 'sent' | 'skipped' | 'failed'; reason?: string }[] = []
@@ -142,11 +188,6 @@ export async function GET(request: Request) {
     )
 
     const dueTasks = schedule.weekCheckins.filter((t) => t.status === 'available')
-
-    if (dueTasks.length === 0) {
-      skipped += 1
-      continue
-    }
 
     for (const task of dueTasks) {
       const type: NotificationType =
@@ -185,6 +226,43 @@ export async function GET(request: Request) {
       } else {
         skipped += 1
         details.push({ userId: client.id, type, result: 'failed', reason: 'insert_failed' })
+      }
+    }
+
+    const trackerType: NotificationType = 'tracker_reminder'
+    const trackerDay = trackerByClient.get(client.id) ?? null
+    const trackerIncomplete = !trackerDay || (trackerDay.overall_percent ?? 0) < 100
+    const trackerStarted = hasCoachingDayStarted(client.checkin_schedule_started_at, now)
+
+    if (
+      trackerStarted &&
+      activePlanClientIds.has(client.id) &&
+      trackerIncomplete &&
+      !(await alreadySentToday(admin, client.id, trackerType, startIso, endIso))
+    ) {
+      const template = NotificationTemplates.trackerReminder({
+        overallPercent: trackerDay?.overall_percent ?? null,
+        coachingDay: trackerDay?.coaching_day ?? null,
+        coachingWeek: trackerDay?.coaching_week ?? null,
+      })
+
+      const notification = await sendNotification({
+        userId: client.id,
+        ...template,
+        idempotencyKey: `tracker-due:${client.id}:${todayKey}`,
+        metadata: {
+          ...template.metadata,
+          firstName: client.name?.trim()?.split(/\s+/)[0] ?? undefined,
+          logDate: todayKey,
+        },
+      })
+
+      if (notification) {
+        sent += 1
+        details.push({ userId: client.id, type: trackerType, result: 'sent' })
+      } else {
+        skipped += 1
+        details.push({ userId: client.id, type: trackerType, result: 'failed', reason: 'insert_failed' })
       }
     }
   }

@@ -192,6 +192,20 @@ export const NotificationTemplates = {
       coachingWeek: opts?.coachingWeek ?? null,
     },
   }),
+  trackerReminder: (opts?: { overallPercent?: number | null; coachingDay?: number | null; coachingWeek?: number | null }) => ({
+    type: 'tracker_reminder' as NotificationType,
+    title: 'Today’s tracker is still pending',
+    body:
+      opts?.overallPercent && opts.overallPercent > 0
+        ? `You’re at ${opts.overallPercent}% today. Log the rest of your meals, workout, water, and habits.`
+        : 'Log your meals, workout, water, and habits for today so your coach can see your consistency.',
+    actionUrl: '/tracker',
+    metadata: {
+      overallPercent: opts?.overallPercent ?? null,
+      coachingDay: opts?.coachingDay ?? null,
+      coachingWeek: opts?.coachingWeek ?? null,
+    },
+  }),
   checkinSubmitted: (clientName: string, checkinType: 'mid_week' | 'weekly') => ({
     type: 'checkin_submitted' as NotificationType,
     title: checkinType === 'mid_week' ? 'Mid-week check-in submitted' : 'Weekly check-in submitted',

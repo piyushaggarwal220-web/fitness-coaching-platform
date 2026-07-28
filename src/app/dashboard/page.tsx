@@ -13,6 +13,8 @@ import {
   ListChecks,
   MessageCircle,
   Timer,
+  Trophy,
+  LucideIcon,
 } from 'lucide-react';
 import { ClientShell } from '@/components/ui/ClientShell';
 import { Card, StatCard } from '@/components/ui/Card';
@@ -291,6 +293,93 @@ export default function Dashboard() {
     : null;
 
   const firstName = profile?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
+  const quickLinks = [
+    {
+      key: 'tracker',
+      title: 'Tracker',
+      subtitle: trackerSubtitle,
+      href: '/tracker',
+      icon: ListChecks,
+      badge: todayTrackerPercent != null ? `${todayTrackerPercent}%` : null,
+      accent: colors.accent,
+      visible: Boolean(activePlan),
+    },
+    {
+      key: 'plan',
+      title: 'Plan',
+      subtitle: activePlan ? `${activePlan.title} · v${activePlan.version}` : 'Open your coaching plan',
+      href: '/plan',
+      icon: ClipboardList,
+      badge: activePlan ? 'Ready' : null,
+      accent: '#60a5fa',
+      visible: Boolean(profile),
+    },
+    {
+      key: 'checkin',
+      title: 'Check-in',
+      subtitle: checkinSchedule?.nextCheckinStatus === 'available'
+        ? `${getCheckinTypeDisplayName(checkinSchedule.nextCheckin!.type)} available now`
+        : checkinSchedule?.nextCheckin
+          ? `${getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)} · Day ${checkinSchedule.nextCheckin.coachingDay}`
+          : 'Weekly accountability and coach review',
+      href: checkinSchedule?.nextCheckinStatus === 'available'
+        ? checkinSchedule.nextCheckin!.href
+        : '/checkin',
+      icon: Calendar,
+      badge: checkinSchedule?.nextCheckinStatus === 'available' ? 'Due' : null,
+      accent: '#f59e0b',
+      visible: true,
+    },
+    {
+      key: 'journey',
+      title: 'Journey',
+      subtitle: 'Photos, check-ins, and progress history',
+      href: '/journey',
+      icon: Flame,
+      badge: null,
+      accent: '#a78bfa',
+      visible: true,
+    },
+    {
+      key: 'league',
+      title: 'League',
+      subtitle: 'Rank, points, and monthly climb',
+      href: '/league',
+      icon: Trophy,
+      badge: null,
+      accent: '#eab308',
+      visible: true,
+    },
+    {
+      key: 'chat',
+      title: 'Coach chat',
+      subtitle: unreadMessages > 0
+        ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
+        : coach
+          ? `Message ${coach.name}`
+          : 'Message your coach',
+      href: '/client/chat',
+      icon: MessageCircle,
+      badge: unreadMessages > 0 ? (unreadMessages > 9 ? '9+' : String(unreadMessages)) : null,
+      accent: '#22c55e',
+      visible: Boolean(coach),
+    },
+  ]
+    .filter((item) => item.visible)
+    .sort((a, b) => {
+      if (checkinSchedule?.nextCheckinStatus === 'available') {
+        if (a.key === 'checkin') return -1;
+        if (b.key === 'checkin') return 1;
+      }
+      return 0;
+    });
+
+  const heroActionLabel = status?.nextActionHref
+    ? status.nextAction ?? 'Continue'
+    : activePlan
+      ? "Open today's tracker"
+      : 'View your coaching dashboard';
+  const heroActionHref = status?.nextActionHref ?? (activePlan ? '/tracker' : '/plan');
   const planCard = profile ? (
     <Card
       variant="glass"
@@ -425,6 +514,46 @@ export default function Dashboard() {
         </p>
       </div>
 
+      <section style={{ marginBottom: spacing[7] }}>
+        <Card
+          variant="glass"
+          style={{
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, rgba(249,115,22,0.14) 0%, rgba(17,24,39,0.96) 42%, rgba(10,10,11,0.98) 100%)',
+            border: '1px solid rgba(249,115,22,0.18)',
+          }}
+        >
+          <div style={{ display: 'grid', gap: spacing[4] }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 12, color: colors.accent, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Coaching Hub
+              </p>
+              <h2 style={{ margin: '8px 0 0', fontSize: 'clamp(1.55rem, 5vw, 2rem)', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.03em', lineHeight: 1.12 }}>
+                Everything important is one tap away
+              </h2>
+              <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.55 }}>
+                Track today, open your plan, stay on top of check-ins, review your journey, and message your coach from one place.
+              </p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[2] }}>
+              <DashboardHeroStat label="Week workouts" value={String(weekWorkouts)} icon={<Dumbbell size={17} />} />
+              <DashboardHeroStat label="Streak" value={String(trackerStreak)} icon={<Flame size={17} />} />
+              <DashboardHeroStat
+                label="Today"
+                value={todayTrackerPercent != null ? `${todayTrackerPercent}%` : '—'}
+                icon={<Calendar size={17} />}
+              />
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2] }}>
+              <Button onClick={() => router.push(heroActionHref)}>{heroActionLabel}</Button>
+              <Button variant="secondary" onClick={() => router.push('/journey')}>
+                Open journey
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </section>
+
       {checkinScheduleBypass && (
         <DevelopmentModeBadge style={{ marginBottom: spacing[4] }} />
       )}
@@ -464,38 +593,45 @@ export default function Dashboard() {
         </section>
       )}
 
-      {subscription && <ActiveSubscriptionCard subscription={subscription} />}
-
-      <LeagueHomeCard />
-
-      {/* Coach assigned + 24h plan countdown (hidden once diet+workout opened) */}
-      {profile && status?.paymentConfirmed && (
-        <PlanCountdownCard
-          profile={profile}
-          activePlan={activePlan}
-          coachName={status.coachName ?? coach?.name}
+      <section style={{ marginBottom: spacing[7] }}>
+        <SectionHeader
+          title="Quick access"
+          subtitle={
+            checkinSchedule?.nextCheckinStatus === 'available'
+              ? 'Your due check-in is surfaced first, followed by the rest of your coaching tools'
+              : 'Main coaching features, organized clearly'
+          }
         />
-      )}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: spacing[3] }}>
+          {quickLinks.map((item, index) => (
+            <QuickLinkCard
+              key={item.key}
+              title={item.title}
+              subtitle={item.subtitle}
+              href={item.href}
+              icon={item.icon}
+              badge={item.badge}
+              accent={item.accent}
+              index={index}
+              onOpen={(href) => router.push(href)}
+            />
+          ))}
+        </div>
+      </section>
 
-      <NotificationActivationGate />
-      <PwaInstallPrompt />
-
-      {/* Next step — lead with today’s action */}
-      {status && status.nextAction && !status.preferTrackerUpTop && (
-        <section style={{ marginBottom: spacing[7] }}>
-          <SectionHeader title="Next step" subtitle="What to do now" />
-          <Card variant="elevated" className="card-hover">
-            <p style={{ margin: '0 0 12px', fontSize: 15, color: colors.textSecondary, lineHeight: 1.5 }}>{status.nextAction}</p>
-            {status.nextActionHref ? (
-              <Button fullWidth onClick={() => router.push(status.nextActionHref!)}>Continue</Button>
-            ) : (
-              <p style={{ margin: 0, fontSize: 13, color: colors.textMuted, lineHeight: 1.45 }}>
-                We&apos;ll notify you as soon as your coach is ready.
-              </p>
-            )}
-          </Card>
-        </section>
-      )}
+      <section style={{ marginBottom: spacing[7] }}>
+        <SectionHeader title="Status" subtitle="Membership, delivery, and device setup" />
+        {subscription && <ActiveSubscriptionCard subscription={subscription} />}
+        {profile && status?.paymentConfirmed && (
+          <PlanCountdownCard
+            profile={profile}
+            activePlan={activePlan}
+            coachName={status.coachName ?? coach?.name}
+          />
+        )}
+        <NotificationActivationGate />
+        <PwaInstallPrompt />
+      </section>
 
       {/* Keep plan and tracker together; tracker leads once daily tracking is preferred. */}
       {(profile || activePlan) && (
@@ -521,6 +657,8 @@ export default function Dashboard() {
           </div>
         </section>
       )}
+
+      <LeagueHomeCard />
 
       {/* Coaching week + next check-in */}
       {checkinSchedule && (
@@ -655,49 +793,6 @@ export default function Dashboard() {
           />
         </div>
       </section>
-
-      {/* Coach message — only when not already in bottom-nav duplicates */}
-      {coach && (
-        <section style={{ marginBottom: spacing[7] }}>
-          <SectionHeader title="Your coach" subtitle="Message your assigned coach" />
-          <Card variant="glass" onClick={() => router.push('/client/chat')} style={{ cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <MessageCircle size={20} color={colors.accent} />
-                {unreadMessages > 0 && (
-                  <span style={{
-                    position: 'absolute',
-                    top: -4,
-                    right: -4,
-                    minWidth: 18,
-                    height: 18,
-                    borderRadius: 999,
-                    backgroundColor: colors.danger,
-                    color: '#fff',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0 5px',
-                  }}>
-                    {unreadMessages > 9 ? '9+' : unreadMessages}
-                  </span>
-                )}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>Message {coach.name}</p>
-                <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textMuted }}>
-                  {unreadMessages > 0
-                    ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
-                    : 'Your assigned coach'}
-                </p>
-              </div>
-              <ArrowRight size={20} color={colors.textMuted} />
-            </div>
-          </Card>
-        </section>
-      )}
 
       {/* Recent activity */}
       <section style={{ marginBottom: spacing[7] }}>
@@ -866,6 +961,106 @@ function nextItemLabel(item: TrackerSnapshotItem | undefined): string {
     default:
       return 'Continue'
   }
+}
+
+function DashboardHeroStat({
+  label,
+  value,
+  icon,
+}: {
+  label: string
+  value: string
+  icon: React.ReactNode
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 14,
+        padding: spacing[3],
+        background: 'rgba(255,255,255,0.04)',
+        border: `1px solid ${colors.borderSubtle}`,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.textMuted, fontSize: 12, fontWeight: 700 }}>
+        {icon}
+        {label}
+      </div>
+      <div style={{ marginTop: 10, fontSize: 22, fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.03em' }}>
+        {value}
+      </div>
+    </div>
+  )
+}
+
+function QuickLinkCard({
+  title,
+  subtitle,
+  href,
+  icon: Icon,
+  badge,
+  accent,
+  index,
+  onOpen,
+}: {
+  title: string
+  subtitle: string
+  href: string
+  icon: LucideIcon
+  badge?: string | null
+  accent: string
+  index: number
+  onOpen: (href: string) => void
+}) {
+  return (
+    <Card
+      variant="elevated"
+      interactive
+      staggerIndex={index}
+      onClick={() => onOpen(href)}
+      style={{ marginBottom: 0 }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing[3] }}>
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            backgroundColor: `${accent}22`,
+            color: accent,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Icon size={20} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: colors.textPrimary }}>{title}</p>
+            {badge && (
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '4px 8px',
+                  borderRadius: 999,
+                  backgroundColor: `${accent}22`,
+                  color: accent,
+                }}
+              >
+                {badge}
+              </span>
+            )}
+          </div>
+          <p style={{ margin: '6px 0 0', fontSize: 13, lineHeight: 1.45, color: colors.textMuted }}>
+            {subtitle}
+          </p>
+        </div>
+        <ArrowRight size={18} color={colors.textMuted} />
+      </div>
+    </Card>
+  )
 }
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
