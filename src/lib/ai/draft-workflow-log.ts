@@ -60,6 +60,13 @@ export function logDraftWorkflow(input: DraftWorkflowLogInput): void {
   }
 }
 
+export type DraftSectionUsage = {
+  action: string
+  model: string
+  inputTokens: number
+  outputTokens: number
+}
+
 export async function persistDraftGenerationLog(input: {
   clientId: string
   coachId?: string | null
@@ -69,6 +76,12 @@ export async function persistDraftGenerationLog(input: {
   error?: string | null
   trigger: 'auto' | 'manual' | 'retry'
   planVersion?: string | null
+  model?: string | null
+  promptTokens?: number | null
+  completionTokens?: number | null
+  skippedCore?: boolean
+  skippedSupport?: boolean
+  sections?: DraftSectionUsage[]
 }): Promise<void> {
   const action =
     input.trigger === 'retry'
@@ -81,18 +94,22 @@ export async function persistDraftGenerationLog(input: {
     clientId: input.clientId,
     coachId: input.coachId ?? null,
     action,
-    model: null,
+    model: input.model ?? null,
     promptVersion: input.planVersion ?? 'weekly_draft',
     latencyMs: input.latencyMs,
-    promptTokens: null,
-    completionTokens: null,
+    promptTokens: input.promptTokens ?? null,
+    completionTokens: input.completionTokens ?? null,
     retryCount: input.trigger === 'retry' ? 1 : 0,
     validationResult: input.success ? 'pass' : 'fail',
     success: input.success,
     knowledgeRefs: null,
-    renderedOutput: input.checkinId
-      ? { checkinId: input.checkinId, error: input.error ?? null }
-      : undefined,
+    renderedOutput: {
+      checkinId: input.checkinId ?? null,
+      error: input.error ?? null,
+      skippedCore: input.skippedCore ?? false,
+      skippedSupport: input.skippedSupport ?? false,
+      sections: input.sections ?? [],
+    },
   })
 }
 

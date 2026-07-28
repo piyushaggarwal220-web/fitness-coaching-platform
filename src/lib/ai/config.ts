@@ -31,6 +31,8 @@ export const LIMITS = {
   MAX_PLAN_TOKENS: 8192,
   /** Cardio / supplements / coach notes — shorter outputs, lower completion cost. */
   MAX_SUPPORT_PLAN_TOKENS: 4096,
+  /** Targeted section edits — shorter revision, lower completion cost. */
+  MAX_SECTION_EDIT_TOKENS: 2048,
   MAX_CHECKIN_TOKENS: 2048,
 } as const
 

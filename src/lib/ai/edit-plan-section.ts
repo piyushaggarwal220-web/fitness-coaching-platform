@@ -105,8 +105,9 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     const response = await callPlanProvider(providerMode, {
       systemPrompt,
       userPrompt,
-      model: MODELS.CLAUDE_SONNET,
-      maxTokens: LIMITS.MAX_PLAN_TOKENS,
+      // Section edits are constrained revisions — Haiku + lower ceiling is enough.
+      model: MODELS.CLAUDE_HAIKU,
+      maxTokens: LIMITS.MAX_SECTION_EDIT_TOKENS,
       temperature: 0.4,
       mockText: buildMockRevision(input),
     })
@@ -145,7 +146,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
       clientId: input.clientId ?? null,
       coachId: null,
       action: `edit_plan_${input.section}`,
-      model: MODELS.CLAUDE_SONNET,
+      model: MODELS.CLAUDE_HAIKU,
       latencyMs: Date.now() - started,
       promptTokens: null,
       completionTokens: null,
