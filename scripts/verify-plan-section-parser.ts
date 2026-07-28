@@ -99,7 +99,7 @@ const humanized = normalizeAiPlanProse(
 assert('removes markdown heading markers', !humanized.includes('#'))
 assert('removes asterisks from generated prose', !humanized.includes('*'))
 assert('removes hyphen and star bullet prefixes', humanized.includes('Squats: 4 sets x 8 reps\nWalk for 20 minutes'))
-assert('preserves normal in-sentence hyphens', humanized.includes('well-balanced'))
+assert('strips in-sentence hyphens', humanized.includes('well balanced') && !humanized.includes('well-balanced'))
 
 if (failed > 0) {
   console.error(`\n${failed} plan parser checks failed`)

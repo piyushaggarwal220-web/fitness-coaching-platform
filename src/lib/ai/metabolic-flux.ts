@@ -105,26 +105,30 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
 
   const dietByLevel: Record<MetabolicFluxLevel, string> = {
     steady: [
-      'Calorie bias: STEADY — prioritize adherence over throughput.',
-      'Fat loss: 350–450 kcal deficit (do not crash). Muscle gain: 150–250 kcal surplus. Recomp: maintenance.',
+      'Calorie bias: STEADY; prioritize adherence over throughput.',
+      'Fat loss: 350 to 450 kcal deficit (do not crash). Muscle gain: 150 to 250 kcal surplus. Recomp: maintenance.',
       'Keep food volume manageable; avoid forcing large meals if appetite is limited.',
-      'Floor still ≥1600 kcal unless a clinician context says otherwise.',
+      'Floor still at least 1600 kcal unless a clinician context says otherwise.',
+      'If eating is already low and weight is not dropping: reverse diet (raise calories gradually), never cut further.',
+      'For weight gain goals: do not force oversized surpluses; let metabolism correct with a modest surplus.',
     ].join(' '),
     build_up: [
       'Calorie bias: BUILD-UP toward higher metabolic flux (eat more while moving more).',
-      'Fat loss: shallower 250–350 kcal deficit so absolute intake stays higher while steps/training rise.',
-      'Muscle gain: 250–350 kcal surplus with enough carbs around training.',
-      'Recomp: slight surplus on training days / maintenance on rest (~±100 kcal).',
+      'Fat loss: shallower 250 to 350 kcal deficit so absolute intake stays higher while steps/training rise.',
+      'Muscle gain: 250 to 350 kcal surplus with enough carbs around training; do not force huge meals.',
+      'Recomp: slight surplus on training days / maintenance on rest (about plus or minus 100 kcal).',
       'Prefer higher-volume meals (veg, lean protein, dairy/curd, fruit) so the client can eat more without feeling restricted.',
-      'Floor ≥1600 kcal.',
+      'Floor at least 1600 kcal.',
+      'If eating is already low and weight is not dropping: reverse diet (raise calories gradually).',
     ].join(' '),
     high_flux: [
-      'Calorie bias: HIGH FLUX — higher energy-in paired with higher energy-out.',
-      'Fat loss: mild 150–250 kcal deficit (keep intake relatively high; create the gap mainly via steps/training).',
-      'Muscle gain: assertive 300–450 kcal surplus with high meal volume.',
-      'Recomp: clear training-day surplus (~200–300) and near-maintenance rest days.',
+      'Calorie bias: HIGH FLUX; higher energy-in paired with higher energy-out.',
+      'Fat loss: mild 150 to 250 kcal deficit (keep intake relatively high; create the gap mainly via steps/training).',
+      'Muscle gain: assertive 300 to 450 kcal surplus with high meal volume, still without forcing food they cannot finish.',
+      'Recomp: clear training-day surplus (about 200 to 300) and near-maintenance rest days.',
       'Use denser + higher-volume foods so hitting calories is realistic; never below 1600 kcal.',
       'If hunger is low, spread calories across more feedings rather than cutting the target.',
+      'If eating is already low and weight is not dropping: reverse diet (raise calories gradually).',
     ].join(' '),
   }
 
@@ -164,8 +168,9 @@ export function buildMetabolicFluxSection(profile: OnboardingProfile): string {
     : `${plan.label} (default — client has not answered yet; lean toward higher flux safely)`
 
   return [
-    '## Metabolic Flux Bias (MUST follow — scale intake AND output together)',
-    'LURVOX preference: push clients toward higher metabolic flux (higher caloric intake + higher training/steps), scaled to this client — never a crash deficit with low output, and never huge calories with sedentary days.',
+    '## Metabolic Flux Bias (MUST follow; scale intake AND output together)',
+    'LURVOX preference: push clients toward higher metabolic flux (higher caloric intake + higher training/steps), scaled to this client; never a crash deficit with low output, and never huge calories with sedentary days.',
+    'Also pair with mesocycle: calories rise with weekly intensity; trim a little when a new lower-volume cycle starts.',
     `- Effective level: ${preferenceLabel}`,
     plan.dampenReasons.length > 0
       ? `- Safety dampeners applied: ${plan.dampenReasons.join('; ')}`

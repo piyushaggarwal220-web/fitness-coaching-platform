@@ -6,7 +6,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/** Remove common AI/Markdown decoration while preserving normal punctuation. */
+/** Remove AI/Markdown decoration and ALL hyphen/dash characters from client-facing plan text. */
 export function normalizeAiPlanProse(value: string): string {
   return value
     .replace(/\r\n/g, '\n')
@@ -18,6 +18,11 @@ export function normalizeAiPlanProse(value: string): string {
         .replace(/^\s*[-*•–—]\s+/, '')
         .replace(/\*+/g, '')
         .replace(/_{2,}/g, '')
+        // Ranges like 10-15 → 10 to 15
+        .replace(/(\d)\s*[-–—]\s*(\d)/g, '$1 to $2')
+        // Any remaining hyphen / en / em dash → space
+        .replace(/[-–—]/g, ' ')
+        .replace(/[ \t]{2,}/g, ' ')
         .trimEnd()
     })
     .join('\n')

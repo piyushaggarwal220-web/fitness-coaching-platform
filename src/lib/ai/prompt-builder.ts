@@ -297,8 +297,11 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   if (data.training) {
     const favorite = data.training.favoriteExercises?.trim()
     const disliked = data.training.exercisesDisliked?.trim()
+    const durationLabel = data.training.trainingDuration
+      ? getOnboardingLabel('training_duration', data.training.trainingDuration)
+      : '—'
     lines.push(
-      `Training: location ${data.training.location ?? '—'}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
+      `Training: location ${data.training.location ?? '—'}, training history ${durationLabel}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
     )
   }
   if (data.medical) {
@@ -310,8 +313,9 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
     )
   }
   if (data.diet) {
+    const previousDiets = data.diet.previousDietsFailed?.trim()
     lines.push(
-      `Diet habits: allergies ${data.diet.allergies ?? '—'}, dislikes ${data.diet.foodsDisliked ?? '—'}, favorites ${data.diet.favoriteFoods ?? '—'}, budget ${data.diet.monthlyFoodBudget ?? '—'}, meal variety preference ${data.lifestyle?.dietVariety ?? '—'}`
+      `Diet habits: allergies ${data.diet.allergies ?? '—'}, dislikes ${data.diet.foodsDisliked ?? '—'}, favorites ${data.diet.favoriteFoods ?? '—'}, budget ${data.diet.monthlyFoodBudget ?? '—'}, meal variety preference ${data.lifestyle?.dietVariety ?? '—'}${previousDiets ? `, previous diets that failed ${previousDiets}` : ''}`
     )
   }
   if (data.eatingPattern) {
@@ -429,6 +433,7 @@ function buildTrainingPreferencesSection(profile: OnboardingProfile): string {
     '## Training Preferences',
     `- Workout environment: ${environment === 'gym' ? 'Full Gym' : 'Home Workout'}`,
     `- Training location: ${location ? getOnboardingLabel('training_location', location) : 'Not provided'}`,
+    `- How long training: ${training?.trainingDuration ? getOnboardingLabel('training_duration', training.trainingDuration) : 'Not provided'}`,
     `- Days per week: ${training?.daysPerWeek ?? 'Not provided'}`,
     `- Session duration: ${training?.durationMinutes ? `${training.durationMinutes} min` : 'Not provided'}`,
     `- Preferred workout time: ${training?.preferredTime ? getOnboardingLabel('preferred_workout_time', training.preferredTime) : 'Not provided'}`,

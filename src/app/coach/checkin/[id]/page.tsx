@@ -8,7 +8,6 @@ import { CoachShell } from '@/components/ui/CoachShell';
 import { coachPageStyles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/coach-theme';
 import { requireCoach } from '@/lib/coach-session';
-import { sendClientNotification } from '@/lib/notifications/client'
 import {
   CHECKIN_PHOTO_BUCKET,
   formatCheckinDate,
@@ -107,45 +106,35 @@ export default function CoachCheckinDetailPage() {
     setError('');
     setSuccess('');
 
-    const { error: updateError } = await supabase
-      .from('checkins')
-      .update({
-        coach_response: serializeCoachResponse(response),
-        reviewed: true,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', checkin.id);
-
-    if (updateError) {
-      setError('Failed to save review: ' + updateError.message);
-      setSubmitting(false);
-      return;
-    }
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ checkin_awaiting: false })
-      .eq('id', checkin.client_id);
-
-    if (profileError) {
-      setError('Review saved but failed to update client status.');
-      setSubmitting(false);
-      return;
-    }
-
-    void sendClientNotification({
-      userId: checkin.client_id,
-      type: 'coach_replied',
-      title: 'Check-in reviewed',
-      body: 'Your coach has reviewed your check-in. View feedback in your journey.',
-      actionUrl: '/journey',
-      metadata: {
-        messageSnippet: 'Your coach has reviewed your check-in. View feedback in your journey.',
-      },
+    const res = await fetch('/api/coach/checkin/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        checkinId: checkin.id,
+        feedback: response.feedback,
+        action_items: response.action_items,
+      }),
     });
 
-    setSuccess('Check-in marked as reviewed.');
-    setCheckin({ ...checkin, reviewed: true, reviewed_at: new Date().toISOString(), coach_response: serializeCoachResponse(response) });
+    const payload = (await res.json().catch(() => null)) as {
+      ok?: boolean
+      error?: string
+      reviewedAt?: string
+    } | null;
+
+    if (!res.ok || !payload?.ok) {
+      setError(payload?.error ?? 'Failed to save review.');
+      setSubmitting(false);
+      return;
+    }
+
+    setSuccess('Check-in marked as reviewed. Feedback sent to client chat.');
+    setCheckin({
+      ...checkin,
+      reviewed: true,
+      reviewed_at: payload.reviewedAt ?? new Date().toISOString(),
+      coach_response: serializeCoachResponse(response),
+    });
     setSubmitting(false);
   };
 

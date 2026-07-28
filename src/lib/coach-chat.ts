@@ -565,3 +565,77 @@ export async function postCheckinToCoachChat(
 }
 
 export { isCheckinSystemMessage }
+
+function formatCoachCheckinFeedbackMessage(input: {
+  checkinType: 'mid_week' | 'weekly'
+  coachingWeek: number | null
+  feedback: string
+  actionItems?: string | null
+}): string {
+  const label = input.checkinType === 'mid_week' ? 'Mid-week check-in' : 'Weekly check-in'
+  const weekSuffix = input.coachingWeek != null ? ` · Week ${input.coachingWeek}` : ''
+  const lines = [`${label} feedback${weekSuffix}`, '', input.feedback.trim()]
+  if (input.actionItems?.trim()) {
+    lines.push('', 'Action items', input.actionItems.trim())
+  }
+  return lines.join('\n')
+}
+
+/**
+ * Post the coach's check-in review feedback as a coach text message in chat.
+ * Uses admin client — safe for API routes after check-in review.
+ */
+export async function postCoachCheckinFeedbackToChat(input: {
+  clientId: string
+  coachId: string
+  coachUserId: string
+  checkinType: 'mid_week' | 'weekly'
+  coachingWeek: number | null
+  feedback: string
+  actionItems?: string | null
+}): Promise<{ conversationId: string | null; error: string | null }> {
+  try {
+    const admin = createAdminClient()
+    const { data: conversation, error: convError } = await getOrCreateConversation(
+      admin,
+      input.clientId
+    )
+
+    if (convError || !conversation) {
+      return { conversationId: null, error: convError ?? 'Could not open conversation' }
+    }
+
+    if (conversation.coach_id !== input.coachId) {
+      await admin
+        .from('coach_conversations')
+        .update({ coach_id: input.coachId, updated_at: new Date().toISOString() })
+        .eq('id', conversation.id)
+    }
+
+    const content = formatCoachCheckinFeedbackMessage({
+      checkinType: input.checkinType,
+      coachingWeek: input.coachingWeek,
+      feedback: input.feedback,
+      actionItems: input.actionItems,
+    })
+
+    const { error: sendError } = await sendChatMessage(admin, {
+      conversationId: conversation.id,
+      senderType: 'coach',
+      senderId: input.coachUserId,
+      content,
+    })
+
+    if (sendError) {
+      return { conversationId: conversation.id, error: sendError }
+    }
+
+    return { conversationId: conversation.id, error: null }
+  } catch (err) {
+    console.error('[coach-chat] check-in feedback post failed:', err)
+    return {
+      conversationId: null,
+      error: err instanceof Error ? err.message : 'Failed to post check-in feedback to chat',
+    }
+  }
+}

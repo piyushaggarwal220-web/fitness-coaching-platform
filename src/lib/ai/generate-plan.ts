@@ -147,6 +147,7 @@ const CLIENT_FACING_PLAN_STYLE_INSTRUCTIONS = [
   '# Client-Facing Writing Style',
   'Write every client-facing plan field in natural, coach-written plain text.',
   'Do not use Markdown formatting, asterisks, star bullets, or hyphen bullets.',
+  'Never use hyphen (-), en dash, or em dash characters anywhere in client-facing text. Write "10 to 15" not "10-15", "well balanced" not "well-balanced", and use commas or new sentences instead of dashes.',
   'Do not wrap headings or phrases in special formatting characters.',
   'Use simple section titles and normal sentences. When listing items, place each item on its own line without a symbol prefix.',
   'Keep the tone practical, personal, and human. Avoid robotic labels, filler, and AI-style commentary.',

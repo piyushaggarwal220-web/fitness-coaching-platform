@@ -50,6 +50,7 @@ import {
   STRESS_OPTIONS,
   TRAINING_LOCATION_OPTIONS,
   TRAINING_OPTIONS,
+  TRAINING_DURATION_OPTIONS,
   uploadOnboardingPhoto,
   validateOnboardingStep,
   waitForOnboardingCompletion,
@@ -703,6 +704,13 @@ function renderStep(
               onChange={(v) => update({ training_experience: v })}
             />
           </Field>
+          <Field label="How long have you been training?" required>
+            <ChipGroup
+              options={TRAINING_DURATION_OPTIONS}
+              value={form.training_duration}
+              onChange={(v) => update({ training_duration: v })}
+            />
+          </Field>
         </div>
       )
 
@@ -976,6 +984,17 @@ function renderStep(
               style={s.textarea}
             />
           </Field>
+          <Field
+            label="Any previous diets you followed that didn't work?"
+            hint="Optional — helps your coach avoid repeating what hasn't worked for you."
+          >
+            <textarea
+              value={form.previous_diets_failed}
+              onChange={(e) => update({ previous_diets_failed: e.target.value })}
+              placeholder="e.g. keto for 2 months, very low calorie, intermittent fasting only..."
+              style={s.textarea}
+            />
+          </Field>
         </div>
       )
 
@@ -1181,8 +1200,16 @@ function renderStep(
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Progress photos</h2>
           <div style={s.privacyNotice}>
-            Your photos are completely private and are never shared or published anywhere without your explicit permission.
-            They are used only by your assigned coach and our AI to create more accurate recommendations.
+            Please upload clear upper-body progress photos — front, side, and back. These help your
+            coach assess posture, muscle development, and changes over time.
+            {' '}
+            Form-fitting athletic wear works well; if you are comfortable, shirtless or upper-body
+            bare photos give the clearest view for coaching assessment. Choose whatever you are
+            comfortable with.
+            {' '}
+            Your photos are completely private and are never shared or published anywhere without
+            your explicit permission. They are used only by your assigned coach and our AI to create
+            more accurate recommendations.
             {!photosOptional &&
               ' Front, side, and back photos are required — after you submit the final review, your AI diet and workout draft starts automatically.'}
             {photosOptional && ' Photos are optional for female clients, and you can continue without uploading them.'}

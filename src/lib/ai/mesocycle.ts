@@ -6,15 +6,25 @@ export type MesocycleContext = {
   mesocycleIndex: number
   /** Human-readable volume guidance for prompts. */
   volumeGuidance: string
+  /** Human-readable calorie guidance paired with volume week. */
+  calorieGuidance: string
   /** Whether this week should open a brand-new split. */
   requiresNewSplit: boolean
 }
 
 const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
-  1: 'BASE volume — lowest of the month. Establish the split, leave 2–3 reps in reserve on compounds.',
-  2: 'BUILD volume — ~10–15% above week 1 (add a set or a few reps on main lifts).',
-  3: 'PUSH volume — ~10–15% above week 2. Keep form strict; still leave ~1–2 RIR on compounds.',
-  4: 'PEAK volume — highest of the month (~10–15% above week 3). Hardest productive week before the reset.',
+  1: 'BASE volume: lowest of the month. Establish the split, leave 2 to 3 reps in reserve on compounds.',
+  2: 'BUILD volume: about 10 to 15 percent above week 1 (add a set or a few reps on main lifts).',
+  3: 'PUSH volume: about 10 to 15 percent above week 2. Keep form strict; still leave about 1 to 2 RIR on compounds.',
+  4: 'PEAK volume: highest of the month (about 10 to 15 percent above week 3). Hardest productive week before the reset.',
+}
+
+/** Calorie guidance paired with mesocycle intensity (food rises with training load). */
+const CALORIE_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
+  1: 'BASE calories: after a new split / lower volume reset, reduce calories a little from last month peak (about 5 to 10 percent or 100 to 200 kcal) so intake matches the lighter week. Do not crash cut.',
+  2: 'BUILD calories: raise intake slightly with the volume bump (about 50 to 150 kcal or more carbs around training) so recovery keeps up.',
+  3: 'PUSH calories: raise again with intensity (another about 50 to 150 kcal vs week 2) favoring carbs/protein around workouts.',
+  4: 'PEAK calories: highest food of the month to support peak volume. After this week, next mesocycle week 1 drops volume AND trims calories again.',
 }
 
 /**
@@ -30,6 +40,7 @@ export function resolveMesocycle(coachingWeek: number | null | undefined): Mesoc
     weekInMesocycle,
     mesocycleIndex,
     volumeGuidance: VOLUME_BY_WEEK[weekInMesocycle],
+    calorieGuidance: CALORIE_BY_WEEK[weekInMesocycle],
     requiresNewSplit: weekInMesocycle === 1,
   }
 }
@@ -52,9 +63,11 @@ export function formatMesocyclePromptSection(
     `- Mesocycle (month index): ${meso.mesocycleIndex}`,
     `- Week within mesocycle: ${meso.weekInMesocycle} of 4`,
     `- Volume target: ${meso.volumeGuidance}`,
+    `- Calorie target (pair with volume): ${meso.calorieGuidance}`,
     meso.requiresNewSplit
-      ? '- Split rule: NEW unique split this week (month start / reset). Do not recycle last month\'s day structure.'
-      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Only progress volume/load per the week target.',
+      ? '- Split rule: NEW unique split this week (month start / reset). Do not recycle last month\'s day structure. Drop volume to BASE and trim calories a little from last peak.'
+      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Raise volume AND calories together per the week targets.',
+    '- Cycle rule: intensity/volume up each week inside the month → calories up with it. New month (new split, lower volume) → calories down a little, then climb again.',
     '',
     '### Prior workout / split hint (rotate away when a new split is required)',
     priorSplitSummary,

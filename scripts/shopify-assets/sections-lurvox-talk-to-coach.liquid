@@ -1,0 +1,209 @@
+{% comment %}
+  LURVOX Talk to a Coach — posts to app.lurvox.in API with 2-submission limit.
+  Template: templates/page.talk-to-a-coach.json (if present)
+{% endcomment %}
+
+<section class="lurvox-talk-coach" id="lurvox-talk-coach-{{ section.id }}">
+  <div class="lurvox-talk-coach__inner page-width">
+    <h1 class="lurvox-talk-coach__title">{{ section.settings.heading | default: 'Talk to a coach' }}</h1>
+    <p class="lurvox-talk-coach__subtitle">
+      {{ section.settings.subheading | default: 'Free consultation — share your goals and we will help you decide if LURVOX is the right fit.' }}
+    </p>
+
+    <form class="lurvox-talk-coach__form" id="lurvox-talk-coach-form-{{ section.id }}" novalidate>
+      <div class="lurvox-talk-coach__field">
+        <label for="lurvox-talk-name-{{ section.id }}">Name</label>
+        <input id="lurvox-talk-name-{{ section.id }}" name="name" type="text" required autocomplete="name">
+      </div>
+      <div class="lurvox-talk-coach__field">
+        <label for="lurvox-talk-email-{{ section.id }}">Email</label>
+        <input id="lurvox-talk-email-{{ section.id }}" name="email" type="email" required autocomplete="email">
+      </div>
+      <div class="lurvox-talk-coach__field">
+        <label for="lurvox-talk-phone-{{ section.id }}">Phone (WhatsApp)</label>
+        <input id="lurvox-talk-phone-{{ section.id }}" name="phone" type="tel" required autocomplete="tel" placeholder="+91 98765 43210">
+      </div>
+      <div class="lurvox-talk-coach__field">
+        <label for="lurvox-talk-message-{{ section.id }}">How can we help?</label>
+        <textarea id="lurvox-talk-message-{{ section.id }}" name="message" rows="5" required placeholder="Your goals, experience, and any questions..."></textarea>
+      </div>
+      <p class="lurvox-talk-coach__status" id="lurvox-talk-status-{{ section.id }}" role="status" aria-live="polite"></p>
+      <button type="submit" class="lurvox-talk-coach__submit" id="lurvox-talk-submit-{{ section.id }}">
+        {{ section.settings.button_label | default: 'Send message' }}
+      </button>
+    </form>
+  </div>
+</section>
+
+<style>
+  #lurvox-talk-coach-{{ section.id }} {
+    --lurvox-accent: {{ section.settings.accent_color | default: '#FF6200' }};
+    padding: 48px 0 64px;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__inner {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__title {
+    margin: 0 0 12px;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__subtitle {
+    margin: 0 0 28px;
+    color: rgba(0, 0, 0, 0.65);
+    line-height: 1.55;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__form {
+    display: grid;
+    gap: 16px;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__field {
+    display: grid;
+    gap: 6px;
+  }
+  #lurvox-talk-coach-{{ section.id }} label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  #lurvox-talk-coach-{{ section.id }} input,
+  #lurvox-talk-coach-{{ section.id }} textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__status {
+    min-height: 1.25em;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__status.is-error {
+    color: #b42318;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__status.is-success {
+    color: #027a48;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__submit {
+    padding: 14px 24px;
+    border: none;
+    border-radius: 10px;
+    background: var(--lurvox-accent);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__submit:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+</style>
+
+<script>
+  (function () {
+    var form = document.getElementById('lurvox-talk-coach-form-{{ section.id }}');
+    if (!form) return;
+    var statusEl = document.getElementById('lurvox-talk-status-{{ section.id }}');
+    var submitBtn = document.getElementById('lurvox-talk-submit-{{ section.id }}');
+    var apiUrl = {{ section.settings.api_url | default: 'https://app.lurvox.in/api/public/talk-to-a-coach' | json }};
+
+    function setStatus(message, type) {
+      if (!statusEl) return;
+      statusEl.textContent = message || '';
+      statusEl.className = 'lurvox-talk-coach__status' + (type ? ' is-' + type : '');
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      setStatus('', '');
+      if (submitBtn) submitBtn.disabled = true;
+
+      var payload = {
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        message: form.message.value.trim()
+      };
+
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(function (res) {
+          return res.json().catch(function () { return null; }).then(function (data) {
+            return { res: res, data: data };
+          });
+        })
+        .then(function (_ref) {
+          var res = _ref.res;
+          var data = _ref.data;
+          if (res.ok && data && data.ok) {
+            setStatus('Thanks — we received your message. A coach will get back to you soon.', 'success');
+            form.reset();
+            if (typeof data.remaining === 'number' && data.remaining === 0) {
+              setStatus('Thanks — we received your message. This was your last consultation request for this email and phone.', 'success');
+            }
+            return;
+          }
+          var err = (data && data.error) || 'Something went wrong. Please try again.';
+          setStatus(err, 'error');
+        })
+        .catch(function () {
+          setStatus('Network error. Please check your connection and try again.', 'error');
+        })
+        .finally(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "LURVOX Talk to Coach",
+  "tag": "section",
+  "class": "section-lurvox-talk-coach",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Talk to a coach"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Free consultation — share your goals and we will help you decide if LURVOX is the right fit."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Send message"
+    },
+    {
+      "type": "url",
+      "id": "api_url",
+      "label": "API URL (advanced)"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent color",
+      "default": "#FF6200"
+    }
+  ],
+  "presets": [
+    {
+      "name": "LURVOX Talk to Coach"
+    }
+  ]
+}
+{% endschema %}

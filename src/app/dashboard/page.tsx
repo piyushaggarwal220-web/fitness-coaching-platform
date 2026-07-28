@@ -429,6 +429,41 @@ export default function Dashboard() {
         <DevelopmentModeBadge style={{ marginBottom: spacing[4] }} />
       )}
 
+      {checkinSchedule?.nextCheckinStatus === 'available' && checkinSchedule.nextCheckin && (
+        <section style={{ marginBottom: spacing[7] }}>
+          <Card variant="elevated" className="card-hover">
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                backgroundColor: colors.accentMuted,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Calendar size={22} color={colors.accent} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 13, color: colors.accent, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Check-in due
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: 17, fontWeight: 700, color: colors.textPrimary }}>
+                  {getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)}
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: 14, color: colors.textSecondary }}>
+                  Week {checkinSchedule.nextCheckin.coachingWeek} · Available now (48h window)
+                </p>
+              </div>
+              <Button onClick={() => router.push(checkinSchedule.nextCheckin!.href)}>
+                Start
+              </Button>
+            </div>
+          </Card>
+        </section>
+      )}
+
       {subscription && <ActiveSubscriptionCard subscription={subscription} />}
 
       <LeagueHomeCard />

@@ -107,6 +107,15 @@ export const TRAINING_OPTIONS = [
   { value: 'advanced', label: 'Advanced' },
 ] as const
 
+export const TRAINING_DURATION_OPTIONS = [
+  { value: 'never', label: 'Never trained consistently' },
+  { value: 'under_6_months', label: 'Under 6 months' },
+  { value: '6_to_12_months', label: '6–12 months' },
+  { value: '1_to_2_years', label: '1–2 years' },
+  { value: '2_to_5_years', label: '2–5 years' },
+  { value: 'over_5_years', label: 'Over 5 years' },
+] as const
+
 export const ACTIVITY_OPTIONS = [
   { value: 'sedentary', label: 'Sedentary' },
   { value: 'lightly_active', label: 'Lightly Active' },
@@ -312,6 +321,7 @@ export const ONBOARDING_LABELS: Record<string, Record<string, string>> = {
   gender: Object.fromEntries(GENDER_OPTIONS.map((o) => [o.value, o.label])),
   fitness_goal: Object.fromEntries(FITNESS_GOAL_OPTIONS.map((o) => [o.value, o.label])),
   training_experience: Object.fromEntries(TRAINING_OPTIONS.map((o) => [o.value, o.label])),
+  training_duration: Object.fromEntries(TRAINING_DURATION_OPTIONS.map((o) => [o.value, o.label])),
   activity_level: Object.fromEntries(ACTIVITY_OPTIONS.map((o) => [o.value, o.label])),
   diet_preference: Object.fromEntries(DIET_OPTIONS.map((o) => [o.value, o.label])),
   sleep_duration: Object.fromEntries(SLEEP_OPTIONS.map((o) => [o.value, o.label])),
@@ -359,6 +369,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   diet_variety: '',
   training_location: '',
   training_experience: '',
+  training_duration: '',
   training_days_per_week: '',
   workout_duration: '',
   preferred_workout_time: '',
@@ -382,6 +393,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   whey_protein: '',
   food_allergies: '',
   foods_disliked: '',
+  previous_diets_failed: '',
   favorite_foods: '',
   diet_custom_notes: '',
   monthly_food_budget: '',
@@ -447,6 +459,7 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     thigh: data.measurements?.thigh ?? '',
     navel: data.measurements?.navel ?? '',
     training_location: data.training?.location ?? '',
+    training_duration: data.training?.trainingDuration ?? '',
     training_days_per_week: data.training?.daysPerWeek != null ? String(data.training.daysPerWeek) : '',
     workout_duration: data.training?.durationMinutes ?? '',
     preferred_workout_time: data.training?.preferredTime ?? '',
@@ -467,6 +480,7 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     whey_protein: data.diet?.wheyProtein ?? '',
     food_allergies: data.diet?.allergies ?? '',
     foods_disliked: data.diet?.foodsDisliked ?? '',
+    previous_diets_failed: data.diet?.previousDietsFailed ?? '',
     favorite_foods: data.diet?.favoriteFoods ?? '',
     diet_custom_notes: data.diet?.customNotes ?? '',
     monthly_food_budget: data.diet?.monthlyFoodBudget ?? '',
@@ -595,6 +609,7 @@ export function buildOnboardingData(
     },
     training: {
       location: form.training_location || null,
+      trainingDuration: form.training_duration || null,
       daysPerWeek: form.training_days_per_week || null,
       durationMinutes: form.workout_duration || null,
       preferredTime: form.preferred_workout_time || null,
@@ -623,6 +638,7 @@ export function buildOnboardingData(
       wheyProtein: form.whey_protein || null,
       allergies: form.food_allergies.trim() || null,
       foodsDisliked: form.foods_disliked.trim() || null,
+      previousDietsFailed: form.previous_diets_failed.trim() || null,
       favoriteFoods: form.favorite_foods.trim() || null,
       customNotes: form.diet_custom_notes.trim() || null,
       monthlyFoodBudget: form.monthly_food_budget || null,
@@ -868,6 +884,7 @@ export function validateOnboardingStep(
     case 7: {
       if (!data.training_location) return 'Please select where you train.'
       if (!data.training_experience) return 'Please select your training experience.'
+      if (!data.training_duration) return 'Please select how long you have been training.'
       return null
     }
     case 8: {
@@ -1063,6 +1080,10 @@ export function buildReviewSections(
       items: [
         { label: 'Location', value: getOnboardingLabel('training_location', form.training_location) },
         { label: 'Experience', value: getOnboardingLabel('training_experience', form.training_experience) },
+        {
+          label: 'Training duration',
+          value: getOnboardingLabel('training_duration', form.training_duration),
+        },
         { label: 'Days per week', value: form.training_days_per_week || 'Not set' },
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
@@ -1097,6 +1118,10 @@ export function buildReviewSections(
         { label: 'Whey protein', value: getOnboardingLabel('whey_protein', form.whey_protein) },
         { label: 'Allergies', value: form.food_allergies || 'None' },
         { label: 'Foods disliked', value: form.foods_disliked || 'None' },
+        {
+          label: 'Previous diets that failed',
+          value: form.previous_diets_failed.trim() || 'None',
+        },
         { label: 'Favourite foods', value: form.favorite_foods || 'None' },
         { label: 'Diet exceptions', value: form.diet_custom_notes || 'None' },
         { label: 'Monthly budget', value: form.monthly_food_budget || 'Not set' },
