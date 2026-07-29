@@ -15,6 +15,7 @@ import { inferFitnessGoal } from '@/lib/ai/goal-inference'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { evaluateComplexityInputs } from '@/lib/complexity/input-guards'
 import { parseHeightCm, validateHeightCm } from '@/lib/height'
+import { uploadStandardPhoto } from '@/lib/photo-upload'
 import type {
   OnboardingData,
   OnboardingFormData,
@@ -1170,14 +1171,33 @@ export async function uploadOnboardingPhoto(
   const ext = compressed.name.split('.').pop() || 'jpg'
   const path = `${clientId}/${Date.now()}_${label}.${ext}`
 
-  const { error } = await supabase.storage
-    .from(ONBOARDING_PHOTO_BUCKET)
-    .upload(path, compressed, { upsert: false, contentType: compressed.type || 'image/jpeg' })
-
-  if (error) throw new Error(`Photo upload failed (${label}): ${error.message}`)
-
   // Store object path; display via signed URLs (bucket is private).
-  return path
+  return uploadStandardPhoto(supabase, ONBOARDING_PHOTO_BUCKET, path, compressed, label)
+}
+
+export async function uploadPendingOnboardingPhotos(
+  supabase: SupabaseClient,
+  clientId: string,
+  files: OnboardingPhotoFiles,
+  savedUrls: SavedPhotoUrls,
+  onUploaded?: (
+    label: keyof OnboardingPhotoFiles,
+    path: string,
+    uploadedUrls: SavedPhotoUrls
+  ) => void | Promise<void>
+): Promise<SavedPhotoUrls> {
+  const urls = { ...savedUrls }
+  const labels = ['front', 'side', 'back'] as const
+
+  for (const label of labels) {
+    const file = files[label]
+    if (!file) continue
+    const path = await uploadOnboardingPhoto(supabase, clientId, file, label)
+    urls[label] = path
+    await onUploaded?.(label, path, { ...urls })
+  }
+
+  return urls
 }
 
 export async function saveOnboardingProgress(

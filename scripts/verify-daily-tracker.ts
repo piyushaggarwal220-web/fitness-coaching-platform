@@ -193,6 +193,71 @@ assert(
     noWarmupWorkout.phases.some((p) => p.phase === 'warmup' && p.exercises.length >= 3)
 )
 
+const phasedDayPlan: Plan = {
+  ...planV1,
+  id: 'plan-phased-days',
+  workout_plan: `**Day 1: Chest + Back (Evening)**
+
+Warmup:
+- 5 min incline treadmill walk
+- 10 arm circles each direction
+- 10 scapular push-ups
+
+Working Sets:
+1. Barbell Bench Press — 4 sets x 8 reps
+2. Barbell Bent-Over Row — 4 sets x 8 reps
+3. Incline Dumbbell Press — 3 sets x 10 reps
+
+Cooldown:
+- 3 min walk
+- Chest and lat static stretches, 30 sec each
+
+**Day 2: Legs + Shoulders (Evening)**
+
+Warmup:
+- 5 min bike or treadmill walk
+- 10 bodyweight squats
+
+Working Sets:
+1. Barbell Back Squat — 4 sets x 8 reps
+2. Leg Press — 3 sets x 10 reps
+3. Walking Dumbbell Lunges — 3 sets x 10 reps per leg
+
+Cooldown:
+- 3 min walk
+
+**Day 3: Rest / Active Recovery**
+
+- 20–30 min brisk walk or light stretching session
+- Daily step target: 5000+ steps
+`,
+}
+
+const phasedSnap = buildTrackerSnapshot(phasedDayPlan, null, new Date('2026-07-28T12:00:00+05:30'))
+const phasedDays = phasedSnap.workoutDays ?? []
+const day1 = phasedSnap.items.find((i) => i.type === 'workout' && i.workoutDay === 'day-1')
+const day2 = phasedSnap.items.find((i) => i.type === 'workout' && i.workoutDay === 'day-2')
+const day3 = phasedSnap.items.find((i) => i.type === 'workout' && i.workoutDay === 'day-3')
+assert('parses training days from phased plan', phasedDays.some((d) => d.key === 'day-1') && phasedDays.some((d) => d.key === 'day-2'))
+assert('skips rest-only day from tracker workouts', !day3 && !phasedDays.some((d) => d.key === 'day-3'))
+assert(
+  'keeps day-1 main lifts out of warm-up',
+  day1?.type === 'workout' &&
+    day1.phases.some((p) => p.phase === 'main' && p.exercises.some((ex) => /bench press/i.test(ex.name))) &&
+    !day1.phases.some((p) => p.phase === 'warmup' && p.exercises.some((ex) => /bench press/i.test(ex.name)))
+)
+assert(
+  'does not leak day-1 lifts into day-2 warm-up',
+  day2?.type === 'workout' &&
+    !day2.phases.some((p) => p.phase === 'warmup' && p.exercises.some((ex) => /bench press/i.test(ex.name))) &&
+    day2.phases.some((p) => p.phase === 'main' && p.exercises.some((ex) => /back squat/i.test(ex.name)))
+)
+assert(
+  'parses per-leg and numbered em-dash prescriptions',
+  day2?.type === 'workout' &&
+    day2.exercises.some((ex) => /walking dumbbell lunges/i.test(ex.name) && ex.targetSets === 3)
+)
+
 const planV2: Plan = { ...planV1, version: 2, nutrition_plan: 'Breakfast\nGreek yogurt and berries\n\nLunch\nTuna salad' }
 const snapV2 = buildTrackerSnapshot(planV2)
 assert('version 2 snapshot updates meals', snapV2.planVersion === 2)

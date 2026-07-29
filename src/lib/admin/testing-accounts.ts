@@ -215,7 +215,7 @@ export async function createTrialCoach(input: CreateTrialCoachInput): Promise<Cr
     .insert({
       user_id: userId,
       name,
-      hard_cap: 100,
+      hard_cap: 1000,
     })
     .select('id')
     .single()
@@ -358,7 +358,7 @@ export async function ensureDemoCoachAccount(password?: string): Promise<Created
 
     const { data: inserted, error: coachError } = await admin
       .from('coaches')
-      .insert({ user_id: existingId, name: 'Demo Coach', hard_cap: 100 })
+      .insert({ user_id: existingId, name: 'Demo Coach', hard_cap: 1000 })
       .select('id')
       .single()
 

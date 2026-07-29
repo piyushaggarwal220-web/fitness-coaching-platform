@@ -310,12 +310,19 @@ const PHASE_LABELS: Record<WorkoutExercisePhase, string> = {
   cooldown: 'Post-Workout',
 }
 
+function isJunkMovementName(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  if (n.length < 3) return true
+  return /^(sec|secs|seconds?|min|mins|minutes?|each|side|leg|arm|reps?|sets?|hold|between|accessory|compound)\b/.test(n)
+}
+
+
 function capitalizeDay(value: string): string {
   return value.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: number): TrackerExerciseItem | null {
-  const trimmed = stripMarkdownDecorators(line.replace(/^[-*•]\s*/, '').trim())
+  let trimmed = stripMarkdownDecorators(line.replace(/^[-*•]\s*/, '').trim())
   if (!trimmed || trimmed.startsWith('#')) return null
   // Skip day / phase headers — they are handled separately
   if (/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(trimmed)) {
@@ -325,17 +332,21 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   // Skip multi-exercise core dump lines; handled by splitCoreExercises
   if (/^core\s*:/i.test(trimmed) && /,/.test(trimmed)) return null
 
+  // Drop numbered list prefixes: "1. Bench Press — 4 sets x 8"
+  trimmed = trimmed.replace(/^\d+[.)]\s+/, '').replace(/^[—–-]\s+/, '').trim()
+
   // AI coach format: "Barbell Bench Press: 5 sets x 5 reps (...)"
+  // Also accepts em/en dashes: "Bench Press — 4 sets x 8 reps"
   const setsReps =
-    /^(.+?)\s*:?\s*(\d+)\s*sets?\s*[x×]\s*(\d+(?:\s*-\s*\d+)?|AMRAP|\d+\s*s)(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$/i
+    /^(.+?)\s*[:\-–—]?\s*(\d+)\s*sets?\s*[x×]\s*(\d+(?:\s*[-–]\s*\d+)?|AMRAP|\d+\s*s)(?:\s*(?:reps?|sec(?:onds?)?\s*hold|hold))?(?:\s*(?:each(?:\s+side)?|\/side|per\s+(?:leg|arm|side)))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$/i
   // Compact format: "Bench Press 4x8 @ 60 kg"
   const compact =
-    /^(.+?)\s+(\d+)\s*[x×]\s*(\d+(?:-\d+)?|AMRAP|\d+s)(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[-–—]\s*(.+))?/i
+    /^(.+?)\s+(\d+)\s*[x×]\s*(\d+(?:[-–]\d+)?|AMRAP|\d+s)(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[-–—]\s*(.+))?/i
 
   const match = trimmed.match(setsReps) ?? trimmed.match(compact)
   if (!match) return null
 
-  let name = match[1]!.trim().replace(/:$/, '').trim()
+  let name = match[1]!.trim().replace(/[:\-–—]+$/, '').trim()
   // Drop leading labels like "Core: "
   name = name.replace(/^(?:core|finisher|accessory)\s*:\s*/i, '').trim()
   if (!name || name.length < 2) return null
@@ -401,7 +412,7 @@ function parseWorkoutPhases(section: string): {
   }
 
   for (const rawLine of lines) {
-    const trimmed = stripMarkdownDecorators(rawLine.trim())
+    let trimmed = stripMarkdownDecorators(rawLine.replace(/^[-*•]\s*/, '').trim())
     if (!trimmed) continue
 
     if (!headerConsumed) {
@@ -431,11 +442,26 @@ function parseWorkoutPhases(section: string): {
       headerConsumed = true
     }
 
-    const phaseMatch = trimmed.match(PHASE_HEADERS)
-    if (phaseMatch) {
-      const key = phaseMatch[1]!.toLowerCase().replace(/\s+/g, ' ')
+    // "Warmup:" alone, or "Warmup: 2-3 min walk, arm circles..."
+    const inlinePhase = trimmed.match(
+      /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|working\s+sets?|strength|hypertrophy|accessory|accessories|compound|cool[- ]?down|post[- ]?workout|recovery|stretch(?:ing)?|finisher)\s*:\s*(.*)$/i
+    )
+    let inlineCuePhase: WorkoutExercisePhase | null = null
+    if (inlinePhase) {
+      const key = inlinePhase[1]!.toLowerCase().replace(/\s+/g, ' ')
       currentPhase = PHASE_MAP[key] ?? 'main'
-      continue
+      const remainder = inlinePhase[2]!.trim()
+      if (!remainder) continue
+      // Self-contained cue on one line — parse it, then return to main lifts.
+      inlineCuePhase = currentPhase
+      trimmed = remainder
+    } else {
+      const phaseMatch = trimmed.match(PHASE_HEADERS)
+      if (phaseMatch) {
+        const key = phaseMatch[1]!.toLowerCase().replace(/\s+/g, ' ')
+        currentPhase = PHASE_MAP[key] ?? 'main'
+        continue
+      }
     }
 
     let matchedExercise = false
@@ -446,7 +472,31 @@ function parseWorkoutPhases(section: string): {
         matchedExercise = true
       }
     }
-    if (matchedExercise) continue
+    if (matchedExercise) {
+      if (inlineCuePhase === 'warmup' || inlineCuePhase === 'cooldown' || inlineCuePhase === 'mobility') {
+        currentPhase = 'main'
+      }
+      continue
+    }
+
+    // Warm-up / cooldown cues often lack sets×reps — parse narrative movement lines.
+    if (currentPhase === 'warmup' || currentPhase === 'cooldown' || currentPhase === 'mobility') {
+      const narrative = parseNarrativeMovementList(trimmed, currentPhase, `${currentPhase}-line`)
+        .filter((ex) => !isJunkMovementName(ex.name))
+      if (narrative.length > 0) {
+        for (const ex of narrative) {
+          addExercise({ ...ex, id: `ex-${currentPhase}-${slug(ex.name)}-${exerciseIndex}` })
+        }
+        if (inlineCuePhase === 'warmup' || inlineCuePhase === 'cooldown' || inlineCuePhase === 'mobility') {
+          currentPhase = 'main'
+        }
+        continue
+      }
+    }
+
+    if (inlineCuePhase === 'warmup' || inlineCuePhase === 'cooldown' || inlineCuePhase === 'mobility') {
+      currentPhase = 'main'
+    }
 
     if (!trimmed.startsWith('-') && !trimmed.startsWith('•') && trimmed.length > 10) {
       noteLines.push(stripMarkdownDecorators(trimmed.replace(/^#{1,3}\s*/, '')))
@@ -539,6 +589,17 @@ function parseWorkouts(workoutText: string): {
 
   for (const day of blocks) {
     const parsed = parseWorkoutPhases(day.body)
+    const dayFocus = `${parsed.dayLabel ?? day.label} ${parsed.focus ?? ''} ${day.body.slice(0, 240)}`
+    const isRestDay = /\b(rest(?:\s+days?)?|recovery|off day|active recovery|no\s+(?:gym|hard)\s+training)\b/i.test(
+      dayFocus
+    )
+    const hasMainWork = parsed.exercises.some(
+      (ex) => ex.phase === 'main' || ex.phase === 'finisher' || ex.phase === 'mobility'
+    )
+    // Rest / recovery days with no prescribed lifts should not become tracker workouts
+    // (they used to show only shared warm-up or stretching).
+    if (isRestDay && !hasMainWork) continue
+
     const merged = mergePhaseExercises(
       parsed.phases,
       parsed.exercises,
@@ -546,6 +607,11 @@ function parseWorkouts(workoutText: string): {
       sharedCooldown
     )
     if (merged.exercises.length === 0) continue
+    // Prefer days that actually have training work over warm-up/stretch-only shells.
+    const mergedMain = merged.exercises.some(
+      (ex) => ex.phase === 'main' || ex.phase === 'finisher'
+    )
+    if (!mergedMain && isRestDay) continue
 
     const phases = merged.phases.map((phase) => ({
       ...phase,
@@ -663,27 +729,65 @@ function parseNarrativeMovementList(
         })
       )
       index++
+      continue
+    }
+
+    // "bodyweight squats x 15" / "arm swings x 10 each direction"
+    const nameThenCount = part.match(
+      /^([A-Za-z][A-Za-z0-9 \-/]{1,40}?)\s*[x×]\s*(\d+)(?:\s*(?:[-–]\s*(\d+)))?(?:\s+each(?:\s+\w+)?)?$/i
+    )
+    if (nameThenCount) {
+      let name = nameThenCount[1]!.trim()
+      name = name.replace(/^(?:of\s+|light\s+)/i, '').trim()
+      if (name.length < 3) continue
+      const low = nameThenCount[2]!
+      const high = nameThenCount[3]
+      exercises.push(
+        withTrackingMeta({
+          id: `ex-${idPrefix}-${slug(name)}-${index}`,
+          name: capitalizeLabel(name),
+          targetSets: 1,
+          targetReps: high ? `${low}-${high}` : low,
+          phase,
+          restSeconds: phase === 'warmup' ? 20 : 30,
+        })
+      )
+      index++
     }
   }
 
   return exercises
 }
 
-/** Pull shared warm-up / post-workout blocks from the overall plan (outside day lists). */
+/** Text before the first day header — the only safe place for shared warm-up/cooldown. */
+function workoutPlanPreface(fullWorkout: string): string {
+  const text = fullWorkout.replace(/\r\n/g, '\n')
+  const dayStart = text.search(
+    /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b)/i
+  )
+  if (dayStart < 0) return text
+  return text.slice(0, dayStart)
+}
+
+/** Pull shared warm-up / post-workout blocks from the plan preface (outside day lists). */
 function extractSharedPhaseExercises(
   fullWorkout: string,
   phase: 'warmup' | 'cooldown'
 ): TrackerExerciseItem[] {
-  const text = fullWorkout.replace(/\r\n/g, '\n')
+  // Only scan the preface. Matching the first in-day "Warmup:" used to swallow Day 1
+  // working sets and re-attach them as shared warm-up on every day.
+  const text = workoutPlanPreface(fullWorkout)
+  if (!text.trim()) return []
+
   const patterns =
     phase === 'warmup'
       ? [
-          /(?:before every session[^\n]*warmup|warmup routine|warm[- ]?up(?:\s+routine)?)[:\s]+([\s\S]+?)(?=\n\s*\n(?:here's how|here is how|\*\*day|day\s*\d+|monday|tuesday)|$)/i,
-          /(?:##\s*)?warmup[^\n]*\n([\s\S]+?)(?=\n\s*##|\n\s*\*\*day|\n\s*day\s*\d+|$)/i,
+          /(?:before every session[^\n]*warm(?:[- ]?up)?|warmup routine|warm[- ]?up(?:\s+routine)?)[:\s]+([\s\S]+?)(?=\n\s*\n(?:here's how|here is how|on intensity|your step|target:)|$)/i,
+          /(?:##\s*)?warmup[^\n]*\n([\s\S]+?)(?=\n\s*##|$)/i,
         ]
       : [
           /(?:^|\n)(?:#{1,3}\s*|\*{0,2})?(?:post[- ]?workout|cool[- ]?down|cooldown)(?:\s+routine)?\*{0,2}\s*[:\-–—]\s*([\s\S]+?)(?=\n\s*(?:#{1,3}|\*{0,2})?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday|breakfast)|\n\s*\n\s*\n|$)/im,
-          /(?:##\s*)?(?:post[- ]?workout|cool[- ]?down|cooldown)[^\n]*\n([\s\S]+?)(?=\n\s*##|\n\s*\*\*day|\n\s*day\s*\d+|$)/i,
+          /(?:##\s*)?(?:post[- ]?workout|cool[- ]?down|cooldown)[^\n]*\n([\s\S]+?)(?=\n\s*##|$)/i,
         ]
 
   for (const pattern of patterns) {
@@ -691,10 +795,10 @@ function extractSharedPhaseExercises(
     if (!match?.[1]) continue
 
     const block = match[1].trim()
-    // Prefer structured exercise lines inside the block
+    // Keep only exercises that belong to this phase — never promote main working sets.
     const structured = parseWorkoutPhases(
       `${phase === 'warmup' ? 'Warm-up' : 'Post-Workout'}\n${block}`
-    ).exercises.filter((ex) => ex.phase === phase || ex.phase === 'main')
+    ).exercises.filter((ex) => ex.phase === phase)
 
     if (structured.length > 0) {
       return structured

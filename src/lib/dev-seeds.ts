@@ -126,7 +126,7 @@ export async function seedEnsureDevCoach(): Promise<SeedResult> {
   if (!coachId) {
     const { data: inserted, error: coachError } = await admin
       .from('coaches')
-      .insert({ user_id: userId, name: 'Dev Test Coach', hard_cap: 100 })
+      .insert({ user_id: userId, name: 'Dev Test Coach', hard_cap: 1000 })
       .select()
       .single()
     if (coachError || !inserted) throw new Error(coachError?.message ?? 'Failed to create coach record')
@@ -208,7 +208,7 @@ export async function seedCreateTestCoach(): Promise<SeedResult> {
     .insert({
       user_id: authData.user.id,
       name: 'Test Coach',
-      hard_cap: 100,
+      hard_cap: 1000,
     })
     .select()
     .single()
