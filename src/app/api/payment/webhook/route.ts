@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { recordCapturedPayment } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { getCoachingPlan } from '@/lib/payments/plans'
+import { expectedAmountPaiseFromOrderNotes } from '@/lib/payments/checkout-discounts'
 import {
   fetchRazorpayOrder,
   fetchRazorpayPayment,
@@ -219,11 +220,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing plan on payment notes' }, { status: 422 })
     }
 
-    if (payment.amount !== plan.amountPaise) {
+    const expectedAmount = expectedAmountPaiseFromOrderNotes(plan, notes)
+    if (payment.amount !== expectedAmount) {
       logPurchaseStep('webhook_amount_mismatch', {
         paymentId,
-        expected: plan.amountPaise,
+        expected: expectedAmount,
         actual: payment.amount,
+        discountCode: notes.discount_code ?? null,
       })
       return NextResponse.json({ success: false, error: 'Amount mismatch' }, { status: 422 })
     }

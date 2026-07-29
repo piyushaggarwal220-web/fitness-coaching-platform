@@ -15,6 +15,7 @@ import {
   isCurrentPolicyAcknowledgement,
   type CheckoutPolicyAcknowledgement,
 } from '@/lib/policies'
+import { expectedAmountPaiseFromOrderNotes } from '@/lib/payments/checkout-discounts'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveAppBaseUrl } from '@/lib/admin/portal-urls'
 
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
   let trustedName = clientName
   let trustedPhone = body.phone?.trim() || null
   let policyAcknowledgement: CheckoutPolicyAcknowledgement | null = null
+  let chargedAmountPaise = plan.amountPaise
 
   if (!orderId) {
     return NextResponse.json(
@@ -110,21 +112,24 @@ export async function POST(request: Request) {
           { status: 400 }
         )
       }
-      if (payment.amount !== plan.amountPaise) {
+
+      const order = await fetchRazorpayOrder(orderId)
+      const trustedNotes = { ...(order.notes ?? {}), ...(payment.notes ?? {}) }
+      const expectedAmount = expectedAmountPaiseFromOrderNotes(plan, trustedNotes)
+
+      if (payment.amount !== expectedAmount) {
         return NextResponse.json(
           { success: false, error: 'Payment amount mismatch' },
           { status: 400 }
         )
       }
-
-      const order = await fetchRazorpayOrder(orderId)
-      if (order.amount !== plan.amountPaise) {
+      if (order.amount !== expectedAmount) {
         return NextResponse.json(
           { success: false, error: 'Payment order amount mismatch' },
           { status: 400 }
         )
       }
-      const trustedNotes = { ...(order.notes ?? {}), ...(payment.notes ?? {}) }
+      chargedAmountPaise = expectedAmount
       const noteEmail = trustedNotes.customer_email?.trim().toLowerCase()
       const noteName = trustedNotes.customer_name?.trim()
       const razorpayEmail = payment.email?.trim().toLowerCase()
@@ -157,6 +162,7 @@ export async function POST(request: Request) {
     plan: plan.slug,
     paymentId: paymentId || 'test',
     testMode: shouldBypassPayment(),
+    amountPaise: chargedAmountPaise,
   })
 
   try {
@@ -171,7 +177,7 @@ export async function POST(request: Request) {
       plan,
       razorpayPaymentId: paymentId || `test_pay_${Date.now()}`,
       razorpayOrderId: orderId || `test_order_${Date.now()}`,
-      amountPaise: plan.amountPaise,
+      amountPaise: chargedAmountPaise,
     })
 
     await Promise.allSettled([
@@ -180,7 +186,7 @@ export async function POST(request: Request) {
         paymentId: result.razorpayPaymentId,
         email: result.customerEmail,
         phone: trustedPhone,
-        amountPaise: plan.amountPaise,
+        amountPaise: chargedAmountPaise,
         currency: 'INR',
         planSlug: plan.slug,
       }),
