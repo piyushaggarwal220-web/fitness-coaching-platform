@@ -115,7 +115,7 @@ export default function OnboardingPage() {
   const [confirmedMealTimes, setConfirmedMealTimes] = useState<MealTimingKey[]>([])
   const [confirmedScrollers, setConfirmedScrollers] = useState<string[]>([])
   const [requireBodyMeasurements, setRequireBodyMeasurements] = useState(true)
-  const [planSlug, setPlanSlug] = useState<string>('1_month')
+  const [planSlug, setPlanSlug] = useState<string>('3_months')
 
   useEffect(() => {
     const init = async () => {

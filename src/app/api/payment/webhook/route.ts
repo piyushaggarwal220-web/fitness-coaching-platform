@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { recordCapturedPayment } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
-import { getCoachingPlan, isValidPlanSlug } from '@/lib/payments/plans'
+import { getCoachingPlan } from '@/lib/payments/plans'
 import {
   fetchRazorpayOrder,
   fetchRazorpayPayment,
@@ -212,14 +212,11 @@ export async function POST(request: Request) {
     }
 
     const planSlug = notes.plan_slug
-    if (!planSlug || !isValidPlanSlug(planSlug)) {
+    // Resolve active + legacy plans so in-flight retired purchases can still fulfill.
+    const plan = planSlug ? getCoachingPlan(planSlug) : null
+    if (!planSlug || !plan) {
       logPurchaseStep('webhook_missing_plan', { paymentId, notes })
       return NextResponse.json({ success: false, error: 'Missing plan on payment notes' }, { status: 422 })
-    }
-
-    const plan = getCoachingPlan(planSlug)
-    if (!plan) {
-      return NextResponse.json({ success: false, error: 'Invalid plan' }, { status: 422 })
     }
 
     if (payment.amount !== plan.amountPaise) {

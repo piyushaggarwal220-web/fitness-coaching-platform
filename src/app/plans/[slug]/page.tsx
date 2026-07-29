@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Syne, DM_Sans } from 'next/font/google'
 import { brandTitle } from '@/lib/brand'
 import {
@@ -9,11 +9,13 @@ import {
   PLAN_INCLUSIONS,
   PLAN_LEAGUE_CALLOUT,
   PLAN_PAGE_COPY,
+  RETIRED_PLAN_PAGE_REDIRECTS,
   planPathForSlug,
   resolvePlanFromPath,
   siblingPlans,
   type PlanPagePath,
 } from '@/lib/payments/plan-pages'
+import type { CoachingPlanSlug } from '@/lib/payments/plans'
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
 
 const display = Syne({
@@ -50,12 +52,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PlanLandingPage({ params }: PageProps) {
   const { slug } = await params
+  const retiredRedirect = RETIRED_PLAN_PAGE_REDIRECTS[slug]
+  if (retiredRedirect) {
+    redirect(`/plans/${retiredRedirect}`)
+  }
+
   const plan = resolvePlanFromPath(slug)
   if (!plan) notFound()
 
-  const copy = PLAN_PAGE_COPY[plan.slug]
+  const planSlug = plan.slug as CoachingPlanSlug
+  const copy = PLAN_PAGE_COPY[planSlug]
   const marketingBase = resolveMarketingBaseUrl()
-  const others = siblingPlans(plan.slug)
+  const others = siblingPlans(planSlug)
 
   return (
     <div className={`${display.variable} ${body.variable}`} style={styles.page}>
@@ -153,7 +161,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
             {others.map((other) => (
               <Link
                 key={other.slug}
-                href={`/plans/${planPathForSlug(other.slug) as PlanPagePath}`}
+                href={`/plans/${planPathForSlug(other.slug as CoachingPlanSlug)}`}
                 style={styles.siblingChip}
               >
                 {other.name} · {other.displayPrice}

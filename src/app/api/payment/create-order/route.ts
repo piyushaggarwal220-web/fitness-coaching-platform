@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getCoachingPlan } from '@/lib/payments/plans'
+import { getPurchasablePlan } from '@/lib/payments/plans'
 import { shouldBypassPayment } from '@/lib/config'
 import { createRazorpayOrder, getRazorpayKeyId } from '@/lib/payments/razorpay'
 import {
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body', missing: ['Valid request body'] }, { status: 400 })
   }
 
-  const plan = getCoachingPlan(body.planSlug)
+  const plan = getPurchasablePlan(body.planSlug)
   if (!plan) {
     return NextResponse.json({ error: 'Invalid plan selected', missing: ['A valid plan'] }, { status: 400 })
   }
