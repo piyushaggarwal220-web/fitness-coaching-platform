@@ -16,16 +16,17 @@ export type PlanGoalOption = {
   tier: PlanGoalTier
 }
 
-/** Goals unlocked at each plan tier (higher tiers also unlock lower-tier goals). */
+/**
+ * Goals unlocked at each plan tier (higher tiers also unlock lower-tier goals).
+ * Former 1-month foundation goals are included in the 3-month starter plan.
+ */
 export const PLAN_GOALS_BY_TIER: Record<PlanGoalTier, readonly PlanGoalOption[]> = {
-  '1_month': [
-    { value: 'debloat_body', label: 'Debloat Body', tier: '1_month' },
-    { value: 'build_consistency', label: 'Build Consistency', tier: '1_month' },
-    { value: 'lose_weight_a_bit', label: 'Lose Weight a Bit', tier: '1_month' },
-    { value: 'increase_energy', label: 'Increase Energy', tier: '1_month' },
-    { value: 'improve_fitness', label: 'Improve Fitness', tier: '1_month' },
-  ],
   '3_months': [
+    { value: 'debloat_body', label: 'Debloat Body', tier: '3_months' },
+    { value: 'build_consistency', label: 'Build Consistency', tier: '3_months' },
+    { value: 'lose_weight_a_bit', label: 'Lose Weight a Bit', tier: '3_months' },
+    { value: 'increase_energy', label: 'Increase Energy', tier: '3_months' },
+    { value: 'improve_fitness', label: 'Improve Fitness', tier: '3_months' },
     { value: 'fat_loss', label: 'Fat Loss', tier: '3_months' },
     { value: 'muscle_gain', label: 'Muscle Gain', tier: '3_months' },
     { value: 'body_recomposition', label: 'Body Recomposition', tier: '3_months' },
@@ -48,7 +49,6 @@ export const PLAN_GOALS_BY_TIER: Record<PlanGoalTier, readonly PlanGoalOption[]>
 } as const
 
 export const PLAN_GOAL_TIER_ORDER: readonly PlanGoalTier[] = [
-  '1_month',
   '3_months',
   '6_months',
   '12_months',
@@ -58,7 +58,6 @@ export const PLAN_GOAL_TIER_META: Record<
   PlanGoalTier,
   { title: string; shortLabel: string; accent: string }
 > = {
-  '1_month': { title: '1 Month', shortLabel: 'Foundation', accent: '#94a3b8' },
   '3_months': { title: '3 Months', shortLabel: 'Momentum', accent: '#38bdf8' },
   '6_months': { title: '6 Months', shortLabel: 'Transformation', accent: '#a78bfa' },
   '12_months': { title: '12 Months', shortLabel: 'Full Journey', accent: '#fbbf24' },
@@ -100,6 +99,8 @@ const BODY_COMP_CATEGORIES = new Set(['fat_loss', 'recomposition'])
 
 export function planTierRank(slug: string | null | undefined): number {
   if (!slug) return -1
+  // Retired 1-month purchases map to the current starter tier for goal unlock.
+  if (slug === '1_month') return planTierRank('3_months')
   return PLAN_GOAL_TIER_ORDER.indexOf(slug as PlanGoalTier)
 }
 
@@ -112,10 +113,11 @@ export function resolveGoalPlanTier(
   planSlug: string | null | undefined,
   options?: { accessSource?: string | null }
 ): PlanGoalTier {
+  if (planSlug === '1_month') return '3_months'
   if (isValidPlanGoalTier(planSlug)) return planSlug
   // Admin trials and unknown entitlements get the full goal catalog.
   if (options?.accessSource === 'admin_trial') return '12_months'
-  return '1_month'
+  return '3_months'
 }
 
 export function isGoalUnlockedForPlan(
@@ -209,7 +211,8 @@ export function upgradePlanPathForTier(tier: PlanGoalTier): string {
 }
 
 export function planDisplayName(planSlug: string | null | undefined): string {
-  return getCoachingPlan(planSlug)?.name ?? COACHING_PLANS['1_month'].name
+  if (planSlug === '1_month') return '1 Month (legacy)'
+  return getCoachingPlan(planSlug)?.name ?? COACHING_PLANS['3_months'].name
 }
 
 export function nextUpgradeTier(currentPlan: string | null | undefined): PlanGoalTier[] {

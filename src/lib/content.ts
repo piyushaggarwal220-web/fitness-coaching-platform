@@ -259,21 +259,12 @@ export const pricing = {
   ],
   plans: [
     {
-      slug: '1_month',
-      name: '1 Month',
-      price: '₹499',
-      perMonth: '₹499/month',
-      blurb: 'Perfect to get started',
-      save: null,
-      popular: false,
-    },
-    {
       slug: '3_months',
       name: '3 Months',
       price: '₹999',
       perMonth: '≈ ₹333/month',
       blurb: 'Best balance of price and consistency',
-      save: 'SAVE ₹498',
+      save: 'BEST STARTER',
       popular: true,
     },
     {
@@ -282,7 +273,7 @@ export const pricing = {
       price: '₹1699',
       perMonth: '≈ ₹283/month',
       blurb: 'Serious results need serious time',
-      save: 'SAVE ₹1295',
+      save: 'SAVE ₹299',
       popular: false,
     },
     {
@@ -291,7 +282,7 @@ export const pricing = {
       price: '₹2999',
       perMonth: '≈ ₹250/month',
       blurb: 'Lowest monthly cost. Maximum support.',
-      save: 'SAVE ₹2989',
+      save: 'SAVE ₹999',
       popular: false,
     },
   ],

@@ -3,13 +3,17 @@ import { COACHING_PLANS, getCoachingPlan } from '@/lib/payments/plans'
 
 /** Public URL segment → catalog slug */
 export const PLAN_PAGE_PATHS = {
-  '1-month': '1_month',
   '3-months': '3_months',
   '6-months': '6_months',
   '12-months': '12_months',
 } as const satisfies Record<string, CoachingPlanSlug>
 
 export type PlanPagePath = keyof typeof PLAN_PAGE_PATHS
+
+/** Retired public paths that should redirect to the current starter plan. */
+export const RETIRED_PLAN_PAGE_REDIRECTS: Record<string, PlanPagePath> = {
+  '1-month': '3-months',
+}
 
 export function planPathForSlug(slug: CoachingPlanSlug): PlanPagePath {
   const entry = Object.entries(PLAN_PAGE_PATHS).find(([, value]) => value === slug)
@@ -27,12 +31,6 @@ export const PLAN_PAGE_COPY: Record<
   CoachingPlanSlug,
   { eyebrow: string; promise: string; bestFor: string }
 > = {
-  '1_month': {
-    eyebrow: 'The Foundation',
-    promise:
-      'Start with a full coaching month — personal plan, weekly reviews, daily tracking, and free Consistency League entry.',
-    bestFor: 'Trying coaching for the first time or testing the fit.',
-  },
   '3_months': {
     eyebrow: 'Momentum',
     promise:
@@ -75,5 +73,5 @@ export const PLAN_LEAGUE_CALLOUT = {
 export const ALL_PLAN_PAGE_PATHS = Object.keys(PLAN_PAGE_PATHS) as PlanPagePath[]
 
 export function siblingPlans(current: CoachingPlanSlug): CoachingPlan[] {
-  return Object.values(COACHING_PLANS).filter((plan) => plan.slug !== current)
+  return (Object.values(COACHING_PLANS) as CoachingPlan[]).filter((plan) => plan.slug !== current)
 }
