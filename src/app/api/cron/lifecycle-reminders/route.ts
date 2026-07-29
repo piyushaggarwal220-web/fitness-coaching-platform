@@ -9,6 +9,7 @@ import {
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
 import { revokeExpiredClientSubscriptions } from '@/lib/client-entitlement-guard'
+import { raiseCoachHardCapsBelowTarget } from '@/lib/coach-capacity'
 import {
   sendAccountSetupRecovery,
   sendOnboardingReminder,
@@ -91,6 +92,15 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient()
+  let coachCapsRaised = 0
+  try {
+    coachCapsRaised = (await raiseCoachHardCapsBelowTarget(admin)).updated
+  } catch (capacityError) {
+    console.error(
+      '[cron/lifecycle-reminders] coach capacity raise failed:',
+      capacityError instanceof Error ? capacityError.message : capacityError
+    )
+  }
   const revokedSubscriptions = await revokeExpiredClientSubscriptions(50)
   const recoveredJobs = await scheduleInitialPlanRecovery(admin)
   const now = Date.now()
@@ -201,6 +211,7 @@ export async function GET(request: Request) {
     skipped,
     recoveredJobs,
     revokedSubscriptions,
+    coachCapsRaised,
   }
   console.info('[cron/lifecycle-reminders]', summary)
   return NextResponse.json(summary)

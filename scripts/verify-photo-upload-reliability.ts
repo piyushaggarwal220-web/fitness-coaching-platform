@@ -55,9 +55,11 @@ function labelFromPath(path: string): string | undefined {
 async function main() {
   assert.equal(resolveCoachHardCap(null), DEFAULT_COACH_HARD_CAP)
   assert.equal(resolveCoachHardCap(undefined), 1000)
-  assert.equal(resolveCoachHardCap(500), 500)
+  assert.equal(resolveCoachHardCap(100), 1000)
+  assert.equal(resolveCoachHardCap(500), 1000)
   assert.equal(resolveCoachHardCap(1000), 1000)
-  console.log('✓ Coach capacity defaults to 1000 when unset')
+  assert.equal(resolveCoachHardCap(1500), 1500)
+  console.log('✓ Coach capacity defaults to 1000 for legacy caps (100/500/null)')
 
   const networkError = storageError('StorageUnknownError', 'Failed to fetch')
   const policyError = storageError(

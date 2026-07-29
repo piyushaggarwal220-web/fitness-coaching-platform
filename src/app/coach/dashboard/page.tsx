@@ -104,6 +104,21 @@ export default function CoachDashboard() {
 
       setCoach(coachData);
 
+      void fetch('/api/coach/ensure-capacity', { method: 'POST' })
+        .then(async (response) => {
+          if (!response.ok) return null
+          return response.json() as Promise<{ hardCap?: number }>
+        })
+        .then((payload) => {
+          if (payload?.hardCap == null) return
+          setCoach((previous) =>
+            previous ? { ...previous, hard_cap: payload.hardCap ?? previous.hard_cap } : previous
+          )
+        })
+        .catch(() => {
+          // Capacity backfill is best-effort; dashboard still works with the resolved default.
+        })
+
       const [clientsResult, pendingCheckinsResult, activePlansResult] = await Promise.all([
         supabase
           .from('profiles')

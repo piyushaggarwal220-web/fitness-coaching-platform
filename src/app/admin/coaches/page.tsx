@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { brandTitle } from '@/lib/brand'
+import { resolveCoachHardCap } from '@/lib/coach-capacity'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { createClient } from '@/lib/supabase/client'
 import type { ClientProfile, Coach } from '@/types/database'
@@ -126,7 +127,7 @@ export default function AdminCoachesPage() {
                       <td style={s.td}>{coach.clientCount}</td>
                       <td style={s.td}>{coach.activeClients}</td>
                       <td style={s.td}>{coach.pendingWork}</td>
-                      <td style={s.td}>{coach.hard_cap ?? '—'}</td>
+                      <td style={s.td}>{resolveCoachHardCap(coach.hard_cap)}</td>
                       <td style={s.td}>
                         <Link href={`/admin/coaches/${coach.id}`} style={s.linkBtn}>View</Link>
                       </td>

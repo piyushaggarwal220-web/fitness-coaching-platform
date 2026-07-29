@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { adminStyles as s } from '@/lib/admin/styles'
+import { resolveCoachHardCap } from '@/lib/coach-capacity'
 import { coachBadgeStyles, formatFitnessGoal, getCheckinStatus, getPlanStatus } from '@/lib/coach-utils'
 import { createClient } from '@/lib/supabase/client'
 import { useAdminRole } from '@/lib/admin/use-admin-role'
@@ -142,7 +143,7 @@ export default function AdminCoachDetailPage() {
             <div style={s.infoGrid}>
               <div style={s.infoRow}>
                 <span style={s.infoLabel}>Capacity</span>
-                <span style={s.infoValue}>{coach.hard_cap ?? 'Not set'}</span>
+                <span style={s.infoValue}>{resolveCoachHardCap(coach.hard_cap)}</span>
               </div>
               <div style={s.infoRow}>
                 <span style={s.infoLabel}>Assigned clients</span>
