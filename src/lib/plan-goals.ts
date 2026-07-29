@@ -108,15 +108,22 @@ export function isValidPlanGoalTier(slug: string | null | undefined): slug is Pl
   return Boolean(slug && PLAN_GOAL_TIER_ORDER.includes(slug as PlanGoalTier))
 }
 
-/** Normalize purchase / trial plan to a goal unlock tier. */
+/** Normalize purchase / trial / enrollment plan to a goal unlock tier. */
 export function resolveGoalPlanTier(
   planSlug: string | null | undefined,
   options?: { accessSource?: string | null }
 ): PlanGoalTier {
+  // Admin trials and enrollment-code members get the full goal catalog.
+  // Check access source first so a redeemed enrollment purchase's plan_slug
+  // cannot re-lock higher-tier goals.
+  if (
+    options?.accessSource === 'admin_trial' ||
+    options?.accessSource === 'enrollment_code'
+  ) {
+    return '12_months'
+  }
   if (planSlug === '1_month') return '3_months'
   if (isValidPlanGoalTier(planSlug)) return planSlug
-  // Admin trials and unknown entitlements get the full goal catalog.
-  if (options?.accessSource === 'admin_trial') return '12_months'
   return '3_months'
 }
 
