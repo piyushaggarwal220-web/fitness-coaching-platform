@@ -137,7 +137,7 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
   const fitnessGoal = pick([
     FITNESS_GOAL_OPTIONS.find((o) => o.value === 'fat_loss')!,
     FITNESS_GOAL_OPTIONS.find((o) => o.value === 'muscle_gain')!,
-    FITNESS_GOAL_OPTIONS.find((o) => o.value === 'recomposition')!,
+    FITNESS_GOAL_OPTIONS.find((o) => o.value === 'body_recomposition')!,
   ]).value
 
   const fullName =
@@ -145,9 +145,16 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`
 
   const height = String(randomHeightCm(gender))
-  const weight = String(randomWeightKg(Number(height), fitnessGoal))
+  const weight = String(randomWeightKg(Number(height), fitnessGoal === 'body_recomposition' ? 'recomposition' : fitnessGoal))
   const targetDelta = fitnessGoal === 'muscle_gain' ? 4 : fitnessGoal === 'fat_loss' ? -6 : -2
   const targetWeight = String(Math.max(45, Math.round(Number(weight) + targetDelta)))
+
+  const companionGoal =
+    fitnessGoal === 'fat_loss'
+      ? 'improve_fitness'
+      : fitnessGoal === 'muscle_gain'
+        ? 'build_strength'
+        : 'improve_endurance'
 
   const trainingLocation = pick(TRAINING_LOCATION_OPTIONS).value
   const equipment =
@@ -167,6 +174,7 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     thigh: String(randomInt(48, 65)),
     navel: String(randomInt(75, 100)),
     fitness_goal: fitnessGoal,
+    selected_goals: [fitnessGoal, companionGoal],
     target_weight: targetWeight,
     goal_deadline: pick(['8_weeks', '12_weeks', '16_weeks', '24_weeks']),
     biggest_struggle: struggle.value,

@@ -15,6 +15,12 @@ import { inferFitnessGoal } from '@/lib/ai/goal-inference'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { evaluateComplexityInputs } from '@/lib/complexity/input-guards'
 import { parseHeightCm, validateHeightCm } from '@/lib/height'
+import {
+  ALL_PLAN_GOAL_OPTIONS,
+  deriveCoachingCategory,
+  formatSelectedGoals,
+  validateSelectedPlanGoals,
+} from '@/lib/plan-goals'
 import type {
   OnboardingData,
   OnboardingFormData,
@@ -45,12 +51,9 @@ export const GENDER_OPTIONS = [
   { value: 'prefer_not_to_say', label: 'Prefer not to say' },
 ] as const
 
+/** @deprecated Prefer ALL_PLAN_GOAL_OPTIONS / plan-tiered selection in onboarding. */
 export const FITNESS_GOAL_OPTIONS = [
-  { value: 'fat_loss', label: 'Fat Loss' },
-  { value: 'muscle_gain', label: 'Muscle Gain' },
-  { value: 'recomposition', label: 'Recomposition' },
-  { value: 'strength', label: 'Strength' },
-  { value: 'athletic_performance', label: 'Athletic Performance' },
+  ...ALL_PLAN_GOAL_OPTIONS.map((goal) => ({ value: goal.value, label: goal.label })),
   { value: 'ai_decide', label: "I'm not sure yet (Help me decide)" },
 ] as const
 
@@ -319,7 +322,13 @@ export const PAIN_OPTIONS = [
 
 export const ONBOARDING_LABELS: Record<string, Record<string, string>> = {
   gender: Object.fromEntries(GENDER_OPTIONS.map((o) => [o.value, o.label])),
-  fitness_goal: Object.fromEntries(FITNESS_GOAL_OPTIONS.map((o) => [o.value, o.label])),
+  fitness_goal: {
+    ...Object.fromEntries(ALL_PLAN_GOAL_OPTIONS.map((o) => [o.value, o.label])),
+    ai_decide: "I'm not sure yet (Help me decide)",
+    recomposition: 'Recomposition',
+    strength: 'Strength',
+    athletic_performance: 'Athletic Performance',
+  },
   training_experience: Object.fromEntries(TRAINING_OPTIONS.map((o) => [o.value, o.label])),
   training_duration: Object.fromEntries(TRAINING_DURATION_OPTIONS.map((o) => [o.value, o.label])),
   activity_level: Object.fromEntries(ACTIVITY_OPTIONS.map((o) => [o.value, o.label])),
@@ -355,6 +364,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   thigh: '',
   navel: '',
   fitness_goal: '',
+  selected_goals: [],
   target_weight: '',
   goal_deadline: '',
   biggest_struggle: '',
@@ -438,6 +448,9 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     height: profile.height != null ? String(profile.height) : '',
     weight: profile.weight != null ? String(profile.weight) : '',
     fitness_goal: profile.fitness_goal ?? '',
+    selected_goals: Array.isArray(data.goals?.selectedGoals)
+      ? data.goals.selectedGoals.filter((value): value is string => typeof value === 'string')
+      : [],
     training_experience: profile.training_experience ?? '',
     activity_level: profile.activity_level ?? '',
     diet_preference: profile.diet_preference ?? '',
@@ -560,6 +573,7 @@ export function getResumeStep(
       requireWorkSchoolSchedule: requireNewFields,
       requireFluxCapacity: requireNewFields,
       requireDietVariety: requireNewFields,
+      requireMultiGoals: true,
     })
     if (error) return step
   }
@@ -586,8 +600,10 @@ export function buildOnboardingData(
     resumeStep,
     lastSavedAt: new Date().toISOString(),
     goals: {
+      targetWeight: form.target_weight.trim() || null,
       deadline: form.goal_deadline || null,
       biggestStruggle: form.biggest_struggle.trim() || null,
+      selectedGoals: form.selected_goals.length > 0 ? form.selected_goals : null,
       goalSelectionMethod: userUnsure || options?.aiSelectedGoal ? 'ai' : 'user',
       aiSelectedGoal: userUnsure || options?.aiSelectedGoal ? true : undefined,
       userIndicatedUnsure: userUnsure ? true : undefined,
@@ -694,7 +710,9 @@ export function buildProfilePayload(
   let aiSelectedGoal = false
   let inferredGoal: string | undefined
 
-  if (options.complete && form.fitness_goal === 'ai_decide') {
+  if (form.selected_goals.length > 0) {
+    resolvedGoal = deriveCoachingCategory(form.selected_goals) ?? form.selected_goals[0] ?? null
+  } else if (options.complete && form.fitness_goal === 'ai_decide') {
     const inference = inferFitnessGoal(form)
     resolvedGoal = inference.goal
     aiSelectedGoal = true
@@ -789,6 +807,13 @@ export function validateOnboardingStep(
     requireDietVariety?: boolean
     /** Number wheels that the user has explicitly confirmed. */
     confirmedScrollers?: string[]
+    /** Current coaching plan — gates which goals are selectable. */
+    planSlug?: string | null
+    /**
+     * When true (onboarding wizard), require 2–4 selected goals.
+     * When false, allow legacy single `fitness_goal` profiles.
+     */
+    requireMultiGoals?: boolean
   }
 ): string | null {
   const confirmedScrollers = new Set(options?.confirmedScrollers ?? [])
@@ -844,7 +869,13 @@ export function validateOnboardingStep(
       return null
     }
     case 2: {
-      if (!data.fitness_goal) return 'Please select your primary goal.'
+      const requireMultiGoals = options?.requireMultiGoals !== false
+      if (requireMultiGoals || data.selected_goals.length > 0) {
+        const goalError = validateSelectedPlanGoals(data.selected_goals, options?.planSlug)
+        if (goalError) return goalError
+      } else if (!data.fitness_goal || data.fitness_goal === 'ai_decide') {
+        return 'Please select your goals.'
+      }
       if (needsTargetWeight(data.fitness_goal)) {
         if (!data.target_weight || Number(data.target_weight) <= 0) return 'Enter a valid target weight.'
       }
@@ -1051,7 +1082,13 @@ export function buildReviewSections(
     {
       title: 'Goals',
       items: [
-        { label: 'Primary goal', value: getOnboardingLabel('fitness_goal', form.fitness_goal) },
+        {
+          label: 'Goals',
+          value:
+            form.selected_goals.length > 0
+              ? formatSelectedGoals(form.selected_goals)
+              : getOnboardingLabel('fitness_goal', form.fitness_goal),
+        },
         { label: 'Deadline', value: getOnboardingLabel('goal_deadline', form.goal_deadline) },
         { label: 'Biggest struggle', value: formatStruggle(form.biggest_struggle) },
       ],
@@ -1253,6 +1290,9 @@ export function findFirstIncompleteOnboardingStep(
     requireWorkSchoolSchedule?: boolean
     requireFluxCapacity?: boolean
     requireDietVariety?: boolean
+    confirmedScrollers?: string[]
+    planSlug?: string | null
+    requireMultiGoals?: boolean
   }
 ): { step: number; error: string } | null {
   const meals = mealTimingContext ?? mealTimingContextFromForm(form)
@@ -1297,6 +1337,8 @@ export function validateOnboardingAnswersForProfile(
       requireWorkSchoolSchedule,
       requireFluxCapacity,
       requireDietVariety,
+      // Completed / generation checks must accept legacy single-goal profiles.
+      requireMultiGoals: false,
     })
     if (error) return error
   }
