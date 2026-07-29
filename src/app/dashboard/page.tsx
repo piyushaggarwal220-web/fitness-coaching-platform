@@ -885,7 +885,17 @@ export default function Dashboard() {
           {profileOpen && (
             <Card variant="elevated">
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: spacing[3] }}>
-                <GlanceItem label="Goal" value={getOnboardingLabel('fitness_goal', profile.fitness_goal)} />
+                <GlanceItem
+                  label="Goal"
+                  value={
+                    profile.onboarding_data?.goals?.selectedGoals &&
+                    profile.onboarding_data.goals.selectedGoals.length > 0
+                      ? profile.onboarding_data.goals.selectedGoals
+                          .map((goal) => getOnboardingLabel('fitness_goal', goal))
+                          .join(', ')
+                      : getOnboardingLabel('fitness_goal', profile.fitness_goal)
+                  }
+                />
                 <GlanceItem label="Training" value={getOnboardingLabel('training_experience', profile.training_experience)} />
                 <GlanceItem label="Weight" value={profile.weight ? `${profile.weight} kg` : '—'} />
                 <GlanceItem label="Age" value={profile.age ? `${profile.age} yrs` : '—'} />

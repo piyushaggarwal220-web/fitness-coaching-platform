@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { OnboardingReview } from '@/components/onboarding/OnboardingReview'
 import { ChipGroup, Field, MultiChipGroup, RadioCards } from '@/components/onboarding/inputs'
+import { PlanGoalSelector } from '@/components/onboarding/PlanGoalSelector'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
 import { HeightInput } from '@/components/ui/HeightInput'
 import { PhotoSourceControl } from '@/components/ui/PhotoSourceControl'
@@ -21,7 +22,6 @@ import {
   DIET_VARIETY_OPTIONS,
   EQUIPMENT_OPTIONS,
   findFirstIncompleteOnboardingStep,
-  FITNESS_GOAL_OPTIONS,
   FLUX_CAPACITY_OPTIONS,
   formFromProfile,
   formatMealTime24,
@@ -60,6 +60,7 @@ import {
   WORKOUT_DURATION_OPTIONS,
   WORKOUT_TIME_OPTIONS,
 } from '@/lib/onboarding'
+import { resolveGoalPlanTier } from '@/lib/plan-goals'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
 import type { OnboardingFormData } from '@/types/database'
 import type { SavedPhotoUrls } from '@/lib/onboarding'
@@ -114,6 +115,7 @@ export default function OnboardingPage() {
   const [confirmedMealTimes, setConfirmedMealTimes] = useState<MealTimingKey[]>([])
   const [confirmedScrollers, setConfirmedScrollers] = useState<string[]>([])
   const [requireBodyMeasurements, setRequireBodyMeasurements] = useState(true)
+  const [planSlug, setPlanSlug] = useState<string>('1_month')
 
   useEffect(() => {
     const init = async () => {
@@ -136,6 +138,22 @@ export default function OnboardingPage() {
 
       setUserId(result.user.id)
       setUserEmail(result.user.email ?? null)
+
+      const { data: purchase } = await supabase
+        .from('purchases')
+        .select('plan_slug, status, created_at')
+        .eq('user_id', result.user.id)
+        .eq('status', 'captured')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      setPlanSlug(
+        resolveGoalPlanTier(purchase?.plan_slug as string | undefined, {
+          accessSource: result.profile?.access_source,
+        })
+      )
+
       if (result.profile) {
         const needsMeasurements = shouldRequireOnboardingBodyMeasurements(result.profile)
         setRequireBodyMeasurements(needsMeasurements)
@@ -261,6 +279,8 @@ export default function OnboardingPage() {
     requireFluxCapacity: requireBodyMeasurements,
     requireDietVariety: requireBodyMeasurements,
     confirmedScrollers,
+    planSlug,
+    requireMultiGoals: true,
   }
 
   const handleNext = async () => {
@@ -412,7 +432,8 @@ export default function OnboardingPage() {
             setConfirmedMealTimes,
             requireBodyMeasurements,
             confirmedScrollers,
-            confirmScroller
+            confirmScroller,
+            planSlug
           )}
 
           <div style={{ height: 72 }} />
@@ -465,7 +486,8 @@ function renderStep(
   setConfirmedMealTimes: (meals: MealTimingKey[] | ((prev: MealTimingKey[]) => MealTimingKey[])) => void,
   requireBodyMeasurements: boolean,
   confirmedScrollers: string[],
-  confirmScroller: (key: string) => void
+  confirmScroller: (key: string) => void,
+  planSlug: string
 ) {
   switch (step) {
     case 0:
@@ -574,20 +596,19 @@ function renderStep(
     case 2:
       return (
         <div style={s.stepContent}>
-          <h2 style={s.stepTitle}>Your goal</h2>
-          <Field label="Primary goal" required>
-            <RadioCards
-              name="fitness_goal"
-              options={FITNESS_GOAL_OPTIONS}
-              value={form.fitness_goal}
-              onChange={(v) => update({ fitness_goal: v })}
+          <h2 style={s.stepTitle}>Your goals</h2>
+          <Field label="What do you want to achieve?" required>
+            <PlanGoalSelector
+              planSlug={planSlug}
+              values={form.selected_goals}
+              onChange={(selected_goals) =>
+                update({
+                  selected_goals,
+                  fitness_goal: selected_goals[0] ?? '',
+                })
+              }
             />
           </Field>
-          {form.fitness_goal === 'ai_decide' && (
-            <p style={s.stepHint}>
-              No problem — we&apos;ll analyse your body stats, lifestyle, and photos to recommend the best goal for you.
-            </p>
-          )}
         </div>
       )
 

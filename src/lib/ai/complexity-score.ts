@@ -1,4 +1,5 @@
 import { MODELS } from '@/lib/ai/config'
+import { isBodyCompositionGoal } from '@/lib/plan-goals'
 import type { Checkin } from '@/types/database'
 
 /** Tier labels used for model routing. */
@@ -212,8 +213,7 @@ function scoreGender(
 ): ScoreContribution[] {
   if (gender !== 'female') return []
 
-  const bodyCompGoals = new Set(['fat_loss', 'recomposition'])
-  if (!fitnessGoal || !bodyCompGoals.has(fitnessGoal)) return []
+  if (!isBodyCompositionGoal(fitnessGoal)) return []
 
   return [{
     points: SCORING_SPEC.gender.FEMALE_BODY_COMP_GOAL,

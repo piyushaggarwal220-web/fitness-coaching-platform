@@ -164,7 +164,14 @@ function buildClientProfileSection(profile: OnboardingProfile): string {
     `- Chest: ${formatValue(profile.onboarding_data?.measurements?.chest)} cm`,
     `- Thigh: ${formatValue(profile.onboarding_data?.measurements?.thigh)} cm`,
     `- Belly (navel): ${formatValue(profile.onboarding_data?.measurements?.navel)} cm`,
-    `- Fitness goal: ${getOnboardingLabel('fitness_goal', profile.fitness_goal)}`,
+    `- Fitness goal: ${
+      profile.onboarding_data?.goals?.selectedGoals &&
+      profile.onboarding_data.goals.selectedGoals.length > 0
+        ? profile.onboarding_data.goals.selectedGoals
+            .map((goal) => getOnboardingLabel('fitness_goal', goal))
+            .join(', ')
+        : getOnboardingLabel('fitness_goal', profile.fitness_goal)
+    }`,
     `- Training experience: ${getOnboardingLabel('training_experience', profile.training_experience)}`,
     `- Activity level: ${getOnboardingLabel('activity_level', profile.activity_level)}`,
     `- Diet preference: ${getOnboardingLabel('diet_preference', profile.diet_preference)}`,
@@ -279,9 +286,15 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   const lines: string[] = ['## Onboarding Answers']
 
   if (data.goals) {
+    const selected =
+      data.goals.selectedGoals && data.goals.selectedGoals.length > 0
+        ? data.goals.selectedGoals.join(', ')
+        : null
     const goalLine = data.goals.aiSelectedGoal
       ? `Goals: AI-selected goal (${data.goals.inferredGoal ?? 'pending'}), deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
-      : `Goals: deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
+      : selected
+        ? `Goals: ${selected}, deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
+        : `Goals: deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
     lines.push(goalLine)
   }
   if (data.lifestyle) {

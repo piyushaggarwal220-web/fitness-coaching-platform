@@ -53,6 +53,8 @@ export type OnboardingData = {
     targetWeight?: string | number | null
     deadline?: string | null
     biggestStruggle?: string | null
+    /** Client-selected plan goals (2–4). */
+    selectedGoals?: string[] | null
     goalSelectionMethod?: 'user' | 'ai'
     aiSelectedGoal?: boolean
     userIndicatedUnsure?: boolean
@@ -199,6 +201,8 @@ export type OnboardingFormData = {
   thigh: string
   navel: string
   fitness_goal: string
+  /** Multi-select plan goals (2–4). Primary coaching focus is derived for fitness_goal. */
+  selected_goals: string[]
   target_weight: string
   goal_deadline: string
   biggest_struggle: string

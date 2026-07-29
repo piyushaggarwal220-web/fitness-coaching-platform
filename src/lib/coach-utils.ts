@@ -2,6 +2,8 @@ import type { CSSProperties } from 'react'
 import type { ClientProfile } from '@/types/database'
 import { colors } from '@/lib/coach-theme'
 
+import { PLAN_GOAL_LABELS, formatSelectedGoals } from '@/lib/plan-goals'
+
 export const FITNESS_GOAL_LABELS: Record<string, string> = {
   lose_weight: 'Lose Weight',
   build_muscle: 'Build Muscle',
@@ -12,11 +14,20 @@ export const FITNESS_GOAL_LABELS: Record<string, string> = {
   recomposition: 'Recomposition',
   strength: 'Strength',
   athletic_performance: 'Athletic Performance',
+  ...PLAN_GOAL_LABELS,
 }
 
 export function formatFitnessGoal(goal: string | null | undefined): string {
   if (!goal) return 'Not set'
   return FITNESS_GOAL_LABELS[goal] ?? goal.replace(/_/g, ' ')
+}
+
+export function formatClientGoals(
+  primaryGoal: string | null | undefined,
+  selectedGoals?: string[] | null
+): string {
+  if (selectedGoals && selectedGoals.length > 0) return formatSelectedGoals(selectedGoals)
+  return formatFitnessGoal(primaryGoal)
 }
 
 export function formatDate(date: string | null | undefined): string {
