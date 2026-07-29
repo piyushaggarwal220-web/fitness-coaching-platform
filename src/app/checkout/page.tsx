@@ -6,6 +6,11 @@ import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { brandTitle } from '@/lib/brand';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
+import {
+  DEFAULT_FIRST_TIMER_DISCOUNT_CODE,
+  FIRST_TIMER_DISCOUNT_PAISE,
+  formatInrFromPaise,
+} from '@/lib/payments/checkout-discounts';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
@@ -15,6 +20,17 @@ import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
 const PAYMENT_SUCCESS_KEY = 'lurvox_checkout_success_redirect';
+
+type AppliedDiscountPreview = {
+  code: string;
+  discountPaise: number;
+  amountPaise: number;
+  listAmountPaise: number;
+  displayListPrice: string;
+  displaySalePrice: string;
+  displayDiscount: string;
+  message: string;
+};
 
 type RazorpayHandlerResponse = {
   razorpay_order_id: string;
@@ -43,7 +59,6 @@ function CheckoutForm() {
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [error, setError] = useState('');
   const [razorpayReady, setRazorpayReady] = useState(false);
-  const [showRedeem, setShowRedeem] = useState(false);
   const [policyAgreementAccepted, setPolicyAgreementAccepted] = useState(false);
   const [verificationId, setVerificationId] = useState('');
   const [emailCode, setEmailCode] = useState('');
@@ -53,6 +68,10 @@ function CheckoutForm() {
   const [missingItems, setMissingItems] = useState<string[]>([]);
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountPreview | null>(null);
+  const [applyingCode, setApplyingCode] = useState(false);
+  const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
   const paymentSucceededRef = useRef(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -60,6 +79,73 @@ function CheckoutForm() {
   const policyRef = useRef<HTMLLabelElement>(null);
   const verifyRef = useRef<HTMLDivElement>(null);
   const testMode = isPaymentBypassClient();
+  const payablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
+  const payableDisplay = appliedDiscount?.displaySalePrice ?? plan.displayPrice;
+  const planDiscountHint = formatInrFromPaise(
+    FIRST_TIMER_DISCOUNT_PAISE[plan.slug as keyof typeof FIRST_TIMER_DISCOUNT_PAISE] ?? 0
+  );
+
+  useEffect(() => {
+    setAppliedDiscount(null);
+    setEnrollmentHref(null);
+  }, [plan.slug]);
+
+  useEffect(() => {
+    // Re-validate is required after email changes (first-timer check is email-bound).
+    setAppliedDiscount(null);
+  }, [email]);
+
+  const applyPromoCode = async () => {
+    setError('');
+    setEnrollmentHref(null);
+    if (!email.trim() || !email.includes('@')) {
+      setError('Enter your email first — first-timer discounts are checked against your email.');
+      return;
+    }
+    setApplyingCode(true);
+    try {
+      const res = await fetch('/api/payment/apply-discount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: promoCode,
+          planSlug: plan.slug,
+          email,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Could not apply code');
+
+      if (data.kind === 'enrollment') {
+        setAppliedDiscount(null);
+        setEnrollmentHref(data.enrollHref ?? `/enroll?code=${encodeURIComponent(promoCode)}`);
+        return;
+      }
+
+      setAppliedDiscount({
+        code: data.code,
+        discountPaise: data.discountPaise,
+        amountPaise: data.amountPaise,
+        listAmountPaise: data.listAmountPaise,
+        displayListPrice: data.displayListPrice,
+        displaySalePrice: data.displaySalePrice,
+        displayDiscount: data.displayDiscount,
+        message: data.message,
+      });
+    } catch (err) {
+      setAppliedDiscount(null);
+      setError(err instanceof Error ? err.message : 'Could not apply code');
+    } finally {
+      setApplyingCode(false);
+    }
+  };
+
+  const clearPromoCode = () => {
+    setPromoCode('');
+    setAppliedDiscount(null);
+    setEnrollmentHref(null);
+    setError('');
+  };
 
   const resetVerification = () => {
     setVerificationId('');
@@ -296,7 +382,7 @@ function CheckoutForm() {
       trackMetaEvent(
         'Purchase',
         {
-          value: plan.amountPaise / 100,
+          value: payablePaise / 100,
           currency: 'INR',
           content_name: `${plan.name} coaching plan`,
           content_ids: [plan.slug],
@@ -336,6 +422,7 @@ function CheckoutForm() {
           phone,
           policyAgreementAccepted,
           verificationId: verificationId || undefined,
+          discountCode: appliedDiscount?.code || undefined,
         }),
       });
 
@@ -412,7 +499,21 @@ function CheckoutForm() {
         <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
         <h1 style={styles.title}>{brandTitle('Complete your purchase')}</h1>
         <p style={styles.subtitle}>
-          {plan.name} plan · {plan.displayPrice} · {plan.saveLabel}
+          {plan.name} plan ·{' '}
+          {appliedDiscount ? (
+            <>
+              <span style={{ textDecoration: 'line-through', color: colors.textMuted }}>
+                {appliedDiscount.displayListPrice}
+              </span>{' '}
+              <strong style={{ color: colors.accent }}>{appliedDiscount.displaySalePrice}</strong>
+              {' · '}
+              Save {appliedDiscount.displayDiscount}
+            </>
+          ) : (
+            <>
+              {plan.displayPrice} · {plan.saveLabel}
+            </>
+          )}
         </p>
         <p style={styles.leagueNote}>
           {plan.slug === '12_months'
@@ -426,27 +527,55 @@ function CheckoutForm() {
           </div>
         )}
 
-        {!showRedeem ? (
-          <button type="button" onClick={() => setShowRedeem(true)} style={styles.redeemLink}>
-            I already have a code →
-          </button>
-        ) : (
-          <div style={styles.redeemBox}>
-            <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Have an enrollment code?</h3>
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
-              Old members and offline payments use a personal code. You&apos;ll confirm your email, set a
-              password, then complete onboarding.
-            </p>
-            <a href="/enroll" style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}>
-              Continue to enrollment →
-            </a>
-            <button type="button" onClick={() => setShowRedeem(false)} style={styles.backToPay}>
-              ← Back to payment
+        <div style={styles.redeemBox}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Discount or enrollment code</h3>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
+            First-timers can use <strong style={{ color: colors.textPrimary }}>{DEFAULT_FIRST_TIMER_DISCOUNT_CODE}</strong>{' '}
+            for {planDiscountHint} off this plan. Membership / offline enrollment codes open the enrollment flow.
+          </p>
+          <div style={styles.codeRow}>
+            <input
+              value={promoCode}
+              onChange={(e) => {
+                setPromoCode(e.target.value.toUpperCase());
+                setEnrollmentHref(null);
+              }}
+              placeholder="Enter code"
+              autoComplete="off"
+              style={{ ...styles.input, marginTop: 0, flex: 1 }}
+            />
+            <button
+              type="button"
+              onClick={() => void applyPromoCode()}
+              disabled={applyingCode || !promoCode.trim()}
+              style={styles.validateBtn}
+            >
+              {applyingCode ? 'Checking…' : 'Apply'}
             </button>
           </div>
-        )}
+          {appliedDiscount && (
+            <div style={styles.discountApplied}>
+              <p style={{ margin: 0 }}>{appliedDiscount.message}</p>
+              <button type="button" onClick={clearPromoCode} style={styles.backToPay}>
+                Remove code
+              </button>
+            </div>
+          )}
+          {enrollmentHref && (
+            <div style={styles.discountApplied}>
+              <p style={{ margin: '0 0 10px' }}>
+                This looks like a membership enrollment code — redeem it on the enrollment page.
+              </p>
+              <a
+                href={enrollmentHref}
+                style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}
+              >
+                Continue to enrollment →
+              </a>
+            </div>
+          )}
+        </div>
 
-        {!showRedeem && (
         <div style={styles.planPicker}>
           {COACHING_PLAN_LIST.map((item) => (
             <Link
@@ -462,10 +591,9 @@ function CheckoutForm() {
             </Link>
           ))}
         </div>
-        )}
 
         {error && <div style={styles.error}>{error}</div>}
-        {!showRedeem && liveMissing.length > 0 && (
+        {liveMissing.length > 0 && (
           <div style={styles.todoBox}>
             <p style={styles.todoTitle}>Still to do before paying</p>
             <ul style={styles.todoList}>
@@ -483,7 +611,6 @@ function CheckoutForm() {
           </ul>
         )}
 
-        {!showRedeem && (
         <form
           onSubmit={handleSubmit}
           style={styles.form}
@@ -612,10 +739,9 @@ function CheckoutForm() {
             disabled={loading}
             style={styles.payBtn}
           >
-            {loading ? 'Processing...' : `Pay ${plan.displayPrice} securely`}
+            {loading ? 'Processing...' : `Pay ${payableDisplay} securely`}
           </button>
         </form>
-        )}
 
         <p style={styles.secure}>
           Secure payments via Razorpay. After payment you&apos;ll create your login password (not a passkey).
@@ -750,6 +876,16 @@ const styles: Record<string, CSSProperties> = {
   loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: colors.textSecondary, backgroundColor: colors.bgPrimary },
   redeemLink: { background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: spacing[3], padding: '8px 0', minHeight: 44 },
   redeemBox: { backgroundColor: colors.accentMuted, padding: spacing[3], borderRadius: radius.sm, marginBottom: spacing[3], boxSizing: 'border-box', width: '100%' },
+  codeRow: { display: 'flex', gap: 8, alignItems: 'stretch', width: '100%', minWidth: 0 },
+  discountApplied: {
+    marginTop: 12,
+    padding: '12px 12px 8px',
+    borderRadius: radius.sm,
+    backgroundColor: colors.successMuted,
+    color: colors.success,
+    fontSize: 13,
+    lineHeight: 1.45,
+  },
   validateBtn: {
     padding: '12px 16px',
     backgroundColor: colors.accent,

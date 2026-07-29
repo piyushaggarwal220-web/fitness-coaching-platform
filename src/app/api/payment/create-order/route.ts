@@ -11,6 +11,10 @@ import {
   normalizeCheckoutEmail,
   normalizeCheckoutPhone,
 } from '@/lib/payments/checkout-otp'
+import {
+  checkoutDiscountNotes,
+  resolveCheckoutPricing,
+} from '@/lib/payments/checkout-discounts'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 type CreateOrderBody = {
@@ -20,6 +24,7 @@ type CreateOrderBody = {
   phone?: string
   policyAgreementAccepted?: boolean
   verificationId?: string
+  discountCode?: string
 }
 
 export async function POST(request: Request) {
@@ -77,6 +82,21 @@ export async function POST(request: Request) {
   const acknowledgement = createPolicyAcknowledgement(request)
   const admin = createAdminClient()
 
+  const pricingResult = await resolveCheckoutPricing({
+    admin,
+    planSlug: plan.slug,
+    email: body.email!,
+    discountCode: body.discountCode,
+  })
+  if (!pricingResult.ok) {
+    return NextResponse.json(
+      { error: pricingResult.error, missing: ['Valid discount code'] },
+      { status: pricingResult.status }
+    )
+  }
+  const { pricing } = pricingResult
+  const discountNotes = checkoutDiscountNotes(pricing)
+
   if (shouldBypassPayment()) {
     const orderId = `test_order_${Date.now()}`
     try {
@@ -90,17 +110,19 @@ export async function POST(request: Request) {
     return NextResponse.json({
       testMode: true,
       orderId,
-      amount: plan.amountPaise,
+      amount: pricing.amountPaise,
       currency: 'INR',
       keyId: 'test',
-      plan,
+      plan: pricing.plan,
+      discount: pricing.discount,
+      listAmountPaise: pricing.listAmountPaise,
     })
   }
 
   try {
     const receipt = `plan_${plan.slug}_${Date.now()}`
     const order = await createRazorpayOrder({
-      amountPaise: plan.amountPaise,
+      amountPaise: pricing.amountPaise,
       receipt,
       notes: {
         plan_slug: plan.slug,
@@ -110,6 +132,7 @@ export async function POST(request: Request) {
         terms_policy_version: acknowledgement.termsVersion,
         refund_policy_version: acknowledgement.refundPolicyVersion,
         policy_acknowledged_at: acknowledgement.acknowledgedAt,
+        ...discountNotes,
       },
     })
     await storeOrderPolicyAcknowledgement(admin, order.id, acknowledgement)
@@ -120,7 +143,9 @@ export async function POST(request: Request) {
       amount: order.amount,
       currency: order.currency,
       keyId: getRazorpayKeyId(),
-      plan,
+      plan: pricing.plan,
+      discount: pricing.discount,
+      listAmountPaise: pricing.listAmountPaise,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create order'
