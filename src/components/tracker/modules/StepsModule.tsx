@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { ProgressBar, trackerInputStyle } from '@/components/tracker/TrackerPrimitives'
 import { colors, spacing } from '@/lib/design-tokens'
@@ -14,16 +14,29 @@ type Props = {
   onPatch: (patch: TrackerCompletion) => Promise<void>
 }
 
-export function StepsModule({ steps, completion, saving, onPatch }: Props) {
+export function StepsModule({ steps, completion, onPatch }: Props) {
   const [editing, setEditing] = useState(false)
-  const actual = completion.cardio?.[steps.id]?.actual ?? 0
+  const initialActual = completion.cardio?.[steps.id]?.actual ?? 0
+  const [actual, setActual] = useState(initialActual)
+  const actualRef = useRef(initialActual)
   const target = Number(steps.target) || 10000
-  const percent = getStepsScore(steps, completion)
+  const percent = getStepsScore(steps, {
+    ...completion,
+    cardio: {
+      ...completion.cardio,
+      [steps.id]: { actual, completed: actual >= target },
+    },
+  })
 
-  const add = (n: number) =>
+  const saveActual = (nextActual: number) => {
+    actualRef.current = nextActual
+    setActual(nextActual)
     void onPatch({
-      cardio: { [steps.id]: { actual: actual + n, completed: actual + n >= target } },
+      cardio: { [steps.id]: { actual: nextActual, completed: nextActual >= target } },
     })
+  }
+
+  const add = (n: number) => saveActual(actualRef.current + n)
 
   return (
     <div>
@@ -40,13 +53,13 @@ export function StepsModule({ steps, completion, saving, onPatch }: Props) {
 
       <div style={{ display: 'flex', gap: 10, marginTop: spacing[5] }}>
         {[500, 1000].map((n) => (
-          <Button key={n} variant="secondary" fullWidth disabled={saving} onClick={() => add(n)}>
+          <Button key={n} variant="secondary" fullWidth onClick={() => add(n)}>
             +{n.toLocaleString()}
           </Button>
         ))}
       </div>
 
-      <Button variant="ghost" fullWidth disabled={saving} onClick={() => setEditing((v) => !v)} style={{ marginTop: 10 }}>
+      <Button variant="ghost" fullWidth onClick={() => setEditing((v) => !v)} style={{ marginTop: 10 }}>
         {editing ? 'Done' : 'Custom'}
       </Button>
 
@@ -54,10 +67,9 @@ export function StepsModule({ steps, completion, saving, onPatch }: Props) {
         <input
           type="number"
           value={actual || ''}
-          disabled={saving}
           onChange={(e) => {
             const val = Number(e.target.value) || 0
-            void onPatch({ cardio: { [steps.id]: { actual: val, completed: val >= target } } })
+            saveActual(val)
           }}
           style={{ ...trackerInputStyle, marginTop: spacing[3] }}
         />

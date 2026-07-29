@@ -513,24 +513,16 @@ export async function claimPurchaseWithPassword(
     : { data: null }
 
   if (userId) {
-    // Checkout magic-link / OTP often creates an Auth user with NO password.
-    // Create-account then asked for a password but we used to skip writing it
-    // (needsLogin), so login failed with "Invalid login credentials".
-    //
-    // Safe to set password when:
-    // - Claim token proves email ownership (same pattern as enrollment), OR
-    // - This is first-time client setup (not yet onboarded).
-    // Keep needsLogin for receipt-only claims against already-onboarded accounts
-    // (anti-takeover: pay with someone else's email + your payment id).
-    const isFirstTimeClientSetup = existingProfile?.onboarding_complete !== true
-    if (claimedViaToken || isFirstTimeClientSetup) {
+    // Only the emailed claim token proves control of this account's address.
+    // A Razorpay payment id is a receipt identifier, not an authentication
+    // factor, so receipt-only recovery must never replace existing credentials.
+    if (claimedViaToken) {
       await syncAuthCredentials(userId, email, password, name)
       needsLogin = false
       logPurchaseStep('auth_password_synced', {
         email,
         userId,
         claimedViaToken,
-        isFirstTimeClientSetup,
       })
     } else {
       needsLogin = true
