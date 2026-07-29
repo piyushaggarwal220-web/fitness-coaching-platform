@@ -61,6 +61,7 @@ import {
   WORKOUT_TIME_OPTIONS,
 } from '@/lib/onboarding'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
+import { isChunkLoadError, reloadForNewDeployment } from '@/lib/chunk-load-recovery'
 import type { OnboardingFormData } from '@/types/database'
 import type { SavedPhotoUrls } from '@/lib/onboarding'
 import { MeasurementScroller, NumberScroller } from '@/components/ui/MeasurementScroller'
@@ -294,6 +295,11 @@ export default function OnboardingPage() {
       await persistProgress(nextStep)
       setStep(nextStep)
     } catch (err) {
+      if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-next')) return
+      if (isChunkLoadError(err)) {
+        setError('The app was updated. Please refresh this page and continue — your answers are already saved.')
+        return
+      }
       setError(err instanceof Error ? err.message : 'Failed to save progress')
     }
   }
@@ -345,6 +351,7 @@ export default function OnboardingPage() {
       markOnboardingJustCompleted()
       router.replace('/dashboard')
     } catch (err) {
+      if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-submit')) return
       setError(err instanceof Error ? err.message : 'Failed to complete onboarding')
       setSubmitting(false)
     }
