@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { assignCoachToClient } from '@/lib/admin/assign-coach'
+import { resolveCoachHardCap } from '@/lib/coach-capacity'
 import { shouldAutoAssignCoach } from '@/lib/config'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -48,7 +49,7 @@ export async function autoAssignCoachToClient(
 
   for (const coach of coaches) {
     const load = loadMap.get(coach.id) ?? 0
-    const cap = coach.hard_cap ?? 999
+    const cap = resolveCoachHardCap(coach.hard_cap)
     if (load < cap && load < lowestLoad) {
       lowestLoad = load
       bestCoachId = coach.id

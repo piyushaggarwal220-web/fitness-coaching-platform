@@ -11,6 +11,7 @@ import { requireCoach } from '@/lib/coach-session';
 import { brandTitle } from '@/lib/brand';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { colors, spacing } from '@/lib/coach-theme';
+import { resolveCoachHardCap } from '@/lib/coach-capacity'
 import { CoachWorkSummaryCards } from '@/components/coach/CoachWorkSummaryCards';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
@@ -207,7 +208,7 @@ export default function CoachDashboard() {
           <div style={styles.statCard}>
             <div style={styles.statNumber}>{stats.total}</div>
             <div style={styles.statLabel}>Total Clients</div>
-            <div style={styles.statSub}>{stats.total}/{coach?.hard_cap || 500} capacity</div>
+            <div style={styles.statSub}>{stats.total}/{resolveCoachHardCap(coach?.hard_cap)} capacity</div>
           </div>
           <div style={{ ...styles.statCard, borderColor: colors.warning }}>
             <div style={styles.statNumber}>{stats.awaiting}</div>

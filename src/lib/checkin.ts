@@ -6,6 +6,7 @@ import type {
   WeeklyCheckinFormData,
 } from '@/types/database'
 import { validatePhotoFile } from '@/lib/photo'
+import { MAX_STANDARD_PHOTO_UPLOAD_BYTES, uploadStandardPhoto } from '@/lib/photo-upload'
 
 export const CHECKIN_PHOTO_BUCKET = 'checkin-photos'
 export const CHECKIN_INTERVAL_DAYS = 7
@@ -113,33 +114,79 @@ export function validateCheckinForm(
   return null
 }
 
-/** Compress image client-side before upload. Falls back to original on failure. */
+type DecodedPhoto = {
+  source: CanvasImageSource
+  width: number
+  height: number
+  close?: () => void
+}
+
+async function decodePhoto(file: File): Promise<DecodedPhoto> {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(file)
+      return {
+        source: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        close: () => bitmap.close(),
+      }
+    } catch {
+      // Some mobile browsers decode camera images through <img> but not createImageBitmap.
+    }
+  }
+
+  if (typeof Image === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    throw new Error('This browser cannot decode the selected photo.')
+  }
+
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    const image = new Image()
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve()
+      image.onerror = () => reject(new Error('The selected photo could not be decoded.'))
+      image.src = objectUrl
+    })
+    return {
+      source: image,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    }
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
+/** Compress image client-side before upload. Falls back to the original when it is already safe to upload. */
 export async function compressImageFile(file: File): Promise<File> {
   const validationError = validatePhotoFile(file)
   if (validationError) throw new Error(validationError)
 
   try {
-    const bitmap = await createImageBitmap(file)
-    const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(bitmap.width, bitmap.height))
-    const width = Math.round(bitmap.width * scale)
-    const height = Math.round(bitmap.height * scale)
+    const decoded = await decodePhoto(file)
+    try {
+      const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(decoded.width, decoded.height))
+      const width = Math.round(decoded.width * scale)
+      const height = Math.round(decoded.height * scale)
 
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return file
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return file
 
-    ctx.drawImage(bitmap, 0, 0, width, height)
-    bitmap.close()
+      ctx.drawImage(decoded.source, 0, 0, width, height)
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((b) => resolve(b), 'image/jpeg', PHOTO_JPEG_QUALITY)
+      })
 
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((b) => resolve(b), 'image/jpeg', PHOTO_JPEG_QUALITY)
-    })
-
-    if (!blob) return file
-    const baseName = file.name.replace(/\.[^.]+$/, '') || 'photo'
-    return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' })
+      if (!blob || blob.size > MAX_STANDARD_PHOTO_UPLOAD_BYTES) return file
+      const baseName = file.name.replace(/\.[^.]+$/, '') || 'photo'
+      return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' })
+    } finally {
+      decoded.close?.()
+    }
   } catch {
     return file
   }
@@ -157,14 +204,8 @@ export async function uploadCheckinPhoto(
   const ext = compressed.name.split('.').pop() || 'jpg'
   const path = `${clientId}/${Date.now()}_${label}.${ext}`
 
-  const { error } = await supabase.storage
-    .from(CHECKIN_PHOTO_BUCKET)
-    .upload(path, compressed, { upsert: false, contentType: compressed.type || 'image/jpeg' })
-
-  if (error) throw new Error(`Photo upload failed (${label}): ${error.message}`)
-
   // Store object path; display via signed URLs (bucket is private).
-  return path
+  return uploadStandardPhoto(supabase, CHECKIN_PHOTO_BUCKET, path, compressed, label)
 }
 
 export function parseCoachResponse(raw: string | null): CoachCheckinResponse {
