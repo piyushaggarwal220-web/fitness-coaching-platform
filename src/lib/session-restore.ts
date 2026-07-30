@@ -31,6 +31,8 @@ export type SessionRestoreResult = SessionRestoreSuccess | SessionRestoreFailure
 
 const PROFILE_FETCH_RETRY_DELAYS_MS = [0, 200, 500, 1000, 1500, 2500]
 const COACH_FETCH_RETRY_DELAYS_MS = [0, 200, 500, 1000, 1500]
+/** Retries help after mobile app-switch when cookies/tokens are still settling. */
+const SESSION_RETRY_DELAYS_MS = [0, 300, 800, 1500]
 
 type SessionRestoreLogEvent =
   | 'session_found'
@@ -57,26 +59,46 @@ function logSessionRestore(
 export async function ensureAuthSession(
   supabase: SupabaseClient
 ): Promise<{ user: SessionUser | null; refreshed: boolean }> {
-  const { data: { user }, error } = await supabase.auth.getUser()
+  let sawRefresh = false
 
-  if (user && !error) {
-    logSessionRestore('session_found', { userId: user.id })
-    return { user: { id: user.id, email: user.email }, refreshed: false }
-  }
-
-  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-  if (refreshData?.user && !refreshError) {
-    logSessionRestore('session_refreshed', { userId: refreshData.user.id })
-    return {
-      user: { id: refreshData.user.id, email: refreshData.user.email },
-      refreshed: true,
+  for (let attempt = 0; attempt < SESSION_RETRY_DELAYS_MS.length; attempt++) {
+    if (SESSION_RETRY_DELAYS_MS[attempt] > 0) {
+      await new Promise((resolve) => setTimeout(resolve, SESSION_RETRY_DELAYS_MS[attempt]))
     }
-  }
 
-  const { data: { user: retryUser } } = await supabase.auth.getUser()
-  if (retryUser) {
-    logSessionRestore('session_found', { userId: retryUser.id, afterRefreshRetry: true })
-    return { user: { id: retryUser.id, email: retryUser.email }, refreshed: true }
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (user && !error) {
+      logSessionRestore('session_found', {
+        userId: user.id,
+        attempt,
+        refreshed: sawRefresh,
+      })
+      return {
+        user: { id: user.id, email: user.email },
+        refreshed: sawRefresh,
+      }
+    }
+
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+    if (refreshData?.user && !refreshError) {
+      sawRefresh = true
+      logSessionRestore('session_refreshed', { userId: refreshData.user.id, attempt })
+      return {
+        user: { id: refreshData.user.id, email: refreshData.user.email },
+        refreshed: true,
+      }
+    }
+
+    const { data: { user: retryUser } } = await supabase.auth.getUser()
+    if (retryUser) {
+      sawRefresh = true
+      logSessionRestore('session_found', {
+        userId: retryUser.id,
+        afterRefreshRetry: true,
+        attempt,
+      })
+      return { user: { id: retryUser.id, email: retryUser.email }, refreshed: true }
+    }
   }
 
   logSessionRestore('session_missing', {})

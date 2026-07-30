@@ -5,6 +5,7 @@ import "@/components/dev/dev-panel.css";
 import { DevPanelRoot } from "@/components/dev/DevPanelRoot";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
+import { SessionKeepalive } from "@/components/auth/SessionKeepalive";
 import { initWhatsAppProvider } from "@/lib/notifications/whatsapp-provider";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 
@@ -57,6 +58,7 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body>
         {children}
+        <SessionKeepalive />
         <PwaRegister />
         <MetaPixel />
         <DevPanelRoot />

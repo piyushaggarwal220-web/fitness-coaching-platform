@@ -212,11 +212,15 @@ export type TrackerCompletion = {
   selectedDietDay?: string | null
   /** Which plan workout day the client is following today. null clears the selection. */
   selectedWorkoutDay?: string | null
-  /** Explicitly saved workout session for the day */
+  /** Explicitly saved or in-progress workout session for the day */
   workoutSession?: {
     status?: 'in_progress' | 'saved'
+    /** Wall-clock start used to restore the timer after app switch / remount */
+    startedAt?: string
     savedAt?: string
     durationSeconds?: number
+    /** True when the client paused the timer (still in progress) */
+    paused?: boolean
   } | null
 }
 

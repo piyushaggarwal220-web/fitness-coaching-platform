@@ -64,6 +64,33 @@ type RestState = {
 
 const MAX_SESSION_MS = 4 * 60 * 60 * 1000
 
+function restoreSessionClock(session: TrackerCompletion['workoutSession']): {
+  running: boolean
+  startedAt: number | null
+  elapsedMs: number
+} {
+  if (session?.status !== 'in_progress') {
+    return { running: false, startedAt: null, elapsedMs: 0 }
+  }
+  const durationMs = Math.min(
+    MAX_SESSION_MS,
+    Math.max(0, (session.durationSeconds ?? 0) * 1000)
+  )
+  if (session.paused || !session.startedAt) {
+    return { running: false, startedAt: null, elapsedMs: durationMs }
+  }
+  const startedAt = Date.parse(session.startedAt)
+  if (Number.isNaN(startedAt)) {
+    return { running: false, startedAt: null, elapsedMs: durationMs }
+  }
+  const elapsed = Math.min(MAX_SESSION_MS, Math.max(0, Date.now() - startedAt))
+  return {
+    running: elapsed < MAX_SESSION_MS,
+    startedAt,
+    elapsedMs: elapsed,
+  }
+}
+
 function formatDuration(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
@@ -95,11 +122,14 @@ export function WorkoutModule({
     return workouts.find((w) => w.workoutDay === selectedKey) ?? null
   }, [workouts, multiDay, selectedKey])
 
-  const [sessionRunning, setSessionRunning] = useState(false)
-  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null)
-  const [elapsedMs, setElapsedMs] = useState(0)
+  const [bootClock] = useState(() => restoreSessionClock(completion.workoutSession))
+  const [sessionRunning, setSessionRunning] = useState(bootClock.running)
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(bootClock.startedAt)
+  const [elapsedMs, setElapsedMs] = useState(bootClock.elapsedMs)
   const [rest, setRest] = useState<RestState | null>(null)
-  const [autoStopped, setAutoStopped] = useState(false)
+  const [autoStopped, setAutoStopped] = useState(
+    bootClock.elapsedMs >= MAX_SESSION_MS && completion.workoutSession?.status === 'in_progress'
+  )
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
 
@@ -137,28 +167,65 @@ export function WorkoutModule({
     } as const
   }, [workout, completion.exercises, progress.percent, hasWarmup])
 
+  const persistSession = useCallback(
+    (next: {
+      running: boolean
+      startedAt: number | null
+      elapsedMs: number
+      clear?: boolean
+    }) => {
+      if (next.clear) {
+        void onPatch({ workoutSession: null })
+        return
+      }
+      const startedAt =
+        next.running && next.startedAt != null
+          ? new Date(next.startedAt).toISOString()
+          : undefined
+      void onPatch({
+        workoutSession: {
+          status: 'in_progress',
+          startedAt,
+          durationSeconds: Math.floor(next.elapsedMs / 1000),
+          paused: !next.running,
+        },
+      })
+    },
+    [onPatch]
+  )
+
   const stopSession = useCallback(() => {
+    const ms =
+      sessionStartedAt != null ? Math.min(MAX_SESSION_MS, Date.now() - sessionStartedAt) : elapsedMs
+    setElapsedMs(ms)
     setSessionRunning(false)
     setSessionStartedAt(null)
-  }, [])
+    persistSession({ running: false, startedAt: null, elapsedMs: ms })
+  }, [elapsedMs, persistSession, sessionStartedAt])
 
   const startSession = useCallback(() => {
     setAutoStopped(false)
     setSaveMessage('')
-    setSessionStartedAt(Date.now() - elapsedMs)
+    const startedAt = Date.now() - elapsedMs
+    setSessionStartedAt(startedAt)
     setSessionRunning(true)
-  }, [elapsedMs])
+    persistSession({ running: true, startedAt, elapsedMs })
+  }, [elapsedMs, persistSession])
 
   const resetSession = useCallback(() => {
     setSessionRunning(false)
     setSessionStartedAt(null)
     setElapsedMs(0)
     setAutoStopped(false)
-  }, [])
+    persistSession({ running: false, startedAt: null, elapsedMs: 0, clear: true })
+  }, [persistSession])
 
   const selectWorkoutDay = useCallback(
     (key: string | null) => {
-      resetSession()
+      setSessionRunning(false)
+      setSessionStartedAt(null)
+      setElapsedMs(0)
+      setAutoStopped(false)
       setRest(null)
       setConfirmSaveOpen(false)
       setSaveMessage('')
@@ -167,7 +234,7 @@ export function WorkoutModule({
         workoutSession: null,
       })
     },
-    [onPatch, resetSession]
+    [onPatch]
   )
 
   useEffect(() => {
@@ -180,6 +247,11 @@ export function WorkoutModule({
         setSessionRunning(false)
         setSessionStartedAt(null)
         setAutoStopped(true)
+        persistSession({
+          running: false,
+          startedAt: null,
+          elapsedMs: MAX_SESSION_MS,
+        })
         return
       }
       setElapsedMs(ms)
@@ -188,7 +260,33 @@ export function WorkoutModule({
     tick()
     const id = window.setInterval(tick, 1000)
     return () => window.clearInterval(id)
-  }, [sessionRunning, sessionStartedAt])
+  }, [persistSession, sessionRunning, sessionStartedAt])
+
+  // Periodically checkpoint running duration so a killed tab still restores close time.
+  useEffect(() => {
+    if (!sessionRunning || sessionStartedAt == null) return
+    const id = window.setInterval(() => {
+      const ms = Math.min(MAX_SESSION_MS, Date.now() - sessionStartedAt)
+      persistSession({ running: true, startedAt: sessionStartedAt, elapsedMs: ms })
+    }, 30_000)
+    return () => window.clearInterval(id)
+  }, [persistSession, sessionRunning, sessionStartedAt])
+
+  // Checkpoint immediately when the user backgrounds the app.
+  useEffect(() => {
+    const checkpoint = () => {
+      if (document.visibilityState !== 'hidden') return
+      if (!sessionRunning || sessionStartedAt == null) return
+      const ms = Math.min(MAX_SESSION_MS, Date.now() - sessionStartedAt)
+      persistSession({ running: true, startedAt: sessionStartedAt, elapsedMs: ms })
+    }
+    document.addEventListener('visibilitychange', checkpoint)
+    window.addEventListener('pagehide', checkpoint)
+    return () => {
+      document.removeEventListener('visibilitychange', checkpoint)
+      window.removeEventListener('pagehide', checkpoint)
+    }
+  }, [persistSession, sessionRunning, sessionStartedAt])
 
   if (multiDay && !selectedKey) {
     return (
@@ -322,13 +420,18 @@ export function WorkoutModule({
   }
 
   const confirmSaveWorkout = async () => {
-    stopSession()
+    const ms =
+      sessionStartedAt != null ? Math.min(MAX_SESSION_MS, Date.now() - sessionStartedAt) : elapsedMs
+    setElapsedMs(ms)
+    setSessionRunning(false)
+    setSessionStartedAt(null)
     setRest(null)
     await onPatch({
       workoutSession: {
         status: 'saved',
         savedAt: new Date().toISOString(),
-        durationSeconds: Math.floor(elapsedMs / 1000),
+        durationSeconds: Math.floor(ms / 1000),
+        paused: false,
       },
     })
     setConfirmSaveOpen(false)

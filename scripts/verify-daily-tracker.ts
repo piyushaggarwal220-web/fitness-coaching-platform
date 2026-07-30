@@ -1,5 +1,6 @@
-import { buildTrackerSnapshot } from '../src/lib/daily-tracker/parser'
+import { buildTrackerSnapshot, mergeCompletion } from '../src/lib/daily-tracker/parser'
 import { calculateTrackerScores } from '../src/lib/daily-tracker/scores'
+import { applyTrackerDraft } from '../src/lib/daily-tracker/tracker-draft'
 import type { Plan } from '../src/types/database'
 
 let failed = 0
@@ -207,6 +208,31 @@ const { scores, overall } = calculateTrackerScores(snapV1, {
   water: { ml: 3000 },
 })
 assert('completion scoring works', scores.diet === 100 && overall > 0)
+
+const mergedSession = mergeCompletion(
+  { workoutSession: { status: 'in_progress', startedAt: '2026-07-30T10:00:00.000Z', durationSeconds: 120 } },
+  { workoutSession: { status: 'in_progress', durationSeconds: 180, paused: true } }
+)
+assert(
+  'mergeCompletion keeps in-progress workout session fields',
+  mergedSession.workoutSession?.status === 'in_progress' &&
+    mergedSession.workoutSession?.durationSeconds === 180 &&
+    mergedSession.workoutSession?.paused === true &&
+    mergedSession.workoutSession?.startedAt === '2026-07-30T10:00:00.000Z'
+)
+
+const draftMerged = applyTrackerDraft(
+  { exercises: { ex1: { completed: false } } },
+  {
+    dayId: 'day-1',
+    updatedAt: new Date().toISOString(),
+    completion: { exercises: { ex1: { completed: true, sets: [{ completed: true }] } } },
+  }
+)
+assert(
+  'applyTrackerDraft restores unsynced exercise progress',
+  draftMerged.exercises?.ex1?.completed === true
+)
 
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)

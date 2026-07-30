@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server'
 import { loadTodayTrackerView } from '@/lib/daily-tracker'
-import { createClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/api-auth'
 
 export async function GET() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  const auth = await requireApiUser()
+  if (!auth.ok) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }
+
+  const { supabase, user } = auth
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
