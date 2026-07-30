@@ -1,6 +1,12 @@
 {
   "prompts": [
     {
+      "slug": "system-prompt",
+      "category": "system_prompt",
+      "name": "System Prompt",
+      "file": "system-prompt.prompt"
+    },
+    {
       "slug": "initial-diet-prompt",
       "category": "initial_diet",
       "name": "Initial Diet Prompt",

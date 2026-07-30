@@ -29,15 +29,15 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
    - Use approximate gram weights alongside everyday portion language (roti, katori, bowl, scoop, glass) rather than only numeric bullet points
    - **After each meal option, add a compact macro line immediately below it: (P: 28g | C: 45g | F: 12g | ~400 kcal). Macros should be calculated for the full meal option as described, not per ingredient.**
    - At the end of each day, add a **Daily Total** line that correctly sums that day's meal macros. Daily totals must be consistent with the weekly average targets (within ~100 kcal per day).
-   - Vary the structure naturally across the week — not every day needs to look identical; some days can simply say "repeat Monday's breakfast" or "same as Tuesday but swap rice for 2 rotis" — and in those cases, carry the macros forward without recalculating
+   - You may reuse the same meals on multiple days when variety preference allows it, BUT every day must rewrite the FULL meal text in actual words (foods, portions, cooking fats, and the macro line). NEVER write "repeat Monday", "same as Tuesday", "follow Monday's plan", "as above", "Day 1 meals again", or any cross-day pointer. The daily tracker cannot resolve those references — if Thursday mirrors Monday, copy Monday's complete meals onto Thursday word for word (or with the intended swaps written out fully).
    - For dal/curries/sabzi with gravy, just describe the final cooked portion in everyday terms (e.g. "1 katori cooked dal, approx 150g") — no raw-to-cooked cooking formulas in the client-facing text
 
 5. Respect veg/non-veg days exactly as specified. On veg days, no eggs, chicken, or fish in any option. On non-veg days, include at least one egg/chicken/fish-based choice.
 
 6. Keep food choices realistic and affordable for the client's stated budget. Prioritise foods they said they enjoy, and never use anything they dislike or are allergic to. Add a few extra practical options beyond what they mentioned if it helps variety.
-   Obey diet variety preference from onboarding:
-   - same_daily → largely repeat the same daily structure (small swaps ok)
-   - fifty_fifty → about half the week can repeat a template day; other days introduce clear variety
+   Obey diet variety preference from onboarding (content may repeat; wording must still be fully written each day):
+   - same_daily → largely the same daily meals across the week (small swaps ok) — still paste the full meal list under every day header
+   - fifty_fifty → about half the week can reuse a template day's meals; other days introduce clear variety — reused days still get the full meal text rewritten
    - different_daily → meaningfully different meals across most days while staying on target macros
 
 7. If the client uses whey protein, mention it naturally as a post-workout option on training days. If not, build the plan entirely with food-based protein sources (eggs, dal, paneer, soya chunks, chana, peanuts, etc. — biased toward cheaper sources if the budget is tight).

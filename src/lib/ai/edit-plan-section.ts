@@ -81,6 +81,8 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
     '- Use plain section titles and put list items on separate lines without symbol prefixes.',
     '- Do not invent unsafe extreme restrictions or medical claims.',
+    '- Never introduce cross-day references ("same as Monday", "repeat Day 1", "follow Thursday\'s plan", "as above"). Every day must keep its full meal or exercise list written out so the daily tracker can parse it.',
+    '- If the request asks one day to mirror another, copy the full content under both day headers instead of pointing between days.',
     '- Output ONLY the full revised plan text for that section — no preamble, no explanation.',
   ].join('\n')
 
