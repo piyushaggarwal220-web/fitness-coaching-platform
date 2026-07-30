@@ -9,7 +9,7 @@ type Props = {
   items: TrackerCardioItem[]
   completion: TrackerCompletion
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 export function CardioModule({ items, completion, saving, onPatch }: Props) {

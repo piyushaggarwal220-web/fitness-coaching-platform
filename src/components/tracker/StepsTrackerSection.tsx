@@ -11,7 +11,7 @@ type Props = {
   steps: TrackerCardioItem
   completion: TrackerCompletion
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 export function StepsTrackerSection({ steps, completion, saving, onPatch }: Props) {

@@ -13,7 +13,7 @@ type Props = {
   completion: TrackerCompletion
   sleepScore: number
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 const QUALITY_OPTIONS: { value: SleepQualityLabel; label: string }[] = [

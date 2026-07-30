@@ -14,7 +14,7 @@ type Props = {
   completion: TrackerCompletion
   waterScore: number
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 export function WaterModule({ water, completion, waterScore, saving, onPatch }: Props) {

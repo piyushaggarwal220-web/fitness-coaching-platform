@@ -15,7 +15,7 @@ type Props = {
   completion: TrackerCompletion
   dietScore: number
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 export function DietTrackerSection({ meals, completion, dietScore, saving, onPatch }: Props) {

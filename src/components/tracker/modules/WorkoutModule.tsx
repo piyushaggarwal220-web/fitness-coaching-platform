@@ -39,7 +39,8 @@ type Props = {
   completion: TrackerCompletion
   workoutScore: number
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  error?: string | null
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 function deriveWorkoutDays(
@@ -80,6 +81,7 @@ export function WorkoutModule({
   completion,
   workoutScore,
   saving,
+  error,
   onPatch,
 }: Props) {
   const days = useMemo(() => deriveWorkoutDays(workouts, workoutDays), [workouts, workoutDays])
@@ -324,13 +326,18 @@ export function WorkoutModule({
   const confirmSaveWorkout = async () => {
     stopSession()
     setRest(null)
-    await onPatch({
+    setSaveMessage('')
+    const ok = await onPatch({
       workoutSession: {
         status: 'saved',
         savedAt: new Date().toISOString(),
         durationSeconds: Math.floor(elapsedMs / 1000),
       },
     })
+    if (!ok) {
+      setSaveMessage('')
+      return
+    }
     setConfirmSaveOpen(false)
     setSaveMessage('Workout saved.')
   }
@@ -339,6 +346,28 @@ export function WorkoutModule({
 
   return (
     <div>
+      {error && (
+        <div
+          role="alert"
+          style={{
+            marginBottom: spacing[4],
+            padding: '12px 14px',
+            borderRadius: radius.md,
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            color: '#fca5a5',
+            fontSize: 14,
+            lineHeight: 1.45,
+            fontWeight: 600,
+          }}
+        >
+          {error}
+          <div style={{ marginTop: 6, fontSize: 13, fontWeight: 500, color: colors.textSecondary }}>
+            Your logged sets are still here — tap Save workout again when you are back online.
+          </div>
+        </div>
+      )}
+
       {multiDay && selectedDay && (
         <div
           style={{
