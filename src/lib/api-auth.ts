@@ -11,26 +11,34 @@ export type ApiAuthResult =
 export async function requireApiUser(): Promise<ApiAuthResult> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 200 * attempt))
+    }
 
-  if (user && !error) {
-    scheduleOpportunisticNotificationDrain()
-    return { ok: true, supabase, user }
-  }
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
 
-  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-  if (refreshData?.user && !refreshError) {
-    scheduleOpportunisticNotificationDrain()
-    return { ok: true, supabase, user: refreshData.user }
-  }
+    if (user && !error) {
+      scheduleOpportunisticNotificationDrain()
+      return { ok: true, supabase, user }
+    }
 
-  const { data: { user: retryUser } } = await supabase.auth.getUser()
-  if (retryUser) {
-    scheduleOpportunisticNotificationDrain()
-    return { ok: true, supabase, user: retryUser }
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+    if (refreshData?.user && !refreshError) {
+      scheduleOpportunisticNotificationDrain()
+      return { ok: true, supabase, user: refreshData.user }
+    }
+
+    const {
+      data: { user: retryUser },
+    } = await supabase.auth.getUser()
+    if (retryUser) {
+      scheduleOpportunisticNotificationDrain()
+      return { ok: true, supabase, user: retryUser }
+    }
   }
 
   return {

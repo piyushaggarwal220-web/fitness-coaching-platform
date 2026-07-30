@@ -16,6 +16,12 @@ import { authenticateClient } from '@/lib/onboarding'
 import { createClient } from '@/lib/supabase/client'
 import { getCategoryDisplayScores, splitSnapshot, type TrackerSections } from '@/lib/daily-tracker/display'
 import { mergeCompletion } from '@/lib/daily-tracker/parser'
+import {
+  applyTrackerDraft,
+  clearTrackerDraft,
+  readTrackerDraft,
+  writeTrackerDraft,
+} from '@/lib/daily-tracker/tracker-draft'
 import { ensureAuthSession } from '@/lib/session-restore'
 import type {
   DailyTrackerDay,
@@ -47,6 +53,18 @@ type PatchQueue = {
   pending: TrackerCompletion | null
   waiters: Array<(ok: boolean) => void>
   flushing: boolean
+}
+
+function withDraft(view: TodayTrackerView): TodayTrackerView {
+  const day = view.day
+  if (!day) return view
+  const draft = readTrackerDraft(day.id)
+  if (!draft) return view
+  const merged = applyTrackerDraft(day.completion, draft)
+  return {
+    ...view,
+    day: { ...day, completion: merged },
+  }
 }
 
 async function sendTrackerPatch(
@@ -131,6 +149,13 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
               const nextCompletion = queue.pending
                 ? mergeCompletion(result.day!.completion, queue.pending)
                 : result.day!.completion
+
+              if (queue.pending) {
+                writeTrackerDraft(dayId, nextCompletion)
+              } else {
+                clearTrackerDraft(dayId)
+              }
+
               return { ...current, day: { ...result.day!, completion: nextCompletion } }
             })
             setError(null)
@@ -191,8 +216,9 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       }
 
       if (loaded?.day) {
-        dayIdRef.current = loaded.day.id
-        setView(loaded)
+        const withLocal = withDraft(loaded)
+        dayIdRef.current = withLocal.day!.id
+        setView(withLocal)
         setError(null)
       } else {
         dayIdRef.current = null
@@ -218,6 +244,24 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     }
   }, [load])
 
+  useEffect(() => {
+    const onResume = () => {
+      if (document.visibilityState === 'hidden') return
+      void (async () => {
+        await ensureAuthSession(supabase)
+        await flushQueueRef.current()
+      })()
+    }
+    document.addEventListener('visibilitychange', onResume)
+    window.addEventListener('focus', onResume)
+    window.addEventListener('online', onResume)
+    return () => {
+      document.removeEventListener('visibilitychange', onResume)
+      window.removeEventListener('focus', onResume)
+      window.removeEventListener('online', onResume)
+    }
+  }, [])
+
   const day = view?.day ?? null
 
   const sections = useMemo(
@@ -232,14 +276,16 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       if (!dayId) return false
       dayIdRef.current = dayId
 
-      // Optimistic local merge so rapid set taps feel instant and survive brief offline blips.
+      // Optimistic local merge + draft so rapid set taps and app switches keep progress.
       setView((current) => {
         if (!current?.day) return current
+        const nextCompletion = mergeCompletion(current.day.completion, patch)
+        writeTrackerDraft(current.day.id, nextCompletion)
         return {
           ...current,
           day: {
             ...current.day,
-            completion: mergeCompletion(current.day.completion, patch),
+            completion: nextCompletion,
           },
         }
       })
