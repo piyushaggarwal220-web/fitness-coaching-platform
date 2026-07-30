@@ -2,6 +2,7 @@ import type { PromptLibraryCategory } from '@/types/database'
 
 /** Core production workflow prompts (gym + diet). */
 export const CORE_PRODUCTION_PROMPT_CATEGORIES = [
+  'system_prompt',
   'initial_diet',
   'initial_workout',
   'weekly_diet_update',
