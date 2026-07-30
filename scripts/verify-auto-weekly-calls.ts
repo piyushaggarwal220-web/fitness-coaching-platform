@@ -3,8 +3,11 @@
  * Run: npm run verify:auto-weekly-calls
  */
 import {
+  autoWeeklyCallNote,
+  getAutoWeeklyCallMeta,
   getAutoWeeklyCallSlot,
   isTwelveMonthActiveSubscription,
+  parseAutoWeeklyCallWeek,
 } from '../src/lib/auto-weekly-calls'
 import { getDueDate } from '../src/lib/checkin-schedule'
 
@@ -67,6 +70,15 @@ function main() {
   check(
     'Expired 12-month purchase is not eligible',
     !isTwelveMonthActiveSubscription(purchase, '2026-02-01T00:00:00.000Z', new Date('2026-06-01T00:00:00.000Z'))
+  )
+
+  console.log('\nAuto note helpers:')
+  check('Note encodes week', autoWeeklyCallNote(3) === 'Auto-booked weekly call · Week 3 (Day 7)')
+  check('Note parses week', parseAutoWeeklyCallWeek(autoWeeklyCallNote(3)) === 3)
+  check(
+    'Meta detects note-only auto calls',
+    getAutoWeeklyCallMeta({ source: undefined, coaching_week: null, coach_note: autoWeeklyCallNote(2) })
+      .coachingWeek === 2
   )
 
   console.log(`\n${passed} passed, ${failed} failed`)

@@ -837,8 +837,10 @@ export type CallRequest = {
   client_id: string
   coach_id: string
   status: CallRequestStatus
-  source: CallRequestSource
-  coaching_week: number | null
+  /** Present after auto-weekly migration; older rows may omit this. */
+  source?: CallRequestSource
+  /** Present after auto-weekly migration for source=auto_weekly rows. */
+  coaching_week?: number | null
   requested_at: string
   scheduled_for: string | null
   coach_note: string | null

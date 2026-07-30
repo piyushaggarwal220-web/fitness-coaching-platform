@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { getAutoWeeklyCallMeta } from '@/lib/auto-weekly-calls'
 
 export type WorkQueueTaskType =
   | 'initial_plan'
@@ -193,19 +194,19 @@ export async function getCoachWorkQueue(
 
   for (const request of callRequests ?? []) {
     const name = clientNameById.get(request.client_id) ?? 'Client'
-    const isAutoWeekly = request.source === 'auto_weekly'
+    const autoMeta = getAutoWeeklyCallMeta(request)
     tasks.push({
       id: `call-${request.id}`,
       type: 'call_request',
       title: request.status === 'scheduled'
         ? `Scheduled call with ${name}`
-        : isAutoWeekly
+        : autoMeta.isAutoWeekly
           ? `Weekly Day 7 call · ${name}`
           : `Call requested by ${name}`,
       subtitle: request.scheduled_for
         ? new Date(request.scheduled_for).toLocaleString('en-IN')
-        : isAutoWeekly
-          ? `Auto-booked week ${request.coaching_week ?? '—'} — open chat to schedule`
+        : autoMeta.isAutoWeekly
+          ? `Auto-booked week ${autoMeta.coachingWeek ?? '—'} — open chat to schedule`
           : 'Open chat to schedule or resolve',
       href: `/coach/chat/${request.conversation_id}`,
       clientId: request.client_id,

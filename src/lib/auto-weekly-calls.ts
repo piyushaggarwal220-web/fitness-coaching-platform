@@ -7,11 +7,39 @@ import {
 } from '@/lib/checkin-schedule'
 import { planSlugIsTwelveMonth } from '@/lib/league/eligibility'
 import { getActiveSubscription } from '@/lib/subscription'
-import type { Purchase } from '@/types/database'
+import type { CallRequest, Purchase } from '@/types/database'
 
 export type AutoWeeklyCallSlot = {
   coachingWeek: number
   dueDate: Date
+}
+
+export function autoWeeklyCallNote(coachingWeek: number): string {
+  return `Auto-booked weekly call · Week ${coachingWeek} (Day 7)`
+}
+
+export function parseAutoWeeklyCallWeek(coachNote: string | null | undefined): number | null {
+  if (!coachNote) return null
+  const match = coachNote.match(/^Auto-booked weekly call · Week (\d+) \(Day 7\)$/)
+  if (!match) return null
+  const week = Number(match[1])
+  return Number.isFinite(week) && week >= 1 ? week : null
+}
+
+export function getAutoWeeklyCallMeta(
+  request: Pick<CallRequest, 'source' | 'coaching_week' | 'coach_note'>
+): { isAutoWeekly: boolean; coachingWeek: number | null } {
+  if (request.source === 'auto_weekly') {
+    return {
+      isAutoWeekly: true,
+      coachingWeek: request.coaching_week ?? parseAutoWeeklyCallWeek(request.coach_note),
+    }
+  }
+  const fromNote = parseAutoWeeklyCallWeek(request.coach_note)
+  return {
+    isAutoWeekly: fromNote != null,
+    coachingWeek: fromNote,
+  }
 }
 
 /**

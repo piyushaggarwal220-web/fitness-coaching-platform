@@ -1,11 +1,14 @@
 import 'server-only'
 
-import { getAutoWeeklyCallSlot } from '@/lib/auto-weekly-calls'
+import {
+  autoWeeklyCallNote,
+  getAutoWeeklyCallSlot,
+  isTwelveMonthActiveSubscription,
+} from '@/lib/auto-weekly-calls'
 import { getOrCreateConversation } from '@/lib/coach-chat'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isTwelveMonthActiveSubscription } from '@/lib/auto-weekly-calls'
 import type { CallRequest, Purchase } from '@/types/database'
 
 export type AutoWeeklyCallResult =
@@ -88,7 +91,10 @@ async function findExistingAutoWeeklyCall(
   clientId: string,
   coachingWeek: number
 ): Promise<CallRequest | null> {
-  const { data, error } = await admin
+  const note = autoWeeklyCallNote(coachingWeek)
+
+  // Prefer schema columns when the migration is applied.
+  const byColumns = await admin
     .from('call_requests')
     .select('*')
     .eq('client_id', clientId)
@@ -96,8 +102,75 @@ async function findExistingAutoWeeklyCall(
     .eq('coaching_week', coachingWeek)
     .maybeSingle()
 
+  if (!byColumns.error && byColumns.data) {
+    return byColumns.data as CallRequest
+  }
+
+  const { data, error } = await admin
+    .from('call_requests')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('coach_note', note)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
   if (error) throw new Error(error.message)
   return (data as CallRequest | null) ?? null
+}
+
+async function insertAutoWeeklyCall(
+  admin: ReturnType<typeof createAdminClient>,
+  input: {
+    conversationId: string
+    clientId: string
+    coachId: string
+    coachingWeek: number
+    coachNote: string
+    now: string
+  }
+): Promise<{ data: CallRequest | null; error: { code?: string; message: string } | null }> {
+  const baseRow = {
+    conversation_id: input.conversationId,
+    client_id: input.clientId,
+    coach_id: input.coachId,
+    status: 'requested' as const,
+    coach_note: input.coachNote,
+    updated_by: input.clientId,
+    requested_at: input.now,
+    created_at: input.now,
+    updated_at: input.now,
+  }
+
+  const withSchema = await admin
+    .from('call_requests')
+    .insert({
+      ...baseRow,
+      source: 'auto_weekly',
+      coaching_week: input.coachingWeek,
+    })
+    .select()
+    .single()
+
+  if (!withSchema.error) {
+    return { data: withSchema.data as CallRequest, error: null }
+  }
+
+  // Migration not applied yet — fall back to coach_note-only tracking.
+  if (/source|coaching_week|schema cache/i.test(withSchema.error.message)) {
+    const fallback = await admin.from('call_requests').insert(baseRow).select().single()
+    return {
+      data: (fallback.data as CallRequest | null) ?? null,
+      error: fallback.error
+        ? { code: fallback.error.code, message: fallback.error.message }
+        : null,
+    }
+  }
+
+  return {
+    data: null,
+    error: { code: withSchema.error.code, message: withSchema.error.message },
+  }
 }
 
 /**
@@ -138,7 +211,6 @@ export async function ensureAutoWeeklyCallForClient(
     .maybeSingle()
 
   if (active) {
-    // An open manual/previous call already covers the client until the coach resolves it.
     return {
       status: 'skipped',
       reason: 'active_call_exists',
@@ -159,25 +231,15 @@ export async function ensureAutoWeeklyCallForClient(
   }
 
   const now = new Date().toISOString()
-  const coachNote = `Auto-booked weekly call · Week ${slot.coachingWeek} (Day 7)`
-
-  const { data: created, error } = await admin
-    .from('call_requests')
-    .insert({
-      conversation_id: conversation.id,
-      client_id: client.id,
-      coach_id: conversation.coach_id,
-      status: 'requested',
-      source: 'auto_weekly',
-      coaching_week: slot.coachingWeek,
-      coach_note: coachNote,
-      updated_by: client.id,
-      requested_at: now,
-      created_at: now,
-      updated_at: now,
-    })
-    .select()
-    .single()
+  const coachNote = autoWeeklyCallNote(slot.coachingWeek)
+  const { data: created, error } = await insertAutoWeeklyCall(admin, {
+    conversationId: conversation.id,
+    clientId: client.id,
+    coachId: conversation.coach_id,
+    coachingWeek: slot.coachingWeek,
+    coachNote,
+    now,
+  })
 
   if (error) {
     if (error.code === '23505') {
@@ -196,6 +258,14 @@ export async function ensureAutoWeeklyCallForClient(
       }
     }
     throw new Error(error.message)
+  }
+
+  if (!created) {
+    return {
+      status: 'skipped',
+      reason: 'insert_failed',
+      coachingWeek: slot.coachingWeek,
+    }
   }
 
   await admin.from('call_request_events').insert({
@@ -257,7 +327,7 @@ export async function ensureAutoWeeklyCallForClient(
 
   return {
     status: 'created',
-    callRequestId: created.id as string,
+    callRequestId: created.id,
     coachingWeek: slot.coachingWeek,
     conversationId: conversation.id,
   }
