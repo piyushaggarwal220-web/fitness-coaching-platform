@@ -77,6 +77,8 @@ export async function POST(request: Request) {
       client_id: participant.conversation.client_id,
       coach_id: participant.conversation.coach_id,
       status: 'requested',
+      source: 'manual',
+      coaching_week: null,
       updated_by: userId,
       requested_at: now,
       created_at: now,

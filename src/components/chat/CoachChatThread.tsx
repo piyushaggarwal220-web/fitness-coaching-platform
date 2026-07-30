@@ -525,7 +525,14 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
       {viewer === 'coach' && activeCallRequest && (
         <div style={styles.callRequestPanel}>
-          <strong>Call request: {activeCallRequest.status}</strong>
+          <strong>
+            {activeCallRequest.source === 'auto_weekly'
+              ? `Weekly call (Day 7 · Week ${activeCallRequest.coaching_week ?? '—'}): ${activeCallRequest.status}`
+              : `Call request: ${activeCallRequest.status}`}
+          </strong>
+          {activeCallRequest.coach_note && (
+            <span style={{ color: wa.textMuted, fontSize: 12 }}>{activeCallRequest.coach_note}</span>
+          )}
           <input
             type="datetime-local"
             value={scheduledFor}

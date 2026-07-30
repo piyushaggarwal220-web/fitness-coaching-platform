@@ -829,12 +829,16 @@ export type CallRequestStatus =
   | 'declined'
   | 'cancelled'
 
+export type CallRequestSource = 'manual' | 'auto_weekly'
+
 export type CallRequest = {
   id: string
   conversation_id: string
   client_id: string
   coach_id: string
   status: CallRequestStatus
+  source: CallRequestSource
+  coaching_week: number | null
   requested_at: string
   scheduled_for: string | null
   coach_note: string | null
