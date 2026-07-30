@@ -18,7 +18,7 @@ type Props = {
   completion: TrackerCompletion
   supplementsScore: number
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 export function SupplementsTrackerSection({

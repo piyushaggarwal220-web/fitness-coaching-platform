@@ -16,7 +16,7 @@ type Props = {
   supplements: TrackerSupplementItem[]
   completion: TrackerCompletion
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 export function SupplementsModule({ supplements, completion, saving, onPatch }: Props) {

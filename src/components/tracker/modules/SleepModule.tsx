@@ -33,7 +33,7 @@ type Props = {
   completion: TrackerCompletion
   sleepScore: number
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: Props) {

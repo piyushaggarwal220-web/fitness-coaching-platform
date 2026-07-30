@@ -37,7 +37,7 @@ type Props = {
   completion: TrackerCompletion
   workoutScore: number
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 function formatDuration(seconds: number): string {
@@ -63,7 +63,7 @@ function ExerciseCard({
   isActive: boolean
   saving: boolean
   onStart: () => void
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }) {
   const defaultWeight = ex.targetWeight?.replace(/[^\d.]/g, '')
 
@@ -369,7 +369,7 @@ function PhaseSection({
   activeExercise: string | null
   setActiveExercise: (id: string | null) => void
   nextIncompleteId: string | null
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }) {
   const phaseProgress = getPhaseProgress(block, completion)
   const defaultOpen = block.phase === 'main' || block.phase === 'warmup'

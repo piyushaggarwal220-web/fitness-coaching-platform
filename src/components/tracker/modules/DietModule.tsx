@@ -20,7 +20,7 @@ type Props = {
   completion: TrackerCompletion
   dietScore: number
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 function deriveDietDays(meals: TrackerMealItem[], explicit?: DietDayOption[]): DietDayOption[] {

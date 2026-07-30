@@ -10,7 +10,7 @@ type Props = {
   completion: TrackerCompletion
   waterScore: number
   saving: boolean
-  onPatch: (patch: TrackerCompletion) => Promise<void>
+  onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
 const QUICK_ADD = [250, 500, 750, 1000] as const

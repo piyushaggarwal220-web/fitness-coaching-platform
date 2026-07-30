@@ -9,7 +9,21 @@ type Body = {
 
 export async function PATCH(request: Request) {
   const auth = await requireEntitledClientApiUser()
-  if (!auth.ok) return auth.response
+  if (!auth.ok) {
+    // Normalize auth/entitlement payloads so the client always reads `error`.
+    const payload = (await auth.response
+      .clone()
+      .json()
+      .catch(() => null)) as { error?: string; code?: string; success?: boolean } | null
+    return NextResponse.json(
+      {
+        error: payload?.error ?? 'Authentication required',
+        code: payload?.code,
+        success: false,
+      },
+      { status: auth.response.status }
+    )
+  }
 
   let body: Body
   try {
@@ -31,7 +45,11 @@ export async function PATCH(request: Request) {
   )
 
   if (error || !day) {
-    return NextResponse.json({ error: error ?? 'Update failed' }, { status: 400 })
+    const conflict = Boolean(error?.includes('another update finished first'))
+    return NextResponse.json(
+      { error: error ?? 'Update failed' },
+      { status: conflict ? 409 : 400 }
+    )
   }
 
   return NextResponse.json({ day })

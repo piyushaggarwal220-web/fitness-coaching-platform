@@ -45,21 +45,28 @@ export function DailyTrackerClient({ initialView, initialError }: Props) {
   const motivation = useMemo(() => (view ? buildMotivationMessage(view) : ''), [view])
 
   const patchCompletion = useCallback(
-    async (patch: TrackerCompletion) => {
-      if (!day) return
+    async (patch: TrackerCompletion): Promise<boolean> => {
+      if (!day) return false
       setSaving(true)
       try {
         const res = await fetch('/api/tracker/update', {
           method: 'PATCH',
+          credentials: 'include',
+          cache: 'no-store',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dayId: day.id, completion: patch }),
         })
         const data = (await res.json()) as { day?: DailyTrackerDay; error?: string }
         if (!res.ok || !data.day) {
           setError(data.error ?? 'Failed to save progress')
-          return
+          return false
         }
         setView((current) => (current ? { ...current, day: data.day! } : current))
+        setError('')
+        return true
+      } catch {
+        setError('Failed to save progress')
+        return false
       } finally {
         setSaving(false)
       }
