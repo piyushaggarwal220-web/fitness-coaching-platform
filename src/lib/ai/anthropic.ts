@@ -24,6 +24,8 @@ export type GenerateClaudeResponseResult = {
   model: string
   retryCount: number
   fallbackUsed: boolean
+  /** Anthropic stop reason — `max_tokens` means the plan was cut off mid-response. */
+  stopReason: string | null
 }
 
 export class ClaudeResponseError extends Error {
@@ -181,6 +183,7 @@ export async function generateClaudeResponse(
           model: response.model,
           retryCount,
           fallbackUsed: modelIndex > 0,
+          stopReason: response.stop_reason ?? null,
         }
       } catch (err) {
         const converted = toClaudeResponseError(err)

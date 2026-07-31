@@ -46,7 +46,7 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 
 8b. **Cooking fats (mandatory):** For every cooked meal, specify exact ghee / oil / butter amounts (e.g. "1 tsp ghee", "1/2 tsp mustard oil", "1 tsp butter"). Also state a clear **daily cooking-fat budget** once per day or in the daily total (e.g. "Cooking fats today: ~3 tsp ghee/oil total"). Never leave frying/tempering fat vague.
 
-9. Cover all 7 days. Do not add any guidance, advice, or notes about what happens after the week.
+9. Cover all 7 days with clear day headers (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday). Never skip a day. Never say "same as Monday" without writing the full day. Do not add any guidance, advice, or notes about what happens after the week.
 
 10. End with a short, casual closing line wishing them well for the week.
 

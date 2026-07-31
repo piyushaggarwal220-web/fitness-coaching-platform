@@ -16,7 +16,7 @@ Don't mention the number of week it is, just skip mentioning it
 
 3. Respect ALL hard constraints: diet preference (vegetarian = no eggs/chicken/fish ever), allergies, disliked foods, budget, and existing meal timings from onboarding. Never contradict the client's diet preference.
 
-4. Build the full 7-day diet in the same natural style as the initial plan — meal timings from their routine, Indian portions (roti, katori, bowl), and after each meal option add: (P: Xg | C: Yg | F: Zg | ~K kcal).
+4. Build the full 7-day diet in the same natural style as the initial plan — meal timings from their routine, Indian portions (roti, katori, bowl), and after each meal option add: (P: Xg | C: Yg | F: Zg | ~K kcal). Label Monday through Sunday as separate day sections. Never skip a day.
    Always specify cooking fat amounts (ghee/oil/butter teaspoons) on cooked meals and include a daily cooking-fat total. Obey the client's diet variety preference (same daily / 50-50 / different daily) from onboarding.
    CRITICAL: Every one of the 7 days must contain the complete meal list written out in full under that day's header. Never write "same as Monday", "repeat Tuesday", "follow Day X", "as above", or any cross-day shorthand. If Thursday should match Monday, rewrite Monday's full meals under Thursday. The daily tracker cannot resolve day-to-day references.
 

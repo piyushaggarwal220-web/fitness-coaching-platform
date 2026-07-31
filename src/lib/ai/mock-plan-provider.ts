@@ -33,9 +33,17 @@ export function buildMockGeneratedPlan(
     ? `Coach notes: ${coachInstructions.trim()}`
     : 'Mock draft — replace AI_PLAN_PROVIDER=claude when ready for live generation.'
 
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const weeklyDiet = days
+    .map(
+      (day) =>
+        `${day}\nBreakfast: ${diet} oats with eggs and fruit\nLunch: lean protein, rice, vegetables\nDinner: protein, complex carbs, salad\nSnack: Greek yogurt or nuts\n(P: ${protein}g | C: 180g | F: 55g | ~${calories} kcal)`
+    )
+    .join('\n\n')
+
   return {
     workout_plan: {
-      overview: `${name}'s ${goal.toLowerCase()} program (${training} level, ${flux.label}). 4 training days + optional recovery.`,
+      overview: `${name}'s ${goal.toLowerCase()} program (${training} level, ${flux.label}). 4 training days + optional recovery.\n\nDay 1 (Monday)\nBench press 4 sets x 8 reps\nOverhead press 3 sets x 10 reps\n\nDay 2 (Wednesday)\nSquat 4 sets x 8 reps\nRomanian deadlift 3 sets x 10 reps\n\nDay 3 (Friday)\nLat pulldown 4 sets x 10 reps\nBarbell row 3 sets x 8 reps\n\nDay 4 (Saturday)\nGoblet squat 3 sets x 12 reps\nPush ups 3 sets x AMRAP`,
       days: [
         { day: 'Monday', focus: 'Upper push', exercises: ['Bench press 4x8', 'Overhead press 3x10', 'Triceps pushdown 3x12'] },
         { day: 'Wednesday', focus: 'Lower', exercises: ['Squat 4x8', 'Romanian deadlift 3x10', 'Walking lunges 3x12'] },
@@ -49,10 +57,10 @@ export function buildMockGeneratedPlan(
       carbs: Math.round((calories - protein * 4 - Math.round(calories * 0.25)) / 4),
       fat: Math.round((calories * 0.25) / 9),
       meals: [
-        { meal: 'Breakfast', example: `${diet} — oats, eggs, fruit` },
-        { meal: 'Lunch', example: 'Lean protein, rice, vegetables' },
-        { meal: 'Dinner', example: 'Protein, complex carbs, salad' },
-        { meal: 'Snack', example: 'Greek yogurt or nuts' },
+        {
+          meal: 'Weekly Diet Plan',
+          example: `Daily averages: ~${calories} kcal | P: ${protein}g | C: 180g | F: 55g\n\n${weeklyDiet}`,
+        },
       ],
     },
     cardio_plan: {

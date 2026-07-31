@@ -23,6 +23,7 @@ export type PlanProviderCallResult = {
   outputTokens: number
   retryCount?: number
   fallbackUsed?: boolean
+  stopReason?: string | null
 }
 
 /** Mock only when explicitly requested; otherwise Anthropic is always used. */
@@ -57,6 +58,7 @@ export async function callPlanProvider(
       outputTokens: 0,
       retryCount: 0,
       fallbackUsed: false,
+      stopReason: 'end_turn',
     }
   }
 
@@ -78,5 +80,6 @@ export async function callPlanProvider(
     outputTokens: response.outputTokens,
     retryCount: response.retryCount,
     fallbackUsed: response.fallbackUsed,
+    stopReason: response.stopReason,
   }
 }

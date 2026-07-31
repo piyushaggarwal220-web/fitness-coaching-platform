@@ -1,7 +1,17 @@
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
-import { DEFAULTS, LIMITS, isSupportPlanAction, resolvePlanGenerationModel } from '@/lib/ai/config'
+import {
+  DEFAULTS,
+  LIMITS,
+  PLAN_GENERATION_TEMPERATURE,
+  isSupportPlanAction,
+  resolvePlanGenerationModel,
+} from '@/lib/ai/config'
 import { buildMockGeneratedPlan } from '@/lib/ai/mock-plan-provider'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
+import {
+  assessPlanCompleteness,
+  resolveExpectedTrainingDays,
+} from '@/lib/ai/plan-completeness'
 import {
   calculateComplexityScore,
   type ComplexityScoreResult,
@@ -16,7 +26,10 @@ import {
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
 import { syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
 import { profileToComplexityInput } from '@/lib/complexity/profile-input'
-import { getPromptCategoryForAction } from '@/lib/ai/workout-prompt-selection'
+import {
+  getPromptCategoryForAction,
+  resolveWorkoutEnvironment,
+} from '@/lib/ai/workout-prompt-selection'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
 
@@ -138,10 +151,15 @@ const PLAN_TASK_INSTRUCTIONS = [
 ].join('\n')
 
 const RETRY_INSTRUCTIONS = [
-  'Your previous response was not valid JSON matching the required schema.',
-  'Return ONLY a corrected JSON object with no extra text, no markdown fences.',
+  'Your previous response failed validation.',
+  'Return ONLY a corrected JSON object with no extra text and no markdown fences.',
   'Escape all newlines inside JSON strings as \\n. Ensure the JSON parses cleanly.',
+  'If this is a diet plan: include Monday through Sunday (or Day 1 through Day 7) as separate labeled day sections with meals under each day. Do not skip days.',
+  'If this is a workout plan: include every required training day with a clear day label and exercises. Do not leave empty day sections.',
 ].join(' ')
+
+const COMPLETENESS_RETRY_PREFIX =
+  'COMPLETENESS FIX REQUIRED: The previous plan was incomplete. '
 
 const CLIENT_FACING_PLAN_STYLE_INSTRUCTIONS = [
   '# Client-Facing Writing Style',
@@ -159,6 +177,8 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   'The JSON must match this exact top-level structure:',
   PLAN_JSON_SCHEMA,
   '- Put the full client-facing diet plan prose in nutrition_plan.meals as ONE item: { "meal": "Weekly Diet Plan", "example": "<entire copy-paste diet plan>" }.',
+  '- CRITICAL: The diet prose MUST include all 7 days as separate labeled sections: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday (or Day 1 through Day 7). Never skip a day. Never write "same every day" without repeating the full day blocks.',
+  '- Each day section must include breakfast, lunch, dinner, and snacks with concrete foods and approximate portions.',
   '- Set nutrition_plan.calories, protein, carbs, and fat to the rounded AVERAGE daily totals from the 7-day plan (sum each day, divide by 7). NEVER use 0 or placeholder values.',
   '- Header macros MUST match the meal plan: if meals show (P: Xg | C: Yg | F: Zg | ~K kcal) lines, totals must reflect those sums.',
   '- Include a clear daily average line in the prose, e.g. "Daily averages: ~1850 kcal | P: 130g | C: 200g | F: 55g" matching the header fields.',
@@ -179,7 +199,8 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   '- Put the full client-facing workout plan prose in workout_plan.overview.',
   '- workout_plan.overview must include exercises, sets, reps, and weekly structure — not internal coach analysis.',
   '- Use "sets x reps" format (e.g. 4 sets x 8 reps) — the letter x, not special symbols.',
-  '- workout_plan.days may be [] when the prose already contains the daily structure.',
+  '- CRITICAL: Label every training day clearly (Day 1, Day 2, … or weekday names). Cover every required training day for this client. Do not omit days or leave empty day headers.',
+  '- Prefer also filling workout_plan.days with one object per training day (day, focus, exercises).',
   '- Workout text must contain ONLY strength / resistance training. Never include a Cardio, Steps, Conditioning, or Supplements section.',
   '- Every training day must list every exercise with sets x reps in full under that day header.',
   '- NEVER use cross-day references such as "same as Day 1", "repeat Monday", "follow Thursday\'s workout", or "as above". If two days share a session, rewrite the complete exercise list under both headers. The daily tracker cannot resolve day-to-day pointers.',
@@ -436,6 +457,7 @@ async function buildPlanPrompts(
   coachInstructions: string | null | undefined,
   options: {
     retry?: boolean
+    completenessHint?: string | null
     activePlan?: Plan | null
     updatedDietPlan?: Plan | null
     libraryPrompts?: {
@@ -484,6 +506,9 @@ async function buildPlanPrompts(
     base.userPrompt,
     useLibraryTemplate ? null : PLAN_TASK_INSTRUCTIONS,
     options.retry ? RETRY_INSTRUCTIONS : null,
+    options.completenessHint
+      ? `${COMPLETENESS_RETRY_PREFIX}${options.completenessHint}`
+      : null,
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -521,7 +546,8 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   let lastValidationError = 'Unknown validation error.'
   let lastRawResponse = ''
   // Support sections soft-fail upstream — one attempt avoids a second expensive call.
-  const maxAttempts = providerMode === 'mock' ? 1 : supportSection ? 1 : 2
+  // Diet/workout get a third attempt when days are missing or output truncates.
+  const maxAttempts = providerMode === 'mock' ? 1 : supportSection ? 1 : 3
   const maxTokens = supportSection ? LIMITS.MAX_SUPPORT_PLAN_TOKENS : LIMITS.MAX_PLAN_TOKENS
   const validationMode = input.validationMode ?? 'full'
 
@@ -552,6 +578,13 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     }
   }
 
+  const workoutEnvironment = resolveWorkoutEnvironment(input.profile)
+  const expectedTrainingDays = resolveExpectedTrainingDays(
+    input.profile.onboarding_data?.training?.daysPerWeek,
+    workoutEnvironment
+  )
+  let completenessHint: string | null = null
+
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const prompts = await buildPlanPrompts(
       input.profile,
@@ -560,7 +593,8 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       knowledgeEntries,
       input.coachInstructions,
       {
-        retry: attempt === 1,
+        retry: attempt > 0,
+        completenessHint: attempt > 0 ? completenessHint : null,
         activePlan: input.activePlan,
         updatedDietPlan: input.updatedDietPlan,
         libraryPrompts,
@@ -588,7 +622,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         userPrompt: prompts.userPrompt,
         model,
         maxTokens,
-        temperature: DEFAULTS.DEFAULT_TEMPERATURE,
+        temperature: supportSection ? DEFAULTS.DEFAULT_TEMPERATURE : PLAN_GENERATION_TEMPERATURE,
         mockText,
         images: input.progressImages,
       })
@@ -607,23 +641,46 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     totalOutputTokens += response.outputTokens
     lastRawResponse = response.text
 
+    if (response.stopReason === 'max_tokens') {
+      lastValidationError =
+        'Plan response was truncated (hit max output tokens). Retrying with a complete week required.'
+      completenessHint =
+        'Previous output was cut off. Write a complete plan that still fits, with every required day labeled. Prefer concise meal/exercise lines over long commentary.'
+      continue
+    }
+
     const { plan, error } = parseGeneratedPlanResponse(response.text, {
       mode: validationMode,
     })
-    if (plan) {
-      return {
-        generatedPlan: plan,
-        model: response.model,
-        complexityScore,
-        estimatedTokens: prompts.estimatedTokens,
-        inputTokens: totalInputTokens,
-        outputTokens: totalOutputTokens,
-        retryCount: attempt,
-        promptVersion,
+    if (!plan) {
+      lastValidationError = error ?? 'Invalid plan JSON.'
+      completenessHint = null
+      continue
+    }
+
+    if (!supportSection && providerMode !== 'mock') {
+      const completeness = assessPlanCompleteness(plan, {
+        mode: validationMode,
+        expectedTrainingDays,
+        workoutEnvironment,
+      })
+      if (!completeness.ok) {
+        lastValidationError = completeness.error ?? 'Plan incomplete.'
+        completenessHint = completeness.error
+        continue
       }
     }
 
-    lastValidationError = error ?? 'Invalid plan JSON.'
+    return {
+      generatedPlan: plan,
+      model: response.model,
+      complexityScore,
+      estimatedTokens: prompts.estimatedTokens,
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      retryCount: attempt,
+      promptVersion,
+    }
   }
 
   const providerLabel = providerMode === 'mock' ? 'Mock provider' : 'Anthropic'
