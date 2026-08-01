@@ -880,6 +880,28 @@ function parseSleep(profile?: OnboardingProfile | null, coachNotes?: string): Tr
   }
 }
 
+/** Stable fingerprint of plan section text so tracker rebuilds when content changes. */
+export function planContentSignature(plan: Pick<
+  Plan,
+  'nutrition_plan' | 'workout_plan' | 'cardio_plan' | 'supplement_plan' | 'coach_notes' | 'title' | 'phase'
+>): string {
+  const normalize = (value: string | null | undefined) =>
+    (value ?? '')
+      .replace(/\r\n/g, '\n')
+      .replace(/[ \t]+/g, ' ')
+      .trim()
+
+  return [
+    `title:${normalize(plan.title)}`,
+    `phase:${normalize(plan.phase)}`,
+    `diet:${normalize(plan.nutrition_plan)}`,
+    `workout:${normalize(plan.workout_plan)}`,
+    `cardio:${normalize(plan.cardio_plan)}`,
+    `supp:${normalize(plan.supplement_plan)}`,
+    `notes:${normalize(plan.coach_notes)}`,
+  ].join('\n')
+}
+
 /** Build today's tracker template from the active plan — no manual setup. */
 export function buildTrackerSnapshot(
   plan: Plan,
@@ -929,6 +951,7 @@ export function buildTrackerSnapshot(
     planVersion: plan.version,
     planTitle: plan.title,
     planUpdatedAt: plan.updated_at,
+    planContentSignature: planContentSignature(plan),
     items,
     dietDays: dietDays.length > 0 ? dietDays : undefined,
     workoutDays: workoutDays.length > 0 ? workoutDays : undefined,

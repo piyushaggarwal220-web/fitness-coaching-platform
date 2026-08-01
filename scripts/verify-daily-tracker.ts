@@ -1,4 +1,8 @@
-import { buildTrackerSnapshot, mergeCompletion } from '../src/lib/daily-tracker/parser'
+import {
+  buildTrackerSnapshot,
+  mergeCompletion,
+  planContentSignature,
+} from '../src/lib/daily-tracker/parser'
 import { calculateTrackerScores } from '../src/lib/daily-tracker/scores'
 import { applyTrackerDraft } from '../src/lib/daily-tracker/tracker-draft'
 import type { Plan } from '../src/types/database'
@@ -198,6 +202,15 @@ const planV2: Plan = { ...planV1, version: 2, nutrition_plan: 'Breakfast\nGreek 
 const snapV2 = buildTrackerSnapshot(planV2)
 assert('version 2 snapshot updates meals', snapV2.planVersion === 2)
 assert('version 2 has updated breakfast', snapV2.items.some((i) => i.type === 'meal' && i.foods.includes('Greek yogurt')))
+assert('snapshot stores plan content signature', Boolean(snapV1.planContentSignature))
+assert(
+  'plan content signature changes when diet changes',
+  planContentSignature(planV1) !== planContentSignature(planV2)
+)
+assert(
+  'snapshot signature matches helper',
+  snapV2.planContentSignature === planContentSignature(planV2)
+)
 
 const { scores, overall } = calculateTrackerScores(snapV1, {
   meals: Object.fromEntries(

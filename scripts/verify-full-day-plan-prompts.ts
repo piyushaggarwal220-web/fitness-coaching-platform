@@ -77,6 +77,22 @@ assert(
   editSrc.includes('Never introduce cross-day references') &&
     editSrc.includes('copy the full content under both day headers')
 )
+assert(
+  'edit-plan-section uses full plan token ceiling',
+  editSrc.includes('LIMITS.MAX_SECTION_EDIT_TOKENS') &&
+    editSrc.includes('MODELS.CLAUDE_SONNET') &&
+    editSrc.includes("stopReason === 'max_tokens'")
+)
+
+const aiConfig = read('src/lib/ai/config.ts')
+assert(
+  'MAX_PLAN_TOKENS is restored to a full-week ceiling',
+  /MAX_PLAN_TOKENS:\s*32000/.test(aiConfig)
+)
+assert(
+  'MAX_SECTION_EDIT_TOKENS matches full-week ceiling',
+  /MAX_SECTION_EDIT_TOKENS:\s*32000/.test(aiConfig)
+)
 
 const manifest = read('prompts/production/manifest.json')
 assert('manifest includes system_prompt for republish', manifest.includes('"system_prompt"'))

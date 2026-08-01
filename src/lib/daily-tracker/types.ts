@@ -164,6 +164,11 @@ export type TrackerSnapshot = {
   planTitle: string
   /** Active plan updated_at when this snapshot was built — used to detect mid-day plan edits */
   planUpdatedAt?: string
+  /**
+   * Compact fingerprint of raw plan section text. Used to rebuild today's tracker
+   * when a newer plan (or in-place edit) changes content without relying only on version.
+   */
+  planContentSignature?: string
   items: TrackerSnapshotItem[]
   /** Available diet day options from the plan (when multi-day) */
   dietDays?: { key: string; label: string }[]

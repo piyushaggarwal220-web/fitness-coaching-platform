@@ -55,11 +55,53 @@ type PatchQueue = {
   flushing: boolean
 }
 
-function withDraft(view: TodayTrackerView): TodayTrackerView {
+function withDraft(
+  view: TodayTrackerView,
+  previous?: TodayTrackerView | null
+): TodayTrackerView {
   const day = view.day
   if (!day) return view
+
   const draft = readTrackerDraft(day.id)
   if (!draft) return view
+
+  // Drop local drafts tied to an older plan so a newly delivered plan wins.
+  const previousSnapshot = previous?.day?.snapshot
+  const nextSnapshot = day.snapshot
+  const planChanged =
+    previousSnapshot != null &&
+    (previousSnapshot.planId !== nextSnapshot.planId ||
+      previousSnapshot.planVersion !== nextSnapshot.planVersion ||
+      previousSnapshot.planContentSignature !== nextSnapshot.planContentSignature ||
+      previousSnapshot.planUpdatedAt !== nextSnapshot.planUpdatedAt)
+
+  if (planChanged) {
+    clearTrackerDraft(day.id)
+    return view
+  }
+
+  // Also ignore drafts that still mention exercise/meal ids absent from the new snapshot.
+  const itemIds = new Set(nextSnapshot.items.map((item) => item.id))
+  const exerciseIds = new Set(
+    nextSnapshot.items.flatMap((item) => {
+      if (item.type !== 'workout') return [] as string[]
+      const fromPhases =
+        item.phases?.flatMap((phase) => phase.exercises.map((exercise) => exercise.id)) ?? []
+      const fromRoot = item.exercises?.map((exercise) => exercise.id) ?? []
+      return [...fromPhases, ...fromRoot]
+    })
+  )
+  const draftMealIds = Object.keys(draft.completion.meals ?? {})
+  const draftExerciseIds = Object.keys(draft.completion.exercises ?? {})
+  const draftLooksStale =
+    draftMealIds.some((id) => !itemIds.has(id)) ||
+    draftExerciseIds.some((id) => !exerciseIds.has(id) && !itemIds.has(id))
+
+  if (draftLooksStale) {
+    clearTrackerDraft(day.id)
+    return view
+  }
+
   const merged = applyTrackerDraft(day.completion, draft)
   return {
     ...view,
@@ -216,9 +258,11 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       }
 
       if (loaded?.day) {
-        const withLocal = withDraft(loaded)
-        dayIdRef.current = withLocal.day!.id
-        setView(withLocal)
+        setView((current) => {
+          const withLocal = withDraft(loaded, current)
+          dayIdRef.current = withLocal.day!.id
+          return withLocal
+        })
         setError(null)
       } else {
         dayIdRef.current = null
@@ -250,6 +294,8 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       void (async () => {
         await ensureAuthSession(supabase)
         await flushQueueRef.current()
+        // Pull the latest active plan snapshot so newly delivered plans replace stale tracker UI.
+        await load()
       })()
     }
     document.addEventListener('visibilitychange', onResume)
@@ -260,7 +306,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('focus', onResume)
       window.removeEventListener('online', onResume)
     }
-  }, [])
+  }, [load])
 
   const day = view?.day ?? null
 

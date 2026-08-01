@@ -1,5 +1,5 @@
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
-import { MODELS, LIMITS } from '@/lib/ai/config'
+import { LIMITS, MODELS, PLAN_GENERATION_TEMPERATURE } from '@/lib/ai/config'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
 import { logAiGeneration } from '@/lib/ai/trace-log'
@@ -102,56 +102,84 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
 
   const providerMode = getPlanProviderMode()
   const started = Date.now()
+  // Full-week section rewrites need the same model/token headroom as generation —
+  // Haiku + 2k ceilings truncated mid-week ("half plans").
+  const model = MODELS.CLAUDE_SONNET
+  const maxAttempts = providerMode === 'mock' ? 1 : 2
+  let totalInputTokens = 0
+  let totalOutputTokens = 0
+  let lastRaw = ''
 
   try {
-    const response = await callPlanProvider(providerMode, {
-      systemPrompt,
-      userPrompt,
-      // Section edits are constrained revisions — Haiku + lower ceiling is enough.
-      model: MODELS.CLAUDE_HAIKU,
-      maxTokens: LIMITS.MAX_SECTION_EDIT_TOKENS,
-      temperature: 0.4,
-      mockText: buildMockRevision(input),
-    })
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const retryHint =
+        attempt > 0
+          ? '\n\n## Retry instruction\nPrevious output was cut off at the token limit. Rewrite the COMPLETE section for every day, concisely, with no cross-day references and no preamble.'
+          : ''
 
-    const revisedText = normalizeAiPlanProse(extractRevisedText(response.text))
-    if (!revisedText) {
-      throw new ClaudeResponseError('AI returned an empty revision.')
+      const response = await callPlanProvider(providerMode, {
+        systemPrompt,
+        userPrompt: `${userPrompt}${retryHint}`,
+        model,
+        maxTokens: LIMITS.MAX_SECTION_EDIT_TOKENS,
+        temperature: PLAN_GENERATION_TEMPERATURE,
+        mockText: buildMockRevision(input),
+      })
+
+      totalInputTokens += response.inputTokens
+      totalOutputTokens += response.outputTokens
+      lastRaw = response.text
+
+      if (response.stopReason === 'max_tokens') {
+        if (attempt < maxAttempts - 1) continue
+        throw new ClaudeResponseError(
+          'AI revision was truncated (hit max output tokens). Try again or shorten coach notes.'
+        )
+      }
+
+      const revisedText = normalizeAiPlanProse(extractRevisedText(response.text))
+      if (!revisedText) {
+        throw new ClaudeResponseError('AI returned an empty revision.')
+      }
+
+      const summary = `Updated ${section} from client request (${revisedText.length} chars).`
+
+      await logAiGeneration({
+        clientId: input.clientId ?? null,
+        coachId: null,
+        action: `edit_plan_${input.section}`,
+        model: response.model,
+        latencyMs: Date.now() - started,
+        promptTokens: totalInputTokens,
+        completionTokens: totalOutputTokens,
+        retryCount: attempt,
+        validationResult: 'ok',
+        success: true,
+        knowledgeRefs: null,
+        renderedOutput: { summary },
+      }).catch(() => undefined)
+
+      return {
+        revisedText,
+        model: response.model,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+        summary,
+      }
     }
 
-    const summary = `Updated ${section} from client request (${revisedText.length} chars).`
-
-    await logAiGeneration({
-      clientId: input.clientId ?? null,
-      coachId: null,
-      action: `edit_plan_${input.section}`,
-      model: response.model,
-      latencyMs: Date.now() - started,
-      promptTokens: response.inputTokens,
-      completionTokens: response.outputTokens,
-      retryCount: 0,
-      validationResult: 'ok',
-      success: true,
-      knowledgeRefs: null,
-      renderedOutput: { summary },
-    }).catch(() => undefined)
-
-    return {
-      revisedText,
-      model: response.model,
-      inputTokens: response.inputTokens,
-      outputTokens: response.outputTokens,
-      summary,
-    }
+    throw new ClaudeResponseError(
+      `AI revision failed after retry. Raw response: ${lastRaw.slice(0, 400)}`
+    )
   } catch (err) {
     await logAiGeneration({
       clientId: input.clientId ?? null,
       coachId: null,
       action: `edit_plan_${input.section}`,
-      model: MODELS.CLAUDE_HAIKU,
+      model,
       latencyMs: Date.now() - started,
-      promptTokens: null,
-      completionTokens: null,
+      promptTokens: totalInputTokens || null,
+      completionTokens: totalOutputTokens || null,
       retryCount: 0,
       validationResult: 'error',
       success: false,
