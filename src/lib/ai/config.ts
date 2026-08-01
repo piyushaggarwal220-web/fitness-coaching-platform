@@ -28,13 +28,19 @@ export const DEFAULTS = {
 
 /** Per-feature output token ceilings for plan and check-in AI flows. */
 export const LIMITS = {
-  /** Full diet/workout weeks need headroom — truncated outputs caused missing days. */
-  MAX_PLAN_TOKENS: 16384,
+  /**
+   * Full diet/workout weeks (every day written out, no cross-day shortcuts) need
+   * generous headroom — lower ceilings produced truncated / half plans.
+   */
+  MAX_PLAN_TOKENS: 32000,
   /** Cardio / supplements / coach notes — shorter outputs, lower completion cost. */
-  MAX_SUPPORT_PLAN_TOKENS: 4096,
-  /** Targeted section edits — shorter revision, lower completion cost. */
-  MAX_SECTION_EDIT_TOKENS: 2048,
-  MAX_CHECKIN_TOKENS: 2048,
+  MAX_SUPPORT_PLAN_TOKENS: 8192,
+  /**
+   * Section edits must return the full revised week text (same completeness rules
+   * as generation), so use the same ceiling as plan generation.
+   */
+  MAX_SECTION_EDIT_TOKENS: 32000,
+  MAX_CHECKIN_TOKENS: 4096,
 } as const
 
 /** Slightly lower temperature for diet/workout — fewer invented mistakes. */

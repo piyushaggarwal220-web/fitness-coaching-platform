@@ -7,7 +7,7 @@ import {
   hasCoachingDayStarted,
 } from '@/lib/checkin-schedule'
 import type { OnboardingProfile, Plan } from '@/types/database'
-import { buildTrackerSnapshot, mergeCompletion } from './parser'
+import { buildTrackerSnapshot, mergeCompletion, planContentSignature } from './parser'
 import { averageRpe, calculateTrackerScores } from './scores'
 import type {
   DailyTrackerDay,
@@ -119,27 +119,36 @@ function getWorkoutPhaseSignature(snapshot: {
 
 /** Detect meal/workout/cardio edits that keep the same item count. */
 function snapshotContentFingerprint(snapshot: DailyTrackerDay['snapshot']): string {
-  return snapshot.items
-    .map((item) => {
-      if (item.type === 'meal') {
-        const foods = Array.isArray(item.foods) ? item.foods.join(',') : String(item.foods ?? '')
-        return `meal:${item.id}:${item.title}:${foods}:${item.mealTime ?? ''}`
-      }
-      if (item.type === 'workout') {
-        const names = (item.exercises ?? [])
-          .map((ex) => `${ex.name}:${ex.targetSets}:${ex.targetReps}`)
-          .join(',')
-        return `workout:${item.id}:${item.title}:${names}`
-      }
-      if (item.type === 'cardio') {
-        return `cardio:${item.id}:${item.title}:${item.target ?? ''}:${item.unit ?? ''}`
-      }
-      if (item.type === 'supplement') {
-        return `supp:${item.id}:${item.title}:${item.dose ?? ''}`
-      }
-      return `${item.type}:${item.id}:${'title' in item ? item.title : ''}`
-    })
-    .join('|')
+  const dayKeys = [
+    `dietDays:${(snapshot.dietDays ?? []).map((d) => d.key).join(',')}`,
+    `workoutDays:${(snapshot.workoutDays ?? []).map((d) => d.key).join(',')}`,
+  ]
+  const items = snapshot.items.map((item) => {
+    if (item.type === 'meal') {
+      const foods = Array.isArray(item.foods) ? item.foods.join(',') : String(item.foods ?? '')
+      return `meal:${item.id}:${item.title}:${foods}:${item.mealTime ?? ''}:${item.dietDay ?? ''}`
+    }
+    if (item.type === 'workout') {
+      const names = (item.exercises ?? [])
+        .map((ex) => `${ex.name}:${ex.targetSets}:${ex.targetReps}`)
+        .join(',')
+      return `workout:${item.id}:${item.title}:${item.workoutDay ?? ''}:${names}`
+    }
+    if (item.type === 'cardio') {
+      return `cardio:${item.id}:${item.title}:${item.target ?? ''}:${item.unit ?? ''}`
+    }
+    if (item.type === 'supplement') {
+      return `supp:${item.id}:${item.title}:${item.dose ?? ''}`
+    }
+    if (item.type === 'water') {
+      return `water:${item.id}:${item.targetMl}`
+    }
+    if (item.type === 'sleep') {
+      return `sleep:${item.id}:${item.targetBedtime ?? ''}:${item.targetHours ?? ''}`
+    }
+    return `note:${item.id}:${item.body}`
+  })
+  return [...dayKeys, ...items].join('|')
 }
 
 function sanitizeCompletionForSnapshot(
@@ -257,14 +266,22 @@ export async function getOrCreateTodayTracker(
     const planEditedAfterSnapshot =
       Boolean(plan.updated_at) &&
       new Date(plan.updated_at).getTime() > new Date(snapshotPlanStamp).getTime()
+    const activePlanSignature = planContentSignature(plan)
+    const snapshotPlanSignature =
+      existingDay.snapshot.planContentSignature ?? null
+    const planContentChanged =
+      snapshotPlanSignature == null || snapshotPlanSignature !== activePlanSignature
     const workoutStructureChanged =
       getWorkoutPhaseSignature(existingDay.snapshot) !== getWorkoutPhaseSignature(snapshot)
     const contentChanged =
       snapshotContentFingerprint(existingDay.snapshot) !== snapshotContentFingerprint(snapshot)
     const needsRebuild =
-      existingDay.plan_version < plan.version ||
+      existingDay.plan_version !== plan.version ||
       existingDay.plan_id !== plan.id ||
+      existingDay.snapshot.planId !== plan.id ||
+      existingDay.snapshot.planVersion !== plan.version ||
       planEditedAfterSnapshot ||
+      planContentChanged ||
       workoutStructureChanged ||
       contentChanged ||
       (newHasWorkout && !existingHasWorkout) ||
