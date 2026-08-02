@@ -49,6 +49,15 @@ export function isAndroidDevice(): boolean {
   return /Android/i.test(window.navigator.userAgent)
 }
 
+/** True for phones/tablets (or when a native install event is available). */
+export function shouldOfferHomeScreenInstall(): boolean {
+  if (typeof window === 'undefined') return false
+  if (isStandaloneDisplay()) return false
+  if (isIosDevice() || isAndroidDevice()) return true
+  if (getDeferredInstall()) return true
+  return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches
+}
+
 export function manualInstallCopy(): string {
   if (isIosDevice()) {
     return 'Tap Share, then Add to Home Screen.'
