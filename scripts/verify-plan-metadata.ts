@@ -57,6 +57,15 @@ assert('prepareCoachNotesForPublish strips meta', publish.notes?.includes('Great
 const emptyPublish = prepareCoachNotesForPublish('@@META{"checkinId":"x","week":1,"generatedBy":"ai"}@@')
 assert('prepareCoachNotesForPublish blocks empty notes', emptyPublish.error !== null)
 
+const emptyWithFallback = prepareCoachNotesForPublish(
+  '@@META{"checkinId":"x","week":1,"generatedBy":"ai"}@@',
+  { fallbackMessage: 'Your Week 1 plan is ready.' }
+)
+assert(
+  'prepareCoachNotesForPublish accepts fallback for empty notes',
+  emptyWithFallback.error === null && emptyWithFallback.notes === 'Your Week 1 plan is ready.' && emptyWithFallback.usedFallback === true
+)
+
 assert(
   'formatPublishedPlanTitle for first delivery',
   formatPublishedPlanTitle(

@@ -1,15 +1,24 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { sanitizeDraftFailureError } from '@/lib/ai/draft-error'
+import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { createClient } from '@/lib/supabase/server'
 
-/** Retry runs the full weekly draft pipeline. */
+/** Background weekly draft pipeline (diet → workout → support). */
 export const maxDuration = 300
 
 type Body = {
   clientId?: string
   checkinId?: string
   coachingWeek?: number
+  coachNote?: string | null
+  /** Defaults to retry; panel "Generate" uses manual. */
+  trigger?: 'manual' | 'retry'
+  /**
+   * When true (default), queue work with after() and return 202 so browser/proxy
+   * timeouts cannot mark a still-running job as failed.
+   */
+  async?: boolean
 }
 
 export async function POST(request: Request) {
@@ -40,6 +49,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'clientId and checkinId are required' }, { status: 400 })
   }
 
+  const trigger = body.trigger === 'manual' ? 'manual' : 'retry'
+  const runAsync = body.async !== false
+  const coachNote = body.coachNote?.trim() || null
+
   const { data: client } = await supabase
     .from('profiles')
     .select('id, coach_id')
@@ -60,13 +73,44 @@ export async function POST(request: Request) {
 
   const coachingWeek = body.coachingWeek ?? checkin?.coaching_week ?? 0
 
-  const result = await generateWeeklyPlanDraft({
+  const jobInput = {
     clientId,
-    coachId: coach.id,
+    coachId: coach.id as string,
     checkinId,
     coachingWeek,
-    trigger: 'retry',
-  })
+    trigger,
+    coachNote,
+  } as const
+
+  if (runAsync) {
+    // Mark in-flight before returning so the status endpoint shows Generating immediately.
+    await persistDraftGenerationStarted({
+      clientId,
+      coachId: coach.id,
+      checkinId,
+      trigger,
+    })
+
+    after(() =>
+      generateWeeklyPlanDraft(jobInput).catch((err) => {
+        console.error(
+          '[coach/ai-draft/retry] background draft failed:',
+          err instanceof Error ? err.message : err
+        )
+      })
+    )
+
+    return NextResponse.json(
+      {
+        success: true,
+        queued: true,
+        trigger,
+      },
+      { status: 202 }
+    )
+  }
+
+  const result = await generateWeeklyPlanDraft(jobInput)
 
   if (result.error) {
     return NextResponse.json(

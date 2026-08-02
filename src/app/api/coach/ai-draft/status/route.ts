@@ -4,6 +4,11 @@ import { getLatestDraftLogForCheckin } from '@/lib/ai/draft-workflow-log'
 import { loadLatestAiDraftForClient } from '@/lib/ai/weekly-plan-draft'
 import { createClient } from '@/lib/supabase/server'
 
+/** How long a "started" log keeps the UI in generating state. */
+const GENERATING_WINDOW_MS = 15 * 60 * 1000
+/** Fallback when no start log exists (pre-deploy auto jobs). */
+const SUBMIT_HEURISTIC_MS = 12 * 60 * 1000
+
 export async function GET(request: Request) {
   const supabase = await createClient()
   const {
@@ -47,26 +52,35 @@ export async function GET(request: Request) {
   const draft = await loadLatestAiDraftForClient(clientId, checkinId)
   const log = await getLatestDraftLogForCheckin(clientId, checkinId)
 
+  const now = Date.now()
   const submittedAt = checkin?.submitted_at ? new Date(checkin.submitted_at).getTime() : 0
-  const elapsedMs = submittedAt > 0 ? Date.now() - submittedAt : 0
-  const recentSubmit = submittedAt > 0 && elapsedMs < 12 * 60 * 1000
-  const timedOutWithoutDraft = !draft && submittedAt > 0 && elapsedMs >= 12 * 60 * 1000
-  const generationFailed = !draft && (log?.success === false || timedOutWithoutDraft)
-  const isGenerating = !draft && !generationFailed && recentSubmit
+  const submitAgeMs = submittedAt > 0 ? now - submittedAt : Number.POSITIVE_INFINITY
+  const logAgeMs = log?.createdAt ? now - new Date(log.createdAt).getTime() : Number.POSITIVE_INFINITY
+
+  const startedInFlight = Boolean(log && log.phase === 'started' && logAgeMs < GENERATING_WINDOW_MS)
+  const startedTimedOut = Boolean(log && log.phase === 'started' && logAgeMs >= GENERATING_WINDOW_MS)
+  const finishFailed = Boolean(log && log.phase === 'failed')
+  const recentSubmitNoLog = !log && submittedAt > 0 && submitAgeMs < SUBMIT_HEURISTIC_MS
+  const submitTimedOutNoLog = !draft && !log && submittedAt > 0 && submitAgeMs >= SUBMIT_HEURISTIC_MS
+
+  const generationFailed =
+    !draft && (finishFailed || startedTimedOut || submitTimedOutNoLog)
+  const isGenerating = !draft && !generationFailed && (startedInFlight || recentSubmitNoLog)
+
+  let failureRaw: string | null = null
+  if (generationFailed) {
+    if (finishFailed) failureRaw = log?.error ?? null
+    else if (startedTimedOut || submitTimedOutNoLog) {
+      failureRaw = 'Draft generation timed out. Use Retry to generate again.'
+    }
+  }
 
   return NextResponse.json({
     hasDraft: Boolean(draft),
     draftPlanId: draft?.id ?? null,
     generationFailed,
     isGenerating,
-    failureError: generationFailed
-      ? sanitizeDraftFailureError(
-          log?.error ??
-            (timedOutWithoutDraft
-              ? 'Draft generation timed out. Use Retry to generate again.'
-              : null)
-        )
-      : null,
+    failureError: generationFailed ? sanitizeDraftFailureError(failureRaw) : null,
     checkinWeek: checkin?.coaching_week ?? null,
   })
 }
