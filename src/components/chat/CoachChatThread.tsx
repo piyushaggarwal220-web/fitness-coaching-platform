@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { CallRequest, CallRequestStatus, ConversationMessage } from '@/types/database'
+import { getAutoWeeklyCallMeta } from '@/lib/auto-weekly-calls'
 import { readApiJson } from '@/lib/api-response'
 import { formatMessageTime } from '@/lib/coach-chat-ui'
 import { isCheckinSystemMessage } from '@/lib/checkin-chat'
@@ -525,7 +526,21 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
       {viewer === 'coach' && activeCallRequest && (
         <div style={styles.callRequestPanel}>
-          <strong>Call request: {activeCallRequest.status}</strong>
+          {(() => {
+            const autoMeta = getAutoWeeklyCallMeta(activeCallRequest)
+            return (
+              <>
+                <strong>
+                  {autoMeta.isAutoWeekly
+                    ? `Weekly call (Day 7 · Week ${autoMeta.coachingWeek ?? '—'}): ${activeCallRequest.status}`
+                    : `Call request: ${activeCallRequest.status}`}
+                </strong>
+                {activeCallRequest.coach_note && (
+                  <span style={{ color: wa.textMuted, fontSize: 12 }}>{activeCallRequest.coach_note}</span>
+                )}
+              </>
+            )
+          })()}
           <input
             type="datetime-local"
             value={scheduledFor}

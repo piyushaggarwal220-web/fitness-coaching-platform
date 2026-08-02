@@ -829,12 +829,18 @@ export type CallRequestStatus =
   | 'declined'
   | 'cancelled'
 
+export type CallRequestSource = 'manual' | 'auto_weekly'
+
 export type CallRequest = {
   id: string
   conversation_id: string
   client_id: string
   coach_id: string
   status: CallRequestStatus
+  /** Present after auto-weekly migration; older rows may omit this. */
+  source?: CallRequestSource
+  /** Present after auto-weekly migration for source=auto_weekly rows. */
+  coaching_week?: number | null
   requested_at: string
   scheduled_for: string | null
   coach_note: string | null
