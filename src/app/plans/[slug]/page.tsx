@@ -60,7 +60,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
   const plan = resolvePlanFromPath(slug)
   if (!plan) notFound()
 
-  const planSlug = plan.slug as CoachingPlanSlug
+  const planSlug = plan.slug as Exclude<CoachingPlanSlug, '1_week_trial'>
   const copy = PLAN_PAGE_COPY[planSlug]
   const marketingBase = resolveMarketingBaseUrl()
   const others = siblingPlans(planSlug)

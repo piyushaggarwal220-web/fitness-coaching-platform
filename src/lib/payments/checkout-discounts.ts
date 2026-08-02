@@ -8,8 +8,10 @@ import {
 /** Default public first-timer promo code (override with FIRST_TIMER_DISCOUNT_CODE). */
 export const DEFAULT_FIRST_TIMER_DISCOUNT_CODE = 'WELCOME'
 
-/** Fixed first-timer discounts by plan (paise). */
-export const FIRST_TIMER_DISCOUNT_PAISE: Record<CoachingPlanSlug, number> = {
+type FirstTimerPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
+
+/** Fixed first-timer discounts by plan (paise). Trial is not eligible. */
+export const FIRST_TIMER_DISCOUNT_PAISE: Record<FirstTimerPlanSlug, number> = {
   '3_months': 20000, // ₹200
   '6_months': 30000, // ₹300
   '12_months': 40000, // ₹400
@@ -58,7 +60,7 @@ export function formatInrFromPaise(paise: number): string {
 
 export function discountPaiseForPlan(planSlug: string): number | null {
   if (!(planSlug in FIRST_TIMER_DISCOUNT_PAISE)) return null
-  return FIRST_TIMER_DISCOUNT_PAISE[planSlug as CoachingPlanSlug]
+  return FIRST_TIMER_DISCOUNT_PAISE[planSlug as FirstTimerPlanSlug]
 }
 
 /** True when this email has never successfully paid or redeemed enrollment. */
@@ -114,6 +116,14 @@ export async function resolveCheckoutPricing(input: {
         amountPaise: listAmountPaise,
         discount: null,
       },
+    }
+  }
+
+  if (plan.isTrial) {
+    return {
+      ok: false,
+      error: 'Discount codes cannot be applied to the trial.',
+      status: 400,
     }
   }
 

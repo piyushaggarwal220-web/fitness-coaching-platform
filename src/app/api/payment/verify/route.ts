@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { recordCapturedPayment, issuePurchaseClaimToken } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
-import { getCoachingPlan } from '@/lib/payments/plans'
+import { getCoachingPlan, isTrialPlanSlug } from '@/lib/payments/plans'
 import {
   fetchRazorpayPayment,
   fetchRazorpayOrder,
@@ -16,6 +16,7 @@ import {
   type CheckoutPolicyAcknowledgement,
 } from '@/lib/policies'
 import { expectedAmountPaiseFromOrderNotes } from '@/lib/payments/checkout-discounts'
+import { assertTrialPurchaseEligible } from '@/lib/payments/trial-eligibility'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveAppBaseUrl } from '@/lib/admin/portal-urls'
 
@@ -49,6 +50,21 @@ export async function POST(request: Request) {
   }
   if (!clientName) {
     return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
+  }
+
+  if (isTrialPlanSlug(plan.slug)) {
+    const phone = body.phone?.trim() || ''
+    const trialCheck = await assertTrialPurchaseEligible({
+      admin: createAdminClient(),
+      email: clientEmail,
+      phone,
+    })
+    if (!trialCheck.ok) {
+      return NextResponse.json(
+        { success: false, error: trialCheck.error, reason: trialCheck.reason },
+        { status: trialCheck.status }
+      )
+    }
   }
 
   const orderId = body.razorpay_order_id ?? ''

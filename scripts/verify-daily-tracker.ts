@@ -2,6 +2,8 @@ import {
   buildTrackerSnapshot,
   mergeCompletion,
   planContentSignature,
+  remapWorkoutDayKey,
+  suggestedWorkoutDayKey,
 } from '../src/lib/daily-tracker/parser'
 import { calculateTrackerScores } from '../src/lib/daily-tracker/scores'
 import { applyTrackerDraft } from '../src/lib/daily-tracker/tracker-draft'
@@ -245,6 +247,73 @@ const draftMerged = applyTrackerDraft(
 assert(
   'applyTrackerDraft restores unsynced exercise progress',
   draftMerged.exercises?.ex1?.completed === true
+)
+
+const weekdayPlan: Plan = {
+  ...planV1,
+  id: 'plan-weekdays',
+  workout_plan: `Monday — Push
+Main Workout
+- Bench 4x8
+
+Tuesday — Pull
+Main Workout
+- Row 4x8
+
+Wednesday — Rest
+
+Thursday — Legs
+Main Workout
+- Squat 4x5`,
+}
+const weekdaySnap = buildTrackerSnapshot(weekdayPlan)
+const weekdayDays = weekdaySnap.workoutDays ?? []
+assert('keeps rest day in workoutDays', weekdayDays.some((d) => d.key === 'wednesday'))
+assert(
+  'rest day has Rest focus',
+  weekdaySnap.items.some(
+    (i) => i.type === 'workout' && i.workoutDay === 'wednesday' && i.focus === 'Rest day'
+  )
+)
+
+// Fixed IST Monday 2026-08-03 12:00 UTC = evening IST Monday
+const istMonday = new Date('2026-08-03T06:30:00.000Z')
+assert(
+  'suggests monday for IST Monday on weekday plan',
+  suggestedWorkoutDayKey(weekdayDays, istMonday) === 'monday'
+)
+
+const dayNPlan: Plan = {
+  ...planV1,
+  id: 'plan-day-n',
+  workout_plan: `Day 1 — Push
+Main Workout
+- Bench 4x8
+
+Day 2 — Pull
+Main Workout
+- Row 4x8
+
+Day 3 — Legs
+Main Workout
+- Squat 4x5`,
+}
+const dayNDays = buildTrackerSnapshot(dayNPlan).workoutDays ?? []
+assert(
+  'does not invent Day N = weekday without coaching context',
+  suggestedWorkoutDayKey(dayNDays, istMonday) === null
+)
+assert(
+  'maps Day N via coaching day-in-week',
+  suggestedWorkoutDayKey(dayNDays, istMonday, { coachingDayInWeek: 2 }) === 'day-2'
+)
+assert(
+  'remaps day-1 selection onto monday label',
+  remapWorkoutDayKey('day-1', [{ key: 'monday', label: 'Day 1 (Monday)' }]) === 'monday'
+)
+assert(
+  'remaps monday selection onto day-1 key',
+  remapWorkoutDayKey('monday', [{ key: 'day-1', label: 'Day 1 (Monday)' }]) === 'day-1'
 )
 
 if (failed > 0) {

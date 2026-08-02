@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, coach_id, plan_delivered, role')
+    .select('id, coach_id, plan_delivered, role, payment_confirmed, access_source, subscription_expires_at')
     .eq('id', auth.user.id)
     .maybeSingle()
 
@@ -65,6 +65,20 @@ export async function POST(request: Request) {
   if (!profile.plan_delivered) {
     return NextResponse.json(
       { error: 'You can request edits after your coach delivers your first plan.' },
+      { status: 400 }
+    )
+  }
+
+  const { assertClientCanReceivePlanChanges } = await import('@/lib/entitlements')
+  const planWindow = assertClientCanReceivePlanChanges(profile)
+  if (!planWindow.ok) {
+    return NextResponse.json(
+      {
+        error:
+          planWindow.daysRemaining <= 0
+            ? 'Your subscription has ended or has less than 7 days left. Renew your plan before requesting edits.'
+            : `You have only ${planWindow.daysRemaining} day${planWindow.daysRemaining === 1 ? '' : 's'} left. Renew to at least 7 days before requesting plan edits.`,
+      },
       { status: 400 }
     )
   }

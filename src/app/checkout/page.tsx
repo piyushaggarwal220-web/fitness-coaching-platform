@@ -79,6 +79,7 @@ function CheckoutForm() {
   const policyRef = useRef<HTMLLabelElement>(null);
   const verifyRef = useRef<HTMLDivElement>(null);
   const testMode = isPaymentBypassClient();
+  const isTrialCheckout = plan.isTrial === true;
   const payablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
   const payableDisplay = appliedDiscount?.displaySalePrice ?? plan.displayPrice;
   const planDiscountHint = formatInrFromPaise(
@@ -88,7 +89,8 @@ function CheckoutForm() {
   useEffect(() => {
     setAppliedDiscount(null);
     setEnrollmentHref(null);
-  }, [plan.slug]);
+    if (isTrialCheckout) setPromoCode('');
+  }, [plan.slug, isTrialCheckout]);
 
   useEffect(() => {
     // Re-validate is required after email changes (first-timer check is email-bound).
@@ -497,9 +499,12 @@ function CheckoutForm() {
     <div style={styles.page}>
       <div style={styles.card}>
         <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
-        <h1 style={styles.title}>{brandTitle('Complete your purchase')}</h1>
+        <h1 style={styles.title}>
+          {brandTitle(isTrialCheckout ? 'Start your 7-day trial' : 'Complete your purchase')}
+        </h1>
         <p style={styles.subtitle}>
-          {plan.name} plan ·{' '}
+          {plan.name}
+          {isTrialCheckout ? '' : ' plan'} ·{' '}
           {appliedDiscount ? (
             <>
               <span style={{ textDecoration: 'line-through', color: colors.textMuted }}>
@@ -516,9 +521,11 @@ function CheckoutForm() {
           )}
         </p>
         <p style={styles.leagueNote}>
-          {plan.slug === '12_months'
-            ? 'Includes free Consistency League entry and Crazy League eligibility for prize money up to ₹5,000.'
-            : 'Includes free Consistency League entry (certificates & trophies). Crazy League prize money up to ₹5,000 requires the 12-month plan.'}
+          {isTrialCheckout
+            ? 'Full platform access for 7 days — coach chat, personal plan, trackers, and check-ins. Once per person. Upgrade anytime to 3, 6, or 12 months.'
+            : plan.slug === '12_months'
+              ? 'Includes free Consistency League entry and Crazy League eligibility for prize money up to ₹5,000.'
+              : 'Includes free Consistency League entry (certificates & trophies). Crazy League prize money up to ₹5,000 requires the 12-month plan.'}
         </p>
 
         {testMode && (
@@ -527,6 +534,7 @@ function CheckoutForm() {
           </div>
         )}
 
+        {!isTrialCheckout && (
         <div style={styles.redeemBox}>
           <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Discount or enrollment code</h3>
           <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
@@ -575,8 +583,21 @@ function CheckoutForm() {
             </div>
           )}
         </div>
+        )}
 
         <div style={styles.planPicker}>
+          {isTrialCheckout && (
+            <span
+              style={{
+                ...styles.planChip,
+                borderColor: colors.accent,
+                backgroundColor: colors.accentMuted,
+                cursor: 'default',
+              }}
+            >
+              {plan.name} · {plan.displayPrice}
+            </span>
+          )}
           {COACHING_PLAN_LIST.map((item) => (
             <Link
               key={item.slug}
@@ -593,6 +614,18 @@ function CheckoutForm() {
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
+        {isTrialCheckout && error && /trial|already used|renewal|new customers/i.test(error) && (
+          <div style={styles.todoBox}>
+            <p style={styles.todoTitle}>Upgrade instead</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {COACHING_PLAN_LIST.map((item) => (
+                <Link key={item.slug} href={`/checkout?plan=${item.slug}`} style={styles.validateBtn}>
+                  {item.name} · {item.displayPrice}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         {liveMissing.length > 0 && (
           <div style={styles.todoBox}>
             <p style={styles.todoTitle}>Still to do before paying</p>

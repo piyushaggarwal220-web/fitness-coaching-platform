@@ -10,6 +10,8 @@ import {
 } from '@/components/tracker/TrackerPrimitives'
 import { colors, radius, spacing } from '@/lib/design-tokens'
 import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
+import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
+import { useTracker } from '@/components/tracker/context/TrackerContext'
 import type { TrackerCompletion, TrackerMealItem } from '@/lib/daily-tracker/types'
 
 type DietDayOption = { key: string; label: string }
@@ -33,11 +35,15 @@ function deriveDietDays(meals: TrackerMealItem[], explicit?: DietDayOption[]): D
 }
 
 export function DietModule({ meals, dietDays, completion, dietScore, saving, onPatch }: Props) {
+  const { view } = useTracker()
   const days = useMemo(() => deriveDietDays(meals, dietDays), [meals, dietDays])
   const multiDay = days.length > 1
   const selectedKey = completion.selectedDietDay ?? null
   const selectedDay = days.find((d) => d.key === selectedKey) ?? null
-  const suggestion = suggestedWorkoutDayKey(days)
+  const coachingDayInWeek = view?.schedule.coachingDay
+    ? getCoachingDayInWeek(view.schedule.coachingDay)
+    : undefined
+  const suggestion = suggestedWorkoutDayKey(days, new Date(), { coachingDayInWeek })
 
   const selectDietDay = useCallback(
     (key: string | null) => {

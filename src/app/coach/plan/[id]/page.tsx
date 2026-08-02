@@ -17,6 +17,7 @@ import {
   planToForm,
   validatePlanForm,
 } from '@/lib/plans'
+import { assertClientCanReceivePlanChanges } from '@/lib/entitlements'
 import { prepareCoachNotesForSave } from '@/lib/plan-metadata';
 import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-sync';
 import { requireCoach } from '@/lib/coach-session';
@@ -36,6 +37,11 @@ export default function CoachPlanDetailPage() {
   const [history, setHistory] = useState<Plan[]>([]);
   const [coachName, setCoachName] = useState<string | null>(null);
   const [form, setForm] = useState<PlanFormData | null>(null);
+  const [clientEntitlement, setClientEntitlement] = useState<{
+    payment_confirmed?: boolean | null
+    access_source?: 'purchase' | 'admin_trial' | 'enrollment_code' | null
+    subscription_expires_at?: string | null
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -68,6 +74,25 @@ export default function CoachPlanDetailPage() {
       const record = planData as PlanWithClient;
       setPlan(record);
       setForm(planToForm(record));
+
+      const { data: clientProfile } = await supabase
+        .from('profiles')
+        .select('payment_confirmed, access_source, subscription_expires_at')
+        .eq('id', record.client_id)
+        .maybeSingle();
+      setClientEntitlement(
+        clientProfile
+          ? {
+              payment_confirmed: clientProfile.payment_confirmed,
+              access_source: clientProfile.access_source as
+                | 'purchase'
+                | 'admin_trial'
+                | 'enrollment_code'
+                | null,
+              subscription_expires_at: clientProfile.subscription_expires_at,
+            }
+          : null
+      );
 
       const { data: historyData } = await supabase
         .from('plans')
@@ -118,6 +143,14 @@ export default function CoachPlanDetailPage() {
     if (validationError) {
       setError(validationError);
       return;
+    }
+
+    if (plan.active) {
+      const planWindow = assertClientCanReceivePlanChanges(clientEntitlement);
+      if (!planWindow.ok) {
+        setError(planWindow.error);
+        return;
+      }
     }
 
     setSaving(true);

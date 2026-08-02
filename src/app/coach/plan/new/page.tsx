@@ -21,13 +21,18 @@ import { mergePlanForms } from '@/lib/coach/ai-actions';
 import { runCoachAiAction } from '@/lib/coach/ai-action-client';
 import type { AiReasoningDisplay } from '@/lib/coach/ai-actions';
 import { activatePlan, getNextPlanVersion, INITIAL_PLAN_FORM, validatePlanForm } from '@/lib/plans';
+import { assertClientCanReceivePlanChanges } from '@/lib/entitlements';
 import { clientCoachNotes } from '@/lib/plan-metadata';
 import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-sync';
 import { createClient } from '@/lib/supabase/client';
 import { requireCoach } from '@/lib/coach-session';
 import type { ClientProfile, Coach, PlanFormData } from '@/types/database';
 
-type ClientOption = Pick<ClientProfile, 'id' | 'name' | 'email' | 'coach_id'>;
+type ClientOption = Pick<ClientProfile, 'id' | 'name' | 'email' | 'coach_id'> & {
+  payment_confirmed?: boolean | null
+  access_source?: 'purchase' | 'admin_trial' | 'enrollment_code' | null
+  subscription_expires_at?: string | null
+};
 
 const supabase = createClient();
 
@@ -60,7 +65,7 @@ function CoachNewPlanForm() {
 
       const { data: clientsData, error: clientsError } = await supabase
         .from('profiles')
-        .select('id, name, email, coach_id')
+        .select('id, name, email, coach_id, payment_confirmed, access_source, subscription_expires_at')
         .eq('coach_id', coachData.id)
         .order('name');
 
@@ -143,6 +148,13 @@ function CoachNewPlanForm() {
       return;
     }
     if (!coach) return;
+
+    const selectedClient = clients.find((c) => c.id === form.client_id);
+    const planWindow = assertClientCanReceivePlanChanges(selectedClient ?? null);
+    if (!planWindow.ok) {
+      setError(planWindow.error);
+      return;
+    }
 
     setSubmitting(true);
     setError('');

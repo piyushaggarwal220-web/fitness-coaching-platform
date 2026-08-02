@@ -6,7 +6,7 @@ import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
 import type { CoachingPlan } from '@/lib/payments/plans'
-import { getCoachingPlan } from '@/lib/payments/plans'
+import { getCoachingPlan, subscriptionExpiryFromPlan } from '@/lib/payments/plans'
 import type { Purchase } from '@/types/database'
 
 const CLAIM_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -559,15 +559,17 @@ export async function claimPurchaseWithPassword(
 
   const now = new Date().toISOString()
   const includeAccessSource = await hasAccessSourceColumn()
-  const planExpiry = new Date()
-  planExpiry.setMonth(planExpiry.getMonth() + plan.durationMonths)
+  const planExpiry = subscriptionExpiryFromPlan(plan)
 
   const existingRole = existingProfile?.role as string | null | undefined
   const preservePrivilegedRole = existingRole === 'coach' || existingRole === 'admin'
   const existingExpiry = existingProfile?.subscription_expires_at
     ? new Date(existingProfile.subscription_expires_at).getTime()
     : 0
-  const nextExpiry = new Date(Math.max(planExpiry.getTime(), existingExpiry)).toISOString()
+  // Trials start from now (don't stack on leftover access). Long plans still extend from max(now, existing).
+  const nextExpiry = plan.isTrial
+    ? planExpiry.toISOString()
+    : new Date(Math.max(planExpiry.getTime(), existingExpiry, Date.now())).toISOString()
 
   const profilePayload: Record<string, unknown> = {
     id: userId,

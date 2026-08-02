@@ -7,7 +7,7 @@ import {
   hasCoachingDayStarted,
 } from '@/lib/checkin-schedule'
 import type { OnboardingProfile, Plan } from '@/types/database'
-import { buildTrackerSnapshot, mergeCompletion, planContentSignature } from './parser'
+import { buildTrackerSnapshot, mergeCompletion, planContentSignature, remapWorkoutDayKey } from './parser'
 import { averageRpe, calculateTrackerScores } from './scores'
 import type {
   DailyTrackerDay,
@@ -174,7 +174,10 @@ function sanitizeCompletionForSnapshot(
       snapshot.items.some(
         (item) => item.type === 'meal' && item.dietDay === next.selectedDietDay
       )
-    if (!stillValid) next.selectedDietDay = undefined
+    if (!stillValid) {
+      const remapped = remapWorkoutDayKey(next.selectedDietDay, days)
+      next.selectedDietDay = remapped
+    }
   }
 
   if (next.selectedWorkoutDay) {
@@ -184,7 +187,10 @@ function sanitizeCompletionForSnapshot(
       snapshot.items.some(
         (item) => item.type === 'workout' && item.workoutDay === next.selectedWorkoutDay
       )
-    if (!stillValid) next.selectedWorkoutDay = undefined
+    if (!stillValid) {
+      const remapped = remapWorkoutDayKey(next.selectedWorkoutDay, days)
+      next.selectedWorkoutDay = remapped
+    }
   }
 
   if (next.meals) {

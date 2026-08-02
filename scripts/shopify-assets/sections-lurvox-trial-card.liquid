@@ -1,0 +1,139 @@
+{% comment %}
+  LURVOX — 7-day all-access trial card
+  CTA → https://app.lurvox.in/trial
+{% endcomment %}
+
+{%- liquid
+  assign accent = section.settings.accent_color | default: '#FF6200'
+  assign title = section.settings.title | default: '7-Day All-Access Trial'
+  assign price = section.settings.price | default: '₹179'
+  assign meta = section.settings.meta | default: 'Once per person · all features unlocked'
+  assign cta_label = section.settings.cta_label | default: 'Start 7-day trial'
+  assign cta_url = section.settings.cta_url | default: 'https://app.lurvox.in/trial'
+  assign eyebrow = section.settings.eyebrow | default: 'Try before you commit'
+-%}
+
+<section
+  class="lx-trial"
+  id="lx-trial-{{ section.id }}"
+  style="--lx-accent: {{ accent }};"
+>
+  <div class="lx-trial__inner page-width">
+    <div class="lx-trial__card">
+      <p class="lx-trial__eyebrow">{{ eyebrow }}</p>
+      <h2 class="lx-trial__title">{{ title }}</h2>
+      <p class="lx-trial__price">{{ price }}<span> / week</span></p>
+      <p class="lx-trial__meta">{{ meta }}</p>
+      <ul class="lx-trial__bullets">
+        <li>{{ section.settings.bullet_1 | default: 'Full coaching features unlocked for 7 days' }}</li>
+        <li>{{ section.settings.bullet_2 | default: 'Coach chat, personal plan, trackers & check-ins' }}</li>
+        <li>{{ section.settings.bullet_3 | default: 'One trial per person — then upgrade to 3 / 6 / 12 months' }}</li>
+      </ul>
+      <a class="lx-trial__cta" href="{{ cta_url }}">{{ cta_label }}</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  #lx-trial-{{ section.id }} {
+    padding: 48px 0 24px;
+    background: #0a0a0a;
+    color: #f5f5f5;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__inner {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__card {
+    border: 1px solid rgba(255, 98, 0, 0.35);
+    background: linear-gradient(160deg, rgba(255, 98, 0, 0.12), rgba(20, 20, 20, 0.95));
+    border-radius: 20px;
+    padding: 32px 28px;
+    text-align: center;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__eyebrow {
+    margin: 0 0 8px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--lx-accent);
+    font-weight: 700;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__title {
+    margin: 0 0 10px;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    line-height: 1.2;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__price {
+    margin: 0 0 6px;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--lx-accent);
+  }
+  #lx-trial-{{ section.id }} .lx-trial__price span {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: rgba(245, 245, 245, 0.7);
+  }
+  #lx-trial-{{ section.id }} .lx-trial__meta {
+    margin: 0 0 18px;
+    color: rgba(245, 245, 245, 0.72);
+    font-size: 0.95rem;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__bullets {
+    list-style: none;
+    margin: 0 auto 22px;
+    padding: 0;
+    max-width: 420px;
+    text-align: left;
+    display: grid;
+    gap: 8px;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__bullets li {
+    position: relative;
+    padding-left: 22px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__bullets li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--lx-accent);
+    font-weight: 800;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__cta {
+    display: inline-block;
+    background: var(--lx-accent);
+    color: #111;
+    font-weight: 800;
+    text-decoration: none;
+    padding: 14px 22px;
+    border-radius: 999px;
+    font-size: 1rem;
+  }
+  #lx-trial-{{ section.id }} .lx-trial__cta:hover {
+    filter: brightness(1.05);
+  }
+</style>
+
+{% schema %}
+{
+  "name": "LURVOX Trial Card",
+  "tag": "section",
+  "class": "section-lurvox-trial",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Try before you commit" },
+    { "type": "text", "id": "title", "label": "Title", "default": "7-Day All-Access Trial" },
+    { "type": "text", "id": "price", "label": "Price", "default": "₹179" },
+    { "type": "text", "id": "meta", "label": "Meta", "default": "Once per person · all features unlocked" },
+    { "type": "text", "id": "bullet_1", "label": "Bullet 1", "default": "Full coaching features unlocked for 7 days" },
+    { "type": "text", "id": "bullet_2", "label": "Bullet 2", "default": "Coach chat, personal plan, trackers & check-ins" },
+    { "type": "text", "id": "bullet_3", "label": "Bullet 3", "default": "One trial per person — then upgrade to 3 / 6 / 12 months" },
+    { "type": "text", "id": "cta_label", "label": "CTA label", "default": "Start 7-day trial" },
+    { "type": "text", "id": "cta_url", "label": "CTA URL", "default": "https://app.lurvox.in/trial" },
+    { "type": "color", "id": "accent_color", "label": "Accent", "default": "#FF6200" }
+  ],
+  "presets": [{ "name": "LURVOX Trial Card" }]
+}
+{% endschema %}

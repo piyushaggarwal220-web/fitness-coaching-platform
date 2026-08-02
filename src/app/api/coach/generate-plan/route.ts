@@ -19,6 +19,7 @@ import {
   mergePlanForms,
   type CoachAiActionId,
 } from '@/lib/coach/ai-actions'
+import { assertClientCanReceivePlanChanges } from '@/lib/entitlements'
 import { createClient } from '@/lib/supabase/server'
 import { planToForm } from '@/lib/plans'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
@@ -164,6 +165,11 @@ export async function POST(request: Request) {
       { success: false, error: 'Client not found or not assigned to you' },
       { status: 404 }
     )
+  }
+
+  const planWindow = assertClientCanReceivePlanChanges(profile)
+  if (!planWindow.ok) {
+    return NextResponse.json({ success: false, error: planWindow.error }, { status: 400 })
   }
 
   let checkin: Checkin | null = null

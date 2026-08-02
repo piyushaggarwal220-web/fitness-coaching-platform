@@ -29,6 +29,8 @@ import {
   getWorkoutProgress,
 } from '@/lib/daily-tracker/display'
 import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
+import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
+import { useTracker } from '@/components/tracker/context/TrackerContext'
 import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
 
 type WorkoutDayOption = { key: string; label: string }
@@ -111,11 +113,17 @@ export function WorkoutModule({
   error,
   onPatch,
 }: Props) {
+  const { view } = useTracker()
   const days = useMemo(() => deriveWorkoutDays(workouts, workoutDays), [workouts, workoutDays])
   const multiDay = days.length > 1
   const selectedKey = completion.selectedWorkoutDay ?? null
   const selectedDay = days.find((d) => d.key === selectedKey) ?? null
-  const suggestion = suggestedWorkoutDayKey(days)
+  const coachingDayInWeek = view?.schedule.coachingDay
+    ? getCoachingDayInWeek(view.schedule.coachingDay)
+    : undefined
+  const suggestion = suggestedWorkoutDayKey(days, new Date(), {
+    coachingDayInWeek,
+  })
 
   const workout = useMemo(() => {
     if (workouts.length === 0) return null

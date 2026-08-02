@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { getNextCoachingDayStart } from '@/lib/checkin-schedule'
+import { assertClientCanReceivePlanChanges } from '@/lib/entitlements'
 import {
   clientCoachNotes,
   formatPublishedPlanTitle,
@@ -115,7 +116,7 @@ export async function activatePlan(
 ): Promise<{ error: string | null }> {
   const { data: client, error: clientError } = await supabase
     .from('profiles')
-    .select('onboarding_complete, onboarding_completed_at, terms_accepted_at, coach_id')
+    .select('onboarding_complete, onboarding_completed_at, terms_accepted_at, coach_id, payment_confirmed, access_source, subscription_expires_at')
     .eq('id', plan.client_id)
     .maybeSingle()
 
@@ -128,6 +129,11 @@ export async function activatePlan(
   }
   if (client.coach_id !== plan.coach_id) {
     return { error: 'Cannot deliver plan: plan coach does not match assigned coach.' }
+  }
+
+  const planWindow = assertClientCanReceivePlanChanges(client)
+  if (!planWindow.ok) {
+    return { error: planWindow.error }
   }
 
   const { data: fullPlan, error: planError } = await supabase
@@ -250,6 +256,17 @@ export async function restorePlanAsDraft(
   supabase: SupabaseClient,
   plan: Plan
 ): Promise<{ data: Plan | null; error: string | null }> {
+  const { data: clientProfile } = await supabase
+    .from('profiles')
+    .select('payment_confirmed, access_source, subscription_expires_at')
+    .eq('id', plan.client_id)
+    .maybeSingle()
+
+  const planWindow = assertClientCanReceivePlanChanges(clientProfile)
+  if (!planWindow.ok) {
+    return { data: null, error: planWindow.error }
+  }
+
   const version = await getNextPlanVersion(supabase, plan.client_id)
   const now = new Date().toISOString()
 
@@ -290,6 +307,17 @@ export async function persistAiPlanDraft(
     title?: string
   }
 ): Promise<{ data: Plan | null; error: string | null }> {
+  const { data: clientProfile } = await supabase
+    .from('profiles')
+    .select('payment_confirmed, access_source, subscription_expires_at')
+    .eq('id', input.clientId)
+    .maybeSingle()
+
+  const planWindow = assertClientCanReceivePlanChanges(clientProfile)
+  if (!planWindow.ok) {
+    return { data: null, error: planWindow.error }
+  }
+
   const version = await getNextPlanVersion(supabase, input.clientId)
   const now = new Date().toISOString()
   const titleBase = input.title?.trim() || input.form.title.trim() || 'Initial Plan'

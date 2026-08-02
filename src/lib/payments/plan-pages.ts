@@ -1,12 +1,15 @@
 import type { CoachingPlan, CoachingPlanSlug } from '@/lib/payments/plans'
-import { COACHING_PLANS, getCoachingPlan } from '@/lib/payments/plans'
+import { COACHING_PLAN_LIST, COACHING_PLANS, getCoachingPlan } from '@/lib/payments/plans'
+
+/** Public marketing plan pages (excludes trial). */
+export type LongCoachingPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
 
 /** Public URL segment → catalog slug */
 export const PLAN_PAGE_PATHS = {
   '3-months': '3_months',
   '6-months': '6_months',
   '12-months': '12_months',
-} as const satisfies Record<string, CoachingPlanSlug>
+} as const satisfies Record<string, LongCoachingPlanSlug>
 
 export type PlanPagePath = keyof typeof PLAN_PAGE_PATHS
 
@@ -28,7 +31,7 @@ export function resolvePlanFromPath(pathSlug: string | undefined): CoachingPlan 
 }
 
 export const PLAN_PAGE_COPY: Record<
-  CoachingPlanSlug,
+  LongCoachingPlanSlug,
   { eyebrow: string; promise: string; bestFor: string }
 > = {
   '3_months': {
@@ -73,5 +76,8 @@ export const PLAN_LEAGUE_CALLOUT = {
 export const ALL_PLAN_PAGE_PATHS = Object.keys(PLAN_PAGE_PATHS) as PlanPagePath[]
 
 export function siblingPlans(current: CoachingPlanSlug): CoachingPlan[] {
-  return (Object.values(COACHING_PLANS) as CoachingPlan[]).filter((plan) => plan.slug !== current)
+  return COACHING_PLAN_LIST.filter((plan) => plan.slug !== current)
 }
+
+/** @deprecated Prefer COACHING_PLAN_LIST — kept for callers that imported COACHING_PLANS via this module. */
+export { COACHING_PLANS }

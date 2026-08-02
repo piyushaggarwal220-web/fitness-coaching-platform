@@ -19,10 +19,24 @@ import type {
 } from './types'
 import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 
-const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
 function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48)
+}
+
+/** Calendar weekday name in Asia/Kolkata (matches tracker log_date). */
+export function getIstWeekdayName(referenceDate: Date = new Date()): (typeof DAY_NAMES)[number] {
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'long',
+  })
+    .format(referenceDate)
+    .toLowerCase()
+  if ((DAY_NAMES as readonly string[]).includes(weekday)) {
+    return weekday as (typeof DAY_NAMES)[number]
+  }
+  return DAY_NAMES[referenceDate.getDay()]!
 }
 
 function parseMealMacros(text: string): { macros: MealMacros; cleaned: string } {
@@ -502,19 +516,67 @@ function splitWorkoutDayBlocks(workoutText: string): { key: string; label: strin
   return [{ key: 'default', label: 'Today', body: workoutText.trim() }]
 }
 
-/** Suggest which plan day matches the calendar weekday / Day N convention. */
+/** Suggest which plan day matches today's IST weekday (or coaching day-in-week for Day N plans). */
 export function suggestedWorkoutDayKey(
   days: { key: string; label: string }[],
-  referenceDate = new Date()
+  referenceDate = new Date(),
+  options?: { coachingDayInWeek?: number }
 ): string | null {
   if (days.length === 0) return null
-  const dayName = DAY_NAMES[referenceDate.getDay()]!
-  const programDay = referenceDate.getDay() || 7
-  return (
-    days.find((d) => d.key === dayName)?.key ??
-    days.find((d) => d.key === `day-${programDay}` || d.key === slug(`day ${programDay}`))?.key ??
-    days[0]!.key
+
+  const dayName = getIstWeekdayName(referenceDate)
+  const byWeekday = days.find((d) => d.key === dayName)
+  if (byWeekday) return byWeekday.key
+
+  // Prefer explicit weekday mentioned in labels (e.g. "Day 1 (Monday)")
+  const byWeekdayLabel = days.find((d) => d.label.toLowerCase().includes(dayName))
+  if (byWeekdayLabel) return byWeekdayLabel.key
+
+  // Day N plans: only map when we know coaching day-in-week (1–7). Do not assume Day 1 = Monday.
+  const programDay = options?.coachingDayInWeek
+  if (programDay && programDay >= 1 && programDay <= 7) {
+    const byProgramDay =
+      days.find((d) => d.key === `day-${programDay}` || d.key === slug(`day ${programDay}`)) ??
+      days.find((d) => new RegExp(`\\bday\\s*${programDay}\\b`, 'i').test(d.label))
+    if (byProgramDay) return byProgramDay.key
+  }
+
+  // Ambiguous (plain Day N with no weekday / no coaching context) — no false "Today" badge.
+  return null
+}
+
+/** Remap a previous workout-day selection onto a rebuilt snapshot's day keys. */
+export function remapWorkoutDayKey(
+  previousKey: string | null | undefined,
+  days: { key: string; label: string }[]
+): string | undefined {
+  if (!previousKey || days.length === 0) return undefined
+  if (days.some((d) => d.key === previousKey)) return previousKey
+
+  const prev = previousKey.toLowerCase()
+  const dayNum = prev.match(/^day-(\d+)$/)?.[1]
+  if (dayNum) {
+    const byNum =
+      days.find((d) => d.key === `day-${dayNum}`) ??
+      days.find((d) => new RegExp(`\\bday\\s*${dayNum}\\b`, 'i').test(d.label))
+    if (byNum) return byNum.key
+  }
+
+  if ((DAY_NAMES as readonly string[]).includes(prev)) {
+    const byKey = days.find((d) => d.key === prev)
+    if (byKey) return byKey.key
+    const byLabel = days.find((d) => d.label.toLowerCase().includes(prev))
+    if (byLabel) return byLabel.key
+  }
+
+  const bySharedWeekday = days.find((d) =>
+    DAY_NAMES.some(
+      (name) =>
+        (prev === name || prev.includes(name) || new RegExp(`\\b${name}\\b`, 'i').test(prev)) &&
+        (d.key === name || d.label.toLowerCase().includes(name))
+    )
   )
+  return bySharedWeekday?.key
 }
 
 function prefixIdsForWorkoutDay<T extends { id: string }>(items: T[], dayKey: string): T[] {
@@ -539,12 +601,38 @@ function parseWorkouts(workoutText: string): {
 
   for (const day of blocks) {
     const parsed = parseWorkoutPhases(day.body)
+    const dayLabel = parsed.dayLabel ?? day.label
+    // Detect rest/empty before default warm-ups are injected — otherwise Rest days
+    // look like normal sessions and disappear from the picker inconsistently.
+    const isRestDay = parsed.exercises.length === 0 && day.key !== 'default'
+
+    if (isRestDay) {
+      workouts.push({
+        id: `workout-${day.key}`,
+        type: 'workout',
+        period: 'workout',
+        icon: '🛌',
+        title: `${dayLabel} — Rest`,
+        dayLabel,
+        focus: 'Rest day',
+        workoutNotes: parsed.workoutNotes,
+        workoutDay: day.key,
+        workoutDayLabel: day.label,
+        phases: [],
+        exercises: [],
+        sortOrder: 50,
+      })
+      workoutDays.push({ key: day.key, label: day.label })
+      continue
+    }
+
     const merged = mergePhaseExercises(
       parsed.phases,
       parsed.exercises,
       sharedWarmup,
       sharedCooldown
     )
+
     if (merged.exercises.length === 0) continue
 
     const phases = merged.phases.map((phase) => ({
@@ -553,7 +641,6 @@ function parseWorkouts(workoutText: string): {
       exercises: prefixIdsForWorkoutDay(phase.exercises, day.key),
     }))
     const exercises = prefixIdsForWorkoutDay(merged.exercises, day.key)
-    const dayLabel = parsed.dayLabel ?? day.label
     const focus = parsed.focus ?? parseWorkoutFocus(day.body)
 
     workouts.push({
