@@ -1,6 +1,6 @@
 /* Lurvox service worker — push + instant shell / asset caching */
 
-const CACHE_VERSION = 'v3'
+const CACHE_VERSION = 'v4'
 const SHELL_CACHE = `lurvox-shell-${CACHE_VERSION}`
 const STATIC_CACHE = `lurvox-static-${CACHE_VERSION}`
 const PAGE_CACHE = `lurvox-pages-${CACHE_VERSION}`
@@ -10,8 +10,8 @@ const SHELL_URLS = [
   '/offline.html',
   '/manifest.webmanifest',
   '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  '/icon-192.png',
+  '/icon-512.png',
 ]
 
 /** Key app routes kept for fast revisit / offline fallback (network-first). */
@@ -158,8 +158,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title || 'LURVOX', {
       body: payload.body || 'You have a new notification.',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
       tag: payload.tag || 'lurvox-notification',
       data: { actionUrl: payload.actionUrl || '/' },
     })

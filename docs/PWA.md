@@ -9,7 +9,7 @@ Stack: **Next.js App Router** + a single root service worker + **Web Push (VAPID
 | Manifest | `/public/manifest.webmanifest` and `/public/manifest.json` (same payload) |
 | Service worker | `/public/notification-sw.js` (scope `/`) |
 | Offline fallback | `/public/offline.html` |
-| Icons | `/public/icons/icon-192.png`, `icon-512.png` |
+| Icons | `/public/icon-192.png`, `/public/icon-512.png` |
 | Head / metadata | `src/app/layout.tsx` (`manifest`, `themeColor`, `appleWebApp`, icons) |
 | SW registration + install capture | `src/components/pwa/PwaRegister.tsx` |
 | Mobile install prompt | `src/components/pwa/PwaInstallPrompt.tsx` (client + coach dashboards) |

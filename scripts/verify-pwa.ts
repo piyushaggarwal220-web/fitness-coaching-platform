@@ -12,25 +12,37 @@ assert.ok(existsSync(path.join(root, 'public/manifest.webmanifest')), 'manifest.
 assert.ok(existsSync(path.join(root, 'public/manifest.json')), 'manifest.json exists')
 assert.ok(existsSync(path.join(root, 'public/notification-sw.js')), 'service worker exists')
 assert.ok(existsSync(path.join(root, 'public/offline.html')), 'offline.html exists')
-assert.ok(existsSync(path.join(root, 'public/icons/icon-192.png')), 'icon-192 exists')
-assert.ok(existsSync(path.join(root, 'public/icons/icon-512.png')), 'icon-512 exists')
+assert.ok(existsSync(path.join(root, 'public/icon-192.png')), 'icon-192 exists at /icon-192.png')
+assert.ok(existsSync(path.join(root, 'public/icon-512.png')), 'icon-512 exists at /icon-512.png')
 
 const webManifest = JSON.parse(read('public/manifest.webmanifest')) as {
   name?: string
   short_name?: string
+  description?: string
   display?: string
   theme_color?: string
-  icons?: unknown[]
+  background_color?: string
+  icons?: { src?: string; sizes?: string }[]
   start_url?: string
 }
 const jsonManifest = JSON.parse(read('public/manifest.json')) as typeof webManifest
 
 assert.equal(webManifest.display, 'standalone', 'manifest display standalone')
 assert.equal(jsonManifest.display, 'standalone', 'manifest.json display standalone')
-assert.ok(webManifest.name?.trim(), 'manifest has name')
-assert.ok(webManifest.theme_color?.trim(), 'manifest has theme_color')
+assert.equal(webManifest.name, 'Lurvox', 'manifest name')
+assert.equal(webManifest.short_name, 'Lurvox', 'manifest short_name')
+assert.equal(webManifest.start_url, '/', 'manifest start_url')
+assert.equal(webManifest.theme_color, '#15110D', 'manifest theme_color')
+assert.equal(webManifest.background_color, '#15110D', 'manifest background_color')
+assert.match(
+  webManifest.description ?? '',
+  /Personal fitness coaching/,
+  'manifest description'
+)
 assert.ok((webManifest.icons?.length ?? 0) >= 2, 'manifest has icons')
-assert.equal(webManifest.start_url, jsonManifest.start_url, 'manifest files stay in sync')
+assert.equal(webManifest.icons?.[0]?.src, '/icon-192.png', '192 icon path')
+assert.equal(webManifest.icons?.[1]?.src, '/icon-512.png', '512 icon path')
+assert.deepEqual(webManifest, jsonManifest, 'manifest files stay in sync')
 
 const sw = read('public/notification-sw.js')
 assert.match(sw, /SHELL_CACHE|lurvox-shell/, 'SW defines shell cache')
