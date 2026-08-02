@@ -14,7 +14,9 @@ import {
   validatePersistedOnboardingAnswers,
   type InitialPlanGenerationStatus,
 } from '@/lib/initial-plan-generation-policy'
+import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { sendNotification } from '@/lib/notifications/dispatcher'
+import { resolveVisionMediaType, type VisionSafeMediaType } from '@/lib/photo'
 import { persistAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
@@ -100,24 +102,27 @@ export async function enqueueInitialPlanGeneration(
 async function loadProgressImages(
   admin: SupabaseClient,
   profile: OnboardingProfile
-): Promise<{ mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'; data: string }[]> {
+): Promise<{ mediaType: VisionSafeMediaType; data: string }[]> {
   const paths = [
     profile.progress_photo_front,
     profile.progress_photo_side,
     profile.progress_photo_back,
   ].filter((path): path is string => Boolean(path))
-  const images = []
+  const images: { mediaType: VisionSafeMediaType; data: string }[] = []
 
   for (const path of paths) {
     const { data, error } = await admin.storage.from('onboarding-photos').download(path)
-    if (error || !data) throw new Error('An uploaded onboarding photo could not be loaded.')
-    const mediaType = data.type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
-    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mediaType)) {
-      throw new Error('An uploaded onboarding photo has an unsupported format.')
+    if (error || !data) {
+      throw new Error(
+        `An uploaded onboarding photo could not be loaded (${path.split('/').pop() || 'photo'}). Ask the client to re-upload it in the app, then retry.`
+      )
     }
+    const buffer = await data.arrayBuffer()
+    // Supabase often returns an empty Blob.type — sniff bytes / extension instead.
+    const mediaType = resolveVisionMediaType(data.type, buffer, path)
     images.push({
       mediaType,
-      data: Buffer.from(await data.arrayBuffer()).toString('base64'),
+      data: Buffer.from(buffer).toString('base64'),
     })
   }
   if (profile.gender !== 'female' && images.length !== 3) {
@@ -129,7 +134,14 @@ async function loadProgressImages(
 function safeFailure(error: unknown): { code: string; message: string } {
   const text = error instanceof Error ? error.message : ''
   if (/not configured/i.test(text)) return { code: 'configuration', message: 'AI generation is not configured.' }
-  if (/photo/i.test(text)) return { code: 'photo_unavailable', message: 'A required onboarding photo could not be processed.' }
+  if (/photo/i.test(text)) {
+    return {
+      code: 'photo_unavailable',
+      message:
+        text.trim() ||
+        'A required onboarding photo could not be processed. Ask the client to re-upload, then retry.',
+    }
+  }
   // Metrics / onboarding gates — must run before the generic "validation" matcher,
   // because those messages also contain the word "validation".
   if (/coach review|height|weight|age|bmi|metrics/i.test(text)) {
@@ -350,13 +362,19 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
 
     const { data: coach } = await admin.from('coaches').select('user_id').eq('id', job.coach_id).single()
     if (coach?.user_id) {
+      const guidance = getGenerationFailureGuidance(safe.code, safe.message)
       await sendNotification({
         userId: coach.user_id,
         type: 'initial_plan_generation_failed',
         title: 'AI plan draft needs a retry',
-        body: safe.message,
+        body: `${guidance.summary} Next: ${guidance.nextSteps[0] ?? 'Open the client generate-plan page.'}`,
         actionUrl: `/coach/client/${job.client_id}/generate-plan`,
-        metadata: { jobId: job.id, clientId: job.client_id, errorCode: safe.code },
+        metadata: {
+          jobId: job.id,
+          clientId: job.client_id,
+          errorCode: safe.code,
+          nextSteps: guidance.nextSteps,
+        },
       })
     }
   }

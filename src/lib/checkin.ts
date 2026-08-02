@@ -5,12 +5,18 @@ import type {
   MidWeekCheckinFormData,
   WeeklyCheckinFormData,
 } from '@/types/database'
-import { validatePhotoFile } from '@/lib/photo'
+import {
+  convertHeicFileToJpeg,
+  isHeicLike,
+  isVisionSafeMediaType,
+  validatePhotoFile,
+} from '@/lib/photo'
 
 export const CHECKIN_PHOTO_BUCKET = 'checkin-photos'
 export const CHECKIN_INTERVAL_DAYS = 7
 export const MAX_PHOTO_DIMENSION = 1600
 export const PHOTO_JPEG_QUALITY = 0.82
+const PHOTO_UPLOAD_ATTEMPTS = 3
 
 export const INITIAL_CHECKIN_FORM: CheckinFormData = {
   weight: '',
@@ -113,11 +119,7 @@ export function validateCheckinForm(
   return null
 }
 
-/** Compress image client-side before upload. Falls back to original on failure. */
-export async function compressImageFile(file: File): Promise<File> {
-  const validationError = validatePhotoFile(file)
-  if (validationError) throw new Error(validationError)
-
+async function canvasCompressToJpeg(file: File): Promise<File | null> {
   try {
     const bitmap = await createImageBitmap(file)
     const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(bitmap.width, bitmap.height))
@@ -128,7 +130,10 @@ export async function compressImageFile(file: File): Promise<File> {
     canvas.width = width
     canvas.height = height
     const ctx = canvas.getContext('2d')
-    if (!ctx) return file
+    if (!ctx) {
+      bitmap.close()
+      return null
+    }
 
     ctx.drawImage(bitmap, 0, 0, width, height)
     bitmap.close()
@@ -136,13 +141,66 @@ export async function compressImageFile(file: File): Promise<File> {
     const blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob((b) => resolve(b), 'image/jpeg', PHOTO_JPEG_QUALITY)
     })
-
-    if (!blob) return file
+    if (!blob) return null
     const baseName = file.name.replace(/\.[^.]+$/, '') || 'photo'
     return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' })
   } catch {
-    return file
+    return null
   }
+}
+
+/**
+ * Normalize photos to JPEG before upload.
+ * HEIC/HEIF (common on iPhone gallery picks) is converted so AI vision can process them.
+ * Never silently upload an unreadable HEIC original.
+ */
+export async function compressImageFile(file: File): Promise<File> {
+  const validationError = validatePhotoFile(file)
+  if (validationError) throw new Error(validationError)
+
+  let working = file
+  if (isHeicLike(file)) {
+    try {
+      working = await convertHeicFileToJpeg(file, PHOTO_JPEG_QUALITY)
+    } catch {
+      // Some browsers can decode HEIC via createImageBitmap; try that next.
+    }
+  }
+
+  const compressed = await canvasCompressToJpeg(working)
+  if (compressed && isVisionSafeMediaType(compressed.type)) return compressed
+
+  if (isVisionSafeMediaType(working.type) && !isHeicLike(working)) {
+    return working
+  }
+
+  throw new Error(
+    `${file.name || 'This photo'} could not be processed. Use “Take photo now”, or choose a JPEG/PNG from your gallery, then try again.`
+  )
+}
+
+/** Retry transient storage failures (network blips) without masking RLS / size errors. */
+export async function uploadPhotoWithRetry(
+  supabase: SupabaseClient,
+  bucket: string,
+  path: string,
+  file: File,
+  label: string
+): Promise<void> {
+  let lastError: Error | null = null
+  for (let attempt = 0; attempt < PHOTO_UPLOAD_ATTEMPTS; attempt++) {
+    const { error } = await supabase.storage
+      .from(bucket)
+      .upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' })
+    if (!error) return
+    lastError = new Error(`Photo upload failed (${label}): ${error.message}`)
+    // Do not retry permanent client errors
+    if (/duplicate|already exists|payload too large|not allowed|row-level security/i.test(error.message)) {
+      break
+    }
+    await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)))
+  }
+  throw lastError ?? new Error(`Photo upload failed (${label}).`)
 }
 
 export async function uploadCheckinPhoto(
@@ -154,14 +212,15 @@ export async function uploadCheckinPhoto(
   const validationError = validatePhotoFile(file)
   if (validationError) throw new Error(validationError)
   const compressed = typeof window !== 'undefined' ? await compressImageFile(file) : file
+  if (!isVisionSafeMediaType(compressed.type) && isHeicLike(compressed)) {
+    throw new Error(
+      `Photo upload failed (${label}): iPhone HEIC photos must be converted first. Use “Take photo now” or pick a JPEG/PNG.`
+    )
+  }
   const ext = compressed.name.split('.').pop() || 'jpg'
   const path = `${clientId}/${Date.now()}_${label}.${ext}`
 
-  const { error } = await supabase.storage
-    .from(CHECKIN_PHOTO_BUCKET)
-    .upload(path, compressed, { upsert: false, contentType: compressed.type || 'image/jpeg' })
-
-  if (error) throw new Error(`Photo upload failed (${label}): ${error.message}`)
+  await uploadPhotoWithRetry(supabase, CHECKIN_PHOTO_BUCKET, path, compressed, label)
 
   // Store object path; display via signed URLs (bucket is private).
   return path

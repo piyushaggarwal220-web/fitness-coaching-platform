@@ -104,6 +104,11 @@ export default function OnboardingPage() {
     side: null,
     back: null,
   })
+  const [uploadingPhotos, setUploadingPhotos] = useState<Record<PhotoKey, boolean>>({
+    front: false,
+    side: false,
+    back: false,
+  })
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -217,6 +222,8 @@ export default function OnboardingPage() {
       if (!userId) return
       setSaving(true)
       try {
+        // Photos are normally uploaded as soon as they are selected. Re-upload any
+        // leftover local files (e.g. if an earlier upload was interrupted).
         const urls = { ...photoUrls }
         if (photos.front) urls.front = await uploadOnboardingPhoto(supabase, userId, photos.front, 'front')
         if (photos.side) urls.side = await uploadOnboardingPhoto(supabase, userId, photos.side, 'side')
@@ -242,18 +249,57 @@ export default function OnboardingPage() {
     [userId, userEmail, form, photos, photoUrls, mealsForTiming]
   )
 
-  const handlePhotoChange = (key: PhotoKey) => (files: File[]) => {
-    const file = files[0] ?? null
-    if (file) {
+  const handlePhotoChange = useCallback(
+    (key: PhotoKey) => (files: File[]) => {
+      const file = files[0] ?? null
+      if (!file) return
       const validationError = validatePhotoFiles([file])
       if (validationError) {
         setError(validationError)
         return
       }
-    }
-    setPhotos((prev) => ({ ...prev, [key]: file }))
-    setError('')
-  }
+      if (!userId) {
+        setError('Please wait for your session to load, then try the photo again.')
+        return
+      }
+
+      setPhotos((prev) => ({ ...prev, [key]: file }))
+      setError('')
+      setUploadingPhotos((prev) => ({ ...prev, [key]: true }))
+
+      void (async () => {
+        try {
+          const path = await uploadOnboardingPhoto(supabase, userId, file, key)
+          let nextUrls: SavedPhotoUrls = { front: null, side: null, back: null }
+          setPhotoUrls((prev) => {
+            nextUrls = { ...prev, [key]: path }
+            return nextUrls
+          })
+          setPhotos((prev) => ({ ...prev, [key]: null }))
+          // Keep profile paths in sync immediately so later steps / resume never miss photos.
+          await saveOnboardingProgress(supabase, userId, form, {
+            email: userEmail,
+            step,
+            photoUrls: nextUrls,
+            mealsForTiming,
+          })
+          setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+        } catch (err) {
+          // If storage succeeded but profile save failed, photoUrls already holds the path
+          // so validation/continue can still proceed; only clear a failed local pick.
+          setPhotos((prev) => ({ ...prev, [key]: null }))
+          setError(
+            err instanceof Error
+              ? err.message
+              : `Could not upload the ${key} photo. Please try again or use “Take photo now”.`
+          )
+        } finally {
+          setUploadingPhotos((prev) => ({ ...prev, [key]: false }))
+        }
+      })()
+    },
+    [userId, userEmail, form, step, mealsForTiming]
+  )
 
   useEffect(() => {
     if (step === 19 && mealsForTiming.length === 0) {
@@ -369,7 +415,9 @@ export default function OnboardingPage() {
 
   const progress = ((step + 1) / ONBOARDING_SCREEN_COUNT) * 100
   const currentSection = getSectionForStep(step)
-  const busy = submitting || saving
+  const photoUploadInFlight =
+    uploadingPhotos.front || uploadingPhotos.side || uploadingPhotos.back
+  const busy = submitting || saving || photoUploadInFlight
 
   return (
     <div style={s.page}>
@@ -424,6 +472,7 @@ export default function OnboardingPage() {
             updateForm,
             photos,
             photoUrls,
+            uploadingPhotos,
             handlePhotoChange,
             handleEditSection,
             mealsForTiming,
@@ -454,7 +503,7 @@ export default function OnboardingPage() {
               style={s.nextBtn}
               disabled={busy}
             >
-              {saving ? 'Saving…' : 'Continue'}
+              {photoUploadInFlight ? 'Uploading photos…' : saving ? 'Saving…' : 'Continue'}
             </button>
           ) : (
             <button
@@ -478,6 +527,7 @@ function renderStep(
   update: (patch: Partial<OnboardingFormData>) => void,
   photos: Record<PhotoKey, File | null>,
   photoUrls: SavedPhotoUrls,
+  uploadingPhotos: Record<PhotoKey, boolean>,
   onPhotoChange: (key: PhotoKey) => (files: File[]) => void,
   onEditSection: (step: number) => void,
   mealsForTiming: MealTimingKey[],
@@ -1236,19 +1286,27 @@ function renderStep(
             {photosOptional && ' Photos are optional for female clients, and you can continue without uploading them.'}
           </div>
           <div style={s.photoGrid}>
-            {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (
-              <div key={key} style={s.field}>
-                <PhotoSourceControl
-                  label={`${key.charAt(0).toUpperCase()}${key.slice(1)} photo`}
-                  required={!photosOptional}
-                  onFiles={onPhotoChange(key)}
-                  selectedText={photos[key] ? `${photos[key]!.name} selected` : undefined}
-                />
-                {photoUrls[key] && !photos[key] && (
-                  <p style={s.photoPreview}>Previously uploaded — select a new file to replace.</p>
-                )}
-              </div>
-            ))}
+            {(['front', 'side', 'back'] as PhotoKey[]).map((key) => {
+              const uploading = uploadingPhotos[key]
+              const selectedText = uploading
+                ? `Uploading ${photos[key]?.name || `${key} photo`}…`
+                : photos[key]
+                  ? `${photos[key]!.name} selected`
+                  : photoUrls[key]
+                    ? 'Uploaded — select a new file to replace.'
+                    : undefined
+              return (
+                <div key={key} style={s.field}>
+                  <PhotoSourceControl
+                    label={`${key.charAt(0).toUpperCase()}${key.slice(1)} photo`}
+                    required={!photosOptional}
+                    onFiles={onPhotoChange(key)}
+                    selectedText={selectedText}
+                    disabled={uploading}
+                  />
+                </div>
+              )
+            })}
           </div>
         </div>
       )
