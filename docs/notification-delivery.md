@@ -1,5 +1,7 @@
 # Notification delivery scheduling
 
+Push for **Android + desktop** uses the browser **Web Push API** with VAPID (`web-push`), delivered through the Lurvox service worker (`/notification-sw.js`). Firebase Cloud Messaging is intentionally not used for the web app — see `docs/PWA.md`.
+
 The application is designed to work on Vercel Hobby without a frequent cron:
 
 - In-app notifications are persisted synchronously and delivered through Supabase Realtime.

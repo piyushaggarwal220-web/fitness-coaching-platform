@@ -9,6 +9,7 @@ import {
   isStandaloneDisplay,
   manualInstallCopy,
   markInstallDismissedToday,
+  shouldOfferHomeScreenInstall,
   triggerNativeInstall,
   wasInstallDismissedToday,
 } from '@/lib/pwa-install'
@@ -27,6 +28,8 @@ export function PwaInstallPrompt() {
     if (typeof window === 'undefined') return
     if (isStandaloneDisplay()) return
     if (wasInstallDismissedToday()) return
+    // Mobile / installable surfaces first — skip noisy desktop manual tips.
+    if (!shouldOfferHomeScreenInstall()) return
 
     const open = (next: PromptMode) => {
       // Claim the once-per-day slot immediately so remounts stay quiet.
@@ -53,9 +56,10 @@ export function PwaInstallPrompt() {
 
     const fallbackTimer = window.setTimeout(() => {
       if (wasInstallDismissedToday() || isStandaloneDisplay()) return
+      if (!shouldOfferHomeScreenInstall()) return
       if (getDeferredInstall()) open('native')
       else open('manual')
-    }, 800)
+    }, 1200)
 
     return () => {
       window.removeEventListener('lurvox-install-available', onAvailable)

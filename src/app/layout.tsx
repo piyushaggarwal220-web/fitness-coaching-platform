@@ -31,6 +31,7 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  // Canonical PWA manifest (manifest.json kept in sync for tooling that expects .json).
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -39,6 +40,9 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
@@ -46,7 +50,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: 'cover',
-  themeColor: '#09090b',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
+    { media: '(prefers-color-scheme: light)', color: '#09090b' },
+    { color: '#09090b' },
+  ],
 };
 
 export default function RootLayout({
