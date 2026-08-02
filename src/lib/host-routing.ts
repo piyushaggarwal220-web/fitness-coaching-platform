@@ -81,7 +81,11 @@ export function resolveProductionHostRedirect(
   const apexHost = getApexHost(marketingHost)
   const appOrigin = `https://${appHost}`
 
+  // Keep the app host for PWA launches (start_url / install). Marketing still owns bare `/`.
   if (host === appHost && pathname === '/') {
+    if (search.includes('source=pwa') || search.includes('utm_source=pwa')) {
+      return null
+    }
     return marketingUrl
   }
 

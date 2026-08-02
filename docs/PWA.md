@@ -2,11 +2,19 @@
 
 Stack: **Next.js App Router** + a single root service worker + **Web Push (VAPID)**.
 
+## Important: which URL to audit
+
+- Marketing (Shopify): `https://www.lurvox.in` — **not** a PWA  
+- App (Next.js): `https://app.lurvox.in/login` or `/dashboard`  
+- Bare `https://app.lurvox.in/` redirects to Shopify by design  
+
+Use **PWA Builder against** `https://app.lurvox.in/login` (or any app path), not the marketing site.
+
 ## What ships
 
 | Piece | Location |
 |-------|----------|
-| Manifest | `/public/manifest.webmanifest` and `/public/manifest.json` (same payload) |
+| Manifest | `/public/manifest.json` (+ synced `manifest.webmanifest`) — `start_url` is `/dashboard` so installs stay on the Next app |
 | Service worker | `/public/notification-sw.js` (scope `/`) |
 | Offline fallback | `/public/offline.html` |
 | Icons | `/public/icon-192.png`, `/public/icon-512.png` |

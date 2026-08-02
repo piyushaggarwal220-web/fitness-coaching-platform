@@ -31,8 +31,8 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  // Canonical PWA manifest (manifest.json kept in sync for tooling that expects .json).
-  manifest: "/manifest.webmanifest",
+  // Prefer .json — PWA Builder and many store tools look for /manifest.json.
+  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
