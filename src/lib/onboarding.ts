@@ -1199,19 +1199,20 @@ export async function uploadOnboardingPhoto(
   file: File,
   label: 'front' | 'side' | 'back'
 ): Promise<string> {
-  const { validatePhotoFile } = await import('@/lib/photo')
+  const { isHeicLike, isVisionSafeMediaType, validatePhotoFile } = await import('@/lib/photo')
   const validationError = validatePhotoFile(file)
   if (validationError) throw new Error(validationError)
-  const { compressImageFile } = await import('@/lib/checkin')
+  const { compressImageFile, uploadPhotoWithRetry } = await import('@/lib/checkin')
   const compressed = typeof window !== 'undefined' ? await compressImageFile(file) : file
+  if (!isVisionSafeMediaType(compressed.type) && isHeicLike(compressed)) {
+    throw new Error(
+      `Photo upload failed (${label}): iPhone HEIC photos must be converted first. Use “Take photo now” or pick a JPEG/PNG.`
+    )
+  }
   const ext = compressed.name.split('.').pop() || 'jpg'
   const path = `${clientId}/${Date.now()}_${label}.${ext}`
 
-  const { error } = await supabase.storage
-    .from(ONBOARDING_PHOTO_BUCKET)
-    .upload(path, compressed, { upsert: false, contentType: compressed.type || 'image/jpeg' })
-
-  if (error) throw new Error(`Photo upload failed (${label}): ${error.message}`)
+  await uploadPhotoWithRetry(supabase, ONBOARDING_PHOTO_BUCKET, path, compressed, label)
 
   // Store object path; display via signed URLs (bucket is private).
   return path

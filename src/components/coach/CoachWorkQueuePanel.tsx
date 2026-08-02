@@ -254,6 +254,18 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
       >
         <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>{current.title}</p>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: colors.textSecondary }}>{current.subtitle}</p>
+        {current.coachNextSteps && current.coachNextSteps.length > 0 ? (
+          <div style={{ marginTop: 10 }}>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: colors.textPrimary }}>
+              What to do next
+            </p>
+            <ol style={{ margin: '6px 0 0', paddingLeft: 18, color: colors.textSecondary, fontSize: 13 }}>
+              {current.coachNextSteps.map((step) => (
+                <li key={step} style={{ marginBottom: 4 }}>{step}</li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
       </button>
       <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
         <button type="button" onClick={() => openTask(current.href)} style={primaryBtn}>

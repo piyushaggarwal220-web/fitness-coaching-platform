@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 
 export type WorkQueueTaskType =
   | 'initial_plan'
@@ -17,24 +18,26 @@ export type WorkQueueTask = {
   href: string
   clientId?: string
   clientName?: string
+  /** @deprecated Queue order is FIFO by createdAt — kept for API compatibility. */
   priority: number
   createdAt: string
+  /** Coach-facing next steps when a task needs recovery (e.g. failed AI generation). */
+  coachNextSteps?: string[]
 }
 
-const PRIORITY: Record<WorkQueueTaskType, number> = {
-  initial_plan: 1,
-  plan_change_request: 1,
-  checkin_review: 2,
-  call_request: 2,
-  unread_chat: 3,
-  issue_report: 4,
-  other: 5,
-}
+/** Equal priority for all types — display order is strictly by received time. */
+const QUEUE_PRIORITY = 1
 
+/** Oldest received first — messages, check-ins, and plan work share one timeline. */
 function sortTasks(tasks: WorkQueueTask[]): WorkQueueTask[] {
   return [...tasks].sort((a, b) => {
-    if (a.priority !== b.priority) return a.priority - b.priority
-    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    const aTime = Date.parse(a.createdAt)
+    const bTime = Date.parse(b.createdAt)
+    const safeA = Number.isFinite(aTime) ? aTime : 0
+    const safeB = Number.isFinite(bTime) ? bTime : 0
+    if (safeA !== safeB) return safeA - safeB
+    // Stable tie-break so order does not jump between refreshes.
+    return a.id.localeCompare(b.id)
   })
 }
 
@@ -55,7 +58,7 @@ export async function getCoachWorkQueue(
   )
   const { data: generationJobs } = await supabase
     .from('initial_plan_generation_jobs')
-    .select('id, client_id, status, draft_plan_id, error_message, queued_at, updated_at')
+    .select('id, client_id, status, draft_plan_id, error_code, error_message, queued_at, updated_at')
     .eq('coach_id', coachId)
   const generationByClient = new Map(
     (generationJobs ?? []).map((job) => [job.client_id, job])
@@ -105,6 +108,7 @@ export async function getCoachWorkQueue(
 
     const generation = generationByClient.get(client.id)
     const draft = latestDraftByClient.get(client.id)
+    const clientName = clientNameById.get(client.id) ?? 'Client'
     const readyDraftId =
       (generation?.status === 'ready' && generation.draft_plan_id) || draft?.id || null
     const title =
@@ -118,18 +122,23 @@ export async function getCoachWorkQueue(
       : generation?.status === 'failed'
         ? `/coach/client/${client.id}/generate-plan`
         : `/coach/client/${client.id}`
+    const failedGuidance =
+      generation?.status === 'failed'
+        ? getGenerationFailureGuidance(generation.error_code, generation.error_message)
+        : null
     tasks.push({
       id: `plan-${client.id}`,
       type: 'initial_plan',
       title,
-      subtitle: generation?.status === 'failed'
-        ? `${clientNameById.get(client.id) ?? 'Client'} · ${generation.error_message ?? 'Retry available'}`
-        : clientNameById.get(client.id) ?? 'Client',
+      subtitle: failedGuidance
+        ? formatGenerationFailureSubtitle(clientName, generation?.error_code, generation?.error_message)
+        : clientName,
       href,
       clientId: client.id,
-      clientName: clientNameById.get(client.id),
-      priority: PRIORITY.initial_plan,
+      clientName,
+      priority: QUEUE_PRIORITY,
       createdAt: generation?.queued_at ?? draft?.created_at ?? client.created_at ?? new Date().toISOString(),
+      coachNextSteps: failedGuidance?.nextSteps,
     })
   }
 
@@ -157,8 +166,8 @@ export async function getCoachWorkQueue(
         : `/coach/client/${change.client_id}`,
       clientId: change.client_id,
       clientName: name,
-      priority: PRIORITY.plan_change_request,
-      createdAt: change.draft_ready_at ?? change.locked_at,
+      priority: QUEUE_PRIORITY,
+      createdAt: change.locked_at ?? change.draft_ready_at ?? new Date().toISOString(),
     })
   }
 
@@ -179,7 +188,7 @@ export async function getCoachWorkQueue(
       href: `/coach/checkin/${checkin.id}`,
       clientId: checkin.client_id,
       clientName: name,
-      priority: PRIORITY.checkin_review,
+      priority: QUEUE_PRIORITY,
       createdAt: checkin.submitted_at,
     })
   }
@@ -203,7 +212,7 @@ export async function getCoachWorkQueue(
       href: `/coach/chat/${request.conversation_id}`,
       clientId: request.client_id,
       clientName: name,
-      priority: PRIORITY.call_request,
+      priority: QUEUE_PRIORITY,
       createdAt: request.requested_at,
     })
   }
@@ -226,7 +235,7 @@ export async function getCoachWorkQueue(
       href: `/coach/chat/${conv.id}`,
       clientId: conv.client_id,
       clientName: name,
-      priority: PRIORITY.unread_chat,
+      priority: QUEUE_PRIORITY,
       createdAt: conv.last_message_at ?? new Date().toISOString(),
     })
   }
@@ -249,7 +258,7 @@ export async function getCoachWorkQueue(
         href: `/coach/client/${issue.client_id}`,
         clientId: issue.client_id,
         clientName: name,
-        priority: PRIORITY.issue_report,
+        priority: QUEUE_PRIORITY,
         createdAt: issue.created_at,
       })
     }

@@ -25,6 +25,7 @@ import { ActionCard, AiReasoningPanel, GenerationStatus, MessageClientButton, Op
 import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
 import type { Coach, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
+import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import type { InitialPlanGenerationJob } from '@/lib/initial-plan-generation'
 
 const supabase = createClient()
@@ -471,25 +472,45 @@ export default function CoachGeneratePlanPage() {
                   </Link>
                 </div>
               )}
-              {backgroundJob.status === 'failed' && (
-                <div style={{ marginTop: 10 }}>
-                  <span>{backgroundJob.error_message ?? 'Generation failed safely.'}</span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginTop: 8 }}>
-                    <button
-                      type="button"
-                      style={s.noteToggle}
-                      disabled={retryingBackground}
-                      onClick={() => void retryBackgroundGeneration()}
-                    >
-                      {retryingBackground ? 'Queueing…' : 'Retry background generation'}
-                    </button>
-                    <MessageClientButton
-                      clientId={client.id}
-                      label="Message client about the delay"
-                    />
+              {backgroundJob.status === 'failed' && (() => {
+                const guidance = getGenerationFailureGuidance(
+                  backgroundJob.error_code,
+                  backgroundJob.error_message
+                )
+                return (
+                  <div style={{ marginTop: 10 }}>
+                    <span>{guidance.summary}</span>
+                    <div style={{ marginTop: 10 }}>
+                      <strong style={{ display: 'block', marginBottom: 6 }}>What to do next</strong>
+                      <ol style={{ margin: 0, paddingLeft: 18 }}>
+                        {guidance.nextSteps.map((step) => (
+                          <li key={step} style={{ marginBottom: 4 }}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginTop: 8 }}>
+                      <button
+                        type="button"
+                        style={s.noteToggle}
+                        disabled={retryingBackground}
+                        onClick={() => void retryBackgroundGeneration()}
+                      >
+                        {retryingBackground ? 'Queueing…' : 'Retry background generation'}
+                      </button>
+                      <MessageClientButton
+                        clientId={client.id}
+                        label={
+                          guidance.code === 'photo_unavailable'
+                            ? 'Ask client to re-upload photos'
+                            : guidance.code === 'metrics_review'
+                              ? 'Message client about metrics'
+                              : 'Message client about the delay'
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )
+              })()}
             </div>
           )}
 

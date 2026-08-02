@@ -86,12 +86,12 @@ assert(
 
 const aiConfig = read('src/lib/ai/config.ts')
 assert(
-  'MAX_PLAN_TOKENS is restored to a full-week ceiling',
-  /MAX_PLAN_TOKENS:\s*32000/.test(aiConfig)
+  'MAX_PLAN_TOKENS uses the full model output ceiling for complete weeks',
+  /MAX_PLAN_TOKENS:\s*64000/.test(aiConfig)
 )
 assert(
   'MAX_SECTION_EDIT_TOKENS matches full-week ceiling',
-  /MAX_SECTION_EDIT_TOKENS:\s*32000/.test(aiConfig)
+  /MAX_SECTION_EDIT_TOKENS:\s*64000/.test(aiConfig)
 )
 
 const manifest = read('prompts/production/manifest.json')

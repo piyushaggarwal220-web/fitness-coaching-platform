@@ -30,17 +30,18 @@ export const DEFAULTS = {
 export const LIMITS = {
   /**
    * Full diet/workout weeks (every day written out, no cross-day shortcuts) need
-   * generous headroom — lower ceilings produced truncated / half plans.
+   * the model’s full output ceiling — lower values produced truncated / half plans.
+   * Claude Sonnet max output is 64k; prefer completeness over token savings.
    */
-  MAX_PLAN_TOKENS: 32000,
-  /** Cardio / supplements / coach notes — shorter outputs, lower completion cost. */
-  MAX_SUPPORT_PLAN_TOKENS: 8192,
+  MAX_PLAN_TOKENS: 64000,
+  /** Cardio / supplements / coach notes — shorter outputs, still roomy enough to finish. */
+  MAX_SUPPORT_PLAN_TOKENS: 16384,
   /**
    * Section edits must return the full revised week text (same completeness rules
    * as generation), so use the same ceiling as plan generation.
    */
-  MAX_SECTION_EDIT_TOKENS: 32000,
-  MAX_CHECKIN_TOKENS: 4096,
+  MAX_SECTION_EDIT_TOKENS: 64000,
+  MAX_CHECKIN_TOKENS: 8192,
 } as const
 
 /** Slightly lower temperature for diet/workout — fewer invented mistakes. */
