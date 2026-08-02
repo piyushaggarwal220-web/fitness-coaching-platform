@@ -6,6 +6,7 @@ export type DirectEmail = {
   subject: string
   text: string
   html?: string
+  replyTo?: string
 }
 
 export function isEmailConfigured(): boolean {
@@ -40,6 +41,7 @@ export async function sendDirectEmail(
       subject: message.subject,
       text: message.text,
       html: message.html,
+      ...(message.replyTo ? { replyTo: message.replyTo } : {}),
     })
     if (error) {
       return { ok: false, error: humanizeResendError(error.message, from) }
