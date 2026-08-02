@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { requireAdminApi } from '@/lib/admin/api-auth'
-import { createRedemptionCode } from '@/lib/redemption-codes'
+import { createRedemptionCode, updateRedemptionCode } from '@/lib/redemption-codes'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { CoachingPlanSlug } from '@/lib/payments/plans'
-import { isValidPlanSlug } from '@/lib/payments/plans'
+import type { AnyCoachingPlanSlug, CoachingPlanSlug } from '@/lib/payments/plans'
+import { getCoachingPlan, getPurchasablePlan, isValidPlanSlug } from '@/lib/payments/plans'
 
 export async function GET() {
   const auth = await requireAdminApi()
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   }
-  if (!isValidPlanSlug(planSlug)) {
+  if (!isValidPlanSlug(planSlug) || planSlug === '1_week_trial' || !getPurchasablePlan(planSlug)) {
     return NextResponse.json({ error: 'Invalid plan slug' }, { status: 400 })
   }
 
@@ -72,16 +72,46 @@ export async function PATCH(request: Request) {
   if (!auth.ok) return auth.response
 
   const body = await request.json()
-  const { id, isActive, notes, memberLabel } = body
+  const {
+    id,
+    code,
+    planSlug,
+    maxRedemptions,
+    membershipExpiresAt,
+    expiresAt,
+    isReusable,
+    isActive,
+    notes,
+    memberLabel,
+  } = body
+
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const admin = createAdminClient()
-  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  if (isActive !== undefined) payload.is_active = isActive
-  if (notes !== undefined) payload.notes = notes
-  if (memberLabel !== undefined) payload.member_label = memberLabel
+  if (planSlug !== undefined) {
+    const resolved = getCoachingPlan(String(planSlug))
+    if (!resolved || String(planSlug) === '1_week_trial') {
+      return NextResponse.json({ error: 'Invalid plan slug' }, { status: 400 })
+    }
+  }
 
-  const { error } = await admin.from('redemption_codes').update(payload).eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ ok: true })
+  const admin = createAdminClient()
+  const { data, error } = await updateRedemptionCode(
+    {
+      id: String(id),
+      code: code !== undefined ? String(code) : undefined,
+      planSlug: planSlug !== undefined ? (String(planSlug) as AnyCoachingPlanSlug) : undefined,
+      maxRedemptions: maxRedemptions !== undefined ? Number(maxRedemptions) : undefined,
+      membershipExpiresAt:
+        membershipExpiresAt !== undefined ? (membershipExpiresAt as string | null) : undefined,
+      expiresAt: expiresAt !== undefined ? (expiresAt as string | null) : undefined,
+      isReusable: isReusable !== undefined ? Boolean(isReusable) : undefined,
+      isActive: isActive !== undefined ? Boolean(isActive) : undefined,
+      notes: notes !== undefined ? (notes as string | null) : undefined,
+      memberLabel: memberLabel !== undefined ? (memberLabel as string | null) : undefined,
+    },
+    admin
+  )
+
+  if (error) return NextResponse.json({ error }, { status: 400 })
+  return NextResponse.json({ ok: true, code: data })
 }

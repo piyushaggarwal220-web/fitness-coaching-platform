@@ -2,7 +2,7 @@ import 'server-only'
 import { createHmac, timingSafeEqual, randomBytes } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
-import { getCoachingPlan, type CoachingPlanSlug } from '@/lib/payments/plans'
+import { getCoachingPlan, type AnyCoachingPlanSlug, type CoachingPlanSlug } from '@/lib/payments/plans'
 import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
 import { isEmailConfigured, sendDirectEmail } from '@/lib/notifications/email-provider'
 import { resolveAuthEmailRedirectOrigin } from '@/lib/admin/portal-urls'
@@ -662,6 +662,121 @@ export async function createRedemptionCode(
       created_at: now,
       updated_at: now,
     })
+    .select()
+    .single()
+
+  if (error) return { data: null, error: error.message }
+  return { data: data as RedemptionCode, error: null }
+}
+
+export type UpdateRedemptionCodeInput = {
+  id: string
+  code?: string
+  planSlug?: AnyCoachingPlanSlug
+  maxRedemptions?: number
+  membershipExpiresAt?: string | null
+  expiresAt?: string | null
+  isReusable?: boolean
+  isActive?: boolean
+  notes?: string | null
+  memberLabel?: string | null
+}
+
+/** Admin update for enrollment / redemption codes (code string, plan, dates, limits, status). */
+export async function updateRedemptionCode(
+  input: UpdateRedemptionCodeInput,
+  supabase?: SupabaseClient
+): Promise<{ data: RedemptionCode | null; error: string | null }> {
+  const db = supabase ?? createAdminClient()
+  const now = new Date().toISOString()
+
+  const { data: existing, error: loadError } = await db
+    .from('redemption_codes')
+    .select('*')
+    .eq('id', input.id)
+    .maybeSingle()
+
+  if (loadError) return { data: null, error: loadError.message }
+  if (!existing) return { data: null, error: 'Enrollment code not found.' }
+
+  const payload: Record<string, unknown> = { updated_at: now }
+
+  if (input.code !== undefined) {
+    const normalized = normalizeRedemptionCode(input.code)
+    if (!normalized || normalized.length < 2) {
+      return { data: null, error: 'Code must be at least 2 characters' }
+    }
+    if (normalized !== existing.code) {
+      const { data: clash } = await db
+        .from('redemption_codes')
+        .select('id')
+        .eq('code', normalized)
+        .neq('id', input.id)
+        .maybeSingle()
+      if (clash) return { data: null, error: 'Another enrollment code already uses that value.' }
+      payload.code = normalized
+    }
+  }
+
+  if (input.planSlug !== undefined) {
+    const plan = getCoachingPlan(input.planSlug)
+    if (!plan || input.planSlug === '1_week_trial') {
+      return { data: null, error: 'Invalid plan slug' }
+    }
+    payload.plan_slug = input.planSlug
+  }
+
+  if (input.membershipExpiresAt !== undefined) {
+    if (!input.membershipExpiresAt) {
+      return { data: null, error: 'Membership expiry date is required' }
+    }
+    const membershipEnd = endOfDayUtc(input.membershipExpiresAt)
+    if (!Number.isFinite(membershipEnd.getTime())) {
+      return { data: null, error: 'Invalid membership expiry date' }
+    }
+    payload.membership_expires_at = membershipEnd.toISOString()
+    payload.duration_months = monthsBetween(new Date(), membershipEnd)
+  }
+
+  if (input.expiresAt !== undefined) {
+    if (input.expiresAt === null || input.expiresAt === '') {
+      payload.expires_at = null
+    } else {
+      const redeemBy = endOfDayUtc(input.expiresAt)
+      if (!Number.isFinite(redeemBy.getTime())) {
+        return { data: null, error: 'Invalid redeem-by date' }
+      }
+      payload.expires_at = redeemBy.toISOString()
+    }
+  }
+
+  if (input.maxRedemptions !== undefined) {
+    const max = Math.floor(Number(input.maxRedemptions))
+    if (!Number.isFinite(max) || max < 1) {
+      return { data: null, error: 'Max uses must be at least 1' }
+    }
+    const used = Math.max(0, existing.max_redemptions - existing.remaining_uses)
+    if (max < used) {
+      return {
+        data: null,
+        error: `Max uses cannot be below already-redeemed count (${used}).`,
+      }
+    }
+    payload.max_redemptions = max
+    payload.remaining_uses = max - used
+  }
+
+  if (input.isReusable !== undefined) payload.is_reusable = Boolean(input.isReusable)
+  if (input.isActive !== undefined) payload.is_active = Boolean(input.isActive)
+  if (input.notes !== undefined) payload.notes = input.notes?.trim() ? input.notes.trim() : null
+  if (input.memberLabel !== undefined) {
+    payload.member_label = input.memberLabel?.trim() ? input.memberLabel.trim() : null
+  }
+
+  const { data, error } = await db
+    .from('redemption_codes')
+    .update(payload)
+    .eq('id', input.id)
     .select()
     .single()
 
