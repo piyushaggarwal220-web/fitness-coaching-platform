@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sanitizeDraftFailureError } from '@/lib/ai/draft-error'
+import { resolveDraftPollingState } from '@/lib/ai/draft-status'
 import { getLatestDraftLogForCheckin } from '@/lib/ai/draft-workflow-log'
 import { loadLatestAiDraftForClient } from '@/lib/ai/weekly-plan-draft'
 import { createClient } from '@/lib/supabase/server'
@@ -46,26 +47,20 @@ export async function GET(request: Request) {
 
   const draft = await loadLatestAiDraftForClient(clientId, checkinId)
   const log = await getLatestDraftLogForCheckin(clientId, checkinId)
-
-  const submittedAt = checkin?.submitted_at ? new Date(checkin.submitted_at).getTime() : 0
-  const elapsedMs = submittedAt > 0 ? Date.now() - submittedAt : 0
-  const recentSubmit = submittedAt > 0 && elapsedMs < 12 * 60 * 1000
-  const timedOutWithoutDraft = !draft && submittedAt > 0 && elapsedMs >= 12 * 60 * 1000
-  const generationFailed = !draft && (log?.success === false || timedOutWithoutDraft)
-  const isGenerating = !draft && !generationFailed && recentSubmit
+  const submittedAtMs = checkin?.submitted_at ? new Date(checkin.submitted_at).getTime() : 0
+  const polling = resolveDraftPollingState({
+    hasDraft: Boolean(draft),
+    log,
+    submittedAtMs,
+  })
 
   return NextResponse.json({
     hasDraft: Boolean(draft),
     draftPlanId: draft?.id ?? null,
-    generationFailed,
-    isGenerating,
-    failureError: generationFailed
-      ? sanitizeDraftFailureError(
-          log?.error ??
-            (timedOutWithoutDraft
-              ? 'Draft generation timed out. Use Retry to generate again.'
-              : null)
-        )
+    generationFailed: polling.generationFailed,
+    isGenerating: polling.isGenerating,
+    failureError: polling.generationFailed
+      ? sanitizeDraftFailureError(polling.failureRaw)
       : null,
     checkinWeek: checkin?.coaching_week ?? null,
   })

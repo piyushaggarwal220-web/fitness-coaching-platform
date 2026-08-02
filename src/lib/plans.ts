@@ -4,6 +4,7 @@ import { getNextCoachingDayStart } from '@/lib/checkin-schedule'
 import { assertClientCanReceivePlanChanges } from '@/lib/entitlements'
 import {
   clientCoachNotes,
+  fallbackPublishCoachNotes,
   formatPublishedPlanTitle,
   isAiDraftTitle,
   prepareCoachNotesForPublish,
@@ -145,8 +146,15 @@ export async function activatePlan(
   if (planError) return { error: planError.message }
   if (!fullPlan) return { error: 'Plan not found.' }
 
-  const { notes: publishNotes, error: notesError } = prepareCoachNotesForPublish(fullPlan.coach_notes)
-  if (notesError) return { error: notesError }
+  const publishPrep = prepareCoachNotesForPublish(fullPlan.coach_notes, {
+    fallbackMessage: isAiDraftTitle(fullPlan.title)
+      ? fallbackPublishCoachNotes(fullPlan)
+      : null,
+  })
+  if (publishPrep.error || !publishPrep.notes) {
+    return { error: publishPrep.error ?? 'Cannot publish: Coach Notes must include a client-facing message.' }
+  }
+  const publishNotes = publishPrep.notes
 
   const { count: activeCount, error: activeCountError } = await supabase
     .from('plans')
@@ -170,8 +178,25 @@ export async function activatePlan(
 
   if (deactivateError) return { error: deactivateError.message }
 
+  // RLS can silently leave another coach's active plan untouched — detect before activate.
+  const { data: stillActive, error: stillActiveError } = await supabase
+    .from('plans')
+    .select('id')
+    .eq('client_id', plan.client_id)
+    .eq('active', true)
+    .neq('id', plan.id)
+    .limit(1)
+
+  if (stillActiveError) return { error: stillActiveError.message }
+  if (stillActive && stillActive.length > 0) {
+    return {
+      error:
+        'Cannot publish: another active plan could not be replaced. Re-assign the client or contact support.',
+    }
+  }
+
   const deliveredAt = new Date().toISOString()
-  const { error } = await supabase
+  const { data: activated, error } = await supabase
     .from('plans')
     .update({
       active: true,
@@ -181,8 +206,15 @@ export async function activatePlan(
       updated_at: deliveredAt,
     })
     .eq('id', plan.id)
+    .select('id')
+    .maybeSingle()
 
   if (error) return { error: error.message }
+  if (!activated) {
+    return {
+      error: 'Cannot publish: draft could not be activated. Refresh and try again.',
+    }
+  }
 
   await supabase
     .from('plan_change_requests')
@@ -195,8 +227,14 @@ export async function activatePlan(
     .in('status', ['generating', 'draft_ready', 'in_review'])
 
   void invalidateForEvent('plan_activated', plan.client_id)
+
+  // DB trigger sync_profile_plan_delivered already updates plan_delivered.
+  // Treat client-side profile sync as best-effort so a profiles RLS hiccup
+  // cannot surface as "publish failed" after the plan is already live.
   const delivered = await syncPlanDeliveredFlag(supabase, plan.client_id)
-  if (delivered.error) return delivered
+  if (delivered.error) {
+    console.error('[activatePlan] syncPlanDeliveredFlag failed after activate:', delivered.error)
+  }
 
   // Keep today's tracker in sync with the plan the client was just given.
   try {

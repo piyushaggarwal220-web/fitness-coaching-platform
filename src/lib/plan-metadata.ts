@@ -82,19 +82,44 @@ export function prepareCoachNotesForSave(
   return trimmed
 }
 
+/** Default client-facing message when an AI draft only has internal @@META. */
+export function fallbackPublishCoachNotes(
+  plan: Pick<Plan, 'title' | 'coach_notes' | 'phase'>
+): string {
+  const meta = parsePlanMeta(plan)
+  const week = meta.week ?? extractWeekFromTitle(plan.title)
+  if (week) {
+    return `Your Week ${week} plan is ready. Keep building on your consistency — your coach is here if you need anything.`
+  }
+  return 'Your updated plan is ready. Keep building on your consistency — your coach is here if you need anything.'
+}
+
 /** Strip metadata and validate before delivering a plan to the client. */
-export function prepareCoachNotesForPublish(notes: string | null | undefined): {
+export function prepareCoachNotesForPublish(
+  notes: string | null | undefined,
+  options?: {
+    /** When set, empty client notes use this instead of blocking publish. */
+    fallbackMessage?: string | null
+  }
+): {
   notes: string | null
   error: string | null
+  usedFallback?: boolean
 } {
   const cleaned = stripPlanMeta(notes).trim()
-  if (!cleaned) {
-    return {
-      notes: null,
-      error: 'Cannot publish: Coach Notes must include a client-facing message.',
-    }
+  if (cleaned) {
+    return { notes: cleaned, error: null }
   }
-  return { notes: cleaned, error: null }
+
+  const fallback = options?.fallbackMessage?.trim()
+  if (fallback) {
+    return { notes: fallback, error: null, usedFallback: true }
+  }
+
+  return {
+    notes: null,
+    error: 'Cannot publish: Coach Notes must include a client-facing message.',
+  }
 }
 
 export function formatPublishedPlanTitle(

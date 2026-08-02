@@ -10,6 +10,7 @@ import {
   stripPlanMeta,
 } from '../src/lib/plan-metadata'
 import { sanitizeDraftFailureError } from '../src/lib/ai/draft-error'
+import { resolveDraftPollingState } from '../src/lib/ai/draft-status'
 
 let failed = 0
 
@@ -57,6 +58,15 @@ assert('prepareCoachNotesForPublish strips meta', publish.notes?.includes('Great
 const emptyPublish = prepareCoachNotesForPublish('@@META{"checkinId":"x","week":1,"generatedBy":"ai"}@@')
 assert('prepareCoachNotesForPublish blocks empty notes', emptyPublish.error !== null)
 
+const emptyWithFallback = prepareCoachNotesForPublish(
+  '@@META{"checkinId":"x","week":1,"generatedBy":"ai"}@@',
+  { fallbackMessage: 'Your Week 1 plan is ready.' }
+)
+assert(
+  'prepareCoachNotesForPublish accepts fallback for empty notes',
+  emptyWithFallback.error === null && emptyWithFallback.notes === 'Your Week 1 plan is ready.' && emptyWithFallback.usedFallback === true
+)
+
 assert(
   'formatPublishedPlanTitle for first delivery',
   formatPublishedPlanTitle(
@@ -97,6 +107,55 @@ const roundTrip = encodePlanMeta(
   'Client message'
 )
 assert('encode + strip round trip', clientCoachNotes(roundTrip) === 'Client message')
+
+const now = Date.parse('2026-08-02T12:00:00.000Z')
+const startedRecent = resolveDraftPollingState({
+  hasDraft: false,
+  log: {
+    phase: 'started',
+    error: null,
+    createdAt: '2026-08-02T11:55:00.000Z',
+  },
+  submittedAtMs: Date.parse('2026-08-02T11:50:00.000Z'),
+  nowMs: now,
+})
+assert('started log keeps generating', startedRecent.isGenerating && !startedRecent.generationFailed)
+
+const startedStale = resolveDraftPollingState({
+  hasDraft: false,
+  log: {
+    phase: 'started',
+    error: null,
+    createdAt: '2026-08-02T11:40:00.000Z',
+  },
+  submittedAtMs: Date.parse('2026-08-02T11:40:00.000Z'),
+  nowMs: now,
+})
+assert('stale started log times out', !startedStale.isGenerating && startedStale.generationFailed)
+
+const finishFailed = resolveDraftPollingState({
+  hasDraft: false,
+  log: {
+    phase: 'failed',
+    error: 'Anthropic overloaded',
+    createdAt: '2026-08-02T11:59:00.000Z',
+  },
+  submittedAtMs: Date.parse('2026-08-02T11:50:00.000Z'),
+  nowMs: now,
+})
+assert('failed log surfaces failure', finishFailed.generationFailed && finishFailed.failureRaw === 'Anthropic overloaded')
+
+const draftReady = resolveDraftPollingState({
+  hasDraft: true,
+  log: {
+    phase: 'started',
+    error: null,
+    createdAt: '2026-08-02T11:55:00.000Z',
+  },
+  submittedAtMs: Date.parse('2026-08-02T11:50:00.000Z'),
+  nowMs: now,
+})
+assert('draft present clears generating/failed', !draftReady.isGenerating && !draftReady.generationFailed)
 
 if (failed > 0) {
   console.error(`\n${failed} plan metadata checks failed`)

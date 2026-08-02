@@ -8,6 +8,7 @@ import { generatePlan } from '@/lib/ai/generate-plan'
 import {
   logDraftWorkflow,
   persistDraftGenerationLog,
+  persistDraftGenerationStarted,
   type DraftSectionUsage,
 } from '@/lib/ai/draft-workflow-log'
 import { MODELS } from '@/lib/ai/config'
@@ -247,10 +248,12 @@ export async function generateWeeklyPlanDraft(input: {
   checkinId: string
   coachingWeek: number
   trigger?: 'auto' | 'manual' | 'retry'
+  coachNote?: string | null
 }): Promise<{ planId: string | null; error: string | null; generationTimeMs: number }> {
   const trigger = input.trigger ?? 'auto'
   const started = Date.now()
   const eventStart = trigger === 'retry' ? 'retry_started' : 'draft_started'
+  const coachNote = input.coachNote?.trim() || null
 
   logDraftWorkflow({
     event: eventStart,
@@ -258,6 +261,14 @@ export async function generateWeeklyPlanDraft(input: {
     coachId: input.coachId,
     checkinId: input.checkinId,
     checkinWeek: input.coachingWeek,
+    trigger,
+  })
+
+  // Durable in-flight marker for status polling (survives UI refresh / proxy timeouts).
+  await persistDraftGenerationStarted({
+    clientId: input.clientId,
+    coachId: input.coachId,
+    checkinId: input.checkinId,
     trigger,
   })
 
@@ -321,6 +332,7 @@ export async function generateWeeklyPlanDraft(input: {
         coachInstructions: buildActionCoachInstructions('review_update_diet', {
           activePlan: active,
           checkin: checkinTyped,
+          coachNote,
         }),
       })
       sections.push({
@@ -352,6 +364,7 @@ export async function generateWeeklyPlanDraft(input: {
         coachInstructions: buildActionCoachInstructions('review_update_workout', {
           activePlan: active,
           checkin: checkinTyped,
+          coachNote,
         }),
       })
       sections.push({
@@ -363,81 +376,36 @@ export async function generateWeeklyPlanDraft(input: {
       workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, input.clientId)
     }
 
+    // Persist a publishable core draft before optional cardio/supplement calls.
+    // If the serverless isolate is killed mid-pipeline, coaches still get a usable draft.
     let cardioForm = {
       cardio_plan: active?.cardio_plan?.trim() || '',
     }
-    // Skip support regenerations when the active plan already has them and the check-in looks stable.
-    if (!skipSupportRefresh) {
-      try {
-        const cardioResult = await generatePlan({
-          profile: profileTyped,
-          latestCheckin: checkinTyped,
-          actionId: 'review_update_cardio',
-          activePlan: active,
-          updatedDietPlan: updatedDietContext,
-          validationMode: 'cardio_focus',
-          coachInstructions: buildActionCoachInstructions('review_update_cardio', {
-            activePlan: active,
-            checkin: checkinTyped,
-          }),
-        })
-        sections.push({
-          action: 'review_update_cardio',
-          model: cardioResult.model,
-          inputTokens: cardioResult.inputTokens,
-          outputTokens: cardioResult.outputTokens,
-        })
-        cardioForm = generatedCardioFormData(cardioResult.generatedPlan, input.clientId)
-      } catch {
-        // Keep existing cardio if the dedicated step fails.
-      }
-    }
-
     let supplementForm = {
       supplement_plan: active?.supplement_plan?.trim() || '',
     }
-    if (!skipSupportRefresh) {
-      try {
-        const supplementResult = await generatePlan({
-          profile: profileTyped,
-          latestCheckin: checkinTyped,
-          actionId: 'review_update_supplements',
-          activePlan: active,
-          updatedDietPlan: updatedDietContext,
-          validationMode: 'supplements_focus',
-          coachInstructions: buildActionCoachInstructions('review_update_supplements', {
-            activePlan: active,
-            checkin: checkinTyped,
-          }),
-        })
-        sections.push({
-          action: 'review_update_supplements',
-          model: supplementResult.model,
-          inputTokens: supplementResult.inputTokens,
-          outputTokens: supplementResult.outputTokens,
-        })
-        supplementForm = generatedSupplementFormData(supplementResult.generatedPlan, input.clientId)
-      } catch {
-        // Keep existing supplements if the dedicated step fails.
-      }
-    }
 
-    const merged = mergePlanForms(
-      {
-        ...dietForm,
-        client_id: input.clientId,
-        title: `AI Draft · Week ${input.coachingWeek}`,
-      },
-      {
-        workout_plan: workoutForm.workout_plan,
-        cardio_plan: cardioForm.cardio_plan,
-        supplement_plan: supplementForm.supplement_plan,
-        coach_notes: skipCoreRefresh
-          ? buildStableWeekCoachNotes(profileTyped, checkinTyped)
-          : [dietForm.coach_notes, workoutForm.coach_notes].filter(Boolean).join('\n\n'),
-      }
-    )
+    const buildMerged = (
+      cardioPlan: string,
+      supplementPlan: string
+    ): PlanFormData =>
+      mergePlanForms(
+        {
+          ...dietForm,
+          client_id: input.clientId,
+          title: `AI Draft · Week ${input.coachingWeek}`,
+        },
+        {
+          workout_plan: workoutForm.workout_plan,
+          cardio_plan: cardioPlan,
+          supplement_plan: supplementPlan,
+          coach_notes: skipCoreRefresh
+            ? buildStableWeekCoachNotes(profileTyped, checkinTyped)
+            : [dietForm.coach_notes, workoutForm.coach_notes].filter(Boolean).join('\n\n'),
+        }
+      )
 
+    let merged = buildMerged(cardioForm.cardio_plan, supplementForm.supplement_plan)
     const draftContext = buildDraftContextPlan(
       merged,
       input.clientId,
@@ -452,6 +420,7 @@ export async function generateWeeklyPlanDraft(input: {
       activePlan: active,
       draftPlan: draftContext,
       mergedNotes: merged.coach_notes,
+      coachInstructions: coachNote,
     })
 
     const metaNotes = encodePlanMeta(
@@ -464,7 +433,7 @@ export async function generateWeeklyPlanDraft(input: {
       clientMessage
     )
 
-    const draft = await upsertWeeklyPlanDraft({
+    let draft = await upsertWeeklyPlanDraft({
       admin,
       clientId: input.clientId,
       coachId: input.coachId,
@@ -474,6 +443,71 @@ export async function generateWeeklyPlanDraft(input: {
       metaNotes,
       activePlan: active,
     })
+
+    // Skip support regenerations when the active plan already has them and the check-in looks stable.
+    if (!skipSupportRefresh) {
+      try {
+        const cardioResult = await generatePlan({
+          profile: profileTyped,
+          latestCheckin: checkinTyped,
+          actionId: 'review_update_cardio',
+          activePlan: active,
+          updatedDietPlan: updatedDietContext,
+          validationMode: 'cardio_focus',
+          coachInstructions: buildActionCoachInstructions('review_update_cardio', {
+            activePlan: active,
+            checkin: checkinTyped,
+            coachNote,
+          }),
+        })
+        sections.push({
+          action: 'review_update_cardio',
+          model: cardioResult.model,
+          inputTokens: cardioResult.inputTokens,
+          outputTokens: cardioResult.outputTokens,
+        })
+        cardioForm = generatedCardioFormData(cardioResult.generatedPlan, input.clientId)
+      } catch {
+        // Keep existing cardio if the dedicated step fails.
+      }
+
+      try {
+        const supplementResult = await generatePlan({
+          profile: profileTyped,
+          latestCheckin: checkinTyped,
+          actionId: 'review_update_supplements',
+          activePlan: active,
+          updatedDietPlan: updatedDietContext,
+          validationMode: 'supplements_focus',
+          coachInstructions: buildActionCoachInstructions('review_update_supplements', {
+            activePlan: active,
+            checkin: checkinTyped,
+            coachNote,
+          }),
+        })
+        sections.push({
+          action: 'review_update_supplements',
+          model: supplementResult.model,
+          inputTokens: supplementResult.inputTokens,
+          outputTokens: supplementResult.outputTokens,
+        })
+        supplementForm = generatedSupplementFormData(supplementResult.generatedPlan, input.clientId)
+      } catch {
+        // Keep existing supplements if the dedicated step fails.
+      }
+
+      merged = buildMerged(cardioForm.cardio_plan, supplementForm.supplement_plan)
+      draft = await upsertWeeklyPlanDraft({
+        admin,
+        clientId: input.clientId,
+        coachId: input.coachId,
+        checkinId: input.checkinId,
+        coachingWeek: input.coachingWeek,
+        merged,
+        metaNotes,
+        activePlan: active,
+      })
+    }
 
     const generationTimeMs = Date.now() - started
     const finishEvent = trigger === 'retry' ? 'retry_finished' : 'draft_finished'
@@ -512,6 +546,39 @@ export async function generateWeeklyPlanDraft(input: {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Draft generation failed'
     const generationTimeMs = Date.now() - started
+
+    // If a core draft was already saved before a later failure, treat as success for the coach.
+    try {
+      const admin = createAdminClient()
+      const existing = await findAiDraftForCheckin(admin, input.clientId, input.checkinId)
+      if (existing?.nutrition_plan?.trim() || existing?.workout_plan?.trim()) {
+        logDraftWorkflow({
+          event: trigger === 'retry' ? 'retry_finished' : 'draft_finished',
+          clientId: input.clientId,
+          coachId: input.coachId,
+          checkinId: input.checkinId,
+          checkinWeek: input.coachingWeek,
+          planId: existing.id,
+          planVersion: existing.version,
+          generationTimeMs,
+          trigger,
+          error: `Completed with partial draft after: ${message}`,
+        })
+        await persistDraftGenerationLog({
+          clientId: input.clientId,
+          coachId: input.coachId,
+          checkinId: input.checkinId,
+          success: true,
+          latencyMs: generationTimeMs,
+          trigger,
+          planVersion: `v${existing.version}`,
+          error: `partial_ok: ${message}`,
+        })
+        return { planId: existing.id, error: null, generationTimeMs }
+      }
+    } catch {
+      // Fall through to failure path.
+    }
 
     logDraftWorkflow({
       event: 'draft_failed',

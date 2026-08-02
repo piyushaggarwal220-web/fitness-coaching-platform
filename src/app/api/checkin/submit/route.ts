@@ -1,6 +1,7 @@
 import { NextResponse, after } from 'next/server'
 import { requireEntitledClientApiUser } from '@/lib/client-entitlement-guard'
 import { logApiDev } from '@/lib/api-dev-log'
+import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import {
@@ -383,6 +384,14 @@ export async function POST(request: Request) {
     }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
 
     if (body.checkinType === 'weekly') {
+      // Mark in-flight before the response returns so coaches see Generating immediately.
+      void persistDraftGenerationStarted({
+        clientId: user.id,
+        coachId: profile.coach_id,
+        checkinId: inserted.id,
+        trigger: 'auto',
+      }).catch((err) => console.error('[checkin-submit] draft start log failed:', err))
+
       after(() =>
         generateWeeklyPlanDraft({
           clientId: user.id,

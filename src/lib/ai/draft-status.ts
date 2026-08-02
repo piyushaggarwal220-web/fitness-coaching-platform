@@ -1,5 +1,59 @@
-import { getLatestDraftLogForCheckin } from '@/lib/ai/draft-workflow-log'
+import {
+  getLatestDraftLogForCheckin,
+  type DraftCheckinLog,
+} from '@/lib/ai/draft-workflow-log'
 import type { Checkin, Plan } from '@/types/database'
+
+/** How long a "started" log keeps the UI in generating state. */
+export const DRAFT_GENERATING_WINDOW_MS = 15 * 60 * 1000
+/** Fallback when no start log exists (pre-deploy auto jobs). */
+export const DRAFT_SUBMIT_HEURISTIC_MS = 12 * 60 * 1000
+
+export function resolveDraftPollingState(input: {
+  hasDraft: boolean
+  log: Pick<DraftCheckinLog, 'phase' | 'error' | 'createdAt'> | null
+  submittedAtMs: number
+  nowMs?: number
+}): {
+  isGenerating: boolean
+  generationFailed: boolean
+  failureRaw: string | null
+} {
+  if (input.hasDraft) {
+    return { isGenerating: false, generationFailed: false, failureRaw: null }
+  }
+
+  const now = input.nowMs ?? Date.now()
+  const submitAgeMs =
+    input.submittedAtMs > 0 ? now - input.submittedAtMs : Number.POSITIVE_INFINITY
+  const logAgeMs = input.log?.createdAt
+    ? now - new Date(input.log.createdAt).getTime()
+    : Number.POSITIVE_INFINITY
+
+  const startedInFlight = Boolean(
+    input.log && input.log.phase === 'started' && logAgeMs < DRAFT_GENERATING_WINDOW_MS
+  )
+  const startedTimedOut = Boolean(
+    input.log && input.log.phase === 'started' && logAgeMs >= DRAFT_GENERATING_WINDOW_MS
+  )
+  const finishFailed = Boolean(input.log && input.log.phase === 'failed')
+  const recentSubmitNoLog = !input.log && input.submittedAtMs > 0 && submitAgeMs < DRAFT_SUBMIT_HEURISTIC_MS
+  const submitTimedOutNoLog =
+    !input.log && input.submittedAtMs > 0 && submitAgeMs >= DRAFT_SUBMIT_HEURISTIC_MS
+
+  const generationFailed = finishFailed || startedTimedOut || submitTimedOutNoLog
+  const isGenerating = !generationFailed && (startedInFlight || recentSubmitNoLog)
+
+  let failureRaw: string | null = null
+  if (generationFailed) {
+    if (finishFailed) failureRaw = input.log?.error ?? null
+    else if (startedTimedOut || submitTimedOutNoLog) {
+      failureRaw = 'Draft generation timed out. Use Retry to generate again.'
+    }
+  }
+
+  return { isGenerating, generationFailed, failureRaw }
+}
 
 export type AiGenerationStatus =
   | 'ai_draft_ready'
