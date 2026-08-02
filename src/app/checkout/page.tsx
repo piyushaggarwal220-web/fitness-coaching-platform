@@ -6,11 +6,6 @@ import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { brandTitle } from '@/lib/brand';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
-import {
-  DEFAULT_FIRST_TIMER_DISCOUNT_CODE,
-  FIRST_TIMER_DISCOUNT_PAISE,
-  formatInrFromPaise,
-} from '@/lib/payments/checkout-discounts';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
@@ -68,7 +63,7 @@ function CheckoutForm() {
   const [missingItems, setMissingItems] = useState<string[]>([]);
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
-  const [promoCode, setPromoCode] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountPreview | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
   const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
@@ -82,26 +77,23 @@ function CheckoutForm() {
   const isTrialCheckout = plan.isTrial === true;
   const payablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
   const payableDisplay = appliedDiscount?.displaySalePrice ?? plan.displayPrice;
-  const planDiscountHint = formatInrFromPaise(
-    FIRST_TIMER_DISCOUNT_PAISE[plan.slug as keyof typeof FIRST_TIMER_DISCOUNT_PAISE] ?? 0
-  );
 
   useEffect(() => {
     setAppliedDiscount(null);
     setEnrollmentHref(null);
-    if (isTrialCheckout) setPromoCode('');
+    if (isTrialCheckout) setReferralCode('');
   }, [plan.slug, isTrialCheckout]);
 
   useEffect(() => {
-    // Re-validate is required after email changes (first-timer check is email-bound).
+    // Re-validate is required after email changes (eligibility is email-bound).
     setAppliedDiscount(null);
   }, [email]);
 
-  const applyPromoCode = async () => {
+  const applyReferralCode = async () => {
     setError('');
     setEnrollmentHref(null);
     if (!email.trim() || !email.includes('@')) {
-      setError('Enter your email first — first-timer discounts are checked against your email.');
+      setError('Enter your email first, then apply your referral code.');
       return;
     }
     setApplyingCode(true);
@@ -110,17 +102,17 @@ function CheckoutForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          code: promoCode,
+          code: referralCode,
           planSlug: plan.slug,
           email,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Could not apply code');
+      if (!res.ok) throw new Error(data.error ?? 'Could not apply referral code');
 
       if (data.kind === 'enrollment') {
         setAppliedDiscount(null);
-        setEnrollmentHref(data.enrollHref ?? `/enroll?code=${encodeURIComponent(promoCode)}`);
+        setEnrollmentHref(data.enrollHref ?? `/enroll?code=${encodeURIComponent(referralCode)}`);
         return;
       }
 
@@ -136,14 +128,14 @@ function CheckoutForm() {
       });
     } catch (err) {
       setAppliedDiscount(null);
-      setError(err instanceof Error ? err.message : 'Could not apply code');
+      setError(err instanceof Error ? err.message : 'Could not apply referral code');
     } finally {
       setApplyingCode(false);
     }
   };
 
-  const clearPromoCode = () => {
-    setPromoCode('');
+  const clearReferralCode = () => {
+    setReferralCode('');
     setAppliedDiscount(null);
     setEnrollmentHref(null);
     setError('');
@@ -536,26 +528,25 @@ function CheckoutForm() {
 
         {!isTrialCheckout && (
         <div style={styles.redeemBox}>
-          <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Discount or enrollment code</h3>
+          <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Referral code</h3>
           <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
-            First-timers can use <strong style={{ color: colors.textPrimary }}>{DEFAULT_FIRST_TIMER_DISCOUNT_CODE}</strong>{' '}
-            for {planDiscountHint} off this plan. Membership / offline enrollment codes open the enrollment flow.
+            Optional — enter a referral code if you have one.
           </p>
           <div style={styles.codeRow}>
             <input
-              value={promoCode}
+              value={referralCode}
               onChange={(e) => {
-                setPromoCode(e.target.value.toUpperCase());
+                setReferralCode(e.target.value.toUpperCase());
                 setEnrollmentHref(null);
               }}
-              placeholder="Enter code"
+              placeholder="Enter referral code"
               autoComplete="off"
               style={{ ...styles.input, marginTop: 0, flex: 1 }}
             />
             <button
               type="button"
-              onClick={() => void applyPromoCode()}
-              disabled={applyingCode || !promoCode.trim()}
+              onClick={() => void applyReferralCode()}
+              disabled={applyingCode || !referralCode.trim()}
               style={styles.validateBtn}
             >
               {applyingCode ? 'Checking…' : 'Apply'}
@@ -564,7 +555,7 @@ function CheckoutForm() {
           {appliedDiscount && (
             <div style={styles.discountApplied}>
               <p style={{ margin: 0 }}>{appliedDiscount.message}</p>
-              <button type="button" onClick={clearPromoCode} style={styles.backToPay}>
+              <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
                 Remove code
               </button>
             </div>

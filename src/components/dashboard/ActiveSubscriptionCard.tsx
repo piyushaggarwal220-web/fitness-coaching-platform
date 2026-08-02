@@ -1,8 +1,13 @@
 'use client'
 
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, ChevronRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
-import type { ActiveSubscription } from '@/lib/subscription'
+import {
+  checkoutHrefForSubscription,
+  subscriptionPlanActionLabel,
+  type ActiveSubscription,
+} from '@/lib/subscription'
 import { colors, spacing } from '@/lib/design-tokens'
 
 type Props = {
@@ -10,10 +15,18 @@ type Props = {
 }
 
 export function ActiveSubscriptionCard({ subscription }: Props) {
+  const router = useRouter()
   const isActive = subscription.status === 'active'
+  const actionLabel = subscriptionPlanActionLabel(subscription)
+  const href = checkoutHrefForSubscription(subscription)
 
   return (
-    <Card variant="glass" style={{ marginBottom: spacing[4] }}>
+    <Card
+      variant="glass"
+      interactive
+      onClick={() => router.push(href)}
+      style={{ marginBottom: spacing[4] }}
+    >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing[3] }}>
         <div
           style={{
@@ -81,6 +94,20 @@ export function ActiveSubscriptionCard({ subscription }: Props) {
                 : `${subscription.daysRemaining} day${subscription.daysRemaining === 1 ? '' : 's'} remaining`}
             </p>
           )}
+          <p
+            style={{
+              margin: '10px 0 0',
+              fontSize: 13,
+              fontWeight: 600,
+              color: colors.accent,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            {actionLabel}
+            <ChevronRight size={16} aria-hidden />
+          </p>
         </div>
       </div>
     </Card>

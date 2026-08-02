@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   const code = normalizeDiscountCode(body.code)
   if (!code) {
-    return NextResponse.json({ error: 'Enter a discount or enrollment code.' }, { status: 400 })
+    return NextResponse.json({ error: 'Enter a referral code.' }, { status: 400 })
   }
 
   const admin = createAdminClient()
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     displaySalePrice: pricing.discount?.displaySalePrice ?? pricing.plan.displayPrice,
     displayDiscount: pricing.discount?.displayDiscount ?? '₹0',
     message: pricing.discount
-      ? `First-timer discount applied — save ${pricing.discount.displayDiscount} on ${pricing.plan.name}.`
-      : 'No discount applied.',
+      ? `Referral applied — save ${pricing.discount.displayDiscount} on ${pricing.plan.name}.`
+      : 'No referral discount applied.',
   })
 }

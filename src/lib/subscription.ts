@@ -1,4 +1,4 @@
-import { getCoachingPlan } from '@/lib/payments/plans'
+import { getCoachingPlan, getPurchasablePlan, isTrialPlanSlug } from '@/lib/payments/plans'
 import type { Purchase } from '@/types/database'
 
 export type ActiveSubscription = {
@@ -58,4 +58,28 @@ export function getActiveSubscription(
     endsLabel: formatDateLabel(endsAt),
     daysRemaining: status === 'active' ? daysRemaining : 0,
   }
+}
+
+/** Checkout URL when the member taps their current plan (upgrade / renew / extend). */
+export function checkoutHrefForSubscription(subscription: ActiveSubscription): string {
+  const slug = subscription.planSlug
+
+  if (subscription.status === 'expired') {
+    if (isTrialPlanSlug(slug) || slug === '1_month') return '/checkout?plan=3_months'
+    if (getPurchasablePlan(slug) && !getCoachingPlan(slug)?.isTrial) {
+      return `/checkout?plan=${slug}`
+    }
+    return '/checkout?plan=3_months'
+  }
+
+  if (isTrialPlanSlug(slug) || slug === '1_month') return '/checkout?plan=3_months'
+  if (slug === '3_months') return '/checkout?plan=6_months'
+  if (slug === '6_months') return '/checkout?plan=12_months'
+  return '/checkout?plan=12_months'
+}
+
+export function subscriptionPlanActionLabel(subscription: ActiveSubscription): string {
+  if (subscription.status === 'expired') return 'Tap to renew'
+  if (subscription.planSlug === '12_months') return 'Tap to extend'
+  return 'Tap to upgrade'
 }

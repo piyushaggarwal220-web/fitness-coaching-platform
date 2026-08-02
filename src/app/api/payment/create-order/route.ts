@@ -105,7 +105,7 @@ export async function POST(request: Request) {
   })
   if (!pricingResult.ok) {
     return NextResponse.json(
-      { error: pricingResult.error, missing: ['Valid discount code'] },
+      { error: pricingResult.error, missing: ['Valid referral code'] },
       { status: pricingResult.status }
     )
   }

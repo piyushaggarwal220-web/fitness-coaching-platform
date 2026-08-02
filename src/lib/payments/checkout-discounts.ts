@@ -122,16 +122,16 @@ export async function resolveCheckoutPricing(input: {
   if (plan.isTrial) {
     return {
       ok: false,
-      error: 'Discount codes cannot be applied to the trial.',
+      error: 'Referral codes cannot be applied to the trial.',
       status: 400,
     }
   }
 
   if (!isFirstTimerDiscountCode(code)) {
-    // Caller may check enrollment codes separately; treat unknown discount codes as invalid here.
+    // Caller may check enrollment codes separately; treat unknown codes as invalid here.
     return {
       ok: false,
-      error: `Invalid discount code. First-timer code is ${getFirstTimerDiscountCode()}. Enrollment / membership codes are redeemed on the enrollment page.`,
+      error: 'Invalid referral code. Enrollment / membership codes are redeemed on the enrollment page.',
       status: 400,
     }
   }
@@ -140,7 +140,7 @@ export async function resolveCheckoutPricing(input: {
   if (!email || !email.includes('@')) {
     return {
       ok: false,
-      error: 'Enter a valid email before applying a first-timer discount.',
+      error: 'Enter a valid email before applying a referral code.',
       status: 400,
     }
   }
@@ -151,7 +151,7 @@ export async function resolveCheckoutPricing(input: {
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : 'Could not verify discount eligibility',
+      error: err instanceof Error ? err.message : 'Could not verify referral eligibility',
       status: 500,
     }
   }
@@ -159,14 +159,14 @@ export async function resolveCheckoutPricing(input: {
   if (!firstTimer) {
     return {
       ok: false,
-      error: 'This discount is for first-time customers only. This email already has a purchase or enrollment.',
+      error: 'This referral code is for first-time customers only. This email already has a purchase or enrollment.',
       status: 400,
     }
   }
 
   const discountPaise = discountPaiseForPlan(plan.slug)
   if (discountPaise == null || discountPaise <= 0 || discountPaise >= listAmountPaise) {
-    return { ok: false, error: 'Discount is not available for this plan.', status: 400 }
+    return { ok: false, error: 'This referral code is not available for this plan.', status: 400 }
   }
 
   const amountPaise = listAmountPaise - discountPaise
