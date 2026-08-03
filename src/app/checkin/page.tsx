@@ -199,15 +199,19 @@ export default function CheckinPage() {
     setSuccess('');
 
     try {
+      // Refresh auth before storage uploads — stale tokens often surface as "Failed to fetch".
+      await supabase.auth.refreshSession().catch(() => undefined)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/login'); return; }
 
-      const [frontUrl, sideUrl, backUrl, ...extraUrls] = await Promise.all([
-        uploadCheckinPhoto(supabase, user.id, photos.front!, 'front'),
-        uploadCheckinPhoto(supabase, user.id, photos.side!, 'side'),
-        uploadCheckinPhoto(supabase, user.id, photos.back!, 'back'),
-        ...extraPhotos.map((file, i) => uploadCheckinPhoto(supabase, user.id, file, `extra_${i}`)),
-      ]);
+      // Sequential uploads are far more reliable on mobile than Promise.all of 3–6 large POSTs.
+      const frontUrl = await uploadCheckinPhoto(supabase, user.id, photos.front!, 'front')
+      const sideUrl = await uploadCheckinPhoto(supabase, user.id, photos.side!, 'side')
+      const backUrl = await uploadCheckinPhoto(supabase, user.id, photos.back!, 'back')
+      const extraUrls: string[] = []
+      for (let i = 0; i < extraPhotos.length; i += 1) {
+        extraUrls.push(await uploadCheckinPhoto(supabase, user.id, extraPhotos[i]!, `extra_${i}`))
+      }
 
       const res = await fetch('/api/checkin/submit', {
         method: 'POST',
