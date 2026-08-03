@@ -45,14 +45,14 @@ export function buildModuleSummaries(day: DailyTrackerDay): TrackerModuleSummary
       activeMeals[0]?.dietDayLabel
     modules.push({
       id: 'diet',
-      title: 'Diet Tracker',
+      title: 'Meals',
       icon: '🥗',
       href: '/tracker/diet',
       subtitle: selected
         ? `${dayLabel ?? selected} · ${done} / ${activeMeals.length} meals`
         : sections.meals.some((m) => m.dietDay)
-          ? 'Choose which day\'s diet you\'re following'
-          : `${done} / ${sections.meals.length} meals completed`,
+          ? 'Choose which diet day you\'re following'
+          : `${done} / ${sections.meals.length} meals logged`,
       progress: scores.diet,
       available: true,
     })
@@ -67,10 +67,10 @@ export function buildModuleSummaries(day: DailyTrackerDay): TrackerModuleSummary
     if (multiDay && !selected) {
       modules.push({
         id: 'workout',
-        title: 'Workout Tracker',
+        title: 'Workout',
         icon: '🏋️',
         href: '/tracker/workout',
-        subtitle: "Choose which day's workout you're following",
+        subtitle: "Choose which workout day you're following",
         progress: scores.workout,
         available: true,
       })
@@ -80,7 +80,7 @@ export function buildModuleSummaries(day: DailyTrackerDay): TrackerModuleSummary
       const focus = active.focus ?? active.dayLabel ?? "Today's session"
       modules.push({
         id: 'workout',
-        title: 'Workout Tracker',
+        title: 'Workout',
         icon: '🏋️',
         href: '/tracker/workout',
         subtitle: `${focus} · ${done} / ${total} exercises`,

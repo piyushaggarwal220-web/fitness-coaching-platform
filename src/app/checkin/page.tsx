@@ -266,40 +266,40 @@ export default function CheckinPage() {
 
   const devMode = shouldBypassCheckinScheduleClient();
 
-  if (loading) return <ClientShell title="Check-In" loading hideBottomNav />;
+  if (loading) return <ClientShell title="Check-in" loading hideBottomNav />;
 
   if (!profile?.coach_id) {
     return (
-      <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>{brandTitle('Weekly Check-In')}</h1>
+      <ClientShell title="Check-in" hideBottomNav>
+        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>{brandTitle('Weekly check-in')}</h1>
         <div style={mobileStyles.info}>
-          No coach is assigned to your account yet. Your coach will be assigned shortly.
+          Your coach will be assigned shortly. You can message support from the menu if this takes too long.
         </div>
-        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
+        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to Today</Button>
       </ClientShell>
     );
   }
 
   if (!available) {
     return (
-      <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>{brandTitle('Weekly Check-In')}</h1>
+      <ClientShell title="Check-in" hideBottomNav>
+        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>{brandTitle('Weekly check-in')}</h1>
         <div style={mobileStyles.info}>
           {unavailableReason ||
-            'Your weekly check-in is not available. Check your dashboard for the next scheduled check-in.'}
+            'This check-in isn’t open yet. On Today you’ll see when the next one is due.'}
         </div>
-        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
+        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to Today</Button>
       </ClientShell>
     );
   }
 
   return (
-    <ClientShell title="Check-In" hideBottomNav>
+    <ClientShell title="Check-in" hideBottomNav>
       {devMode && <DevelopmentModeBadge />}
       <div style={{ marginBottom: spacing[4] }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>{brandTitle('Weekly Check-In')}</h1>
-        <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 15 }}>
-          Day 7 progress update — photos required
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>{brandTitle('Weekly check-in')}</h1>
+        <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 15, lineHeight: 1.45 }}>
+          Share measurements, photos, and how your week went
         </p>
       </div>
 

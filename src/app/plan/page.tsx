@@ -13,13 +13,14 @@ import { PlanChangeRequestPanel } from '@/components/plan/PlanChangeRequestPanel
 import { ClientShell } from '@/components/ui/ClientShell';
 import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { BRAND_NAME } from '@/lib/brand'
+import { Button } from '@/components/ui/Button';
 import { formatPlanDate } from '@/lib/plans';
 import { clientFacingPlanTitle } from '@/lib/plan-metadata';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
 import { colors, spacing } from '@/lib/design-tokens';
+import { motionClass } from '@/lib/motion';
 import type { Plan } from '@/types/database';
 
 const supabase = createClient();
@@ -32,7 +33,7 @@ export default function ClientPlanPage() {
   const [planDelivered, setPlanDelivered] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [expanded, setExpanded] = useState<PlanSection | null>(null);
+  const [expanded, setExpanded] = useState<PlanSection | null>('diet');
 
   useEffect(() => {
     const load = async () => {
@@ -60,6 +61,11 @@ export default function ClientPlanPage() {
       }
 
       setPlan(data);
+      if (data && !data.diet_opened_at) {
+        setExpanded('diet')
+      } else if (data && !data.workout_opened_at) {
+        setExpanded('workout')
+      }
       setLoading(false);
     };
     load();
@@ -115,7 +121,7 @@ export default function ClientPlanPage() {
           icon={<ClipboardListIcon />}
           title="Could not load plan"
           description={error}
-          actionLabel="Back to dashboard"
+          actionLabel="Back to Today"
           onAction={() => router.push('/dashboard')}
         />
       </ClientShell>
@@ -127,13 +133,13 @@ export default function ClientPlanPage() {
       <ClientShell title="Plan">
         <EmptyState
           icon={<ClipboardListIcon />}
-          title="No active plan yet"
+          title="Your plan isn’t ready yet"
           description={
             planDelivered
-              ? 'Your plan was delivered. If sections look empty, refresh or message your coach.'
-              : 'Your coach is preparing your personalised plan. Check back soon.'
+              ? 'Your coach has sent a plan. Pull to refresh, or message your coach if sections look empty.'
+              : 'Your coach is building your personal diet and workout. You’ll get a clear next step on Today when it’s ready.'
           }
-          actionLabel="Back to dashboard"
+          actionLabel="Back to Today"
           onAction={() => router.push('/dashboard')}
         />
       </ClientShell>
@@ -143,46 +149,73 @@ export default function ClientPlanPage() {
   const sections = resolvePlanSectionsFromPlan(plan)
 
   const accordionItems = [
-    { key: 'diet' as const, title: 'Diet', icon: <Apple size={20} />, content: sections.diet },
-    { key: 'workout' as const, title: 'Workout', icon: <Dumbbell size={20} />, content: sections.workout },
-    { key: 'supplements' as const, title: 'Supplements', icon: <Pill size={20} color={colors.accent} />, content: sections.supplements },
-    { key: 'cardio' as const, title: 'Cardio', icon: <Footprints size={20} />, content: sections.cardio },
-    { key: 'notes' as const, title: 'Coach Notes', icon: <ClipboardList size={20} />, content: sections.coachNotes },
+    { key: 'diet' as const, title: 'Diet', hint: 'What to eat', icon: <Apple size={20} />, content: sections.diet },
+    { key: 'workout' as const, title: 'Workout', hint: 'What to train', icon: <Dumbbell size={20} />, content: sections.workout },
+    { key: 'supplements' as const, title: 'Supplements', hint: 'Optional extras', icon: <Pill size={20} color={colors.accent} />, content: sections.supplements },
+    { key: 'cardio' as const, title: 'Cardio', hint: 'Steps & movement', icon: <Footprints size={20} />, content: sections.cardio },
+    { key: 'notes' as const, title: 'Coach notes', hint: 'Personal guidance', icon: <ClipboardList size={20} />, content: sections.coachNotes },
   ].filter((item) => item.content.trim().length > 0)
+
+  const needsOpenCore = !plan.diet_opened_at || !plan.workout_opened_at
 
   return (
     <ClientShell title="Plan">
-      {/* Hero */}
       <div
+        className={motionClass.cardEnter}
         style={{
-          background: `linear-gradient(135deg, ${colors.bgElevated} 0%, ${colors.bgCard} 100%)`,
+          background: `linear-gradient(145deg, rgba(249,115,22,0.14) 0%, ${colors.bgElevated} 42%, ${colors.bgCard} 100%)`,
           borderRadius: 20,
           padding: spacing[5],
-          marginBottom: spacing[5],
+          marginBottom: spacing[4],
           border: `1px solid ${colors.borderSubtle}`,
         }}
       >
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: colors.accent, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          {BRAND_NAME} · Your Plan
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: colors.accent, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Your coaching plan
         </p>
         <h1 style={{ margin: '8px 0 0', fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
           {clientFacingPlanTitle(plan.title)}
         </h1>
-        {plan.phase && <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 16 }}>{plan.phase}</p>}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2], marginTop: spacing[4], alignItems: 'center' }}>
-          <span style={{ backgroundColor: colors.accentMuted, color: colors.accent, padding: '4px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
-            v{plan.version}
-          </span>
-          <span style={{ fontSize: 13, color: colors.textMuted }}>Updated {formatPlanDate(plan.updated_at)}</span>
-          {plan.delivered_at && (
-            <span style={{ fontSize: 13, color: colors.textMuted }}>Delivered {formatPlanDate(plan.delivered_at)}</span>
-          )}
-        </div>
+        <p style={{ margin: '10px 0 0', color: colors.textSecondary, fontSize: 15, lineHeight: 1.5 }}>
+          Tap <strong style={{ color: colors.textPrimary, fontWeight: 700 }}>Diet</strong> and{' '}
+          <strong style={{ color: colors.textPrimary, fontWeight: 700 }}>Workout</strong> first.
+          Then log them every day from Today.
+        </p>
+        {plan.phase && (
+          <p style={{ margin: '10px 0 0', color: colors.textMuted, fontSize: 14 }}>
+            Phase: {plan.phase}
+          </p>
+        )}
+        <p style={{ margin: '10px 0 0', fontSize: 13, color: colors.textMuted }}>
+          Last updated {formatPlanDate(plan.updated_at)}
+        </p>
       </div>
 
-      {/* Accordions */}
+      {needsOpenCore && (
+        <div
+          style={{
+            marginBottom: spacing[4],
+            padding: spacing[3],
+            borderRadius: 14,
+            background: colors.accentMuted,
+            border: '1px solid rgba(249,115,22,0.2)',
+            fontSize: 14,
+            color: colors.textSecondary,
+            lineHeight: 1.5,
+          }}
+        >
+          <strong style={{ color: colors.textPrimary }}>Tip:</strong> Open Diet and Workout once so we know you’ve seen your plan. Daily logging unlocks after that.
+        </div>
+      )}
+
+      <div style={{ marginBottom: spacing[4] }}>
+        <Button fullWidth variant="secondary" onClick={() => router.push('/tracker')}>
+          Go log today
+        </Button>
+      </div>
+
       <div>
-        {accordionItems.map(({ key, title, icon, content }) => (
+        {accordionItems.map(({ key, title, hint, icon, content }) => (
           <AccordionItem
             key={key}
             title={title}
@@ -190,6 +223,7 @@ export default function ClientPlanPage() {
             isOpen={expanded === key}
             onToggle={() => toggle(key)}
           >
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textMuted }}>{hint}</p>
             <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: colors.textSecondary, fontSize: 15, paddingBottom: spacing[2] }}>
               {content}
             </div>
@@ -197,7 +231,9 @@ export default function ClientPlanPage() {
         ))}
       </div>
 
-      <PlanChangeRequestPanel />
+      <div style={{ marginTop: spacing[5] }}>
+        <PlanChangeRequestPanel />
+      </div>
     </ClientShell>
   );
 }

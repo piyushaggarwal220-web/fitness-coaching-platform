@@ -108,39 +108,32 @@ export function PlanChangeRequestPanel() {
 
   return (
     <section style={styles.card}>
-      <h2 style={styles.title}>Request a plan edit</h2>
+      <h2 style={styles.title}>Need a plan change?</h2>
       <p style={styles.lead}>
-        Tell us what to change in your diet and/or workout. Your coach reviews every locked-in
-        request before anything goes live.
+        Tell your coach what isn’t working. They review every request before your live plan updates.
       </p>
 
       <div style={styles.terms}>
-        <p style={styles.termsTitle}>Terms for plan changes</p>
+        <p style={styles.termsTitle}>Quick rules</p>
         <ul style={styles.termsList}>
           <li>
-            You can lock in plan changes up to <strong>5 times per month</strong>.
+            Up to <strong>5 requests per month</strong>, and <strong>1 per day</strong>.
           </li>
           <li>
-            You can lock in only <strong>1 change request per day</strong>.
+            Include <strong>everything in one message</strong> — you can’t send a second list the same day.
           </li>
           <li>
-            Put <strong>all issues in one request</strong>. After you lock in, that day&apos;s
-            chance is used — you cannot send a second list the same day.
+            Changes are <strong>not instant</strong>. Your coach reviews first, then updates your plan.
           </li>
-          <li>
-            Locking in does <strong>not</strong> instantly change your live plan. Your coach reviews
-            the update first, then sends it if approved.
-          </li>
-          <li>Vague or incomplete requests may be declined or delayed.</li>
+          <li>Clear, specific requests get faster replies.</li>
         </ul>
       </div>
 
       {loading ? (
-        <p style={styles.muted}>Loading limits…</p>
+        <p style={styles.muted}>Loading…</p>
       ) : (
         <p style={styles.muted}>
-          Remaining today: {quota?.remainingToday ?? 0}/1 · Remaining this month:{' '}
-          {quota?.remainingThisMonth ?? 0}/5
+          Left today: {quota?.remainingToday ?? 0}/1 · This month: {quota?.remainingThisMonth ?? 0}/5
         </p>
       )}
 
@@ -150,7 +143,7 @@ export function PlanChangeRequestPanel() {
 
       {quota?.canSubmit && !openRequest && (
         <form onSubmit={onSubmit} style={{ marginTop: spacing[3] }}>
-          <label style={styles.label}>What should we change?</label>
+          <label style={styles.label}>What needs to change?</label>
           <div style={styles.scopeRow}>
             {SCOPE_OPTIONS.map((opt) => (
               <button
@@ -168,14 +161,14 @@ export function PlanChangeRequestPanel() {
           </div>
 
           <label style={styles.label} htmlFor="plan-change-text">
-            Write every change in one go
+            List every change here
           </label>
           <textarea
             id="plan-change-text"
             value={requestText}
             onChange={(e) => setRequestText(e.target.value)}
             rows={6}
-            placeholder="Example: Reduce rice at lunch, add paneer 3x/week, swap deadlifts for leg press because of lower-back tightness, keep evening workout time…"
+            placeholder="Example: Less rice at lunch, add paneer 3x/week, swap deadlifts for leg press (lower back), keep evening workouts…"
             style={styles.textarea}
             required
             minLength={10}
@@ -189,13 +182,12 @@ export function PlanChangeRequestPanel() {
               onChange={(e) => setAcceptedTerms(e.target.checked)}
             />
             <span>
-              I understand the 5/month and 1/day limits, and I have listed all changes I need in this
-              request.
+              I’ve listed everything I need in this one request (5/month, 1/day).
             </span>
           </label>
 
           <button type="submit" disabled={submitting || !acceptedTerms} style={styles.lockBtn}>
-            {submitting ? 'Locking in…' : 'Lock in changes'}
+            {submitting ? 'Sending…' : 'Send to coach'}
           </button>
         </form>
       )}

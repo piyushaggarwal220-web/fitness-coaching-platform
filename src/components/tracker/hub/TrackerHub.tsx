@@ -1,11 +1,32 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
+import {
+  Apple,
+  ChevronRight,
+  Droplets,
+  Dumbbell,
+  Footprints,
+  Moon,
+  Pill,
+  Activity,
+} from 'lucide-react'
 import { ProgressRing } from '@/components/tracker/ProgressRing'
 import { colors, radius, spacing } from '@/lib/design-tokens'
-import { buildModuleSummaries } from '@/lib/daily-tracker/module-summaries'
+import { buildModuleSummaries, type TrackerModuleId } from '@/lib/daily-tracker/module-summaries'
 import type { TodayTrackerView } from '@/lib/daily-tracker/types'
+import { motionClass, staggerClass } from '@/lib/motion'
+
+const MODULE_ICONS: Record<TrackerModuleId, ReactNode> = {
+  diet: <Apple size={22} color={colors.accent} />,
+  workout: <Dumbbell size={22} color={colors.accent} />,
+  water: <Droplets size={22} color={colors.accent} />,
+  steps: <Footprints size={22} color={colors.accent} />,
+  sleep: <Moon size={22} color={colors.accent} />,
+  supplements: <Pill size={22} color={colors.accent} />,
+  cardio: <Activity size={22} color={colors.accent} />,
+}
 
 export function TrackerHub({ view }: { view: TodayTrackerView }) {
   const modules = buildModuleSummaries(view.day)
@@ -18,13 +39,14 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           fontSize: 12,
           color: colors.accent,
           fontWeight: 700,
-          letterSpacing: '0.1em',
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
         }}
       >
         {view.greeting}
       </p>
       <h1
+        className={motionClass.pageEnter}
         style={{
           margin: '6px 0 0',
           fontSize: 'clamp(1.5rem, 5vw, 2rem)',
@@ -32,10 +54,14 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           letterSpacing: '-0.02em',
         }}
       >
-        Tracker
+        Log today
       </h1>
+      <p style={{ margin: '8px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.45 }}>
+        Tap a section, tick what you finished, and you’re done.
+      </p>
 
       <div
+        className={motionClass.cardEnter}
         style={{
           marginTop: spacing[4],
           marginBottom: spacing[5],
@@ -54,21 +80,23 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           percent={view.day.overall_percent ?? 0}
           size={140}
           stroke={11}
-          label="Today's Progress"
+          label="Today"
         />
         <div style={{ textAlign: 'center', fontSize: 13, color: colors.textMuted }}>
-          Day {view.schedule.coachingDay} · Week {view.schedule.coachingWeek}
-          {view.streak > 0 && (
-            <div style={{ color: colors.accent, marginTop: 4 }}>{view.streak}-day streak</div>
+          {view.streak > 0 ? (
+            <div style={{ color: colors.accent, fontWeight: 700 }}>{view.streak}-day streak</div>
+          ) : (
+            <div>Start logging to build a streak</div>
           )}
         </div>
       </div>
 
       <div style={{ display: 'grid', gap: 10 }}>
-        {modules.map((mod) => (
+        {modules.map((mod, index) => (
           <Link
             key={mod.id}
             href={mod.href}
+            className={`btn-press ${staggerClass(index)}`}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -92,11 +120,10 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 26,
                 flexShrink: 0,
               }}
             >
-              {mod.icon}
+              {MODULE_ICONS[mod.id]}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em' }}>{mod.title}</div>
@@ -116,7 +143,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                   style={{
                     height: '100%',
                     width: `${mod.progress}%`,
-                    background: `linear-gradient(90deg, ${colors.accent}, ${colors.accentMuted})`,
+                    background: `linear-gradient(90deg, ${colors.accent}, ${colors.accentHover})`,
                     transition: 'width 500ms ease',
                   }}
                 />
@@ -128,9 +155,8 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
       </div>
 
       {modules.length === 0 && (
-        <p style={{ color: colors.textMuted, textAlign: 'center', lineHeight: 1.6 }}>
-          No tracker modules found in your active plan. Your coach will add diet, workout, and other sections to your
-          plan.
+        <p style={{ color: colors.textMuted, textAlign: 'center', lineHeight: 1.6, marginTop: spacing[4] }}>
+          Nothing to log yet. Open your plan, or message your coach if sections look empty.
         </p>
       )}
     </div>

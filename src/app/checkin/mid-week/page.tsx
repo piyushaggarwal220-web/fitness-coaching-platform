@@ -57,12 +57,12 @@ export default function MidWeekCheckinPage() {
         const reason = getCheckinUnavailableReason(scheduleStartedAt, 'mid_week', rows, new Date());
         setUnavailableReason(
           reason === 'plan_not_delivered'
-            ? 'Your check-in schedule will begin when your coach delivers your first plan.'
+            ? 'Check-ins start after your first plan is ready.'
             : reason === 'window_closed'
-              ? 'This Day 3 check-in window has closed (48 hours). Please wait for your next scheduled check-in.'
+              ? 'This mid-week update window has closed. Your next check-in will show on Today.'
             : reason === 'already_submitted'
-              ? 'You already submitted this Day 3 check-in.'
-              : 'Your Day 3 check-in is not available yet. Check your dashboard for the next scheduled check-in.'
+              ? 'You’ve already sent this mid-week update.'
+              : 'This mid-week update isn’t open yet. You’ll see it on Today when it’s due.'
         );
       }
 
@@ -116,9 +116,9 @@ export default function MidWeekCheckinPage() {
       const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)
       if (!parsed.ok) throw new Error(parsed.error)
 
-      setSuccess('Day 3 check-in submitted! +5 league points when the season refreshes.');
+      setSuccess('Mid-week update sent. Nice work!');
       setForm(INITIAL_MID_WEEK_FORM);
-      setTimeout(() => router.push('/league'), 1800);
+      setTimeout(() => router.push('/dashboard'), 1800);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit check-in.');
     } finally {
@@ -128,52 +128,52 @@ export default function MidWeekCheckinPage() {
 
   const devMode = shouldBypassCheckinScheduleClient();
 
-  if (loading) return <ClientShell title="Check-In" loading hideBottomNav />;
+  if (loading) return <ClientShell title="Check-in" loading hideBottomNav />;
 
   if (!profile?.coach_id) {
     return (
-      <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={styles.title}>{brandTitle('Mid-Week Check-In')}</h1>
-        <div style={styles.error}>No coach is assigned to your account yet.</div>
-        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
+      <ClientShell title="Check-in" hideBottomNav>
+        <h1 style={styles.title}>{brandTitle('Mid-week update')}</h1>
+        <div style={styles.error}>Your coach will be assigned shortly.</div>
+        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to Today</Button>
       </ClientShell>
     );
   }
 
   if (!available) {
     return (
-      <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={styles.title}>{brandTitle('Mid-Week Check-In')}</h1>
+      <ClientShell title="Check-in" hideBottomNav>
+        <h1 style={styles.title}>{brandTitle('Mid-week update')}</h1>
         <div style={styles.infoBox}>
-          {unavailableReason || 'Your Day 3 check-in is not available.'}
+          {unavailableReason || 'This mid-week update isn’t open yet.'}
         </div>
-        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
+        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to Today</Button>
       </ClientShell>
     );
   }
 
   return (
-    <ClientShell title="Check-In" hideBottomNav>
+    <ClientShell title="Check-in" hideBottomNav>
         {devMode && <DevelopmentModeBadge />}
-        <h1 style={styles.title}>{brandTitle('Mid-Week Check-In')}</h1>
-        <p style={styles.subtitle}>Day 3 adherence check — how well are you sticking to the plan?</p>
+        <h1 style={styles.title}>{brandTitle('Mid-week update')}</h1>
+        <p style={styles.subtitle}>A quick check-in so your coach can help you stay on track.</p>
 
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 
         <form onSubmit={handleSubmit}>
           <Card variant="elevated">
-            <h2 style={styles.sectionTitle}>Adherence this week (1–10)</h2>
-            <Slider label="Diet adherence" name="diet_adherence" value={form.diet_adherence || '5'} onChange={handleChange} />
-            <Slider label="Workout adherence" name="workout_adherence" value={form.workout_adherence || '5'} onChange={handleChange} />
+            <h2 style={styles.sectionTitle}>How this week feels (1–10)</h2>
+            <Slider label="Following the diet" name="diet_adherence" value={form.diet_adherence || '5'} onChange={handleChange} />
+            <Slider label="Following the workouts" name="workout_adherence" value={form.workout_adherence || '5'} onChange={handleChange} />
             <Slider label="Energy" name="energy_level" value={form.energy_level || '5'} onChange={handleChange} />
-            <Slider label="Sleep quality" name="sleep_quality" value={form.sleep_quality || '5'} onChange={handleChange} />
+            <Slider label="Sleep" name="sleep_quality" value={form.sleep_quality || '5'} onChange={handleChange} />
             <Slider label="Stress" name="stress_level" value={form.stress_level || '5'} onChange={handleChange} />
             <Slider label="Hunger" name="hunger_level" value={form.hunger_level || '5'} onChange={handleChange} />
           </Card>
 
           <Card variant="elevated">
-            <h2 style={styles.sectionTitle}>Adherence details</h2>
+            <h2 style={styles.sectionTitle}>A bit more detail</h2>
             <TextArea
               label="What’s helping you stick to the plan? *"
               name="adherence_wins"

@@ -99,7 +99,7 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
           )}
         </div>
         {!hideBottomNav && <BottomNav unreadChats={unreadChats} />}
-        <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={`${BRAND_NAME} coaching hub`} />
+        <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={`${BRAND_NAME} · Your coaching app`} />
       </>
     )
   }
@@ -117,7 +117,7 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
         )}
       </main>
       {!hideBottomNav && !fullHeight && <BottomNav unreadChats={unreadChats} />}
-      <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={`${BRAND_NAME} coaching hub`} />
+      <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={`${BRAND_NAME} · Your coaching app`} />
     </>
   )
 }

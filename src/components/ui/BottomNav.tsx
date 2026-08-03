@@ -2,16 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Map, ClipboardList, MessageCircle, ListChecks, Trophy } from 'lucide-react'
+import { CalendarDays, ClipboardList, MessageCircle, TrendingUp } from 'lucide-react'
 import { colors, layout, spacing } from '@/lib/design-tokens'
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/tracker', label: 'Tracker', icon: ListChecks },
-  { href: '/plan', label: 'Plan', icon: ClipboardList },
-  { href: '/league', label: 'League', icon: Trophy },
-  { href: '/client/chat', label: 'Chat', icon: MessageCircle },
-  { href: '/journey', label: 'Journey', icon: Map },
+  { href: '/dashboard', label: 'Today', icon: CalendarDays, match: ['/dashboard', '/tracker', '/checkin'] },
+  { href: '/plan', label: 'Plan', icon: ClipboardList, match: ['/plan'] },
+  { href: '/journey', label: 'Progress', icon: TrendingUp, match: ['/journey', '/progress'] },
+  { href: '/client/chat', label: 'Coach', icon: MessageCircle, match: ['/client/chat'] },
 ] as const
 
 export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
@@ -39,8 +37,12 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
       }}
       aria-label="Main navigation"
     >
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+      {NAV_ITEMS.map(({ href, label, icon: Icon, match }) => {
+        const active = match.some((prefix) =>
+          prefix === '/dashboard'
+            ? pathname === '/dashboard' || pathname.startsWith('/tracker') || pathname.startsWith('/checkin')
+            : pathname === prefix || pathname.startsWith(`${prefix}/`)
+        )
         return (
           <Link
             key={href}
@@ -51,7 +53,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 4,
-              minWidth: 48,
+              minWidth: 64,
               minHeight: 56,
               padding: `${spacing[1]}px`,
               color: active ? colors.accent : colors.textMuted,
@@ -83,7 +85,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
                 </span>
               )}
             </span>
-            <span style={{ fontSize: 10, fontWeight: active ? 600 : 500 }}>{label}</span>
+            <span style={{ fontSize: 11, fontWeight: active ? 700 : 500 }}>{label}</span>
           </Link>
         )
       })}

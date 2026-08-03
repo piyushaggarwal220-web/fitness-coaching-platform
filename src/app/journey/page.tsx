@@ -56,7 +56,7 @@ export default function JourneyPage() {
 
   const weightChangeAnimated = useCountUp(data?.stats.weightChange ?? 0)
 
-  if (loading) return <ClientShell title="Journey" loading />
+  if (loading) return <ClientShell title="Progress" loading />
   if (!data) return null
 
   const { stats, milestones, weeklyEntries, weightHistory, progressPhotos, coachComments, recentWorkouts, measurements } = data
@@ -64,7 +64,7 @@ export default function JourneyPage() {
   const prior = weeklyEntries.length > 1 ? weeklyEntries[weeklyEntries.length - 2] : null
 
   return (
-    <ClientShell title="Journey">
+    <ClientShell title="Progress">
       {gallery && (
         <PhotoGalleryViewer
           photos={gallery.photos}
@@ -76,10 +76,10 @@ export default function JourneyPage() {
 
       <div style={{ marginBottom: spacing[5] }}>
         <h1 style={{ margin: 0, fontSize: 'clamp(1.75rem, 6vw, 2.25rem)', fontWeight: 800, letterSpacing: '-0.03em', color: colors.textPrimary }}>
-          {brandTitle('Your Journey')}
+          {brandTitle('Progress')}
         </h1>
-        <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 15 }}>
-          Every step forward counts
+        <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 15, lineHeight: 1.45 }}>
+          Photos, weight, and check-ins in one place
         </p>
       </div>
 

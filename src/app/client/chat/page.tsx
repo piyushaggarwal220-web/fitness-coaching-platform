@@ -91,14 +91,14 @@ export default function ClientChatPage() {
 
   if (!authReady && !error) {
     return (
-      <ClientShell title="Chat" loading hideBottomNav fullHeight>
+      <ClientShell title="Coach" loading hideBottomNav fullHeight>
         <span />
       </ClientShell>
     )
   }
 
   return (
-    <ClientShell title="Chat" hideBottomNav fullHeight>
+    <ClientShell title="Coach" hideBottomNav fullHeight>
       {connecting && !conversation && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: '#0b141a' }}>
           <p style={{ margin: '12px 16px', fontSize: 13, color: '#8696a0', textAlign: 'center', flexShrink: 0 }}>

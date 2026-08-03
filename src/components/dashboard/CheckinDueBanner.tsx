@@ -2,7 +2,7 @@
 
 import { Calendar, ChevronRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { getCheckinTypeDisplayName } from '@/lib/checkin-schedule'
+import { clientCheckinShortHint, clientCheckinTypeLabel } from '@/lib/client-ux-copy'
 import type { ScheduledCheckin } from '@/lib/checkin-schedule'
 import { colors, layout, spacing } from '@/lib/design-tokens'
 
@@ -13,13 +13,14 @@ type Props = {
 /** Sticky top-of-homescreen alert while a check-in window is open. */
 export function CheckinDueBanner({ checkin }: Props) {
   const router = useRouter()
-  const typeLabel = getCheckinTypeDisplayName(checkin.type)
+  const typeLabel = clientCheckinTypeLabel(checkin.type)
 
   return (
     <button
       type="button"
       onClick={() => router.push(checkin.href)}
-      aria-label={`${typeLabel} check-in is due. Start now.`}
+      aria-label={`${typeLabel} is due. Start now.`}
+      className="btn-press"
       style={{
         position: 'sticky',
         top: `calc(${layout.topBarHeight}px + env(safe-area-inset-top, 0px))`,
@@ -34,7 +35,7 @@ export function CheckinDueBanner({ checkin }: Props) {
         marginBottom: spacing[4],
         padding: `${spacing[3]}px ${spacing[4]}px`,
         border: 'none',
-        borderBottom: `1px solid rgba(249, 115, 22, 0.35)`,
+        borderBottom: '1px solid rgba(249, 115, 22, 0.35)',
         background:
           'linear-gradient(90deg, rgba(249,115,22,0.22) 0%, rgba(249,115,22,0.12) 55%, rgba(24,24,27,0.96) 100%)',
         backdropFilter: 'blur(16px)',
@@ -70,13 +71,13 @@ export function CheckinDueBanner({ checkin }: Props) {
             color: colors.accent,
           }}
         >
-          Check-in due
+          Due now
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>
-          {typeLabel} · Week {checkin.coachingWeek}
+          {typeLabel}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textSecondary }}>
-          Available now · tap to start
+          {clientCheckinShortHint(checkin.type)}
         </p>
       </div>
       <span

@@ -13,6 +13,8 @@ export type DrawerNavItem = {
   label: string
   icon: ReactNode
   badge?: number
+  /** Optional group heading shown above this item when it changes */
+  section?: string
 }
 
 type DrawerNavProps = {
@@ -63,6 +65,8 @@ export function DrawerNav({ open, onClose, items, title, subtitle, theme = 'dark
   }, [visible, mounted])
 
   if (!mounted) return null
+
+  let lastSection: string | undefined
 
   return (
     <div
@@ -130,57 +134,76 @@ export function DrawerNav({ open, onClose, items, title, subtitle, theme = 'dark
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto' }}>
           {items.map((item, index) => {
-            const active = pathname === item.href || (item.href !== '/dashboard' && item.href !== '/coach/dashboard' && item.href !== '/admin' && pathname.startsWith(item.href))
+            const showSection = Boolean(item.section) && item.section !== lastSection
+            if (item.section) lastSection = item.section
+            const active = pathname === item.href
+              || (item.href !== '/dashboard' && item.href !== '/coach/dashboard' && item.href !== '/admin' && pathname.startsWith(item.href))
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`drawer-item-cascade ${staggerClass(index)}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing[3],
-                  padding: '14px 16px',
-                  borderRadius: 14,
-                  textDecoration: 'none',
-                  color: active ? colors.textPrimary : colors.textSecondary,
-                  backgroundColor: active ? colors.accentMuted : 'transparent',
-                  border: active ? `1px solid rgba(249,115,22,0.2)` : '1px solid transparent',
-                  fontWeight: active ? 600 : 500,
-                  fontSize: 15,
-                  minHeight: 48,
-                  transition: 'background-color 180ms ease, color 180ms ease',
-                }}
-              >
-                <span style={{ color: active ? colors.accent : colors.textMuted, display: 'flex' }}>{item.icon}</span>
-                <span style={{ flex: 1 }}>{item.label}</span>
-                {Boolean(item.badge) && (
-                  <span style={{
-                    minWidth: 22,
-                    height: 22,
-                    padding: '0 7px',
-                    borderRadius: 999,
-                    backgroundColor: colors.accent,
-                    color: colors.textInverse,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    fontWeight: 700,
-                  }}>
-                    {item.badge! > 99 ? '99+' : item.badge}
-                  </span>
+              <div key={item.href}>
+                {showSection && (
+                  <p
+                    style={{
+                      margin: index === 0 ? '0 0 8px' : '16px 0 8px',
+                      padding: '0 16px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: colors.textMuted,
+                    }}
+                  >
+                    {item.section}
+                  </p>
                 )}
-              </Link>
+                <Link
+                  href={item.href}
+                  onClick={onClose}
+                  className={`drawer-item-cascade ${staggerClass(index)}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing[3],
+                    padding: '14px 16px',
+                    borderRadius: 14,
+                    textDecoration: 'none',
+                    color: active ? colors.textPrimary : colors.textSecondary,
+                    backgroundColor: active ? colors.accentMuted : 'transparent',
+                    border: active ? '1px solid rgba(249,115,22,0.2)' : '1px solid transparent',
+                    fontWeight: active ? 600 : 500,
+                    fontSize: 15,
+                    minHeight: 48,
+                    transition: 'background-color 180ms ease, color 180ms ease',
+                  }}
+                >
+                  <span style={{ color: active ? colors.accent : colors.textMuted, display: 'flex' }}>{item.icon}</span>
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  {Boolean(item.badge) && (
+                    <span style={{
+                      minWidth: 22,
+                      height: 22,
+                      padding: '0 7px',
+                      borderRadius: 999,
+                      backgroundColor: colors.accent,
+                      color: colors.textInverse,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}>
+                      {item.badge! > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
+                </Link>
+              </div>
             )
           })}
         </div>
 
         <p style={{ margin: `${spacing[4]}px 0 0`, fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
-          Premium coaching platform
+          Need help? Open Support from the menu.
         </p>
       </nav>
     </div>
@@ -236,14 +259,14 @@ export const clientDrawerItems = (icons: {
   Settings: React.ComponentType<{ size?: number; color?: string }>
   LifeBuoy: React.ComponentType<{ size?: number; color?: string }>
 }): DrawerNavItem[] => [
-  { href: '/dashboard', label: 'Dashboard', icon: <icons.Home size={20} /> },
-  { href: '/tracker', label: "Today's Tracker", icon: <icons.ListChecks size={20} /> },
-  { href: '/league', label: 'League', icon: <icons.Trophy size={20} /> },
-  { href: '/journey', label: 'Journey', icon: <icons.Map size={20} /> },
-  { href: '/plan', label: 'My Plan', icon: <icons.ClipboardList size={20} /> },
-  { href: '/checkin', label: 'Check-ins', icon: <icons.Calendar size={20} /> },
-  { href: '/client/chat', label: 'Chat', icon: <icons.MessageCircle size={20} /> },
-  { href: '/profile', label: 'Profile', icon: <icons.User size={20} /> },
-  { href: '/settings', label: 'Settings', icon: <icons.Settings size={20} /> },
-  { href: '/client/support', label: 'Support', icon: <icons.LifeBuoy size={20} /> },
+  { href: '/dashboard', label: 'Today', icon: <icons.Home size={20} />, section: 'Daily' },
+  { href: '/tracker', label: 'Log today', icon: <icons.ListChecks size={20} />, section: 'Daily' },
+  { href: '/plan', label: 'My plan', icon: <icons.ClipboardList size={20} />, section: 'Daily' },
+  { href: '/checkin', label: 'Check-ins', icon: <icons.Calendar size={20} />, section: 'Daily' },
+  { href: '/journey', label: 'Progress', icon: <icons.Map size={20} />, section: 'Results' },
+  { href: '/league', label: 'League', icon: <icons.Trophy size={20} />, section: 'Results' },
+  { href: '/client/chat', label: 'Coach chat', icon: <icons.MessageCircle size={20} />, section: 'Help' },
+  { href: '/client/support', label: 'Support', icon: <icons.LifeBuoy size={20} />, section: 'Help' },
+  { href: '/profile', label: 'Profile', icon: <icons.User size={20} />, section: 'Account' },
+  { href: '/settings', label: 'Settings', icon: <icons.Settings size={20} />, section: 'Account' },
 ]

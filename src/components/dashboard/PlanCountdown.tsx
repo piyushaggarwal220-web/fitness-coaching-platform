@@ -66,10 +66,10 @@ export function PlanCountdownCard({ profile, activePlan, coachName }: PlanCountd
               Your plan is ready
             </p>
             <p style={{ margin: '6px 0 4px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-              {displayCoach} published your diet and workout. Open both sections to unlock your daily tracker focus.
+              {displayCoach} shared your diet and workout. Open both once, then log them every day from Today.
             </p>
             <Button fullWidth style={{ marginTop: 12 }} onClick={() => router.push('/plan')}>
-              Open diet & workout
+              Open my plan
             </Button>
           </div>
         </div>

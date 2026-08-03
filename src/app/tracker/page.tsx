@@ -13,17 +13,17 @@ export default function TrackerPage() {
   const { loading, error, view } = useTracker()
 
   if (loading) {
-    return <ClientShell title="Tracker" loading />
+    return <ClientShell title="Log today" loading />
   }
 
   if (error && !view) {
     return (
-      <ClientShell title="Tracker">
+      <ClientShell title="Log today">
         <EmptyState
           icon={<ClipboardList size={40} color={colors.accent} />}
-          title="Tracker not ready"
-          description={error}
-          actionLabel="View plan"
+          title="Nothing to log yet"
+          description={error || 'Open your plan first. Daily logging appears once your diet and workout are ready.'}
+          actionLabel="Open plan"
           onAction={() => router.push('/plan')}
         />
       </ClientShell>
@@ -31,11 +31,11 @@ export default function TrackerPage() {
   }
 
   if (!view) {
-    return <ClientShell title="Tracker" loading />
+    return <ClientShell title="Log today" loading />
   }
 
   return (
-    <ClientShell title="Tracker">
+    <ClientShell title="Log today">
       <TrackerHub view={view} />
     </ClientShell>
   )
