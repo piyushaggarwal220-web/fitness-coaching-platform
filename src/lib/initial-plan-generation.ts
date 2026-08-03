@@ -17,7 +17,7 @@ import {
 import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { resolveVisionMediaType, type VisionSafeMediaType } from '@/lib/photo'
-import { persistAiPlanDraft } from '@/lib/plans'
+import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
 
@@ -281,21 +281,46 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
     }
 
     const dietResult = await runSection('initial_diet')
-    const workoutResult = await runSection('initial_workout')
-    const cardioResult = await runOptionalSection('initial_cardio')
-    const supplementResult = await runOptionalSection('initial_supplements')
+    let workoutResult: Awaited<ReturnType<typeof runSection>>
+    try {
+      workoutResult = await runSection('initial_workout')
+    } catch (workoutError) {
+      // Keep the successful diet so a mid-pipeline failure does not discard LLM work.
+      const dietOnly = generatedDietFormData(dietResult.generatedPlan, profile.id)
+      const partial = await persistAiPlanDraft(admin, {
+        clientId: profile.id,
+        coachId: job.coach_id,
+        form: {
+          ...dietOnly,
+          workout_plan: '',
+          cardio_plan: '',
+          supplement_plan: '',
+          coach_notes: '',
+          title: 'Complete Coaching Plan (Draft)',
+        },
+        title: 'AI Draft · Partial (diet only — retry workout)',
+      })
+      if (partial.data) {
+        await admin
+          .from('initial_plan_generation_jobs')
+          .update({
+            draft_plan_id: partial.data.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', job.id)
+          .eq('status', 'generating')
+      }
+      throw workoutError
+    }
     const diet = generatedDietFormData(dietResult.generatedPlan, profile.id)
     const workout = generatedWorkoutFormData(workoutResult.generatedPlan, profile.id)
-    const cardio = cardioResult
-      ? generatedCardioFormData(cardioResult.generatedPlan, profile.id)
-      : null
-    const supplements = supplementResult
-      ? generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
-      : null
-    const form: PlanFormData = mergePlanForms(diet, {
+
+    // Persist a publishable core draft before optional cardio/supplement calls.
+    // If the serverless isolate is killed mid-pipeline, coaches still get diet+workout.
+    const coreForm: PlanFormData = mergePlanForms(diet, {
       workout_plan: workout.workout_plan,
-      cardio_plan: cardio?.cardio_plan ?? '',
-      supplement_plan: supplements?.supplement_plan ?? '',
+      cardio_plan: '',
+      supplement_plan: '',
       // Keep the client-facing coach note empty: delivery is blocked until a
       // coach reviews the draft and adds their own note.
       coach_notes: '',
@@ -314,10 +339,45 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
     const persisted = await persistAiPlanDraft(admin, {
       clientId: profile.id,
       coachId: job.coach_id,
-      form,
+      form: coreForm,
       title: 'AI Draft · Ready for coach note/review',
     })
-    if (persisted.error || !persisted.data) throw new Error(persisted.error ?? 'Draft persistence failed.')
+    if (persisted.error || !persisted.data) {
+      throw new Error(persisted.error ?? 'Draft persistence failed.')
+    }
+
+    // Link the core draft immediately so a later kill still leaves a recoverable job.
+    await admin
+      .from('initial_plan_generation_jobs')
+      .update({
+        draft_plan_id: persisted.data.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', job.id)
+      .eq('status', 'generating')
+
+    const cardioResult = await runOptionalSection('initial_cardio')
+    const supplementResult = await runOptionalSection('initial_supplements')
+    const cardio = cardioResult
+      ? generatedCardioFormData(cardioResult.generatedPlan, profile.id)
+      : null
+    const supplements = supplementResult
+      ? generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
+      : null
+
+    if (cardio || supplements) {
+      const updated = await updateAiPlanDraft(admin, persisted.data.id, {
+        cardio_plan: cardio?.cardio_plan ?? '',
+        supplement_plan: supplements?.supplement_plan ?? '',
+      })
+      if (updated.error) {
+        // Core draft is already usable — do not fail the whole job for support sections.
+        console.warn(
+          '[initial-plan-generation] support section draft update failed:',
+          updated.error
+        )
+      }
+    }
 
     const completedAt = new Date().toISOString()
     await admin
@@ -348,6 +408,63 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
   } catch (error) {
     const safe = safeFailure(error)
     const failedAt = new Date().toISOString()
+
+    // If a core diet+workout draft was already linked, treat the job as ready.
+    // Support-section / notification failures must not erase successful generation.
+    const { data: latestJob } = await admin
+      .from('initial_plan_generation_jobs')
+      .select('draft_plan_id')
+      .eq('id', job.id)
+      .maybeSingle()
+    const draftPlanId = latestJob?.draft_plan_id as string | null | undefined
+    if (draftPlanId) {
+      const { data: draft } = await admin
+        .from('plans')
+        .select('id, nutrition_plan, workout_plan')
+        .eq('id', draftPlanId)
+        .maybeSingle()
+      const hasCore =
+        Boolean(draft?.nutrition_plan?.trim()) && Boolean(draft?.workout_plan?.trim())
+      if (hasCore) {
+        await admin
+          .from('initial_plan_generation_jobs')
+          .update({
+            status: 'ready',
+            draft_plan_id: draftPlanId,
+            completed_at: failedAt,
+            failed_at: null,
+            error_code: null,
+            error_message: null,
+            updated_at: failedAt,
+          })
+          .eq('id', job.id)
+          .eq('status', 'generating')
+
+        const { data: coach } = await admin
+          .from('coaches')
+          .select('user_id')
+          .eq('id', job.coach_id)
+          .single()
+        if (coach?.user_id) {
+          await sendNotification({
+            userId: coach.user_id,
+            type: 'initial_plan_draft_ready',
+            title: 'AI plan draft ready for review',
+            body: 'Core diet and workout drafts are ready (support sections may be incomplete). Add your coach note, review, and explicitly deliver.',
+            actionUrl: `/coach/plan/${draftPlanId}`,
+            metadata: {
+              jobId: job.id,
+              planId: draftPlanId,
+              clientId: job.client_id,
+              partialOk: true,
+              recoveredFrom: safe.code,
+            },
+          })
+        }
+        return
+      }
+    }
+
     await admin
       .from('initial_plan_generation_jobs')
       .update({

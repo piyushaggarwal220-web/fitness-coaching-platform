@@ -379,7 +379,7 @@ export async function POST(request: Request) {
       generationTimeMs: Date.now() - startedAt,
     })
   } catch (err) {
-    const failureMessage =
+    const rawFailureMessage =
       err instanceof ClaudeResponseError
         ? `Anthropic plan generation failed${err.status ? ` (HTTP ${err.status})` : ''}: ${err.message}`
         : err instanceof GeneratePlanError
@@ -387,6 +387,11 @@ export async function POST(request: Request) {
           : err instanceof Error
             ? err.message
             : 'Plan generation failed'
+    // Avoid returning multi-KB raw model dumps to the coach UI / logs.
+    const failureMessage =
+      rawFailureMessage.length > 500
+        ? `${rawFailureMessage.slice(0, 500)}…`
+        : rawFailureMessage
 
     await writeTrace({
       success: false,
@@ -398,11 +403,10 @@ export async function POST(request: Request) {
     })
 
     if (err instanceof ClaudeResponseError) {
-      const detail = err.status ? ` (HTTP ${err.status})` : ''
       return NextResponse.json(
         {
           success: false,
-          error: `Anthropic plan generation failed${detail}: ${err.message}`,
+          error: failureMessage,
         },
         { status: err.status && err.status >= 400 && err.status < 600 ? err.status : 502 }
       )

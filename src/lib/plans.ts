@@ -385,3 +385,36 @@ export async function persistAiPlanDraft(
   return { data: data as Plan, error: null }
 }
 
+/** Update an existing inactive AI draft in place (used after early core persist). */
+export async function updateAiPlanDraft(
+  supabase: SupabaseClient,
+  planId: string,
+  form: Partial<PlanFormData>,
+  title?: string
+): Promise<{ data: Plan | null; error: string | null }> {
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  }
+  if (title?.trim()) patch.title = title.trim()
+  if (form.phase !== undefined) patch.phase = form.phase.trim() || null
+  if (form.workout_plan !== undefined) patch.workout_plan = form.workout_plan.trim() || null
+  if (form.nutrition_plan !== undefined) patch.nutrition_plan = form.nutrition_plan.trim() || null
+  if (form.cardio_plan !== undefined) patch.cardio_plan = form.cardio_plan.trim() || null
+  if (form.supplement_plan !== undefined) {
+    patch.supplement_plan = form.supplement_plan.trim() || null
+  }
+  if (form.coach_notes !== undefined) patch.coach_notes = form.coach_notes.trim() || null
+
+  const { data, error } = await supabase
+    .from('plans')
+    .update(patch)
+    .eq('id', planId)
+    .eq('active', false)
+    .is('delivered_at', null)
+    .select()
+    .maybeSingle()
+
+  if (error || !data) return { data: null, error: error?.message ?? 'Failed to update AI draft' }
+  return { data: data as Plan, error: null }
+}
+

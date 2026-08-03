@@ -7,6 +7,7 @@ Weekly AI draft generation still runs **in-process** (no Inngest functions wired
 - Check-in submit and coach Generate/Retry mark `weekly_draft_started` immediately, then run `generateWeeklyPlanDraft()` via Next.js `after()`
 - Coach panel polls `/api/coach/ai-draft/status` instead of waiting on a long HTTP request (avoids proxy/browser timeouts looking like failures)
 - Core diet + workout draft is saved **before** cardio/supplement calls, so a mid-pipeline kill still leaves a publishable draft
+- Initial onboarding generation uses the same early core-draft pattern, retries transient Anthropic blips inside `generatePlan`, and recovers a ready job when a core draft already exists
 - Cardio/supplement failures soft-fail and keep the active plan values
 - Publish goes through `/api/coach/ai-draft/publish` (service role) so deactivate/activate is not blocked by coach-scoped RLS
 - Empty AI coach notes fall back to a default client message on publish; post-activate profile sync errors no longer fake a publish failure

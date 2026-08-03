@@ -107,6 +107,29 @@ export class GeneratePlanError extends Error {
   }
 }
 
+/** Whether a provider error should consume another generatePlan attempt. */
+export function shouldRetryProviderError(
+  err: ClaudeResponseError,
+  attempt: number,
+  maxAttempts: number
+): boolean {
+  return err.retryable && attempt < maxAttempts - 1
+}
+
+/** Keep failure messages short so DB logs / UI are not flooded with raw model output. */
+export function formatGeneratePlanFailure(
+  providerLabel: string,
+  lastValidationError: string,
+  lastRawResponse: string,
+  previewChars = 500
+): string {
+  const preview = lastRawResponse.trim().slice(0, previewChars)
+  const suffix = preview
+    ? ` Raw response preview: ${preview}${lastRawResponse.trim().length > previewChars ? '…' : ''}`
+    : ''
+  return `${providerLabel} returned invalid plan JSON after retry: ${lastValidationError}.${suffix}`
+}
+
 const PLAN_JSON_SCHEMA = `{
   "workout_plan": {
     "overview": "",
@@ -629,10 +652,15 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     } catch (err) {
       if (err instanceof ClaudeResponseError) {
         const detail = err.status ? ` (HTTP ${err.status})` : ''
-        throw new GeneratePlanError(
-          `Anthropic plan generation failed${detail}: ${err.message}`,
-          { cause: err }
-        )
+        lastValidationError = `Anthropic plan generation failed${detail}: ${err.message}`
+        // Transient/quota blips used to abort the whole generatePlan call even when
+        // validation retries remained — retry those in this outer loop.
+        if (shouldRetryProviderError(err, attempt, maxAttempts)) {
+          completenessHint =
+            'Previous provider call failed transiently. Generate the complete plan again from scratch.'
+          continue
+        }
+        throw new GeneratePlanError(lastValidationError, { cause: err })
       }
       throw err
     }
@@ -640,6 +668,13 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     totalInputTokens += response.inputTokens
     totalOutputTokens += response.outputTokens
     lastRawResponse = response.text
+
+    if (!response.text?.trim()) {
+      lastValidationError = 'Model returned an empty plan response.'
+      completenessHint =
+        'Previous response was empty. Return ONLY the complete JSON plan object with every required day.'
+      continue
+    }
 
     if (response.stopReason === 'max_tokens') {
       lastValidationError =
@@ -685,6 +720,6 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
 
   const providerLabel = providerMode === 'mock' ? 'Mock provider' : 'Anthropic'
   throw new GeneratePlanError(
-    `${providerLabel} returned invalid plan JSON after retry: ${lastValidationError}. Raw response: ${lastRawResponse}`
+    formatGeneratePlanFailure(providerLabel, lastValidationError, lastRawResponse)
   )
 }
