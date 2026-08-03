@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { recordCapturedPayment } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { getCoachingPlan } from '@/lib/payments/plans'
-import { expectedAmountPaiseFromOrderNotes } from '@/lib/payments/checkout-discounts'
+import {
+  expectedAmountPaiseFromOrderNotes,
+  normalizeDiscountCode,
+} from '@/lib/payments/checkout-discounts'
+import { recordPromoCodeUsage } from '@/lib/payments/promo-codes'
 import {
   fetchRazorpayOrder,
   fetchRazorpayPayment,
@@ -265,6 +269,18 @@ export async function POST(request: Request) {
       razorpayOrderId: payment.order_id,
       amountPaise: payment.amount,
     })
+
+    const discountCode = normalizeDiscountCode(notes.discount_code)
+    const discountPaise = Number(notes.discount_paise ?? 0) || 0
+    if (discountCode && discountPaise > 0) {
+      await recordPromoCodeUsage(createAdminClient(), {
+        code: discountCode,
+        purchaseId: result.purchaseId,
+        customerEmail: result.customerEmail,
+        planSlug: plan.slug,
+        discountPaise,
+      }).catch(() => undefined)
+    }
 
     await Promise.allSettled([
       sendMetaPurchase({

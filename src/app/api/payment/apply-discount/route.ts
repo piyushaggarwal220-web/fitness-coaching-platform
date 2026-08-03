@@ -68,7 +68,8 @@ export async function POST(request: Request) {
     displaySalePrice: pricing.discount?.displaySalePrice ?? pricing.plan.displayPrice,
     displayDiscount: pricing.discount?.displayDiscount ?? '₹0',
     message: pricing.discount
-      ? `Referral applied — save ${pricing.discount.displayDiscount} on ${pricing.plan.name}.`
-      : 'No referral discount applied.',
+      ? `${pricing.discount.kind === 'referral' ? 'Referral' : 'Discount'} applied — save ${pricing.discount.displayDiscount} on ${pricing.plan.name}.`
+      : 'No discount applied.',
+    referrerLabel: pricing.discount?.referrerLabel ?? null,
   })
 }

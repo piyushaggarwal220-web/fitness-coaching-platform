@@ -790,6 +790,47 @@ export type RedemptionUsage = {
   redeemed_at: string
 }
 
+export type PromoCodeKind = 'discount' | 'referral'
+export type PromoDiscountType = 'fixed' | 'percent' | 'plan_fixed'
+
+export type PromoCode = {
+  id: string
+  code: string
+  kind: PromoCodeKind
+  discount_type: PromoDiscountType
+  discount_paise: number
+  discount_percent: number
+  plan_discounts_paise: Record<string, number>
+  applicable_plans: string[] | null
+  first_timer_only: boolean
+  max_redemptions: number
+  remaining_uses: number
+  expires_at: string | null
+  is_active: boolean
+  referrer_label: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  promo_code_usages?: {
+    id: string
+    customer_email: string
+    plan_slug: string
+    discount_paise: number
+    used_at: string
+  }[]
+}
+
+export type PromoCodeUsage = {
+  id: string
+  promo_code_id: string
+  purchase_id: string | null
+  customer_email: string
+  plan_slug: string
+  discount_paise: number
+  used_at: string
+}
+
 export type ConversationStatus = 'connecting' | 'active' | 'closed'
 export type MessageType = 'text' | 'image' | 'voice' | 'system'
 export type MessageSender = 'client' | 'coach' | 'system'
