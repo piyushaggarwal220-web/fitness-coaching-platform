@@ -1,5 +1,10 @@
 /** Normalize Auth errors so leaked-password / HIBP warnings are not shown to clients. */
 
+import {
+  isPasswordReauthError,
+  passwordReauthUserMessage,
+} from '@/lib/auth-password-reset'
+
 const BREACH_RE =
   /data breach|have.?i.?been.?pwned|leaked password|pwned|known to be (weak|compromised)|password.*(breach|leaked|compromised)/i
 
@@ -19,6 +24,9 @@ export function sanitizeAuthPasswordError(
   if (!message) return null
   if (opts?.ignoreBreachWarnings !== false && isLeakedPasswordAuthError(message)) {
     return null
+  }
+  if (isPasswordReauthError(message)) {
+    return passwordReauthUserMessage(false)
   }
   return message
 }

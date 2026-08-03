@@ -6,7 +6,14 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { BRAND_NAME, brandTitle } from '@/lib/brand'
 import { authStyles } from '@/lib/auth-styles'
-import { sanitizeAuthPasswordError, isLeakedPasswordAuthError } from '@/lib/auth-password-errors'
+import {
+  isLeakedPasswordAuthError,
+  sanitizeAuthPasswordError,
+} from '@/lib/auth-password-errors'
+import {
+  isPasswordReauthError,
+  passwordReauthUserMessage,
+} from '@/lib/auth-password-reset'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { colors } from '@/lib/design-tokens'
 
@@ -16,31 +23,40 @@ export default function ResetPasswordPage() {
   const router = useRouter()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [nonce, setNonce] = useState('')
+  const [needsNonce, setNeedsNonce] = useState(false)
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
   const [done, setDone] = useState(false)
 
   useEffect(() => {
     let active = true
 
-    const markReady = () => {
+    const markReady = async (fromRecoveryEvent: boolean) => {
       if (!active) return
       setReady(true)
       setChecking(false)
+      if (fromRecoveryEvent) {
+        // Hash-based recovery links never hit /auth/callback — stamp the cookie here.
+        await fetch('/api/auth/mark-password-recovery', { method: 'POST' }).catch(() => undefined)
+      }
     }
 
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-        markReady()
+      if (event === 'PASSWORD_RECOVERY') {
+        void markReady(true)
+      } else if (event === 'SIGNED_IN') {
+        void markReady(false)
       }
     })
 
     void supabase.auth.getSession().then(({ data }) => {
       if (!active) return
       if (data.session) {
-        markReady()
+        void markReady(false)
       } else {
         setChecking(false)
       }
@@ -52,9 +68,24 @@ export default function ResetPasswordPage() {
     }
   }, [])
 
+  const requestNonce = async (): Promise<boolean> => {
+    const { error: reauthError } = await supabase.auth.reauthenticate()
+    if (reauthError) {
+      setError(
+        sanitizeAuthPasswordError(reauthError.message) ??
+          'Could not send a verification code. Request a new reset link and try again.'
+      )
+      return false
+    }
+    setNeedsNonce(true)
+    setInfo(passwordReauthUserMessage(false))
+    return true
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
+    setInfo('')
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters')
@@ -64,24 +95,62 @@ export default function ResetPasswordPage() {
       setError('Passwords do not match')
       return
     }
-
-    setLoading(true)
-    const { error: updateError } = await supabase.auth.updateUser({ password })
-    if (updateError) {
-      if (isLeakedPasswordAuthError(updateError.message)) {
-        setError('Please choose a different password and try again.')
-      } else {
-        setError(sanitizeAuthPasswordError(updateError.message) ?? updateError.message)
-      }
-      setLoading(false)
+    if (needsNonce && !nonce.trim()) {
+      setError('Enter the verification code from your email.')
       return
     }
 
-    setDone(true)
-    setLoading(false)
-    setTimeout(() => {
-      router.replace('/dashboard')
-    }, 1200)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/update-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password,
+          ...(needsNonce && nonce.trim() ? { nonce: nonce.trim() } : {}),
+        }),
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string
+        code?: string
+        success?: boolean
+      }
+
+      if (res.ok && data.success) {
+        setDone(true)
+        setLoading(false)
+        setTimeout(() => {
+          router.replace('/dashboard')
+        }, 1200)
+        return
+      }
+
+      const message = data.error ?? 'Could not update password.'
+
+      if (data.code === 'reauthentication_required' || isPasswordReauthError(message)) {
+        if (!needsNonce) {
+          const sent = await requestNonce()
+          setLoading(false)
+          if (sent) {
+            setError('')
+          }
+          return
+        }
+        setError(passwordReauthUserMessage(true))
+        setLoading(false)
+        return
+      }
+
+      if (isLeakedPasswordAuthError(message)) {
+        setError('Please choose a different password and try again.')
+      } else {
+        setError(sanitizeAuthPasswordError(message) ?? message)
+      }
+      setLoading(false)
+    } catch {
+      setError('Something went wrong. Try again.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -127,6 +196,20 @@ export default function ResetPasswordPage() {
         {ready && !done && (
           <form onSubmit={handleSubmit} style={authStyles.form}>
             {error && <div style={authStyles.error}>{error}</div>}
+            {info && !error && (
+              <div
+                style={{
+                  backgroundColor: colors.successMuted ?? 'rgba(34,197,94,0.12)',
+                  color: colors.success ?? '#22c55e',
+                  padding: '14px 16px',
+                  borderRadius: 12,
+                  fontSize: 14,
+                  lineHeight: 1.55,
+                }}
+              >
+                {info}
+              </div>
+            )}
             <div style={authStyles.inputGroup}>
               <label style={authStyles.label}>New login password</label>
               <PasswordInput
@@ -153,6 +236,22 @@ export default function ResetPasswordPage() {
                 autoComplete="new-password"
               />
             </div>
+            {needsNonce && (
+              <div style={authStyles.inputGroup}>
+                <label style={authStyles.label}>Email verification code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={nonce}
+                  onChange={(e) => setNonce(e.target.value)}
+                  required
+                  style={authStyles.input}
+                  placeholder="Code from your email"
+                  aria-label="Email verification code"
+                />
+              </div>
+            )}
             <button
               type="submit"
               disabled={loading}
