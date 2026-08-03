@@ -11,12 +11,17 @@ import {
   isVisionSafeMediaType,
   validatePhotoFile,
 } from '@/lib/photo'
+import {
+  MAX_STANDARD_PHOTO_UPLOAD_BYTES,
+  MAX_STANDARD_PHOTO_UPLOAD_LABEL,
+  isNetworkPhotoUploadError,
+  uploadStandardPhoto,
+} from '@/lib/photo-upload'
 
 export const CHECKIN_PHOTO_BUCKET = 'checkin-photos'
 export const CHECKIN_INTERVAL_DAYS = 7
 export const MAX_PHOTO_DIMENSION = 1600
 export const PHOTO_JPEG_QUALITY = 0.82
-const PHOTO_UPLOAD_ATTEMPTS = 3
 
 export const INITIAL_CHECKIN_FORM: CheckinFormData = {
   weight: '',
@@ -119,31 +124,74 @@ export function validateCheckinForm(
   return null
 }
 
-async function canvasCompressToJpeg(file: File): Promise<File | null> {
-  try {
-    const bitmap = await createImageBitmap(file)
-    const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(bitmap.width, bitmap.height))
-    const width = Math.round(bitmap.width * scale)
-    const height = Math.round(bitmap.height * scale)
+type DecodedPhoto = {
+  source: CanvasImageSource
+  width: number
+  height: number
+  close?: () => void
+}
 
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      bitmap.close()
-      return null
+async function decodePhoto(file: File): Promise<DecodedPhoto> {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(file)
+      return {
+        source: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        close: () => bitmap.close(),
+      }
+    } catch {
+      // Some Android browsers decode camera/gallery images via <img> only.
     }
+  }
 
-    ctx.drawImage(bitmap, 0, 0, width, height)
-    bitmap.close()
+  if (typeof Image === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    throw new Error('This browser cannot decode the selected photo.')
+  }
 
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((b) => resolve(b), 'image/jpeg', PHOTO_JPEG_QUALITY)
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    const image = new Image()
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve()
+      image.onerror = () => reject(new Error('The selected photo could not be decoded.'))
+      image.src = objectUrl
     })
-    if (!blob) return null
-    const baseName = file.name.replace(/\.[^.]+$/, '') || 'photo'
-    return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' })
+    return {
+      source: image,
+      width: image.naturalWidth || image.width,
+      height: image.naturalHeight || image.height,
+    }
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
+async function canvasCompressToJpeg(file: File, quality = PHOTO_JPEG_QUALITY): Promise<File | null> {
+  try {
+    const decoded = await decodePhoto(file)
+    try {
+      const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(decoded.width, decoded.height))
+      const width = Math.max(1, Math.round(decoded.width * scale))
+      const height = Math.max(1, Math.round(decoded.height * scale))
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return null
+
+      ctx.drawImage(decoded.source, 0, 0, width, height)
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
+      })
+      if (!blob) return null
+      const baseName = file.name.replace(/\.[^.]+$/, '') || 'photo'
+      return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' })
+    } finally {
+      decoded.close?.()
+    }
   } catch {
     return null
   }
@@ -152,7 +200,7 @@ async function canvasCompressToJpeg(file: File): Promise<File | null> {
 /**
  * Normalize photos to JPEG before upload.
  * HEIC/HEIF (common on iPhone gallery picks) is converted so AI vision can process them.
- * Never silently upload an unreadable HEIC original.
+ * Never silently upload an unreadable HEIC original or a huge uncompressed PNG.
  */
 export async function compressImageFile(file: File): Promise<File> {
   const validationError = validatePhotoFile(file)
@@ -163,14 +211,30 @@ export async function compressImageFile(file: File): Promise<File> {
     try {
       working = await convertHeicFileToJpeg(file, PHOTO_JPEG_QUALITY)
     } catch {
-      // Some browsers can decode HEIC via createImageBitmap; try that next.
+      // Some browsers can decode HEIC via createImageBitmap / <img>; try that next.
     }
   }
 
-  const compressed = await canvasCompressToJpeg(working)
-  if (compressed && isVisionSafeMediaType(compressed.type)) return compressed
+  let compressed = await canvasCompressToJpeg(working, PHOTO_JPEG_QUALITY)
+  if (compressed && compressed.size > MAX_STANDARD_PHOTO_UPLOAD_BYTES) {
+    compressed = await canvasCompressToJpeg(working, 0.7)
+  }
+  if (compressed && isVisionSafeMediaType(compressed.type)) {
+    if (compressed.size > MAX_STANDARD_PHOTO_UPLOAD_BYTES) {
+      throw new Error(
+        `${file.name || 'This photo'} is still too large after compression ` +
+          `(max ${MAX_STANDARD_PHOTO_UPLOAD_LABEL}). Use “Take photo now” or choose a smaller image.`
+      )
+    }
+    return compressed
+  }
 
-  if (isVisionSafeMediaType(working.type) && !isHeicLike(working)) {
+  // Only keep the original when it is already small enough for reliable mobile upload.
+  if (
+    isVisionSafeMediaType(working.type) &&
+    !isHeicLike(working) &&
+    working.size <= MAX_STANDARD_PHOTO_UPLOAD_BYTES
+  ) {
     return working
   }
 
@@ -187,20 +251,25 @@ export async function uploadPhotoWithRetry(
   file: File,
   label: string
 ): Promise<void> {
-  let lastError: Error | null = null
-  for (let attempt = 0; attempt < PHOTO_UPLOAD_ATTEMPTS; attempt++) {
-    const { error } = await supabase.storage
-      .from(bucket)
-      .upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' })
-    if (!error) return
-    lastError = new Error(`Photo upload failed (${label}): ${error.message}`)
-    // Do not retry permanent client errors
-    if (/duplicate|already exists|payload too large|not allowed|row-level security/i.test(error.message)) {
-      break
-    }
-    await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)))
+  await uploadStandardPhoto(supabase, bucket, path, file, label)
+}
+
+async function uploadCheckinPhotoViaApi(file: File, label: string): Promise<string> {
+  const body = new FormData()
+  body.append('file', file, file.name || `${label}.jpg`)
+  body.append('label', label)
+
+  const res = await fetch('/api/checkin/upload-photo', {
+    method: 'POST',
+    body,
+    credentials: 'include',
+  })
+
+  const data = (await res.json().catch(() => ({}))) as { path?: string; error?: string }
+  if (!res.ok || !data.path) {
+    throw new Error(data.error || `Photo upload failed (${label}): server upload failed.`)
   }
-  throw lastError ?? new Error(`Photo upload failed (${label}).`)
+  return data.path
 }
 
 export async function uploadCheckinPhoto(
@@ -220,10 +289,16 @@ export async function uploadCheckinPhoto(
   const ext = compressed.name.split('.').pop() || 'jpg'
   const path = `${clientId}/${Date.now()}_${label}.${ext}`
 
-  await uploadPhotoWithRetry(supabase, CHECKIN_PHOTO_BUCKET, path, compressed, label)
-
-  // Store object path; display via signed URLs (bucket is private).
-  return path
+  try {
+    await uploadPhotoWithRetry(supabase, CHECKIN_PHOTO_BUCKET, path, compressed, label)
+    return path
+  } catch (error) {
+    // Mobile networks often fail browser→Supabase Storage; same-origin API is more reliable.
+    if (typeof window !== 'undefined' && isNetworkPhotoUploadError(error)) {
+      return uploadCheckinPhotoViaApi(compressed, label)
+    }
+    throw error
+  }
 }
 
 export function parseCoachResponse(raw: string | null): CoachCheckinResponse {
