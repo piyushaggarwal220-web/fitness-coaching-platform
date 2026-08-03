@@ -1,10 +1,13 @@
 /**
- * Verifies plan-gated goal unlock rules, including enrollment-code full unlock.
+ * Verifies plan-gated goal unlock rules, including enrollment-code full unlock
+ * and gender-restricted goals (Hourglass Physique for women on 12 months).
  */
 import {
   ALL_PLAN_GOAL_OPTIONS,
+  getGoalByValue,
   getLockedGoals,
   getUnlockedGoals,
+  isGoalVisibleForGender,
   resolveGoalPlanTier,
   validateSelectedPlanGoals,
 } from '../src/lib/plan-goals'
@@ -23,7 +26,31 @@ function assert(label: string, condition: boolean) {
 assert('3_months unlocks starter tier only', getUnlockedGoals('3_months').length === 10)
 assert('6_months unlocks through transformation', getUnlockedGoals('6_months').length === 15)
 assert('12_months unlocks full catalog', getUnlockedGoals('12_months').length === ALL_PLAN_GOAL_OPTIONS.length)
-assert('3_months locks higher goals', getLockedGoals('3_months').length === 9)
+assert('3_months locks higher goals', getLockedGoals('3_months').length === ALL_PLAN_GOAL_OPTIONS.length - 10)
+
+assert(
+  'hourglass is a 12-month women-only goal',
+  getGoalByValue('hourglass_physique')?.tier === '12_months' &&
+    getGoalByValue('hourglass_physique')?.genders?.includes('female') === true
+)
+assert('hourglass visible for female', isGoalVisibleForGender('hourglass_physique', 'female'))
+assert('hourglass hidden for male', !isGoalVisibleForGender('hourglass_physique', 'male'))
+assert(
+  'female on 12_months can unlock hourglass',
+  getUnlockedGoals('12_months', 'female').some((g) => g.value === 'hourglass_physique')
+)
+assert(
+  'male on 12_months cannot unlock hourglass',
+  !getUnlockedGoals('12_months', 'male').some((g) => g.value === 'hourglass_physique')
+)
+assert(
+  'female on 3_months sees hourglass locked',
+  getLockedGoals('3_months', 'female').some((g) => g.value === 'hourglass_physique')
+)
+assert(
+  'male on 3_months does not see hourglass locked',
+  !getLockedGoals('3_months', 'male').some((g) => g.value === 'hourglass_physique')
+)
 
 assert(
   'paid 6_months resolves to 6_months',
@@ -59,6 +86,14 @@ assert(
 assert(
   '3_months cannot select a 12-month goal',
   validateSelectedPlanGoals(['fat_loss', 'complete_body_transformation'], '3_months') !== null
+)
+assert(
+  'female on 12_months can select hourglass',
+  validateSelectedPlanGoals(['fat_loss', 'hourglass_physique'], '12_months', { gender: 'female' }) === null
+)
+assert(
+  'male on 12_months cannot select hourglass',
+  validateSelectedPlanGoals(['fat_loss', 'hourglass_physique'], '12_months', { gender: 'male' }) !== null
 )
 
 if (failed > 0) {

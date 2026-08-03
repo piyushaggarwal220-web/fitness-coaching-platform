@@ -13,6 +13,7 @@ import {
   PLAN_GOAL_TIER_ORDER,
   PLAN_GOALS_BY_TIER,
   getGoalByValue,
+  getGoalsForGender,
   isGoalUnlockedForPlan,
   planDisplayName,
   resolveGoalPlanTier,
@@ -23,26 +24,40 @@ import {
 
 type PlanGoalSelectorProps = {
   planSlug: string | null | undefined
+  /** Used to show women-only goals like Hourglass Physique. */
+  gender?: string | null
   values: string[]
   onChange: (values: string[]) => void
 }
 
-export function PlanGoalSelector({ planSlug, values, onChange }: PlanGoalSelectorProps) {
+export function PlanGoalSelector({ planSlug, gender, values, onChange }: PlanGoalSelectorProps) {
   const currentTier = resolveGoalPlanTier(planSlug)
   const [upgradeTarget, setUpgradeTarget] = useState<PlanGoalOption | null>(null)
 
   const selectedCount = values.length
   const atMax = selectedCount >= PLAN_GOAL_MAX
 
+  const goalsByTier = useMemo(() => {
+    const map = {} as Record<PlanGoalTier, PlanGoalOption[]>
+    for (const tier of PLAN_GOAL_TIER_ORDER) {
+      map[tier] = getGoalsForGender(PLAN_GOALS_BY_TIER[tier], gender)
+    }
+    return map
+  }, [gender])
+
   const { includedTiers, lockedTiers, includedTierLabel } = useMemo(() => {
-    const included = PLAN_GOAL_TIER_ORDER.filter((tier) => planTierUnlocked(tier, currentTier))
-    const locked = PLAN_GOAL_TIER_ORDER.filter((tier) => !planTierUnlocked(tier, currentTier))
+    const included = PLAN_GOAL_TIER_ORDER.filter(
+      (tier) => planTierUnlocked(tier, currentTier) && goalsByTier[tier].length > 0
+    )
+    const locked = PLAN_GOAL_TIER_ORDER.filter(
+      (tier) => !planTierUnlocked(tier, currentTier) && goalsByTier[tier].length > 0
+    )
     const label =
       included.length === 1
         ? PLAN_GOAL_TIER_META[included[0]].title
         : included.map((tier) => PLAN_GOAL_TIER_META[tier].title).join(' + ')
     return { includedTiers: included, lockedTiers: locked, includedTierLabel: label }
-  }, [currentTier])
+  }, [currentTier, goalsByTier])
 
   const toggle = (goal: PlanGoalOption) => {
     const unlocked = isGoalUnlockedForPlan(goal, currentTier)
@@ -187,7 +202,7 @@ export function PlanGoalSelector({ planSlug, values, onChange }: PlanGoalSelecto
               </div>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {PLAN_GOALS_BY_TIER[tier].map((goal) =>
+                {goalsByTier[tier].map((goal) =>
                   renderGoalChip({
                     goal,
                     selected: values.includes(goal.value),
@@ -279,7 +294,7 @@ export function PlanGoalSelector({ planSlug, values, onChange }: PlanGoalSelecto
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {PLAN_GOALS_BY_TIER[tier].map((goal) =>
+                  {goalsByTier[tier].map((goal) =>
                     renderGoalChip({
                       goal,
                       selected: false,

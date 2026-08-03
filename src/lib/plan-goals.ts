@@ -11,10 +11,14 @@ export const PLAN_GOAL_MAX = 4
 /** Goal tiers are long plans only — trial does not unlock goal picking. */
 export type PlanGoalTier = Exclude<CoachingPlanSlug, '1_week_trial'>
 
+export type PlanGoalGender = 'female' | 'male'
+
 export type PlanGoalOption = {
   value: string
   label: string
   tier: PlanGoalTier
+  /** When set, goal is only shown/selectable for these genders. */
+  genders?: readonly PlanGoalGender[]
 }
 
 /**
@@ -46,6 +50,12 @@ export const PLAN_GOALS_BY_TIER: Record<PlanGoalTier, readonly PlanGoalOption[]>
     { value: 'aesthetic_physique', label: 'Aesthetic Physique', tier: '12_months' },
     { value: 'maximum_natural_muscle', label: 'Maximum Natural Muscle', tier: '12_months' },
     { value: 'complete_body_transformation', label: 'Complete Body Transformation', tier: '12_months' },
+    {
+      value: 'hourglass_physique',
+      label: 'Hourglass Physique',
+      tier: '12_months',
+      genders: ['female'] as const,
+    },
   ],
 } as const
 
@@ -94,6 +104,7 @@ export const PLAN_GOAL_COACHING_CATEGORY: Record<string, string> = {
   aesthetic_physique: 'recomposition',
   maximum_natural_muscle: 'muscle_gain',
   complete_body_transformation: 'recomposition',
+  hourglass_physique: 'recomposition',
 }
 
 const BODY_COMP_CATEGORIES = new Set(['fat_loss', 'recomposition'])
@@ -137,12 +148,44 @@ export function isGoalUnlockedForPlan(
   return planTierRank(planSlug) >= planTierRank(tier)
 }
 
-export function getUnlockedGoals(planSlug: string | null | undefined): PlanGoalOption[] {
-  return ALL_PLAN_GOAL_OPTIONS.filter((goal) => isGoalUnlockedForPlan(goal, planSlug))
+export function isGoalVisibleForGender(
+  goal: PlanGoalOption | string,
+  gender: string | null | undefined
+): boolean {
+  const option = typeof goal === 'string' ? getGoalByValue(goal) : goal
+  if (!option) return false
+  if (!option.genders || option.genders.length === 0) return true
+  if (!gender) return false
+  return option.genders.includes(gender as PlanGoalGender)
 }
 
-export function getLockedGoals(planSlug: string | null | undefined): PlanGoalOption[] {
-  return ALL_PLAN_GOAL_OPTIONS.filter((goal) => !isGoalUnlockedForPlan(goal, planSlug))
+export function getGoalsForGender(
+  goals: readonly PlanGoalOption[],
+  gender: string | null | undefined
+): PlanGoalOption[] {
+  return goals.filter((goal) => isGoalVisibleForGender(goal, gender))
+}
+
+export function getUnlockedGoals(
+  planSlug: string | null | undefined,
+  gender?: string | null
+): PlanGoalOption[] {
+  return ALL_PLAN_GOAL_OPTIONS.filter(
+    (goal) =>
+      isGoalUnlockedForPlan(goal, planSlug) &&
+      (gender === undefined || isGoalVisibleForGender(goal, gender))
+  )
+}
+
+export function getLockedGoals(
+  planSlug: string | null | undefined,
+  gender?: string | null
+): PlanGoalOption[] {
+  return ALL_PLAN_GOAL_OPTIONS.filter(
+    (goal) =>
+      !isGoalUnlockedForPlan(goal, planSlug) &&
+      (gender === undefined || isGoalVisibleForGender(goal, gender))
+  )
 }
 
 export function getGoalByValue(value: string | null | undefined): PlanGoalOption | null {
@@ -182,7 +225,8 @@ export function isBodyCompositionGoal(fitnessGoal: string | null | undefined): b
 
 export function validateSelectedPlanGoals(
   selected: string[],
-  planSlug: string | null | undefined
+  planSlug: string | null | undefined,
+  options?: { gender?: string | null }
 ): string | null {
   const unique = Array.from(new Set(selected))
   if (unique.length < PLAN_GOAL_MIN) {
@@ -195,6 +239,13 @@ export function validateSelectedPlanGoals(
   const unknown = unique.filter((value) => !getGoalByValue(value))
   if (unknown.length > 0) {
     return 'Please select valid goals from the list.'
+  }
+
+  if (options && 'gender' in options) {
+    const genderBlocked = unique.filter((value) => !isGoalVisibleForGender(value, options.gender))
+    if (genderBlocked.length > 0) {
+      return `“${formatPlanGoalLabel(genderBlocked[0])}” is available for women on the 12 Months plan.`
+    }
   }
 
   // Only enforce plan locks when we know the client's plan.

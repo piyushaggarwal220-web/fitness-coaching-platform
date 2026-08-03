@@ -28,6 +28,8 @@ export const GOAL_KNOWLEDGE_CATEGORIES: Record<string, readonly AiKnowledgeCateg
   recomposition: ['recomposition', 'nutrition', 'cardio', 'recovery'],
   strength: ['strength', 'nutrition', 'recovery'],
   athletic_performance: ['strength', 'cardio', 'nutrition', 'recovery'],
+  // Plan-goal values (also mapped via PLAN_GOAL_COACHING_CATEGORY where needed)
+  hourglass_physique: ['recomposition', 'nutrition', 'female', 'recovery'],
 }
 
 /** Default categories when fitness goal is missing or unmapped. */

@@ -871,7 +871,9 @@ export function validateOnboardingStep(
     case 2: {
       const requireMultiGoals = options?.requireMultiGoals !== false
       if (requireMultiGoals || data.selected_goals.length > 0) {
-        const goalError = validateSelectedPlanGoals(data.selected_goals, options?.planSlug)
+        const goalError = validateSelectedPlanGoals(data.selected_goals, options?.planSlug, {
+          gender: data.gender,
+        })
         if (goalError) return goalError
       } else if (!data.fitness_goal || data.fitness_goal === 'ai_decide') {
         return 'Please select your goals.'
