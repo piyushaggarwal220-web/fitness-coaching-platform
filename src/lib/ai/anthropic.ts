@@ -74,11 +74,21 @@ function toClaudeResponseError(err: unknown): ClaudeResponseError {
 
   if (err instanceof APIError) {
     const status = err.status
-    const isQuota = status === 429
-    const isTransient = status === 408 || status === 409 || (typeof status === 'number' && status >= 500)
-    return new ClaudeResponseError(err.message || 'Anthropic API request failed', {
+    const type = err.type
+    const message = err.message || 'Anthropic API request failed'
+    const isQuota = status === 429 || type === 'rate_limit_error'
+    const isOverloaded =
+      status === 529 ||
+      type === 'overloaded_error' ||
+      /overloaded/i.test(message)
+    const isTransient =
+      isOverloaded ||
+      status === 408 ||
+      status === 409 ||
+      (typeof status === 'number' && status >= 500)
+    return new ClaudeResponseError(message, {
       status,
-      type: err.type,
+      type,
       cause: err,
       category: isQuota ? 'quota' : isTransient ? 'transient' : 'request',
       retryable: isQuota || isTransient,
@@ -86,7 +96,10 @@ function toClaudeResponseError(err: unknown): ClaudeResponseError {
   }
 
   if (err instanceof Error) {
-    const transient = /timeout|timed out|ECONNRESET|ECONNREFUSED|fetch failed|network/i.test(err.message)
+    const transient =
+      /timeout|timed out|ECONNRESET|ECONNREFUSED|fetch failed|network|overloaded|rate limit/i.test(
+        err.message
+      )
     return new ClaudeResponseError(err.message, {
       cause: err,
       category: transient ? 'transient' : 'unknown',

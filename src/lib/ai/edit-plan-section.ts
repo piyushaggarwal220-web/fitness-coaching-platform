@@ -117,14 +117,26 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
           ? '\n\n## Retry instruction\nPrevious output was cut off at the token limit. Rewrite the COMPLETE section for every day, concisely, with no cross-day references and no preamble.'
           : ''
 
-      const response = await callPlanProvider(providerMode, {
-        systemPrompt,
-        userPrompt: `${userPrompt}${retryHint}`,
-        model,
-        maxTokens: LIMITS.MAX_SECTION_EDIT_TOKENS,
-        temperature: PLAN_GENERATION_TEMPERATURE,
-        mockText: buildMockRevision(input),
-      })
+      let response
+      try {
+        response = await callPlanProvider(providerMode, {
+          systemPrompt,
+          userPrompt: `${userPrompt}${retryHint}`,
+          model,
+          maxTokens: LIMITS.MAX_SECTION_EDIT_TOKENS,
+          temperature: PLAN_GENERATION_TEMPERATURE,
+          mockText: buildMockRevision(input),
+        })
+      } catch (err) {
+        if (
+          err instanceof ClaudeResponseError &&
+          err.retryable &&
+          attempt < maxAttempts - 1
+        ) {
+          continue
+        }
+        throw err
+      }
 
       totalInputTokens += response.inputTokens
       totalOutputTokens += response.outputTokens
@@ -139,6 +151,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
 
       const revisedText = normalizeAiPlanProse(extractRevisedText(response.text))
       if (!revisedText) {
+        if (attempt < maxAttempts - 1) continue
         throw new ClaudeResponseError('AI returned an empty revision.')
       }
 
