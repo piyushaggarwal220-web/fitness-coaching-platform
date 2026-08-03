@@ -4,6 +4,12 @@ import {
   type CoachingPlan,
   type CoachingPlanSlug,
 } from '@/lib/payments/plans'
+import {
+  computePromoDiscountPaise,
+  getActivePromoCode,
+  isPromoCodeCurrentlyValid,
+} from '@/lib/payments/promo-codes'
+import type { PromoCodeKind } from '@/types/database'
 
 /** Default public first-timer promo code (override with FIRST_TIMER_DISCOUNT_CODE). */
 export const DEFAULT_FIRST_TIMER_DISCOUNT_CODE = 'WELCOME'
@@ -17,7 +23,7 @@ export const FIRST_TIMER_DISCOUNT_PAISE: Record<FirstTimerPlanSlug, number> = {
   '12_months': 40000, // ₹400
 }
 
-export type CheckoutDiscountKind = 'first_timer'
+export type CheckoutDiscountKind = 'first_timer' | 'discount' | 'referral'
 
 export type AppliedCheckoutDiscount = {
   kind: CheckoutDiscountKind
@@ -29,6 +35,7 @@ export type AppliedCheckoutDiscount = {
   displayListPrice: string
   displaySalePrice: string
   displayDiscount: string
+  referrerLabel?: string | null
 }
 
 export type CheckoutPricing = {
@@ -89,8 +96,30 @@ export type ResolveDiscountResult =
   | { ok: true; pricing: CheckoutPricing }
   | { ok: false; error: string; status: number; enrollmentCode?: boolean }
 
+function buildAppliedDiscount(input: {
+  kind: CheckoutDiscountKind
+  code: string
+  discountPaise: number
+  listAmountPaise: number
+  referrerLabel?: string | null
+}): AppliedCheckoutDiscount {
+  const amountPaise = input.listAmountPaise - input.discountPaise
+  return {
+    kind: input.kind,
+    code: input.code,
+    discountPaise: input.discountPaise,
+    discountInr: input.discountPaise / 100,
+    listAmountPaise: input.listAmountPaise,
+    amountPaise,
+    displayListPrice: formatInrFromPaise(input.listAmountPaise),
+    displaySalePrice: formatInrFromPaise(amountPaise),
+    displayDiscount: formatInrFromPaise(input.discountPaise),
+    referrerLabel: input.referrerLabel ?? null,
+  }
+}
+
 /**
- * Resolve list vs payable amount for a plan, optionally applying the first-timer code.
+ * Resolve list vs payable amount for a plan, optionally applying a promo / referral code.
  * Empty code → full catalog price.
  */
 export async function resolveCheckoutPricing(input: {
@@ -122,16 +151,7 @@ export async function resolveCheckoutPricing(input: {
   if (plan.isTrial) {
     return {
       ok: false,
-      error: 'Referral codes cannot be applied to the trial.',
-      status: 400,
-    }
-  }
-
-  if (!isFirstTimerDiscountCode(code)) {
-    // Caller may check enrollment codes separately; treat unknown codes as invalid here.
-    return {
-      ok: false,
-      error: 'Invalid referral code. Enrollment / membership codes are redeemed on the enrollment page.',
+      error: 'Discount / referral codes cannot be applied to the trial.',
       status: 400,
     }
   }
@@ -140,7 +160,72 @@ export async function resolveCheckoutPricing(input: {
   if (!email || !email.includes('@')) {
     return {
       ok: false,
-      error: 'Enter a valid email before applying a referral code.',
+      error: 'Enter a valid email before applying a code.',
+      status: 400,
+    }
+  }
+
+  // Prefer admin-managed promo_codes rows.
+  const { promo, error: promoLookupError } = await getActivePromoCode(input.admin, code)
+  if (promoLookupError) {
+    return { ok: false, error: promoLookupError, status: 500 }
+  }
+
+  if (promo) {
+    const validityError = isPromoCodeCurrentlyValid(promo)
+    if (validityError) return { ok: false, error: validityError, status: 400 }
+
+    if (promo.first_timer_only) {
+      let firstTimer = false
+      try {
+        firstTimer = await isFirstTimerEmail(input.admin, email)
+      } catch (err) {
+        return {
+          ok: false,
+          error: err instanceof Error ? err.message : 'Could not verify first-timer eligibility',
+          status: 500,
+        }
+      }
+      if (!firstTimer) {
+        return {
+          ok: false,
+          error: 'This code is for first-time customers only. This email already has a purchase or enrollment.',
+          status: 400,
+        }
+      }
+    }
+
+    const discountPaise = computePromoDiscountPaise(promo, plan.slug, listAmountPaise)
+    if (discountPaise == null) {
+      return { ok: false, error: 'This code is not available for this plan.', status: 400 }
+    }
+
+    const kind: CheckoutDiscountKind =
+      promo.kind === 'referral' ? 'referral' : promo.first_timer_only ? 'first_timer' : 'discount'
+    const discount = buildAppliedDiscount({
+      kind,
+      code: promo.code,
+      discountPaise,
+      listAmountPaise,
+      referrerLabel: promo.referrer_label,
+    })
+
+    return {
+      ok: true,
+      pricing: {
+        plan,
+        listAmountPaise,
+        amountPaise: discount.amountPaise,
+        discount,
+      },
+    }
+  }
+
+  // Legacy env/default WELCOME path when no DB row exists yet.
+  if (!isFirstTimerDiscountCode(code)) {
+    return {
+      ok: false,
+      error: 'Invalid code. Enrollment / membership codes are redeemed on the enrollment page.',
       status: 400,
     }
   }
@@ -169,25 +254,19 @@ export async function resolveCheckoutPricing(input: {
     return { ok: false, error: 'This referral code is not available for this plan.', status: 400 }
   }
 
-  const amountPaise = listAmountPaise - discountPaise
-  const discount: AppliedCheckoutDiscount = {
+  const discount = buildAppliedDiscount({
     kind: 'first_timer',
     code: getFirstTimerDiscountCode(),
     discountPaise,
-    discountInr: discountPaise / 100,
     listAmountPaise,
-    amountPaise,
-    displayListPrice: formatInrFromPaise(listAmountPaise),
-    displaySalePrice: formatInrFromPaise(amountPaise),
-    displayDiscount: formatInrFromPaise(discountPaise),
-  }
+  })
 
   return {
     ok: true,
     pricing: {
       plan,
       listAmountPaise,
-      amountPaise,
+      amountPaise: discount.amountPaise,
       discount,
     },
   }
@@ -199,22 +278,36 @@ export function expectedAmountPaiseFromOrderNotes(
   notes: Record<string, string | undefined> | null | undefined
 ): number {
   const charged = notes?.amount_paise ? Number(notes.amount_paise) : NaN
+  const listFromNotes = notes?.list_amount_paise ? Number(notes.list_amount_paise) : NaN
+  const discountPaise = notes?.discount_paise ? Number(notes.discount_paise) : 0
+  const code = normalizeDiscountCode(notes?.discount_code)
+
   if (Number.isFinite(charged) && charged > 0) {
-    const discountPaise = notes?.discount_paise ? Number(notes.discount_paise) : 0
-    const code = normalizeDiscountCode(notes?.discount_code)
+    const listAmount = Number.isFinite(listFromNotes) && listFromNotes > 0 ? listFromNotes : plan.amountPaise
+
+    // Generic admin promo / referral codes created at order time.
+    if (
+      code &&
+      listAmount === plan.amountPaise &&
+      Number.isFinite(discountPaise) &&
+      discountPaise > 0 &&
+      charged === listAmount - discountPaise
+    ) {
+      return charged
+    }
+
     if (code && isFirstTimerDiscountCode(code)) {
       const expectedDiscount = discountPaiseForPlan(plan.slug) ?? 0
       if (discountPaise === expectedDiscount && charged === plan.amountPaise - expectedDiscount) {
         return charged
       }
     }
+
     if (!code && charged === plan.amountPaise) {
       return charged
     }
   }
 
-  const discountPaise = notes?.discount_paise ? Number(notes.discount_paise) : 0
-  const code = normalizeDiscountCode(notes?.discount_code)
   if (code && isFirstTimerDiscountCode(code) && discountPaise > 0) {
     const expectedDiscount = discountPaiseForPlan(plan.slug) ?? 0
     if (discountPaise === expectedDiscount) {
@@ -233,11 +326,21 @@ export function checkoutDiscountNotes(pricing: CheckoutPricing): Record<string, 
     }
   }
 
-  return {
+  const notes: Record<string, string> = {
     amount_paise: String(pricing.amountPaise),
     list_amount_paise: String(pricing.listAmountPaise),
     discount_paise: String(pricing.discount.discountPaise),
     discount_code: pricing.discount.code,
     discount_kind: pricing.discount.kind,
   }
+  if (pricing.discount.referrerLabel) {
+    notes.referrer_label = pricing.discount.referrerLabel
+  }
+  return notes
+}
+
+export function promoKindLabel(kind: PromoCodeKind | CheckoutDiscountKind): string {
+  if (kind === 'referral') return 'Referral'
+  if (kind === 'first_timer') return 'First-timer'
+  return 'Discount'
 }

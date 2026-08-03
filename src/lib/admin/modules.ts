@@ -65,6 +65,16 @@ export const ADMIN_MODULES: AdminModule[] = [
     tables: ['redemption_codes', 'redemption_usages'],
   },
   {
+    id: 'promo-codes',
+    title: 'Discount & Referral Codes',
+    description: 'Create checkout discount and referral codes that reduce payment amount.',
+    href: '/admin/promo-codes',
+    status: 'implemented',
+    showInNav: true,
+    navOrder: 55,
+    tables: ['promo_codes', 'promo_code_usages'],
+  },
+  {
     id: 'onboarding',
     title: 'Pending Onboarding',
     description: 'Clients who have not completed onboarding.',

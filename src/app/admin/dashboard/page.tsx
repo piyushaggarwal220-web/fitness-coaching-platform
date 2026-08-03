@@ -244,6 +244,7 @@ export default function AdminDashboardPage() {
           <div style={{ ...s.toolbar, marginTop: 8 }}>
             <Link href="/admin/clients" style={s.linkBtn}>Manage clients →</Link>
             <Link href="/admin/redemption-codes" style={s.linkBtn}>Enrollment codes →</Link>
+            <Link href="/admin/promo-codes" style={s.linkBtn}>Discount & referral codes →</Link>
             <Link href="/admin/purchases" style={s.linkBtn}>Purchases →</Link>
           </div>
         </div>

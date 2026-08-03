@@ -15,7 +15,11 @@ import {
   isCurrentPolicyAcknowledgement,
   type CheckoutPolicyAcknowledgement,
 } from '@/lib/policies'
-import { expectedAmountPaiseFromOrderNotes } from '@/lib/payments/checkout-discounts'
+import {
+  expectedAmountPaiseFromOrderNotes,
+  normalizeDiscountCode,
+} from '@/lib/payments/checkout-discounts'
+import { recordPromoCodeUsage } from '@/lib/payments/promo-codes'
 import { assertTrialPurchaseEligible } from '@/lib/payments/trial-eligibility'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveAppBaseUrl } from '@/lib/admin/portal-urls'
@@ -76,6 +80,8 @@ export async function POST(request: Request) {
   let trustedPhone = body.phone?.trim() || null
   let policyAcknowledgement: CheckoutPolicyAcknowledgement | null = null
   let chargedAmountPaise = plan.amountPaise
+  let appliedDiscountCode = ''
+  let appliedDiscountPaise = 0
 
   if (!orderId) {
     return NextResponse.json(
@@ -132,6 +138,8 @@ export async function POST(request: Request) {
       const order = await fetchRazorpayOrder(orderId)
       const trustedNotes = { ...(order.notes ?? {}), ...(payment.notes ?? {}) }
       const expectedAmount = expectedAmountPaiseFromOrderNotes(plan, trustedNotes)
+      appliedDiscountCode = normalizeDiscountCode(trustedNotes.discount_code)
+      appliedDiscountPaise = Number(trustedNotes.discount_paise ?? 0) || 0
 
       if (payment.amount !== expectedAmount) {
         return NextResponse.json(
@@ -195,6 +203,16 @@ export async function POST(request: Request) {
       razorpayOrderId: orderId || `test_order_${Date.now()}`,
       amountPaise: chargedAmountPaise,
     })
+
+    if (appliedDiscountCode && appliedDiscountPaise > 0) {
+      await recordPromoCodeUsage(createAdminClient(), {
+        code: appliedDiscountCode,
+        purchaseId: result.purchaseId,
+        customerEmail: result.customerEmail,
+        planSlug: plan.slug,
+        discountPaise: appliedDiscountPaise,
+      }).catch(() => undefined)
+    }
 
     await Promise.allSettled([
       sendMetaPurchase({
