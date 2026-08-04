@@ -5,7 +5,7 @@ export type AccessSource = 'purchase' | 'admin_trial' | 'enrollment_code'
 export type EntitlementProfile = Pick<Profile, 'payment_confirmed' | 'access_source' | 'subscription_expires_at'>
 
 /** Clients need at least this many days left to receive a new or edited coaching plan. */
-export const MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE = 7
+export const MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE = 4
 
 /** Show renew CTAs / send soft reminders when this many days (or fewer) remain. */
 export const MEMBERSHIP_RENEWAL_WARNING_DAYS = 7
@@ -40,7 +40,26 @@ export function isAdminTrialClient(profile: EntitlementProfile | null | undefine
   return profile?.access_source === 'admin_trial'
 }
 
+<<<<<<< HEAD
 /** Fractional days remaining until subscription_expires_at (null = no expiry / unknown). */
+=======
+/**
+ * Returning members (paid / enrollment / expired seat) should hit the hard paywall page.
+ * Brand-new unpaid accounts go to normal checkout.
+ */
+export function getClientPaymentGatePath(
+  profile: Pick<EntitlementProfile, 'access_source' | 'subscription_expires_at'> | null | undefined
+): string {
+  if (!profile) return '/checkout?plan=6_months'
+  const hadMembership =
+    Boolean(profile.subscription_expires_at) ||
+    profile.access_source === 'purchase' ||
+    profile.access_source === 'enrollment_code'
+  return hadMembership ? '/membership-required' : '/checkout?plan=6_months'
+}
+
+/** Whole days remaining until subscription_expires_at (null = no expiry / unknown). */
+>>>>>>> 9800112 (Require 4 days left for plan changes and hard-block expired members.)
 export function subscriptionDaysRemaining(
   profile: Pick<EntitlementProfile, 'subscription_expires_at' | 'access_source'> | null | undefined,
   now = Date.now()
@@ -93,7 +112,7 @@ export function membershipReminderStage(
 }
 
 /**
- * Block new/edited plan delivery when the client has under 7 days of access left.
+ * Block new/edited plan delivery when the client has under 4 days of access left.
  * Admin trials (no expiry) always pass. Profiles without an expiry also pass.
  */
 export function assertClientCanReceivePlanChanges(
@@ -119,12 +138,13 @@ export function assertClientCanReceivePlanChanges(
 
   if (days < MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE) {
     const whole = Math.max(0, Math.floor(days))
+    const need = MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE
     return {
       ok: false,
       error:
         whole <= 0
-          ? 'This client’s subscription has ended or has less than 7 days left. Renew before creating or editing a plan.'
-          : `This client has only ${whole} day${whole === 1 ? '' : 's'} left on their subscription. Renew to at least 7 days before creating or editing a plan.`,
+          ? `This client’s subscription has ended or has less than ${need} days left. Renew before creating or editing a plan.`
+          : `This client has only ${whole} day${whole === 1 ? '' : 's'} left on their subscription. Renew to at least ${need} days before creating or editing a plan.`,
       daysRemaining: whole,
     }
   }

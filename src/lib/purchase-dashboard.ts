@@ -1,4 +1,4 @@
-import { hasClientEntitlement } from '@/lib/entitlements'
+import { getClientPaymentGatePath, hasClientEntitlement } from '@/lib/entitlements'
 import { clientFacingPlanTitle } from '@/lib/plan-metadata'
 import type { Coach, OnboardingProfile, Plan, Purchase } from '@/types/database'
 
@@ -108,12 +108,12 @@ export function getClientDashboardStatus(params: {
   }
 
   let nextAction: string | null = 'Choose a coaching plan'
-  let nextActionHref: string | null = '/checkout?plan=6_months'
+  let nextActionHref: string | null = getClientPaymentGatePath(profile)
   let showPlanCountdown = false
 
   if (!paymentConfirmed) {
     nextAction = 'Complete payment to activate your account'
-    nextActionHref = '/checkout?plan=6_months'
+    nextActionHref = getClientPaymentGatePath(profile)
   } else if (!onboardingComplete) {
     const needsPhotos =
       profile.gender !== 'female' &&
