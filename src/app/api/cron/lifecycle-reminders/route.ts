@@ -10,11 +10,20 @@ import {
 } from '@/lib/initial-plan-generation'
 import { revokeExpiredClientSubscriptions } from '@/lib/client-entitlement-guard'
 import {
+  MEMBERSHIP_GRACE_DAYS,
+  MEMBERSHIP_RENEWAL_WARNING_DAYS,
+  membershipReminderStage,
+  subscriptionDaysRemaining,
+} from '@/lib/entitlements'
+import {
   sendAccountSetupRecovery,
+  sendMembershipRenewalReminder,
   sendOnboardingReminder,
 } from '@/lib/notifications/lifecycle'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -85,6 +94,75 @@ async function scheduleInitialPlanRecovery(admin: SupabaseClient): Promise<numbe
   return toStart.length
 }
 
+async function sendMembershipExpiryReminders(admin: SupabaseClient, now: number): Promise<{
+  checked: number
+  sent: number
+  failed: number
+  skipped: number
+}> {
+  const windowStart = new Date(now - MEMBERSHIP_GRACE_DAYS * DAY_MS).toISOString()
+  const windowEnd = new Date(now + (MEMBERSHIP_RENEWAL_WARNING_DAYS + 1) * DAY_MS).toISOString()
+
+  const { data: profiles, error } = await admin
+    .from('profiles')
+    .select('id, email, phone, name, payment_confirmed, access_source, subscription_expires_at')
+    .eq('role', 'client')
+    .eq('payment_confirmed', true)
+    .neq('access_source', 'admin_trial')
+    .not('subscription_expires_at', 'is', null)
+    .gte('subscription_expires_at', windowStart)
+    .lte('subscription_expires_at', windowEnd)
+    .order('subscription_expires_at', { ascending: true })
+    .limit(200)
+
+  if (error) {
+    console.error('[cron/lifecycle-reminders] membership query failed:', error.message)
+    return { checked: 0, sent: 0, failed: 0, skipped: 0 }
+  }
+
+  let sent = 0
+  let failed = 0
+  let skipped = 0
+
+  for (const profile of profiles ?? []) {
+    if (!profile.subscription_expires_at) continue
+    const stage = membershipReminderStage(profile.subscription_expires_at, now)
+    if (!stage) {
+      skipped += 1
+      continue
+    }
+    const daysRemaining = subscriptionDaysRemaining(
+      {
+        access_source: profile.access_source,
+        subscription_expires_at: profile.subscription_expires_at,
+      },
+      now
+    )
+    try {
+      const result = await sendMembershipRenewalReminder({
+        userId: profile.id,
+        email: profile.email,
+        phone: profile.phone,
+        name: profile.name,
+        stage,
+        endsAt: profile.subscription_expires_at,
+        daysRemaining: daysRemaining ?? 0,
+      })
+      sent += result.sent
+      failed += result.failed
+      skipped += result.skipped
+    } catch (deliveryError) {
+      failed += 1
+      console.error(
+        '[cron/lifecycle-reminders] membership reminder failed:',
+        deliveryError instanceof Error ? deliveryError.message : 'unknown'
+      )
+    }
+  }
+
+  return { checked: profiles?.length ?? 0, sent, failed, skipped }
+}
+
 export async function GET(request: Request) {
   if (!authorizeCron(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -94,6 +172,7 @@ export async function GET(request: Request) {
   const revokedSubscriptions = await revokeExpiredClientSubscriptions(50)
   const recoveredJobs = await scheduleInitialPlanRecovery(admin)
   const now = Date.now()
+  const membershipReminders = await sendMembershipExpiryReminders(admin, now)
   const cutoff = new Date(now - 24 * 3_600_000).toISOString()
   const { data: purchases, error } = await admin
     .from('purchases')
@@ -109,9 +188,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Lifecycle query failed' }, { status: 500 })
   }
 
-  let sent = 0
-  let failed = 0
-  let skipped = 0
+  let sent = membershipReminders.sent
+  let failed = membershipReminders.failed
+  let skipped = membershipReminders.skipped
   const processedUsers = new Set<string>()
 
   for (const row of purchases ?? []) {
@@ -201,6 +280,7 @@ export async function GET(request: Request) {
     skipped,
     recoveredJobs,
     revokedSubscriptions,
+    membershipReminders,
   }
   console.info('[cron/lifecycle-reminders]', summary)
   return NextResponse.json(summary)

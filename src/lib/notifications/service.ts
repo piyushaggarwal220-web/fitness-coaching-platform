@@ -233,4 +233,30 @@ export const NotificationTemplates = {
     body: `Your report status is now: ${status}`,
     actionUrl: '/client/report-issue',
   }),
+  membershipExpiring: (opts: { daysRemaining: number; endsLabel: string }) => ({
+    type: 'membership_expiring' as NotificationType,
+    title:
+      opts.daysRemaining <= 1
+        ? opts.daysRemaining === 0
+          ? 'Membership ends today'
+          : 'Membership ends tomorrow'
+        : `Membership ends in ${opts.daysRemaining} days`,
+    body: `Your coaching plan ends on ${opts.endsLabel}. Renew to keep your coach, plan, and tracker.`,
+    actionUrl: '/checkout?plan=3_months',
+    metadata: {
+      daysRemaining: opts.daysRemaining,
+      endsLabel: opts.endsLabel,
+      messageSnippet: `Your coaching plan ends on ${opts.endsLabel}. Renew to keep coaching access.`,
+    },
+  }),
+  membershipExpired: (opts: { endsLabel: string }) => ({
+    type: 'membership_expired' as NotificationType,
+    title: 'Membership ended',
+    body: `Your coaching access ended on ${opts.endsLabel}. Renew now to restore your plan and coach chat.`,
+    actionUrl: '/checkout?plan=3_months',
+    metadata: {
+      endsLabel: opts.endsLabel,
+      messageSnippet: `Your coaching access ended on ${opts.endsLabel}. Renew to continue.`,
+    },
+  }),
 }

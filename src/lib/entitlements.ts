@@ -7,8 +7,19 @@ export type EntitlementProfile = Pick<Profile, 'payment_confirmed' | 'access_sou
 /** Clients need at least this many days left to receive a new or edited coaching plan. */
 export const MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE = 7
 
-/** Whether a client has active platform access (paid or admin-granted trial). */
-export function hasClientEntitlement(profile: EntitlementProfile | null | undefined): boolean {
+/** Show renew CTAs / send soft reminders when this many days (or fewer) remain. */
+export const MEMBERSHIP_RENEWAL_WARNING_DAYS = 7
+
+/**
+ * After subscription_expires_at, clients keep access this many days so they can renew
+ * in-app before hard revoke.
+ */
+export const MEMBERSHIP_GRACE_DAYS = 3
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Whether a client has active platform access (paid, code, or admin-granted trial). */
+export function hasClientEntitlement(profile: EntitlementProfile | null | undefined, now = Date.now()): boolean {
   if (!profile) return false
 
   if (profile.access_source === 'admin_trial') return true
@@ -17,7 +28,9 @@ export function hasClientEntitlement(profile: EntitlementProfile | null | undefi
 
   if (profile.subscription_expires_at) {
     const expires = new Date(profile.subscription_expires_at).getTime()
-    if (Number.isFinite(expires) && expires < Date.now()) return false
+    if (Number.isFinite(expires) && expires + MEMBERSHIP_GRACE_DAYS * DAY_MS < now) {
+      return false
+    }
   }
 
   return true
@@ -27,7 +40,7 @@ export function isAdminTrialClient(profile: EntitlementProfile | null | undefine
   return profile?.access_source === 'admin_trial'
 }
 
-/** Whole days remaining until subscription_expires_at (null = no expiry / unknown). */
+/** Fractional days remaining until subscription_expires_at (null = no expiry / unknown). */
 export function subscriptionDaysRemaining(
   profile: Pick<EntitlementProfile, 'subscription_expires_at' | 'access_source'> | null | undefined,
   now = Date.now()
@@ -37,7 +50,46 @@ export function subscriptionDaysRemaining(
   if (!profile.subscription_expires_at) return null
   const expires = new Date(profile.subscription_expires_at).getTime()
   if (!Number.isFinite(expires)) return null
-  return (expires - now) / (24 * 60 * 60 * 1000)
+  return (expires - now) / DAY_MS
+}
+
+/** True while past the end date but still inside the grace window. */
+export function isInMembershipGrace(
+  profile: EntitlementProfile | null | undefined,
+  now = Date.now()
+): boolean {
+  if (!profile || profile.access_source === 'admin_trial') return false
+  if (profile.payment_confirmed !== true) return false
+  const days = subscriptionDaysRemaining(profile, now)
+  return days != null && days <= 0 && days > -MEMBERSHIP_GRACE_DAYS
+}
+
+/** True when renew messaging should surface (≤7 days left, or in grace). */
+export function needsMembershipRenewalAttention(
+  profile: EntitlementProfile | null | undefined,
+  now = Date.now()
+): boolean {
+  if (!profile || profile.access_source === 'admin_trial') return false
+  if (profile.payment_confirmed !== true) return false
+  const days = subscriptionDaysRemaining(profile, now)
+  if (days == null) return false
+  return days <= MEMBERSHIP_RENEWAL_WARNING_DAYS && days > -MEMBERSHIP_GRACE_DAYS
+}
+
+export type MembershipReminderStage = 'day_7' | 'day_1' | 'expired'
+
+/** Pick the membership reminder stage from days until subscription_expires_at. */
+export function membershipReminderStage(
+  expiresAt: string | Date,
+  now: number = Date.now()
+): MembershipReminderStage | null {
+  const expires = new Date(expiresAt).getTime()
+  if (!Number.isFinite(expires)) return null
+  const days = (expires - now) / DAY_MS
+  if (days <= 0 && days > -MEMBERSHIP_GRACE_DAYS) return 'expired'
+  if (days > 0 && days <= 1.5) return 'day_1'
+  if (days > 1.5 && days <= MEMBERSHIP_RENEWAL_WARNING_DAYS + 0.5) return 'day_7'
+  return null
 }
 
 /**

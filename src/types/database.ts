@@ -909,6 +909,8 @@ export type NotificationType =
   | 'missed_checkin'
   | 'onboarding_reminder'
   | 'photo_reminder'
+  | 'membership_expiring'
+  | 'membership_expired'
   | 'call_requested'
   | 'call_request_updated'
   | 'initial_plan_draft_ready'

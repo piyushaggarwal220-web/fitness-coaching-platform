@@ -21,6 +21,18 @@ const COST_POLICIES: Partial<Record<NotificationType, CostPolicy>> = {
   plan_delivered: { immediate: ['in_app', 'web_push'], escalation: ['whatsapp', 'email'], escalationDelayMinutes: 180, digestWindowMinutes: 0 },
   plan_available: { immediate: ['in_app', 'web_push'], escalation: ['whatsapp', 'email'], escalationDelayMinutes: 180, digestWindowMinutes: 0 },
   missed_checkin: { immediate: ['in_app', 'web_push'], escalation: ['whatsapp'], escalationDelayMinutes: 240, digestWindowMinutes: 0 },
+  membership_expiring: {
+    immediate: ['in_app', 'web_push'],
+    escalation: ['whatsapp', 'email'],
+    escalationDelayMinutes: 180,
+    digestWindowMinutes: 0,
+  },
+  membership_expired: {
+    immediate: ['in_app', 'web_push'],
+    escalation: ['whatsapp', 'email'],
+    escalationDelayMinutes: 60,
+    digestWindowMinutes: 0,
+  },
 }
 
 export function getCostPolicy(type: NotificationType): CostPolicy {

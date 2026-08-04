@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import {
   checkoutHrefForSubscription,
+  isSubscriptionRenewalUrgent,
   subscriptionPlanActionLabel,
   type ActiveSubscription,
 } from '@/lib/subscription'
@@ -17,6 +18,7 @@ type Props = {
 export function ActiveSubscriptionCard({ subscription }: Props) {
   const router = useRouter()
   const isActive = subscription.status === 'active'
+  const renewSoon = isSubscriptionRenewalUrgent(subscription)
   const actionLabel = subscriptionPlanActionLabel(subscription)
   const href = checkoutHrefForSubscription(subscription)
 
@@ -25,7 +27,12 @@ export function ActiveSubscriptionCard({ subscription }: Props) {
       variant="glass"
       interactive
       onClick={() => router.push(href)}
-      style={{ marginBottom: spacing[4] }}
+      style={{
+        marginBottom: spacing[4],
+        border: renewSoon
+          ? `1px solid ${isActive ? 'rgba(249, 115, 22, 0.45)' : 'rgba(239, 68, 68, 0.45)'}`
+          : undefined,
+      }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing[3] }}>
         <div
@@ -88,10 +95,24 @@ export function ActiveSubscriptionCard({ subscription }: Props) {
             </div>
           </div>
           {isActive && subscription.daysRemaining != null && (
-            <p style={{ margin: '12px 0 0', fontSize: 13, color: colors.textSecondary }}>
+            <p
+              style={{
+                margin: '12px 0 0',
+                fontSize: 13,
+                fontWeight: renewSoon ? 700 : 500,
+                color: renewSoon ? colors.accent : colors.textSecondary,
+              }}
+            >
               {subscription.daysRemaining === 0
-                ? 'Ends today'
-                : `${subscription.daysRemaining} day${subscription.daysRemaining === 1 ? '' : 's'} remaining`}
+                ? 'Ends today — renew to keep coaching'
+                : `${subscription.daysRemaining} day${subscription.daysRemaining === 1 ? '' : 's'} remaining${
+                    renewSoon ? ' — renew soon' : ''
+                  }`}
+            </p>
+          )}
+          {!isActive && (
+            <p style={{ margin: '12px 0 0', fontSize: 13, fontWeight: 700, color: colors.danger }}>
+              Membership ended — renew to restore access
             </p>
           )}
           <p
@@ -105,7 +126,7 @@ export function ActiveSubscriptionCard({ subscription }: Props) {
               gap: 4,
             }}
           >
-            {actionLabel}
+            {renewSoon && isActive ? 'Tap to renew / upgrade' : actionLabel}
             <ChevronRight size={16} aria-hidden />
           </p>
         </div>

@@ -6,8 +6,9 @@ import { ClientShell } from '@/components/ui/ClientShell'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard'
+import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner'
 import { authenticateClient } from '@/lib/onboarding'
-import { getActiveSubscription } from '@/lib/subscription'
+import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription'
 import { createClient } from '@/lib/supabase/client'
 import { colors, spacing } from '@/lib/design-tokens'
 import type { OnboardingProfile, Purchase } from '@/types/database'
@@ -47,11 +48,13 @@ export default function ClientSettingsPage() {
     purchase,
     profile?.subscription_expires_at ?? null
   )
+  const renewalPrompt = getMembershipRenewalPrompt(profile, purchase)
 
   if (loading) return <ClientShell title="Settings" loading />
 
   return (
     <ClientShell title="Settings">
+      {renewalPrompt && <MembershipRenewalBanner prompt={renewalPrompt} />}
       {subscription && <ActiveSubscriptionCard subscription={subscription} />}
 
       <Card variant="glass">
