@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import {
+  ensureCheckinInCoachChat,
   getOrCreateConversationForCoach,
   listCoachConversations,
 } from '@/lib/coach-chat'
@@ -62,10 +63,43 @@ export async function POST(request: Request) {
   const gate = await requireCoachId()
   if (!gate.ok) return gate.response
 
-  const body = (await request.json().catch(() => null)) as { clientId?: string } | null
+  const body = (await request.json().catch(() => null)) as {
+    clientId?: string
+    checkinId?: string
+  } | null
   const clientId = body?.clientId?.trim()
+  const checkinId = body?.checkinId?.trim()
   if (!clientId) {
     return NextResponse.json({ error: 'clientId is required.' }, { status: 400 })
+  }
+
+  if (checkinId) {
+    const ensured = await ensureCheckinInCoachChat({
+      checkinId,
+      coachId: gate.coachId,
+      notifyCoach: false,
+    })
+    if (ensured.error) {
+      console.error('[coach-conversations] ensure check-in chat failed', ensured.error)
+      return NextResponse.json(
+        { error: ensured.error ?? 'Could not open check-in in chat.' },
+        { status: ensured.error.includes('not assigned') ? 403 : 400 }
+      )
+    }
+    if (ensured.conversationId) {
+      const { data: conversation } = await gate.admin
+        .from('coach_conversations')
+        .select('*')
+        .eq('id', ensured.conversationId)
+        .maybeSingle()
+      if (conversation) {
+        return NextResponse.json({
+          conversation,
+          isNew: false,
+          checkinPosted: ensured.posted,
+        })
+      }
+    }
   }
 
   const result = await getOrCreateConversationForCoach(gate.admin, gate.coachId, clientId)
@@ -77,5 +111,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     conversation: result.data,
     isNew: result.isNew,
+    checkinPosted: false,
   })
 }

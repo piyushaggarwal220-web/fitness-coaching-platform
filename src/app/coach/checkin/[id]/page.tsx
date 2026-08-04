@@ -191,7 +191,10 @@ export default function CoachCheckinDetailPage() {
             {checkin.coaching_week ? ` · Week ${checkin.coaching_week}` : ''}
             {' · '}Submitted {formatCheckinDate(checkin.submitted_at)}
           </p>
-          <Link href={`/coach/chat?clientId=${checkin.client_id}`} style={styles.chatLink}>
+          <Link
+            href={`/coach/chat?clientId=${checkin.client_id}&checkinId=${checkin.id}`}
+            style={styles.chatLink}
+          >
             Reply in chat →
           </Link>
         </div>
@@ -389,7 +392,7 @@ export default function CoachCheckinDetailPage() {
               text or voice. A mid-week check-in does not create a new plan.
             </p>
             <Link
-              href={`/coach/chat?clientId=${checkin.client_id}`}
+              href={`/coach/chat?clientId=${checkin.client_id}&checkinId=${checkin.id}`}
               style={{ ...styles.submitBtn, display: 'inline-flex', textDecoration: 'none' }}
             >
               Open chat and reply

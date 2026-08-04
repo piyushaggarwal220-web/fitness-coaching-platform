@@ -331,7 +331,7 @@ export async function POST(request: Request) {
         metadata: { checkinId: inserted.id, clientId: user.id, checkinType: body.checkinType },
         actionUrl:
           body.checkinType === 'mid_week'
-            ? `/coach/chat?clientId=${user.id}`
+            ? `/coach/chat?clientId=${user.id}&checkinId=${inserted.id}`
             : `/coach/checkin/${inserted.id}`,
         idempotencyKey: `checkin-submitted:${inserted.id}:coach`,
       })

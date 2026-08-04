@@ -186,7 +186,7 @@ export async function getCoachWorkQueue(
       title: checkin.checkin_type === 'mid_week' ? 'Reply to Mid-Week Check-in' : 'Review Weekly Check-in',
       subtitle: name,
       href: checkin.checkin_type === 'mid_week'
-        ? `/coach/chat?clientId=${checkin.client_id}`
+        ? `/coach/chat?clientId=${checkin.client_id}&checkinId=${checkin.id}`
         : `/coach/checkin/${checkin.id}`,
       clientId: checkin.client_id,
       clientName: name,

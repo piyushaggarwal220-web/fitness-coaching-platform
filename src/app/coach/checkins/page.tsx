@@ -140,8 +140,14 @@ export default function CoachCheckinsPage() {
                 key={`${item.clientId}-${item.type}-${item.coachingWeek}`}
                 item={item}
                 onOpen={(queueItem) => {
-                  if (queueItem.type === 'mid_week' && queueItem.status !== 'completed') {
-                    router.push(`/coach/chat?clientId=${queueItem.clientId}`)
+                  if (
+                    queueItem.type === 'mid_week' &&
+                    queueItem.status !== 'completed' &&
+                    queueItem.checkinId
+                  ) {
+                    router.push(
+                      `/coach/chat?clientId=${queueItem.clientId}&checkinId=${queueItem.checkinId}`
+                    )
                     return
                   }
                   if (queueItem.checkinId) {

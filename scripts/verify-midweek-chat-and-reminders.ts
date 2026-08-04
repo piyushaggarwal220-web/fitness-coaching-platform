@@ -44,7 +44,10 @@ assert.match(submitRoute, /const chatPost = await postCheckinToCoachChat\(/)
 assert.match(submitRoute, /hungerLevel: body\.hunger_level/)
 assert.match(submitRoute, /additionalComments: body\.additional_comments/)
 assert.match(submitRoute, /idempotencyKey: `checkin-submitted:\$\{inserted\.id\}:coach`/)
-assert.match(submitRoute, /`\/coach\/chat\?clientId=\$\{user\.id\}`/)
+assert.match(
+  submitRoute,
+  /`\/coach\/chat\?clientId=\$\{user\.id\}&checkinId=\$\{inserted\.id\}`/
+)
 
 const draftSource = source('src/lib/ai/weekly-plan-draft.ts')
 assert.match(draftSource, /if \(checkin\.checkin_type !== 'weekly'\)/)
@@ -64,6 +67,16 @@ assert.match(chatSource, /completeMidWeekCheckinFromCoachReply/)
 assert.match(chatSource, /Coach replied with a voice message in chat/)
 assert.match(chatSource, /idempotencyKey: `checkin-chat:\$\{input\.checkinId\}:coach`/)
 assert.match(chatSource, /checkin_type !== 'mid_week'/)
+assert.match(chatSource, /ensureCheckinInCoachChat/)
+assert.match(chatSource, /formatCheckinChatMessageFromRow/)
+
+const openChat = source('src/lib/coach-open-chat.ts')
+assert.match(openChat, /checkinId/)
+assert.match(openChat, /JSON\.stringify\(\{ clientId, checkinId \}\)/)
+
+const coachConversations = source('src/app/api/chat/coach-conversations/route.ts')
+assert.match(coachConversations, /ensureCheckinInCoachChat/)
+assert.match(coachConversations, /checkinId/)
 
 const migration = source('supabase/migrations/20260726152459_link_checkins_to_coach_chat.sql')
 assert.match(migration, /ADD COLUMN IF NOT EXISTS source_checkin_id uuid/)
@@ -76,7 +89,10 @@ assert.match(coachCheckinPage, /text or voice/)
 
 const workQueue = source('src/lib/coach-work-queue.ts')
 assert.match(workQueue, /Reply to Mid-Week Check-in/)
-assert.match(workQueue, /`\/coach\/chat\?clientId=\$\{checkin\.client_id\}`/)
+assert.match(
+  workQueue,
+  /`\/coach\/chat\?clientId=\$\{checkin\.client_id\}&checkinId=\$\{checkin\.id\}`/
+)
 
 const workQueueResolve = source('src/lib/coach-work-queue-resolve.ts')
 assert.match(workQueueResolve, /Reply to this mid-week check-in in coach chat to complete it/)

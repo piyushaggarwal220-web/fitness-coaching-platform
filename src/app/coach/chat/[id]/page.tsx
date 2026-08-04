@@ -29,6 +29,7 @@ function CoachChatDetailInner() {
   const searchParams = useSearchParams()
   const conversationId = params.id as string
   const back = resolveChatBackHref(searchParams.get('returnTo'))
+  const highlightCheckinId = searchParams.get('checkinId')
   const [conversation, setConversation] = useState<CoachConversation | null>(null)
   const [messages, setMessages] = useState<ConversationMessage[]>([])
   const [clientName, setClientName] = useState('')
@@ -239,6 +240,7 @@ function CoachChatDetailInner() {
             coachId={conversation.coach_id}
             viewer="coach"
             initialMessages={messages}
+            highlightCheckinId={highlightCheckinId}
           />
         </div>
       </div>

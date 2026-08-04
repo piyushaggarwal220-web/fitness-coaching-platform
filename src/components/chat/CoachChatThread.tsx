@@ -81,6 +81,8 @@ type CoachChatThreadProps = {
   coachId: string
   viewer: 'client' | 'coach'
   initialMessages?: ConversationMessage[]
+  /** When set, scroll to / highlight the check-in summary for this check-in id. */
+  highlightCheckinId?: string | null
 }
 
 function formatDuration(milliseconds: number): string {
@@ -110,11 +112,18 @@ function messagesVisuallyEqual(a: ConversationMessage[], b: ConversationMessage[
   return true
 }
 
-export function CoachChatThread({ conversationId, coachId, viewer, initialMessages = [] }: CoachChatThreadProps) {
+export function CoachChatThread({
+  conversationId,
+  coachId,
+  viewer,
+  initialMessages = [],
+  highlightCheckinId = null,
+}: CoachChatThreadProps) {
   const palette = viewer === 'coach' ? waCoach : waDark
   const incomingText = viewer === 'coach' ? waCoach.incomingText : waDark.text
   const incomingMeta = viewer === 'coach' ? waCoach.metaIncoming : waDark.meta
   const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages)
+  const checkinHighlightRef = useRef<HTMLDivElement | null>(null)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(initialMessages.length === 0)
@@ -210,6 +219,14 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     }
     queueMicrotask(() => void fetchMessages())
   }, [fetchMessages, initialMessages.length])
+
+  useEffect(() => {
+    if (!highlightCheckinId || loading || messages.length === 0) return
+    const frame = window.requestAnimationFrame(() => {
+      checkinHighlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [highlightCheckinId, loading, messages])
 
   useSupabaseRealtimeRefresh({
     channelName: `chat:${conversationId}`,
@@ -584,14 +601,47 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
           if (isSystem) {
             const isCheckin = isCheckinSystemMessage(msg.content)
+            const isHighlighted =
+              Boolean(highlightCheckinId) && msg.source_checkin_id === highlightCheckinId
             return (
               <div
                 key={msg.id}
+                ref={isHighlighted ? checkinHighlightRef : undefined}
                 className={`${isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'}${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
-                style={isCheckin ? styles.checkinSystemMsg : styles.systemMsg}
+                style={
+                  isCheckin
+                    ? {
+                        ...styles.checkinSystemMsg,
+                        ...(viewer === 'coach'
+                          ? {
+                              alignSelf: 'flex-start',
+                              backgroundColor: palette.incoming,
+                              color: incomingText,
+                              border: isHighlighted
+                                ? '2px solid #00a884'
+                                : '1px solid rgba(24,24,27,0.12)',
+                            }
+                          : null),
+                      }
+                    : styles.systemMsg
+                }
               >
                 {isCheckin ? (
-                  <pre style={styles.checkinContent}>{msg.content}</pre>
+                  <>
+                    {viewer === 'coach' ? (
+                      <div style={{ ...styles.checkinEyebrow, color: incomingMeta }}>
+                        Client check-in · reply below with text or voice
+                      </div>
+                    ) : null}
+                    <pre
+                      style={{
+                        ...styles.checkinContent,
+                        color: viewer === 'coach' ? incomingText : wa.text,
+                      }}
+                    >
+                      {msg.content}
+                    </pre>
+                  </>
                 ) : (
                   msg.content
                 )}
@@ -961,6 +1011,13 @@ const styles: Record<string, CSSProperties> = {
     margin: '6px 0',
     boxShadow: '0 1px 0.5px rgba(0,0,0,0.15)',
     zIndex: 1,
+  },
+  checkinEyebrow: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
   checkinContent: {
     margin: 0,
