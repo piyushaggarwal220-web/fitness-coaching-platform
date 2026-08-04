@@ -504,10 +504,27 @@ export async function sendChatMessage(
     content?: string
     mediaUrl?: string
     mediaDurationSeconds?: number
+    replyToMessageId?: string | null
   }
 ): Promise<{ data: ConversationMessage | null; error: string | null }> {
   const now = new Date().toISOString()
   const messageType = input.messageType ?? 'text'
+  let replyToMessageId: string | null = input.replyToMessageId?.trim() || null
+
+  if (replyToMessageId) {
+    const { data: parent, error: parentError } = await supabase
+      .from('conversation_messages')
+      .select('id, conversation_id')
+      .eq('id', replyToMessageId)
+      .maybeSingle()
+
+    if (parentError) {
+      return { data: null, error: parentError.message }
+    }
+    if (!parent || parent.conversation_id !== input.conversationId) {
+      return { data: null, error: 'Reply target message was not found in this chat.' }
+    }
+  }
 
   const { data, error } = await supabase
     .from('conversation_messages')
@@ -519,6 +536,7 @@ export async function sendChatMessage(
       content: input.content ?? null,
       media_url: input.mediaUrl ?? null,
       media_duration_seconds: input.mediaDurationSeconds ?? null,
+      reply_to_message_id: replyToMessageId,
       created_at: now,
     })
     .select()

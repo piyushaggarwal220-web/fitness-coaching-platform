@@ -151,6 +151,7 @@ export async function POST(request: Request) {
       messageType?: string
       mediaUrl?: string
       mediaDurationSeconds?: number
+      replyToMessageId?: string
       typing?: boolean
     }
 
@@ -213,6 +214,7 @@ export async function POST(request: Request) {
       content: body.content,
       mediaUrl: body.mediaUrl,
       mediaDurationSeconds: body.mediaDurationSeconds,
+      replyToMessageId: body.replyToMessageId,
     })
 
     if (error) {

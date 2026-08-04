@@ -22,7 +22,7 @@ import {
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
 } from '@/lib/coach-working-hours'
-import { CalendarClock, Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
+import { CalendarClock, Check, CheckCheck, ImageIcon, Reply, Send, Smile, X } from 'lucide-react'
 
 /** WhatsApp-like dark palette (client portal) */
 const waDark = {
@@ -104,12 +104,47 @@ function messagesVisuallyEqual(a: ConversationMessage[], b: ConversationMessage[
       left.read_at !== right.read_at ||
       left.content !== right.content ||
       left.media_url !== right.media_url ||
-      left.message_type !== right.message_type
+      left.message_type !== right.message_type ||
+      left.reply_to_message_id !== right.reply_to_message_id
     ) {
       return false
     }
   }
   return true
+}
+
+function isCheckinMessage(msg: ConversationMessage): boolean {
+  return Boolean(msg.source_checkin_id) || isCheckinSystemMessage(msg.content)
+}
+
+function messageQuotePreview(msg: ConversationMessage): string {
+  if (isCheckinMessage(msg)) {
+    const firstLine = (msg.content ?? '')
+      .split('\n')
+      .map((line) => line.trim())
+      .find(Boolean)
+    return (firstLine ?? 'Check-in').slice(0, 100)
+  }
+  if (msg.message_type === 'voice') return 'Voice message'
+  if (msg.message_type === 'image') return 'Photo'
+  const text = (msg.content ?? '').trim()
+  return text ? text.slice(0, 120) : 'Message'
+}
+
+function messageAuthorLabel(
+  msg: ConversationMessage,
+  viewer: 'client' | 'coach',
+  peerLabel: string
+): string {
+  if (isCheckinMessage(msg)) return 'Check-in'
+  if (msg.sender_type === 'system') return 'System'
+  if (
+    (viewer === 'client' && msg.sender_type === 'client') ||
+    (viewer === 'coach' && msg.sender_type === 'coach')
+  ) {
+    return 'You'
+  }
+  return peerLabel
 }
 
 export function CoachChatThread({
@@ -138,8 +173,11 @@ export function CoachChatThread({
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
   const [gallery, setGallery] = useState<{ photos: GalleryPhoto[]; index: number } | null>(null)
+  const [replyTo, setReplyTo] = useState<ConversationMessage | null>(null)
   const threadRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const messageNodeRefs = useRef<Map<string, HTMLElement>>(new Map())
   const lastPeerMessageIdRef = useRef<string | null>(null)
   const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sendingRef = useRef(false)
@@ -212,6 +250,7 @@ export function CoachChatThread({
 
   useEffect(() => {
     prepareNotificationSound()
+    setReplyTo(null)
     if (initialMessages.length > 0) {
       // Seeded from the parent page — only refresh metadata (calls, presence, unread).
       queueMicrotask(() => void fetchMessages(false))
@@ -373,10 +412,32 @@ export function CoachChatThread({
     stickToBottomRef.current = distanceFromBottom < 100
   }
 
+  const beginReply = (msg: ConversationMessage) => {
+    if (msg.id.startsWith('temp-')) return
+    setReplyTo(msg)
+    window.requestAnimationFrame(() => inputRef.current?.focus())
+  }
+
+  const scrollToMessage = (messageId: string) => {
+    const node = messageNodeRefs.current.get(messageId)
+    if (!node) return
+    node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    node.animate(
+      [
+        { outline: '2px solid transparent' },
+        { outline: '2px solid #00a884' },
+        { outline: '2px solid transparent' },
+      ],
+      { duration: 1200, easing: 'ease-out' }
+    )
+  }
+
   const sendMessage = async (opts?: { messageType?: string; mediaUrl?: string; mediaDurationSeconds?: number; content?: string }) => {
     if (sendingRef.current) return
     const content = opts?.content ?? (opts?.mediaUrl ? input : input.trim())
     if (!content && !opts?.mediaUrl) return
+    const replyTarget = replyTo
+    const replyToMessageId = replyTarget?.id ?? null
 
     const optimistic: ConversationMessage = {
       id: `temp-${Date.now()}`,
@@ -388,6 +449,7 @@ export function CoachChatThread({
       media_url: opts?.mediaUrl ?? null,
       media_duration_seconds: opts?.mediaDurationSeconds ?? null,
       source_checkin_id: null,
+      reply_to_message_id: replyToMessageId,
       read_at: null,
       created_at: new Date().toISOString(),
     }
@@ -400,6 +462,7 @@ export function CoachChatThread({
     setError('')
     setInput('')
     setImagePreview(null)
+    setReplyTo(null)
 
     try {
       const res = await fetch('/api/chat/messages', {
@@ -412,6 +475,7 @@ export function CoachChatThread({
           messageType: opts?.messageType ?? 'text',
           mediaUrl: opts?.mediaUrl,
           mediaDurationSeconds: opts?.mediaDurationSeconds,
+          replyToMessageId: replyToMessageId || undefined,
         }),
       })
       const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)
@@ -421,6 +485,7 @@ export function CoachChatThread({
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
       setError(err instanceof Error ? err.message : 'Send failed')
       if (!opts?.mediaUrl) setInput(content)
+      if (replyTarget) setReplyTo(replyTarget)
     } finally {
       sendingRef.current = false
       setSending(false)
@@ -604,10 +669,13 @@ export function CoachChatThread({
           const isSystem = msg.sender_type === 'system' || msg.message_type === 'system'
           const shouldAnimate = historyReadyRef.current && !animatedIdsRef.current.has(msg.id)
 
-          const isCheckin =
-            Boolean(msg.source_checkin_id) || isCheckinSystemMessage(msg.content)
+          const isCheckin = isCheckinMessage(msg)
           const isHighlighted =
             Boolean(highlightCheckinId) && msg.source_checkin_id === highlightCheckinId
+          const repliedMessage = msg.reply_to_message_id
+            ? messages.find((candidate) => candidate.id === msg.reply_to_message_id) ?? null
+            : null
+          const canReply = !msg.id.startsWith('temp-') && (isCheckin || !isSystem)
 
           if (isSystem && !isCheckin) {
             return (
@@ -625,7 +693,11 @@ export function CoachChatThread({
             return (
               <div
                 key={msg.id}
-                ref={isHighlighted ? checkinHighlightRef : undefined}
+                ref={(el) => {
+                  if (el) messageNodeRefs.current.set(msg.id, el)
+                  else messageNodeRefs.current.delete(msg.id)
+                  if (isHighlighted) checkinHighlightRef.current = el
+                }}
                 className={`coach-chat-checkin${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
                 style={{
                   ...styles.checkinSystemMsg,
@@ -643,7 +715,7 @@ export function CoachChatThread({
               >
                 {viewer === 'coach' ? (
                   <div style={{ ...styles.checkinEyebrow, color: incomingMeta }}>
-                    Client check-in · reply below with text or voice
+                    Client check-in · tap Reply to answer this one
                   </div>
                 ) : null}
                 <pre
@@ -654,6 +726,20 @@ export function CoachChatThread({
                 >
                   {msg.content}
                 </pre>
+                {canReply ? (
+                  <button
+                    type="button"
+                    onClick={() => beginReply(msg)}
+                    style={{
+                      ...styles.replyActionBtn,
+                      color: viewer === 'coach' ? incomingMeta : wa.textMuted,
+                      borderColor: viewer === 'coach' ? 'rgba(17,27,33,0.18)' : 'rgba(255,255,255,0.18)',
+                    }}
+                  >
+                    <Reply size={14} />
+                    Reply
+                  </button>
+                ) : null}
               </div>
             )
           }
@@ -661,6 +747,10 @@ export function CoachChatThread({
           return (
             <div
               key={msg.id}
+              ref={(el) => {
+                if (el) messageNodeRefs.current.set(msg.id, el)
+                else messageNodeRefs.current.delete(msg.id)
+              }}
               className={
                 shouldAnimate
                   ? (isMine ? motionClass.messageEnterMine : motionClass.messageEnterTheirs)
@@ -672,6 +762,7 @@ export function CoachChatThread({
                 alignItems: isMine ? 'flex-end' : 'flex-start',
                 maxWidth: '100%',
                 paddingInline: 4,
+                gap: 4,
               }}
             >
               <div
@@ -699,6 +790,49 @@ export function CoachChatThread({
                   ...(msg.message_type === 'image' ? { padding: 4 } : null),
                 }}
               >
+                {repliedMessage ? (
+                  <button
+                    type="button"
+                    onClick={() => scrollToMessage(repliedMessage.id)}
+                    style={{
+                      ...styles.quoteBox,
+                      backgroundColor: isMine ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.06)',
+                      borderLeftColor: isMine ? '#8ce3cf' : '#00a884',
+                    }}
+                  >
+                    <span style={{ ...styles.quoteAuthor, color: isMine ? '#8ce3cf' : '#00a884' }}>
+                      {messageAuthorLabel(repliedMessage, viewer, peerLabel)}
+                    </span>
+                    <span
+                      style={{
+                        ...styles.quoteText,
+                        color: isMine ? palette.text : incomingText,
+                      }}
+                    >
+                      {messageQuotePreview(repliedMessage)}
+                    </span>
+                  </button>
+                ) : msg.reply_to_message_id ? (
+                  <div
+                    style={{
+                      ...styles.quoteBox,
+                      backgroundColor: isMine ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.06)',
+                      borderLeftColor: isMine ? '#8ce3cf' : '#00a884',
+                    }}
+                  >
+                    <span style={{ ...styles.quoteAuthor, color: isMine ? '#8ce3cf' : '#00a884' }}>
+                      Reply
+                    </span>
+                    <span
+                      style={{
+                        ...styles.quoteText,
+                        color: isMine ? palette.metaOutgoing : incomingMeta,
+                      }}
+                    >
+                      Original message unavailable
+                    </span>
+                  </div>
+                ) : null}
                 {msg.message_type === 'voice' && msg.media_url ? (
                   <div className="coach-chat-voice">
                     <VoicePlayer
@@ -782,6 +916,21 @@ export function CoachChatThread({
                   )}
                 </div>
               </div>
+              {canReply ? (
+                <button
+                  type="button"
+                  onClick={() => beginReply(msg)}
+                  style={{
+                    ...styles.replyChipBtn,
+                    alignSelf: isMine ? 'flex-end' : 'flex-start',
+                    color: wa.textMuted,
+                  }}
+                  aria-label="Reply to message"
+                >
+                  <Reply size={13} />
+                  Reply
+                </button>
+              ) : null}
               {viewer === 'client' && msg.sender_type === 'coach' && msg.message_type !== 'system' && (
                 <CoachReplyRatingPrompt messageId={msg.id} coachId={coachId} />
               )}
@@ -820,12 +969,32 @@ export function CoachChatThread({
         </div>
       )}
 
+      {replyTo ? (
+        <div style={styles.replyComposerBar}>
+          <div style={styles.replyComposerCopy}>
+            <span style={styles.replyComposerLabel}>
+              Replying to {messageAuthorLabel(replyTo, viewer, peerLabel)}
+            </span>
+            <span style={styles.replyComposerPreview}>{messageQuotePreview(replyTo)}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReplyTo(null)}
+            style={styles.replyComposerCancel}
+            aria-label="Cancel reply"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ) : null}
+
       <div className="coach-chat-input-bar" style={styles.inputBar}>
         <div style={styles.composer}>
           <span style={styles.composerIcon} aria-hidden>
             <Smile size={22} color={wa.textMuted} />
           </span>
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => { setInput(e.target.value); handleTyping() }}
             onKeyDown={(e) => {
@@ -835,7 +1004,7 @@ export function CoachChatThread({
                 else void sendMessage()
               }
             }}
-            placeholder="Message"
+            placeholder={replyTo ? 'Reply…' : 'Message'}
             className="coach-chat-input"
             style={styles.input}
             disabled={sending}
@@ -861,7 +1030,11 @@ export function CoachChatThread({
           <div style={styles.micWrap}>
             <VoiceRecorder
               conversationId={conversationId}
-              onSent={() => void fetchMessages()}
+              replyToMessageId={replyTo?.id ?? null}
+              onSent={() => {
+                setReplyTo(null)
+                void fetchMessages()
+              }}
               onError={setError}
             />
           </div>
@@ -1036,6 +1209,103 @@ const styles: Record<string, CSSProperties> = {
     color: wa.text,
     whiteSpace: 'pre-wrap',
     textAlign: 'left',
+  },
+  replyActionBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    padding: '7px 10px',
+    borderRadius: 8,
+    border: '1px solid rgba(255,255,255,0.18)',
+    background: 'transparent',
+    fontSize: 12.5,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  replyChipBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '2px 6px',
+    border: 'none',
+    background: 'transparent',
+    fontSize: 11.5,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  quoteBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    width: '100%',
+    textAlign: 'left',
+    border: 'none',
+    borderLeft: '3px solid #00a884',
+    borderRadius: 6,
+    padding: '6px 8px',
+    marginBottom: 6,
+    cursor: 'pointer',
+  },
+  quoteAuthor: {
+    fontSize: 11.5,
+    fontWeight: 700,
+    lineHeight: 1.2,
+  },
+  quoteText: {
+    fontSize: 12.5,
+    lineHeight: 1.35,
+    opacity: 0.9,
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+  },
+  replyComposerBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '8px 12px',
+    backgroundColor: wa.header,
+    borderTop: '1px solid rgba(255,255,255,0.08)',
+    flexShrink: 0,
+    zIndex: 2,
+  },
+  replyComposerCopy: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    borderLeft: '3px solid #00a884',
+    paddingLeft: 10,
+  },
+  replyComposerLabel: {
+    color: '#00a884',
+    fontSize: 12,
+    fontWeight: 700,
+  },
+  replyComposerPreview: {
+    color: wa.textMuted,
+    fontSize: 12.5,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  replyComposerCancel: {
+    width: 32,
+    height: 32,
+    border: 'none',
+    borderRadius: '50%',
+    background: wa.input,
+    color: wa.textMuted,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    flexShrink: 0,
   },
   bubbleMine: {
     backgroundColor: wa.outgoing,

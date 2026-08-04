@@ -85,7 +85,7 @@ assert.match(forChatRoute, /ensureCheckinInCoachChat/)
 assert.match(forChatRoute, /formatCheckinChatMessageFromRow/)
 
 const replyPanel = source('src/components/chat/CheckinReplyPanel.tsx')
-assert.match(replyPanel, /Reply below with text or a voice note/)
+assert.match(replyPanel, /Tap Reply on this check-in in chat/)
 assert.match(replyPanel, /\/api\/coach\/checkin\/\$\{encodeURIComponent\(checkinId\)\}\/for-chat/)
 assert.match(replyPanel, /ensuredOnceRef/)
 assert.doesNotMatch(replyPanel, /\[checkinId, onEnsured\]/)
@@ -100,6 +100,19 @@ assert.match(conversationDetail, /ensureClientMidWeekCheckinsInCoachChat/)
 const migration = source('supabase/migrations/20260726152459_link_checkins_to_coach_chat.sql')
 assert.match(migration, /ADD COLUMN IF NOT EXISTS source_checkin_id uuid/)
 assert.match(migration, /UNIQUE INDEX IF NOT EXISTS conversation_messages_source_checkin_uidx/)
+
+const replyMigration = source('supabase/migrations/20260804120000_conversation_message_reply_to.sql')
+assert.match(replyMigration, /ADD COLUMN IF NOT EXISTS reply_to_message_id uuid/)
+assert.match(replyMigration, /REFERENCES public\.conversation_messages\(id\) ON DELETE SET NULL/)
+
+const chatThread = source('src/components/chat/CoachChatThread.tsx')
+assert.match(chatThread, /beginReply/)
+assert.match(chatThread, /replyToMessageId/)
+assert.match(chatThread, /Replying to/)
+
+const chatSend = source('src/lib/coach-chat.ts')
+assert.match(chatSend, /replyToMessageId/)
+assert.match(chatSend, /reply_to_message_id: replyToMessageId/)
 
 const coachCheckinPage = source('src/app/coach/checkin/[id]/page.tsx')
 assert.match(coachCheckinPage, /A mid-week check-in does not create a new plan/)

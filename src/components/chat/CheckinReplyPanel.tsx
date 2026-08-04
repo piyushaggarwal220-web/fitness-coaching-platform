@@ -83,7 +83,7 @@ export function CheckinReplyPanel({ checkinId, onEnsured }: CheckinReplyPanelPro
   return (
     <div style={styles.panel}>
       <div style={styles.eyebrow}>{label}</div>
-      <div style={styles.hint}>Reply below with text or a voice note</div>
+      <div style={styles.hint}>Tap Reply on this check-in in chat, then send text or a voice note</div>
       <pre style={styles.summary}>{summary}</pre>
     </div>
   )
