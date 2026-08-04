@@ -10,7 +10,7 @@ import {
   restoreSession,
 } from '@/lib/session-restore'
 import { shouldBypassPaymentGuardClient } from '@/lib/dev-mode'
-import { hasClientEntitlement } from '@/lib/entitlements'
+import { getClientPaymentGatePath, hasClientEntitlement } from '@/lib/entitlements'
 import { inferFitnessGoal } from '@/lib/ai/goal-inference'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { evaluateComplexityInputs } from '@/lib/complexity/input-guards'
@@ -1430,7 +1430,7 @@ export function getClientPostAuthPath(
   }
 
   if (!shouldBypassPaymentGuardClient() && !isPaymentConfirmed(profile)) {
-    return '/checkout?plan=6_months'
+    return getClientPaymentGatePath(profile)
   }
 
   // Trust the server completion flag for routing. Full answer re-validation is
@@ -1490,7 +1490,7 @@ export async function authenticateClient(
     !isPaymentConfirmed(profile) &&
     !shouldBypassPaymentGuardClient()
   ) {
-    router.push('/checkout?plan=6_months')
+    router.push(getClientPaymentGatePath(profile))
     return null
   }
 

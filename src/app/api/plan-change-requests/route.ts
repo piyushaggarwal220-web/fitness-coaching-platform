@@ -69,15 +69,18 @@ export async function POST(request: Request) {
     )
   }
 
-  const { assertClientCanReceivePlanChanges } = await import('@/lib/entitlements')
+  const { assertClientCanReceivePlanChanges, MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE } = await import(
+    '@/lib/entitlements'
+  )
   const planWindow = assertClientCanReceivePlanChanges(profile)
   if (!planWindow.ok) {
+    const need = MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE
     return NextResponse.json(
       {
         error:
           planWindow.daysRemaining <= 0
-            ? 'Your subscription has ended or has less than 7 days left. Renew your plan before requesting edits.'
-            : `You have only ${planWindow.daysRemaining} day${planWindow.daysRemaining === 1 ? '' : 's'} left. Renew to at least 7 days before requesting plan edits.`,
+            ? `Your subscription has ended or has less than ${need} days left. Renew your plan before requesting edits.`
+            : `You have only ${planWindow.daysRemaining} day${planWindow.daysRemaining === 1 ? '' : 's'} left. Renew to at least ${need} days before requesting plan edits.`,
       },
       { status: 400 }
     )
