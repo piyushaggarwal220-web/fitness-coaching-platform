@@ -12,7 +12,7 @@ export const MEMBERSHIP_RENEWAL_WARNING_DAYS = 7
 
 /**
  * After subscription_expires_at, clients keep access this many days so they can renew
- * in-app before hard revoke.
+ * in-app before hard revoke / paywall.
  */
 export const MEMBERSHIP_GRACE_DAYS = 3
 
@@ -40,12 +40,9 @@ export function isAdminTrialClient(profile: EntitlementProfile | null | undefine
   return profile?.access_source === 'admin_trial'
 }
 
-<<<<<<< HEAD
-/** Fractional days remaining until subscription_expires_at (null = no expiry / unknown). */
-=======
 /**
- * Returning members (paid / enrollment / expired seat) should hit the hard paywall page.
- * Brand-new unpaid accounts go to normal checkout.
+ * Returning members (paid / enrollment / expired seat) should hit the hard paywall page
+ * once entitlement is gone (after grace). Brand-new unpaid accounts go to normal checkout.
  */
 export function getClientPaymentGatePath(
   profile: Pick<EntitlementProfile, 'access_source' | 'subscription_expires_at'> | null | undefined
@@ -58,8 +55,7 @@ export function getClientPaymentGatePath(
   return hadMembership ? '/membership-required' : '/checkout?plan=6_months'
 }
 
-/** Whole days remaining until subscription_expires_at (null = no expiry / unknown). */
->>>>>>> 9800112 (Require 4 days left for plan changes and hard-block expired members.)
+/** Fractional days remaining until subscription_expires_at (null = no expiry / unknown). */
 export function subscriptionDaysRemaining(
   profile: Pick<EntitlementProfile, 'subscription_expires_at' | 'access_source'> | null | undefined,
   now = Date.now()
