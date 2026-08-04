@@ -294,6 +294,11 @@ export default function Dashboard() {
         bypassSchedule: checkinScheduleBypass,
       })
     : null;
+  /** Prefer schedule "next" when open; fall back to any available slot this week (e.g. weekly after mid-week missed). */
+  const dueCheckin =
+    checkinSchedule?.nextCheckinStatus === 'available' && checkinSchedule.nextCheckin
+      ? checkinSchedule.nextCheckin
+      : checkinSchedule?.weekCheckins.find((task) => task.status === 'available') ?? null;
 
   const firstName = profile?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
   const quickLinks = [
@@ -320,16 +325,14 @@ export default function Dashboard() {
     {
       key: 'checkin',
       title: 'Check-in',
-      subtitle: checkinSchedule?.nextCheckinStatus === 'available'
-        ? `${getCheckinTypeDisplayName(checkinSchedule.nextCheckin!.type)} available now`
+      subtitle: dueCheckin
+        ? `${getCheckinTypeDisplayName(dueCheckin.type)} available now`
         : checkinSchedule?.nextCheckin
           ? `${getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)} · Day ${checkinSchedule.nextCheckin.coachingDay}`
           : 'Weekly accountability and coach review',
-      href: checkinSchedule?.nextCheckinStatus === 'available'
-        ? checkinSchedule.nextCheckin!.href
-        : '/checkin',
+      href: dueCheckin ? dueCheckin.href : '/checkin',
       icon: Calendar,
-      badge: checkinSchedule?.nextCheckinStatus === 'available' ? 'Due' : null,
+      badge: dueCheckin ? 'Due' : null,
       accent: '#f59e0b',
       visible: true,
     },
@@ -370,19 +373,23 @@ export default function Dashboard() {
   ]
     .filter((item) => item.visible)
     .sort((a, b) => {
-      if (checkinSchedule?.nextCheckinStatus === 'available') {
+      if (dueCheckin) {
         if (a.key === 'checkin') return -1;
         if (b.key === 'checkin') return 1;
       }
       return 0;
     });
 
-  const heroActionLabel = status?.nextActionHref
-    ? status.nextAction ?? 'Continue'
-    : activePlan
-      ? "Open today's tracker"
-      : 'View your coaching dashboard';
-  const heroActionHref = status?.nextActionHref ?? (activePlan ? '/tracker' : '/plan');
+  const heroActionLabel = dueCheckin
+    ? `Start ${getCheckinTypeDisplayName(dueCheckin.type)}`
+    : status?.nextActionHref
+      ? status.nextAction ?? 'Continue'
+      : activePlan
+        ? "Open today's tracker"
+        : 'View your coaching dashboard';
+  const heroActionHref = dueCheckin?.href
+    ?? status?.nextActionHref
+    ?? (activePlan ? '/tracker' : '/plan');
   const planCard = profile ? (
     <Card
       variant="glass"
@@ -474,9 +481,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {checkinSchedule?.nextCheckinStatus === 'available' && checkinSchedule.nextCheckin && (
-        <CheckinDueBanner checkin={checkinSchedule.nextCheckin} />
-      )}
+      {dueCheckin && <CheckinDueBanner checkin={dueCheckin} />}
 
       {generationJob && !activePlan && profile?.plan_delivered !== true && (
         <div style={{
@@ -576,7 +581,7 @@ export default function Dashboard() {
         <SectionHeader
           title="Quick access"
           subtitle={
-            checkinSchedule?.nextCheckinStatus === 'available'
+            dueCheckin
               ? 'Your due check-in is surfaced first, followed by the rest of your coaching tools'
               : 'Main coaching features, organized clearly'
           }

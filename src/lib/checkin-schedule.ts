@@ -320,6 +320,17 @@ export function getClientCheckinSchedule(
   )
 
   if (options?.bypassSchedule) {
+    const nextAvailable = weekCheckins.find((task) => task.status === 'available') ?? null
+    const nextScheduled = nextAvailable
+      ? {
+          type: nextAvailable.type,
+          coachingWeek: nextAvailable.coachingWeek,
+          coachingDay: nextAvailable.coachingDay,
+          dueDate: nextAvailable.dueDate,
+          label: nextAvailable.label,
+          href: nextAvailable.href,
+        }
+      : null
     return {
       scheduleAnchored: true,
       coachingDay,
@@ -328,11 +339,11 @@ export function getClientCheckinSchedule(
       coachingWeek: activeCoachingWeek,
       weekCheckins,
       todayTasks,
-      nextCheckin: null,
-      nextCheckinStatus: null,
-      countdownMs: null,
-      countdownLabel: null,
-      countdownDetailed: null,
+      nextCheckin: nextScheduled,
+      nextCheckinStatus: nextScheduled ? 'available' : null,
+      countdownMs: nextScheduled ? 0 : null,
+      countdownLabel: nextScheduled ? formatCountdown(0) : null,
+      countdownDetailed: nextScheduled ? formatDetailedCountdown(0) : null,
       developmentScheduleMessage: 'Check-ins available immediately.',
     }
   }

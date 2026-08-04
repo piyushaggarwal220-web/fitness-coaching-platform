@@ -38,7 +38,6 @@ export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) 
         left: 0,
         right: 0,
         height: `calc(${layout.topBarHeight}px + env(safe-area-inset-top))`,
-        paddingTop: 'env(safe-area-inset-top)',
         backgroundColor: colors.bgGlass,
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
@@ -47,7 +46,11 @@ export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) 
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: `0 ${spacing[3]}px`,
+        // Keep paddingTop for the notch — a shorthand `padding` would wipe it.
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingRight: spacing[3],
+        paddingBottom: 0,
+        paddingLeft: spacing[3],
         maxWidth: layout.maxWidthWide,
         margin: '0 auto',
       }}
