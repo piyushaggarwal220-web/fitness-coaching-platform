@@ -316,6 +316,56 @@ assert(
   remapWorkoutDayKey('monday', [{ key: 'day-1', label: 'Day 1 (Monday)' }]) === 'day-1'
 )
 
+// AI plan style forbids hyphens and writes "6 to 8" — must parse as training, not Rest.
+const toRangePlan: Plan = {
+  ...planV1,
+  id: 'plan-to-ranges',
+  workout_plan: `Day 1 — Lower Power
+Barbell Back Squat: 4 sets x 6 to 8 reps
+Romanian Deadlift: 3 sets x 8 to 10 reps
+Leg Press: 3 sets of 10 to 12 reps
+
+Day 2 — Upper Push
+Bench Press: 4 sets x 6 to 8 reps
+Overhead Press: 3 sets x 8 to 10 reps
+
+Day 3 — Rest
+`,
+}
+const toRangeSnap = buildTrackerSnapshot(toRangePlan, null, tuesday)
+const toRangeDay1 = toRangeSnap.items.find(
+  (i) => i.type === 'workout' && i.workoutDay === 'day-1'
+)
+const toRangeDay3 = toRangeSnap.items.find(
+  (i) => i.type === 'workout' && i.workoutDay === 'day-3'
+)
+assert(
+  'parses AI "N to M" rep ranges as real Lower Power session',
+  toRangeDay1?.type === 'workout' &&
+    toRangeDay1.focus !== 'Rest day' &&
+    toRangeDay1.exercises.length >= 3 &&
+    toRangeDay1.exercises.some((ex) => /squat/i.test(ex.name) && ex.targetReps === '6-8')
+)
+assert(
+  'parses "sets of N to M" format',
+  toRangeDay1?.type === 'workout' &&
+    toRangeDay1.exercises.some((ex) => /leg press/i.test(ex.name) && ex.targetReps === '10-12')
+)
+assert(
+  'still marks explicit Rest day as rest',
+  toRangeDay3?.type === 'workout' && toRangeDay3.focus === 'Rest day'
+)
+assert(
+  'does not mark Upper Push as rest when using to-ranges',
+  toRangeSnap.items.some(
+    (i) =>
+      i.type === 'workout' &&
+      i.workoutDay === 'day-2' &&
+      i.focus !== 'Rest day' &&
+      i.exercises.length >= 2
+  )
+)
+
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)
   process.exit(1)
