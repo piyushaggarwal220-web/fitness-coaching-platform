@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { readApiJson } from '@/lib/api-response'
 import { colors } from '@/lib/coach-theme'
 
 type CheckinReplyPanelProps = {
   checkinId: string
+  /** Called at most once after the check-in summary is first loaded. */
   onEnsured?: () => void
 }
 
@@ -14,12 +15,26 @@ export function CheckinReplyPanel({ checkinId, onEnsured }: CheckinReplyPanelPro
   const [label, setLabel] = useState('Client check-in')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const onEnsuredRef = useRef(onEnsured)
+  const ensuredOnceRef = useRef(false)
+  const loadedCheckinIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    onEnsuredRef.current = onEnsured
+  }, [onEnsured])
 
   useEffect(() => {
     let active = true
-    const load = async () => {
+
+    // Keep the existing card visible while switching/reloading the same check-in.
+    if (loadedCheckinIdRef.current !== checkinId) {
       setLoading(true)
       setError('')
+      setSummary(null)
+      ensuredOnceRef.current = false
+    }
+
+    const load = async () => {
       const response = await fetch(`/api/coach/checkin/${encodeURIComponent(checkinId)}/for-chat`, {
         credentials: 'include',
         cache: 'no-store',
@@ -40,20 +55,24 @@ export function CheckinReplyPanel({ checkinId, onEnsured }: CheckinReplyPanelPro
         parsed.data.checkin?.checkin_type === 'weekly' ? 'Weekly check-in' : 'Mid-week check-in'
       setLabel(week != null ? `${typeLabel} · Week ${week}` : typeLabel)
       setSummary(parsed.data.summary)
+      loadedCheckinIdRef.current = checkinId
       setLoading(false)
-      onEnsured?.()
+      if (!ensuredOnceRef.current) {
+        ensuredOnceRef.current = true
+        onEnsuredRef.current?.()
+      }
     }
     void load()
     return () => {
       active = false
     }
-  }, [checkinId, onEnsured])
+  }, [checkinId])
 
-  if (loading) {
+  if (loading && !summary) {
     return <div style={styles.panel}>Loading client check-in…</div>
   }
 
-  if (error || !summary) {
+  if ((error || !summary) && !summary) {
     return (
       <div style={{ ...styles.panel, borderColor: colors.danger }}>
         {error || 'Client check-in could not be loaded.'}

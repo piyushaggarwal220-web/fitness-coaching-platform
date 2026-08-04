@@ -220,8 +220,13 @@ export function CoachChatThread({
     queueMicrotask(() => void fetchMessages())
   }, [fetchMessages, initialMessages.length])
 
+  const scrolledToCheckinRef = useRef<string | null>(null)
   useEffect(() => {
     if (!highlightCheckinId || loading || messages.length === 0) return
+    if (scrolledToCheckinRef.current === highlightCheckinId) return
+    const hasTarget = messages.some((msg) => msg.source_checkin_id === highlightCheckinId)
+    if (!hasTarget) return
+    scrolledToCheckinRef.current = highlightCheckinId
     const frame = window.requestAnimationFrame(() => {
       checkinHighlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })

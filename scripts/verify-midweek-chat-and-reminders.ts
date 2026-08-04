@@ -87,6 +87,8 @@ assert.match(forChatRoute, /formatCheckinChatMessageFromRow/)
 const replyPanel = source('src/components/chat/CheckinReplyPanel.tsx')
 assert.match(replyPanel, /Reply below with text or a voice note/)
 assert.match(replyPanel, /\/api\/coach\/checkin\/\$\{encodeURIComponent\(checkinId\)\}\/for-chat/)
+assert.match(replyPanel, /ensuredOnceRef/)
+assert.doesNotMatch(replyPanel, /\[checkinId, onEnsured\]/)
 
 const chatDetail = source('src/app/coach/chat/[id]/page.tsx')
 assert.match(chatDetail, /CheckinReplyPanel/)

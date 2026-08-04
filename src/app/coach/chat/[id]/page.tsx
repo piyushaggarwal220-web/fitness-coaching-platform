@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Copy, Phone, Sparkles, UserRound } from 'lucide-react'
@@ -41,19 +41,6 @@ function CoachChatDetailInner() {
   const [loadError, setLoadError] = useState('')
   const [loadStatus, setLoadStatus] = useState<number | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const [messageRefreshKey, setMessageRefreshKey] = useState(0)
-
-  const refreshMessages = useCallback(async () => {
-    const messageResponse = await fetch(
-      `/api/chat/messages?conversationId=${conversationId}`,
-      { credentials: 'include', cache: 'no-store' }
-    )
-    const messageResult = await readApiJson<{ messages?: ConversationMessage[] }>(messageResponse)
-    if (messageResult.ok) {
-      setMessages(messageResult.data.messages ?? [])
-      setMessageRefreshKey((value) => value + 1)
-    }
-  }, [conversationId])
 
   useEffect(() => {
     let active = true
@@ -249,16 +236,8 @@ function CoachChatDetailInner() {
         </div>
 
         <div className="coach-chat-detail-viewport">
-          {highlightCheckinId ? (
-            <CheckinReplyPanel
-              checkinId={highlightCheckinId}
-              onEnsured={() => {
-                void refreshMessages()
-              }}
-            />
-          ) : null}
+          {highlightCheckinId ? <CheckinReplyPanel checkinId={highlightCheckinId} /> : null}
           <CoachChatThread
-            key={`${conversation.id}:${messageRefreshKey}`}
             conversationId={conversation.id}
             coachId={conversation.coach_id}
             viewer="coach"
