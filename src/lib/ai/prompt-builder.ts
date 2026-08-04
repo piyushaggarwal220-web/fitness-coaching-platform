@@ -30,6 +30,12 @@ export const GOAL_KNOWLEDGE_CATEGORIES: Record<string, readonly AiKnowledgeCateg
   athletic_performance: ['strength', 'cardio', 'nutrition', 'recovery'],
   // Plan-goal values (also mapped via PLAN_GOAL_COACHING_CATEGORY where needed)
   hourglass_physique: ['recomposition', 'nutrition', 'female', 'recovery'],
+  tone_and_firm: ['recomposition', 'nutrition', 'female', 'recovery'],
+  slim_waist: ['fat_loss', 'nutrition', 'female', 'cardio'],
+  lifted_glutes: ['muscle_gain', 'nutrition', 'female', 'recovery'],
+  sculpted_curves: ['recomposition', 'nutrition', 'female', 'recovery'],
+  lean_toned_physique: ['recomposition', 'nutrition', 'female', 'cardio'],
+  strong_glutes_and_legs: ['muscle_gain', 'strength', 'female', 'recovery'],
 }
 
 /** Default categories when fitness goal is missing or unmapped. */

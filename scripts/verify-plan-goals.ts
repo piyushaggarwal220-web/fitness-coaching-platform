@@ -1,6 +1,6 @@
 /**
  * Verifies plan-gated goal unlock rules, including enrollment-code full unlock
- * and gender-restricted goals (Hourglass Physique for women on 12 months).
+ * and gender-restricted goals (women-only goals on 3 / 6 / 12 month plans).
  */
 import {
   ALL_PLAN_GOAL_OPTIONS,
@@ -23,10 +23,49 @@ function assert(label: string, condition: boolean) {
   }
 }
 
-assert('3_months unlocks starter tier only', getUnlockedGoals('3_months').length === 10)
-assert('6_months unlocks through transformation', getUnlockedGoals('6_months').length === 15)
+const sharedUnlocked3 = getUnlockedGoals('3_months', 'male').length
+const allUnlocked3 = getUnlockedGoals('3_months').length
+const femaleUnlocked3 = getUnlockedGoals('3_months', 'female').length
+
+assert('3_months unlocks shared starter goals for men', sharedUnlocked3 === 10)
+assert('3_months unlocks shared + women goals without gender filter', allUnlocked3 === 13)
+assert('3_months unlocks shared + women goals for women', femaleUnlocked3 === 13)
+assert(
+  '6_months unlocks through transformation for men',
+  getUnlockedGoals('6_months', 'male').length === 15
+)
+assert(
+  '6_months unlocks women goals for women',
+  getUnlockedGoals('6_months', 'female').length === 21
+)
 assert('12_months unlocks full catalog', getUnlockedGoals('12_months').length === ALL_PLAN_GOAL_OPTIONS.length)
-assert('3_months locks higher goals', getLockedGoals('3_months').length === ALL_PLAN_GOAL_OPTIONS.length - 10)
+assert(
+  '3_months locks higher goals for women',
+  getLockedGoals('3_months', 'female').length === ALL_PLAN_GOAL_OPTIONS.length - femaleUnlocked3
+)
+
+const womenGoals3 = ['tone_and_firm', 'slim_waist', 'lifted_glutes'] as const
+const womenGoals6 = ['sculpted_curves', 'lean_toned_physique', 'strong_glutes_and_legs'] as const
+
+for (const value of womenGoals3) {
+  assert(
+    `${value} is 3-month women-only`,
+    getGoalByValue(value)?.tier === '3_months' &&
+      getGoalByValue(value)?.genders?.includes('female') === true
+  )
+  assert(`${value} visible for female`, isGoalVisibleForGender(value, 'female'))
+  assert(`${value} hidden for male`, !isGoalVisibleForGender(value, 'male'))
+}
+
+for (const value of womenGoals6) {
+  assert(
+    `${value} is 6-month women-only`,
+    getGoalByValue(value)?.tier === '6_months' &&
+      getGoalByValue(value)?.genders?.includes('female') === true
+  )
+  assert(`${value} visible for female`, isGoalVisibleForGender(value, 'female'))
+  assert(`${value} hidden for male`, !isGoalVisibleForGender(value, 'male'))
+}
 
 assert(
   'hourglass is a 12-month women-only goal',
@@ -50,6 +89,14 @@ assert(
 assert(
   'male on 3_months does not see hourglass locked',
   !getLockedGoals('3_months', 'male').some((g) => g.value === 'hourglass_physique')
+)
+assert(
+  'female on 3_months sees 6-month women goals locked',
+  womenGoals6.every((value) => getLockedGoals('3_months', 'female').some((g) => g.value === value))
+)
+assert(
+  'male on 3_months does not see 6-month women goals',
+  womenGoals6.every((value) => !getLockedGoals('3_months', 'male').some((g) => g.value === value))
 )
 
 assert(
@@ -94,6 +141,22 @@ assert(
 assert(
   'male on 12_months cannot select hourglass',
   validateSelectedPlanGoals(['fat_loss', 'hourglass_physique'], '12_months', { gender: 'male' }) !== null
+)
+assert(
+  'female on 3_months can select slim_waist',
+  validateSelectedPlanGoals(['fat_loss', 'slim_waist'], '3_months', { gender: 'female' }) === null
+)
+assert(
+  'male on 3_months cannot select slim_waist',
+  validateSelectedPlanGoals(['fat_loss', 'slim_waist'], '3_months', { gender: 'male' }) !== null
+)
+assert(
+  'female on 6_months can select sculpted_curves',
+  validateSelectedPlanGoals(['fat_loss', 'sculpted_curves'], '6_months', { gender: 'female' }) === null
+)
+assert(
+  'female on 3_months cannot select sculpted_curves',
+  validateSelectedPlanGoals(['fat_loss', 'sculpted_curves'], '3_months', { gender: 'female' }) !== null
 )
 
 if (failed > 0) {

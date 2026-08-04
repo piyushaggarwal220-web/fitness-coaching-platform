@@ -37,6 +37,24 @@ export const PLAN_GOALS_BY_TIER: Record<PlanGoalTier, readonly PlanGoalOption[]>
     { value: 'body_recomposition', label: 'Body Recomposition', tier: '3_months' },
     { value: 'build_strength', label: 'Build Strength', tier: '3_months' },
     { value: 'improve_endurance', label: 'Improve Endurance', tier: '3_months' },
+    {
+      value: 'tone_and_firm',
+      label: 'Tone & Firm',
+      tier: '3_months',
+      genders: ['female'] as const,
+    },
+    {
+      value: 'slim_waist',
+      label: 'Slim Waist',
+      tier: '3_months',
+      genders: ['female'] as const,
+    },
+    {
+      value: 'lifted_glutes',
+      label: 'Lifted Glutes',
+      tier: '3_months',
+      genders: ['female'] as const,
+    },
   ],
   '6_months': [
     { value: 'athletic_physique', label: 'Athletic Physique', tier: '6_months' },
@@ -44,6 +62,24 @@ export const PLAN_GOALS_BY_TIER: Record<PlanGoalTier, readonly PlanGoalOption[]>
     { value: 'build_lean_muscle', label: 'Build Lean Muscle', tier: '6_months' },
     { value: 'increase_performance', label: 'Increase Performance', tier: '6_months' },
     { value: 'improve_mobility', label: 'Improve Mobility', tier: '6_months' },
+    {
+      value: 'sculpted_curves',
+      label: 'Sculpted Curves',
+      tier: '6_months',
+      genders: ['female'] as const,
+    },
+    {
+      value: 'lean_toned_physique',
+      label: 'Lean & Toned Physique',
+      tier: '6_months',
+      genders: ['female'] as const,
+    },
+    {
+      value: 'strong_glutes_and_legs',
+      label: 'Strong Glutes & Legs',
+      tier: '6_months',
+      genders: ['female'] as const,
+    },
   ],
   '12_months': [
     { value: 'shredded_physique', label: 'Shredded Physique', tier: '12_months' },
@@ -105,6 +141,12 @@ export const PLAN_GOAL_COACHING_CATEGORY: Record<string, string> = {
   maximum_natural_muscle: 'muscle_gain',
   complete_body_transformation: 'recomposition',
   hourglass_physique: 'recomposition',
+  tone_and_firm: 'recomposition',
+  slim_waist: 'fat_loss',
+  lifted_glutes: 'muscle_gain',
+  sculpted_curves: 'recomposition',
+  lean_toned_physique: 'recomposition',
+  strong_glutes_and_legs: 'muscle_gain',
 }
 
 const BODY_COMP_CATEGORIES = new Set(['fat_loss', 'recomposition'])
@@ -244,7 +286,9 @@ export function validateSelectedPlanGoals(
   if (options && 'gender' in options) {
     const genderBlocked = unique.filter((value) => !isGoalVisibleForGender(value, options.gender))
     if (genderBlocked.length > 0) {
-      return `“${formatPlanGoalLabel(genderBlocked[0])}” is available for women on the 12 Months plan.`
+      const first = getGoalByValue(genderBlocked[0])
+      const required = first ? PLAN_GOAL_TIER_META[first.tier].title : 'a longer'
+      return `“${formatPlanGoalLabel(genderBlocked[0])}” is available for women on the ${required} plan.`
     }
   }
 
