@@ -11,6 +11,8 @@
  * - AISENSY_CAMPAIGN_COACH_REPLIED — coach_replied
  * - AISENSY_CAMPAIGN_ACCOUNT_SETUP — paid account setup recovery
  * - AISENSY_CAMPAIGN_ONBOARDING_REMINDER — onboarding/photo reminders
+ * - AISENSY_CAMPAIGN_MEMBERSHIP_RENEWAL — membership expiring / expired renewals
+ *   templateParams: [firstName, endsLabel, daysRemaining, renewUrl]
  *
  * templateParams order (stable — match AiSensy campaign variable slots):
  * - check-in reminders: [firstName, checkinLabel]
@@ -38,6 +40,8 @@ const WHATSAPP_ENABLED_TYPES = new Set<NotificationType>([
   'unread_chat',
   'missed_checkin',
   'plan_delivered',
+  'membership_expiring',
+  'membership_expired',
 ])
 
 type CampaignEnvKey =
@@ -45,6 +49,7 @@ type CampaignEnvKey =
   | 'AISENSY_CAMPAIGN_MISSED_CHECKIN'
   | 'AISENSY_CAMPAIGN_PLAN_READY'
   | 'AISENSY_CAMPAIGN_COACH_REPLIED'
+  | 'AISENSY_CAMPAIGN_MEMBERSHIP_RENEWAL'
 
 const TYPE_TO_CAMPAIGN_ENV: Partial<Record<NotificationType, CampaignEnvKey>> = {
   weekly_checkin_reminder: 'AISENSY_CAMPAIGN_CHECKIN_DUE',
@@ -55,6 +60,8 @@ const TYPE_TO_CAMPAIGN_ENV: Partial<Record<NotificationType, CampaignEnvKey>> = 
   coach_replied: 'AISENSY_CAMPAIGN_COACH_REPLIED',
   // Cost policy escalates unread chat to WhatsApp; reuse coach-reply campaign slots.
   unread_chat: 'AISENSY_CAMPAIGN_COACH_REPLIED',
+  membership_expiring: 'AISENSY_CAMPAIGN_MEMBERSHIP_RENEWAL',
+  membership_expired: 'AISENSY_CAMPAIGN_MEMBERSHIP_RENEWAL',
 }
 
 function getApiKey(): string | undefined {
@@ -97,6 +104,16 @@ function buildTemplateParams(
   if (type === 'missed_checkin') {
     const checkinLabel = (meta.checkinLabel as string | undefined) ?? 'Weekly Check-in'
     return [firstName, checkinLabel]
+  }
+
+  if (type === 'membership_expiring' || type === 'membership_expired') {
+    const endsLabel = (meta.endsLabel as string | undefined) ?? 'soon'
+    const daysRemaining = String(meta.daysRemaining ?? 0)
+    const renewUrl =
+      (meta.renewUrl as string | undefined) ??
+      payload.actionUrl ??
+      '/checkout?plan=3_months'
+    return [firstName, endsLabel, daysRemaining, renewUrl]
   }
 
   const snippet =
@@ -188,6 +205,9 @@ export function getAiSensyConfigStatus(): {
       AISENSY_CAMPAIGN_ONBOARDING_REMINDER: Boolean(
         process.env.AISENSY_CAMPAIGN_ONBOARDING_REMINDER?.trim()
       ),
+      AISENSY_CAMPAIGN_MEMBERSHIP_RENEWAL: Boolean(
+        process.env.AISENSY_CAMPAIGN_MEMBERSHIP_RENEWAL?.trim()
+      ),
       AISENSY_CAMPAIGN_CHECKOUT_OTP: Boolean(process.env.AISENSY_CAMPAIGN_CHECKOUT_OTP?.trim()),
     },
   }
@@ -225,6 +245,7 @@ export async function sendDirectWhatsApp(input: {
   campaignEnv:
     | 'AISENSY_CAMPAIGN_ACCOUNT_SETUP'
     | 'AISENSY_CAMPAIGN_ONBOARDING_REMINDER'
+    | 'AISENSY_CAMPAIGN_MEMBERSHIP_RENEWAL'
     | 'AISENSY_CAMPAIGN_CHECKOUT_OTP'
   phone: string | null | undefined
   name: string | null | undefined

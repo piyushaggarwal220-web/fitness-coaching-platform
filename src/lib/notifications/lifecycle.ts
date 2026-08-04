@@ -1,9 +1,13 @@
 import 'server-only'
+import type { MembershipReminderStage } from '@/lib/entitlements'
 import { sendDirectEmail } from '@/lib/notifications/email-provider'
+import { NotificationTemplates } from '@/lib/notifications/service'
 import { sendDirectWhatsApp } from '@/lib/notifications/whatsapp-provider'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NotificationType } from '@/types/database'
+
+export type { MembershipReminderStage } from '@/lib/entitlements'
 
 type DeliveryResult = { sent: number; skipped: number; failed: number }
 
@@ -212,6 +216,111 @@ export async function sendOnboardingReminder(input: {
           metadata: { lifecycleStage: input.stage, photosMissing: isPhoto },
         })),
       })
+    ),
+  ])
+
+  return summarize(results)
+}
+
+export async function sendMembershipRenewalReminder(input: {
+  userId: string
+  email?: string | null
+  phone?: string | null
+  name?: string | null
+  stage: MembershipReminderStage
+  endsAt: string
+  daysRemaining: number
+}): Promise<DeliveryResult> {
+  const greeting = firstName(input.name)
+  const endsLabel = new Date(input.endsAt).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+  const renewUrl = `${appBaseUrl()}/checkout?plan=3_months`
+  const kind = `membership_${input.stage}`
+  const template =
+    input.stage === 'expired'
+      ? NotificationTemplates.membershipExpired({ endsLabel })
+      : NotificationTemplates.membershipExpiring({
+          daysRemaining: Math.max(0, Math.ceil(input.daysRemaining)),
+          endsLabel,
+        })
+
+  const emailSubject =
+    input.stage === 'expired'
+      ? 'Your LURVOX membership has ended — renew to continue'
+      : input.daysRemaining <= 1
+        ? 'Your LURVOX membership ends soon — renew today'
+        : `Your LURVOX membership ends in ${Math.ceil(input.daysRemaining)} days`
+
+  const emailText =
+    input.stage === 'expired'
+      ? `Hi ${greeting}, your coaching access ended on ${endsLabel}. Renew here to keep your coach and plan: ${renewUrl}`
+      : `Hi ${greeting}, your coaching plan ends on ${endsLabel}. Renew to keep uninterrupted coaching: ${renewUrl}`
+
+  const results = await Promise.all([
+    deliverOnce(
+      {
+        userId: input.userId,
+        kind,
+        channel: 'in_app',
+        dedupeKey: `${input.userId}:${kind}:in_app`,
+      },
+      async () => ({
+        ok: Boolean(
+          await sendNotification({
+            userId: input.userId,
+            type: template.type,
+            title: template.title,
+            body: template.body,
+            actionUrl: template.actionUrl,
+            idempotencyKey: `lifecycle:${input.userId}:${kind}`,
+            priority: 'high',
+            metadata: {
+              ...(template.metadata ?? {}),
+              lifecycleStage: input.stage,
+            },
+          })
+        ),
+      })
+    ),
+    deliverOnce(
+      {
+        userId: input.userId,
+        kind,
+        channel: 'whatsapp',
+        dedupeKey: `${input.userId}:${kind}:whatsapp`,
+      },
+      () =>
+        sendDirectWhatsApp({
+          campaignEnv: 'AISENSY_CAMPAIGN_MEMBERSHIP_RENEWAL',
+          phone: input.phone,
+          name: input.name,
+          templateParams: [
+            greeting,
+            endsLabel,
+            String(Math.max(0, Math.ceil(input.daysRemaining))),
+            renewUrl,
+          ],
+        })
+    ),
+    deliverOnce(
+      {
+        userId: input.userId,
+        kind,
+        channel: 'email',
+        dedupeKey: `${input.userId}:${kind}:email`,
+      },
+      () => {
+        if (!input.email?.trim()) return Promise.resolve({ ok: true, skipped: true })
+        return sendDirectEmail({
+          to: input.email,
+          subject: emailSubject,
+          text: emailText,
+          html: `<p>Hi ${escapeHtml(greeting)},</p><p>${escapeHtml(template.body)}</p><p><a href="${escapeHtml(renewUrl)}">Renew membership</a></p>`,
+        })
+      }
     ),
   ])
 

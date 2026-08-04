@@ -1,21 +1,25 @@
 import 'server-only'
-import { hasClientEntitlement } from '@/lib/entitlements'
+import { hasClientEntitlement, MEMBERSHIP_GRACE_DAYS } from '@/lib/entitlements'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import type { ApiAuthResult } from '@/lib/api-auth'
 import { requireApiUser } from '@/lib/api-auth'
 
-/** Revoke paid access for clients whose subscription_expires_at has passed. */
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Revoke paid access after the membership end date plus grace window. */
 export async function revokeExpiredClientSubscriptions(limit = 50): Promise<number> {
   const admin = createAdminClient()
-  const nowIso = new Date().toISOString()
+  const now = Date.now()
+  const nowIso = new Date(now).toISOString()
+  const revokeBeforeIso = new Date(now - MEMBERSHIP_GRACE_DAYS * DAY_MS).toISOString()
 
   const { data: expired, error } = await admin
     .from('profiles')
     .select('id')
     .eq('payment_confirmed', true)
     .neq('access_source', 'admin_trial')
-    .lt('subscription_expires_at', nowIso)
+    .lt('subscription_expires_at', revokeBeforeIso)
     .order('subscription_expires_at', { ascending: true })
     .limit(limit)
 
@@ -71,7 +75,7 @@ export async function requireEntitledClientApiUser(): Promise<ApiAuthResult> {
       response: NextResponse.json(
         {
           success: false,
-          error: 'Your coaching plan has ended. Renew to continue using the app.',
+          error: 'Your coaching plan has ended. Renew your membership to continue using the app.',
           code: 'entitlement_expired',
         },
         { status: 403 }

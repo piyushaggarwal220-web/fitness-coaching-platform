@@ -35,12 +35,13 @@ import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
 import { CheckinDueBanner } from '@/components/dashboard/CheckinDueBanner';
+import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner';
 import { GoalUpgradeCard } from '@/components/dashboard/GoalUpgradeCard';
 import { LeagueHomeCard } from '@/components/league/LeagueHomeCard';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
-import { getActiveSubscription } from '@/lib/subscription';
+import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
 import { isItemComplete } from '@/lib/daily-tracker/scores';
 import type { DailyTrackerDay, TrackerSnapshotItem } from '@/lib/daily-tracker/types';
@@ -283,6 +284,7 @@ export default function Dashboard() {
     purchase,
     profile?.subscription_expires_at ?? null
   );
+  const renewalPrompt = getMembershipRenewalPrompt(profile, purchase);
 
   const checkinScheduleBypass = shouldBypassCheckinScheduleClient();
   const coachingDayStarted = profile?.checkin_schedule_started_at
@@ -482,6 +484,7 @@ export default function Dashboard() {
       )}
 
       {dueCheckin && <CheckinDueBanner checkin={dueCheckin} />}
+      {renewalPrompt && <MembershipRenewalBanner prompt={renewalPrompt} />}
 
       {generationJob && !activePlan && profile?.plan_delivered !== true && (
         <div style={{
