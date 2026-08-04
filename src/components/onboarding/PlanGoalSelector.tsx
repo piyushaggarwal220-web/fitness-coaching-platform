@@ -1,63 +1,76 @@
 'use client'
 
 import { Lock } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
 import { colors, radius, spacing } from '@/lib/design-tokens'
 import {
   ALL_PLAN_GOAL_OPTIONS,
+  GOAL_BODY_TYPE_META,
+  GOAL_BODY_TYPE_ORDER,
   PLAN_GOAL_MAX,
   PLAN_GOAL_MIN,
   PLAN_GOAL_TIER_META,
   PLAN_GOAL_TIER_ORDER,
-  PLAN_GOALS_BY_TIER,
   getGoalByValue,
-  getGoalsForGender,
+  getGoalsForBodyType,
   isGoalUnlockedForPlan,
+  isPhysiqueGoal,
+  isValidGoalBodyType,
   planDisplayName,
   resolveGoalPlanTier,
   upgradeHrefForTier,
+  type GoalBodyType,
   type PlanGoalOption,
   type PlanGoalTier,
 } from '@/lib/plan-goals'
 
 type PlanGoalSelectorProps = {
   planSlug: string | null | undefined
-  /** Used to show women-only goals like Hourglass Physique. */
   gender?: string | null
+  bodyType: string
   values: string[]
+  onBodyTypeChange: (bodyType: GoalBodyType) => void
   onChange: (values: string[]) => void
 }
 
-export function PlanGoalSelector({ planSlug, gender, values, onChange }: PlanGoalSelectorProps) {
+export function PlanGoalSelector({
+  planSlug,
+  gender,
+  bodyType,
+  values,
+  onBodyTypeChange,
+  onChange,
+}: PlanGoalSelectorProps) {
   const currentTier = resolveGoalPlanTier(planSlug)
+  const selectedBodyType = isValidGoalBodyType(bodyType) ? bodyType : null
   const [upgradeTarget, setUpgradeTarget] = useState<PlanGoalOption | null>(null)
 
   const selectedCount = values.length
   const atMax = selectedCount >= PLAN_GOAL_MAX
 
-  const goalsByTier = useMemo(() => {
+  const bodyGoalsByTier = useMemo(() => {
     const map = {} as Record<PlanGoalTier, PlanGoalOption[]>
     for (const tier of PLAN_GOAL_TIER_ORDER) {
-      map[tier] = getGoalsForGender(PLAN_GOALS_BY_TIER[tier], gender)
+      map[tier] = getGoalsForBodyType(selectedBodyType, { gender, section: 'body' }).filter(
+        (goal) => goal.tier === tier
+      )
     }
     return map
-  }, [gender])
+  }, [selectedBodyType, gender])
 
-  const { includedTiers, lockedTiers, includedTierLabel } = useMemo(() => {
-    const included = PLAN_GOAL_TIER_ORDER.filter(
-      (tier) => planTierUnlocked(tier, currentTier) && goalsByTier[tier].length > 0
-    )
-    const locked = PLAN_GOAL_TIER_ORDER.filter(
-      (tier) => !planTierUnlocked(tier, currentTier) && goalsByTier[tier].length > 0
-    )
-    const label =
-      included.length === 1
-        ? PLAN_GOAL_TIER_META[included[0]].title
-        : included.map((tier) => PLAN_GOAL_TIER_META[tier].title).join(' + ')
-    return { includedTiers: included, lockedTiers: locked, includedTierLabel: label }
-  }, [currentTier, goalsByTier])
+  const physiqueGoalsByTier = useMemo(() => {
+    const map = {} as Record<PlanGoalTier, PlanGoalOption[]>
+    for (const tier of PLAN_GOAL_TIER_ORDER) {
+      map[tier] = getGoalsForBodyType(selectedBodyType, { gender, section: 'physique' }).filter(
+        (goal) => goal.tier === tier
+      )
+    }
+    return map
+  }, [selectedBodyType, gender])
+
+  const hasPhysiqueGoals = PLAN_GOAL_TIER_ORDER.some((tier) => physiqueGoalsByTier[tier].length > 0)
 
   const toggle = (goal: PlanGoalOption) => {
     const unlocked = isGoalUnlockedForPlan(goal, currentTier)
@@ -75,6 +88,20 @@ export function PlanGoalSelector({ planSlug, gender, values, onChange }: PlanGoa
 
     if (atMax) return
     onChange([...values, goal.value])
+  }
+
+  const selectBodyType = (next: GoalBodyType) => {
+    setUpgradeTarget(null)
+    onBodyTypeChange(next)
+    // Drop goals that don't belong to the new path (physique goals stay).
+    onChange(
+      values.filter((value) => {
+        const goal = getGoalByValue(value)
+        if (!goal) return false
+        if (isPhysiqueGoal(goal)) return true
+        return goal.bodyTypes?.includes(next) ?? false
+      })
+    )
   }
 
   return (
@@ -117,189 +144,82 @@ export function PlanGoalSelector({ planSlug, gender, values, onChange }: PlanGoa
       </div>
 
       <p style={{ ...s.stepHint, marginBottom: spacing[4] }}>
-        Choose at least {PLAN_GOAL_MIN} and up to {PLAN_GOAL_MAX} goals. Your {planDisplayName(currentTier)}{' '}
-        plan includes every goal from shorter plans
-        {includedTiers.length > 1 ? ` (${includedTierLabel})` : ''}. Longer-plan goals stay locked until you
-        upgrade.
+        First pick your starting point. Then choose at least {PLAN_GOAL_MIN} and up to {PLAN_GOAL_MAX}{' '}
+        goals. Locked goals can be unlocked by upgrading your plan.
       </p>
 
       <section style={{ marginBottom: spacing[5] }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-            marginBottom: spacing[3],
-          }}
-        >
-          <h3
-            style={{
-              margin: 0,
-              fontSize: 15,
-              fontWeight: 700,
-              color: colors.textPrimary,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Available on your plan
-          </h3>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              color: colors.success,
-            }}
-          >
-            Selectable
-          </span>
-        </div>
-
-        {includedTiers.map((tier) => {
-          const meta = PLAN_GOAL_TIER_META[tier]
-          const isCurrent = tier === currentTier
-          const isShorter = PLAN_GOAL_TIER_ORDER.indexOf(tier) < PLAN_GOAL_TIER_ORDER.indexOf(currentTier)
-
-          return (
-            <div key={tier} style={{ marginBottom: spacing[4] }}>
-              <div
+        <h3 style={sectionHeading}>1. Your starting point</h3>
+        <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textMuted, lineHeight: 1.4 }}>
+          Pick the one that feels most like you right now.
+        </p>
+        <div style={{ display: 'grid', gap: 10 }}>
+          {GOAL_BODY_TYPE_ORDER.map((type) => {
+            const meta = GOAL_BODY_TYPE_META[type]
+            const active = selectedBodyType === type
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => selectBodyType(type)}
+                aria-pressed={active}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 10,
+                  textAlign: 'left',
+                  padding: '14px 14px',
+                  borderRadius: 16,
+                  border: active
+                    ? '1px solid rgba(249,115,22,0.45)'
+                    : `1px solid ${colors.borderSubtle}`,
+                  background: active
+                    ? 'linear-gradient(145deg, rgba(249,115,22,0.16), rgba(24,24,27,0.98))'
+                    : colors.bgCard,
+                  color: colors.textPrimary,
+                  cursor: 'pointer',
                 }}
               >
-                <span
-                  aria-hidden
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 999,
-                    backgroundColor: meta.accent,
-                    flexShrink: 0,
-                  }}
-                />
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: colors.textSecondary,
-                  }}
-                >
-                  {meta.title}
-                  <span style={{ fontWeight: 500, color: colors.textMuted }}>
-                    {isCurrent
-                      ? ' · Your plan'
-                      : isShorter
-                        ? ' · Included from shorter plan'
-                        : ` · ${meta.shortLabel}`}
-                  </span>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 800 }}>{meta.title}</p>
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.textMuted, lineHeight: 1.4 }}>
+                  {meta.description}
                 </p>
-              </div>
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {goalsByTier[tier].map((goal) =>
-                  renderGoalChip({
-                    goal,
-                    selected: values.includes(goal.value),
-                    locked: false,
-                    blockedByMax: !values.includes(goal.value) && atMax,
-                    onToggle: () => toggle(goal),
-                  })
-                )}
-              </div>
-            </div>
-          )
-        })}
+              </button>
+            )
+          })}
+        </div>
       </section>
 
-      {lockedTiers.length > 0 && (
-        <section style={{ marginBottom: spacing[4] }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-              marginBottom: spacing[3],
-            }}
-          >
-            <h3
-              style={{
-                margin: 0,
-                fontSize: 15,
-                fontWeight: 700,
-                color: colors.textPrimary,
-                letterSpacing: '-0.01em',
-              }}
-            >
-              Unlock with a longer plan
-            </h3>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                color: colors.textMuted,
-              }}
-            >
-              Locked
-            </span>
-          </div>
+      {selectedBodyType && (
+        <section style={{ marginBottom: spacing[5] }}>
+          <h3 style={sectionHeading}>2. Goals for {GOAL_BODY_TYPE_META[selectedBodyType].title.toLowerCase()}</h3>
+          <p style={{ margin: '0 0 14px', fontSize: 13, color: colors.textMuted, lineHeight: 1.4 }}>
+            Choose at least {PLAN_GOAL_MIN}. Your {planDisplayName(currentTier)} plan unlocks included tiers.
+          </p>
 
-          {lockedTiers.map((tier) => {
+          {PLAN_GOAL_TIER_ORDER.map((tier) => {
+            const goals = bodyGoalsByTier[tier]
+            if (goals.length === 0) return null
             const meta = PLAN_GOAL_TIER_META[tier]
+            const unlocked = planTierUnlocked(tier, currentTier)
             return (
               <div key={tier} style={{ marginBottom: spacing[4] }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 8,
-                    marginBottom: 10,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span
-                      aria-hidden
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 999,
-                        backgroundColor: meta.accent,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: colors.textSecondary,
-                      }}
-                    >
-                      {meta.title}
-                      <span style={{ fontWeight: 500, color: colors.textMuted }}>
-                        {' '}
-                        · {meta.shortLabel}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
+                <TierHeader
+                  tier={tier}
+                  currentTier={currentTier}
+                  unlocked={unlocked}
+                  labelSuffix={
+                    unlocked
+                      ? tier === currentTier
+                        ? 'Your plan'
+                        : 'Included'
+                      : 'Locked — upgrade'
+                  }
+                />
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {goalsByTier[tier].map((goal) =>
+                  {goals.map((goal) =>
                     renderGoalChip({
                       goal,
-                      selected: false,
-                      locked: true,
-                      blockedByMax: false,
+                      selected: values.includes(goal.value),
+                      locked: !unlocked,
+                      blockedByMax: !values.includes(goal.value) && atMax,
                       onToggle: () => toggle(goal),
                     })
                   )}
@@ -307,6 +227,54 @@ export function PlanGoalSelector({ planSlug, gender, values, onChange }: PlanGoa
               </div>
             )
           })}
+        </section>
+      )}
+
+      {selectedBodyType && hasPhysiqueGoals && (
+        <section style={{ marginBottom: spacing[4] }}>
+          <div
+            style={{
+              padding: 14,
+              borderRadius: 16,
+              border: `1px solid ${colors.borderSubtle}`,
+              background: colors.bgCard,
+            }}
+          >
+            <h3 style={{ ...sectionHeading, marginBottom: 6 }}>Optional physique focus</h3>
+            <p style={{ margin: '0 0 12px', fontSize: 12, color: colors.textMuted, lineHeight: 1.4 }}>
+              {gender === 'female'
+                ? 'Women-only shape goals you can add on top.'
+                : gender === 'male'
+                  ? 'Men-only shape goals you can add on top.'
+                  : 'Optional shape goals for your profile.'}
+            </p>
+            {PLAN_GOAL_TIER_ORDER.map((tier) => {
+              const goals = physiqueGoalsByTier[tier]
+              if (goals.length === 0) return null
+              const unlocked = planTierUnlocked(tier, currentTier)
+              return (
+                <div key={tier} style={{ marginBottom: spacing[3] }}>
+                  <TierHeader
+                    tier={tier}
+                    currentTier={currentTier}
+                    unlocked={unlocked}
+                    labelSuffix={unlocked ? (tier === currentTier ? 'Your plan' : 'Included') : 'Locked'}
+                  />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {goals.map((goal) =>
+                      renderGoalChip({
+                        goal,
+                        selected: values.includes(goal.value),
+                        locked: !unlocked,
+                        blockedByMax: !values.includes(goal.value) && atMax,
+                        onToggle: () => toggle(goal),
+                      })
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </section>
       )}
 
@@ -358,6 +326,41 @@ export function PlanGoalSelector({ planSlug, gender, values, onChange }: PlanGoa
   )
 }
 
+function TierHeader({
+  tier,
+  currentTier,
+  unlocked,
+  labelSuffix,
+}: {
+  tier: PlanGoalTier
+  currentTier: PlanGoalTier
+  unlocked: boolean
+  labelSuffix: string
+}) {
+  const meta = PLAN_GOAL_TIER_META[tier]
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+      <span
+        aria-hidden
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 999,
+          backgroundColor: unlocked ? meta.accent : colors.textMuted,
+          flexShrink: 0,
+        }}
+      />
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: colors.textSecondary }}>
+        {meta.title}
+        <span style={{ fontWeight: 500, color: colors.textMuted }}> · {labelSuffix}</span>
+        {!unlocked && currentTier !== tier ? (
+          <span style={{ fontWeight: 500, color: colors.warning }}> · Tap a goal to upgrade</span>
+        ) : null}
+      </p>
+    </div>
+  )
+}
+
 function renderGoalChip({
   goal,
   selected,
@@ -377,7 +380,7 @@ function renderGoalChip({
       type="button"
       onClick={onToggle}
       aria-pressed={selected}
-      aria-disabled={locked || blockedByMax}
+      aria-disabled={blockedByMax}
       style={{
         ...s.chip,
         opacity: locked || blockedByMax ? 0.55 : 1,
@@ -426,7 +429,7 @@ function UpgradePrompt({
         padding: '16px 16px 14px',
         borderRadius: radius.sm,
         backgroundColor: colors.warningMuted,
-        border: `1px solid rgba(245, 158, 11, 0.28)`,
+        border: '1px solid rgba(245, 158, 11, 0.28)',
       }}
     >
       <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>
@@ -434,7 +437,7 @@ function UpgradePrompt({
       </p>
       <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.5, color: colors.textSecondary }}>
         This goal is part of the {requiredMeta.title} plan ({requiredMeta.shortLabel}). Your current{' '}
-        {currentMeta.title} plan already includes all shorter-plan goals — upgrade to add this one.
+        {currentMeta.title} plan already includes shorter-plan goals — upgrade to add this one.
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
         <Link
@@ -475,4 +478,12 @@ function UpgradePrompt({
       </div>
     </div>
   )
+}
+
+const sectionHeading: CSSProperties = {
+  margin: 0,
+  fontSize: 15,
+  fontWeight: 700,
+  color: colors.textPrimary,
+  letterSpacing: '-0.01em',
 }

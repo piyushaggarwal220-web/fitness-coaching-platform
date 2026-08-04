@@ -35,6 +35,7 @@ import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
 import { CheckinDueBanner } from '@/components/dashboard/CheckinDueBanner';
+import { GoalUpgradeCard } from '@/components/dashboard/GoalUpgradeCard';
 import { LeagueHomeCard } from '@/components/league/LeagueHomeCard';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
@@ -563,6 +564,13 @@ export default function Dashboard() {
       {checkinScheduleBypass && (
         <DevelopmentModeBadge style={{ marginBottom: spacing[4] }} />
       )}
+
+      <GoalUpgradeCard
+        planSlug={purchase?.plan_slug}
+        accessSource={profile?.access_source}
+        gender={profile?.gender}
+        bodyType={profile?.onboarding_data?.goals?.startingBodyType}
+      />
 
       <section style={{ marginBottom: spacing[7] }}>
         <SectionHeader

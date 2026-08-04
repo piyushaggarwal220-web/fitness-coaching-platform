@@ -668,7 +668,9 @@ function renderStep(
             <PlanGoalSelector
               planSlug={planSlug}
               gender={form.gender}
+              bodyType={form.starting_body_type}
               values={form.selected_goals}
+              onBodyTypeChange={(starting_body_type) => update({ starting_body_type })}
               onChange={(selected_goals) =>
                 update({
                   selected_goals,

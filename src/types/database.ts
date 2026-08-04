@@ -53,6 +53,8 @@ export type OnboardingData = {
     targetWeight?: string | number | null
     deadline?: string | null
     biggestStruggle?: string | null
+    /** weight_gain | skinny_fat | lose_fat_fast */
+    startingBodyType?: string | null
     /** Client-selected plan goals (2–4). */
     selectedGoals?: string[] | null
     goalSelectionMethod?: 'user' | 'ai'
@@ -201,6 +203,8 @@ export type OnboardingFormData = {
   thigh: string
   navel: string
   fitness_goal: string
+  /** weight_gain | skinny_fat | lose_fat_fast */
+  starting_body_type: string
   /** Multi-select plan goals (2–4). Primary coaching focus is derived for fitness_goal. */
   selected_goals: string[]
   target_weight: string

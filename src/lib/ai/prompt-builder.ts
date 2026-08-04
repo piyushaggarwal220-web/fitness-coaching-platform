@@ -36,6 +36,12 @@ export const GOAL_KNOWLEDGE_CATEGORIES: Record<string, readonly AiKnowledgeCateg
   sculpted_curves: ['recomposition', 'nutrition', 'female', 'recovery'],
   lean_toned_physique: ['recomposition', 'nutrition', 'female', 'cardio'],
   strong_glutes_and_legs: ['muscle_gain', 'strength', 'female', 'recovery'],
+  healthy_weight_gain: ['muscle_gain', 'nutrition', 'recovery'],
+  soft_bulk_start: ['muscle_gain', 'nutrition', 'recovery'],
+  lose_fat_build_muscle: ['recomposition', 'nutrition', 'cardio', 'recovery'],
+  drop_belly_fat_fast: ['fat_loss', 'nutrition', 'cardio', 'recovery'],
+  v_taper_start: ['muscle_gain', 'nutrition', 'recovery'],
+  classic_v_taper: ['recomposition', 'nutrition', 'recovery'],
 }
 
 /** Default categories when fitness goal is missing or unmapped. */
@@ -298,11 +304,14 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
       data.goals.selectedGoals && data.goals.selectedGoals.length > 0
         ? data.goals.selectedGoals.join(', ')
         : null
+    const bodyType = data.goals.startingBodyType
+      ? `starting point ${data.goals.startingBodyType.replace(/_/g, ' ')}, `
+      : ''
     const goalLine = data.goals.aiSelectedGoal
-      ? `Goals: AI-selected goal (${data.goals.inferredGoal ?? 'pending'}), deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
+      ? `Goals: ${bodyType}AI-selected goal (${data.goals.inferredGoal ?? 'pending'}), deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
       : selected
-        ? `Goals: ${selected}, deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
-        : `Goals: deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
+        ? `Goals: ${bodyType}${selected}, deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
+        : `Goals: ${bodyType}deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
     lines.push(goalLine)
   }
   if (data.lifestyle) {
