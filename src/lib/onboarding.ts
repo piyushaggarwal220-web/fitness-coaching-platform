@@ -364,6 +364,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   thigh: '',
   navel: '',
   fitness_goal: '',
+  starting_body_type: '',
   selected_goals: [],
   target_weight: '',
   goal_deadline: '',
@@ -448,6 +449,8 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     height: profile.height != null ? String(profile.height) : '',
     weight: profile.weight != null ? String(profile.weight) : '',
     fitness_goal: profile.fitness_goal ?? '',
+    starting_body_type:
+      typeof data.goals?.startingBodyType === 'string' ? data.goals.startingBodyType : '',
     selected_goals: Array.isArray(data.goals?.selectedGoals)
       ? data.goals.selectedGoals.filter((value): value is string => typeof value === 'string')
       : [],
@@ -603,6 +606,7 @@ export function buildOnboardingData(
       targetWeight: form.target_weight.trim() || null,
       deadline: form.goal_deadline || null,
       biggestStruggle: form.biggest_struggle.trim() || null,
+      startingBodyType: form.starting_body_type.trim() || null,
       selectedGoals: form.selected_goals.length > 0 ? form.selected_goals : null,
       goalSelectionMethod: userUnsure || options?.aiSelectedGoal ? 'ai' : 'user',
       aiSelectedGoal: userUnsure || options?.aiSelectedGoal ? true : undefined,
@@ -871,7 +875,11 @@ export function validateOnboardingStep(
     case 2: {
       const requireMultiGoals = options?.requireMultiGoals !== false
       if (requireMultiGoals || data.selected_goals.length > 0) {
-        const goalError = validateSelectedPlanGoals(data.selected_goals, options?.planSlug)
+        const goalError = validateSelectedPlanGoals(data.selected_goals, options?.planSlug, {
+          gender: data.gender,
+          bodyType: data.starting_body_type,
+          requireBodyType: requireMultiGoals,
+        })
         if (goalError) return goalError
       } else if (!data.fitness_goal || data.fitness_goal === 'ai_decide') {
         return 'Please select your goals.'

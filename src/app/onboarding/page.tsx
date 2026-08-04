@@ -60,7 +60,7 @@ import {
   WORKOUT_DURATION_OPTIONS,
   WORKOUT_TIME_OPTIONS,
 } from '@/lib/onboarding'
-import { resolveGoalPlanTier } from '@/lib/plan-goals'
+import { isGoalVisibleForGender, resolveGoalPlanTier } from '@/lib/plan-goals'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
 import type { OnboardingFormData } from '@/types/database'
 import type { SavedPhotoUrls } from '@/lib/onboarding'
@@ -572,7 +572,24 @@ function renderStep(
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>About you</h2>
           <Field label="Gender" required>
-            <ChipGroup options={GENDER_OPTIONS} value={form.gender} onChange={(v) => update({ gender: v })} />
+            <ChipGroup
+              options={GENDER_OPTIONS}
+              value={form.gender}
+              onChange={(v) => {
+                const nextGoals = form.selected_goals.filter((goal) =>
+                  isGoalVisibleForGender(goal, v)
+                )
+                update({
+                  gender: v,
+                  selected_goals: nextGoals,
+                  fitness_goal: nextGoals[0] ?? (
+                    form.fitness_goal && isGoalVisibleForGender(form.fitness_goal, v)
+                      ? form.fitness_goal
+                      : ''
+                  ),
+                })
+              }}
+            />
           </Field>
           <div style={{ display: 'grid', gap: 12 }}>
             <HeightInput
@@ -650,7 +667,10 @@ function renderStep(
           <Field label="What do you want to achieve?" required>
             <PlanGoalSelector
               planSlug={planSlug}
+              gender={form.gender}
+              bodyType={form.starting_body_type}
               values={form.selected_goals}
+              onBodyTypeChange={(starting_body_type) => update({ starting_body_type })}
               onChange={(selected_goals) =>
                 update({
                   selected_goals,

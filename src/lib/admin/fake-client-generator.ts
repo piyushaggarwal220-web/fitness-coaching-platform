@@ -3,7 +3,6 @@ import {
   ACTIVITY_OPTIONS,
   DIET_OPTIONS,
   DIET_VARIETY_OPTIONS,
-  FITNESS_GOAL_OPTIONS,
   FLUX_CAPACITY_OPTIONS,
   GENDER_OPTIONS,
   OCCUPATION_OPTIONS,
@@ -134,11 +133,12 @@ export function generateFakeClientEmail(): string {
 
 export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
   const gender = pick(GENDER_OPTIONS).value
-  const fitnessGoal = pick([
-    FITNESS_GOAL_OPTIONS.find((o) => o.value === 'fat_loss')!,
-    FITNESS_GOAL_OPTIONS.find((o) => o.value === 'muscle_gain')!,
-    FITNESS_GOAL_OPTIONS.find((o) => o.value === 'body_recomposition')!,
-  ]).value
+  const path = pick([
+    { bodyType: 'lose_fat_fast' as const, fitnessGoal: 'fat_loss', companionGoal: 'improve_fitness' },
+    { bodyType: 'weight_gain' as const, fitnessGoal: 'muscle_gain', companionGoal: 'build_strength' },
+    { bodyType: 'skinny_fat' as const, fitnessGoal: 'body_recomposition', companionGoal: 'build_consistency' },
+  ])
+  const fitnessGoal = path.fitnessGoal
 
   const fullName =
     name?.trim() ||
@@ -149,12 +149,7 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
   const targetDelta = fitnessGoal === 'muscle_gain' ? 4 : fitnessGoal === 'fat_loss' ? -6 : -2
   const targetWeight = String(Math.max(45, Math.round(Number(weight) + targetDelta)))
 
-  const companionGoal =
-    fitnessGoal === 'fat_loss'
-      ? 'improve_fitness'
-      : fitnessGoal === 'muscle_gain'
-        ? 'build_strength'
-        : 'improve_endurance'
+  const companionGoal = path.companionGoal
 
   const trainingLocation = pick(TRAINING_LOCATION_OPTIONS).value
   const equipment =
@@ -174,6 +169,7 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     thigh: String(randomInt(48, 65)),
     navel: String(randomInt(75, 100)),
     fitness_goal: fitnessGoal,
+    starting_body_type: path.bodyType,
     selected_goals: [fitnessGoal, companionGoal],
     target_weight: targetWeight,
     goal_deadline: pick(['8_weeks', '12_weeks', '16_weeks', '24_weeks']),
