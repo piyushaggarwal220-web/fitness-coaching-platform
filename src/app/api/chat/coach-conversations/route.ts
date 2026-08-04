@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import {
+  ensureClientMidWeekCheckinsInCoachChat,
   getOrCreateConversationForCoach,
   listCoachConversations,
 } from '@/lib/coach-chat'
@@ -62,10 +63,55 @@ export async function POST(request: Request) {
   const gate = await requireCoachId()
   if (!gate.ok) return gate.response
 
-  const body = (await request.json().catch(() => null)) as { clientId?: string } | null
+  const body = (await request.json().catch(() => null)) as {
+    clientId?: string
+    checkinId?: string
+  } | null
   const clientId = body?.clientId?.trim()
+  let checkinId = body?.checkinId?.trim() || ''
   if (!clientId) {
     return NextResponse.json({ error: 'clientId is required.' }, { status: 400 })
+  }
+
+  // Backfill every mid-week check-in this client has sent into the chat thread.
+  const backfill = await ensureClientMidWeekCheckinsInCoachChat({
+    clientId,
+    coachId: gate.coachId,
+  })
+  if (backfill.error) {
+    console.error('[coach-conversations] mid-week backfill failed', backfill.error)
+  }
+
+  // Prefer the check-in the coach tapped; otherwise highlight the latest unreplied one.
+  if (!checkinId) {
+    const { data: pendingMidweek } = await gate.admin
+      .from('checkins')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('coach_id', gate.coachId)
+      .eq('checkin_type', 'mid_week')
+      .eq('reviewed', false)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    checkinId = pendingMidweek?.id ?? ''
+  }
+
+  if (backfill.conversationId) {
+    const { data: conversation } = await gate.admin
+      .from('coach_conversations')
+      .select('*')
+      .eq('id', backfill.conversationId)
+      .maybeSingle()
+    if (conversation) {
+      return NextResponse.json({
+        conversation,
+        isNew: false,
+        checkinPosted: backfill.postedCount > 0,
+        checkinId: checkinId || null,
+        midWeekPostedCount: backfill.postedCount,
+      })
+    }
   }
 
   const result = await getOrCreateConversationForCoach(gate.admin, gate.coachId, clientId)
@@ -77,5 +123,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     conversation: result.data,
     isNew: result.isNew,
+    checkinPosted: false,
+    checkinId: checkinId || null,
+    midWeekPostedCount: backfill.postedCount,
   })
 }

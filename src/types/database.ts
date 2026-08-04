@@ -866,6 +866,11 @@ export type ConversationMessage = {
   content: string | null
   media_url: string | null
   media_duration_seconds: number | null
+  source_checkin_id: string | null
+  related_checkin_id: string | null
+  reply_to_message_id: string | null
+  /** When true, message is coach-internal and must never be shown to clients. */
+  coach_only: boolean
   read_at: string | null
   created_at: string
 }

@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
-import { isCheckinSystemMessage } from '@/lib/checkin-chat'
+import { serializeCoachResponse } from '@/lib/checkin'
+import {
+  formatCheckinChatMessageFromRow,
+  isCheckinSystemMessage,
+} from '@/lib/checkin-chat'
 import {
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
@@ -8,6 +12,7 @@ import {
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type {
+  Checkin,
   CoachConversation,
   ConversationMessage,
   ConversationStatus,
@@ -28,11 +33,15 @@ function messagePreview(
 async function insertSystemMessage(
   conversationId: string,
   content: string,
-  options?: { incrementCoachUnread?: boolean }
-): Promise<void> {
+  options?: {
+    incrementCoachUnread?: boolean
+    sourceCheckinId?: string
+    createdAt?: string
+  }
+): Promise<{ error: string | null }> {
   const admin = createAdminClient()
-  const now = new Date().toISOString()
-  const { data: conversation } = options?.incrementCoachUnread
+  const createdAt = options?.createdAt ?? new Date().toISOString()
+  const { data: conversation } = options?.incrementCoachUnread || options?.sourceCheckinId
     ? await admin
         .from('coach_conversations')
         .select('client_id')
@@ -40,14 +49,56 @@ async function insertSystemMessage(
         .single()
     : { data: null }
 
-  await admin.from('conversation_messages').insert({
+  // Check-in summaries are stored as normal client text so they appear as
+  // readable incoming bubbles in coach chat (not easy-to-miss system chips).
+  const isCheckinSummary = Boolean(options?.sourceCheckinId)
+  const { error } = await admin.from('conversation_messages').insert({
     conversation_id: conversationId,
-    sender_type: (options?.incrementCoachUnread ? 'client' : 'system') as MessageSender,
-    sender_id: options?.incrementCoachUnread ? conversation?.client_id ?? null : null,
-    message_type: 'system' as MessageType,
+    sender_type: (options?.incrementCoachUnread || isCheckinSummary
+      ? 'client'
+      : 'system') as MessageSender,
+    sender_id:
+      options?.incrementCoachUnread || isCheckinSummary
+        ? conversation?.client_id ?? null
+        : null,
+    message_type: (isCheckinSummary ? 'text' : 'system') as MessageType,
     content,
-    created_at: now,
+    source_checkin_id: options?.sourceCheckinId ?? null,
+    coach_only: false,
+    related_checkin_id: null,
+    created_at: createdAt,
   })
+
+  // Idempotent re-post of the same check-in summary is a no-op success.
+  if (error?.code === '23505' && options?.sourceCheckinId) {
+    return { error: null }
+  }
+  return { error: error?.message ?? null }
+}
+
+async function syncConversationLatestMessage(conversationId: string): Promise<void> {
+  const admin = createAdminClient()
+  const { data: latest } = await admin
+    .from('conversation_messages')
+    .select('content, message_type, created_at')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!latest?.created_at) return
+
+  await admin
+    .from('coach_conversations')
+    .update({
+      last_message_at: latest.created_at,
+      last_message_preview: messagePreview(
+        (latest.message_type as MessageType) ?? 'text',
+        latest.content
+      ),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', conversationId)
 }
 
 async function syncConversationCoach(
@@ -366,6 +417,85 @@ export async function getOrCreateConversationForCoach(
   return { data: updated as CoachConversation, error: null, isNew: true }
 }
 
+function coachReplyFeedback(input: {
+  messageType: MessageType
+  content?: string
+}): string {
+  const content = input.content?.trim()
+  if (input.messageType === 'text' && content) return content
+  if (input.messageType === 'voice') return 'Coach replied with a voice message in chat.'
+  if (input.messageType === 'image') return 'Coach replied with a photo in chat.'
+  return content || 'Coach replied in chat.'
+}
+
+/**
+ * When a coach replies in a thread that has an unreplied mid-week check-in summary,
+ * mark that check-in reviewed. Voice/text/photo replies all count.
+ */
+async function completeMidWeekCheckinFromCoachReply(
+  supabase: SupabaseClient,
+  input: {
+    conversationId: string
+    replyCreatedAt: string
+    messageType: MessageType
+    content?: string
+  }
+): Promise<void> {
+  const { data: summary, error: summaryError } = await supabase
+    .from('conversation_messages')
+    .select('source_checkin_id')
+    .eq('conversation_id', input.conversationId)
+    .not('source_checkin_id', 'is', null)
+    .lte('created_at', input.replyCreatedAt)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (summaryError || !summary?.source_checkin_id) return
+
+  const { data: checkin, error: checkinError } = await supabase
+    .from('checkins')
+    .select('id, client_id, checkin_type, reviewed')
+    .eq('id', summary.source_checkin_id)
+    .maybeSingle()
+
+  if (checkinError || !checkin || checkin.checkin_type !== 'mid_week' || checkin.reviewed) {
+    return
+  }
+
+  const reviewedAt = input.replyCreatedAt
+  const { error: updateError } = await supabase
+    .from('checkins')
+    .update({
+      reviewed: true,
+      reviewed_at: reviewedAt,
+      coach_response: serializeCoachResponse({
+        feedback: coachReplyFeedback(input),
+        action_items: '',
+      }),
+    })
+    .eq('id', checkin.id)
+    .eq('reviewed', false)
+
+  if (updateError) {
+    console.error('[coach-chat] mid-week check-in completion failed:', updateError.message)
+    return
+  }
+
+  const { count } = await supabase
+    .from('checkins')
+    .select('id', { count: 'exact', head: true })
+    .eq('client_id', checkin.client_id)
+    .eq('reviewed', false)
+
+  if ((count ?? 0) === 0) {
+    await supabase
+      .from('profiles')
+      .update({ checkin_awaiting: false })
+      .eq('id', checkin.client_id)
+  }
+}
+
 export async function sendChatMessage(
   supabase: SupabaseClient,
   input: {
@@ -376,10 +506,27 @@ export async function sendChatMessage(
     content?: string
     mediaUrl?: string
     mediaDurationSeconds?: number
+    replyToMessageId?: string | null
   }
 ): Promise<{ data: ConversationMessage | null; error: string | null }> {
   const now = new Date().toISOString()
   const messageType = input.messageType ?? 'text'
+  let replyToMessageId: string | null = input.replyToMessageId?.trim() || null
+
+  if (replyToMessageId) {
+    const { data: parent, error: parentError } = await supabase
+      .from('conversation_messages')
+      .select('id, conversation_id')
+      .eq('id', replyToMessageId)
+      .maybeSingle()
+
+    if (parentError) {
+      return { data: null, error: parentError.message }
+    }
+    if (!parent || parent.conversation_id !== input.conversationId) {
+      return { data: null, error: 'Reply target message was not found in this chat.' }
+    }
+  }
 
   const { data, error } = await supabase
     .from('conversation_messages')
@@ -391,6 +538,9 @@ export async function sendChatMessage(
       content: input.content ?? null,
       media_url: input.mediaUrl ?? null,
       media_duration_seconds: input.mediaDurationSeconds ?? null,
+      reply_to_message_id: replyToMessageId,
+      coach_only: false,
+      related_checkin_id: null,
       created_at: now,
     })
     .select()
@@ -407,6 +557,20 @@ export async function sendChatMessage(
     .single()
 
   if (conv) {
+    if (input.senderType === 'coach') {
+      try {
+        await completeMidWeekCheckinFromCoachReply(supabase, {
+          conversationId: input.conversationId,
+          replyCreatedAt: data.created_at,
+          messageType,
+          content: input.content,
+        })
+      } catch (err) {
+        // The reply is already persisted; completion can be retried from the check-in.
+        console.error('[coach-chat] mid-week completion failed after reply:', err)
+      }
+    }
+
     try {
       if (input.senderType === 'coach') {
         const replyBody =
@@ -509,58 +673,207 @@ export { formatMessageTime, formatRelativeActivity } from '@/lib/coach-chat-ui'
  * Post a check-in summary into the client's persistent coach conversation.
  * Uses admin client — safe for API routes after check-in submit.
  */
-export async function postCheckinToCoachChat(
-  supabase: SupabaseClient,
-  input: {
-    clientId: string
-    coachId: string
-    message: string
-    checkinId: string
-    checkinType: 'mid_week' | 'weekly'
-  }
-): Promise<{ error: string | null }> {
+export async function postCheckinToCoachChat(input: {
+  clientId: string
+  coachId: string
+  message: string
+  checkinId: string
+  checkinType: 'mid_week' | 'weekly'
+  notifyCoach?: boolean
+  /** When backfilling history, use the original submit time so cards land in order. */
+  createdAt?: string
+  incrementCoachUnread?: boolean
+}): Promise<{ conversationId: string | null; error: string | null }> {
   try {
-    const { data: conversation, error: convError, isNew } = await getOrCreateConversation(
-      supabase,
+    const admin = createAdminClient()
+    const { data: conversation, error: convError } = await getOrCreateConversation(
+      admin,
       input.clientId
     )
 
     if (convError || !conversation) {
-      return { error: convError ?? 'Could not open conversation' }
+      return { conversationId: null, error: convError ?? 'Could not open conversation' }
     }
 
     if (conversation.coach_id !== input.coachId) {
-      await supabase
+      await admin
         .from('coach_conversations')
         .update({ coach_id: input.coachId, updated_at: new Date().toISOString() })
         .eq('id', conversation.id)
     }
 
-    await insertSystemMessage(conversation.id, input.message, { incrementCoachUnread: !isNew })
-
-    const admin = createAdminClient()
-    const { data: coach } = await admin
-      .from('coaches')
-      .select('user_id')
-      .eq('id', input.coachId)
-      .maybeSingle()
-
-    if (coach?.user_id) {
-      const label = input.checkinType === 'mid_week' ? 'Mid-week check-in' : 'Weekly check-in'
-      await sendNotification({
-        userId: coach.user_id,
-        type: 'unread_chat',
-        title: `${label} in chat`,
-        body: input.message.split('\n').slice(0, 3).join(' · '),
-        actionUrl: `/coach/chat/${conversation.id}`,
-        metadata: { checkinId: input.checkinId, clientId: input.clientId },
-      })
+    const inserted = await insertSystemMessage(conversation.id, input.message, {
+      incrementCoachUnread: input.incrementCoachUnread ?? true,
+      sourceCheckinId: input.checkinId,
+      createdAt: input.createdAt,
+    })
+    if (inserted.error) {
+      return { conversationId: conversation.id, error: inserted.error }
     }
 
-    return { error: null }
+    if (input.notifyCoach !== false) {
+      const { data: coach } = await admin
+        .from('coaches')
+        .select('user_id')
+        .eq('id', input.coachId)
+        .maybeSingle()
+
+      if (coach?.user_id) {
+        const label = input.checkinType === 'mid_week' ? 'Mid-week check-in' : 'Weekly check-in'
+        await sendNotification({
+          userId: coach.user_id,
+          type: 'unread_chat',
+          title: `${label} in chat`,
+          body: input.message.split('\n').slice(0, 3).join(' · '),
+          actionUrl: `/coach/chat?clientId=${input.clientId}&checkinId=${input.checkinId}`,
+          metadata: { checkinId: input.checkinId, clientId: input.clientId },
+          idempotencyKey: `checkin-chat:${input.checkinId}:coach`,
+        })
+      }
+    }
+
+    return { conversationId: conversation.id, error: null }
   } catch (err) {
     console.error('[checkin-chat]', err)
-    return { error: err instanceof Error ? err.message : 'Failed to post check-in to chat' }
+    return {
+      conversationId: null,
+      error: err instanceof Error ? err.message : 'Failed to post check-in to chat',
+    }
+  }
+}
+
+/**
+ * Make sure a check-in's answers are visible in the client chat thread.
+ * Used when a coach opens midweek check-in → chat (repairs missed/failed posts).
+ */
+export async function ensureCheckinInCoachChat(input: {
+  checkinId: string
+  coachId: string
+  notifyCoach?: boolean
+}): Promise<{ conversationId: string | null; posted: boolean; error: string | null }> {
+  try {
+    const admin = createAdminClient()
+    const { data: checkin, error: checkinError } = await admin
+      .from('checkins')
+      .select('*')
+      .eq('id', input.checkinId)
+      .maybeSingle()
+
+    if (checkinError || !checkin) {
+      return {
+        conversationId: null,
+        posted: false,
+        error: checkinError?.message ?? 'Check-in not found',
+      }
+    }
+
+    const row = checkin as Checkin
+    if (row.coach_id && row.coach_id !== input.coachId) {
+      return { conversationId: null, posted: false, error: 'Check-in is not assigned to you.' }
+    }
+
+    const { data: existing } = await admin
+      .from('conversation_messages')
+      .select('id, conversation_id')
+      .eq('source_checkin_id', input.checkinId)
+      .maybeSingle()
+
+    if (existing?.conversation_id) {
+      return { conversationId: existing.conversation_id, posted: false, error: null }
+    }
+
+    const message = formatCheckinChatMessageFromRow(row)
+    if (!message) {
+      return {
+        conversationId: null,
+        posted: false,
+        error: 'Check-in is missing fields needed for the chat summary.',
+      }
+    }
+
+    const posted = await postCheckinToCoachChat({
+      clientId: row.client_id,
+      coachId: input.coachId,
+      message,
+      checkinId: row.id,
+      checkinType: row.checkin_type,
+      notifyCoach: input.notifyCoach ?? false,
+      createdAt: row.submitted_at,
+      incrementCoachUnread: !row.reviewed,
+    })
+
+    return {
+      conversationId: posted.conversationId,
+      posted: !posted.error,
+      error: posted.error,
+    }
+  } catch (err) {
+    console.error('[checkin-chat] ensure failed:', err)
+    return {
+      conversationId: null,
+      posted: false,
+      error: err instanceof Error ? err.message : 'Failed to ensure check-in in chat',
+    }
+  }
+}
+
+/**
+ * Post every mid-week check-in this client has sent into their coach chat
+ * (idempotent). Missing cards are inserted at the original submit time.
+ */
+export async function ensureClientMidWeekCheckinsInCoachChat(input: {
+  clientId: string
+  coachId: string
+}): Promise<{ conversationId: string | null; postedCount: number; error: string | null }> {
+  try {
+    const admin = createAdminClient()
+    const { data: checkins, error: checkinsError } = await admin
+      .from('checkins')
+      .select('*')
+      .eq('client_id', input.clientId)
+      .eq('checkin_type', 'mid_week')
+      .order('submitted_at', { ascending: true })
+
+    if (checkinsError) {
+      return { conversationId: null, postedCount: 0, error: checkinsError.message }
+    }
+
+    const rows = (checkins ?? []) as Checkin[]
+    if (rows.length === 0) {
+      const { data: conversation } = await getOrCreateConversation(admin, input.clientId)
+      return { conversationId: conversation?.id ?? null, postedCount: 0, error: null }
+    }
+
+    let conversationId: string | null = null
+    let postedCount = 0
+
+    for (const row of rows) {
+      if (row.coach_id && row.coach_id !== input.coachId) continue
+
+      const result = await ensureCheckinInCoachChat({
+        checkinId: row.id,
+        coachId: input.coachId,
+        notifyCoach: false,
+      })
+      if (result.conversationId) conversationId = result.conversationId
+      if (result.posted) postedCount += 1
+      if (result.error) {
+        console.error('[checkin-chat] mid-week backfill item failed:', row.id, result.error)
+      }
+    }
+
+    if (conversationId) {
+      await syncConversationLatestMessage(conversationId)
+    }
+
+    return { conversationId, postedCount, error: null }
+  } catch (err) {
+    console.error('[checkin-chat] mid-week backfill failed:', err)
+    return {
+      conversationId: null,
+      postedCount: 0,
+      error: err instanceof Error ? err.message : 'Failed to backfill mid-week check-ins',
+    }
   }
 }
 
@@ -636,6 +949,76 @@ export async function postCoachCheckinFeedbackToChat(input: {
     return {
       conversationId: null,
       error: err instanceof Error ? err.message : 'Failed to post check-in feedback to chat',
+    }
+  }
+}
+
+/**
+ * Post a coach-only mid-week AI brief into chat.
+ * Uses sender_type=system so unread/preview triggers do not treat it as a client message,
+ * and coach_only=true so clients never receive it.
+ */
+export async function postMidWeekAiSuggestionToChat(input: {
+  clientId: string
+  coachId: string
+  checkinId: string
+  content: string
+  conversationId?: string | null
+}): Promise<{ conversationId: string | null; error: string | null }> {
+  try {
+    const admin = createAdminClient()
+    let conversationId = input.conversationId ?? null
+
+    if (!conversationId) {
+      const { data: conversation, error: convError } = await getOrCreateConversation(
+        admin,
+        input.clientId
+      )
+      if (convError || !conversation) {
+        return { conversationId: null, error: convError ?? 'Could not open conversation' }
+      }
+      conversationId = conversation.id
+      if (conversation.coach_id !== input.coachId) {
+        await admin
+          .from('coach_conversations')
+          .update({ coach_id: input.coachId, updated_at: new Date().toISOString() })
+          .eq('id', conversation.id)
+      }
+    }
+
+    const { data: summary } = await admin
+      .from('conversation_messages')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('source_checkin_id', input.checkinId)
+      .maybeSingle()
+
+    const { error } = await admin.from('conversation_messages').insert({
+      conversation_id: conversationId,
+      sender_type: 'system' as MessageSender,
+      sender_id: null,
+      message_type: 'system' as MessageType,
+      content: input.content,
+      coach_only: true,
+      related_checkin_id: input.checkinId,
+      reply_to_message_id: summary?.id ?? null,
+      source_checkin_id: null,
+      created_at: new Date().toISOString(),
+    })
+
+    if (error?.code === '23505') {
+      return { conversationId, error: null }
+    }
+    if (error) {
+      return { conversationId, error: error.message }
+    }
+
+    return { conversationId, error: null }
+  } catch (err) {
+    console.error('[coach-chat] mid-week AI post failed:', err)
+    return {
+      conversationId: null,
+      error: err instanceof Error ? err.message : 'Failed to post mid-week AI suggestion',
     }
   }
 }

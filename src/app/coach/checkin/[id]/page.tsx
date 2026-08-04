@@ -191,7 +191,10 @@ export default function CoachCheckinDetailPage() {
             {checkin.coaching_week ? ` · Week ${checkin.coaching_week}` : ''}
             {' · '}Submitted {formatCheckinDate(checkin.submitted_at)}
           </p>
-          <Link href={`/coach/chat?clientId=${checkin.client_id}`} style={styles.chatLink}>
+          <Link
+            href={`/coach/chat?clientId=${checkin.client_id}&checkinId=${checkin.id}`}
+            style={styles.chatLink}
+          >
             Reply in chat →
           </Link>
         </div>
@@ -343,40 +346,59 @@ export default function CoachCheckinDetailPage() {
           </section>
         )}
 
-        <section style={styles.card}>
-          <h2 style={styles.cardTitle}>Coach review</h2>
-          {checkin.reviewed && (
-            <p style={styles.reviewedBadge}>Reviewed {formatCheckinDate(checkin.reviewed_at)}</p>
-          )}
-          <form onSubmit={handleSubmitReview}>
-            <div style={styles.field}>
-              <label style={styles.label}>Feedback *</label>
-              <textarea
-                value={response.feedback}
-                onChange={(e) => setResponse({ ...response, feedback: e.target.value })}
-                rows={4}
-                style={styles.textarea}
-                placeholder="Overall feedback for the client..."
-                required
-              />
-            </div>
-            <div style={styles.field}>
-              <label style={styles.label}>Action items</label>
-              <textarea
-                value={response.action_items}
-                onChange={(e) => setResponse({ ...response, action_items: e.target.value })}
-                rows={3}
-                style={styles.textarea}
-                placeholder="Specific changes for next week..."
-              />
-            </div>
-            {!checkin.reviewed && (
-              <button type="submit" disabled={submitting} style={styles.submitBtn}>
-                {submitting ? 'Saving...' : 'Mark as reviewed'}
-              </button>
+        {isWeekly ? (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Coach review</h2>
+            {checkin.reviewed && (
+              <p style={styles.reviewedBadge}>Reviewed {formatCheckinDate(checkin.reviewed_at)}</p>
             )}
-          </form>
-        </section>
+            <form onSubmit={handleSubmitReview}>
+              <div style={styles.field}>
+                <label style={styles.label}>Feedback *</label>
+                <textarea
+                  value={response.feedback}
+                  onChange={(e) => setResponse({ ...response, feedback: e.target.value })}
+                  rows={4}
+                  style={styles.textarea}
+                  placeholder="Overall feedback for the client..."
+                  required
+                />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Action items</label>
+                <textarea
+                  value={response.action_items}
+                  onChange={(e) => setResponse({ ...response, action_items: e.target.value })}
+                  rows={3}
+                  style={styles.textarea}
+                  placeholder="Specific changes for next week..."
+                />
+              </div>
+              {!checkin.reviewed && (
+                <button type="submit" disabled={submitting} style={styles.submitBtn}>
+                  {submitting ? 'Saving...' : 'Mark as reviewed'}
+                </button>
+              )}
+            </form>
+          </section>
+        ) : (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Reply in coach chat</h2>
+            {checkin.reviewed && (
+              <p style={styles.reviewedBadge}>Replied {formatCheckinDate(checkin.reviewed_at)}</p>
+            )}
+            <p style={styles.notes}>
+              This update is already visible in the client&apos;s chat. Send a short reply there —
+              text or voice. A mid-week check-in does not create a new plan.
+            </p>
+            <Link
+              href={`/coach/chat?clientId=${checkin.client_id}&checkinId=${checkin.id}`}
+              style={{ ...styles.submitBtn, display: 'inline-flex', textDecoration: 'none' }}
+            >
+              Open chat and reply
+            </Link>
+          </section>
+        )}
       {gallery ? (
         <PhotoGalleryViewer
           photos={gallery.photos}

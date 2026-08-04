@@ -21,6 +21,7 @@ function CoachChatListInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const clientIdParam = searchParams.get('clientId')
+  const checkinIdParam = searchParams.get('checkinId')
   const { conversations, loading, error, retry, reload } = useCoachConversationList({
     realtimeScope: 'chat-list',
   })
@@ -55,7 +56,9 @@ function CoachChatListInner() {
     const open = async () => {
       setAutoOpening(true)
       setOpenError('')
-      const result = await openCoachChatWithClient(clientIdParam)
+      const result = await openCoachChatWithClient(clientIdParam, {
+        checkinId: checkinIdParam,
+      })
       if (cancelled) return
       if ('error' in result) {
         setOpenError(result.error)
@@ -68,7 +71,7 @@ function CoachChatListInner() {
     return () => {
       cancelled = true
     }
-  }, [clientIdParam, loading, router])
+  }, [checkinIdParam, clientIdParam, loading, router])
 
   const conversationClientIds = useMemo(
     () => new Set(conversations.map((c) => c.client_id)),

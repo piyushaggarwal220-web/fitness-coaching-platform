@@ -1,4 +1,43 @@
-import type { CheckinType } from '@/types/database'
+import type { Checkin, CheckinType, ConversationMessage } from '@/types/database'
+
+export const AI_MIDWEEK_CHAT_PREFIX = 'AI brief · coach only'
+const AI_SUGGESTED_REPLY_HEADER = 'Suggested reply'
+
+export function formatMidWeekAiChatMessage(input: {
+  analysis: string
+  suggestedReply: string
+}): string {
+  return [
+    AI_MIDWEEK_CHAT_PREFIX,
+    '',
+    'Analysis',
+    input.analysis.trim(),
+    '',
+    AI_SUGGESTED_REPLY_HEADER,
+    input.suggestedReply.trim(),
+  ].join('\n')
+}
+
+export function isMidWeekAiChatMessage(
+  message: Pick<ConversationMessage, 'coach_only' | 'content' | 'related_checkin_id'> | {
+    coach_only?: boolean | null
+    content?: string | null
+    related_checkin_id?: string | null
+  }
+): boolean {
+  if (message.coach_only) return true
+  const content = message.content?.trim() ?? ''
+  return content.startsWith(AI_MIDWEEK_CHAT_PREFIX)
+}
+
+export function parseMidWeekAiSuggestedReply(content: string | null | undefined): string | null {
+  if (!content?.trim()) return null
+  const marker = `\n${AI_SUGGESTED_REPLY_HEADER}\n`
+  const index = content.indexOf(marker)
+  if (index < 0) return null
+  const reply = content.slice(index + marker.length).trim()
+  return reply || null
+}
 
 export function formatMidWeekCheckinChatMessage(input: {
   coachingWeek: number
@@ -7,10 +46,12 @@ export function formatMidWeekCheckinChatMessage(input: {
   energyLevel: number
   sleepQuality: number
   stressLevel: number
+  hungerLevel: number
   adherenceWins?: string | null
   adherenceStruggles?: string | null
   painInjuries?: string | null
   questionsForCoach?: string | null
+  additionalComments?: string | null
 }): string {
   const lines = [
     '📋 Mid Week Check-in',
@@ -22,6 +63,7 @@ export function formatMidWeekCheckinChatMessage(input: {
     `Energy: ${input.energyLevel}/10`,
     `Sleep: ${input.sleepQuality}/10`,
     `Stress: ${input.stressLevel}/10`,
+    `Hunger: ${input.hungerLevel}/10`,
   ]
 
   if (input.adherenceWins?.trim()) {
@@ -39,6 +81,16 @@ export function formatMidWeekCheckinChatMessage(input: {
   if (input.questionsForCoach?.trim()) {
     lines.push('', 'Question', input.questionsForCoach.trim())
   }
+
+  if (input.additionalComments?.trim()) {
+    lines.push('', 'Additional comments', input.additionalComments.trim())
+  }
+
+  lines.push(
+    '',
+    'Coach reply requested',
+    'Please send a short response in this chat. No plan update is needed.'
+  )
 
   return lines.join('\n')
 }
@@ -126,5 +178,67 @@ export function isCheckinSystemMessage(content: string | null | undefined): bool
 export function checkinTypeFromMessage(content: string): CheckinType | null {
   if (content.startsWith('📋 Mid Week Check-in')) return 'mid_week'
   if (content.startsWith('📋 Weekly Check-in')) return 'weekly'
+  return null
+}
+
+function asScore(value: unknown, fallback = 0): number {
+  const n = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+/** Build the chat summary card text from a persisted check-in row. */
+export function formatCheckinChatMessageFromRow(checkin: Checkin): string | null {
+  const week = asScore(checkin.coaching_week, 0)
+
+  if (checkin.checkin_type === 'mid_week') {
+    return formatMidWeekCheckinChatMessage({
+      coachingWeek: week,
+      dietAdherence: asScore(checkin.diet_adherence),
+      workoutAdherence: asScore(checkin.workout_adherence),
+      energyLevel: asScore(checkin.energy_level),
+      sleepQuality: asScore(checkin.sleep_quality),
+      stressLevel: asScore(checkin.stress_level),
+      hungerLevel: asScore(checkin.hunger_level),
+      adherenceWins: checkin.adherence_wins,
+      adherenceStruggles: checkin.adherence_struggles,
+      painInjuries: checkin.pain_injuries,
+      questionsForCoach: checkin.questions_for_coach,
+      additionalComments: checkin.notes,
+    })
+  }
+
+  if (checkin.checkin_type === 'weekly') {
+    if (checkin.weight == null || checkin.weight === ('' as unknown)) {
+      return null
+    }
+
+    const photoCount =
+      Number(Boolean(checkin.progress_photo_front)) +
+      Number(Boolean(checkin.progress_photo_side)) +
+      Number(Boolean(checkin.progress_photo_back)) +
+      (checkin.extra_photos?.length ?? 0)
+
+    return formatWeeklyCheckinChatMessage({
+      coachingWeek: week,
+      weight: asScore(checkin.weight),
+      chest: checkin.chest == null ? null : asScore(checkin.chest),
+      thigh: checkin.thigh == null ? null : asScore(checkin.thigh),
+      navel: checkin.navel == null ? null : asScore(checkin.navel),
+      dietAdherence: asScore(checkin.diet_adherence),
+      workoutAdherence: asScore(checkin.workout_adherence),
+      energyLevel: asScore(checkin.energy_level),
+      sleepQuality: asScore(checkin.sleep_quality),
+      stressLevel: asScore(checkin.stress_level),
+      motivationLevel: checkin.motivation_level == null ? null : asScore(checkin.motivation_level),
+      progressRating: checkin.progress_rating == null ? null : asScore(checkin.progress_rating),
+      progressNotes: checkin.progress_notes,
+      painInjuries: checkin.pain_injuries,
+      notes: checkin.notes,
+      questionsForCoach: checkin.questions_for_coach,
+      photoCount,
+      journeyUrl: '/journey',
+    })
+  }
+
   return null
 }

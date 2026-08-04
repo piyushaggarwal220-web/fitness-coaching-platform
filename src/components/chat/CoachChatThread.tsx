@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import type { CallRequest, CallRequestStatus, ConversationMessage } from '@/types/database'
 import { readApiJson } from '@/lib/api-response'
 import { formatMessageTime } from '@/lib/coach-chat-ui'
-import { isCheckinSystemMessage } from '@/lib/checkin-chat'
+import {
+  isCheckinSystemMessage,
+  isMidWeekAiChatMessage,
+  parseMidWeekAiSuggestedReply,
+} from '@/lib/checkin-chat'
 import { CoachReplyRatingPrompt } from '@/components/chat/CoachReplyRating'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
@@ -22,7 +26,7 @@ import {
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
 } from '@/lib/coach-working-hours'
-import { CalendarClock, Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
+import { CalendarClock, Check, CheckCheck, ImageIcon, Reply, Send, Smile, Sparkles, X } from 'lucide-react'
 
 /** WhatsApp-like dark palette (client portal) */
 const waDark = {
@@ -81,6 +85,8 @@ type CoachChatThreadProps = {
   coachId: string
   viewer: 'client' | 'coach'
   initialMessages?: ConversationMessage[]
+  /** When set, scroll to / highlight the check-in summary for this check-in id. */
+  highlightCheckinId?: string | null
 }
 
 function formatDuration(milliseconds: number): string {
@@ -102,7 +108,9 @@ function messagesVisuallyEqual(a: ConversationMessage[], b: ConversationMessage[
       left.read_at !== right.read_at ||
       left.content !== right.content ||
       left.media_url !== right.media_url ||
-      left.message_type !== right.message_type
+      left.message_type !== right.message_type ||
+      left.reply_to_message_id !== right.reply_to_message_id ||
+      left.coach_only !== right.coach_only
     ) {
       return false
     }
@@ -110,11 +118,56 @@ function messagesVisuallyEqual(a: ConversationMessage[], b: ConversationMessage[
   return true
 }
 
-export function CoachChatThread({ conversationId, coachId, viewer, initialMessages = [] }: CoachChatThreadProps) {
+function isCheckinMessage(msg: ConversationMessage): boolean {
+  return Boolean(msg.source_checkin_id) || isCheckinSystemMessage(msg.content)
+}
+
+function messageQuotePreview(msg: ConversationMessage): string {
+  if (isCheckinMessage(msg)) {
+    const firstLine = (msg.content ?? '')
+      .split('\n')
+      .map((line) => line.trim())
+      .find(Boolean)
+    return (firstLine ?? 'Check-in').slice(0, 100)
+  }
+  if (msg.message_type === 'voice') return 'Voice message'
+  if (msg.message_type === 'image') return 'Photo'
+  const text = (msg.content ?? '').trim()
+  return text ? text.slice(0, 120) : 'Message'
+}
+
+function messageAuthorLabel(
+  msg: ConversationMessage,
+  viewer: 'client' | 'coach',
+  peerLabel: string
+): string {
+  if (isCheckinMessage(msg)) return 'Check-in'
+  if (msg.sender_type === 'system') return 'System'
+  if (
+    (viewer === 'client' && msg.sender_type === 'client') ||
+    (viewer === 'coach' && msg.sender_type === 'coach')
+  ) {
+    return 'You'
+  }
+  return peerLabel
+}
+
+export function CoachChatThread({
+  conversationId,
+  coachId,
+  viewer,
+  initialMessages = [],
+  highlightCheckinId = null,
+}: CoachChatThreadProps) {
   const palette = viewer === 'coach' ? waCoach : waDark
   const incomingText = viewer === 'coach' ? waCoach.incomingText : waDark.text
   const incomingMeta = viewer === 'coach' ? waCoach.metaIncoming : waDark.meta
-  const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages)
+  const [messages, setMessages] = useState<ConversationMessage[]>(() =>
+    viewer === 'coach'
+      ? initialMessages
+      : initialMessages.filter((message) => !message.coach_only && !isMidWeekAiChatMessage(message))
+  )
+  const checkinHighlightRef = useRef<HTMLDivElement | null>(null)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(initialMessages.length === 0)
@@ -129,8 +182,11 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
   const [gallery, setGallery] = useState<{ photos: GalleryPhoto[]; index: number } | null>(null)
+  const [replyTo, setReplyTo] = useState<ConversationMessage | null>(null)
   const threadRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const messageNodeRefs = useRef<Map<string, HTMLElement>>(new Map())
   const lastPeerMessageIdRef = useRef<string | null>(null)
   const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sendingRef = useRef(false)
@@ -157,7 +213,11 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       return
     }
     if (parsed.data.messages) {
-      const incoming = parsed.data.messages
+      // Clients must never see coach-only AI briefs, even if a cached API payload leaks them.
+      const incoming =
+        viewer === 'coach'
+          ? parsed.data.messages
+          : parsed.data.messages.filter((message) => !message.coach_only && !isMidWeekAiChatMessage(message))
       const latestPeer = [...incoming].reverse().find((m) => m.sender_type !== viewer)
       const latestPeerId = latestPeer?.id ?? 'none'
       if (lastPeerMessageIdRef.current !== null && latestPeer && lastPeerMessageIdRef.current !== latestPeerId) {
@@ -203,6 +263,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
   useEffect(() => {
     prepareNotificationSound()
+    setReplyTo(null)
     if (initialMessages.length > 0) {
       // Seeded from the parent page — only refresh metadata (calls, presence, unread).
       queueMicrotask(() => void fetchMessages(false))
@@ -210,6 +271,19 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     }
     queueMicrotask(() => void fetchMessages())
   }, [fetchMessages, initialMessages.length])
+
+  const scrolledToCheckinRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!highlightCheckinId || loading || messages.length === 0) return
+    if (scrolledToCheckinRef.current === highlightCheckinId) return
+    const hasTarget = messages.some((msg) => msg.source_checkin_id === highlightCheckinId)
+    if (!hasTarget) return
+    scrolledToCheckinRef.current = highlightCheckinId
+    const frame = window.requestAnimationFrame(() => {
+      checkinHighlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [highlightCheckinId, loading, messages])
 
   useSupabaseRealtimeRefresh({
     channelName: `chat:${conversationId}`,
@@ -351,10 +425,32 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     stickToBottomRef.current = distanceFromBottom < 100
   }
 
+  const beginReply = (msg: ConversationMessage) => {
+    if (msg.id.startsWith('temp-')) return
+    setReplyTo(msg)
+    window.requestAnimationFrame(() => inputRef.current?.focus())
+  }
+
+  const scrollToMessage = (messageId: string) => {
+    const node = messageNodeRefs.current.get(messageId)
+    if (!node) return
+    node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    node.animate(
+      [
+        { outline: '2px solid transparent' },
+        { outline: '2px solid #00a884' },
+        { outline: '2px solid transparent' },
+      ],
+      { duration: 1200, easing: 'ease-out' }
+    )
+  }
+
   const sendMessage = async (opts?: { messageType?: string; mediaUrl?: string; mediaDurationSeconds?: number; content?: string }) => {
     if (sendingRef.current) return
     const content = opts?.content ?? (opts?.mediaUrl ? input : input.trim())
     if (!content && !opts?.mediaUrl) return
+    const replyTarget = replyTo
+    const replyToMessageId = replyTarget?.id ?? null
 
     const optimistic: ConversationMessage = {
       id: `temp-${Date.now()}`,
@@ -365,6 +461,10 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       content: content || null,
       media_url: opts?.mediaUrl ?? null,
       media_duration_seconds: opts?.mediaDurationSeconds ?? null,
+      source_checkin_id: null,
+      related_checkin_id: null,
+      reply_to_message_id: replyToMessageId,
+      coach_only: false,
       read_at: null,
       created_at: new Date().toISOString(),
     }
@@ -377,6 +477,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     setError('')
     setInput('')
     setImagePreview(null)
+    setReplyTo(null)
 
     try {
       const res = await fetch('/api/chat/messages', {
@@ -389,6 +490,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           messageType: opts?.messageType ?? 'text',
           mediaUrl: opts?.mediaUrl,
           mediaDurationSeconds: opts?.mediaDurationSeconds,
+          replyToMessageId: replyToMessageId || undefined,
         }),
       })
       const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)
@@ -398,6 +500,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
       setError(err instanceof Error ? err.message : 'Send failed')
       if (!opts?.mediaUrl) setInput(content)
+      if (replyTarget) setReplyTo(replyTarget)
     } finally {
       sendingRef.current = false
       setSending(false)
@@ -581,19 +684,114 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           const isSystem = msg.sender_type === 'system' || msg.message_type === 'system'
           const shouldAnimate = historyReadyRef.current && !animatedIdsRef.current.has(msg.id)
 
-          if (isSystem) {
-            const isCheckin = isCheckinSystemMessage(msg.content)
+          const isCheckin = isCheckinMessage(msg)
+          const isAiBrief = isMidWeekAiChatMessage(msg) || Boolean(msg.coach_only)
+          const isHighlighted =
+            Boolean(highlightCheckinId) && msg.source_checkin_id === highlightCheckinId
+          const repliedMessage = msg.reply_to_message_id
+            ? messages.find((candidate) => candidate.id === msg.reply_to_message_id) ?? null
+            : null
+          const canReply = !msg.id.startsWith('temp-') && (isCheckin || (!isSystem && !isAiBrief))
+
+          if (isAiBrief) {
+            if (viewer !== 'coach') return null
+            const suggestedReply = parseMidWeekAiSuggestedReply(msg.content)
             return (
               <div
                 key={msg.id}
-                className={`${isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'}${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
-                style={isCheckin ? styles.checkinSystemMsg : styles.systemMsg}
+                ref={(el) => {
+                  if (el) messageNodeRefs.current.set(msg.id, el)
+                  else messageNodeRefs.current.delete(msg.id)
+                }}
+                className={`coach-chat-ai-brief${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
+                style={styles.aiBriefCard}
               >
-                {isCheckin ? (
-                  <pre style={styles.checkinContent}>{msg.content}</pre>
-                ) : (
-                  msg.content
-                )}
+                <div style={styles.aiBriefEyebrow}>
+                  <Sparkles size={14} />
+                  AI brief · coach only · client cannot see this
+                </div>
+                <pre style={styles.aiBriefContent}>{msg.content}</pre>
+                {suggestedReply ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInput(suggestedReply)
+                      if (repliedMessage) beginReply(repliedMessage)
+                      else setReplyTo(null)
+                      window.requestAnimationFrame(() => inputRef.current?.focus())
+                    }}
+                    style={styles.aiUseReplyBtn}
+                  >
+                    Use suggested reply
+                  </button>
+                ) : null}
+              </div>
+            )
+          }
+
+          if (isSystem && !isCheckin) {
+            return (
+              <div
+                key={msg.id}
+                className={`coach-chat-system${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
+                style={styles.systemMsg}
+              >
+                {msg.content}
+              </div>
+            )
+          }
+
+          if (isCheckin) {
+            return (
+              <div
+                key={msg.id}
+                ref={(el) => {
+                  if (el) messageNodeRefs.current.set(msg.id, el)
+                  else messageNodeRefs.current.delete(msg.id)
+                  if (isHighlighted) checkinHighlightRef.current = el
+                }}
+                className={`coach-chat-checkin${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
+                style={{
+                  ...styles.checkinSystemMsg,
+                  alignSelf: viewer === 'coach' ? 'flex-start' : 'center',
+                  ...(viewer === 'coach'
+                    ? {
+                        backgroundColor: palette.incoming,
+                        color: incomingText,
+                        border: isHighlighted
+                          ? '2px solid #00a884'
+                          : '1px solid rgba(24,24,27,0.12)',
+                      }
+                    : null),
+                }}
+              >
+                {viewer === 'coach' ? (
+                  <div style={{ ...styles.checkinEyebrow, color: incomingMeta }}>
+                    Client check-in · tap Reply to answer this one
+                  </div>
+                ) : null}
+                <pre
+                  style={{
+                    ...styles.checkinContent,
+                    color: viewer === 'coach' ? incomingText : wa.text,
+                  }}
+                >
+                  {msg.content}
+                </pre>
+                {canReply ? (
+                  <button
+                    type="button"
+                    onClick={() => beginReply(msg)}
+                    style={{
+                      ...styles.replyActionBtn,
+                      color: viewer === 'coach' ? incomingMeta : wa.textMuted,
+                      borderColor: viewer === 'coach' ? 'rgba(17,27,33,0.18)' : 'rgba(255,255,255,0.18)',
+                    }}
+                  >
+                    <Reply size={14} />
+                    Reply
+                  </button>
+                ) : null}
               </div>
             )
           }
@@ -601,6 +799,10 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           return (
             <div
               key={msg.id}
+              ref={(el) => {
+                if (el) messageNodeRefs.current.set(msg.id, el)
+                else messageNodeRefs.current.delete(msg.id)
+              }}
               className={
                 shouldAnimate
                   ? (isMine ? motionClass.messageEnterMine : motionClass.messageEnterTheirs)
@@ -612,6 +814,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                 alignItems: isMine ? 'flex-end' : 'flex-start',
                 maxWidth: '100%',
                 paddingInline: 4,
+                gap: 4,
               }}
             >
               <div
@@ -639,6 +842,49 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                   ...(msg.message_type === 'image' ? { padding: 4 } : null),
                 }}
               >
+                {repliedMessage ? (
+                  <button
+                    type="button"
+                    onClick={() => scrollToMessage(repliedMessage.id)}
+                    style={{
+                      ...styles.quoteBox,
+                      backgroundColor: isMine ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.06)',
+                      borderLeftColor: isMine ? '#8ce3cf' : '#00a884',
+                    }}
+                  >
+                    <span style={{ ...styles.quoteAuthor, color: isMine ? '#8ce3cf' : '#00a884' }}>
+                      {messageAuthorLabel(repliedMessage, viewer, peerLabel)}
+                    </span>
+                    <span
+                      style={{
+                        ...styles.quoteText,
+                        color: isMine ? palette.text : incomingText,
+                      }}
+                    >
+                      {messageQuotePreview(repliedMessage)}
+                    </span>
+                  </button>
+                ) : msg.reply_to_message_id ? (
+                  <div
+                    style={{
+                      ...styles.quoteBox,
+                      backgroundColor: isMine ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.06)',
+                      borderLeftColor: isMine ? '#8ce3cf' : '#00a884',
+                    }}
+                  >
+                    <span style={{ ...styles.quoteAuthor, color: isMine ? '#8ce3cf' : '#00a884' }}>
+                      Reply
+                    </span>
+                    <span
+                      style={{
+                        ...styles.quoteText,
+                        color: isMine ? palette.metaOutgoing : incomingMeta,
+                      }}
+                    >
+                      Original message unavailable
+                    </span>
+                  </div>
+                ) : null}
                 {msg.message_type === 'voice' && msg.media_url ? (
                   <div className="coach-chat-voice">
                     <VoicePlayer
@@ -722,6 +968,21 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                   )}
                 </div>
               </div>
+              {canReply ? (
+                <button
+                  type="button"
+                  onClick={() => beginReply(msg)}
+                  style={{
+                    ...styles.replyChipBtn,
+                    alignSelf: isMine ? 'flex-end' : 'flex-start',
+                    color: wa.textMuted,
+                  }}
+                  aria-label="Reply to message"
+                >
+                  <Reply size={13} />
+                  Reply
+                </button>
+              ) : null}
               {viewer === 'client' && msg.sender_type === 'coach' && msg.message_type !== 'system' && (
                 <CoachReplyRatingPrompt messageId={msg.id} coachId={coachId} />
               )}
@@ -760,12 +1021,32 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         </div>
       )}
 
+      {replyTo ? (
+        <div style={styles.replyComposerBar}>
+          <div style={styles.replyComposerCopy}>
+            <span style={styles.replyComposerLabel}>
+              Replying to {messageAuthorLabel(replyTo, viewer, peerLabel)}
+            </span>
+            <span style={styles.replyComposerPreview}>{messageQuotePreview(replyTo)}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReplyTo(null)}
+            style={styles.replyComposerCancel}
+            aria-label="Cancel reply"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ) : null}
+
       <div className="coach-chat-input-bar" style={styles.inputBar}>
         <div style={styles.composer}>
           <span style={styles.composerIcon} aria-hidden>
             <Smile size={22} color={wa.textMuted} />
           </span>
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => { setInput(e.target.value); handleTyping() }}
             onKeyDown={(e) => {
@@ -775,7 +1056,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                 else void sendMessage()
               }
             }}
-            placeholder="Message"
+            placeholder={replyTo ? 'Reply…' : 'Message'}
             className="coach-chat-input"
             style={styles.input}
             disabled={sending}
@@ -801,7 +1082,11 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           <div style={styles.micWrap}>
             <VoiceRecorder
               conversationId={conversationId}
-              onSent={() => void fetchMessages()}
+              replyToMessageId={replyTo?.id ?? null}
+              onSent={() => {
+                setReplyTo(null)
+                void fetchMessages()
+              }}
               onError={setError}
             />
           </div>
@@ -961,6 +1246,13 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: '0 1px 0.5px rgba(0,0,0,0.15)',
     zIndex: 1,
   },
+  checkinEyebrow: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
   checkinContent: {
     margin: 0,
     fontFamily: 'inherit',
@@ -969,6 +1261,149 @@ const styles: Record<string, CSSProperties> = {
     color: wa.text,
     whiteSpace: 'pre-wrap',
     textAlign: 'left',
+  },
+  aiBriefCard: {
+    alignSelf: 'stretch',
+    width: '100%',
+    maxWidth: 380,
+    margin: '6px 0',
+    padding: '12px 14px',
+    borderRadius: 10,
+    backgroundColor: '#1a2730',
+    border: '1px solid rgba(0,168,132,0.45)',
+    boxShadow: '0 1px 0.5px rgba(0,0,0,0.15)',
+    zIndex: 1,
+  },
+  aiBriefEyebrow: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase',
+    color: '#8ce3cf',
+    marginBottom: 8,
+  },
+  aiBriefContent: {
+    margin: 0,
+    fontFamily: 'inherit',
+    fontSize: 13.5,
+    lineHeight: 1.5,
+    color: wa.text,
+    whiteSpace: 'pre-wrap',
+    textAlign: 'left',
+  },
+  aiUseReplyBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    padding: '8px 12px',
+    borderRadius: 8,
+    border: 'none',
+    background: wa.send,
+    color: '#fff',
+    fontSize: 12.5,
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  replyActionBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    padding: '7px 10px',
+    borderRadius: 8,
+    border: '1px solid rgba(255,255,255,0.18)',
+    background: 'transparent',
+    fontSize: 12.5,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  replyChipBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '2px 6px',
+    border: 'none',
+    background: 'transparent',
+    fontSize: 11.5,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  quoteBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    width: '100%',
+    textAlign: 'left',
+    border: 'none',
+    borderLeft: '3px solid #00a884',
+    borderRadius: 6,
+    padding: '6px 8px',
+    marginBottom: 6,
+    cursor: 'pointer',
+  },
+  quoteAuthor: {
+    fontSize: 11.5,
+    fontWeight: 700,
+    lineHeight: 1.2,
+  },
+  quoteText: {
+    fontSize: 12.5,
+    lineHeight: 1.35,
+    opacity: 0.9,
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+  },
+  replyComposerBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '8px 12px',
+    backgroundColor: wa.header,
+    borderTop: '1px solid rgba(255,255,255,0.08)',
+    flexShrink: 0,
+    zIndex: 2,
+  },
+  replyComposerCopy: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    borderLeft: '3px solid #00a884',
+    paddingLeft: 10,
+  },
+  replyComposerLabel: {
+    color: '#00a884',
+    fontSize: 12,
+    fontWeight: 700,
+  },
+  replyComposerPreview: {
+    color: wa.textMuted,
+    fontSize: 12.5,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  replyComposerCancel: {
+    width: 32,
+    height: 32,
+    border: 'none',
+    borderRadius: '50%',
+    background: wa.input,
+    color: wa.textMuted,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    flexShrink: 0,
   },
   bubbleMine: {
     backgroundColor: wa.outgoing,

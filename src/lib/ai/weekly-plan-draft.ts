@@ -295,6 +295,14 @@ export async function generateWeeklyPlanDraft(input: {
       throw new Error(checkinError?.message ?? 'Check-in not found')
     }
 
+    if (checkin.checkin_type !== 'weekly') {
+      return {
+        planId: null,
+        error: 'Mid-week check-ins require a coach reply in chat and never create a plan draft.',
+        generationTimeMs: Date.now() - started,
+      }
+    }
+
     const { data: activePlan } = await admin
       .from('plans')
       .select('*')

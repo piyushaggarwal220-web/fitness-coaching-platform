@@ -136,7 +136,25 @@ export default function CoachCheckinsPage() {
             </div>
           ) : (
             filtered.map((item) => (
-              <QueueCard key={`${item.clientId}-${item.type}-${item.coachingWeek}`} item={item} onOpen={(id) => router.push(`/coach/checkin/${id}`)} />
+              <QueueCard
+                key={`${item.clientId}-${item.type}-${item.coachingWeek}`}
+                item={item}
+                onOpen={(queueItem) => {
+                  if (
+                    queueItem.type === 'mid_week' &&
+                    queueItem.status !== 'completed' &&
+                    queueItem.checkinId
+                  ) {
+                    router.push(
+                      `/coach/chat?clientId=${queueItem.clientId}&checkinId=${queueItem.checkinId}`
+                    )
+                    return
+                  }
+                  if (queueItem.checkinId) {
+                    router.push(`/coach/checkin/${queueItem.checkinId}`)
+                  }
+                }}
+              />
             ))
           )}
         </div>
@@ -152,7 +170,13 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
   );
 }
 
-function QueueCard({ item, onOpen }: { item: CoachCheckinQueueItem; onOpen: (id: string) => void }) {
+function QueueCard({
+  item,
+  onOpen,
+}: {
+  item: CoachCheckinQueueItem
+  onOpen: (item: CoachCheckinQueueItem) => void
+}) {
   const badgeStyle =
     item.status === 'completed' ? localStyles.badgeReviewed :
     item.status === 'missed' ? localStyles.badgeMissed :
@@ -163,6 +187,7 @@ function QueueCard({ item, onOpen }: { item: CoachCheckinQueueItem; onOpen: (id:
     item.status === 'completed' ? 'Completed' :
     item.status === 'missed' ? 'Missed' :
     item.status === 'due_today' ? 'Due today' :
+    item.type === 'mid_week' ? 'Reply in chat' :
     'Pending review';
 
   const content = (
@@ -180,7 +205,7 @@ function QueueCard({ item, onOpen }: { item: CoachCheckinQueueItem; onOpen: (id:
 
   if (item.checkinId) {
     return (
-      <button type="button" style={localStyles.cardBtn} onClick={() => onOpen(item.checkinId!)}>
+      <button type="button" style={localStyles.cardBtn} onClick={() => onOpen(item)}>
         {content}
       </button>
     );

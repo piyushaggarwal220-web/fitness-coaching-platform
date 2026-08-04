@@ -11,6 +11,7 @@ type VoiceRecorderProps = {
   conversationId: string
   onSent: () => void
   onError: (msg: string) => void
+  replyToMessageId?: string | null
 }
 
 type RecordingFormat = {
@@ -105,7 +106,12 @@ async function queryMicPermission(): Promise<MicPermissionState> {
   return 'prompt'
 }
 
-export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorderProps) {
+export function VoiceRecorder({
+  conversationId,
+  onSent,
+  onError,
+  replyToMessageId = null,
+}: VoiceRecorderProps) {
   const [recording, setRecording] = useState(false)
   const [preview, setPreview] = useState<PreviewState | null>(null)
   const [sending, setSending] = useState(false)
@@ -256,6 +262,7 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
           messageType: 'voice',
           mediaUrl: path,
           mediaDurationSeconds: preview.duration,
+          replyToMessageId: replyToMessageId || undefined,
         }),
       })
       const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)

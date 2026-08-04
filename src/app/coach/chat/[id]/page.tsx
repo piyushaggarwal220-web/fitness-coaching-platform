@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Copy, Phone, Sparkles, UserRound } from 'lucide-react'
 import { CoachShell } from '@/components/ui/CoachShell'
+import { CheckinReplyPanel } from '@/components/chat/CheckinReplyPanel'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { readApiJson } from '@/lib/api-response'
@@ -29,6 +30,7 @@ function CoachChatDetailInner() {
   const searchParams = useSearchParams()
   const conversationId = params.id as string
   const back = resolveChatBackHref(searchParams.get('returnTo'))
+  const highlightCheckinId = searchParams.get('checkinId')
   const [conversation, setConversation] = useState<CoachConversation | null>(null)
   const [messages, setMessages] = useState<ConversationMessage[]>([])
   const [clientName, setClientName] = useState('')
@@ -234,11 +236,13 @@ function CoachChatDetailInner() {
         </div>
 
         <div className="coach-chat-detail-viewport">
+          {highlightCheckinId ? <CheckinReplyPanel checkinId={highlightCheckinId} /> : null}
           <CoachChatThread
             conversationId={conversation.id}
             coachId={conversation.coach_id}
             viewer="coach"
             initialMessages={messages}
+            highlightCheckinId={highlightCheckinId}
           />
         </div>
       </div>
