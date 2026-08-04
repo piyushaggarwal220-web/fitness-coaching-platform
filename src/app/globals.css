@@ -147,9 +147,10 @@ button, a[role="button"], input[type="submit"] {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Opacity-only: transform on this wrapper creates a containing block and breaks position:sticky descendants. */
 @keyframes pageEnter {
-  from { opacity: 0.96; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0.96; }
+  to { opacity: 1; }
 }
 
 @keyframes cardEnter {

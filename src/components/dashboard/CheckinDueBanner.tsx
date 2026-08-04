@@ -1,6 +1,8 @@
 'use client'
 
 import { Calendar, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { getCheckinTypeDisplayName } from '@/lib/checkin-schedule'
 import type { ScheduledCheckin } from '@/lib/checkin-schedule'
@@ -10,31 +12,44 @@ type Props = {
   checkin: ScheduledCheckin
 }
 
-/** Sticky top-of-homescreen alert while a check-in window is open. */
+/** Keeps page content clear of the fixed banner (icon row + padding). */
+export const CHECKIN_DUE_BANNER_HEIGHT = 72
+
+/**
+ * Fixed top-of-homescreen alert while a check-in window is open.
+ * Portaled + fixed so page-enter transforms / overflow ancestors cannot unpin it.
+ */
 export function CheckinDueBanner({ checkin }: Props) {
   const router = useRouter()
   const typeLabel = getCheckinTypeDisplayName(checkin.type)
+  const [mounted, setMounted] = useState(false)
 
-  return (
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const banner = (
     <button
       type="button"
       onClick={() => router.push(checkin.href)}
       aria-label={`${typeLabel} check-in is due. Start now.`}
       style={{
-        position: 'sticky',
+        position: 'fixed',
         top: `calc(${layout.topBarHeight}px + env(safe-area-inset-top, 0px))`,
+        left: 0,
+        right: 0,
         zIndex: 90,
         display: 'flex',
         alignItems: 'center',
         gap: spacing[3],
-        width: `calc(100% + ${spacing[3] * 2}px)`,
-        marginLeft: -spacing[3],
-        marginRight: -spacing[3],
-        marginTop: -spacing[3],
-        marginBottom: spacing[4],
+        width: '100%',
+        maxWidth: layout.maxWidthWide,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        minHeight: CHECKIN_DUE_BANNER_HEIGHT,
         padding: `${spacing[3]}px ${spacing[4]}px`,
         border: 'none',
-        borderBottom: `1px solid rgba(249, 115, 22, 0.35)`,
+        borderBottom: '1px solid rgba(249, 115, 22, 0.35)',
         background:
           'linear-gradient(90deg, rgba(249,115,22,0.22) 0%, rgba(249,115,22,0.12) 55%, rgba(24,24,27,0.96) 100%)',
         backdropFilter: 'blur(16px)',
@@ -94,5 +109,19 @@ export function CheckinDueBanner({ checkin }: Props) {
         <ChevronRight size={16} aria-hidden />
       </span>
     </button>
+  )
+
+  return (
+    <>
+      <div
+        aria-hidden
+        style={{
+          height: CHECKIN_DUE_BANNER_HEIGHT,
+          marginTop: -spacing[3],
+          marginBottom: spacing[4],
+        }}
+      />
+      {mounted ? createPortal(banner, document.body) : null}
+    </>
   )
 }
