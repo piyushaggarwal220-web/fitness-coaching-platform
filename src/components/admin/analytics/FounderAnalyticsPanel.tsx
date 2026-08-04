@@ -1,13 +1,20 @@
 'use client'
 
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { AdminStatCard } from '@/components/admin/AdminStatCard'
-import { BarChartCard, LineChartCard } from '@/components/admin/analytics/AnalyticsCharts'
+import {
+  BarChartCard,
+  EnrollmentDayChartCard,
+  LineChartCard,
+} from '@/components/admin/analytics/AnalyticsCharts'
 import { adminStyles as s } from '@/lib/admin/styles'
 import { colors } from '@/lib/design-tokens'
 import { formatInr, formatUsd } from '@/lib/admin/pricing'
-import type { BusinessAnalytics } from '@/lib/admin/business-analytics'
+import {
+  enrollmentCountsForDay,
+  type BusinessAnalytics,
+} from '@/lib/admin/business-analytics'
 
 function MetricRow({ label, value }: { label: string; value: string }) {
   return (
@@ -22,13 +29,16 @@ export function FounderAnalyticsPanel() {
   const [data, setData] = useState<BusinessAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedEnrollmentDate, setSelectedEnrollmentDate] = useState('')
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch('/api/admin/business-analytics')
         if (!res.ok) throw new Error('Failed to load analytics')
-        setData((await res.json()) as BusinessAnalytics)
+        const payload = (await res.json()) as BusinessAnalytics
+        setData(payload)
+        setSelectedEnrollmentDate(payload.enrollment.todayDate)
       } catch {
         setError('Business analytics unavailable.')
       }
@@ -36,6 +46,16 @@ export function FounderAnalyticsPanel() {
     }
     void load()
   }, [])
+
+  const selectedEnrollment = useMemo(() => {
+    if (!data || !selectedEnrollmentDate) return null
+    return enrollmentCountsForDay(data.charts.enrollmentsByDay, selectedEnrollmentDate)
+  }, [data, selectedEnrollmentDate])
+
+  const enrollmentChartPoints = useMemo(() => {
+    if (!data) return []
+    return data.charts.enrollmentsByDay.slice(-30)
+  }, [data])
 
   if (loading) {
     return <div style={{ ...s.card, color: colors.textMuted }}>Loading financial analytics…</div>
@@ -53,6 +73,70 @@ export function FounderAnalyticsPanel() {
           Real Razorpay captured revenue, refunds, estimated fees, and AI spend. Enrollment codes are
           tracked separately (₹0, not revenue).
         </p>
+      </div>
+
+      <div style={s.card}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 12,
+            flexWrap: 'wrap',
+            marginBottom: 12,
+          }}
+        >
+          <div>
+            <h3 style={{ ...sectionTitle, marginBottom: 4 }}>Enrollments by day</h3>
+            <p style={{ margin: 0, fontSize: 13, color: colors.textSecondary }}>
+              Unique people who enrolled via Razorpay payment or enrollment code ({data.enrollment.timezone}).
+            </p>
+          </div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: colors.textMuted }}>
+            Date
+            <input
+              type="date"
+              value={selectedEnrollmentDate}
+              max={data.enrollment.todayDate}
+              onChange={(event) => setSelectedEnrollmentDate(event.target.value)}
+              style={{ ...s.input, width: 180, minHeight: 44 }}
+            />
+          </label>
+        </div>
+        <div style={s.statGrid}>
+          <AdminStatCard
+            label="Payment"
+            value={String(selectedEnrollment?.paid ?? 0)}
+            hint="Captured Razorpay enrollments"
+            accent={colors.accent}
+          />
+          <AdminStatCard
+            label="Enrollment code"
+            value={String(selectedEnrollment?.code ?? 0)}
+            hint="Code redemptions"
+          />
+          <AdminStatCard
+            label="Total"
+            value={String(selectedEnrollment?.total ?? 0)}
+            hint={selectedEnrollmentDate || data.enrollment.todayDate}
+            accent={colors.textPrimary}
+          />
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+          <button
+            type="button"
+            style={s.secondaryBtn}
+            onClick={() => setSelectedEnrollmentDate(data.enrollment.todayDate)}
+          >
+            Today ({data.enrollment.todayPaid + data.enrollment.todayCode})
+          </button>
+          <Link href="/admin/purchases" style={{ ...s.linkBtn, alignSelf: 'center' }}>
+            Purchases →
+          </Link>
+          <Link href="/admin/redemption-codes" style={{ ...s.linkBtn, alignSelf: 'center' }}>
+            Enrollment codes →
+          </Link>
+        </div>
       </div>
 
       <div>
@@ -147,6 +231,10 @@ export function FounderAnalyticsPanel() {
           <BarChartCard title="AI Cost by Model" points={data.charts.aiCostByModel} valuePrefix="$" />
           <LineChartCard title="Customer Growth" points={data.charts.customerGrowth} />
           <LineChartCard title="Paid purchases / day" points={data.charts.purchasesPerDay} />
+          <EnrollmentDayChartCard
+            title="Enrollments / day (payment vs code, IST)"
+            points={enrollmentChartPoints}
+          />
         </div>
       </div>
 

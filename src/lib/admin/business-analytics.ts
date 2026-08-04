@@ -1,10 +1,18 @@
 import { calculateAiCostUsd, calculateRazorpayFeeInr, usdToInr } from '@/lib/admin/pricing'
 import { DEFAULTS, MODELS } from '@/lib/ai/config'
+import { COACHING_TIME_ZONE, getCoachingDateKey } from '@/lib/checkin-schedule'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AiGenerationLog, Purchase } from '@/types/database'
 
 export type DayPoint = { date: string; value: number }
 export type ModelCostPoint = { model: string; costUsd: number }
+/** People enrolled on an IST calendar day via Razorpay vs enrollment code. */
+export type EnrollmentDayPoint = {
+  date: string
+  paid: number
+  code: number
+  total: number
+}
 
 export type RevenueMetrics = {
   todayInr: number
@@ -84,6 +92,14 @@ export type EnrollmentFinanceMetrics = {
   trialClients: number
   seatsExpiringIn30Days: number
   pendingOnboarding: number
+  /** IST calendar day used for todayPaid / todayCode. */
+  timezone: typeof COACHING_TIME_ZONE
+  todayDate: string
+  /** Unique people with a captured paid purchase today (IST). */
+  todayPaid: number
+  /** Unique people who redeemed an enrollment code today (IST). */
+  todayCode: number
+  todayTotal: number
 }
 
 export type PlatformStatusMetrics = {
@@ -106,6 +122,8 @@ export type ChartSeries = {
   purchasesPerDay: DayPoint[]
   plansPerDay: DayPoint[]
   supportPerDay: DayPoint[]
+  /** Last 30 IST days — paid vs enrollment-code people. */
+  enrollmentsByDay: EnrollmentDayPoint[]
 }
 
 export type BusinessAnalytics = {
@@ -217,6 +235,51 @@ function uniqueDays(rows: { user_id: string | null; created_at: string }[], from
   return set.size
 }
 
+/** Recent IST calendar dates ending today, oldest → newest. */
+function recentIstDays(count: number, now: Date = new Date()): string[] {
+  const todayKey = getCoachingDateKey(now)
+  const [year, month, day] = todayKey.split('-').map(Number)
+  const days: string[] = []
+  for (let i = count - 1; i >= 0; i -= 1) {
+    // UTC midnight of that civil date stays on the same IST calendar day (UTC+05:30).
+    days.push(getCoachingDateKey(new Date(Date.UTC(year, month - 1, day - i))))
+  }
+  return days
+}
+
+function buildEnrollmentsByDay(
+  paidEvents: { id: string; user_id: string | null; created_at: string }[],
+  codeEvents: { user_id: string; redeemed_at: string }[],
+  dayKeys: string[]
+): EnrollmentDayPoint[] {
+  const paidByDay = new Map<string, Set<string>>()
+  const codeByDay = new Map<string, Set<string>>()
+
+  for (const event of paidEvents) {
+    const day = getCoachingDateKey(new Date(event.created_at))
+    if (!paidByDay.has(day)) paidByDay.set(day, new Set())
+    paidByDay.get(day)!.add(event.user_id ?? `purchase:${event.id}`)
+  }
+  for (const event of codeEvents) {
+    const day = getCoachingDateKey(new Date(event.redeemed_at))
+    if (!codeByDay.has(day)) codeByDay.set(day, new Set())
+    codeByDay.get(day)!.add(event.user_id)
+  }
+
+  return dayKeys.map((date) => {
+    const paid = paidByDay.get(date)?.size ?? 0
+    const code = codeByDay.get(date)?.size ?? 0
+    return { date, paid, code, total: paid + code }
+  })
+}
+
+export function enrollmentCountsForDay(
+  series: EnrollmentDayPoint[],
+  date: string
+): EnrollmentDayPoint {
+  return series.find((row) => row.date === date) ?? { date, paid: 0, code: 0, total: 0 }
+}
+
 export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
   const admin = createAdminClient()
   const now = new Date()
@@ -271,7 +334,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
       .limit(5000),
     admin.storage.listBuckets(),
     admin.from('redemption_codes').select('id, is_active, remaining_uses, max_redemptions'),
-    admin.from('redemption_usages').select('id', { count: 'exact', head: true }),
+    admin.from('redemption_usages').select('user_id, redeemed_at'),
     admin
       .from('profiles')
       .select('id, access_source, payment_confirmed, onboarding_complete, subscription_expires_at')
@@ -279,11 +342,29 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
   ])
 
   const purchases = (purchasesRes.data ?? []) as PurchaseRow[]
+  const redemptionUsages = (usagesRes.data ?? []) as { user_id: string; redeemed_at: string }[]
   const aiLogs = (aiLogsRes.data ?? []) as AiLogRow[]
   const aiLogsLifetime = (aiLogsLifetimeRes.data ?? []) as AiLogRow[]
   const activeClientIds = new Set(
     ((activeClientsRes.data ?? []) as { client_id: string }[]).map((p) => p.client_id)
   )
+  const paidEnrollmentPurchases = purchases.filter(
+    (p) => p.status === 'captured' && (p.amount_paise ?? 0) > 0
+  )
+  const todayIst = getCoachingDateKey(now)
+  const enrollmentActivityDays = [
+    ...paidEnrollmentPurchases.map((p) => getCoachingDateKey(new Date(p.created_at))),
+    ...redemptionUsages.map((u) => getCoachingDateKey(new Date(u.redeemed_at))),
+  ]
+  const enrollmentDayKeys = Array.from(
+    new Set([...recentIstDays(90, now), ...enrollmentActivityDays])
+  ).sort((a, b) => a.localeCompare(b))
+  const enrollmentsByDay = buildEnrollmentsByDay(
+    paidEnrollmentPurchases,
+    redemptionUsages,
+    enrollmentDayKeys
+  )
+  const todayEnrollment = enrollmentCountsForDay(enrollmentsByDay, todayIst)
 
   const revenue: RevenueMetrics = {
     todayInr: sumPurchaseInr(purchases, todayStart, nextDay),
@@ -427,7 +508,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
   const enrollment: EnrollmentFinanceMetrics = {
     codesIssued: codes.length,
     codesActive: codes.filter((c) => c.is_active && c.remaining_uses > 0).length,
-    codesRedeemed: usagesRes.count ?? 0,
+    codesRedeemed: redemptionUsages.length,
     usesRemaining: codes.reduce((sum, c) => sum + (c.is_active ? c.remaining_uses : 0), 0),
     paidClients: clientProfiles.filter((p) => p.access_source === 'purchase' && p.payment_confirmed).length,
     enrollmentClients: clientProfiles.filter(
@@ -440,6 +521,11 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
       return exp >= now.getTime() && exp <= in30.getTime()
     }).length,
     pendingOnboarding: clientProfiles.filter((p) => p.onboarding_complete === false).length,
+    timezone: COACHING_TIME_ZONE,
+    todayDate: todayIst,
+    todayPaid: todayEnrollment.paid,
+    todayCode: todayEnrollment.code,
+    todayTotal: todayEnrollment.total,
   }
 
   const profit: ProfitMetrics = {
@@ -515,6 +601,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
     purchasesPerDay: aggregateByDay(capturedPurchases.map((p) => ({ created_at: p.created_at, value: 1 }))),
     plansPerDay: aggregateByDay(planRows.map((p) => ({ created_at: p.created_at, value: 1 }))),
     supportPerDay: [] as DayPoint[],
+    enrollmentsByDay,
   }
 
   // Support per day from actual support requests
