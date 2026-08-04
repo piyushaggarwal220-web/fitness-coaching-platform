@@ -14,7 +14,7 @@ import {
 } from 'chart.js'
 import { Bar, Line } from 'react-chartjs-2'
 import { colors } from '@/lib/design-tokens'
-import type { DayPoint, ModelCostPoint } from '@/lib/admin/business-analytics'
+import type { DayPoint, EnrollmentDayPoint, ModelCostPoint } from '@/lib/admin/business-analytics'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 
@@ -141,6 +141,69 @@ export function BarChartCard({
                 tooltip: {
                   callbacks: {
                     label: (ctx) => `${valuePrefix}${ctx.parsed.y}`,
+                  },
+                },
+              },
+            }}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Grouped bars: payment enrollments vs enrollment-code redemptions per day. */
+export function EnrollmentDayChartCard({
+  title,
+  points,
+}: {
+  title: string
+  points: EnrollmentDayPoint[]
+}) {
+  const labels = points.map((p) => p.date)
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: 'Payment',
+        data: points.map((p) => p.paid),
+        backgroundColor: colors.accent,
+        borderRadius: 4,
+      },
+      {
+        label: 'Enrollment code',
+        data: points.map((p) => p.code),
+        backgroundColor: '#60a5fa',
+        borderRadius: 4,
+      },
+    ],
+  }
+
+  return (
+    <div style={cardStyle}>
+      <h3 style={titleStyle}>{title}</h3>
+      <div style={{ height: 220 }}>
+        {points.length === 0 ? (
+          <p style={{ color: colors.textMuted, fontSize: 14 }}>No data yet.</p>
+        ) : (
+          <Bar
+            data={data}
+            options={{
+              ...chartOptions,
+              plugins: {
+                legend: {
+                  display: true,
+                  labels: { color: colors.textSecondary, boxWidth: 12, font: { size: 11 } },
+                },
+              },
+              scales: {
+                ...chartOptions.scales,
+                y: {
+                  ...chartOptions.scales.y,
+                  ticks: {
+                    ...chartOptions.scales.y.ticks,
+                    stepSize: 1,
+                    precision: 0,
                   },
                 },
               },
