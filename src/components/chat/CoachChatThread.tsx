@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import type { CallRequest, CallRequestStatus, ConversationMessage } from '@/types/database'
 import { readApiJson } from '@/lib/api-response'
 import { formatMessageTime } from '@/lib/coach-chat-ui'
-import { isCheckinSystemMessage } from '@/lib/checkin-chat'
+import {
+  isCheckinSystemMessage,
+  isMidWeekAiChatMessage,
+  parseMidWeekAiSuggestedReply,
+} from '@/lib/checkin-chat'
 import { CoachReplyRatingPrompt } from '@/components/chat/CoachReplyRating'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
@@ -22,7 +26,7 @@ import {
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
 } from '@/lib/coach-working-hours'
-import { CalendarClock, Check, CheckCheck, ImageIcon, Reply, Send, Smile, X } from 'lucide-react'
+import { CalendarClock, Check, CheckCheck, ImageIcon, Reply, Send, Smile, Sparkles, X } from 'lucide-react'
 
 /** WhatsApp-like dark palette (client portal) */
 const waDark = {
@@ -105,7 +109,8 @@ function messagesVisuallyEqual(a: ConversationMessage[], b: ConversationMessage[
       left.content !== right.content ||
       left.media_url !== right.media_url ||
       left.message_type !== right.message_type ||
-      left.reply_to_message_id !== right.reply_to_message_id
+      left.reply_to_message_id !== right.reply_to_message_id ||
+      left.coach_only !== right.coach_only
     ) {
       return false
     }
@@ -157,7 +162,11 @@ export function CoachChatThread({
   const palette = viewer === 'coach' ? waCoach : waDark
   const incomingText = viewer === 'coach' ? waCoach.incomingText : waDark.text
   const incomingMeta = viewer === 'coach' ? waCoach.metaIncoming : waDark.meta
-  const [messages, setMessages] = useState<ConversationMessage[]>(initialMessages)
+  const [messages, setMessages] = useState<ConversationMessage[]>(() =>
+    viewer === 'coach'
+      ? initialMessages
+      : initialMessages.filter((message) => !message.coach_only && !isMidWeekAiChatMessage(message))
+  )
   const checkinHighlightRef = useRef<HTMLDivElement | null>(null)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -204,7 +213,11 @@ export function CoachChatThread({
       return
     }
     if (parsed.data.messages) {
-      const incoming = parsed.data.messages
+      // Clients must never see coach-only AI briefs, even if a cached API payload leaks them.
+      const incoming =
+        viewer === 'coach'
+          ? parsed.data.messages
+          : parsed.data.messages.filter((message) => !message.coach_only && !isMidWeekAiChatMessage(message))
       const latestPeer = [...incoming].reverse().find((m) => m.sender_type !== viewer)
       const latestPeerId = latestPeer?.id ?? 'none'
       if (lastPeerMessageIdRef.current !== null && latestPeer && lastPeerMessageIdRef.current !== latestPeerId) {
@@ -449,7 +462,9 @@ export function CoachChatThread({
       media_url: opts?.mediaUrl ?? null,
       media_duration_seconds: opts?.mediaDurationSeconds ?? null,
       source_checkin_id: null,
+      related_checkin_id: null,
       reply_to_message_id: replyToMessageId,
+      coach_only: false,
       read_at: null,
       created_at: new Date().toISOString(),
     }
@@ -670,12 +685,49 @@ export function CoachChatThread({
           const shouldAnimate = historyReadyRef.current && !animatedIdsRef.current.has(msg.id)
 
           const isCheckin = isCheckinMessage(msg)
+          const isAiBrief = isMidWeekAiChatMessage(msg) || Boolean(msg.coach_only)
           const isHighlighted =
             Boolean(highlightCheckinId) && msg.source_checkin_id === highlightCheckinId
           const repliedMessage = msg.reply_to_message_id
             ? messages.find((candidate) => candidate.id === msg.reply_to_message_id) ?? null
             : null
-          const canReply = !msg.id.startsWith('temp-') && (isCheckin || !isSystem)
+          const canReply = !msg.id.startsWith('temp-') && (isCheckin || (!isSystem && !isAiBrief))
+
+          if (isAiBrief) {
+            if (viewer !== 'coach') return null
+            const suggestedReply = parseMidWeekAiSuggestedReply(msg.content)
+            return (
+              <div
+                key={msg.id}
+                ref={(el) => {
+                  if (el) messageNodeRefs.current.set(msg.id, el)
+                  else messageNodeRefs.current.delete(msg.id)
+                }}
+                className={`coach-chat-ai-brief${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
+                style={styles.aiBriefCard}
+              >
+                <div style={styles.aiBriefEyebrow}>
+                  <Sparkles size={14} />
+                  AI brief · coach only · client cannot see this
+                </div>
+                <pre style={styles.aiBriefContent}>{msg.content}</pre>
+                {suggestedReply ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInput(suggestedReply)
+                      if (repliedMessage) beginReply(repliedMessage)
+                      else setReplyTo(null)
+                      window.requestAnimationFrame(() => inputRef.current?.focus())
+                    }}
+                    style={styles.aiUseReplyBtn}
+                  >
+                    Use suggested reply
+                  </button>
+                ) : null}
+              </div>
+            )
+          }
 
           if (isSystem && !isCheckin) {
             return (
@@ -1209,6 +1261,52 @@ const styles: Record<string, CSSProperties> = {
     color: wa.text,
     whiteSpace: 'pre-wrap',
     textAlign: 'left',
+  },
+  aiBriefCard: {
+    alignSelf: 'stretch',
+    width: '100%',
+    maxWidth: 380,
+    margin: '6px 0',
+    padding: '12px 14px',
+    borderRadius: 10,
+    backgroundColor: '#1a2730',
+    border: '1px solid rgba(0,168,132,0.45)',
+    boxShadow: '0 1px 0.5px rgba(0,0,0,0.15)',
+    zIndex: 1,
+  },
+  aiBriefEyebrow: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase',
+    color: '#8ce3cf',
+    marginBottom: 8,
+  },
+  aiBriefContent: {
+    margin: 0,
+    fontFamily: 'inherit',
+    fontSize: 13.5,
+    lineHeight: 1.5,
+    color: wa.text,
+    whiteSpace: 'pre-wrap',
+    textAlign: 'left',
+  },
+  aiUseReplyBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    padding: '8px 12px',
+    borderRadius: 8,
+    border: 'none',
+    background: wa.send,
+    color: '#fff',
+    fontSize: 12.5,
+    fontWeight: 700,
+    cursor: 'pointer',
   },
   replyActionBtn: {
     display: 'inline-flex',

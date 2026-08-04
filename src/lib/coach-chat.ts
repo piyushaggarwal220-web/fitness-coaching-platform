@@ -64,6 +64,8 @@ async function insertSystemMessage(
     message_type: (isCheckinSummary ? 'text' : 'system') as MessageType,
     content,
     source_checkin_id: options?.sourceCheckinId ?? null,
+    coach_only: false,
+    related_checkin_id: null,
     created_at: createdAt,
   })
 
@@ -537,6 +539,8 @@ export async function sendChatMessage(
       media_url: input.mediaUrl ?? null,
       media_duration_seconds: input.mediaDurationSeconds ?? null,
       reply_to_message_id: replyToMessageId,
+      coach_only: false,
+      related_checkin_id: null,
       created_at: now,
     })
     .select()
@@ -945,6 +949,76 @@ export async function postCoachCheckinFeedbackToChat(input: {
     return {
       conversationId: null,
       error: err instanceof Error ? err.message : 'Failed to post check-in feedback to chat',
+    }
+  }
+}
+
+/**
+ * Post a coach-only mid-week AI brief into chat.
+ * Uses sender_type=system so unread/preview triggers do not treat it as a client message,
+ * and coach_only=true so clients never receive it.
+ */
+export async function postMidWeekAiSuggestionToChat(input: {
+  clientId: string
+  coachId: string
+  checkinId: string
+  content: string
+  conversationId?: string | null
+}): Promise<{ conversationId: string | null; error: string | null }> {
+  try {
+    const admin = createAdminClient()
+    let conversationId = input.conversationId ?? null
+
+    if (!conversationId) {
+      const { data: conversation, error: convError } = await getOrCreateConversation(
+        admin,
+        input.clientId
+      )
+      if (convError || !conversation) {
+        return { conversationId: null, error: convError ?? 'Could not open conversation' }
+      }
+      conversationId = conversation.id
+      if (conversation.coach_id !== input.coachId) {
+        await admin
+          .from('coach_conversations')
+          .update({ coach_id: input.coachId, updated_at: new Date().toISOString() })
+          .eq('id', conversation.id)
+      }
+    }
+
+    const { data: summary } = await admin
+      .from('conversation_messages')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('source_checkin_id', input.checkinId)
+      .maybeSingle()
+
+    const { error } = await admin.from('conversation_messages').insert({
+      conversation_id: conversationId,
+      sender_type: 'system' as MessageSender,
+      sender_id: null,
+      message_type: 'system' as MessageType,
+      content: input.content,
+      coach_only: true,
+      related_checkin_id: input.checkinId,
+      reply_to_message_id: summary?.id ?? null,
+      source_checkin_id: null,
+      created_at: new Date().toISOString(),
+    })
+
+    if (error?.code === '23505') {
+      return { conversationId, error: null }
+    }
+    if (error) {
+      return { conversationId, error: error.message }
+    }
+
+    return { conversationId, error: null }
+  } catch (err) {
+    console.error('[coach-chat] mid-week AI post failed:', err)
+    return {
+      conversationId: null,
+      error: err instanceof Error ? err.message : 'Failed to post mid-week AI suggestion',
     }
   }
 }

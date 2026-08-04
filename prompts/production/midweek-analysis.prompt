@@ -12,6 +12,9 @@
 
 [ACTIVE PLAN]
 
-Analyze this check-in for the coach. Put a structured analysis in coach_notes:
-trends, adherence, energy/hunger flags, and recommended focus.
-Use placeholder empty structures for workout_plan.days and nutrition_plan.meals.
+Analyze this mid-week check-in for the coach only.
+Cover trends, adherence, energy/hunger/sleep/stress flags, pain, and the client's question.
+Recommend one clear coaching focus for the rest of the week.
+Also draft a warm, concise client-facing reply the coach can send in chat.
+Do not create or change any workout or nutrition plan.
+Never mention AI in the suggested reply.

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
+import { generateAndPostMidWeekAiSuggestion } from '@/lib/ai/mid-week-analysis'
 import { formatCheckinChatMessageFromRow } from '@/lib/checkin-chat'
 import { ensureCheckinInCoachChat } from '@/lib/coach-chat'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -69,6 +70,17 @@ export async function GET(
 
   if (ensured.error) {
     console.error('[checkin-for-chat] ensure failed:', ensured.error)
+  }
+
+  if (row.checkin_type === 'mid_week' && row.client_id) {
+    after(() =>
+      generateAndPostMidWeekAiSuggestion({
+        clientId: row.client_id,
+        coachId: coach.id,
+        checkinId: row.id,
+        conversationId: ensured.conversationId,
+      }).catch((err) => console.error('[checkin-for-chat] mid-week AI failed:', err))
+    )
   }
 
   return NextResponse.json({

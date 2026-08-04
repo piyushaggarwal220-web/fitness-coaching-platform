@@ -2,6 +2,7 @@ import { NextResponse, after } from 'next/server'
 import { requireEntitledClientApiUser } from '@/lib/client-entitlement-guard'
 import { logApiDev } from '@/lib/api-dev-log'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
+import { generateAndPostMidWeekAiSuggestion } from '@/lib/ai/mid-week-analysis'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import {
@@ -390,6 +391,18 @@ export async function POST(request: Request) {
     })
     if (chatPost.error) {
       console.error('[checkin-submit] chat post failed:', chatPost.error)
+    }
+
+    if (body.checkinType === 'mid_week') {
+      // Coach-only AI brief in chat — never a plan draft, never client-visible.
+      after(() =>
+        generateAndPostMidWeekAiSuggestion({
+          clientId: user.id,
+          coachId: profile.coach_id,
+          checkinId: inserted.id,
+          conversationId: chatPost.conversationId,
+        }).catch((err) => console.error('[checkin-submit] mid-week AI failed:', err))
+      )
     }
 
     if (body.checkinType === 'weekly') {

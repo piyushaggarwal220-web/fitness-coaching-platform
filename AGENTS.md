@@ -8,3 +8,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 1. A mid-week check-in never creates a plan or plan draft. Its summary belongs in coach chat, and the coach completes it by replying in that chat (text, voice, or photo).
 2. When a mid-week or weekly check-in becomes due, show a prominent dashboard prompt and enqueue one in-app and web push reminder for that coaching week and check-in type.
+3. Mid-week AI briefs are coach-only chat messages (`coach_only = true`). Clients must never see them in API responses, RLS, or UI.

@@ -85,7 +85,7 @@ assert.match(forChatRoute, /ensureCheckinInCoachChat/)
 assert.match(forChatRoute, /formatCheckinChatMessageFromRow/)
 
 const replyPanel = source('src/components/chat/CheckinReplyPanel.tsx')
-assert.match(replyPanel, /Tap Reply on this check-in in chat/)
+assert.match(replyPanel, /Read the coach-only AI brief in chat/)
 assert.match(replyPanel, /\/api\/coach\/checkin\/\$\{encodeURIComponent\(checkinId\)\}\/for-chat/)
 assert.match(replyPanel, /ensuredOnceRef/)
 assert.doesNotMatch(replyPanel, /\[checkinId, onEnsured\]/)
@@ -109,10 +109,35 @@ const chatThread = source('src/components/chat/CoachChatThread.tsx')
 assert.match(chatThread, /beginReply/)
 assert.match(chatThread, /replyToMessageId/)
 assert.match(chatThread, /Replying to/)
+assert.match(chatThread, /AI brief · coach only/)
+assert.match(chatThread, /Use suggested reply/)
+assert.match(chatThread, /message\.coach_only !== true|!message\.coach_only/)
 
 const chatSend = source('src/lib/coach-chat.ts')
 assert.match(chatSend, /replyToMessageId/)
 assert.match(chatSend, /reply_to_message_id: replyToMessageId/)
+assert.match(chatSend, /postMidWeekAiSuggestionToChat/)
+assert.match(chatSend, /coach_only: true/)
+
+const midWeekAi = source('src/lib/ai/mid-week-analysis.ts')
+assert.match(midWeekAi, /generateAndPostMidWeekAiSuggestion/)
+assert.match(midWeekAi, /mid_week_analysis/)
+assert.match(midWeekAi, /never mention AI/i)
+
+assert.match(submitRoute, /generateAndPostMidWeekAiSuggestion/)
+assert.match(submitRoute, /body\.checkinType === 'mid_week'/)
+
+assert.match(forChatRoute, /generateAndPostMidWeekAiSuggestion/)
+
+const messagesRoute = source('src/app/api/chat/messages/route.ts')
+assert.match(messagesRoute, /message\.coach_only !== true/)
+
+const coachOnlyMigration = source(
+  'supabase/migrations/20260804130000_conversation_message_coach_only.sql'
+)
+assert.match(coachOnlyMigration, /ADD COLUMN IF NOT EXISTS coach_only boolean/)
+assert.match(coachOnlyMigration, /ADD COLUMN IF NOT EXISTS related_checkin_id uuid/)
+assert.match(coachOnlyMigration, /coach_only = false/)
 
 const coachCheckinPage = source('src/app/coach/checkin/[id]/page.tsx')
 assert.match(coachCheckinPage, /A mid-week check-in does not create a new plan/)
@@ -132,6 +157,7 @@ assert.match(workQueueResolve, /Reply to this mid-week check-in in coach chat to
 const agents = source('AGENTS.md')
 assert.match(agents, /Check-in invariants/)
 assert.match(agents, /summary belongs in coach chat/)
+assert.match(agents, /coach_only = true/)
 
 const reminderCron = source('src/app/api/cron/checkin-reminders/route.ts')
 assert.match(reminderCron, /status === 'available'/)

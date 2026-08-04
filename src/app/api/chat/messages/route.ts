@@ -42,7 +42,10 @@ export async function GET(request: Request) {
       )
     }
 
-    const chronological = [...(data ?? [])].reverse()
+    // Defense in depth: never return coach-only AI notes to clients.
+    const chronological = [...(data ?? [])]
+      .reverse()
+      .filter((message) => participant.viewer === 'coach' || message.coach_only !== true)
 
     const reader = participant.viewer
 

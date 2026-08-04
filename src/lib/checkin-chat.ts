@@ -1,4 +1,43 @@
-import type { Checkin, CheckinType } from '@/types/database'
+import type { Checkin, CheckinType, ConversationMessage } from '@/types/database'
+
+export const AI_MIDWEEK_CHAT_PREFIX = 'AI brief · coach only'
+const AI_SUGGESTED_REPLY_HEADER = 'Suggested reply'
+
+export function formatMidWeekAiChatMessage(input: {
+  analysis: string
+  suggestedReply: string
+}): string {
+  return [
+    AI_MIDWEEK_CHAT_PREFIX,
+    '',
+    'Analysis',
+    input.analysis.trim(),
+    '',
+    AI_SUGGESTED_REPLY_HEADER,
+    input.suggestedReply.trim(),
+  ].join('\n')
+}
+
+export function isMidWeekAiChatMessage(
+  message: Pick<ConversationMessage, 'coach_only' | 'content' | 'related_checkin_id'> | {
+    coach_only?: boolean | null
+    content?: string | null
+    related_checkin_id?: string | null
+  }
+): boolean {
+  if (message.coach_only) return true
+  const content = message.content?.trim() ?? ''
+  return content.startsWith(AI_MIDWEEK_CHAT_PREFIX)
+}
+
+export function parseMidWeekAiSuggestedReply(content: string | null | undefined): string | null {
+  if (!content?.trim()) return null
+  const marker = `\n${AI_SUGGESTED_REPLY_HEADER}\n`
+  const index = content.indexOf(marker)
+  if (index < 0) return null
+  const reply = content.slice(index + marker.length).trim()
+  return reply || null
+}
 
 export function formatMidWeekCheckinChatMessage(input: {
   coachingWeek: number
