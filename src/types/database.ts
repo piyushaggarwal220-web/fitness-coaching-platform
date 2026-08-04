@@ -42,6 +42,9 @@ export type CoachClientDetail = ClientProfile & {
   complexity_input_needs_review?: boolean | null
   complexity_input_review_reasons?: string[] | null
   league_opt_in?: boolean | null
+  payment_confirmed?: boolean | null
+  access_source?: 'purchase' | 'admin_trial' | 'enrollment_code' | null
+  subscription_expires_at?: string | null
 }
 
 /** Structured coaching intake stored in profiles.onboarding_data */

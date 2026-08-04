@@ -27,7 +27,7 @@ export const ADMIN_MODULES: AdminModule[] = [
   {
     id: 'clients',
     title: 'Clients',
-    description: 'Client roster, search, filters, and coach assignment.',
+    description: 'Client roster, search, filters, coach assignment, and membership extensions.',
     href: '/admin/clients',
     status: 'implemented',
     showInNav: true,
