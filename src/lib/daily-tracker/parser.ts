@@ -1,3 +1,4 @@
+import { resolvePlanDayMeta, toProgramDayLabel, WEEKDAY_PROGRAM_DAY } from '@/lib/plan-day-labels'
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser'
 import type { OnboardingProfile, Plan } from '@/types/database'
 import type {
@@ -149,10 +150,7 @@ function parseDietDayBlocks(diet: string): { key: string; label: string; body: s
     if (!dayMatch) continue
     const dayToken = (dayMatch[1] || dayMatch[2] || '').toLowerCase().replace(/\s+/g, ' ')
     const weekdayHint = dayMatch[3]?.toLowerCase()
-    // Prefer calendar weekday key when present (e.g. "DAY 1 (Monday)") so Today matches.
-    const raw = weekdayHint || dayToken
-    const key = slug(raw)
-    const label = capitalizeLabel(weekdayHint ? `${dayToken} (${weekdayHint})` : dayToken)
+    const { key, label } = resolvePlanDayMeta(dayToken, weekdayHint)
     const body = lines.slice(1).join('\n').trim()
     if (!body) continue
     days.push({ key, label, body })
@@ -325,7 +323,7 @@ const PHASE_LABELS: Record<WorkoutExercisePhase, string> = {
 }
 
 function capitalizeDay(value: string): string {
-  return value.replace(/\b\w/g, (c) => c.toUpperCase())
+  return toProgramDayLabel(value)
 }
 
 /** True when the day block is clearly a rest / off day (not a failed exercise parse). */
@@ -546,8 +544,8 @@ function splitWorkoutDayBlocks(workoutText: string): { key: string; label: strin
     if (!dayMatch) continue
     const dayToken = (dayMatch[1] || dayMatch[2] || '').toLowerCase().replace(/\s+/g, ' ')
     const weekdayHint = dayMatch[3]?.toLowerCase()
-    const raw = weekdayHint || dayToken
-    days.push({ key: slug(raw), label: capitalizeLabel(weekdayHint ? `${dayToken} (${weekdayHint})` : dayToken), body: block.trim() })
+    const { key, label } = resolvePlanDayMeta(dayToken, weekdayHint)
+    days.push({ key, label, body: block.trim() })
   }
 
   if (days.length > 0) return days
@@ -563,12 +561,9 @@ export function suggestedWorkoutDayKey(
   if (days.length === 0) return null
 
   const dayName = getIstWeekdayName(referenceDate)
+  // Legacy / hybrid plans keep weekday keys (monday…) even when labels show Day 1…
   const byWeekday = days.find((d) => d.key === dayName)
   if (byWeekday) return byWeekday.key
-
-  // Prefer explicit weekday mentioned in labels (e.g. "Day 1 (Monday)")
-  const byWeekdayLabel = days.find((d) => d.label.toLowerCase().includes(dayName))
-  if (byWeekdayLabel) return byWeekdayLabel.key
 
   // Day N plans: only map when we know coaching day-in-week (1–7). Do not assume Day 1 = Monday.
   const programDay = options?.coachingDayInWeek
@@ -605,6 +600,13 @@ export function remapWorkoutDayKey(
     if (byKey) return byKey.key
     const byLabel = days.find((d) => d.label.toLowerCase().includes(prev))
     if (byLabel) return byLabel.key
+    const programDay = WEEKDAY_PROGRAM_DAY[prev]
+    if (programDay) {
+      const byProgramDay =
+        days.find((d) => d.key === `day-${programDay}`) ??
+        days.find((d) => new RegExp(`\\bday\\s*${programDay}\\b`, 'i').test(d.label))
+      if (byProgramDay) return byProgramDay.key
+    }
   }
 
   const bySharedWeekday = days.find((d) =>

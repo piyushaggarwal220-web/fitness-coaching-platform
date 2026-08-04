@@ -15,6 +15,7 @@ import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
+import { formatPlanDayHeadersForClient } from '@/lib/plan-day-labels';
 import { clientFacingPlanTitle } from '@/lib/plan-metadata';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
@@ -143,8 +144,18 @@ export default function ClientPlanPage() {
   const sections = resolvePlanSectionsFromPlan(plan)
 
   const accordionItems = [
-    { key: 'diet' as const, title: 'Diet', icon: <Apple size={20} />, content: sections.diet },
-    { key: 'workout' as const, title: 'Workout', icon: <Dumbbell size={20} />, content: sections.workout },
+    {
+      key: 'diet' as const,
+      title: 'Diet',
+      icon: <Apple size={20} />,
+      content: formatPlanDayHeadersForClient(sections.diet),
+    },
+    {
+      key: 'workout' as const,
+      title: 'Workout',
+      icon: <Dumbbell size={20} />,
+      content: formatPlanDayHeadersForClient(sections.workout),
+    },
     { key: 'supplements' as const, title: 'Supplements', icon: <Pill size={20} color={colors.accent} />, content: sections.supplements },
     { key: 'cardio' as const, title: 'Cardio', icon: <Footprints size={20} />, content: sections.cardio },
     { key: 'notes' as const, title: 'Coach Notes', icon: <ClipboardList size={20} />, content: sections.coachNotes },

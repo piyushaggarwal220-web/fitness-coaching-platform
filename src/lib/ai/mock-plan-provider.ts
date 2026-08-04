@@ -33,7 +33,7 @@ export function buildMockGeneratedPlan(
     ? `Coach notes: ${coachInstructions.trim()}`
     : 'Mock draft — replace AI_PLAN_PROVIDER=claude when ready for live generation.'
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const days = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7']
   const weeklyDiet = days
     .map(
       (day) =>
@@ -43,12 +43,12 @@ export function buildMockGeneratedPlan(
 
   return {
     workout_plan: {
-      overview: `${name}'s ${goal.toLowerCase()} program (${training} level, ${flux.label}). 4 training days + optional recovery.\n\nDay 1 (Monday)\nBench press 4 sets x 8 reps\nOverhead press 3 sets x 10 reps\n\nDay 2 (Wednesday)\nSquat 4 sets x 8 reps\nRomanian deadlift 3 sets x 10 reps\n\nDay 3 (Friday)\nLat pulldown 4 sets x 10 reps\nBarbell row 3 sets x 8 reps\n\nDay 4 (Saturday)\nGoblet squat 3 sets x 12 reps\nPush ups 3 sets x AMRAP`,
+      overview: `${name}'s ${goal.toLowerCase()} program (${training} level, ${flux.label}). 4 training days + optional recovery.\n\nDay 1\nBench press 4 sets x 8 reps\nOverhead press 3 sets x 10 reps\n\nDay 2\nSquat 4 sets x 8 reps\nRomanian deadlift 3 sets x 10 reps\n\nDay 3\nLat pulldown 4 sets x 10 reps\nBarbell row 3 sets x 8 reps\n\nDay 4\nGoblet squat 3 sets x 12 reps\nPush ups 3 sets x AMRAP`,
       days: [
-        { day: 'Monday', focus: 'Upper push', exercises: ['Bench press 4x8', 'Overhead press 3x10', 'Triceps pushdown 3x12'] },
-        { day: 'Wednesday', focus: 'Lower', exercises: ['Squat 4x8', 'Romanian deadlift 3x10', 'Walking lunges 3x12'] },
-        { day: 'Friday', focus: 'Upper pull', exercises: ['Lat pulldown 4x10', 'Barbell row 3x8', 'Face pulls 3x15'] },
-        { day: 'Saturday', focus: 'Full body / conditioning', exercises: ['Goblet squat 3x12', 'Push-ups 3xAMRAP', 'Plank 3x45s'] },
+        { day: 'Day 1', focus: 'Upper push', exercises: ['Bench press 4x8', 'Overhead press 3x10', 'Triceps pushdown 3x12'] },
+        { day: 'Day 2', focus: 'Lower', exercises: ['Squat 4x8', 'Romanian deadlift 3x10', 'Walking lunges 3x12'] },
+        { day: 'Day 3', focus: 'Upper pull', exercises: ['Lat pulldown 4x10', 'Barbell row 3x8', 'Face pulls 3x15'] },
+        { day: 'Day 4', focus: 'Full body / conditioning', exercises: ['Goblet squat 3x12', 'Push-ups 3xAMRAP', 'Plank 3x45s'] },
       ],
     },
     nutrition_plan: {
