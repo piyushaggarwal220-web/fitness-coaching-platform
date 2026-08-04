@@ -150,6 +150,8 @@ assert.match(
   workQueue,
   /`\/coach\/chat\?clientId=\$\{checkin\.client_id\}&checkinId=\$\{checkin\.id\}`/
 )
+assert.match(workQueue, /Promise\.all\(/)
+assert.doesNotMatch(workQueue, /select\('client_id, nutrition_plan, workout_plan'\)/)
 
 const workQueueResolve = source('src/lib/coach-work-queue-resolve.ts')
 assert.match(workQueueResolve, /Reply to this mid-week check-in in coach chat to complete it/)

@@ -104,9 +104,15 @@ function withQueueReturn(href: string, returnTo: string): string {
 type CoachWorkQueuePanelProps = {
   filter?: WorkQueueFilter
   onCountsChange?: (counts: WorkQueueCounts) => void
+  /** When provided (e.g. dashboard already resolved the coach), skip a second auth round-trip. */
+  coachId?: string | null
 }
 
-export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWorkQueuePanelProps) {
+export function CoachWorkQueuePanel({
+  filter = 'all',
+  onCountsChange,
+  coachId: coachIdProp = null,
+}: CoachWorkQueuePanelProps) {
   const router = useRouter()
   const pathname = usePathname()
   const returnTo = pathname.startsWith('/coach/queue')
@@ -127,7 +133,7 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const [completing, setCompleting] = useState(false)
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
   const [completeError, setCompleteError] = useState('')
-  const [coachId, setCoachId] = useState<string | null>(null)
+  const [coachId, setCoachId] = useState<string | null>(coachIdProp)
 
   const applyQueue = useCallback((queue: WorkQueueTask[]) => {
     setTasks(queue)
@@ -139,6 +145,10 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     completedRef.current = completed
   }, [completed])
 
+  useEffect(() => {
+    if (coachIdProp) setCoachId(coachIdProp)
+  }, [coachIdProp])
+
   const load = useCallback(async () => {
     if (!coachId) return
     const queue = await getCoachWorkQueue(supabase, coachId)
@@ -149,6 +159,16 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   useEffect(() => {
     let active = true
     const authorize = async () => {
+      // Dashboard already authenticated — reuse that coach id and skip another session restore.
+      if (coachIdProp) {
+        setCoachId(coachIdProp)
+        const queue = await getCoachWorkQueue(supabase, coachIdProp)
+        if (!active) return
+        applyQueue(queue)
+        setLoading(false)
+        return
+      }
+
       const coach = await requireCoach(supabase, router)
       if (!active) return
       if (!coach) {
@@ -163,10 +183,10 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     }
     void authorize()
     return () => { active = false }
-  }, [router, applyQueue])
+  }, [router, applyQueue, coachIdProp])
 
-  // Realtime accelerates chat tasks; 20s fallback covers plans/check-ins/profiles.
-  useCoachConversationRealtime(coachId, load, 20_000, 'work-queue')
+  // Realtime accelerates chat tasks; 30s fallback covers plans/check-ins/profiles.
+  useCoachConversationRealtime(coachId, load, 30_000, 'work-queue')
 
   const filtered = filterWorkQueue(tasks, filter)
   const visible = filtered.filter((task) => !isTaskCompleted(task, completed))

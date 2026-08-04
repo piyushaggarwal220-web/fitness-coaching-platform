@@ -249,7 +249,11 @@ export default function CoachDashboard() {
           filter={queueFilter}
           onFilter={setQueueFilter}
         />
-        <CoachWorkQueuePanel filter={queueFilter} onCountsChange={handleCountsChange} />
+        <CoachWorkQueuePanel
+          filter={queueFilter}
+          onCountsChange={handleCountsChange}
+          coachId={coach?.id ?? null}
+        />
       </section>
 
       {/* Adherence */}
