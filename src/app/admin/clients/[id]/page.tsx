@@ -10,6 +10,7 @@ import { coachBadgeStyles, formatFitnessGoal, formatDate, getCheckinStatus, getP
 import { ComplexityHistoryTimeline } from '@/components/complexity/ComplexityHistoryTimeline'
 import { ComplexityScoreCard } from '@/components/complexity/ComplexityScoreCard'
 import { CoachClientProfileEdit } from '@/components/coach/CoachClientProfileEdit'
+import { AdminExtendMembershipCard } from '@/components/admin/AdminExtendMembershipCard'
 import { createClient } from '@/lib/supabase/client'
 import { useAdminRole } from '@/lib/admin/use-admin-role'
 import { formatHeight } from '@/lib/height'
@@ -185,6 +186,18 @@ export default function AdminClientDetailPage() {
               onSaved={setClient}
             />
           </div>
+
+          <AdminExtendMembershipCard
+            client={client}
+            onUpdated={(next) =>
+              setClient({
+                ...client,
+                payment_confirmed: next.payment_confirmed,
+                access_source: next.access_source,
+                subscription_expires_at: next.subscription_expires_at,
+              })
+            }
+          />
 
           <div style={s.card}>
             <h2 style={s.cardTitle}>Coach assignment</h2>
