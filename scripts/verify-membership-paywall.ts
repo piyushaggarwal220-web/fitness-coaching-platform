@@ -3,6 +3,7 @@ import {
   assertClientCanReceivePlanChanges,
   getClientPaymentGatePath,
   hasClientEntitlement,
+  MEMBERSHIP_GRACE_DAYS,
   MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE,
 } from '../src/lib/entitlements'
 
@@ -24,11 +25,23 @@ assert.equal(assertClientCanReceivePlanChanges(profile(4), now).ok, true)
 assert.equal(assertClientCanReceivePlanChanges(profile(3.9), now).ok, false)
 assert.equal(assertClientCanReceivePlanChanges(profile(0), now).ok, false)
 
+// Still entitled during the 3-day grace window after expiry.
 assert.equal(
   hasClientEntitlement({
     payment_confirmed: true,
     access_source: 'purchase',
     subscription_expires_at: new Date(Date.now() - 60_000).toISOString(),
+  }),
+  true
+)
+// Hard paywall only after grace ends.
+assert.equal(
+  hasClientEntitlement({
+    payment_confirmed: true,
+    access_source: 'purchase',
+    subscription_expires_at: new Date(
+      Date.now() - (MEMBERSHIP_GRACE_DAYS * DAY_MS + 60_000)
+    ).toISOString(),
   }),
   false
 )
