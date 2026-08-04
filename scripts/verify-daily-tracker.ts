@@ -7,6 +7,7 @@ import {
 } from '../src/lib/daily-tracker/parser'
 import { calculateTrackerScores } from '../src/lib/daily-tracker/scores'
 import { applyTrackerDraft } from '../src/lib/daily-tracker/tracker-draft'
+import { formatPlanDayHeadersForClient } from '../src/lib/plan-day-labels'
 import type { Plan } from '../src/types/database'
 
 let failed = 0
@@ -66,7 +67,7 @@ assert(
 )
 assert(
   'parses day label and focus',
-  workoutItem?.type === 'workout' && workoutItem.dayLabel === 'Monday' && workoutItem.focus === 'Chest + Triceps'
+  workoutItem?.type === 'workout' && workoutItem.dayLabel === 'Day 1' && workoutItem.focus === 'Chest + Triceps'
 )
 assert('parses cardio steps', snapV1.items.some((i) => i.type === 'cardio'))
 assert('parses supplements', snapV1.items.some((i) => i.type === 'supplement'))
@@ -107,6 +108,11 @@ const tuesdayMeals = dietSnap.items.filter((i) => i.type === 'meal' && i.dietDay
 assert('parses multi-day diet days list', (dietSnap.dietDays?.length ?? 0) >= 2)
 assert('parses monday meals', mondayMeals.length >= 2)
 assert('parses tuesday meals', tuesdayMeals.length >= 2)
+assert(
+  'labels diet days as Day N',
+  dietSnap.dietDays?.some((d) => d.key === 'monday' && d.label === 'Day 1') === true &&
+    dietSnap.dietDays?.some((d) => d.key === 'tuesday' && d.label === 'Day 2') === true
+)
 assert(
   'meal ids include day',
   mondayMeals.some((m) => m.type === 'meal' && m.id.includes('monday'))
@@ -270,6 +276,11 @@ const weekdaySnap = buildTrackerSnapshot(weekdayPlan)
 const weekdayDays = weekdaySnap.workoutDays ?? []
 assert('keeps rest day in workoutDays', weekdayDays.some((d) => d.key === 'wednesday'))
 assert(
+  'labels weekday workout days as Day N',
+  weekdayDays.some((d) => d.key === 'monday' && d.label === 'Day 1') &&
+    weekdayDays.some((d) => d.key === 'tuesday' && d.label === 'Day 2')
+)
+assert(
   'rest day has Rest focus',
   weekdaySnap.items.some(
     (i) => i.type === 'workout' && i.workoutDay === 'wednesday' && i.focus === 'Rest day'
@@ -308,12 +319,18 @@ assert(
   suggestedWorkoutDayKey(dayNDays, istMonday, { coachingDayInWeek: 2 }) === 'day-2'
 )
 assert(
-  'remaps day-1 selection onto monday label',
-  remapWorkoutDayKey('day-1', [{ key: 'monday', label: 'Day 1 (Monday)' }]) === 'monday'
+  'remaps day-1 selection onto monday key',
+  remapWorkoutDayKey('day-1', [{ key: 'monday', label: 'Day 1' }]) === 'monday'
 )
 assert(
   'remaps monday selection onto day-1 key',
-  remapWorkoutDayKey('monday', [{ key: 'day-1', label: 'Day 1 (Monday)' }]) === 'day-1'
+  remapWorkoutDayKey('monday', [{ key: 'day-1', label: 'Day 1' }]) === 'day-1'
+)
+
+assert(
+  'formats plan prose weekday headers as Day N',
+  formatPlanDayHeadersForClient('Monday — Push\nBench 4x8\n\nDay 2 (Wednesday) — Pull\nRow 4x8') ===
+    'Day 1 — Push\nBench 4x8\n\nDay 2 — Pull\nRow 4x8'
 )
 
 // AI plan style forbids hyphens and writes "6 to 8" — must parse as training, not Rest.
