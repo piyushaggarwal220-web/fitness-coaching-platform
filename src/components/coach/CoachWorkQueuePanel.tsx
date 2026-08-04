@@ -96,7 +96,7 @@ function isTaskCompleted(task: WorkQueueTask, map: CompletedMap): boolean {
 
 /** Keep queue context when opening chat from dashboard or /coach/queue. */
 function withQueueReturn(href: string, returnTo: string): string {
-  if (!href.startsWith('/coach/chat/')) return href
+  if (!(href.startsWith('/coach/chat/') || href.startsWith('/coach/chat?'))) return href
   const sep = href.includes('?') ? '&' : '?'
   return `${href}${sep}returnTo=${encodeURIComponent(returnTo)}`
 }

@@ -72,11 +72,23 @@ assert.match(chatSource, /formatCheckinChatMessageFromRow/)
 
 const openChat = source('src/lib/coach-open-chat.ts')
 assert.match(openChat, /checkinId/)
-assert.match(openChat, /JSON\.stringify\(\{ clientId, checkinId \}\)/)
+assert.match(openChat, /JSON\.stringify\(\{ clientId, checkinId: requestedCheckinId \}\)/)
 
 const coachConversations = source('src/app/api/chat/coach-conversations/route.ts')
 assert.match(coachConversations, /ensureCheckinInCoachChat/)
 assert.match(coachConversations, /checkinId/)
+
+const forChatRoute = source('src/app/api/coach/checkin/[id]/for-chat/route.ts')
+assert.match(forChatRoute, /ensureCheckinInCoachChat/)
+assert.match(forChatRoute, /formatCheckinChatMessageFromRow/)
+
+const replyPanel = source('src/components/chat/CheckinReplyPanel.tsx')
+assert.match(replyPanel, /Reply below with text or a voice note/)
+assert.match(replyPanel, /\/api\/coach\/checkin\/\$\{encodeURIComponent\(checkinId\)\}\/for-chat/)
+
+const chatDetail = source('src/app/coach/chat/[id]/page.tsx')
+assert.match(chatDetail, /CheckinReplyPanel/)
+assert.match(chatDetail, /highlightCheckinId/)
 
 const migration = source('supabase/migrations/20260726152459_link_checkins_to_coach_chat.sql')
 assert.match(migration, /ADD COLUMN IF NOT EXISTS source_checkin_id uuid/)

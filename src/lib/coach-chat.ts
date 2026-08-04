@@ -37,7 +37,7 @@ async function insertSystemMessage(
 ): Promise<{ error: string | null }> {
   const admin = createAdminClient()
   const now = new Date().toISOString()
-  const { data: conversation } = options?.incrementCoachUnread
+  const { data: conversation } = options?.incrementCoachUnread || options?.sourceCheckinId
     ? await admin
         .from('coach_conversations')
         .select('client_id')
@@ -45,11 +45,19 @@ async function insertSystemMessage(
         .single()
     : { data: null }
 
+  // Check-in summaries are stored as normal client text so they appear as
+  // readable incoming bubbles in coach chat (not easy-to-miss system chips).
+  const isCheckinSummary = Boolean(options?.sourceCheckinId)
   const { error } = await admin.from('conversation_messages').insert({
     conversation_id: conversationId,
-    sender_type: (options?.incrementCoachUnread ? 'client' : 'system') as MessageSender,
-    sender_id: options?.incrementCoachUnread ? conversation?.client_id ?? null : null,
-    message_type: 'system' as MessageType,
+    sender_type: (options?.incrementCoachUnread || isCheckinSummary
+      ? 'client'
+      : 'system') as MessageSender,
+    sender_id:
+      options?.incrementCoachUnread || isCheckinSummary
+        ? conversation?.client_id ?? null
+        : null,
+    message_type: (isCheckinSummary ? 'text' : 'system') as MessageType,
     content,
     source_checkin_id: options?.sourceCheckinId ?? null,
     created_at: now,

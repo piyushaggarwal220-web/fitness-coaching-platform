@@ -599,52 +599,56 @@ export function CoachChatThread({
           const isSystem = msg.sender_type === 'system' || msg.message_type === 'system'
           const shouldAnimate = historyReadyRef.current && !animatedIdsRef.current.has(msg.id)
 
-          if (isSystem) {
-            const isCheckin = isCheckinSystemMessage(msg.content)
-            const isHighlighted =
-              Boolean(highlightCheckinId) && msg.source_checkin_id === highlightCheckinId
+          const isCheckin =
+            Boolean(msg.source_checkin_id) || isCheckinSystemMessage(msg.content)
+          const isHighlighted =
+            Boolean(highlightCheckinId) && msg.source_checkin_id === highlightCheckinId
+
+          if (isSystem && !isCheckin) {
+            return (
+              <div
+                key={msg.id}
+                className={`coach-chat-system${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
+                style={styles.systemMsg}
+              >
+                {msg.content}
+              </div>
+            )
+          }
+
+          if (isCheckin) {
             return (
               <div
                 key={msg.id}
                 ref={isHighlighted ? checkinHighlightRef : undefined}
-                className={`${isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'}${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
-                style={
-                  isCheckin
+                className={`coach-chat-checkin${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
+                style={{
+                  ...styles.checkinSystemMsg,
+                  alignSelf: viewer === 'coach' ? 'flex-start' : 'center',
+                  ...(viewer === 'coach'
                     ? {
-                        ...styles.checkinSystemMsg,
-                        ...(viewer === 'coach'
-                          ? {
-                              alignSelf: 'flex-start',
-                              backgroundColor: palette.incoming,
-                              color: incomingText,
-                              border: isHighlighted
-                                ? '2px solid #00a884'
-                                : '1px solid rgba(24,24,27,0.12)',
-                            }
-                          : null),
+                        backgroundColor: palette.incoming,
+                        color: incomingText,
+                        border: isHighlighted
+                          ? '2px solid #00a884'
+                          : '1px solid rgba(24,24,27,0.12)',
                       }
-                    : styles.systemMsg
-                }
+                    : null),
+                }}
               >
-                {isCheckin ? (
-                  <>
-                    {viewer === 'coach' ? (
-                      <div style={{ ...styles.checkinEyebrow, color: incomingMeta }}>
-                        Client check-in · reply below with text or voice
-                      </div>
-                    ) : null}
-                    <pre
-                      style={{
-                        ...styles.checkinContent,
-                        color: viewer === 'coach' ? incomingText : wa.text,
-                      }}
-                    >
-                      {msg.content}
-                    </pre>
-                  </>
-                ) : (
-                  msg.content
-                )}
+                {viewer === 'coach' ? (
+                  <div style={{ ...styles.checkinEyebrow, color: incomingMeta }}>
+                    Client check-in · reply below with text or voice
+                  </div>
+                ) : null}
+                <pre
+                  style={{
+                    ...styles.checkinContent,
+                    color: viewer === 'coach' ? incomingText : wa.text,
+                  }}
+                >
+                  {msg.content}
+                </pre>
               </div>
             )
           }

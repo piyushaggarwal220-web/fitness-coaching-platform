@@ -142,30 +142,24 @@ export function checkinTypeFromMessage(content: string): CheckinType | null {
   return null
 }
 
+function asScore(value: unknown, fallback = 0): number {
+  const n = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
 /** Build the chat summary card text from a persisted check-in row. */
 export function formatCheckinChatMessageFromRow(checkin: Checkin): string | null {
-  const week = checkin.coaching_week ?? 0
+  const week = asScore(checkin.coaching_week, 0)
 
   if (checkin.checkin_type === 'mid_week') {
-    if (
-      checkin.diet_adherence == null ||
-      checkin.workout_adherence == null ||
-      checkin.energy_level == null ||
-      checkin.sleep_quality == null ||
-      checkin.stress_level == null ||
-      checkin.hunger_level == null
-    ) {
-      return null
-    }
-
     return formatMidWeekCheckinChatMessage({
       coachingWeek: week,
-      dietAdherence: checkin.diet_adherence,
-      workoutAdherence: checkin.workout_adherence,
-      energyLevel: checkin.energy_level,
-      sleepQuality: checkin.sleep_quality,
-      stressLevel: checkin.stress_level,
-      hungerLevel: checkin.hunger_level,
+      dietAdherence: asScore(checkin.diet_adherence),
+      workoutAdherence: asScore(checkin.workout_adherence),
+      energyLevel: asScore(checkin.energy_level),
+      sleepQuality: asScore(checkin.sleep_quality),
+      stressLevel: asScore(checkin.stress_level),
+      hungerLevel: asScore(checkin.hunger_level),
       adherenceWins: checkin.adherence_wins,
       adherenceStruggles: checkin.adherence_struggles,
       painInjuries: checkin.pain_injuries,
@@ -175,14 +169,7 @@ export function formatCheckinChatMessageFromRow(checkin: Checkin): string | null
   }
 
   if (checkin.checkin_type === 'weekly') {
-    if (
-      checkin.weight == null ||
-      checkin.diet_adherence == null ||
-      checkin.workout_adherence == null ||
-      checkin.energy_level == null ||
-      checkin.sleep_quality == null ||
-      checkin.stress_level == null
-    ) {
+    if (checkin.weight == null || checkin.weight === ('' as unknown)) {
       return null
     }
 
@@ -194,17 +181,17 @@ export function formatCheckinChatMessageFromRow(checkin: Checkin): string | null
 
     return formatWeeklyCheckinChatMessage({
       coachingWeek: week,
-      weight: checkin.weight,
-      chest: checkin.chest,
-      thigh: checkin.thigh,
-      navel: checkin.navel,
-      dietAdherence: checkin.diet_adherence,
-      workoutAdherence: checkin.workout_adherence,
-      energyLevel: checkin.energy_level,
-      sleepQuality: checkin.sleep_quality,
-      stressLevel: checkin.stress_level,
-      motivationLevel: checkin.motivation_level,
-      progressRating: checkin.progress_rating,
+      weight: asScore(checkin.weight),
+      chest: checkin.chest == null ? null : asScore(checkin.chest),
+      thigh: checkin.thigh == null ? null : asScore(checkin.thigh),
+      navel: checkin.navel == null ? null : asScore(checkin.navel),
+      dietAdherence: asScore(checkin.diet_adherence),
+      workoutAdherence: asScore(checkin.workout_adherence),
+      energyLevel: asScore(checkin.energy_level),
+      sleepQuality: asScore(checkin.sleep_quality),
+      stressLevel: asScore(checkin.stress_level),
+      motivationLevel: checkin.motivation_level == null ? null : asScore(checkin.motivation_level),
+      progressRating: checkin.progress_rating == null ? null : asScore(checkin.progress_rating),
       progressNotes: checkin.progress_notes,
       painInjuries: checkin.pain_injuries,
       notes: checkin.notes,

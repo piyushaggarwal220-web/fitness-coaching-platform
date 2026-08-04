@@ -68,9 +68,25 @@ export async function POST(request: Request) {
     checkinId?: string
   } | null
   const clientId = body?.clientId?.trim()
-  const checkinId = body?.checkinId?.trim()
+  let checkinId = body?.checkinId?.trim() || ''
   if (!clientId) {
     return NextResponse.json({ error: 'clientId is required.' }, { status: 400 })
+  }
+
+  // If the coach opened chat from a check-in queue item without an id, attach
+  // the latest unreplied mid-week check-in so answers still appear in chat.
+  if (!checkinId) {
+    const { data: pendingMidweek } = await gate.admin
+      .from('checkins')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('coach_id', gate.coachId)
+      .eq('checkin_type', 'mid_week')
+      .eq('reviewed', false)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    checkinId = pendingMidweek?.id ?? ''
   }
 
   if (checkinId) {
@@ -81,10 +97,7 @@ export async function POST(request: Request) {
     })
     if (ensured.error) {
       console.error('[coach-conversations] ensure check-in chat failed', ensured.error)
-      return NextResponse.json(
-        { error: ensured.error ?? 'Could not open check-in in chat.' },
-        { status: ensured.error.includes('not assigned') ? 403 : 400 }
-      )
+      // Still open the conversation; the chat page can show the check-in panel.
     }
     if (ensured.conversationId) {
       const { data: conversation } = await gate.admin
@@ -97,6 +110,7 @@ export async function POST(request: Request) {
           conversation,
           isNew: false,
           checkinPosted: ensured.posted,
+          checkinId,
         })
       }
     }
@@ -112,5 +126,6 @@ export async function POST(request: Request) {
     conversation: result.data,
     isNew: result.isNew,
     checkinPosted: false,
+    checkinId: checkinId || null,
   })
 }
