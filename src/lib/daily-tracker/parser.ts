@@ -328,6 +328,32 @@ function capitalizeDay(value: string): string {
   return value.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+/** True when the day block is clearly a rest / off day (not a failed exercise parse). */
+function isExplicitRestDayText(text: string): boolean {
+  const normalized = text.replace(/\s+/g, ' ').trim().toLowerCase()
+  if (!normalized) return true
+  if (/\b(rest\s*day|full\s*rest|active\s*recovery|off\s*day|recovery\s*day)\b/i.test(normalized)) {
+    return true
+  }
+  // Short day headers like "Day 3 — Rest" / "Wednesday: Rest"
+  if (/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b.{0,40}\brest\b/i.test(normalized)) {
+    return true
+  }
+  // Training-like titles should never be auto-classified as rest when empty.
+  if (
+    /\b(lower|upper|push|pull|legs?|chest|back|shoulders?|arms?|full\s*body|power|strength|hypertrophy|glute|hinge|squat|conditioning|metcon)\b/i.test(
+      normalized
+    )
+  ) {
+    return false
+  }
+  // Empty-ish body after stripping the day header → treat as rest.
+  const withoutHeader = normalized
+    .replace(/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b[^\n]*/i, '')
+    .trim()
+  return withoutHeader.length < 8
+}
+
 function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: number): TrackerExerciseItem | null {
   const trimmed = stripMarkdownDecorators(line.replace(/^[-*•]\s*/, '').trim())
   if (!trimmed || trimmed.startsWith('#')) return null
@@ -339,14 +365,25 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   // Skip multi-exercise core dump lines; handled by splitCoreExercises
   if (/^core\s*:/i.test(trimmed) && /,/.test(trimmed)) return null
 
-  // AI coach format: "Barbell Bench Press: 5 sets x 5 reps (...)"
-  const setsReps =
-    /^(.+?)\s*:?\s*(\d+)\s*sets?\s*[x×]\s*(\d+(?:\s*-\s*\d+)?|AMRAP|\d+\s*s)(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$/i
-  // Compact format: "Bench Press 4x8 @ 60 kg"
-  const compact =
-    /^(.+?)\s+(\d+)\s*[x×]\s*(\d+(?:-\d+)?|AMRAP|\d+s)(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[-–—]\s*(.+))?/i
+  // Rep token: fixed, hyphen range, or AI "N to M" prose range (plan style forbids hyphens).
+  const repsToken = String.raw`(\d+(?:\s*(?:-|–|to)\s*\d+)?|AMRAP|\d+\s*s)`
+  // AI coach format: "Barbell Bench Press: 5 sets x 6 to 8 reps (...)"
+  const setsReps = new RegExp(
+    String.raw`^(.+?)\s*:?\s*(\d+)\s*sets?\s*[x×]\s*${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
+    'i'
+  )
+  // Alternate AI phrasing: "Bench Press: 4 sets of 8 to 10 reps"
+  const setsOf = new RegExp(
+    String.raw`^(.+?)\s*:?\s*(\d+)\s*sets?\s+of\s+${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
+    'i'
+  )
+  // Compact format: "Bench Press 4x8 @ 60 kg" / "Squat 4x6-8"
+  const compact = new RegExp(
+    String.raw`^(.+?)\s+(\d+)\s*[x×]\s*${repsToken}(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[-–—]\s*(.+))?`,
+    'i'
+  )
 
-  const match = trimmed.match(setsReps) ?? trimmed.match(compact)
+  const match = trimmed.match(setsReps) ?? trimmed.match(setsOf) ?? trimmed.match(compact)
   if (!match) return null
 
   let name = match[1]!.trim().replace(/:$/, '').trim()
@@ -360,7 +397,8 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   const parenNotes = name.match(/^(.+?)\s*\((.+)\)$/)
   const cleanName = parenNotes?.[1]?.trim() ?? name
   const inlineNotes = parenNotes?.[2]?.trim() ?? match[5]?.trim()
-  const reps = match[3]!.replace(/\s+/g, '')
+  // Normalize "6 to 8" / "6–8" → "6-8" for compact tracker display.
+  const reps = match[3]!.replace(/\s*(?:to|–)\s*/gi, '-').replace(/\s+/g, '')
   let restSeconds: number | undefined
   if (restMatch) {
     const amount = Number(restMatch[1])
@@ -604,7 +642,12 @@ function parseWorkouts(workoutText: string): {
     const dayLabel = parsed.dayLabel ?? day.label
     // Detect rest/empty before default warm-ups are injected — otherwise Rest days
     // look like normal sessions and disappear from the picker inconsistently.
-    const isRestDay = parsed.exercises.length === 0 && day.key !== 'default'
+    // Only treat as Rest when the day is empty AND looks like a rest day (or has no
+    // training-like title). Failed exercise parses on "Lower Power" etc. must not
+    // all collapse into Rest day.
+    const looksLikeRestDay = isExplicitRestDayText(`${day.label}\n${day.body}`)
+    const isRestDay =
+      parsed.exercises.length === 0 && day.key !== 'default' && looksLikeRestDay
 
     if (isRestDay) {
       workouts.push({
