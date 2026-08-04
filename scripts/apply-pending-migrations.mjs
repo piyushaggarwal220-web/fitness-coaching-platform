@@ -11,6 +11,7 @@ const MIGRATION_FILES = [
   'supabase/migrations/20260714120000_create_daily_tracker.sql',
   'supabase/migrations/20260721083954_enable_realtime_chat_notifications.sql',
   'supabase/migrations/20260721143000_checkin_schedule_anchor.sql',
+  'supabase/migrations/20260726152459_link_checkins_to_coach_chat.sql',
 ]
 
 function loadEnvLocal() {
