@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
+import { serializeCoachResponse } from '@/lib/checkin'
 import { isCheckinSystemMessage } from '@/lib/checkin-chat'
 import {
   formatNextCoachWorkingHours,
@@ -28,8 +29,8 @@ function messagePreview(
 async function insertSystemMessage(
   conversationId: string,
   content: string,
-  options?: { incrementCoachUnread?: boolean }
-): Promise<void> {
+  options?: { incrementCoachUnread?: boolean; sourceCheckinId?: string }
+): Promise<{ error: string | null }> {
   const admin = createAdminClient()
   const now = new Date().toISOString()
   const { data: conversation } = options?.incrementCoachUnread
@@ -40,14 +41,21 @@ async function insertSystemMessage(
         .single()
     : { data: null }
 
-  await admin.from('conversation_messages').insert({
+  const { error } = await admin.from('conversation_messages').insert({
     conversation_id: conversationId,
     sender_type: (options?.incrementCoachUnread ? 'client' : 'system') as MessageSender,
     sender_id: options?.incrementCoachUnread ? conversation?.client_id ?? null : null,
     message_type: 'system' as MessageType,
     content,
+    source_checkin_id: options?.sourceCheckinId ?? null,
     created_at: now,
   })
+
+  // Idempotent re-post of the same check-in summary is a no-op success.
+  if (error?.code === '23505' && options?.sourceCheckinId) {
+    return { error: null }
+  }
+  return { error: error?.message ?? null }
 }
 
 async function syncConversationCoach(
@@ -366,6 +374,85 @@ export async function getOrCreateConversationForCoach(
   return { data: updated as CoachConversation, error: null, isNew: true }
 }
 
+function coachReplyFeedback(input: {
+  messageType: MessageType
+  content?: string
+}): string {
+  const content = input.content?.trim()
+  if (input.messageType === 'text' && content) return content
+  if (input.messageType === 'voice') return 'Coach replied with a voice message in chat.'
+  if (input.messageType === 'image') return 'Coach replied with a photo in chat.'
+  return content || 'Coach replied in chat.'
+}
+
+/**
+ * When a coach replies in a thread that has an unreplied mid-week check-in summary,
+ * mark that check-in reviewed. Voice/text/photo replies all count.
+ */
+async function completeMidWeekCheckinFromCoachReply(
+  supabase: SupabaseClient,
+  input: {
+    conversationId: string
+    replyCreatedAt: string
+    messageType: MessageType
+    content?: string
+  }
+): Promise<void> {
+  const { data: summary, error: summaryError } = await supabase
+    .from('conversation_messages')
+    .select('source_checkin_id')
+    .eq('conversation_id', input.conversationId)
+    .not('source_checkin_id', 'is', null)
+    .lte('created_at', input.replyCreatedAt)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (summaryError || !summary?.source_checkin_id) return
+
+  const { data: checkin, error: checkinError } = await supabase
+    .from('checkins')
+    .select('id, client_id, checkin_type, reviewed')
+    .eq('id', summary.source_checkin_id)
+    .maybeSingle()
+
+  if (checkinError || !checkin || checkin.checkin_type !== 'mid_week' || checkin.reviewed) {
+    return
+  }
+
+  const reviewedAt = input.replyCreatedAt
+  const { error: updateError } = await supabase
+    .from('checkins')
+    .update({
+      reviewed: true,
+      reviewed_at: reviewedAt,
+      coach_response: serializeCoachResponse({
+        feedback: coachReplyFeedback(input),
+        action_items: '',
+      }),
+    })
+    .eq('id', checkin.id)
+    .eq('reviewed', false)
+
+  if (updateError) {
+    console.error('[coach-chat] mid-week check-in completion failed:', updateError.message)
+    return
+  }
+
+  const { count } = await supabase
+    .from('checkins')
+    .select('id', { count: 'exact', head: true })
+    .eq('client_id', checkin.client_id)
+    .eq('reviewed', false)
+
+  if ((count ?? 0) === 0) {
+    await supabase
+      .from('profiles')
+      .update({ checkin_awaiting: false })
+      .eq('id', checkin.client_id)
+  }
+}
+
 export async function sendChatMessage(
   supabase: SupabaseClient,
   input: {
@@ -407,6 +494,20 @@ export async function sendChatMessage(
     .single()
 
   if (conv) {
+    if (input.senderType === 'coach') {
+      try {
+        await completeMidWeekCheckinFromCoachReply(supabase, {
+          conversationId: input.conversationId,
+          replyCreatedAt: data.created_at,
+          messageType,
+          content: input.content,
+        })
+      } catch (err) {
+        // The reply is already persisted; completion can be retried from the check-in.
+        console.error('[coach-chat] mid-week completion failed after reply:', err)
+      }
+    }
+
     try {
       if (input.senderType === 'coach') {
         const replyBody =
@@ -509,19 +610,17 @@ export { formatMessageTime, formatRelativeActivity } from '@/lib/coach-chat-ui'
  * Post a check-in summary into the client's persistent coach conversation.
  * Uses admin client — safe for API routes after check-in submit.
  */
-export async function postCheckinToCoachChat(
-  supabase: SupabaseClient,
-  input: {
-    clientId: string
-    coachId: string
-    message: string
-    checkinId: string
-    checkinType: 'mid_week' | 'weekly'
-  }
-): Promise<{ error: string | null }> {
+export async function postCheckinToCoachChat(input: {
+  clientId: string
+  coachId: string
+  message: string
+  checkinId: string
+  checkinType: 'mid_week' | 'weekly'
+}): Promise<{ error: string | null }> {
   try {
-    const { data: conversation, error: convError, isNew } = await getOrCreateConversation(
-      supabase,
+    const admin = createAdminClient()
+    const { data: conversation, error: convError } = await getOrCreateConversation(
+      admin,
       input.clientId
     )
 
@@ -530,15 +629,20 @@ export async function postCheckinToCoachChat(
     }
 
     if (conversation.coach_id !== input.coachId) {
-      await supabase
+      await admin
         .from('coach_conversations')
         .update({ coach_id: input.coachId, updated_at: new Date().toISOString() })
         .eq('id', conversation.id)
     }
 
-    await insertSystemMessage(conversation.id, input.message, { incrementCoachUnread: !isNew })
+    const inserted = await insertSystemMessage(conversation.id, input.message, {
+      incrementCoachUnread: true,
+      sourceCheckinId: input.checkinId,
+    })
+    if (inserted.error) {
+      return { error: inserted.error }
+    }
 
-    const admin = createAdminClient()
     const { data: coach } = await admin
       .from('coaches')
       .select('user_id')
@@ -554,6 +658,7 @@ export async function postCheckinToCoachChat(
         body: input.message.split('\n').slice(0, 3).join(' · '),
         actionUrl: `/coach/chat/${conversation.id}`,
         metadata: { checkinId: input.checkinId, clientId: input.clientId },
+        idempotencyKey: `checkin-chat:${input.checkinId}:coach`,
       })
     }
 

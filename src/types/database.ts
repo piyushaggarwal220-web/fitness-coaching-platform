@@ -866,6 +866,7 @@ export type ConversationMessage = {
   content: string | null
   media_url: string | null
   media_duration_seconds: number | null
+  source_checkin_id: string | null
   read_at: string | null
   created_at: string
 }

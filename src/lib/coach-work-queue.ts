@@ -183,9 +183,11 @@ export async function getCoachWorkQueue(
     tasks.push({
       id: `checkin-${checkin.id}`,
       type: 'checkin_review',
-      title: checkin.checkin_type === 'mid_week' ? 'Review Mid-Week Check-in' : 'Review Weekly Check-in',
+      title: checkin.checkin_type === 'mid_week' ? 'Reply to Mid-Week Check-in' : 'Review Weekly Check-in',
       subtitle: name,
-      href: `/coach/checkin/${checkin.id}`,
+      href: checkin.checkin_type === 'mid_week'
+        ? `/coach/chat?clientId=${checkin.client_id}`
+        : `/coach/checkin/${checkin.id}`,
       clientId: checkin.client_id,
       clientName: name,
       priority: QUEUE_PRIORITY,

@@ -116,7 +116,7 @@ export async function resolveWorkQueueTask(
       const checkinId = task.id.replace(/^checkin-/, '')
       const { data: checkin, error: loadError } = await admin
         .from('checkins')
-        .select('id, client_id, reviewed, coach_response, coach_id')
+        .select('id, client_id, reviewed, coach_response, coach_id, checkin_type')
         .eq('id', checkinId)
         .maybeSingle()
 
@@ -127,6 +127,13 @@ export async function resolveWorkQueueTask(
         return { ok: false, resolved: false, error: 'Check-in is not assigned to you.' }
       }
       if (checkin.reviewed) return { ok: true, resolved: true }
+      if (checkin.checkin_type === 'mid_week') {
+        return {
+          ok: false,
+          resolved: false,
+          error: 'Reply to this mid-week check-in in coach chat to complete it.',
+        }
+      }
 
       const now = new Date().toISOString()
       const { error } = await admin

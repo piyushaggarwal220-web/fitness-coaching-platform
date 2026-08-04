@@ -66,12 +66,22 @@ export async function POST(request: Request) {
 
   const { data: checkin } = await supabase
     .from('checkins')
-    .select('coaching_week')
+    .select('coaching_week, checkin_type')
     .eq('id', checkinId)
     .eq('client_id', clientId)
     .maybeSingle()
 
-  const coachingWeek = body.coachingWeek ?? checkin?.coaching_week ?? 0
+  if (!checkin) {
+    return NextResponse.json({ error: 'Check-in not found' }, { status: 404 })
+  }
+  if (checkin.checkin_type !== 'weekly') {
+    return NextResponse.json(
+      { error: 'Mid-week check-ins only require a reply in coach chat.' },
+      { status: 409 }
+    )
+  }
+
+  const coachingWeek = body.coachingWeek ?? checkin.coaching_week ?? 0
 
   const jobInput = {
     clientId,

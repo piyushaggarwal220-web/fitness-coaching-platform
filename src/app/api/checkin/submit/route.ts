@@ -329,7 +329,11 @@ export async function POST(request: Request) {
         userId: coach.user_id,
         ...template,
         metadata: { checkinId: inserted.id, clientId: user.id, checkinType: body.checkinType },
-        actionUrl: `/coach/checkin/${inserted.id}`,
+        actionUrl:
+          body.checkinType === 'mid_week'
+            ? `/coach/chat?clientId=${user.id}`
+            : `/coach/checkin/${inserted.id}`,
+        idempotencyKey: `checkin-submitted:${inserted.id}:coach`,
       })
     }
 
@@ -350,10 +354,12 @@ export async function POST(request: Request) {
             energyLevel: body.energy_level,
             sleepQuality: body.sleep_quality,
             stressLevel: body.stress_level,
+            hungerLevel: body.hunger_level,
             adherenceWins: body.adherence_wins,
             adherenceStruggles: body.adherence_struggles,
             painInjuries: body.pain_injuries,
             questionsForCoach: body.questions_for_coach,
+            additionalComments: body.additional_comments,
           })
         : formatWeeklyCheckinChatMessage({
             coachingWeek: scheduled.coachingWeek,
@@ -375,13 +381,16 @@ export async function POST(request: Request) {
             journeyUrl: '/journey',
           })
 
-    void postCheckinToCoachChat(supabase, {
+    const chatPost = await postCheckinToCoachChat({
       clientId: user.id,
       coachId: profile.coach_id,
       message: chatMessage,
       checkinId: inserted.id,
       checkinType: body.checkinType,
-    }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
+    })
+    if (chatPost.error) {
+      console.error('[checkin-submit] chat post failed:', chatPost.error)
+    }
 
     if (body.checkinType === 'weekly') {
       // Mark in-flight before the response returns so coaches see Generating immediately.
