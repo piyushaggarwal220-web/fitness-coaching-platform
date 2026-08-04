@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireConversationParticipant } from '@/lib/chat-api-access'
+import { ensureClientMidWeekCheckinsInCoachChat } from '@/lib/coach-chat'
 
 export async function GET(
   _request: Request,
@@ -15,6 +16,18 @@ export async function GET(
   if (!access.ok) return access.response
 
   const { admin, participant } = access
+
+  // When a coach opens the thread, make every mid-week check-in visible in chat.
+  if (participant.viewer === 'coach') {
+    const backfill = await ensureClientMidWeekCheckinsInCoachChat({
+      clientId: participant.conversation.client_id,
+      coachId: participant.conversation.coach_id,
+    })
+    if (backfill.error) {
+      console.error('[chat-conversation] mid-week backfill failed', backfill.error)
+    }
+  }
+
   const [{ data: profile, error: profileError }, { data: activePlan, error: planError }] =
     await Promise.all([
       admin

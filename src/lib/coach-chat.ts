@@ -33,10 +33,14 @@ function messagePreview(
 async function insertSystemMessage(
   conversationId: string,
   content: string,
-  options?: { incrementCoachUnread?: boolean; sourceCheckinId?: string }
+  options?: {
+    incrementCoachUnread?: boolean
+    sourceCheckinId?: string
+    createdAt?: string
+  }
 ): Promise<{ error: string | null }> {
   const admin = createAdminClient()
-  const now = new Date().toISOString()
+  const createdAt = options?.createdAt ?? new Date().toISOString()
   const { data: conversation } = options?.incrementCoachUnread || options?.sourceCheckinId
     ? await admin
         .from('coach_conversations')
@@ -60,7 +64,7 @@ async function insertSystemMessage(
     message_type: (isCheckinSummary ? 'text' : 'system') as MessageType,
     content,
     source_checkin_id: options?.sourceCheckinId ?? null,
-    created_at: now,
+    created_at: createdAt,
   })
 
   // Idempotent re-post of the same check-in summary is a no-op success.
@@ -68,6 +72,31 @@ async function insertSystemMessage(
     return { error: null }
   }
   return { error: error?.message ?? null }
+}
+
+async function syncConversationLatestMessage(conversationId: string): Promise<void> {
+  const admin = createAdminClient()
+  const { data: latest } = await admin
+    .from('conversation_messages')
+    .select('content, message_type, created_at')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!latest?.created_at) return
+
+  await admin
+    .from('coach_conversations')
+    .update({
+      last_message_at: latest.created_at,
+      last_message_preview: messagePreview(
+        (latest.message_type as MessageType) ?? 'text',
+        latest.content
+      ),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', conversationId)
 }
 
 async function syncConversationCoach(
@@ -629,6 +658,9 @@ export async function postCheckinToCoachChat(input: {
   checkinId: string
   checkinType: 'mid_week' | 'weekly'
   notifyCoach?: boolean
+  /** When backfilling history, use the original submit time so cards land in order. */
+  createdAt?: string
+  incrementCoachUnread?: boolean
 }): Promise<{ conversationId: string | null; error: string | null }> {
   try {
     const admin = createAdminClient()
@@ -649,8 +681,9 @@ export async function postCheckinToCoachChat(input: {
     }
 
     const inserted = await insertSystemMessage(conversation.id, input.message, {
-      incrementCoachUnread: true,
+      incrementCoachUnread: input.incrementCoachUnread ?? true,
       sourceCheckinId: input.checkinId,
+      createdAt: input.createdAt,
     })
     if (inserted.error) {
       return { conversationId: conversation.id, error: inserted.error }
@@ -743,6 +776,8 @@ export async function ensureCheckinInCoachChat(input: {
       checkinId: row.id,
       checkinType: row.checkin_type,
       notifyCoach: input.notifyCoach ?? false,
+      createdAt: row.submitted_at,
+      incrementCoachUnread: !row.reviewed,
     })
 
     return {
@@ -756,6 +791,66 @@ export async function ensureCheckinInCoachChat(input: {
       conversationId: null,
       posted: false,
       error: err instanceof Error ? err.message : 'Failed to ensure check-in in chat',
+    }
+  }
+}
+
+/**
+ * Post every mid-week check-in this client has sent into their coach chat
+ * (idempotent). Missing cards are inserted at the original submit time.
+ */
+export async function ensureClientMidWeekCheckinsInCoachChat(input: {
+  clientId: string
+  coachId: string
+}): Promise<{ conversationId: string | null; postedCount: number; error: string | null }> {
+  try {
+    const admin = createAdminClient()
+    const { data: checkins, error: checkinsError } = await admin
+      .from('checkins')
+      .select('*')
+      .eq('client_id', input.clientId)
+      .eq('checkin_type', 'mid_week')
+      .order('submitted_at', { ascending: true })
+
+    if (checkinsError) {
+      return { conversationId: null, postedCount: 0, error: checkinsError.message }
+    }
+
+    const rows = (checkins ?? []) as Checkin[]
+    if (rows.length === 0) {
+      const { data: conversation } = await getOrCreateConversation(admin, input.clientId)
+      return { conversationId: conversation?.id ?? null, postedCount: 0, error: null }
+    }
+
+    let conversationId: string | null = null
+    let postedCount = 0
+
+    for (const row of rows) {
+      if (row.coach_id && row.coach_id !== input.coachId) continue
+
+      const result = await ensureCheckinInCoachChat({
+        checkinId: row.id,
+        coachId: input.coachId,
+        notifyCoach: false,
+      })
+      if (result.conversationId) conversationId = result.conversationId
+      if (result.posted) postedCount += 1
+      if (result.error) {
+        console.error('[checkin-chat] mid-week backfill item failed:', row.id, result.error)
+      }
+    }
+
+    if (conversationId) {
+      await syncConversationLatestMessage(conversationId)
+    }
+
+    return { conversationId, postedCount, error: null }
+  } catch (err) {
+    console.error('[checkin-chat] mid-week backfill failed:', err)
+    return {
+      conversationId: null,
+      postedCount: 0,
+      error: err instanceof Error ? err.message : 'Failed to backfill mid-week check-ins',
     }
   }
 }

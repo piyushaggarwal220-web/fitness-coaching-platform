@@ -62,20 +62,22 @@ assert.match(retryRoute, /Mid-week check-ins only require a reply in coach chat/
 
 const chatSource = source('src/lib/coach-chat.ts')
 assert.match(chatSource, /sourceCheckinId: input\.checkinId/)
-assert.match(chatSource, /incrementCoachUnread: true/)
+assert.match(chatSource, /incrementCoachUnread: input\.incrementCoachUnread \?\? true/)
 assert.match(chatSource, /completeMidWeekCheckinFromCoachReply/)
 assert.match(chatSource, /Coach replied with a voice message in chat/)
 assert.match(chatSource, /idempotencyKey: `checkin-chat:\$\{input\.checkinId\}:coach`/)
 assert.match(chatSource, /checkin_type !== 'mid_week'/)
 assert.match(chatSource, /ensureCheckinInCoachChat/)
+assert.match(chatSource, /ensureClientMidWeekCheckinsInCoachChat/)
 assert.match(chatSource, /formatCheckinChatMessageFromRow/)
+assert.match(chatSource, /syncConversationLatestMessage/)
 
 const openChat = source('src/lib/coach-open-chat.ts')
 assert.match(openChat, /checkinId/)
 assert.match(openChat, /JSON\.stringify\(\{ clientId, checkinId: requestedCheckinId \}\)/)
 
 const coachConversations = source('src/app/api/chat/coach-conversations/route.ts')
-assert.match(coachConversations, /ensureCheckinInCoachChat/)
+assert.match(coachConversations, /ensureClientMidWeekCheckinsInCoachChat/)
 assert.match(coachConversations, /checkinId/)
 
 const forChatRoute = source('src/app/api/coach/checkin/[id]/for-chat/route.ts')
@@ -89,6 +91,9 @@ assert.match(replyPanel, /\/api\/coach\/checkin\/\$\{encodeURIComponent\(checkin
 const chatDetail = source('src/app/coach/chat/[id]/page.tsx')
 assert.match(chatDetail, /CheckinReplyPanel/)
 assert.match(chatDetail, /highlightCheckinId/)
+
+const conversationDetail = source('src/app/api/chat/conversations/[id]/route.ts')
+assert.match(conversationDetail, /ensureClientMidWeekCheckinsInCoachChat/)
 
 const migration = source('supabase/migrations/20260726152459_link_checkins_to_coach_chat.sql')
 assert.match(migration, /ADD COLUMN IF NOT EXISTS source_checkin_id uuid/)

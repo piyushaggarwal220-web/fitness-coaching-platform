@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import {
-  ensureCheckinInCoachChat,
+  ensureClientMidWeekCheckinsInCoachChat,
   getOrCreateConversationForCoach,
   listCoachConversations,
 } from '@/lib/coach-chat'
@@ -73,8 +73,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'clientId is required.' }, { status: 400 })
   }
 
-  // If the coach opened chat from a check-in queue item without an id, attach
-  // the latest unreplied mid-week check-in so answers still appear in chat.
+  // Backfill every mid-week check-in this client has sent into the chat thread.
+  const backfill = await ensureClientMidWeekCheckinsInCoachChat({
+    clientId,
+    coachId: gate.coachId,
+  })
+  if (backfill.error) {
+    console.error('[coach-conversations] mid-week backfill failed', backfill.error)
+  }
+
+  // Prefer the check-in the coach tapped; otherwise highlight the latest unreplied one.
   if (!checkinId) {
     const { data: pendingMidweek } = await gate.admin
       .from('checkins')
@@ -89,30 +97,20 @@ export async function POST(request: Request) {
     checkinId = pendingMidweek?.id ?? ''
   }
 
-  if (checkinId) {
-    const ensured = await ensureCheckinInCoachChat({
-      checkinId,
-      coachId: gate.coachId,
-      notifyCoach: false,
-    })
-    if (ensured.error) {
-      console.error('[coach-conversations] ensure check-in chat failed', ensured.error)
-      // Still open the conversation; the chat page can show the check-in panel.
-    }
-    if (ensured.conversationId) {
-      const { data: conversation } = await gate.admin
-        .from('coach_conversations')
-        .select('*')
-        .eq('id', ensured.conversationId)
-        .maybeSingle()
-      if (conversation) {
-        return NextResponse.json({
-          conversation,
-          isNew: false,
-          checkinPosted: ensured.posted,
-          checkinId,
-        })
-      }
+  if (backfill.conversationId) {
+    const { data: conversation } = await gate.admin
+      .from('coach_conversations')
+      .select('*')
+      .eq('id', backfill.conversationId)
+      .maybeSingle()
+    if (conversation) {
+      return NextResponse.json({
+        conversation,
+        isNew: false,
+        checkinPosted: backfill.postedCount > 0,
+        checkinId: checkinId || null,
+        midWeekPostedCount: backfill.postedCount,
+      })
     }
   }
 
@@ -127,5 +125,6 @@ export async function POST(request: Request) {
     isNew: result.isNew,
     checkinPosted: false,
     checkinId: checkinId || null,
+    midWeekPostedCount: backfill.postedCount,
   })
 }
