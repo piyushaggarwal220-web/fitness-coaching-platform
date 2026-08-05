@@ -4,9 +4,6 @@ export type AccessSource = 'purchase' | 'admin_trial' | 'enrollment_code'
 
 export type EntitlementProfile = Pick<Profile, 'payment_confirmed' | 'access_source' | 'subscription_expires_at'>
 
-/** Clients need at least this many days left to receive a new or edited coaching plan. */
-export const MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE = 4
-
 /** Show renew CTAs / send soft reminders when this many days (or fewer) remain. */
 export const MEMBERSHIP_RENEWAL_WARNING_DAYS = 7
 
@@ -108,8 +105,9 @@ export function membershipReminderStage(
 }
 
 /**
- * Block new/edited plan delivery when the client has under 4 days of access left.
- * Admin trials (no expiry) always pass. Profiles without an expiry also pass.
+ * Allow new/edited plan delivery whenever the client still has platform access
+ * (including with only one day left, and through the membership grace window).
+ * Admin trials always pass. Profiles without an expiry also pass when entitled.
  */
 export function assertClientCanReceivePlanChanges(
   profile: EntitlementProfile | null | undefined,
@@ -128,19 +126,13 @@ export function assertClientCanReceivePlanChanges(
   }
 
   const days = subscriptionDaysRemaining(profile, now)
-  if (days == null) {
-    return { ok: true }
-  }
+  const whole = days == null ? 0 : Math.max(0, Math.floor(days))
 
-  if (days < MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE) {
-    const whole = Math.max(0, Math.floor(days))
-    const need = MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE
+  if (!hasClientEntitlement(profile, now)) {
     return {
       ok: false,
       error:
-        whole <= 0
-          ? `This client’s subscription has ended or has less than ${need} days left. Renew before creating or editing a plan.`
-          : `This client has only ${whole} day${whole === 1 ? '' : 's'} left on their subscription. Renew to at least ${need} days before creating or editing a plan.`,
+        'This client’s subscription has ended. Renew before creating or editing a plan.',
       daysRemaining: whole,
     }
   }
