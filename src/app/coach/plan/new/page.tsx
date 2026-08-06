@@ -21,7 +21,6 @@ import { mergePlanForms } from '@/lib/coach/ai-actions';
 import { runCoachAiAction } from '@/lib/coach/ai-action-client';
 import type { AiReasoningDisplay } from '@/lib/coach/ai-actions';
 import { activatePlan, getNextPlanVersion, INITIAL_PLAN_FORM, validatePlanForm } from '@/lib/plans';
-import { assertClientCanReceivePlanChanges } from '@/lib/entitlements';
 import { clientCoachNotes } from '@/lib/plan-metadata';
 import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-sync';
 import { createClient } from '@/lib/supabase/client';
@@ -148,13 +147,6 @@ function CoachNewPlanForm() {
       return;
     }
     if (!coach) return;
-
-    const selectedClient = clients.find((c) => c.id === form.client_id);
-    const planWindow = assertClientCanReceivePlanChanges(selectedClient ?? null);
-    if (!planWindow.ok) {
-      setError(planWindow.error);
-      return;
-    }
 
     setSubmitting(true);
     setError('');
