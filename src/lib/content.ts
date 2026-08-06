@@ -261,28 +261,28 @@ export const pricing = {
     {
       slug: '3_months',
       name: '3 Months',
-      price: '₹1,499',
-      perMonth: '≈ ₹500/month',
-      blurb: 'Best balance of price and consistency',
+      price: '₹1,999',
+      perMonth: '≈ ₹666/month',
+      blurb: 'Quick Reset',
       save: 'BEST STARTER',
       popular: true,
     },
     {
       slug: '6_months',
       name: '6 Months',
-      price: '₹2,499',
-      perMonth: '≈ ₹417/month',
-      blurb: 'Serious results need serious time',
-      save: 'SAVE ₹501',
+      price: '₹2,599',
+      perMonth: '≈ ₹433/month',
+      blurb: 'Recomposition Starter',
+      save: 'MOST POPULAR',
       popular: false,
     },
     {
       slug: '12_months',
       name: '12 Months',
-      price: '₹3,999',
-      perMonth: '≈ ₹333/month',
-      blurb: 'Lowest monthly cost. Maximum support.',
-      save: 'SAVE ₹2,001',
+      price: '₹3,599',
+      perMonth: '≈ ₹300/month',
+      blurb: 'Complete Transformation',
+      save: 'BEST VALUE',
       popular: false,
     },
   ],
@@ -356,7 +356,7 @@ export const finalCta = {
 } as const
 
 export const stickyCta = {
-  label: 'Start Today — From ₹1,499',
+  label: 'Start Today — From ₹1,999',
   mobileLabel: 'Start Today',
 } as const
 
