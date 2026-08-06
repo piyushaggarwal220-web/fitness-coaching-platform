@@ -145,7 +145,9 @@ export function formatExerciseTarget(ex: TrackerExerciseItem): string {
   return `${sets}${ex.targetReps}${weight}`.trim()
 }
 
-export function formatDurationInput(seconds: number | undefined): { minutes: string; seconds: string } {
+export function formatDurationInput(
+  seconds: number | null | undefined
+): { minutes: string; seconds: string } {
   if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) {
     return { minutes: '', seconds: '' }
   }
