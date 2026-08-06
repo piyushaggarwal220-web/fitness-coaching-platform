@@ -14,6 +14,7 @@ import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
 import {
   formatInrFromPaise,
   firstTimerSalePaise,
+  getFirstTimerDiscountCode,
 } from '@/lib/payments/checkout-discounts';
 
 const supabase = createClient();
@@ -68,11 +69,13 @@ function CheckoutForm() {
   const [missingItems, setMissingItems] = useState<string[]>([]);
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
-  const [referralCode, setReferralCode] = useState(codeFromUrl);
+  const welcomeCode = getFirstTimerDiscountCode();
+  const [referralCode, setReferralCode] = useState(
+    codeFromUrl || (plan.isTrial ? '' : welcomeCode)
+  );
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountPreview | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
   const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
-  const [showCodeField, setShowCodeField] = useState(Boolean(codeFromUrl));
   const [attemptedPay, setAttemptedPay] = useState(false);
   const paymentSucceededRef = useRef(false);
   const autoApplyKeyRef = useRef('');
@@ -90,10 +93,6 @@ function CheckoutForm() {
     firstTimerPreviewPaise != null ? formatInrFromPaise(firstTimerPreviewPaise) : plan.displayPrice;
   const firstTimerSavingsPaise =
     firstTimerPreviewPaise != null ? plan.amountPaise - firstTimerPreviewPaise : null;
-  const checkoutSavingsDisplay = appliedDiscount?.displayDiscount ??
-    (referralCode && !isTrialCheckout && firstTimerSavingsPaise != null
-      ? formatInrFromPaise(firstTimerSavingsPaise)
-      : null);
 
   useEffect(() => {
     setAppliedDiscount(null);
@@ -101,7 +100,8 @@ function CheckoutForm() {
     autoApplyKeyRef.current = '';
     if (isTrialCheckout) setReferralCode('');
     else if (codeFromUrl) setReferralCode(codeFromUrl);
-  }, [plan.slug, isTrialCheckout, codeFromUrl]);
+    else setReferralCode((prev) => prev || welcomeCode);
+  }, [plan.slug, isTrialCheckout, codeFromUrl, welcomeCode]);
 
   useEffect(() => {
     // Re-validate is required after email changes (eligibility is email-bound).
@@ -169,7 +169,7 @@ function CheckoutForm() {
   }, [email, referralCode, plan.slug, isTrialCheckout, appliedDiscount, applyingCode]);
 
   const clearReferralCode = () => {
-    setReferralCode('');
+    setReferralCode(isTrialCheckout ? '' : welcomeCode);
     setAppliedDiscount(null);
     setEnrollmentHref(null);
     setError('');
@@ -527,13 +527,12 @@ function CheckoutForm() {
     );
   }
 
-  const pricePrimary = appliedDiscount?.displaySalePrice
-    ?? (referralCode && !isTrialCheckout
-      ? firstTimerPreviewDisplay
-      : plan.displayPrice);
-  const priceMrp =
-    appliedDiscount?.displayListPrice
-    ?? (referralCode && !isTrialCheckout ? plan.displayPrice : null);
+  const pricePrimary = appliedDiscount?.displaySalePrice ?? firstTimerPreviewDisplay;
+  const priceMrp = appliedDiscount?.displayListPrice ?? plan.displayPrice;
+  const discountLockedIn = Boolean(appliedDiscount);
+  const offerSaveDisplay =
+    appliedDiscount?.displayDiscount
+    ?? (firstTimerSavingsPaise != null ? formatInrFromPaise(firstTimerSavingsPaise) : null);
 
   return (
     <div style={styles.page}>
@@ -547,13 +546,15 @@ function CheckoutForm() {
         <p style={styles.subtitle}>
           {isTrialCheckout
             ? 'Full coaching access for 7 days. Upgrade anytime.'
-            : 'Choose a plan, verify your email, and pay securely.'}
+            : 'Pick a plan, apply your first-order offer, verify email, and pay.'}
         </p>
 
         {!isTrialCheckout && (
           <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
             {COACHING_PLAN_LIST.map((item) => {
               const selected = item.slug === plan.slug;
+              const sale = firstTimerSalePaise(item.slug);
+              const saleLabel = sale != null ? formatInrFromPaise(sale) : item.displayPrice;
               return (
                 <Link
                   key={item.slug}
@@ -566,7 +567,8 @@ function CheckoutForm() {
                   }}
                 >
                   <span style={styles.planChipName}>{item.name}</span>
-                  <span style={styles.planChipPrice}>{item.displayPrice}</span>
+                  <span style={styles.planChipPrice}>{saleLabel}</span>
+                  <span style={styles.planChipMrp}>{item.displayPrice}</span>
                 </Link>
               );
             })}
@@ -590,22 +592,64 @@ function CheckoutForm() {
               </div>
             </div>
             <div style={styles.orderPriceCol}>
-              {priceMrp && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
-              <span style={styles.orderSummaryPrice}>{pricePrimary}</span>
+              {!isTrialCheckout && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
+              <span style={styles.orderSummaryPrice}>
+                {isTrialCheckout ? plan.displayPrice : pricePrimary}
+              </span>
             </div>
           </div>
-          {(appliedDiscount || (referralCode && !isTrialCheckout)) && (
-            <div style={styles.orderSavings}>
-              <span>
-                {appliedDiscount
-                  ? `${appliedDiscount.code} applied`
-                  : `${referralCode} ready`}
-              </span>
-              <strong>
-                {appliedDiscount
-                  ? `Save ${appliedDiscount.displayDiscount}`
-                  : `Save ${checkoutSavingsDisplay}`}
-              </strong>
+
+          {!isTrialCheckout && (
+            <div style={discountLockedIn ? styles.offerBannerApplied : styles.offerBanner}>
+              <div style={styles.offerBannerTop}>
+                <strong>{discountLockedIn ? 'Offer applied' : '60% off first order'}</strong>
+                {offerSaveDisplay && <span>Save {offerSaveDisplay}</span>}
+              </div>
+              <p style={styles.offerBannerText}>
+                {discountLockedIn
+                  ? `${appliedDiscount!.code} locked in — you pay ${appliedDiscount!.displaySalePrice} today.`
+                  : `Code ${welcomeCode} is ready. Enter your email below, then tap Apply to lock in ${firstTimerPreviewDisplay}.`}
+              </p>
+              <div style={styles.codeRow}>
+                <input
+                  value={referralCode}
+                  onChange={(e) => {
+                    setReferralCode(e.target.value.toUpperCase());
+                    setEnrollmentHref(null);
+                    setAppliedDiscount(null);
+                  }}
+                  placeholder={welcomeCode}
+                  autoComplete="off"
+                  aria-label="Discount code"
+                  style={{ ...styles.input, marginTop: 0, flex: 1, minHeight: 48 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => void applyReferralCode()}
+                  disabled={applyingCode || !referralCode.trim()}
+                  style={styles.validateBtn}
+                >
+                  {applyingCode ? '…' : discountLockedIn ? 'Applied' : 'Apply'}
+                </button>
+              </div>
+              {discountLockedIn && (
+                <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
+                  Remove offer
+                </button>
+              )}
+              {enrollmentHref && (
+                <div style={styles.discountApplied}>
+                  <p style={{ margin: '0 0 10px' }}>
+                    This looks like a membership enrollment code — redeem it on the enrollment page.
+                  </p>
+                  <a
+                    href={enrollmentHref}
+                    style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}
+                  >
+                    Continue to enrollment →
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -713,11 +757,9 @@ function CheckoutForm() {
               <p style={styles.otpHint}>
                 We email a secure link — open it on this device, then continue.
               </p>
-              {(appliedDiscount || (referralCode && !isTrialCheckout)) && (
+              {(appliedDiscount) && (
                 <div style={styles.otpDiscountApplied}>
-                  {appliedDiscount
-                    ? `${appliedDiscount.code} applied · Save ${appliedDiscount.displayDiscount}`
-                    : `${referralCode} ready · confirm email to lock in the discount`}
+                  {appliedDiscount.code} applied · you pay {appliedDiscount.displaySalePrice}
                 </div>
               )}
               <div style={styles.otpBtnRow}>
@@ -775,70 +817,6 @@ function CheckoutForm() {
             </div>
           )}
 
-          {!isTrialCheckout && (
-            <div style={styles.redeemBox}>
-              {!showCodeField && !appliedDiscount ? (
-                <button
-                  type="button"
-                  onClick={() => setShowCodeField(true)}
-                  style={styles.redeemToggle}
-                >
-                  Have a referral or discount code?
-                </button>
-              ) : (
-                <>
-                  <div style={styles.redeemHeader}>
-                    <span style={styles.redeemTitle}>Discount code</span>
-                    {appliedDiscount && (
-                      <span style={styles.discountBadge}>Applied</span>
-                    )}
-                  </div>
-                  <div style={styles.codeRow}>
-                    <input
-                      value={referralCode}
-                      onChange={(e) => {
-                        setReferralCode(e.target.value.toUpperCase());
-                        setEnrollmentHref(null);
-                      }}
-                      placeholder="e.g. WELCOME60"
-                      autoComplete="off"
-                      style={{ ...styles.input, marginTop: 0, flex: 1, minHeight: 48 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void applyReferralCode()}
-                      disabled={applyingCode || !referralCode.trim()}
-                      style={styles.validateBtn}
-                    >
-                      {applyingCode ? '…' : 'Apply'}
-                    </button>
-                  </div>
-                  {appliedDiscount && (
-                    <div style={styles.discountApplied}>
-                      <p style={{ margin: 0 }}>{appliedDiscount.message}</p>
-                      <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
-                        Remove code
-                      </button>
-                    </div>
-                  )}
-                  {enrollmentHref && (
-                    <div style={styles.discountApplied}>
-                      <p style={{ margin: '0 0 10px' }}>
-                        This looks like a membership enrollment code — redeem it on the enrollment page.
-                      </p>
-                      <a
-                        href={enrollmentHref}
-                        style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}
-                      >
-                        Continue to enrollment →
-                      </a>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
           <label
             ref={policyRef}
             style={styles.policyRow}
@@ -860,11 +838,24 @@ function CheckoutForm() {
           </label>
 
           <button type="submit" disabled={loading} style={styles.payBtn}>
-            {loading ? 'Processing…' : `Pay ${payableDisplay}`}
+            {loading
+              ? 'Processing…'
+              : isTrialCheckout
+                ? `Pay ${payableDisplay}`
+                : discountLockedIn
+                  ? `Pay ${payableDisplay}`
+                  : `Pay ${plan.displayPrice}`}
           </button>
-          <p style={styles.paySecureNote}>
-            Secure checkout via Razorpay · UPI, cards, netbanking
-          </p>
+          {!isTrialCheckout && !discountLockedIn && (
+            <p style={styles.paySecureNote}>
+              Or apply {welcomeCode} above to pay {firstTimerPreviewDisplay} instead
+            </p>
+          )}
+          {(isTrialCheckout || discountLockedIn) && (
+            <p style={styles.paySecureNote}>
+              Secure checkout via Razorpay · UPI, cards, netbanking
+            </p>
+          )}
         </form>
 
         <p style={styles.secure}>
@@ -976,9 +967,14 @@ const styles: Record<string, CSSProperties> = {
     color: colors.textSecondary,
   },
   planChipPrice: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 800,
     color: colors.textPrimary,
+  },
+  planChipMrp: {
+    fontSize: 11,
+    color: colors.textMuted,
+    textDecoration: 'line-through',
   },
   trialBadge: {
     marginBottom: 16,
@@ -1033,15 +1029,34 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 500,
     color: colors.textMuted,
   },
-  orderSavings: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: 12,
+  offerBanner: {
     marginTop: 12,
-    paddingTop: 12,
-    borderTop: `1px solid ${colors.borderSubtle}`,
-    color: colors.success,
+    padding: 12,
+    borderRadius: radius.sm,
+    border: '1px solid rgba(249,115,22,0.35)',
+    backgroundColor: colors.accentMuted,
+  },
+  offerBannerApplied: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: radius.sm,
+    border: '1px solid rgba(34,197,94,0.35)',
+    backgroundColor: colors.successMuted,
+  },
+  offerBannerTop: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 6,
     fontSize: 13,
+    color: colors.textPrimary,
+  },
+  offerBannerText: {
+    margin: '0 0 10px',
+    fontSize: 12,
+    lineHeight: 1.45,
+    color: colors.textSecondary,
   },
   leagueNote: {
     margin: '0 0 20px',
@@ -1168,16 +1183,6 @@ const styles: Record<string, CSSProperties> = {
   redeemBox: {
     marginTop: 10,
     marginBottom: 4,
-  },
-  redeemToggle: {
-    background: 'none',
-    border: 'none',
-    color: colors.accent,
-    cursor: 'pointer',
-    fontSize: 13,
-    fontWeight: 600,
-    padding: '8px 0',
-    textAlign: 'left' as const,
   },
   redeemHeader: {
     display: 'flex',
