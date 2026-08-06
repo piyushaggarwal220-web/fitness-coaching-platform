@@ -18,6 +18,10 @@ import {
   getFirstTimerDiscountCode,
   isFirstTimerDiscountCode,
 } from '@/lib/payments/checkout-discounts';
+import {
+  formatCountdownHms,
+  getSaleCountdownRemainingMs,
+} from '@/lib/sale-countdown';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
@@ -76,6 +80,7 @@ function CheckoutForm() {
     codeFromUrl || (plan.isTrial ? '' : welcomeCode)
   );
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountPreview | null>(null);
+  const [saleCountdown, setSaleCountdown] = useState('08:00:00');
   const [applyingCode, setApplyingCode] = useState(false);
   const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
   const [attemptedPay, setAttemptedPay] = useState(false);
@@ -108,6 +113,15 @@ function CheckoutForm() {
       setReferralCode((prev) => prev || welcomeCode);
     }
   }, [plan.slug, isTrialCheckout, codeFromUrl, welcomeCode]);
+
+  useEffect(() => {
+    const tick = () => {
+      setSaleCountdown(formatCountdownHms(getSaleCountdownRemainingMs()));
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const buildLocalWelcomeDiscount = (code: string): AppliedDiscountPreview | null => {
     if (!isFirstTimerDiscountCode(code) || isTrialCheckout) return null;
@@ -670,6 +684,12 @@ function CheckoutForm() {
                   Remove offer
                 </button>
               )}
+              {discountLockedIn && (
+                <div style={styles.priceIncreaseTimer} aria-live="polite">
+                  <span style={styles.priceIncreaseLabel}>Price increases in</span>
+                  <strong style={styles.priceIncreaseValue}>{saleCountdown}</strong>
+                </div>
+              )}
               {enrollmentHref && (
                 <div style={styles.discountApplied}>
                   <p style={{ margin: '0 0 10px' }}>
@@ -1079,6 +1099,33 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     lineHeight: 1.45,
     color: colors.textSecondary,
+  },
+  priceIncreaseTimer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 10,
+    padding: '10px 12px',
+    borderRadius: radius.sm,
+    border: '1px solid rgba(249,115,22,0.4)',
+    backgroundColor: 'rgba(249,115,22,0.12)',
+  },
+  priceIncreaseLabel: {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    color: '#fdba74',
+  },
+  priceIncreaseValue: {
+    fontSize: 16,
+    fontWeight: 800,
+    fontVariantNumeric: 'tabular-nums' as const,
+    letterSpacing: '0.04em',
+    color: colors.textPrimary,
+    minWidth: '5.8em',
+    textAlign: 'right' as const,
   },
   leagueNote: {
     margin: '0 0 20px',
