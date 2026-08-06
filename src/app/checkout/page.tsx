@@ -11,6 +11,10 @@ import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
 import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
+import {
+  formatInrFromPaise,
+  firstTimerSalePaise,
+} from '@/lib/payments/checkout-discounts';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
@@ -81,9 +85,14 @@ function CheckoutForm() {
   const isTrialCheckout = plan.isTrial === true;
   const payablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
   const payableDisplay = appliedDiscount?.displaySalePrice ?? plan.displayPrice;
+  const firstTimerPreviewPaise = firstTimerSalePaise(plan.slug);
+  const firstTimerPreviewDisplay =
+    firstTimerPreviewPaise != null ? formatInrFromPaise(firstTimerPreviewPaise) : plan.displayPrice;
+  const firstTimerSavingsPaise =
+    firstTimerPreviewPaise != null ? plan.amountPaise - firstTimerPreviewPaise : null;
   const checkoutSavingsDisplay = appliedDiscount?.displayDiscount ??
-    (referralCode && !isTrialCheckout
-      ? `₹${Math.round((plan.amountPaise * 0.6) / 100).toLocaleString('en-IN')}`
+    (referralCode && !isTrialCheckout && firstTimerSavingsPaise != null
+      ? formatInrFromPaise(firstTimerSavingsPaise)
       : null);
 
   useEffect(() => {
@@ -520,7 +529,7 @@ function CheckoutForm() {
 
   const pricePrimary = appliedDiscount?.displaySalePrice
     ?? (referralCode && !isTrialCheckout
-      ? `₹${Math.round((plan.amountPaise * 0.4) / 100).toLocaleString('en-IN')}`
+      ? firstTimerPreviewDisplay
       : plan.displayPrice);
   const priceMrp =
     appliedDiscount?.displayListPrice

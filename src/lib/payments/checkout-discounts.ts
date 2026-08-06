@@ -12,16 +12,14 @@ import {
 import type { PromoCodeKind } from '@/types/database'
 
 /** Default public first-timer promo code (override with FIRST_TIMER_DISCOUNT_CODE). */
-export const DEFAULT_FIRST_TIMER_DISCOUNT_CODE = 'WELCOME'
+export const DEFAULT_FIRST_TIMER_DISCOUNT_CODE = 'WELCOME60'
 
 type FirstTimerPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
 
-/** Fixed first-timer discounts by plan (paise). Trial is not eligible. */
-export const FIRST_TIMER_DISCOUNT_PAISE: Record<FirstTimerPlanSlug, number> = {
-  '3_months': 20000, // ₹200
-  '6_months': 30000, // ₹300
-  '12_months': 40000, // ₹400
-}
+/** First-timer percent off list price. Trial is not eligible. */
+export const FIRST_TIMER_DISCOUNT_PERCENT = 60
+
+const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_months'])
 
 export type CheckoutDiscountKind = 'first_timer' | 'discount' | 'referral'
 
@@ -65,9 +63,29 @@ export function formatInrFromPaise(paise: number): string {
   return `₹${rupees.toLocaleString('en-IN')}`
 }
 
-export function discountPaiseForPlan(planSlug: string): number | null {
-  if (!(planSlug in FIRST_TIMER_DISCOUNT_PAISE)) return null
-  return FIRST_TIMER_DISCOUNT_PAISE[planSlug as FirstTimerPlanSlug]
+export function discountPaiseForPlan(
+  planSlug: string,
+  listAmountPaise?: number
+): number | null {
+  if (!FIRST_TIMER_PLAN_SLUGS.has(planSlug)) return null
+  const list =
+    listAmountPaise ??
+    getPurchasablePlan(planSlug)?.amountPaise
+  if (!list || list <= 0) return null
+  return Math.round((list * FIRST_TIMER_DISCOUNT_PERCENT) / 100)
+}
+
+/** Payable amount after first-timer / WELCOME60 percent off. */
+export function firstTimerSalePaise(
+  planSlug: string,
+  listAmountPaise?: number
+): number | null {
+  const list =
+    listAmountPaise ??
+    getPurchasablePlan(planSlug)?.amountPaise
+  const discount = discountPaiseForPlan(planSlug, list)
+  if (!list || discount == null) return null
+  return list - discount
 }
 
 /** True when this email has never successfully paid or redeemed enrollment. */
@@ -249,7 +267,7 @@ export async function resolveCheckoutPricing(input: {
     }
   }
 
-  const discountPaise = discountPaiseForPlan(plan.slug)
+  const discountPaise = discountPaiseForPlan(plan.slug, listAmountPaise)
   if (discountPaise == null || discountPaise <= 0 || discountPaise >= listAmountPaise) {
     return { ok: false, error: 'This referral code is not available for this plan.', status: 400 }
   }
@@ -297,7 +315,7 @@ export function expectedAmountPaiseFromOrderNotes(
     }
 
     if (code && isFirstTimerDiscountCode(code)) {
-      const expectedDiscount = discountPaiseForPlan(plan.slug) ?? 0
+      const expectedDiscount = discountPaiseForPlan(plan.slug, plan.amountPaise) ?? 0
       if (discountPaise === expectedDiscount && charged === plan.amountPaise - expectedDiscount) {
         return charged
       }
@@ -309,7 +327,7 @@ export function expectedAmountPaiseFromOrderNotes(
   }
 
   if (code && isFirstTimerDiscountCode(code) && discountPaise > 0) {
-    const expectedDiscount = discountPaiseForPlan(plan.slug) ?? 0
+    const expectedDiscount = discountPaiseForPlan(plan.slug, plan.amountPaise) ?? 0
     if (discountPaise === expectedDiscount) {
       return plan.amountPaise - expectedDiscount
     }

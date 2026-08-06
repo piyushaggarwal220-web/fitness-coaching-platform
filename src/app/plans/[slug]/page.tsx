@@ -16,6 +16,7 @@ import {
   type PlanPagePath,
 } from '@/lib/payments/plan-pages'
 import type { CoachingPlanSlug } from '@/lib/payments/plans'
+import { formatInrFromPaise, firstTimerSalePaise } from '@/lib/payments/checkout-discounts'
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
 
 const display = Syne({
@@ -64,6 +65,8 @@ export default async function PlanLandingPage({ params }: PageProps) {
   const copy = PLAN_PAGE_COPY[planSlug]
   const marketingBase = resolveMarketingBaseUrl()
   const others = siblingPlans(planSlug)
+  const salePaise = firstTimerSalePaise(plan.slug)
+  const saleDisplay = salePaise != null ? formatInrFromPaise(salePaise) : plan.displayPrice
 
   return (
     <div className={`${display.variable} ${body.variable}`} style={styles.page}>
@@ -106,8 +109,16 @@ export default async function PlanLandingPage({ params }: PageProps) {
         <p style={styles.promise}>{copy.promise}</p>
 
         <div style={styles.priceBlock}>
-          <p style={styles.price}>{plan.displayPrice}</p>
-          <p style={styles.save}>{plan.saveLabel}</p>
+          <p style={styles.price}>{saleDisplay}</p>
+          <p style={styles.save}>
+            <span style={{ textDecoration: 'line-through', color: '#71717a', fontWeight: 500 }}>
+              {plan.displayPrice}
+            </span>
+            {' '}with WELCOME60 ({plan.saveLabel})
+          </p>
+          <p style={styles.codeHint}>
+            Apply <strong style={{ color: '#fdba74' }}>WELCOME60</strong> at checkout for 60% off
+          </p>
           {(plan.popular || plan.best) && (
             <p style={styles.badge}>{plan.best ? 'Best value' : 'Most popular'}</p>
           )}
@@ -277,6 +288,13 @@ const styles: Record<string, CSSProperties> = {
     margin: 0,
     fontSize: 14,
     color: '#a1a1aa',
+  },
+  codeHint: {
+    margin: 0,
+    flexBasis: '100%',
+    fontSize: 13,
+    color: '#a1a1aa',
+    lineHeight: 1.4,
   },
   badge: {
     margin: 0,
