@@ -261,8 +261,8 @@ export const pricing = {
     {
       slug: '3_months',
       name: '3 Months',
-      price: '₹1,999',
-      perMonth: '≈ ₹666/month',
+      price: '₹1,699',
+      perMonth: '≈ ₹566/month',
       blurb: 'Quick Reset',
       save: 'BEST STARTER',
       popular: true,
@@ -270,8 +270,8 @@ export const pricing = {
     {
       slug: '6_months',
       name: '6 Months',
-      price: '₹2,599',
-      perMonth: '≈ ₹433/month',
+      price: '₹2,699',
+      perMonth: '≈ ₹450/month',
       blurb: 'Recomposition Starter',
       save: 'MOST POPULAR',
       popular: false,
@@ -279,8 +279,8 @@ export const pricing = {
     {
       slug: '12_months',
       name: '12 Months',
-      price: '₹3,599',
-      perMonth: '≈ ₹300/month',
+      price: '₹3,699',
+      perMonth: '≈ ₹308/month',
       blurb: 'Complete Transformation',
       save: 'BEST VALUE',
       popular: false,
@@ -356,7 +356,7 @@ export const finalCta = {
 } as const
 
 export const stickyCta = {
-  label: 'Start Today — From ₹1,999',
+  label: 'Start Today — From ₹1,699',
   mobileLabel: 'Start Today',
 } as const
 
