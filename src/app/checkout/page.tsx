@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState, type CSSProperties, type FormEve
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
-import { brandTitle } from '@/lib/brand';
+import { BRAND_NAME } from '@/lib/brand';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
@@ -68,6 +68,8 @@ function CheckoutForm() {
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountPreview | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
   const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
+  const [showCodeField, setShowCodeField] = useState(Boolean(codeFromUrl));
+  const [attemptedPay, setAttemptedPay] = useState(false);
   const paymentSucceededRef = useRef(false);
   const autoApplyKeyRef = useRef('');
   const nameRef = useRef<HTMLInputElement>(null);
@@ -79,11 +81,6 @@ function CheckoutForm() {
   const isTrialCheckout = plan.isTrial === true;
   const payablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
   const payableDisplay = appliedDiscount?.displaySalePrice ?? plan.displayPrice;
-  const discountPreviewDisplay =
-    referralCode && !isTrialCheckout
-      ? `₹${Math.round((plan.amountPaise * 0.4) / 100).toLocaleString('en-IN')}`
-      : plan.displayPrice;
-  const checkoutTotalDisplay = appliedDiscount?.displaySalePrice ?? discountPreviewDisplay;
   const checkoutSavingsDisplay = appliedDiscount?.displayDiscount ??
     (referralCode && !isTrialCheckout
       ? `₹${Math.round((plan.amountPaise * 0.6) / 100).toLocaleString('en-IN')}`
@@ -425,6 +422,7 @@ function CheckoutForm() {
     e.preventDefault();
     setError('');
     setMissingItems([]);
+    setAttemptedPay(true);
 
     const missing = getMissingRequirements();
     if (missing.length > 0) {
@@ -512,172 +510,110 @@ function CheckoutForm() {
       <div style={styles.page}>
         <div style={styles.card}>
           <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
-          <h1 style={styles.title}>{brandTitle('Payment confirmed')}</h1>
+          <p style={styles.brandMark}>{BRAND_NAME}</p>
+          <h1 style={styles.title}>Payment confirmed</h1>
           <p style={styles.subtitle}>Taking you to create your login password…</p>
         </div>
       </div>
     );
   }
 
+  const pricePrimary = appliedDiscount?.displaySalePrice
+    ?? (referralCode && !isTrialCheckout
+      ? `₹${Math.round((plan.amountPaise * 0.4) / 100).toLocaleString('en-IN')}`
+      : plan.displayPrice);
+  const priceMrp =
+    appliedDiscount?.displayListPrice
+    ?? (referralCode && !isTrialCheckout ? plan.displayPrice : null);
+
   return (
     <div style={styles.page}>
       <div style={styles.card}>
         <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
-        <section style={styles.orderSummary}>
-          <div style={styles.orderSummaryTop}>
-            <span style={styles.orderSummaryLabel}>Order summary</span>
-            <span style={styles.orderSummaryPrice}>
-              {referralCode && !isTrialCheckout && (
-                <s style={styles.orderSummaryMrp}>{plan.displayPrice}</s>
-              )}
-              {checkoutTotalDisplay}
-            </span>
+
+        <p style={styles.brandMark}>{BRAND_NAME}</p>
+        <h1 style={styles.title}>
+          {isTrialCheckout ? 'Start your 7-day trial' : 'Checkout'}
+        </h1>
+        <p style={styles.subtitle}>
+          {isTrialCheckout
+            ? 'Full coaching access for 7 days. Upgrade anytime.'
+            : 'Choose a plan, verify your email, and pay securely.'}
+        </p>
+
+        {!isTrialCheckout && (
+          <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
+            {COACHING_PLAN_LIST.map((item) => {
+              const selected = item.slug === plan.slug;
+              return (
+                <Link
+                  key={item.slug}
+                  href={`/checkout?plan=${item.slug}${referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}`}
+                  role="tab"
+                  aria-selected={selected}
+                  style={{
+                    ...styles.planChip,
+                    ...(selected ? styles.planChipSelected : null),
+                  }}
+                >
+                  <span style={styles.planChipName}>{item.name}</span>
+                  <span style={styles.planChipPrice}>{item.displayPrice}</span>
+                </Link>
+              );
+            })}
           </div>
-          <div style={styles.orderItem}>
-            <div style={styles.orderItemIcon}>LX</div>
-            <div style={styles.orderItemBody}>
-              <strong>{plan.name}{isTrialCheckout ? '' : ' coaching plan'}</strong>
-              <span>Personal workout, diet, check-ins and coach chat</span>
-              {referralCode && !isTrialCheckout && (
-                <span style={styles.orderCode}>{referralCode} · 60% OFF</span>
-              )}
+        )}
+
+        {isTrialCheckout && (
+          <div style={styles.trialBadge}>
+            {plan.name} · {plan.displayPrice}
+          </div>
+        )}
+
+        <section style={styles.orderSummary}>
+          <div style={styles.orderRow}>
+            <div>
+              <div style={styles.orderPlanName}>
+                {plan.name}{isTrialCheckout ? '' : ' coaching'}
+              </div>
+              <div style={styles.orderPlanMeta}>
+                Workout · diet · check-ins · coach chat
+              </div>
+            </div>
+            <div style={styles.orderPriceCol}>
+              {priceMrp && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
+              <span style={styles.orderSummaryPrice}>{pricePrimary}</span>
             </div>
           </div>
-          {checkoutSavingsDisplay && (
+          {(appliedDiscount || (referralCode && !isTrialCheckout)) && (
             <div style={styles.orderSavings}>
-              <span>Total savings</span>
-              <strong>{checkoutSavingsDisplay}</strong>
+              <span>
+                {appliedDiscount
+                  ? `${appliedDiscount.code} applied`
+                  : `${referralCode} ready`}
+              </span>
+              <strong>
+                {appliedDiscount
+                  ? `Save ${appliedDiscount.displayDiscount}`
+                  : `Save ${checkoutSavingsDisplay}`}
+              </strong>
             </div>
           )}
         </section>
-        <h1 style={styles.title}>
-          {brandTitle(isTrialCheckout ? 'Start your 7-day trial' : 'Contact')}
-        </h1>
-        <p style={styles.subtitle}>
-          {isTrialCheckout ? `${plan.name} · ` : 'Enter your details to continue · '}
-          {appliedDiscount ? (
-            <>
-              <span style={{ textDecoration: 'line-through', color: colors.textMuted }}>
-                {appliedDiscount.displayListPrice}
-              </span>{' '}
-              <strong style={{ color: colors.accent }}>{appliedDiscount.displaySalePrice}</strong>
-              {' · '}
-              Save {appliedDiscount.displayDiscount}
-              {' · '}
-              <span style={{ color: colors.accent }}>{appliedDiscount.code} applied</span>
-            </>
-          ) : referralCode && !isTrialCheckout ? (
-            <>
-              <span style={{ textDecoration: 'line-through', color: colors.textMuted }}>
-                {plan.displayPrice}
-              </span>{' '}
-              <strong style={{ color: colors.accent }}>
-                ₹{Math.round((plan.amountPaise * 0.4) / 100).toLocaleString('en-IN')}
-              </strong>
-              {' · '}
-              <span style={{ color: colors.accent }}>{referralCode} ready — enter email to confirm</span>
-            </>
-          ) : (
-            <>
-              {plan.displayPrice} · {plan.saveLabel}
-            </>
-          )}
-        </p>
+
         <p style={styles.leagueNote}>
           {isTrialCheckout
-            ? 'Full platform access for 7 days — coach chat, personal plan, trackers, and check-ins. Once per person. Upgrade anytime to 3, 6, or 12 months.'
+            ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
             : plan.slug === '12_months'
-              ? 'Includes free Consistency League entry and Crazy League eligibility for prize money up to ₹5,000.'
-              : 'Includes free Consistency League entry (certificates & trophies). Crazy League prize money up to ₹5,000 requires the 12-month plan.'}
+              ? 'Includes Consistency League entry and Crazy League eligibility (prizes up to ₹5,000).'
+              : 'Includes Consistency League entry. Crazy League prizes need the 12-month plan.'}
         </p>
 
         {testMode && (
           <div style={styles.testBanner}>
-            DEVELOPMENT MODE — payment will be simulated. No Razorpay charge.
+            Development mode — payment will be simulated. No Razorpay charge.
           </div>
         )}
-
-        {!isTrialCheckout && (
-        <div style={styles.redeemBox}>
-          <div style={styles.redeemHeader}>
-            <h3 style={{ margin: 0, fontSize: 16 }}>Referral / discount code</h3>
-            <span style={styles.discountBadge}>60% OFF</span>
-          </div>
-          <p style={{ margin: '8px 0 12px', fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
-            Enter your code below to unlock the first-time discount before paying.
-            Use <strong style={{ color: colors.accent }}>WELCOME60</strong> for 60% off.
-          </p>
-          <div style={styles.codeRow}>
-            <input
-              value={referralCode}
-              onChange={(e) => {
-                setReferralCode(e.target.value.toUpperCase());
-                setEnrollmentHref(null);
-              }}
-              placeholder="Enter code (e.g. WELCOME60)"
-              autoComplete="off"
-              style={{ ...styles.input, marginTop: 0, flex: 1 }}
-            />
-            <button
-              type="button"
-              onClick={() => void applyReferralCode()}
-              disabled={applyingCode || !referralCode.trim()}
-              style={styles.validateBtn}
-            >
-              {applyingCode ? 'Checking…' : 'Apply'}
-            </button>
-          </div>
-          {appliedDiscount && (
-            <div style={styles.discountApplied}>
-              <p style={{ margin: 0 }}>{appliedDiscount.message}</p>
-              <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
-                Remove code
-              </button>
-            </div>
-          )}
-          {enrollmentHref && (
-            <div style={styles.discountApplied}>
-              <p style={{ margin: '0 0 10px' }}>
-                This looks like a membership enrollment code — redeem it on the enrollment page.
-              </p>
-              <a
-                href={enrollmentHref}
-                style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}
-              >
-                Continue to enrollment →
-              </a>
-            </div>
-          )}
-        </div>
-        )}
-
-        <div style={styles.planPicker}>
-          {isTrialCheckout && (
-            <span
-              style={{
-                ...styles.planChip,
-                borderColor: colors.accent,
-                backgroundColor: colors.accentMuted,
-                cursor: 'default',
-              }}
-            >
-              {plan.name} · {plan.displayPrice}
-            </span>
-          )}
-          {COACHING_PLAN_LIST.map((item) => (
-            <Link
-              key={item.slug}
-              href={`/checkout?plan=${item.slug}`}
-              style={{
-                ...styles.planChip,
-                borderColor: item.slug === plan.slug ? colors.accent : colors.borderSubtle,
-                backgroundColor: item.slug === plan.slug ? colors.accentMuted : colors.bgElevated,
-              }}
-            >
-              {item.name} · {item.displayPrice}
-            </Link>
-          ))}
-        </div>
 
         {error && <div style={styles.error}>{error}</div>}
         {isTrialCheckout && error && /trial|already used|renewal|new customers/i.test(error) && (
@@ -692,9 +628,9 @@ function CheckoutForm() {
             </div>
           </div>
         )}
-        {liveMissing.length > 0 && (
+        {attemptedPay && liveMissing.length > 0 && (
           <div style={styles.todoBox}>
-            <p style={styles.todoTitle}>Still to do before paying</p>
+            <p style={styles.todoTitle}>Finish these to pay</p>
             <ul style={styles.todoList}>
               {liveMissing.map((item) => (
                 <li key={item}>{item}</li>
@@ -710,21 +646,22 @@ function CheckoutForm() {
           </ul>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          style={styles.form}
-          noValidate
-        >
-          <label style={styles.label}>Full name</label>
+        <form onSubmit={handleSubmit} style={styles.form} noValidate>
+          <h2 style={styles.sectionLabel}>Your details</h2>
+
+          <label style={styles.label} htmlFor="checkout-name">Full name</label>
           <input
+            id="checkout-name"
             ref={nameRef}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
             style={styles.input}
           />
 
-          <label style={styles.label}>Email</label>
+          <label style={styles.label} htmlFor="checkout-email">Email</label>
           <input
+            id="checkout-email"
             ref={emailRef}
             type="email"
             value={email}
@@ -732,11 +669,13 @@ function CheckoutForm() {
               setEmail(e.target.value);
               resetVerification();
             }}
+            autoComplete="email"
             style={styles.input}
           />
 
-          <label style={styles.label}>WhatsApp number</label>
+          <label style={styles.label} htmlFor="checkout-phone">WhatsApp number</label>
           <input
+            id="checkout-phone"
             ref={phoneRef}
             type="tel"
             value={phone}
@@ -751,19 +690,27 @@ function CheckoutForm() {
 
           {!testMode && (
             <div ref={verifyRef} style={styles.otpBox}>
+              <div style={styles.otpHead}>
+                <span style={styles.otpTitle}>Email verification</span>
+                <span
+                  style={{
+                    ...styles.otpStatusPill,
+                    ...(emailVerified ? styles.otpStatusOk : null),
+                  }}
+                >
+                  {emailVerified ? 'Verified' : emailLinkSent ? 'Link sent' : 'Required'}
+                </span>
+              </div>
               <p style={styles.otpHint}>
-                Verify your email before paying. We email a secure link — open it on this phone to continue.
+                We email a secure link — open it on this device, then continue.
               </p>
               {(appliedDiscount || (referralCode && !isTrialCheckout)) && (
                 <div style={styles.otpDiscountApplied}>
                   {appliedDiscount
                     ? `${appliedDiscount.code} applied · Save ${appliedDiscount.displayDiscount}`
-                    : `${referralCode} ready · 60% OFF once email is confirmed`}
+                    : `${referralCode} ready · confirm email to lock in the discount`}
                 </div>
               )}
-              <div style={styles.otpStatus}>
-                Email {emailVerified ? '✓ verified' : emailLinkSent ? 'link sent — check inbox/spam' : 'not verified'}
-              </div>
               <div style={styles.otpBtnRow}>
                 <button
                   type="button"
@@ -819,67 +766,104 @@ function CheckoutForm() {
             </div>
           )}
 
-          <section style={styles.paymentSection}>
-            <h2 style={styles.checkoutSectionTitle}>Payment</h2>
-            <p style={styles.paymentSubtitle}>All transactions are secure and encrypted.</p>
-            <div style={styles.paymentMethod}>
-              <div style={styles.paymentMethodTop}>
-                <strong>Razorpay Secure</strong>
-                <span style={styles.paymentLogos}>UPI · VISA · MC · +18</span>
-              </div>
-              <p style={{ margin: '0 16px 12px', color: colors.textSecondary, fontSize: 13 }}>
-                UPI, cards, netbanking and wallets
-              </p>
-              <small
-                style={{
-                  display: 'block',
-                  padding: '12px 16px',
-                  borderTop: `1px solid ${colors.borderSubtle}`,
-                  color: colors.textMuted,
-                  lineHeight: 1.4,
-                }}
-              >
-                You’ll be redirected to Razorpay Secure to complete your purchase.
-              </small>
+          {!isTrialCheckout && (
+            <div style={styles.redeemBox}>
+              {!showCodeField && !appliedDiscount ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCodeField(true)}
+                  style={styles.redeemToggle}
+                >
+                  Have a referral or discount code?
+                </button>
+              ) : (
+                <>
+                  <div style={styles.redeemHeader}>
+                    <span style={styles.redeemTitle}>Discount code</span>
+                    {appliedDiscount && (
+                      <span style={styles.discountBadge}>Applied</span>
+                    )}
+                  </div>
+                  <div style={styles.codeRow}>
+                    <input
+                      value={referralCode}
+                      onChange={(e) => {
+                        setReferralCode(e.target.value.toUpperCase());
+                        setEnrollmentHref(null);
+                      }}
+                      placeholder="e.g. WELCOME60"
+                      autoComplete="off"
+                      style={{ ...styles.input, marginTop: 0, flex: 1, minHeight: 48 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void applyReferralCode()}
+                      disabled={applyingCode || !referralCode.trim()}
+                      style={styles.validateBtn}
+                    >
+                      {applyingCode ? '…' : 'Apply'}
+                    </button>
+                  </div>
+                  {appliedDiscount && (
+                    <div style={styles.discountApplied}>
+                      <p style={{ margin: 0 }}>{appliedDiscount.message}</p>
+                      <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
+                        Remove code
+                      </button>
+                    </div>
+                  )}
+                  {enrollmentHref && (
+                    <div style={styles.discountApplied}>
+                      <p style={{ margin: '0 0 10px' }}>
+                        This looks like a membership enrollment code — redeem it on the enrollment page.
+                      </p>
+                      <a
+                        href={enrollmentHref}
+                        style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}
+                      >
+                        Continue to enrollment →
+                      </a>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          </section>
+          )}
 
           <label
             ref={policyRef}
-            style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, fontSize: 13, lineHeight: 1.5 }}
+            style={styles.policyRow}
           >
             <input
               type="checkbox"
               checked={policyAgreementAccepted}
               onChange={(event) => setPolicyAgreementAccepted(event.target.checked)}
               aria-describedby="checkout-policy-agreement"
-              style={{ marginTop: 3 }}
+              style={styles.policyCheck}
             />
-            <span id="checkout-policy-agreement">
-              I have read and agree to the{' '}
-              <Link href="/terms" target="_blank" style={{ color: colors.accent }}>Terms &amp; Conditions</Link>
+            <span id="checkout-policy-agreement" style={styles.policyText}>
+              I agree to the{' '}
+              <Link href="/terms" target="_blank" style={styles.inlineLink}>Terms</Link>
               {' '}and{' '}
-              <Link href="/refund-policy" target="_blank" style={{ color: colors.accent }}>Refund Policy</Link>.
-              The results guarantee requires a documented no-result claim and at least 90% of
-              due check-ins submitted within each 48-hour window. Statutory rights still apply.
+              <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>Refund Policy</Link>.
+              Results guarantee needs documented claims and ≥90% on-time check-ins. Statutory rights still apply.
             </span>
           </label>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={styles.payBtn}
-          >
-            {loading ? 'Processing...' : `Pay now · ${payableDisplay}`}
+          <button type="submit" disabled={loading} style={styles.payBtn}>
+            {loading ? 'Processing…' : `Pay ${payableDisplay}`}
           </button>
+          <p style={styles.paySecureNote}>
+            Secure checkout via Razorpay · UPI, cards, netbanking
+          </p>
         </form>
 
         <p style={styles.secure}>
-          Secure payments via Razorpay. After payment you&apos;ll create your login password (not a passkey).
+          After payment you&apos;ll create your login password.
           {' '}
-          <Link href="/create-account" style={{ color: colors.accent }}>Already paid?</Link>
+          <Link href="/create-account" style={styles.inlineLink}>Already paid?</Link>
           {' · '}
-          <Link href="/enroll" style={{ color: colors.accent }}>Enrollment code</Link>
+          <Link href="/enroll" style={styles.inlineLink}>Enrollment code</Link>
         </p>
       </div>
 
@@ -905,136 +889,201 @@ const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: '100vh',
     backgroundColor: colors.bgPrimary,
-    padding: `${spacing[4]}px ${spacing[2]}px`,
+    backgroundImage:
+      'radial-gradient(ellipse 90% 50% at 50% -10%, rgba(249,115,22,0.14), transparent 55%)',
+    padding: `${spacing[5]}px ${spacing[2]}px ${spacing[7]}px`,
     overflowX: 'hidden',
     boxSizing: 'border-box',
   },
   card: {
     width: '100%',
-    maxWidth: 520,
+    maxWidth: 480,
     margin: '0 auto',
     backgroundColor: colors.bgCard,
     borderRadius: radius.lg,
-    padding: spacing[4],
+    padding: `${spacing[4]}px ${spacing[3]}px ${spacing[5]}px`,
     border: `1px solid ${colors.borderSubtle}`,
     boxSizing: 'border-box',
+    boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
   },
   backLink: {
     display: 'inline-block',
     color: colors.textMuted,
     textDecoration: 'none',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 600,
-    marginBottom: 4,
+    marginBottom: 16,
+  },
+  brandMark: {
+    margin: '0 0 6px',
+    fontSize: 13,
+    fontWeight: 800,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
+    color: colors.accent,
+  },
+  title: {
+    margin: '0 0 8px',
+    fontSize: 28,
+    color: colors.textPrimary,
+    fontWeight: 800,
+    letterSpacing: '-0.03em',
+    lineHeight: 1.15,
+  },
+  subtitle: {
+    margin: '0 0 22px',
+    color: colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 1.45,
+  },
+  planPicker: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 8,
+    marginBottom: 16,
+  },
+  planChip: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 2,
+    padding: '12px 8px',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.borderSubtle}`,
+    textDecoration: 'none',
+    color: colors.textPrimary,
+    backgroundColor: colors.bgElevated,
+    textAlign: 'center' as const,
+    minWidth: 0,
+  },
+  planChipSelected: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+    boxShadow: `0 0 0 1px ${colors.accent}`,
+  },
+  planChipName: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: colors.textSecondary,
+  },
+  planChipPrice: {
+    fontSize: 14,
+    fontWeight: 800,
+    color: colors.textPrimary,
+  },
+  trialBadge: {
+    marginBottom: 16,
+    padding: '12px 14px',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.accent}`,
+    backgroundColor: colors.accentMuted,
+    color: colors.textPrimary,
+    fontWeight: 700,
+    fontSize: 14,
+    textAlign: 'center' as const,
   },
   orderSummary: {
-    margin: '12px 0 22px',
-    padding: 16,
+    margin: '0 0 12px',
+    padding: 14,
     borderRadius: radius.md,
     border: `1px solid ${colors.borderSubtle}`,
     backgroundColor: colors.bgElevated,
   },
-  orderSummaryTop: {
+  orderRow: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 16,
-    paddingBottom: 14,
-    borderBottom: `1px solid ${colors.borderSubtle}`,
+    gap: 12,
   },
-  orderSummaryLabel: {
+  orderPlanName: {
     fontSize: 15,
     fontWeight: 700,
     color: colors.textPrimary,
   },
-  orderSummaryPrice: {
+  orderPlanMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 1.35,
+  },
+  orderPriceCol: {
     display: 'flex',
-    alignItems: 'baseline',
-    gap: 8,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 2,
+    flexShrink: 0,
+  },
+  orderSummaryPrice: {
     fontSize: 20,
     fontWeight: 800,
     color: colors.textPrimary,
-    whiteSpace: 'nowrap',
+    whiteSpace: 'nowrap' as const,
   },
   orderSummaryMrp: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 500,
     color: colors.textMuted,
-  },
-  orderItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '16px 0 12px',
-  },
-  orderItemIcon: {
-    flex: '0 0 48px',
-    width: 48,
-    height: 48,
-    display: 'grid',
-    placeItems: 'center',
-    borderRadius: 10,
-    backgroundColor: colors.accent,
-    color: colors.textInverse,
-    fontSize: 13,
-    fontWeight: 900,
-    letterSpacing: '0.08em',
-  },
-  orderItemBody: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 3,
-    minWidth: 0,
-    color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 1.35,
-  },
-  orderCode: {
-    color: colors.accent,
-    fontWeight: 800,
-    letterSpacing: '0.03em',
   },
   orderSavings: {
     display: 'flex',
     justifyContent: 'space-between',
     gap: 12,
+    marginTop: 12,
     paddingTop: 12,
     borderTop: `1px solid ${colors.borderSubtle}`,
     color: colors.success,
     fontSize: 13,
   },
-  title: { margin: '12px 0 8px', fontSize: 28, color: colors.textPrimary, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 },
-  subtitle: { margin: '0 0 12px', color: colors.textSecondary },
   leagueNote: {
     margin: '0 0 20px',
-    padding: '10px 12px',
-    borderRadius: 10,
-    backgroundColor: 'rgba(249,115,22,0.08)',
-    border: `1px solid ${colors.borderSubtle}`,
-    color: colors.textSecondary,
-    fontSize: 13,
+    color: colors.textMuted,
+    fontSize: 12,
     lineHeight: 1.45,
   },
-  testBanner: { backgroundColor: colors.warningMuted, color: colors.warning, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[3], fontSize: 14 },
-  planPicker: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: spacing[4] },
-  planChip: { padding: '8px 14px', borderRadius: 999, border: `1px solid ${colors.borderSubtle}`, textDecoration: 'none', color: colors.textPrimary, fontSize: 14, backgroundColor: colors.bgElevated },
-  form: { display: 'flex', flexDirection: 'column', gap: 10, width: '100%', minWidth: 0 },
-  label: { fontWeight: 600, fontSize: 14, marginTop: 8, color: colors.textSecondary },
+  testBanner: {
+    backgroundColor: colors.warningMuted,
+    color: colors.warning,
+    padding: spacing[2],
+    borderRadius: radius.sm,
+    marginBottom: spacing[3],
+    fontSize: 13,
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    width: '100%',
+    minWidth: 0,
+  },
+  sectionLabel: {
+    margin: '8px 0 4px',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
+    color: colors.textMuted,
+  },
+  label: {
+    fontWeight: 600,
+    fontSize: 13,
+    marginTop: 6,
+    color: colors.textSecondary,
+  },
   input: {
-    padding: '14px 16px',
+    padding: '13px 14px',
     border: `1px solid ${colors.borderSubtle}`,
     borderRadius: radius.sm,
     fontSize: 16,
     backgroundColor: colors.bgElevated,
     color: colors.textPrimary,
-    minHeight: 56,
+    minHeight: 52,
     width: '100%',
     maxWidth: '100%',
     boxSizing: 'border-box',
     minWidth: 0,
   },
   payBtn: {
-    marginTop: spacing[3],
+    marginTop: 14,
     padding: 16,
     backgroundColor: colors.accent,
     color: colors.textInverse,
@@ -1047,41 +1096,20 @@ const styles: Record<string, CSSProperties> = {
     width: '100%',
     boxSizing: 'border-box',
   },
-  paymentSection: {
-    marginTop: 18,
-  },
-  checkoutSectionTitle: {
-    margin: '0 0 4px',
-    color: colors.textPrimary,
-    fontSize: 20,
-    lineHeight: 1.25,
-  },
-  paymentSubtitle: {
-    margin: '0 0 12px',
+  paySecureNote: {
+    margin: '8px 0 0',
+    textAlign: 'center' as const,
+    fontSize: 12,
     color: colors.textMuted,
-    fontSize: 13,
   },
-  paymentMethod: {
-    overflow: 'hidden',
-    border: `1px solid ${colors.accent}`,
+  error: {
+    backgroundColor: colors.dangerMuted,
+    color: colors.danger,
+    padding: spacing[2],
     borderRadius: radius.sm,
-    backgroundColor: colors.bgElevated,
-    color: colors.textPrimary,
+    marginBottom: spacing[2],
+    fontSize: 14,
   },
-  paymentMethodTop: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    padding: '14px 16px 8px',
-  },
-  paymentLogos: {
-    color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: 700,
-    whiteSpace: 'nowrap',
-  },
-  error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[2] },
   missingList: {
     margin: '0 0 12px',
     padding: '12px 12px 12px 28px',
@@ -1095,12 +1123,12 @@ const styles: Record<string, CSSProperties> = {
     margin: '0 0 16px',
     padding: '14px 16px',
     backgroundColor: colors.accentMuted,
-    border: `1px solid rgba(249,115,22,0.25)`,
+    border: '1px solid rgba(249,115,22,0.25)',
     borderRadius: radius.sm,
   },
   todoTitle: {
     margin: '0 0 8px',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 700,
     color: colors.accent,
     letterSpacing: '0.04em',
@@ -1113,38 +1141,67 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.5,
     color: colors.textSecondary,
   },
-  secure: { marginTop: spacing[3], fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 },
-  loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: colors.textSecondary, backgroundColor: colors.bgPrimary },
-  redeemLink: { background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: spacing[3], padding: '8px 0', minHeight: 44 },
+  secure: {
+    marginTop: spacing[4],
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center' as const,
+    lineHeight: 1.5,
+  },
+  loading: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '100vh',
+    color: colors.textSecondary,
+    backgroundColor: colors.bgPrimary,
+  },
   redeemBox: {
-    backgroundColor: colors.accentMuted,
-    padding: spacing[3],
-    borderRadius: radius.sm,
-    marginBottom: spacing[3],
-    boxSizing: 'border-box',
-    width: '100%',
-    border: `1px solid rgba(249,115,22,0.35)`,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  redeemToggle: {
+    background: 'none',
+    border: 'none',
+    color: colors.accent,
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    padding: '8px 0',
+    textAlign: 'left' as const,
   },
   redeemHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
+    marginBottom: 8,
+  },
+  redeemTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: colors.textSecondary,
   },
   discountBadge: {
     flexShrink: 0,
-    padding: '4px 8px',
+    padding: '3px 8px',
     borderRadius: 999,
-    backgroundColor: colors.accent,
-    color: colors.textInverse,
+    backgroundColor: colors.successMuted,
+    color: colors.success,
     fontSize: 11,
     fontWeight: 800,
-    letterSpacing: '0.06em',
+    letterSpacing: '0.04em',
   },
-  codeRow: { display: 'flex', gap: 8, alignItems: 'stretch', width: '100%', minWidth: 0 },
+  codeRow: {
+    display: 'flex',
+    gap: 8,
+    alignItems: 'stretch',
+    width: '100%',
+    minWidth: 0,
+  },
   discountApplied: {
-    marginTop: 12,
-    padding: '12px 12px 8px',
+    marginTop: 10,
+    padding: '10px 12px',
     borderRadius: radius.sm,
     backgroundColor: colors.successMuted,
     color: colors.success,
@@ -1160,23 +1217,55 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     minHeight: 48,
-    whiteSpace: 'nowrap',
+    whiteSpace: 'nowrap' as const,
     flex: '0 0 auto',
   },
-  validBanner: { backgroundColor: colors.successMuted, color: colors.success, padding: 10, borderRadius: radius.sm, fontSize: 14, marginBottom: 8 },
-  backToPay: { background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 13, padding: '8px 0', minHeight: 44 },
+  backToPay: {
+    background: 'none',
+    border: 'none',
+    color: colors.textMuted,
+    cursor: 'pointer',
+    fontSize: 13,
+    padding: '8px 0 0',
+    minHeight: 36,
+  },
   otpBox: {
-    marginTop: 8,
-    padding: spacing[3],
+    marginTop: 10,
+    padding: 14,
     borderRadius: radius.sm,
     border: `1px solid ${colors.borderSubtle}`,
     backgroundColor: colors.bgElevated,
     display: 'flex',
     flexDirection: 'column',
-    gap: 8,
+    gap: 10,
     width: '100%',
     boxSizing: 'border-box',
     minWidth: 0,
+  },
+  otpHead: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  otpTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: colors.textPrimary,
+  },
+  otpStatusPill: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase' as const,
+    padding: '4px 8px',
+    borderRadius: 999,
+    backgroundColor: colors.warningMuted,
+    color: colors.warning,
+  },
+  otpStatusOk: {
+    backgroundColor: colors.successMuted,
+    color: colors.success,
   },
   otpDiscountApplied: {
     padding: '8px 10px',
@@ -1187,8 +1276,12 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 700,
     lineHeight: 1.35,
   },
-  otpHint: { margin: 0, fontSize: 13, color: colors.textSecondary, lineHeight: 1.4 },
-  otpStatus: { fontSize: 13, fontWeight: 600, color: colors.textSecondary },
+  otpHint: {
+    margin: 0,
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 1.4,
+  },
   otpInput: {
     padding: '14px 16px',
     border: `1px solid ${colors.borderSubtle}`,
@@ -1230,5 +1323,23 @@ const styles: Record<string, CSSProperties> = {
     flex: '1 1 140px',
     boxSizing: 'border-box',
   },
-  hint: { margin: '0 0 4px', fontSize: 13, color: colors.textMuted, lineHeight: 1.4 },
+  policyRow: {
+    display: 'flex',
+    gap: 10,
+    alignItems: 'flex-start',
+    marginTop: 14,
+  },
+  policyCheck: {
+    marginTop: 3,
+    flexShrink: 0,
+  },
+  policyText: {
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: colors.textSecondary,
+  },
+  inlineLink: {
+    color: colors.accent,
+    fontWeight: 600,
+  },
 };
