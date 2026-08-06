@@ -4,10 +4,7 @@ import {
   getClientPaymentGatePath,
   hasClientEntitlement,
   MEMBERSHIP_GRACE_DAYS,
-  MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE,
 } from '../src/lib/entitlements'
-
-assert.equal(MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE, 4)
 
 const now = Date.UTC(2026, 7, 4, 12, 0, 0)
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -20,10 +17,22 @@ function profile(daysLeft: number) {
   }
 }
 
+// Coaches can create/edit plans with any remaining time, including 1 day.
 assert.equal(assertClientCanReceivePlanChanges(profile(5), now).ok, true)
 assert.equal(assertClientCanReceivePlanChanges(profile(4), now).ok, true)
-assert.equal(assertClientCanReceivePlanChanges(profile(3.9), now).ok, false)
-assert.equal(assertClientCanReceivePlanChanges(profile(0), now).ok, false)
+assert.equal(assertClientCanReceivePlanChanges(profile(3.9), now).ok, true)
+assert.equal(assertClientCanReceivePlanChanges(profile(1), now).ok, true)
+assert.equal(assertClientCanReceivePlanChanges(profile(0.25), now).ok, true)
+
+// Still allowed at/after expiry while inside the grace window.
+assert.equal(assertClientCanReceivePlanChanges(profile(0), now).ok, true)
+assert.equal(assertClientCanReceivePlanChanges(profile(-1), now).ok, true)
+
+// Blocked only after grace ends (no remaining platform access).
+assert.equal(
+  assertClientCanReceivePlanChanges(profile(-(MEMBERSHIP_GRACE_DAYS + 0.1)), now).ok,
+  false
+)
 
 // Still entitled during the 3-day grace window after expiry.
 assert.equal(
@@ -76,10 +85,13 @@ assert.equal(
   '/membership-required'
 )
 
-const blocked = assertClientCanReceivePlanChanges(profile(2), now)
+const blocked = assertClientCanReceivePlanChanges(
+  profile(-(MEMBERSHIP_GRACE_DAYS + 0.1)),
+  now
+)
 assert.equal(blocked.ok, false)
 if (!blocked.ok) {
-  assert.match(blocked.error, /4 days/)
+  assert.match(blocked.error, /subscription has ended/i)
 }
 
-console.log('Membership paywall + 4-day plan window verification passed.')
+console.log('Membership paywall + plan-window verification passed.')
