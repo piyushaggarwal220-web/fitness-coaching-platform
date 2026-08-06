@@ -85,15 +85,43 @@ export function normalizeWorkout(workout: TrackerWorkoutItem): TrackerWorkoutIte
   return { ...workout, exercises, phases }
 }
 
-/** Always keep a Warm-up section — plan warmup if present, otherwise defaults. */
+function isEmptyOrRestWorkout(workout: TrackerWorkoutItem): boolean {
+  const hasExercises =
+    workout.exercises.length > 0 ||
+    (workout.phases?.some((phase) => phase.exercises.length > 0) ?? false)
+  if (!hasExercises) return true
+  const focus = String(workout.focus ?? '').toLowerCase()
+  const title = String(workout.title ?? '').toLowerCase()
+  return (
+    /\brest\s*day\b/.test(focus) ||
+    /\brest\s*day\b/.test(title) ||
+    /—\s*rest\b/.test(title) ||
+    focus === 'rest'
+  )
+}
+
+/** Keep a Warm-up section for training days — plan warmup if present, otherwise defaults. */
 export function ensureWarmupPhase(workout: TrackerWorkoutItem): TrackerWorkoutItem {
+  // Rest / empty days must stay empty — shared default IDs would bleed completion across days.
+  if (isEmptyOrRestWorkout(workout)) {
+    return {
+      ...workout,
+      phases: workout.phases ?? [],
+      exercises: workout.exercises ?? [],
+    }
+  }
+
   const normalized = normalizeWorkout(workout)
   const existingWarmup = normalized.phases.find((phase) => phase.phase === 'warmup')
   if (existingWarmup && existingWarmup.exercises.length > 0) return normalized
 
-  const warmupExercises: TrackerExerciseItem[] = DEFAULT_WARMUP_EXERCISES
+  const dayKey = workout.workoutDay || workout.id || 'default'
+  const warmupExercises: TrackerExerciseItem[] = DEFAULT_WARMUP_EXERCISES.map((ex) => ({
+    ...ex,
+    id: `${dayKey}__${ex.id}`,
+  }))
   const warmupPhase: WorkoutPhaseBlock = {
-    id: 'phase-warmup',
+    id: `${dayKey}__phase-warmup`,
     phase: 'warmup',
     label: 'Warm-up',
     exercises: warmupExercises,
@@ -148,9 +176,14 @@ export function getCategoryDisplayScores(
   }
 }
 
-export function computeWorkoutVolume(completion: TrackerCompletion): number {
+export function computeWorkoutVolume(
+  completion: TrackerCompletion,
+  exerciseIds?: Iterable<string>
+): number {
+  const allowed = exerciseIds ? new Set(exerciseIds) : null
   let volume = 0
-  for (const ex of Object.values(completion.exercises ?? {})) {
+  for (const [id, ex] of Object.entries(completion.exercises ?? {})) {
+    if (allowed && !allowed.has(id)) continue
     for (const set of ex.sets ?? []) {
       // Strength volume only — timed/distance/reps-only do not contribute kg volume.
       if (set.reps != null && set.weight != null && set.weight > 0) {

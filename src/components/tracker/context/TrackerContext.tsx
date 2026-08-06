@@ -64,18 +64,10 @@ function withDraft(
   const day = view.day
   if (!day) return view
 
-  let nextCompletion = day.completion
-
-  // Keep in-flight React edits when a background reload lands.
-  if (previous?.day?.id === day.id) {
-    nextCompletion = mergeCompletion(nextCompletion, previous.day.completion)
-  }
-
+  // Unsynced edits live in the local draft (and the in-flight patch queue after load).
+  // previous is only used below for plan-change detection.
   const draft = readTrackerDraft(day.id)
-  if (!draft) {
-    if (nextCompletion === day.completion) return view
-    return { ...view, day: { ...day, completion: nextCompletion } }
-  }
+  if (!draft) return view
 
   // Drop local drafts tied to an older plan so a newly delivered plan wins.
   const previousSnapshot = previous?.day?.snapshot
@@ -93,6 +85,7 @@ function withDraft(
   }
 
   // Also ignore drafts that still mention exercise/meal ids absent from the new snapshot.
+  // Default warm-ups are injected client-side and are not in the snapshot.
   const itemIds = new Set(nextSnapshot.items.map((item) => item.id))
   const exerciseIds = new Set(
     nextSnapshot.items.flatMap((item) => {
@@ -103,19 +96,33 @@ function withDraft(
       return [...fromPhases, ...fromRoot]
     })
   )
+  const isSyntheticId = (id: string) => id.includes('ex-warmup-default')
   const draftMealIds = Object.keys(draft.completion.meals ?? {})
   const draftExerciseIds = Object.keys(draft.completion.exercises ?? {})
   const draftLooksStale =
     draftMealIds.some((id) => !itemIds.has(id)) ||
-    draftExerciseIds.some((id) => !exerciseIds.has(id) && !itemIds.has(id))
+    draftExerciseIds.some(
+      (id) => !exerciseIds.has(id) && !itemIds.has(id) && !isSyntheticId(id)
+    )
 
   if (draftLooksStale) {
     clearTrackerDraft(day.id)
-    if (nextCompletion === day.completion) return view
-    return { ...view, day: { ...day, completion: nextCompletion } }
+    return view
   }
 
-  const merged = applyTrackerDraft(nextCompletion, draft)
+  // If the server row is newer than the draft, prefer server (another tab won).
+  const serverUpdated = Date.parse(day.updated_at)
+  const draftUpdated = Date.parse(draft.updatedAt)
+  if (
+    Number.isFinite(serverUpdated) &&
+    Number.isFinite(draftUpdated) &&
+    serverUpdated > draftUpdated
+  ) {
+    clearTrackerDraft(day.id)
+    return view
+  }
+
+  const merged = applyTrackerDraft(day.completion, draft)
   return {
     ...view,
     day: { ...day, completion: merged },
@@ -318,8 +325,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       void (async () => {
         await ensureAuthSession(supabase)
         await flushQueueRef.current()
-        // Pull the latest active plan snapshot so newly delivered plans replace stale tracker UI.
-        // withDraft merges current React completion so typing is not wiped.
+        // Unsynced edits live in the local draft (and flush before reload).
         await load()
       })()
     }

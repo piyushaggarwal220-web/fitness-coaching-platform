@@ -10,7 +10,6 @@ export function inferTrackingMode(ex: Pick<
   TrackerExerciseItem,
   'name' | 'targetReps' | 'targetWeight' | 'trackingMode' | 'targetDurationSeconds' | 'targetDistanceMeters' | 'phase'
 >): ExerciseTrackingMode {
-  if (ex.trackingMode) return ex.trackingMode
   if (ex.targetDurationSeconds != null && ex.targetDurationSeconds > 0) return 'timed'
   if (ex.targetDistanceMeters != null && ex.targetDistanceMeters > 0) return 'distance'
 
@@ -18,7 +17,10 @@ export function inferTrackingMode(ex: Pick<
   const weight = String(ex.targetWeight ?? '').trim()
   const name = String(ex.name ?? '').toLowerCase()
 
-  if (/\b\d+(\.\d+)?\s*(km|m|meters?|metres|miles?)\b/i.test(reps) || /\b(run|row|cycle|bike|swim)\b/i.test(name) && /\b\d/.test(reps) && /km|m\b/i.test(reps)) {
+  if (
+    /\b\d+(\.\d+)?\s*(km|m|meters?|metres|miles?)\b/i.test(reps) ||
+    (/\b(run|row|cycle|bike|swim)\b/i.test(name) && /\b\d/.test(reps) && /km|m\b/i.test(reps))
+  ) {
     return 'distance'
   }
 
@@ -34,6 +36,22 @@ export function inferTrackingMode(ex: Pick<
     return 'strength'
   }
 
+  // Upgrade stale snapshots that froze main lifts as reps_only (no weight field).
+  if (
+    ex.trackingMode === 'reps_only' &&
+    (ex.phase === 'main' || ex.phase === 'finisher' || ex.phase == null) &&
+    /\d/.test(reps)
+  ) {
+    return 'strength'
+  }
+
+  if (ex.trackingMode) return ex.trackingMode
+
+  // Main / finisher lifts with countable reps → strength so clients can log weight + custom reps.
+  if ((ex.phase === 'main' || ex.phase === 'finisher' || ex.phase == null) && /\d/.test(reps)) {
+    return 'strength'
+  }
+
   // Pure mobility / soft cues with no countable target
   if (
     (ex.phase === 'mobility' || ex.phase === 'cooldown') &&
@@ -46,7 +64,7 @@ export function inferTrackingMode(ex: Pick<
     return 'reps_only'
   }
 
-  // Has a numeric / range target without weight → bodyweight / count
+  // Warm-up / bodyweight countable work without prescribed load
   if (/\d/.test(reps)) return 'reps_only'
 
   return 'checkoff'
@@ -227,14 +245,12 @@ export function buildExercisePatch(
   data: ExerciseCompletion | undefined,
   sets: ExerciseSetLog[]
 ): ExerciseCompletion {
-  const mode = inferTrackingMode(ex)
-  const normalized = sets.map((s) => {
-    if (mode === 'checkoff') return s
-    if (isSetCompleteForMode(mode, s) && !s.completed) return { ...s, completed: true }
-    return s
-  })
-  const completed = areAllSetsComplete(ex, normalized)
-  return { completed, sets: normalized, notes: data?.notes }
+  // Do NOT auto-flip set.completed while the client is typing reps/weight —
+  // that immediately disables inputs. Completion is explicit via Done.
+  const target = sets.slice(0, ex.targetSets)
+  const completed =
+    target.length >= ex.targetSets && target.every((s) => Boolean(s.completed))
+  return { completed, sets, notes: data?.notes }
 }
 
 export function getCurrentExercise(

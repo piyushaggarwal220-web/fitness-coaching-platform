@@ -13,5 +13,6 @@ export {
   loadTodayTrackerView,
   loadTrackerHistory,
   loadClientAdherenceSummary,
+  loadCoachAdherenceSummaries,
   buildAiAdherenceContext,
 } from './service'

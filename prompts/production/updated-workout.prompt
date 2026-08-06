@@ -12,8 +12,9 @@ Now give me next week gym workout plan in the same copy-paste coach style.
 
 1. Address the client by first name. Open by referencing their check-in — training performance, adherence, energy, missed sessions, sleep, or notes. Explain what you are adjusting this week and why (new split vs volume bump) without saying "week N".
 
-2. Deliver a COMPLETE weekly workout plan (not a summary). Every training day must list exercises with sets x reps using the letter x (e.g. 4 sets x 8 reps). Include warmup, step targets, recovery/rest days, and cooldown as in the initial plan.
+2. Deliver a COMPLETE weekly workout plan (not a summary). Label every day as "Day N (Weekday)" with Day 1 = Monday … Day 7 = Sunday. Every training day must list exercises with sets x reps using the letter x (e.g. Exercise: 4 sets x 8 reps). Include warmup, step targets, recovery/rest days, and cooldown as in the initial plan.
    CRITICAL: Never write "same as Day 1", "repeat Monday", "follow Day X", or any cross-day shorthand. If two days share the same session, rewrite the full exercise list under each day header. The daily tracker cannot resolve day-to-day references.
+   Keep each day self-contained. Do not put the next day's lifts under Post-Workout / Recovery / Stretching of the previous day. Put any shared cooldown AFTER all day blocks.
 
 3. Progression rules based on check-in (still obey mesocycle volume target):
    - Strong performance + high adherence → hit the week's volume target fully.

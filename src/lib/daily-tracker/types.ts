@@ -178,11 +178,12 @@ export type TrackerSnapshot = {
 
 export type MealCompletion = { completed: boolean; notes?: string }
 export type ExerciseSetLog = {
-  reps?: number
-  weight?: number
-  rpe?: number
-  durationSeconds?: number
-  distanceMeters?: number
+  /** null = explicitly cleared (tombstone so merges do not revive the old value). */
+  reps?: number | null
+  weight?: number | null
+  rpe?: number | null
+  durationSeconds?: number | null
+  distanceMeters?: number | null
   completed?: boolean
 }
 export type ExerciseCompletion = {
@@ -199,10 +200,11 @@ export type WakeFeeling = 'fresh' | 'okay' | 'tired'
 export type SleepCompletion = {
   bedtime?: string
   wakeTime?: string
-  hours?: number
+  /** null = explicitly cleared. */
+  hours?: number | null
   quality?: number
   qualityLabel?: SleepQualityLabel
-  energy?: number
+  energy?: number | null
   wakeFeeling?: WakeFeeling
 }
 

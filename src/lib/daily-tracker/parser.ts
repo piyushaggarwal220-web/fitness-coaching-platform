@@ -288,7 +288,7 @@ function parseMeals(diet: string): {
 }
 
 const PHASE_HEADERS =
-  /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|working\s+sets?|strength|hypertrophy|accessory|accessories|compound|cool[- ]?down|post[- ]?workout|recovery|stretch(?:ing)?|finisher)\s*:?\s*$/i
+  /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|working\s+sets?|strength|hypertrophy|accessory|accessories|compound|cool[- ]?down|post[- ]?workout|finisher)\s*:?\s*$/i
 
 const PHASE_MAP: Record<string, WorkoutExercisePhase> = {
   'warm-up': 'warmup',
@@ -308,9 +308,6 @@ const PHASE_MAP: Record<string, WorkoutExercisePhase> = {
   cooldown: 'cooldown',
   'cool-down': 'cooldown',
   'post-workout': 'cooldown',
-  recovery: 'cooldown',
-  stretching: 'cooldown',
-  stretch: 'cooldown',
   finisher: 'finisher',
 }
 
@@ -552,7 +549,7 @@ function splitWorkoutDayBlocks(workoutText: string): { key: string; label: strin
   return [{ key: 'default', label: 'Today', body: workoutText.trim() }]
 }
 
-/** Suggest which plan day matches today's IST weekday (or coaching day-in-week for Day N plans). */
+/** Suggest which plan day matches today (IST weekday / Day N). */
 export function suggestedWorkoutDayKey(
   days: { key: string; label: string }[],
   referenceDate = new Date(),
@@ -565,16 +562,41 @@ export function suggestedWorkoutDayKey(
   const byWeekday = days.find((d) => d.key === dayName)
   if (byWeekday) return byWeekday.key
 
-  // Day N plans: only map when we know coaching day-in-week (1–7). Do not assume Day 1 = Monday.
-  const programDay = options?.coachingDayInWeek
-  if (programDay && programDay >= 1 && programDay <= 7) {
-    const byProgramDay =
-      days.find((d) => d.key === `day-${programDay}` || d.key === slug(`day ${programDay}`)) ??
-      days.find((d) => new RegExp(`\\bday\\s*${programDay}\\b`, 'i').test(d.label))
-    if (byProgramDay) return byProgramDay.key
+  // Labels that name today's weekday (e.g. "Day 4 (Thursday)") win over Day N math.
+  const byLabelWeekday = days.find((d) => new RegExp(`\\b${dayName}\\b`, 'i').test(d.label))
+  if (byLabelWeekday) return byLabelWeekday.key
+
+  const weekdayAligned = days.some((d) =>
+    /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(d.label)
+  )
+
+  const calendarProgramDay = WEEKDAY_PROGRAM_DAY[dayName]
+  const coachingDay = options?.coachingDayInWeek
+
+  // Bare Day N (no weekday in labels): prefer coaching day-in-week when available.
+  // Weekday-aligned plans (Day 1 = Monday): use calendar Monday = Day 1.
+  const preferredDay =
+    !weekdayAligned && coachingDay && coachingDay >= 1 && coachingDay <= 7
+      ? coachingDay
+      : calendarProgramDay
+
+  if (preferredDay && preferredDay >= 1 && preferredDay <= 7) {
+    const byPreferred =
+      days.find((d) => d.key === `day-${preferredDay}` || d.key === slug(`day ${preferredDay}`)) ??
+      days.find((d) => new RegExp(`\\bday\\s*${preferredDay}\\b`, 'i').test(d.label))
+    if (byPreferred) return byPreferred.key
   }
 
-  // Ambiguous (plain Day N with no weekday / no coaching context) — no false "Today" badge.
+  // Last resort: the other numbering scheme if the preferred one missed.
+  const fallbackDay =
+    preferredDay === coachingDay ? calendarProgramDay : coachingDay
+  if (fallbackDay && fallbackDay >= 1 && fallbackDay <= 7 && fallbackDay !== preferredDay) {
+    const byFallback =
+      days.find((d) => d.key === `day-${fallbackDay}` || d.key === slug(`day ${fallbackDay}`)) ??
+      days.find((d) => new RegExp(`\\bday\\s*${fallbackDay}\\b`, 'i').test(d.label))
+    if (byFallback) return byFallback.key
+  }
+
   return null
 }
 
@@ -1090,6 +1112,39 @@ export function buildTrackerSnapshot(
   }
 }
 
+function mergeSetLog(
+  prev: NonNullable<TrackerCompletion['exercises']>[string]['sets'][number] | undefined,
+  next: NonNullable<TrackerCompletion['exercises']>[string]['sets'][number] | undefined
+): NonNullable<TrackerCompletion['exercises']>[string]['sets'][number] {
+  const out: NonNullable<TrackerCompletion['exercises']>[string]['sets'][number] = {
+    ...(prev ?? {}),
+  }
+  if (!next) return out
+
+  // Explicit null clears; missing key keeps previous; number overwrites.
+  const applyField = <K extends keyof typeof out>(key: K) => {
+    if (!Object.prototype.hasOwnProperty.call(next, key)) return
+    const value = next[key]
+    if (value === null) {
+      delete out[key]
+      return
+    }
+    if (value !== undefined) {
+      out[key] = value
+    }
+  }
+
+  applyField('reps')
+  applyField('weight')
+  applyField('rpe')
+  applyField('durationSeconds')
+  applyField('distanceMeters')
+  if (Object.prototype.hasOwnProperty.call(next, 'completed')) {
+    out.completed = next.completed
+  }
+  return out
+}
+
 export function mergeCompletion(previous: TrackerCompletion, next: TrackerCompletion): TrackerCompletion {
   const mergeExercises = (
     prevMap: TrackerCompletion['exercises'],
@@ -1105,15 +1160,33 @@ export function mergeCompletion(previous: TrackerCompletion, next: TrackerComple
         continue
       }
       const setCount = Math.max(prevEx.sets?.length ?? 0, nextEx.sets?.length ?? 0)
-      const sets = Array.from({ length: setCount }, (_, index) => ({
-        ...(prevEx.sets?.[index] ?? {}),
-        ...(nextEx.sets?.[index] ?? {}),
-      }))
+      const sets = Array.from({ length: setCount }, (_, index) =>
+        mergeSetLog(prevEx.sets?.[index], nextEx.sets?.[index])
+      )
       out[id] = {
         ...prevEx,
         ...nextEx,
         sets,
         notes: nextEx.notes !== undefined ? nextEx.notes : prevEx.notes,
+      }
+    }
+    return out
+  }
+
+  const mergeSleep = (
+    prev: TrackerCompletion['sleep'],
+    nextSleep: TrackerCompletion['sleep']
+  ): TrackerCompletion['sleep'] => {
+    if (!nextSleep) return prev
+    if (!prev) return nextSleep
+    const out = { ...prev }
+    for (const key of Object.keys(nextSleep) as (keyof NonNullable<TrackerCompletion['sleep']>)[]) {
+      if (!Object.prototype.hasOwnProperty.call(nextSleep, key)) continue
+      const value = nextSleep[key]
+      if (value === null) {
+        delete out[key]
+      } else if (value !== undefined) {
+        ;(out as Record<string, unknown>)[key] = value
       }
     }
     return out
@@ -1125,7 +1198,7 @@ export function mergeCompletion(previous: TrackerCompletion, next: TrackerComple
     cardio: { ...previous.cardio, ...next.cardio },
     supplements: { ...previous.supplements, ...next.supplements },
     water: next.water ?? previous.water,
-    sleep: { ...previous.sleep, ...next.sleep },
+    sleep: mergeSleep(previous.sleep, next.sleep),
     selectedDietDay:
       next.selectedDietDay === null
         ? undefined

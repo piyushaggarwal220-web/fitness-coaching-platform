@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { loadClientAdherenceSummary } from '@/lib/daily-tracker'
+import { loadClientAdherenceSummary, loadCoachAdherenceSummaries } from '@/lib/daily-tracker'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
@@ -26,18 +26,20 @@ export async function GET(request: Request) {
     .eq('coach_id', coach.id)
 
   const list = clients ?? []
-  const targets = clientId ? list.filter((c) => c.id === clientId) : list
 
-  const summaries = await Promise.all(
-    targets.map(async (client) => {
-      const summary = await loadClientAdherenceSummary(supabase, client.id, 7)
-      return {
-        clientName: client.name,
-        ...summary,
-      }
+  // Single-client detail keeps full missed-meal/workout accounting.
+  if (clientId) {
+    const target = list.find((c) => c.id === clientId)
+    if (!target) {
+      return NextResponse.json({ summaries: [] })
+    }
+    const summary = await loadClientAdherenceSummary(supabase, target.id, 7)
+    return NextResponse.json({
+      summaries: [{ clientName: target.name, ...summary }],
     })
-  )
+  }
 
+  const summaries = await loadCoachAdherenceSummaries(supabase, list, 7)
   summaries.sort((a, b) => a.overallAverage - b.overallAverage)
 
   return NextResponse.json({ summaries })

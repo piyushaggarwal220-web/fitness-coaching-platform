@@ -144,7 +144,10 @@ export function WorkoutModule({
   const [saveMessage, setSaveMessage] = useState('')
 
   const progress = getWorkoutProgress(workout, completion)
-  const volume = computeWorkoutVolume(completion)
+  const volume = computeWorkoutVolume(
+    completion,
+    workout?.exercises.map((ex) => ex.id)
+  )
   const remainingMin = estimateRemainingMinutes(workout, completion)
   const currentEx = workout
     ? getCurrentExercise(workout.exercises, completion.exercises)
@@ -413,7 +416,16 @@ export function WorkoutModule({
     const data = completion.exercises?.[exId]
     const sets = getExerciseSets(ex, data)
     const next = [...sets]
-    next[setIdx] = { ...next[setIdx], ...patch }
+    const cleaned: Partial<ExerciseSetLog> = { ...patch }
+    for (const key of ['reps', 'weight', 'rpe', 'durationSeconds', 'distanceMeters'] as const) {
+      if (Object.prototype.hasOwnProperty.call(cleaned, key)) {
+        const value = cleaned[key]
+        if (typeof value === 'number' && !Number.isFinite(value)) {
+          cleaned[key] = null
+        }
+      }
+    }
+    next[setIdx] = { ...next[setIdx], ...cleaned }
     void onPatch({ exercises: { [exId]: buildExercisePatch(ex, data, next) } })
   }
 
@@ -712,7 +724,7 @@ export function WorkoutModule({
                   const doneBtn = (setCompleted: boolean, onClick: () => void) => (
                     <button
                       type="button"
-                      disabled={saving || isDone || setCompleted}
+                      disabled={isDone || setCompleted}
                       onClick={onClick}
                       style={{
                         height: 48,
@@ -798,10 +810,11 @@ export function WorkoutModule({
                                     : '0'
                                 }
                                 value={durParts.minutes}
-                                disabled={isDone || set.completed}
+                                disabled={isDone}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, {
-                                    durationSeconds: durationFromParts(e.target.value, durParts.seconds),
+                                    durationSeconds:
+                                      durationFromParts(e.target.value, durParts.seconds) ?? null,
                                   })
                                 }
                                 style={trackerInputStyle}
@@ -819,10 +832,11 @@ export function WorkoutModule({
                                     : '0'
                                 }
                                 value={durParts.seconds}
-                                disabled={isDone || set.completed}
+                                disabled={isDone}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, {
-                                    durationSeconds: durationFromParts(durParts.minutes, e.target.value),
+                                    durationSeconds:
+                                      durationFromParts(durParts.minutes, e.target.value) ?? null,
                                   })
                                 }
                                 style={trackerInputStyle}
@@ -843,12 +857,13 @@ export function WorkoutModule({
                                   ex.targetDistanceMeters != null ? String(ex.targetDistanceMeters) : '—'
                                 }
                                 value={set.distanceMeters ?? ''}
-                                disabled={isDone || set.completed}
-                                onChange={(e) =>
+                                disabled={isDone}
+                                onChange={(e) => {
+                                  const raw = e.target.value
                                   updateSet(ex.id, ex, idx, {
-                                    distanceMeters: Number(e.target.value) || undefined,
+                                    distanceMeters: raw === '' ? null : Number(raw),
                                   })
-                                }
+                                }}
                                 style={trackerInputStyle}
                               />
                             </div>
@@ -864,10 +879,13 @@ export function WorkoutModule({
                                 type="number"
                                 placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
                                 value={set.reps ?? ''}
-                                disabled={isDone || set.completed}
-                                onChange={(e) =>
-                                  updateSet(ex.id, ex, idx, { reps: Number(e.target.value) || undefined })
-                                }
+                                disabled={isDone}
+                                onChange={(e) => {
+                                  const raw = e.target.value
+                                  updateSet(ex.id, ex, idx, {
+                                    reps: raw === '' ? null : Number(raw),
+                                  })
+                                }}
                                 style={trackerInputStyle}
                               />
                             </div>
@@ -881,12 +899,15 @@ export function WorkoutModule({
                               <label style={{ fontSize: 10, color: colors.textMuted }}>Weight (kg)</label>
                               <input
                                 type="number"
-                                placeholder={defaultWeight || '—'}
+                                placeholder={defaultWeight || 'kg'}
                                 value={set.weight ?? ''}
-                                disabled={isDone || set.completed}
-                                onChange={(e) =>
-                                  updateSet(ex.id, ex, idx, { weight: Number(e.target.value) || undefined })
-                                }
+                                disabled={isDone}
+                                onChange={(e) => {
+                                  const raw = e.target.value
+                                  updateSet(ex.id, ex, idx, {
+                                    weight: raw === '' ? null : Number(raw),
+                                  })
+                                }}
                                 style={trackerInputStyle}
                               />
                             </div>
@@ -896,10 +917,13 @@ export function WorkoutModule({
                                 type="number"
                                 placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
                                 value={set.reps ?? ''}
-                                disabled={isDone || set.completed}
-                                onChange={(e) =>
-                                  updateSet(ex.id, ex, idx, { reps: Number(e.target.value) || undefined })
-                                }
+                                disabled={isDone}
+                                onChange={(e) => {
+                                  const raw = e.target.value
+                                  updateSet(ex.id, ex, idx, {
+                                    reps: raw === '' ? null : Number(raw),
+                                  })
+                                }}
                                 style={trackerInputStyle}
                               />
                             </div>

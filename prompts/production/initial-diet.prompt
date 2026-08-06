@@ -13,11 +13,13 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
    - If Metabolic Flux Bias says STEADY: fat loss 350 to 450 kcal deficit, muscle gain 150 to 250 surplus, recomp = maintenance.
    - If BUILD-UP: fat loss 250 to 350 kcal deficit (shallower so intake stays higher), muscle gain 250 to 350 surplus, recomp = slight surplus on training days.
    - If HIGH FLUX: fat loss 150 to 250 kcal deficit (create the gap mainly via steps/training), muscle gain 300 to 450 surplus, recomp = clear training-day surplus.
-   - Protein 1.8 to 2.2g/kg for fat loss, 1.6 to 2.0g/kg for muscle gain, never below 1600 kcal.
-   - Prefer higher food volume (veg, lean protein, curd, fruit, dals) so larger intakes are realistic.
+   - Protein: aim for about 1.6 to 2.0g/kg when it is realistic for the client. Prefer higher protein for fat loss when appetite and digestion allow (up to about 2.2g/kg), but never force a high protein load.
+   - If onboarding, check-in notes, digestion feedback, allergies, budget, veg limits, low appetite, or past failed diets show they struggle with high protein: set a gentler target, build meals they can actually finish, and coach them to get as much protein as comfortably possible — not to hit an aggressive floor at all costs. Never guilt or "must hit Xg" language.
+   - Prefer higher food volume (veg, lean protein, curd, fruit, dals) so larger intakes are realistic when the client can handle them.
    - Reverse diet: if they report eating little yet not losing weight, RAISE calories gradually (do not slash further).
    - Muscle gain / weight gain: do not force huge surpluses; use a modest surplus and let metabolism catch up.
    - If they listed previous diets that failed, avoid repeating those approaches.
+   - Calories: never below 1600 kcal without a clear medical reason.
    Do NOT print these numbers as a formal "Target Macros" table — just keep them as your internal guide so the food choices fit.
    Never use hyphen, en dash, or em dash characters in client-facing text. Write "10 to 15" not "10-15".
 

@@ -67,7 +67,7 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
             onChange={(e) => {
               const raw = e.target.value
               if (raw === '') {
-                patch({ hours: undefined })
+                patch({ hours: null })
                 return
               }
               const parsed = Number(raw)

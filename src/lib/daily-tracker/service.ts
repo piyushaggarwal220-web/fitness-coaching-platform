@@ -512,13 +512,107 @@ export async function loadClientAdherenceSummary(
 
   const { data } = await supabase
     .from('daily_tracker_days')
-    .select('*')
+    .select('id, client_id, log_date, plan_id, plan_version, coaching_day, coaching_week, snapshot, completion, scores, overall_percent, created_at, updated_at')
     .eq('client_id', clientId)
     .gte('log_date', since.toISOString().slice(0, 10))
     .order('log_date', { ascending: false })
 
-  const days = (data ?? []).map((row) => rowToDay(row as Record<string, unknown>))
+  return summarizeAdherenceDays(
+    clientId,
+    periodDays,
+    (data ?? []).map((row) => rowToDay(row as Record<string, unknown>))
+  )
+}
 
+/** Batch adherence for many clients in one round-trip (coach dashboard). */
+export async function loadCoachAdherenceSummaries(
+  supabase: SupabaseClient,
+  clients: { id: string; name: string | null }[],
+  periodDays = 7
+): Promise<Array<TrackerAdherenceSummary & { clientName: string | null }>> {
+  if (clients.length === 0) return []
+
+  const since = new Date()
+  since.setDate(since.getDate() - periodDays)
+  const sinceKey = since.toISOString().slice(0, 10)
+  const clientIds = clients.map((c) => c.id)
+
+  // Panel only needs scores + overall — skip huge snapshot/completion payloads.
+  const { data } = await supabase
+    .from('daily_tracker_days')
+    .select('client_id, scores, overall_percent')
+    .in('client_id', clientIds)
+    .gte('log_date', sinceKey)
+
+  const daysByClient = new Map<string, { scores: TrackerCategoryScores | null; overall_percent: number | null }[]>()
+  for (const row of data ?? []) {
+    const clientId = row.client_id as string
+    const list = daysByClient.get(clientId) ?? []
+    list.push({
+      scores: (row.scores as TrackerCategoryScores | null) ?? null,
+      overall_percent: (row.overall_percent as number | null) ?? null,
+    })
+    daysByClient.set(clientId, list)
+  }
+
+  const empty: TrackerCategoryScores = {
+    diet: 0,
+    workout: 0,
+    water: 0,
+    supplements: 0,
+    cardio: 0,
+    sleep: 0,
+  }
+
+  const nameById = new Map(clients.map((c) => [c.id, c.name]))
+
+  return clients.map((client) => {
+    const days = daysByClient.get(client.id) ?? []
+    if (days.length === 0) {
+      return {
+        clientId: client.id,
+        clientName: nameById.get(client.id) ?? null,
+        periodDays,
+        overallAverage: 0,
+        categories: { ...empty },
+        weeklyCompletion: 0,
+        averageRpe: null,
+        missedMeals: 0,
+        missedWorkouts: 0,
+        exercisePerformance: [],
+      }
+    }
+
+    const categories: TrackerCategoryScores = { ...empty }
+    for (const key of Object.keys(empty) as (keyof TrackerCategoryScores)[]) {
+      const vals = days.map((d) => d.scores?.[key] ?? 0)
+      categories[key] = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
+    }
+
+    const overallAverage = Math.round(
+      days.reduce((s, d) => s + (d.overall_percent ?? 0), 0) / days.length
+    )
+
+    return {
+      clientId: client.id,
+      clientName: nameById.get(client.id) ?? null,
+      periodDays,
+      overallAverage,
+      categories,
+      weeklyCompletion: overallAverage,
+      averageRpe: null,
+      missedMeals: 0,
+      missedWorkouts: 0,
+      exercisePerformance: [],
+    }
+  })
+}
+
+function summarizeAdherenceDays(
+  clientId: string,
+  periodDays: number,
+  days: DailyTrackerDay[]
+): TrackerAdherenceSummary {
   const empty: TrackerCategoryScores = {
     diet: 0,
     workout: 0,
