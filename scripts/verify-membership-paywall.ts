@@ -7,7 +7,7 @@ import {
   MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE,
 } from '../src/lib/entitlements'
 
-assert.equal(MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE, 4)
+assert.equal(MIN_DAYS_REQUIRED_FOR_PLAN_CHANGE, 1)
 
 const now = Date.UTC(2026, 7, 4, 12, 0, 0)
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -21,9 +21,10 @@ function profile(daysLeft: number) {
 }
 
 assert.equal(assertClientCanReceivePlanChanges(profile(5), now).ok, true)
-assert.equal(assertClientCanReceivePlanChanges(profile(4), now).ok, true)
-assert.equal(assertClientCanReceivePlanChanges(profile(3.9), now).ok, false)
+assert.equal(assertClientCanReceivePlanChanges(profile(1), now).ok, true)
+assert.equal(assertClientCanReceivePlanChanges(profile(0.5), now).ok, true)
 assert.equal(assertClientCanReceivePlanChanges(profile(0), now).ok, false)
+assert.equal(assertClientCanReceivePlanChanges(profile(-0.1), now).ok, false)
 
 // Still entitled during the 3-day grace window after expiry.
 assert.equal(
@@ -76,10 +77,10 @@ assert.equal(
   '/membership-required'
 )
 
-const blocked = assertClientCanReceivePlanChanges(profile(2), now)
+const blocked = assertClientCanReceivePlanChanges(profile(0), now)
 assert.equal(blocked.ok, false)
 if (!blocked.ok) {
-  assert.match(blocked.error, /4 days/)
+  assert.match(blocked.error, /subscription has ended/i)
 }
 
-console.log('Membership paywall + 4-day plan window verification passed.')
+console.log('Membership paywall + final-day plan window verification passed.')
