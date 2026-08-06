@@ -19,6 +19,17 @@ type FirstTimerPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
 /** First-timer percent off list price. Trial is not eligible. */
 export const FIRST_TIMER_DISCOUNT_PERCENT = 60
 
+/**
+ * Exact payable amounts with WELCOME60 (₹1,499 / ₹2,499 / ₹3,999).
+ * Kept as fixed sale targets so storefront and checkout match psychological pricing
+ * while list MRP stays at the catalog amounts (≈60% off).
+ */
+export const FIRST_TIMER_SALE_PAISE: Record<FirstTimerPlanSlug, number> = {
+  '3_months': 149900,
+  '6_months': 249900,
+  '12_months': 399900,
+}
+
 const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_months'])
 
 export type CheckoutDiscountKind = 'first_timer' | 'discount' | 'referral'
@@ -72,6 +83,10 @@ export function discountPaiseForPlan(
     listAmountPaise ??
     getPurchasablePlan(planSlug)?.amountPaise
   if (!list || list <= 0) return null
+  const sale = FIRST_TIMER_SALE_PAISE[planSlug as FirstTimerPlanSlug]
+  if (sale != null && sale > 0 && sale < list) {
+    return list - sale
+  }
   return Math.round((list * FIRST_TIMER_DISCOUNT_PERCENT) / 100)
 }
 
@@ -80,6 +95,9 @@ export function firstTimerSalePaise(
   planSlug: string,
   listAmountPaise?: number
 ): number | null {
+  if (!FIRST_TIMER_PLAN_SLUGS.has(planSlug)) return null
+  const fixed = FIRST_TIMER_SALE_PAISE[planSlug as FirstTimerPlanSlug]
+  if (fixed != null) return fixed
   const list =
     listAmountPaise ??
     getPurchasablePlan(planSlug)?.amountPaise
