@@ -14,6 +14,7 @@ function ConfirmEmailInner() {
   const searchParams = useSearchParams()
   const verificationId = searchParams.get('vid')?.trim() ?? ''
   const plan = searchParams.get('plan')?.trim() ?? '3_months'
+  const code = searchParams.get('code')?.trim() ?? ''
   const [message, setMessage] = useState('Confirming your email…')
   const [failed, setFailed] = useState(false)
 
@@ -61,9 +62,14 @@ function ConfirmEmailInner() {
       }
 
       if (!cancelled) {
-        setMessage('Email verified. Returning to checkout…')
+        setMessage(
+          code
+            ? `Email verified. ${code} will stay applied on checkout…`
+            : 'Email verified. Returning to checkout…'
+        )
+        const codeParam = code ? `&code=${encodeURIComponent(code)}` : ''
         router.replace(
-          `/checkout?plan=${encodeURIComponent(plan)}&vid=${encodeURIComponent(verificationId)}&emailVerified=1`
+          `/checkout?plan=${encodeURIComponent(plan)}&vid=${encodeURIComponent(verificationId)}&emailVerified=1${codeParam}`
         )
       }
     }
@@ -72,7 +78,7 @@ function ConfirmEmailInner() {
     return () => {
       cancelled = true
     }
-  }, [verificationId, plan, router])
+  }, [verificationId, plan, code, router])
 
   return (
     <div style={styles.page}>
@@ -83,7 +89,12 @@ function ConfirmEmailInner() {
         <h1 style={styles.title}>{brandTitle(failed ? 'Verification needed' : 'Verifying email')}</h1>
         <p style={styles.subtitle}>{message}</p>
         {failed && (
-          <a href={`/checkout?plan=${encodeURIComponent(plan)}`} style={styles.link}>
+          <a
+            href={`/checkout?plan=${encodeURIComponent(plan)}${
+              code ? `&code=${encodeURIComponent(code)}` : ''
+            }`}
+            style={styles.link}
+          >
             Back to checkout
           </a>
         )}

@@ -32,6 +32,7 @@ import type {
 
 const supabase = createClient()
 const PATCH_RETRY_DELAYS_MS = [0, 400, 1000]
+const PATCH_DEBOUNCE_MS = 400
 
 type TrackerContextValue = {
   view: TodayTrackerView | null
@@ -53,6 +54,7 @@ type PatchQueue = {
   pending: TrackerCompletion | null
   waiters: Array<(ok: boolean) => void>
   flushing: boolean
+  debounceTimer: ReturnType<typeof setTimeout> | null
 }
 
 function withDraft(
@@ -62,8 +64,18 @@ function withDraft(
   const day = view.day
   if (!day) return view
 
+  let nextCompletion = day.completion
+
+  // Keep in-flight React edits when a background reload lands.
+  if (previous?.day?.id === day.id) {
+    nextCompletion = mergeCompletion(nextCompletion, previous.day.completion)
+  }
+
   const draft = readTrackerDraft(day.id)
-  if (!draft) return view
+  if (!draft) {
+    if (nextCompletion === day.completion) return view
+    return { ...view, day: { ...day, completion: nextCompletion } }
+  }
 
   // Drop local drafts tied to an older plan so a newly delivered plan wins.
   const previousSnapshot = previous?.day?.snapshot
@@ -99,10 +111,11 @@ function withDraft(
 
   if (draftLooksStale) {
     clearTrackerDraft(day.id)
-    return view
+    if (nextCompletion === day.completion) return view
+    return { ...view, day: { ...day, completion: nextCompletion } }
   }
 
-  const merged = applyTrackerDraft(day.completion, draft)
+  const merged = applyTrackerDraft(nextCompletion, draft)
   return {
     ...view,
     day: { ...day, completion: merged },
@@ -158,12 +171,23 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const dayIdRef = useRef<string | null>(null)
-  const queueRef = useRef<PatchQueue>({ pending: null, waiters: [], flushing: false })
+  const queueRef = useRef<PatchQueue>({
+    pending: null,
+    waiters: [],
+    flushing: false,
+    debounceTimer: null,
+  })
   const flushQueueRef = useRef<() => Promise<void>>(async () => {})
+  const viewRef = useRef<TodayTrackerView | null>(null)
+  viewRef.current = view
 
   useLayoutEffect(() => {
     flushQueueRef.current = async () => {
       const queue = queueRef.current
+      if (queue.debounceTimer) {
+        clearTimeout(queue.debounceTimer)
+        queue.debounceTimer = null
+      }
       if (queue.flushing) return
       queue.flushing = true
       setSaving(true)
@@ -295,15 +319,14 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
         await ensureAuthSession(supabase)
         await flushQueueRef.current()
         // Pull the latest active plan snapshot so newly delivered plans replace stale tracker UI.
+        // withDraft merges current React completion so typing is not wiped.
         await load()
       })()
     }
     document.addEventListener('visibilitychange', onResume)
-    window.addEventListener('focus', onResume)
     window.addEventListener('online', onResume)
     return () => {
       document.removeEventListener('visibilitychange', onResume)
-      window.removeEventListener('focus', onResume)
       window.removeEventListener('online', onResume)
     }
   }, [load])
@@ -340,8 +363,11 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
         const queue = queueRef.current
         queue.pending = queue.pending ? mergeCompletion(queue.pending, patch) : patch
         queue.waiters.push(resolve)
-        setSaving(true)
-        void flushQueueRef.current()
+        if (queue.debounceTimer) clearTimeout(queue.debounceTimer)
+        queue.debounceTimer = setTimeout(() => {
+          queue.debounceTimer = null
+          void flushQueueRef.current()
+        }, PATCH_DEBOUNCE_MS)
       })
     },
     [day?.id]

@@ -5,7 +5,6 @@ import type { CallRequest, CallRequestStatus, ConversationMessage } from '@/type
 import { readApiJson } from '@/lib/api-response'
 import { formatMessageTime } from '@/lib/coach-chat-ui'
 import { isCheckinSystemMessage } from '@/lib/checkin-chat'
-import { CoachReplyRatingPrompt } from '@/components/chat/CoachReplyRating'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
 import { StorageImage } from '@/components/ui/StorageImage'
@@ -138,11 +137,46 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const scrollBehaviorRef = useRef<'auto' | 'smooth'>('auto')
   const animatedIdsRef = useRef<Set<string>>(new Set(initialMessages.map((m) => m.id)))
   const historyReadyRef = useRef(initialMessages.length > 0)
+  const fetchSeqRef = useRef(0)
+  const fetchAbortRef = useRef<AbortController | null>(null)
+  const activeConversationRef = useRef(conversationId)
+
+  useEffect(() => {
+    activeConversationRef.current = conversationId
+    fetchAbortRef.current?.abort()
+    fetchAbortRef.current = null
+    fetchSeqRef.current += 1
+    setMessages(initialMessages)
+    setLoading(initialMessages.length === 0)
+    setError('')
+    historyReadyRef.current = initialMessages.length > 0
+    animatedIdsRef.current = new Set(initialMessages.map((m) => m.id))
+    lastPeerMessageIdRef.current = null
+    // Only reset when the room changes — parent may pass a fresh initialMessages array each render.
+  }, [conversationId]) // eslint-disable-line react-hooks/exhaustive-deps -- conversationId is the room boundary
 
   const fetchMessages = useCallback(async (markRead = true) => {
-    const res = await fetch(`/api/chat/messages?conversationId=${conversationId}${markRead ? '' : '&peek=1'}`, {
-      credentials: 'include',
+    const requestConversationId = conversationId
+    fetchAbortRef.current?.abort()
+    const controller = new AbortController()
+    fetchAbortRef.current = controller
+    const seq = ++fetchSeqRef.current
+
+    const res = await fetch(
+      `/api/chat/messages?conversationId=${requestConversationId}${markRead ? '' : '&peek=1'}`,
+      {
+        credentials: 'include',
+        signal: controller.signal,
+      }
+    ).catch((err: unknown) => {
+      if (err instanceof DOMException && err.name === 'AbortError') return null
+      throw err
     })
+    if (!res) return
+    if (seq !== fetchSeqRef.current || activeConversationRef.current !== requestConversationId) {
+      return
+    }
+
     const parsed = await readApiJson<{
       messages?: ConversationMessage[]
       peerTyping?: boolean
@@ -151,6 +185,9 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       responseTarget?: CoachResponseTarget | null
       error?: string
     }>(res)
+    if (seq !== fetchSeqRef.current || activeConversationRef.current !== requestConversationId) {
+      return
+    }
     if (!parsed.ok) {
       setError(parsed.error)
       setLoading(false)
@@ -169,22 +206,33 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       lastPeerMessageIdRef.current = latestPeerId
       setMessages((prev) => {
         const temps = prev.filter((m) => m.id.startsWith('temp-'))
+        const serverIds = new Set(incoming.map((m) => m.id))
+        // Keep only temps that don't already have a server twin by id reconciliation
+        // (send path swaps temp → server id). Soft content match only as fallback.
         const consumedTemps = new Set<string>()
         const merged = incoming.map((msg) => {
-          const matchedTemp = temps.find((temp) =>
-            !consumedTemps.has(temp.id) &&
-            temp.sender_type === msg.sender_type &&
-            temp.content === msg.content &&
-            Math.abs(new Date(msg.created_at).getTime() - new Date(temp.created_at).getTime()) < 60_000
-          )
+          const matchedTemp = temps.find((temp) => {
+            if (consumedTemps.has(temp.id)) return false
+            if (temp.sender_type !== msg.sender_type) return false
+            if (temp.media_url && temp.media_url === msg.media_url) return true
+            if (!temp.content || !msg.content) return false
+            if (temp.content !== msg.content) return false
+            // Soften identical-message mis-merge: only match the newest unmatched temp
+            // within a short window, and skip if another server msg already claimed it.
+            const dt = Math.abs(
+              new Date(msg.created_at).getTime() - new Date(temp.created_at).getTime()
+            )
+            return dt < 15_000
+          })
           if (matchedTemp) {
             consumedTemps.add(matchedTemp.id)
-            // Avoid a second enter animation when temp → server id.
             animatedIdsRef.current.add(msg.id)
           }
           return msg
         })
-        const leftoverTemps = temps.filter((temp) => !consumedTemps.has(temp.id))
+        const leftoverTemps = temps.filter(
+          (temp) => !consumedTemps.has(temp.id) && !serverIds.has(temp.id)
+        )
         const next = leftoverTemps.length ? [...merged, ...leftoverTemps] : merged
         if (!historyReadyRef.current) {
           next.forEach((m) => animatedIdsRef.current.add(m.id))
@@ -391,9 +439,26 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           mediaDurationSeconds: opts?.mediaDurationSeconds,
         }),
       })
-      const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)
+      const parsed = await readApiJson<{
+        success?: boolean
+        error?: string
+        message?: ConversationMessage
+      }>(res)
       if (!parsed.ok) throw new Error(parsed.error)
-      await fetchMessages()
+
+      const serverMessage = parsed.data.message
+      if (serverMessage?.id) {
+        animatedIdsRef.current.add(serverMessage.id)
+        setMessages((prev) => {
+          const withoutTemp = prev.filter((m) => m.id !== optimistic.id)
+          if (withoutTemp.some((m) => m.id === serverMessage.id)) return withoutTemp
+          return [...withoutTemp, serverMessage]
+        })
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
+      }
+      // Refresh metadata / peer state without relying on fuzzy temp matching
+      await fetchMessages(false)
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
       setError(err instanceof Error ? err.message : 'Send failed')
@@ -722,9 +787,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                   )}
                 </div>
               </div>
-              {viewer === 'client' && msg.sender_type === 'coach' && msg.message_type !== 'system' && (
-                <CoachReplyRatingPrompt messageId={msg.id} coachId={coachId} />
-              )}
             </div>
           )
         })}

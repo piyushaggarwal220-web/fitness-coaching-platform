@@ -45,6 +45,7 @@ declare global {
 function CheckoutForm() {
   const searchParams = useSearchParams();
   const initialPlan = searchParams.get('plan') ?? '3_months';
+  const codeFromUrl = (searchParams.get('code') ?? '').trim().toUpperCase();
   const plan = getCoachingPlan(initialPlan) ?? getCoachingPlan('3_months')!;
 
   const [name, setName] = useState('');
@@ -63,11 +64,12 @@ function CheckoutForm() {
   const [missingItems, setMissingItems] = useState<string[]>([]);
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
-  const [referralCode, setReferralCode] = useState('');
+  const [referralCode, setReferralCode] = useState(codeFromUrl);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountPreview | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
   const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
   const paymentSucceededRef = useRef(false);
+  const autoApplyKeyRef = useRef('');
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
@@ -77,16 +79,28 @@ function CheckoutForm() {
   const isTrialCheckout = plan.isTrial === true;
   const payablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
   const payableDisplay = appliedDiscount?.displaySalePrice ?? plan.displayPrice;
+  const discountPreviewDisplay =
+    referralCode && !isTrialCheckout
+      ? `₹${Math.round((plan.amountPaise * 0.4) / 100).toLocaleString('en-IN')}`
+      : plan.displayPrice;
+  const checkoutTotalDisplay = appliedDiscount?.displaySalePrice ?? discountPreviewDisplay;
+  const checkoutSavingsDisplay = appliedDiscount?.displayDiscount ??
+    (referralCode && !isTrialCheckout
+      ? `₹${Math.round((plan.amountPaise * 0.6) / 100).toLocaleString('en-IN')}`
+      : null);
 
   useEffect(() => {
     setAppliedDiscount(null);
     setEnrollmentHref(null);
+    autoApplyKeyRef.current = '';
     if (isTrialCheckout) setReferralCode('');
-  }, [plan.slug, isTrialCheckout]);
+    else if (codeFromUrl) setReferralCode(codeFromUrl);
+  }, [plan.slug, isTrialCheckout, codeFromUrl]);
 
   useEffect(() => {
     // Re-validate is required after email changes (eligibility is email-bound).
     setAppliedDiscount(null);
+    autoApplyKeyRef.current = '';
   }, [email]);
 
   const applyReferralCode = async () => {
@@ -133,6 +147,20 @@ function CheckoutForm() {
       setApplyingCode(false);
     }
   };
+
+  useEffect(() => {
+    if (isTrialCheckout || appliedDiscount || applyingCode) return;
+    if (!referralCode.trim() || !email.trim() || !email.includes('@')) return;
+    const key = `${plan.slug}|${referralCode}|${email.trim().toLowerCase()}`;
+    if (autoApplyKeyRef.current === key) return;
+    autoApplyKeyRef.current = key;
+    const timer = window.setTimeout(() => {
+      void applyReferralCode();
+    }, 350);
+    return () => window.clearTimeout(timer);
+    // intentionally omit applyReferralCode from deps — key guards re-entry
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email, referralCode, plan.slug, isTrialCheckout, appliedDiscount, applyingCode]);
 
   const clearReferralCode = () => {
     setReferralCode('');
@@ -288,7 +316,11 @@ function CheckoutForm() {
       if (delivery === 'magic_link' && !data.emailVerified) {
         // Always use the public app origin — never localhost (emails open on other devices).
         const appOrigin = resolveAuthEmailRedirectOrigin(window.location.origin);
-        const redirectTo = `${appOrigin}/checkout/confirm-email?vid=${encodeURIComponent(data.verificationId)}&plan=${encodeURIComponent(plan.slug)}`;
+        const redirectTo = `${appOrigin}/checkout/confirm-email?vid=${encodeURIComponent(data.verificationId)}&plan=${encodeURIComponent(plan.slug)}${
+          referralCode.trim()
+            ? `&code=${encodeURIComponent(referralCode.trim())}`
+            : ''
+        }`;
         const { error: otpError } = await supabase.auth.signInWithOtp({
           email: email.trim().toLowerCase(),
           options: {
@@ -491,12 +523,38 @@ function CheckoutForm() {
     <div style={styles.page}>
       <div style={styles.card}>
         <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
+        <section style={styles.orderSummary}>
+          <div style={styles.orderSummaryTop}>
+            <span style={styles.orderSummaryLabel}>Order summary</span>
+            <span style={styles.orderSummaryPrice}>
+              {referralCode && !isTrialCheckout && (
+                <s style={styles.orderSummaryMrp}>{plan.displayPrice}</s>
+              )}
+              {checkoutTotalDisplay}
+            </span>
+          </div>
+          <div style={styles.orderItem}>
+            <div style={styles.orderItemIcon}>LX</div>
+            <div style={styles.orderItemBody}>
+              <strong>{plan.name}{isTrialCheckout ? '' : ' coaching plan'}</strong>
+              <span>Personal workout, diet, check-ins and coach chat</span>
+              {referralCode && !isTrialCheckout && (
+                <span style={styles.orderCode}>{referralCode} · 60% OFF</span>
+              )}
+            </div>
+          </div>
+          {checkoutSavingsDisplay && (
+            <div style={styles.orderSavings}>
+              <span>Total savings</span>
+              <strong>{checkoutSavingsDisplay}</strong>
+            </div>
+          )}
+        </section>
         <h1 style={styles.title}>
-          {brandTitle(isTrialCheckout ? 'Start your 7-day trial' : 'Complete your purchase')}
+          {brandTitle(isTrialCheckout ? 'Start your 7-day trial' : 'Contact')}
         </h1>
         <p style={styles.subtitle}>
-          {plan.name}
-          {isTrialCheckout ? '' : ' plan'} ·{' '}
+          {isTrialCheckout ? `${plan.name} · ` : 'Enter your details to continue · '}
           {appliedDiscount ? (
             <>
               <span style={{ textDecoration: 'line-through', color: colors.textMuted }}>
@@ -505,6 +563,19 @@ function CheckoutForm() {
               <strong style={{ color: colors.accent }}>{appliedDiscount.displaySalePrice}</strong>
               {' · '}
               Save {appliedDiscount.displayDiscount}
+              {' · '}
+              <span style={{ color: colors.accent }}>{appliedDiscount.code} applied</span>
+            </>
+          ) : referralCode && !isTrialCheckout ? (
+            <>
+              <span style={{ textDecoration: 'line-through', color: colors.textMuted }}>
+                {plan.displayPrice}
+              </span>{' '}
+              <strong style={{ color: colors.accent }}>
+                ₹{Math.round((plan.amountPaise * 0.4) / 100).toLocaleString('en-IN')}
+              </strong>
+              {' · '}
+              <span style={{ color: colors.accent }}>{referralCode} ready — enter email to confirm</span>
             </>
           ) : (
             <>
@@ -528,9 +599,13 @@ function CheckoutForm() {
 
         {!isTrialCheckout && (
         <div style={styles.redeemBox}>
-          <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Referral code</h3>
-          <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
-            Optional — enter a referral code if you have one.
+          <div style={styles.redeemHeader}>
+            <h3 style={{ margin: 0, fontSize: 16 }}>Referral / discount code</h3>
+            <span style={styles.discountBadge}>60% OFF</span>
+          </div>
+          <p style={{ margin: '8px 0 12px', fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
+            Enter your code below to unlock the first-time discount before paying.
+            Use <strong style={{ color: colors.accent }}>WELCOME60</strong> for 60% off.
           </p>
           <div style={styles.codeRow}>
             <input
@@ -539,7 +614,7 @@ function CheckoutForm() {
                 setReferralCode(e.target.value.toUpperCase());
                 setEnrollmentHref(null);
               }}
-              placeholder="Enter referral code"
+              placeholder="Enter code (e.g. WELCOME60)"
               autoComplete="off"
               style={{ ...styles.input, marginTop: 0, flex: 1 }}
             />
@@ -679,6 +754,13 @@ function CheckoutForm() {
               <p style={styles.otpHint}>
                 Verify your email before paying. We email a secure link — open it on this phone to continue.
               </p>
+              {(appliedDiscount || (referralCode && !isTrialCheckout)) && (
+                <div style={styles.otpDiscountApplied}>
+                  {appliedDiscount
+                    ? `${appliedDiscount.code} applied · Save ${appliedDiscount.displayDiscount}`
+                    : `${referralCode} ready · 60% OFF once email is confirmed`}
+                </div>
+              )}
               <div style={styles.otpStatus}>
                 Email {emailVerified ? '✓ verified' : emailLinkSent ? 'link sent — check inbox/spam' : 'not verified'}
               </div>
@@ -737,6 +819,31 @@ function CheckoutForm() {
             </div>
           )}
 
+          <section style={styles.paymentSection}>
+            <h2 style={styles.checkoutSectionTitle}>Payment</h2>
+            <p style={styles.paymentSubtitle}>All transactions are secure and encrypted.</p>
+            <div style={styles.paymentMethod}>
+              <div style={styles.paymentMethodTop}>
+                <strong>Razorpay Secure</strong>
+                <span style={styles.paymentLogos}>UPI · VISA · MC · +18</span>
+              </div>
+              <p style={{ margin: '0 16px 12px', color: colors.textSecondary, fontSize: 13 }}>
+                UPI, cards, netbanking and wallets
+              </p>
+              <small
+                style={{
+                  display: 'block',
+                  padding: '12px 16px',
+                  borderTop: `1px solid ${colors.borderSubtle}`,
+                  color: colors.textMuted,
+                  lineHeight: 1.4,
+                }}
+              >
+                You’ll be redirected to Razorpay Secure to complete your purchase.
+              </small>
+            </div>
+          </section>
+
           <label
             ref={policyRef}
             style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12, fontSize: 13, lineHeight: 1.5 }}
@@ -763,7 +870,7 @@ function CheckoutForm() {
             disabled={loading}
             style={styles.payBtn}
           >
-            {loading ? 'Processing...' : `Pay ${payableDisplay} securely`}
+            {loading ? 'Processing...' : `Pay now · ${payableDisplay}`}
           </button>
         </form>
 
@@ -820,6 +927,82 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     marginBottom: 4,
   },
+  orderSummary: {
+    margin: '12px 0 22px',
+    padding: 16,
+    borderRadius: radius.md,
+    border: `1px solid ${colors.borderSubtle}`,
+    backgroundColor: colors.bgElevated,
+  },
+  orderSummaryTop: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    paddingBottom: 14,
+    borderBottom: `1px solid ${colors.borderSubtle}`,
+  },
+  orderSummaryLabel: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: colors.textPrimary,
+  },
+  orderSummaryPrice: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 8,
+    fontSize: 20,
+    fontWeight: 800,
+    color: colors.textPrimary,
+    whiteSpace: 'nowrap',
+  },
+  orderSummaryMrp: {
+    fontSize: 13,
+    fontWeight: 500,
+    color: colors.textMuted,
+  },
+  orderItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '16px 0 12px',
+  },
+  orderItemIcon: {
+    flex: '0 0 48px',
+    width: 48,
+    height: 48,
+    display: 'grid',
+    placeItems: 'center',
+    borderRadius: 10,
+    backgroundColor: colors.accent,
+    color: colors.textInverse,
+    fontSize: 13,
+    fontWeight: 900,
+    letterSpacing: '0.08em',
+  },
+  orderItemBody: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    minWidth: 0,
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 1.35,
+  },
+  orderCode: {
+    color: colors.accent,
+    fontWeight: 800,
+    letterSpacing: '0.03em',
+  },
+  orderSavings: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingTop: 12,
+    borderTop: `1px solid ${colors.borderSubtle}`,
+    color: colors.success,
+    fontSize: 13,
+  },
   title: { margin: '12px 0 8px', fontSize: 28, color: colors.textPrimary, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 },
   subtitle: { margin: '0 0 12px', color: colors.textSecondary },
   leagueNote: {
@@ -864,6 +1047,40 @@ const styles: Record<string, CSSProperties> = {
     width: '100%',
     boxSizing: 'border-box',
   },
+  paymentSection: {
+    marginTop: 18,
+  },
+  checkoutSectionTitle: {
+    margin: '0 0 4px',
+    color: colors.textPrimary,
+    fontSize: 20,
+    lineHeight: 1.25,
+  },
+  paymentSubtitle: {
+    margin: '0 0 12px',
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  paymentMethod: {
+    overflow: 'hidden',
+    border: `1px solid ${colors.accent}`,
+    borderRadius: radius.sm,
+    backgroundColor: colors.bgElevated,
+    color: colors.textPrimary,
+  },
+  paymentMethodTop: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: '14px 16px 8px',
+  },
+  paymentLogos: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
+  },
   error: { backgroundColor: colors.dangerMuted, color: colors.danger, padding: spacing[2], borderRadius: radius.sm, marginBottom: spacing[2] },
   missingList: {
     margin: '0 0 12px',
@@ -899,7 +1116,31 @@ const styles: Record<string, CSSProperties> = {
   secure: { marginTop: spacing[3], fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 },
   loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', color: colors.textSecondary, backgroundColor: colors.bgPrimary },
   redeemLink: { background: 'none', border: 'none', color: colors.accent, cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: spacing[3], padding: '8px 0', minHeight: 44 },
-  redeemBox: { backgroundColor: colors.accentMuted, padding: spacing[3], borderRadius: radius.sm, marginBottom: spacing[3], boxSizing: 'border-box', width: '100%' },
+  redeemBox: {
+    backgroundColor: colors.accentMuted,
+    padding: spacing[3],
+    borderRadius: radius.sm,
+    marginBottom: spacing[3],
+    boxSizing: 'border-box',
+    width: '100%',
+    border: `1px solid rgba(249,115,22,0.35)`,
+  },
+  redeemHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  discountBadge: {
+    flexShrink: 0,
+    padding: '4px 8px',
+    borderRadius: 999,
+    backgroundColor: colors.accent,
+    color: colors.textInverse,
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+  },
   codeRow: { display: 'flex', gap: 8, alignItems: 'stretch', width: '100%', minWidth: 0 },
   discountApplied: {
     marginTop: 12,
@@ -936,6 +1177,15 @@ const styles: Record<string, CSSProperties> = {
     width: '100%',
     boxSizing: 'border-box',
     minWidth: 0,
+  },
+  otpDiscountApplied: {
+    padding: '8px 10px',
+    borderRadius: radius.sm,
+    backgroundColor: colors.successMuted,
+    color: colors.success,
+    fontSize: 13,
+    fontWeight: 700,
+    lineHeight: 1.35,
   },
   otpHint: { margin: 0, fontSize: 13, color: colors.textSecondary, lineHeight: 1.4 },
   otpStatus: { fontSize: 13, fontWeight: 600, color: colors.textSecondary },

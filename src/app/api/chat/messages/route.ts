@@ -43,6 +43,7 @@ export async function GET(request: Request) {
     }
 
     const chronological = [...(data ?? [])].reverse()
+    // Window is last 100 messages (newest). Older history is intentionally not loaded.
 
     const reader = participant.viewer
 

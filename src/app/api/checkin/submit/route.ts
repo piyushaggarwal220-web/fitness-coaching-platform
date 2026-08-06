@@ -2,6 +2,7 @@ import { NextResponse, after } from 'next/server'
 import { requireEntitledClientApiUser } from '@/lib/client-entitlement-guard'
 import { logApiDev } from '@/lib/api-dev-log'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
+import { generateMidWeekAnalysis } from '@/lib/ai/midweek-analysis'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import {
@@ -57,9 +58,9 @@ type WeeklyBody = {
   pain_injuries?: string | null
   cardio_completed?: string | null
   additional_notes?: string | null
-  progress_photo_front: string
-  progress_photo_side: string
-  progress_photo_back: string
+  progress_photo_front?: string | null
+  progress_photo_side?: string | null
+  progress_photo_back?: string | null
   extra_photos?: string[]
   plan_version?: number | null
 }
@@ -70,7 +71,7 @@ function isScore(n: unknown): n is number {
   return typeof n === 'number' && n >= 1 && n <= 10
 }
 
-function validateBody(body: SubmitBody): string | null {
+function validateBody(body: SubmitBody, options?: { gender?: string | null }): string | null {
   if (body.checkinType === 'mid_week') {
     if (!isScore(body.diet_adherence)) return 'Invalid diet adherence.'
     if (!isScore(body.workout_adherence)) return 'Invalid workout adherence.'
@@ -96,8 +97,11 @@ function validateBody(body: SubmitBody): string | null {
   if (!isScore(body.motivation_level)) return 'Invalid motivation level.'
   if (!isScore(body.progress_rating)) return 'Invalid progress rating.'
   if (!body.progress_notes?.trim()) return 'Progress notes are required.'
-  if (!body.progress_photo_front || !body.progress_photo_side || !body.progress_photo_back) {
-    return 'Progress photos are required.'
+  // Match onboarding: photos are optional for female clients
+  if (options?.gender !== 'female') {
+    if (!body.progress_photo_front || !body.progress_photo_side || !body.progress_photo_back) {
+      return 'Progress photos are required.'
+    }
   }
   return null
 }
@@ -129,19 +133,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Invalid check-in type.' }, { status: 400 })
     }
 
-    const validationError = validateBody(body)
-    if (validationError) {
-      return NextResponse.json({ success: false, error: validationError }, { status: 400 })
-    }
-
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, name, email, coach_id, onboarding_complete, checkin_schedule_started_at')
+      .select('id, name, email, gender, coach_id, onboarding_complete, checkin_schedule_started_at')
       .eq('id', user.id)
       .single()
 
     if (profileError || !profile) {
       return NextResponse.json({ success: false, error: 'Profile not found.' }, { status: 404 })
+    }
+
+    const validationError = validateBody(body, { gender: profile.gender })
+    if (validationError) {
+      return NextResponse.json({ success: false, error: validationError }, { status: 400 })
     }
 
     if (!profile.coach_id) {
@@ -256,9 +260,9 @@ export async function POST(request: Request) {
         digestion: body.digestion ?? null,
         cardio_completed: body.cardio_completed ?? null,
         notes: body.additional_notes ?? null,
-        progress_photo_front: body.progress_photo_front,
-        progress_photo_side: body.progress_photo_side,
-        progress_photo_back: body.progress_photo_back,
+        progress_photo_front: body.progress_photo_front ?? null,
+        progress_photo_side: body.progress_photo_side ?? null,
+        progress_photo_back: body.progress_photo_back ?? null,
         extra_photos: body.extra_photos ?? [],
         plan_version: body.plan_version ?? null,
       }
@@ -302,9 +306,9 @@ export async function POST(request: Request) {
         checkin_id: inserted.id,
         entry_date: new Date().toISOString(),
         weight: body.weight,
-        photo_front: body.progress_photo_front,
-        photo_side: body.progress_photo_side,
-        photo_back: body.progress_photo_back,
+        photo_front: body.progress_photo_front ?? null,
+        photo_side: body.progress_photo_side ?? null,
+        photo_back: body.progress_photo_back ?? null,
         extra_photos: body.extra_photos ?? [],
         checkin_summary: summary,
         plan_version: body.plan_version ?? null,
@@ -338,7 +342,8 @@ export async function POST(request: Request) {
 
     const photoCount =
       body.checkinType === 'weekly'
-        ? 3 + (body.extra_photos?.length ?? 0)
+        ? [body.progress_photo_front, body.progress_photo_side, body.progress_photo_back].filter(Boolean)
+            .length + (body.extra_photos?.length ?? 0)
         : 0
 
     const chatMessage =
@@ -401,6 +406,26 @@ export async function POST(request: Request) {
           trigger: 'auto',
         }).catch((err) => console.error('[checkin-submit] auto draft failed:', err))
       )
+    }
+
+    if (body.checkinType === 'mid_week') {
+      after(async () => {
+        try {
+          const adminClient = createAdminClient()
+          const [{ data: fullCheckin }, { data: fullProfile }] = await Promise.all([
+            adminClient.from('checkins').select('*').eq('id', inserted.id).single(),
+            adminClient.from('profiles').select('*').eq('id', user.id).single(),
+          ])
+          if (!fullCheckin || !fullProfile) return
+          await generateMidWeekAnalysis({
+            profile: fullProfile,
+            checkin: fullCheckin,
+            coachId: profile.coach_id,
+          })
+        } catch (err) {
+          console.error('[checkin-submit] mid-week analysis failed:', err)
+        }
+      })
     }
 
     logApiDev('checkin_submit_success', {

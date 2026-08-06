@@ -34,13 +34,15 @@ export async function logAiGeneration(input: AiGenerationLogInput): Promise<void
     const admin = createAdminClient()
     const debug = isDebugAiEnabled()
     const isDraftWorkflow = input.action.startsWith('weekly_draft_')
+    const alwaysPersistRendered =
+      isDraftWorkflow || input.action === 'mid_week_analysis'
 
     const costs = calculateAiCostUsd(input.model, input.promptTokens, input.completionTokens)
 
-    // Draft workflow rows must always keep checkin linkage for status/retry UI.
+    // Draft workflow / mid-week summary rows must keep checkin linkage for coach UI.
     // Full prompt dumps remain DEBUG_AI-only.
     const shouldPersistRendered =
-      input.renderedOutput != null && (debug || isDraftWorkflow)
+      input.renderedOutput != null && (debug || alwaysPersistRendered)
 
     const row = {
       client_id: input.clientId,

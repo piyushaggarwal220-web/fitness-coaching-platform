@@ -55,9 +55,10 @@ export function CardioModule({ items, completion, saving, onPatch }: Props) {
               type="number"
               placeholder={`Log ${unit}`}
               value={actual || ''}
-              disabled={saving}
               onChange={(e) => {
-                const val = Number(e.target.value) || 0
+                const raw = e.target.value
+                const val = raw === '' ? 0 : Number(raw)
+                if (!Number.isFinite(val)) return
                 void onPatch({ cardio: { [item.id]: { actual: val, completed: val >= target } } })
               }}
               style={{ ...trackerInputStyle, marginBottom: spacing[3] }}

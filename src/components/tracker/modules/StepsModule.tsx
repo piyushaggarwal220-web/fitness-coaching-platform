@@ -54,9 +54,10 @@ export function StepsModule({ steps, completion, saving, onPatch }: Props) {
         <input
           type="number"
           value={actual || ''}
-          disabled={saving}
           onChange={(e) => {
-            const val = Number(e.target.value) || 0
+            const raw = e.target.value
+            const val = raw === '' ? 0 : Number(raw)
+            if (!Number.isFinite(val)) return
             void onPatch({ cardio: { [steps.id]: { actual: val, completed: val >= target } } })
           }}
           style={{ ...trackerInputStyle, marginTop: spacing[3] }}

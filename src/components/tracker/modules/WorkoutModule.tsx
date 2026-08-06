@@ -798,7 +798,7 @@ export function WorkoutModule({
                                     : '0'
                                 }
                                 value={durParts.minutes}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, {
                                     durationSeconds: durationFromParts(e.target.value, durParts.seconds),
@@ -819,7 +819,7 @@ export function WorkoutModule({
                                     : '0'
                                 }
                                 value={durParts.seconds}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, {
                                     durationSeconds: durationFromParts(durParts.minutes, e.target.value),
@@ -843,7 +843,7 @@ export function WorkoutModule({
                                   ex.targetDistanceMeters != null ? String(ex.targetDistanceMeters) : '—'
                                 }
                                 value={set.distanceMeters ?? ''}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, {
                                     distanceMeters: Number(e.target.value) || undefined,
@@ -864,7 +864,7 @@ export function WorkoutModule({
                                 type="number"
                                 placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
                                 value={set.reps ?? ''}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, { reps: Number(e.target.value) || undefined })
                                 }
@@ -883,7 +883,7 @@ export function WorkoutModule({
                                 type="number"
                                 placeholder={defaultWeight || '—'}
                                 value={set.weight ?? ''}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, { weight: Number(e.target.value) || undefined })
                                 }
@@ -896,7 +896,7 @@ export function WorkoutModule({
                                 type="number"
                                 placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
                                 value={set.reps ?? ''}
-                                disabled={saving || isDone || set.completed}
+                                disabled={isDone || set.completed}
                                 onChange={(e) =>
                                   updateSet(ex.id, ex, idx, { reps: Number(e.target.value) || undefined })
                                 }

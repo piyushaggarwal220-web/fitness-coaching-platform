@@ -41,7 +41,7 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
   const goal = sleep.targetHours ?? 8
   const percent = sleepScore
 
-  const patch = (next: typeof data) => void onPatch({ sleep: { ...data, ...next } })
+  const patch = (next: Partial<typeof data>) => void onPatch({ sleep: next })
 
   return (
     <div>
@@ -64,8 +64,15 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
             step={0.5}
             placeholder="Hours"
             value={data.hours ?? ''}
-            disabled={saving}
-            onChange={(e) => patch({ hours: Number(e.target.value) || undefined })}
+            onChange={(e) => {
+              const raw = e.target.value
+              if (raw === '') {
+                patch({ hours: undefined })
+                return
+              }
+              const parsed = Number(raw)
+              if (Number.isFinite(parsed)) patch({ hours: parsed })
+            }}
             style={{ ...trackerInputStyle, marginTop: 8, fontSize: 24, fontWeight: 800 }}
           />
         </div>
@@ -76,7 +83,6 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
         <input
           placeholder={sleep.targetBedtime ?? '10:30 PM'}
           value={data.bedtime ?? ''}
-          disabled={saving}
           onChange={(e) => patch({ bedtime: e.target.value })}
           style={{ ...trackerInputStyle, marginTop: 8 }}
         />
@@ -87,7 +93,6 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
         <input
           placeholder="7:00 AM"
           value={data.wakeTime ?? ''}
-          disabled={saving}
           onChange={(e) => patch({ wakeTime: e.target.value })}
           style={{ ...trackerInputStyle, marginTop: 8 }}
         />
@@ -98,7 +103,6 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
         <ChipSelector
           options={QUALITY}
           value={data.qualityLabel}
-          disabled={saving}
           onChange={(v) => patch({ qualityLabel: v, quality: qualityLabelToScore(v) })}
         />
       </div>
@@ -110,7 +114,6 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
           min={1}
           max={10}
           value={data.energy ?? 5}
-          disabled={saving}
           onChange={(e) => patch({ energy: Number(e.target.value) })}
           style={{ width: '100%', accentColor: colors.accent }}
         />
@@ -121,7 +124,7 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
 
       <div style={{ marginBottom: spacing[4] }}>
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: colors.textSecondary }}>Wake-up feeling</div>
-        <ChipSelector options={WAKE} value={data.wakeFeeling} disabled={saving} onChange={(v) => patch({ wakeFeeling: v })} />
+        <ChipSelector options={WAKE} value={data.wakeFeeling} onChange={(v) => patch({ wakeFeeling: v })} />
       </div>
     </div>
   )

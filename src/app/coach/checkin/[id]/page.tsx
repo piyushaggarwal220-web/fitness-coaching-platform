@@ -18,6 +18,7 @@ import {
 } from '@/lib/checkin';
 import { getCheckinTypeLabel } from '@/lib/checkin-schedule';
 import { formatFitnessGoal } from '@/lib/coach-utils';
+import { MidWeekAnalysisPanel } from '@/components/coach/ai-actions/MidWeekAnalysisPanel';
 import { WeeklyCoachingPanel } from '@/components/coach/ai-actions/WeeklyCoachingPanel';
 import { PhotoGalleryViewer, type GalleryPhoto } from '@/components/journey/PhotoGalleryViewer';
 import { StorageImage } from '@/components/ui/StorageImage';
@@ -198,6 +199,12 @@ export default function CoachCheckinDetailPage() {
 
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
+
+        {!isWeekly && (
+          <section style={styles.card}>
+            <MidWeekAnalysisPanel checkinId={checkin.id} />
+          </section>
+        )}
 
         <div style={styles.grid}>
           <section style={styles.card}>

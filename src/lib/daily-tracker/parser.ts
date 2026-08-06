@@ -1091,9 +1091,37 @@ export function buildTrackerSnapshot(
 }
 
 export function mergeCompletion(previous: TrackerCompletion, next: TrackerCompletion): TrackerCompletion {
+  const mergeExercises = (
+    prevMap: TrackerCompletion['exercises'],
+    nextMap: TrackerCompletion['exercises']
+  ): TrackerCompletion['exercises'] => {
+    if (!nextMap) return prevMap
+    if (!prevMap) return nextMap
+    const out = { ...prevMap }
+    for (const [id, nextEx] of Object.entries(nextMap)) {
+      const prevEx = prevMap[id]
+      if (!prevEx) {
+        out[id] = nextEx
+        continue
+      }
+      const setCount = Math.max(prevEx.sets?.length ?? 0, nextEx.sets?.length ?? 0)
+      const sets = Array.from({ length: setCount }, (_, index) => ({
+        ...(prevEx.sets?.[index] ?? {}),
+        ...(nextEx.sets?.[index] ?? {}),
+      }))
+      out[id] = {
+        ...prevEx,
+        ...nextEx,
+        sets,
+        notes: nextEx.notes !== undefined ? nextEx.notes : prevEx.notes,
+      }
+    }
+    return out
+  }
+
   return {
     meals: { ...previous.meals, ...next.meals },
-    exercises: { ...previous.exercises, ...next.exercises },
+    exercises: mergeExercises(previous.exercises, next.exercises),
     cardio: { ...previous.cardio, ...next.cardio },
     supplements: { ...previous.supplements, ...next.supplements },
     water: next.water ?? previous.water,
