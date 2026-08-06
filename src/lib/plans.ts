@@ -294,17 +294,6 @@ export async function restorePlanAsDraft(
   supabase: SupabaseClient,
   plan: Plan
 ): Promise<{ data: Plan | null; error: string | null }> {
-  const { data: clientProfile } = await supabase
-    .from('profiles')
-    .select('payment_confirmed, access_source, subscription_expires_at')
-    .eq('id', plan.client_id)
-    .maybeSingle()
-
-  const planWindow = assertClientCanReceivePlanChanges(clientProfile)
-  if (!planWindow.ok) {
-    return { data: null, error: planWindow.error }
-  }
-
   const version = await getNextPlanVersion(supabase, plan.client_id)
   const now = new Date().toISOString()
 
@@ -345,17 +334,6 @@ export async function persistAiPlanDraft(
     title?: string
   }
 ): Promise<{ data: Plan | null; error: string | null }> {
-  const { data: clientProfile } = await supabase
-    .from('profiles')
-    .select('payment_confirmed, access_source, subscription_expires_at')
-    .eq('id', input.clientId)
-    .maybeSingle()
-
-  const planWindow = assertClientCanReceivePlanChanges(clientProfile)
-  if (!planWindow.ok) {
-    return { data: null, error: planWindow.error }
-  }
-
   const version = await getNextPlanVersion(supabase, input.clientId)
   const now = new Date().toISOString()
   const titleBase = input.title?.trim() || input.form.title.trim() || 'Initial Plan'

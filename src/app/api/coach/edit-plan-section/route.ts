@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { editPlanSection, type PlanSectionKind } from '@/lib/ai/edit-plan-section'
-import { assertClientCanReceivePlanChanges } from '@/lib/entitlements'
 import { createClient } from '@/lib/supabase/server'
 
 /** Section rewrites run a long Claude call. */
@@ -62,11 +61,6 @@ export async function POST(request: Request) {
 
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 })
-  }
-
-  const planWindow = assertClientCanReceivePlanChanges(client)
-  if (!planWindow.ok) {
-    return NextResponse.json({ error: planWindow.error }, { status: 400 })
   }
 
   try {
