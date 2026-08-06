@@ -647,49 +647,51 @@ function CheckoutForm() {
           </div>
 
           {!isTrialCheckout && (
-            <div style={discountLockedIn ? styles.offerBannerApplied : styles.offerBanner}>
+            <div style={styles.offerBanner}>
               <div style={styles.offerBannerTop}>
-                <strong>{discountLockedIn ? 'Offer applied' : '60% off first order'}</strong>
-                {offerSaveDisplay && <span>Save {offerSaveDisplay}</span>}
+                <strong>{discountLockedIn ? '60% off applied' : '60% off first order'}</strong>
+                {offerSaveDisplay && <span style={styles.offerSave}>Save {offerSaveDisplay}</span>}
               </div>
               <p style={styles.offerBannerText}>
                 {discountLockedIn
-                  ? `${appliedDiscount!.code} is on — you pay ${appliedDiscount!.displaySalePrice} today.`
-                  : `Code ${welcomeCode} gives 60% off this plan. Tap Apply if it isn’t already on.`}
+                  ? `You pay ${appliedDiscount!.displaySalePrice} today.`
+                  : 'Enter your first-order code and tap Apply.'}
               </p>
-              <div style={styles.codeRow}>
-                <input
-                  value={referralCode}
-                  onChange={(e) => {
-                    setReferralCode(e.target.value.toUpperCase());
-                    setEnrollmentHref(null);
-                    setAppliedDiscount(null);
-                  }}
-                  placeholder={welcomeCode}
-                  autoComplete="off"
-                  aria-label="Discount code"
-                  style={{ ...styles.input, marginTop: 0, flex: 1, minHeight: 48 }}
-                />
-                <button
-                  type="button"
-                  onClick={() => void applyReferralCode()}
-                  disabled={applyingCode || !referralCode.trim()}
-                  style={styles.validateBtn}
-                >
-                  {applyingCode ? '…' : discountLockedIn ? 'Applied' : 'Apply'}
-                </button>
-              </div>
-              {discountLockedIn && (
-                <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
-                  Remove offer
-                </button>
-              )}
-              {discountLockedIn && (
-                <div style={styles.priceIncreaseTimer} aria-live="polite">
-                  <span style={styles.priceIncreaseLabel}>Price increases in</span>
-                  <strong style={styles.priceIncreaseValue}>{saleCountdown}</strong>
+              {discountLockedIn ? (
+                <div style={styles.appliedCodeRow}>
+                  <span style={styles.appliedCodeChip}>{appliedDiscount!.code}</span>
+                  <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div style={styles.codeRow}>
+                  <input
+                    value={referralCode}
+                    onChange={(e) => {
+                      setReferralCode(e.target.value.toUpperCase());
+                      setEnrollmentHref(null);
+                      setAppliedDiscount(null);
+                    }}
+                    placeholder={welcomeCode}
+                    autoComplete="off"
+                    aria-label="Discount code"
+                    style={{ ...styles.input, marginTop: 0, flex: 1, minHeight: 48 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void applyReferralCode()}
+                    disabled={applyingCode || !referralCode.trim()}
+                    style={styles.validateBtn}
+                  >
+                    {applyingCode ? '…' : 'Apply'}
+                  </button>
                 </div>
               )}
+              <div style={styles.priceIncreaseTimer} aria-live="polite">
+                <span style={styles.priceIncreaseLabel}>Price increases in</span>
+                <strong style={styles.priceIncreaseValue}>{saleCountdown}</strong>
+              </div>
               {enrollmentHref && (
                 <div style={styles.discountApplied}>
                   <p style={{ margin: '0 0 10px' }}>
@@ -810,11 +812,6 @@ function CheckoutForm() {
               <p style={styles.otpHint}>
                 We email a secure link — open it on this device, then continue.
               </p>
-              {(appliedDiscount) && (
-                <div style={styles.otpDiscountApplied}>
-                  {appliedDiscount.code} applied · you pay {appliedDiscount.displaySalePrice}
-                </div>
-              )}
               <div style={styles.otpBtnRow}>
                 <button
                   type="button"
@@ -1073,17 +1070,10 @@ const styles: Record<string, CSSProperties> = {
   },
   offerBanner: {
     marginTop: 12,
-    padding: 12,
+    padding: 14,
     borderRadius: radius.sm,
-    border: '1px solid rgba(249,115,22,0.35)',
+    border: '1px solid rgba(249,115,22,0.45)',
     backgroundColor: colors.accentMuted,
-  },
-  offerBannerApplied: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: radius.sm,
-    border: '1px solid rgba(34,197,94,0.35)',
-    backgroundColor: colors.successMuted,
   },
   offerBannerTop: {
     display: 'flex',
@@ -1094,32 +1084,57 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     color: colors.textPrimary,
   },
-  offerBannerText: {
-    margin: '0 0 10px',
+  offerSave: {
+    color: colors.accentHover,
+    fontWeight: 700,
     fontSize: 12,
+  },
+  offerBannerText: {
+    margin: '0 0 12px',
+    fontSize: 13,
     lineHeight: 1.45,
     color: colors.textSecondary,
+  },
+  appliedCodeRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 4,
+  },
+  appliedCodeChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '8px 12px',
+    borderRadius: 999,
+    border: '1px solid rgba(249,115,22,0.55)',
+    backgroundColor: 'rgba(249,115,22,0.16)',
+    color: colors.accentHover,
+    fontSize: 13,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
   },
   priceIncreaseTimer: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    marginTop: 10,
-    padding: '10px 12px',
+    marginTop: 12,
+    padding: '12px 14px',
     borderRadius: radius.sm,
-    border: '1px solid rgba(249,115,22,0.4)',
-    backgroundColor: 'rgba(249,115,22,0.12)',
+    border: '1px solid rgba(249,115,22,0.55)',
+    background:
+      'linear-gradient(135deg, rgba(249,115,22,0.22), rgba(249,115,22,0.08))',
   },
   priceIncreaseLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 800,
-    letterSpacing: '0.1em',
+    letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
-    color: '#fdba74',
+    color: colors.accentHover,
   },
   priceIncreaseValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 800,
     fontVariantNumeric: 'tabular-nums' as const,
     letterSpacing: '0.04em',
@@ -1309,8 +1324,9 @@ const styles: Record<string, CSSProperties> = {
     color: colors.textMuted,
     cursor: 'pointer',
     fontSize: 13,
-    padding: '8px 0 0',
+    padding: '4px 0',
     minHeight: 36,
+    flexShrink: 0,
   },
   otpBox: {
     marginTop: 10,
