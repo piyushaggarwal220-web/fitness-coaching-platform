@@ -44,11 +44,16 @@ export async function POST(request: Request) {
     })
   }
 
+  const email = (body.email ?? '').trim()
+  const hasEmail = email.includes('@')
+
   const resolved = await resolveCheckoutPricing({
     admin,
     planSlug: body.planSlug ?? '3_months',
-    email: body.email ?? '',
+    email,
     discountCode: code,
+    // Preview can apply without email; eligibility is enforced at create-order.
+    enforceEligibility: hasEmail,
   })
 
   if (!resolved.ok) {

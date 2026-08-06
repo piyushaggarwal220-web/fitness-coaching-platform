@@ -102,6 +102,7 @@ export async function POST(request: Request) {
     planSlug: plan.slug,
     email: body.email!,
     discountCode: body.discountCode,
+    enforceEligibility: true,
   })
   if (!pricingResult.ok) {
     return NextResponse.json(

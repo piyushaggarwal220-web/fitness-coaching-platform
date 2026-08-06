@@ -139,12 +139,17 @@ function buildAppliedDiscount(input: {
 /**
  * Resolve list vs payable amount for a plan, optionally applying a promo / referral code.
  * Empty code → full catalog price.
+ *
+ * Pass `enforceEligibility: false` (or omit email) for checkout preview before the
+ * customer types an email. Create-order must pass a real email with enforcement on
+ * so first-timer / promo rules are checked before charging.
  */
 export async function resolveCheckoutPricing(input: {
   admin: SupabaseClient
   planSlug: string
-  email: string
+  email?: string | null
   discountCode?: string | null
+  enforceEligibility?: boolean
 }): Promise<ResolveDiscountResult> {
   const plan = getPurchasablePlan(input.planSlug)
   if (!plan) {
@@ -174,13 +179,39 @@ export async function resolveCheckoutPricing(input: {
     }
   }
 
-  const email = input.email.trim().toLowerCase()
-  if (!email || !email.includes('@')) {
+  const email = (input.email ?? '').trim().toLowerCase()
+  const hasEmail = Boolean(email && email.includes('@'))
+  const enforceEligibility = input.enforceEligibility ?? true
+
+  if (enforceEligibility && !hasEmail) {
     return {
       ok: false,
       error: 'Enter a valid email before applying a code.',
       status: 400,
     }
+  }
+
+  async function assertFirstTimerIfNeeded(required: boolean): Promise<ResolveDiscountResult | null> {
+    if (!required || !enforceEligibility || !hasEmail) return null
+    let firstTimer = false
+    try {
+      firstTimer = await isFirstTimerEmail(input.admin, email)
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : 'Could not verify first-timer eligibility',
+        status: 500,
+      }
+    }
+    if (!firstTimer) {
+      return {
+        ok: false,
+        error:
+          'This code is for first-time customers only. This email already has a purchase or enrollment.',
+        status: 400,
+      }
+    }
+    return null
   }
 
   // Prefer admin-managed promo_codes rows.
@@ -193,25 +224,8 @@ export async function resolveCheckoutPricing(input: {
     const validityError = isPromoCodeCurrentlyValid(promo)
     if (validityError) return { ok: false, error: validityError, status: 400 }
 
-    if (promo.first_timer_only) {
-      let firstTimer = false
-      try {
-        firstTimer = await isFirstTimerEmail(input.admin, email)
-      } catch (err) {
-        return {
-          ok: false,
-          error: err instanceof Error ? err.message : 'Could not verify first-timer eligibility',
-          status: 500,
-        }
-      }
-      if (!firstTimer) {
-        return {
-          ok: false,
-          error: 'This code is for first-time customers only. This email already has a purchase or enrollment.',
-          status: 400,
-        }
-      }
-    }
+    const firstTimerBlock = await assertFirstTimerIfNeeded(Boolean(promo.first_timer_only))
+    if (firstTimerBlock) return firstTimerBlock
 
     const discountPaise = computePromoDiscountPaise(promo, plan.slug, listAmountPaise)
     if (discountPaise == null) {
@@ -248,24 +262,8 @@ export async function resolveCheckoutPricing(input: {
     }
   }
 
-  let firstTimer = false
-  try {
-    firstTimer = await isFirstTimerEmail(input.admin, email)
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : 'Could not verify referral eligibility',
-      status: 500,
-    }
-  }
-
-  if (!firstTimer) {
-    return {
-      ok: false,
-      error: 'This referral code is for first-time customers only. This email already has a purchase or enrollment.',
-      status: 400,
-    }
-  }
+  const firstTimerBlock = await assertFirstTimerIfNeeded(true)
+  if (firstTimerBlock) return firstTimerBlock
 
   const discountPaise = discountPaiseForPlan(plan.slug, listAmountPaise)
   if (discountPaise == null || discountPaise <= 0 || discountPaise >= listAmountPaise) {

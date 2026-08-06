@@ -14,7 +14,9 @@ import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
 import {
   formatInrFromPaise,
   firstTimerSalePaise,
+  discountPaiseForPlan,
   getFirstTimerDiscountCode,
+  isFirstTimerDiscountCode,
 } from '@/lib/payments/checkout-discounts';
 
 const supabase = createClient();
@@ -95,36 +97,57 @@ function CheckoutForm() {
     firstTimerPreviewPaise != null ? plan.amountPaise - firstTimerPreviewPaise : null;
 
   useEffect(() => {
-    setAppliedDiscount(null);
     setEnrollmentHref(null);
     autoApplyKeyRef.current = '';
-    if (isTrialCheckout) setReferralCode('');
-    else if (codeFromUrl) setReferralCode(codeFromUrl);
-    else setReferralCode((prev) => prev || welcomeCode);
+    if (isTrialCheckout) {
+      setReferralCode('');
+      setAppliedDiscount(null);
+    } else if (codeFromUrl) {
+      setReferralCode(codeFromUrl);
+    } else {
+      setReferralCode((prev) => prev || welcomeCode);
+    }
   }, [plan.slug, isTrialCheckout, codeFromUrl, welcomeCode]);
 
-  useEffect(() => {
-    // Re-validate is required after email changes (eligibility is email-bound).
-    setAppliedDiscount(null);
-    autoApplyKeyRef.current = '';
-  }, [email]);
+  const buildLocalWelcomeDiscount = (code: string): AppliedDiscountPreview | null => {
+    if (!isFirstTimerDiscountCode(code) || isTrialCheckout) return null;
+    const discountPaise = discountPaiseForPlan(plan.slug, plan.amountPaise);
+    const amountPaise = firstTimerSalePaise(plan.slug, plan.amountPaise);
+    if (discountPaise == null || amountPaise == null) return null;
+    return {
+      code: getFirstTimerDiscountCode(),
+      discountPaise,
+      amountPaise,
+      listAmountPaise: plan.amountPaise,
+      displayListPrice: plan.displayPrice,
+      displaySalePrice: formatInrFromPaise(amountPaise),
+      displayDiscount: formatInrFromPaise(discountPaise),
+      message: `Discount applied — save ${formatInrFromPaise(discountPaise)} on ${plan.name}.`,
+    };
+  };
 
-  const applyReferralCode = async () => {
-    setError('');
+  const applyReferralCode = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setError('');
     setEnrollmentHref(null);
-    if (!email.trim() || !email.includes('@')) {
-      setError('Enter your email first, then apply your referral code.');
+    const code = referralCode.trim();
+    if (!code) {
+      setAppliedDiscount(null);
       return;
     }
+
+    // Instant local apply for WELCOME60 — no email required.
+    const local = buildLocalWelcomeDiscount(code);
+    if (local) setAppliedDiscount(local);
+
     setApplyingCode(true);
     try {
       const res = await fetch('/api/payment/apply-discount', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          code: referralCode,
+          code,
           planSlug: plan.slug,
-          email,
+          email: email.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -132,7 +155,7 @@ function CheckoutForm() {
 
       if (data.kind === 'enrollment') {
         setAppliedDiscount(null);
-        setEnrollmentHref(data.enrollHref ?? `/enroll?code=${encodeURIComponent(referralCode)}`);
+        setEnrollmentHref(data.enrollHref ?? `/enroll?code=${encodeURIComponent(code)}`);
         return;
       }
 
@@ -147,32 +170,42 @@ function CheckoutForm() {
         message: data.message,
       });
     } catch (err) {
-      setAppliedDiscount(null);
-      setError(err instanceof Error ? err.message : 'Could not apply referral code');
+      const message = err instanceof Error ? err.message : 'Could not apply referral code';
+      // Email-bound eligibility failed (returning customer) — drop the preview discount.
+      if (email.trim().includes('@') || !local) {
+        setAppliedDiscount(null);
+      }
+      if (!opts?.silent || email.trim().includes('@')) {
+        setError(message);
+      }
     } finally {
       setApplyingCode(false);
     }
   };
 
+  // Auto-apply as soon as a code is present (no email required).
   useEffect(() => {
-    if (isTrialCheckout || appliedDiscount || applyingCode) return;
-    if (!referralCode.trim() || !email.trim() || !email.includes('@')) return;
-    const key = `${plan.slug}|${referralCode}|${email.trim().toLowerCase()}`;
+    if (isTrialCheckout || applyingCode) return;
+    if (!referralCode.trim()) {
+      setAppliedDiscount(null);
+      return;
+    }
+    const key = `${plan.slug}|${referralCode}|${email.trim().toLowerCase() || 'no-email'}`;
     if (autoApplyKeyRef.current === key) return;
     autoApplyKeyRef.current = key;
     const timer = window.setTimeout(() => {
-      void applyReferralCode();
-    }, 350);
+      void applyReferralCode({ silent: true });
+    }, 150);
     return () => window.clearTimeout(timer);
-    // intentionally omit applyReferralCode from deps — key guards re-entry
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [email, referralCode, plan.slug, isTrialCheckout, appliedDiscount, applyingCode]);
+  }, [email, referralCode, plan.slug, isTrialCheckout]);
 
   const clearReferralCode = () => {
     setReferralCode(isTrialCheckout ? '' : welcomeCode);
     setAppliedDiscount(null);
     setEnrollmentHref(null);
     setError('');
+    autoApplyKeyRef.current = '';
   };
 
   const resetVerification = () => {
@@ -607,8 +640,8 @@ function CheckoutForm() {
               </div>
               <p style={styles.offerBannerText}>
                 {discountLockedIn
-                  ? `${appliedDiscount!.code} locked in — you pay ${appliedDiscount!.displaySalePrice} today.`
-                  : `Code ${welcomeCode} is ready. Enter your email below, then tap Apply to lock in ${firstTimerPreviewDisplay}.`}
+                  ? `${appliedDiscount!.code} is on — you pay ${appliedDiscount!.displaySalePrice} today.`
+                  : `Code ${welcomeCode} gives 60% off this plan. Tap Apply if it isn’t already on.`}
               </p>
               <div style={styles.codeRow}>
                 <input
@@ -840,22 +873,11 @@ function CheckoutForm() {
           <button type="submit" disabled={loading} style={styles.payBtn}>
             {loading
               ? 'Processing…'
-              : isTrialCheckout
-                ? `Pay ${payableDisplay}`
-                : discountLockedIn
-                  ? `Pay ${payableDisplay}`
-                  : `Pay ${plan.displayPrice}`}
+              : `Pay ${payableDisplay}`}
           </button>
-          {!isTrialCheckout && !discountLockedIn && (
-            <p style={styles.paySecureNote}>
-              Or apply {welcomeCode} above to pay {firstTimerPreviewDisplay} instead
-            </p>
-          )}
-          {(isTrialCheckout || discountLockedIn) && (
-            <p style={styles.paySecureNote}>
-              Secure checkout via Razorpay · UPI, cards, netbanking
-            </p>
-          )}
+          <p style={styles.paySecureNote}>
+            Secure checkout via Razorpay · UPI, cards, netbanking
+          </p>
         </form>
 
         <p style={styles.secure}>
