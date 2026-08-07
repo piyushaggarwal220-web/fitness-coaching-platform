@@ -23,6 +23,7 @@ import {
   formatCountdownHms,
   getSaleCountdownRemainingMs,
 } from '@/lib/sale-countdown';
+import { CheckoutTransformationCarousel } from '@/components/checkout/TransformationCarousel';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
@@ -631,6 +632,8 @@ function CheckoutForm() {
             </p>
           </div>
         )}
+
+        {!isTrialCheckout && <CheckoutTransformationCarousel />}
 
         {!isTrialCheckout && (
           <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
