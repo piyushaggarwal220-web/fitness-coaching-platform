@@ -20,14 +20,14 @@ type FirstTimerPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
 export const FIRST_TIMER_DISCOUNT_PERCENT = 60
 
 /**
- * Exact payable amounts with WELCOME60 (₹1,699 / ₹2,699 / ₹3,699).
+ * Exact payable amounts with WELCOME60 (₹999 / ₹1,699 / ₹2,999).
  * Kept as fixed sale targets so storefront and checkout match psychological pricing
  * while list MRP stays at the catalog amounts (≈60% off).
  */
 export const FIRST_TIMER_SALE_PAISE: Record<FirstTimerPlanSlug, number> = {
-  '3_months': 169900,
-  '6_months': 269900,
-  '12_months': 369900,
+  '3_months': 99900,
+  '6_months': 169900,
+  '12_months': 299900,
 }
 
 const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_months'])

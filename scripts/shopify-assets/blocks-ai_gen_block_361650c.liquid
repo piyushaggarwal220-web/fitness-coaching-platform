@@ -444,11 +444,17 @@
   }
 
   .ai-transformation-plan-card-label-{{ ai_gen_id }} {
-    font-size: 11px;
-    letter-spacing: 1.5px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: {{ block.settings.text_color }};
-    font-weight: 700;
+    color: #ff8a3d;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255, 98, 0, 0.18);
+    border: 1px solid rgba(255, 98, 0, 0.45);
   }
 
 .ai-transformation-plan-badge-{{ ai_gen_id }} {
@@ -834,10 +840,19 @@
   }
 
   .ai-transformation-plan-card-label-{{ ai_gen_id }} {
-    font-size: 10px !important;
-    letter-spacing: 0.12em !important;
-    font-weight: 650 !important;
-    color: rgba(255, 255, 255, 0.55) !important;
+    font-size: 11px !important;
+    letter-spacing: 0.06em !important;
+    font-weight: 800 !important;
+    color: #ff9a55 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 4px 9px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 98, 0, 0.2) !important;
+    border: 1px solid rgba(255, 98, 0, 0.5) !important;
+    text-transform: none !important;
+    max-width: 100%;
+    line-height: 1.25 !important;
   }
 
   .ai-transformation-plan-badge-{{ ai_gen_id }} {
@@ -1349,13 +1364,13 @@
       "type": "text",
       "id": "plan_2_price",
       "label": "Price",
-      "default": "900"
+      "default": "999"
     },
     {
       "type": "text",
       "id": "plan_2_original_price",
       "label": "Original price",
-      "default": "1500"
+      "default": "3750"
     },
     {
       "type": "text",
@@ -1424,13 +1439,13 @@
       "type": "text",
       "id": "plan_3_price",
       "label": "Price",
-      "default": "1500"
+      "default": "1699"
     },
     {
       "type": "text",
       "id": "plan_3_original_price",
       "label": "Original price",
-      "default": "3000"
+      "default": "6250"
     },
     {
       "type": "text",
@@ -1499,13 +1514,13 @@
       "type": "text",
       "id": "plan_4_price",
       "label": "Price",
-      "default": "2400"
+      "default": "2999"
     },
     {
       "type": "text",
       "id": "plan_4_original_price",
       "label": "Original price",
-      "default": "6000"
+      "default": "10000"
     },
     {
       "type": "text",
