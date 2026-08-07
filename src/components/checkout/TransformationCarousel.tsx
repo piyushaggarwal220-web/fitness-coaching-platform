@@ -172,14 +172,18 @@ const styles: Record<string, CSSProperties> = {
     overflow: 'hidden',
   },
   imageWrap: {
-    aspectRatio: '4 / 5',
+    width: '100%',
     backgroundColor: '#0c0c0e',
-    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   image: {
     width: '100%',
-    height: '100%',
-    objectFit: 'cover',
+    height: 'auto',
+    maxHeight: 420,
+    objectFit: 'contain',
+    objectPosition: 'center',
     display: 'block',
   },
   meta: {
