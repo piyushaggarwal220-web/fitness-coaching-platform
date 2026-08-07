@@ -3,7 +3,7 @@
   Template: page.start  ·  URL: /pages/start
 {% endcomment %}
 
-{%- assign wa_url = 'https://wa.me/919220451577?text=' | append: 'Hi%20LURVOX%20—%20I%20saw%20your%20ad%20and%20want%20a%20free%20consult.' -%}
+{%- assign consult_url = '/pages/talk-to-a-coach' -%}
 {%- assign refund_url = '/pages/refund-policy' -%}
 {%- assign q = 'utm_source=ads&utm_medium=paid&utm_campaign=start_landing&code=WELCOME60' -%}
 {%- assign c3 = 'https://app.lurvox.in/checkout?plan=3_months&' | append: q -%}
@@ -20,7 +20,7 @@
     </p>
     <div class="lx-ad__hero-actions">
       <a class="lx-ad__btn lx-ad__btn--primary" href="#plans" data-funnel="view_plans">See plans — from ₹566/mo</a>
-      <a class="lx-ad__btn lx-ad__btn--ghost" href="{{ wa_url }}" target="_blank" rel="noopener noreferrer" data-funnel="talk_to_coach">Talk to a coach</a>
+      <a class="lx-ad__btn lx-ad__btn--ghost" href="{{ consult_url }}" data-funnel="talk_to_coach">Book a free call</a>
     </div>
     <div class="lx-ad__badges" aria-label="Secure payment">
       <span>UPI</span><span>Cards</span><span>Razorpay Secure</span><span>SSL</span>

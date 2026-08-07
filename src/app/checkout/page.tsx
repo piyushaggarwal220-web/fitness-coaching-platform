@@ -622,13 +622,11 @@ function CheckoutForm() {
             <p style={styles.trustLineMuted}>
               Questions before paying?{' '}
               <a
-                href="https://wa.me/919220451577?text=Hi%20LURVOX%20—%20I%20have%20a%20question%20before%20checkout."
-                target="_blank"
-                rel="noopener noreferrer"
+                href="https://www.lurvox.in/pages/talk-to-a-coach"
                 style={styles.inlineLink}
                 onClick={() => trackFunnelStep('talk_to_coach', { source: 'checkout' })}
               >
-                Talk to a coach on WhatsApp
+                Book a free consultation call
               </a>
             </p>
           </div>

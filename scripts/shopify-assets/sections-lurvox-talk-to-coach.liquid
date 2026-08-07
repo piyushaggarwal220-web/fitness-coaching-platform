@@ -1,121 +1,294 @@
 {% comment %}
-  LURVOX Talk to a Coach — posts to app.lurvox.in API with 2-submission limit.
-  Template: templates/page.talk-to-a-coach.json (if present)
+  LURVOX — Book a free consultation call
+  On-site form only (name, phone, email, goal). No plan picker.
+  Posts to app.lurvox.in API.
 {% endcomment %}
 
-<section class="lurvox-talk-coach" id="lurvox-talk-coach-{{ section.id }}">
-  <div class="lurvox-talk-coach__inner page-width">
-    <h1 class="lurvox-talk-coach__title">{{ section.settings.heading | default: 'Talk to a coach' }}</h1>
-    <p class="lurvox-talk-coach__subtitle">
-      {{ section.settings.subheading | default: 'Free consultation — share your goals and we will help you decide if LURVOX is the right fit.' }}
-    </p>
+{%- liquid
+  assign accent = section.settings.accent_color | default: '#FF6200'
+  assign heading = section.settings.heading | default: 'Book a free consultation call'
+  assign subheading = section.settings.subheading | default: 'Tell us a bit about yourself. A coach will call you back — no payment required.'
+  assign button_label = section.settings.button_label | default: 'Request free consultation call'
+  assign api_url = section.settings.api_url | default: 'https://app.lurvox.in/api/public/talk-to-a-coach'
+-%}
 
-    <form class="lurvox-talk-coach__form" id="lurvox-talk-coach-form-{{ section.id }}" novalidate>
-      <div class="lurvox-talk-coach__field">
-        <label for="lurvox-talk-name-{{ section.id }}">Name</label>
-        <input id="lurvox-talk-name-{{ section.id }}" name="name" type="text" required autocomplete="name">
-      </div>
-      <div class="lurvox-talk-coach__field">
-        <label for="lurvox-talk-email-{{ section.id }}">Email</label>
-        <input id="lurvox-talk-email-{{ section.id }}" name="email" type="email" required autocomplete="email">
-      </div>
-      <div class="lurvox-talk-coach__field">
-        <label for="lurvox-talk-phone-{{ section.id }}">Phone (WhatsApp)</label>
-        <input id="lurvox-talk-phone-{{ section.id }}" name="phone" type="tel" required autocomplete="tel" placeholder="+91 98765 43210">
-      </div>
-      <div class="lurvox-talk-coach__field">
-        <label for="lurvox-talk-message-{{ section.id }}">How can we help?</label>
-        <textarea id="lurvox-talk-message-{{ section.id }}" name="message" rows="5" required placeholder="Your goals, experience, and any questions..."></textarea>
-      </div>
-      <p class="lurvox-talk-coach__status" id="lurvox-talk-status-{{ section.id }}" role="status" aria-live="polite"></p>
-      <button type="submit" class="lurvox-talk-coach__submit" id="lurvox-talk-submit-{{ section.id }}">
-        {{ section.settings.button_label | default: 'Send message' }}
-      </button>
-    </form>
+<section
+  class="lx-consult"
+  id="lx-consult-{{ section.id }}"
+  style="--lx-accent: {{ accent }};"
+>
+  <div class="lx-consult__bg" aria-hidden="true"></div>
+
+  <div class="lx-consult__inner page-width">
+    <header class="lx-consult__header">
+      <p class="lx-consult__eyebrow">{{ section.settings.eyebrow | default: 'Free coach call' }}</p>
+      <h1 class="lx-consult__title">{{ heading }}</h1>
+      <p class="lx-consult__subtitle">{{ subheading }}</p>
+    </header>
+
+    <div class="lx-consult__grid">
+      <form class="lx-consult__form" id="lx-consult-form-{{ section.id }}" novalidate>
+        <h2 class="lx-consult__form-title">{{ section.settings.form_heading | default: 'Your details' }}</h2>
+
+        <div class="lx-consult__field">
+          <label for="lx-consult-name-{{ section.id }}">Name</label>
+          <input
+            id="lx-consult-name-{{ section.id }}"
+            name="name"
+            type="text"
+            required
+            autocomplete="name"
+            placeholder="Your full name"
+          >
+        </div>
+
+        <div class="lx-consult__row">
+          <div class="lx-consult__field">
+            <label for="lx-consult-phone-{{ section.id }}">Phone / WhatsApp</label>
+            <input
+              id="lx-consult-phone-{{ section.id }}"
+              name="phone"
+              type="tel"
+              required
+              autocomplete="tel"
+              placeholder="+91 98765 43210"
+            >
+          </div>
+          <div class="lx-consult__field">
+            <label for="lx-consult-email-{{ section.id }}">Email</label>
+            <input
+              id="lx-consult-email-{{ section.id }}"
+              name="email"
+              type="email"
+              required
+              autocomplete="email"
+              placeholder="you@email.com"
+            >
+          </div>
+        </div>
+
+        <div class="lx-consult__field">
+          <label for="lx-consult-goal-{{ section.id }}">Your goal</label>
+          <textarea
+            id="lx-consult-goal-{{ section.id }}"
+            name="message"
+            rows="4"
+            required
+            placeholder="e.g. Lose fat, build muscle, get consistent with training…"
+          ></textarea>
+        </div>
+
+        <p class="lx-consult__status" id="lx-consult-status-{{ section.id }}" role="status" aria-live="polite"></p>
+
+        <button type="submit" class="lx-consult__submit" id="lx-consult-submit-{{ section.id }}">
+          {{ button_label }}
+        </button>
+
+        <p class="lx-consult__fineprint">
+          {{ section.settings.fineprint | default: 'Free consultation · No payment on this page · A coach typically responds within a few hours' }}
+        </p>
+      </form>
+    </div>
   </div>
 </section>
 
 <style>
-  #lurvox-talk-coach-{{ section.id }} {
-    --lurvox-accent: {{ section.settings.accent_color | default: '#FF6200' }};
-    padding: 48px 0 64px;
+  body,
+  #MainContent,
+  .shopify-section.section-lx-consult {
+    background: #000 !important;
   }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__inner {
-    max-width: 520px;
+
+  /* lurvox-consult-mobile-v2 */
+  #lx-consult-{{ section.id }} {
+    --lx-ink: #f5f5f5;
+    --lx-muted: rgba(245, 245, 245, 0.62);
+    --lx-line: rgba(255, 255, 255, 0.12);
+    --lx-surface: #141414;
+    --lx-soft: #1a1a1a;
+    position: relative;
+    color: var(--lx-ink);
+    padding: clamp(20px, 4vw, 72px) 12px clamp(28px, 6vw, 88px);
+    overflow: hidden;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 15% 0%, color-mix(in srgb, var(--lx-accent) 22%, transparent), transparent 60%),
+      radial-gradient(ellipse 55% 40% at 90% 100%, rgba(255, 255, 255, 0.04), transparent 55%);
+    pointer-events: none;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__inner {
+    position: relative;
+    z-index: 1;
+    max-width: 640px;
     margin: 0 auto;
   }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__title {
+
+  #lx-consult-{{ section.id }} .lx-consult__header {
+    text-align: center;
+    margin-bottom: clamp(22px, 4vw, 32px);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__eyebrow {
+    margin: 0 0 10px;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--lx-accent);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__title {
     margin: 0 0 12px;
-    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-size: clamp(1.55rem, 6.2vw, 2.65rem);
     font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__subtitle {
+    margin: 0;
+    font-size: clamp(0.95rem, 3.4vw, 1.05rem);
+    line-height: 1.5;
+    color: var(--lx-muted);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__form {
+    background: var(--lx-surface);
+    border: 1px solid var(--lx-line);
+    border-radius: 18px;
+    padding: clamp(14px, 3vw, 28px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__form-title {
+    margin: 0 0 18px;
+    font-size: 1.15rem;
+    font-weight: 750;
     letter-spacing: -0.02em;
   }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__subtitle {
-    margin: 0 0 28px;
-    color: rgba(0, 0, 0, 0.65);
-    line-height: 1.55;
-  }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__form {
-    display: grid;
-    gap: 16px;
-  }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__field {
+
+  #lx-consult-{{ section.id }} .lx-consult__field {
     display: grid;
     gap: 6px;
+    margin-bottom: 14px;
   }
-  #lurvox-talk-coach-{{ section.id }} label {
-    font-size: 14px;
-    font-weight: 600;
+
+  #lx-consult-{{ section.id }} .lx-consult__field label {
+    font-size: 0.82rem;
+    font-weight: 650;
+    color: var(--lx-muted);
   }
-  #lurvox-talk-coach-{{ section.id }} input,
-  #lurvox-talk-coach-{{ section.id }} textarea {
+
+  #lx-consult-{{ section.id }} .lx-consult__field input,
+  #lx-consult-{{ section.id }} .lx-consult__field textarea {
     width: 100%;
-    padding: 14px 16px;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    border-radius: 10px;
-    font-size: 16px;
     box-sizing: border-box;
-  }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__status {
-    min-height: 1.25em;
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.45;
-  }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__status.is-error {
-    color: #b42318;
-  }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__status.is-success {
-    color: #027a48;
-  }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__submit {
-    padding: 14px 24px;
-    border: none;
-    border-radius: 10px;
-    background: var(--lurvox-accent);
-    color: #fff;
+    padding: 14px 14px;
+    min-height: 48px;
+    border-radius: 12px;
+    border: 1px solid var(--lx-line);
+    background: var(--lx-soft);
+    color: var(--lx-ink);
+    font: inherit;
     font-size: 16px;
-    font-weight: 700;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__field input:focus,
+  #lx-consult-{{ section.id }} .lx-consult__field textarea:focus {
+    outline: none;
+    border-color: var(--lx-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--lx-accent) 28%, transparent);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  @media (min-width: 640px) {
+    #lx-consult-{{ section.id }} .lx-consult__row {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__status {
+    min-height: 1.2em;
+    margin: 0 0 12px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__status.is-success {
+    color: #86efac;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__status.is-error {
+    color: #fca5a5;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__submit {
+    display: block;
+    width: 100%;
+    margin: 0 0 12px;
+    padding: 16px 18px;
+    min-height: 52px;
+    border: none;
+    border-radius: 14px;
+    background: var(--lx-accent);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 750;
     cursor: pointer;
   }
-  #lurvox-talk-coach-{{ section.id }} .lurvox-talk-coach__submit:disabled {
+
+  #lx-consult-{{ section.id }} .lx-consult__submit:disabled {
     opacity: 0.65;
-    cursor: not-allowed;
+    cursor: wait;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__fineprint {
+    margin: 2px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--lx-muted);
+    text-align: center;
+  }
+
+  @media (max-width: 639px) {
+    #lx-consult-{{ section.id }} .lx-consult__inner {
+      max-width: 100%;
+    }
+    #lx-consult-{{ section.id }} .lx-consult__form {
+      border-radius: 14px;
+    }
   }
 </style>
 
 <script>
   (function () {
-    var form = document.getElementById('lurvox-talk-coach-form-{{ section.id }}');
+    var form = document.getElementById('lx-consult-form-{{ section.id }}');
     if (!form) return;
-    var statusEl = document.getElementById('lurvox-talk-status-{{ section.id }}');
-    var submitBtn = document.getElementById('lurvox-talk-submit-{{ section.id }}');
-    var apiUrl = {{ section.settings.api_url | default: 'https://app.lurvox.in/api/public/talk-to-a-coach' | json }};
+    var statusEl = document.getElementById('lx-consult-status-{{ section.id }}');
+    var submitBtn = document.getElementById('lx-consult-submit-{{ section.id }}');
+    var apiUrl = {{ api_url | json }};
 
     function setStatus(message, type) {
       if (!statusEl) return;
       statusEl.textContent = message || '';
-      statusEl.className = 'lurvox-talk-coach__status' + (type ? ' is-' + type : '');
+      statusEl.className = 'lx-consult__status' + (type ? ' is-' + type : '');
     }
 
     form.addEventListener('submit', function (event) {
@@ -127,7 +300,7 @@
         name: form.name.value.trim(),
         email: form.email.value.trim(),
         phone: form.phone.value.trim(),
-        message: form.message.value.trim()
+        message: (form.message.value || '').trim()
       };
 
       fetch(apiUrl, {
@@ -144,11 +317,8 @@
           var res = _ref.res;
           var data = _ref.data;
           if (res.ok && data && data.ok) {
-            setStatus('Thanks — we received your message. A coach will get back to you soon.', 'success');
+            setStatus('Thanks — we received your request. A coach will call you soon.', 'success');
             form.reset();
-            if (typeof data.remaining === 'number' && data.remaining === 0) {
-              setStatus('Thanks — we received your message. This was your last consultation request for this email and phone.', 'success');
-            }
             return;
           }
           var err = (data && data.error) || 'Something went wrong. Please try again.';
@@ -166,27 +336,45 @@
 
 {% schema %}
 {
-  "name": "LURVOX Talk to Coach",
+  "name": "LURVOX Consultation",
   "tag": "section",
-  "class": "section-lurvox-talk-coach",
+  "class": "section-lx-consult",
   "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Free coach call"
+    },
     {
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "Talk to a coach"
+      "default": "Book a free consultation call"
     },
     {
       "type": "textarea",
       "id": "subheading",
       "label": "Subheading",
-      "default": "Free consultation — share your goals and we will help you decide if LURVOX is the right fit."
+      "default": "Tell us a bit about yourself. A coach will call you back — no payment required."
+    },
+    {
+      "type": "text",
+      "id": "form_heading",
+      "label": "Form heading",
+      "default": "Your details"
     },
     {
       "type": "text",
       "id": "button_label",
       "label": "Button label",
-      "default": "Send message"
+      "default": "Request free consultation call"
+    },
+    {
+      "type": "text",
+      "id": "fineprint",
+      "label": "Fine print",
+      "default": "Free consultation · No payment on this page · A coach typically responds within a few hours"
     },
     {
       "type": "url",
@@ -202,7 +390,7 @@
   ],
   "presets": [
     {
-      "name": "LURVOX Talk to Coach"
+      "name": "LURVOX Consultation"
     }
   ]
 }
