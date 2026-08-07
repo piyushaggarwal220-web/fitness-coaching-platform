@@ -27,6 +27,8 @@ export default function CoachCheckinsPage() {
   const [clientFilter, setClientFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [backfillMsg, setBackfillMsg] = useState('');
+  const [backfilling, setBackfilling] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -38,7 +40,7 @@ export default function CoachCheckinsPage() {
       const [{ data: checkinData, error: checkinsError }, { data: clientsData }] = await Promise.all([
         supabase
           .from('checkins')
-          .select('*, profiles:client_id(name, email)')
+          .select('id, client_id, coach_id, submitted_at, checkin_type, coaching_week, coaching_day, due_at, reviewed, reviewed_at, profiles:client_id(name, email)')
           .eq('coach_id', coachData.id)
           .order('submitted_at', { ascending: false }),
         supabase
@@ -53,7 +55,7 @@ export default function CoachCheckinsPage() {
         return;
       }
 
-      setCheckins((checkinData as CheckinWithClient[]) ?? []);
+      setCheckins((checkinData as unknown as CheckinWithClient[]) ?? []);
       setClients(clientsData ?? []);
       setLoading(false);
     };
@@ -88,7 +90,45 @@ export default function CoachCheckinsPage() {
     completed: queue.filter((i) => i.status === 'completed').length,
     missed: queue.filter((i) => i.status === 'missed').length,
     dueToday: queue.filter((i) => i.status === 'due_today').length,
+    pendingMidWeek: queue.filter(
+      (i) => i.status === 'pending_review' && i.type === 'mid_week' && i.checkinId
+    ).length,
   }), [queue]);
+
+  const runMidWeekBackfill = async () => {
+    setBackfilling(true)
+    setBackfillMsg('')
+    setError('')
+    try {
+      const res = await fetch('/api/coach/midweek-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backfill: true, limit: 50 }),
+      })
+      const data = (await res.json().catch(() => null)) as {
+        ok?: boolean
+        total?: number
+        generated?: number
+        skipped?: number
+        failed?: { checkinId: string; error: string }[]
+        error?: string
+      } | null
+      if (!res.ok || !data?.ok) {
+        setError(data?.error ?? 'Could not generate mid week replies')
+        return
+      }
+      const failCount = data.failed?.length ?? 0
+      setBackfillMsg(
+        `Mid week replies: ${data.generated ?? 0} generated, ${data.skipped ?? 0} already ready` +
+          (failCount ? `, ${failCount} failed` : '') +
+          `. Open a pending Day 3 check in to send.`
+      )
+    } catch {
+      setError('Could not generate mid week replies')
+    } finally {
+      setBackfilling(false)
+    }
+  }
 
   if (loading) {
     return <CoachShell loading />;
@@ -98,6 +138,29 @@ export default function CoachCheckinsPage() {
     <CoachShell>
         <h1 style={styles.title}>{brandTitle('Check-ins')}</h1>
         <p style={styles.subtitle}>{coach?.name ? `${coach.name}'s queue` : 'Review client progress'}</p>
+
+        {counts.pendingMidWeek > 0 && (
+          <div style={localStyles.backfillBar}>
+            <div>
+              <strong style={{ color: colors.textPrimary }}>
+                {counts.pendingMidWeek} mid week check in{counts.pendingMidWeek === 1 ? '' : 's'} awaiting reply
+              </strong>
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
+                Generate ready to send coach replies with AI, then open each check in to send.
+              </p>
+            </div>
+            <button
+              type="button"
+              style={styles.primaryBtn}
+              disabled={backfilling}
+              onClick={() => void runMidWeekBackfill()}
+            >
+              {backfilling ? 'Generating…' : 'Generate mid week replies'}
+            </button>
+          </div>
+        )}
+
+        {backfillMsg && <div style={styles.success}>{backfillMsg}</div>}
 
         {error && (
           <div style={styles.error}>
@@ -190,6 +253,18 @@ function QueueCard({ item, onOpen }: { item: CoachCheckinQueueItem; onOpen: (id:
 }
 
 const localStyles: Record<string, CSSProperties> = {
+  backfillBar: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 12,
+    background: colors.accentMuted,
+    border: `1px solid ${colors.borderSubtle}`,
+  },
   filters: { display: 'flex', flexWrap: 'wrap', gap: 8 },
   list: { display: 'flex', flexDirection: 'column', gap: 0 },
   cardBtn: { ...styles.listItem, cursor: 'pointer', textAlign: 'left', width: '100%', border: 'none', font: 'inherit' },

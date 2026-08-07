@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import {
+  backfillMidWeekReplies,
   generateMidWeekAnalysis,
-  loadCachedMidWeekSummary,
+  loadCachedMidWeekPack,
 } from '@/lib/ai/midweek-analysis'
 import { createClient } from '@/lib/supabase/server'
 import type { Checkin, OnboardingProfile } from '@/types/database'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 type CoachCheckinContext = {
   coachId: string
@@ -14,9 +15,9 @@ type CoachCheckinContext = {
   profile: OnboardingProfile
 }
 
-async function requireCoachForCheckin(
-  checkinId: string
-): Promise<CoachCheckinContext | { error: NextResponse }> {
+async function requireCoach(): Promise<
+  { coachId: string } | { error: NextResponse }
+> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -31,11 +32,21 @@ async function requireCoachForCheckin(
     return { error: NextResponse.json({ error: 'Coach access required' }, { status: 403 }) }
   }
 
+  return { coachId: coach.id }
+}
+
+async function requireCoachForCheckin(
+  checkinId: string
+): Promise<CoachCheckinContext | { error: NextResponse }> {
+  const auth = await requireCoach()
+  if ('error' in auth) return auth
+
+  const supabase = await createClient()
   const { data: checkin } = await supabase
     .from('checkins')
     .select('*')
     .eq('id', checkinId)
-    .eq('coach_id', coach.id)
+    .eq('coach_id', auth.coachId)
     .maybeSingle()
 
   if (!checkin) {
@@ -57,7 +68,7 @@ async function requireCoachForCheckin(
   }
 
   return {
-    coachId: coach.id,
+    coachId: auth.coachId,
     checkin: checkin as Checkin,
     profile: profile as OnboardingProfile,
   }
@@ -79,20 +90,43 @@ export async function GET(request: Request) {
   const auth = await requireCoachForCheckin(checkinId)
   if (isError(auth)) return auth.error
 
-  const summary = await loadCachedMidWeekSummary(checkinId)
+  const pack = await loadCachedMidWeekPack(checkinId)
   return NextResponse.json({
-    summary,
-    cached: Boolean(summary),
+    summary: pack?.summary ?? null,
+    clientReply: pack?.clientReply ?? null,
+    cached: Boolean(pack?.summary || pack?.clientReply),
     checkinId,
   })
 }
 
 export async function POST(request: Request) {
-  let body: { checkinId?: string; force?: boolean }
+  let body: { checkinId?: string; force?: boolean; backfill?: boolean; limit?: number }
   try {
-    body = (await request.json()) as { checkinId?: string; force?: boolean }
+    body = (await request.json()) as {
+      checkinId?: string
+      force?: boolean
+      backfill?: boolean
+      limit?: number
+    }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  // Batch generate missing replies for this coach's unreviewed mid-weeks
+  if (body.backfill) {
+    const auth = await requireCoach()
+    if ('error' in auth) return auth.error
+
+    try {
+      const result = await backfillMidWeekReplies({
+        coachId: auth.coachId,
+        limit: body.limit,
+      })
+      return NextResponse.json({ ok: true, ...result })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Backfill failed'
+      return NextResponse.json({ error: message }, { status: 500 })
+    }
   }
 
   const checkinId = body.checkinId?.trim()
@@ -112,6 +146,7 @@ export async function POST(request: Request) {
     })
     return NextResponse.json({
       summary: result.summary,
+      clientReply: result.clientReply,
       cached: result.cached,
       checkinId,
     })

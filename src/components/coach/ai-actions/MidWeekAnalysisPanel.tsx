@@ -5,14 +5,36 @@ import { colors } from '@/lib/coach-theme'
 
 type MidWeekAnalysisPanelProps = {
   checkinId: string
+  reviewed?: boolean
+  onReplyReady?: (clientReply: string) => void
+  onSent?: (payload: { reviewedAt: string; feedback: string }) => void
 }
 
-export function MidWeekAnalysisPanel({ checkinId }: MidWeekAnalysisPanelProps) {
+export function MidWeekAnalysisPanel({
+  checkinId,
+  reviewed = false,
+  onReplyReady,
+  onSent,
+}: MidWeekAnalysisPanelProps) {
   const [summary, setSummary] = useState<string | null>(null)
+  const [clientReply, setClientReply] = useState('')
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [sendSuccess, setSendSuccess] = useState('')
   const autoGenAttempted = useRef(false)
+
+  const applyPack = useCallback(
+    (pack: { summary?: string | null; clientReply?: string | null }) => {
+      const nextSummary = pack.summary?.trim() || null
+      const nextReply = pack.clientReply?.trim() || ''
+      setSummary(nextSummary)
+      setClientReply(nextReply)
+      if (nextReply) onReplyReady?.(nextReply)
+    },
+    [onReplyReady]
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -23,84 +45,110 @@ export function MidWeekAnalysisPanel({ checkinId }: MidWeekAnalysisPanelProps) {
       )
       const data = (await res.json().catch(() => null)) as {
         summary?: string | null
+        clientReply?: string | null
         error?: string
       } | null
       if (!res.ok) {
         setError(data?.error ?? 'Could not load AI summary')
         setSummary(null)
+        setClientReply('')
         return
       }
-      setSummary(data?.summary?.trim() || null)
+      applyPack(data ?? {})
     } catch {
       setError('Could not load AI summary')
       setSummary(null)
+      setClientReply('')
     } finally {
       setLoading(false)
     }
-  }, [checkinId])
+  }, [applyPack, checkinId])
 
   useEffect(() => {
     autoGenAttempted.current = false
     void load()
   }, [load])
 
-  // Auto-generate once if nothing cached yet (covers submissions before auto-gen existed)
-  useEffect(() => {
-    if (loading || summary || generating || error || autoGenAttempted.current) return
-    autoGenAttempted.current = true
-    let cancelled = false
-    const run = async () => {
+  const generate = useCallback(
+    async (force: boolean) => {
       setGenerating(true)
+      setError('')
+      setSendSuccess('')
       try {
         const res = await fetch('/api/coach/midweek-summary', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ checkinId }),
+          body: JSON.stringify({ checkinId, force }),
         })
         const data = (await res.json().catch(() => null)) as {
           summary?: string
+          clientReply?: string
           error?: string
         } | null
-        if (cancelled) return
         if (!res.ok) {
           setError(data?.error ?? 'AI summary failed')
           return
         }
-        setSummary(data?.summary?.trim() || null)
+        applyPack(data ?? {})
       } catch {
-        if (!cancelled) setError('AI summary failed')
+        setError('AI summary failed')
       } finally {
-        if (!cancelled) setGenerating(false)
+        setGenerating(false)
       }
-    }
-    void run()
-    return () => {
-      cancelled = true
-    }
-  }, [loading, summary, generating, error, checkinId])
+    },
+    [applyPack, checkinId]
+  )
 
-  const regenerate = async () => {
-    setGenerating(true)
+  // Auto-generate once if reply missing
+  useEffect(() => {
+    if (loading || generating || error || autoGenAttempted.current) return
+    if (clientReply.trim()) return
+    autoGenAttempted.current = true
+    void generate(false)
+  }, [loading, clientReply, generating, error, generate])
+
+  const sendToClient = async () => {
+    const feedback = clientReply.trim()
+    if (!feedback) {
+      setError('Generate or write a reply before sending.')
+      return
+    }
+    setSending(true)
     setError('')
+    setSendSuccess('')
     try {
-      const res = await fetch('/api/coach/midweek-summary', {
+      const res = await fetch('/api/coach/checkin/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checkinId, force: true }),
+        body: JSON.stringify({
+          checkinId,
+          feedback,
+          action_items: '',
+        }),
       })
       const data = (await res.json().catch(() => null)) as {
-        summary?: string
+        ok?: boolean
         error?: string
+        reviewedAt?: string
+        chatError?: string | null
       } | null
-      if (!res.ok) {
-        setError(data?.error ?? 'AI summary failed')
+      if (!res.ok || !data?.ok) {
+        setError(data?.error ?? 'Failed to send reply')
         return
       }
-      setSummary(data?.summary?.trim() || null)
+      setSendSuccess(
+        data.chatError
+          ? 'Marked reviewed, but chat delivery had an issue. Check chat.'
+          : 'Sent to client chat and marked reviewed.'
+      )
+      onSent?.({
+        reviewedAt: data.reviewedAt ?? new Date().toISOString(),
+        feedback,
+      })
     } catch {
-      setError('AI summary failed')
+      setError('Failed to send reply')
     } finally {
-      setGenerating(false)
+      setSending(false)
     }
   }
 
@@ -108,25 +156,57 @@ export function MidWeekAnalysisPanel({ checkinId }: MidWeekAnalysisPanelProps) {
     <div>
       <div style={styles.headerRow}>
         <div>
-          <h2 style={styles.title}>Coach briefing (AI)</h2>
+          <h2 style={styles.title}>Ready to send reply (AI)</h2>
           <p style={styles.subtitle}>
-            Skim this first — then use the raw scores below. Uses AI credits.
+            Written in your voice for this client. Uses AI credits. Edit before sending if needed.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => void regenerate()}
-          disabled={generating || loading}
+          onClick={() => void generate(true)}
+          disabled={generating || loading || sending}
           style={styles.refreshBtn}
         >
           {generating ? 'Generating…' : 'Regenerate'}
         </button>
       </div>
-      {(loading || generating) && !summary && (
-        <p style={styles.muted}>Generating coach briefing from client scores and notes…</p>
+
+      {(loading || generating) && !clientReply && (
+        <p style={styles.muted}>Drafting a coach style reply from this mid week check in…</p>
       )}
       {error && <p style={styles.error}>{error}</p>}
-      {summary && <pre style={styles.summary}>{summary}</pre>}
+      {sendSuccess && <p style={styles.success}>{sendSuccess}</p>}
+
+      <label style={styles.label}>Message to client</label>
+      <textarea
+        value={clientReply}
+        onChange={(e) => setClientReply(e.target.value)}
+        rows={10}
+        style={styles.textarea}
+        placeholder="AI reply will appear here…"
+        disabled={sending}
+      />
+
+      <div style={styles.actions}>
+        {!reviewed && (
+          <button
+            type="button"
+            onClick={() => void sendToClient()}
+            disabled={sending || generating || !clientReply.trim()}
+            style={styles.sendBtn}
+          >
+            {sending ? 'Sending…' : 'Send to client now'}
+          </button>
+        )}
+        {reviewed && <span style={styles.reviewedNote}>Already reviewed</span>}
+      </div>
+
+      {summary && (
+        <details style={styles.details}>
+          <summary style={styles.summaryToggle}>Internal coach briefing</summary>
+          <pre style={styles.summary}>{summary}</pre>
+        </details>
+      )}
     </div>
   )
 }
@@ -162,7 +242,7 @@ const styles: Record<string, CSSProperties> = {
     flexShrink: 0,
   },
   muted: {
-    margin: 0,
+    margin: '0 0 8px',
     fontSize: 13,
     color: colors.textMuted,
   },
@@ -171,17 +251,75 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     color: colors.danger,
   },
+  success: {
+    margin: '0 0 8px',
+    fontSize: 13,
+    color: colors.success,
+  },
+  label: {
+    display: 'block',
+    fontSize: 13,
+    fontWeight: 600,
+    color: colors.textSecondary,
+    marginBottom: 6,
+  },
+  textarea: {
+    width: '100%',
+    boxSizing: 'border-box',
+    borderRadius: 10,
+    border: `1px solid ${colors.borderSubtle}`,
+    padding: 12,
+    fontSize: 14,
+    lineHeight: 1.55,
+    fontFamily: 'inherit',
+    color: colors.textPrimary,
+    background: colors.bgSecondary,
+    resize: 'vertical',
+    marginBottom: 12,
+  },
+  actions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  sendBtn: {
+    border: 'none',
+    background: colors.accent,
+    color: '#fff',
+    borderRadius: 10,
+    padding: '10px 16px',
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  reviewedNote: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: colors.success,
+  },
+  details: {
+    marginTop: 8,
+    borderTop: `1px solid ${colors.borderSubtle}`,
+    paddingTop: 10,
+  },
+  summaryToggle: {
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    color: colors.textMuted,
+  },
   summary: {
-    margin: 0,
+    margin: '10px 0 0',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
     fontFamily: 'inherit',
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 1.55,
     color: colors.textPrimary,
     background: colors.bgSecondary,
     borderRadius: 10,
-    padding: 14,
+    padding: 12,
     borderLeft: `3px solid ${colors.accent}`,
   },
 }

@@ -202,7 +202,32 @@ export default function CoachCheckinDetailPage() {
 
         {!isWeekly && (
           <section style={styles.card}>
-            <MidWeekAnalysisPanel checkinId={checkin.id} />
+            <MidWeekAnalysisPanel
+              checkinId={checkin.id}
+              reviewed={checkin.reviewed}
+              onReplyReady={(reply) => {
+                setResponse((prev) =>
+                  prev.feedback.trim() ? prev : { ...prev, feedback: reply }
+                )
+              }}
+              onSent={({ reviewedAt, feedback }) => {
+                setResponse((prev) => ({ ...prev, feedback }))
+                setCheckin((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        reviewed: true,
+                        reviewed_at: reviewedAt,
+                        coach_response: serializeCoachResponse({
+                          feedback,
+                          action_items: '',
+                        }),
+                      }
+                    : prev
+                )
+                setSuccess('Reply sent to client chat.')
+              }}
+            />
           </section>
         )}
 

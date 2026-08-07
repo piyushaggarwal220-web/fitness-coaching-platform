@@ -1,8 +1,8 @@
 /**
- * Mid-week check-in AI summary for coaches.
- * Uses Prompt Library category mid_week_analysis when published;
- * otherwise falls back to a concise coach-facing analysis prompt.
- * Costs are logged to ai_generation_logs (admin AI credits / cost tracking).
+ * Mid-week check-in AI pack for coaches:
+ * 1) Internal briefing (skim)
+ * 2) Ready-to-send client reply (human coach voice, no hyphens)
+ * Costs logged to ai_generation_logs (AI credits).
  */
 import { MODELS } from '@/lib/ai/config'
 import { generateClaudeResponse } from '@/lib/ai/anthropic'
@@ -11,11 +11,33 @@ import { logAiGeneration } from '@/lib/ai/trace-log'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Checkin, OnboardingProfile } from '@/types/database'
 
-function scoreLine(label: string, value: number | null | undefined): string {
-  return `${label}: ${value != null ? `${value}/10` : '—'}`
+export type MidWeekAiPack = {
+  summary: string
+  clientReply: string
+  cached: boolean
 }
 
-function buildFallbackUserPrompt(
+function scoreLine(label: string, value: number | null | undefined): string {
+  return `${label}: ${value != null ? `${value}/10` : 'n/a'}`
+}
+
+/** Remove ASCII/Unicode hyphens and dashes from client-facing text. */
+export function stripHyphensForCoachReply(text: string): string {
+  return text
+    .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D-]/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function firstName(profile: OnboardingProfile): string {
+  const raw = profile.name?.trim() || ''
+  if (!raw) return 'there'
+  return raw.split(/\s+/)[0] || 'there'
+}
+
+function buildCheckinFacts(
   profile: OnboardingProfile,
   checkin: Checkin,
   previous?: Checkin | null
@@ -43,7 +65,8 @@ function buildFallbackUserPrompt(
     : ''
 
   return [
-    `Client: ${profile.name || profile.email || checkin.client_id}`,
+    `Client full name: ${profile.name || profile.email || checkin.client_id}`,
+    `Client first name: ${firstName(profile)}`,
     profile.fitness_goal ? `Goal: ${profile.fitness_goal}` : null,
     checkin.coaching_week != null ? `Coaching week: ${checkin.coaching_week}` : null,
     '',
@@ -56,69 +79,102 @@ function buildFallbackUserPrompt(
     scoreLine('Hunger', checkin.hunger_level),
     '',
     '## Client written input',
-    `Wins: ${checkin.adherence_wins?.trim() || '—'}`,
-    `Slips: ${checkin.adherence_struggles?.trim() || '—'}`,
-    `Pain/injuries: ${checkin.pain_injuries?.trim() || '—'}`,
-    `Questions: ${checkin.questions_for_coach?.trim() || '—'}`,
-    `Additional comments: ${checkin.notes?.trim() || '—'}`,
+    `Wins: ${checkin.adherence_wins?.trim() || 'n/a'}`,
+    `Slips: ${checkin.adherence_struggles?.trim() || 'n/a'}`,
+    `Pain/injuries: ${checkin.pain_injuries?.trim() || 'n/a'}`,
+    `Questions: ${checkin.questions_for_coach?.trim() || 'n/a'}`,
+    `Additional comments: ${checkin.notes?.trim() || 'n/a'}`,
     prevBlock,
-    '',
-    'Write a coach-ready briefing the coach can read in under 60 seconds before messaging this client.',
-    'Use EXACTLY these headings (plain text, no markdown fences, no JSON):',
-    '',
-    'SNAPSHOT',
-    '(2–3 sentences: how the week is going overall)',
-    '',
-    'FLAGS',
-    '(bullet lines starting with - for risks: low adherence, sleep, stress, pain, hunger — or "- None" if clean)',
-    '',
-    'CLIENT VOICE',
-    '(1–2 sentences paraphrasing wins, slips, questions in coach language)',
-    '',
-    'COACH TALK TRACK',
-    '(3–5 short lines the coach can send almost as-is: acknowledge, address slips/questions, one clear next action)',
-    '',
-    'HOLD OR NUDGE',
-    '(one line: "Hold current plan" OR a specific micro-adjustment suggestion for end-of-week review — do not invent a full new plan)',
   ]
     .filter((line) => line != null)
     .join('\n')
 }
 
-const FALLBACK_SYSTEM = [
-  'You are an expert fitness coach assistant for LURVOX.',
-  'Turn mid-week check-ins into a skim-ready briefing so a human coach can reply fast and confidently.',
-  'Be concrete, brief, and actionable. Do not invent measurements, photos, or facts that were not provided.',
-  'Never invent medical diagnoses. Flag pain for the coach to ask about — do not prescribe treatment.',
-  'Output plain text only — no JSON, no markdown fences, no asterisks.',
-].join(' ')
-
-const OUTPUT_INSTRUCTIONS = [
-  '# Output',
-  'Respond with plain text coach briefing only (no JSON, no markdown fences), unless the library template above requires coach_notes JSON — in that case put the analysis in coach_notes and use empty workout/nutrition placeholders.',
-].join('\n')
-
-function extractSummaryText(raw: string): string {
-  const trimmed = raw.trim()
-  if (!trimmed) return ''
-  try {
-    const start = trimmed.indexOf('{')
-    const end = trimmed.lastIndexOf('}')
-    if (start >= 0 && end > start) {
-      const parsed = JSON.parse(trimmed.slice(start, end + 1)) as {
-        coach_notes?: unknown
-      }
-      if (typeof parsed.coach_notes === 'string' && parsed.coach_notes.trim()) {
-        return parsed.coach_notes.trim()
-      }
-    }
-  } catch {
-    // plain text path
-  }
-  return trimmed
+function buildPackUserPrompt(
+  profile: OnboardingProfile,
+  checkin: Checkin,
+  previous?: Checkin | null
+): string {
+  return [
+    buildCheckinFacts(profile, checkin, previous),
+    '',
+    'Produce TWO sections with the exact delimiters below.',
+    '',
+    '===COACH_BRIEFING===',
+    'Internal only. Coach skim in under 60 seconds. Plain text. Headings:',
+    'SNAPSHOT',
+    'FLAGS (use bullet dots like •, not hyphens)',
+    'CLIENT VOICE',
+    'HOLD OR NUDGE',
+    '',
+    '===CLIENT_REPLY===',
+    'A message the coach will send to the client in chat, as if the coach typed it themselves.',
+    'Rules for CLIENT_REPLY only:',
+    `Address them as ${firstName(profile)}.`,
+    'Warm, direct, human Indian online coach tone. Supportive but accountable.',
+    'Reference their actual wins, slips, scores, questions, or comments. Do not be generic.',
+    'Answer their questions if any. Give 1 to 3 clear next actions for the rest of the week.',
+    'Do not invent measurements, medical diagnoses, or plan rewrites.',
+    'Do not mention AI, templates, or that this is automated.',
+    'Do not use Markdown, asterisks, or bullet symbols.',
+    'CRITICAL: Never use hyphen, en dash, or em dash characters anywhere in CLIENT_REPLY. Use commas, periods, or new sentences instead.',
+    'Length: about 90 to 180 words. Short paragraphs. Ready to send as is.',
+  ].join('\n')
 }
 
-export async function loadCachedMidWeekSummary(checkinId: string): Promise<string | null> {
+const PACK_SYSTEM = [
+  'You are writing for a real human coach on LURVOX.',
+  'Output exactly two sections: ===COACH_BRIEFING=== then ===CLIENT_REPLY===.',
+  'Be concrete. Never invent facts not in the check-in.',
+  'In CLIENT_REPLY never use any hyphen or dash character.',
+].join(' ')
+
+function extractSection(raw: string, marker: string, nextMarker?: string): string {
+  const start = raw.indexOf(marker)
+  if (start < 0) return ''
+  const after = raw.slice(start + marker.length)
+  if (!nextMarker) return after.trim()
+  const end = after.indexOf(nextMarker)
+  return (end >= 0 ? after.slice(0, end) : after).trim()
+}
+
+function parsePackOutput(raw: string): { summary: string; clientReply: string } {
+  const trimmed = raw.trim()
+  let summary = extractSection(trimmed, '===COACH_BRIEFING===', '===CLIENT_REPLY===')
+  let clientReply = extractSection(trimmed, '===CLIENT_REPLY===')
+
+  if (!summary && !clientReply) {
+    // Legacy / library JSON path
+    try {
+      const start = trimmed.indexOf('{')
+      const end = trimmed.lastIndexOf('}')
+      if (start >= 0 && end > start) {
+        const parsed = JSON.parse(trimmed.slice(start, end + 1)) as {
+          coach_notes?: unknown
+          client_reply?: unknown
+        }
+        if (typeof parsed.coach_notes === 'string') summary = parsed.coach_notes.trim()
+        if (typeof parsed.client_reply === 'string') clientReply = parsed.client_reply.trim()
+      }
+    } catch {
+      summary = trimmed
+    }
+  }
+
+  if (!clientReply && summary) {
+    // If model only returned one blob, treat as briefing; reply must be regenerated later.
+    clientReply = ''
+  }
+
+  return {
+    summary: summary.trim(),
+    clientReply: stripHyphensForCoachReply(clientReply),
+  }
+}
+
+export async function loadCachedMidWeekPack(
+  checkinId: string
+): Promise<{ summary: string; clientReply: string } | null> {
   const admin = createAdminClient()
   const { data } = await admin
     .from('ai_generation_logs')
@@ -127,15 +183,36 @@ export async function loadCachedMidWeekSummary(checkinId: string): Promise<strin
     .eq('success', true)
     .contains('rendered_output', { checkinId })
     .order('created_at', { ascending: false })
-    .limit(5)
+    .limit(8)
+
+  let bestSummary: string | null = null
+  let bestReply: string | null = null
 
   for (const row of data ?? []) {
-    const rendered = row.rendered_output as { checkinId?: string; summary?: string } | null
-    if (rendered?.checkinId === checkinId && rendered.summary?.trim()) {
-      return rendered.summary.trim()
+    const rendered = row.rendered_output as {
+      checkinId?: string
+      summary?: string
+      clientReply?: string
+    } | null
+    if (rendered?.checkinId !== checkinId) continue
+    if (!bestSummary && rendered.summary?.trim()) bestSummary = rendered.summary.trim()
+    if (!bestReply && rendered.clientReply?.trim()) {
+      bestReply = stripHyphensForCoachReply(rendered.clientReply)
     }
+    if (bestSummary && bestReply) break
   }
-  return null
+
+  if (!bestSummary && !bestReply) return null
+  return {
+    summary: bestSummary ?? '',
+    clientReply: bestReply ?? '',
+  }
+}
+
+/** @deprecated Prefer loadCachedMidWeekPack */
+export async function loadCachedMidWeekSummary(checkinId: string): Promise<string | null> {
+  const pack = await loadCachedMidWeekPack(checkinId)
+  return pack?.summary?.trim() || null
 }
 
 async function loadPreviousCheckin(checkin: Checkin): Promise<Checkin | null> {
@@ -156,18 +233,24 @@ export async function generateMidWeekAnalysis(input: {
   checkin: Checkin
   coachId?: string | null
   force?: boolean
-}): Promise<{ summary: string; cached: boolean }> {
+}): Promise<MidWeekAiPack> {
   if (!input.force) {
-    const cached = await loadCachedMidWeekSummary(input.checkin.id)
-    if (cached) return { summary: cached, cached: true }
+    const cached = await loadCachedMidWeekPack(input.checkin.id)
+    if (cached?.summary?.trim() && cached.clientReply?.trim()) {
+      return {
+        summary: cached.summary,
+        clientReply: cached.clientReply,
+        cached: true,
+      }
+    }
   }
 
   const previous = await loadPreviousCheckin(input.checkin)
   const libraryPrompt = await getPublishedPromptByCategory('mid_week_analysis')
   const systemPrompt = libraryPrompt?.promptBody?.trim()
-    ? `${FALLBACK_SYSTEM}\n\n# Library template\n${libraryPrompt.promptBody}\n\n${OUTPUT_INSTRUCTIONS}`
-    : `${FALLBACK_SYSTEM}\n\n${OUTPUT_INSTRUCTIONS}`
-  const userPrompt = buildFallbackUserPrompt(input.profile, input.checkin, previous)
+    ? `${PACK_SYSTEM}\n\n# Library template (apply spirit, still output both delimiters)\n${libraryPrompt.promptBody}`
+    : PACK_SYSTEM
+  const userPrompt = buildPackUserPrompt(input.profile, input.checkin, previous)
 
   const started = Date.now()
   try {
@@ -175,11 +258,47 @@ export async function generateMidWeekAnalysis(input: {
       systemPrompt,
       userPrompt,
       model: MODELS.CLAUDE_HAIKU,
-      maxTokens: 1100,
-      temperature: 0.3,
+      maxTokens: 1400,
+      temperature: 0.45,
     })
-    const summary = extractSummaryText(result.text)
-    if (!summary) throw new Error('Empty mid-week analysis')
+    const parsed = parsePackOutput(result.text)
+    if (!parsed.summary && !parsed.clientReply) throw new Error('Empty mid-week analysis')
+
+    // If reply missing, one focused retry for client message only
+    let clientReply = parsed.clientReply
+    let summary = parsed.summary
+    let retryCount = result.retryCount
+    let inputTokens = result.inputTokens
+    let outputTokens = result.outputTokens
+
+    if (!clientReply.trim()) {
+      const replyOnly = await generateClaudeResponse({
+        systemPrompt: [
+          'You are a real LURVOX coach writing a WhatsApp style check in reply.',
+          'Output ONLY the client message. No headings. No markdown.',
+          'Never use hyphen, en dash, or em dash characters.',
+        ].join(' '),
+        userPrompt: [
+          buildCheckinFacts(input.profile, input.checkin, previous),
+          '',
+          `Write the client reply to ${firstName(input.profile)} now.`,
+          'Warm, direct, human. Reference their check in. 90 to 180 words.',
+          'CRITICAL: zero hyphen or dash characters in the entire message.',
+        ].join('\n'),
+        model: MODELS.CLAUDE_HAIKU,
+        maxTokens: 700,
+        temperature: 0.5,
+      })
+      clientReply = stripHyphensForCoachReply(replyOnly.text)
+      retryCount += 1 + replyOnly.retryCount
+      inputTokens += replyOnly.inputTokens
+      outputTokens += replyOnly.outputTokens
+    }
+
+    if (!summary.trim()) summary = 'Briefing unavailable. Use the client reply below.'
+    if (!clientReply.trim()) throw new Error('Empty mid-week client reply')
+
+    clientReply = stripHyphensForCoachReply(clientReply)
 
     await logAiGeneration({
       clientId: input.checkin.client_id,
@@ -187,19 +306,23 @@ export async function generateMidWeekAnalysis(input: {
       action: 'mid_week_analysis',
       model: result.model,
       promptVersion: libraryPrompt
-        ? `library:${libraryPrompt.slug}:v${libraryPrompt.version}`
-        : 'fallback-v2',
+        ? `library:${libraryPrompt.slug}:v${libraryPrompt.version}+reply`
+        : 'fallback-v3-pack',
       latencyMs: Date.now() - started,
-      promptTokens: result.inputTokens,
-      completionTokens: result.outputTokens,
-      retryCount: result.retryCount,
+      promptTokens: inputTokens,
+      completionTokens: outputTokens,
+      retryCount,
       validationResult: 'ok',
       success: true,
       knowledgeRefs: null,
-      renderedOutput: { checkinId: input.checkin.id, summary },
+      renderedOutput: {
+        checkinId: input.checkin.id,
+        summary,
+        clientReply,
+      },
     })
 
-    return { summary, cached: false }
+    return { summary, clientReply, cached: false }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Mid-week analysis failed'
     await logAiGeneration({
@@ -217,5 +340,80 @@ export async function generateMidWeekAnalysis(input: {
       renderedOutput: { checkinId: input.checkin.id },
     })
     throw err
+  }
+}
+
+/** Generate packs for unreviewed mid-week check-ins missing a client reply. */
+export async function backfillMidWeekReplies(input: {
+  coachId?: string | null
+  limit?: number
+}): Promise<{
+  total: number
+  generated: number
+  skipped: number
+  failed: { checkinId: string; error: string }[]
+}> {
+  const admin = createAdminClient()
+  const limit = Math.min(Math.max(input.limit ?? 40, 1), 100)
+
+  let query = admin
+    .from('checkins')
+    .select('*')
+    .eq('checkin_type', 'mid_week')
+    .eq('reviewed', false)
+    .order('submitted_at', { ascending: true })
+    .limit(limit)
+
+  if (input.coachId) {
+    query = query.eq('coach_id', input.coachId)
+  }
+
+  const { data: rows, error } = await query
+  if (error) throw new Error(error.message)
+
+  const checkins = (rows ?? []) as Checkin[]
+  let generated = 0
+  let skipped = 0
+  const failed: { checkinId: string; error: string }[] = []
+
+  for (const checkin of checkins) {
+    try {
+      const cached = await loadCachedMidWeekPack(checkin.id)
+      if (cached?.clientReply?.trim()) {
+        skipped += 1
+        continue
+      }
+
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('*')
+        .eq('id', checkin.client_id)
+        .maybeSingle()
+
+      if (!profile) {
+        failed.push({ checkinId: checkin.id, error: 'Profile missing' })
+        continue
+      }
+
+      await generateMidWeekAnalysis({
+        profile: profile as OnboardingProfile,
+        checkin,
+        coachId: checkin.coach_id,
+        force: true,
+      })
+      generated += 1
+    } catch (err) {
+      failed.push({
+        checkinId: checkin.id,
+        error: err instanceof Error ? err.message : 'Failed',
+      })
+    }
+  }
+
+  return {
+    total: checkins.length,
+    generated,
+    skipped,
+    failed,
   }
 }
