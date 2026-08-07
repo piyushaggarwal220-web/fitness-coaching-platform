@@ -35,32 +35,42 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     let active = true
 
-    const markReady = async (fromRecoveryEvent: boolean) => {
+    const markReady = async (stampRecoveryCookie: boolean) => {
       if (!active) return
       setReady(true)
       setChecking(false)
-      if (fromRecoveryEvent) {
-        // Hash-based recovery links never hit /auth/callback — stamp the cookie here.
+      if (stampRecoveryCookie) {
+        // Hash-based / late recovery sessions may skip /auth/callback cookie stamp.
         await fetch('/api/auth/mark-password-recovery', { method: 'POST' }).catch(() => undefined)
       }
     }
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return
       if (event === 'PASSWORD_RECOVERY') {
         void markReady(true)
-      } else if (event === 'SIGNED_IN') {
-        void markReady(false)
+      } else if (
+        session &&
+        (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')
+      ) {
+        void markReady(true)
       }
     })
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!active) return
-      if (data.session) {
-        void markReady(false)
-      } else {
-        setChecking(false)
+    // Session cookies from /auth/callback can land a beat after mount — poll briefly
+    // instead of flashing "invalid link" too early.
+    void (async () => {
+      for (let i = 0; i < 24 && active; i++) {
+        const { data } = await supabase.auth.getSession()
+        if (!active) return
+        if (data.session) {
+          await markReady(true)
+          return
+        }
+        await new Promise((r) => setTimeout(r, 200))
       }
-    })
+      if (active) setChecking(false)
+    })()
 
     return () => {
       active = false

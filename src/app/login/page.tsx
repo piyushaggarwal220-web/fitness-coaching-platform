@@ -38,6 +38,8 @@ function LoginForm() {
 
     // Session can succeed even when Auth attaches a weak/leaked-password warning.
     if (data.user) {
+      const { invalidateSessionCache } = await import('@/lib/session-restore')
+      invalidateSessionCache()
       await supabase.auth.getSession();
       const { profile, error: profileError } = await fetchClientProfile(supabase, data.user.id);
       router.refresh();
@@ -126,7 +128,11 @@ function LoginForm() {
 
         {searchParams.get('error') === 'auth_callback' && (
           <div style={authStyles.error}>
-            That email link expired or was already used. Request a new password reset.
+            That email link expired or was already used.{' '}
+            <Link href="/forgot-password" style={authStyles.linkColor}>
+              Request a new password reset
+            </Link>
+            .
           </div>
         )}
 
