@@ -419,21 +419,45 @@
 <script>
   (function () {
     var sticky = document.querySelector('[data-lx-conv-sticky]');
-    if (!sticky) return;
-    var hideNear = function () {
-      var closer = document.getElementById('start');
-      var footer = document.querySelector('footer, .shopify-section-group-footer-group');
-      var near = false;
-      if (closer) {
-        var r = closer.getBoundingClientRect();
-        near = r.top < window.innerHeight - 80;
-      } else if (footer) {
-        var fr = footer.getBoundingClientRect();
-        near = fr.top < window.innerHeight - 40;
+    if (sticky) {
+      var hideNear = function () {
+        var closer = document.getElementById('start');
+        var footer = document.querySelector('footer, .shopify-section-group-footer-group');
+        var near = false;
+        if (closer) {
+          var r = closer.getBoundingClientRect();
+          near = r.top < window.innerHeight - 80;
+        } else if (footer) {
+          var fr = footer.getBoundingClientRect();
+          near = fr.top < window.innerHeight - 40;
+        }
+        document.body.classList.toggle('lx-conv-sticky-hide', near);
+      };
+      hideNear();
+      window.addEventListener('scroll', hideNear, { passive: true });
+    }
+
+    // Keep plan prices consistent if Shopify HTML cache serves a stale matrix.
+    function rewritePrices(root) {
+      var scope = root || document;
+      var matrix = scope.querySelector('.lx-matrix__table');
+      if (matrix && /2,?699|3,?699/.test(matrix.textContent || '')) {
+        var strongs = matrix.querySelectorAll('thead strong');
+        if (strongs.length >= 3) {
+          strongs[0].textContent = '₹999';
+          strongs[1].textContent = '₹1,699';
+          strongs[2].textContent = '₹2,999';
+        }
       }
-      document.body.classList.toggle('lx-conv-sticky-hide', near);
-    };
-    hideNear();
-    window.addEventListener('scroll', hideNear, { passive: true });
+      document.querySelectorAll('.lx-conv__btn-sub, .lx-conv-sticky__meta').forEach(function (el) {
+        if (/566/.test(el.textContent || '')) {
+          el.textContent = (el.textContent || '').replace(/566/g, '333');
+        }
+      });
+    }
+    rewritePrices(document);
+    document.addEventListener('DOMContentLoaded', function () {
+      rewritePrices(document);
+    });
   })();
 </script>
