@@ -86,6 +86,7 @@ function CheckoutForm() {
   const [applyingCode, setApplyingCode] = useState(false);
   const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
   const [attemptedPay, setAttemptedPay] = useState(false);
+  const [checkoutScreen, setCheckoutScreen] = useState<1 | 2>(1);
   const paymentSucceededRef = useRef(false);
   const autoApplyKeyRef = useRef('');
   const nameRef = useRef<HTMLInputElement>(null);
@@ -590,7 +591,7 @@ function CheckoutForm() {
     ?? (firstTimerSavingsPaise != null ? formatInrFromPaise(firstTimerSavingsPaise) : null);
 
   return (
-    <div style={styles.page}>
+    <div style={{ ...styles.page, ...(checkoutScreen === 2 ? styles.pageWithSticky : null) }}>
       <div style={styles.card}>
         <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
 
@@ -599,365 +600,428 @@ function CheckoutForm() {
           {isTrialCheckout ? 'Start your 7-day trial' : 'Checkout'}
         </h1>
         <p style={styles.subtitle}>
-          {isTrialCheckout
-            ? 'Full coaching access for 7 days. Upgrade anytime.'
-            : 'Pick a plan, apply your first-order offer, verify email, and pay.'}
+          {checkoutScreen === 1
+            ? (isTrialCheckout
+              ? 'Full coaching access for 7 days. Upgrade anytime.'
+              : 'Choose your plan and enter your details.')
+            : 'Verify your email and pay securely.'}
         </p>
 
-        {!isTrialCheckout && (
-          <div style={styles.trustStrip} aria-label="Checkout trust">
-            <div style={styles.trustBadges}>
-              <span style={styles.trustBadge}>UPI</span>
-              <span style={styles.trustBadge}>Cards</span>
-              <span style={styles.trustBadge}>Netbanking</span>
-              <span style={styles.trustBadge}>Razorpay Secure</span>
-              <span style={styles.trustBadge}>SSL</span>
-            </div>
-            <p style={styles.trustLine}>
-              Personal plan in <strong>24–48 hours</strong> after onboarding — or request a{' '}
-              <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>
-                full refund within 7 days
-              </Link>{' '}
-              if delivery fails.
-            </p>
-            <p style={styles.trustLineMuted}>
-              Questions before paying?{' '}
-              <a
-                href="https://www.lurvox.in/pages/talk-to-a-coach"
-                style={styles.inlineLink}
-                onClick={() => trackFunnelStep('talk_to_coach', { source: 'checkout' })}
-              >
-                Book a free consultation call
-              </a>
-            </p>
-          </div>
-        )}
+        <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 2`}>
+          <span style={{ ...styles.screenDot, ...(checkoutScreen === 1 ? styles.screenDotActive : null) }} />
+          <span style={{ ...styles.screenDot, ...(checkoutScreen === 2 ? styles.screenDotActive : null) }} />
+        </div>
 
-        {!isTrialCheckout && <CheckoutTransformationCarousel />}
-
-        {!isTrialCheckout && (
-          <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
-            {COACHING_PLAN_LIST.map((item) => {
-              const selected = item.slug === plan.slug;
-              const sale = firstTimerSalePaise(item.slug);
-              const saleLabel = sale != null ? formatInrFromPaise(sale) : item.displayPrice;
-              return (
-                <Link
-                  key={item.slug}
-                  href={`/checkout?plan=${item.slug}${referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}`}
-                  role="tab"
-                  aria-selected={selected}
-                  onClick={() =>
-                    trackFunnelStep('checkout_plan_switch', {
-                      plan: item.slug,
-                      plan_name: item.name,
-                      value: (sale ?? item.amountPaise) / 100,
-                    })
-                  }
-                  style={{
-                    ...styles.planChip,
-                    ...(selected ? styles.planChipSelected : null),
-                  }}
-                >
-                  <span style={styles.planChipName}>{item.name}</span>
-                  <span style={styles.planChipPrice}>{saleLabel}</span>
-                  <span style={styles.planChipMrp}>{item.displayPrice}</span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-
-        {isTrialCheckout && (
-          <div style={styles.trialBadge}>
-            {plan.name} · {plan.displayPrice}
-          </div>
-        )}
-
-        <section style={styles.orderSummary}>
-          <div style={styles.orderRow}>
-            <div>
-              <div style={styles.orderPlanName}>
-                {plan.name}{isTrialCheckout ? '' : ' coaching'}
-              </div>
-              <div style={styles.orderPlanMeta}>
-                Workout · diet · check-ins · coach chat
-              </div>
-            </div>
-            <div style={styles.orderPriceCol}>
-              {!isTrialCheckout && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
-              <span style={styles.orderSummaryPrice}>
-                {isTrialCheckout ? plan.displayPrice : pricePrimary}
-              </span>
-            </div>
-          </div>
-
-          {!isTrialCheckout && (
-            <div style={styles.offerBanner}>
-              <div style={styles.offerBannerTop}>
-                <strong>{discountLockedIn ? '60% off applied' : '60% off first order'}</strong>
-                {offerSaveDisplay && <span style={styles.offerSave}>Save {offerSaveDisplay}</span>}
-              </div>
-              <p style={styles.offerBannerText}>
-                {discountLockedIn
-                  ? `You pay ${appliedDiscount!.displaySalePrice} today.`
-                  : 'Enter your first-order code and tap Apply.'}
-              </p>
-              {discountLockedIn ? (
-                <div style={styles.appliedCodeRow}>
-                  <span style={styles.appliedCodeChip}>{appliedDiscount!.code}</span>
-                  <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
-                    Remove
-                  </button>
+        {checkoutScreen === 1 && (
+          <>
+            {!isTrialCheckout && (
+              <div style={styles.trustStrip} aria-label="Checkout trust">
+                <div style={styles.trustBadges}>
+                  <span style={styles.trustBadge}>UPI</span>
+                  <span style={styles.trustBadge}>Cards</span>
+                  <span style={styles.trustBadge}>Netbanking</span>
+                  <span style={styles.trustBadge}>Razorpay Secure</span>
                 </div>
-              ) : (
-                <div style={styles.codeRow}>
-                  <input
-                    value={referralCode}
-                    onChange={(e) => {
-                      setReferralCode(e.target.value.toUpperCase());
-                      setEnrollmentHref(null);
-                      setAppliedDiscount(null);
-                    }}
-                    placeholder={welcomeCode}
-                    autoComplete="off"
-                    aria-label="Discount code"
-                    style={{ ...styles.input, marginTop: 0, flex: 1, minHeight: 48 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void applyReferralCode()}
-                    disabled={applyingCode || !referralCode.trim()}
-                    style={styles.validateBtn}
-                  >
-                    {applyingCode ? '…' : 'Apply'}
-                  </button>
-                </div>
-              )}
-              <div style={styles.priceIncreaseTimer} aria-live="polite">
-                <span style={styles.priceIncreaseLabel}>Price increases in</span>
-                <strong style={styles.priceIncreaseValue}>{saleCountdown}</strong>
+                <p style={styles.trustLine}>
+                  Personal plan in <strong>24–48 hours</strong> after onboarding — or request a{' '}
+                  <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>
+                    full refund within 7 days
+                  </Link>{' '}
+                  if delivery fails.
+                </p>
               </div>
-              {enrollmentHref && (
-                <div style={styles.discountApplied}>
-                  <p style={{ margin: '0 0 10px' }}>
-                    This looks like a membership enrollment code — redeem it on the enrollment page.
+            )}
+
+            {!isTrialCheckout && (
+              <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
+                {COACHING_PLAN_LIST.map((item) => {
+                  const selected = item.slug === plan.slug;
+                  const sale = firstTimerSalePaise(item.slug);
+                  const saleLabel = sale != null ? formatInrFromPaise(sale) : item.displayPrice;
+                  return (
+                    <Link
+                      key={item.slug}
+                      href={`/checkout?plan=${item.slug}${referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}`}
+                      role="tab"
+                      aria-selected={selected}
+                      onClick={() =>
+                        trackFunnelStep('checkout_plan_switch', {
+                          plan: item.slug,
+                          plan_name: item.name,
+                          value: (sale ?? item.amountPaise) / 100,
+                        })
+                      }
+                      style={{
+                        ...styles.planChip,
+                        ...(selected ? styles.planChipSelected : null),
+                      }}
+                    >
+                      <span style={styles.planChipName}>{item.name}</span>
+                      <span style={styles.planChipPrice}>{saleLabel}</span>
+                      <span style={styles.planChipMrp}>{item.displayPrice}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {isTrialCheckout && (
+              <div style={styles.trialBadge}>
+                {plan.name} · {plan.displayPrice}
+              </div>
+            )}
+
+            <section style={styles.orderSummary}>
+              <div style={styles.orderRow}>
+                <div>
+                  <div style={styles.orderPlanName}>
+                    {plan.name}{isTrialCheckout ? '' : ' coaching'}
+                  </div>
+                  <div style={styles.orderPlanMeta}>
+                    Workout · diet · check-ins · coach chat
+                  </div>
+                </div>
+                <div style={styles.orderPriceCol}>
+                  {!isTrialCheckout && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
+                  <span style={styles.orderSummaryPrice}>
+                    {isTrialCheckout ? plan.displayPrice : pricePrimary}
+                  </span>
+                </div>
+              </div>
+
+              {!isTrialCheckout && (
+                <div style={styles.offerBanner}>
+                  <div style={styles.offerBannerTop}>
+                    <strong>{discountLockedIn ? '60% off applied' : '60% off first order'}</strong>
+                    {offerSaveDisplay && <span style={styles.offerSave}>Save {offerSaveDisplay}</span>}
+                  </div>
+                  <p style={styles.offerBannerText}>
+                    {discountLockedIn
+                      ? `You pay ${appliedDiscount!.displaySalePrice} today.`
+                      : 'Enter your first-order code and tap Apply.'}
                   </p>
-                  <a
-                    href={enrollmentHref}
-                    style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}
-                  >
-                    Continue to enrollment →
-                  </a>
+                  {discountLockedIn ? (
+                    <div style={styles.appliedCodeRow}>
+                      <span style={styles.appliedCodeChip}>{appliedDiscount!.code}</span>
+                      <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={styles.codeRow}>
+                      <input
+                        value={referralCode}
+                        onChange={(e) => {
+                          setReferralCode(e.target.value.toUpperCase());
+                          setEnrollmentHref(null);
+                          setAppliedDiscount(null);
+                        }}
+                        placeholder={welcomeCode}
+                        autoComplete="off"
+                        aria-label="Discount code"
+                        style={{ ...styles.input, marginTop: 0, flex: 1, minHeight: 48 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void applyReferralCode()}
+                        disabled={applyingCode || !referralCode.trim()}
+                        style={styles.validateBtn}
+                      >
+                        {applyingCode ? '…' : 'Apply'}
+                      </button>
+                    </div>
+                  )}
+                  <div style={styles.priceIncreaseTimer} aria-live="polite">
+                    <span style={styles.priceIncreaseLabel}>Price increases in</span>
+                    <strong style={styles.priceIncreaseValue}>{saleCountdown}</strong>
+                  </div>
+                  {enrollmentHref && (
+                    <div style={styles.discountApplied}>
+                      <p style={{ margin: '0 0 10px' }}>
+                        This looks like a membership enrollment code — redeem it on the enrollment page.
+                      </p>
+                      <a
+                        href={enrollmentHref}
+                        style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}
+                      >
+                        Continue to enrollment →
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
+            </section>
+
+            <p style={styles.leagueNote}>
+              {isTrialCheckout
+                ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
+                : plan.slug === '12_months'
+                  ? 'Includes Consistency League entry and Crazy League eligibility (prizes up to ₹5,000).'
+                  : 'Includes Consistency League entry. Crazy League prizes need the 12-month plan.'}
+            </p>
+
+            {error && <div style={styles.error}>{error}</div>}
+
+            <div style={styles.form}>
+              <h2 style={styles.sectionLabel}>Your details</h2>
+
+              <label style={styles.label} htmlFor="checkout-name">Full name</label>
+              <input
+                id="checkout-name"
+                ref={nameRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                style={styles.input}
+              />
+
+              <label style={styles.label} htmlFor="checkout-email">Email</label>
+              <input
+                id="checkout-email"
+                ref={emailRef}
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  resetVerification();
+                }}
+                autoComplete="email"
+                style={styles.input}
+              />
+
+              <label style={styles.label} htmlFor="checkout-phone">WhatsApp number</label>
+              <input
+                id="checkout-phone"
+                ref={phoneRef}
+                type="tel"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  resetVerification();
+                }}
+                placeholder="+91 98765 43210"
+                autoComplete="tel"
+                style={styles.input}
+              />
+
+              <button
+                type="button"
+                style={styles.payBtn}
+                onClick={() => {
+                  const missing: string[] = [];
+                  if (!name.trim()) missing.push('Full name');
+                  if (!email.trim()) missing.push('Email');
+                  if (!phone.trim()) missing.push('WhatsApp number');
+                  if (missing.length > 0) {
+                    setError(`Complete these first: ${missing.join(', ')}`);
+                    setMissingItems(missing);
+                    return;
+                  }
+                  setError('');
+                  setMissingItems([]);
+                  setCheckoutScreen(2);
+                  trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'verify_pay' });
+                }}
+              >
+                Continue to pay
+              </button>
             </div>
-          )}
-        </section>
 
-        <p style={styles.leagueNote}>
-          {isTrialCheckout
-            ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
-            : plan.slug === '12_months'
-              ? 'Includes Consistency League entry and Crazy League eligibility (prizes up to ₹5,000).'
-              : 'Includes Consistency League entry. Crazy League prizes need the 12-month plan.'}
-        </p>
-
-        {testMode && (
-          <div style={styles.testBanner}>
-            Development mode — payment will be simulated. No Razorpay charge.
-          </div>
-        )}
-
-        {error && <div style={styles.error}>{error}</div>}
-        {isTrialCheckout && error && /trial|already used|renewal|new customers/i.test(error) && (
-          <div style={styles.todoBox}>
-            <p style={styles.todoTitle}>Upgrade instead</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {COACHING_PLAN_LIST.map((item) => (
-                <Link key={item.slug} href={`/checkout?plan=${item.slug}`} style={styles.validateBtn}>
-                  {item.name} · {item.displayPrice}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-        {attemptedPay && liveMissing.length > 0 && (
-          <div style={styles.todoBox}>
-            <p style={styles.todoTitle}>Finish these to pay</p>
-            <ul style={styles.todoList}>
-              {liveMissing.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {missingItems.length > 0 && error && (
-          <ul style={styles.missingList}>
-            {missingItems.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        )}
-
-        <form onSubmit={handleSubmit} style={styles.form} noValidate>
-          <h2 style={styles.sectionLabel}>Your details</h2>
-
-          <label style={styles.label} htmlFor="checkout-name">Full name</label>
-          <input
-            id="checkout-name"
-            ref={nameRef}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoComplete="name"
-            style={styles.input}
-          />
-
-          <label style={styles.label} htmlFor="checkout-email">Email</label>
-          <input
-            id="checkout-email"
-            ref={emailRef}
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              resetVerification();
-            }}
-            autoComplete="email"
-            style={styles.input}
-          />
-
-          <label style={styles.label} htmlFor="checkout-phone">WhatsApp number</label>
-          <input
-            id="checkout-phone"
-            ref={phoneRef}
-            type="tel"
-            value={phone}
-            onChange={(e) => {
-              setPhone(e.target.value);
-              resetVerification();
-            }}
-            placeholder="+91 98765 43210"
-            autoComplete="tel"
-            style={styles.input}
-          />
-
-          {!testMode && (
-            <div ref={verifyRef} style={styles.otpBox}>
-              <div style={styles.otpHead}>
-                <span style={styles.otpTitle}>Email verification</span>
-                <span
-                  style={{
-                    ...styles.otpStatusPill,
-                    ...(emailVerified ? styles.otpStatusOk : null),
-                  }}
-                >
-                  {emailVerified ? 'Verified' : emailLinkSent ? 'Link sent' : 'Required'}
-                </span>
+            {!isTrialCheckout && (
+              <div style={{ marginTop: 28 }}>
+                <CheckoutTransformationCarousel />
               </div>
-              <p style={styles.otpHint}>
-                We email a secure link — open it on this device, then continue.
-              </p>
-              <div style={styles.otpBtnRow}>
-                <button
-                  type="button"
-                  onClick={() => void sendEmailOtp()}
-                  disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
-                  style={styles.otpBtn}
-                >
-                  {sendingEmailOtp
-                    ? 'Sending…'
-                    : emailVerified
-                      ? 'Verified'
-                      : emailLinkSent
-                        ? 'Resend email'
-                        : 'Send verification email'}
-                </button>
-                {emailLinkSent && !emailVerified && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!verificationId) return;
-                      const res = await fetch(
-                        `/api/payment/verification-status?verificationId=${encodeURIComponent(verificationId)}`
-                      );
-                      const data = await res.json();
-                      if (data.emailVerified) setEmailVerified(true);
-                      else setError('Not verified yet. Open the newest link in your email, then tap this again.');
-                    }}
-                    style={styles.otpBtnSecondary}
-                  >
-                    I’ve opened the link
-                  </button>
-                )}
+            )}
+          </>
+        )}
+
+        {checkoutScreen === 2 && (
+          <>
+            <button
+              type="button"
+              onClick={() => { setCheckoutScreen(1); setError(''); }}
+              style={styles.backToDetails}
+            >
+              ← Edit plan & details
+            </button>
+
+            <section style={{ ...styles.orderSummary, marginBottom: 16 }}>
+              <div style={styles.orderRow}>
+                <div>
+                  <div style={styles.orderPlanName}>{plan.name}</div>
+                  <div style={styles.orderPlanMeta}>{email.trim() || '—'}</div>
+                </div>
+                <div style={styles.orderPriceCol}>
+                  {!isTrialCheckout && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
+                  <span style={styles.orderSummaryPrice}>
+                    {isTrialCheckout ? plan.displayPrice : pricePrimary}
+                  </span>
+                </div>
               </div>
-              {emailDelivery === 'code' && !emailVerified && (
-                <>
-                  <input
-                    value={emailCode}
-                    onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                    placeholder="Code from email"
-                    inputMode="numeric"
-                    style={styles.otpInput}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void verifyEmailOtp()}
-                    disabled={verifyingEmailOtp || emailCode.length < 6 || !verificationId}
-                    style={styles.otpBtn}
-                  >
-                    {verifyingEmailOtp ? 'Checking…' : 'Verify code'}
-                  </button>
-                </>
+            </section>
+
+            {testMode && (
+              <div style={styles.testBanner}>
+                Development mode — payment will be simulated. No Razorpay charge.
+              </div>
+            )}
+
+            {error && <div style={styles.error}>{error}</div>}
+            {isTrialCheckout && error && /trial|already used|renewal|new customers/i.test(error) && (
+              <div style={styles.todoBox}>
+                <p style={styles.todoTitle}>Upgrade instead</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {COACHING_PLAN_LIST.map((item) => (
+                    <Link key={item.slug} href={`/checkout?plan=${item.slug}`} style={styles.validateBtn}>
+                      {item.name} · {item.displayPrice}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            {attemptedPay && liveMissing.length > 0 && (
+              <div style={styles.todoBox}>
+                <p style={styles.todoTitle}>Finish these to pay</p>
+                <ul style={styles.todoList}>
+                  {liveMissing.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {missingItems.length > 0 && error && (
+              <ul style={styles.missingList}>
+                {missingItems.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            )}
+
+            <form id="checkout-pay-form" onSubmit={handleSubmit} style={styles.form} noValidate>
+              {!testMode && (
+                <div ref={verifyRef} style={styles.otpBox}>
+                  <div style={styles.otpHead}>
+                    <span style={styles.otpTitle}>Email verification</span>
+                    <span
+                      style={{
+                        ...styles.otpStatusPill,
+                        ...(emailVerified ? styles.otpStatusOk : null),
+                      }}
+                    >
+                      {emailVerified ? 'Verified' : emailLinkSent ? 'Link sent' : 'Required'}
+                    </span>
+                  </div>
+                  <p style={styles.otpHint}>
+                    We email a secure link — open it on this device, then continue.
+                  </p>
+                  <div style={styles.otpBtnRow}>
+                    <button
+                      type="button"
+                      onClick={() => void sendEmailOtp()}
+                      disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
+                      style={styles.otpBtn}
+                    >
+                      {sendingEmailOtp
+                        ? 'Sending…'
+                        : emailVerified
+                          ? 'Verified'
+                          : emailLinkSent
+                            ? 'Resend email'
+                            : 'Send verification email'}
+                    </button>
+                    {emailLinkSent && !emailVerified && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!verificationId) return;
+                          const res = await fetch(
+                            `/api/payment/verification-status?verificationId=${encodeURIComponent(verificationId)}`
+                          );
+                          const data = await res.json();
+                          if (data.emailVerified) setEmailVerified(true);
+                          else setError('Not verified yet. Open the newest link in your email, then tap this again.');
+                        }}
+                        style={styles.otpBtnSecondary}
+                      >
+                        I’ve opened the link
+                      </button>
+                    )}
+                  </div>
+                  {emailDelivery === 'code' && !emailVerified && (
+                    <>
+                      <input
+                        value={emailCode}
+                        onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                        placeholder="Code from email"
+                        inputMode="numeric"
+                        style={styles.otpInput}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void verifyEmailOtp()}
+                        disabled={verifyingEmailOtp || emailCode.length < 6 || !verificationId}
+                        style={styles.otpBtn}
+                      >
+                        {verifyingEmailOtp ? 'Checking…' : 'Verify code'}
+                      </button>
+                    </>
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          <label
-            ref={policyRef}
-            style={styles.policyRow}
-          >
-            <input
-              type="checkbox"
-              checked={policyAgreementAccepted}
-              onChange={(event) => setPolicyAgreementAccepted(event.target.checked)}
-              aria-describedby="checkout-policy-agreement"
-              style={styles.policyCheck}
-            />
-            <span id="checkout-policy-agreement" style={styles.policyText}>
-              I agree to the{' '}
-              <Link href="/terms" target="_blank" style={styles.inlineLink}>Terms</Link>
-              {' '}and{' '}
-              <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>Refund Policy</Link>.
-              Results guarantee needs documented claims and ≥90% on-time check-ins. Statutory rights still apply.
-            </span>
-          </label>
+              <label
+                ref={policyRef}
+                style={styles.policyRow}
+              >
+                <input
+                  type="checkbox"
+                  checked={policyAgreementAccepted}
+                  onChange={(event) => setPolicyAgreementAccepted(event.target.checked)}
+                  aria-describedby="checkout-policy-agreement"
+                  style={styles.policyCheck}
+                />
+                <span id="checkout-policy-agreement" style={styles.policyText}>
+                  I agree to the{' '}
+                  <Link href="/terms" target="_blank" style={styles.inlineLink}>Terms</Link>
+                  {' '}and{' '}
+                  <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>Refund Policy</Link>.
+                  Results guarantee needs documented claims and ≥90% on-time check-ins. Statutory rights still apply.
+                </span>
+              </label>
 
-          <button type="submit" disabled={loading} style={styles.payBtn}>
-            {loading
-              ? 'Processing…'
-              : `Pay ${payableDisplay}`}
-          </button>
-          <p style={styles.paySecureNote}>
-            Secure checkout via Razorpay · UPI, cards, netbanking · SSL encrypted
-          </p>
-          <p style={styles.paySecureNote}>
-            Results guarantee available with ≥90% on-time check-ins — see{' '}
-            <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>
-              Refund Policy
-            </Link>
-            .
-          </p>
-        </form>
+              <div style={{ height: 88 }} aria-hidden />
+            </form>
 
-        <p style={styles.secure}>
-          After payment you&apos;ll create your login password.
-          {' '}
-          <Link href="/create-account" style={styles.inlineLink}>Already paid?</Link>
-          {' · '}
-          <Link href="/enroll" style={styles.inlineLink}>Enrollment code</Link>
-        </p>
+            <p style={styles.secure}>
+              After payment you&apos;ll create your login password.
+              {' '}
+              <Link href="/create-account" style={styles.inlineLink}>Already paid?</Link>
+              {' · '}
+              <Link href="/enroll" style={styles.inlineLink}>Enrollment code</Link>
+            </p>
+          </>
+        )}
       </div>
+
+      {checkoutScreen === 2 && (
+        <div style={styles.stickyPayBar}>
+          <div style={styles.stickyPayInner}>
+            <div style={styles.stickyPayMeta}>
+              <span style={styles.stickyPayLabel}>Total due</span>
+              <strong style={styles.stickyPayAmount}>{payableDisplay}</strong>
+            </div>
+            <button
+              type="submit"
+              form="checkout-pay-form"
+              disabled={loading}
+              style={styles.stickyPayBtn}
+            >
+              {loading ? 'Processing…' : `Pay ${payableDisplay}`}
+            </button>
+          </div>
+          <p style={styles.stickyPayNote}>Secure checkout via Razorpay · SSL encrypted</p>
+        </div>
+      )}
 
       {!testMode && (
         <Script
@@ -986,6 +1050,91 @@ const styles: Record<string, CSSProperties> = {
     padding: `${spacing[5]}px ${spacing[2]}px ${spacing[7]}px`,
     overflowX: 'hidden',
     boxSizing: 'border-box',
+  },
+  pageWithSticky: {
+    paddingBottom: 120,
+  },
+  screenDots: {
+    display: 'flex',
+    gap: 8,
+    marginBottom: 20,
+  },
+  screenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: colors.borderSubtle,
+  },
+  screenDotActive: {
+    backgroundColor: colors.accent,
+    width: 22,
+  },
+  backToDetails: {
+    background: 'none',
+    border: 'none',
+    color: colors.textMuted,
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    padding: '0 0 16px',
+    minHeight: 36,
+  },
+  stickyPayBar: {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
+    padding: `10px ${spacing[2]}px calc(10px + env(safe-area-inset-bottom))`,
+    backgroundColor: 'rgba(9,9,11,0.92)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    borderTop: `1px solid ${colors.borderSubtle}`,
+  },
+  stickyPayInner: {
+    maxWidth: 480,
+    margin: '0 auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stickyPayMeta: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+    flex: 1,
+  },
+  stickyPayLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: colors.textMuted,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase' as const,
+  },
+  stickyPayAmount: {
+    fontSize: 18,
+    fontWeight: 800,
+    color: colors.textPrimary,
+  },
+  stickyPayBtn: {
+    flex: '1 1 auto',
+    maxWidth: 220,
+    padding: '14px 18px',
+    backgroundColor: colors.accent,
+    color: colors.textInverse,
+    border: 'none',
+    borderRadius: radius.sm,
+    fontWeight: 800,
+    fontSize: 15,
+    cursor: 'pointer',
+    minHeight: 52,
+  },
+  stickyPayNote: {
+    maxWidth: 480,
+    margin: '6px auto 0',
+    fontSize: 11,
+    color: colors.textMuted,
+    textAlign: 'center' as const,
   },
   card: {
     width: '100%',

@@ -10,7 +10,7 @@ type OnboardingReviewProps = {
   onTermsChange: (accepted: boolean) => void
 }
 
-const SECTION_EDIT_STEPS = [0, 2, 4, 7, 11, 13, 17, 20, 21] as const
+const SECTION_EDIT_STEPS = [0, 2, 7, 11, 13, 19, 21] as const
 
 export function OnboardingReview({
   form,

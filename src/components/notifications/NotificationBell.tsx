@@ -1,10 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import type { UserNotification } from '@/types/database'
-import { colors, radius } from '@/lib/design-tokens'
+import { colors, coachColors, radius } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
 import { safeInternalPathOrNull } from '@/lib/safe-navigation'
@@ -12,7 +12,15 @@ import { createClient } from '@/lib/supabase/client'
 import { useSupabaseRealtimeRefresh } from '@/hooks/useSupabaseRealtime'
 import { canUseWebPush, enableWebPush } from '@/lib/notifications/web-push-client'
 
-export function NotificationBell() {
+type NotificationBellProps = {
+  /** Coach portal uses light chrome; client/admin stay dark. */
+  theme?: 'dark' | 'light'
+}
+
+export function NotificationBell({ theme = 'dark' }: NotificationBellProps) {
+  const palette = theme === 'light' ? coachColors : colors
+  const styles = useMemo(() => bellStyles(palette, theme), [palette, theme])
+
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<UserNotification[]>([])
   const [open, setOpen] = useState(false)
@@ -115,7 +123,7 @@ export function NotificationBell() {
         style={styles.bell}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
-        <Bell size={22} color={colors.textSecondary} />
+        <Bell size={22} color={palette.textSecondary} />
         {unreadCount > 0 && (
           <span className={badgePop ? motionClass.badgePop : ''} style={styles.badge}>
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -126,7 +134,7 @@ export function NotificationBell() {
       {open && (
         <div className={motionClass.dropdownEnter} style={styles.dropdown}>
           <div style={styles.header}>
-            <span style={{ fontWeight: 600, color: colors.textPrimary }}>Notifications</span>
+            <span style={{ fontWeight: 600, color: palette.textPrimary }}>Notifications</span>
             {showPushEnable ? (
               <button
                 type="button"
@@ -186,18 +194,87 @@ function formatTime(date: string): string {
   return d.toLocaleDateString()
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  bell: { position: 'relative', background: 'none', border: 'none', cursor: 'pointer', minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
-  badge: { position: 'absolute', top: 4, right: 4, backgroundColor: colors.accent, color: colors.textInverse, fontSize: 10, fontWeight: 700, borderRadius: 10, minWidth: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' },
-  dropdown: { position: 'absolute', top: '100%', right: 0, width: 320, maxWidth: '90vw', backgroundColor: colors.bgCard, borderRadius: radius.md, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 200, marginTop: 8, overflow: 'hidden', border: `1px solid ${colors.borderSubtle}` },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${colors.divider}` },
-  markAll: { background: 'none', border: 'none', color: colors.accent, fontSize: 13, cursor: 'pointer', fontWeight: 600 },
-  list: { maxHeight: 400, overflowY: 'auto' },
-  empty: { padding: 24, textAlign: 'center', color: colors.textMuted, fontSize: 14 },
-  item: { padding: '12px 16px', borderBottom: `1px solid ${colors.divider}`, cursor: 'pointer' },
-  unread: { backgroundColor: colors.accentMuted },
-  itemLink: { textDecoration: 'none', color: 'inherit', display: 'block' },
-  itemTitle: { fontWeight: 600, fontSize: 14, color: colors.textPrimary, marginBottom: 2 },
-  itemBody: { fontSize: 13, color: colors.textSecondary, lineHeight: 1.4 },
-  itemTime: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
+function bellStyles(
+  palette: typeof colors | typeof coachColors,
+  theme: 'dark' | 'light'
+): Record<string, React.CSSProperties> {
+  return {
+    bell: {
+      position: 'relative',
+      background: 'none',
+      border: 'none',
+      cursor: 'pointer',
+      minWidth: 44,
+      minHeight: 44,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.sm,
+    },
+    badge: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      backgroundColor: palette.accent,
+      color: palette.textInverse,
+      fontSize: 10,
+      fontWeight: 700,
+      borderRadius: 10,
+      minWidth: 18,
+      height: 18,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '0 4px',
+    },
+    dropdown: {
+      position: 'absolute',
+      top: '100%',
+      right: 0,
+      width: 320,
+      maxWidth: '90vw',
+      backgroundColor: palette.bgCard,
+      borderRadius: radius.md,
+      boxShadow:
+        theme === 'light'
+          ? '0 8px 28px rgba(24,24,27,0.14)'
+          : '0 8px 32px rgba(0,0,0,0.5)',
+      zIndex: 200,
+      marginTop: 8,
+      overflow: 'hidden',
+      border: `1px solid ${palette.borderSubtle}`,
+    },
+    header: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '12px 16px',
+      borderBottom: `1px solid ${palette.divider}`,
+    },
+    markAll: {
+      background: 'none',
+      border: 'none',
+      color: palette.accent,
+      fontSize: 13,
+      cursor: 'pointer',
+      fontWeight: 600,
+    },
+    list: { maxHeight: 400, overflowY: 'auto' },
+    empty: { padding: 24, textAlign: 'center', color: palette.textMuted, fontSize: 14 },
+    item: {
+      padding: '12px 16px',
+      borderBottom: `1px solid ${palette.divider}`,
+      cursor: 'pointer',
+    },
+    unread: { backgroundColor: palette.accentMuted },
+    itemLink: { textDecoration: 'none', color: 'inherit', display: 'block' },
+    itemTitle: {
+      fontWeight: 600,
+      fontSize: 14,
+      color: palette.textPrimary,
+      marginBottom: 2,
+    },
+    itemBody: { fontSize: 13, color: palette.textSecondary, lineHeight: 1.4 },
+    itemTime: { fontSize: 11, color: palette.textMuted, marginTop: 4 },
+  }
 }

@@ -375,40 +375,43 @@ export default function CoachCheckinDetailPage() {
           </section>
         )}
 
-        <section style={styles.card}>
-          <h2 style={styles.cardTitle}>Coach review</h2>
-          {checkin.reviewed && (
-            <p style={styles.reviewedBadge}>Reviewed {formatCheckinDate(checkin.reviewed_at)}</p>
-          )}
-          <form onSubmit={handleSubmitReview}>
-            <div style={styles.field}>
-              <label style={styles.label}>Feedback *</label>
-              <textarea
-                value={response.feedback}
-                onChange={(e) => setResponse({ ...response, feedback: e.target.value })}
-                rows={4}
-                style={styles.textarea}
-                placeholder="Overall feedback for the client..."
-                required
-              />
-            </div>
-            <div style={styles.field}>
-              <label style={styles.label}>Action items</label>
-              <textarea
-                value={response.action_items}
-                onChange={(e) => setResponse({ ...response, action_items: e.target.value })}
-                rows={3}
-                style={styles.textarea}
-                placeholder="Specific changes for next week..."
-              />
-            </div>
-            {!checkin.reviewed && (
-              <button type="submit" disabled={submitting} style={styles.submitBtn}>
-                {submitting ? 'Saving...' : 'Mark as reviewed'}
-              </button>
+        {/* Mid-week: only MidWeekAnalysisPanel sends (avoids duplicate Mark as reviewed). */}
+        {isWeekly && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Coach review</h2>
+            {checkin.reviewed && (
+              <p style={styles.reviewedBadge}>Reviewed {formatCheckinDate(checkin.reviewed_at)}</p>
             )}
-          </form>
-        </section>
+            <form onSubmit={handleSubmitReview}>
+              <div style={styles.field}>
+                <label style={styles.label}>Feedback *</label>
+                <textarea
+                  value={response.feedback}
+                  onChange={(e) => setResponse({ ...response, feedback: e.target.value })}
+                  rows={4}
+                  style={styles.textarea}
+                  placeholder="Overall feedback for the client..."
+                  required
+                />
+              </div>
+              <div style={styles.field}>
+                <label style={styles.label}>Action items</label>
+                <textarea
+                  value={response.action_items}
+                  onChange={(e) => setResponse({ ...response, action_items: e.target.value })}
+                  rows={3}
+                  style={styles.textarea}
+                  placeholder="Specific changes for next week..."
+                />
+              </div>
+              {!checkin.reviewed && (
+                <button type="submit" disabled={submitting} style={styles.submitBtn}>
+                  {submitting ? 'Saving...' : 'Mark as reviewed'}
+                </button>
+              )}
+            </form>
+          </section>
+        )}
       {gallery ? (
         <PhotoGalleryViewer
           photos={gallery.photos}

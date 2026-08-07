@@ -26,8 +26,10 @@ import {
   formFromProfile,
   formatMealTime24,
   GENDER_OPTIONS,
+  getOnboardingWizardSteps,
   getResumeStep,
   getSectionForStep,
+  getWizardIndexForStep,
   GOAL_DEADLINE_OPTIONS,
   HAIR_LOSS_OPTIONS,
   INITIAL_ONBOARDING_FORM,
@@ -35,7 +37,6 @@ import {
   markOnboardingJustCompleted,
   MEAL_TIMING_OPTIONS,
   OCCUPATION_OPTIONS,
-  ONBOARDING_SCREEN_COUNT,
   ONBOARDING_SECTIONS,
   PAIN_OPTIONS,
   PROTEIN_DAYS_OPTIONS,
@@ -343,7 +344,20 @@ export default function OnboardingPage() {
       return
     }
     setError('')
-    const nextStep = Math.min(step + 1, ONBOARDING_SCREEN_COUNT - 1)
+    const wizardSteps = getOnboardingWizardSteps(form)
+    let wizardIndex = wizardSteps.indexOf(step)
+    if (wizardIndex < 0) {
+      // Left the day-1 path (e.g. review edit) — rejoin at the next must-have screen.
+      const rejoined = wizardSteps.find((s) => s > step) ?? wizardSteps[wizardSteps.length - 1] ?? 22
+      try {
+        await persistProgress(rejoined)
+        setStep(rejoined)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to save progress')
+      }
+      return
+    }
+    const nextStep = wizardSteps[Math.min(wizardIndex + 1, wizardSteps.length - 1)] ?? step
     try {
       await persistProgress(nextStep)
       setStep(nextStep)
@@ -354,7 +368,15 @@ export default function OnboardingPage() {
 
   const handleBack = () => {
     setError('')
-    setStep((current) => Math.max(current - 1, 0))
+    const wizardSteps = getOnboardingWizardSteps(form)
+    const wizardIndex = wizardSteps.indexOf(step)
+    if (wizardIndex < 0) {
+      const prev = [...wizardSteps].reverse().find((s) => s < step) ?? wizardSteps[0] ?? 0
+      setStep(prev)
+      return
+    }
+    const prevStep = wizardSteps[Math.max(wizardIndex - 1, 0)] ?? 0
+    setStep(prevStep)
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -377,7 +399,7 @@ export default function OnboardingPage() {
     try {
       // Persist the final answers first, but let the authenticated server route
       // own the completion flags and generation queue transition.
-      await persistProgress(ONBOARDING_SCREEN_COUNT - 1)
+      await persistProgress(22)
       const generationResponse = await fetch('/api/onboarding/complete-generation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -413,7 +435,11 @@ export default function OnboardingPage() {
     return <div style={s.loading}>Loading your coaching intake...</div>
   }
 
-  const progress = ((step + 1) / ONBOARDING_SCREEN_COUNT) * 100
+  const wizardSteps = getOnboardingWizardSteps(form)
+  const wizardIndex = getWizardIndexForStep(step, wizardSteps)
+  const wizardCount = wizardSteps.length
+  const isLastWizardStep = step === 22 || wizardIndex >= wizardCount - 1
+  const progress = ((wizardIndex + 1) / wizardCount) * 100
   const currentSection = getSectionForStep(step)
   const photoUploadInFlight =
     uploadingPhotos.front || uploadingPhotos.side || uploadingPhotos.back
@@ -432,7 +458,7 @@ export default function OnboardingPage() {
 
         <div style={s.progressMeta}>
           <span>
-            Step {step + 1} of {ONBOARDING_SCREEN_COUNT} · {currentSection}
+            Step {wizardIndex + 1} of {wizardCount} · {currentSection}
           </span>
           {(saving || savedAt) && (
             <span style={s.saved}>{saving ? 'Saving…' : savedAt ? `Saved ${savedAt}` : ''}</span>
@@ -464,7 +490,7 @@ export default function OnboardingPage() {
         <form
           id="onboarding-form"
           style={{ marginTop: 24 }}
-          onSubmit={step === ONBOARDING_SCREEN_COUNT - 1 ? handleSubmit : (ev) => { ev.preventDefault(); void handleNext() }}
+          onSubmit={isLastWizardStep ? handleSubmit : (ev) => { ev.preventDefault(); void handleNext() }}
         >
           {renderStep(
             step,
@@ -491,12 +517,12 @@ export default function OnboardingPage() {
 
       <div style={s.fixedActions}>
         <div style={s.actionsInner}>
-          {step > 0 && (
+          {wizardIndex > 0 && (
             <button type="button" onClick={handleBack} style={s.backBtn} disabled={busy}>
               Back
             </button>
           )}
-          {step < ONBOARDING_SCREEN_COUNT - 1 ? (
+          {!isLastWizardStep ? (
             <button
               type="submit"
               form="onboarding-form"

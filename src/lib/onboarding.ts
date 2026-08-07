@@ -8,6 +8,7 @@ import {
   isOnboardingComplete,
   redirectToLogin,
   restoreSession,
+  seedAuthenticatedClientSession,
 } from '@/lib/session-restore'
 import { shouldBypassPaymentGuardClient } from '@/lib/dev-mode'
 import { getClientPaymentGatePath, hasClientEntitlement } from '@/lib/entitlements'
@@ -31,15 +32,51 @@ export const ONBOARDING_PHOTO_BUCKET = 'onboarding-photos'
 
 export const ONBOARDING_SCREEN_COUNT = 23
 
+/**
+ * Day-1 wizard content steps (must-haves for coaching).
+ * Lifestyle / recovery / free-text eating / supplements are deferred —
+ * coaches can collect later; plan gen accepts nulls for those fields.
+ * Equipment (9) is inserted only when training at home.
+ */
+export const ONBOARDING_DAY1_CORE_STEPS = [
+  0, // Basic info
+  1, // About you
+  2, // Goals
+  7, // Training setup
+  8, // Training schedule
+  11, // Medical background
+  13, // Diet type
+  14, // Protein sources
+  19, // Meal timings
+  21, // Progress photos
+  22, // Review / terms
+] as const
+
+export function getOnboardingWizardSteps(
+  form: Pick<OnboardingFormData, 'training_location'>
+): number[] {
+  const steps: number[] = [...ONBOARDING_DAY1_CORE_STEPS]
+  const needsGear =
+    form.training_location === 'home' || form.training_location === 'both'
+  if (needsGear) {
+    const scheduleIdx = steps.indexOf(8)
+    steps.splice(scheduleIdx + 1, 0, 9)
+  }
+  return steps
+}
+
+export function getWizardIndexForStep(step: number, wizardSteps: number[]): number {
+  const idx = wizardSteps.indexOf(step)
+  return idx >= 0 ? idx : 0
+}
+
 export const ONBOARDING_SECTIONS = [
   'Basic',
   'Goals',
-  'Lifestyle',
   'Training',
   'Medical',
   'Diet',
   'Eating',
-  'Supplements',
   'Photos',
   'Review',
 ] as const
@@ -570,7 +607,7 @@ export function getResumeStep(
   )
   const requireNewFields =
     options?.requireBodyMeasurements ?? shouldRequireOnboardingBodyMeasurements(profile)
-  for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
+  for (const step of getOnboardingWizardSteps(form)) {
     const error = validateOnboardingStep(step, form, undefined, photoUrls, mealTimingContext, {
       requireBodyMeasurements: requireNewFields,
       requireWorkSchoolSchedule: requireNewFields,
@@ -583,7 +620,11 @@ export function getResumeStep(
 
   const step = profile.onboarding_data?.resumeStep
   if (typeof step === 'number' && step >= 0 && step < ONBOARDING_SCREEN_COUNT) {
-    return step
+    const wizard = getOnboardingWizardSteps(form)
+    if (wizard.includes(step)) return step
+    // Snap deferred resume points onto the next day-1 wizard screen.
+    const next = wizard.find((s) => s >= step)
+    return next ?? wizard[wizard.length - 1] ?? 0
   }
   return 0
 }
@@ -1047,12 +1088,10 @@ export function validateOnboardingStep(
 export function getSectionForStep(step: number): (typeof ONBOARDING_SECTIONS)[number] {
   if (step <= 1) return 'Basic'
   if (step <= 3) return 'Goals'
-  if (step <= 6) return 'Lifestyle'
   if (step <= 10) return 'Training'
   if (step <= 12) return 'Medical'
   if (step <= 16) return 'Diet'
   if (step <= 19) return 'Eating'
-  if (step === 20) return 'Supplements'
   if (step === 21) return 'Photos'
   return 'Review'
 }
@@ -1097,27 +1136,6 @@ export function buildReviewSections(
               ? formatSelectedGoals(form.selected_goals)
               : getOnboardingLabel('fitness_goal', form.fitness_goal),
         },
-        { label: 'Deadline', value: getOnboardingLabel('goal_deadline', form.goal_deadline) },
-        { label: 'Biggest struggle', value: formatStruggle(form.biggest_struggle) },
-      ],
-    },
-    {
-      title: 'Lifestyle',
-      items: [
-        { label: 'Occupation', value: getOnboardingLabel('occupation', form.occupation) },
-        {
-          label: 'Work / school schedule',
-          value: form.work_school_schedule.trim() || 'Not set',
-        },
-        { label: 'Activity level', value: getOnboardingLabel('activity_level', form.activity_level) },
-        { label: 'Daily steps', value: getOnboardingLabel('daily_steps', form.daily_steps) },
-        { label: 'Sleep', value: getOnboardingLabel('sleep_duration', form.sleep_duration) },
-        { label: 'Stress', value: getOnboardingLabel('stress_level', form.stress_level) },
-        { label: 'Water intake', value: getOnboardingLabel('water_intake', form.water_intake) },
-        {
-          label: 'Food + training push',
-          value: getOnboardingLabel('flux_capacity', form.flux_capacity),
-        },
       ],
     },
     {
@@ -1133,8 +1151,6 @@ export function buildReviewSections(
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
         { label: 'Equipment', value: equipment },
-        { label: 'Favourite exercises', value: form.favorite_exercises || 'None specified' },
-        { label: 'Exercises disliked', value: form.exercises_disliked || 'None specified' },
       ],
     },
     {
@@ -1145,8 +1161,6 @@ export function buildReviewSections(
         { label: 'Acne', value: ACNE_OPTIONS.find((o) => o.value === form.acne_status)?.label ?? 'Not set' },
         { label: 'Hair loss', value: HAIR_LOSS_OPTIONS.find((o) => o.value === form.hair_loss_status)?.label ?? 'Not set' },
         { label: 'Sexual health', value: SEXUAL_HEALTH_OPTIONS.find((o) => o.value === form.sexual_health_status)?.label ?? 'Not set' },
-        { label: 'Pain during exercise', value: form.pain_during_exercise === 'none' ? 'No' : form.pain_during_exercise === 'yes' ? 'Yes' : 'Not set' },
-        { label: 'Medications', value: form.medications || 'None' },
       ],
     },
     {
@@ -1161,34 +1175,16 @@ export function buildReviewSections(
         { label: 'Fish days/week', value: form.fish_days || 'N/A' },
         { label: 'Fish days', value: formatProteinWeekdays(form.fish_allowed_days) },
         { label: 'Whey protein', value: getOnboardingLabel('whey_protein', form.whey_protein) },
-        { label: 'Allergies', value: form.food_allergies || 'None' },
-        { label: 'Foods disliked', value: form.foods_disliked || 'None' },
-        {
-          label: 'Previous diets that failed',
-          value: form.previous_diets_failed.trim() || 'None',
-        },
-        { label: 'Favourite foods', value: form.favorite_foods || 'None' },
-        { label: 'Diet exceptions', value: form.diet_custom_notes || 'None' },
-        { label: 'Monthly budget', value: form.monthly_food_budget || 'Not set' },
-        { label: 'Cooking ability', value: getOnboardingLabel('cooking_ability', form.cooking_ability) },
       ],
     },
     {
-      title: 'Current Eating Pattern',
+      title: 'Meal timings',
       items: [
-        { label: 'Breakfast', value: form.breakfast },
-        { label: 'Lunch', value: form.lunch },
-        { label: 'Dinner', value: form.dinner },
-        { label: 'Snacks', value: form.snacks },
         { label: 'Breakfast time', value: formatMealTime24(form.timing_breakfast) },
         { label: 'Lunch time', value: formatMealTime24(form.timing_lunch) },
         { label: 'Dinner time', value: formatMealTime24(form.timing_dinner) },
         { label: 'Snack time', value: formatMealTime24(form.timing_snacks) },
       ],
-    },
-    {
-      title: 'Supplements',
-      items: [{ label: 'Current supplements', value: form.current_supplements }],
     },
     {
       title: 'Progress Photos',
@@ -1305,7 +1301,7 @@ export function findFirstIncompleteOnboardingStep(
   }
 ): { step: number; error: string } | null {
   const meals = mealTimingContext ?? mealTimingContextFromForm(form)
-  for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
+  for (const step of getOnboardingWizardSteps(form)) {
     const error = validateOnboardingStep(step, form, undefined, photoUrls, meals, options)
     if (error) return { step, error }
   }
@@ -1340,7 +1336,7 @@ export function validateOnboardingAnswersForProfile(
   const requireFluxCapacity = options?.requireFluxCapacity ?? requireNewFields
   const requireDietVariety = options?.requireDietVariety ?? requireNewFields
 
-  for (let step = 0; step < ONBOARDING_SCREEN_COUNT; step += 1) {
+  for (const step of getOnboardingWizardSteps(form)) {
     const error = validateOnboardingStep(step, form, undefined, photoUrls, meals, {
       requireBodyMeasurements,
       requireWorkSchoolSchedule,
@@ -1508,11 +1504,13 @@ export async function authenticateClient(
         delayMs: 300,
       })
       if (confirmed) {
+        seedAuthenticatedClientSession(user, confirmed)
         return { user, profile: confirmed }
       }
     } else {
       const { profile: refreshed } = await fetchClientProfile(supabase, user.id)
       if (refreshed && isOnboardingComplete(refreshed)) {
+        seedAuthenticatedClientSession(user, refreshed)
         return { user, profile: refreshed }
       }
     }

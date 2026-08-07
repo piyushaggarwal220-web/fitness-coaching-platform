@@ -156,9 +156,9 @@ export function MidWeekAnalysisPanel({
     <div>
       <div style={styles.headerRow}>
         <div>
-          <h2 style={styles.title}>Ready to send reply (AI)</h2>
+          <h2 style={styles.title}>Send mid-week reply</h2>
           <p style={styles.subtitle}>
-            Written in your voice for this client. Uses AI credits. Edit before sending if needed.
+            Short WhatsApp style reply (about 30 to 40 words). Edit if you want, then send — this marks the check-in reviewed.
           </p>
         </div>
         <button
@@ -177,7 +177,7 @@ export function MidWeekAnalysisPanel({
       {error && <p style={styles.error}>{error}</p>}
       {sendSuccess && <p style={styles.success}>{sendSuccess}</p>}
 
-      <label style={styles.label}>Message to client</label>
+      <label style={styles.label}>Message to client (send as you)</label>
       <textarea
         value={clientReply}
         onChange={(e) => setClientReply(e.target.value)}
@@ -198,7 +198,7 @@ export function MidWeekAnalysisPanel({
             {sending ? 'Sending…' : 'Send to client now'}
           </button>
         )}
-        {reviewed && <span style={styles.reviewedNote}>Already reviewed</span>}
+        {reviewed && <span style={styles.reviewedNote}>Already sent</span>}
       </div>
 
       {summary && (
