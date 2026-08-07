@@ -8,12 +8,33 @@ import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-act
 import { encodePlanMeta } from '@/lib/plan-metadata'
 import { persistAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { OnboardingProfile, Plan } from '@/types/database'
+import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
 
 export const PLAN_CHANGE_DAILY_LIMIT = 1
 export const PLAN_CHANGE_MONTHLY_LIMIT = 5
 export const PLAN_CHANGE_MIN_CHARS = 10
 export const PLAN_CHANGE_MAX_CHARS = 4000
+
+/** Word-overlap similarity; near 1.0 means the model barely changed the plan. */
+export function planTextSimilarity(a: string, b: string): number {
+  const tokenize = (s: string) =>
+    new Set(
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length > 2)
+    )
+  const wa = tokenize(a)
+  const wb = tokenize(b)
+  if (wa.size === 0 && wb.size === 0) return 1
+  if (wa.size === 0 || wb.size === 0) return 0
+  let inter = 0
+  for (const w of wa) if (wb.has(w)) inter += 1
+  return inter / Math.max(wa.size, wb.size)
+}
+
+const NEAR_COPY_SIMILARITY = 0.93
 
 export type PlanChangeScope = 'diet' | 'workout' | 'both'
 
@@ -199,7 +220,7 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
   if (request.status !== 'generating') return
 
   try {
-    const [{ data: profile }, { data: activePlan }] = await Promise.all([
+    const [{ data: profile }, { data: activePlan }, { data: latestCheckin }] = await Promise.all([
       admin.from('profiles').select('*').eq('id', request.client_id).single(),
       request.active_plan_id
         ? admin.from('plans').select('*').eq('id', request.active_plan_id).maybeSingle()
@@ -211,17 +232,36 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
             .order('updated_at', { ascending: false })
             .limit(1)
             .maybeSingle(),
+      admin
+        .from('checkins')
+        .select('*')
+        .eq('client_id', request.client_id)
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ])
 
     if (!profile) throw new Error('Client profile not found')
     const active = (activePlan as Plan | null) ?? null
     if (!active) throw new Error('No active plan to edit')
+    const checkin = (latestCheckin as Checkin | null) ?? null
 
     const clientInstructions = [
-      'CLIENT LOCKED-IN CHANGE REQUEST (must address every point):',
+      'CLIENT LOCKED-IN CHANGE REQUEST (must address every point with VISIBLE edits):',
       request.request_text,
       '',
-      'Keep hard constraints from onboarding. Produce a full updated section for coach review — do not auto-publish.',
+      'Hard rules for this generation:',
+      '- Do not return a near-copy of the current plan.',
+      '- Every bullet in the request must map to a concrete meal, macro, exercise, volume, or schedule change.',
+      '- Opening lines of the section must name what changed vs the previous plan and why.',
+      '- Keep hard constraints from onboarding.',
+      '- Produce a full updated section for coach review — do not auto-publish.',
+    ].join('\n')
+
+    const retryDiffInstructions = [
+      'RETRY — previous draft was too similar to the current plan.',
+      'Rewrite with clear, coach-obvious differences that satisfy the client request.',
+      'Change meal compositions / exercise selections / sets-reps / calories as needed — do not paraphrase the same plan.',
     ].join('\n')
 
     let dietForm = {
@@ -240,13 +280,17 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
     }
 
     if (request.scope === 'diet' || request.scope === 'both') {
-      const dietResult = await generatePlan({
+      let dietResult = await generatePlan({
         profile: profile as OnboardingProfile,
+        latestCheckin: checkin,
         actionId: 'review_update_diet',
         activePlan: active,
         validationMode: 'nutrition_focus',
         coachInstructions: [
-          buildActionCoachInstructions('review_update_diet', { activePlan: active }),
+          buildActionCoachInstructions('review_update_diet', {
+            activePlan: active,
+            checkin,
+          }),
           clientInstructions,
         ].join('\n\n'),
       })
@@ -255,6 +299,33 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
         client_id: request.client_id,
         title: `AI Draft · Client request`,
       }
+
+      const priorNutrition = active.nutrition_plan?.trim() || ''
+      if (
+        priorNutrition &&
+        planTextSimilarity(priorNutrition, dietForm.nutrition_plan) >= NEAR_COPY_SIMILARITY
+      ) {
+        dietResult = await generatePlan({
+          profile: profile as OnboardingProfile,
+          latestCheckin: checkin,
+          actionId: 'review_update_diet',
+          activePlan: active,
+          validationMode: 'nutrition_focus',
+          coachInstructions: [
+            buildActionCoachInstructions('review_update_diet', {
+              activePlan: active,
+              checkin,
+            }),
+            clientInstructions,
+            retryDiffInstructions,
+          ].join('\n\n'),
+        })
+        dietForm = {
+          ...generatedDietFormData(dietResult.generatedPlan, request.client_id),
+          client_id: request.client_id,
+          title: `AI Draft · Client request`,
+        }
+      }
     }
 
     if (request.scope === 'workout' || request.scope === 'both') {
@@ -262,18 +333,46 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
         request.scope === 'both'
           ? buildUpdatedDietContext(active, dietForm.nutrition_plan)
           : active
-      const workoutResult = await generatePlan({
+      let workoutResult = await generatePlan({
         profile: profile as OnboardingProfile,
+        latestCheckin: checkin,
         actionId: 'review_update_workout',
         activePlan: active,
         updatedDietPlan: updatedDietContext,
         validationMode: 'workout_focus',
         coachInstructions: [
-          buildActionCoachInstructions('review_update_workout', { activePlan: active }),
+          buildActionCoachInstructions('review_update_workout', {
+            activePlan: active,
+            checkin,
+          }),
           clientInstructions,
         ].join('\n\n'),
       })
       workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, request.client_id)
+
+      const priorWorkout = active.workout_plan?.trim() || ''
+      if (
+        priorWorkout &&
+        planTextSimilarity(priorWorkout, workoutForm.workout_plan) >= NEAR_COPY_SIMILARITY
+      ) {
+        workoutResult = await generatePlan({
+          profile: profile as OnboardingProfile,
+          latestCheckin: checkin,
+          actionId: 'review_update_workout',
+          activePlan: active,
+          updatedDietPlan: updatedDietContext,
+          validationMode: 'workout_focus',
+          coachInstructions: [
+            buildActionCoachInstructions('review_update_workout', {
+              activePlan: active,
+              checkin,
+            }),
+            clientInstructions,
+            retryDiffInstructions,
+          ].join('\n\n'),
+        })
+        workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, request.client_id)
+      }
     }
 
     const merged = mergePlanForms(

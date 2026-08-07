@@ -107,7 +107,12 @@ export function MidWeekAnalysisPanel({ checkinId }: MidWeekAnalysisPanelProps) {
   return (
     <div>
       <div style={styles.headerRow}>
-        <h2 style={styles.title}>AI mid-week summary</h2>
+        <div>
+          <h2 style={styles.title}>Coach briefing (AI)</h2>
+          <p style={styles.subtitle}>
+            Skim this first — then use the raw scores below. Uses AI credits.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => void regenerate()}
@@ -129,7 +134,7 @@ export function MidWeekAnalysisPanel({ checkinId }: MidWeekAnalysisPanelProps) {
 const styles: Record<string, CSSProperties> = {
   headerRow: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
     marginBottom: 12,
@@ -140,6 +145,12 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 700,
     color: colors.textPrimary,
   },
+  subtitle: {
+    margin: '4px 0 0',
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 1.4,
+  },
   refreshBtn: {
     border: `1px solid ${colors.borderSubtle}`,
     background: colors.bgCard,
@@ -148,6 +159,7 @@ const styles: Record<string, CSSProperties> = {
     padding: '6px 10px',
     fontSize: 12,
     cursor: 'pointer',
+    flexShrink: 0,
   },
   muted: {
     margin: 0,
@@ -170,5 +182,6 @@ const styles: Record<string, CSSProperties> = {
     background: colors.bgSecondary,
     borderRadius: 10,
     padding: 14,
+    borderLeft: `3px solid ${colors.accent}`,
   },
 }

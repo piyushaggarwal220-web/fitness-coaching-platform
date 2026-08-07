@@ -122,12 +122,26 @@ function checkinContext(checkin: Checkin): string {
   return [
     'Latest check-in context:',
     `Weight: ${checkin.weight ?? '—'} kg`,
-    `Waist: ${checkin.waist ?? '—'} cm`,
+    `Waist / navel: ${checkin.navel ?? checkin.waist ?? '—'} cm`,
+    `Diet adherence: ${checkin.diet_adherence ?? checkin.adherence_score ?? '—'}/10`,
+    `Workout adherence: ${checkin.workout_adherence ?? checkin.training_performance ?? '—'}/10`,
     `Energy: ${checkin.energy_level ?? '—'}/10`,
+    `Sleep: ${checkin.sleep_quality ?? '—'}/10`,
+    `Stress: ${checkin.stress_level ?? '—'}/10`,
     `Hunger: ${checkin.hunger_level ?? '—'}/10`,
-    `Training performance: ${checkin.training_performance ?? '—'}/10`,
-    `Adherence: ${checkin.adherence_score ?? '—'}/10`,
-    checkin.notes ? `Client notes: ${checkin.notes}` : null,
+    `Motivation: ${checkin.motivation_level ?? '—'}/10`,
+    `Progress rating: ${checkin.progress_rating ?? '—'}/10`,
+    checkin.progress_notes?.trim() ? `Progress notes: ${checkin.progress_notes.trim()}` : null,
+    checkin.adherence_wins?.trim() ? `Wins: ${checkin.adherence_wins.trim()}` : null,
+    checkin.adherence_struggles?.trim()
+      ? `Struggles: ${checkin.adherence_struggles.trim()}`
+      : null,
+    checkin.pain_injuries?.trim() ? `Pain/injuries: ${checkin.pain_injuries.trim()}` : null,
+    checkin.questions_for_coach?.trim()
+      ? `Questions: ${checkin.questions_for_coach.trim()}`
+      : null,
+    checkin.digestion?.trim() ? `Digestion: ${checkin.digestion.trim()}` : null,
+    checkin.notes?.trim() ? `Additional notes: ${checkin.notes.trim()}` : null,
   ]
     .filter(Boolean)
     .join('\n')
@@ -205,6 +219,9 @@ export function buildActionCoachInstructions(
           'Update the diet plan based on the latest check-in.',
           checkin ? checkinContext(checkin) : '',
           planContext(activePlan ?? null, ['nutrition']),
+          'CRITICAL: Address every client request, struggle, question, and check-in flag with concrete meal/macro changes.',
+          'Do NOT return a near-copy of the current diet. State what changed and why in the opening lines, then deliver a full 7-day plan that reflects those changes.',
+          'If the client asked to swap foods, change portions, simplify meals, or fix hunger/adherence — those edits must be visible in the meal lists.',
           'Adjust nutrition_plan only.',
           'Always specify exact ghee/oil/butter amounts for cooked meals and a daily cooking-fat total.',
           'Obey the client meal-variety preference (same daily / 50-50 / different daily).',
@@ -221,6 +238,9 @@ export function buildActionCoachInstructions(
           'Update the workout plan based on the latest check-in and Training Mesocycle context.',
           checkin ? checkinContext(checkin) : '',
           planContext(activePlan ?? null, ['workout']),
+          'CRITICAL: Address every client request, struggle, pain note, and check-in flag with concrete exercise/volume/split changes.',
+          'Do NOT return a near-copy of the current workout. Opening lines must name what changed; day lists must show the edits.',
+          'If the client asked for easier/harder sessions, different exercises, home vs gym, or injury workarounds — those must appear in the days.',
           'Obey mesocycle rules: week 1 of a month = NEW unique split + base volume; weeks 2–4 = same split with rising volume; after week 4 reset.',
           'Do not mention the week number to the client.',
           'Adjust workout_plan only (strength / resistance training).',

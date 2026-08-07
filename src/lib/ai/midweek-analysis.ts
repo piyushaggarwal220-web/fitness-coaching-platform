@@ -2,6 +2,7 @@
  * Mid-week check-in AI summary for coaches.
  * Uses Prompt Library category mid_week_analysis when published;
  * otherwise falls back to a concise coach-facing analysis prompt.
+ * Costs are logged to ai_generation_logs (admin AI credits / cost tracking).
  */
 import { MODELS } from '@/lib/ai/config'
 import { generateClaudeResponse } from '@/lib/ai/anthropic'
@@ -14,9 +15,36 @@ function scoreLine(label: string, value: number | null | undefined): string {
   return `${label}: ${value != null ? `${value}/10` : '—'}`
 }
 
-function buildFallbackUserPrompt(profile: OnboardingProfile, checkin: Checkin): string {
+function buildFallbackUserPrompt(
+  profile: OnboardingProfile,
+  checkin: Checkin,
+  previous?: Checkin | null
+): string {
+  const prevBlock = previous
+    ? [
+        '',
+        '## Previous check-in (for trends)',
+        `Type: ${previous.checkin_type}`,
+        previous.coaching_week != null ? `Week: ${previous.coaching_week}` : null,
+        scoreLine('Diet adherence', previous.diet_adherence ?? previous.adherence_score),
+        scoreLine('Workout adherence', previous.workout_adherence ?? previous.training_performance),
+        scoreLine('Energy', previous.energy_level),
+        scoreLine('Sleep', previous.sleep_quality),
+        scoreLine('Stress', previous.stress_level),
+        previous.adherence_struggles?.trim()
+          ? `Prior slips: ${previous.adherence_struggles.trim()}`
+          : null,
+        previous.progress_notes?.trim()
+          ? `Prior progress notes: ${previous.progress_notes.trim()}`
+          : null,
+      ]
+        .filter((line) => line != null)
+        .join('\n')
+    : ''
+
   return [
     `Client: ${profile.name || profile.email || checkin.client_id}`,
+    profile.fitness_goal ? `Goal: ${profile.fitness_goal}` : null,
     checkin.coaching_week != null ? `Coaching week: ${checkin.coaching_week}` : null,
     '',
     '## Mid-week scores',
@@ -33,18 +61,36 @@ function buildFallbackUserPrompt(profile: OnboardingProfile, checkin: Checkin): 
     `Pain/injuries: ${checkin.pain_injuries?.trim() || '—'}`,
     `Questions: ${checkin.questions_for_coach?.trim() || '—'}`,
     `Additional comments: ${checkin.notes?.trim() || '—'}`,
+    prevBlock,
     '',
-    'Write a short coach-facing briefing (not client-facing). Cover: trends, adherence risks, energy/sleep/stress flags, and 2–4 recommended focus points for the coach call. Plain text only.',
+    'Write a coach-ready briefing the coach can read in under 60 seconds before messaging this client.',
+    'Use EXACTLY these headings (plain text, no markdown fences, no JSON):',
+    '',
+    'SNAPSHOT',
+    '(2–3 sentences: how the week is going overall)',
+    '',
+    'FLAGS',
+    '(bullet lines starting with - for risks: low adherence, sleep, stress, pain, hunger — or "- None" if clean)',
+    '',
+    'CLIENT VOICE',
+    '(1–2 sentences paraphrasing wins, slips, questions in coach language)',
+    '',
+    'COACH TALK TRACK',
+    '(3–5 short lines the coach can send almost as-is: acknowledge, address slips/questions, one clear next action)',
+    '',
+    'HOLD OR NUDGE',
+    '(one line: "Hold current plan" OR a specific micro-adjustment suggestion for end-of-week review — do not invent a full new plan)',
   ]
     .filter((line) => line != null)
     .join('\n')
 }
 
 const FALLBACK_SYSTEM = [
-  'You are an expert fitness coach assistant.',
-  'Summarize mid-week check-ins so a human coach can skim fast and reply with confidence.',
-  'Be concrete, brief, and actionable. Do not invent measurements or photos that were not provided.',
-  'Output plain text only — no JSON, no markdown fences.',
+  'You are an expert fitness coach assistant for LURVOX.',
+  'Turn mid-week check-ins into a skim-ready briefing so a human coach can reply fast and confidently.',
+  'Be concrete, brief, and actionable. Do not invent measurements, photos, or facts that were not provided.',
+  'Never invent medical diagnoses. Flag pain for the coach to ask about — do not prescribe treatment.',
+  'Output plain text only — no JSON, no markdown fences, no asterisks.',
 ].join(' ')
 
 const OUTPUT_INSTRUCTIONS = [
@@ -92,6 +138,19 @@ export async function loadCachedMidWeekSummary(checkinId: string): Promise<strin
   return null
 }
 
+async function loadPreviousCheckin(checkin: Checkin): Promise<Checkin | null> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('checkins')
+    .select('*')
+    .eq('client_id', checkin.client_id)
+    .lt('submitted_at', checkin.submitted_at)
+    .order('submitted_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return (data as Checkin | null) ?? null
+}
+
 export async function generateMidWeekAnalysis(input: {
   profile: OnboardingProfile
   checkin: Checkin
@@ -103,11 +162,12 @@ export async function generateMidWeekAnalysis(input: {
     if (cached) return { summary: cached, cached: true }
   }
 
+  const previous = await loadPreviousCheckin(input.checkin)
   const libraryPrompt = await getPublishedPromptByCategory('mid_week_analysis')
   const systemPrompt = libraryPrompt?.promptBody?.trim()
     ? `${FALLBACK_SYSTEM}\n\n# Library template\n${libraryPrompt.promptBody}\n\n${OUTPUT_INSTRUCTIONS}`
     : `${FALLBACK_SYSTEM}\n\n${OUTPUT_INSTRUCTIONS}`
-  const userPrompt = buildFallbackUserPrompt(input.profile, input.checkin)
+  const userPrompt = buildFallbackUserPrompt(input.profile, input.checkin, previous)
 
   const started = Date.now()
   try {
@@ -115,7 +175,7 @@ export async function generateMidWeekAnalysis(input: {
       systemPrompt,
       userPrompt,
       model: MODELS.CLAUDE_HAIKU,
-      maxTokens: 900,
+      maxTokens: 1100,
       temperature: 0.3,
     })
     const summary = extractSummaryText(result.text)
@@ -128,7 +188,7 @@ export async function generateMidWeekAnalysis(input: {
       model: result.model,
       promptVersion: libraryPrompt
         ? `library:${libraryPrompt.slug}:v${libraryPrompt.version}`
-        : 'fallback-v1',
+        : 'fallback-v2',
       latencyMs: Date.now() - started,
       promptTokens: result.inputTokens,
       completionTokens: result.outputTokens,

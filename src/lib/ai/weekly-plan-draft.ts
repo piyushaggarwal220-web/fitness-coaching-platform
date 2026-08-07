@@ -26,11 +26,33 @@ function hasMeaningfulText(value: string | null | undefined): boolean {
   return !/^(none|n\/a|na|no|nil|-)$/i.test(text)
 }
 
-/** Stable weekly check-in: good scores, no pain/questions/struggles that need a plan change. */
+/**
+ * Detect client-written requests to change food/training — progress_notes is required
+ * every week, so we only treat it as a plan signal when change language appears.
+ */
+function clientRequestedPlanChange(checkin: Checkin): boolean {
+  const CHANGE_SIGNAL =
+    /\b(change|chang(?:e|ing)|swap|replace|remov(?:e|ing)|add(?:ing)?|increas(?:e|ing)|decreas(?:e|ing)|lower|rais(?:e|ing)|reduc(?:e|ing)|less|more|can'?t|cannot|struggl|hate|don'?t like|dislike|prefer|instead|switch|modif(?:y|ying)|updat(?:e|ing)|adjust|too (?:much|little|hard|easy|heavy|light)|want|need|please|request|stop|start|different|allerg|hurt|injur|pain|sick|digest|bloated|constipat|skip|miss(?:ed|ing)?|swap out|cut (?:out|back)|new (?:meal|exercise|workout|split)|vegetarian|non.?veg|egg|chicken|gym|home workout)\b/i
+
+  const fields = [
+    checkin.progress_notes,
+    checkin.notes,
+    checkin.questions_for_coach,
+    checkin.adherence_struggles,
+    checkin.pain_injuries,
+    checkin.digestion,
+    checkin.cardio_completed,
+  ]
+
+  return fields.some((text) => hasMeaningfulText(text) && CHANGE_SIGNAL.test(text!))
+}
+
+/** Stable weekly check-in: good scores, no pain/questions/struggles/change requests. */
 function isStableWeeklyCheckin(checkin: Checkin): boolean {
   if (hasMeaningfulText(checkin.pain_injuries)) return false
   if (hasMeaningfulText(checkin.questions_for_coach)) return false
   if (hasMeaningfulText(checkin.adherence_struggles)) return false
+  if (clientRequestedPlanChange(checkin)) return false
 
   const scoreOk = (value: number | null | undefined, min: number) =>
     typeof value === 'number' && Number.isFinite(value) ? value >= min : true
