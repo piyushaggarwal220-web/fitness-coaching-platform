@@ -1,28 +1,11 @@
-import { trackMetaEvent } from '@/lib/analytics/meta-pixel'
+import { trackMetaCustom, trackMetaEvent } from '@/lib/analytics/meta-pixel'
 
 type FunnelParams = Record<string, unknown>
-
-declare global {
-  interface Window {
-    dataLayer?: Array<Record<string, unknown>>
-    fbq?: (
-      action: 'track' | 'trackCustom',
-      eventName: string,
-      parameters?: Record<string, unknown>,
-      options?: { eventID?: string }
-    ) => void
-  }
-}
 
 function pushDataLayer(event: string, params?: FunnelParams) {
   if (typeof window === 'undefined') return
   window.dataLayer = window.dataLayer || []
   window.dataLayer.push({ event, ...params })
-}
-
-export function trackMetaCustom(eventName: string, parameters?: FunnelParams) {
-  if (typeof window === 'undefined' || !window.fbq) return
-  window.fbq('trackCustom', eventName, parameters)
 }
 
 /** Funnel steps for ads + Meta + GTM-style dataLayer. */
