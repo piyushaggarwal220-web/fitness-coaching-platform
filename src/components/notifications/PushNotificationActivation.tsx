@@ -118,7 +118,7 @@ export function NotificationActivationGate({
 
   useEffect(() => {
     let active = true
-    void createClient().auth.getUser().then(({ data }) => {
+    void createClient().auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
       if (!active) return
       if (data.user) setUserId(data.user.id)
       setAuthChecked(true)

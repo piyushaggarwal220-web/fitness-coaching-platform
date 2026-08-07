@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { BRAND_NAME, brandTitle } from '@/lib/brand'
 import { authStyles } from '@/lib/auth-styles'
 import {
@@ -45,7 +46,7 @@ export default function ResetPasswordPage() {
       }
     }
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (!active) return
       if (event === 'PASSWORD_RECOVERY') {
         void markReady(true)

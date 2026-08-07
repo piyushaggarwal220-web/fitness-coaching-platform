@@ -80,12 +80,15 @@ function CoachClientsContent() {
 
       setClients((clientsData ?? []) as CoachClientRow[]);
 
-      const clientIds = (clientsData ?? []).map((c) => c.id);
+      const clientIds = ((clientsData ?? []) as CoachClientRow[]).map((c) => c.id);
       if (clientIds.length > 0) {
+        const since = new Date();
+        since.setDate(since.getDate() - 90);
         const { data: checkinData } = await supabase
           .from('checkins')
           .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed, submitted_at')
-          .in('client_id', clientIds);
+          .in('client_id', clientIds)
+          .gte('submitted_at', since.toISOString());
         setCheckins((checkinData ?? []) as Checkin[]);
       }
 

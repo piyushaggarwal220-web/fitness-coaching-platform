@@ -69,7 +69,7 @@ export function SessionKeepalive() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
+    } = supabase.auth.onAuthStateChange((event: string) => {
       if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
         lastRefreshAt.current = Date.now()
       }

@@ -45,13 +45,14 @@ export default function CoachAnalyticsPage() {
         .eq('coach_id', coach.id)
         .eq('active', true)
 
+      const tiers = (clients ?? []) as Array<{ complexity_tier: string | null }>
       setStats({
-        total: clients?.length ?? 0,
+        total: tiers.length,
         activePlans: plans ?? 0,
         pendingCheckins: pending ?? 0,
-        low: clients?.filter((c) => c.complexity_tier === 'low').length ?? 0,
-        medium: clients?.filter((c) => c.complexity_tier === 'medium').length ?? 0,
-        high: clients?.filter((c) => c.complexity_tier === 'high').length ?? 0,
+        low: tiers.filter((c) => c.complexity_tier === 'low').length,
+        medium: tiers.filter((c) => c.complexity_tier === 'medium').length,
+        high: tiers.filter((c) => c.complexity_tier === 'high').length,
       })
       setLoading(false)
     }

@@ -119,14 +119,14 @@ export function useSupabaseRealtimeRefresh({
           table: subscription.table,
           ...(subscription.filter ? { filter: subscription.filter } : {}),
         },
-        (payload) => {
+        (payload: RealtimeChangePayload) => {
           eventRef.current?.(payload as RealtimeChangePayload)
           requestRefresh()
         }
       )
     }
 
-    channel.subscribe((status) => {
+    channel.subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         if (configuredPresence) {
           void channel.track(configuredPresence.payload)
@@ -207,8 +207,9 @@ export function useChatUnreadCount(viewer: 'client' | 'coach', enabled = true) {
       .eq(ownerColumn, ownerId)
       .neq('status', 'closed')
 
-    const nextCount = (data ?? []).reduce(
-      (total, row) => total + Number(row[unreadColumn as keyof typeof row] ?? 0),
+    const nextCount = ((data ?? []) as Array<Record<string, unknown>>).reduce(
+      (total: number, row: Record<string, unknown>) =>
+        total + Number(row[unreadColumn] ?? 0),
       0
     )
     setCount(nextCount)
