@@ -11,12 +11,12 @@ import {
 } from '@/lib/payments/promo-codes'
 import type { PromoCodeKind } from '@/types/database'
 
-/** Default public first-timer promo code (override with FIRST_TIMER_DISCOUNT_CODE). */
+/** Default public promo code (override with FIRST_TIMER_DISCOUNT_CODE). Open to all customers. */
 export const DEFAULT_FIRST_TIMER_DISCOUNT_CODE = 'WELCOME60'
 
 type FirstTimerPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
 
-/** First-timer percent off list price. Trial is not eligible. */
+/** Public sale percent off list price. Trial is not eligible. Available to all customers. */
 export const FIRST_TIMER_DISCOUNT_PERCENT = 60
 
 /**
@@ -90,7 +90,7 @@ export function discountPaiseForPlan(
   return Math.round((list * FIRST_TIMER_DISCOUNT_PERCENT) / 100)
 }
 
-/** Payable amount after first-timer / WELCOME60 percent off. */
+/** Payable amount after WELCOME60 / public sale percent off. */
 export function firstTimerSalePaise(
   planSlug: string,
   listAmountPaise?: number
@@ -160,7 +160,9 @@ function buildAppliedDiscount(input: {
  *
  * Pass `enforceEligibility: false` (or omit email) for checkout preview before the
  * customer types an email. Create-order must pass a real email with enforcement on
- * so first-timer / promo rules are checked before charging.
+ * so promo validity is checked before charging.
+ *
+ * Public WELCOME60 (and matching env code) is available to everyone — not first-timer only.
  */
 export async function resolveCheckoutPricing(input: {
   admin: SupabaseClient
@@ -210,6 +212,8 @@ export async function resolveCheckoutPricing(input: {
   }
 
   async function assertFirstTimerIfNeeded(required: boolean): Promise<ResolveDiscountResult | null> {
+    // Public sale code is open to renewals and returning customers too.
+    if (isFirstTimerDiscountCode(code)) return null
     if (!required || !enforceEligibility || !hasEmail) return null
     let firstTimer = false
     try {
@@ -251,7 +255,11 @@ export async function resolveCheckoutPricing(input: {
     }
 
     const kind: CheckoutDiscountKind =
-      promo.kind === 'referral' ? 'referral' : promo.first_timer_only ? 'first_timer' : 'discount'
+      promo.kind === 'referral'
+        ? 'referral'
+        : isFirstTimerDiscountCode(promo.code) || !promo.first_timer_only
+          ? 'discount'
+          : 'first_timer'
     const discount = buildAppliedDiscount({
       kind,
       code: promo.code,
@@ -280,16 +288,13 @@ export async function resolveCheckoutPricing(input: {
     }
   }
 
-  const firstTimerBlock = await assertFirstTimerIfNeeded(true)
-  if (firstTimerBlock) return firstTimerBlock
-
   const discountPaise = discountPaiseForPlan(plan.slug, listAmountPaise)
   if (discountPaise == null || discountPaise <= 0 || discountPaise >= listAmountPaise) {
     return { ok: false, error: 'This referral code is not available for this plan.', status: 400 }
   }
 
   const discount = buildAppliedDiscount({
-    kind: 'first_timer',
+    kind: 'discount',
     code: getFirstTimerDiscountCode(),
     discountPaise,
     listAmountPaise,
@@ -375,6 +380,6 @@ export function checkoutDiscountNotes(pricing: CheckoutPricing): Record<string, 
 
 export function promoKindLabel(kind: PromoCodeKind | CheckoutDiscountKind): string {
   if (kind === 'referral') return 'Referral'
-  if (kind === 'first_timer') return 'First-timer'
+  if (kind === 'first_timer') return 'Promo'
   return 'Discount'
 }

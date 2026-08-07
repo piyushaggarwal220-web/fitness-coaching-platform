@@ -117,7 +117,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
             {' '}with WELCOME60 ({plan.saveLabel})
           </p>
           <p style={styles.codeHint}>
-            Apply <strong style={{ color: '#fdba74' }}>WELCOME60</strong> at checkout for 60% off
+            Apply <strong style={{ color: '#fdba74' }}>WELCOME60</strong> at checkout for 60% off — new or returning
           </p>
           {(plan.popular || plan.best) && (
             <p style={styles.badge}>{plan.best ? 'Best value' : 'Most popular'}</p>

@@ -188,7 +188,7 @@ function CheckoutForm() {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not apply referral code';
-      // Email-bound eligibility failed (returning customer) — drop the preview discount.
+      // Eligibility failed (invalid code, etc.) — drop the preview discount when email is known.
       if (email.trim().includes('@') || !local) {
         setAppliedDiscount(null);
       }
@@ -692,13 +692,13 @@ function CheckoutForm() {
               {!isTrialCheckout && (
                 <div style={styles.offerBanner}>
                   <div style={styles.offerBannerTop}>
-                    <strong>{discountLockedIn ? '60% off applied' : '60% off first order'}</strong>
+                    <strong>{discountLockedIn ? '60% off applied' : '60% off with code'}</strong>
                     {offerSaveDisplay && <span style={styles.offerSave}>Save {offerSaveDisplay}</span>}
                   </div>
                   <p style={styles.offerBannerText}>
                     {discountLockedIn
                       ? `You pay ${appliedDiscount!.displaySalePrice} today.`
-                      : 'Enter your first-order code and tap Apply.'}
+                      : 'Enter your code and tap Apply — available for new and returning customers.'}
                   </p>
                   {discountLockedIn ? (
                     <div style={styles.appliedCodeRow}>
