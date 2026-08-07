@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Pause, Play, Timer, X } from 'lucide-react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { colors, radius, spacing, layout } from '@/lib/design-tokens'
 import { formatRestClock } from '@/lib/daily-tracker/exercise-utils'
 
 type Props = {
@@ -10,10 +10,12 @@ type Props = {
   exerciseName: string
   nextLabel: string
   onDismiss: () => void
+  /** Extra space above the fixed bottom nav / sticky save bar (px). */
+  bottomOffset?: number
 }
 
 /** Rest between sets — Start / Pause / Stop. Caps at the plan rest duration. */
-export function RestTimer({ seconds, exerciseName, nextLabel, onDismiss }: Props) {
+export function RestTimer({ seconds, exerciseName, nextLabel, onDismiss, bottomOffset = 0 }: Props) {
   const [remaining, setRemaining] = useState(seconds)
   const [running, setRunning] = useState(false)
   const dismissRef = useRef(onDismiss)
@@ -41,20 +43,26 @@ export function RestTimer({ seconds, exerciseName, nextLabel, onDismiss }: Props
   }, [running, seconds, exerciseName, nextLabel])
 
   const progress = seconds > 0 ? ((seconds - remaining) / seconds) * 100 : 100
+  const bottom = `calc(${layout.bottomNavHeight}px + env(safe-area-inset-bottom, 0px) + ${bottomOffset}px)`
 
   return (
     <div
       style={{
-        position: 'sticky',
-        bottom: 12,
-        zIndex: 40,
-        marginTop: spacing[4],
+        position: 'fixed',
+        left: spacing[3],
+        right: spacing[3],
+        bottom,
+        zIndex: 95,
+        marginTop: 0,
         padding: spacing[4],
         borderRadius: radius.lg,
         background: colors.bgGlass,
         backdropFilter: 'blur(20px)',
         border: `1px solid ${colors.accentMuted}`,
         boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
+        maxWidth: layout.maxWidthWide,
+        marginLeft: 'auto',
+        marginRight: 'auto',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>

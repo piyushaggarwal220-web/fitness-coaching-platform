@@ -10,7 +10,8 @@ import {
   TrackerPhaseFolder,
   trackerInputStyle,
 } from '@/components/tracker/TrackerPrimitives'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { colors, radius, spacing, layout } from '@/lib/design-tokens'
+import { mobileStyles } from '@/lib/mobile-styles'
 import {
   buildExercisePatch,
   durationFromParts,
@@ -946,8 +947,69 @@ export function WorkoutModule({
           exerciseName={rest.exerciseName}
           nextLabel={rest.nextLabel}
           onDismiss={() => setRest(null)}
+          bottomOffset={76}
         />
       )}
+
+      {/* Keeps last exercises clear of the sticky save bar + bottom nav */}
+      <div aria-hidden style={{ height: rest ? 220 : 88 }} />
+
+      <div
+        style={{
+          ...mobileStyles.stickyBottom,
+          maxWidth: layout.maxWidthWide,
+          margin: '0 auto',
+          display: 'flex',
+          gap: 8,
+          zIndex: 95,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => (sessionRunning ? stopSession() : startSession())}
+          style={{
+            flex: '0 0 auto',
+            minWidth: 108,
+            height: 52,
+            borderRadius: 14,
+            border: 'none',
+            background: sessionRunning ? colors.bgElevated : colors.accent,
+            color: sessionRunning ? colors.textPrimary : colors.textInverse,
+            fontWeight: 800,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          {sessionRunning ? <Pause size={18} /> : <Play size={18} />}
+          {sessionRunning ? 'Stop' : elapsedMs > 0 ? 'Resume' : 'Start'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirmSaveOpen(true)}
+          disabled={saving}
+          style={{
+            flex: 1,
+            height: 52,
+            borderRadius: 14,
+            border: 'none',
+            background: colors.accent,
+            color: colors.textInverse,
+            fontWeight: 800,
+            cursor: saving ? 'wait' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            boxShadow: '0 8px 24px rgba(249,115,22,0.28)',
+          }}
+        >
+          <Save size={18} />
+          {saving ? 'Saving…' : workoutSaved ? 'Save again' : 'Save workout'}
+        </button>
+      </div>
 
       {confirmSaveOpen && (
         <div
@@ -957,12 +1019,13 @@ export function WorkoutModule({
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 80,
+            zIndex: 120,
             background: 'rgba(0,0,0,0.55)',
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'center',
             padding: spacing[4],
+            paddingBottom: `calc(${layout.bottomNavHeight}px + env(safe-area-inset-bottom, 0px) + ${spacing[4]}px)`,
           }}
           onClick={() => setConfirmSaveOpen(false)}
         >
