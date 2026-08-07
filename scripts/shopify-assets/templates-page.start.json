@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "lx_ad_landing": {
+      "type": "lurvox-ad-landing",
+      "settings": {}
+    }
+  },
+  "order": ["lx_ad_landing"]
+}

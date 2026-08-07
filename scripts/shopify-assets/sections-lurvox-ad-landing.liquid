@@ -1,0 +1,167 @@
+{% comment %}
+  Short ad landing — hero → how it works → 3 plans → closer.
+  Template: page.start  ·  URL: /pages/start
+{% endcomment %}
+
+{%- assign wa_url = 'https://wa.me/919220451577?text=' | append: 'Hi%20LURVOX%20—%20I%20saw%20your%20ad%20and%20want%20a%20free%20consult.' -%}
+{%- assign refund_url = '/pages/refund-policy' -%}
+{%- assign q = 'utm_source=ads&utm_medium=paid&utm_campaign=start_landing&code=WELCOME60' -%}
+{%- assign c3 = 'https://app.lurvox.in/checkout?plan=3_months&' | append: q -%}
+{%- assign c6 = 'https://app.lurvox.in/checkout?plan=6_months&' | append: q -%}
+{%- assign c12 = 'https://app.lurvox.in/checkout?plan=12_months&' | append: q -%}
+
+<section class="lx-ad" id="lx-ad" data-lx-ad-landing>
+  <header class="lx-ad__hero">
+    <p class="lx-ad__brand">LURVOX</p>
+    <h1 class="lx-ad__title">Build the body you want in 90 days</h1>
+    <p class="lx-ad__lede">
+      Personal workout + diet, weekly coach check-ins, daily trackers — not a PDF.
+      Veg / ghar-ka-khana friendly. Gym or home.
+    </p>
+    <div class="lx-ad__hero-actions">
+      <a class="lx-ad__btn lx-ad__btn--primary" href="#plans" data-funnel="view_plans">See plans — from ₹566/mo</a>
+      <a class="lx-ad__btn lx-ad__btn--ghost" href="{{ wa_url }}" target="_blank" rel="noopener noreferrer" data-funnel="talk_to_coach">Talk to a coach</a>
+    </div>
+    <div class="lx-ad__badges" aria-label="Secure payment">
+      <span>UPI</span><span>Cards</span><span>Razorpay Secure</span><span>SSL</span>
+    </div>
+  </header>
+
+  <div class="lx-ad__how">
+    <p class="lx-ad__eyebrow">How it works</p>
+    <ol class="lx-ad__steps">
+      <li><strong>01</strong> Assessment + photos after payment</li>
+      <li><strong>02</strong> Personal plan in 24–48 hours</li>
+      <li><strong>03</strong> Daily trackers + weekly coach reviews</li>
+      <li><strong>04</strong> Consistency League rewards for showing up</li>
+    </ol>
+    <p class="lx-ad__risk">
+      <strong>Delivery promise:</strong> first plan within 24–48 hrs after onboarding — or request a full refund within 7 days if delivery fails.
+      <a href="{{ refund_url }}">Refund policy</a>
+    </p>
+  </div>
+
+  <div class="lx-ad__plans" id="plans">
+    <p class="lx-ad__eyebrow">Choose your plan</p>
+    <h2 class="lx-ad__plans-title">Start with 90 days — or go longer</h2>
+    <div class="lx-ad__grid">
+      <a class="lx-ad__card" href="{{ c3 }}" data-funnel="plan_click" data-plan="3_months" data-plan-name="Quick Reset" data-value="1699">
+        <span class="lx-ad__dur">3 MONTHS · 90-DAY FIT</span>
+        <strong>Quick Reset</strong>
+        <span class="lx-ad__price">₹1,699 <small>≈ ₹19/day</small></span>
+        <span class="lx-ad__note">Matches the 90-day goal</span>
+        <span class="lx-ad__cta">Start 90-day · ₹1,699</span>
+      </a>
+      <a class="lx-ad__card lx-ad__card--pop" href="{{ c6 }}" data-funnel="plan_click" data-plan="6_months" data-plan-name="Recomposition" data-value="2699">
+        <span class="lx-ad__pill">MOST POPULAR</span>
+        <span class="lx-ad__dur">6 MONTHS</span>
+        <strong>Recomposition</strong>
+        <span class="lx-ad__price">₹2,699 <small>≈ ₹15/day</small></span>
+        <span class="lx-ad__note">Best balance of results vs price</span>
+        <span class="lx-ad__cta">Start 6-month · ₹2,699</span>
+      </a>
+      <a class="lx-ad__card" href="{{ c12 }}" data-funnel="plan_click" data-plan="12_months" data-plan-name="Complete" data-value="3699">
+        <span class="lx-ad__dur">12 MONTHS · BEST VALUE</span>
+        <strong>Complete</strong>
+        <span class="lx-ad__price">₹3,699 <small>≈ ₹10/day</small></span>
+        <span class="lx-ad__note">Lowest monthly + prize money</span>
+        <span class="lx-ad__cta">Start 12-month · ₹3,699</span>
+      </a>
+    </div>
+    <p class="lx-ad__fine">WELCOME60 applied at checkout · Cancel anytime on WhatsApp</p>
+  </div>
+</section>
+
+<style>
+  .lx-ad {
+    --o: #ff6200;
+    --muted: rgba(255,255,255,.68);
+    --line: rgba(255,255,255,.12);
+    background: #050505;
+    color: #fff;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    padding: 28px 16px 64px;
+  }
+  .lx-ad__hero, .lx-ad__how, .lx-ad__plans { max-width: 720px; margin: 0 auto; }
+  .lx-ad__brand { margin: 0 0 10px; font-weight: 900; letter-spacing: .08em; }
+  .lx-ad__title { margin: 0 0 12px; font-size: clamp(1.7rem, 5vw, 2.4rem); line-height: 1.1; font-weight: 850; }
+  .lx-ad__lede { margin: 0 0 18px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+  .lx-ad__hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .lx-ad__btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 18px; border-radius: 14px; text-decoration: none; font-weight: 800; font-size: 14px; }
+  .lx-ad__btn--primary { background: linear-gradient(180deg,#ff8a3d,#ff6200); color: #140a00; }
+  .lx-ad__btn--ghost { border: 1px solid rgba(255,255,255,.28); color: #fff; }
+  .lx-ad__badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .lx-ad__badges span { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .lx-ad__eyebrow { margin: 0 0 8px; color: var(--o); font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+  .lx-ad__steps { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
+  .lx-ad__steps li { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #0a0a0a; font-size: 14px; color: var(--muted); }
+  .lx-ad__steps strong { color: var(--o); margin-right: 8px; }
+  .lx-ad__risk { margin: 0 0 32px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,98,0,.35); background: rgba(255,98,0,.08); font-size: 13px; line-height: 1.5; }
+  .lx-ad__risk a { color: #ffb07a; }
+  .lx-ad__plans-title { margin: 0 0 16px; font-size: 1.45rem; font-weight: 850; }
+  .lx-ad__grid { display: grid; gap: 12px; }
+  @media (min-width: 760px) { .lx-ad__grid { grid-template-columns: repeat(3, 1fr); } }
+  .lx-ad__card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 16px; border: 1px solid var(--line); background: #0b0b0b; color: inherit; text-decoration: none; text-align: left; }
+  .lx-ad__card--pop { border-color: rgba(255,98,0,.55); background: radial-gradient(circle at 80% -20%, rgba(255,98,0,.22), transparent 55%), #100c09; }
+  .lx-ad__pill { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 999px; background: var(--o); color: #111; font-size: 10px; font-weight: 850; }
+  .lx-ad__dur { color: var(--o); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+  .lx-ad__card strong { font-size: 18px; }
+  .lx-ad__price { font-size: 22px; font-weight: 850; }
+  .lx-ad__price small { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .lx-ad__note { color: var(--muted); font-size: 12.5px; margin-bottom: 8px; }
+  .lx-ad__cta { margin-top: auto; display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 42px; border-radius: 12px; background: linear-gradient(180deg,#ff8a3d,#ff6200); color: #140a00; font-size: 13px; font-weight: 800; }
+  .lx-ad__card:not(.lx-ad__card--pop) .lx-ad__cta { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.28); }
+  .lx-ad__fine { margin: 14px 0 0; text-align: center; color: var(--muted); font-size: 12.5px; }
+</style>
+
+<script>
+  (function () {
+    var root = document.querySelector('[data-lx-ad-landing]');
+    if (!root || root.dataset.bound === '1') return;
+    root.dataset.bound = '1';
+
+    function track(step, extra) {
+      try {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push(Object.assign({ event: 'lurvox_' + step, funnel_step: step }, extra || {}));
+      } catch (e) {}
+      try {
+        if (typeof window.fbq === 'function') {
+          window.fbq('trackCustom', 'Lurvox_' + step, Object.assign({ funnel_step: step }, extra || {}));
+          if (step === 'plan_click') {
+            window.fbq('track', 'AddToCart', {
+              content_type: 'product',
+              content_ids: extra && extra.plan ? [extra.plan] : undefined,
+              content_name: extra && extra.plan_name,
+              value: extra && extra.value,
+              currency: 'INR'
+            });
+          }
+          if (step === 'talk_to_coach') window.fbq('track', 'Contact');
+          if (step === 'view_landing') window.fbq('track', 'ViewContent', { content_name: 'ad_landing_start' });
+        }
+      } catch (e2) {}
+    }
+
+    track('view_landing', { page: 'start' });
+
+    root.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('[data-funnel]') : null;
+      if (!a) return;
+      var step = a.getAttribute('data-funnel');
+      track(step, {
+        plan: a.getAttribute('data-plan') || undefined,
+        plan_name: a.getAttribute('data-plan-name') || undefined,
+        value: a.getAttribute('data-value') ? Number(a.getAttribute('data-value')) : undefined
+      });
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "LURVOX ad landing",
+  "settings": [],
+  "presets": [{ "name": "LURVOX ad landing" }]
+}
+{% endschema %}

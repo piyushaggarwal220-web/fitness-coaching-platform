@@ -11,6 +11,7 @@ import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
 import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
+import { trackFunnelStep } from '@/lib/analytics/funnel';
 import {
   formatInrFromPaise,
   firstTimerSalePaise,
@@ -280,12 +281,11 @@ function CheckoutForm() {
 
   useEffect(() => {
     if (testMode) return;
-    trackMetaEvent('InitiateCheckout', {
-      value: plan.amountPaise / 100,
-      currency: 'INR',
-      content_name: `${plan.name} coaching plan`,
-      content_ids: [plan.slug],
-      content_type: 'product',
+    const sale = firstTimerSalePaise(plan.slug);
+    trackFunnelStep('checkout_view', {
+      plan: plan.slug,
+      plan_name: plan.name,
+      value: (sale ?? plan.amountPaise) / 100,
     });
   }, [plan, testMode]);
 
@@ -492,6 +492,13 @@ function CheckoutForm() {
     setLoading(true);
 
     try {
+      const sale = firstTimerSalePaise(plan.slug);
+      trackFunnelStep('pay_click', {
+        plan: plan.slug,
+        plan_name: plan.name,
+        value: (appliedDiscount?.amountPaise ?? sale ?? plan.amountPaise) / 100,
+      });
+
       const orderRes = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -597,6 +604,37 @@ function CheckoutForm() {
         </p>
 
         {!isTrialCheckout && (
+          <div style={styles.trustStrip} aria-label="Checkout trust">
+            <div style={styles.trustBadges}>
+              <span style={styles.trustBadge}>UPI</span>
+              <span style={styles.trustBadge}>Cards</span>
+              <span style={styles.trustBadge}>Netbanking</span>
+              <span style={styles.trustBadge}>Razorpay Secure</span>
+              <span style={styles.trustBadge}>SSL</span>
+            </div>
+            <p style={styles.trustLine}>
+              Personal plan in <strong>24–48 hours</strong> after onboarding — or request a{' '}
+              <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>
+                full refund within 7 days
+              </Link>{' '}
+              if delivery fails.
+            </p>
+            <p style={styles.trustLineMuted}>
+              Questions before paying?{' '}
+              <a
+                href="https://wa.me/919220451577?text=Hi%20LURVOX%20—%20I%20have%20a%20question%20before%20checkout."
+                target="_blank"
+                rel="noopener noreferrer"
+                style={styles.inlineLink}
+                onClick={() => trackFunnelStep('talk_to_coach', { source: 'checkout' })}
+              >
+                Talk to a coach on WhatsApp
+              </a>
+            </p>
+          </div>
+        )}
+
+        {!isTrialCheckout && (
           <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
             {COACHING_PLAN_LIST.map((item) => {
               const selected = item.slug === plan.slug;
@@ -608,6 +646,13 @@ function CheckoutForm() {
                   href={`/checkout?plan=${item.slug}${referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}`}
                   role="tab"
                   aria-selected={selected}
+                  onClick={() =>
+                    trackFunnelStep('checkout_plan_switch', {
+                      plan: item.slug,
+                      plan_name: item.name,
+                      value: (sale ?? item.amountPaise) / 100,
+                    })
+                  }
                   style={{
                     ...styles.planChip,
                     ...(selected ? styles.planChipSelected : null),
@@ -893,7 +938,14 @@ function CheckoutForm() {
               : `Pay ${payableDisplay}`}
           </button>
           <p style={styles.paySecureNote}>
-            Secure checkout via Razorpay · UPI, cards, netbanking
+            Secure checkout via Razorpay · UPI, cards, netbanking · SSL encrypted
+          </p>
+          <p style={styles.paySecureNote}>
+            Results guarantee available with ≥90% on-time check-ins — see{' '}
+            <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>
+              Refund Policy
+            </Link>
+            .
           </p>
         </form>
 
@@ -974,6 +1026,43 @@ const styles: Record<string, CSSProperties> = {
     color: colors.textSecondary,
     fontSize: 15,
     lineHeight: 1.45,
+  },
+  trustStrip: {
+    margin: '0 0 18px',
+    padding: '12px 14px',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.borderSubtle}`,
+    backgroundColor: colors.bgElevated,
+  },
+  trustBadges: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: 6,
+    marginBottom: 10,
+  },
+  trustBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '4px 8px',
+    borderRadius: 8,
+    border: `1px solid ${colors.borderSubtle}`,
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase' as const,
+    color: colors.textMuted,
+  },
+  trustLine: {
+    margin: '0 0 6px',
+    fontSize: 13,
+    lineHeight: 1.45,
+    color: colors.textSecondary,
+  },
+  trustLineMuted: {
+    margin: 0,
+    fontSize: 12,
+    lineHeight: 1.4,
+    color: colors.textMuted,
   },
   planPicker: {
     display: 'grid',
