@@ -22,7 +22,7 @@ import {
   readTrackerDraft,
   writeTrackerDraft,
 } from '@/lib/daily-tracker/tracker-draft'
-import { ensureAuthSession } from '@/lib/session-restore'
+import { ensureAuthSession, redirectToLogin } from '@/lib/session-restore'
 import type {
   DailyTrackerDay,
   TodayTrackerView,
@@ -110,18 +110,9 @@ function withDraft(
     return view
   }
 
-  // If the server row is newer than the draft, prefer server (another tab won).
-  const serverUpdated = Date.parse(day.updated_at)
-  const draftUpdated = Date.parse(draft.updatedAt)
-  if (
-    Number.isFinite(serverUpdated) &&
-    Number.isFinite(draftUpdated) &&
-    serverUpdated > draftUpdated
-  ) {
-    clearTrackerDraft(day.id)
-    return view
-  }
-
+  // Drafts only exist for unsynced edits. Keep applying them even when a
+  // snapshot rebuild bumps server updated_at — otherwise Change day / food
+  // selections appear to stick briefly then snap back to Day 1.
   const merged = applyTrackerDraft(day.completion, draft)
   return {
     ...view,
@@ -234,7 +225,12 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
             setError(null)
             waiters.forEach((resolve) => resolve(true))
           } else {
-            setError(result.error ?? 'Failed to save progress')
+            if (result.status === 401) {
+              setError('Your session expired. Please sign in again to save changes.')
+              redirectToLogin(router, 'client', 'tracker_patch_unauthorized')
+            } else {
+              setError(result.error ?? 'Failed to save progress')
+            }
             waiters.forEach((resolve) => resolve(false))
           }
         }

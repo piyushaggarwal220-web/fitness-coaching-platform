@@ -61,6 +61,31 @@ assert(
   afterLateMerge.workoutSession?.status === 'saved'
 )
 
+// Day selections must survive merge even when server completion is empty
+// (failed PATCH / rebuild race) — this is what "Change day" relies on.
+const daySelectDraft: TrackerCompletion = {
+  selectedDietDay: 'day-3',
+  selectedWorkoutDay: 'day-2',
+}
+const afterDaySelect = mergeCompletion({}, daySelectDraft)
+assert(
+  'day selection merge keeps diet + workout day keys',
+  afterDaySelect.selectedDietDay === 'day-3' && afterDaySelect.selectedWorkoutDay === 'day-2'
+)
+
+const serverWithOldDay: TrackerCompletion = {
+  selectedDietDay: 'day-1',
+  selectedWorkoutDay: 'day-1',
+}
+const afterChangeDay = mergeCompletion(serverWithOldDay, {
+  selectedDietDay: 'day-4',
+  selectedWorkoutDay: 'day-5',
+})
+assert(
+  'Change day overwrites previous Day 1 selection',
+  afterChangeDay.selectedDietDay === 'day-4' && afterChangeDay.selectedWorkoutDay === 'day-5'
+)
+
 if (failed > 0) {
   console.error(`\n${failed} tracker save checks failed`)
   process.exit(1)

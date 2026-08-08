@@ -294,7 +294,32 @@ export async function getOrCreateTodayTracker(
       (newHasMeals && !existingHasMeals) ||
       snapshot.items.length !== existingDay.snapshot.items.length
 
-    if (!needsRebuild) return { day: existingDay, error: null }
+    // Keep coaching day/week current even when the plan snapshot is unchanged.
+    const coachingFieldsStale =
+      existingDay.coaching_day !== coachingDay || existingDay.coaching_week !== coachingWeek
+
+    if (!needsRebuild && !coachingFieldsStale) {
+      return { day: existingDay, error: null }
+    }
+
+    if (!needsRebuild && coachingFieldsStale) {
+      // Do not bump updated_at — that column is the optimistic-concurrency token
+      // for tracker PATCH and must not race with in-flight set / Change day saves.
+      const { data: touched, error: touchError } = await supabase
+        .from('daily_tracker_days')
+        .update({
+          coaching_day: coachingDay,
+          coaching_week: coachingWeek,
+        })
+        .eq('id', existingDay.id)
+        .select()
+        .single()
+
+      if (touchError || !touched) {
+        return { day: null, error: touchError?.message ?? 'Failed to refresh coaching day' }
+      }
+      return { day: rowToDay(touched as Record<string, unknown>), error: null }
+    }
 
     const completion = sanitizeCompletionForSnapshot(existingDay.completion, snapshot)
     const { scores, overall } = calculateTrackerScores(snapshot, completion)
@@ -303,6 +328,8 @@ export async function getOrCreateTodayTracker(
       .update({
         plan_id: plan.id,
         plan_version: plan.version,
+        coaching_day: coachingDay,
+        coaching_week: coachingWeek,
         snapshot,
         completion,
         scores,
@@ -474,8 +501,9 @@ export async function loadTodayTrackerView(
     view: {
       day,
       schedule: {
-        coachingDay: day.coaching_day ?? schedule.coachingDay,
-        coachingWeek: day.coaching_week ?? schedule.activeCoachingWeek,
+        // Live schedule wins so the hub never sticks on a stale Day 1 row value.
+        coachingDay: schedule.coachingDay,
+        coachingWeek: schedule.activeCoachingWeek,
         countdownLabel: schedule.countdownLabel,
         countdownMs: schedule.countdownMs,
       },

@@ -86,6 +86,8 @@ export default function ClientSettingsPage() {
           fullWidth
           variant="secondary"
           onClick={async () => {
+            const { invalidateSessionCache } = await import('@/lib/session-restore')
+            invalidateSessionCache()
             await supabase.auth.signOut()
             router.push('/login')
             router.refresh()

@@ -27,6 +27,8 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
+    const { invalidateSessionCache } = await import('@/lib/session-restore')
+    invalidateSessionCache()
     await supabase.auth.signOut();
     router.push('/');
   };

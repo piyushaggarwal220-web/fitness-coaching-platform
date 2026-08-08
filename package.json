@@ -31,6 +31,7 @@
     "verify:initial-plan-generation": "tsx scripts/verify-initial-plan-generation.ts",
     "verify:generate-plan-retries": "tsx scripts/verify-generate-plan-retries.ts",
     "verify:password-reset-reauth": "tsx scripts/verify-password-reset-reauth.ts",
+    "verify:session-cache": "tsx scripts/verify-session-cache.ts",
     "verify:photo-upload-reliability": "tsx scripts/verify-photo-upload-reliability.ts",
     "verify:promo-codes": "tsx scripts/verify-promo-codes.ts",
     "verify:notifications": "tsx scripts/verify-notification-delivery.ts",
