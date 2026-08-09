@@ -27,6 +27,7 @@
     "verify:daily-tracker": "tsx scripts/verify-daily-tracker.ts",
     "verify:prompt-cache": "tsx scripts/verify-prompt-cache.ts",
     "verify:chat-policy": "tsx scripts/verify-chat-policy-workflow.ts",
+    "verify:weekly-checkin-chat": "tsx scripts/verify-weekly-checkin-chat-policy.ts",
     "verify:chat-access": "tsx scripts/verify-chat-access-regression.ts",
     "verify:initial-plan-generation": "tsx scripts/verify-initial-plan-generation.ts",
     "verify:generate-plan-retries": "tsx scripts/verify-generate-plan-retries.ts",

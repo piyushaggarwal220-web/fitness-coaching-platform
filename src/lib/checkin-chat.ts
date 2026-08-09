@@ -118,13 +118,18 @@ export function formatWeeklyCheckinChatMessage(input: {
   return lines.join('\n')
 }
 
+export function isWeeklyCheckinSystemMessage(content: string | null | undefined): boolean {
+  if (!content) return false
+  return content.startsWith('📋 Weekly Check-in')
+}
+
 export function isCheckinSystemMessage(content: string | null | undefined): boolean {
   if (!content) return false
-  return content.startsWith('📋 Mid Week Check-in') || content.startsWith('📋 Weekly Check-in')
+  return content.startsWith('📋 Mid Week Check-in') || isWeeklyCheckinSystemMessage(content)
 }
 
 export function checkinTypeFromMessage(content: string): CheckinType | null {
   if (content.startsWith('📋 Mid Week Check-in')) return 'mid_week'
-  if (content.startsWith('📋 Weekly Check-in')) return 'weekly'
+  if (isWeeklyCheckinSystemMessage(content)) return 'weekly'
   return null
 }

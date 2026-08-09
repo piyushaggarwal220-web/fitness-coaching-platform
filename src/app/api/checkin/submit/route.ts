@@ -11,10 +11,7 @@ import {
   isCheckinSubmissionWindowClosed,
   resolveCheckinSubmissionSlot,
 } from '@/lib/checkin-schedule'
-import {
-  formatMidWeekCheckinChatMessage,
-  formatWeeklyCheckinChatMessage,
-} from '@/lib/checkin-chat'
+import { formatMidWeekCheckinChatMessage } from '@/lib/checkin-chat'
 import { postCheckinToCoachChat } from '@/lib/coach-chat'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
@@ -340,53 +337,49 @@ export async function POST(request: Request) {
     invalidateForEvent('checkin_submitted', user.id)
     invalidateForEvent('journey_updated', user.id)
 
-    const photoCount =
-      body.checkinType === 'weekly'
-        ? [body.progress_photo_front, body.progress_photo_side, body.progress_photo_back].filter(Boolean)
-            .length + (body.extra_photos?.length ?? 0)
-        : 0
+    // Weekly check-ins must NEVER post into the shared client/coach chat.
+    // They always go to the check-in review page + next-week AI draft instead.
+    // Mid-week summaries still post to chat for quick coach visibility.
+    if (body.checkinType === 'mid_week') {
+      const chatMessage = formatMidWeekCheckinChatMessage({
+        coachingWeek: scheduled.coachingWeek,
+        dietAdherence: body.diet_adherence,
+        workoutAdherence: body.workout_adherence,
+        energyLevel: body.energy_level,
+        sleepQuality: body.sleep_quality,
+        stressLevel: body.stress_level,
+        adherenceWins: body.adherence_wins,
+        adherenceStruggles: body.adherence_struggles,
+        painInjuries: body.pain_injuries,
+        questionsForCoach: body.questions_for_coach,
+      })
 
-    const chatMessage =
-      body.checkinType === 'mid_week'
-        ? formatMidWeekCheckinChatMessage({
-            coachingWeek: scheduled.coachingWeek,
-            dietAdherence: body.diet_adherence,
-            workoutAdherence: body.workout_adherence,
-            energyLevel: body.energy_level,
-            sleepQuality: body.sleep_quality,
-            stressLevel: body.stress_level,
-            adherenceWins: body.adherence_wins,
-            adherenceStruggles: body.adherence_struggles,
-            painInjuries: body.pain_injuries,
-            questionsForCoach: body.questions_for_coach,
-          })
-        : formatWeeklyCheckinChatMessage({
-            coachingWeek: scheduled.coachingWeek,
-            weight: body.weight,
-            chest: body.chest,
-            thigh: body.thigh,
-            navel: body.navel,
-            dietAdherence: body.diet_adherence,
-            workoutAdherence: body.workout_adherence,
-            energyLevel: body.energy_level,
-            sleepQuality: body.sleep_quality,
-            stressLevel: body.stress_level,
-            motivationLevel: body.motivation_level,
-            progressRating: body.progress_rating,
-            progressNotes: body.progress_notes,
-            painInjuries: body.pain_injuries,
-            notes: body.additional_notes,
-            photoCount,
-            journeyUrl: '/journey',
-          })
+      void postCheckinToCoachChat(supabase, {
+        clientId: user.id,
+        coachId: profile.coach_id,
+        message: chatMessage,
+        checkinId: inserted.id,
+        checkinType: 'mid_week',
+      }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
 
-    void postCheckinToCoachChat(supabase, {
-      clientId: user.id,
-      coachId: profile.coach_id,
-      message: chatMessage,
-      checkinId: inserted.id,
-      checkinType: body.checkinType,
-    }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
+      after(async () => {
+        try {
+          const adminClient = createAdminClient()
+          const [{ data: fullCheckin }, { data: fullProfile }] = await Promise.all([
+            adminClient.from('checkins').select('*').eq('id', inserted.id).single(),
+            adminClient.from('profiles').select('*').eq('id', user.id).single(),
+          ])
+          if (!fullCheckin || !fullProfile) return
+          await generateMidWeekAnalysis({
+            profile: fullProfile,
+            checkin: fullCheckin,
+            coachId: profile.coach_id,
+          })
+        } catch (err) {
+          console.error('[checkin-submit] mid-week analysis failed:', err)
+        }
+      })
+    }
 
     if (body.checkinType === 'weekly') {
       // Mark in-flight before the response returns so coaches see Generating immediately.
@@ -406,26 +399,6 @@ export async function POST(request: Request) {
           trigger: 'auto',
         }).catch((err) => console.error('[checkin-submit] auto draft failed:', err))
       )
-    }
-
-    if (body.checkinType === 'mid_week') {
-      after(async () => {
-        try {
-          const adminClient = createAdminClient()
-          const [{ data: fullCheckin }, { data: fullProfile }] = await Promise.all([
-            adminClient.from('checkins').select('*').eq('id', inserted.id).single(),
-            adminClient.from('profiles').select('*').eq('id', user.id).single(),
-          ])
-          if (!fullCheckin || !fullProfile) return
-          await generateMidWeekAnalysis({
-            profile: fullProfile,
-            checkin: fullCheckin,
-            coachId: profile.coach_id,
-          })
-        } catch (err) {
-          console.error('[checkin-submit] mid-week analysis failed:', err)
-        }
-      })
     }
 
     logApiDev('checkin_submit_success', {

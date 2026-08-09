@@ -506,7 +506,9 @@ export function formatConversationStatus(status: ConversationStatus): string {
 export { formatMessageTime, formatRelativeActivity } from '@/lib/coach-chat-ui'
 
 /**
- * Post a check-in summary into the client's persistent coach conversation.
+ * Post a mid-week check-in summary into the client's persistent coach conversation.
+ * Weekly check-ins are intentionally never posted here — they draft the next-week
+ * AI plan on the coach check-in review page instead.
  * Uses admin client — safe for API routes after check-in submit.
  */
 export async function postCheckinToCoachChat(
@@ -519,6 +521,10 @@ export async function postCheckinToCoachChat(
     checkinType: 'mid_week' | 'weekly'
   }
 ): Promise<{ error: string | null }> {
+  if (input.checkinType === 'weekly') {
+    return { error: null }
+  }
+
   try {
     const { data: conversation, error: convError, isNew } = await getOrCreateConversation(
       supabase,
