@@ -33,6 +33,49 @@ const PROFILE_FETCH_RETRY_DELAYS_MS = [0, 200, 500, 1000, 1500, 2500]
 const COACH_FETCH_RETRY_DELAYS_MS = [0, 200, 500, 1000, 1500]
 /** Retries help after mobile app-switch when cookies/tokens are still settling. */
 const SESSION_RETRY_DELAYS_MS = [0, 300, 800, 1500]
+/** Short-lived client profile seed so post-onboarding navigations skip a stale incomplete read. */
+const CLIENT_SESSION_CACHE_TTL_MS = 60_000
+
+type CachedClientSession = {
+  user: SessionUser
+  profile: OnboardingProfile
+  cachedAt: number
+}
+
+let clientSessionCache: CachedClientSession | null = null
+
+/** Drop any in-memory auth/profile seed (call on login + logout). */
+export function invalidateSessionCache(): void {
+  clientSessionCache = null
+}
+
+/**
+ * Seed the in-memory client session after onboarding completion is confirmed.
+ * Prevents a race where the next restore still reads onboarding_complete=false.
+ */
+export function seedAuthenticatedClientSession(
+  user: SessionUser,
+  profile: OnboardingProfile
+): void {
+  clientSessionCache = {
+    user: { id: user.id, email: user.email },
+    profile,
+    cachedAt: Date.now(),
+  }
+}
+
+function readClientSessionCache(userId: string): OnboardingProfile | null {
+  if (!clientSessionCache) return null
+  if (clientSessionCache.user.id !== userId) {
+    clientSessionCache = null
+    return null
+  }
+  if (Date.now() - clientSessionCache.cachedAt > CLIENT_SESSION_CACHE_TTL_MS) {
+    clientSessionCache = null
+    return null
+  }
+  return clientSessionCache.profile
+}
 
 type SessionRestoreLogEvent =
   | 'session_found'
@@ -324,7 +367,20 @@ export async function restoreSession(
 ): Promise<SessionRestoreResult> {
   const { user } = await ensureAuthSession(supabase)
   if (!user) {
+    invalidateSessionCache()
     return { status: 'unauthenticated' }
+  }
+
+  const seededProfile = readClientSessionCache(user.id)
+  if (seededProfile && isOnboardingComplete(seededProfile)) {
+    logSessionRestore('onboarding_complete', { userId: user.id, fromCache: true })
+    return {
+      status: 'authenticated',
+      user,
+      role: 'client',
+      profile: seededProfile,
+      coach: null,
+    }
   }
 
   const detection = await detectUserRole(supabase, user.id)
@@ -378,6 +434,7 @@ export async function restoreSession(
   if (profile) {
     if (isOnboardingComplete(profile)) {
       logSessionRestore('onboarding_complete', { userId: user.id })
+      seedAuthenticatedClientSession(user, profile)
     }
     return { status: 'authenticated', user, role: 'client', profile, coach: null }
   }

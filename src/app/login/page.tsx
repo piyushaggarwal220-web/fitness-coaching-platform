@@ -38,10 +38,18 @@ function LoginForm() {
 
     // Session can succeed even when Auth attaches a weak/leaked-password warning.
     if (data.user) {
-      const { invalidateSessionCache } = await import('@/lib/session-restore')
+      const { invalidateSessionCache, seedAuthenticatedClientSession } = await import(
+        '@/lib/session-restore'
+      )
       invalidateSessionCache()
       await supabase.auth.getSession();
       const { profile, error: profileError } = await fetchClientProfile(supabase, data.user.id);
+      if (profile && isOnboardingComplete(profile)) {
+        seedAuthenticatedClientSession(
+          { id: data.user.id, email: data.user.email },
+          profile
+        )
+      }
       router.refresh();
 
       const role = profile?.role;
