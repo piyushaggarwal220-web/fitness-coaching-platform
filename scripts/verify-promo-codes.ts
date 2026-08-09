@@ -90,13 +90,14 @@ assert.match(
 )
 pass('exhausted code is invalid')
 
+const list3 = COACHING_PLANS['3_months'].amountPaise
 const expected = expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'], {
-  amount_paise: String(149900 - 20000),
-  list_amount_paise: '149900',
+  amount_paise: String(list3 - 20000),
+  list_amount_paise: String(list3),
   discount_paise: '20000',
   discount_code: 'PARTNER50',
 })
-assert.equal(expected, 129900)
+assert.equal(expected, list3 - 20000)
 pass('order notes accept generic promo amounts')
 
 const modules = readFileSync(resolve('src/lib/admin/modules.ts'), 'utf8')
