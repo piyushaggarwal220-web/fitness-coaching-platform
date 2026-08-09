@@ -6,6 +6,8 @@ import {
   expectedAmountPaiseFromOrderNotes,
   normalizeDiscountCode,
 } from '@/lib/payments/checkout-discounts'
+import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
+import { notifyAffiliateCodeUsage } from '@/lib/payments/affiliate-notify'
 import { recordPromoCodeUsage } from '@/lib/payments/promo-codes'
 import {
   fetchRazorpayOrder,
@@ -273,13 +275,25 @@ export async function POST(request: Request) {
     const discountCode = normalizeDiscountCode(notes.discount_code)
     const discountPaise = Number(notes.discount_paise ?? 0) || 0
     if (discountCode && discountPaise > 0) {
-      await recordPromoCodeUsage(createAdminClient(), {
+      const usage = await recordPromoCodeUsage(createAdminClient(), {
         code: discountCode,
         purchaseId: result.purchaseId,
         customerEmail: result.customerEmail,
         planSlug: plan.slug,
         discountPaise,
-      }).catch(() => undefined)
+      }).catch(() => null)
+
+      if (usage?.recorded && isAffiliateDiscountCode(discountCode)) {
+        await notifyAffiliateCodeUsage({
+          code: discountCode,
+          referrerLabel: usage.referrerLabel,
+          customerEmail: result.customerEmail,
+          planSlug: plan.slug,
+          discountPaise,
+          amountPaise: payment.amount,
+          purchaseId: result.purchaseId,
+        }).catch(() => undefined)
+      }
     }
 
     await Promise.allSettled([

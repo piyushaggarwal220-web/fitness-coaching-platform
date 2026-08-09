@@ -6,6 +6,12 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  affiliateDiscountPaise,
+  affiliateSalePaise,
+  getAffiliateCode,
+  isAffiliateDiscountCode,
+} from '../src/lib/payments/affiliate-codes'
+import {
   computePromoDiscountPaise,
   isPromoCodeCurrentlyValid,
   normalizePromoCode,
@@ -105,5 +111,32 @@ const migration = readFileSync(
 assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.promo_codes/)
 assert.match(migration, /kind text NOT NULL CHECK \(kind IN \('discount', 'referral'\)\)/)
 pass('migration creates promo_codes with discount/referral kinds')
+
+assert.equal(isAffiliateDiscountCode('luke'), true)
+assert.equal(getAffiliateCode('LUKE')?.extraPercentOffSale, 5)
+assert.equal(affiliateSalePaise('LUKE', '3_months'), 94900)
+assert.equal(affiliateSalePaise('LUKE', '6_months'), 161400)
+assert.equal(affiliateSalePaise('LUKE', '12_months'), 284900)
+assert.equal(affiliateDiscountPaise('LUKE', '3_months', 249900), 155000)
+assert.equal(affiliateDiscountPaise('LUKE', '6_months', 424900), 263500)
+assert.equal(affiliateDiscountPaise('LUKE', '12_months', 749900), 465000)
+pass('LUKE affiliate code is sale + 5% (₹949 / ₹1,614 / ₹2,849)')
+
+const lukeExpected = expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'], {
+  amount_paise: '94900',
+  list_amount_paise: '249900',
+  discount_paise: '155000',
+  discount_code: 'LUKE',
+})
+assert.equal(lukeExpected, 94900)
+pass('order notes accept LUKE affiliate amounts')
+
+const lukeMigration = readFileSync(
+  resolve('supabase/migrations/20260809180000_luke_affiliate_promo.sql'),
+  'utf8'
+)
+assert.match(lukeMigration, /'LUKE'/)
+assert.match(lukeMigration, /referral/)
+pass('migration seeds LUKE affiliate promo')
 
 console.log('\nAll promo code checks passed.')

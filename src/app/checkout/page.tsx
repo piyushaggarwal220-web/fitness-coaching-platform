@@ -20,6 +20,11 @@ import {
   isFirstTimerDiscountCode,
 } from '@/lib/payments/checkout-discounts';
 import {
+  affiliateDiscountPaise,
+  affiliateSalePaise,
+  getAffiliateCode,
+} from '@/lib/payments/affiliate-codes';
+import {
   formatCountdownHms,
   getSaleCountdownRemainingMs,
 } from '@/lib/sale-countdown';
@@ -127,7 +132,26 @@ function CheckoutForm() {
   }, []);
 
   const buildLocalWelcomeDiscount = (code: string): AppliedDiscountPreview | null => {
-    if (!isFirstTimerDiscountCode(code) || isTrialCheckout) return null;
+    if (isTrialCheckout) return null;
+
+    const affiliate = getAffiliateCode(code);
+    if (affiliate) {
+      const discountPaise = affiliateDiscountPaise(code, plan.slug, plan.amountPaise);
+      const amountPaise = affiliateSalePaise(code, plan.slug);
+      if (discountPaise == null || amountPaise == null) return null;
+      return {
+        code: affiliate.code,
+        discountPaise,
+        amountPaise,
+        listAmountPaise: plan.amountPaise,
+        displayListPrice: plan.displayPrice,
+        displaySalePrice: formatInrFromPaise(amountPaise),
+        displayDiscount: formatInrFromPaise(discountPaise),
+        message: `Referral applied — save ${formatInrFromPaise(discountPaise)} on ${plan.name} (sale + ${affiliate.extraPercentOffSale}% via ${affiliate.referrerLabel}).`,
+      };
+    }
+
+    if (!isFirstTimerDiscountCode(code)) return null;
     const discountPaise = discountPaiseForPlan(plan.slug, plan.amountPaise);
     const amountPaise = firstTimerSalePaise(plan.slug, plan.amountPaise);
     if (discountPaise == null || amountPaise == null) return null;
@@ -152,7 +176,7 @@ function CheckoutForm() {
       return;
     }
 
-    // Instant local apply for WELCOME60 — no email required.
+    // Instant local apply for WELCOME60 / LUKE — no email required.
     const local = buildLocalWelcomeDiscount(code);
     if (local) setAppliedDiscount(local);
 

@@ -19,6 +19,8 @@ import {
   expectedAmountPaiseFromOrderNotes,
   normalizeDiscountCode,
 } from '@/lib/payments/checkout-discounts'
+import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
+import { notifyAffiliateCodeUsage } from '@/lib/payments/affiliate-notify'
 import { recordPromoCodeUsage } from '@/lib/payments/promo-codes'
 import { assertTrialPurchaseEligible } from '@/lib/payments/trial-eligibility'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -205,13 +207,25 @@ export async function POST(request: Request) {
     })
 
     if (appliedDiscountCode && appliedDiscountPaise > 0) {
-      await recordPromoCodeUsage(createAdminClient(), {
+      const usage = await recordPromoCodeUsage(createAdminClient(), {
         code: appliedDiscountCode,
         purchaseId: result.purchaseId,
         customerEmail: result.customerEmail,
         planSlug: plan.slug,
         discountPaise: appliedDiscountPaise,
-      }).catch(() => undefined)
+      }).catch(() => null)
+
+      if (usage?.recorded && isAffiliateDiscountCode(appliedDiscountCode)) {
+        await notifyAffiliateCodeUsage({
+          code: appliedDiscountCode,
+          referrerLabel: usage.referrerLabel,
+          customerEmail: result.customerEmail,
+          planSlug: plan.slug,
+          discountPaise: appliedDiscountPaise,
+          amountPaise: chargedAmountPaise,
+          purchaseId: result.purchaseId,
+        }).catch(() => undefined)
+      }
     }
 
     await Promise.allSettled([
