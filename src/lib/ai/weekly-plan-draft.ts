@@ -1,7 +1,8 @@
 /**
  * Server-side weekly plan draft generation.
- * Triggered automatically after weekly check-in submission.
- * Stores inactive draft plans — never auto-publishes.
+ * Triggered automatically after every weekly check-in submission.
+ * Always regenerates diet + workout via AI, then stores an inactive draft.
+ * Never auto-publishes and never posts the check-in into client chat.
  */
 import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { generatePlan } from '@/lib/ai/generate-plan'
@@ -78,50 +79,10 @@ function shouldSkipSupportPlanRefresh(checkin: Checkin, active: Plan | null): bo
   return isStableWeeklyCheckin(checkin)
 }
 
-/** Skip diet/workout AI when active plan has both and check-in is stable. */
-function shouldSkipCorePlanRefresh(checkin: Checkin, active: Plan | null): boolean {
-  const hasNutrition = Boolean(active?.nutrition_plan?.trim())
-  const hasWorkout = Boolean(active?.workout_plan?.trim())
-  if (!hasNutrition || !hasWorkout) return false
-  return isStableWeeklyCheckin(checkin)
-}
-
-function buildStableWeekCoachNotes(profile: OnboardingProfile, checkin: Checkin): string {
-  const name = profile.name?.trim() || 'there'
-  const week = checkin.coaching_week ? `Week ${checkin.coaching_week}` : 'this week'
-  return `Hi ${name} — ${week} looks solid. Energy, sleep, and adherence are in a good place, so we're keeping your current plan steady. Keep the consistency going; your coach is here if you need anything.`
-}
-
 function pickPrimaryModel(sections: DraftSectionUsage[]): string | null {
   if (sections.length === 0) return null
   const sonnet = sections.find((s) => s.model.includes('sonnet') || s.model === MODELS.CLAUDE_SONNET)
   return sonnet?.model ?? sections[0]?.model ?? null
-}
-
-function dietFormFromActive(clientId: string, active: Plan): PlanFormData {
-  return {
-    client_id: clientId,
-    title: 'Diet Plan (Draft)',
-    phase: active.phase ?? '',
-    workout_plan: '',
-    nutrition_plan: active.nutrition_plan?.trim() || '',
-    cardio_plan: '',
-    supplement_plan: '',
-    coach_notes: '',
-  }
-}
-
-function workoutFormFromActive(clientId: string, active: Plan): PlanFormData {
-  return {
-    client_id: clientId,
-    title: 'Workout Plan (Draft)',
-    phase: active.phase ?? '',
-    workout_plan: active.workout_plan?.trim() || '',
-    nutrition_plan: '',
-    cardio_plan: '',
-    supplement_plan: '',
-    coach_notes: '',
-  }
 }
 
 function buildUpdatedDietPlanForPrompt(
@@ -330,73 +291,56 @@ export async function generateWeeklyPlanDraft(input: {
     const checkinTyped = checkin as Checkin
     const profileTyped = profile as OnboardingProfile
     const sections: DraftSectionUsage[] = []
-    const skipCoreRefresh = shouldSkipCorePlanRefresh(checkinTyped, active)
-    const skipSupportRefresh = skipCoreRefresh || shouldSkipSupportPlanRefresh(checkinTyped, active)
+    // Diet + workout always regenerate from the weekly check-in. Support sections
+    // (cardio/supplements) may still soft-keep when the week is stable.
+    const skipSupportRefresh = shouldSkipSupportPlanRefresh(checkinTyped, active)
 
-    let dietForm: PlanFormData
-    let updatedDietContext: Plan | null
-
-    if (skipCoreRefresh && active) {
-      dietForm = dietFormFromActive(input.clientId, active)
-      updatedDietContext = buildUpdatedDietPlanForPrompt(
-        active,
-        dietForm.nutrition_plan,
-        null,
-        null
-      )
-    } else {
-      const dietResult = await generatePlan({
-        profile: profileTyped,
-        latestCheckin: checkinTyped,
-        actionId: 'review_update_diet',
+    const dietResult = await generatePlan({
+      profile: profileTyped,
+      latestCheckin: checkinTyped,
+      actionId: 'review_update_diet',
+      activePlan: active,
+      validationMode: 'nutrition_focus',
+      coachInstructions: buildActionCoachInstructions('review_update_diet', {
         activePlan: active,
-        validationMode: 'nutrition_focus',
-        coachInstructions: buildActionCoachInstructions('review_update_diet', {
-          activePlan: active,
-          checkin: checkinTyped,
-          coachNote,
-        }),
-      })
-      sections.push({
-        action: 'review_update_diet',
-        model: dietResult.model,
-        inputTokens: dietResult.inputTokens,
-        outputTokens: dietResult.outputTokens,
-      })
-      dietForm = generatedDietFormData(dietResult.generatedPlan, input.clientId)
-      updatedDietContext = buildUpdatedDietPlanForPrompt(
-        active,
-        dietForm.nutrition_plan,
-        null,
-        null
-      )
-    }
+        checkin: checkinTyped,
+        coachNote,
+      }),
+    })
+    sections.push({
+      action: 'review_update_diet',
+      model: dietResult.model,
+      inputTokens: dietResult.inputTokens,
+      outputTokens: dietResult.outputTokens,
+    })
+    const dietForm = generatedDietFormData(dietResult.generatedPlan, input.clientId)
+    const updatedDietContext = buildUpdatedDietPlanForPrompt(
+      active,
+      dietForm.nutrition_plan,
+      null,
+      null
+    )
 
-    let workoutForm: PlanFormData
-    if (skipCoreRefresh && active) {
-      workoutForm = workoutFormFromActive(input.clientId, active)
-    } else {
-      const workoutResult = await generatePlan({
-        profile: profileTyped,
-        latestCheckin: checkinTyped,
-        actionId: 'review_update_workout',
+    const workoutResult = await generatePlan({
+      profile: profileTyped,
+      latestCheckin: checkinTyped,
+      actionId: 'review_update_workout',
+      activePlan: active,
+      updatedDietPlan: updatedDietContext,
+      validationMode: 'workout_focus',
+      coachInstructions: buildActionCoachInstructions('review_update_workout', {
         activePlan: active,
-        updatedDietPlan: updatedDietContext,
-        validationMode: 'workout_focus',
-        coachInstructions: buildActionCoachInstructions('review_update_workout', {
-          activePlan: active,
-          checkin: checkinTyped,
-          coachNote,
-        }),
-      })
-      sections.push({
-        action: 'review_update_workout',
-        model: workoutResult.model,
-        inputTokens: workoutResult.inputTokens,
-        outputTokens: workoutResult.outputTokens,
-      })
-      workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, input.clientId)
-    }
+        checkin: checkinTyped,
+        coachNote,
+      }),
+    })
+    sections.push({
+      action: 'review_update_workout',
+      model: workoutResult.model,
+      inputTokens: workoutResult.inputTokens,
+      outputTokens: workoutResult.outputTokens,
+    })
+    const workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, input.clientId)
 
     // Persist a publishable core draft before optional cardio/supplement calls.
     // If the serverless isolate is killed mid-pipeline, coaches still get a usable draft.
@@ -421,9 +365,9 @@ export async function generateWeeklyPlanDraft(input: {
           workout_plan: workoutForm.workout_plan,
           cardio_plan: cardioPlan,
           supplement_plan: supplementPlan,
-          coach_notes: skipCoreRefresh
-            ? buildStableWeekCoachNotes(profileTyped, checkinTyped)
-            : [dietForm.coach_notes, workoutForm.coach_notes].filter(Boolean).join('\n\n'),
+          coach_notes: [dietForm.coach_notes, workoutForm.coach_notes]
+            .filter(Boolean)
+            .join('\n\n'),
         }
       )
 
@@ -559,7 +503,7 @@ export async function generateWeeklyPlanDraft(input: {
       model: pickPrimaryModel(sections),
       promptTokens,
       completionTokens,
-      skippedCore: skipCoreRefresh,
+      skippedCore: false,
       skippedSupport: skipSupportRefresh,
       sections,
     })

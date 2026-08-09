@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import type { CallRequest, CallRequestStatus, ConversationMessage } from '@/types/database'
 import { readApiJson } from '@/lib/api-response'
 import { formatMessageTime } from '@/lib/coach-chat-ui'
-import { isCheckinSystemMessage } from '@/lib/checkin-chat'
+import { isCheckinSystemMessage, isWeeklyCheckinSystemMessage } from '@/lib/checkin-chat'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
 import { StorageImage } from '@/components/ui/StorageImage'
@@ -647,6 +647,12 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           const shouldAnimate = historyReadyRef.current && !animatedIdsRef.current.has(msg.id)
 
           if (isSystem) {
+            // Weekly check-in dumps must never appear in chat (client or coach).
+            // Hide legacy rows too — new weekly submits no longer post here;
+            // coaches review them on /coach/checkin/[id] with the AI draft.
+            if (isWeeklyCheckinSystemMessage(msg.content)) {
+              return null
+            }
             const isCheckin = isCheckinSystemMessage(msg.content)
             return (
               <div
