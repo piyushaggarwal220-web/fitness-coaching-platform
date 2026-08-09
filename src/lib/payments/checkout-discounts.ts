@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
+  affiliateDiscountPaise,
+  getAffiliateCode,
+  isAffiliateDiscountCode,
+} from '@/lib/payments/affiliate-codes'
+import {
   getPurchasablePlan,
   type CoachingPlan,
   type CoachingPlanSlug,
@@ -212,8 +217,8 @@ export async function resolveCheckoutPricing(input: {
   }
 
   async function assertFirstTimerIfNeeded(required: boolean): Promise<ResolveDiscountResult | null> {
-    // Public sale code is open to renewals and returning customers too.
-    if (isFirstTimerDiscountCode(code)) return null
+    // Public sale / affiliate codes are open to renewals and returning customers too.
+    if (isFirstTimerDiscountCode(code) || isAffiliateDiscountCode(code)) return null
     if (!required || !enforceEligibility || !hasEmail) return null
     let firstTimer = false
     try {
@@ -234,6 +239,43 @@ export async function resolveCheckoutPricing(input: {
       }
     }
     return null
+  }
+
+  // Affiliate codes (e.g. LUKE): sale price + extra % off. Prefer hard-coded math so
+  // storefront sale targets stay authoritative even if the admin promo row drifts.
+  const affiliate = getAffiliateCode(code)
+  if (affiliate) {
+    const { promo, error: promoLookupError } = await getActivePromoCode(input.admin, code)
+    if (promoLookupError) {
+      return { ok: false, error: promoLookupError, status: 500 }
+    }
+    if (promo) {
+      const validityError = isPromoCodeCurrentlyValid(promo)
+      if (validityError) return { ok: false, error: validityError, status: 400 }
+    }
+
+    const discountPaise = affiliateDiscountPaise(code, plan.slug, listAmountPaise)
+    if (discountPaise == null) {
+      return { ok: false, error: 'This code is not available for this plan.', status: 400 }
+    }
+
+    const discount = buildAppliedDiscount({
+      kind: 'referral',
+      code: affiliate.code,
+      discountPaise,
+      listAmountPaise,
+      referrerLabel: promo?.referrer_label || affiliate.referrerLabel,
+    })
+
+    return {
+      ok: true,
+      pricing: {
+        plan,
+        listAmountPaise,
+        amountPaise: discount.amountPaise,
+        discount,
+      },
+    }
   }
 
   // Prefer admin-managed promo_codes rows.
@@ -324,7 +366,7 @@ export function expectedAmountPaiseFromOrderNotes(
   if (Number.isFinite(charged) && charged > 0) {
     const listAmount = Number.isFinite(listFromNotes) && listFromNotes > 0 ? listFromNotes : plan.amountPaise
 
-    // Generic admin promo / referral codes created at order time.
+    // Generic admin promo / referral / affiliate codes created at order time.
     if (
       code &&
       listAmount === plan.amountPaise &&
@@ -333,6 +375,13 @@ export function expectedAmountPaiseFromOrderNotes(
       charged === listAmount - discountPaise
     ) {
       return charged
+    }
+
+    if (code && isAffiliateDiscountCode(code)) {
+      const expectedDiscount = affiliateDiscountPaise(code, plan.slug, plan.amountPaise) ?? 0
+      if (discountPaise === expectedDiscount && charged === plan.amountPaise - expectedDiscount) {
+        return charged
+      }
     }
 
     if (code && isFirstTimerDiscountCode(code)) {

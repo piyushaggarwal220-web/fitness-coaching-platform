@@ -259,6 +259,12 @@ export async function updatePromoCode(
   return { data: data as PromoCode, error: null }
 }
 
+export type RecordPromoCodeUsageResult = {
+  recorded: boolean
+  alreadyRecorded: boolean
+  referrerLabel: string | null
+}
+
 /** Best-effort usage recording after a successful paid checkout. */
 export async function recordPromoCodeUsage(
   admin: SupabaseClient,
@@ -269,16 +275,20 @@ export async function recordPromoCodeUsage(
     planSlug: string
     discountPaise: number
   }
-): Promise<void> {
+): Promise<RecordPromoCodeUsageResult> {
   const code = normalizePromoCode(input.code)
-  if (!code) return
+  if (!code) return { recorded: false, alreadyRecorded: false, referrerLabel: null }
 
   const { data: promo } = await admin
     .from('promo_codes')
-    .select('id, remaining_uses')
+    .select('id, remaining_uses, referrer_label')
     .eq('code', code)
     .maybeSingle()
-  if (!promo) return
+
+  if (!promo) {
+    console.warn(`[promo] promo_codes row missing for ${code}; usage not recorded.`)
+    return { recorded: false, alreadyRecorded: false, referrerLabel: null }
+  }
 
   // Idempotent when both verify + webhook fire for the same purchase.
   if (input.purchaseId) {
@@ -287,7 +297,13 @@ export async function recordPromoCodeUsage(
       .select('id')
       .eq('purchase_id', input.purchaseId)
       .maybeSingle()
-    if (existing) return
+    if (existing) {
+      return {
+        recorded: false,
+        alreadyRecorded: true,
+        referrerLabel: promo.referrer_label ?? null,
+      }
+    }
   }
 
   await admin.from('promo_code_usages').insert({
@@ -306,5 +322,11 @@ export async function recordPromoCodeUsage(
         updated_at: new Date().toISOString(),
       })
       .eq('id', promo.id)
+  }
+
+  return {
+    recorded: true,
+    alreadyRecorded: false,
+    referrerLabel: promo.referrer_label ?? null,
   }
 }
