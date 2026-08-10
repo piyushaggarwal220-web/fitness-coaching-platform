@@ -17,6 +17,7 @@ import {
 import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { resolveVisionMediaType, type VisionSafeMediaType } from '@/lib/photo'
+import { clientWantsSupplements, ensurePlanLifestyleSections } from '@/lib/plan-lifestyle'
 import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
@@ -357,7 +358,10 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       .eq('status', 'generating')
 
     const cardioResult = await runOptionalSection('initial_cardio')
-    const supplementResult = await runOptionalSection('initial_supplements')
+    const wantsSupplements = clientWantsSupplements(profile)
+    const supplementResult = wantsSupplements
+      ? await runOptionalSection('initial_supplements')
+      : null
     const cardio = cardioResult
       ? generatedCardioFormData(cardioResult.generatedPlan, profile.id)
       : null
@@ -365,10 +369,23 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       ? generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
       : null
 
-    if (cardio || supplements) {
-      const updated = await updateAiPlanDraft(admin, persisted.data.id, {
+    const lifestyleForm = ensurePlanLifestyleSections(
+      {
+        ...coreForm,
+        workout_plan: workout.workout_plan,
         cardio_plan: cardio?.cardio_plan ?? '',
-        supplement_plan: supplements?.supplement_plan ?? '',
+        supplement_plan: wantsSupplements ? supplements?.supplement_plan ?? '' : '',
+        // Keep coach_notes empty until a human coach writes their delivery note.
+        coach_notes: '',
+      },
+      profile
+    )
+
+    {
+      const updated = await updateAiPlanDraft(admin, persisted.data.id, {
+        workout_plan: lifestyleForm.workout_plan,
+        cardio_plan: lifestyleForm.cardio_plan,
+        supplement_plan: lifestyleForm.supplement_plan,
       })
       if (updated.error) {
         // Core draft is already usable — do not fail the whole job for support sections.

@@ -16,6 +16,7 @@ import { MODELS } from '@/lib/ai/config'
 import { generatedCardioFormData, generatedDietFormData, generatedSupplementFormData, generatedWorkoutFormData } from '@/lib/ai/plan-format'
 import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-actions'
 import { encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
+import { clientWantsSupplements, ensurePlanLifestyleSections } from '@/lib/plan-lifestyle'
 import { getNextPlanVersion } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
@@ -437,32 +438,50 @@ export async function generateWeeklyPlanDraft(input: {
         // Keep existing cardio if the dedicated step fails.
       }
 
-      try {
-        const supplementResult = await generatePlan({
-          profile: profileTyped,
-          latestCheckin: checkinTyped,
-          actionId: 'review_update_supplements',
-          activePlan: active,
-          updatedDietPlan: updatedDietContext,
-          validationMode: 'supplements_focus',
-          coachInstructions: buildActionCoachInstructions('review_update_supplements', {
+      if (clientWantsSupplements(profileTyped)) {
+        try {
+          const supplementResult = await generatePlan({
+            profile: profileTyped,
+            latestCheckin: checkinTyped,
+            actionId: 'review_update_supplements',
             activePlan: active,
-            checkin: checkinTyped,
-            coachNote,
-          }),
-        })
-        sections.push({
-          action: 'review_update_supplements',
-          model: supplementResult.model,
-          inputTokens: supplementResult.inputTokens,
-          outputTokens: supplementResult.outputTokens,
-        })
-        supplementForm = generatedSupplementFormData(supplementResult.generatedPlan, input.clientId)
-      } catch {
-        // Keep existing supplements if the dedicated step fails.
+            updatedDietPlan: updatedDietContext,
+            validationMode: 'supplements_focus',
+            coachInstructions: buildActionCoachInstructions('review_update_supplements', {
+              activePlan: active,
+              checkin: checkinTyped,
+              coachNote,
+            }),
+          })
+          sections.push({
+            action: 'review_update_supplements',
+            model: supplementResult.model,
+            inputTokens: supplementResult.inputTokens,
+            outputTokens: supplementResult.outputTokens,
+          })
+          supplementForm = generatedSupplementFormData(supplementResult.generatedPlan, input.clientId)
+        } catch {
+          // Keep existing supplements if the dedicated step fails.
+        }
+      } else {
+        supplementForm = { supplement_plan: '' }
       }
 
       merged = buildMerged(cardioForm.cardio_plan, supplementForm.supplement_plan)
+      merged = ensurePlanLifestyleSections(merged, profileTyped)
+      draft = await upsertWeeklyPlanDraft({
+        admin,
+        clientId: input.clientId,
+        coachId: input.coachId,
+        checkinId: input.checkinId,
+        coachingWeek: input.coachingWeek,
+        merged,
+        metaNotes,
+        activePlan: active,
+      })
+    } else {
+      // Still guarantee Sleep / Water blocks even when cardio/supplements are soft-kept.
+      merged = ensurePlanLifestyleSections(merged, profileTyped)
       draft = await upsertWeeklyPlanDraft({
         admin,
         clientId: input.clientId,

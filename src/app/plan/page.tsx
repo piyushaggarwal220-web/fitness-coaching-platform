@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Apple,
   ClipboardList,
+  Droplets,
   Dumbbell,
   Footprints,
+  Moon,
   Pill,
 } from 'lucide-react';
 import { PlanChangeRequestPanel } from '@/components/plan/PlanChangeRequestPanel';
@@ -17,19 +19,31 @@ import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
 import { formatPlanDayHeadersForClient } from '@/lib/plan-day-labels';
 import { clientFacingPlanTitle } from '@/lib/plan-metadata';
+import { resolveClientPlanDisplaySections } from '@/lib/plan-lifestyle';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
 import { colors, spacing } from '@/lib/design-tokens';
-import type { Plan } from '@/types/database';
+import type { OnboardingProfile, Plan } from '@/types/database';
 
 const supabase = createClient();
 
-type PlanSection = 'diet' | 'workout' | 'supplements' | 'cardio' | 'notes';
+type PlanSection = 'diet' | 'workout' | 'sleep' | 'cardio' | 'water' | 'supplements' | 'notes';
+
+const SECTION_ICONS: Record<PlanSection, ReactNode> = {
+  diet: <Apple size={20} />,
+  workout: <Dumbbell size={20} />,
+  sleep: <Moon size={20} />,
+  cardio: <Footprints size={20} />,
+  water: <Droplets size={20} />,
+  supplements: <Pill size={20} color={colors.accent} />,
+  notes: <ClipboardList size={20} />,
+};
 
 export default function ClientPlanPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [profile, setProfile] = useState<OnboardingProfile | null>(null);
   const [planDelivered, setPlanDelivered] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,6 +58,7 @@ export default function ClientPlanPage() {
       }
 
       setPlanDelivered(result.profile?.plan_delivered === true);
+      setProfile((result.profile as OnboardingProfile) ?? null);
 
       const { data, error: planError } = await supabase
         .from('plans')
@@ -141,25 +156,15 @@ export default function ClientPlanPage() {
     );
   }
 
-  const sections = resolvePlanSectionsFromPlan(plan)
-
-  const accordionItems = [
-    {
-      key: 'diet' as const,
-      title: 'Diet',
-      icon: <Apple size={20} />,
-      content: formatPlanDayHeadersForClient(sections.diet),
-    },
-    {
-      key: 'workout' as const,
-      title: 'Workout',
-      icon: <Dumbbell size={20} />,
-      content: formatPlanDayHeadersForClient(sections.workout),
-    },
-    { key: 'supplements' as const, title: 'Supplements', icon: <Pill size={20} color={colors.accent} />, content: sections.supplements },
-    { key: 'cardio' as const, title: 'Cardio', icon: <Footprints size={20} />, content: sections.cardio },
-    { key: 'notes' as const, title: 'Coach Notes', icon: <ClipboardList size={20} />, content: sections.coachNotes },
-  ].filter((item) => item.content.trim().length > 0)
+  const parsed = resolvePlanSectionsFromPlan(plan)
+  const accordionItems = resolveClientPlanDisplaySections(parsed, profile).map((item) => ({
+    ...item,
+    content:
+      item.key === 'diet' || item.key === 'workout'
+        ? formatPlanDayHeadersForClient(item.content)
+        : item.content,
+    icon: SECTION_ICONS[item.key],
+  }))
 
   return (
     <ClientShell title="Plan">
@@ -189,6 +194,10 @@ export default function ClientPlanPage() {
             <span style={{ fontSize: 13, color: colors.textMuted }}>Delivered {formatPlanDate(plan.delivered_at)}</span>
           )}
         </div>
+        <p style={{ margin: `${spacing[4]}px 0 0`, fontSize: 13, color: colors.textMuted, lineHeight: 1.5 }}>
+          Diet chart, workout, sleep, cardio, water
+          {accordionItems.some((i) => i.key === 'supplements') ? ', and supplements' : ''} — open each section below.
+        </p>
       </div>
 
       {/* Accordions */}

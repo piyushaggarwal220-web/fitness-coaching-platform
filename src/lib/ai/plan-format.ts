@@ -155,6 +155,12 @@ function formatCardioSessions(sessions: unknown[]): string {
         typeof session.notes === 'string' ? session.notes : null,
       ].filter(Boolean)
 
+      // Keep Sleep / Water as labeled blocks so the client plan page can peel them out.
+      if (/^(water(?:\s+intake)?|sleep(?:\s+guidance)?)$/i.test(type.trim())) {
+        const body = parts.join('. ').trim()
+        return body ? `${type}\n${body}` : type
+      }
+
       return parts.length > 0 ? `${type} — ${parts.join(' · ')}` : type
     })
     .filter(Boolean)
