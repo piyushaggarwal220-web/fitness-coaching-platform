@@ -44,6 +44,7 @@ export const ONBOARDING_DAY1_CORE_STEPS = [
   2, // Goals
   7, // Training setup
   8, // Training schedule
+  10, // Movement comfort + recent program
   11, // Medical background
   13, // Diet type
   14, // Protein sources
@@ -357,6 +358,13 @@ export const PAIN_OPTIONS = [
   { value: 'yes', label: 'Yes, during some exercises' },
 ] as const
 
+/** Comfort performing foundational bodyweight / gym patterns. */
+export const MOVEMENT_COMFORT_OPTIONS = [
+  { value: 'yes', label: 'Yes, comfortably' },
+  { value: 'with_modification', label: 'With modifications' },
+  { value: 'no', label: 'No / not comfortably' },
+] as const
+
 export const ONBOARDING_LABELS: Record<string, Record<string, string>> = {
   gender: Object.fromEntries(GENDER_OPTIONS.map((o) => [o.value, o.label])),
   fitness_goal: {
@@ -381,6 +389,9 @@ export const ONBOARDING_LABELS: Record<string, Record<string, string>> = {
   training_location: Object.fromEntries(TRAINING_LOCATION_OPTIONS.map((o) => [o.value, o.label])),
   workout_duration: Object.fromEntries(WORKOUT_DURATION_OPTIONS.map((o) => [o.value, o.label])),
   preferred_workout_time: Object.fromEntries(WORKOUT_TIME_OPTIONS.map((o) => [o.value, o.label])),
+  can_squat: Object.fromEntries(MOVEMENT_COMFORT_OPTIONS.map((o) => [o.value, o.label])),
+  can_pushup: Object.fromEntries(MOVEMENT_COMFORT_OPTIONS.map((o) => [o.value, o.label])),
+  can_pullup: Object.fromEntries(MOVEMENT_COMFORT_OPTIONS.map((o) => [o.value, o.label])),
   whey_protein: Object.fromEntries(WHEY_OPTIONS.map((o) => [o.value, o.label])),
   monthly_food_budget: Object.fromEntries(BUDGET_OPTIONS.map((o) => [o.value, o.label])),
   cooking_ability: Object.fromEntries(COOKING_OPTIONS.map((o) => [o.value, o.label])),
@@ -400,6 +411,8 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   chest: '',
   thigh: '',
   navel: '',
+  left_bicep: '',
+  right_bicep: '',
   fitness_goal: '',
   starting_body_type: '',
   selected_goals: [],
@@ -424,6 +437,10 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   equipment_available: [],
   favorite_exercises: '',
   exercises_disliked: '',
+  can_squat: '',
+  can_pushup: '',
+  can_pullup: '',
+  recent_program: '',
   injuries: '',
   medical_notes: '',
   pain_during_exercise: '',
@@ -511,6 +528,8 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     chest: data.measurements?.chest ?? '',
     thigh: data.measurements?.thigh ?? '',
     navel: data.measurements?.navel ?? '',
+    left_bicep: data.measurements?.leftBicep ?? '',
+    right_bicep: data.measurements?.rightBicep ?? '',
     training_location: data.training?.location ?? '',
     training_duration: data.training?.trainingDuration ?? '',
     training_days_per_week: data.training?.daysPerWeek != null ? String(data.training.daysPerWeek) : '',
@@ -519,6 +538,10 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     equipment_available: data.training?.equipmentAvailable ?? [],
     favorite_exercises: data.training?.favoriteExercises ?? '',
     exercises_disliked: data.training?.exercisesDisliked ?? '',
+    can_squat: data.training?.canSquat ?? '',
+    can_pushup: data.training?.canPushup ?? '',
+    can_pullup: data.training?.canPullup ?? '',
+    recent_program: data.training?.recentProgram ?? '',
     pain_during_exercise: data.medical?.painDuringExercise ?? '',
     medications: data.medical?.medications ?? '',
     acne_status: data.medical?.acne ?? '',
@@ -613,6 +636,7 @@ export function getResumeStep(
       requireWorkSchoolSchedule: requireNewFields,
       requireFluxCapacity: requireNewFields,
       requireDietVariety: requireNewFields,
+      requireMovementAssessment: requireNewFields,
       requireMultiGoals: true,
     })
     if (error) return step
@@ -667,6 +691,8 @@ export function buildOnboardingData(
       chest: form.chest.trim() || null,
       thigh: form.thigh.trim() || null,
       navel: form.navel.trim() || null,
+      leftBicep: form.left_bicep.trim() || null,
+      rightBicep: form.right_bicep.trim() || null,
     },
     training: {
       location: form.training_location || null,
@@ -677,6 +703,10 @@ export function buildOnboardingData(
       equipmentAvailable: form.equipment_available.length > 0 ? form.equipment_available : null,
       favoriteExercises: form.favorite_exercises.trim() || null,
       exercisesDisliked: form.exercises_disliked.trim() || null,
+      canSquat: form.can_squat || null,
+      canPushup: form.can_pushup || null,
+      canPullup: form.can_pullup || null,
+      recentProgram: form.recent_program.trim() || null,
     },
     medical: {
       conditions: form.medical_notes.trim() || null,
@@ -850,6 +880,8 @@ export function validateOnboardingStep(
     requireFluxCapacity?: boolean
     /** New clients only — diet variety preference. */
     requireDietVariety?: boolean
+    /** New clients only — squat/push-up/pull-up comfort + recent program. */
+    requireMovementAssessment?: boolean
     /** Number wheels that the user has explicitly confirmed. */
     confirmedScrollers?: string[]
     /** Current coaching plan — gates which goals are selectable. */
@@ -909,6 +941,18 @@ export function validateOnboardingStep(
         }
         if (options?.confirmedScrollers != null && !confirmedScrollers.has('navel')) {
           return 'Confirm your belly measurement after scrolling.'
+        }
+        if (!data.left_bicep || Number(data.left_bicep) <= 0) {
+          return 'Scroll to select your left bicep (flexed) measurement.'
+        }
+        if (options?.confirmedScrollers != null && !confirmedScrollers.has('left_bicep')) {
+          return 'Confirm your left bicep measurement after scrolling.'
+        }
+        if (!data.right_bicep || Number(data.right_bicep) <= 0) {
+          return 'Scroll to select your right bicep (flexed) measurement.'
+        }
+        if (options?.confirmedScrollers != null && !confirmedScrollers.has('right_bicep')) {
+          return 'Confirm your right bicep measurement after scrolling.'
         }
       }
       return null
@@ -979,8 +1023,17 @@ export function validateOnboardingStep(
       }
       return null
     }
-    case 10:
+    case 10: {
+      if (options?.requireMovementAssessment !== false) {
+        if (!data.can_squat) return 'Please answer whether you can comfortably perform squats.'
+        if (!data.can_pushup) return 'Please answer whether you can comfortably perform push-ups.'
+        if (!data.can_pullup) return 'Please answer whether you can comfortably perform pull-ups.'
+        if (!data.recent_program.trim()) {
+          return 'Describe any recent workout program, or write "None".'
+        }
+      }
       return null
+    }
     case 11: {
       if (!data.acne_status) return 'Please answer the acne question.'
       if (!data.hair_loss_status) return 'Please answer the hair loss question.'
@@ -1124,6 +1177,8 @@ export function buildReviewSections(
         { label: 'Chest', value: form.chest ? `${form.chest} cm` : 'Not set' },
         { label: 'Thigh', value: form.thigh ? `${form.thigh} cm` : 'Not set' },
         { label: 'Belly (navel)', value: form.navel ? `${form.navel} cm` : 'Not set' },
+        { label: 'Left bicep (flexed)', value: form.left_bicep ? `${form.left_bicep} cm` : 'Not set' },
+        { label: 'Right bicep (flexed)', value: form.right_bicep ? `${form.right_bicep} cm` : 'Not set' },
       ],
     },
     {
@@ -1151,6 +1206,10 @@ export function buildReviewSections(
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
         { label: 'Equipment', value: equipment },
+        { label: 'Squats', value: getOnboardingLabel('can_squat', form.can_squat) },
+        { label: 'Push-ups', value: getOnboardingLabel('can_pushup', form.can_pushup) },
+        { label: 'Pull-ups', value: getOnboardingLabel('can_pullup', form.can_pullup) },
+        { label: 'Recent program', value: form.recent_program.trim() || 'Not set' },
       ],
     },
     {
@@ -1295,6 +1354,7 @@ export function findFirstIncompleteOnboardingStep(
     requireWorkSchoolSchedule?: boolean
     requireFluxCapacity?: boolean
     requireDietVariety?: boolean
+    requireMovementAssessment?: boolean
     confirmedScrollers?: string[]
     planSlug?: string | null
     requireMultiGoals?: boolean
@@ -1317,6 +1377,7 @@ export function validateOnboardingAnswersForProfile(
     requireWorkSchoolSchedule?: boolean
     requireFluxCapacity?: boolean
     requireDietVariety?: boolean
+    requireMovementAssessment?: boolean
   }
 ): string | null {
   const form = formFromProfile(profile)
@@ -1335,6 +1396,7 @@ export function validateOnboardingAnswersForProfile(
   const requireWorkSchoolSchedule = options?.requireWorkSchoolSchedule ?? requireNewFields
   const requireFluxCapacity = options?.requireFluxCapacity ?? requireNewFields
   const requireDietVariety = options?.requireDietVariety ?? requireNewFields
+  const requireMovementAssessment = options?.requireMovementAssessment ?? requireNewFields
 
   for (const step of getOnboardingWizardSteps(form)) {
     const error = validateOnboardingStep(step, form, undefined, photoUrls, meals, {
@@ -1342,6 +1404,7 @@ export function validateOnboardingAnswersForProfile(
       requireWorkSchoolSchedule,
       requireFluxCapacity,
       requireDietVariety,
+      requireMovementAssessment,
       // Completed / generation checks must accept legacy single-goal profiles.
       requireMultiGoals: false,
     })

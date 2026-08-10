@@ -178,6 +178,8 @@ function buildClientProfileSection(profile: OnboardingProfile): string {
     `- Chest: ${formatValue(profile.onboarding_data?.measurements?.chest)} cm`,
     `- Thigh: ${formatValue(profile.onboarding_data?.measurements?.thigh)} cm`,
     `- Belly (navel): ${formatValue(profile.onboarding_data?.measurements?.navel)} cm`,
+    `- Left bicep (flexed): ${formatValue(profile.onboarding_data?.measurements?.leftBicep)} cm`,
+    `- Right bicep (flexed): ${formatValue(profile.onboarding_data?.measurements?.rightBicep)} cm`,
     `- Fitness goal: ${
       profile.onboarding_data?.goals?.selectedGoals &&
       profile.onboarding_data.goals.selectedGoals.length > 0
@@ -328,17 +330,27 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   }
   if (data.measurements) {
     lines.push(
-      `Body measurements: chest ${data.measurements.chest ?? '—'} cm, thigh ${data.measurements.thigh ?? '—'} cm, belly at navel ${data.measurements.navel ?? '—'} cm`
+      `Body measurements: chest ${data.measurements.chest ?? '—'} cm, thigh ${data.measurements.thigh ?? '—'} cm, belly at navel ${data.measurements.navel ?? '—'} cm, left bicep ${data.measurements.leftBicep ?? '—'} cm, right bicep ${data.measurements.rightBicep ?? '—'} cm`
     )
   }
   if (data.training) {
     const favorite = data.training.favoriteExercises?.trim()
     const disliked = data.training.exercisesDisliked?.trim()
+    const recentProgram = data.training.recentProgram?.trim()
     const durationLabel = data.training.trainingDuration
       ? getOnboardingLabel('training_duration', data.training.trainingDuration)
       : '—'
+    const squat = data.training.canSquat
+      ? getOnboardingLabel('can_squat', data.training.canSquat)
+      : '—'
+    const pushup = data.training.canPushup
+      ? getOnboardingLabel('can_pushup', data.training.canPushup)
+      : '—'
+    const pullup = data.training.canPullup
+      ? getOnboardingLabel('can_pullup', data.training.canPullup)
+      : '—'
     lines.push(
-      `Training: location ${data.training.location ?? '—'}, training history ${durationLabel}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
+      `Training: location ${data.training.location ?? '—'}, training history ${durationLabel}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}, squat comfort ${squat}, push-up comfort ${pushup}, pull-up comfort ${pullup}${recentProgram ? `, recent program ${recentProgram}` : ''}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
     )
   }
   if (data.medical) {
@@ -443,6 +455,18 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
   if (training?.daysPerWeek) {
     lines.push(`- Training days per week: ${training.daysPerWeek} — program must match this exactly, not more.`)
   }
+  if (training?.canSquat) {
+    lines.push(`- Squats: ${getOnboardingLabel('can_squat', training.canSquat)}`)
+  }
+  if (training?.canPushup) {
+    lines.push(`- Push-ups: ${getOnboardingLabel('can_pushup', training.canPushup)}`)
+  }
+  if (training?.canPullup) {
+    lines.push(`- Pull-ups: ${getOnboardingLabel('can_pullup', training.canPullup)}`)
+  }
+  if (training?.recentProgram?.trim()) {
+    lines.push(`- Recent workout program: ${training.recentProgram.trim()}`)
+  }
   if (training?.favoriteExercises?.trim()) {
     lines.push(`- Include preferred exercises where appropriate: ${training.favoriteExercises.trim()}`)
   }
@@ -475,6 +499,10 @@ function buildTrainingPreferencesSection(profile: OnboardingProfile): string {
     `- Session duration: ${training?.durationMinutes ? `${training.durationMinutes} min` : 'Not provided'}`,
     `- Preferred workout time: ${training?.preferredTime ? getOnboardingLabel('preferred_workout_time', training.preferredTime) : 'Not provided'}`,
     `- Available equipment: ${equipment.length > 0 ? equipment.join(', ') : location === 'gym' ? 'Full commercial gym' : 'None / bodyweight only'}`,
+    `- Squats: ${training?.canSquat ? getOnboardingLabel('can_squat', training.canSquat) : 'Not provided'}`,
+    `- Push-ups: ${training?.canPushup ? getOnboardingLabel('can_pushup', training.canPushup) : 'Not provided'}`,
+    `- Pull-ups: ${training?.canPullup ? getOnboardingLabel('can_pullup', training.canPullup) : 'Not provided'}`,
+    `- Recent workout program: ${training?.recentProgram?.trim() || 'Not provided'}`,
     `- Favorite exercises / exercises to include: ${training?.favoriteExercises?.trim() || 'None specified'}`,
     `- Exercises to avoid: ${training?.exercisesDisliked?.trim() || 'None specified'}`,
     `- Training experience: ${getOnboardingLabel('training_experience', profile.training_experience)}`,

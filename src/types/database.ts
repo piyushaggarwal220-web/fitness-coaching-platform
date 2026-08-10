@@ -86,6 +86,10 @@ export type OnboardingData = {
     chest?: string | null
     thigh?: string | null
     navel?: string | null
+    /** Flexed left bicep circumference (cm). */
+    leftBicep?: string | null
+    /** Flexed right bicep circumference (cm). */
+    rightBicep?: string | null
   }
   training?: {
     location?: string | null
@@ -97,6 +101,14 @@ export type OnboardingData = {
     equipmentAvailable?: string[] | null
     favoriteExercises?: string | null
     exercisesDisliked?: string | null
+    /** yes | with_modification | no */
+    canSquat?: string | null
+    /** yes | with_modification | no */
+    canPushup?: string | null
+    /** yes | with_modification | no */
+    canPullup?: string | null
+    /** Recent or current workout program description (or "None"). */
+    recentProgram?: string | null
   }
   medical?: {
     conditions?: string | null
@@ -205,6 +217,8 @@ export type OnboardingFormData = {
   chest: string
   thigh: string
   navel: string
+  left_bicep: string
+  right_bicep: string
   fitness_goal: string
   /** weight_gain | skinny_fat | lose_fat_fast */
   starting_body_type: string
@@ -233,6 +247,14 @@ export type OnboardingFormData = {
   equipment_available: string[]
   favorite_exercises: string
   exercises_disliked: string
+  /** yes | with_modification | no — can comfortably squat */
+  can_squat: string
+  /** yes | with_modification | no — can comfortably do push-ups */
+  can_pushup: string
+  /** yes | with_modification | no — can comfortably do pull-ups */
+  can_pullup: string
+  /** Recent workout program description, or "None" */
+  recent_program: string
   injuries: string
   medical_notes: string
   pain_during_exercise: string
