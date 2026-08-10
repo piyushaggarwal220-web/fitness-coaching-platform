@@ -35,6 +35,7 @@ import {
   HAIR_LOSS_OPTIONS,
   INITIAL_ONBOARDING_FORM,
   isOnboardingComplete,
+  isOnboardingFormEffectivelyEmpty,
   loadOnboardingWizardDraft,
   markOnboardingJustCompleted,
   MEAL_TIMING_OPTIONS,
@@ -45,6 +46,7 @@ import {
   PROTEIN_DAYS_OPTIONS,
   proteinDaysNeedWeekdays,
   allWeekdayValues,
+  resolveOnboardingRestoreStep,
   saveOnboardingProgress,
   saveOnboardingWizardDraft,
   SEXUAL_HEALTH_OPTIONS,
@@ -126,6 +128,9 @@ export default function OnboardingPage() {
   const [confirmedScrollers, setConfirmedScrollers] = useState<string[]>([])
   const [requireBodyMeasurements, setRequireBodyMeasurements] = useState(true)
   const [planSlug, setPlanSlug] = useState<string>('3_months')
+  /** Blocks draft writes / photo saves until profile hydrate finishes. */
+  const [wizardReady, setWizardReady] = useState(false)
+  const wizardReadyRef = useRef(false)
 
   const stateRef = useRef({
     userId,
@@ -134,10 +139,20 @@ export default function OnboardingPage() {
     form,
     photoUrls,
     mealsForTiming,
+    wizardReady,
   })
   useEffect(() => {
-    stateRef.current = { userId, userEmail, step, form, photoUrls, mealsForTiming }
-  }, [userId, userEmail, step, form, photoUrls, mealsForTiming])
+    stateRef.current = {
+      userId,
+      userEmail,
+      step,
+      form,
+      photoUrls,
+      mealsForTiming,
+      wizardReady,
+    }
+    wizardReadyRef.current = wizardReady
+  }, [userId, userEmail, step, form, photoUrls, mealsForTiming, wizardReady])
 
   useEffect(() => {
     const init = async () => {
@@ -148,11 +163,13 @@ export default function OnboardingPage() {
       if (!result) return
 
       if (result.profileError) {
+        // Do not mark wizard ready — empty INITIAL form must not autosave/wipe.
         setUserId(result.user.id)
         setUserEmail(result.user.email ?? null)
         const draftStep = loadOnboardingWizardDraft(result.user.id)
         if (draftStep != null) setStep(draftStep)
         setError('Could not load your profile. Please refresh the page.')
+        setWizardReady(false)
         setLoading(false)
         return
       }
@@ -163,9 +180,8 @@ export default function OnboardingPage() {
         return
       }
 
-      setUserId(result.user.id)
-      setUserEmail(result.user.email ?? null)
-
+      // Fetch purchase before applying wizard state so we never set userId while
+      // step is still 0 (that race was writing draft step 0 over real progress).
       const { data: purchase } = await supabase
         .from('purchases')
         .select('plan_slug, status, created_at')
@@ -175,53 +191,52 @@ export default function OnboardingPage() {
         .limit(1)
         .maybeSingle()
 
-      setPlanSlug(
-        resolveGoalPlanTier(purchase?.plan_slug as string | undefined, {
-          accessSource: result.profile?.access_source,
-        })
-      )
+      const nextPlanSlug = resolveGoalPlanTier(purchase?.plan_slug as string | undefined, {
+        accessSource: result.profile?.access_source,
+      })
 
-      if (result.profile) {
-        const needsMeasurements = shouldRequireOnboardingBodyMeasurements(result.profile)
-        setRequireBodyMeasurements(needsMeasurements)
-        const resumed = formFromProfile(result.profile)
-        setForm(resumed)
-        const resumeStep = getResumeStep(result.profile, {
-          requireBodyMeasurements: needsMeasurements,
-        })
-        const wizardSteps = getOnboardingWizardSteps(resumed)
-        // Mobile camera remounts can restore a later draft step (e.g. photos/review).
-        // Never skip past the first incomplete required step (e.g. missing biceps).
-        const draftStep = loadOnboardingWizardDraft(result.user.id)
-        let restoredStep = resumeStep
-        if (draftStep != null && wizardSteps.includes(draftStep)) {
-          const resumeIdx = wizardSteps.indexOf(resumeStep)
-          const draftIdx = wizardSteps.indexOf(draftStep)
-          restoredStep = draftIdx <= resumeIdx || resumeIdx < 0 ? draftStep : resumeStep
-        }
-        setStep(restoredStep)
-        saveOnboardingWizardDraft(result.user.id, restoredStep)
-        const preConfirmed: string[] = []
-        if (resumed.age) preConfirmed.push('age')
-        if (resumed.height) preConfirmed.push('height')
-        if (resumed.weight) preConfirmed.push('weight')
-        if (resumed.chest) preConfirmed.push('chest')
-        if (resumed.thigh) preConfirmed.push('thigh')
-        if (resumed.navel) preConfirmed.push('navel')
-        if (resumed.left_bicep) preConfirmed.push('left_bicep')
-        if (resumed.right_bicep) preConfirmed.push('right_bicep')
-        if (resumed.monthly_food_budget) preConfirmed.push('monthly_food_budget')
-        setConfirmedScrollers(preConfirmed)
-        setPhotoUrls({
-          front: result.profile.progress_photo_front ?? null,
-          side: result.profile.progress_photo_side ?? null,
-          back: result.profile.progress_photo_back ?? null,
-        })
-        const savedMeals = result.profile.onboarding_data?.eatingPattern?.mealsForTiming
-        if (savedMeals && savedMeals.length > 0) {
-          setMealsForTiming(savedMeals)
-          setConfirmedMealTimes(
-            savedMeals.filter((meal) => {
+      if (!result.profile) {
+        setUserId(result.user.id)
+        setUserEmail(result.user.email ?? null)
+        setPlanSlug(nextPlanSlug)
+        setWizardReady(false)
+        setError('Could not load your profile. Please refresh the page.')
+        setLoading(false)
+        return
+      }
+
+      const needsMeasurements = shouldRequireOnboardingBodyMeasurements(result.profile)
+      const resumed = formFromProfile(result.profile)
+      const resumeStep = getResumeStep(result.profile, {
+        requireBodyMeasurements: needsMeasurements,
+      })
+      const wizardSteps = getOnboardingWizardSteps(resumed)
+      const draftStep = loadOnboardingWizardDraft(result.user.id)
+      const restoredStep = resolveOnboardingRestoreStep(resumeStep, draftStep, wizardSteps)
+
+      const preConfirmed: string[] = []
+      if (resumed.age) preConfirmed.push('age')
+      if (resumed.height) preConfirmed.push('height')
+      if (resumed.weight) preConfirmed.push('weight')
+      if (resumed.chest) preConfirmed.push('chest')
+      if (resumed.thigh) preConfirmed.push('thigh')
+      if (resumed.navel) preConfirmed.push('navel')
+      if (resumed.left_bicep) preConfirmed.push('left_bicep')
+      if (resumed.right_bicep) preConfirmed.push('right_bicep')
+      if (resumed.monthly_food_budget) preConfirmed.push('monthly_food_budget')
+
+      const nextPhotoUrls = {
+        front: result.profile.progress_photo_front ?? null,
+        side: result.profile.progress_photo_side ?? null,
+        back: result.profile.progress_photo_back ?? null,
+      }
+
+      const savedMeals = result.profile.onboarding_data?.eatingPattern?.mealsForTiming
+      const nextMeals =
+        savedMeals && savedMeals.length > 0 ? savedMeals : (['breakfast', 'lunch', 'dinner'] as MealTimingKey[])
+      const nextConfirmedMeals =
+        savedMeals && savedMeals.length > 0
+          ? savedMeals.filter((meal) => {
               const timing =
                 meal === 'breakfast'
                   ? result.profile!.onboarding_data?.eatingPattern?.timings?.breakfast
@@ -232,24 +247,40 @@ export default function OnboardingPage() {
                       : result.profile!.onboarding_data?.eatingPattern?.timings?.snacks
               return Boolean(timing)
             })
-          )
-        }
+          : []
+
+      // Write draft BEFORE React state so any interim effect cannot clobber with 0.
+      saveOnboardingWizardDraft(result.user.id, restoredStep)
+
+      // Apply hydrated wizard state in one turn (step never lags behind userId).
+      setUserId(result.user.id)
+      setUserEmail(result.user.email ?? null)
+      setPlanSlug(nextPlanSlug)
+      setRequireBodyMeasurements(needsMeasurements)
+      setForm(resumed)
+      setStep(restoredStep)
+      setConfirmedScrollers(preConfirmed)
+      setPhotoUrls(nextPhotoUrls)
+      if (savedMeals && savedMeals.length > 0) {
+        setMealsForTiming(nextMeals)
+        setConfirmedMealTimes(nextConfirmedMeals)
       }
+      setWizardReady(true)
       setLoading(false)
     }
     init()
   }, [router])
 
   useEffect(() => {
-    if (!userId) return
+    if (!wizardReady || !userId) return
     saveOnboardingWizardDraft(userId, step)
-  }, [userId, step])
+  }, [wizardReady, userId, step])
 
   // Checkpoint wizard position before the OS camera kills this page.
   useEffect(() => {
     const flushDraft = () => {
       const current = stateRef.current
-      if (!current.userId) return
+      if (!current.userId || !current.wizardReady) return
       saveOnboardingWizardDraft(current.userId, current.step)
     }
     const onVisibility = () => {
@@ -290,7 +321,11 @@ export default function OnboardingPage() {
 
   const persistProgress = useCallback(
     async (nextStep: number, complete = false) => {
-      if (!userId) return
+      if (!userId || !wizardReadyRef.current) return
+      if (!complete && isOnboardingFormEffectivelyEmpty(form) && nextStep > 0) {
+        setError('Your answers are still loading. Please wait a moment and try again.')
+        return
+      }
       setSaving(true)
       try {
         // Photos are normally uploaded as soon as they are selected. Re-upload any
@@ -307,6 +342,7 @@ export default function OnboardingPage() {
           complete,
           mealsForTiming,
         })
+        saveOnboardingWizardDraft(userId, nextStep)
 
         if (photos.front || photos.side || photos.back) {
           setPhotoUrls(urls)
@@ -322,7 +358,8 @@ export default function OnboardingPage() {
 
   const checkpointBeforeCamera = useCallback(async () => {
     const current = stateRef.current
-    if (!current.userId) return
+    if (!current.userId || !current.wizardReady) return
+    if (isOnboardingFormEffectivelyEmpty(current.form)) return
     saveOnboardingWizardDraft(current.userId, current.step)
     await supabase.auth.refreshSession().catch(() => undefined)
     try {
@@ -334,7 +371,7 @@ export default function OnboardingPage() {
       })
       setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
     } catch {
-      // Draft is already in sessionStorage; continue into the camera.
+      // Draft is already in storage; continue into the camera.
     }
   }, [])
 
@@ -348,8 +385,12 @@ export default function OnboardingPage() {
         return
       }
       const current = stateRef.current
-      if (!current.userId) {
+      if (!current.userId || !current.wizardReady) {
         setError('Please wait for your session to load, then try the photo again.')
+        return
+      }
+      if (isOnboardingFormEffectivelyEmpty(current.form)) {
+        setError('Your answers are still loading. Please wait a moment, then try the photo again.')
         return
       }
 
@@ -371,6 +412,12 @@ export default function OnboardingPage() {
           setPhotos((prev) => ({ ...prev, [key]: null }))
           // Keep profile paths in sync immediately so later steps / resume never miss photos.
           const latest = stateRef.current
+          if (isOnboardingFormEffectivelyEmpty(latest.form)) {
+            // Upload succeeded; skip profile upsert so we never wipe progress.
+            saveOnboardingWizardDraft(latest.userId ?? current.userId!, latest.step)
+            setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+            return
+          }
           await saveOnboardingProgress(supabase, latest.userId ?? current.userId!, latest.form, {
             email: latest.userEmail,
             step: latest.step,
@@ -465,12 +512,13 @@ export default function OnboardingPage() {
     setError('')
     const wizardSteps = getOnboardingWizardSteps(form)
     const wizardIndex = wizardSteps.indexOf(step)
-    if (wizardIndex < 0) {
-      const prev = [...wizardSteps].reverse().find((s) => s < step) ?? wizardSteps[0] ?? 0
-      setStep(prev)
-      return
+    const prevStep =
+      wizardIndex < 0
+        ? ([...wizardSteps].reverse().find((s) => s < step) ?? wizardSteps[0] ?? 0)
+        : (wizardSteps[Math.max(wizardIndex - 1, 0)] ?? 0)
+    if (userId) {
+      saveOnboardingWizardDraft(userId, prevStep, { allowBackward: true })
     }
-    const prevStep = wizardSteps[Math.max(wizardIndex - 1, 0)] ?? 0
     setStep(prevStep)
   }
 
@@ -550,6 +598,14 @@ export default function OnboardingPage() {
 
   const handleEditSection = (targetStep: number) => {
     setError('')
+    if (userId && wizardReady) {
+      const wizardSteps = getOnboardingWizardSteps(form)
+      const currentIdx = wizardSteps.indexOf(step)
+      const targetIdx = wizardSteps.indexOf(targetStep)
+      saveOnboardingWizardDraft(userId, targetStep, {
+        allowBackward: targetIdx >= 0 && currentIdx >= 0 ? targetIdx < currentIdx : targetStep < step,
+      })
+    }
     setStep(targetStep)
   }
 
@@ -565,7 +621,7 @@ export default function OnboardingPage() {
   const currentSection = getSectionForStep(step)
   const photoUploadInFlight =
     uploadingPhotos.front || uploadingPhotos.side || uploadingPhotos.back
-  const busy = submitting || saving || photoUploadInFlight
+  const busy = submitting || saving || photoUploadInFlight || !wizardReady
 
   return (
     <div style={s.page}>
