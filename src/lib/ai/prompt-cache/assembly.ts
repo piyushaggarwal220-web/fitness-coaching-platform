@@ -24,11 +24,26 @@ export function resolveAppendOrderForAction(
       return [
         'hardConstraints',
         'metabolicFlux',
+        'nutritionTargets',
         'clientDetails',
         'onboarding',
         'activeDiet',
         'activeWorkout',
         'checkin',
+        'mesocycle',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
+    case 'initial_diet':
+    case 'initial_supplements':
+      return [
+        'hardConstraints',
+        'metabolicFlux',
+        'nutritionTargets',
+        'clientDetails',
+        'onboarding',
+        'mesocycle',
         'coachNotes',
         'knowledge',
         'complexity',
@@ -54,6 +69,7 @@ export function resolveAppendOrderForAction(
       return [
         'hardConstraints',
         'metabolicFlux',
+        'nutritionTargets',
         'clientDetails',
         'onboarding',
         'coachNotes',

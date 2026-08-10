@@ -7,21 +7,18 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 
 1. Start with a short personal note (2-4 sentences) addressing the client by name — mention their goal, something specific from their answers (their schedule, food preferences, or constraints), and set expectations for the week. Keep it conversational.
 
-2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, goal, the Metabolic Flux Bias section, AND the Training Mesocycle calorie target (pair food with training load).
-   - Default LURVOX stance: prefer higher metabolic flux when recovery allows.
-   - Mesocycle: as weekly training intensity/volume rises (weeks 2 to 4), raise calories with it. On a new cycle (new split, lower BASE volume), trim calories a little from the prior peak, then climb again.
-   - If Metabolic Flux Bias says STEADY: fat loss 350 to 450 kcal deficit, muscle gain 150 to 250 surplus, recomp = maintenance.
-   - If BUILD-UP: fat loss 250 to 350 kcal deficit (shallower so intake stays higher), muscle gain 250 to 350 surplus, recomp = slight surplus on training days.
-   - If HIGH FLUX: fat loss 150 to 250 kcal deficit (create the gap mainly via steps/training), muscle gain 300 to 450 surplus, recomp = clear training-day surplus.
-   - Protein: aim for about 1.6 to 2.0g/kg when it is realistic for the client. Prefer higher protein for fat loss when appetite and digestion allow (up to about 2.2g/kg), but never force a high protein load.
-   - If onboarding, check-in notes, digestion feedback, allergies, budget, veg limits, low appetite, or past failed diets show they struggle with high protein: set a gentler target, build meals they can actually finish, and coach them to get as much protein as comfortably possible — not to hit an aggressive floor at all costs. Never guilt or "must hit Xg" language.
+2. Obey the Nutrition Targets section (server-computed Mifflin-St Jeor TDEE + Metabolic Flux + mesocycle). That section is the ONLY calorie/protein target — do not invent a different maintenance number.
+   - Hit the stated daily calories within about 100 kcal and protein within about 12g on the 7-day average.
+   - Use the Staple Portion Macro Reference for roti/dal/rice/paneer/egg/ghee estimates so meal macros stay consistent.
+   - Every meal line (P/C/F/kcal) must satisfy about 4×P + 4×C + 9×F ≈ kcal.
    - Prefer higher food volume (veg, lean protein, curd, fruit, dals) so larger intakes are realistic when the client can handle them.
-   - Reverse diet: if they report eating little yet not losing weight, RAISE calories gradually (do not slash further).
-   - Muscle gain / weight gain: do not force huge surpluses; use a modest surplus and let metabolism catch up.
-   - If they listed previous diets that failed, avoid repeating those approaches.
+   - Reverse diet: if they report eating little yet not losing weight, the targets already bias upward — do not slash further.
+   - If Nutrition Targets says GENTLE protein, keep meals finishable and never guilt about protein.
    - Calories: never below 1600 kcal without a clear medical reason.
-   Do NOT print these numbers as a formal "Target Macros" table — just keep them as your internal guide so the food choices fit.
+   Do NOT print a formal "Target Macros" / BMR / TDEE table in client-facing text — just build food to the targets and show Daily averages + per-meal macro lines.
    Never use hyphen, en dash, or em dash characters in client-facing text. Write "10 to 15" not "10-15".
+
+[NUTRITION TARGETS]
 
 3. Build meal timings around the client's existing routine — don't invent new meal slots. If they eat lunch at 2pm, keep it close to 2pm.
 

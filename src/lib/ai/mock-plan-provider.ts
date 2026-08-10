@@ -1,12 +1,8 @@
 import type { Checkin, OnboardingProfile } from '@/types/database'
 import type { GeneratedPlan } from '@/lib/ai/generate-plan'
 import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
+import { computeNutritionTargets } from '@/lib/ai/nutrition-targets'
 import { getOnboardingLabel } from '@/lib/onboarding'
-
-function num(value: number | string | null | undefined, fallback: number): number {
-  const n = typeof value === 'string' ? parseFloat(value) : value
-  return typeof n === 'number' && Number.isFinite(n) ? n : fallback
-}
 
 /** Deterministic mock plan from client onboarding — valid GeneratedPlan schema. */
 export function buildMockGeneratedPlan(
@@ -18,12 +14,12 @@ export function buildMockGeneratedPlan(
   const goal = getOnboardingLabel('fitness_goal', profile.fitness_goal)
   const training = getOnboardingLabel('training_experience', profile.training_experience)
   const diet = getOnboardingLabel('diet_preference', profile.diet_preference)
-  const weight = num(profile.weight, 70)
   const flux = resolveMetabolicFluxPlan(profile)
-  const calorieFactor =
-    flux.level === 'high_flux' ? 34 : flux.level === 'build_up' ? 32 : 30
-  const calories = Math.round(weight * calorieFactor)
-  const protein = Math.round(weight * 2)
+  const targets = computeNutritionTargets(profile, latestCheckin)
+  const calories = targets.calories
+  const protein = targets.protein
+  const carbs = targets.carbs
+  const fat = targets.fat
 
   const checkinNote = latestCheckin
     ? `Latest check-in: energy ${latestCheckin.energy_level ?? '—'}/10, adherence ${latestCheckin.adherence_score ?? '—'}/10.`
@@ -33,12 +29,38 @@ export function buildMockGeneratedPlan(
     ? `Coach notes: ${coachInstructions.trim()}`
     : 'Mock draft — replace AI_PLAN_PROVIDER=claude when ready for live generation.'
 
+  // Split daily macros across 4 meals so meal-line verification passes.
+  const mealP = [
+    Math.round(protein * 0.3),
+    Math.round(protein * 0.3),
+    Math.round(protein * 0.25),
+    protein - Math.round(protein * 0.3) - Math.round(protein * 0.3) - Math.round(protein * 0.25),
+  ]
+  const mealC = [
+    Math.round(carbs * 0.3),
+    Math.round(carbs * 0.35),
+    Math.round(carbs * 0.25),
+    carbs - Math.round(carbs * 0.3) - Math.round(carbs * 0.35) - Math.round(carbs * 0.25),
+  ]
+  const mealF = [
+    Math.round(fat * 0.25),
+    Math.round(fat * 0.3),
+    Math.round(fat * 0.3),
+    fat - Math.round(fat * 0.25) - Math.round(fat * 0.3) - Math.round(fat * 0.3),
+  ]
+  const mealNames = ['Breakfast', 'Lunch', 'Dinner', 'Snack']
   const days = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7']
   const weeklyDiet = days
-    .map(
-      (day) =>
-        `${day}\nBreakfast: ${diet} oats with eggs and fruit\nLunch: lean protein, rice, vegetables\nDinner: protein, complex carbs, salad\nSnack: Greek yogurt or nuts\n(P: ${protein}g | C: 180g | F: 55g | ~${calories} kcal)`
-    )
+    .map((day) => {
+      const lines = mealNames.map((mealName, idx) => {
+        const p = mealP[idx]!
+        const c = mealC[idx]!
+        const f = mealF[idx]!
+        const kcal = p * 4 + c * 4 + f * 9
+        return `${mealName}: ${diet} balanced option with protein, carbs, and veg\n(P: ${p}g | C: ${c}g | F: ${f}g | ~${kcal} kcal)`
+      })
+      return `${day}\n${lines.join('\n')}\nDaily Total: P: ${protein}g | C: ${carbs}g | F: ${fat}g | ~${calories} kcal`
+    })
     .join('\n\n')
 
   return {
@@ -54,12 +76,12 @@ export function buildMockGeneratedPlan(
     nutrition_plan: {
       calories,
       protein,
-      carbs: Math.round((calories - protein * 4 - Math.round(calories * 0.25)) / 4),
-      fat: Math.round((calories * 0.25) / 9),
+      carbs,
+      fat,
       meals: [
         {
           meal: 'Weekly Diet Plan',
-          example: `Daily averages: ~${calories} kcal | P: ${protein}g | C: 180g | F: 55g\n\n${weeklyDiet}`,
+          example: `Daily averages: ~${calories} kcal | P: ${protein}g | C: ${carbs}g | F: ${fat}g\n\n${weeklyDiet}`,
         },
       ],
     },

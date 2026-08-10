@@ -31,6 +31,7 @@
     "verify:chat-access": "tsx scripts/verify-chat-access-regression.ts",
     "verify:initial-plan-generation": "tsx scripts/verify-initial-plan-generation.ts",
     "verify:generate-plan-retries": "tsx scripts/verify-generate-plan-retries.ts",
+    "verify:nutrition-macros": "tsx scripts/verify-nutrition-macros.ts",
     "verify:password-reset-reauth": "tsx scripts/verify-password-reset-reauth.ts",
     "verify:session-cache": "tsx scripts/verify-session-cache.ts",
     "verify:photo-upload-reliability": "tsx scripts/verify-photo-upload-reliability.ts",
@@ -39,7 +40,7 @@
     "verify:membership-renewal": "tsx scripts/verify-membership-renewal.ts",
     "verify:membership-paywall": "tsx scripts/verify-membership-paywall.ts",
     "verify:pwa": "tsx scripts/verify-pwa.ts",
-    "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:payment-operations && npm run verify:refund-eligibility && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:plan-metadata && npm run verify:plan-goals && npm run verify:daily-tracker && npm run verify:prompt-cache && npm run verify:chat-policy && npm run verify:chat-access && npm run verify:initial-plan-generation && npm run verify:generate-plan-retries && npm run verify:password-reset-reauth && npm run verify:photo-upload-reliability && npm run verify:promo-codes",
+    "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:payment-operations && npm run verify:refund-eligibility && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:plan-metadata && npm run verify:plan-goals && npm run verify:daily-tracker && npm run verify:prompt-cache && npm run verify:chat-policy && npm run verify:chat-access && npm run verify:initial-plan-generation && npm run verify:generate-plan-retries && npm run verify:nutrition-macros && npm run verify:password-reset-reauth && npm run verify:photo-upload-reliability && npm run verify:promo-codes",
     "db:apply-pending": "node scripts/apply-pending-migrations.mjs",
     "prompts:import": "tsx --env-file=.env.local scripts/import-production-prompts.ts"
   },
