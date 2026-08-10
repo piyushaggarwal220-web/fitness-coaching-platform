@@ -170,14 +170,21 @@ export function WorkoutModule({
       } as const
     }
     const warmupBlock = workout.phases.find((phase) => phase.phase === 'warmup')
+    const mainBlock = workout.phases.find((phase) => phase.phase === 'main')
     const warmupDone =
       warmupBlock?.exercises.every((ex) => completion.exercises?.[ex.id]?.completed) ?? true
+    const mainDone =
+      !mainBlock ||
+      mainBlock.exercises.length === 0 ||
+      mainBlock.exercises.every((ex) => completion.exercises?.[ex.id]?.completed)
     return {
       warmup: hasWarmup && !warmupDone,
       mobility: true,
       main: !hasWarmup || warmupDone,
       finisher: true,
-      cooldown: progress.percent >= 70,
+      // Open Post-Workout when main work is done (or overall progress is high) —
+      // do not wait on a percent that can be diluted by a long cooldown list.
+      cooldown: mainDone || progress.percent >= 70,
     } as const
   }, [workout, completion.exercises, progress.percent, hasWarmup])
 

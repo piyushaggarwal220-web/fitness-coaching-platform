@@ -5,6 +5,7 @@ import {
   remapWorkoutDayKey,
   suggestedWorkoutDayKey,
 } from '../src/lib/daily-tracker/parser'
+import { getCurrentExercise } from '../src/lib/daily-tracker/exercise-utils'
 import { calculateTrackerScores } from '../src/lib/daily-tracker/scores'
 import { applyTrackerDraft } from '../src/lib/daily-tracker/tracker-draft'
 import { formatPlanDayHeadersForClient } from '../src/lib/plan-day-labels'
@@ -382,6 +383,83 @@ assert(
       i.exercises.length >= 2
   )
 )
+
+// Weekday headers + per-day Post-Workout must NOT pull Tuesday's lifts into Monday cooldown.
+const weekdayPostWorkoutPlan: Plan = {
+  ...planV1,
+  id: 'plan-weekday-post-workout',
+  workout_plan: `Monday — Lower Strength
+Warm-up
+- Bodyweight squat 2x10
+
+Main Workout
+- Barbell Back Squat: 4 sets x 6 reps
+- Romanian Deadlift: 3 sets x 8 reps
+
+Post-Workout
+- Hip Flexor Stretch: 2x30s
+- Couch Stretch: 2x30s each side
+
+Tuesday — Upper Push
+Warm-up
+- Arm circles 2x15
+
+Main Workout
+- Barbell Bench Press: 4 sets x 6 reps
+- Overhead Press: 3 sets x 8 reps
+
+Post-Workout
+- Chest Opener: 2x30s
+- Doorway Stretch: 2x30s
+`,
+}
+const postWorkoutSnap = buildTrackerSnapshot(weekdayPostWorkoutPlan)
+const mondayWorkout = postWorkoutSnap.items.find(
+  (i) => i.type === 'workout' && (i.workoutDay === 'monday' || i.dayLabel === 'Monday')
+)
+const tuesdayWorkout = postWorkoutSnap.items.find(
+  (i) => i.type === 'workout' && (i.workoutDay === 'tuesday' || i.dayLabel === 'Tuesday')
+)
+assert(
+  'weekday plan parses Monday and Tuesday workouts',
+  mondayWorkout?.type === 'workout' && tuesdayWorkout?.type === 'workout'
+)
+const mondayCooldown =
+  mondayWorkout?.type === 'workout'
+    ? mondayWorkout.phases.find((p) => p.phase === 'cooldown')?.exercises ?? []
+    : []
+assert(
+  'Monday Post-Workout keeps stretches only',
+  mondayCooldown.some((ex) => /hip flexor|couch stretch/i.test(ex.name)) &&
+    !mondayCooldown.some((ex) => /bench|overhead press/i.test(ex.name))
+)
+assert(
+  'Monday Post-Workout does not include shared next-day compounds',
+  !mondayCooldown.some((ex) => /shared/i.test(ex.id) && /bench|press|squat/i.test(ex.name))
+)
+assert(
+  'Tuesday Post-Workout keeps its own stretches',
+  tuesdayWorkout?.type === 'workout' &&
+    (tuesdayWorkout.phases.find((p) => p.phase === 'cooldown')?.exercises ?? []).some((ex) =>
+      /chest opener|doorway/i.test(ex.name)
+    )
+)
+
+if (mondayWorkout?.type === 'workout') {
+  const completion: Record<string, { completed: boolean }> = {}
+  for (const ex of mondayWorkout.exercises) {
+    if (ex.phase !== 'cooldown') completion[ex.id] = { completed: true }
+  }
+  const current = getCurrentExercise(mondayWorkout.exercises, completion)
+  assert(
+    'after Monday main work, current exercise is a stretch (not Tuesday lift)',
+    Boolean(current && /stretch|opener/i.test(current.name) && current.phase === 'cooldown')
+  )
+  assert(
+    'after Monday main work, current is not a next-day compound',
+    Boolean(current && !/bench|overhead press/i.test(current.name))
+  )
+}
 
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)

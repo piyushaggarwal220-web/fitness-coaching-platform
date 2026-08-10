@@ -288,7 +288,7 @@ function parseMeals(diet: string): {
 }
 
 const PHASE_HEADERS =
-  /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|working\s+sets?|strength|hypertrophy|accessory|accessories|compound|cool[- ]?down|post[- ]?workout|finisher)\s*:?\s*$/i
+  /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|working\s+sets?|strength|hypertrophy|accessory|accessories|compound|cool[- ]?down|post[- ]?workout(?:\s+stretching)?|stretching|recovery|finisher)\s*:?\s*$/i
 
 const PHASE_MAP: Record<string, WorkoutExercisePhase> = {
   'warm-up': 'warmup',
@@ -308,8 +308,15 @@ const PHASE_MAP: Record<string, WorkoutExercisePhase> = {
   cooldown: 'cooldown',
   'cool-down': 'cooldown',
   'post-workout': 'cooldown',
+  'post-workout stretching': 'cooldown',
+  stretching: 'cooldown',
+  recovery: 'cooldown',
   finisher: 'finisher',
 }
+
+/** Day-header boundary used when slicing shared warm-up / post-workout blocks. */
+const DAY_HEADER_BOUNDARY =
+  '(?:#{1,3}\\s*|\\*{0,2})?(?:day\\s*\\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\\b'
 
 const PHASE_LABELS: Record<WorkoutExercisePhase, string> = {
   warmup: 'Warm-up',
@@ -482,6 +489,33 @@ function parseWorkoutPhases(section: string): {
     if (phaseMatch) {
       const key = phaseMatch[1]!.toLowerCase().replace(/\s+/g, ' ')
       currentPhase = PHASE_MAP[key] ?? 'main'
+      continue
+    }
+
+    // "Post-workout: walk, then hip flexor stretches" (header + content on one line)
+    const inlinePhase = trimmed.match(
+      /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|cool[- ]?down|post[- ]?workout(?:\s+stretching)?|stretching|recovery|finisher)\s*[:\-–—]\s+(.+)$/i
+    )
+    if (inlinePhase) {
+      const key = inlinePhase[1]!.toLowerCase().replace(/\s+/g, ' ')
+      currentPhase = PHASE_MAP[key] ?? currentPhase
+      const rest = inlinePhase[2]!.trim()
+      let matchedInline = false
+      for (const candidate of expandCompositeExerciseLines(rest)) {
+        const exercise = parseExerciseLine(candidate, currentPhase, exerciseIndex)
+        if (exercise) {
+          addExercise(exercise)
+          matchedInline = true
+        }
+      }
+      if (!matchedInline && rest.length > 8) {
+        for (const narrative of parseNarrativeMovementList(rest, currentPhase, `inline-${currentPhase}`)) {
+          addExercise({
+            ...narrative,
+            id: `ex-${currentPhase}-${slug(narrative.name)}-${exerciseIndex}`,
+          })
+        }
+      }
       continue
     }
 
@@ -823,46 +857,111 @@ function parseNarrativeMovementList(
   return exercises
 }
 
+/**
+ * Text that sits outside per-day workout bodies (usually a preamble before Day 1 /
+ * Monday). In-day Post-Workout blocks must NOT be treated as shared — that was
+ * swallowing the next day's main lifts into every day's cooldown.
+ */
+function workoutSharedRegions(fullWorkout: string): string {
+  const text = fullWorkout.replace(/\r\n/g, '\n')
+  const dayStart = text.search(
+    new RegExp(`(?:^|\\n)(?=${DAY_HEADER_BOUNDARY})`, 'i')
+  )
+  if (dayStart < 0) return ''
+  // Prefer preamble only. Trailing shared blocks after the last day are uncommon
+  // and would otherwise sit inside the last day body with the current splitter.
+  return text.slice(0, dayStart).trim()
+}
+
+/** Strength compounds accidentally captured into shared cooldown must be dropped. */
+function looksLikeMainLiftInCooldown(ex: TrackerExerciseItem): boolean {
+  const name = ex.name.toLowerCase()
+  if (/\b(stretch|mobility|foam\s*roll|breathing|cool\s*down|walk|pose|hold)\b/i.test(name)) {
+    return false
+  }
+  const strengthName =
+    /\b(bench|squat|deadlift|press|row|pull[- ]?up|chin[- ]?up|lunge|rdl|hip\s*thrust|curl|extension|flye?|raise|pulldown|dip|hack\s*squat|leg\s*press)\b/i.test(
+      name
+    )
+  if (!strengthName) return false
+  const sets = ex.targetSets ?? 0
+  const reps = String(ex.targetReps ?? '')
+  const timedStretch = /\b(\d+\s*s|\d+\s*sec|hold|seconds?)\b/i.test(reps) || /\b\d+\s*s\b/i.test(name)
+  if (timedStretch) return false
+  return sets >= 2 || Boolean(reps && /^\d/.test(reps))
+}
+
+function sharedPhasePatterns(phase: 'warmup' | 'cooldown'): RegExp[] {
+  const dayBoundary = DAY_HEADER_BOUNDARY
+  if (phase === 'warmup') {
+    return [
+      new RegExp(
+        `(?:before every session[^\\n]*warmup|warmup routine|warm[- ]?up(?:\\s+routine)?)[:\\s]+([\\s\\S]+?)(?=\\n\\s*\\n(?:here's how|here is how|${dayBoundary})|$)`,
+        'i'
+      ),
+      new RegExp(
+        `(?:##\\s*)?warmup[^\\n]*\\n([\\s\\S]+?)(?=\\n\\s*##|\\n\\s*(?:\\*{0,2})?(?:${dayBoundary})|$)`,
+        'i'
+      ),
+    ]
+  }
+  return [
+    new RegExp(
+      `(?:^|\\n)(?:#{1,3}\\s*|\\*{0,2})?(?:post[- ]?workout|cool[- ]?down|cooldown)(?:\\s+(?:routine|stretching))?\\*{0,2}\\s*[:\\-–—]\\s*([\\s\\S]+?)(?=\\n\\s*(?:${dayBoundary}|breakfast)|\\n\\s*\\n\\s*\\n|$)`,
+      'im'
+    ),
+    // CRITICAL: must stop at weekday headers too — previously only Day N / ## stopped,
+    // so "Post-Workout\\n...\\nTuesday — Bench..." swallowed the next day's lifts.
+    new RegExp(
+      `(?:##\\s*)?(?:post[- ]?workout|cool[- ]?down|cooldown)[^\\n]*\\n([\\s\\S]+?)(?=\\n\\s*##|\\n\\s*(?:\\*{0,2})?(?:${dayBoundary})|$)`,
+      'i'
+    ),
+  ]
+}
+
+function parseSharedPhaseBlock(
+  block: string,
+  phase: 'warmup' | 'cooldown'
+): TrackerExerciseItem[] {
+  const structured = parseWorkoutPhases(
+    `${phase === 'warmup' ? 'Warm-up' : 'Post-Workout'}\n${block}`
+  ).exercises.filter((ex) => ex.phase === phase || ex.phase === 'main')
+
+  if (structured.length > 0) {
+    return structured
+      .filter((ex) => !/steps|intensity|rep ranges/i.test(ex.name))
+      .filter((ex) => !(phase === 'cooldown' && looksLikeMainLiftInCooldown(ex)))
+      .map((ex, idx) => ({
+        ...ex,
+        phase,
+        id: `ex-${phase}-shared-${slug(ex.name)}-${idx}`,
+        restSeconds: ex.restSeconds ?? (phase === 'warmup' ? 30 : 45),
+      }))
+  }
+
+  return parseNarrativeMovementList(block, phase, `${phase}-shared`).filter(
+    (ex) => !(phase === 'cooldown' && looksLikeMainLiftInCooldown(ex))
+  )
+}
+
 /** Pull shared warm-up / post-workout blocks from the overall plan (outside day lists). */
 function extractSharedPhaseExercises(
   fullWorkout: string,
   phase: 'warmup' | 'cooldown'
 ): TrackerExerciseItem[] {
-  const text = fullWorkout.replace(/\r\n/g, '\n')
-  const patterns =
-    phase === 'warmup'
-      ? [
-          /(?:before every session[^\n]*warmup|warmup routine|warm[- ]?up(?:\s+routine)?)[:\s]+([\s\S]+?)(?=\n\s*\n(?:here's how|here is how|\*\*day|day\s*\d+|monday|tuesday)|$)/i,
-          /(?:##\s*)?warmup[^\n]*\n([\s\S]+?)(?=\n\s*##|\n\s*\*\*day|\n\s*day\s*\d+|$)/i,
-        ]
-      : [
-          /(?:^|\n)(?:#{1,3}\s*|\*{0,2})?(?:post[- ]?workout|cool[- ]?down|cooldown)(?:\s+routine)?\*{0,2}\s*[:\-–—]\s*([\s\S]+?)(?=\n\s*(?:#{1,3}|\*{0,2})?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday|breakfast)|\n\s*\n\s*\n|$)/im,
-          /(?:##\s*)?(?:post[- ]?workout|cool[- ]?down|cooldown)[^\n]*\n([\s\S]+?)(?=\n\s*##|\n\s*\*\*day|\n\s*day\s*\d+|$)/i,
-        ]
+  const normalized = fullWorkout.replace(/\r\n/g, '\n')
+  // Prefer preamble (before first day) so in-day Post-Workout is not treated as shared.
+  const regions = [workoutSharedRegions(normalized), normalized]
+  const patterns = sharedPhasePatterns(phase)
 
-  for (const pattern of patterns) {
-    const match = text.match(pattern)
-    if (!match?.[1]) continue
-
-    const block = match[1].trim()
-    // Prefer structured exercise lines inside the block
-    const structured = parseWorkoutPhases(
-      `${phase === 'warmup' ? 'Warm-up' : 'Post-Workout'}\n${block}`
-    ).exercises.filter((ex) => ex.phase === phase || ex.phase === 'main')
-
-    if (structured.length > 0) {
-      return structured
-        .filter((ex) => !/steps|intensity|rep ranges/i.test(ex.name))
-        .map((ex, idx) => ({
-          ...ex,
-          phase,
-          id: `ex-${phase}-shared-${slug(ex.name)}-${idx}`,
-          restSeconds: ex.restSeconds ?? (phase === 'warmup' ? 30 : 45),
-        }))
+  for (const text of regions) {
+    if (!text.trim()) continue
+    for (const pattern of patterns) {
+      const match = text.match(pattern)
+      if (!match?.[1]) continue
+      const parsed = parseSharedPhaseBlock(match[1].trim(), phase)
+      if (parsed.length > 0) return parsed
     }
-
-    const narrative = parseNarrativeMovementList(block, phase, `${phase}-shared`)
-    if (narrative.length > 0) return narrative
   }
 
   return []
@@ -882,21 +981,38 @@ function mergePhaseExercises(
     byPhase.set(ex.phase, list)
   }
 
-  for (const ex of sharedWarmup) add(ex)
+  const dayHasWarmup = dayPhases.some((p) => p.phase === 'warmup' && p.exercises.length > 0)
+  const dayHasCooldown = dayPhases.some((p) => p.phase === 'cooldown' && p.exercises.length > 0)
+
+  // Prefer the day's own warm-up when present; otherwise apply shared preamble warmup.
+  if (!dayHasWarmup) {
+    for (const ex of sharedWarmup) add(ex)
+  }
   for (const block of dayPhases) {
     for (const ex of block.exercises) add(ex)
   }
-  // Day exercises not already in blocks (shouldn't happen) + shared cooldown last
+  // Day exercises not already in blocks (shouldn't happen)
   for (const ex of dayExercises) {
     const exists = (byPhase.get(ex.phase) ?? []).some((e) => e.id === ex.id)
     if (!exists) add(ex)
   }
-  for (const ex of sharedCooldown) add(ex)
+  // Never append shared cooldown when the day already has its own Post-Workout —
+  // that was how next-day compounds leaked into today's stretches.
+  if (!dayHasCooldown) {
+    for (const ex of sharedCooldown) {
+      if (!looksLikeMainLiftInCooldown(ex)) add(ex)
+    }
+  }
 
   // Always include a warm-up block — use plan warmup when present, otherwise defaults
   if ((byPhase.get('warmup')?.length ?? 0) === 0) {
     for (const ex of DEFAULT_WARMUP_EXERCISES) add(ex)
   }
+
+  // Drop any strength compounds that still landed in cooldown (bad AI layout).
+  const cleanedCooldown = (byPhase.get('cooldown') ?? []).filter((ex) => !looksLikeMainLiftInCooldown(ex))
+  if (cleanedCooldown.length > 0) byPhase.set('cooldown', cleanedCooldown)
+  else byPhase.delete('cooldown')
 
   const phaseOrder: WorkoutExercisePhase[] = ['warmup', 'mobility', 'main', 'finisher', 'cooldown']
   const phases: WorkoutPhaseBlock[] = phaseOrder
