@@ -30,6 +30,54 @@ import type {
 
 export const ONBOARDING_PHOTO_BUCKET = 'onboarding-photos'
 
+/** Survives mobile camera app-switches that remount the onboarding page. */
+const ONBOARDING_WIZARD_DRAFT_KEY = 'onboarding_wizard_draft_v1'
+const ONBOARDING_WIZARD_DRAFT_TTL_MS = 6 * 60 * 60 * 1000
+
+type OnboardingWizardDraft = {
+  userId: string
+  step: number
+  savedAt: number
+}
+
+export function saveOnboardingWizardDraft(userId: string, step: number): void {
+  if (typeof window === 'undefined' || !userId) return
+  try {
+    const payload: OnboardingWizardDraft = {
+      userId,
+      step,
+      savedAt: Date.now(),
+    }
+    sessionStorage.setItem(ONBOARDING_WIZARD_DRAFT_KEY, JSON.stringify(payload))
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+export function loadOnboardingWizardDraft(userId: string): number | null {
+  if (typeof window === 'undefined' || !userId) return null
+  try {
+    const raw = sessionStorage.getItem(ONBOARDING_WIZARD_DRAFT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as OnboardingWizardDraft
+    if (parsed.userId !== userId) return null
+    if (typeof parsed.step !== 'number' || !Number.isFinite(parsed.step)) return null
+    if (Date.now() - parsed.savedAt > ONBOARDING_WIZARD_DRAFT_TTL_MS) return null
+    return parsed.step
+  } catch {
+    return null
+  }
+}
+
+export function clearOnboardingWizardDraft(): void {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.removeItem(ONBOARDING_WIZARD_DRAFT_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 export const ONBOARDING_SCREEN_COUNT = 23
 
 /**

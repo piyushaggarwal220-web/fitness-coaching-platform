@@ -1,7 +1,7 @@
 'use client'
 
 import { brandTitle } from '@/lib/brand'
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { OnboardingReview } from '@/components/onboarding/OnboardingReview'
@@ -16,6 +16,7 @@ import {
   ACTIVITY_OPTIONS,
   ACNE_OPTIONS,
   authenticateClient,
+  clearOnboardingWizardDraft,
   COOKING_OPTIONS,
   DAYS_PER_WEEK_OPTIONS,
   DIET_OPTIONS,
@@ -34,6 +35,7 @@ import {
   HAIR_LOSS_OPTIONS,
   INITIAL_ONBOARDING_FORM,
   isOnboardingComplete,
+  loadOnboardingWizardDraft,
   markOnboardingJustCompleted,
   MEAL_TIMING_OPTIONS,
   MOVEMENT_COMFORT_OPTIONS,
@@ -44,6 +46,7 @@ import {
   proteinDaysNeedWeekdays,
   allWeekdayValues,
   saveOnboardingProgress,
+  saveOnboardingWizardDraft,
   SEXUAL_HEALTH_OPTIONS,
   SLEEP_OPTIONS,
   shouldRequireOnboardingBodyMeasurements,
@@ -124,6 +127,18 @@ export default function OnboardingPage() {
   const [requireBodyMeasurements, setRequireBodyMeasurements] = useState(true)
   const [planSlug, setPlanSlug] = useState<string>('3_months')
 
+  const stateRef = useRef({
+    userId,
+    userEmail,
+    step,
+    form,
+    photoUrls,
+    mealsForTiming,
+  })
+  useEffect(() => {
+    stateRef.current = { userId, userEmail, step, form, photoUrls, mealsForTiming }
+  }, [userId, userEmail, step, form, photoUrls, mealsForTiming])
+
   useEffect(() => {
     const init = async () => {
       const result = await authenticateClient(supabase, router, {
@@ -133,12 +148,17 @@ export default function OnboardingPage() {
       if (!result) return
 
       if (result.profileError) {
+        setUserId(result.user.id)
+        setUserEmail(result.user.email ?? null)
+        const draftStep = loadOnboardingWizardDraft(result.user.id)
+        if (draftStep != null) setStep(draftStep)
         setError('Could not load your profile. Please refresh the page.')
         setLoading(false)
         return
       }
 
       if (result.profile && isOnboardingComplete(result.profile)) {
+        clearOnboardingWizardDraft()
         router.replace('/dashboard')
         return
       }
@@ -164,9 +184,19 @@ export default function OnboardingPage() {
       if (result.profile) {
         const needsMeasurements = shouldRequireOnboardingBodyMeasurements(result.profile)
         setRequireBodyMeasurements(needsMeasurements)
-        setForm(formFromProfile(result.profile))
-        setStep(getResumeStep(result.profile, { requireBodyMeasurements: needsMeasurements }))
         const resumed = formFromProfile(result.profile)
+        setForm(resumed)
+        const resumeStep = getResumeStep(result.profile, {
+          requireBodyMeasurements: needsMeasurements,
+        })
+        const wizardSteps = getOnboardingWizardSteps(resumed)
+        // Mobile camera often remounts this page; prefer the local draft step so
+        // clients stay on photos instead of jumping back to step 1.
+        const draftStep = loadOnboardingWizardDraft(result.user.id)
+        const restoredStep =
+          draftStep != null && wizardSteps.includes(draftStep) ? draftStep : resumeStep
+        setStep(restoredStep)
+        saveOnboardingWizardDraft(result.user.id, restoredStep)
         const preConfirmed: string[] = []
         if (resumed.age) preConfirmed.push('age')
         if (resumed.height) preConfirmed.push('height')
@@ -174,6 +204,8 @@ export default function OnboardingPage() {
         if (resumed.chest) preConfirmed.push('chest')
         if (resumed.thigh) preConfirmed.push('thigh')
         if (resumed.navel) preConfirmed.push('navel')
+        if (resumed.left_bicep) preConfirmed.push('left_bicep')
+        if (resumed.right_bicep) preConfirmed.push('right_bicep')
         if (resumed.monthly_food_budget) preConfirmed.push('monthly_food_budget')
         setConfirmedScrollers(preConfirmed)
         setPhotoUrls({
@@ -204,10 +236,43 @@ export default function OnboardingPage() {
     init()
   }, [router])
 
+  useEffect(() => {
+    if (!userId) return
+    saveOnboardingWizardDraft(userId, step)
+  }, [userId, step])
+
+  // Checkpoint wizard position before the OS camera kills this page.
+  useEffect(() => {
+    const flushDraft = () => {
+      const current = stateRef.current
+      if (!current.userId) return
+      saveOnboardingWizardDraft(current.userId, current.step)
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flushDraft()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', flushDraft)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', flushDraft)
+    }
+  }, [])
+
   const updateForm = useCallback((patch: Partial<OnboardingFormData>) => {
     setForm((prev) => ({ ...prev, ...patch }))
     setError('')
-    const scrollerKeys = ['age', 'height', 'weight', 'chest', 'thigh', 'navel', 'monthly_food_budget'] as const
+    const scrollerKeys = [
+      'age',
+      'height',
+      'weight',
+      'chest',
+      'thigh',
+      'navel',
+      'left_bicep',
+      'right_bicep',
+      'monthly_food_budget',
+    ] as const
     const cleared = scrollerKeys.filter((key) => key in patch)
     if (cleared.length > 0) {
       setConfirmedScrollers((prev) => prev.filter((key) => !cleared.includes(key as typeof cleared[number])))
@@ -251,6 +316,24 @@ export default function OnboardingPage() {
     [userId, userEmail, form, photos, photoUrls, mealsForTiming]
   )
 
+  const checkpointBeforeCamera = useCallback(async () => {
+    const current = stateRef.current
+    if (!current.userId) return
+    saveOnboardingWizardDraft(current.userId, current.step)
+    await supabase.auth.refreshSession().catch(() => undefined)
+    try {
+      await saveOnboardingProgress(supabase, current.userId, current.form, {
+        email: current.userEmail,
+        step: current.step,
+        photoUrls: current.photoUrls,
+        mealsForTiming: current.mealsForTiming,
+      })
+      setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+    } catch {
+      // Draft is already in sessionStorage; continue into the camera.
+    }
+  }, [])
+
   const handlePhotoChange = useCallback(
     (key: PhotoKey) => (files: File[]) => {
       const file = files[0] ?? null
@@ -260,7 +343,8 @@ export default function OnboardingPage() {
         setError(validationError)
         return
       }
-      if (!userId) {
+      const current = stateRef.current
+      if (!current.userId) {
         setError('Please wait for your session to load, then try the photo again.')
         return
       }
@@ -268,10 +352,13 @@ export default function OnboardingPage() {
       setPhotos((prev) => ({ ...prev, [key]: file }))
       setError('')
       setUploadingPhotos((prev) => ({ ...prev, [key]: true }))
+      saveOnboardingWizardDraft(current.userId, current.step)
 
       void (async () => {
         try {
-          const path = await uploadOnboardingPhoto(supabase, userId, file, key)
+          // Camera return often happens after the WebView was suspended — refresh auth first.
+          await supabase.auth.refreshSession().catch(() => undefined)
+          const path = await uploadOnboardingPhoto(supabase, current.userId!, file, key)
           let nextUrls: SavedPhotoUrls = { front: null, side: null, back: null }
           setPhotoUrls((prev) => {
             nextUrls = { ...prev, [key]: path }
@@ -279,12 +366,14 @@ export default function OnboardingPage() {
           })
           setPhotos((prev) => ({ ...prev, [key]: null }))
           // Keep profile paths in sync immediately so later steps / resume never miss photos.
-          await saveOnboardingProgress(supabase, userId, form, {
-            email: userEmail,
-            step,
+          const latest = stateRef.current
+          await saveOnboardingProgress(supabase, latest.userId ?? current.userId!, latest.form, {
+            email: latest.userEmail,
+            step: latest.step,
             photoUrls: nextUrls,
-            mealsForTiming,
+            mealsForTiming: latest.mealsForTiming,
           })
+          saveOnboardingWizardDraft(latest.userId ?? current.userId!, latest.step)
           setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
         } catch (err) {
           // If storage succeeded but profile save failed, photoUrls already holds the path
@@ -300,7 +389,7 @@ export default function OnboardingPage() {
         }
       })()
     },
-    [userId, userEmail, form, step, mealsForTiming]
+    []
   )
 
   useEffect(() => {
@@ -420,6 +509,7 @@ export default function OnboardingPage() {
       // Wait until the browser can see the server-written completion flag so the
       // dashboard guard does not bounce the client back to these questions.
       await waitForOnboardingCompletion(supabase, userId)
+      clearOnboardingWizardDraft()
       markOnboardingJustCompleted()
       router.replace('/dashboard')
     } catch (err) {
@@ -510,7 +600,8 @@ export default function OnboardingPage() {
             requireBodyMeasurements,
             confirmedScrollers,
             confirmScroller,
-            planSlug
+            planSlug,
+            checkpointBeforeCamera
           )}
 
           <div style={{ height: 72 }} />
@@ -565,7 +656,8 @@ function renderStep(
   requireBodyMeasurements: boolean,
   confirmedScrollers: string[],
   confirmScroller: (key: string) => void,
-  planSlug: string
+  planSlug: string,
+  onBeforeCameraOpen: () => void | Promise<void>
 ) {
   switch (step) {
     case 0:
@@ -1407,6 +1499,7 @@ function renderStep(
                     onFiles={onPhotoChange(key)}
                     selectedText={selectedText}
                     disabled={uploading}
+                    onBeforeCameraOpen={onBeforeCameraOpen}
                   />
                 </div>
               )
