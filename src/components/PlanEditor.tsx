@@ -82,7 +82,7 @@ export function PlanEditor({
         <textarea name="workout_plan" value={form.workout_plan} onChange={onChange} rows={8} style={styles.textarea} placeholder="Exercises, sets, reps, schedule..." />
       </Field>
       <Field
-        label="Nutrition plan"
+        label="Diet chart"
         action={
           canAiEdit ? (
             <AiEditSectionButton onClick={() => setAiSection('nutrition')} />
@@ -91,11 +91,18 @@ export function PlanEditor({
       >
         <textarea name="nutrition_plan" value={form.nutrition_plan} onChange={onChange} rows={8} style={styles.textarea} placeholder="Meals, macros, timing..." />
       </Field>
-      <Field label="Cardio plan">
-        <textarea name="cardio_plan" value={form.cardio_plan} onChange={onChange} rows={5} style={styles.textarea} placeholder="Cardio type, duration, frequency..." />
+      <Field label="Cardio guidance (include Water Intake + Sleep Guidance)">
+        <textarea
+          name="cardio_plan"
+          value={form.cardio_plan}
+          onChange={onChange}
+          rows={6}
+          style={styles.textarea}
+          placeholder={"Steps / LISS / conditioning...\n\nWater Intake\n3 L daily...\n\nSleep Guidance\nAim for 7 to 8 hours..."}
+        />
       </Field>
-      <Field label="Supplement plan">
-        <textarea name="supplement_plan" value={form.supplement_plan} onChange={onChange} rows={4} style={styles.textarea} placeholder="Supplements, dosage, timing..." />
+      <Field label="Supplement guidance (only if client wants)">
+        <textarea name="supplement_plan" value={form.supplement_plan} onChange={onChange} rows={4} style={styles.textarea} placeholder="Leave empty if client does not want supplements..." />
       </Field>
       <Field label="Coach notes">
         <textarea name="coach_notes" value={form.coach_notes} onChange={onChange} rows={4} style={styles.textarea} placeholder="Client-facing coaching message and priorities..." />

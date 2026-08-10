@@ -186,7 +186,8 @@ export function buildActionCoachInstructions(
           'Leave cardio_plan.sessions and supplement_plan.items as empty arrays — those are separate plans.',
           'Respect training days, equipment, injuries, and experience level.',
           'For nutrition_plan use minimal placeholder macros (0) and empty meals array.',
-          'Set coach_notes to a brief summary of training priorities only.',
+          'Do not put Sleep, Water, Cardio, or Supplements inside the workout day lists.',
+          'Set coach_notes to a brief summary of training priorities only (or empty).',
         ].join(' '),
         coachNote
       )
@@ -195,6 +196,8 @@ export function buildActionCoachInstructions(
         [
           'Generate a standalone cardio plan for this client.',
           'Put all cardio, steps, walking, LISS, HIIT, and conditioning in cardio_plan.sessions only.',
+          'REQUIRED: Include a clear Water Intake block, e.g. "Water Intake: 3 L daily" with a short how-to-spread tip.',
+          'REQUIRED: Include a short Sleep Guidance block (target hours + bedtime + one tip) in the same cardio prose after water.',
           'Follow Metabolic Flux Bias: raise sustainable steps/NEAT with higher food intake; prefer walks/LISS over punishing HIIT when pushing flux.',
           'Do NOT put cardio inside workout_plan or nutrition_plan.',
           'Set workout_plan.overview to "N/A", nutrition meals to [], and supplement_plan.items to [].',
@@ -205,7 +208,8 @@ export function buildActionCoachInstructions(
     case 'initial_supplements':
       return appendNote(
         [
-          'Generate a standalone supplement plan for this client.',
+          'Generate a standalone supplement plan for this client ONLY if they already use whey/supplements or asked for them.',
+          'If onboarding says whey = no AND current supplements are none/empty, return supplement_plan.items as [] with no recommendations.',
           'Put all supplement recommendations in supplement_plan.items only.',
           'Do NOT put supplements inside nutrition_plan or workout_plan.',
           'Set workout_plan.overview to "N/A", nutrition meals to [], and cardio_plan.sessions to [].',
@@ -258,6 +262,7 @@ export function buildActionCoachInstructions(
           checkin ? checkinContext(checkin) : '',
           planContext(activePlan ?? null, ['cardio', 'workout']),
           'Put updates only in cardio_plan.sessions.',
+          'REQUIRED: Keep explicit Water Intake and Sleep Guidance blocks in the cardio prose (liters/day + sleep hours/bedtime tip). Adjust from check-in sleep/energy when relevant.',
           'Do not modify diet or workout content.',
         ]
           .filter(Boolean)
@@ -270,6 +275,7 @@ export function buildActionCoachInstructions(
           'Update the supplement plan based on the latest check-in.',
           checkin ? checkinContext(checkin) : '',
           planContext(activePlan ?? null, ['supplements', 'nutrition']),
+          'If the client does not use whey and listed no current supplements, return items [] — do not invent a stack.',
           'Put updates only in supplement_plan.items.',
           'Do not modify diet or workout content.',
         ]
