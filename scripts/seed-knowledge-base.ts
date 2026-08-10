@@ -10,13 +10,13 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Fat loss fundamentals',
     category: 'fat_loss',
     content:
-      'Target a sustainable 300–500 kcal daily deficit. Prioritise protein 1.8–2.2 g/kg bodyweight. Keep fibre high for satiety. Weigh 3–4 mornings per week; trend matters more than single readings. Never drop below ~1600 kcal without medical oversight.',
+      'Use Metabolic Flux bands for deficits (not a flat 500 cut): steady 350 to 450 kcal, build-up 250 to 350 kcal, high flux 150 to 250 kcal — pair with higher steps/training. Prioritise protein about 1.8 to 2.2 g/kg when appetite allows. Keep fibre high for satiety. Weigh 3 to 4 mornings per week; trend matters more than single readings. Never drop below about 1600 kcal without medical oversight.',
   },
   {
     title: 'Muscle gain fundamentals',
     category: 'muscle_gain',
     content:
-      'Target a 200–300 kcal surplus with protein 1.6–2.2 g/kg. Progress load or reps when all prescribed sets are completed with good form. Sleep 7–9 hours for recovery.',
+      'Use Metabolic Flux surplus bands: steady 150 to 250 kcal, build-up 250 to 350 kcal, high flux 300 to 450 kcal, with protein about 1.6 to 2.2 g/kg. Progress load or reps when all prescribed sets are completed with good form. Sleep 7 to 9 hours for recovery.',
   },
   {
     title: 'Recomposition guidance',

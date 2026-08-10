@@ -269,6 +269,8 @@ function sectionsFromBlocks(
     clientDetails: mapSection('client-profile', fresh.clientDetails),
     onboarding: mapSection('onboarding', fresh.onboarding),
     metabolicFlux: fresh.metabolicFlux,
+    // Always fresh — derived from profile/checkin/flux/mesocycle at request time.
+    nutritionTargets: fresh.nutritionTargets,
     hardConstraints: mapSection('hard-constraints', fresh.hardConstraints),
     trainingPreferences: mapSection('training-preferences', fresh.trainingPreferences),
     activePlan: mapSection('active-plan', fresh.activePlan),

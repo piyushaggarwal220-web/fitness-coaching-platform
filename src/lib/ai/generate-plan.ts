@@ -24,7 +24,11 @@ import {
   loadPublishedPromptsForAction,
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
-import { syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
+import {
+  assessNutritionMacroConsistency,
+  syncNutritionPlanMacros,
+} from '@/lib/ai/nutrition-macro-sync'
+import { computeNutritionTargets } from '@/lib/ai/nutrition-targets'
 import { profileToComplexityInput } from '@/lib/complexity/profile-input'
 import {
   getPromptCategoryForAction,
@@ -202,9 +206,11 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   '- Put the full client-facing diet plan prose in nutrition_plan.meals as ONE item: { "meal": "Weekly Diet Plan", "example": "<entire copy-paste diet plan>" }.',
   '- CRITICAL: The diet prose MUST include all 7 days as separate labeled sections: Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7. Never use weekday names (Monday–Sunday) as day headers. Never skip a day. Never write "same every day" without repeating the full day blocks.',
   '- Each day section must include breakfast, lunch, dinner, and snacks with concrete foods and approximate portions.',
+  '- Obey the Nutrition Targets section exactly: build meals so the 7-day AVERAGE lands within ±100 kcal and ±12g protein of those server-computed targets. Do not invent a different maintenance calorie number.',
   '- Set nutrition_plan.calories, protein, carbs, and fat to the rounded AVERAGE daily totals from the 7-day plan (sum each day, divide by 7). NEVER use 0 or placeholder values.',
-  '- Header macros MUST match the meal plan: if meals show (P: Xg | C: Yg | F: Zg | ~K kcal) lines, totals must reflect those sums.',
-  '- Include a clear daily average line in the prose, e.g. "Daily averages: ~1850 kcal | P: 130g | C: 200g | F: 55g" matching the header fields.',
+  '- Header macros MUST match the meal plan: if meals show (P: Xg | C: Yg | F: Zg | ~K kcal) lines, totals must reflect those sums — never put aspirational targets in the header that the meals do not hit.',
+  '- Every meal kcal must equal about 4×protein + 4×carbs + 9×fat (within ~20 kcal). Use the Staple Portion Macro Reference for Indian household portions.',
+  '- Include a clear daily average line in the prose, e.g. "Daily averages: ~1850 kcal | P: 130g | C: 200g | F: 55g" matching the header fields, and a Daily Total line per day: "Daily Total: P: Xg | C: Yg | F: Zg | ~K kcal".',
   '- Protein targets should be ambitious only when realistic: if the client cannot comfortably take high protein (digestion, appetite, veg limits, budget, notes), use a gentler protein total and coach getting as much as possible — never force aggressive floors or "must hit Xg" wording.',
   '- Diet text must contain ONLY food / nutrition. Never include Cardio, Steps, Conditioning, or Supplements sections in the diet prose.',
   '- Every day under a Day N header must include the FULL meal list written out in actual words with portions, cooking fats, and macro lines.',
@@ -446,7 +452,13 @@ export function validateGeneratedPlan(
 /** Parse and validate model text into a GeneratedPlan. */
 export function parseGeneratedPlanResponse(
   text: string,
-  options?: { mode?: PlanValidationMode }
+  options?: {
+    mode?: PlanValidationMode
+    /** When set, diet plans must land near these server-computed targets. */
+    nutritionTargets?: ReturnType<typeof computeNutritionTargets> | null
+    /** Skip target-band checks (e.g. unit tests that only care about schema). */
+    skipNutritionTargetCheck?: boolean
+  }
 ): { plan: GeneratedPlan | null; error: string | null } {
   const { parsed, error: parseError } = parseJsonFromModelResponse(text)
   if (parseError || parsed === null) {
@@ -461,15 +473,21 @@ export function parseGeneratedPlanResponse(
     const syncedNutrition = syncNutritionPlanMacros(plan.nutrition_plan)
     const syncedPlan = { ...plan, nutrition_plan: syncedNutrition }
 
-    if (
-      (mode === 'nutrition_focus' || mode === 'full') &&
-      syncedNutrition.calories <= 0
-    ) {
+    if (syncedNutrition.calories <= 0) {
       return {
         plan: null,
         error:
           'nutrition_plan.calories must be a positive number matching the meal plan totals (never 0).',
       }
+    }
+
+    // Always enforce Atwater + meal-line presence. Target band enforced when targets provided.
+    const assessment = assessNutritionMacroConsistency(
+      syncedNutrition,
+      options?.skipNutritionTargetCheck ? null : options?.nutritionTargets
+    )
+    if (!assessment.ok) {
+      return { plan: null, error: assessment.error }
     }
 
     return { plan: syncedPlan, error: null }
@@ -613,6 +631,10 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     workoutEnvironment
   )
   let completenessHint: string | null = null
+  const nutritionTargets =
+    validationMode === 'nutrition_focus' || validationMode === 'full'
+      ? computeNutritionTargets(input.profile, input.latestCheckin)
+      : null
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const prompts = await buildPlanPrompts(
@@ -692,10 +714,16 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
 
     const { plan, error } = parseGeneratedPlanResponse(response.text, {
       mode: validationMode,
+      nutritionTargets,
+      // Mock provider uses a simplified calorie model — still sync/Atwater-check, skip target band.
+      skipNutritionTargetCheck: providerMode === 'mock',
     })
     if (!plan) {
       lastValidationError = error ?? 'Invalid plan JSON.'
-      completenessHint = null
+      completenessHint =
+        error && /target|macro|kcal|protein/i.test(error)
+          ? error
+          : null
       continue
     }
 

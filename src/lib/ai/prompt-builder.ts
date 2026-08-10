@@ -5,6 +5,7 @@ import {
   summarizePriorSplit,
 } from '@/lib/ai/mesocycle'
 import { buildMetabolicFluxSection } from '@/lib/ai/metabolic-flux'
+import { buildNutritionTargetsSection } from '@/lib/ai/nutrition-targets'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
 import { getOnboardingLabel } from '@/lib/onboarding'
@@ -592,6 +593,7 @@ export type PromptContextSections = {
   clientDetails: string
   onboarding: string
   metabolicFlux: string
+  nutritionTargets: string
   hardConstraints: string
   trainingPreferences: string
   activePlan: string
@@ -611,6 +613,7 @@ const SECTION_LABELS: Record<PromptContextSectionKey, string> = {
   clientDetails: 'Client Profile',
   onboarding: 'Onboarding',
   metabolicFlux: 'Metabolic Flux Bias',
+  nutritionTargets: 'Nutrition Targets',
   hardConstraints: 'Hard Constraints',
   trainingPreferences: 'Training Preferences',
   activePlan: 'Current Active Plan',
@@ -683,6 +686,7 @@ export function buildPromptContextSections(
     clientDetails: buildClientProfileSection(input.profile),
     onboarding: buildOnboardingSection(input.profile.onboarding_data),
     metabolicFlux: buildMetabolicFluxSection(input.profile),
+    nutritionTargets: buildNutritionTargetsSection(input.profile, input.latestCheckin),
     hardConstraints: buildHardConstraintsSection(input.profile),
     trainingPreferences: buildTrainingPreferencesSection(input.profile),
     activePlan: buildActivePlanSection(input.activePlan),
@@ -710,6 +714,9 @@ const PLACEHOLDER_ALIASES: Record<string, keyof PromptContextSections> = {
   '[METABOLIC FLUX]': 'metabolicFlux',
   '[METABOLIC FLUX BIAS]': 'metabolicFlux',
   '[FLUX BIAS]': 'metabolicFlux',
+  '[NUTRITION TARGETS]': 'nutritionTargets',
+  '[MACRO TARGETS]': 'nutritionTargets',
+  '[CALORIE TARGETS]': 'nutritionTargets',
   '[HARD CONSTRAINTS]': 'hardConstraints',
   '[NON-NEGOTIABLE CONSTRAINTS]': 'hardConstraints',
   '[TRAINING PREFERENCES]': 'trainingPreferences',
@@ -792,11 +799,26 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
       return [
         'hardConstraints',
         'metabolicFlux',
+        'nutritionTargets',
         'clientDetails',
         'onboarding',
         'activeDiet',
         'activeWorkout',
         'checkin',
+        'mesocycle',
+        'coachNotes',
+        'knowledge',
+        'complexity',
+      ]
+    case 'initial_diet':
+    case 'initial_supplements':
+      return [
+        'hardConstraints',
+        'metabolicFlux',
+        'nutritionTargets',
+        'clientDetails',
+        'onboarding',
+        'mesocycle',
         'coachNotes',
         'knowledge',
         'complexity',
@@ -822,6 +844,7 @@ function resolveAppendOrder(actionId?: CoachAiActionId): (keyof PromptContextSec
       return [
         'hardConstraints',
         'metabolicFlux',
+        'nutritionTargets',
         'clientDetails',
         'onboarding',
         'coachNotes',
