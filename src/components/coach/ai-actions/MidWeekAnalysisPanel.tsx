@@ -158,7 +158,7 @@ export function MidWeekAnalysisPanel({
         <div>
           <h2 style={styles.title}>Send mid-week reply</h2>
           <p style={styles.subtitle}>
-            Short WhatsApp style reply (about 30 to 40 words). Edit if you want, then send — this marks the check-in reviewed.
+            Short WhatsApp style reply (max 40 words). Edit if you want, then send — this marks the check-in reviewed.
           </p>
         </div>
         <button
