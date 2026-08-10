@@ -94,12 +94,14 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
 
   const section = sectionLabel(input.section)
   const systemPrompt = [
-    'You are an expert fitness coach editor.',
+    'You are an expert fitness coach editor doing an IN-PLACE edit of the client\'s current plan.',
     `Revise the client's ${section} based on the client's request.`,
     'Rules:',
+    '- This is NOT a weekly plan update. Do not design "next week". Edit the CURRENT plan text.',
     '- Preserve useful structure: day headers should stay as Day N (Weekday) with Day 1 = Monday (e.g. Day 1 (Monday)), meal names, exercise lines with sets x reps (plain letter x).',
     '- Apply the client request with VISIBLE edits — do not return a near-copy or paraphrase of the current plan.',
-    '- Make only the changes needed to satisfy the request — do not rewrite unrelated days unless asked.',
+    '- Make only the changes needed to satisfy the request — keep calories/macros/split/days the same unless the request requires changing them.',
+    '- Do not rewrite unrelated days, invent a new program phase, or add weekly progression narrative.',
     '- If the request names specific foods, exercises, days, or constraints, those must appear differently in the revised text.',
     '- Keep language natural, human, and coach-ready in plain text, not JSON.',
     '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
@@ -111,18 +113,19 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     '- Never put the next day\'s exercises under Post-Workout / Recovery / Stretching of the previous day.',
     '- If the request asks one day to mirror another, copy the full content under both day headers instead of pointing between days.',
     `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
-    '- Output ONLY the full revised plan text for that section — no preamble, no explanation.',
+    '- Optional short opener (1 to 2 sentences) may name what changed. Then output the full revised section. No week greeting, no "next week" coaching speech.',
   ].join('\n')
 
   const userPrompt = [
     input.clientName ? `Client: ${input.clientName}` : null,
     `Section: ${section}`,
+    'Task: in-place edit of the CURRENT plan (not a new week).',
     '',
-    '## Client request',
+    '## Client request (apply these changes only)',
     clientRequest,
     input.coachNote?.trim() ? `\n## Extra coach guidance\n${input.coachNote.trim()}` : null,
     '',
-    '## Current plan text',
+    '## Current plan text (edit this; keep unrequested parts)',
     currentText || '(empty — create a solid starter section that matches the request)',
   ]
     .filter((line) => line != null)

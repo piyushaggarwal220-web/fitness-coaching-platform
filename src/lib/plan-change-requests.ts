@@ -1,18 +1,13 @@
 import 'server-only'
-import { generatePlan } from '@/lib/ai/generate-plan'
-import {
-  generatedDietFormData,
-  generatedWorkoutFormData,
-} from '@/lib/ai/plan-format'
+import { editPlanSection } from '@/lib/ai/edit-plan-section'
 import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
   stripClientWeekHandoffLanguage,
 } from '@/lib/ai/plan-prose-guards'
-import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-actions'
 import { encodePlanMeta } from '@/lib/plan-metadata'
 import { persistAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
+import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 
 export const PLAN_CHANGE_DAILY_LIMIT = 1
 export const PLAN_CHANGE_MONTHLY_LIMIT = 5
@@ -197,16 +192,7 @@ export async function createLockedPlanChangeRequest(input: {
   return { ok: true, request: data as PlanChangeRequestRow }
 }
 
-function buildUpdatedDietContext(active: Plan, nutrition: string): Plan {
-  const now = new Date().toISOString()
-  return {
-    ...active,
-    nutrition_plan: nutrition,
-    updated_at: now,
-  }
-}
-
-/** Background processor: generate draft from client lock-in, then queue for coach. */
+/** Background processor: in-place edit draft from client lock-in, then queue for coach. */
 export async function processPlanChangeRequest(requestId: string): Promise<void> {
   const admin = createAdminClient()
   const { data: row, error } = await admin
@@ -250,161 +236,94 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
     if (!active) throw new Error('No active plan to edit')
     const checkin = (latestCheckin as Checkin | null) ?? null
 
+    // Use the in-place section editor — NOT review_update_* weekly generators.
+    // Weekly prompts made the model invent "next week" programs for small edit requests.
     const dayHint =
       checkin?.coaching_day != null
-        ? `Client coaching day on file: ${checkin.coaching_day}${
-            checkin.coaching_week != null ? ` (coaching week ${checkin.coaching_week} — INTERNAL only).` : '.'
-          }`
-        : 'Client may still be on early days of coaching — do not invent a later week.'
+        ? `Client coaching day on file: ${checkin.coaching_day}. Still editing the CURRENT plan — do not advance the week.`
+        : 'Client may still be on early coaching days. Edit the CURRENT plan only.'
 
-    const clientInstructions = [
-      'CLIENT LOCKED-IN CHANGE REQUEST (must address every point with VISIBLE edits):',
-      request.request_text,
-      '',
+    const coachNote = [
       CLIENT_PLAN_EDIT_WEEK_RULES,
       dayHint,
-      '',
-      'Hard rules for this generation:',
-      '- Do not return a near-copy of the current plan.',
-      '- Every bullet in the request must map to a concrete meal, macro, exercise, volume, or schedule change.',
-      '- Opening lines of the section must name what changed vs the previous plan and why (not a week greeting).',
-      '- Keep hard constraints from onboarding.',
-      '- Produce a full updated section for coach review — do not auto-publish.',
+      'Every point in the client request must map to a concrete visible change.',
+      'Do not redesign the whole week. Keep unrequested meals/exercises.',
     ].join('\n')
 
-    const retryDiffInstructions = [
-      'RETRY — previous draft was too similar to the current plan.',
-      'Rewrite with clear, coach-obvious differences that satisfy the client request.',
-      'Change meal compositions / exercise selections / sets-reps / calories as needed — do not paraphrase the same plan.',
-    ].join('\n')
-
-    let dietForm = {
-      nutrition_plan: active.nutrition_plan?.trim() || '',
-      title: active.title,
-      phase: active.phase ?? '',
-      workout_plan: '',
-      cardio_plan: active.cardio_plan?.trim() || '',
-      supplement_plan: active.supplement_plan?.trim() || '',
-      coach_notes: '',
-      client_id: request.client_id,
-    }
-
-    let workoutForm = {
-      workout_plan: active.workout_plan?.trim() || '',
-    }
+    const profileTyped = profile as OnboardingProfile
+    let nutritionPlan = active.nutrition_plan?.trim() || ''
+    let workoutPlan = active.workout_plan?.trim() || ''
 
     if (request.scope === 'diet' || request.scope === 'both') {
-      let dietResult = await generatePlan({
-        profile: profile as OnboardingProfile,
-        latestCheckin: checkin,
-        actionId: 'review_update_diet',
-        activePlan: active,
-        validationMode: 'nutrition_focus',
-        coachInstructions: [
-          buildActionCoachInstructions('review_update_diet', {
-            activePlan: active,
-            checkin,
-          }),
-          clientInstructions,
-        ].join('\n\n'),
+      const dietEdit = await editPlanSection({
+        section: 'nutrition',
+        currentText: nutritionPlan,
+        clientRequest: request.request_text,
+        coachNote,
+        clientName: profileTyped.name,
+        clientId: request.client_id,
       })
-      dietForm = {
-        ...generatedDietFormData(dietResult.generatedPlan, request.client_id),
-        client_id: request.client_id,
-        title: `AI Draft · Client request`,
-      }
+      nutritionPlan = stripClientWeekHandoffLanguage(dietEdit.revisedText)
 
-      const priorNutrition = active.nutrition_plan?.trim() || ''
       if (
-        priorNutrition &&
-        planTextSimilarity(priorNutrition, dietForm.nutrition_plan) >= NEAR_COPY_SIMILARITY
+        active.nutrition_plan?.trim() &&
+        planTextSimilarity(active.nutrition_plan, nutritionPlan) >= NEAR_COPY_SIMILARITY
       ) {
-        dietResult = await generatePlan({
-          profile: profile as OnboardingProfile,
-          latestCheckin: checkin,
-          actionId: 'review_update_diet',
-          activePlan: active,
-          validationMode: 'nutrition_focus',
-          coachInstructions: [
-            buildActionCoachInstructions('review_update_diet', {
-              activePlan: active,
-              checkin,
-            }),
-            clientInstructions,
-            retryDiffInstructions,
-          ].join('\n\n'),
+        const retry = await editPlanSection({
+          section: 'nutrition',
+          currentText: active.nutrition_plan,
+          clientRequest: request.request_text,
+          coachNote: [
+            coachNote,
+            'RETRY: previous revision was too similar. Apply the requested food/portion changes clearly.',
+          ].join('\n'),
+          clientName: profileTyped.name,
+          clientId: request.client_id,
         })
-        dietForm = {
-          ...generatedDietFormData(dietResult.generatedPlan, request.client_id),
-          client_id: request.client_id,
-          title: `AI Draft · Client request`,
-        }
+        nutritionPlan = stripClientWeekHandoffLanguage(retry.revisedText)
       }
     }
 
     if (request.scope === 'workout' || request.scope === 'both') {
-      const updatedDietContext =
-        request.scope === 'both'
-          ? buildUpdatedDietContext(active, dietForm.nutrition_plan)
-          : active
-      let workoutResult = await generatePlan({
-        profile: profile as OnboardingProfile,
-        latestCheckin: checkin,
-        actionId: 'review_update_workout',
-        activePlan: active,
-        updatedDietPlan: updatedDietContext,
-        validationMode: 'workout_focus',
-        coachInstructions: [
-          buildActionCoachInstructions('review_update_workout', {
-            activePlan: active,
-            checkin,
-          }),
-          clientInstructions,
-        ].join('\n\n'),
+      const workoutEdit = await editPlanSection({
+        section: 'workout',
+        currentText: workoutPlan,
+        clientRequest: request.request_text,
+        coachNote,
+        clientName: profileTyped.name,
+        clientId: request.client_id,
       })
-      workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, request.client_id)
+      workoutPlan = stripClientWeekHandoffLanguage(workoutEdit.revisedText)
 
-      const priorWorkout = active.workout_plan?.trim() || ''
       if (
-        priorWorkout &&
-        planTextSimilarity(priorWorkout, workoutForm.workout_plan) >= NEAR_COPY_SIMILARITY
+        active.workout_plan?.trim() &&
+        planTextSimilarity(active.workout_plan, workoutPlan) >= NEAR_COPY_SIMILARITY
       ) {
-        workoutResult = await generatePlan({
-          profile: profile as OnboardingProfile,
-          latestCheckin: checkin,
-          actionId: 'review_update_workout',
-          activePlan: active,
-          updatedDietPlan: updatedDietContext,
-          validationMode: 'workout_focus',
-          coachInstructions: [
-            buildActionCoachInstructions('review_update_workout', {
-              activePlan: active,
-              checkin,
-            }),
-            clientInstructions,
-            retryDiffInstructions,
-          ].join('\n\n'),
+        const retry = await editPlanSection({
+          section: 'workout',
+          currentText: active.workout_plan,
+          clientRequest: request.request_text,
+          coachNote: [
+            coachNote,
+            'RETRY: previous revision was too similar. Apply the requested exercise/volume changes clearly.',
+          ].join('\n'),
+          clientName: profileTyped.name,
+          clientId: request.client_id,
         })
-        workoutForm = generatedWorkoutFormData(workoutResult.generatedPlan, request.client_id)
+        workoutPlan = stripClientWeekHandoffLanguage(retry.revisedText)
       }
     }
 
-    const merged = mergePlanForms(
-      {
-        ...dietForm,
-        client_id: request.client_id,
-        title: 'AI Draft · Client request',
-        workout_plan: stripClientWeekHandoffLanguage(
-          request.scope === 'diet' ? active.workout_plan?.trim() || '' : workoutForm.workout_plan
-        ),
-        cardio_plan: active.cardio_plan?.trim() || dietForm.cardio_plan,
-        supplement_plan: active.supplement_plan?.trim() || dietForm.supplement_plan,
-        nutrition_plan: stripClientWeekHandoffLanguage(
-          request.scope === 'workout' ? active.nutrition_plan?.trim() || '' : dietForm.nutrition_plan
-        ),
-      },
-      {}
-    )
+    const merged: PlanFormData = {
+      client_id: request.client_id,
+      title: 'AI Draft · Client request',
+      phase: active.phase ?? '',
+      nutrition_plan: nutritionPlan,
+      workout_plan: workoutPlan,
+      cardio_plan: active.cardio_plan?.trim() || '',
+      supplement_plan: active.supplement_plan?.trim() || '',
+      coach_notes: '',
+    }
 
     const metaNotes = encodePlanMeta(
       {
