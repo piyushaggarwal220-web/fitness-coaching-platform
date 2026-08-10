@@ -301,6 +301,9 @@ export default function Dashboard() {
     checkinSchedule?.nextCheckinStatus === 'available' && checkinSchedule.nextCheckin
       ? checkinSchedule.nextCheckin
       : checkinSchedule?.weekCheckins.find((task) => task.status === 'available') ?? null;
+  /** Always keep a sticky check-in strip: due CTA, or countdown to the next slot. */
+  const stickyCheckin = dueCheckin ?? checkinSchedule?.nextCheckin ?? null;
+  const stickyCheckinMode = dueCheckin ? 'due' : 'countdown';
 
   const firstName = profile?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
   const quickLinks = [
@@ -483,7 +486,15 @@ export default function Dashboard() {
         </div>
       )}
 
-      {dueCheckin && <CheckinDueBanner checkin={dueCheckin} />}
+      {stickyCheckin && (
+        <CheckinDueBanner
+          checkin={stickyCheckin}
+          mode={stickyCheckinMode}
+          countdownLabel={
+            checkinSchedule?.countdownDetailed ?? checkinSchedule?.countdownLabel
+          }
+        />
+      )}
       {renewalPrompt && <MembershipRenewalBanner prompt={renewalPrompt} />}
 
       {generationJob && !activePlan && profile?.plan_delivered !== true && (

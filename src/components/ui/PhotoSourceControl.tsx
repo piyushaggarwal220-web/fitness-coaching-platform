@@ -12,6 +12,11 @@ type PhotoSourceControlProps = {
   required?: boolean
   selectedText?: string
   disabled?: boolean
+  /**
+   * Called before opening the native camera. Use to checkpoint wizard state —
+   * mobile camera often remounts the page when returning.
+   */
+  onBeforeCameraOpen?: () => void | Promise<void>
 }
 
 export function PhotoSourceControl({
@@ -21,6 +26,7 @@ export function PhotoSourceControl({
   required = false,
   selectedText,
   disabled = false,
+  onBeforeCameraOpen,
 }: PhotoSourceControlProps) {
   const galleryInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -29,6 +35,17 @@ export function PhotoSourceControl({
     const files = Array.from(event.target.files ?? [])
     if (files.length > 0) onFiles(files)
     event.target.value = ''
+  }
+
+  const openCamera = () => {
+    void (async () => {
+      try {
+        await onBeforeCameraOpen?.()
+      } catch {
+        // Still open the camera — draft may already be in sessionStorage.
+      }
+      cameraInputRef.current?.click()
+    })()
   }
 
   return (
@@ -58,7 +75,7 @@ export function PhotoSourceControl({
           type="button"
           style={styles.action}
           aria-label={`${label}: take photo now`}
-          onClick={() => cameraInputRef.current?.click()}
+          onClick={openCamera}
         >
           <Camera size={18} aria-hidden="true" />
           Take photo now
