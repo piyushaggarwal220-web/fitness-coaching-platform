@@ -87,6 +87,10 @@ export function fallbackPublishCoachNotes(
   plan: Pick<Plan, 'title' | 'coach_notes' | 'phase'>
 ): string {
   const meta = parsePlanMeta(plan)
+  // Client-requested edits are not a new coaching-week handoff.
+  if (meta.source === 'client_plan_change' || /client request/i.test(plan.title ?? '')) {
+    return 'Your updated plan is ready. Keep building on your consistency — your coach is here if you need anything.'
+  }
   const week = meta.week ?? extractWeekFromTitle(plan.title)
   if (week) {
     return `Your Week ${week} plan is ready. Keep building on your consistency — your coach is here if you need anything.`
@@ -129,6 +133,9 @@ export function formatPublishedPlanTitle(
   if (!isAiDraftTitle(plan.title)) return clientFacingPlanTitle(plan.title)
 
   const meta = parsePlanMeta(plan)
+  if (meta.source === 'client_plan_change' || /client request/i.test(plan.title ?? '')) {
+    return isUpdate ? 'Updated Plan' : 'Coaching Plan'
+  }
   const week = meta.week ?? extractWeekFromTitle(plan.title)
   if (week) {
     return isUpdate ? `Week ${week} Updated Plan` : `Week ${week} Plan`

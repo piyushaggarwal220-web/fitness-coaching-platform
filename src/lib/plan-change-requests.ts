@@ -4,6 +4,10 @@ import {
   generatedDietFormData,
   generatedWorkoutFormData,
 } from '@/lib/ai/plan-format'
+import {
+  CLIENT_PLAN_EDIT_WEEK_RULES,
+  stripClientWeekHandoffLanguage,
+} from '@/lib/ai/plan-prose-guards'
 import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-actions'
 import { encodePlanMeta } from '@/lib/plan-metadata'
 import { persistAiPlanDraft } from '@/lib/plans'
@@ -246,14 +250,24 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
     if (!active) throw new Error('No active plan to edit')
     const checkin = (latestCheckin as Checkin | null) ?? null
 
+    const dayHint =
+      checkin?.coaching_day != null
+        ? `Client coaching day on file: ${checkin.coaching_day}${
+            checkin.coaching_week != null ? ` (coaching week ${checkin.coaching_week} — INTERNAL only).` : '.'
+          }`
+        : 'Client may still be on early days of coaching — do not invent a later week.'
+
     const clientInstructions = [
       'CLIENT LOCKED-IN CHANGE REQUEST (must address every point with VISIBLE edits):',
       request.request_text,
       '',
+      CLIENT_PLAN_EDIT_WEEK_RULES,
+      dayHint,
+      '',
       'Hard rules for this generation:',
       '- Do not return a near-copy of the current plan.',
       '- Every bullet in the request must map to a concrete meal, macro, exercise, volume, or schedule change.',
-      '- Opening lines of the section must name what changed vs the previous plan and why.',
+      '- Opening lines of the section must name what changed vs the previous plan and why (not a week greeting).',
       '- Keep hard constraints from onboarding.',
       '- Produce a full updated section for coach review — do not auto-publish.',
     ].join('\n')
@@ -380,11 +394,14 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
         ...dietForm,
         client_id: request.client_id,
         title: 'AI Draft · Client request',
-        workout_plan: request.scope === 'diet' ? active.workout_plan?.trim() || '' : workoutForm.workout_plan,
+        workout_plan: stripClientWeekHandoffLanguage(
+          request.scope === 'diet' ? active.workout_plan?.trim() || '' : workoutForm.workout_plan
+        ),
         cardio_plan: active.cardio_plan?.trim() || dietForm.cardio_plan,
         supplement_plan: active.supplement_plan?.trim() || dietForm.supplement_plan,
-        nutrition_plan:
-          request.scope === 'workout' ? active.nutrition_plan?.trim() || '' : dietForm.nutrition_plan,
+        nutrition_plan: stripClientWeekHandoffLanguage(
+          request.scope === 'workout' ? active.nutrition_plan?.trim() || '' : dietForm.nutrition_plan
+        ),
       },
       {}
     )

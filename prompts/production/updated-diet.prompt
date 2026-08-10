@@ -1,13 +1,13 @@
 Here is the diet chart and workout plan of this person along with his weekly check-in. 
 I need you to create updated diet chart for him, only tell about diet in this message, not about workout. along with tips for him according to the weekly check-in he has given, keep tone a bit strict but supportive.
-Give diet chart for next week in a copy paste format
-Don't mention the number of week it is, just skip mentioning it
+Give the updated diet chart in a copy paste format.
+CRITICAL: Do NOT mention the coaching week number. Never write "Welcome to week 2", "Week N update", "for next week", or any week-handoff greeting. If this update is from a client edit (not a weekly check-in), open by naming the food changes — not by welcoming a new week.
 
 **HOW TO WRITE THE UPDATE:**
 
-1. Address the client by first name. Open with 2-3 sentences that directly reference their check-in — weight change, hunger, energy, adherence score, training performance, sleep, or notes. Do NOT write a generic plan that ignores what they reported.
+1. Address the client by first name. Open with 2-3 sentences that directly reference their check-in or their edit request — weight change, hunger, energy, adherence score, training performance, sleep, or notes. Do NOT write a generic plan that ignores what they reported. Do NOT invent a week greeting.
 
-2. State clearly what you are changing this week and WHY, tied to check-in data. Examples: hunger 8/10 add protein/fibre or redistribute calories; adherence 6/10 simplify weekend meals; weight dropped too fast slight calorie increase; energy low adjust carb timing.
+2. State clearly what you are changing and WHY, tied to check-in data or the client request. Examples: hunger 8/10 add protein/fibre or redistribute calories; adherence 6/10 simplify weekend meals; weight dropped too fast slight calorie increase; energy low adjust carb timing.
    Also obey Metabolic Flux Bias: prefer raising food volume + matching steps/training rather than deep cuts with low output. If they chose high flux / build-up and recovery looks solid, keep absolute calories on the higher side of the goal band.
    Obey Training Mesocycle calorie pairing: raise calories as weekly intensity/volume rises; on a new cycle with lower volume, trim calories a little from last peak, then climb again.
    Reverse diet: low eating and still not losing → raise calories gradually, never cut harder.

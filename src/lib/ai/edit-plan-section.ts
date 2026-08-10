@@ -2,6 +2,10 @@ import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { LIMITS, MODELS, PLAN_GENERATION_TEMPERATURE } from '@/lib/ai/config'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
+import {
+  CLIENT_PLAN_EDIT_WEEK_RULES,
+  stripClientWeekHandoffLanguage,
+} from '@/lib/ai/plan-prose-guards'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 
 export type PlanSectionKind = 'nutrition' | 'workout'
@@ -106,6 +110,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     '- Never introduce cross-day references ("same as Day 1", "repeat Day 2", "follow Day 3\'s plan", "as above"). Every day must keep its full meal or exercise list written out so the daily tracker can parse it.',
     '- Never put the next day\'s exercises under Post-Workout / Recovery / Stretching of the previous day.',
     '- If the request asks one day to mirror another, copy the full content under both day headers instead of pointing between days.',
+    `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
     '- Output ONLY the full revised plan text for that section — no preamble, no explanation.',
   ].join('\n')
 
@@ -172,7 +177,9 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         )
       }
 
-      const revisedText = normalizeAiPlanProse(extractRevisedText(response.text))
+      const revisedText = stripClientWeekHandoffLanguage(
+        normalizeAiPlanProse(extractRevisedText(response.text))
+      )
       if (!revisedText) {
         if (attempt < maxAttempts - 1) continue
         throw new ClaudeResponseError('AI returned an empty revision.')

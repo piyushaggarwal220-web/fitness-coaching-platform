@@ -59,6 +59,7 @@ export function formatMesocyclePromptSection(
 ): string {
   return [
     '## Training Mesocycle (authoritative — obey this)',
+    'INTERNAL ONLY: use the week/volume/calorie targets below for programming. NEVER write coaching week numbers, "Welcome to week N", or "next week\'s plan" in client-facing diet or workout text.',
     `- Coaching week: ${meso.coachingWeek}`,
     `- Mesocycle (month index): ${meso.mesocycleIndex}`,
     `- Week within mesocycle: ${meso.weekInMesocycle} of 4`,

@@ -1,4 +1,5 @@
 import type { GeneratedPlan } from '@/lib/ai/generate-plan'
+import { stripClientWeekHandoffLanguage } from '@/lib/ai/plan-prose-guards'
 import { applyParsedSectionsToFormData } from '@/lib/plan-section-parser'
 import type { PlanFormData } from '@/types/database'
 
@@ -8,7 +9,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** Remove AI/Markdown decoration and ALL hyphen/dash characters from client-facing plan text. */
 export function normalizeAiPlanProse(value: string): string {
-  return value
+  const cleaned = value
     .replace(/\r\n/g, '\n')
     .split('\n')
     .map((line) => {
@@ -28,6 +29,9 @@ export function normalizeAiPlanProse(value: string): string {
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+
+  // Drop invented "Welcome to week 2" style handoffs (common on client edits).
+  return stripClientWeekHandoffLanguage(cleaned)
 }
 
 function formatScalar(value: unknown): string {
