@@ -36,6 +36,7 @@ import {
   isOnboardingComplete,
   markOnboardingJustCompleted,
   MEAL_TIMING_OPTIONS,
+  MOVEMENT_COMFORT_OPTIONS,
   OCCUPATION_OPTIONS,
   ONBOARDING_SECTIONS,
   PAIN_OPTIONS,
@@ -325,6 +326,7 @@ export default function OnboardingPage() {
     requireWorkSchoolSchedule: requireBodyMeasurements,
     requireFluxCapacity: requireBodyMeasurements,
     requireDietVariety: requireBodyMeasurements,
+    requireMovementAssessment: requireBodyMeasurements,
     confirmedScrollers,
     planSlug,
     requireMultiGoals: true,
@@ -675,6 +677,26 @@ function renderStep(
                     confirmed={confirmedScrollers.includes('navel')}
                     onConfirm={() => confirmScroller('navel')}
                   />
+                  <MeasurementScroller
+                    label="Left bicep (flexed)"
+                    kind="bicep"
+                    value={form.left_bicep}
+                    onChange={(left_bicep) => update({ left_bicep })}
+                    required
+                    requireConfirm
+                    confirmed={confirmedScrollers.includes('left_bicep')}
+                    onConfirm={() => confirmScroller('left_bicep')}
+                  />
+                  <MeasurementScroller
+                    label="Right bicep (flexed)"
+                    kind="bicep"
+                    value={form.right_bicep}
+                    onChange={(right_bicep) => update({ right_bicep })}
+                    required
+                    requireConfirm
+                    confirmed={confirmedScrollers.includes('right_bicep')}
+                    onConfirm={() => confirmScroller('right_bicep')}
+                  />
                 </div>
               </Field>
             ) : (
@@ -869,7 +891,43 @@ function renderStep(
     case 10:
       return (
         <div style={s.stepContent}>
-          <h2 style={s.stepTitle}>Exercise preferences</h2>
+          <h2 style={s.stepTitle}>Movement & recent training</h2>
+          <p style={s.stepHint}>
+            These help your coach choose the right starting point and avoid movements that cause problems.
+          </p>
+          <Field label="Can you comfortably perform squats?" required>
+            <ChipGroup
+              options={MOVEMENT_COMFORT_OPTIONS}
+              value={form.can_squat}
+              onChange={(v) => update({ can_squat: v })}
+            />
+          </Field>
+          <Field label="Can you comfortably perform push-ups?" required>
+            <ChipGroup
+              options={MOVEMENT_COMFORT_OPTIONS}
+              value={form.can_pushup}
+              onChange={(v) => update({ can_pushup: v })}
+            />
+          </Field>
+          <Field label="Can you comfortably perform pull-ups?" required>
+            <ChipGroup
+              options={MOVEMENT_COMFORT_OPTIONS}
+              value={form.can_pullup}
+              onChange={(v) => update({ can_pullup: v })}
+            />
+          </Field>
+          <Field
+            label="Have you been following any workout program recently?"
+            required
+            hint='Briefly describe it, or write "None".'
+          >
+            <textarea
+              value={form.recent_program}
+              onChange={(e) => update({ recent_program: e.target.value })}
+              placeholder='e.g. PPL 4 days/week for 2 months, or "None"'
+              style={s.textarea}
+            />
+          </Field>
           <Field label="Favourite exercises" hint="Optional — helps your coach program what you enjoy.">
             <textarea
               value={form.favorite_exercises}

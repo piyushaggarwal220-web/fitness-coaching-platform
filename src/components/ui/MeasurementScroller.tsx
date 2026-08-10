@@ -14,6 +14,7 @@ export const NUMBER_SCROLLER_PRESETS = {
   chest: { min: 55, max: 150, step: 1, unit: 'cm' },
   thigh: { min: 35, max: 90, step: 1, unit: 'cm' },
   navel: { min: 55, max: 140, step: 1, unit: 'cm' },
+  bicep: { min: 18, max: 60, step: 1, unit: 'cm' },
   food_budget: { min: 1000, max: 100000, step: 500, unit: '₹' },
   feet: { min: 3, max: 8, step: 1, unit: 'ft' },
   inches: { min: 0, max: 11, step: 1, unit: 'in' },
@@ -272,7 +273,7 @@ export function NumberScroller(props: NumberScrollerProps) {
 /** Alias for body-tape fields — same scroll wheel. */
 export function MeasurementScroller(
   props: Omit<NumberScrollerBaseProps, 'min' | 'max' | 'step'> & {
-    kind: Extract<NumberScrollerPreset, 'chest' | 'thigh' | 'navel' | 'weight'>
+    kind: Extract<NumberScrollerPreset, 'chest' | 'thigh' | 'navel' | 'bicep' | 'weight'>
   }
 ) {
   const { kind, ...rest } = props
