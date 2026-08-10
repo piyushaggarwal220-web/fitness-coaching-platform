@@ -10,7 +10,17 @@ type OnboardingReviewProps = {
   onTermsChange: (accepted: boolean) => void
 }
 
-const SECTION_EDIT_STEPS = [0, 2, 7, 11, 13, 19, 21] as const
+/** Map review section titles to the wizard step that contains those fields. */
+const SECTION_EDIT_STEPS: Record<string, number> = {
+  // Name/age are on 0; gender, height, weight, and tape (incl. biceps) are on 1.
+  'Basic Information': 1,
+  Goals: 2,
+  Training: 7,
+  Medical: 11,
+  Diet: 13,
+  'Meal timings': 19,
+  'Progress Photos': 21,
+}
 
 export function OnboardingReview({
   form,
@@ -28,7 +38,7 @@ export function OnboardingReview({
         Confirm everything looks correct before your coach builds your personalised plan.
       </p>
 
-      {sections.map((section, index) => (
+      {sections.map((section) => (
         <div key={section.title} style={s.reviewSection}>
           <h3 style={s.reviewTitle}>{section.title}</h3>
           {section.items.map((item) => (
@@ -40,7 +50,7 @@ export function OnboardingReview({
           <button
             type="button"
             style={s.editLink}
-            onClick={() => onEditSection(SECTION_EDIT_STEPS[index] ?? 0)}
+            onClick={() => onEditSection(SECTION_EDIT_STEPS[section.title] ?? 0)}
           >
             Edit
           </button>

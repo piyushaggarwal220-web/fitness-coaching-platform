@@ -190,11 +190,15 @@ export default function OnboardingPage() {
           requireBodyMeasurements: needsMeasurements,
         })
         const wizardSteps = getOnboardingWizardSteps(resumed)
-        // Mobile camera often remounts this page; prefer the local draft step so
-        // clients stay on photos instead of jumping back to step 1.
+        // Mobile camera remounts can restore a later draft step (e.g. photos/review).
+        // Never skip past the first incomplete required step (e.g. missing biceps).
         const draftStep = loadOnboardingWizardDraft(result.user.id)
-        const restoredStep =
-          draftStep != null && wizardSteps.includes(draftStep) ? draftStep : resumeStep
+        let restoredStep = resumeStep
+        if (draftStep != null && wizardSteps.includes(draftStep)) {
+          const resumeIdx = wizardSteps.indexOf(resumeStep)
+          const draftIdx = wizardSteps.indexOf(draftStep)
+          restoredStep = draftIdx <= resumeIdx || resumeIdx < 0 ? draftStep : resumeStep
+        }
         setStep(restoredStep)
         saveOnboardingWizardDraft(result.user.id, restoredStep)
         const preConfirmed: string[] = []
@@ -499,9 +503,35 @@ export default function OnboardingPage() {
       })
       const generationResult = await generationResponse.json()
       if (!generationResponse.ok) {
+        const serverError =
+          typeof generationResult.error === 'string' ? generationResult.error : ''
+        // If server still sees missing answers (e.g. new required tape fields),
+        // jump the client to that step so the inputs are visible.
+        const incompleteAfterSave = findFirstIncompleteOnboardingStep(
+          form,
+          photoUrls,
+          mealTimingContext,
+          stepOptions
+        )
+        if (incompleteAfterSave) {
+          if (/bicep|chest|thigh|navel|measurement/i.test(incompleteAfterSave.error)) {
+            setRequireBodyMeasurements(true)
+          }
+          setError(serverError || incompleteAfterSave.error)
+          setStep(incompleteAfterSave.step)
+          setSubmitting(false)
+          return
+        }
+        if (/bicep|chest|thigh|navel|measurement/i.test(serverError)) {
+          setRequireBodyMeasurements(true)
+          setError(serverError)
+          setStep(1)
+          setSubmitting(false)
+          return
+        }
         throw new Error(
-          generationResult.error
-            ? `Intake saved, but your plan could not be started yet: ${generationResult.error}`
+          serverError
+            ? `Intake saved, but your plan could not be started yet: ${serverError}`
             : 'Intake saved, but your plan could not be started yet. Please try again or message support.'
         )
       }
@@ -691,6 +721,9 @@ function renderStep(
       return (
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>About you</h2>
+          <p style={s.stepHint}>
+            Include height, weight, and tape measurements (chest, thigh, belly, and both flexed biceps).
+          </p>
           <Field label="Gender" required>
             <ChipGroup
               options={GENDER_OPTIONS}
@@ -736,7 +769,7 @@ function renderStep(
               <Field
                 label="Body measurements"
                 required
-                hint="Scroll each wheel to your soft-tape reading (whole cm). Belly = around the waist at navel height. No tape yet? Buy one from a hardware store and come back later."
+                hint="Scroll each wheel to your soft-tape reading (whole cm). Belly = waist at navel. Left and right biceps are flexed. No tape yet? Buy one from a hardware store and come back later."
               >
                 <div style={{ display: 'grid', gap: 16 }}>
                   <MeasurementScroller
