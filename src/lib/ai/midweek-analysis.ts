@@ -21,6 +21,9 @@ function scoreLine(label: string, value: number | null | undefined): string {
   return `${label}: ${value != null ? `${value}/10` : 'n/a'}`
 }
 
+/** Hard cap for the client-facing mid-week WhatsApp reply. */
+export const MIDWEEK_CLIENT_REPLY_MAX_WORDS = 40
+
 /** Remove ASCII/Unicode hyphens and dashes from client-facing text. */
 export function stripHyphensForCoachReply(text: string): string {
   return text
@@ -29,6 +32,36 @@ export function stripHyphensForCoachReply(text: string): string {
     .replace(/ *\n */g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+export function countCoachReplyWords(text: string): number {
+  const trimmed = text.trim()
+  if (!trimmed) return 0
+  return trimmed.split(/\s+/).filter(Boolean).length
+}
+
+/**
+ * Enforce a hard word limit on the client reply.
+ * Prefers ending on a sentence boundary inside the limit; otherwise hard-cuts.
+ */
+export function limitCoachReplyWords(
+  text: string,
+  maxWords: number = MIDWEEK_CLIENT_REPLY_MAX_WORDS
+): string {
+  const cleaned = stripHyphensForCoachReply(text)
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  if (words.length <= maxWords) return cleaned
+
+  const truncated = words.slice(0, maxWords).join(' ')
+  const sentenceMatch = truncated.match(/^[\s\S]*[.!?](?=\s|$)/)
+  if (sentenceMatch && countCoachReplyWords(sentenceMatch[0]) >= Math.min(20, maxWords)) {
+    return sentenceMatch[0].trim()
+  }
+  return /[.!?]$/.test(truncated) ? truncated : `${truncated}.`
+}
+
+function finalizeClientReply(text: string): string {
+  return limitCoachReplyWords(stripHyphensForCoachReply(text))
 }
 
 function firstName(profile: OnboardingProfile): string {
@@ -113,12 +146,13 @@ function buildPackUserPrompt(
     `Address them as ${firstName(profile)}.`,
     'Warm, direct, human Indian online coach tone. Supportive but accountable.',
     'Reference their actual wins, slips, scores, questions, or comments. Do not be generic.',
-    'Answer their questions if any. Give 1 to 3 clear next actions for the rest of the week.',
+    'Answer their questions briefly if any. Give at most 1 clear next action for the rest of the week.',
     'Do not invent measurements, medical diagnoses, or plan rewrites.',
     'Do not mention AI, templates, or that this is automated.',
     'Do not use Markdown, asterisks, or bullet symbols.',
     'CRITICAL: Never use hyphen, en dash, or em dash characters anywhere in CLIENT_REPLY. Use commas, periods, or new sentences instead.',
-    'Length: about 90 to 180 words. Short paragraphs. Ready to send as is.',
+    `HARD LIMIT: CLIENT_REPLY must be at most ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words. Aim for 30 to 40 words. Never exceed ${MIDWEEK_CLIENT_REPLY_MAX_WORDS}.`,
+    'One short WhatsApp style message. Ready to send as is.',
   ].join('\n')
 }
 
@@ -127,6 +161,7 @@ const PACK_SYSTEM = [
   'Output exactly two sections: ===COACH_BRIEFING=== then ===CLIENT_REPLY===.',
   'Be concrete. Never invent facts not in the check-in.',
   'In CLIENT_REPLY never use any hyphen or dash character.',
+  `CLIENT_REPLY hard max ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words.`,
 ].join(' ')
 
 function extractSection(raw: string, marker: string, nextMarker?: string): string {
@@ -168,7 +203,7 @@ function parsePackOutput(raw: string): { summary: string; clientReply: string } 
 
   return {
     summary: summary.trim(),
-    clientReply: stripHyphensForCoachReply(clientReply),
+    clientReply: finalizeClientReply(clientReply),
   }
 }
 
@@ -197,7 +232,7 @@ export async function loadCachedMidWeekPack(
     if (rendered?.checkinId !== checkinId) continue
     if (!bestSummary && rendered.summary?.trim()) bestSummary = rendered.summary.trim()
     if (!bestReply && rendered.clientReply?.trim()) {
-      bestReply = stripHyphensForCoachReply(rendered.clientReply)
+      bestReply = finalizeClientReply(rendered.clientReply)
     }
     if (bestSummary && bestReply) break
   }
@@ -277,19 +312,21 @@ export async function generateMidWeekAnalysis(input: {
           'You are a real LURVOX coach writing a WhatsApp style check in reply.',
           'Output ONLY the client message. No headings. No markdown.',
           'Never use hyphen, en dash, or em dash characters.',
+          `Hard max ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words.`,
         ].join(' '),
         userPrompt: [
           buildCheckinFacts(input.profile, input.checkin, previous),
           '',
           `Write the client reply to ${firstName(input.profile)} now.`,
-          'Warm, direct, human. Reference their check in. 90 to 180 words.',
+          'Warm, direct, human. Reference their check in.',
+          `HARD LIMIT: at most ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words. Aim for 30 to 40 words.`,
           'CRITICAL: zero hyphen or dash characters in the entire message.',
         ].join('\n'),
         model: MODELS.CLAUDE_HAIKU,
-        maxTokens: 700,
+        maxTokens: 220,
         temperature: 0.5,
       })
-      clientReply = stripHyphensForCoachReply(replyOnly.text)
+      clientReply = finalizeClientReply(replyOnly.text)
       retryCount += 1 + replyOnly.retryCount
       inputTokens += replyOnly.inputTokens
       outputTokens += replyOnly.outputTokens
@@ -298,7 +335,7 @@ export async function generateMidWeekAnalysis(input: {
     if (!summary.trim()) summary = 'Briefing unavailable. Use the client reply below.'
     if (!clientReply.trim()) throw new Error('Empty mid-week client reply')
 
-    clientReply = stripHyphensForCoachReply(clientReply)
+    clientReply = finalizeClientReply(clientReply)
 
     await logAiGeneration({
       clientId: input.checkin.client_id,
