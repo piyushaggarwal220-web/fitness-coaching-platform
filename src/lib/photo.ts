@@ -1,3 +1,5 @@
+import { importWithChunkRetry } from '@/lib/chunk-load-recovery'
+
 export const MAX_PHOTO_FILE_SIZE_BYTES = 20 * 1024 * 1024
 export const MAX_PHOTO_FILE_SIZE_LABEL = '20 MB'
 
@@ -154,7 +156,7 @@ export function validatePhotoFiles(files: readonly File[]): string | null {
 
 /** Convert HEIC/HEIF to JPEG in the browser so uploads are vision-safe. */
 export async function convertHeicFileToJpeg(file: File, quality = 0.82): Promise<File> {
-  const heic2any = (await import('heic2any')).default
+  const heic2any = (await importWithChunkRetry(() => import('heic2any'))).default
   const converted = await heic2any({
     blob: file,
     toType: 'image/jpeg',

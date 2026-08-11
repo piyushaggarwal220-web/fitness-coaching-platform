@@ -27,6 +27,7 @@ import type {
   OnboardingFormData,
   OnboardingProfile,
 } from '@/types/database'
+import { importWithChunkRetry } from '@/lib/chunk-load-recovery'
 
 export const ONBOARDING_PHOTO_BUCKET = 'onboarding-photos'
 
@@ -1310,10 +1311,16 @@ export async function uploadOnboardingPhoto(
   file: File,
   label: 'front' | 'side' | 'back'
 ): Promise<string> {
-  const { isHeicLike, isVisionSafeMediaType, validatePhotoFile } = await import('@/lib/photo')
+  // Keep these dynamic so other onboarding consumers stay lean, but retry once
+  // when a mid-flow deploy leaves the browser holding stale chunk hashes.
+  const { isHeicLike, isVisionSafeMediaType, validatePhotoFile } = await importWithChunkRetry(
+    () => import('@/lib/photo')
+  )
   const validationError = validatePhotoFile(file)
   if (validationError) throw new Error(validationError)
-  const { compressImageFile, uploadPhotoWithRetry } = await import('@/lib/checkin')
+  const { compressImageFile, uploadPhotoWithRetry } = await importWithChunkRetry(
+    () => import('@/lib/checkin')
+  )
   const compressed = typeof window !== 'undefined' ? await compressImageFile(file) : file
   if (!isVisionSafeMediaType(compressed.type) && isHeicLike(compressed)) {
     throw new Error(

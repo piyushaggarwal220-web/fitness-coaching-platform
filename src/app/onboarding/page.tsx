@@ -67,6 +67,11 @@ import {
 } from '@/lib/onboarding'
 import { isGoalVisibleForGender, resolveGoalPlanTier } from '@/lib/plan-goals'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
+import {
+  CHUNK_LOAD_USER_MESSAGE,
+  isChunkLoadError,
+  reloadForNewDeployment,
+} from '@/lib/chunk-load-recovery'
 import type { OnboardingFormData } from '@/types/database'
 import type { SavedPhotoUrls } from '@/lib/onboarding'
 import { MeasurementScroller, NumberScroller } from '@/components/ui/MeasurementScroller'
@@ -380,13 +385,18 @@ export default function OnboardingPage() {
           saveOnboardingWizardDraft(latest.userId ?? current.userId!, latest.step)
           setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
         } catch (err) {
+          // Stale `/_next/static` hashes after a deploy surface here because the
+          // photo compress/upload modules are loaded lazily on first upload.
+          if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-photo')) return
           // If storage succeeded but profile save failed, photoUrls already holds the path
           // so validation/continue can still proceed; only clear a failed local pick.
           setPhotos((prev) => ({ ...prev, [key]: null }))
           setError(
-            err instanceof Error
-              ? err.message
-              : `Could not upload the ${key} photo. Please try again or use “Take photo now”.`
+            isChunkLoadError(err)
+              ? CHUNK_LOAD_USER_MESSAGE
+              : err instanceof Error
+                ? err.message
+                : `Could not upload the ${key} photo. Please try again or use “Take photo now”.`
           )
         } finally {
           setUploadingPhotos((prev) => ({ ...prev, [key]: false }))
@@ -401,6 +411,15 @@ export default function OnboardingPage() {
       queueMicrotask(() => setMealsForTiming(defaultMealsForTiming(form)))
     }
   }, [step, form, mealsForTiming.length])
+
+  // Warm the photo compress/upload chunks before the first pick so a mid-flow
+  // deploy is less likely to fail the first upload attempt.
+  useEffect(() => {
+    if (step !== 21 || typeof window === 'undefined') return
+    void import('@/lib/photo').catch(() => undefined)
+    void import('@/lib/checkin').catch(() => undefined)
+    void import('heic2any').catch(() => undefined)
+  }, [step])
 
   // Each step should start at the top; otherwise the previous step's scroll
   // position carries over and new steps open scrolled below the heading.
@@ -448,7 +467,8 @@ export default function OnboardingPage() {
         await persistProgress(rejoined)
         setStep(rejoined)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to save progress')
+        if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-next')) return
+        setError(isChunkLoadError(err) ? CHUNK_LOAD_USER_MESSAGE : err instanceof Error ? err.message : 'Failed to save progress')
       }
       return
     }
@@ -457,7 +477,8 @@ export default function OnboardingPage() {
       await persistProgress(nextStep)
       setStep(nextStep)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save progress')
+      if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-next')) return
+      setError(isChunkLoadError(err) ? CHUNK_LOAD_USER_MESSAGE : err instanceof Error ? err.message : 'Failed to save progress')
     }
   }
 
@@ -543,7 +564,8 @@ export default function OnboardingPage() {
       markOnboardingJustCompleted()
       router.replace('/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to complete onboarding')
+      if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-submit')) return
+      setError(isChunkLoadError(err) ? CHUNK_LOAD_USER_MESSAGE : err instanceof Error ? err.message : 'Failed to complete onboarding')
       setSubmitting(false)
     }
   }

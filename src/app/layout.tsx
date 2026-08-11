@@ -5,6 +5,7 @@ import "@/components/dev/dev-panel.css";
 import { DevPanelRoot } from "@/components/dev/DevPanelRoot";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
+import { ChunkLoadRecovery } from "@/components/pwa/ChunkLoadRecovery";
 import { SessionKeepalive } from "@/components/auth/SessionKeepalive";
 import { initWhatsAppProvider } from "@/lib/notifications/whatsapp-provider";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
@@ -67,6 +68,7 @@ export default function RootLayout({
       <body>
         {children}
         <SessionKeepalive />
+        <ChunkLoadRecovery />
         <PwaRegister />
         <MetaPixel />
         <DevPanelRoot />
