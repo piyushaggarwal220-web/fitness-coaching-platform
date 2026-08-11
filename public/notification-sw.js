@@ -1,6 +1,6 @@
 /* Lurvox service worker — push + instant shell / asset caching */
 
-const CACHE_VERSION = 'v4'
+const CACHE_VERSION = 'v5'
 const SHELL_CACHE = `lurvox-shell-${CACHE_VERSION}`
 const STATIC_CACHE = `lurvox-static-${CACHE_VERSION}`
 const PAGE_CACHE = `lurvox-pages-${CACHE_VERSION}`
@@ -38,7 +38,9 @@ function isKeyPagePath(pathname) {
 }
 
 function isStaticAsset(pathname) {
-  if (pathname.startsWith('/_next/static/')) return true
+  // Do not cache/intercept hashed Next.js build assets — stale SW entries after
+  // deploy cause "Failed to load chunk /_next/static/..." during photo upload.
+  if (pathname.startsWith('/_next/')) return false
   if (pathname.startsWith('/icons/')) return true
   if (pathname.startsWith('/landing/')) return true
   return /\.(?:js|css|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|otf|map)$/i.test(pathname)
@@ -117,11 +119,12 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
 
-  // Never cache API, auth, or admin traffic.
+  // Never cache API, auth, admin, or hashed Next build traffic.
   if (
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/auth') ||
-    url.pathname.startsWith('/admin')
+    url.pathname.startsWith('/admin') ||
+    url.pathname.startsWith('/_next/')
   ) {
     return
   }

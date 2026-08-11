@@ -51,14 +51,23 @@ assert.match(sw, /PAGE_CACHE|lurvox-pages/, 'SW defines page cache')
 assert.match(sw, /addEventListener\('push'/, 'SW handles push')
 assert.match(sw, /addEventListener\('notificationclick'/, 'SW handles notification click')
 assert.match(sw, /KEY_PAGE_PREFIXES/, 'SW caches key pages')
-assert.match(sw, /_next\/static/, 'SW caches Next static assets')
+assert.match(sw, /_next\//, 'SW mentions Next build assets')
+assert.match(
+  sw,
+  /Do not cache\/intercept hashed Next\.js build assets|pathname\.startsWith\('\/_next\//,
+  'SW bypasses hashed Next build assets so deploys do not break open tabs'
+)
 assert.doesNotMatch(sw, /firebase/i, 'SW does not depend on Firebase')
+
+const chunkRecovery = read('src/components/pwa/ChunkLoadRecovery.tsx')
+assert.match(chunkRecovery, /reloadForNewDeployment/, 'chunk recovery reloads after stale deploy')
 
 const layout = read('src/app/layout.tsx')
 assert.match(layout, /manifest:\s*["']\/manifest\.json["']/, 'layout links manifest.json')
 assert.match(layout, /themeColor/, 'layout sets themeColor')
 assert.match(layout, /appleWebApp/, 'layout sets appleWebApp')
 assert.match(layout, /PwaRegister/, 'layout registers SW')
+assert.match(layout, /ChunkLoadRecovery/, 'layout recovers from stale Next chunks')
 
 const pwaRegister = read('src/components/pwa/PwaRegister.tsx')
 assert.match(pwaRegister, /notification-sw\.js/, 'PwaRegister points at SW')
