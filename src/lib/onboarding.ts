@@ -40,33 +40,73 @@ type OnboardingWizardDraft = {
   savedAt: number
 }
 
-export function saveOnboardingWizardDraft(userId: string, step: number): void {
-  if (typeof window === 'undefined' || !userId) return
+function readWizardDraftRaw(userId: string, storage: Storage): OnboardingWizardDraft | null {
   try {
-    const payload: OnboardingWizardDraft = {
-      userId,
-      step,
-      savedAt: Date.now(),
+    const raw = storage.getItem(ONBOARDING_WIZARD_DRAFT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as OnboardingWizardDraft
+    if (parsed.userId !== userId) return null
+    if (typeof parsed.step !== 'number' || !Number.isFinite(parsed.step) || parsed.step < 0) {
+      return null
     }
-    sessionStorage.setItem(ONBOARDING_WIZARD_DRAFT_KEY, JSON.stringify(payload))
+    if (Date.now() - parsed.savedAt > ONBOARDING_WIZARD_DRAFT_TTL_MS) return null
+    return parsed
   } catch {
-    // ignore quota / private mode
+    return null
   }
+}
+
+function writeWizardDraftRaw(payload: OnboardingWizardDraft): void {
+  const raw = JSON.stringify(payload)
+  try {
+    sessionStorage.setItem(ONBOARDING_WIZARD_DRAFT_KEY, raw)
+  } catch {
+    // ignore
+  }
+  try {
+    localStorage.setItem(ONBOARDING_WIZARD_DRAFT_KEY, raw)
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Persist the wizard step across mobile camera remounts.
+ * By default refuses to move the draft backward — that race (saving step 0
+ * before hydrate) was sending clients back to question 1.
+ */
+export function saveOnboardingWizardDraft(
+  userId: string,
+  step: number,
+  options?: { allowBackward?: boolean }
+): void {
+  if (typeof window === 'undefined' || !userId) return
+  if (!Number.isFinite(step) || step < 0) return
+
+  const existing =
+    readWizardDraftRaw(userId, sessionStorage) ?? readWizardDraftRaw(userId, localStorage)
+  if (
+    existing &&
+    !options?.allowBackward &&
+    existing.step > step
+  ) {
+    // Keep the farther-along draft; only Back may lower it.
+    return
+  }
+
+  writeWizardDraftRaw({
+    userId,
+    step,
+    savedAt: Date.now(),
+  })
 }
 
 export function loadOnboardingWizardDraft(userId: string): number | null {
   if (typeof window === 'undefined' || !userId) return null
-  try {
-    const raw = sessionStorage.getItem(ONBOARDING_WIZARD_DRAFT_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as OnboardingWizardDraft
-    if (parsed.userId !== userId) return null
-    if (typeof parsed.step !== 'number' || !Number.isFinite(parsed.step)) return null
-    if (Date.now() - parsed.savedAt > ONBOARDING_WIZARD_DRAFT_TTL_MS) return null
-    return parsed.step
-  } catch {
-    return null
-  }
+  const session = readWizardDraftRaw(userId, sessionStorage)
+  const local = readWizardDraftRaw(userId, localStorage)
+  if (session && local) return Math.max(session.step, local.step)
+  return session?.step ?? local?.step ?? null
 }
 
 export function clearOnboardingWizardDraft(): void {
@@ -76,6 +116,41 @@ export function clearOnboardingWizardDraft(): void {
   } catch {
     // ignore
   }
+  try {
+    localStorage.removeItem(ONBOARDING_WIZARD_DRAFT_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * After remount, trust the profile resume step for required progress.
+ * Only keep a draft when it matches that resume step (camera remount on the
+ * same screen). Never prefer a lower draft (corrupted step-0) or a higher one
+ * (would skip unfinished required answers like biceps).
+ */
+export function resolveOnboardingRestoreStep(
+  resumeStep: number,
+  draftStep: number | null,
+  wizardSteps: number[]
+): number {
+  const safeResume = wizardSteps.includes(resumeStep)
+    ? resumeStep
+    : (wizardSteps.find((s) => s >= resumeStep) ?? wizardSteps[0] ?? 0)
+
+  if (draftStep == null || !wizardSteps.includes(draftStep)) return safeResume
+
+  // Same screen as resume — keep draft (camera remount).
+  if (draftStep === safeResume) return draftStep
+
+  // Draft behind resume = corruption from saving step 0 pre-hydrate. Ignore it.
+  // Draft ahead of resume = would skip incomplete required fields. Ignore it.
+  return safeResume
+}
+
+/** True when a save would wipe real progress with an empty intake form. */
+export function isOnboardingFormEffectivelyEmpty(form: OnboardingFormData): boolean {
+  return !form.name.trim() && !form.age.trim() && !form.gender.trim()
 }
 
 export const ONBOARDING_SCREEN_COUNT = 23
@@ -1341,6 +1416,28 @@ export async function saveOnboardingProgress(
     mealsForTiming?: Array<'breakfast' | 'lunch' | 'dinner' | 'snacks'>
   }
 ): Promise<void> {
+  // Guard: never upsert an empty form over existing progress (camera remount race).
+  if (!options.complete && isOnboardingFormEffectivelyEmpty(form) && options.step > 0) {
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('name, onboarding_data')
+      .eq('id', userId)
+      .maybeSingle()
+    const existingName =
+      typeof existing?.name === 'string' ? existing.name.trim() : ''
+    const existingResume =
+      existing?.onboarding_data &&
+      typeof existing.onboarding_data === 'object' &&
+      typeof (existing.onboarding_data as { resumeStep?: unknown }).resumeStep === 'number'
+        ? (existing.onboarding_data as { resumeStep: number }).resumeStep
+        : 0
+    if (existingName || existingResume > 0) {
+      throw new Error(
+        'Your answers are still loading. Wait a moment, then try again — progress was not overwritten.'
+      )
+    }
+  }
+
   // Always persist answer updates — even if onboarding was already marked complete.
   // New required fields (schedule, tape) must be writable when clients return to finish.
   const payload = buildProfilePayload(form, userId, {
