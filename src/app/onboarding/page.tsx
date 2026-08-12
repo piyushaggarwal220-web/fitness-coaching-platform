@@ -21,6 +21,7 @@ import {
   DAYS_PER_WEEK_OPTIONS,
   DIET_OPTIONS,
   DIET_VARIETY_OPTIONS,
+  emptySavedPhotoUrls,
   EQUIPMENT_OPTIONS,
   findFirstIncompleteOnboardingStep,
   FLUX_CAPACITY_OPTIONS,
@@ -38,6 +39,7 @@ import {
   loadOnboardingWizardDraft,
   markOnboardingJustCompleted,
   MEAL_TIMING_OPTIONS,
+  mergeSavedPhotoUrls,
   MOVEMENT_COMFORT_OPTIONS,
   OCCUPATION_OPTIONS,
   ONBOARDING_SECTIONS,
@@ -109,15 +111,16 @@ export default function OnboardingPage() {
     side: null,
     back: null,
   })
-  const [photoUrls, setPhotoUrls] = useState<SavedPhotoUrls>({
-    front: null,
-    side: null,
-    back: null,
-  })
+  const [photoUrls, setPhotoUrls] = useState<SavedPhotoUrls>(emptySavedPhotoUrls)
   const [uploadingPhotos, setUploadingPhotos] = useState<Record<PhotoKey, boolean>>({
     front: false,
     side: false,
     back: false,
+  })
+  const [photoSlotErrors, setPhotoSlotErrors] = useState<Record<PhotoKey, string | null>>({
+    front: null,
+    side: null,
+    back: null,
   })
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
@@ -155,8 +158,9 @@ export default function OnboardingPage() {
       if (result.profileError) {
         setUserId(result.user.id)
         setUserEmail(result.user.email ?? null)
-        const draftStep = loadOnboardingWizardDraft(result.user.id)
-        if (draftStep != null) setStep(draftStep)
+        const draft = loadOnboardingWizardDraft(result.user.id)
+        if (draft != null) setStep(draft.step)
+        if (draft?.photoUrls) setPhotoUrls(mergeSavedPhotoUrls(emptySavedPhotoUrls(), draft.photoUrls))
         setError('Could not load your profile. Please refresh the page.')
         setLoading(false)
         return
@@ -197,15 +201,22 @@ export default function OnboardingPage() {
         const wizardSteps = getOnboardingWizardSteps(resumed)
         // Mobile camera remounts can restore a later draft step (e.g. photos/review).
         // Never skip past the first incomplete required step (e.g. missing biceps).
-        const draftStep = loadOnboardingWizardDraft(result.user.id)
+        const draft = loadOnboardingWizardDraft(result.user.id)
         let restoredStep = resumeStep
-        if (draftStep != null && wizardSteps.includes(draftStep)) {
+        if (draft != null && wizardSteps.includes(draft.step)) {
           const resumeIdx = wizardSteps.indexOf(resumeStep)
-          const draftIdx = wizardSteps.indexOf(draftStep)
-          restoredStep = draftIdx <= resumeIdx || resumeIdx < 0 ? draftStep : resumeStep
+          const draftIdx = wizardSteps.indexOf(draft.step)
+          restoredStep = draftIdx <= resumeIdx || resumeIdx < 0 ? draft.step : resumeStep
         }
         setStep(restoredStep)
-        saveOnboardingWizardDraft(result.user.id, restoredStep)
+        const profilePhotos = {
+          front: result.profile.progress_photo_front ?? null,
+          side: result.profile.progress_photo_side ?? null,
+          back: result.profile.progress_photo_back ?? null,
+        }
+        const restoredPhotos = mergeSavedPhotoUrls(profilePhotos, draft?.photoUrls)
+        setPhotoUrls(restoredPhotos)
+        saveOnboardingWizardDraft(result.user.id, restoredStep, restoredPhotos)
         const preConfirmed: string[] = []
         if (resumed.age) preConfirmed.push('age')
         if (resumed.height) preConfirmed.push('height')
@@ -217,11 +228,6 @@ export default function OnboardingPage() {
         if (resumed.right_bicep) preConfirmed.push('right_bicep')
         if (resumed.monthly_food_budget) preConfirmed.push('monthly_food_budget')
         setConfirmedScrollers(preConfirmed)
-        setPhotoUrls({
-          front: result.profile.progress_photo_front ?? null,
-          side: result.profile.progress_photo_side ?? null,
-          back: result.profile.progress_photo_back ?? null,
-        })
         const savedMeals = result.profile.onboarding_data?.eatingPattern?.mealsForTiming
         if (savedMeals && savedMeals.length > 0) {
           setMealsForTiming(savedMeals)
@@ -247,7 +253,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (!userId) return
-    saveOnboardingWizardDraft(userId, step)
+    saveOnboardingWizardDraft(userId, step, stateRef.current.photoUrls)
   }, [userId, step])
 
   // Checkpoint wizard position before the OS camera kills this page.
@@ -255,7 +261,7 @@ export default function OnboardingPage() {
     const flushDraft = () => {
       const current = stateRef.current
       if (!current.userId) return
-      saveOnboardingWizardDraft(current.userId, current.step)
+      saveOnboardingWizardDraft(current.userId, current.step, current.photoUrls)
     }
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') flushDraft()
@@ -300,7 +306,8 @@ export default function OnboardingPage() {
       try {
         // Photos are normally uploaded as soon as they are selected. Re-upload any
         // leftover local files (e.g. if an earlier upload was interrupted).
-        const urls = { ...photoUrls }
+        const latest = stateRef.current
+        const urls = mergeSavedPhotoUrls(latest.photoUrls)
         if (photos.front) urls.front = await uploadOnboardingPhoto(supabase, userId, photos.front, 'front')
         if (photos.side) urls.side = await uploadOnboardingPhoto(supabase, userId, photos.side, 'side')
         if (photos.back) urls.back = await uploadOnboardingPhoto(supabase, userId, photos.back, 'back')
@@ -313,8 +320,10 @@ export default function OnboardingPage() {
           mealsForTiming,
         })
 
+        setPhotoUrls(urls)
+        stateRef.current = { ...stateRef.current, photoUrls: urls }
+        saveOnboardingWizardDraft(userId, nextStep, urls)
         if (photos.front || photos.side || photos.back) {
-          setPhotoUrls(urls)
           setPhotos({ front: null, side: null, back: null })
         }
         setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
@@ -322,13 +331,13 @@ export default function OnboardingPage() {
         setSaving(false)
       }
     },
-    [userId, userEmail, form, photos, photoUrls, mealsForTiming]
+    [userId, userEmail, form, photos, mealsForTiming]
   )
 
   const checkpointBeforeCamera = useCallback(async () => {
     const current = stateRef.current
     if (!current.userId) return
-    saveOnboardingWizardDraft(current.userId, current.step)
+    saveOnboardingWizardDraft(current.userId, current.step, current.photoUrls)
     await supabase.auth.refreshSession().catch(() => undefined)
     try {
       await saveOnboardingProgress(supabase, current.userId, current.form, {
@@ -349,6 +358,7 @@ export default function OnboardingPage() {
       if (!file) return
       const validationError = validatePhotoFiles([file])
       if (validationError) {
+        setPhotoSlotErrors((prev) => ({ ...prev, [key]: validationError }))
         setError(validationError)
         return
       }
@@ -359,21 +369,27 @@ export default function OnboardingPage() {
       }
 
       setPhotos((prev) => ({ ...prev, [key]: file }))
+      setPhotoSlotErrors((prev) => ({ ...prev, [key]: null }))
       setError('')
       setUploadingPhotos((prev) => ({ ...prev, [key]: true }))
-      saveOnboardingWizardDraft(current.userId, current.step)
+      saveOnboardingWizardDraft(current.userId, current.step, current.photoUrls)
 
       void (async () => {
         try {
           // Camera return often happens after the WebView was suspended — refresh auth first.
           await supabase.auth.refreshSession().catch(() => undefined)
           const path = await uploadOnboardingPhoto(supabase, current.userId!, file, key)
-          let nextUrls: SavedPhotoUrls = { front: null, side: null, back: null }
-          setPhotoUrls((prev) => {
-            nextUrls = { ...prev, [key]: path }
-            return nextUrls
-          })
+          // Merge against the live ref so concurrent side/back uploads cannot wipe front.
+          const nextUrls = mergeSavedPhotoUrls(stateRef.current.photoUrls, { [key]: path })
+          stateRef.current = { ...stateRef.current, photoUrls: nextUrls }
+          setPhotoUrls(nextUrls)
           setPhotos((prev) => ({ ...prev, [key]: null }))
+          setPhotoSlotErrors((prev) => ({ ...prev, [key]: null }))
+          saveOnboardingWizardDraft(
+            stateRef.current.userId ?? current.userId!,
+            stateRef.current.step,
+            nextUrls
+          )
           // Keep profile paths in sync immediately so later steps / resume never miss photos.
           const latest = stateRef.current
           await saveOnboardingProgress(supabase, latest.userId ?? current.userId!, latest.form, {
@@ -382,22 +398,19 @@ export default function OnboardingPage() {
             photoUrls: nextUrls,
             mealsForTiming: latest.mealsForTiming,
           })
-          saveOnboardingWizardDraft(latest.userId ?? current.userId!, latest.step)
           setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
         } catch (err) {
           // Stale `/_next/static` hashes after a deploy surface here because the
           // photo compress/upload modules are loaded lazily on first upload.
           if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-photo')) return
-          // If storage succeeded but profile save failed, photoUrls already holds the path
-          // so validation/continue can still proceed; only clear a failed local pick.
-          setPhotos((prev) => ({ ...prev, [key]: null }))
-          setError(
-            isChunkLoadError(err)
-              ? CHUNK_LOAD_USER_MESSAGE
-              : err instanceof Error
-                ? err.message
-                : `Could not upload the ${key} photo. Please try again or use “Take photo now”.`
-          )
+          // Keep the local pick so Continue can retry upload from persistProgress.
+          const message = isChunkLoadError(err)
+            ? CHUNK_LOAD_USER_MESSAGE
+            : err instanceof Error
+              ? err.message
+              : `Could not upload the ${key} photo. Please try again or use “Take photo now”.`
+          setPhotoSlotErrors((prev) => ({ ...prev, [key]: message }))
+          setError(message)
         } finally {
           setUploadingPhotos((prev) => ({ ...prev, [key]: false }))
         }
@@ -445,11 +458,50 @@ export default function OnboardingPage() {
   }
 
   const handleNext = async () => {
+    let currentPhotos = photos
+    let currentPhotoUrls = mergeSavedPhotoUrls(stateRef.current.photoUrls, photoUrls)
+
+    // If Continue thinks a photo is missing, re-read profile + draft once — mobile
+    // remounts can leave React state behind a successful storage upload.
+    if (step === 21 && userId) {
+      const missingBefore = validateOnboardingStep(
+        step,
+        form,
+        currentPhotos,
+        currentPhotoUrls,
+        mealTimingContext,
+        stepOptions
+      )
+      if (missingBefore) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('progress_photo_front, progress_photo_side, progress_photo_back')
+            .eq('id', userId)
+            .maybeSingle()
+          const draft = loadOnboardingWizardDraft(userId)
+          currentPhotoUrls = mergeSavedPhotoUrls(
+            {
+              front: profile?.progress_photo_front ?? null,
+              side: profile?.progress_photo_side ?? null,
+              back: profile?.progress_photo_back ?? null,
+            },
+            mergeSavedPhotoUrls(currentPhotoUrls, draft?.photoUrls)
+          )
+          setPhotoUrls(currentPhotoUrls)
+          stateRef.current = { ...stateRef.current, photoUrls: currentPhotoUrls }
+          saveOnboardingWizardDraft(userId, step, currentPhotoUrls)
+        } catch {
+          // Fall through to the normal validation error.
+        }
+      }
+    }
+
     const validationError = validateOnboardingStep(
       step,
       form,
-      photos,
-      photoUrls,
+      currentPhotos,
+      currentPhotoUrls,
       mealTimingContext,
       stepOptions
     )
@@ -643,6 +695,7 @@ export default function OnboardingPage() {
             photos,
             photoUrls,
             uploadingPhotos,
+            photoSlotErrors,
             handlePhotoChange,
             handleEditSection,
             mealsForTiming,
@@ -699,6 +752,7 @@ function renderStep(
   photos: Record<PhotoKey, File | null>,
   photoUrls: SavedPhotoUrls,
   uploadingPhotos: Record<PhotoKey, boolean>,
+  photoSlotErrors: Record<PhotoKey, string | null>,
   onPhotoChange: (key: PhotoKey) => (files: File[]) => void,
   onEditSection: (step: number) => void,
   mealsForTiming: MealTimingKey[],
@@ -1539,10 +1593,11 @@ function renderStep(
           <div style={s.photoGrid}>
             {(['front', 'side', 'back'] as PhotoKey[]).map((key) => {
               const uploading = uploadingPhotos[key]
+              const slotError = photoSlotErrors[key]
               const selectedText = uploading
                 ? `Uploading ${photos[key]?.name || `${key} photo`}…`
                 : photos[key]
-                  ? `${photos[key]!.name} selected`
+                  ? `${photos[key]!.name} selected — tap Continue to finish if upload stalled`
                   : photoUrls[key]
                     ? 'Uploaded — select a new file to replace.'
                     : undefined
@@ -1556,6 +1611,11 @@ function renderStep(
                     disabled={uploading}
                     onBeforeCameraOpen={onBeforeCameraOpen}
                   />
+                  {slotError && (
+                    <p style={{ ...s.error, marginTop: 8, marginBottom: 0 }} role="alert">
+                      {slotError}
+                    </p>
+                  )}
                 </div>
               )
             })}
