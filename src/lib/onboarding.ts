@@ -32,22 +32,61 @@ import { importWithChunkRetry } from '@/lib/chunk-load-recovery'
 export const ONBOARDING_PHOTO_BUCKET = 'onboarding-photos'
 
 /** Survives mobile camera app-switches that remount the onboarding page. */
-const ONBOARDING_WIZARD_DRAFT_KEY = 'onboarding_wizard_draft_v1'
+const ONBOARDING_WIZARD_DRAFT_KEY = 'onboarding_wizard_draft_v2'
 const ONBOARDING_WIZARD_DRAFT_TTL_MS = 6 * 60 * 60 * 1000
 
 type OnboardingWizardDraft = {
   userId: string
   step: number
   savedAt: number
+  /** Keeps uploaded photo paths across camera remounts / chunk reloads. */
+  photoUrls?: SavedPhotoUrls | null
 }
 
-export function saveOnboardingWizardDraft(userId: string, step: number): void {
+export type OnboardingWizardDraftState = {
+  step: number
+  photoUrls: SavedPhotoUrls | null
+}
+
+export function emptySavedPhotoUrls(): SavedPhotoUrls {
+  return { front: null, side: null, back: null }
+}
+
+export function mergeSavedPhotoUrls(
+  base: SavedPhotoUrls | null | undefined,
+  patch?: Partial<SavedPhotoUrls> | null
+): SavedPhotoUrls {
+  return {
+    front: patch?.front || base?.front || null,
+    side: patch?.side || base?.side || null,
+    back: patch?.back || base?.back || null,
+  }
+}
+
+function normalizeDraftPhotoUrls(value: unknown): SavedPhotoUrls | null {
+  if (!value || typeof value !== 'object') return null
+  const record = value as Partial<SavedPhotoUrls>
+  const merged = mergeSavedPhotoUrls(emptySavedPhotoUrls(), {
+    front: typeof record.front === 'string' ? record.front : null,
+    side: typeof record.side === 'string' ? record.side : null,
+    back: typeof record.back === 'string' ? record.back : null,
+  })
+  if (!merged.front && !merged.side && !merged.back) return null
+  return merged
+}
+
+export function saveOnboardingWizardDraft(
+  userId: string,
+  step: number,
+  photoUrls?: SavedPhotoUrls | null
+): void {
   if (typeof window === 'undefined' || !userId) return
   try {
     const payload: OnboardingWizardDraft = {
       userId,
       step,
       savedAt: Date.now(),
+      photoUrls: photoUrls ? mergeSavedPhotoUrls(photoUrls) : undefined,
     }
     sessionStorage.setItem(ONBOARDING_WIZARD_DRAFT_KEY, JSON.stringify(payload))
   } catch {
@@ -55,16 +94,22 @@ export function saveOnboardingWizardDraft(userId: string, step: number): void {
   }
 }
 
-export function loadOnboardingWizardDraft(userId: string): number | null {
+export function loadOnboardingWizardDraft(userId: string): OnboardingWizardDraftState | null {
   if (typeof window === 'undefined' || !userId) return null
   try {
-    const raw = sessionStorage.getItem(ONBOARDING_WIZARD_DRAFT_KEY)
+    const raw =
+      sessionStorage.getItem(ONBOARDING_WIZARD_DRAFT_KEY) ??
+      // Migrate older drafts that only stored the step.
+      sessionStorage.getItem('onboarding_wizard_draft_v1')
     if (!raw) return null
     const parsed = JSON.parse(raw) as OnboardingWizardDraft
     if (parsed.userId !== userId) return null
     if (typeof parsed.step !== 'number' || !Number.isFinite(parsed.step)) return null
     if (Date.now() - parsed.savedAt > ONBOARDING_WIZARD_DRAFT_TTL_MS) return null
-    return parsed.step
+    return {
+      step: parsed.step,
+      photoUrls: normalizeDraftPhotoUrls(parsed.photoUrls),
+    }
   } catch {
     return null
   }
@@ -74,6 +119,7 @@ export function clearOnboardingWizardDraft(): void {
   if (typeof window === 'undefined') return
   try {
     sessionStorage.removeItem(ONBOARDING_WIZARD_DRAFT_KEY)
+    sessionStorage.removeItem('onboarding_wizard_draft_v1')
   } catch {
     // ignore
   }
@@ -1305,6 +1351,24 @@ export function buildReviewSections(
   ]
 }
 
+async function uploadOnboardingPhotoViaApi(file: File, label: string): Promise<string> {
+  const body = new FormData()
+  body.append('file', file, file.name || `${label}.jpg`)
+  body.append('label', label)
+
+  const res = await fetch('/api/onboarding/upload-photo', {
+    method: 'POST',
+    body,
+    credentials: 'include',
+  })
+
+  const data = (await res.json().catch(() => ({}))) as { path?: string; error?: string }
+  if (!res.ok || !data.path) {
+    throw new Error(data.error || `Photo upload failed (${label}): server upload failed.`)
+  }
+  return data.path
+}
+
 export async function uploadOnboardingPhoto(
   supabase: SupabaseClient,
   clientId: string,
@@ -1321,6 +1385,7 @@ export async function uploadOnboardingPhoto(
   const { compressImageFile, uploadPhotoWithRetry } = await importWithChunkRetry(
     () => import('@/lib/checkin')
   )
+  const { isNetworkPhotoUploadError } = await importWithChunkRetry(() => import('@/lib/photo-upload'))
   const compressed = typeof window !== 'undefined' ? await compressImageFile(file) : file
   if (!isVisionSafeMediaType(compressed.type) && isHeicLike(compressed)) {
     throw new Error(
@@ -1330,10 +1395,17 @@ export async function uploadOnboardingPhoto(
   const ext = compressed.name.split('.').pop() || 'jpg'
   const path = `${clientId}/${Date.now()}_${label}.${ext}`
 
-  await uploadPhotoWithRetry(supabase, ONBOARDING_PHOTO_BUCKET, path, compressed, label)
-
-  // Store object path; display via signed URLs (bucket is private).
-  return path
+  try {
+    await uploadPhotoWithRetry(supabase, ONBOARDING_PHOTO_BUCKET, path, compressed, label)
+    // Store object path; display via signed URLs (bucket is private).
+    return path
+  } catch (error) {
+    // Mobile networks often fail browser→Supabase Storage; same-origin API is more reliable.
+    if (typeof window !== 'undefined' && isNetworkPhotoUploadError(error)) {
+      return uploadOnboardingPhotoViaApi(compressed, label)
+    }
+    throw error
+  }
 }
 
 export async function saveOnboardingProgress(
