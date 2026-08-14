@@ -34,7 +34,7 @@
     "verify:generate-plan-retries": "tsx scripts/verify-generate-plan-retries.ts",
     "verify:password-reset-reauth": "tsx scripts/verify-password-reset-reauth.ts",
     "verify:session-cache": "tsx scripts/verify-session-cache.ts",
-    "verify:work-queue-load": "tsx scripts/verify-work-queue-load.ts",
+    "verify:work-queue-load": "tsx scripts/verify-work-queue-load.ts && tsx scripts/verify-work-queue-parallelism.ts",
     "verify:photo-upload-reliability": "tsx scripts/verify-photo-upload-reliability.ts",
     "verify:onboarding-photo-upload": "tsx scripts/verify-onboarding-photo-upload.ts",
     "verify:chunk-recovery": "tsx scripts/verify-chunk-load-recovery.ts",
