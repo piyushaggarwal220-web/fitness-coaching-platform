@@ -72,7 +72,14 @@ function createFakeSupabase(opts: {
       if (table === 'plans' && selectCols === 'id, client_id, created_at') plansMode = 'drafts'
       if (table === 'plans' && selectCols === 'client_id') plansMode = 'active'
     })
-    api.eq = chain(() => {})
+    api.eq = chain((col: unknown, val: unknown) => {
+      if (table === 'plans' && col === 'has_core_content' && val === true) {
+        plansMode = 'active'
+      }
+      if (table === 'plans' && col === 'active' && val === true && plansMode === 'unknown') {
+        plansMode = 'active'
+      }
+    })
     api.in = chain(() => {})
     api.is = chain(() => {})
     api.not = chain(() => {})

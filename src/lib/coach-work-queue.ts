@@ -52,11 +52,54 @@ function sortTasks(tasks: WorkQueueTask[]): WorkQueueTask[] {
 }
 
 /**
+ * Ready active plans without downloading nutrition/workout text blobs.
+ * Prefers the has_core_content flag (migration); falls back to NULL checks only.
+ */
+async function fetchReadyActivePlanClientIds(
+  supabase: SupabaseClient,
+  coachId: string,
+  pendingClientIds: Set<string>
+): Promise<Set<string>> {
+  if (pendingClientIds.size === 0) return new Set()
+
+  const primary = await supabase
+    .from('plans')
+    .select('client_id')
+    .eq('coach_id', coachId)
+    .eq('active', true)
+    .eq('has_core_content', true)
+
+  if (!primary.error) {
+    return new Set(
+      (primary.data ?? [])
+        .map((row) => row.client_id as string)
+        .filter((id) => pendingClientIds.has(id))
+    )
+  }
+
+  // Pre-migration fallback: IS NOT NULL does not detoast large plan text.
+  const fallback = await supabase
+    .from('plans')
+    .select('client_id')
+    .eq('coach_id', coachId)
+    .eq('active', true)
+    .not('nutrition_plan', 'is', null)
+    .not('workout_plan', 'is', null)
+
+  return new Set(
+    (fallback.data ?? [])
+      .map((row) => row.client_id as string)
+      .filter((id) => pendingClientIds.has(id))
+  )
+}
+
+/**
  * Build the coach work queue.
  *
- * Performance: two parallel query waves (coach-scoped, then client-scoped) instead of
- * a long sequential waterfall. Active-plan readiness is checked without downloading
- * full nutrition/workout plan text blobs.
+ * Performance notes:
+ * - Two parallel query waves (coach-scoped, then plan/issue scoped)
+ * - Prefer coach_id filters over giant client_id IN lists (those inflate GET URLs and hang)
+ * - Never download nutrition/workout plan text just to check readiness
  */
 export async function getCoachWorkQueue(
   supabase: SupabaseClient,
@@ -64,7 +107,7 @@ export async function getCoachWorkQueue(
 ): Promise<WorkQueueTask[]> {
   const tasks: WorkQueueTask[] = []
 
-  // Wave 1 — all coach-scoped reads in parallel (one network RTT when called server-side).
+  // Wave 1 — all coach-scoped reads in parallel (indexed coach_id paths).
   const [
     { data: clients },
     { data: planChangeRequests },
@@ -108,70 +151,52 @@ export async function getCoachWorkQueue(
       .eq('coach_id', coachId),
   ])
 
-  const clientIds = (clients ?? []).map((c) => c.id)
   const clientNameById = new Map(
     (clients ?? []).map((c) => [c.id, c.name || c.email || 'Client'])
   )
-  const pendingPlanClientIds = (clients ?? [])
-    .filter((c) => !c.plan_delivered && c.onboarding_complete)
-    .map((c) => c.id)
+  const pendingClientIds = new Set(
+    (clients ?? [])
+      .filter((c) => !c.plan_delivered && c.onboarding_complete)
+      .map((c) => c.id)
+  )
 
-  // Wave 2 — client-scoped reads (skipped when there is nothing to look up).
+  // Wave 2 — still coach_id scoped (no giant .in(clientIds) URL payloads).
   const [
     { data: generationJobs },
     { data: undeliveredDrafts },
-    { data: activePlans },
-    { data: issues },
+    activePlanReadyByClient,
+    { data: issueRows },
   ] = await Promise.all([
-    pendingPlanClientIds.length > 0
+    pendingClientIds.size > 0
       ? supabase
           .from('initial_plan_generation_jobs')
           .select('id, client_id, status, draft_plan_id, error_code, error_message, queued_at')
           .eq('coach_id', coachId)
-          .in('client_id', pendingPlanClientIds)
+          .in('status', ['queued', 'generating', 'ready', 'failed'])
           .order('queued_at', { ascending: false })
       : Promise.resolve({ data: [] as GenerationJobRow[] }),
-    pendingPlanClientIds.length > 0
+    pendingClientIds.size > 0
       ? supabase
           .from('plans')
           .select('id, client_id, created_at')
-          .in('client_id', pendingPlanClientIds)
+          .eq('coach_id', coachId)
           .is('delivered_at', null)
           .order('created_at', { ascending: false })
       : Promise.resolve({ data: [] as { id: string; client_id: string; created_at: string }[] }),
-    pendingPlanClientIds.length > 0
-      ? // Only need client ids — do not download nutrition_plan / workout_plan text.
-        supabase
-          .from('plans')
-          .select('client_id')
-          .in('client_id', pendingPlanClientIds)
-          .eq('active', true)
-          .not('nutrition_plan', 'is', null)
-          .not('workout_plan', 'is', null)
-          .neq('nutrition_plan', '')
-          .neq('workout_plan', '')
-      : Promise.resolve({ data: [] as { client_id: string }[] }),
-    clientIds.length > 0
-      ? supabase
-          .from('issue_reports')
-          .select('id, client_id, description, created_at, status')
-          .in('client_id', clientIds)
-          .in('status', ['open', 'investigating'])
-          .order('created_at', { ascending: true })
-      : Promise.resolve({
-          data: [] as {
-            id: string
-            client_id: string
-            description: string
-            created_at: string
-            status: string
-          }[],
-        }),
+    fetchReadyActivePlanClientIds(supabase, coachId, pendingClientIds),
+    // Join profiles so we never ship a huge client_id=in.(...) query string.
+    supabase
+      .from('issue_reports')
+      .select('id, client_id, description, created_at, status, profiles!inner(coach_id)')
+      .eq('profiles.coach_id', coachId)
+      .in('status', ['open', 'investigating'])
+      .order('created_at', { ascending: true }),
   ])
 
   const generationByClient = new Map<string, GenerationJobRow>()
   for (const job of (generationJobs ?? []) as GenerationJobRow[]) {
-    // Newest first from query order — keep the latest job per client.
+    if (!pendingClientIds.has(job.client_id)) continue
+    // Newest first from query order — keep the latest job per pending client.
     if (!generationByClient.has(job.client_id)) {
       generationByClient.set(job.client_id, job)
     }
@@ -179,14 +204,13 @@ export async function getCoachWorkQueue(
 
   const latestDraftByClient = new Map<string, { id: string; created_at: string }>()
   for (const draft of undeliveredDrafts ?? []) {
+    if (!pendingClientIds.has(draft.client_id)) continue
     if (!latestDraftByClient.has(draft.client_id)) {
       latestDraftByClient.set(draft.client_id, { id: draft.id, created_at: draft.created_at })
     }
   }
 
-  const activePlanReadyByClient = new Set(
-    (activePlans ?? []).map((plan) => plan.client_id)
-  )
+  const issues = (issueRows ?? []).filter((issue) => clientNameById.has(issue.client_id))
 
   for (const client of clients ?? []) {
     // Only surface plan work after onboarding completion is persisted.
@@ -300,7 +324,7 @@ export async function getCoachWorkQueue(
     })
   }
 
-  for (const issue of issues ?? []) {
+  for (const issue of issues) {
     const name = clientNameById.get(issue.client_id) ?? 'Client'
     tasks.push({
       id: `issue-${issue.id}`,

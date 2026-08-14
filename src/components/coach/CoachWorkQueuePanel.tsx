@@ -15,6 +15,8 @@ import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
 
 const COMPLETED_KEY = 'coach-queue-completed'
 const COMPLETED_MAX = 400
+/** Hard cap so a stuck Supabase/network call cannot leave coaches waiting for minutes. */
+const QUEUE_FETCH_TIMEOUT_MS = 20_000
 
 type CompletedEntry = { createdAt: string | null; completedAt: number }
 type CompletedMap = Map<string, CompletedEntry>
@@ -119,10 +121,12 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const [completed, setCompleted] = useState<CompletedMap>(loadCompleted)
   const completedRef = useRef<CompletedMap>(completed)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [completing, setCompleting] = useState(false)
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
   const [completeError, setCompleteError] = useState('')
   const [coachId, setCoachId] = useState<string | null>(null)
+  const loadGenerationRef = useRef(0)
 
   const applyQueue = useCallback((queue: WorkQueueTask[]) => {
     setTasks(queue)
@@ -134,33 +138,47 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     completedRef.current = completed
   }, [completed])
 
-  // Single server round-trip: auth + parallel queue queries (avoids browser waterfall).
+  // Single server round-trip with a hard timeout (avoids multi-minute hangs).
   const load = useCallback(async () => {
-    const res = await fetch('/api/coach/work-queue', { credentials: 'include' })
-    if (res.status === 401 || res.status === 403) {
+    const generation = ++loadGenerationRef.current
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => controller.abort(), QUEUE_FETCH_TIMEOUT_MS)
+    try {
+      const res = await fetch('/api/coach/work-queue', {
+        credentials: 'include',
+        signal: controller.signal,
+      })
+      if (generation !== loadGenerationRef.current) return
+      if (res.status === 401 || res.status === 403) {
+        setLoading(false)
+        setLoadError('')
+        router.push(`/login?expired=1&redirect=${encodeURIComponent(returnTo)}`)
+        return
+      }
+      if (!res.ok) {
+        setLoadError('Work queue took too long or failed to load.')
+        setLoading(false)
+        return
+      }
+      const data = (await res.json()) as { tasks?: WorkQueueTask[]; coachId?: string }
+      if (generation !== loadGenerationRef.current) return
+      if (data.coachId) setCoachId(data.coachId)
+      applyQueue(data.tasks ?? [])
+      setLoadError('')
       setLoading(false)
-      router.push(`/login?expired=1&redirect=${encodeURIComponent(returnTo)}`)
-      return
-    }
-    if (!res.ok) {
+    } catch {
+      if (generation !== loadGenerationRef.current) return
+      setLoadError('Work queue took too long or failed to load.')
       setLoading(false)
-      return
+    } finally {
+      window.clearTimeout(timer)
     }
-    const data = (await res.json()) as { tasks?: WorkQueueTask[]; coachId?: string }
-    if (data.coachId) setCoachId(data.coachId)
-    applyQueue(data.tasks ?? [])
-    setLoading(false)
   }, [applyQueue, returnTo, router])
 
   useEffect(() => {
-    let active = true
-    const run = async () => {
-      await load()
-      if (!active) return
-    }
-    void run()
+    void load()
     return () => {
-      active = false
+      loadGenerationRef.current += 1
     }
   }, [load])
 
@@ -209,6 +227,30 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
 
   if (loading) {
     return <div className="skeleton" style={{ height: 160, borderRadius: 16 }} />
+  }
+
+  if (loadError) {
+    return (
+      <div style={panelStyle}>
+        <p style={{ margin: 0, fontWeight: 700, fontSize: 18, color: colors.textPrimary }}>
+          Couldn’t load work queue
+        </p>
+        <p style={{ margin: '8px 0 0', color: colors.textMuted, fontSize: 14 }}>
+          {loadError} This should only take a few seconds — tap retry.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true)
+            setLoadError('')
+            void load()
+          }}
+          style={{ ...primaryBtn, marginTop: 14, flex: 'none', width: '100%' }}
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
   if (!current) {
