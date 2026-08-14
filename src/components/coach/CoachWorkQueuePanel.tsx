@@ -4,19 +4,14 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { usePathname, useRouter } from 'next/navigation'
 import {
   filterWorkQueue,
-  getCoachWorkQueue,
   getWorkQueueCounts,
   type WorkQueueCounts,
   type WorkQueueFilter,
   type WorkQueueTask,
 } from '@/lib/coach-work-queue'
-import { requireCoach } from '@/lib/coach-session'
-import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/coach-theme'
 import { motionClass } from '@/lib/motion'
 import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
-
-const supabase = createClient()
 
 const COMPLETED_KEY = 'coach-queue-completed'
 const COMPLETED_MAX = 400
@@ -139,31 +134,35 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     completedRef.current = completed
   }, [completed])
 
+  // Single server round-trip: auth + parallel queue queries (avoids browser waterfall).
   const load = useCallback(async () => {
-    if (!coachId) return
-    const queue = await getCoachWorkQueue(supabase, coachId)
-    applyQueue(queue)
+    const res = await fetch('/api/coach/work-queue', { credentials: 'include' })
+    if (res.status === 401 || res.status === 403) {
+      setLoading(false)
+      router.push(`/login?expired=1&redirect=${encodeURIComponent(returnTo)}`)
+      return
+    }
+    if (!res.ok) {
+      setLoading(false)
+      return
+    }
+    const data = (await res.json()) as { tasks?: WorkQueueTask[]; coachId?: string }
+    if (data.coachId) setCoachId(data.coachId)
+    applyQueue(data.tasks ?? [])
     setLoading(false)
-  }, [coachId, applyQueue])
+  }, [applyQueue, returnTo, router])
 
   useEffect(() => {
     let active = true
-    const authorize = async () => {
-      const coach = await requireCoach(supabase, router)
+    const run = async () => {
+      await load()
       if (!active) return
-      if (!coach) {
-        setLoading(false)
-        return
-      }
-      setCoachId(coach.id)
-      const queue = await getCoachWorkQueue(supabase, coach.id)
-      if (!active) return
-      applyQueue(queue)
-      setLoading(false)
     }
-    void authorize()
-    return () => { active = false }
-  }, [router, applyQueue])
+    void run()
+    return () => {
+      active = false
+    }
+  }, [load])
 
   // Realtime accelerates chat tasks; 20s fallback covers plans/check-ins/profiles.
   useCoachConversationRealtime(coachId, load, 20_000, 'work-queue')
