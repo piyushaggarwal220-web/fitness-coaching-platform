@@ -28,6 +28,16 @@ export type WorkQueueTask = {
 /** Equal priority for all types — display order is strictly by received time. */
 const QUEUE_PRIORITY = 1
 
+type GenerationJobRow = {
+  id: string
+  client_id: string
+  status: string
+  draft_plan_id: string | null
+  error_code: string | null
+  error_message: string | null
+  queued_at: string | null
+}
+
 /** Oldest received first — messages, check-ins, and plan work share one timeline. */
 function sortTasks(tasks: WorkQueueTask[]): WorkQueueTask[] {
   return [...tasks].sort((a, b) => {
@@ -41,63 +51,166 @@ function sortTasks(tasks: WorkQueueTask[]): WorkQueueTask[] {
   })
 }
 
+/**
+ * Ready active plans without downloading nutrition/workout text blobs.
+ * Prefers the has_core_content flag (migration); falls back to NULL checks only.
+ */
+async function fetchReadyActivePlanClientIds(
+  supabase: SupabaseClient,
+  coachId: string,
+  pendingClientIds: Set<string>
+): Promise<Set<string>> {
+  if (pendingClientIds.size === 0) return new Set()
+
+  const primary = await supabase
+    .from('plans')
+    .select('client_id')
+    .eq('coach_id', coachId)
+    .eq('active', true)
+    .eq('has_core_content', true)
+
+  if (!primary.error) {
+    return new Set(
+      (primary.data ?? [])
+        .map((row) => row.client_id as string)
+        .filter((id) => pendingClientIds.has(id))
+    )
+  }
+
+  // Pre-migration fallback: IS NOT NULL does not detoast large plan text.
+  const fallback = await supabase
+    .from('plans')
+    .select('client_id')
+    .eq('coach_id', coachId)
+    .eq('active', true)
+    .not('nutrition_plan', 'is', null)
+    .not('workout_plan', 'is', null)
+
+  return new Set(
+    (fallback.data ?? [])
+      .map((row) => row.client_id as string)
+      .filter((id) => pendingClientIds.has(id))
+  )
+}
+
+/**
+ * Build the coach work queue.
+ *
+ * Performance notes:
+ * - Two parallel query waves (coach-scoped, then plan/issue scoped)
+ * - Prefer coach_id filters over giant client_id IN lists (those inflate GET URLs and hang)
+ * - Never download nutrition/workout plan text just to check readiness
+ */
 export async function getCoachWorkQueue(
   supabase: SupabaseClient,
   coachId: string
 ): Promise<WorkQueueTask[]> {
   const tasks: WorkQueueTask[] = []
 
-  const { data: clients } = await supabase
-    .from('profiles')
-    .select('id, name, email, plan_delivered, onboarding_complete, checkin_awaiting, created_at')
-    .eq('coach_id', coachId)
+  // Wave 1 — all coach-scoped reads in parallel (indexed coach_id paths).
+  const [
+    { data: clients },
+    { data: planChangeRequests },
+    { data: pendingCheckins },
+    { data: callRequests },
+    { data: unreadChats },
+    { data: completedRows },
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, name, email, plan_delivered, onboarding_complete, created_at')
+      .eq('coach_id', coachId),
+    supabase
+      .from('plan_change_requests')
+      .select('id, client_id, status, draft_plan_id, scope, locked_at, draft_ready_at, error_message')
+      .eq('coach_id', coachId)
+      .in('status', ['generating', 'draft_ready', 'in_review'])
+      .order('locked_at', { ascending: true }),
+    supabase
+      .from('checkins')
+      .select('id, client_id, submitted_at, checkin_type, coaching_week')
+      .eq('coach_id', coachId)
+      .eq('reviewed', false)
+      .order('submitted_at', { ascending: true }),
+    supabase
+      .from('call_requests')
+      .select('id, conversation_id, client_id, status, requested_at, scheduled_for')
+      .eq('coach_id', coachId)
+      .in('status', ['requested', 'scheduled'])
+      .order('requested_at', { ascending: true }),
+    supabase
+      .from('coach_conversations')
+      .select('id, client_id, unread_by_coach, last_message_at, last_message_preview')
+      .eq('coach_id', coachId)
+      .gt('unread_by_coach', 0)
+      .neq('status', 'closed')
+      .order('last_message_at', { ascending: true }),
+    supabase
+      .from('coach_work_queue_completions')
+      .select('task_id, task_created_at')
+      .eq('coach_id', coachId),
+  ])
 
-  const clientIds = (clients ?? []).map((c) => c.id)
   const clientNameById = new Map(
     (clients ?? []).map((c) => [c.id, c.name || c.email || 'Client'])
   )
-  const { data: generationJobs } = await supabase
-    .from('initial_plan_generation_jobs')
-    .select('id, client_id, status, draft_plan_id, error_code, error_message, queued_at, updated_at')
-    .eq('coach_id', coachId)
-  const generationByClient = new Map(
-    (generationJobs ?? []).map((job) => [job.client_id, job])
+  const pendingClientIds = new Set(
+    (clients ?? [])
+      .filter((c) => !c.plan_delivered && c.onboarding_complete)
+      .map((c) => c.id)
   )
 
-  const pendingPlanClientIds = (clients ?? [])
-    .filter((c) => !c.plan_delivered && c.onboarding_complete)
-    .map((c) => c.id)
-  const latestDraftByClient = new Map<string, { id: string; created_at: string }>()
-  if (pendingPlanClientIds.length > 0) {
-    const { data: undeliveredDrafts } = await supabase
-      .from('plans')
-      .select('id, client_id, created_at')
-      .in('client_id', pendingPlanClientIds)
-      .is('delivered_at', null)
-      .order('created_at', { ascending: false })
-    for (const draft of undeliveredDrafts ?? []) {
-      if (!latestDraftByClient.has(draft.client_id)) {
-        latestDraftByClient.set(draft.client_id, { id: draft.id, created_at: draft.created_at })
-      }
+  // Wave 2 — still coach_id scoped (no giant .in(clientIds) URL payloads).
+  const [
+    { data: generationJobs },
+    { data: undeliveredDrafts },
+    activePlanReadyByClient,
+    { data: issueRows },
+  ] = await Promise.all([
+    pendingClientIds.size > 0
+      ? supabase
+          .from('initial_plan_generation_jobs')
+          .select('id, client_id, status, draft_plan_id, error_code, error_message, queued_at')
+          .eq('coach_id', coachId)
+          .in('status', ['queued', 'generating', 'ready', 'failed'])
+          .order('queued_at', { ascending: false })
+      : Promise.resolve({ data: [] as GenerationJobRow[] }),
+    pendingClientIds.size > 0
+      ? supabase
+          .from('plans')
+          .select('id, client_id, created_at')
+          .eq('coach_id', coachId)
+          .is('delivered_at', null)
+          .order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] as { id: string; client_id: string; created_at: string }[] }),
+    fetchReadyActivePlanClientIds(supabase, coachId, pendingClientIds),
+    // Join profiles so we never ship a huge client_id=in.(...) query string.
+    supabase
+      .from('issue_reports')
+      .select('id, client_id, description, created_at, status, profiles!inner(coach_id)')
+      .eq('profiles.coach_id', coachId)
+      .in('status', ['open', 'investigating'])
+      .order('created_at', { ascending: true }),
+  ])
+
+  const generationByClient = new Map<string, GenerationJobRow>()
+  for (const job of (generationJobs ?? []) as GenerationJobRow[]) {
+    if (!pendingClientIds.has(job.client_id)) continue
+    // Newest first from query order — keep the latest job per pending client.
+    if (!generationByClient.has(job.client_id)) {
+      generationByClient.set(job.client_id, job)
     }
   }
 
-  const pendingContentClientIds = (clients ?? [])
-    .filter((c) => !c.plan_delivered && c.onboarding_complete)
-    .map((c) => c.id)
-  const activePlanReadyByClient = new Set<string>()
-  if (pendingContentClientIds.length > 0) {
-    const { data: activePlans } = await supabase
-      .from('plans')
-      .select('client_id, nutrition_plan, workout_plan')
-      .in('client_id', pendingContentClientIds)
-      .eq('active', true)
-    for (const plan of activePlans ?? []) {
-      if (plan.nutrition_plan?.trim() && plan.workout_plan?.trim()) {
-        activePlanReadyByClient.add(plan.client_id)
-      }
+  const latestDraftByClient = new Map<string, { id: string; created_at: string }>()
+  for (const draft of undeliveredDrafts ?? []) {
+    if (!pendingClientIds.has(draft.client_id)) continue
+    if (!latestDraftByClient.has(draft.client_id)) {
+      latestDraftByClient.set(draft.client_id, { id: draft.id, created_at: draft.created_at })
     }
   }
+
+  const issues = (issueRows ?? []).filter((issue) => clientNameById.has(issue.client_id))
 
   for (const client of clients ?? []) {
     // Only surface plan work after onboarding completion is persisted.
@@ -142,13 +255,6 @@ export async function getCoachWorkQueue(
     })
   }
 
-  const { data: planChangeRequests } = await supabase
-    .from('plan_change_requests')
-    .select('id, client_id, status, draft_plan_id, scope, locked_at, draft_ready_at, error_message')
-    .eq('coach_id', coachId)
-    .in('status', ['generating', 'draft_ready', 'in_review'])
-    .order('locked_at', { ascending: true })
-
   for (const change of planChangeRequests ?? []) {
     const name = clientNameById.get(change.client_id) ?? 'Client'
     const ready = change.status === 'draft_ready' || change.status === 'in_review'
@@ -171,13 +277,6 @@ export async function getCoachWorkQueue(
     })
   }
 
-  const { data: pendingCheckins } = await supabase
-    .from('checkins')
-    .select('id, client_id, submitted_at, checkin_type, coaching_week')
-    .eq('coach_id', coachId)
-    .eq('reviewed', false)
-    .order('submitted_at', { ascending: true })
-
   for (const checkin of pendingCheckins ?? []) {
     const name = clientNameById.get(checkin.client_id) ?? 'Client'
     tasks.push({
@@ -192,13 +291,6 @@ export async function getCoachWorkQueue(
       createdAt: checkin.submitted_at,
     })
   }
-
-  const { data: callRequests } = await supabase
-    .from('call_requests')
-    .select('id, conversation_id, client_id, status, requested_at, scheduled_for')
-    .eq('coach_id', coachId)
-    .in('status', ['requested', 'scheduled'])
-    .order('requested_at', { ascending: true })
 
   for (const request of callRequests ?? []) {
     const name = clientNameById.get(request.client_id) ?? 'Client'
@@ -217,14 +309,6 @@ export async function getCoachWorkQueue(
     })
   }
 
-  const { data: unreadChats } = await supabase
-    .from('coach_conversations')
-    .select('id, client_id, unread_by_coach, last_message_at, last_message_preview')
-    .eq('coach_id', coachId)
-    .gt('unread_by_coach', 0)
-    .neq('status', 'closed')
-    .order('last_message_at', { ascending: true })
-
   for (const conv of unreadChats ?? []) {
     const name = clientNameById.get(conv.client_id) ?? 'Client'
     tasks.push({
@@ -240,34 +324,20 @@ export async function getCoachWorkQueue(
     })
   }
 
-  if (clientIds.length > 0) {
-    const { data: issues } = await supabase
-      .from('issue_reports')
-      .select('id, client_id, description, created_at, status')
-      .in('client_id', clientIds)
-      .in('status', ['open', 'investigating'])
-      .order('created_at', { ascending: true })
-
-    for (const issue of issues ?? []) {
-      const name = clientNameById.get(issue.client_id) ?? 'Client'
-      tasks.push({
-        id: `issue-${issue.id}`,
-        type: 'issue_report',
-        title: 'Issue Report',
-        subtitle: `${name}: ${issue.description.slice(0, 60)}`,
-        href: `/coach/client/${issue.client_id}`,
-        clientId: issue.client_id,
-        clientName: name,
-        priority: QUEUE_PRIORITY,
-        createdAt: issue.created_at,
-      })
-    }
+  for (const issue of issues) {
+    const name = clientNameById.get(issue.client_id) ?? 'Client'
+    tasks.push({
+      id: `issue-${issue.id}`,
+      type: 'issue_report',
+      title: 'Issue Report',
+      subtitle: `${name}: ${issue.description.slice(0, 60)}`,
+      href: `/coach/client/${issue.client_id}`,
+      clientId: issue.client_id,
+      clientName: name,
+      priority: QUEUE_PRIORITY,
+      createdAt: issue.created_at,
+    })
   }
-
-  const { data: completedRows } = await supabase
-    .from('coach_work_queue_completions')
-    .select('task_id, task_created_at')
-    .eq('coach_id', coachId)
 
   const completionByTaskId = new Map(
     (completedRows ?? []).map((row) => [

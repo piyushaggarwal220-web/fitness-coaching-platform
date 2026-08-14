@@ -103,6 +103,7 @@ export default function CoachDashboard() {
 
       setCoach(coachData);
 
+      // Lightweight first paint — do not wait on full check-in history before showing the queue.
       const [clientsResult, pendingCheckinsResult, activePlansResult] = await Promise.all([
         supabase
           .from('profiles')
@@ -134,15 +135,6 @@ export default function CoachDashboard() {
       const newClients = clientsData.filter(c => c.plan_delivered === false).length;
       setStats({ total, awaiting, overdue, new: newClients });
 
-      const clientIds = clientsData.map((c) => c.id);
-      if (clientIds.length > 0) {
-        const { data: checkinData } = await supabase
-          .from('checkins')
-          .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed, submitted_at')
-          .in('client_id', clientIds);
-        setCheckins((checkinData ?? []) as Checkin[]);
-      }
-
       if (pendingCheckinsResult.error) {
         setError('Failed to load check-in counts.');
         setLoading(false);
@@ -158,7 +150,22 @@ export default function CoachDashboard() {
       }
 
       setPlansDelivered(activePlansResult.count ?? 0);
+      // Unblock the work queue immediately — roster check-in detail loads after.
       setLoading(false);
+
+      const previewIds = [...clientsData]
+        .sort((a, b) => clientPriority(a) - clientPriority(b))
+        .slice(0, ROSTER_PREVIEW_LIMIT)
+        .map((c) => c.id);
+      if (previewIds.length > 0) {
+        const { data: checkinData } = await supabase
+          .from('checkins')
+          .select('id, client_id, checkin_type, coaching_week, coaching_day, reviewed, submitted_at')
+          .in('client_id', previewIds)
+          .order('submitted_at', { ascending: false })
+          .limit(80);
+        setCheckins((checkinData ?? []) as Checkin[]);
+      }
     };
     checkCoach();
   }, [router]);

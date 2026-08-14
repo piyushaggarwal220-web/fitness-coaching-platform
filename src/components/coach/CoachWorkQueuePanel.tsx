@@ -4,22 +4,19 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { usePathname, useRouter } from 'next/navigation'
 import {
   filterWorkQueue,
-  getCoachWorkQueue,
   getWorkQueueCounts,
   type WorkQueueCounts,
   type WorkQueueFilter,
   type WorkQueueTask,
 } from '@/lib/coach-work-queue'
-import { requireCoach } from '@/lib/coach-session'
-import { createClient } from '@/lib/supabase/client'
 import { colors } from '@/lib/coach-theme'
 import { motionClass } from '@/lib/motion'
 import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
 
-const supabase = createClient()
-
 const COMPLETED_KEY = 'coach-queue-completed'
 const COMPLETED_MAX = 400
+/** Hard cap so a stuck Supabase/network call cannot leave coaches waiting for minutes. */
+const QUEUE_FETCH_TIMEOUT_MS = 20_000
 
 type CompletedEntry = { createdAt: string | null; completedAt: number }
 type CompletedMap = Map<string, CompletedEntry>
@@ -124,10 +121,12 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const [completed, setCompleted] = useState<CompletedMap>(loadCompleted)
   const completedRef = useRef<CompletedMap>(completed)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [completing, setCompleting] = useState(false)
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
   const [completeError, setCompleteError] = useState('')
   const [coachId, setCoachId] = useState<string | null>(null)
+  const loadGenerationRef = useRef(0)
 
   const applyQueue = useCallback((queue: WorkQueueTask[]) => {
     setTasks(queue)
@@ -139,31 +138,49 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
     completedRef.current = completed
   }, [completed])
 
+  // Single server round-trip with a hard timeout (avoids multi-minute hangs).
   const load = useCallback(async () => {
-    if (!coachId) return
-    const queue = await getCoachWorkQueue(supabase, coachId)
-    applyQueue(queue)
-    setLoading(false)
-  }, [coachId, applyQueue])
-
-  useEffect(() => {
-    let active = true
-    const authorize = async () => {
-      const coach = await requireCoach(supabase, router)
-      if (!active) return
-      if (!coach) {
+    const generation = ++loadGenerationRef.current
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => controller.abort(), QUEUE_FETCH_TIMEOUT_MS)
+    try {
+      const res = await fetch('/api/coach/work-queue', {
+        credentials: 'include',
+        signal: controller.signal,
+      })
+      if (generation !== loadGenerationRef.current) return
+      if (res.status === 401 || res.status === 403) {
+        setLoading(false)
+        setLoadError('')
+        router.push(`/login?expired=1&redirect=${encodeURIComponent(returnTo)}`)
+        return
+      }
+      if (!res.ok) {
+        setLoadError('Work queue took too long or failed to load.')
         setLoading(false)
         return
       }
-      setCoachId(coach.id)
-      const queue = await getCoachWorkQueue(supabase, coach.id)
-      if (!active) return
-      applyQueue(queue)
+      const data = (await res.json()) as { tasks?: WorkQueueTask[]; coachId?: string }
+      if (generation !== loadGenerationRef.current) return
+      if (data.coachId) setCoachId(data.coachId)
+      applyQueue(data.tasks ?? [])
+      setLoadError('')
       setLoading(false)
+    } catch {
+      if (generation !== loadGenerationRef.current) return
+      setLoadError('Work queue took too long or failed to load.')
+      setLoading(false)
+    } finally {
+      window.clearTimeout(timer)
     }
-    void authorize()
-    return () => { active = false }
-  }, [router, applyQueue])
+  }, [applyQueue, returnTo, router])
+
+  useEffect(() => {
+    void load()
+    return () => {
+      loadGenerationRef.current += 1
+    }
+  }, [load])
 
   // Realtime accelerates chat tasks; 20s fallback covers plans/check-ins/profiles.
   useCoachConversationRealtime(coachId, load, 20_000, 'work-queue')
@@ -210,6 +227,30 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
 
   if (loading) {
     return <div className="skeleton" style={{ height: 160, borderRadius: 16 }} />
+  }
+
+  if (loadError) {
+    return (
+      <div style={panelStyle}>
+        <p style={{ margin: 0, fontWeight: 700, fontSize: 18, color: colors.textPrimary }}>
+          Couldn’t load work queue
+        </p>
+        <p style={{ margin: '8px 0 0', color: colors.textMuted, fontSize: 14 }}>
+          {loadError} This should only take a few seconds — tap retry.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true)
+            setLoadError('')
+            void load()
+          }}
+          style={{ ...primaryBtn, marginTop: 14, flex: 'none', width: '100%' }}
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
   if (!current) {
