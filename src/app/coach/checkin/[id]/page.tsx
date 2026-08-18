@@ -16,8 +16,14 @@ import {
   parseCoachResponse,
   serializeCoachResponse,
 } from '@/lib/checkin';
+import {
+  getCheckinReplyTiming,
+  getCoachReplyWaitMessage,
+  type CheckinReplyTiming,
+} from '@/lib/checkin-reply-timing';
 import { getCheckinTypeLabel } from '@/lib/checkin-schedule';
 import { formatFitnessGoal } from '@/lib/coach-utils';
+import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { MidWeekAnalysisPanel } from '@/components/coach/ai-actions/MidWeekAnalysisPanel';
 import { WeeklyCoachingPanel } from '@/components/coach/ai-actions/WeeklyCoachingPanel';
 import { PhotoGalleryViewer, type GalleryPhoto } from '@/components/journey/PhotoGalleryViewer';
@@ -40,6 +46,8 @@ export default function CoachCheckinDetailPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [gallery, setGallery] = useState<{ photos: GalleryPhoto[]; index: number } | null>(null);
+  const [replyTiming, setReplyTiming] = useState<CheckinReplyTiming | null>(null);
+  const bypassReplyWait = shouldBypassCheckinScheduleClient();
 
   useEffect(() => {
     const load = async () => {
@@ -87,6 +95,19 @@ export default function CoachCheckinDetailPage() {
     load();
   }, [checkinId, router]);
 
+  useEffect(() => {
+    if (!checkin?.submitted_at) {
+      setReplyTiming(null)
+      return
+    }
+    setReplyTiming(getCheckinReplyTiming(checkin.submitted_at))
+    if (bypassReplyWait || checkin.reviewed) return
+    const id = window.setInterval(() => {
+      setReplyTiming(getCheckinReplyTiming(checkin.submitted_at))
+    }, 30_000)
+    return () => window.clearInterval(id)
+  }, [checkin?.submitted_at, checkin?.reviewed, bypassReplyWait]);
+
   if (!checkinId) {
     return (
       <CoachShell narrow>
@@ -100,6 +121,12 @@ export default function CoachCheckinDetailPage() {
     e.preventDefault();
     if (!checkin || !response.feedback.trim()) {
       setError('Feedback is required before marking as reviewed.');
+      return;
+    }
+
+    const canSendNow = bypassReplyWait || replyTiming?.canSend !== false
+    if (!canSendNow && replyTiming) {
+      setError(getCoachReplyWaitMessage(replyTiming));
       return;
     }
 
@@ -204,6 +231,7 @@ export default function CoachCheckinDetailPage() {
           <section style={styles.card}>
             <MidWeekAnalysisPanel
               checkinId={checkin.id}
+              submittedAt={checkin.submitted_at}
               reviewed={checkin.reviewed}
               onReplyReady={(reply) => {
                 setResponse((prev) =>
@@ -382,6 +410,19 @@ export default function CoachCheckinDetailPage() {
             {checkin.reviewed && (
               <p style={styles.reviewedBadge}>Reviewed {formatCheckinDate(checkin.reviewed_at)}</p>
             )}
+            {!checkin.reviewed && replyTiming && (
+              <p
+                style={{
+                  margin: '0 0 12px',
+                  fontSize: 13,
+                  color:
+                    bypassReplyWait || replyTiming.canSend ? colors.success : colors.warning,
+                  lineHeight: 1.4,
+                }}
+              >
+                {getCoachReplyWaitMessage(replyTiming)}
+              </p>
+            )}
             <form onSubmit={handleSubmitReview}>
               <div style={styles.field}>
                 <label style={styles.label}>Feedback *</label>
@@ -405,8 +446,26 @@ export default function CoachCheckinDetailPage() {
                 />
               </div>
               {!checkin.reviewed && (
-                <button type="submit" disabled={submitting} style={styles.submitBtn}>
-                  {submitting ? 'Saving...' : 'Mark as reviewed'}
+                <button
+                  type="submit"
+                  disabled={
+                    submitting ||
+                    (!bypassReplyWait && replyTiming !== null && !replyTiming.canSend)
+                  }
+                  style={{
+                    ...styles.submitBtn,
+                    opacity:
+                      submitting ||
+                      (!bypassReplyWait && replyTiming !== null && !replyTiming.canSend)
+                        ? 0.55
+                        : 1,
+                  }}
+                >
+                  {submitting
+                    ? 'Saving...'
+                    : !bypassReplyWait && replyTiming !== null && !replyTiming.canSend
+                      ? 'Send locked until min wait'
+                      : 'Mark as reviewed'}
                 </button>
               )}
             </form>

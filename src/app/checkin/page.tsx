@@ -252,7 +252,9 @@ export default function CheckinPage() {
 
       await requestComplexityRecalculation({ trigger: 'weekly_checkin', checkinId: data.checkinId })
 
-      setSuccess('Weekly check-in submitted! Photos + measurements earn league points.');
+      setSuccess(
+        'Weekly check-in submitted! Your coach typically replies in 5–8 hours. Photos + measurements earn league points.'
+      );
       setForm(INITIAL_WEEKLY_FORM);
       setPhotos({ front: null, side: null, back: null });
       setExtraPhotos([]);

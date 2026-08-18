@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import { serializeCoachResponse } from '@/lib/checkin'
+import { assertCheckinReplyWaitElapsed } from '@/lib/checkin-reply-timing'
 import { postCoachCheckinFeedbackToChat } from '@/lib/coach-chat'
 import { getCheckinTypeDisplayName } from '@/lib/checkin-schedule'
+import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CoachCheckinResponse } from '@/types/database'
@@ -49,13 +51,29 @@ export async function POST(request: Request) {
 
   const { data: checkin, error: checkinError } = await admin
     .from('checkins')
-    .select('id, client_id, coach_id, checkin_type, coaching_week, reviewed')
+    .select('id, client_id, coach_id, checkin_type, coaching_week, reviewed, submitted_at')
     .eq('id', checkinId)
     .eq('coach_id', coach.id)
     .maybeSingle()
 
   if (checkinError || !checkin) {
     return NextResponse.json({ ok: false, error: 'Check-in not found or not assigned to you.' }, { status: 404 })
+  }
+
+  const bypassWait = shouldBypassCheckinScheduleServer(request.headers.get('host'))
+  if (!bypassWait) {
+    const wait = assertCheckinReplyWaitElapsed(checkin.submitted_at)
+    if (!wait.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: wait.error,
+          canSendAt: wait.timing?.readyAt.toISOString() ?? null,
+          remainingMinWaitMs: wait.timing?.remainingMinWaitMs ?? null,
+        },
+        { status: 425 }
+      )
+    }
   }
 
   const response: CoachCheckinResponse = { feedback, action_items: actionItems }
