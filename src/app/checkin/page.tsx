@@ -16,6 +16,7 @@ import {
   uploadCheckinPhoto,
   validateWeeklyCheckinForm,
 } from '@/lib/checkin';
+import { loadCheckinSleepSuggestion } from '@/lib/checkin-sleep-bridge';
 import { getCheckinUnavailableReason, isCheckinAvailableToday } from '@/lib/checkin-schedule';
 import { brandTitle } from '@/lib/brand';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
@@ -58,6 +59,7 @@ export default function CheckinPage() {
   const [success, setSuccess] = useState('');
   const [available, setAvailable] = useState(false);
   const [unavailableReason, setUnavailableReason] = useState<string>('');
+  const [sleepPrefillHint, setSleepPrefillHint] = useState('');
   const [currentSection, setCurrentSection] = useState<Section>('measurements');
   const [slideDirection, setSlideDirection] = useState<'forward' | 'back'>('forward');
 
@@ -103,6 +105,24 @@ export default function CheckinPage() {
           thigh: prev.thigh || m.thigh || '',
           navel: prev.navel || m.navel || '',
         }))
+      }
+
+      const suggestion = await loadCheckinSleepSuggestion(supabase, userId)
+      if (suggestion.sleepQuality != null || suggestion.energy != null) {
+        setForm((prev) => ({
+          ...prev,
+          sleep_quality:
+            prev.sleep_quality ||
+            (suggestion.sleepQuality != null ? String(suggestion.sleepQuality) : prev.sleep_quality),
+          energy_level:
+            prev.energy_level ||
+            (suggestion.energy != null ? String(suggestion.energy) : prev.energy_level),
+        }))
+        if (suggestion.sampleCount > 0) {
+          setSleepPrefillHint(
+            `Prefilled from your sleep tracker (${suggestion.sampleCount} recent day${suggestion.sampleCount === 1 ? '' : 's'}). Adjust if needed.`
+          )
+        }
       }
 
       const scheduleStartedAt = result.profile?.checkin_schedule_started_at;
@@ -371,6 +391,9 @@ export default function CheckinPage() {
             <Slider label="Workout adherence" name="workout_adherence" value={form.workout_adherence || '5'} onChange={handleChange} />
             <Slider label="Energy" name="energy_level" value={form.energy_level || '5'} onChange={handleChange} />
             <Slider label="Sleep" name="sleep_quality" value={form.sleep_quality || '5'} onChange={handleChange} />
+            {sleepPrefillHint && (
+              <p style={{ margin: '0 0 12px', fontSize: 12, color: colors.textMuted }}>{sleepPrefillHint}</p>
+            )}
             <Slider label="Stress" name="stress_level" value={form.stress_level || '5'} onChange={handleChange} />
             <Slider label="Hunger" name="hunger_level" value={form.hunger_level || '5'} onChange={handleChange} />
             <Slider label="Motivation" name="motivation_level" value={form.motivation_level || '5'} onChange={handleChange} />

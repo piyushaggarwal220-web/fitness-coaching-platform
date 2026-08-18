@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Slider, TextArea } from '@/components/ui/Input';
 import { INITIAL_MID_WEEK_FORM, validateMidWeekForm } from '@/lib/checkin';
+import { loadCheckinSleepSuggestion } from '@/lib/checkin-sleep-bridge';
 import { getCheckinUnavailableReason, isCheckinAvailableToday } from '@/lib/checkin-schedule';
 import { brandTitle } from '@/lib/brand';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
@@ -31,6 +32,7 @@ export default function MidWeekCheckinPage() {
   const [success, setSuccess] = useState('');
   const [available, setAvailable] = useState(false);
   const [unavailableReason, setUnavailableReason] = useState('');
+  const [sleepPrefillHint, setSleepPrefillHint] = useState('');
 
   useEffect(() => {
     const init = async () => {
@@ -64,6 +66,24 @@ export default function MidWeekCheckinPage() {
               ? 'You already submitted this Day 3 check-in.'
               : 'Your Day 3 check-in is not available yet. Check your dashboard for the next scheduled check-in.'
         );
+      } else {
+        const suggestion = await loadCheckinSleepSuggestion(supabase, result.user.id)
+        if (suggestion.sleepQuality != null || suggestion.energy != null) {
+          setForm((prev) => ({
+            ...prev,
+            sleep_quality:
+              prev.sleep_quality ||
+              (suggestion.sleepQuality != null ? String(suggestion.sleepQuality) : prev.sleep_quality),
+            energy_level:
+              prev.energy_level ||
+              (suggestion.energy != null ? String(suggestion.energy) : prev.energy_level),
+          }))
+          if (suggestion.sampleCount > 0) {
+            setSleepPrefillHint(
+              `Prefilled from your sleep tracker (${suggestion.sampleCount} recent day${suggestion.sampleCount === 1 ? '' : 's'}). Adjust if needed.`
+            )
+          }
+        }
       }
 
       setLoading(false);
@@ -170,6 +190,9 @@ export default function MidWeekCheckinPage() {
             <Slider label="Workout adherence" name="workout_adherence" value={form.workout_adherence || '5'} onChange={handleChange} />
             <Slider label="Energy" name="energy_level" value={form.energy_level || '5'} onChange={handleChange} />
             <Slider label="Sleep quality" name="sleep_quality" value={form.sleep_quality || '5'} onChange={handleChange} />
+            {sleepPrefillHint && (
+              <p style={{ margin: '0 0 12px', fontSize: 12, color: colors.textMuted }}>{sleepPrefillHint}</p>
+            )}
             <Slider label="Stress" name="stress_level" value={form.stress_level || '5'} onChange={handleChange} />
             <Slider label="Hunger" name="hunger_level" value={form.hunger_level || '5'} onChange={handleChange} />
           </Card>
