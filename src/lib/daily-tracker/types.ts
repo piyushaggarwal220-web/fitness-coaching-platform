@@ -202,10 +202,13 @@ export type SleepCompletion = {
   wakeTime?: string
   /** null = explicitly cleared. */
   hours?: number | null
-  quality?: number
-  qualityLabel?: SleepQualityLabel
+  /** null = explicitly cleared. */
+  quality?: number | null
+  /** null = explicitly cleared. */
+  qualityLabel?: SleepQualityLabel | null
   energy?: number | null
-  wakeFeeling?: WakeFeeling
+  /** null = explicitly cleared. */
+  wakeFeeling?: WakeFeeling | null
 }
 
 export type TrackerCompletion = {

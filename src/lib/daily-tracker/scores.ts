@@ -76,11 +76,15 @@ export function calculateTrackerScores(
   if (sleepItem && sleepItem.type === 'sleep') {
     const hours = completion.sleep?.hours
     const quality = completion.sleep?.quality
-    if (hours != null && sleepItem.targetHours) {
-      sleep = Math.min(100, pct(hours, sleepItem.targetHours))
-    } else if (quality != null) {
-      sleep = Math.round((quality / 10) * 100)
-    } else if (!completion.sleep?.bedtime) {
+    const goal = sleepItem.targetHours ?? 8
+    if (hours != null && Number.isFinite(hours)) {
+      // Clamp so negative / absurd inputs cannot drag overall below 0 or above 100.
+      const safeHours = Math.max(0, Math.min(hours, 24))
+      sleep = Math.min(100, Math.max(0, pct(safeHours, goal)))
+    } else if (quality != null && Number.isFinite(quality)) {
+      sleep = Math.min(100, Math.max(0, Math.round((quality / 10) * 100)))
+    } else {
+      // Bedtime / wake / energy alone do not count as logged sleep.
       sleep = 0
     }
   }
@@ -158,7 +162,7 @@ export function isItemComplete(item: TrackerSnapshotItem, completion: TrackerCom
     case 'water':
       return (completion.water?.ml ?? 0) >= item.targetMl * 0.8
     case 'sleep':
-      return Boolean(completion.sleep?.hours || completion.sleep?.quality)
+      return completion.sleep?.hours != null || completion.sleep?.quality != null
     case 'note':
       return true
     default:

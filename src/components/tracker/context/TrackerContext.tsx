@@ -16,6 +16,7 @@ import { authenticateClient } from '@/lib/onboarding'
 import { createClient } from '@/lib/supabase/client'
 import { getCategoryDisplayScores, splitSnapshot, type TrackerSections } from '@/lib/daily-tracker/display'
 import { mergeCompletion } from '@/lib/daily-tracker/parser'
+import { calculateTrackerScores } from '@/lib/daily-tracker/scores'
 import {
   applyTrackerDraft,
   clearTrackerDraft,
@@ -114,9 +115,10 @@ function withDraft(
   // snapshot rebuild bumps server updated_at — otherwise Change day / food
   // selections appear to stick briefly then snap back to Day 1.
   const merged = applyTrackerDraft(day.completion, draft)
+  const { scores, overall } = calculateTrackerScores(day.snapshot, merged)
   return {
     ...view,
-    day: { ...day, completion: merged },
+    day: { ...day, completion: merged, scores, overall_percent: overall },
   }
 }
 
@@ -213,6 +215,10 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
               const nextCompletion = queue.pending
                 ? mergeCompletion(result.day!.completion, queue.pending)
                 : result.day!.completion
+              const { scores, overall } = calculateTrackerScores(
+                result.day!.snapshot,
+                nextCompletion
+              )
 
               if (queue.pending) {
                 writeTrackerDraft(dayId, nextCompletion)
@@ -220,7 +226,15 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
                 clearTrackerDraft(dayId)
               }
 
-              return { ...current, day: { ...result.day!, completion: nextCompletion } }
+              return {
+                ...current,
+                day: {
+                  ...result.day!,
+                  completion: nextCompletion,
+                  scores,
+                  overall_percent: overall,
+                },
+              }
             })
             setError(null)
             waiters.forEach((resolve) => resolve(true))
@@ -351,12 +365,15 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       setView((current) => {
         if (!current?.day) return current
         const nextCompletion = mergeCompletion(current.day.completion, patch)
+        const { scores, overall } = calculateTrackerScores(current.day.snapshot, nextCompletion)
         writeTrackerDraft(current.day.id, nextCompletion)
         return {
           ...current,
           day: {
             ...current.day,
             completion: nextCompletion,
+            scores,
+            overall_percent: overall,
           },
         }
       })

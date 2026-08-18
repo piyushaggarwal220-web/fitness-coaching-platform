@@ -81,7 +81,8 @@ export function CoachTrackerAdherencePanel() {
                 {row.clientName ?? 'Client'}
               </p>
               <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-                Diet {row.categories.diet}% · Workout {row.categories.workout}% · Water {row.categories.water}%
+                Diet {row.categories.diet}% · Workout {row.categories.workout}% · Water{' '}
+                {row.categories.water}% · Sleep {row.categories.sleep}%
               </p>
             </div>
             <span

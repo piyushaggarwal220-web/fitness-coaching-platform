@@ -11,6 +11,7 @@ import type {
   WorkoutPhaseBlock,
 } from './types'
 import { DEFAULT_WARMUP_EXERCISES } from './exercise-utils'
+import { calculateTrackerScores } from './scores'
 
 export type TrackerSections = {
   meals: Extract<TrackerSnapshotItem, { type: 'meal' }>[]
@@ -146,32 +147,13 @@ export function getStepsScore(steps: TrackerCardioItem | null, completion: Track
 export function getCategoryDisplayScores(
   day: DailyTrackerDay
 ): TrackerCategoryScores & { steps: number } {
-  const scores = day.scores ?? {
-    diet: 0,
-    workout: 0,
-    water: 0,
-    supplements: 0,
-    cardio: 0,
-    sleep: 0,
-  }
-  const { steps, cardio } = splitSnapshot(day.snapshot)
-
-  let cardioScore = 100
-  if (cardio.length > 0) {
-    let sum = 0
-    for (const item of cardio) {
-      const target = Number(item.target) || 1
-      const actual = day.completion.cardio?.[item.id]?.actual ?? 0
-      sum += Math.min(100, pct(actual, target))
-    }
-    cardioScore = Math.round(sum / cardio.length)
-  } else if (!steps) {
-    cardioScore = scores.cardio
-  }
+  // Always derive from live completion so optimistic local patches (sleep, water, etc.)
+  // update hub/module progress before the server round-trip lands.
+  const { scores } = calculateTrackerScores(day.snapshot, day.completion)
+  const { steps } = splitSnapshot(day.snapshot)
 
   return {
     ...scores,
-    cardio: cardioScore,
     steps: getStepsScore(steps, day.completion),
   }
 }

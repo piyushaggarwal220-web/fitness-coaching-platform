@@ -29,8 +29,11 @@ const WAKE_OPTIONS: { value: WakeFeeling; label: string }[] = [
   { value: 'tired', label: 'Tired' },
 ]
 
+const MAX_SLEEP_HOURS = 14
+
 export function SleepTrackerSection({ sleep, completion, sleepScore, saving, onPatch }: Props) {
   const sleepData = completion.sleep ?? {}
+  const energySet = sleepData.energy != null
   const qualityLabel =
     sleepData.qualityLabel ??
     (sleepData.quality != null
@@ -73,18 +76,25 @@ export function SleepTrackerSection({ sleep, completion, sleepScore, saving, onP
             type="number"
             step={0.5}
             min={0}
-            max={14}
+            max={MAX_SLEEP_HOURS}
+            inputMode="decimal"
             placeholder="Hours"
             value={sleepData.hours ?? ''}
             disabled={saving}
-            onChange={(e) =>
+            onChange={(e) => {
+              const raw = e.target.value
+              if (raw === '') {
+                void onPatch({ sleep: { hours: null } })
+                return
+              }
+              const parsed = Number(raw)
+              if (!Number.isFinite(parsed)) return
               void onPatch({
                 sleep: {
-                  ...sleepData,
-                  hours: Number(e.target.value) || undefined,
+                  hours: Math.max(0, Math.min(MAX_SLEEP_HOURS, parsed)),
                 },
               })
-            }
+            }}
             style={{
               ...trackerInputStyle,
               marginTop: 6,
@@ -103,13 +113,12 @@ export function SleepTrackerSection({ sleep, completion, sleepScore, saving, onP
           options={QUALITY_OPTIONS}
           value={qualityLabel}
           disabled={saving}
+          allowClear
           onChange={(v) =>
             void onPatch({
-              sleep: {
-                ...sleepData,
-                qualityLabel: v,
-                quality: qualityLabelToScore(v),
-              },
+              sleep: v
+                ? { qualityLabel: v, quality: qualityLabelToScore(v) }
+                : { qualityLabel: null, quality: null },
             })
           }
         />
@@ -128,21 +137,25 @@ export function SleepTrackerSection({ sleep, completion, sleepScore, saving, onP
           type="range"
           min={1}
           max={10}
-          value={sleepData.energy ?? 5}
+          value={energySet ? sleepData.energy! : 5}
           disabled={saving}
           onChange={(e) =>
             void onPatch({
               sleep: {
-                ...sleepData,
                 energy: Number(e.target.value),
               },
             })
           }
-          style={{ width: '100%', accentColor: colors.accent }}
+          style={{ width: '100%', accentColor: colors.accent, opacity: energySet ? 1 : 0.55 }}
         />
         <div style={{ textAlign: 'center', fontSize: 20, fontWeight: 800, color: colors.accent, marginTop: 8 }}>
-          {sleepData.energy ?? '—'}
+          {energySet ? sleepData.energy : '—'}
         </div>
+        {!energySet && (
+          <p style={{ margin: '6px 0 0', textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
+            Move the slider to log energy
+          </p>
+        )}
       </div>
 
       <div>
@@ -153,16 +166,20 @@ export function SleepTrackerSection({ sleep, completion, sleepScore, saving, onP
           options={WAKE_OPTIONS}
           value={sleepData.wakeFeeling}
           disabled={saving}
+          allowClear
           onChange={(v) =>
             void onPatch({
               sleep: {
-                ...sleepData,
                 wakeFeeling: v,
               },
             })
           }
         />
       </div>
+
+      <p style={{ margin: `${spacing[3]}px 0 0`, fontSize: 12, color: colors.textMuted }}>
+        Sleep progress: {sleepScore}%
+      </p>
     </div>
   )
 }
