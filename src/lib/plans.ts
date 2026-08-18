@@ -1,12 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
+import { assertCheckinReplyWaitElapsed } from '@/lib/checkin-reply-timing'
 import { getNextCoachingDayStart } from '@/lib/checkin-schedule'
+import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import { assertClientCanReceivePlanChanges } from '@/lib/entitlements'
 import {
   clientCoachNotes,
   fallbackPublishCoachNotes,
   formatPublishedPlanTitle,
   isAiDraftTitle,
+  parsePlanMeta,
   prepareCoachNotesForPublish,
 } from '@/lib/plan-metadata'
 import type { Plan, PlanFormData } from '@/types/database'
@@ -132,11 +135,6 @@ export async function activatePlan(
     return { error: 'Cannot deliver plan: plan coach does not match assigned coach.' }
   }
 
-  const planWindow = assertClientCanReceivePlanChanges(client)
-  if (!planWindow.ok) {
-    return { error: planWindow.error }
-  }
-
   const { data: fullPlan, error: planError } = await supabase
     .from('plans')
     .select('id, title, coach_notes, phase')
@@ -145,6 +143,23 @@ export async function activatePlan(
 
   if (planError) return { error: planError.message }
   if (!fullPlan) return { error: 'Plan not found.' }
+
+  // Check-in-linked weekly drafts: same human-touch wait as check-in feedback.
+  const meta = parsePlanMeta(fullPlan)
+  if (meta.checkinId && !shouldBypassCheckinScheduleServer()) {
+    const { data: sourceCheckin } = await supabase
+      .from('checkins')
+      .select('submitted_at')
+      .eq('id', meta.checkinId)
+      .maybeSingle()
+    const wait = assertCheckinReplyWaitElapsed(sourceCheckin?.submitted_at)
+    if (!wait.ok) return { error: wait.error }
+  }
+
+  const planWindow = assertClientCanReceivePlanChanges(client)
+  if (!planWindow.ok) {
+    return { error: planWindow.error }
+  }
 
   const publishPrep = prepareCoachNotesForPublish(fullPlan.coach_notes, {
     fallbackMessage: isAiDraftTitle(fullPlan.title)

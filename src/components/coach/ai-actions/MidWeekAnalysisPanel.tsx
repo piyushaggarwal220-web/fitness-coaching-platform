@@ -1,10 +1,17 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import {
+  getCheckinReplyTiming,
+  getCoachReplyWaitMessage,
+  type CheckinReplyTiming,
+} from '@/lib/checkin-reply-timing'
 import { colors } from '@/lib/coach-theme'
+import { shouldBypassCheckinScheduleClient } from '@/lib/config'
 
 type MidWeekAnalysisPanelProps = {
   checkinId: string
+  submittedAt?: string | null
   reviewed?: boolean
   onReplyReady?: (clientReply: string) => void
   onSent?: (payload: { reviewedAt: string; feedback: string }) => void
@@ -12,6 +19,7 @@ type MidWeekAnalysisPanelProps = {
 
 export function MidWeekAnalysisPanel({
   checkinId,
+  submittedAt = null,
   reviewed = false,
   onReplyReady,
   onSent,
@@ -23,7 +31,23 @@ export function MidWeekAnalysisPanel({
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [sendSuccess, setSendSuccess] = useState('')
+  const [timing, setTiming] = useState<CheckinReplyTiming | null>(() =>
+    getCheckinReplyTiming(submittedAt)
+  )
   const autoGenAttempted = useRef(false)
+  const bypassWait = shouldBypassCheckinScheduleClient()
+
+  useEffect(() => {
+    setTiming(getCheckinReplyTiming(submittedAt))
+    if (bypassWait || !submittedAt) return
+    const id = window.setInterval(() => {
+      setTiming(getCheckinReplyTiming(submittedAt))
+    }, 30_000)
+    return () => window.clearInterval(id)
+  }, [submittedAt, bypassWait])
+
+  const canSendNow = bypassWait || timing?.canSend !== false
+  const waitHint = timing ? getCoachReplyWaitMessage(timing) : null
 
   const applyPack = useCallback(
     (pack: { summary?: string | null; clientReply?: string | null }) => {
@@ -113,6 +137,10 @@ export function MidWeekAnalysisPanel({
       setError('Generate or write a reply before sending.')
       return
     }
+    if (!canSendNow) {
+      setError(waitHint ?? 'Minimum reply wait has not elapsed yet.')
+      return
+    }
     setSending(true)
     setError('')
     setSendSuccess('')
@@ -158,7 +186,8 @@ export function MidWeekAnalysisPanel({
         <div>
           <h2 style={styles.title}>Send mid-week reply</h2>
           <p style={styles.subtitle}>
-            Short WhatsApp style reply (max 40 words). Edit if you want, then send — this marks the check-in reviewed.
+            Short WhatsApp style reply (max 40 words). Edit if you want, then send after the
+            minimum wait — clients expect a reply in 5–8 hours.
           </p>
         </div>
         <button
@@ -170,6 +199,10 @@ export function MidWeekAnalysisPanel({
           {generating ? 'Generating…' : 'Regenerate'}
         </button>
       </div>
+
+      {!reviewed && waitHint && (
+        <p style={canSendNow ? styles.waitReady : styles.waitBlocked}>{waitHint}</p>
+      )}
 
       {(loading || generating) && !clientReply && (
         <p style={styles.muted}>Drafting a coach style reply from this mid week check in…</p>
@@ -192,10 +225,17 @@ export function MidWeekAnalysisPanel({
           <button
             type="button"
             onClick={() => void sendToClient()}
-            disabled={sending || generating || !clientReply.trim()}
-            style={styles.sendBtn}
+            disabled={sending || generating || !clientReply.trim() || !canSendNow}
+            style={{
+              ...styles.sendBtn,
+              opacity: sending || generating || !clientReply.trim() || !canSendNow ? 0.55 : 1,
+            }}
           >
-            {sending ? 'Sending…' : 'Send to client now'}
+            {sending
+              ? 'Sending…'
+              : canSendNow
+                ? 'Send to client now'
+                : 'Send locked until min wait'}
           </button>
         )}
         {reviewed && <span style={styles.reviewedNote}>Already sent</span>}
@@ -245,6 +285,18 @@ const styles: Record<string, CSSProperties> = {
     margin: '0 0 8px',
     fontSize: 13,
     color: colors.textMuted,
+  },
+  waitBlocked: {
+    margin: '0 0 10px',
+    fontSize: 13,
+    color: colors.warning,
+    lineHeight: 1.4,
+  },
+  waitReady: {
+    margin: '0 0 10px',
+    fontSize: 13,
+    color: colors.success,
+    lineHeight: 1.4,
   },
   error: {
     margin: '0 0 8px',

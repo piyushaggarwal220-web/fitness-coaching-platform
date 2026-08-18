@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { serializeCoachResponse } from '@/lib/checkin'
+import { assertCheckinReplyWaitElapsed } from '@/lib/checkin-reply-timing'
 import { markConversationRead } from '@/lib/coach-chat'
 import type { WorkQueueTask } from '@/lib/coach-work-queue'
 import { activatePlan, syncPlanDeliveredFlag } from '@/lib/plans'
@@ -116,7 +117,7 @@ export async function resolveWorkQueueTask(
       const checkinId = task.id.replace(/^checkin-/, '')
       const { data: checkin, error: loadError } = await admin
         .from('checkins')
-        .select('id, client_id, reviewed, coach_response, coach_id')
+        .select('id, client_id, reviewed, coach_response, coach_id, submitted_at')
         .eq('id', checkinId)
         .maybeSingle()
 
@@ -127,6 +128,11 @@ export async function resolveWorkQueueTask(
         return { ok: false, resolved: false, error: 'Check-in is not assigned to you.' }
       }
       if (checkin.reviewed) return { ok: true, resolved: true }
+
+      const wait = assertCheckinReplyWaitElapsed(checkin.submitted_at)
+      if (!wait.ok) {
+        return { ok: false, resolved: false, error: wait.error }
+      }
 
       const now = new Date().toISOString()
       const { error } = await admin

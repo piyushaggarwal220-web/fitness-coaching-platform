@@ -116,7 +116,9 @@ export default function MidWeekCheckinPage() {
       const parsed = await readApiJson<{ success?: boolean; error?: string }>(res)
       if (!parsed.ok) throw new Error(parsed.error)
 
-      setSuccess('Day 3 check-in submitted! +5 league points when the season refreshes.');
+      setSuccess(
+        `Day 3 check-in submitted! Your coach typically replies in 5–8 hours. +5 league points when the season refreshes.`
+      );
       setForm(INITIAL_MID_WEEK_FORM);
       setTimeout(() => router.push('/league'), 1800);
     } catch (err) {
