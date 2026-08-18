@@ -343,11 +343,14 @@ export function ChipSelector<T extends string>({
   value,
   onChange,
   disabled,
+  allowClear = false,
 }: {
   options: { value: T; label: string }[]
-  value?: T
-  onChange: (v: T) => void
+  value?: T | null
+  onChange: (v: T | null) => void
   disabled?: boolean
+  /** When true, tapping the active chip clears the selection. */
+  allowClear?: boolean
 }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -358,7 +361,10 @@ export function ChipSelector<T extends string>({
             key={opt.value}
             type="button"
             disabled={disabled}
-            onClick={() => onChange(opt.value)}
+            onClick={() => {
+              if (allowClear && active) onChange(null)
+              else onChange(opt.value)
+            }}
             style={{
               padding: '10px 14px',
               borderRadius: radius.full,

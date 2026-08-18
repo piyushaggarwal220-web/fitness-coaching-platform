@@ -22,6 +22,8 @@
     "verify:launch": "tsx --env-file=.env.local scripts/verify-launch-features.ts",
     "verify:checkins": "tsx --env-file=.env.local scripts/verify-recurring-checkins.ts",
     "verify:checkin-reply-timing": "tsx scripts/verify-checkin-reply-timing.ts",
+    "verify:sleep-tracker": "tsx scripts/verify-sleep-tracker.ts",
+    "verify:checkin-sleep-bridge": "tsx scripts/verify-checkin-sleep-bridge.ts",
     "verify:plan-sections": "tsx scripts/verify-plan-section-parser.ts",
     "verify:plan-prose-guards": "tsx scripts/verify-plan-prose-guards.ts",
     "verify:plan-metadata": "tsx scripts/verify-plan-metadata.ts",

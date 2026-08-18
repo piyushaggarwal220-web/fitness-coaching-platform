@@ -4,15 +4,21 @@ import { logApiDev } from '@/lib/api-dev-log'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { generateMidWeekAnalysis } from '@/lib/ai/midweek-analysis'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
+import {
+  checkinSleepToTrackerPatch,
+  shouldWriteBackCheckinSleepToTracker,
+} from '@/lib/checkin-sleep-bridge'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import {
   buildCheckinSummary,
+  getCoachingDateKey,
   isWithinCheckinSubmissionWindow,
   isCheckinSubmissionWindowClosed,
   resolveCheckinSubmissionSlot,
 } from '@/lib/checkin-schedule'
 import { formatMidWeekCheckinChatMessage } from '@/lib/checkin-chat'
 import { postCheckinToCoachChat } from '@/lib/coach-chat'
+import { updateTrackerCompletion } from '@/lib/daily-tracker/service'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -283,6 +289,26 @@ export async function POST(request: Request) {
       .from('profiles')
       .update({ checkin_awaiting: true, checkin_overdue: false })
       .eq('id', user.id)
+
+    // If today's sleep tracker exists but has no quality yet, fill it from this check-in.
+    try {
+      const todayKey = getCoachingDateKey()
+      const { data: todayRow } = await supabase
+        .from('daily_tracker_days')
+        .select('id, completion')
+        .eq('client_id', user.id)
+        .eq('log_date', todayKey)
+        .maybeSingle()
+
+      const sleep = (todayRow?.completion as { sleep?: { quality?: number | null } } | null)?.sleep
+      if (todayRow?.id && shouldWriteBackCheckinSleepToTracker(sleep)) {
+        await updateTrackerCompletion(supabase, user.id, todayRow.id, {
+          sleep: checkinSleepToTrackerPatch(body.sleep_quality),
+        })
+      }
+    } catch (err) {
+      console.error('[checkin-submit] sleep tracker write-back failed:', err)
+    }
 
     if (body.checkinType === 'weekly') {
       const summary = buildCheckinSummary({

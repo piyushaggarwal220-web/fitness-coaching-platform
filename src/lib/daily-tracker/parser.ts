@@ -1135,9 +1135,37 @@ function parseWaterTarget(
   return 3000
 }
 
+/** Map onboarding sleep_duration enums (or free-text "N hours") to a target. */
+export function sleepHoursFromOnboarding(value?: string | null): number | null {
+  const raw = value?.trim()
+  if (!raw) return null
+  switch (raw) {
+    case 'less_than_6':
+      return 5.5
+    case '6_to_7':
+      return 6.5
+    case '7_to_8':
+      return 7.5
+    case '8_plus':
+      return 8
+    default: {
+      const match = raw.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)/i)
+      return match ? Number(match[1]) : null
+    }
+  }
+}
+
+function sleepHoursFromCoachNotes(coachNotes?: string | null): number | null {
+  if (!coachNotes?.trim()) return null
+  const match = coachNotes.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)/i)
+  return match ? Number(match[1]) : null
+}
+
 function parseSleep(profile?: OnboardingProfile | null, coachNotes?: string): TrackerSleepItem {
   const bedtimeMatch = coachNotes?.match(/bed(?:time)?\s*(?:by|at)?\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i)
-  const hoursMatch = (profile?.sleep_duration ?? coachNotes ?? '').match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)/i)
+  // Prefer explicit coach-note hours; fall back to onboarding enum mapping; default 8.
+  const targetHours =
+    sleepHoursFromCoachNotes(coachNotes) ?? sleepHoursFromOnboarding(profile?.sleep_duration) ?? 8
   return {
     id: 'sleep-daily',
     type: 'sleep',
@@ -1145,7 +1173,7 @@ function parseSleep(profile?: OnboardingProfile | null, coachNotes?: string): Tr
     icon: '🌙',
     title: 'Sleep',
     targetBedtime: bedtimeMatch?.[1] ?? '10:30 PM',
-    targetHours: hoursMatch ? Number(hoursMatch[1]) : 8,
+    targetHours,
     sortOrder: 100,
   }
 }

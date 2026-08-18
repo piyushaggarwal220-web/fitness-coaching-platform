@@ -1,6 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/Button'
 import {
   ChipSelector,
   ProgressBar,
@@ -28,6 +27,8 @@ const WAKE: { value: WakeFeeling; label: string }[] = [
   { value: 'tired', label: 'Tired' },
 ]
 
+const MAX_SLEEP_HOURS = 14
+
 type Props = {
   sleep: TrackerSleepItem
   completion: TrackerCompletion
@@ -36,10 +37,11 @@ type Props = {
   onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
-export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: Props) {
+export function SleepModule({ sleep, completion, sleepScore, onPatch }: Props) {
   const data = completion.sleep ?? {}
   const goal = sleep.targetHours ?? 8
   const percent = sleepScore
+  const energySet = data.energy != null
 
   const patch = (next: Partial<typeof data>) => void onPatch({ sleep: next })
 
@@ -56,12 +58,18 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
         <div style={{ padding: spacing[3], borderRadius: 14, background: colors.bgElevated, border: `1px solid ${colors.borderSubtle}` }}>
           <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase' }}>Sleep Goal</div>
           <div style={{ fontSize: 28, fontWeight: 800, marginTop: 8 }}>{goal}h</div>
+          {sleep.targetBedtime && (
+            <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>Bed by {sleep.targetBedtime}</div>
+          )}
         </div>
         <div style={{ padding: spacing[3], borderRadius: 14, background: colors.bgElevated, border: `1px solid ${colors.borderSubtle}` }}>
           <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase' }}>Actual Sleep</div>
           <input
             type="number"
             step={0.5}
+            min={0}
+            max={MAX_SLEEP_HOURS}
+            inputMode="decimal"
             placeholder="Hours"
             value={data.hours ?? ''}
             onChange={(e) => {
@@ -71,7 +79,9 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
                 return
               }
               const parsed = Number(raw)
-              if (Number.isFinite(parsed)) patch({ hours: parsed })
+              if (!Number.isFinite(parsed)) return
+              const clamped = Math.max(0, Math.min(MAX_SLEEP_HOURS, parsed))
+              patch({ hours: clamped })
             }}
             style={{ ...trackerInputStyle, marginTop: 8, fontSize: 24, fontWeight: 800 }}
           />
@@ -99,32 +109,55 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
       </label>
 
       <div style={{ marginBottom: spacing[4] }}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: colors.textSecondary }}>Sleep Quality</div>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: colors.textSecondary }}>
+          Sleep Quality
+        </div>
         <ChipSelector
           options={QUALITY}
           value={data.qualityLabel}
-          onChange={(v) => patch({ qualityLabel: v, quality: qualityLabelToScore(v) })}
+          allowClear
+          onChange={(v) =>
+            patch(
+              v
+                ? { qualityLabel: v, quality: qualityLabelToScore(v) }
+                : { qualityLabel: null, quality: null }
+            )
+          }
         />
       </div>
 
       <div style={{ marginBottom: spacing[4] }}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: colors.textSecondary }}>Energy (1–10)</div>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: colors.textSecondary }}>
+          Energy (1–10)
+        </div>
         <input
           type="range"
           min={1}
           max={10}
-          value={data.energy ?? 5}
+          value={energySet ? data.energy! : 5}
           onChange={(e) => patch({ energy: Number(e.target.value) })}
-          style={{ width: '100%', accentColor: colors.accent }}
+          style={{ width: '100%', accentColor: colors.accent, opacity: energySet ? 1 : 0.55 }}
         />
         <div style={{ textAlign: 'center', fontSize: 22, fontWeight: 800, color: colors.accent, marginTop: 8 }}>
-          {data.energy ?? 5}
+          {energySet ? data.energy : '—'}
         </div>
+        {!energySet && (
+          <p style={{ margin: '6px 0 0', textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
+            Move the slider to log energy
+          </p>
+        )}
       </div>
 
       <div style={{ marginBottom: spacing[4] }}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: colors.textSecondary }}>Wake-up feeling</div>
-        <ChipSelector options={WAKE} value={data.wakeFeeling} onChange={(v) => patch({ wakeFeeling: v })} />
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: colors.textSecondary }}>
+          Wake-up feeling
+        </div>
+        <ChipSelector
+          options={WAKE}
+          value={data.wakeFeeling}
+          allowClear
+          onChange={(v) => patch({ wakeFeeling: v })}
+        />
       </div>
     </div>
   )
