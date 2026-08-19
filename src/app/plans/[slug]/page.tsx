@@ -1,30 +1,24 @@
-import type { CSSProperties } from 'react'
+import { type CSSProperties } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { Syne, DM_Sans } from 'next/font/google'
+import { DM_Sans } from 'next/font/google'
 import { brandTitle } from '@/lib/brand'
 import {
   ALL_PLAN_PAGE_PATHS,
   PLAN_INCLUSIONS,
-  PLAN_LEAGUE_CALLOUT,
   PLAN_PAGE_COPY,
   RETIRED_PLAN_PAGE_REDIRECTS,
+  planDurationLabel,
+  planGoalName,
   planPathForSlug,
   resolvePlanFromPath,
   siblingPlans,
-  type PlanPagePath,
+  type LongCoachingPlanSlug,
 } from '@/lib/payments/plan-pages'
 import type { CoachingPlanSlug } from '@/lib/payments/plans'
 import { formatInrFromPaise, firstTimerSalePaise } from '@/lib/payments/checkout-discounts'
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
-
-const display = Syne({
-  subsets: ['latin'],
-  weight: ['600', '700', '800'],
-  variable: '--font-plan-display',
-  display: 'swap',
-})
 
 const body = DM_Sans({
   subsets: ['latin'],
@@ -45,11 +39,45 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
   const plan = resolvePlanFromPath(slug)
   if (!plan) return { title: brandTitle('Plan') }
+  const planSlug = plan.slug as LongCoachingPlanSlug
+  const copy = PLAN_PAGE_COPY[planSlug]
   return {
-    title: brandTitle(`${plan.name} coaching`),
-    description: `${plan.name} LURVOX coaching — ${plan.displayPrice}. Personal workout, diet, weekly check-ins, and coach chat.`,
+    title: brandTitle(`${copy.goalName} · ${copy.durationLabel}`),
+    description: `${copy.goalName} coaching (${copy.durationLabel}) — from ${plan.displayPrice}. Personal workout, diet, weekly check-ins, and coach chat.`,
   }
 }
+
+function saleLabel(slug: string) {
+  const salePaise = firstTimerSalePaise(slug)
+  return salePaise != null ? formatInrFromPaise(salePaise) : null
+}
+
+const AFTER_PAYMENT_STEPS: { title: string; text: string }[] = [
+  {
+    title: 'Create your login',
+    text: 'Right after payment you set a password so you can open the app on your phone or laptop.',
+  },
+  {
+    title: 'Fill a quick assessment',
+    text: 'A short form about your body, goals, injuries, food you like, and your daily schedule. Takes a few minutes.',
+  },
+  {
+    title: 'Your coach builds your plan',
+    text: 'A real coach reads your answers and makes a workout and diet plan made only for you — not a copy-paste PDF.',
+  },
+  {
+    title: 'Plan lands in 24 to 48 hours',
+    text: 'You get your personal workout and diet inside the app, ready to start. No waiting around for weeks.',
+  },
+  {
+    title: 'Start training and log daily',
+    text: 'Follow the plan, tick off workouts and meals, and message your coach in the app whenever you are stuck.',
+  },
+  {
+    title: 'Check-ins keep it moving',
+    text: 'You share photos and progress, and your coach adjusts the plan so results keep coming instead of stalling.',
+  },
+]
 
 export default async function PlanLandingPage({ params }: PageProps) {
   const { slug } = await params
@@ -61,90 +89,109 @@ export default async function PlanLandingPage({ params }: PageProps) {
   const plan = resolvePlanFromPath(slug)
   if (!plan) notFound()
 
-  const planSlug = plan.slug as Exclude<CoachingPlanSlug, '1_week_trial'>
+  const planSlug = plan.slug as LongCoachingPlanSlug
   const copy = PLAN_PAGE_COPY[planSlug]
   const marketingBase = resolveMarketingBaseUrl()
   const others = siblingPlans(planSlug)
-  const salePaise = firstTimerSalePaise(plan.slug)
-  const saleDisplay = salePaise != null ? formatInrFromPaise(salePaise) : plan.displayPrice
+  const saleDisplay = saleLabel(planSlug) ?? plan.displayPrice
 
   return (
-    <div className={`${display.variable} ${body.variable}`} style={styles.page}>
+    <div className={body.variable} style={styles.page}>
       <style>{`
         .plan-page-title {
           margin: 10px 0 0;
           font-family: var(--font-plan-body), system-ui, sans-serif;
-          font-size: clamp(1.5rem, 5vw, 2.35rem);
-          font-weight: 700;
-          line-height: 1.25;
-          letter-spacing: -0.02em;
-          color: #fafafa;
+          font-size: clamp(1.55rem, 5vw, 2.4rem);
+          font-weight: 800;
+          line-height: 1.2;
+          letter-spacing: -0.03em;
+          color: #ffffff;
           max-width: 100%;
         }
         @media (max-width: 480px) {
-          .plan-page-title {
-            font-size: 1.45rem;
-            letter-spacing: -0.015em;
-          }
+          .plan-page-title { font-size: 1.45rem; }
         }
       `}</style>
       <div style={styles.atmosphere} aria-hidden />
+
       <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <a href={marketingBase} style={styles.backHome}>
-            ← Home
+        <a href={marketingBase} style={styles.brand}>
+          LURV<span style={{ color: '#ff6200' }}>OX</span>
+        </a>
+        <div style={styles.headerRight}>
+          <a href="/login" style={styles.headerLink}>
+            Log in
           </a>
-          <a href={marketingBase} style={styles.brand}>
-            LURV<span style={{ color: '#f97316' }}>OX</span>
+          <a href={`${marketingBase}/pages/talk-to-a-coach`} style={styles.headerCall}>
+            Talk to a coach
           </a>
         </div>
-        <a href={`${marketingBase}/pages/talk-to-a-coach`} style={styles.headerLink}>
-          Talk to a coach
-        </a>
       </header>
 
       <main style={styles.main}>
         <p style={styles.eyebrow}>{copy.eyebrow}</p>
-        <h1 className="plan-page-title">{plan.name} plan</h1>
+        <h1 className="plan-page-title">
+          {copy.goalName}
+          <span style={{ display: 'block', marginTop: 6, fontSize: '0.55em', fontWeight: 650, color: 'rgba(255,255,255,0.55)' }}>
+            {copy.durationLabel}
+          </span>
+        </h1>
         <p style={styles.promise}>{copy.promise}</p>
 
         <div style={styles.priceBlock}>
           <p style={styles.price}>{saleDisplay}</p>
           <p style={styles.save}>
-            <span style={{ textDecoration: 'line-through', color: '#71717a', fontWeight: 500 }}>
+            <span style={{ textDecoration: 'line-through', color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>
               {plan.displayPrice}
             </span>
-            {' '}with WELCOME60 ({plan.saveLabel})
-          </p>
-          <p style={styles.codeHint}>
-            Apply <strong style={{ color: '#fdba74' }}>WELCOME60</strong> at checkout for 60% off — new or returning
+            {' '}with WELCOME60
           </p>
           {(plan.popular || plan.best) && (
             <p style={styles.badge}>{plan.best ? 'Best value' : 'Most popular'}</p>
           )}
+          <p style={styles.codeHint}>
+            Apply <strong style={{ color: '#ffb07a' }}>WELCOME60</strong> at checkout for 60% off
+          </p>
         </div>
 
         <p style={styles.bestFor}>
-          Best for: <strong style={{ color: '#fafafa', fontWeight: 600 }}>{copy.bestFor}</strong>
+          Best for: <strong style={{ color: '#fff', fontWeight: 600 }}>{copy.bestFor}</strong>
         </p>
 
+        <ul style={styles.goalList}>
+          {copy.goals.map((goal) => (
+            <li key={goal} style={styles.goalItem}>
+              <span style={styles.check} aria-hidden>
+                ✓
+              </span>
+              {goal}
+            </li>
+          ))}
+        </ul>
+
         <a href={`/checkout?plan=${plan.slug}`} style={styles.cta}>
-          Continue to checkout →
+          Continue to checkout
         </a>
 
-        <aside style={styles.leagueCallout} aria-label="Consistency League">
-          <p style={styles.leagueEyebrow}>{PLAN_LEAGUE_CALLOUT.title}</p>
-          <p style={styles.leagueBody}>{PLAN_LEAGUE_CALLOUT.body}</p>
-          {plan.slug === '12_months' ? (
-            <p style={styles.leagueExtra}>{PLAN_LEAGUE_CALLOUT.twelveMonthExtra}</p>
-          ) : (
-            <a href="/plans/12-months" style={styles.leagueLink}>
-              See the 12-month plan for Crazy League →
-            </a>
-          )}
-        </aside>
+        <section style={styles.afterPay}>
+          <p style={styles.siblingsLabel}>After you pay</p>
+          <h2 style={styles.sectionTitle}>What happens once you pay</h2>
+          <ol style={styles.steps}>
+            {AFTER_PAYMENT_STEPS.map((step, index) => (
+              <li key={step.title} style={styles.step}>
+                <span style={styles.stepNum} aria-hidden>
+                  {index + 1}
+                </span>
+                <span style={styles.stepBody}>
+                  <span style={styles.stepTitle}>{step.title}</span>
+                  <span style={styles.stepText}>{step.text}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-        <section style={styles.inclusions}>
+        <section style={styles.included}>
           <h2 style={styles.sectionTitle}>Everything included</h2>
           <ul style={styles.list}>
             {PLAN_INCLUSIONS.map((item) => (
@@ -155,12 +202,18 @@ export default async function PlanLandingPage({ params }: PageProps) {
                 {item}
               </li>
             ))}
+            <li style={styles.listItem}>
+              <span style={styles.check} aria-hidden>
+                ✓
+              </span>
+              {planSlug === '3_months' ? 'Plan updates every 14 days' : 'Plan updates every week'}
+            </li>
             {plan.slug === '12_months' && (
               <li style={styles.listItem}>
                 <span style={styles.check} aria-hidden>
                   ✓
                 </span>
-                Crazy League eligibility — prize money up to ₹5,000
+                Weekly coach phone call. 12 month exclusive
               </li>
             )}
           </ul>
@@ -175,7 +228,11 @@ export default async function PlanLandingPage({ params }: PageProps) {
                 href={`/plans/${planPathForSlug(other.slug as CoachingPlanSlug)}`}
                 style={styles.siblingChip}
               >
-                {other.name} · {other.displayPrice}
+                {planGoalName(other.slug)}
+                <span style={{ opacity: 0.65, fontWeight: 500 }}>
+                  {' '}
+                  · {planDurationLabel(other.slug)} · {saleLabel(other.slug) ?? other.displayPrice}
+                </span>
               </Link>
             ))}
           </div>
@@ -183,6 +240,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
 
         <p style={styles.footnote}>
           After payment: create your password → assessment → personal plan in 24–48 hours.
+          You can upgrade to a better plan within 48 hours of taking your plan. After 48 hours, upgrades cost ₹250 extra.
         </p>
       </main>
     </div>
@@ -192,8 +250,8 @@ export default async function PlanLandingPage({ params }: PageProps) {
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: '100dvh',
-    background: '#0a0a0b',
-    color: '#fafafa',
+    background: '#050505',
+    color: '#ffffff',
     position: 'relative',
     overflowX: 'hidden',
     fontFamily: 'var(--font-plan-body), system-ui, sans-serif',
@@ -202,9 +260,8 @@ const styles: Record<string, CSSProperties> = {
     position: 'absolute',
     inset: 0,
     background: `
-      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(249,115,22,0.28), transparent 55%),
-      radial-gradient(ellipse 60% 40% at 90% 20%, rgba(234,88,12,0.12), transparent 50%),
-      linear-gradient(180deg, #121214 0%, #0a0a0b 45%, #0c0c0e 100%)
+      radial-gradient(ellipse 70% 120% at 50% -40%, rgba(255, 98, 0, 0.28), transparent 60%),
+      linear-gradient(180deg, #050505 0%, #070707 100%)
     `,
     pointerEvents: 'none',
   },
@@ -215,60 +272,61 @@ const styles: Record<string, CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    padding: '16px 20px',
-    maxWidth: 720,
-    margin: '0 auto',
-  },
-  headerLeft: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-    minWidth: 0,
-  },
-  backHome: {
-    fontSize: 13,
-    fontWeight: 600,
-    color: '#a1a1aa',
-    textDecoration: 'none',
+    padding: '14px 20px',
+    borderBottom: '1px solid rgba(255, 98, 0, 0.22)',
+    background: '#050505',
   },
   brand: {
-    fontFamily: 'var(--font-plan-display), sans-serif',
     fontSize: 20,
     fontWeight: 800,
     letterSpacing: '0.04em',
-    color: '#fafafa',
+    color: '#ffffff',
     textDecoration: 'none',
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    flexShrink: 0,
+    flexWrap: 'nowrap',
   },
   headerLink: {
     fontSize: 13,
-    fontWeight: 600,
-    color: '#a1a1aa',
+    fontWeight: 700,
+    color: '#ff8a3d',
     textDecoration: 'none',
-    flexShrink: 0,
+    whiteSpace: 'nowrap',
+  },
+  headerCall: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#ff6200',
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
   },
   main: {
     position: 'relative',
     zIndex: 1,
-    maxWidth: 720,
+    maxWidth: 860,
     margin: '0 auto',
-    padding: '24px 20px 64px',
+    padding: '28px 20px 72px',
     boxSizing: 'border-box',
     width: '100%',
   },
   eyebrow: {
     margin: 0,
     fontSize: 11,
-    fontWeight: 700,
+    fontWeight: 800,
     letterSpacing: '0.14em',
     textTransform: 'uppercase',
-    color: '#f97316',
+    color: '#ff6200',
   },
   promise: {
     margin: '14px 0 0',
-    maxWidth: 480,
+    maxWidth: 520,
     fontSize: 16,
     lineHeight: 1.5,
-    color: '#c4c4cc',
+    color: 'rgba(255,255,255,0.72)',
   },
   priceBlock: {
     marginTop: 24,
@@ -279,96 +337,121 @@ const styles: Record<string, CSSProperties> = {
   },
   price: {
     margin: 0,
-    fontFamily: 'var(--font-plan-body), sans-serif',
-    fontSize: 'clamp(1.65rem, 5.5vw, 2.25rem)',
-    fontWeight: 700,
-    letterSpacing: '-0.02em',
+    fontSize: 'clamp(1.7rem, 5.5vw, 2.35rem)',
+    fontWeight: 800,
+    letterSpacing: '-0.03em',
+    color: '#ffffff',
+    textShadow: '0 0 18px rgba(255,255,255,0.28)',
   },
   save: {
     margin: 0,
     fontSize: 14,
-    color: '#a1a1aa',
+    color: 'rgba(255,255,255,0.55)',
   },
   codeHint: {
     margin: 0,
     flexBasis: '100%',
     fontSize: 13,
-    color: '#a1a1aa',
+    color: 'rgba(255,255,255,0.55)',
     lineHeight: 1.4,
   },
   badge: {
     margin: 0,
     padding: '4px 10px',
     borderRadius: 999,
-    background: 'rgba(249,115,22,0.15)',
-    color: '#fb923c',
+    background: 'rgba(255, 98, 0, 0.16)',
+    color: '#ff8a3d',
     fontSize: 12,
     fontWeight: 700,
   },
   bestFor: {
-    margin: '16px 0 0',
-    fontSize: 14,
-    color: '#a1a1aa',
-    lineHeight: 1.45,
+    margin: '18px 0 0',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.62)',
+    lineHeight: 1.5,
+  },
+  goalList: {
+    margin: '14px 0 0',
+    padding: 0,
+    listStyle: 'none',
+    display: 'grid',
+    gap: 8,
+  },
+  goalItem: {
+    display: 'flex',
+    gap: 10,
+    alignItems: 'flex-start',
+    fontSize: 15,
+    lineHeight: 1.4,
+    color: '#f7f4ee',
   },
   cta: {
     display: 'inline-flex',
     marginTop: 24,
     padding: '14px 22px',
-    borderRadius: 14,
-    background: '#f97316',
-    color: '#09090b',
-    fontWeight: 700,
-    fontSize: 16,
-    textDecoration: 'none',
-    boxShadow: '0 8px 28px rgba(249,115,22,0.35)',
-  },
-  leagueCallout: {
-    marginTop: 28,
-    padding: '18px 18px 16px',
-    borderRadius: 16,
-    border: '1px solid rgba(249,115,22,0.28)',
-    background: 'rgba(249,115,22,0.08)',
-  },
-  leagueEyebrow: {
-    margin: 0,
-    fontSize: 11,
+    borderRadius: 999,
+    background: '#ff6200',
+    color: '#050505',
     fontWeight: 800,
-    letterSpacing: '0.12em',
-    textTransform: 'uppercase' as const,
-    color: '#fb923c',
+    fontSize: 15,
+    textDecoration: 'none',
+    boxShadow: '0 8px 28px rgba(255, 98, 0, 0.35)',
   },
-  leagueBody: {
-    margin: '8px 0 0',
+  afterPay: {
+    marginTop: 40,
+    paddingTop: 28,
+    borderTop: '1px solid rgba(255,255,255,0.08)',
+  },
+  steps: {
+    margin: '18px 0 0',
+    padding: 0,
+    listStyle: 'none',
+    display: 'grid',
+    gap: 14,
+  },
+  step: {
+    display: 'flex',
+    gap: 14,
+    alignItems: 'flex-start',
+  },
+  stepNum: {
+    flexShrink: 0,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    background: 'rgba(255, 98, 0, 0.16)',
+    color: '#ff8a3d',
     fontSize: 14,
-    lineHeight: 1.5,
-    color: '#d4d4d8',
+    fontWeight: 800,
+    lineHeight: 1,
   },
-  leagueExtra: {
-    margin: '10px 0 0',
+  stepBody: {
+    display: 'grid',
+    gap: 3,
+  },
+  stepTitle: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: '#ffffff',
+  },
+  stepText: {
     fontSize: 14,
     lineHeight: 1.45,
-    fontWeight: 600,
-    color: '#fafafa',
+    color: 'rgba(255,255,255,0.66)',
   },
-  leagueLink: {
-    display: 'inline-block',
-    marginTop: 10,
-    fontSize: 14,
-    fontWeight: 700,
-    color: '#fb923c',
-    textDecoration: 'none',
-  },
-  inclusions: {
+  included: {
     marginTop: 40,
     paddingTop: 28,
     borderTop: '1px solid rgba(255,255,255,0.08)',
   },
   sectionTitle: {
-    margin: 0,
-    fontFamily: 'var(--font-plan-display), sans-serif',
-    fontSize: 'clamp(1.15rem, 4vw, 1.35rem)',
-    fontWeight: 700,
+    margin: '6px 0 0',
+    fontSize: 'clamp(1.15rem, 4vw, 1.4rem)',
+    fontWeight: 800,
+    letterSpacing: '-0.02em',
   },
   list: {
     margin: '16px 0 0',
@@ -383,10 +466,10 @@ const styles: Record<string, CSSProperties> = {
     alignItems: 'flex-start',
     fontSize: 15,
     lineHeight: 1.45,
-    color: '#c4c4cc',
+    color: 'rgba(255,255,255,0.72)',
   },
   check: {
-    color: '#f97316',
+    color: '#ff6200',
     fontWeight: 700,
     flexShrink: 0,
   },
@@ -394,12 +477,12 @@ const styles: Record<string, CSSProperties> = {
     marginTop: 36,
   },
   siblingsLabel: {
-    margin: 0,
-    fontSize: 12,
-    fontWeight: 700,
-    letterSpacing: '0.1em',
+    margin: '28px 0 0',
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.14em',
     textTransform: 'uppercase',
-    color: '#71717a',
+    color: '#ff6200',
   },
   siblingRow: {
     marginTop: 12,
@@ -409,10 +492,10 @@ const styles: Record<string, CSSProperties> = {
   },
   siblingChip: {
     padding: '10px 14px',
-    borderRadius: 10,
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(24,24,27,0.8)',
-    color: '#e4e4e7',
+    borderRadius: 999,
+    border: '1px solid rgba(255, 98, 0, 0.35)',
+    background: 'rgba(255, 98, 0, 0.08)',
+    color: '#fff',
     fontSize: 13,
     fontWeight: 600,
     textDecoration: 'none',
@@ -421,6 +504,6 @@ const styles: Record<string, CSSProperties> = {
     margin: '36px 0 0',
     fontSize: 13,
     lineHeight: 1.5,
-    color: '#71717a',
+    color: 'rgba(255,255,255,0.4)',
   },
 }

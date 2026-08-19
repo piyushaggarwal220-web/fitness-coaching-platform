@@ -231,8 +231,10 @@ function sanitizeCompletionForSnapshot(
 export async function getOrCreateTodayTracker(
   supabase: SupabaseClient,
   clientId: string,
-  profile: OnboardingProfile
+  profile: OnboardingProfile,
+  options?: { force?: boolean }
 ): Promise<{ day: DailyTrackerDay | null; error: string | null }> {
+  const force = options?.force === true
   const plan = await getActivePlan(supabase, clientId)
   if (!plan) {
     return { day: null, error: 'No active plan. Your coach will deliver your plan soon.' }
@@ -298,11 +300,14 @@ export async function getOrCreateTodayTracker(
     const coachingFieldsStale =
       existingDay.coaching_day !== coachingDay || existingDay.coaching_week !== coachingWeek
 
-    if (!needsRebuild && !coachingFieldsStale) {
+    // `force` lets a client explicitly rebuild today's snapshot from the active plan when the
+    // automatic change detection misses an edit (a common "my tracker is showing the wrong
+    // workout" report). Logged progress is preserved via sanitizeCompletionForSnapshot.
+    if (!needsRebuild && !force && !coachingFieldsStale) {
       return { day: existingDay, error: null }
     }
 
-    if (!needsRebuild && coachingFieldsStale) {
+    if (!needsRebuild && !force && coachingFieldsStale) {
       // Do not bump updated_at — that column is the optimistic-concurrency token
       // for tracker PATCH and must not race with in-flight set / Change day saves.
       const { data: touched, error: touchError } = await supabase
@@ -485,9 +490,10 @@ export async function refreshTodayTrackerAfterPlanPublish(
 export async function loadTodayTrackerView(
   supabase: SupabaseClient,
   clientId: string,
-  profile: OnboardingProfile
+  profile: OnboardingProfile,
+  options?: { force?: boolean }
 ): Promise<{ view: TodayTrackerView | null; error: string | null }> {
-  const { day, error } = await getOrCreateTodayTracker(supabase, clientId, profile)
+  const { day, error } = await getOrCreateTodayTracker(supabase, clientId, profile, options)
   if (error || !day) return { view: null, error }
 
   const schedule = getClientCheckinSchedule(

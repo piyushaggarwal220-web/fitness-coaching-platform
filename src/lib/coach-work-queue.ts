@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
+import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
+import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
 
 export type WorkQueueTaskType =
   | 'initial_plan'
@@ -23,6 +25,10 @@ export type WorkQueueTask = {
   createdAt: string
   /** Coach-facing next steps when a task needs recovery (e.g. failed AI generation). */
   coachNextSteps?: string[]
+  /** Latest purchased plan slug, used to colour the card by commitment length. */
+  planSlug?: string | null
+  /** Distinguishes paying clients from enrollment-code seats. */
+  accessSource?: AccessSource | null
 }
 
 /** Equal priority for all types — display order is strictly by received time. */
@@ -38,9 +44,19 @@ type GenerationJobRow = {
   queued_at: string | null
 }
 
-/** Oldest received first — messages, check-ins, and plan work share one timeline. */
+/** 12-month clients first, then FIFO within each tier. */
+function planTierRank(planSlug: string | null | undefined): number {
+  if (planSlug === '12_months') return 0
+  if (planSlug === '6_months') return 1
+  if (planSlug === '3_months') return 2
+  return 3
+}
+
+/** Oldest received first within a plan tier. */
 function sortTasks(tasks: WorkQueueTask[]): WorkQueueTask[] {
   return [...tasks].sort((a, b) => {
+    const tierDiff = planTierRank(a.planSlug) - planTierRank(b.planSlug)
+    if (tierDiff !== 0) return tierDiff
     const aTime = Date.parse(a.createdAt)
     const bTime = Date.parse(b.createdAt)
     const safeA = Number.isFinite(aTime) ? aTime : 0
@@ -118,7 +134,7 @@ export async function getCoachWorkQueue(
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, name, email, plan_delivered, onboarding_complete, created_at')
+      .select('id, name, email, plan_delivered, onboarding_complete, created_at, payment_confirmed, access_source, subscription_expires_at')
       .eq('coach_id', coachId),
     supabase
       .from('plan_change_requests')
@@ -166,6 +182,7 @@ export async function getCoachWorkQueue(
     { data: undeliveredDrafts },
     activePlanReadyByClient,
     { data: issueRows },
+    { data: purchases },
   ] = await Promise.all([
     pendingClientIds.size > 0
       ? supabase
@@ -191,7 +208,14 @@ export async function getCoachWorkQueue(
       .eq('profiles.coach_id', coachId)
       .in('status', ['open', 'investigating'])
       .order('created_at', { ascending: true }),
+    supabase
+      .from('purchases')
+      .select('user_id, plan_slug, status, created_at, profiles!inner(coach_id)')
+      .eq('profiles.coach_id', coachId)
+      .in('status', ['captured', 'redeemed']),
   ])
+
+  const planSlugByClient = buildPlanSlugByClient(purchases ?? [])
 
   const generationByClient = new Map<string, GenerationJobRow>()
   for (const job of (generationJobs ?? []) as GenerationJobRow[]) {
@@ -345,14 +369,31 @@ export async function getCoachWorkQueue(
       row.task_created_at as string | null,
     ])
   )
-  return sortTasks(tasks.filter((task) => {
+
+  const endedClientIds = new Set(
+    (clients ?? []).filter((client) => !hasClientEntitlement(client)).map((client) => client.id)
+  )
+  const accessSourceByClient = new Map(
+    (clients ?? []).map((client) => [client.id, (client.access_source ?? null) as AccessSource | null])
+  )
+
+  const visibleTasks = tasks.filter((task) => {
+    if (task.clientId && endedClientIds.has(task.clientId)) return false
     if (!completionByTaskId.has(task.id)) return true
     const completedSourceAt = completionByTaskId.get(task.id)
     if (!completedSourceAt) return false
     const taskAt = Date.parse(task.createdAt)
     const completedAt = Date.parse(completedSourceAt)
     return Number.isFinite(taskAt) && Number.isFinite(completedAt) && taskAt > completedAt
-  }))
+  })
+
+  return sortTasks(
+    visibleTasks.map((task) => ({
+      ...task,
+      planSlug: task.clientId ? planSlugByClient.get(task.clientId) ?? null : null,
+      accessSource: task.clientId ? accessSourceByClient.get(task.clientId) ?? null : null,
+    }))
+  )
 }
 
 export type WorkQueueFilter = WorkQueueTaskType | 'all'

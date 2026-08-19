@@ -1,0 +1,160 @@
+{% doc %}
+Adds a restrained orange glow to prominent LURVOX storefront typography.
+{% enddoc %}
+
+{% stylesheet %}
+  :root {
+    --lx-text-glow-soft:
+      0 0 8px rgba(255, 98, 0, 0.32),
+      0 0 24px rgba(255, 98, 0, 0.2),
+      0 0 50px rgba(255, 98, 0, 0.11);
+    --lx-text-glow-accent:
+      0 0 7px rgba(255, 98, 0, 0.58),
+      0 0 19px rgba(255, 98, 0, 0.34),
+      0 0 38px rgba(255, 98, 0, 0.17);
+    --lx-text-glow-body:
+      0 0 6px rgba(255, 98, 0, 0.28),
+      0 0 17px rgba(255, 98, 0, 0.14);
+    --lx-text-glow-plan-details:
+      0 0 1px rgba(255, 255, 255, 0.96),
+      0 0 5px rgba(255, 98, 0, 0.8),
+      0 0 14px rgba(255, 98, 0, 0.52),
+      0 0 30px rgba(255, 98, 0, 0.24);
+  }
+
+  main h1,
+  main h2,
+  main [class*='headline'],
+  main [class*='title'] {
+    text-shadow: var(--lx-text-glow-soft);
+  }
+
+  main h1,
+  main h2 {
+    position: relative;
+    isolation: isolate;
+  }
+
+  main h1::before,
+  main h2::before {
+    position: absolute;
+    z-index: -1;
+    top: 50%;
+    left: -0.2em;
+    width: min(8em, 72vw);
+    height: 2.1em;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at left center,
+      rgba(255, 98, 0, 0.23),
+      rgba(255, 98, 0, 0.09) 45%,
+      transparent 72%
+    );
+    content: '';
+    filter: blur(15px);
+    opacity: 1;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  main h3,
+  main h4,
+  main p,
+  main li,
+  main th,
+  main td,
+  main label,
+  main a,
+  main button,
+  main span,
+  main strong {
+    text-shadow: var(--lx-text-glow-body);
+  }
+
+  main [class*='plan-card-price'],
+  main [class*='plan-price'],
+  main [class*='savings'],
+  main [class*='eyebrow'],
+  .lx-matrix__heading p,
+  .lx-matrix__table thead strong,
+  .lx-hdr__wordmark,
+  .lurvox-client-login__link {
+    text-shadow: var(--lx-text-glow-accent);
+  }
+
+  main [class*='plan-label'],
+  main [class*='plan-badge'],
+  main [class*='plan-duration'],
+  main [class*='plan-monthly'],
+  main [class*='plan-desc'],
+  main [class*='plan-card-description'],
+  main [class*='plan-card-footer'] {
+    -webkit-font-smoothing: antialiased;
+    text-shadow: var(--lx-text-glow-plan-details);
+    text-rendering: optimizeLegibility;
+  }
+
+  main a:hover,
+  main button:hover {
+    text-shadow:
+      0 0 7px rgba(255, 98, 0, 0.5),
+      0 0 20px rgba(255, 98, 0, 0.25);
+  }
+
+  main a,
+  main button {
+    transition: text-shadow 180ms ease;
+  }
+
+  @media (max-width: 640px) {
+    main h1::before,
+    main h2::before {
+      width: min(7em, 78vw);
+      height: 1.8em;
+      filter: blur(13px);
+      opacity: 0.9;
+    }
+  }
+
+  @media (prefers-contrast: more), (forced-colors: active) {
+    main h1,
+    main h2,
+    main [class*='headline'],
+    main [class*='title'],
+    main h3,
+    main h4,
+    main p,
+    main li,
+    main th,
+    main td,
+    main label,
+    main a,
+    main button,
+    main span,
+    main strong,
+    main [class*='plan-card-price'],
+    main [class*='plan-price'],
+    main [class*='plan-label'],
+    main [class*='plan-badge'],
+    main [class*='plan-duration'],
+    main [class*='plan-monthly'],
+    main [class*='plan-desc'],
+    main [class*='plan-card-description'],
+    main [class*='plan-card-footer'],
+    main [class*='savings'],
+    main [class*='eyebrow'],
+    .lx-matrix__heading p,
+    .lx-matrix__table thead strong,
+    .lx-hdr__wordmark,
+    .lurvox-client-login__link,
+    main a:hover,
+    main button:hover {
+      text-shadow: none;
+    }
+
+    main h1::before,
+    main h2::before {
+      display: none;
+    }
+  }
+{% endstylesheet %}

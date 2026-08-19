@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Apple,
@@ -34,6 +35,7 @@ export default function ClientPlanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<PlanSection | null>(null);
+  const [hasSupplementProtocol, setHasSupplementProtocol] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -44,6 +46,7 @@ export default function ClientPlanPage() {
       }
 
       setPlanDelivered(result.profile?.plan_delivered === true);
+      setHasSupplementProtocol(result.profile?.supplement_protocol_entitled === true);
 
       const { data, error: planError } = await supabase
         .from('plans')
@@ -207,6 +210,37 @@ export default function ClientPlanPage() {
           </AccordionItem>
         ))}
       </div>
+
+      {hasSupplementProtocol && (
+        <Link
+          href="/supplement-protocol"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: spacing[3],
+            marginTop: spacing[4],
+            padding: spacing[4],
+            borderRadius: 16,
+            border: `1px solid ${colors.borderSubtle}`,
+            backgroundColor: colors.bgCard,
+            textDecoration: 'none',
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+            <Pill size={20} color={colors.accent} aria-hidden />
+            <span>
+              <span style={{ display: 'block', fontWeight: 700, color: colors.textPrimary }}>
+                Testosterone support protocol
+              </span>
+              <span style={{ display: 'block', fontSize: 13, color: colors.textMuted }}>
+                Training, sleep, nutrition and supplements
+              </span>
+            </span>
+          </span>
+          <span style={{ color: colors.accent, fontSize: 20 }} aria-hidden>›</span>
+        </Link>
+      )}
 
       <PlanChangeRequestPanel />
     </ClientShell>

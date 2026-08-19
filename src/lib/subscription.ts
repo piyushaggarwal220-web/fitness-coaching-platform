@@ -6,6 +6,10 @@ import {
   type EntitlementProfile,
 } from '@/lib/entitlements'
 import { getCoachingPlan, getPurchasablePlan, isTrialPlanSlug } from '@/lib/payments/plans'
+import {
+  canOfferEarlyPlanUpgrade,
+  hoursRemainingInPlanUpgradeWindow,
+} from '@/lib/payments/plan-upgrade-window'
 import type { Purchase } from '@/types/database'
 
 export type ActiveSubscription = {
@@ -88,6 +92,14 @@ export function checkoutHrefForSubscription(subscription: ActiveSubscription): s
 export function subscriptionPlanActionLabel(subscription: ActiveSubscription): string {
   if (subscription.status === 'expired') return 'Tap to renew'
   if (subscription.planSlug === '12_months') return 'Tap to extend'
+  if (canOfferEarlyPlanUpgrade(subscription)) {
+    const hours = hoursRemainingInPlanUpgradeWindow(subscription.startsAt)
+    if (hours != null && hours <= 48) {
+      return hours <= 1
+        ? 'Upgrade window ends soon — tap to upgrade'
+        : `Upgrade within ${hours}h — tap for a better plan`
+    }
+  }
   return 'Tap to upgrade'
 }
 

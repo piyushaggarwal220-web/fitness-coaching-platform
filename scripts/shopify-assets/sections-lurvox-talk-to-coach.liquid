@@ -7,7 +7,7 @@
 {%- liquid
   assign accent = section.settings.accent_color | default: '#FF6200'
   assign heading = section.settings.heading | default: 'Book a free consultation call'
-  assign subheading = section.settings.subheading | default: 'Tell us a bit about yourself. A coach will call you back — no payment required.'
+  assign subheading = section.settings.subheading | default: 'Tell us a bit about yourself. A coach will call you back. No payment required.'
   assign button_label = section.settings.button_label | default: 'Request free consultation call'
   assign api_url = section.settings.api_url | default: 'https://app.lurvox.in/api/public/talk-to-a-coach'
 -%}
@@ -67,16 +67,64 @@
           </div>
         </div>
 
+        <fieldset class="lx-consult__goals">
+          <legend>Your goal</legend>
+          <p class="lx-consult__timing-hint">Pick the outcome. Duration is secondary.</p>
+          <div class="lx-consult__goal-options" role="radiogroup" aria-label="Your goal">
+            <label class="lx-consult__goal-opt">
+              <input type="radio" name="goal" value="Fat loss" data-duration="90 days" required>
+              <span class="lx-consult__goal-primary">Fat loss</span>
+              <span class="lx-consult__goal-secondary">90 days</span>
+            </label>
+            <label class="lx-consult__goal-opt">
+              <input type="radio" name="goal" value="Fat loss + muscle" data-duration="6 months">
+              <span class="lx-consult__goal-primary">Fat loss + muscle</span>
+              <span class="lx-consult__goal-secondary">6 months</span>
+            </label>
+            <label class="lx-consult__goal-opt">
+              <input type="radio" name="goal" value="Aesthetic body" data-duration="12 months">
+              <span class="lx-consult__goal-primary">Aesthetic body</span>
+              <span class="lx-consult__goal-secondary">12 months</span>
+            </label>
+          </div>
+        </fieldset>
+
         <div class="lx-consult__field">
-          <label for="lx-consult-goal-{{ section.id }}">Your goal</label>
+          <label for="lx-consult-goal-{{ section.id }}">Anything else? <span style="font-weight:500;opacity:.7">(optional)</span></label>
           <textarea
             id="lx-consult-goal-{{ section.id }}"
             name="message"
-            rows="4"
-            required
-            placeholder="e.g. Lose fat, build muscle, get consistent with training…"
+            rows="3"
+            placeholder="Injuries, schedule, questions…"
           ></textarea>
         </div>
+
+        <fieldset class="lx-consult__timing">
+          <legend>When should we call?</legend>
+          <p class="lx-consult__timing-hint">India time. Pick what usually works.</p>
+          <div class="lx-consult__timing-options" role="radiogroup" aria-label="Preferred call time">
+            <label class="lx-consult__timing-opt">
+              <input type="radio" name="preferred_time" value="Morning (9am–12pm)" required>
+              <span>Morning<br><small>9am–12pm</small></span>
+            </label>
+            <label class="lx-consult__timing-opt">
+              <input type="radio" name="preferred_time" value="Afternoon (12pm–5pm)">
+              <span>Afternoon<br><small>12pm–5pm</small></span>
+            </label>
+            <label class="lx-consult__timing-opt">
+              <input type="radio" name="preferred_time" value="Evening (5pm–9pm)">
+              <span>Evening<br><small>5pm–9pm</small></span>
+            </label>
+            <label class="lx-consult__timing-opt">
+              <input type="radio" name="preferred_time" value="Anytime today">
+              <span>Anytime<br><small>Today</small></span>
+            </label>
+            <label class="lx-consult__timing-opt">
+              <input type="radio" name="preferred_time" value="Tomorrow">
+              <span>Tomorrow<br><small>Any time</small></span>
+            </label>
+          </div>
+        </fieldset>
 
         <p class="lx-consult__status" id="lx-consult-status-{{ section.id }}" role="status" aria-live="polite"></p>
 
@@ -217,6 +265,131 @@
     gap: 0;
   }
 
+  #lx-consult-{{ section.id }} .lx-consult__timing,
+  #lx-consult-{{ section.id }} .lx-consult__goals {
+    margin: 4px 0 18px;
+    padding: 0;
+    border: 0;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__timing legend,
+  #lx-consult-{{ section.id }} .lx-consult__goals legend {
+    margin: 0 0 4px;
+    padding: 0;
+    font-size: 0.82rem;
+    font-weight: 650;
+    color: var(--lx-muted);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__timing-hint {
+    margin: 0 0 10px;
+    font-size: 0.78rem;
+    color: rgba(245, 245, 245, 0.5);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__goal-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__goal-opt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--lx-line);
+    background: var(--lx-soft);
+    cursor: pointer;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__goal-opt:has(input:checked) {
+    border-color: var(--lx-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--lx-accent) 35%, transparent);
+    background: color-mix(in srgb, var(--lx-accent) 12%, var(--lx-soft));
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__goal-opt input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__goal-primary {
+    font-size: 1rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__goal-secondary {
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(245, 245, 245, 0.55);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__timing-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  @media (min-width: 520px) {
+    #lx-consult-{{ section.id }} .lx-consult__timing-options {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__timing-opt {
+    position: relative;
+    display: block;
+    cursor: pointer;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__timing-opt input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__timing-opt span {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 58px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--lx-line);
+    background: var(--lx-soft);
+    font-size: 0.92rem;
+    font-weight: 650;
+    line-height: 1.25;
+    color: var(--lx-ink);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__timing-opt span small {
+    margin-top: 2px;
+    font-size: 0.72rem;
+    font-weight: 550;
+    color: var(--lx-muted);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__timing-opt input:focus-visible + span {
+    outline: none;
+    border-color: var(--lx-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--lx-accent) 28%, transparent);
+  }
+
+  #lx-consult-{{ section.id }} .lx-consult__timing-opt input:checked + span {
+    border-color: var(--lx-accent);
+    background: color-mix(in srgb, var(--lx-accent) 16%, #1a1a1a);
+  }
+
   @media (min-width: 640px) {
     #lx-consult-{{ section.id }} .lx-consult__row {
       grid-template-columns: 1fr 1fr;
@@ -296,11 +469,35 @@
       setStatus('', '');
       if (submitBtn) submitBtn.disabled = true;
 
+      var preferred = '';
+      var preferredInput = form.querySelector('input[name="preferred_time"]:checked');
+      if (preferredInput) preferred = preferredInput.value;
+
+      var goalInput = form.querySelector('input[name="goal"]:checked');
+      if (!goalInput) {
+        setStatus('Please pick your goal.', 'error');
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+
+      if (!preferred) {
+        setStatus('Please pick a preferred call time.', 'error');
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+
+      var goal = goalInput.value;
+      var duration = goalInput.getAttribute('data-duration') || '';
+      var notes = (form.message.value || '').trim();
+      var message = 'Goal: ' + goal + (duration ? ' (' + duration + ')' : '');
+      if (notes) message += '\n\nNotes: ' + notes;
+
       var payload = {
         name: form.name.value.trim(),
         email: form.email.value.trim(),
         phone: form.phone.value.trim(),
-        message: (form.message.value || '').trim()
+        message: message,
+        preferredTime: preferred
       };
 
       fetch(apiUrl, {
@@ -356,7 +553,7 @@
       "type": "textarea",
       "id": "subheading",
       "label": "Subheading",
-      "default": "Tell us a bit about yourself. A coach will call you back — no payment required."
+      "default": "Tell us a bit about yourself. A coach will call you back. No payment required."
     },
     {
       "type": "text",

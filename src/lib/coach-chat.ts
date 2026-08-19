@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { isCheckinSystemMessage } from '@/lib/checkin-chat'
+import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
+import type { AccessSource } from '@/lib/entitlements'
 import {
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
@@ -88,6 +90,10 @@ async function syncConversationCoach(
 
 export type CoachConversationListItem = CoachConversation & {
   profiles: { name: string | null; email: string | null } | null
+  /** Latest purchased plan slug, used to colour rows by commitment length. */
+  plan_slug: string | null
+  /** Distinguishes paying clients from enrollment-code seats. */
+  access_source: AccessSource | null
 }
 
 /** Service-role list of open conversations for a coach (used by coach portal APIs). */
@@ -112,11 +118,17 @@ export async function listCoachConversations(
   }
 
   const clientIds = [...new Set(rows.map((row) => row.client_id))]
-  const { data: profiles, error: profileError } = await admin
-    .from('profiles')
-    .select('id, name, email')
-    .in('id', clientIds)
+  const [profilesResult, purchasesResult] = await Promise.all([
+    admin.from('profiles').select('id, name, email, access_source').in('id', clientIds),
+    // Plan length lives on purchases; redemptions land as `redeemed` rows.
+    admin
+      .from('purchases')
+      .select('user_id, plan_slug, status, created_at')
+      .in('user_id', clientIds)
+      .in('status', ['captured', 'redeemed']),
+  ])
 
+  const { data: profiles, error: profileError } = profilesResult
   if (profileError) {
     return { data: null, error: profileError.message }
   }
@@ -127,15 +139,22 @@ export async function listCoachConversations(
       {
         name: (profile.name as string | null) ?? null,
         email: (profile.email as string | null) ?? null,
+        accessSource: (profile.access_source as AccessSource | null) ?? null,
       },
     ])
   )
+  const planSlugByClient = buildPlanSlugByClient(purchasesResult.data)
 
   return {
-    data: rows.map((row) => ({
-      ...row,
-      profiles: profileById.get(row.client_id) ?? null,
-    })),
+    data: rows.map((row) => {
+      const profile = profileById.get(row.client_id) ?? null
+      return {
+        ...row,
+        profiles: profile ? { name: profile.name, email: profile.email } : null,
+        plan_slug: planSlugByClient.get(row.client_id) ?? null,
+        access_source: profile?.accessSource ?? null,
+      }
+    }),
     error: null,
   }
 }

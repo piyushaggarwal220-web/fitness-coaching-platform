@@ -1,0 +1,479 @@
+{% comment %}
+  LURVOX — Cart builder (draft)
+  Pick a coaching plan + optional add-ons, then continue to app checkout.
+{% endcomment %}
+
+{%- liquid
+  assign accent = section.settings.accent_color | default: '#FF6200'
+  assign checkout_base = section.settings.checkout_base | default: 'https://app.lurvox.in/checkout'
+-%}
+
+<section
+  class="lx-cart"
+  id="lx-cart-{{ section.id }}"
+  style="--lx-accent: {{ accent }};"
+  data-checkout-base="{{ checkout_base }}"
+>
+  <div class="lx-cart__bg" aria-hidden="true"></div>
+  <div class="lx-cart__inner page-width">
+    <header class="lx-cart__header">
+      <p class="lx-cart__eyebrow">{{ section.settings.eyebrow | default: 'Build your package' }}</p>
+      <h1 class="lx-cart__title">{{ section.settings.heading | default: 'Choose your plan, then add boosts' }}</h1>
+      <p class="lx-cart__subtitle">
+        {{ section.settings.subheading | default: 'One coaching plan required. Add-ons are optional upgrades you can stack.' }}
+      </p>
+    </header>
+
+    <div class="lx-cart__grid">
+      <div class="lx-cart__main">
+        <section class="lx-cart__block">
+          <h2 class="lx-cart__block-title">1. Coaching plan</h2>
+          <p class="lx-cart__block-hint">Pick one base plan</p>
+          <div class="lx-cart__plans" data-cart-plans role="radiogroup" aria-label="Coaching plan"></div>
+        </section>
+
+        <section class="lx-cart__block">
+          <h2 class="lx-cart__block-title">2. Add-ons</h2>
+          <p class="lx-cart__block-hint">Optional. Stack as many as you want.</p>
+          <div class="lx-cart__addons" data-cart-addons></div>
+        </section>
+      </div>
+
+      <aside class="lx-cart__summary" data-cart-summary>
+        <h2 class="lx-cart__summary-title">Your cart</h2>
+        <ul class="lx-cart__lines" data-cart-lines></ul>
+        <div class="lx-cart__total-row">
+          <span>Total</span>
+          <strong data-cart-total>₹0</strong>
+        </div>
+        <p class="lx-cart__sale-note" data-cart-sale-note></p>
+        <a class="lx-cart__checkout" data-cart-checkout href="#">Continue to checkout</a>
+        <p class="lx-cart__fine">
+          {{ section.settings.fineprint | default: 'Draft preview. Checkout opens on app.lurvox.in with your selected plan and add-ons.' }}
+        </p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<style>
+  body,
+  #MainContent,
+  .shopify-section:has(.lx-cart) {
+    background: #050505 !important;
+  }
+
+  #lx-cart-{{ section.id }} {
+    --lx-ink: #f7f7f7;
+    --lx-muted: rgba(247, 247, 247, 0.64);
+    --lx-line: rgba(255, 255, 255, 0.12);
+    --lx-surface: #121212;
+    --lx-soft: #1a1a1a;
+    position: relative;
+    color: var(--lx-ink);
+    padding: clamp(20px, 4vw, 64px) 12px clamp(48px, 8vw, 96px);
+    overflow: hidden;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 45% at 10% 0%, color-mix(in srgb, var(--lx-accent) 24%, transparent), transparent 58%),
+      radial-gradient(ellipse 45% 35% at 100% 80%, rgba(255,255,255,0.04), transparent 55%);
+    pointer-events: none;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__eyebrow {
+    margin: 0 0 10px;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--lx-accent);
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__title {
+    margin: 0 0 10px;
+    font-size: clamp(1.55rem, 5vw, 2.4rem);
+    font-weight: 850;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__subtitle {
+    margin: 0 auto;
+    max-width: 36em;
+    color: var(--lx-muted);
+    line-height: 1.5;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__grid {
+    display: grid;
+    gap: 18px;
+  }
+
+  @media (min-width: 900px) {
+    #lx-cart-{{ section.id }} .lx-cart__grid {
+      grid-template-columns: 1.4fr 0.9fr;
+      align-items: start;
+    }
+    #lx-cart-{{ section.id }} .lx-cart__summary {
+      position: sticky;
+      top: 88px;
+    }
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__block,
+  #lx-cart-{{ section.id }} .lx-cart__summary {
+    background: linear-gradient(180deg, #161616 0%, var(--lx-surface) 100%);
+    border: 1px solid var(--lx-line);
+    border-radius: 18px;
+    padding: clamp(16px, 3vw, 24px);
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__block + .lx-cart__block {
+    margin-top: 16px;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__block-title,
+  #lx-cart-{{ section.id }} .lx-cart__summary-title {
+    margin: 0 0 4px;
+    font-size: 1.15rem;
+    font-weight: 780;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__block-hint {
+    margin: 0 0 14px;
+    font-size: 0.88rem;
+    color: var(--lx-muted);
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__plans,
+  #lx-cart-{{ section.id }} .lx-cart__addons {
+    display: grid;
+    gap: 10px;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--lx-line);
+    background: var(--lx-soft);
+    color: inherit;
+    cursor: pointer;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__card.is-selected {
+    border-color: var(--lx-accent);
+    background: color-mix(in srgb, var(--lx-accent) 14%, #1a1a1a);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--lx-accent) 30%, transparent);
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__card-name {
+    font-size: 1rem;
+    font-weight: 750;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__card-meta {
+    grid-column: 1 / -1;
+    font-size: 0.86rem;
+    color: var(--lx-muted);
+    line-height: 1.4;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__card-price {
+    font-weight: 750;
+    color: var(--lx-accent);
+    white-space: nowrap;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__lines {
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.94rem;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__line span:last-child {
+    color: var(--lx-accent);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__empty {
+    color: var(--lx-muted);
+    font-size: 0.92rem;
+    margin: 0 0 14px;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-top: 12px;
+    border-top: 1px solid var(--lx-line);
+    margin-bottom: 8px;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__sale-note {
+    margin: 0 0 14px;
+    min-height: 1.2em;
+    font-size: 0.82rem;
+    color: var(--lx-muted);
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__checkout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ff8a3d 0%, var(--lx-accent) 100%);
+    color: #111;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__checkout.is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__fine {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--lx-muted);
+    text-align: center;
+  }
+</style>
+
+<script>
+  (function () {
+    var root = document.getElementById('lx-cart-{{ section.id }}');
+    if (!root) return;
+
+    var checkoutBase = (root.getAttribute('data-checkout-base') || 'https://app.lurvox.in/checkout').replace(/\/$/, '');
+    var STORAGE_KEY = 'lx_draft_cart_v1';
+
+    var plans = [
+      {
+        slug: '3_months',
+        name: 'Fat loss reset',
+        meta: '90 day coaching · 2 weekly check-ins · plan updates every 14 days',
+        listPaise: 249900,
+        salePaise: 99900
+      },
+      {
+        slug: '6_months',
+        name: 'Fat loss + muscle',
+        meta: '6 month coaching · weekly plan updates · 2 weekly check-ins',
+        listPaise: 424900,
+        salePaise: 169900
+      },
+      {
+        slug: '12_months',
+        name: 'Aesthetic transformation',
+        meta: '12 month coaching · weekly plan updates · weekly coach phone call',
+        listPaise: 749900,
+        salePaise: 299900
+      }
+    ];
+
+    var addons = [
+      {
+        id: 'testo_boost',
+        name: 'Testo boost',
+        meta: 'Training + recovery focus for strength, drive, and muscle response.',
+        paise: 49900
+      },
+      {
+        id: 'aura_improver',
+        name: 'Aura improver',
+        meta: 'Grooming, posture, presence, and confidence habits with your coach.',
+        paise: 39900
+      },
+      {
+        id: 'height_improver',
+        name: 'Height improver',
+        meta: 'Mobility, posture, and stretch protocol support layered onto coaching.',
+        paise: 39900
+      }
+    ];
+
+    var state = { planSlug: '3_months', addonIds: [] };
+    try {
+      var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (saved && saved.planSlug) state.planSlug = saved.planSlug;
+      if (saved && Array.isArray(saved.addonIds)) state.addonIds = saved.addonIds;
+    } catch (e) {}
+
+    var plansEl = root.querySelector('[data-cart-plans]');
+    var addonsEl = root.querySelector('[data-cart-addons]');
+    var linesEl = root.querySelector('[data-cart-lines]');
+    var totalEl = root.querySelector('[data-cart-total]');
+    var saleNoteEl = root.querySelector('[data-cart-sale-note]');
+    var checkoutEl = root.querySelector('[data-cart-checkout]');
+
+    function inr(paise) {
+      return '₹' + Math.round(paise / 100).toLocaleString('en-IN');
+    }
+
+    function persist() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    function selectedPlan() {
+      return plans.find(function (p) { return p.slug === state.planSlug; }) || plans[0];
+    }
+
+    function selectedAddons() {
+      return addons.filter(function (a) { return state.addonIds.indexOf(a.id) >= 0; });
+    }
+
+    function renderPlans() {
+      plansEl.innerHTML = '';
+      plans.forEach(function (plan) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'lx-cart__card' + (state.planSlug === plan.slug ? ' is-selected' : '');
+        btn.setAttribute('role', 'radio');
+        btn.setAttribute('aria-checked', state.planSlug === plan.slug ? 'true' : 'false');
+        btn.innerHTML =
+          '<div class="lx-cart__card-name">' + plan.name + '</div>' +
+          '<div class="lx-cart__card-price">' + inr(plan.salePaise) + '</div>' +
+          '<div class="lx-cart__card-meta">' + plan.meta + ' · was ' + inr(plan.listPaise) + '</div>';
+        btn.addEventListener('click', function () {
+          state.planSlug = plan.slug;
+          persist();
+          render();
+        });
+        plansEl.appendChild(btn);
+      });
+    }
+
+    function renderAddons() {
+      addonsEl.innerHTML = '';
+      addons.forEach(function (addon) {
+        var on = state.addonIds.indexOf(addon.id) >= 0;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'lx-cart__card' + (on ? ' is-selected' : '');
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.innerHTML =
+          '<div class="lx-cart__card-name">' + addon.name + '</div>' +
+          '<div class="lx-cart__card-price">+' + inr(addon.paise) + '</div>' +
+          '<div class="lx-cart__card-meta">' + addon.meta + (on ? ' · added' : ' · tap to add') + '</div>';
+        btn.addEventListener('click', function () {
+          if (on) state.addonIds = state.addonIds.filter(function (id) { return id !== addon.id; });
+          else state.addonIds.push(addon.id);
+          persist();
+          render();
+        });
+        addonsEl.appendChild(btn);
+      });
+    }
+
+    function renderSummary() {
+      var plan = selectedPlan();
+      var chosen = selectedAddons();
+      var total = plan.salePaise;
+      linesEl.innerHTML = '';
+
+      var planLine = document.createElement('li');
+      planLine.className = 'lx-cart__line';
+      planLine.innerHTML = '<span>' + plan.name + '</span><span>' + inr(plan.salePaise) + '</span>';
+      linesEl.appendChild(planLine);
+
+      chosen.forEach(function (addon) {
+        total += addon.paise;
+        var line = document.createElement('li');
+        line.className = 'lx-cart__line';
+        line.innerHTML = '<span>' + addon.name + '</span><span>+' + inr(addon.paise) + '</span>';
+        linesEl.appendChild(line);
+      });
+
+      totalEl.textContent = inr(total);
+      saleNoteEl.textContent = chosen.length
+        ? chosen.length + ' add-on' + (chosen.length === 1 ? '' : 's') + ' selected'
+        : 'No add-ons yet';
+
+      var url = checkoutBase + '?plan=' + encodeURIComponent(plan.slug);
+      if (chosen.length) url += '&addons=' + encodeURIComponent(chosen.map(function (a) { return a.id; }).join(','));
+      checkoutEl.href = url;
+      checkoutEl.classList.toggle('is-disabled', !plan);
+      checkoutEl.textContent = 'Continue to checkout · ' + inr(total);
+    }
+
+    function render() {
+      renderPlans();
+      renderAddons();
+      renderSummary();
+    }
+
+    render();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "LURVOX Cart builder",
+  "tag": "section",
+  "class": "section-lx-cart",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Build your package" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Choose your plan, then add boosts" },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "One coaching plan required. Add-ons are optional upgrades you can stack."
+    },
+    {
+      "type": "text",
+      "id": "checkout_base",
+      "label": "Checkout base URL",
+      "default": "https://app.lurvox.in/checkout"
+    },
+    {
+      "type": "textarea",
+      "id": "fineprint",
+      "label": "Fine print",
+      "default": "Draft preview. Checkout opens on app.lurvox.in with your selected plan and add-ons."
+    },
+    { "type": "color", "id": "accent_color", "label": "Accent", "default": "#FF6200" }
+  ],
+  "presets": [{ "name": "LURVOX Cart builder" }]
+}
+{% endschema %}

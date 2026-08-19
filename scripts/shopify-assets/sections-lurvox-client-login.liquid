@@ -1,0 +1,171 @@
+{% comment %}
+  LURVOX — Existing client login rail (sits under the discount / offer strip).
+{% endcomment %}
+{%- if section.settings.enabled -%}
+  {%- assign show_login = true -%}
+  {%- if section.settings.homepage_only and request.page_type != 'index' -%}
+    {%- assign show_login = false -%}
+  {%- endif -%}
+
+  {%- if show_login -%}
+    <aside
+      class="lurvox-client-login"
+      id="lurvox-client-login"
+      style="--lurvox-login-accent: {{ section.settings.accent_color }};"
+      aria-label="Existing client login"
+    >
+      <div class="lurvox-client-login__inner">
+        <p class="lurvox-client-login__copy">
+          {%- if section.settings.prompt != blank -%}
+            <span class="lurvox-client-login__prompt">{{ section.settings.prompt }}</span>
+          {%- endif -%}
+          <a class="lurvox-client-login__link" href="{{ section.settings.login_url }}">
+            {{ section.settings.label }}
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10h11M11 6l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        </p>
+      </div>
+    </aside>
+  {%- endif -%}
+{%- endif -%}
+
+<style id="lurvox-client-login-css">
+  .lurvox-client-login {
+    --lurvox-login-accent: #ff6200;
+    width: 100%;
+    color: #ffffff;
+    background: #070707;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .lurvox-client-login__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+    box-sizing: border-box;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lurvox-client-login__copy {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    text-align: center;
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .lurvox-client-login__prompt {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .lurvox-client-login__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #ff8a3d !important;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    min-height: 0;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-decoration: none !important;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+
+  .lurvox-client-login__link svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+  }
+
+  .lurvox-client-login__link:hover {
+    color: #ffb07a !important;
+  }
+
+  .lurvox-client-login__link:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .lurvox-client-login__inner {
+      height: 34px;
+      padding: 0 12px;
+    }
+
+    .lurvox-client-login__prompt {
+      font-size: 12px;
+    }
+
+    .lurvox-client-login__link {
+      font-size: 12px;
+    }
+
+    .lurvox-client-login__link svg {
+      display: none;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Client login CTA",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Show client login",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "homepage_only",
+      "label": "Show on homepage only",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "prompt",
+      "label": "Prompt",
+      "default": "Already a client?"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Button label",
+      "default": "Log in"
+    },
+    {
+      "type": "text",
+      "id": "login_url",
+      "label": "Login URL",
+      "default": "https://app.lurvox.in/login"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent colour",
+      "default": "#FF6200"
+    }
+  ]
+}
+{% endschema %}

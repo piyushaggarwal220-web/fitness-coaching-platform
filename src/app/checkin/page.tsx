@@ -185,9 +185,11 @@ export default function CheckinPage() {
     }
   };
 
+  const photosOptional = profile?.gender === 'female'
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const validationError = validateWeeklyCheckinForm(form, photos);
+    const validationError = validateWeeklyCheckinForm(form, photos, { gender: profile?.gender });
     if (validationError) { setError(validationError); return; }
     if (!profile?.coach_id) {
       setError('No coach assigned to your account. Contact support before submitting a check-in.');
@@ -253,7 +255,9 @@ export default function CheckinPage() {
       await requestComplexityRecalculation({ trigger: 'weekly_checkin', checkinId: data.checkinId })
 
       setSuccess(
-        'Weekly check-in submitted! Your coach typically replies in 5–8 hours. Photos + measurements earn league points.'
+        photosOptional && !frontUrl && !sideUrl && !backUrl
+          ? 'Weekly check-in submitted! Measurements earn league points. Your coach typically replies in 5–8 hours (not overnight).'
+          : 'Weekly check-in submitted! Photos + measurements earn league points. Your coach typically replies in 5–8 hours (not overnight).'
       );
       setForm(INITIAL_WEEKLY_FORM);
       setPhotos({ front: null, side: null, back: null });
@@ -301,7 +305,9 @@ export default function CheckinPage() {
       <div style={{ marginBottom: spacing[4] }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>{brandTitle('Weekly Check-In')}</h1>
         <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 15 }}>
-          Day 7 progress update — photos required
+          {photosOptional
+            ? 'Day 7 progress update — photos optional'
+            : 'Day 7 progress update — photos required'}
         </p>
       </div>
 
@@ -400,7 +406,9 @@ export default function CheckinPage() {
               currentPreviewUrls={photoPreviews}
             />
             <p style={{ margin: `${spacing[3]}px 0 0`, fontSize: 13, color: colors.textMuted }}>
-              Add this week’s photos in the next step to finish the side-by-side compare.
+              {photosOptional
+                ? 'You can add photos in the next step to finish the side-by-side compare — or skip them.'
+                : 'Add this week’s photos in the next step to finish the side-by-side compare.'}
             </p>
           </Card>
         )}
@@ -408,13 +416,17 @@ export default function CheckinPage() {
         {currentSection === 'photos' && (
           <Card variant="elevated">
             <h2 style={sectionTitle}>Progress Photos</h2>
-            <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textMuted }}>Front, side, and back photos are required — compare with last week below.</p>
+            <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textMuted }}>
+              {photosOptional
+                ? 'Photos are optional for female clients — you can submit without them. Uploading front, side, and back still helps your coach track progress.'
+                : 'Front, side, and back photos are required — compare with last week below.'}
+            </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: spacing[3] }}>
               {(['front', 'side', 'back'] as PhotoKey[]).map((key) => (
                 <PhotoSourceControl
                   key={key}
                   label={key.charAt(0).toUpperCase() + key.slice(1)}
-                  required
+                  required={!photosOptional}
                   onFiles={handlePhoto(key)}
                   selectedText={photos[key]?.name}
                 />

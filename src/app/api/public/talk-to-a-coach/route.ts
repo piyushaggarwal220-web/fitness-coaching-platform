@@ -13,7 +13,16 @@ type TalkToCoachBody = {
   email?: string
   phone?: string
   message?: string
+  preferredTime?: string
 }
+
+const PREFERRED_TIME_OPTIONS = new Set([
+  'Morning (9am–12pm)',
+  'Afternoon (12pm–5pm)',
+  'Evening (5pm–9pm)',
+  'Anytime today',
+  'Tomorrow',
+])
 
 function corsHeaders(origin: string | null): HeadersInit {
   if (origin && ALLOWED_ORIGINS.has(origin)) {
@@ -49,6 +58,7 @@ function buildNotifyEmail(input: {
   email: string
   phone: string
   message: string
+  preferredTime: string
 }) {
   const subject = `New consultation request — ${input.name}`
   const text = [
@@ -57,6 +67,7 @@ function buildNotifyEmail(input: {
     `Name: ${input.name}`,
     `Phone / WhatsApp: ${input.phone}`,
     `Email: ${input.email}`,
+    `Preferred call time: ${input.preferredTime}`,
     '',
     'Goal / message:',
     input.message,
@@ -72,6 +83,7 @@ function buildNotifyEmail(input: {
         <tr><td style="padding:8px 0;font-weight:600;width:140px">Name</td><td style="padding:8px 0">${escapeHtml(input.name)}</td></tr>
         <tr><td style="padding:8px 0;font-weight:600">Phone / WhatsApp</td><td style="padding:8px 0">${escapeHtml(input.phone)}</td></tr>
         <tr><td style="padding:8px 0;font-weight:600">Email</td><td style="padding:8px 0"><a href="mailto:${escapeHtml(input.email)}">${escapeHtml(input.email)}</a></td></tr>
+        <tr><td style="padding:8px 0;font-weight:600">Preferred call time</td><td style="padding:8px 0">${escapeHtml(input.preferredTime)}</td></tr>
       </table>
       <div style="margin-top:16px;padding:14px 16px;background:#f6f6f6;border-radius:10px;white-space:pre-wrap">${escapeHtml(input.message)}</div>
       <p style="margin:16px 0 0;color:#555;font-size:13px">Reply by email or WhatsApp to schedule the call.</p>
@@ -103,6 +115,7 @@ export async function POST(request: Request) {
   const email = body.email?.trim() ?? ''
   const phone = body.phone?.trim() ?? ''
   const message = body.message?.trim() ?? ''
+  const preferredTime = body.preferredTime?.trim() ?? ''
 
   if (!name || name.length < 2) {
     return NextResponse.json({ ok: false, error: 'Please enter your name.' }, { status: 400, headers })
@@ -116,6 +129,12 @@ export async function POST(request: Request) {
   if (!message || message.length < 10) {
     return NextResponse.json(
       { ok: false, error: 'Please share a bit more about what you need help with.' },
+      { status: 400, headers }
+    )
+  }
+  if (!preferredTime || !PREFERRED_TIME_OPTIONS.has(preferredTime)) {
+    return NextResponse.json(
+      { ok: false, error: 'Please pick a preferred call time.' },
       { status: 400, headers }
     )
   }
@@ -150,11 +169,12 @@ export async function POST(request: Request) {
   }
 
   const normalizedEmail = normalizeEmail(email)
+  const storedMessage = `Preferred call time: ${preferredTime}\n\n${message}`
   const { error: insertError } = await admin.from('talk_to_coach_submissions').insert({
     name,
     email: normalizedEmail,
     phone,
-    message,
+    message: storedMessage,
     fingerprint,
   })
 
@@ -166,7 +186,13 @@ export async function POST(request: Request) {
     )
   }
 
-  const notify = buildNotifyEmail({ name, email: normalizedEmail, phone, message })
+  const notify = buildNotifyEmail({
+    name,
+    email: normalizedEmail,
+    phone,
+    message,
+    preferredTime,
+  })
   const emailed = await sendDirectEmail({
     to: NOTIFY_TO,
     subject: notify.subject,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Pause, Play, Save, Square } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { RestTimer } from '@/components/tracker/RestTimer'
@@ -9,6 +9,8 @@ import {
   StatTile,
   TrackerPhaseFolder,
   trackerInputStyle,
+  trackerSurface,
+  trackerSurfaceInset,
 } from '@/components/tracker/TrackerPrimitives'
 import { colors, radius, spacing, layout } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
@@ -257,6 +259,15 @@ export function WorkoutModule({
     },
     [onPatch]
   )
+
+  // One-shot: if nothing is picked yet, follow today's suggested day so the hub isn't stuck at 0%.
+  // After the client taps "Change day", we leave the picker alone.
+  const didAutoSelectWorkoutDay = useRef(false)
+  useEffect(() => {
+    if (!multiDay || selectedKey || !suggestion || saving || didAutoSelectWorkoutDay.current) return
+    didAutoSelectWorkoutDay.current = true
+    selectWorkoutDay(suggestion)
+  }, [multiDay, selectedKey, suggestion, saving, selectWorkoutDay])
 
   useEffect(() => {
     if (!sessionRunning || sessionStartedAt == null) return
@@ -509,8 +520,7 @@ export function WorkoutModule({
             marginBottom: spacing[4],
             padding: '12px 14px',
             borderRadius: radius.md,
-            background: colors.bgElevated,
-            border: `1px solid ${colors.borderSubtle}`,
+            ...trackerSurfaceInset,
           }}
         >
           <div>
@@ -700,13 +710,24 @@ export function WorkoutModule({
               <div
                 key={ex.id}
                 style={{
+                  ...trackerSurface,
                   borderRadius: 14,
                   padding: spacing[3],
                   marginBottom: 12,
-                  background: isDone ? colors.successMuted : isCurrent ? colors.accentMuted : colors.bgCard,
-                  border: `1px solid ${
-                    isDone ? 'rgba(34,197,94,0.25)' : isCurrent ? colors.accentMuted : colors.borderSubtle
-                  }`,
+                  // Done and in-progress exercises get tinted glass instead of a flat fill.
+                  ...(isDone
+                    ? {
+                        background:
+                          'linear-gradient(135deg, rgba(34,197,94,0.14) 0%, rgba(24,24,27,0.92) 60%)',
+                        border: '1px solid rgba(34,197,94,0.25)',
+                      }
+                    : isCurrent
+                      ? {
+                          background:
+                            'linear-gradient(135deg, rgba(249,115,22,0.16) 0%, rgba(24,24,27,0.92) 60%)',
+                          border: '1px solid rgba(249,115,22,0.28)',
+                        }
+                      : null),
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
@@ -791,7 +812,7 @@ export function WorkoutModule({
                           marginTop: 12,
                           padding: 12,
                           borderRadius: 12,
-                          background: colors.bgElevated,
+                          ...trackerSurfaceInset,
                           border: `1px solid ${set.completed ? 'rgba(34,197,94,0.2)' : colors.borderSubtle}`,
                         }}
                       >

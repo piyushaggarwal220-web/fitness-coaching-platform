@@ -131,6 +131,14 @@ export default function AdminPurchaseDetailPage() {
               <Info label="Product" value={purchase.plan_name} />
               <Info label="Plan Slug" value={purchase.plan_slug} />
               <Info label="Amount" value={formatInr(purchase.amount_paise / 100)} />
+              <Info
+                label="Testosterone Support Protocol Add-on"
+                value={
+                  purchase.supplement_addon
+                    ? `Yes · ${formatInr((purchase.supplement_addon_paise ?? 0) / 100)}`
+                    : 'No'
+                }
+              />
               <Info label="Currency" value={purchase.currency} />
               <Info label="Purchase Date" value={formatDate(purchase.created_at)} />
               <Info

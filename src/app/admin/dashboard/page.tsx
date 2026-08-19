@@ -7,6 +7,7 @@ import AdminNavbar from '@/components/admin/AdminNavbar'
 import { AdminStatCard } from '@/components/admin/AdminStatCard'
 import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
+import type { ActiveTodayMetrics } from '@/lib/admin/active-today'
 import type { PlatformHealth } from '@/lib/admin/platform-health'
 import type { PromptLibraryStats } from '@/types/database'
 import { colors } from '@/lib/design-tokens'
@@ -27,6 +28,7 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState('')
   const [adminLabel, setAdminLabel] = useState('Admin')
   const [stats, setStats] = useState({ clients: 0, coaches: 0, activePlans: 0, pendingOnboarding: 0 })
+  const [activeToday, setActiveToday] = useState<ActiveTodayMetrics | null>(null)
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [health, setHealth] = useState<PlatformHealth | null>(null)
   const [promptStats, setPromptStats] = useState<PromptLibraryStats | null>(null)
@@ -110,15 +112,19 @@ export default function AdminDashboardPage() {
       setActivity(items.slice(0, 8))
 
       try {
-        const [healthRes, promptStatsRes] = await Promise.all([
+        const [healthRes, promptStatsRes, activeTodayRes] = await Promise.all([
           fetch('/api/admin/platform-health'),
           fetch('/api/admin/prompts/stats'),
+          fetch('/api/admin/active-today'),
         ])
         if (healthRes.ok) {
           setHealth((await healthRes.json()) as PlatformHealth)
         }
         if (promptStatsRes.ok) {
           setPromptStats((await promptStatsRes.json()) as PromptLibraryStats)
+        }
+        if (activeTodayRes.ok) {
+          setActiveToday((await activeTodayRes.json()) as ActiveTodayMetrics)
         }
       } catch {
         setHealth(null)
@@ -153,6 +159,16 @@ export default function AdminDashboardPage() {
           {error && <div style={s.error}>{error}</div>}
 
           <div style={s.statGrid}>
+            <AdminStatCard
+              label="Active today"
+              value={activeToday?.count ?? '—'}
+              accent={colors.accent}
+              hint={
+                activeToday
+                  ? `Tracker ${activeToday.breakdown.tracker} · Check-in ${activeToday.breakdown.checkin} · Chat ${activeToday.breakdown.chat}`
+                  : 'People who used the app today (India time)'
+              }
+            />
             <AdminStatCard label="Total Clients" value={stats.clients} />
             <AdminStatCard label="Total Coaches" value={stats.coaches} accent={colors.accent} />
             <AdminStatCard label="Active Plans" value={stats.activePlans} accent="#0d9488" />

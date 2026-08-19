@@ -12,7 +12,7 @@ export default function WorkoutTrackerPage() {
     <TrackerModulePage
       title="Workout Tracker"
       isAvailable={hasWorkouts}
-      emptyMessage="No exercises found in your active plan. Ensure your workout plan includes day sessions with exercises formatted like: Bench Press 4x8 @ 60 kg"
+      emptyMessage="No exercises found in your active plan yet. Open your plan to confirm the workout section, or ask your coach to add day sessions."
     >
       {hasWorkouts && day && scores && sections && (
         <WorkoutModule

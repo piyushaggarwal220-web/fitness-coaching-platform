@@ -3,41 +3,15 @@
 {% endcomment %}
 
 {%- assign consult_url = '/pages/talk-to-a-coach' -%}
-{%- assign refund_url = '/pages/refund-policy' -%}
-{%- assign results_url = 'https://app.lurvox.in/refund-policy' -%}
+{%- assign terms_url = 'https://app.lurvox.in/terms' -%}
 
 <section class="lx-close" id="start" data-lx-close aria-label="Choose your plan and start">
   <p class="lx-close__eyebrow">Ready to start</p>
-  <h2 class="lx-close__title">90 days to build the habit — pick the plan that fits</h2>
-  <p class="lx-close__lede">
-    Your headline goal is a 90-day reset. Most people start with <strong>3 months</strong>.
-    Stay longer only if you want deeper recomposition, lower monthly cost, or Crazy League prize money.
-  </p>
+  <h2 class="lx-close__title">Pick the plan that matches your goal</h2>
+  <p class="lx-close__lede"> Goal first. Time is the runway. <strong>Fat loss</strong> is a 90 day reset. <strong>Fat loss + muscle</strong> is 6 months. <strong>Aesthetic body</strong> is 12 months, with the weekly coach phone call.<strong>Quick Reset</strong> is a 90 day fat-loss / habit goal. <strong>Recomposition</strong> is 6 months for fat down, muscle up. <strong>Complete Transformation</strong> is 12 months for an all-in lifestyle change, with weekly coach phone calls.</p>
 
-  <div class="lx-close__plans">
-    <a class="lx-close__card" href="https://app.lurvox.in/checkout?plan=3_months">
-      <span class="lx-close__dur">3 MONTHS</span>
-      <strong class="lx-close__name">Quick Reset</strong>
-      <span class="lx-close__price">₹999 <small>≈ ₹333/mo</small></span>
-      <span class="lx-close__note">Matches the 90-day goal</span>
-      <span class="lx-close__cta">Start 90-day · ₹999</span>
-    </a>
-    <a class="lx-close__card lx-close__card--pop" href="https://app.lurvox.in/checkout?plan=6_months">
-      <span class="lx-close__pill">MOST POPULAR</span>
-      <span class="lx-close__dur">6 MONTHS</span>
-      <strong class="lx-close__name">Recomposition</strong>
-      <span class="lx-close__price">₹1,699 <small>≈ ₹283/mo</small></span>
-      <span class="lx-close__note">Best balance of results vs price</span>
-      <span class="lx-close__cta">Start 6-month · ₹1,699</span>
-    </a>
-    <a class="lx-close__card" href="https://app.lurvox.in/checkout?plan=12_months">
-      <span class="lx-close__dur">12 MONTHS</span>
-      <strong class="lx-close__name">Complete</strong>
-      <span class="lx-close__price">₹2,999 <small>≈ ₹250/mo</small></span>
-      <span class="lx-close__note">Lowest monthly + prize money</span>
-      <span class="lx-close__cta">Start 12-month · ₹2,999</span>
-    </a>
-  </div>
+  {%- comment -%} Prices live once in #plans cards — closer stays decision support only {%- endcomment -%}
+  <a class="lx-close__jump" href="#plans">See plans &amp; prices above</a>
 
   <div class="lx-close__badges" aria-label="Secure checkout">
     <span>🔒 Razorpay Secure</span>
@@ -49,14 +23,8 @@
 
   <div class="lx-close__guarantee">
     <p>
-      <strong>Delivery promise:</strong> first personal plan within 24–48 hours after onboarding —
-      or request a <strong>full refund within 7 days</strong> if delivery fails.
-      <a href="{{ refund_url }}">Refund policy</a>
-    </p>
-    <p>
-      <strong>Results guarantee:</strong> if you hit 90% of due check-ins on time and still report no result,
-      you can claim under our results policy.
-      <a href="{{ results_url }}" target="_blank" rel="noopener noreferrer">Full terms</a>
+      Service rules, refunds, and any guarantees are only in our
+      <a href="{{ terms_url }}" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>.
     </p>
   </div>
 
@@ -98,6 +66,35 @@
     letter-spacing: -0.02em;
   }
 
+  @media screen and (max-width: 749px) {
+    .lx-close {
+      padding: 28px 14px 36px;
+    }
+
+    .lx-close__title {
+      max-width: 16ch;
+      font-size: 1.4rem;
+    }
+
+    .lx-close__lede {
+      font-size: 13.5px;
+      margin-bottom: 18px;
+    }
+
+    .lx-close__jump {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 18px;
+      font-size: 0.95rem;
+    }
+
+    .lx-close__guarantee {
+      text-align: left;
+      font-size: 13px;
+    }
+  }
+
   .lx-close__lede {
     margin: 0 auto 24px;
     max-width: 58ch;
@@ -110,11 +107,29 @@
     color: #fff;
   }
 
+  .lx-close__jump {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 22px;
+    padding: 14px 22px;
+    min-height: 52px;
+    border-radius: 14px;
+    background: #ff6200;
+    color: #0a0a0a !important;
+    text-decoration: none !important;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    box-shadow: 0 10px 26px rgba(255, 98, 0, 0.28);
+  }
+
+  .lx-close__jump:hover {
+    filter: brightness(1.05);
+  }
+
   .lx-close__plans {
-    display: grid;
-    gap: 12px;
-    max-width: 920px;
-    margin: 0 auto 18px;
+    display: none;
   }
 
   @media (min-width: 760px) {

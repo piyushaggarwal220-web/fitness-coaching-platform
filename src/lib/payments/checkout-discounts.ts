@@ -25,17 +25,51 @@ type FirstTimerPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
 export const FIRST_TIMER_DISCOUNT_PERCENT = 60
 
 /**
- * Exact payable amounts with WELCOME60 (₹999 / ₹1,699 / ₹2,999).
+ * Exact payable amounts with WELCOME60 (₹1,299 / ₹2,099 / ₹3,499).
  * Kept as fixed sale targets so storefront and checkout match psychological pricing
- * while list MRP stays at the catalog amounts (≈60% off).
+ * while list MRP stays at the catalog amounts.
  */
 export const FIRST_TIMER_SALE_PAISE: Record<FirstTimerPlanSlug, number> = {
-  '3_months': 99900,
-  '6_months': 169900,
-  '12_months': 299900,
+  '3_months': 129900,
+  '6_months': 209900,
+  '12_months': 349900,
 }
 
 const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_months'])
+
+/**
+ * Optional paid add-on: a personalised supplement protocol built from the client's onboarding
+ * answers (what is worth taking for their goal and budget, dosing, timing, what to skip).
+ *
+ * Charged as its own line on top of the discounted plan price — promo codes apply to coaching
+ * only, so the add-on is never silently discounted or double-counted.
+ */
+export const SUPPLEMENT_PROTOCOL_ADDON_PAISE = 39900
+export const SUPPLEMENT_PROTOCOL_ADDON_LABEL = 'Natural testosterone support protocol'
+/** Razorpay order-note key, also used to reconstruct the charge at verification time. */
+const SUPPLEMENT_ADDON_NOTE_KEY = 'addon_supplement_paise'
+
+export function supplementAddonPaise(enabled: boolean | null | undefined): number {
+  return enabled ? SUPPLEMENT_PROTOCOL_ADDON_PAISE : 0
+}
+
+/** Amount actually charged: discounted coaching plan plus any add-on. */
+export function checkoutTotalPaise(
+  pricing: Pick<CheckoutPricing, 'amountPaise'>,
+  supplementAddon: boolean | null | undefined
+): number {
+  return pricing.amountPaise + supplementAddonPaise(supplementAddon)
+}
+
+/** Add-on amount recorded on the Razorpay order, so verify/webhook can trust it. */
+export function supplementAddonPaiseFromNotes(
+  notes: Record<string, string | undefined> | null | undefined
+): number {
+  const raw = notes?.[SUPPLEMENT_ADDON_NOTE_KEY]
+  const value = raw ? Number(raw) : NaN
+  // Only the exact published price is honoured — a tampered note cannot inflate the expected total.
+  return value === SUPPLEMENT_PROTOCOL_ADDON_PAISE ? SUPPLEMENT_PROTOCOL_ADDON_PAISE : 0
+}
 
 export type CheckoutDiscountKind = 'first_timer' | 'discount' | 'referral'
 
@@ -353,8 +387,21 @@ export async function resolveCheckoutPricing(input: {
   }
 }
 
-/** Expected payable amount from Razorpay order notes (falls back to catalog). */
+/**
+ * Expected payable amount from Razorpay order notes (falls back to catalog).
+ *
+ * `amount_paise` covers coaching only, so the add-on is validated separately and added on top —
+ * that keeps every existing discount check working unchanged.
+ */
 export function expectedAmountPaiseFromOrderNotes(
+  plan: CoachingPlan,
+  notes: Record<string, string | undefined> | null | undefined
+): number {
+  return expectedPlanAmountPaiseFromOrderNotes(plan, notes) + supplementAddonPaiseFromNotes(notes)
+}
+
+/** Expected coaching-only amount, before any add-on. */
+function expectedPlanAmountPaiseFromOrderNotes(
   plan: CoachingPlan,
   notes: Record<string, string | undefined> | null | undefined
 ): number {
@@ -406,24 +453,28 @@ export function expectedAmountPaiseFromOrderNotes(
   return plan.amountPaise
 }
 
-export function checkoutDiscountNotes(pricing: CheckoutPricing): Record<string, string> {
-  if (!pricing.discount) {
-    return {
-      amount_paise: String(pricing.amountPaise),
-      list_amount_paise: String(pricing.listAmountPaise),
-    }
-  }
-
+export function checkoutDiscountNotes(
+  pricing: CheckoutPricing,
+  options?: { supplementAddon?: boolean | null }
+): Record<string, string> {
   const notes: Record<string, string> = {
     amount_paise: String(pricing.amountPaise),
     list_amount_paise: String(pricing.listAmountPaise),
-    discount_paise: String(pricing.discount.discountPaise),
-    discount_code: pricing.discount.code,
-    discount_kind: pricing.discount.kind,
   }
-  if (pricing.discount.referrerLabel) {
-    notes.referrer_label = pricing.discount.referrerLabel
+
+  if (pricing.discount) {
+    notes.discount_paise = String(pricing.discount.discountPaise)
+    notes.discount_code = pricing.discount.code
+    notes.discount_kind = pricing.discount.kind
+    if (pricing.discount.referrerLabel) {
+      notes.referrer_label = pricing.discount.referrerLabel
+    }
   }
+
+  if (options?.supplementAddon) {
+    notes[SUPPLEMENT_ADDON_NOTE_KEY] = String(SUPPLEMENT_PROTOCOL_ADDON_PAISE)
+  }
+
   return notes
 }
 

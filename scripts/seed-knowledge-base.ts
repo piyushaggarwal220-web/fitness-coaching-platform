@@ -10,19 +10,19 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Fat loss fundamentals',
     category: 'fat_loss',
     content:
-      'Target a sustainable 300–500 kcal daily deficit. Prioritise protein 1.8–2.2 g/kg bodyweight. Keep fibre high for satiety. Weigh 3–4 mornings per week; trend matters more than single readings. Never drop below ~1600 kcal without medical oversight.',
+      'Target a sustainable 300–500 kcal daily deficit. Protein around 1.6–2.0 g/kg is optional when it fits naturally — not a target to push toward. Do not maximise protein just because the client could add more; comfortable adherence beats high grams. Lower protein (including ~0.5 g/kg in special cases) can be fine. Never falsify protein totals. Keep fibre/volume high for satiety when helpful. Weigh 3–4 mornings per week; trend matters more than single readings. Never drop below ~1600 kcal without medical oversight.',
   },
   {
     title: 'Muscle gain fundamentals',
     category: 'muscle_gain',
     content:
-      'Target a 200–300 kcal surplus with protein 1.6–2.2 g/kg. Progress load or reps when all prescribed sets are completed with good form. Sleep 7–9 hours for recovery.',
+      'Target a 200–300 kcal surplus. Protein 1.6–2.0 g/kg is optional when comfortable — do not push protein just because food options exist. Lower protein can work; never falsify macros. Progress load or reps when all prescribed sets are completed with good form. Sleep 7–9 hours for recovery.',
   },
   {
     title: 'Recomposition guidance',
     category: 'recomposition',
     content:
-      'At maintenance or slight deficit with high protein (2.0+ g/kg). Combine resistance training 3–5 days/week with moderate cardio.',
+      'At maintenance or slight deficit. Protein need not be maximised; moderate or even low protein (~0.5 g/kg in special cases) is acceptable when it fits the client. Never invent high protein numbers. Combine resistance training 3–5 days/week with moderate cardio.',
   },
   {
     title: 'Strength programming',
@@ -34,7 +34,7 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Nutrition principles',
     category: 'nutrition',
     content:
-      'Build meals around protein, vegetables, and minimally processed carbs. Distribute protein across 3–5 meals. Hydration ~2–3 L/day unless medically restricted.',
+      'Build meals around foods the client will actually eat — vegetables, carbs they enjoy, and a comfortable amount of protein. Do not push protein higher just because they have options to increase it. Lower protein plans are fine when honest and sustainable; never inflate meal or header protein numbers. Hydration ~2–3 L/day unless medically restricted.',
   },
   {
     title: 'Cardio guidelines',
@@ -58,7 +58,7 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Weekly check-in interpretation',
     category: 'checkins',
     content:
-      'Use weight trend, waist, hunger, energy, training performance, and adherence together. Hunger 8+/10 → increase protein/fibre or small calorie adjustment.',
+      'Use weight trend, waist, hunger, energy, training performance, and adherence together. Hunger 8+/10 → try fibre, food volume, meal timing, or a small calorie adjustment first — do not default to pushing protein higher.',
   },
   {
     title: 'Injury modifications',
@@ -95,18 +95,30 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
 async function main(): Promise<void> {
   const admin = createAdminClient()
   let created = 0
-  let skipped = 0
+  let updated = 0
 
   for (const entry of ENTRIES) {
     const { data: existing } = await admin
       .from('ai_knowledge')
-      .select('id')
+      .select('id, content')
       .eq('category', entry.category)
+      .eq('title', entry.title)
       .eq('active', true)
       .limit(1)
 
     if (existing && existing.length > 0) {
-      skipped++
+      const row = existing[0]!
+      if (row.content === entry.content) continue
+      const { error } = await admin
+        .from('ai_knowledge')
+        .update({ content: entry.content })
+        .eq('id', row.id)
+      if (error) {
+        console.error(`FAIL update ${entry.category}: ${error.message}`)
+        process.exit(1)
+      }
+      updated++
+      console.log(`UPDATED ${entry.category}: ${entry.title}`)
       continue
     }
 
@@ -126,7 +138,7 @@ async function main(): Promise<void> {
     console.log(`CREATED ${entry.category}: ${entry.title}`)
   }
 
-  console.log(`\nDone. created=${created}, skipped=${skipped}`)
+  console.log(`\nDone. created=${created}, updated=${updated}`)
   process.exit(0)
 }
 

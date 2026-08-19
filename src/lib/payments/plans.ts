@@ -40,7 +40,6 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
     amountPaise: 249900,
     durationMonths: 3,
     saveLabel: 'Quick Reset',
-    popular: true,
   },
   '6_months': {
     slug: '6_months',
@@ -49,6 +48,7 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
     amountPaise: 424900,
     durationMonths: 6,
     saveLabel: 'Recomposition Starter',
+    popular: true,
   },
   '12_months': {
     slug: '12_months',

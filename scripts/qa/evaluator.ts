@@ -220,13 +220,13 @@ export function evaluateOutput(
       caloriesScore = 6
     }
 
-    let proteinScore = 5
-    const proteinTarget =
-      goal === 'muscle_gain' || goal === 'strength' ? 1.8 : goal === 'fat_loss' ? 1.6 : 1.5
+    let proteinScore = 7
+    // Protein adequacy is contextual — low g/kg is not automatically a failure.
     if (avgProtein === 0) proteinScore = 3
-    else if (proteinPerKg >= proteinTarget) proteinScore = 9
-    else if (proteinPerKg >= proteinTarget - 0.3) proteinScore = 7
-    else proteinScore = 5
+    else if (proteinPerKg >= 1.2) proteinScore = 9
+    else if (proteinPerKg >= 0.7) proteinScore = 8
+    else if (proteinPerKg >= 0.45) proteinScore = 7
+    else proteinScore = 6
 
     const indianHits = ['dal', 'roti', 'rice', 'paneer', 'idli', 'dosa', 'chana', 'curd', 'sabzi', 'katori'].filter(
       (f) => text.toLowerCase().includes(f)

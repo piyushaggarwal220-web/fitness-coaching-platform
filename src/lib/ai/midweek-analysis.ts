@@ -6,7 +6,6 @@
  */
 import { MODELS } from '@/lib/ai/config'
 import { generateClaudeResponse } from '@/lib/ai/anthropic'
-import { getPublishedPromptByCategory } from '@/lib/ai/prompt-library-loader'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Checkin, OnboardingProfile } from '@/types/database'
@@ -134,22 +133,25 @@ function buildPackUserPrompt(
     'Produce TWO sections with the exact delimiters below.',
     '',
     '===COACH_BRIEFING===',
-    'Internal only. Coach skim in under 60 seconds. Plain text. Headings:',
-    'SNAPSHOT',
-    'FLAGS (use bullet dots like •, not hyphens)',
-    'CLIENT VOICE',
-    'HOLD OR NUDGE',
+    'Internal only. Max 40 words total. Plain text, no fluff.',
+    'Format exactly:',
+    'Status: one short line on how the week is going',
+    'Watch: one short line on the main risk or win',
+    'Do: one short line on what the coach should do next',
     '',
     '===CLIENT_REPLY===',
-    'A message the coach will send to the client in chat, as if the coach typed it themselves.',
+    'WhatsApp style message the coach will paste and send.',
+    'This is a MID-WEEK check-in reply, not a full weekly review.',
     'Rules for CLIENT_REPLY only:',
-    `Address them as ${firstName(profile)}.`,
-    'Warm, direct, human Indian online coach tone. Supportive but accountable.',
-    'Reference their actual wins, slips, scores, questions, or comments. Do not be generic.',
+    `Address them as ${firstName(profile)}. Start with their name, then one short warm line.`,
+    'Warm, direct, human Indian online coach tone. Sound like a real coach texting, not a report.',
+    'Pick ONE concrete detail from their wins, slips, scores, questions, or comments. Do not be generic.',
     'Answer their questions briefly if any. Give at most 1 clear next action for the rest of the week.',
+    'Keep it lighter and shorter than a Sunday weekly reply.',
     'Do not invent measurements, medical diagnoses, or plan rewrites.',
     'Do not mention AI, templates, or that this is automated.',
     'Do not use Markdown, asterisks, or bullet symbols.',
+    'No corporate phrases like "great job staying consistent", "proud of you for", "keep crushing", "lean into", "prioritize recovery".',
     'CRITICAL: Never use hyphen, en dash, or em dash characters anywhere in CLIENT_REPLY. Use commas, periods, or new sentences instead.',
     `HARD LIMIT: CLIENT_REPLY must be at most ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words. Aim for 30 to 40 words. Never exceed ${MIDWEEK_CLIENT_REPLY_MAX_WORDS}.`,
     'One short WhatsApp style message. Ready to send as is.',
@@ -157,11 +159,13 @@ function buildPackUserPrompt(
 }
 
 const PACK_SYSTEM = [
-  'You are writing for a real human coach on LURVOX.',
+  'You write short human coach texts for LURVOX.',
   'Output exactly two sections: ===COACH_BRIEFING=== then ===CLIENT_REPLY===.',
+  'CLIENT_REPLY is a mid-week check-in reply: casual, specific, lighter than a weekly review, never AI sounding.',
+  `CLIENT_REPLY hard max ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words.`,
+  'COACH_BRIEFING must be under 40 words.',
   'Be concrete. Never invent facts not in the check-in.',
   'In CLIENT_REPLY never use any hyphen or dash character.',
-  `CLIENT_REPLY hard max ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words.`,
 ].join(' ')
 
 function extractSection(raw: string, marker: string, nextMarker?: string): string {
@@ -281,10 +285,8 @@ export async function generateMidWeekAnalysis(input: {
   }
 
   const previous = await loadPreviousCheckin(input.checkin)
-  const libraryPrompt = await getPublishedPromptByCategory('mid_week_analysis')
-  const systemPrompt = libraryPrompt?.promptBody?.trim()
-    ? `${PACK_SYSTEM}\n\n# Library template (apply spirit, still output both delimiters)\n${libraryPrompt.promptBody}`
-    : PACK_SYSTEM
+  // Keep pack format fixed; library templates tend to inflate length and sound AI.
+  const systemPrompt = PACK_SYSTEM
   const userPrompt = buildPackUserPrompt(input.profile, input.checkin, previous)
 
   const started = Date.now()
@@ -293,8 +295,8 @@ export async function generateMidWeekAnalysis(input: {
       systemPrompt,
       userPrompt,
       model: MODELS.CLAUDE_HAIKU,
-      maxTokens: 1400,
-      temperature: 0.45,
+      maxTokens: 500,
+      temperature: 0.55,
     })
     const parsed = parsePackOutput(result.text)
     if (!parsed.summary && !parsed.clientReply) throw new Error('Empty mid-week analysis')
@@ -309,16 +311,17 @@ export async function generateMidWeekAnalysis(input: {
     if (!clientReply.trim()) {
       const replyOnly = await generateClaudeResponse({
         systemPrompt: [
-          'You are a real LURVOX coach writing a WhatsApp style check in reply.',
+          'You are a real LURVOX coach texting a client on WhatsApp.',
           'Output ONLY the client message. No headings. No markdown.',
+          'This is a mid-week check-in reply, not a full weekly review. Casual and specific.',
           'Never use hyphen, en dash, or em dash characters.',
           `Hard max ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words.`,
         ].join(' '),
         userPrompt: [
           buildCheckinFacts(input.profile, input.checkin, previous),
           '',
-          `Write the client reply to ${firstName(input.profile)} now.`,
-          'Warm, direct, human. Reference their check in.',
+          `Write the mid-week client reply to ${firstName(input.profile)} now.`,
+          'Warm, direct, human. One concrete detail from their check in. One next action max.',
           `HARD LIMIT: at most ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words. Aim for 30 to 40 words.`,
           'CRITICAL: zero hyphen or dash characters in the entire message.',
         ].join('\n'),
@@ -332,7 +335,7 @@ export async function generateMidWeekAnalysis(input: {
       outputTokens += replyOnly.outputTokens
     }
 
-    if (!summary.trim()) summary = 'Briefing unavailable. Use the client reply below.'
+    if (!summary.trim()) summary = 'Status: see reply. Watch: n/a. Do: send reply.'
     if (!clientReply.trim()) throw new Error('Empty mid-week client reply')
 
     clientReply = finalizeClientReply(clientReply)
@@ -342,9 +345,7 @@ export async function generateMidWeekAnalysis(input: {
       coachId: input.coachId ?? null,
       action: 'mid_week_analysis',
       model: result.model,
-      promptVersion: libraryPrompt
-        ? `library:${libraryPrompt.slug}:v${libraryPrompt.version}+reply`
-        : 'fallback-v3-pack',
+      promptVersion: 'fallback-v4-brief-human',
       latencyMs: Date.now() - started,
       promptTokens: inputTokens,
       completionTokens: outputTokens,
@@ -380,10 +381,13 @@ export async function generateMidWeekAnalysis(input: {
   }
 }
 
-/** Generate packs for unreviewed mid-week check-ins missing a client reply. */
+/** Generate packs for unreviewed mid-week check-ins.
+ *  When force=true, regenerates even if a reply already exists (for unsent ones).
+ */
 export async function backfillMidWeekReplies(input: {
   coachId?: string | null
   limit?: number
+  force?: boolean
 }): Promise<{
   total: number
   generated: number
@@ -392,6 +396,7 @@ export async function backfillMidWeekReplies(input: {
 }> {
   const admin = createAdminClient()
   const limit = Math.min(Math.max(input.limit ?? 40, 1), 100)
+  const force = Boolean(input.force)
 
   let query = admin
     .from('checkins')
@@ -415,10 +420,12 @@ export async function backfillMidWeekReplies(input: {
 
   for (const checkin of checkins) {
     try {
-      const cached = await loadCachedMidWeekPack(checkin.id)
-      if (cached?.clientReply?.trim()) {
-        skipped += 1
-        continue
+      if (!force) {
+        const cached = await loadCachedMidWeekPack(checkin.id)
+        if (cached?.clientReply?.trim()) {
+          skipped += 1
+          continue
+        }
       }
 
       const { data: profile } = await admin

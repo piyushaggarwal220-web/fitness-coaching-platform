@@ -1,5 +1,6 @@
 import type { Checkin, CheckinType } from '@/types/database'
 
+/** Coaching weeks run Monday(1) → Sunday(7) IST, so day 3 = Wednesday and day 7 = Sunday. */
 export const MID_WEEK_DAY = 3
 export const WEEKLY_DAY = 7
 export const COACHING_WEEK_LENGTH = 7
@@ -38,7 +39,30 @@ export function getCoachingDateKey(referenceDate: Date = new Date()): string {
   return `${values.year}-${values.month}-${values.day}`
 }
 
-export type CheckinTaskStatus = 'available' | 'completed' | 'missed' | 'upcoming' | 'awaiting_review'
+/** Midnight-to-midnight bounds for a coaching calendar day in Asia/Kolkata. */
+export function getCoachingDayBoundsUtc(referenceDate: Date = new Date()): {
+  dateKey: string
+  startIso: string
+  endIso: string
+} {
+  const dateKey = getCoachingDateKey(referenceDate)
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const startUtcMs = Date.UTC(year, month - 1, day, 0, 0, 0) - INDIA_TIME_OFFSET_MS
+  return {
+    dateKey,
+    startIso: new Date(startUtcMs).toISOString(),
+    endIso: new Date(startUtcMs + DAY_MS).toISOString(),
+  }
+}
+
+export type CheckinTaskStatus =
+  | 'available'
+  | 'completed'
+  | 'missed'
+  | 'upcoming'
+  | 'awaiting_review'
+  /** Slot fell due before this client's plan was delivered — never their responsibility. */
+  | 'skipped'
 
 export type ScheduledCheckin = {
   type: CheckinType
@@ -135,14 +159,65 @@ export function getAbsoluteCoachingDay(coachingWeek: number, dayInWeek: number):
   return (coachingWeek - 1) * COACHING_WEEK_LENGTH + dayInWeek
 }
 
-/** Day 3 is anchor +48h; Day 7 is anchor +144h; later weeks recur every 168h. */
+/** Midnight IST of the Monday that starts the calendar week containing `date`. */
+function getMondayWeekStart(date: Date): Date {
+  const indiaTime = new Date(date.getTime() + INDIA_TIME_OFFSET_MS)
+  // getUTCDay on the shifted clock gives the IST weekday. Sunday(0) belongs to the week that began 6 days earlier.
+  const istWeekday = indiaTime.getUTCDay()
+  const daysSinceMonday = istWeekday === 0 ? 6 : istWeekday - 1
+  const mondayUtcMidnight = Date.UTC(
+    indiaTime.getUTCFullYear(),
+    indiaTime.getUTCMonth(),
+    indiaTime.getUTCDate() - daysSinceMonday
+  )
+  return new Date(mondayUtcMidnight - INDIA_TIME_OFFSET_MS)
+}
+
+/** IST weekday of a moment, Monday=1 … Sunday=7. */
+function getIstWeekdayNumber(date: Date): number {
+  const istWeekday = new Date(date.getTime() + INDIA_TIME_OFFSET_MS).getUTCDay()
+  return istWeekday === 0 ? 7 : istWeekday
+}
+
+/**
+ * Monday IST that starts coaching week 1.
+ *
+ * Clients who start late in the week (Friday, Saturday, Sunday) would otherwise get a rushed
+ * check-in a day or two after their plan lands, so their first coaching week begins the
+ * following Monday instead. Monday–Thursday starts use the current week.
+ */
+export function getScheduleWeekOneStart(scheduleStartedAt: string | Date): Date {
+  const anchor = anchorDate(scheduleStartedAt)
+  const weekStart = getMondayWeekStart(anchor)
+  if (getIstWeekdayNumber(anchor) >= 5) {
+    return new Date(weekStart.getTime() + 7 * DAY_MS)
+  }
+  return weekStart
+}
+
+/**
+ * Calendar due date: mid-week lands on Wednesday 00:00 IST and weekly on Sunday 00:00 IST
+ * of the client's Nth coaching week. Every client shares the same Wed/Sun rhythm.
+ */
 export function getDueDate(
   scheduleStartedAt: string | Date,
   coachingWeek: number,
   dayInWeek: number
 ): Date {
-  const absoluteDay = getAbsoluteCoachingDay(coachingWeek, dayInWeek)
-  return new Date(anchorDate(scheduleStartedAt).getTime() + (absoluteDay - 1) * DAY_MS)
+  const weekOneStart = getScheduleWeekOneStart(scheduleStartedAt)
+  const weekStart = weekOneStart.getTime() + (coachingWeek - 1) * 7 * DAY_MS
+  return new Date(weekStart + (dayInWeek - 1) * DAY_MS)
+}
+
+/**
+ * A slot that fell due before the plan was delivered is not the client's to answer
+ * (e.g. a Thursday start never had that week's Wednesday), so it is skipped, not missed.
+ */
+export function isSlotBeforeScheduleStart(
+  scheduleStartedAt: string | Date,
+  dueDate: Date
+): boolean {
+  return dueDate.getTime() < anchorDate(scheduleStartedAt).getTime()
 }
 
 export function buildScheduledCheckin(
@@ -191,8 +266,10 @@ function isSkippedMissedSlot(
   type: CheckinType,
   referenceDate: Date
 ): boolean {
-  return !hasSubmission(checkins, week, type) &&
-    isCheckinSubmissionWindowClosed(buildScheduledCheckin(scheduleStartedAt, week, type).dueDate, referenceDate)
+  if (hasSubmission(checkins, week, type)) return false
+  const { dueDate } = buildScheduledCheckin(scheduleStartedAt, week, type)
+  if (isSlotBeforeScheduleStart(scheduleStartedAt, dueDate)) return true
+  return isCheckinSubmissionWindowClosed(dueDate, referenceDate)
 }
 
 export function getActiveCoachingWeek(
@@ -214,7 +291,8 @@ export function getActiveCoachingWeek(
 function resolveTaskStatus(
   scheduled: ScheduledCheckin,
   submission: { id: string; reviewed: boolean } | undefined,
-  referenceDate: Date
+  referenceDate: Date,
+  scheduleStartedAt?: string | Date | null
 ): CheckinTask {
   if (submission) {
     return {
@@ -223,6 +301,9 @@ function resolveTaskStatus(
       checkinId: submission.id,
       reviewed: submission.reviewed,
     }
+  }
+  if (scheduleStartedAt && isSlotBeforeScheduleStart(scheduleStartedAt, scheduled.dueDate)) {
+    return { ...scheduled, status: 'skipped' }
   }
   if (isWithinCheckinSubmissionWindow(scheduled.dueDate, referenceDate)) {
     return { ...scheduled, status: 'available' }
@@ -243,7 +324,10 @@ function findNextIncompleteCheckin(
       if (hasSubmission(checkins, week, type)) continue
       if (isSkippedMissedSlot(scheduleStartedAt, checkins, week, type, referenceDate)) continue
       const scheduled = buildScheduledCheckin(scheduleStartedAt, week, type)
-      return { scheduled, status: resolveTaskStatus(scheduled, undefined, referenceDate).status }
+      return {
+        scheduled,
+        status: resolveTaskStatus(scheduled, undefined, referenceDate, scheduleStartedAt).status,
+      }
     }
   }
   return null
@@ -275,6 +359,7 @@ export function getCheckinStatusLabel(status: CheckinTaskStatus): string {
     available: 'Available',
     missed: 'Missed',
     awaiting_review: 'Awaiting coach reply (usually 5–8h)',
+    skipped: 'Skipped',
   }[status]
 }
 
@@ -313,7 +398,7 @@ export function getClientCheckinSchedule(
     const submission = findSubmission(checkins, activeCoachingWeek, type)
     return options?.bypassSchedule && !submission
       ? { ...scheduled, status: 'available' as const }
-      : resolveTaskStatus(scheduled, submission, referenceDate)
+      : resolveTaskStatus(scheduled, submission, referenceDate, scheduleStartedAt)
   })
   const todayTasks = weekCheckins.filter((task) =>
     task.status === 'available' || task.status === 'awaiting_review'
@@ -494,6 +579,8 @@ export function getCoachCheckinQueue(
         const scheduled = buildScheduledCheckin(client.checkin_schedule_started_at, week, type)
         const submission = clientCheckins.find((checkin) => matchesScheduledSlot(checkin, week, type))
         const dueDate = submission?.due_at ? new Date(submission.due_at) : scheduled.dueDate
+        // Late-week starters never owed the slots that fell before their plan landed.
+        if (!submission && isSlotBeforeScheduleStart(client.checkin_schedule_started_at, dueDate)) continue
         const common = {
           clientId: client.id,
           clientName: client.name || client.email || 'Client',

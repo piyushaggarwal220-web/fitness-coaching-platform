@@ -1,6 +1,8 @@
 /**
- * Backfill AI mid-week client replies for unreviewed Day 3 check-ins.
- * Usage: npx tsx --env-file=.env.local scripts/backfill-midweek-replies.ts
+ * Backfill / refresh AI mid-week client replies for unreviewed Day 3 check-ins.
+ * Usage:
+ *   npx tsx --env-file=.env.local scripts/backfill-midweek-replies.ts
+ *   npx tsx --env-file=.env.local scripts/backfill-midweek-replies.ts --force --limit=50
  */
 import { backfillMidWeekReplies } from '../src/lib/ai/midweek-analysis'
 
@@ -9,9 +11,10 @@ async function main() {
   const limit = limitArg ? Number(limitArg.split('=')[1]) : 50
   const coachArg = process.argv.find((a) => a.startsWith('--coach='))
   const coachId = coachArg ? coachArg.split('=')[1] : null
+  const force = process.argv.includes('--force')
 
-  console.log('[backfill-midweek] starting', { limit, coachId })
-  const result = await backfillMidWeekReplies({ coachId, limit })
+  console.log('[backfill-midweek] starting', { limit, coachId, force })
+  const result = await backfillMidWeekReplies({ coachId, limit, force })
   console.log('[backfill-midweek] done', result)
   if (result.failed.length) {
     for (const f of result.failed) {

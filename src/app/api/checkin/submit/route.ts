@@ -4,6 +4,7 @@ import { logApiDev } from '@/lib/api-dev-log'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { generateMidWeekAnalysis } from '@/lib/ai/midweek-analysis'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
+import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import { shouldBypassCheckinScheduleServer } from '@/lib/config'
 import {
   buildCheckinSummary,
@@ -13,6 +14,7 @@ import {
 } from '@/lib/checkin-schedule'
 import { formatMidWeekCheckinChatMessage } from '@/lib/checkin-chat'
 import { postCheckinToCoachChat } from '@/lib/coach-chat'
+import { computeAutoReplyAt } from '@/lib/checkin-auto-reply-schedule'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -231,6 +233,8 @@ export async function POST(request: Request) {
       training_performance: body.workout_adherence,
       pain_injuries: body.pain_injuries ?? null,
       reviewed: false,
+      // Schedules the automated reply; the coach can still answer first, which cancels it.
+      auto_reply_at: computeAutoReplyAt(new Date()).toISOString(),
     }
 
     let insertRow: Record<string, unknown>
@@ -382,23 +386,28 @@ export async function POST(request: Request) {
     }
 
     if (body.checkinType === 'weekly') {
-      // Mark in-flight before the response returns so coaches see Generating immediately.
-      void persistDraftGenerationStarted({
-        clientId: user.id,
-        coachId: profile.coach_id,
-        checkinId: inserted.id,
-        trigger: 'auto',
-      }).catch((err) => console.error('[checkin-submit] draft start log failed:', err))
+      const planSlug = await fetchCapturedPlanSlug(user.id)
+      const autoUpdate = shouldAutoGenerateWeeklyPlanDraft(planSlug, scheduled.coachingWeek)
 
-      after(() =>
-        generateWeeklyPlanDraft({
+      if (autoUpdate) {
+        // Mark in-flight before the response returns so coaches see Generating immediately.
+        void persistDraftGenerationStarted({
           clientId: user.id,
           coachId: profile.coach_id,
           checkinId: inserted.id,
-          coachingWeek: scheduled.coachingWeek,
           trigger: 'auto',
-        }).catch((err) => console.error('[checkin-submit] auto draft failed:', err))
-      )
+        }).catch((err) => console.error('[checkin-submit] draft start log failed:', err))
+
+        after(() =>
+          generateWeeklyPlanDraft({
+            clientId: user.id,
+            coachId: profile.coach_id,
+            checkinId: inserted.id,
+            coachingWeek: scheduled.coachingWeek,
+            trigger: 'auto',
+          }).catch((err) => console.error('[checkin-submit] auto draft failed:', err))
+        )
+      }
     }
 
     logApiDev('checkin_submit_success', {

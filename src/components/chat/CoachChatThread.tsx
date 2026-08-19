@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { CallRequest, CallRequestStatus, ConversationMessage } from '@/types/database'
 import { readApiJson } from '@/lib/api-response'
 import { formatMessageTime } from '@/lib/coach-chat-ui'
 import { isCheckinSystemMessage, isWeeklyCheckinSystemMessage } from '@/lib/checkin-chat'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
+import { CoachReplyRatingPrompt } from '@/components/chat/CoachReplyRating'
 import { StorageImage } from '@/components/ui/StorageImage'
 import { PhotoGalleryViewer, type GalleryPhoto } from '@/components/journey/PhotoGalleryViewer'
 import { motionClass } from '@/lib/motion'
@@ -109,6 +110,30 @@ function messagesVisuallyEqual(a: ConversationMessage[], b: ConversationMessage[
   return true
 }
 
+function dayKeyOf(iso: string): string {
+  const date = new Date(iso)
+  return Number.isNaN(date.getTime()) ? iso : date.toDateString()
+}
+
+function dayLabelOf(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+
+  if (date.toDateString() === today.toDateString()) return 'Today'
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+
+  const sameYear = date.getFullYear() === today.getFullYear()
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  })
+}
+
 export function CoachChatThread({ conversationId, coachId, viewer, initialMessages = [] }: CoachChatThreadProps) {
   const palette = viewer === 'coach' ? waCoach : waDark
   const incomingText = viewer === 'coach' ? waCoach.incomingText : waDark.text
@@ -130,6 +155,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [gallery, setGallery] = useState<{ photos: GalleryPhoto[]; index: number } | null>(null)
   const threadRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const lastPeerMessageIdRef = useRef<string | null>(null)
   const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sendingRef = useRef(false)
@@ -528,6 +554,37 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current)
   }, [])
 
+  // Grow the composer with the draft, capped by the textarea's maxHeight.
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [input])
+
+  /**
+   * Day chips and run boundaries, so the thread reads as grouped conversation
+   * instead of an undifferentiated stack of bubbles.
+   */
+  const rows = useMemo(() => {
+    const runKey = (msg: ConversationMessage) =>
+      msg.sender_type === 'system' || msg.message_type === 'system' ? 'system' : msg.sender_type
+
+    return messages.map((msg, index) => {
+      const dayKey = dayKeyOf(msg.created_at)
+      const prev = index > 0 ? messages[index - 1] : null
+      const next = index + 1 < messages.length ? messages[index + 1] : null
+      const startsDay = !prev || dayKeyOf(prev.created_at) !== dayKey
+
+      return {
+        msg,
+        dateLabel: startsDay ? dayLabelOf(msg.created_at) : null,
+        isRunStart: startsDay || !prev || runKey(prev) !== runKey(msg),
+        isRunEnd: !next || runKey(next) !== runKey(msg) || dayKeyOf(next.created_at) !== dayKey,
+      }
+    })
+  }, [messages])
+
   const peerLabel = viewer === 'client' ? 'Coach' : 'Client'
   const showSend = input.trim().length > 0 || Boolean(imagePreview)
   const remainingMs = responseDeadline && now > 0 ? responseDeadline - now : null
@@ -639,12 +696,18 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           </div>
         )}
 
-        {messages.map((msg) => {
+        {rows.map(({ msg, dateLabel, isRunStart, isRunEnd }) => {
           const isMine =
             (viewer === 'client' && msg.sender_type === 'client') ||
             (viewer === 'coach' && msg.sender_type === 'coach')
           const isSystem = msg.sender_type === 'system' || msg.message_type === 'system'
           const shouldAnimate = historyReadyRef.current && !animatedIdsRef.current.has(msg.id)
+
+          const dateChip = dateLabel ? (
+            <div key={`day-${msg.id}`} style={styles.dateChipRow}>
+              <span style={styles.dateChip}>{dateLabel}</span>
+            </div>
+          ) : null
 
           if (isSystem) {
             // Weekly check-in dumps must never appear in chat (client or coach).
@@ -655,23 +718,26 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
             }
             const isCheckin = isCheckinSystemMessage(msg.content)
             return (
-              <div
-                key={msg.id}
-                className={`${isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'}${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
-                style={isCheckin ? styles.checkinSystemMsg : styles.systemMsg}
-              >
-                {isCheckin ? (
-                  <pre style={styles.checkinContent}>{msg.content}</pre>
-                ) : (
-                  msg.content
-                )}
-              </div>
+              <Fragment key={msg.id}>
+                {dateChip}
+                <div
+                  className={`${isCheckin ? 'coach-chat-checkin' : 'coach-chat-system'}${shouldAnimate ? ` ${motionClass.messageEnter}` : ''}`}
+                  style={isCheckin ? styles.checkinSystemMsg : styles.systemMsg}
+                >
+                  {isCheckin ? (
+                    <pre style={styles.checkinContent}>{msg.content}</pre>
+                  ) : (
+                    msg.content
+                  )}
+                </div>
+              </Fragment>
             )
           }
 
           return (
+            <Fragment key={msg.id}>
+            {dateChip}
             <div
-              key={msg.id}
               className={
                 shouldAnimate
                   ? (isMine ? motionClass.messageEnterMine : motionClass.messageEnterTheirs)
@@ -683,6 +749,8 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                 alignItems: isMine ? 'flex-end' : 'flex-start',
                 maxWidth: '100%',
                 paddingInline: 4,
+                // Extra air only between runs, so a burst from one sender reads as one block.
+                marginTop: isRunStart && !dateLabel ? 8 : 0,
               }}
             >
               <div
@@ -701,6 +769,8 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                 }}
                 style={{
                   ...(isMine ? styles.bubbleMine : styles.bubbleOther),
+                  // Only the closing bubble of a run keeps the tail corner.
+                  ...(isRunEnd ? null : { borderRadius: 8 }),
                   ...(!isMine
                     ? {
                         backgroundColor: palette.incoming,
@@ -794,6 +864,15 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                 </div>
               </div>
             </div>
+            {viewer === 'client' &&
+              msg.sender_type === 'coach' &&
+              isRunEnd &&
+              !msg.id.startsWith('temp-') && (
+                <div style={{ alignSelf: 'flex-start', maxWidth: '78%', paddingInline: 4, marginTop: 4 }}>
+                  <CoachReplyRatingPrompt messageId={msg.id} coachId={coachId} />
+                </div>
+              )}
+            </Fragment>
           )
         })}
 
@@ -833,7 +912,9 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           <span style={styles.composerIcon} aria-hidden>
             <Smile size={22} color={wa.textMuted} />
           </span>
-          <input
+          <textarea
+            ref={inputRef}
+            rows={1}
             value={input}
             onChange={(e) => { setInput(e.target.value); handleTyping() }}
             onKeyDown={(e) => {
@@ -1005,6 +1086,27 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 8,
     boxShadow: '0 1px 1px rgba(0,0,0,0.2)',
   },
+  dateChipRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    // Rides along the top edge while its day scrolls past.
+    position: 'sticky',
+    top: 4,
+    zIndex: 3,
+    margin: '10px 0 2px',
+    pointerEvents: 'none',
+  },
+  dateChip: {
+    backgroundColor: wa.systemBg,
+    color: wa.systemText,
+    fontSize: 11.5,
+    fontWeight: 600,
+    letterSpacing: '0.03em',
+    textTransform: 'uppercase',
+    padding: '4px 12px',
+    borderRadius: 999,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.28)',
+  },
   systemMsg: {
     textAlign: 'center',
     color: wa.systemText,
@@ -1134,13 +1236,18 @@ const styles: Record<string, CSSProperties> = {
     flex: 1,
     minWidth: 0,
     minHeight: 36,
+    maxHeight: 132,
     padding: '8px 4px',
     border: 'none',
     borderRadius: 0,
     fontSize: 16,
+    lineHeight: 1.35,
     outline: 'none',
     backgroundColor: 'transparent',
     color: wa.text,
+    resize: 'none',
+    overflowY: 'auto',
+    fontFamily: 'inherit',
   },
   sendBtn: {
     minHeight: 44,

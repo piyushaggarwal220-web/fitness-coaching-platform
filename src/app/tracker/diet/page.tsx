@@ -13,7 +13,7 @@ export default function DietTrackerPage() {
     <TrackerModulePage
       title="Diet Tracker"
       isAvailable={hasDiet}
-      emptyMessage="No meals found in your active plan. Ask your coach to add a structured nutrition section with meal headers (Breakfast, Lunch, etc.)."
+      emptyMessage="No meals found in your active plan yet. Open your plan to check the nutrition section, or ask your coach to add meal headers."
     >
       {sections && day && scores && (
         <DietModule

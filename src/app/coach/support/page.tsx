@@ -38,12 +38,12 @@ export default function CoachSupportPage() {
       const [openRes, mineRes] = await Promise.all([
         supabase
           .from('support_requests')
-          .select('*')
+          .select('id, client_id, category, title, message, status, claimed_by, claimed_at, closed_at, priority, client_age, client_gender, client_goal, created_at, updated_at')
           .eq('status', 'open')
           .order('created_at', { ascending: false }),
         supabase
           .from('support_requests')
-          .select('*, profiles:client_id(name, email, age, gender, fitness_goal)')
+          .select('id, client_id, category, title, message, status, claimed_by, claimed_at, closed_at, priority, client_age, client_gender, client_goal, created_at, updated_at, profiles:client_id(name, email, age, gender, fitness_goal)')
           .eq('claimed_by', coachData.id)
           .order('updated_at', { ascending: false }),
       ])
@@ -54,8 +54,8 @@ export default function CoachSupportPage() {
         return
       }
 
-      const open = (openRes.data as SupportRequestWithClient[]) ?? []
-      const mine = (mineRes.data as SupportRequestWithClient[]) ?? []
+      const open = (openRes.data as unknown as SupportRequestWithClient[]) ?? []
+      const mine = (mineRes.data as unknown as SupportRequestWithClient[]) ?? []
       const merged = [...open, ...mine.filter((m) => m.status !== 'open')]
       const unique = Array.from(new Map(merged.map((r) => [r.id, r])).values())
       setRequests(unique)

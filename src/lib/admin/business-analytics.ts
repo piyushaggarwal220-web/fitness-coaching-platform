@@ -1,3 +1,4 @@
+import { getActiveTodayMetrics } from '@/lib/admin/active-today'
 import { calculateAiCostUsd, calculateRazorpayFeeInr, usdToInr } from '@/lib/admin/pricing'
 import { DEFAULTS, MODELS } from '@/lib/ai/config'
 import { COACHING_TIME_ZONE, getCoachingDateKey } from '@/lib/checkin-schedule'
@@ -25,6 +26,7 @@ export type RevenueMetrics = {
 export type CustomerMetrics = {
   totalCustomers: number
   activeCustomers: number
+  activeToday: number
   newToday: number
   newThisMonth: number
 }
@@ -309,6 +311,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
     codesRes,
     usagesRes,
     clientProfilesRes,
+    activeToday,
   ] = await Promise.all([
     admin.from('purchases').select('id, user_id, amount_paise, created_at, status, refunded_amount_paise').order('created_at', { ascending: false }),
     admin.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'client'),
@@ -339,6 +342,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
       .from('profiles')
       .select('id, access_source, payment_confirmed, onboarding_complete, subscription_expires_at')
       .eq('role', 'client'),
+    getActiveTodayMetrics(),
   ])
 
   const purchases = (purchasesRes.data ?? []) as PurchaseRow[]
@@ -377,6 +381,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
   const customers: CustomerMetrics = {
     totalCustomers: clientsRes.count ?? 0,
     activeCustomers: activeClientIds.size,
+    activeToday: activeToday.count,
     newToday: uniqueDays(purchases, todayStart, nextDay),
     newThisMonth: uniqueDays(purchases, monthStart),
   }
@@ -652,6 +657,10 @@ export async function listPurchases(params: PurchaseListParams): Promise<Purchas
   let query = admin
     .from('purchases')
     .select('*, profiles:user_id(name, email)', { count: 'exact' })
+    // Enrollment / redemption codes are tracked separately — keep Purchases = Razorpay only.
+    .neq('status', 'redeemed')
+    .not('razorpay_payment_id', 'like', 'enroll_%')
+    .not('razorpay_order_id', 'like', 'enroll_order_%')
 
   if (params.status === 'unclaimed') {
     query = query.eq('status', 'captured').is('claimed_at', null)

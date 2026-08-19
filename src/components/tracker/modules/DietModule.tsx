@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import {
   CompletionToggle,
   ExpandableRow,
   MacroChip,
   ProgressBar,
+  trackerSurfaceInset,
 } from '@/components/tracker/TrackerPrimitives'
 import { colors, radius, spacing } from '@/lib/design-tokens'
 import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
@@ -51,6 +52,13 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
     },
     [onPatch]
   )
+
+  const didAutoSelectDietDay = useRef(false)
+  useEffect(() => {
+    if (!multiDay || selectedKey || !suggestion || saving || didAutoSelectDietDay.current) return
+    didAutoSelectDietDay.current = true
+    selectDietDay(suggestion)
+  }, [multiDay, selectedKey, suggestion, saving, selectDietDay])
 
   const visibleMeals = useMemo(() => {
     if (!multiDay) return meals
@@ -142,8 +150,7 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
             marginBottom: spacing[4],
             padding: '12px 14px',
             borderRadius: radius.md,
-            background: colors.bgElevated,
-            border: `1px solid ${colors.borderSubtle}`,
+            ...trackerSurfaceInset,
           }}
         >
           <div>

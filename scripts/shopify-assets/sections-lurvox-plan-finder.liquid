@@ -1,0 +1,899 @@
+{% comment %}
+  LURVOX — Find your plan (tap quiz)
+  Full intake quiz → recommend a goal-based plan page (not checkout)
+  cache-bust 1786509500004
+{% endcomment %}
+
+{%- liquid
+  assign accent = section.settings.accent_color | default: '#FF6200'
+  assign plan_base = section.settings.plan_base | default: 'https://app.lurvox.in/plans'
+  assign talk_url = section.settings.talk_url | default: '/pages/talk-to-a-coach'
+  assign plans_url = section.settings.plans_url | default: '/#plans'
+-%}
+
+<section
+  class="lx-pf"
+  id="lx-pf-{{ section.id }}"
+  style="--lx-accent: {{ accent }};"
+  data-plan-base="{{ plan_base }}"
+  data-talk-url="{{ talk_url }}"
+  data-plans-url="{{ plans_url }}"
+>
+  <div class="lx-pf__bg" aria-hidden="true"></div>
+
+  <div class="lx-pf__inner page-width">
+    <header class="lx-pf__header" data-pf-header>
+      <p class="lx-pf__eyebrow">{{ section.settings.eyebrow | default: 'Plan finder' }}</p>
+      <h1 class="lx-pf__title">{{ section.settings.heading | default: 'What plan do you actually need?' }}</h1>
+      <p class="lx-pf__subtitle">
+        {{ section.settings.subheading | default: 'Answer each question honestly. We match a goal, then send you to that plan page. No payment here.' }}
+      </p>
+    </header>
+
+    <div class="lx-pf__card" data-pf-quiz>
+      <div class="lx-pf__progress-wrap">
+        <div class="lx-pf__progress" aria-hidden="true">
+          <div class="lx-pf__progress-bar" data-pf-progress></div>
+        </div>
+        <p class="lx-pf__step-label" data-pf-step-label>Tap an answer to continue</p>
+      </div>
+      <h2 class="lx-pf__question" data-pf-question></h2>
+      <div class="lx-pf__options" data-pf-options role="group"></div>
+      <button type="button" class="lx-pf__back" data-pf-back hidden>Back</button>
+    </div>
+
+    <div class="lx-pf__result" data-pf-result hidden>
+      <p class="lx-pf__result-eyebrow">Best fit for you</p>
+      <h2 class="lx-pf__result-title" data-pf-result-title></h2>
+      <p class="lx-pf__result-price" data-pf-result-price></p>
+      <p class="lx-pf__result-why" data-pf-result-why></p>
+      <ul class="lx-pf__result-bullets" data-pf-result-bullets></ul>
+      <div class="lx-pf__compare" data-pf-compare hidden>
+        <p class="lx-pf__compare-title" data-pf-compare-title>Why this plan, and what the others miss</p>
+        <ul class="lx-pf__compare-list" data-pf-compare-list></ul>
+      </div>
+      <p class="lx-pf__result-next">
+        After you start: coach assigned · Day 1 personal plan · mid-week and weekly check-ins in the app.
+      </p>
+      <div class="lx-pf__result-actions">
+        <a class="lx-pf__btn lx-pf__btn--primary" data-pf-checkout href="#">
+          <span data-pf-checkout-label>See this plan</span>
+        </a>
+        <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden>
+          Prefer the finished look? Aesthetic · ₹292/mo
+        </a>
+        <a class="lx-pf__btn lx-pf__btn--ghost" href="{{ talk_url }}">Talk to a coach</a>
+        <a class="lx-pf__btn lx-pf__btn--ghost" href="/">Back to home</a>
+        <a class="lx-pf__link" href="{{ plans_url }}">Compare all plans</a>
+      </div>
+      <button type="button" class="lx-pf__restart" data-pf-restart>Retake quiz</button>
+    </div>
+  </div>
+</section>
+
+<style>
+  body,
+  #MainContent,
+  .shopify-section:has(.lx-pf) {
+    background: #050505 !important;
+  }
+
+  #lx-pf-{{ section.id }} {
+    --lx-ink: #f7f7f7;
+    --lx-muted: rgba(247, 247, 247, 0.64);
+    --lx-line: rgba(255, 255, 255, 0.12);
+    --lx-surface: #121212;
+    --lx-surface-2: #1a1a1a;
+    position: relative;
+    color: var(--lx-ink);
+    padding: clamp(18px, 3.5vw, 56px) 12px clamp(48px, 8vw, 100px);
+    overflow: hidden;
+    min-height: 72vh;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 55% at 12% -10%, color-mix(in srgb, var(--lx-accent) 28%, transparent), transparent 58%),
+      radial-gradient(ellipse 50% 40% at 100% 80%, rgba(255, 255, 255, 0.05), transparent 55%),
+      linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+    pointer-events: none;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__inner {
+    position: relative;
+    z-index: 1;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__eyebrow {
+    margin: 0 0 10px;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--lx-accent);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__title {
+    margin: 0 0 12px;
+    font-size: clamp(1.55rem, 5.8vw, 2.45rem);
+    font-weight: 850;
+    letter-spacing: -0.035em;
+    line-height: 1.12;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__subtitle {
+    margin: 0 auto;
+    max-width: 34em;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--lx-muted);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__card,
+  #lx-pf-{{ section.id }} .lx-pf__result {
+    background: linear-gradient(180deg, #161616 0%, var(--lx-surface) 100%);
+    border: 1px solid var(--lx-line);
+    border-radius: 22px;
+    padding: clamp(18px, 3.8vw, 32px);
+    box-shadow:
+      0 24px 50px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__progress-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__progress {
+    height: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__progress-bar {
+    height: 100%;
+    width: 8%;
+    background: linear-gradient(90deg, var(--lx-accent), #ff8a3d);
+    border-radius: 99px;
+    transition: width 0.28s ease;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__step-label {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--lx-muted);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__question {
+    margin: 0 0 18px;
+    font-size: clamp(1.2rem, 4.2vw, 1.5rem);
+    font-weight: 780;
+    letter-spacing: -0.025em;
+    line-height: 1.28;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__option {
+    appearance: none;
+    width: 100%;
+    text-align: left;
+    border: 1px solid var(--lx-line);
+    background: var(--lx-surface-2);
+    color: var(--lx-ink);
+    border-radius: 16px;
+    padding: 15px 16px;
+    font-size: 0.98rem;
+    font-weight: 600;
+    line-height: 1.35;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__option:hover,
+  #lx-pf-{{ section.id }} .lx-pf__option:focus-visible {
+    border-color: color-mix(in srgb, var(--lx-accent) 72%, white);
+    outline: none;
+    transform: translateY(-1px);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__option:active {
+    transform: translateY(0);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__option.is-selected {
+    border-color: var(--lx-accent);
+    background: color-mix(in srgb, var(--lx-accent) 18%, #1a1a1a);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--lx-accent) 35%, transparent);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__back,
+  #lx-pf-{{ section.id }} .lx-pf__restart {
+    margin-top: 18px;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--lx-muted);
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    padding: 0;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result {
+    text-align: center;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result-eyebrow {
+    margin: 0 0 8px;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--lx-accent);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result-title {
+    margin: 0 0 6px;
+    font-size: clamp(1.65rem, 5.2vw, 2.15rem);
+    font-weight: 850;
+    letter-spacing: -0.03em;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result-price {
+    margin: 0 0 16px;
+    font-size: 1.12rem;
+    font-weight: 700;
+    color: var(--lx-accent);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result-why {
+    margin: 0 0 14px;
+    font-size: 1.02rem;
+    line-height: 1.55;
+    color: rgba(247, 247, 247, 0.86);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result-bullets {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result-bullets li {
+    position: relative;
+    padding: 10px 12px 10px 34px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.92rem;
+    line-height: 1.4;
+    color: rgba(247, 247, 247, 0.88);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result-bullets li::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background: var(--lx-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--lx-accent) 25%, transparent);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__compare {
+    margin: 0 0 20px;
+    padding: 16px 16px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    text-align: left;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__compare-title {
+    margin: 0 0 12px;
+    font-size: 0.74rem;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--lx-muted);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__compare-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__compare-list li {
+    position: relative;
+    padding-left: 26px;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: rgba(247, 247, 247, 0.82);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__compare-list li::before {
+    position: absolute;
+    left: 0;
+    top: 0.05em;
+    font-weight: 800;
+    font-size: 0.95rem;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__compare-list li.is-pick {
+    color: var(--lx-ink);
+    font-weight: 650;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__compare-list li.is-pick::before {
+    content: '✓';
+    color: #46d17f;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__compare-list li.is-miss::before {
+    content: '✕';
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result-next {
+    margin: 0 0 22px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--lx-muted);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 750;
+    text-decoration: none;
+    padding: 12px 18px;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__btn--primary {
+    background: linear-gradient(180deg, #ff8a3d 0%, var(--lx-accent) 100%);
+    color: #111;
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--lx-accent) 35%, transparent);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__btn--ghost {
+    background: transparent;
+    color: var(--lx-ink);
+    border: 1px solid var(--lx-line);
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__link {
+    margin-top: 4px;
+    color: var(--lx-muted);
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  #lx-pf-{{ section.id }} .lx-pf__restart {
+    margin-top: 18px;
+  }
+
+  #lx-pf-{{ section.id }} [hidden] {
+    display: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #lx-pf-{{ section.id }} .lx-pf__progress-bar,
+    #lx-pf-{{ section.id }} .lx-pf__option {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var root = document.getElementById('lx-pf-{{ section.id }}');
+    if (!root) return;
+
+    var planBase = (root.getAttribute('data-plan-base') || 'https://app.lurvox.in/plans').replace(/\/$/, '');
+    var steps = [
+      {
+        key: 'goal',
+        q: 'What is your main goal right now?',
+        options: [
+          { id: 'fat', label: 'Lose fat / tone up', score: -1, goal: 'lose fat and tone up' },
+          { id: 'muscle', label: 'Build strength / add shape', score: 0, goal: 'build strength and shape' },
+          { id: 'recomp', label: 'Fat down and muscle up', score: 1, goal: 'recompose. Fat down, muscle up' },
+          { id: 'transform', label: 'A complete transformation', score: 2, goal: 'a complete transformation' }
+        ]
+      },
+      {
+        key: 'body',
+        q: 'How would you describe your starting point?',
+        options: [
+          { id: 'soft', label: 'Softer / carrying extra fat', score: -1 },
+          { id: 'skinny_fat', label: 'Skinny fat. Soft midsection', score: 1 },
+          { id: 'thin', label: 'Thin / hard to gain', score: 0 },
+          { id: 'fit', label: 'Already somewhat fit', score: 1 }
+        ]
+      },
+      {
+        key: 'history',
+        q: 'How long have you been trying to change your body?',
+        options: [
+          { id: 'never', label: 'This is my first real attempt', score: -1 },
+          { id: 'months', label: 'A few months, on and off', score: 0 },
+          { id: 'years', label: 'Years of starting and stopping', score: 2 }
+        ]
+      },
+      {
+        key: 'experience',
+        q: 'How experienced are you with training?',
+        options: [
+          { id: 'beginner', label: 'Beginner. I need structure', score: 0 },
+          { id: 'some', label: 'Some experience, inconsistent', score: 1 },
+          { id: 'advanced', label: 'I know what I am doing. I need accountability', score: 2 }
+        ]
+      },
+      {
+        key: 'time',
+        q: 'How many days a week can you realistically train?',
+        options: [
+          { id: 'low', label: '0 to 2 days', score: 1 },
+          { id: 'mid', label: '3 to 4 days', score: 0 },
+          { id: 'high', label: '5+ days', score: -1 }
+        ]
+      },
+      {
+        key: 'session',
+        q: 'How long can a training session be?',
+        options: [
+          { id: 'short', label: 'Under 30 minutes', score: 1 },
+          { id: 'normal', label: '30 to 60 minutes', score: 0 },
+          { id: 'long', label: '60+ minutes when needed', score: -1 }
+        ]
+      },
+      {
+        key: 'place',
+        q: 'Where will you train?',
+        options: [
+          { id: 'gym', label: 'Gym', score: 0 },
+          { id: 'home', label: 'Home', score: 0 },
+          { id: 'both', label: 'Both / not sure yet', score: 0 }
+        ]
+      },
+      {
+        key: 'food',
+        q: 'How do you want to eat?',
+        options: [
+          { id: 'home', label: 'Home cooked food. Keep it simple', score: 0 },
+          { id: 'mix', label: 'Home food + some eating out', score: 0 },
+          { id: 'lost', label: 'I do not know what to eat', score: 1 }
+        ]
+      },
+      {
+        key: 'sleep',
+        q: 'How is your sleep most nights?',
+        options: [
+          { id: 'good', label: 'Mostly solid', score: -1 },
+          { id: 'ok', label: 'Hit or miss', score: 0 },
+          { id: 'poor', label: 'Poor. I wake tired', score: 1 }
+        ]
+      },
+      {
+        key: 'stress',
+        q: 'How stressed is your week usually?',
+        options: [
+          { id: 'low', label: 'Manageable', score: -1 },
+          { id: 'mid', label: 'Busy but doable', score: 0 },
+          { id: 'high', label: 'Very high. I burn out easily', score: 2 }
+        ]
+      },
+      {
+        key: 'injury',
+        q: 'Any injuries or pain we should plan around?',
+        options: [
+          { id: 'none', label: 'Nothing major', score: 0 },
+          { id: 'mild', label: 'Mild aches now and then', score: 1 },
+          { id: 'limit', label: 'Yes. It limits how I train', score: 2 }
+        ]
+      },
+      {
+        key: 'blocker',
+        q: 'What usually stops you?',
+        options: [
+          { id: 'time', label: 'No time', score: -1 },
+          { id: 'food', label: 'Food / diet confusion', score: 0 },
+          { id: 'consistency', label: 'I start strong, then quit', score: 2 },
+          { id: 'knowledge', label: 'I do not know the right plan', score: 0 }
+        ]
+      },
+      {
+        key: 'accountability',
+        q: 'What kind of support actually works for you?',
+        options: [
+          { id: 'self', label: 'I am mostly self-driven', score: -1 },
+          { id: 'checkins', label: 'I need regular check ins', score: 1 },
+          { id: 'push', label: 'I need a coach who keeps me accountable', score: 2 }
+        ]
+      },
+      {
+        key: 'coachpast',
+        q: 'Have you worked with a coach before?',
+        options: [
+          { id: 'no', label: 'Never', score: 0 },
+          { id: 'failed', label: 'Yes, but it did not stick', score: 2 },
+          { id: 'yes', label: 'Yes, and it helped', score: 0 }
+        ]
+      },
+      {
+        key: 'timeline',
+        q: 'When do you want to see a real change?',
+        options: [
+          { id: 'fast', label: 'In about 90 days', score: -2 },
+          { id: 'steady', label: 'In about 6 months', score: 1 },
+          { id: 'patient', label: 'No rush. I want it to stick', score: 2 }
+        ]
+      },
+      {
+        key: 'commit',
+        q: 'How serious is this attempt for you?',
+        options: [
+          { id: 'try', label: 'I want to try and see', score: -1 },
+          { id: 'ready', label: 'I am ready to follow a plan', score: 1 },
+          { id: 'allin', label: 'This is non negotiable for me', score: 2 }
+        ]
+      },
+      {
+        key: 'calls',
+        q: 'Do you want a weekly coach phone call?',
+        options: [
+          { id: 'yes', label: 'Yes. Call me every week', score: 3 },
+          { id: 'no', label: 'App chat + check ins is enough', score: 0 }
+        ]
+      }
+    ];
+
+    var plans = {
+      '3_months': {
+        slug: '3_months',
+        path: '3-months',
+        label: 'Fat loss',
+        price: '₹1,299',
+        monthly: '₹433/mo',
+        per: '90 days',
+        bullets: [
+          '2 weekly check-ins',
+          'Plan updates every 14 days',
+          'Coach in the app for your goal'
+        ]
+      },
+      '6_months': {
+        slug: '6_months',
+        path: '6-months',
+        label: 'Fat loss + muscle',
+        price: '₹2,099',
+        monthly: '₹350/mo',
+        per: '6 months',
+        bullets: [
+          '2 weekly check-ins',
+          'Weekly plan updates',
+          'More runway than a 90 day sprint'
+        ]
+      },
+      '12_months': {
+        slug: '12_months',
+        path: '12-months',
+        label: 'Aesthetic body',
+        price: '₹3,499',
+        monthly: '₹292/mo',
+        per: '12 months',
+        bullets: [
+          'Lowest monthly rate with WELCOME60',
+          'Weekly plan updates',
+          'Weekly coach phone call included'
+        ]
+      }
+    };
+
+    // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
+    var contrast = {
+      '3_months': [
+        { kind: 'pick', text: 'Fat loss (your pick): a focused 90-day reset — the fastest honest first change for a short deadline.' },
+        { kind: 'miss', text: '6 months & Aesthetic: longer runways you do not need yet if you are chasing one near-term date.' },
+        { kind: 'miss', text: 'Trade-off: this plan refreshes every 14 days and has no weekly coach call — that is the price of the short commit.' }
+      ],
+      '6_months': [
+        { kind: 'pick', text: 'Fat loss + muscle (your pick): a 6-month runway with weekly plan updates — long enough to build shape, not just cut.' },
+        { kind: 'miss', text: '3 months: a 90-day sprint that ends before muscle really shows, and it only updates every 14 days.' },
+        { kind: 'miss', text: 'Aesthetic (12 months) adds a weekly coach phone call and the lowest ₹292/mo rate — the upgrade if you want the finished look.' }
+      ],
+      '12_months': [
+        { kind: 'pick', text: 'Aesthetic (your pick): the only plan with a weekly coach phone call, plus weekly plan updates and the lowest ₹292/mo rate.' },
+        { kind: 'miss', text: '3 months: just 90 days and updates every 14 days — a first change, not the finished body.' },
+        { kind: 'miss', text: '6 months: a solid runway, but no weekly coach call and it ends before the aesthetic look fully locks in.' }
+      ]
+    };
+
+    var answers = {};
+    var stepIndex = 0;
+
+    var quizEl = root.querySelector('[data-pf-quiz]');
+    var resultEl = root.querySelector('[data-pf-result]');
+    var headerEl = root.querySelector('[data-pf-header]');
+    var progressEl = root.querySelector('[data-pf-progress]');
+    var stepLabelEl = root.querySelector('[data-pf-step-label]');
+    var questionEl = root.querySelector('[data-pf-question]');
+    var optionsEl = root.querySelector('[data-pf-options]');
+    var backEl = root.querySelector('[data-pf-back]');
+    var titleEl = root.querySelector('[data-pf-result-title]');
+    var priceEl = root.querySelector('[data-pf-result-price]');
+    var whyEl = root.querySelector('[data-pf-result-why]');
+    var bulletsEl = root.querySelector('[data-pf-result-bullets]');
+    var compareEl = root.querySelector('[data-pf-compare]');
+    var compareListEl = root.querySelector('[data-pf-compare-list]');
+    var checkoutEl = root.querySelector('[data-pf-checkout]');
+    var checkoutLabelEl = root.querySelector('[data-pf-checkout-label]');
+    var upgradeEl = root.querySelector('[data-pf-upgrade]');
+    var restartEl = root.querySelector('[data-pf-restart]');
+
+    function recommend() {
+      var score = 0;
+      var goalLabel = 'change your body';
+      steps.forEach(function (step) {
+        var picked = answers[step.key];
+        if (!picked) return;
+        score += picked.score || 0;
+        if (step.key === 'goal' && picked.goal) goalLabel = picked.goal;
+      });
+
+      var calls = answers.calls && answers.calls.id;
+      var goal = answers.goal && answers.goal.id;
+      var history = answers.history && answers.history.id;
+      var timeline = answers.timeline && answers.timeline.id;
+      var blocker = answers.blocker && answers.blocker.id;
+      var commit = answers.commit && answers.commit.id;
+      var stress = answers.stress && answers.stress.id;
+      var injury = answers.injury && answers.injury.id;
+
+      var planKey = '6_months';
+      // Aesthetic / all-in intent always lands on 12 months.
+      if (calls === 'yes' || goal === 'transform' || commit === 'allin') planKey = '12_months';
+      else if (
+        score <= -2 ||
+        (timeline === 'fast' && (goal === 'fat' || goal === 'muscle'))
+      ) {
+        planKey = '3_months';
+      } else if (
+        // Bias serious / long-road answers toward Aesthetic (12 months).
+        score >= 3 ||
+        blocker === 'consistency' ||
+        history === 'years' ||
+        stress === 'high' ||
+        injury === 'limit'
+      ) {
+        planKey = '12_months';
+      }
+
+      var why = '';
+      if (planKey === '3_months') {
+        why =
+          'Your goal is to ' +
+          goalLabel +
+          '. Fat loss is the 90 day reset: enough time for a first change. If you want the finished look, Aesthetic (12 months) is the longer runway.';
+      } else if (planKey === '12_months') {
+        why =
+          'Your goal is to ' +
+          goalLabel +
+          '. Aesthetic body is the recommended plan for lasting change' +
+          (calls === 'yes' ? ', and it is the only one with a weekly coach phone call' : '') +
+          ' — lowest monthly rate at ₹292/mo with WELCOME60.';
+      } else {
+        why =
+          'Your goal is to ' +
+          goalLabel +
+          '. Fat loss + muscle is a strong 6 month runway. If you want it to look finished (and get the weekly coach call), Aesthetic (12 months) is the upgrade.';
+      }
+
+      return { planKey: planKey, why: why, goalLabel: goalLabel };
+    }
+
+    function planUrl(plan) {
+      return planBase + '/' + plan.path;
+    }
+
+    function showResult() {
+      var rec = recommend();
+      var plan = plans[rec.planKey];
+      var url = planUrl(plan);
+      quizEl.hidden = true;
+      if (headerEl) headerEl.hidden = true;
+      resultEl.hidden = false;
+      titleEl.textContent = plan.label;
+      priceEl.textContent = plan.price + ' · ' + plan.monthly + ' · ' + plan.per;
+      whyEl.textContent = rec.why;
+      bulletsEl.innerHTML = '';
+      (plan.bullets || []).forEach(function (line) {
+        var li = document.createElement('li');
+        li.textContent = line;
+        bulletsEl.appendChild(li);
+      });
+      if (compareEl && compareListEl) {
+        var rows = contrast[rec.planKey] || [];
+        compareListEl.innerHTML = '';
+        rows.forEach(function (row) {
+          var li = document.createElement('li');
+          li.className = row.kind === 'pick' ? 'is-pick' : 'is-miss';
+          li.textContent = row.text;
+          compareListEl.appendChild(li);
+        });
+        compareEl.hidden = rows.length === 0;
+      }
+      checkoutEl.href = url;
+      checkoutLabelEl.textContent =
+        rec.planKey === '12_months' ? 'See Aesthetic body' : 'See this plan';
+      if (upgradeEl) {
+        upgradeEl.hidden = rec.planKey === '12_months';
+        upgradeEl.href = planBase + '/12-months';
+      }
+      try {
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (e) {
+        try {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (e2) {}
+      }
+    }
+
+    function renderStep() {
+      var step = steps[stepIndex];
+      var total = steps.length;
+      stepLabelEl.textContent = stepIndex === 0 ? 'Tap an answer to continue' : 'Keep going';
+      progressEl.style.width = ((stepIndex + 1) / total) * 100 + '%';
+      questionEl.textContent = step.q;
+      optionsEl.innerHTML = '';
+      backEl.hidden = stepIndex === 0;
+
+      step.options.forEach(function (opt) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'lx-pf__option';
+        btn.textContent = opt.label;
+        if (answers[step.key] && answers[step.key].id === opt.id) {
+          btn.classList.add('is-selected');
+        }
+        btn.addEventListener('click', function () {
+          answers[step.key] = opt;
+          Array.prototype.forEach.call(optionsEl.children, function (el) {
+            el.classList.remove('is-selected');
+          });
+          btn.classList.add('is-selected');
+          window.setTimeout(function () {
+            if (stepIndex >= steps.length - 1) {
+              showResult();
+            } else {
+              stepIndex += 1;
+              renderStep();
+            }
+          }, 160);
+        });
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    backEl.addEventListener('click', function () {
+      if (stepIndex <= 0) return;
+      stepIndex -= 1;
+      renderStep();
+    });
+
+    restartEl.addEventListener('click', function () {
+      answers = {};
+      stepIndex = 0;
+      resultEl.hidden = true;
+      if (headerEl) headerEl.hidden = false;
+      quizEl.hidden = false;
+      renderStep();
+    });
+
+    renderStep();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "LURVOX Plan Finder",
+  "tag": "section",
+  "class": "section-lx-plan-finder",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Plan finder"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "What plan do you actually need?"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Answer each question honestly. We match a goal, then send you to that plan page. No payment here."
+    },
+    {
+      "type": "text",
+      "id": "plan_base",
+      "label": "Plan pages base URL",
+      "default": "https://app.lurvox.in/plans"
+    },
+    {
+      "type": "text",
+      "id": "talk_url",
+      "label": "Talk to coach URL",
+      "default": "/pages/talk-to-a-coach"
+    },
+    {
+      "type": "text",
+      "id": "plans_url",
+      "label": "Compare plans URL",
+      "default": "/#plans"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent",
+      "default": "#FF6200"
+    }
+  ],
+  "presets": [
+    {
+      "name": "LURVOX Plan Finder"
+    }
+  ]
+}
+{% endschema %}

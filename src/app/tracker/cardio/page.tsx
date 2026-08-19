@@ -11,7 +11,7 @@ export default function CardioTrackerPage() {
     <TrackerModulePage
       title="Cardio Tracker"
       isAvailable={Boolean(sections?.cardio.length)}
-      emptyMessage="No cardio sessions found in your active plan."
+      emptyMessage="No cardio sessions in your active plan yet. Open your plan, or ask your coach to add them."
     >
       {sections && day && (
         <CardioModule items={sections.cardio} completion={day.completion} saving={saving} onPatch={patchCompletion} />

@@ -74,7 +74,7 @@ export default function AdminPurchasesPage() {
       <div style={s.page}>
         <div style={s.containerWide}>
           <h1 style={s.title}>{brandTitle('Purchases')}</h1>
-          <p style={s.subtitle}>Payment history and Razorpay transaction records.</p>
+          <p style={s.subtitle}>Razorpay payment history only. Enrollment-code members are listed under Enrollment Codes.</p>
 
           {error && <div style={s.error}>{error}</div>}
 
@@ -160,7 +160,14 @@ export default function AdminPurchasesPage() {
                           {purchase.profiles?.email || purchase.customer_email}
                         </div>
                       </td>
-                      <td style={s.td}>{purchase.plan_name}</td>
+                      <td style={s.td}>
+                        {purchase.plan_name}
+                        {purchase.supplement_addon && (
+                          <div style={{ fontSize: 11, color: '#f97316', marginTop: 2 }}>
+                            + testosterone support protocol
+                          </div>
+                        )}
+                      </td>
                       <td style={s.td}>{formatInr(purchase.amount_paise / 100)}</td>
                       <td style={s.td}>
                         <span style={{ ...s.badge, ...(purchase.status === 'captured' ? s.badgeOk : s.badgeWarn) }}>

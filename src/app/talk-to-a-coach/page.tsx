@@ -5,14 +5,31 @@ import Link from 'next/link'
 import { BRAND_NAME } from '@/lib/brand'
 import { authStyles } from '@/lib/auth-styles'
 import { colors } from '@/lib/design-tokens'
+import { PLAN_PAGE_COPY, type LongCoachingPlanSlug } from '@/lib/payments/plan-pages'
 
 const API_URL = '/api/public/talk-to-a-coach'
+
+const PREFERRED_TIME_OPTIONS = [
+  'Morning (9am–12pm)',
+  'Afternoon (12pm–5pm)',
+  'Evening (5pm–9pm)',
+  'Anytime today',
+  'Tomorrow',
+] as const
+
+const GOAL_OPTIONS = (['3_months', '6_months', '12_months'] as const).map((slug) => ({
+  slug: slug as LongCoachingPlanSlug,
+  goal: PLAN_PAGE_COPY[slug].goalName,
+  duration: PLAN_PAGE_COPY[slug].durationLabel,
+}))
 
 export default function TalkToCoachPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [message, setMessage] = useState('')
+  const [goalSlug, setGoalSlug] = useState<LongCoachingPlanSlug | ''>('')
+  const [notes, setNotes] = useState('')
+  const [preferredTime, setPreferredTime] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -20,15 +37,32 @@ export default function TalkToCoachPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (!goalSlug) {
+      setError('Please pick your goal.')
+      return
+    }
+    if (!preferredTime) {
+      setError('Please pick a preferred call time.')
+      return
+    }
+
     setLoading(true)
     setError('')
     setSuccess('')
+
+    const copy = PLAN_PAGE_COPY[goalSlug]
+    const message = [
+      `Goal: ${copy.goalName} (${copy.durationLabel})`,
+      notes.trim() ? `\nNotes: ${notes.trim()}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n')
 
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, message }),
+        body: JSON.stringify({ name, email, phone, message, preferredTime }),
       })
       const payload = (await res.json().catch(() => null)) as {
         ok?: boolean
@@ -48,7 +82,9 @@ export default function TalkToCoachPage() {
       setName('')
       setEmail('')
       setPhone('')
-      setMessage('')
+      setGoalSlug('')
+      setNotes('')
+      setPreferredTime('')
     } catch {
       setError('Network error. Please check your connection and try again.')
     }
@@ -62,7 +98,7 @@ export default function TalkToCoachPage() {
         <p style={authStyles.logo}>{BRAND_NAME}</p>
         <h1 style={authStyles.title}>Talk to a coach</h1>
         <p style={{ margin: '0 0 24px', textAlign: 'center', color: colors.textSecondary, lineHeight: 1.5 }}>
-          Free consultation — tell us about your goals and we&apos;ll help you decide if LURVOX is the right fit.
+          Free consultation — pick your goal and we&apos;ll help you decide if LURVOX is the right fit.
         </p>
 
         {error && <p style={authStyles.error}>{error}</p>}
@@ -124,18 +160,79 @@ export default function TalkToCoachPage() {
             />
           </div>
           <div style={authStyles.inputGroup}>
-            <label htmlFor="message" style={authStyles.label}>How can we help?</label>
+            <span style={authStyles.label}>Your goal</span>
+            <p style={{ margin: '0 0 8px', fontSize: 12, color: colors.textSecondary }}>
+              Outcome first. Duration is secondary.
+            </p>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {GOAL_OPTIONS.map((option) => {
+                const selected = goalSlug === option.slug
+                return (
+                  <button
+                    key={option.slug}
+                    type="button"
+                    onClick={() => setGoalSlug(option.slug)}
+                    style={{
+                      minHeight: 52,
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      border: selected ? `1px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
+                      background: selected ? colors.accentMuted : colors.bgElevated,
+                      color: colors.textPrimary,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{ display: 'block', fontSize: 15, fontWeight: 750 }}>{option.goal}</span>
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 11, fontWeight: 650, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.6 }}>
+                      {option.duration}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div style={authStyles.inputGroup}>
+            <label htmlFor="notes" style={authStyles.label}>Anything else? (optional)</label>
             <textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              required
-              rows={5}
-              style={{ ...authStyles.input, minHeight: 120, resize: 'vertical' }}
-              placeholder="Your goals, experience, and any questions..."
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              style={{ ...authStyles.input, minHeight: 88, resize: 'vertical' }}
+              placeholder="Injuries, schedule, questions…"
             />
           </div>
-          <button type="submit" disabled={loading} style={authStyles.button}>
+          <div style={authStyles.inputGroup}>
+            <span style={authStyles.label}>When should we call?</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {PREFERRED_TIME_OPTIONS.map((option) => {
+                const selected = preferredTime === option
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setPreferredTime(option)}
+                    style={{
+                      minHeight: 48,
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      border: selected ? `1px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
+                      background: selected ? colors.accentMuted : colors.bgElevated,
+                      color: colors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {option}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <button type="submit" disabled={loading || !preferredTime || !goalSlug} style={authStyles.button}>
             {loading ? 'Sending…' : 'Send message'}
           </button>
         </form>

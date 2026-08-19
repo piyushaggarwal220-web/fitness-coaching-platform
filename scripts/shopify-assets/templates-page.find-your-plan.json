@@ -1,0 +1,17 @@
+{
+  "sections": {
+    "main": {
+      "type": "lurvox-plan-finder",
+      "settings": {
+        "eyebrow": "Plan finder",
+        "heading": "What plan do you actually need?",
+        "subheading": "Answer each question honestly. We match a goal, then send you to that plan page. No payment on this page.",
+        "plan_base": "https://app.lurvox.in/plans",
+        "talk_url": "/pages/talk-to-a-coach",
+        "plans_url": "/#plans",
+        "accent_color": "#FF6200"
+      }
+    }
+  },
+  "order": ["main"]
+}

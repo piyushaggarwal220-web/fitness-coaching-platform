@@ -27,10 +27,11 @@ function ClientAvatar({ name }: { name: string }) {
   )
 }
 
-export function CoachConversationsSection() {
+export function CoachConversationsSection({ coachId = null }: { coachId?: string | null }) {
   const router = useRouter()
   const { conversations, loading, error, retry, reload } = useCoachConversationList({
     realtimeScope: 'conversation-section',
+    coachId,
   })
 
   if (loading) {

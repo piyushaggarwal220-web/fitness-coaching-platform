@@ -27,6 +27,9 @@ export default function AdminLoginPage() {
       password,
     })
 
+    const { invalidateSessionCache } = await import('@/lib/session-restore')
+    invalidateSessionCache()
+
     if (loginError) {
       setError(loginError.message)
       setLoading(false)

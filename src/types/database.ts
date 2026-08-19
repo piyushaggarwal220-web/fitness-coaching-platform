@@ -191,6 +191,8 @@ export type Profile = {
   checkin_overdue?: boolean | null
   plan_delivered?: boolean | null
   checkin_schedule_started_at?: string | null
+  /** Purchased the supplement protocol add-on, so the document is owed to them. */
+  supplement_protocol_entitled?: boolean | null
   complexity_score?: number | null
   complexity_raw_score?: number | null
   complexity_tier?: 'low' | 'medium' | 'high' | null
@@ -320,7 +322,27 @@ export type Purchase = {
   claim_token_hash?: string | null
   claim_token_expires_at?: string | null
   claimed_at?: string | null
+  /** Client added the paid supplement protocol at checkout. */
+  supplement_addon?: boolean
+  /** Portion of amount_paise attributable to the supplement protocol add-on. */
+  supplement_addon_paise?: number
   created_at: string
+}
+
+export type SupplementProtocolStatus = 'pending' | 'ready' | 'failed'
+
+/** The paid, personalised supplement protocol document owed to a client. */
+export type SupplementProtocol = {
+  id: string
+  client_id: string
+  purchase_id: string | null
+  version: number
+  status: SupplementProtocolStatus
+  content: string | null
+  error_message: string | null
+  generated_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type Workout = {
@@ -406,6 +428,10 @@ export type Checkin = {
   coach_response: string | null
   reviewed: boolean
   reviewed_at: string | null
+  /** When the automated reply is scheduled to go out (4–6h post-submission, outside quiet hours). */
+  auto_reply_at: string | null
+  /** Set once the automated reply was actually delivered. */
+  auto_replied_at: string | null
 }
 
 export type JourneyEntry = {

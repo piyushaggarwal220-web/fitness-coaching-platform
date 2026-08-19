@@ -41,10 +41,13 @@ type TrackerContextValue = {
   scores: (TrackerCategoryScores & { steps: number }) | null
   loading: boolean
   saving: boolean
+  rebuilding: boolean
   error: string | null
   /** Returns true when the patch was accepted by the server. */
   patchCompletion: (patch: TrackerCompletion) => Promise<boolean>
   refresh: () => Promise<void>
+  /** Force a fresh snapshot from the active plan, then reload. Returns true on success. */
+  rebuildFromPlan: () => Promise<boolean>
   clearError: () => void
 }
 
@@ -168,6 +171,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [rebuilding, setRebuilding] = useState(false)
   const dayIdRef = useRef<string | null>(null)
   const queueRef = useRef<PatchQueue>({
     pending: null,
@@ -375,6 +379,42 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     [day?.id]
   )
 
+  const rebuildFromPlan = useCallback(async (): Promise<boolean> => {
+    setRebuilding(true)
+    try {
+      // Flush any queued edits first so the server has them before it rebuilds the snapshot.
+      await flushQueueRef.current()
+      await ensureAuthSession(supabase)
+
+      const res = await fetch('/api/tracker/today', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+      })
+      const data = (await res.json().catch(() => null)) as
+        | { view?: TodayTrackerView; error?: string }
+        | null
+
+      if (!res.ok || !data?.view?.day) {
+        setError(data?.error ?? 'Could not rebuild from your plan. Please try again.')
+        return false
+      }
+
+      // Discard any local draft — the point of a rebuild is to trust the plan snapshot.
+      const rebuiltDay = data.view.day
+      clearTrackerDraft(rebuiltDay.id)
+      dayIdRef.current = rebuiltDay.id
+      setView(data.view)
+      setError(null)
+      return true
+    } catch {
+      setError('Could not rebuild from your plan. Please try again.')
+      return false
+    } finally {
+      setRebuilding(false)
+    }
+  }, [])
+
   const clearError = useCallback(() => setError(null), [])
 
   const value: TrackerContextValue = {
@@ -384,9 +424,11 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     scores,
     loading,
     saving,
+    rebuilding,
     error,
     patchCompletion,
     refresh: load,
+    rebuildFromPlan,
     clearError,
   }
 

@@ -10,17 +10,21 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, goal, the Metabolic Flux Bias section, AND the Training Mesocycle calorie target (pair food with training load).
    - Default LURVOX stance: prefer higher metabolic flux when recovery allows.
    - Mesocycle: as weekly training intensity/volume rises (weeks 2 to 4), raise calories with it. On a new cycle (new split, lower BASE volume), trim calories a little from the prior peak, then climb again.
-   - If Metabolic Flux Bias says STEADY: fat loss 350 to 450 kcal deficit, muscle gain 150 to 250 surplus, recomp = maintenance.
+   - If Metabolic Flux Bias says STEADY: fat loss 300 to 400 kcal deficit, muscle gain 150 to 250 surplus, recomp = maintenance.
    - If BUILD-UP: fat loss 250 to 350 kcal deficit (shallower so intake stays higher), muscle gain 250 to 350 surplus, recomp = slight surplus on training days.
-   - If HIGH FLUX: fat loss 150 to 250 kcal deficit (create the gap mainly via steps/training), muscle gain 300 to 450 surplus, recomp = clear training-day surplus.
-   - Protein: aim for about 1.6 to 2.0g/kg when it is realistic for the client. Prefer higher protein for fat loss when appetite and digestion allow (up to about 2.2g/kg), but never force a high protein load.
-   - If onboarding, check-in notes, digestion feedback, allergies, budget, veg limits, low appetite, or past failed diets show they struggle with high protein: set a gentler target, build meals they can actually finish, and coach them to get as much protein as comfortably possible — not to hit an aggressive floor at all costs. Never guilt or "must hit Xg" language.
-   - Prefer higher food volume (veg, lean protein, curd, fruit, dals) so larger intakes are realistic when the client can handle them.
+   - If HIGH FLUX: fat loss 150 to 250 kcal deficit (create the gap mainly via steps/training), muscle gain 300 to 400 surplus, recomp = clear training-day surplus.
+   - Protein: treat 1.6 to 2.0g/kg as an optional upper band when it fits the client naturally — not a default to push toward. Many clients do well with moderate protein; lower intakes are fine when that matches their food pattern, appetite, budget, culture, digestion, or preferences.
+   - Do not push protein hard just because they have room to add more (eggs, whey, paneer, chicken available). Prefer a comfortable amount they will actually eat over maximising grams.
+   - Special cases (very low appetite, elderly, medical limits, extreme budget, strong food aversion, pregnancy guidance from clinician, etc.): around 0.5g/kg or other low totals can be acceptable — do not inflate targets or shame the number.
+   - NEVER falsify protein numbers. Meal macro lines, daily totals, and header Protein must reflect the food actually written. If the plan is low protein, show the low number honestly — do not invent a high header while meals are lighter.
+   - Prefer higher food volume (veg, dal, curd, fruit) for satiety when helpful; do not pile on protein foods only to chase a high g/kg.
    - Reverse diet: if they report eating little yet not losing weight, RAISE calories gradually (do not slash further).
    - Muscle gain / weight gain: do not force huge surpluses; use a modest surplus and let metabolism catch up.
+   - SAFE RATE OF CHANGE (overrides client demands and every band above): the daily gap from maintenance must NEVER exceed 400 kcal in either direction — max 400 kcal deficit for fat loss, max 400 kcal surplus for weight gain. If the client wants to gain fast / add a lot of calories, do not spike intake. If they want to lose fast / cut calories hard, do not slash intake. Never go below ~1600 kcal without a clinical reason. Apply the safe version of their goal and briefly explain why steady beats extreme.
    - If they listed previous diets that failed, avoid repeating those approaches.
    - Calories: never below 1600 kcal without a clear medical reason.
    Do NOT print these numbers as a formal "Target Macros" table — just keep them as your internal guide so the food choices fit.
+   CALORIE CONSISTENCY: if you do mention a calorie number in the personal note, it MUST equal the daily average your meals actually add up to. Never state one daily calorie figure in the note and have the food math land somewhere else. When unsure, don't state a daily total in the note at all — let the daily totals and daily average line carry the numbers.
    Never use hyphen, en dash, or em dash characters in client-facing text. Write "10 to 15" not "10-15".
 
 3. Build meal timings around the client's existing routine — don't invent new meal slots. If they eat lunch at 2pm, keep it close to 2pm.

@@ -23,6 +23,8 @@ export type RecordCapturedPaymentInput = {
   razorpayPaymentId: string
   razorpayOrderId: string
   amountPaise: number
+  /** Portion of amountPaise paid for the supplement protocol add-on (0 when not purchased). */
+  supplementAddonPaise?: number
 }
 
 export type RecordCapturedPaymentResult = {
@@ -229,6 +231,8 @@ export async function recordCapturedPayment(
         plan_slug: input.plan.slug,
         plan_name: input.plan.name,
         amount_paise: input.amountPaise,
+        supplement_addon: (input.supplementAddonPaise ?? 0) > 0,
+        supplement_addon_paise: input.supplementAddonPaise ?? 0,
         customer_email: nextEmail,
         customer_name: existingPurchase.customer_name || name || null,
         customer_phone: existingPurchase.customer_phone || input.phone || null,
@@ -278,6 +282,8 @@ export async function recordCapturedPayment(
       plan_slug: input.plan.slug,
       plan_name: input.plan.name,
       amount_paise: input.amountPaise,
+      supplement_addon: (input.supplementAddonPaise ?? 0) > 0,
+      supplement_addon_paise: input.supplementAddonPaise ?? 0,
       currency: 'INR',
       status: 'captured',
       customer_email: email,
@@ -590,6 +596,12 @@ export async function claimPurchaseWithPassword(
 
   if (includeAccessSource) {
     profilePayload.access_source = 'purchase'
+  }
+
+  // Paid add-on: entitlement sticks to the profile so the document is owed even if the client
+  // renews later. Never revoked here — a second purchase without the add-on must not remove it.
+  if (purchase.supplement_addon) {
+    profilePayload.supplement_protocol_entitled = true
   }
 
   const { error: profileError } = await admin.from('profiles').upsert(profilePayload)

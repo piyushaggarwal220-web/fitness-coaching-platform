@@ -13,16 +13,19 @@ const supabase = createClient()
 type UseCoachConversationListOptions = {
   realtimeScope: string
   pollIntervalMs?: number
+  /** Skip duplicate requireCoach when the parent already resolved the coach. */
+  coachId?: string | null
 }
 
 export function useCoachConversationList({
   realtimeScope,
   pollIntervalMs = 20_000,
+  coachId: coachIdProp = null,
 }: UseCoachConversationListOptions) {
   const router = useRouter()
   const [conversations, setConversations] = useState<CoachConversationListItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [coachId, setCoachId] = useState<string | null>(null)
+  const [coachId, setCoachId] = useState<string | null>(coachIdProp)
   const [error, setError] = useState('')
   const [authRetryKey, setAuthRetryKey] = useState(0)
 
@@ -54,10 +57,19 @@ export function useCoachConversationList({
   }, [coachId])
 
   useEffect(() => {
+    if (coachIdProp) setCoachId(coachIdProp)
+  }, [coachIdProp])
+
+  useEffect(() => {
     let active = true
     const authorize = async () => {
       setError('')
       setLoading(true)
+      if (coachIdProp) {
+        if (!active) return
+        setCoachId(coachIdProp)
+        return
+      }
       for (let attempt = 0; attempt < 3; attempt += 1) {
         const coach = await requireCoach(supabase, router)
         if (!active) return
@@ -77,7 +89,7 @@ export function useCoachConversationList({
     return () => {
       active = false
     }
-  }, [router, authRetryKey])
+  }, [router, authRetryKey, coachIdProp])
 
   useEffect(() => {
     void fetchConversations()

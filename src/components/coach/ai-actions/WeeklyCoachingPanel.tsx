@@ -61,6 +61,9 @@ export function WeeklyCoachingPanel({
   const [failureMessage, setFailureMessage] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [publishSuccess, setPublishSuccess] = useState(false)
+  const [autoDraftScheduled, setAutoDraftScheduled] = useState<boolean | null>(null)
+  const [planUpdateCadence, setPlanUpdateCadence] = useState<string | null>(null)
+  const [nextAutoUpdateWeek, setNextAutoUpdateWeek] = useState<number | null>(null)
 
   const refreshDraftState = useCallback(async () => {
     const { data: active } = await supabase
@@ -100,10 +103,20 @@ export function WeeklyCoachingPanel({
           isGenerating?: boolean
           generationFailed?: boolean
           failureError?: string | null
+          autoDraftScheduled?: boolean
+          planUpdateCadence?: string
+          nextAutoUpdateWeek?: number
         }
         setIsGenerating(Boolean(data.isGenerating) && !draft)
         setGenerationFailed(Boolean(data.generationFailed) && !draft)
         setFailureMessage(data.failureError?.trim() ?? '')
+        if (typeof data.autoDraftScheduled === 'boolean') {
+          setAutoDraftScheduled(data.autoDraftScheduled)
+        }
+        if (data.planUpdateCadence) setPlanUpdateCadence(data.planUpdateCadence)
+        if (typeof data.nextAutoUpdateWeek === 'number') {
+          setNextAutoUpdateWeek(data.nextAutoUpdateWeek)
+        }
       }
     } catch {
       const submitted = checkinSubmittedAt ? new Date(checkinSubmittedAt).getTime() : 0
@@ -300,7 +313,8 @@ export function WeeklyCoachingPanel({
   }
 
   const hasDraft = Boolean(draftPlan)
-  const showFailure = generationFailed && !hasDraft && !isGenerating && !busy && !retrying
+  const cadenceSkip = autoDraftScheduled === false && !hasDraft && !isGenerating && !busy && !retrying
+  const showFailure = generationFailed && !hasDraft && !isGenerating && !busy && !retrying && !cadenceSkip
   const primaryDisabled = busy || publishing || retrying || isGenerating
 
   return (
@@ -313,11 +327,13 @@ export function WeeklyCoachingPanel({
       <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
         {hasDraft
           ? `An AI draft exists for this ${weekLabel} check-in. Review changes, edit if needed, then publish.`
-          : showFailure
-            ? 'Automatic draft generation did not complete. Retry uses your active plan, latest check-in, and cached context.'
-            : isGenerating
-              ? 'AI is building a draft from this check-in. This usually takes a few minutes for a full week.'
-              : 'No AI draft yet. Generate one when you are ready to update the plan.'}
+          : cadenceSkip
+            ? `This client gets a plan update ${planUpdateCadence?.toLowerCase() ?? 'every 14 days'}. ${weekLabel} is check in only. Next auto draft is week ${nextAutoUpdateWeek ?? '—'}. Generate now only if the plan needs a change.`
+            : showFailure
+              ? 'Automatic draft generation did not complete. Retry uses your active plan, latest check-in, and cached context.'
+              : isGenerating
+                ? 'AI is building a draft from this check-in. This usually takes a few minutes for a full week.'
+                : 'No AI draft yet. Generate one when you are ready to update the plan.'}
       </p>
 
       {hasDraft ? (

@@ -8,7 +8,7 @@ export default function WaterTrackerPage() {
   const { sections, day, scores, saving, patchCompletion } = useTracker()
 
   return (
-    <TrackerModulePage title="Water Tracker" isAvailable={Boolean(sections?.water)} emptyMessage="Water target not configured in your plan.">
+    <TrackerModulePage title="Water Tracker" isAvailable={Boolean(sections?.water)} emptyMessage="Water target is not set in your plan yet. Open your plan or ask your coach to add it.">
       {sections?.water && day && scores && (
         <WaterModule
           water={sections.water}

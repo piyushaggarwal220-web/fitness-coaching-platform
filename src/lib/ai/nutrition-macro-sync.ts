@@ -132,11 +132,186 @@ export function inferMacrosFromDietText(text: string): MacroTotals | null {
   return null
 }
 
-/** Fill zero/placeholder nutrition_plan header fields from meal prose. */
+/** Plausible daily-intake range — used so we never rewrite a "400 calorie deficit" style number. */
+const MIN_DAILY_KCAL = 1000
+const MAX_DAILY_KCAL = 5000
+/** Tolerance before a conversational calorie claim is treated as a mismatch and rewritten. */
+const KCAL_MISMATCH_TOLERANCE = 40
+
+/** Diet safety limits enforced on generated plans (never below the floor, no large weekly swings). */
+export const DIET_FLOOR_TARGET_KCAL = 1600
+/** Reject (and retry) only when clearly under the floor; small rounding under 1600 is tolerated. */
+const DIET_FLOOR_HARD_KCAL = 1500
+/** Hard cap on week-to-week daily-calorie change (400 kcal rule + rounding headroom). */
+const MAX_WEEKLY_KCAL_JUMP = 450
+
+/** Read the "Calories: NNNN" header from a stored plan's nutrition string. */
+export function parseHeaderCalories(text: string | null | undefined): number | null {
+  if (!text) return null
+  const match = text.match(HEADER_CALORIES)
+  if (!match) return null
+  const value = parseInt(match[1]!, 10)
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+export type DietSafetyResult = { ok: true } | { ok: false; error: string; hint: string }
+
+/**
+ * Enforce the non-negotiable diet numbers AFTER generation: at least the floor, and no large
+ * week-to-week calorie swing. Returns a retry hint on violation so the model must fix it.
+ */
+export function enforceDietSafety(
+  plan: GeneratedNutritionPlan,
+  opts: { previousCalories?: number | null } = {}
+): DietSafetyResult {
+  const cals = plan.calories
+  if (typeof cals !== 'number' || !Number.isFinite(cals) || cals <= 0) {
+    return { ok: true } // consistency layer already guards missing totals
+  }
+
+  if (cals < DIET_FLOOR_HARD_KCAL) {
+    return {
+      ok: false,
+      error: `Diet daily calories ${cals} are below the ${DIET_FLOOR_TARGET_KCAL} kcal floor.`,
+      hint:
+        `The daily average came out to about ${cals} kcal, which is below the ${DIET_FLOOR_TARGET_KCAL} kcal floor. ` +
+        `Rebuild all 7 days with more food so the daily average is at least ${DIET_FLOOR_TARGET_KCAL} kcal. ` +
+        'Never program a crash diet, and keep any deficit within 400 kcal of maintenance.',
+    }
+  }
+
+  const prev = opts.previousCalories
+  if (typeof prev === 'number' && prev > 0) {
+    const jump = Math.abs(cals - prev)
+    if (jump > MAX_WEEKLY_KCAL_JUMP) {
+      const direction = cals > prev ? 'increase' : 'decrease'
+      return {
+        ok: false,
+        error: `Weekly calorie ${direction} of ${jump} kcal (${prev} → ${cals}) exceeds the ${MAX_WEEKLY_KCAL_JUMP} kcal limit.`,
+        hint:
+          `Last week averaged about ${prev} kcal/day and this draft is about ${cals} kcal/day — a ${jump} kcal ${direction}. ` +
+          'Do not make large week-to-week calorie swings. ' +
+          `Keep the new daily average within ${MAX_WEEKLY_KCAL_JUMP} kcal of ${prev} unless a clear medical reason requires otherwise.`,
+      }
+    }
+  }
+
+  return { ok: true }
+}
+
+/** Lines that ARE the source of truth (meal macro lines / daily totals) must never be rewritten. */
+function isSourceOfTruthLine(line: string): boolean {
+  if (new RegExp(MEAL_MACRO_LINE.source, 'i').test(line)) return true
+  if (new RegExp(DAILY_SUMMARY_LINE.source, 'i').test(line)) return true
+  return /daily\s+(total|totals|average|averages)/i.test(line)
+}
+
+/**
+ * Rewrite conversational daily-calorie claims (e.g. "I'm giving you 1700 calories this week")
+ * so they match the authoritative food-derived total. Meal macro lines and daily total/average
+ * lines are treated as the source of truth and left untouched. Numbers outside a plausible daily
+ * range (deficits, protein grams, etc.) are ignored.
+ */
+export function reconcileDietProseCalories(text: string, targetCalories: number): string {
+  if (!Number.isFinite(targetCalories) || targetCalories <= 0) return text
+
+  const calorieClaim = /(\d[\d,]{2,4})(\s*(?:k?cal\b|calories?\b))/gi
+
+  return text
+    .split('\n')
+    .map((line) => {
+      if (isSourceOfTruthLine(line)) return line
+      return line.replace(calorieClaim, (match, digits: string, unit: string) => {
+        const value = parseInt(digits.replace(/,/g, ''), 10)
+        if (!Number.isFinite(value)) return match
+        if (value < MIN_DAILY_KCAL || value > MAX_DAILY_KCAL) return match
+        if (Math.abs(value - targetCalories) <= KCAL_MISMATCH_TOLERANCE) return match
+        return `${targetCalories}${unit}`
+      })
+    })
+    .join('\n')
+}
+
+/**
+ * Detects the "header says 1450 but the text says 1700" bug in an already-stored diet plan.
+ * Used to force a fresh AI generation instead of carrying a broken plan forward on a stable week.
+ */
+export function dietTextHasCalorieConflict(text: string | null | undefined): boolean {
+  if (!text?.trim()) return false
+
+  const inferred = inferMacrosFromDietText(text)
+  if (!inferred || inferred.calories <= 0) return false
+
+  const mealLines = parseMealMacroLines(text)
+  const dailyLines = parseDailySummaryLines(text)
+  // Only food-derived totals are trustworthy enough to judge a conflict.
+  if (mealLines.length === 0 && dailyLines.length === 0) return false
+
+  const header = text.match(HEADER_CALORIES)
+  if (header) {
+    const headerCalories = parseInt(header[1]!, 10)
+    if (
+      Number.isFinite(headerCalories) &&
+      headerCalories > 0 &&
+      Math.abs(headerCalories - inferred.calories) > KCAL_MISMATCH_TOLERANCE
+    ) {
+      return true
+    }
+  }
+
+  const calorieClaim = /(\d[\d,]{2,4})(\s*(?:k?cal\b|calories?\b))/gi
+  for (const line of text.split('\n')) {
+    if (isSourceOfTruthLine(line)) continue
+    if (/^\s*calories:\s*\d+/i.test(line)) continue
+    let match: RegExpExecArray | null
+    const pattern = new RegExp(calorieClaim.source, 'gi')
+    while ((match = pattern.exec(line)) !== null) {
+      const value = parseInt(match[1]!.replace(/,/g, ''), 10)
+      if (!Number.isFinite(value)) continue
+      if (value < MIN_DAILY_KCAL || value > MAX_DAILY_KCAL) continue
+      if (Math.abs(value - inferred.calories) > KCAL_MISMATCH_TOLERANCE) return true
+    }
+  }
+
+  return false
+}
+
+function reconcileMealsProse(meals: unknown[], targetCalories: number): unknown[] {
+  return meals.map((meal) => {
+    if (!isRecord(meal)) return meal
+    const next: Record<string, unknown> = { ...meal }
+    for (const field of ['example', 'description', 'content'] as const) {
+      const value = next[field]
+      if (typeof value === 'string') {
+        next[field] = reconcileDietProseCalories(value, targetCalories)
+      }
+    }
+    return next
+  })
+}
+
+/** Prefer macros summed from meal/day lines; never keep an inflated header when food totals exist. */
 export function syncNutritionPlanMacros(plan: GeneratedNutritionPlan): GeneratedNutritionPlan {
   const prose = collectDietProse(plan.meals)
   const inferred = inferMacrosFromDietText(prose)
   if (!inferred || inferred.calories <= 0) return plan
+
+  const mealLines = parseMealMacroLines(prose)
+  const dailyLines = parseDailySummaryLines(prose)
+  const trustFoodTotals = mealLines.length > 0 || dailyLines.length > 0
+
+  if (trustFoodTotals) {
+    return {
+      ...plan,
+      calories: inferred.calories,
+      protein: inferred.protein,
+      carbs: inferred.carbs,
+      fat: inferred.fat,
+      // Rewrite any conversational calorie claim in the prose to the food-derived total so the
+      // narrative can never contradict the header ("1450 header / giving you 1700" bug).
+      meals: reconcileMealsProse(plan.meals, inferred.calories),
+    }
+  }
 
   return {
     ...plan,

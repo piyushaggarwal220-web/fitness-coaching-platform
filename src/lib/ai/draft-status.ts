@@ -14,6 +14,8 @@ export function resolveDraftPollingState(input: {
   log: Pick<DraftCheckinLog, 'phase' | 'error' | 'createdAt'> | null
   submittedAtMs: number
   nowMs?: number
+  /** False when this weekly check-in is a cadence skip (3 month, odd week). */
+  expectAutoDraft?: boolean
 }): {
   isGenerating: boolean
   generationFailed: boolean
@@ -37,9 +39,17 @@ export function resolveDraftPollingState(input: {
     input.log && input.log.phase === 'started' && logAgeMs >= DRAFT_GENERATING_WINDOW_MS
   )
   const finishFailed = Boolean(input.log && input.log.phase === 'failed')
-  const recentSubmitNoLog = !input.log && input.submittedAtMs > 0 && submitAgeMs < DRAFT_SUBMIT_HEURISTIC_MS
+  const expectAutoDraft = input.expectAutoDraft !== false
+  const recentSubmitNoLog =
+    expectAutoDraft &&
+    !input.log &&
+    input.submittedAtMs > 0 &&
+    submitAgeMs < DRAFT_SUBMIT_HEURISTIC_MS
   const submitTimedOutNoLog =
-    !input.log && input.submittedAtMs > 0 && submitAgeMs >= DRAFT_SUBMIT_HEURISTIC_MS
+    expectAutoDraft &&
+    !input.log &&
+    input.submittedAtMs > 0 &&
+    submitAgeMs >= DRAFT_SUBMIT_HEURISTIC_MS
 
   const generationFailed = finishFailed || startedTimedOut || submitTimedOutNoLog
   const isGenerating = !generationFailed && (startedInFlight || recentSubmitNoLog)

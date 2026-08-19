@@ -91,9 +91,11 @@ export default function CoachDashboard() {
   );
 
   useEffect(() => {
+    let cancelled = false
     const checkCoach = async () => {
       setError('');
       const coachData = await requireCoach(supabase, router);
+      if (cancelled) return
       setRestoringSession(false);
       if (!coachData) {
         setError((prev) => prev || 'Could not restore your session. Please refresh or sign in again.');
@@ -102,6 +104,8 @@ export default function CoachDashboard() {
       }
 
       setCoach(coachData);
+      // Unlock the shell immediately so work-queue / adherence / chat sections can load in parallel.
+      setLoading(false);
 
       // Lightweight first paint — do not wait on full check-in history before showing the queue.
       const [clientsResult, pendingCheckinsResult, activePlansResult] = await Promise.all([
@@ -121,9 +125,10 @@ export default function CoachDashboard() {
           .eq('active', true),
       ]);
 
+      if (cancelled) return
+
       if (clientsResult.error) {
         setError('Failed to load dashboard data. Please try again.');
-        setLoading(false);
         return;
       }
 
@@ -164,10 +169,13 @@ export default function CoachDashboard() {
           .in('client_id', previewIds)
           .order('submitted_at', { ascending: false })
           .limit(80);
-        setCheckins((checkinData ?? []) as Checkin[]);
+        if (!cancelled) {
+          setCheckins((checkinData ?? []) as Checkin[]);
+        }
       }
     };
-    checkCoach();
+    void checkCoach();
+    return () => { cancelled = true }
   }, [router]);
 
   if (loading) {
@@ -178,7 +186,7 @@ export default function CoachDashboard() {
     );
   }
 
-  if (error) {
+  if (error && !coach) {
     return (
       <CoachShell>
         <div style={styles.errorBox}>
@@ -203,6 +211,12 @@ export default function CoachDashboard() {
           Welcome back, {firstName}. Here&apos;s your coaching overview, sorted by what needs attention first.
         </p>
       </div>
+
+      {error && (
+        <div style={{ ...styles.errorBox, marginBottom: 16 }}>
+          <p style={styles.errorText}>{error}</p>
+        </div>
+      )}
 
       <NotificationActivationGate audience="coach" />
       <PwaInstallPrompt />
@@ -256,7 +270,11 @@ export default function CoachDashboard() {
           filter={queueFilter}
           onFilter={setQueueFilter}
         />
-        <CoachWorkQueuePanel filter={queueFilter} onCountsChange={handleCountsChange} />
+        <CoachWorkQueuePanel
+          filter={queueFilter}
+          onCountsChange={handleCountsChange}
+          coachId={coach?.id}
+        />
       </section>
 
       {/* Adherence */}
@@ -280,7 +298,7 @@ export default function CoachDashboard() {
           }
         />
         <div style={styles.queueSection}>
-          <CoachConversationsSection />
+          <CoachConversationsSection coachId={coach?.id} />
         </div>
       </section>
 

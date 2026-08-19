@@ -1,0 +1,268 @@
+{% comment %}
+  LURVOX — What you get (homepage)
+  Quiet, scannable deliverables before pricing. Dark + orange brand language.
+{% endcomment %}
+
+{%- liquid
+  assign accent = '#FF6200'
+  assign plans_url = '#plans'
+  assign find_url = '/pages/find-your-plan'
+-%}
+
+<section class="lx-wyg" id="what-you-get" aria-label="What you get on LURVOX" style="--lx-wyg-accent: {{ accent }};">
+  <div class="lx-wyg__glow" aria-hidden="true"></div>
+  <div class="lx-wyg__inner">
+    <header class="lx-wyg__header">
+      <p class="lx-wyg__eyebrow">Every plan includes this</p>
+      <h2 class="lx-wyg__title">What you get on the platform</h2>
+      <p class="lx-wyg__lede"> Not a PDF dump. A living coaching system. Personal plan, real coach, daily tools, and weekly adjustments.</p>
+    </header>
+
+    <ul class="lx-wyg__grid">
+      <li class="lx-wyg__item">
+        <span class="lx-wyg__mark" aria-hidden="true"></span>
+        <div>
+          <h3>Personal workout + diet</h3>
+          <p>Built for your body, schedule, and food prefs. Delivered in 24 to 48 hours after onboarding.</p>
+        </div>
+      </li>
+      <li class="lx-wyg__item">
+        <span class="lx-wyg__mark" aria-hidden="true"></span>
+        <div>
+          <h3>Human coach in the app</h3>
+          <p>Direct coach chat. A real person owns your case. Tools help them, they don’t replace them.</p>
+        </div>
+      </li>
+      <li class="lx-wyg__item">
+        <span class="lx-wyg__mark" aria-hidden="true"></span>
+        <div>
+          <h3>Mid week + weekly check ins</h3>
+          <p>Photos, measurements, and adherence reviewed so the plan moves with your real progress.</p>
+        </div>
+      </li>
+      <li class="lx-wyg__item">
+        <span class="lx-wyg__mark" aria-hidden="true"></span>
+        <div>
+          <h3>Daily trackers</h3>
+          <p>Workout, meals, water, sleep, steps, and habits. All in one place your coach can see.</p>
+        </div>
+      </li>
+      <li class="lx-wyg__item">
+        <span class="lx-wyg__mark" aria-hidden="true"></span>
+        <div>
+          <h3>Journey + progress photos</h3>
+          <p>A timeline of check ins and photos so you see proof you’re moving, not guessing.</p>
+        </div>
+      </li>
+      <li class="lx-wyg__item">
+        <span class="lx-wyg__mark" aria-hidden="true"></span>
+        <div>
+          <h3>Plan tweaks when you stall</h3>
+          <p>When progress slows, your coach adjusts workouts and diet. Not a static PDF you outgrow.</p>
+        </div>
+      </li>
+    </ul>
+
+  </div>
+</section>
+
+<style>
+  .lx-wyg {
+    --lx-wyg-ink: #f5f5f5;
+    --lx-wyg-muted: rgba(245, 245, 245, 0.58);
+    --lx-wyg-line: rgba(255, 255, 255, 0.1);
+    position: relative;
+    color: var(--lx-wyg-ink);
+    background: #050505;
+    padding: clamp(48px, 8vw, 88px) 16px;
+    overflow: hidden;
+  }
+
+  @media screen and (max-width: 749px) {
+    .lx-wyg {
+      padding: 32px 14px 28px;
+    }
+
+    .lx-wyg__header {
+      margin: 0 auto 22px;
+      text-align: left;
+    }
+
+    .lx-wyg__title {
+      font-size: 1.45rem;
+      line-height: 1.15;
+    }
+
+    .lx-wyg__lede {
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .lx-wyg__item {
+      padding: 16px 0;
+      gap: 12px;
+    }
+
+    .lx-wyg__item h3 {
+      font-size: 0.98rem;
+    }
+
+    .lx-wyg__item p {
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+  }
+
+  .lx-wyg__glow {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 55% 45% at 50% -10%, color-mix(in srgb, var(--lx-wyg-accent) 18%, transparent), transparent 70%),
+      radial-gradient(ellipse 40% 30% at 90% 80%, rgba(255, 255, 255, 0.03), transparent 55%);
+    pointer-events: none;
+  }
+
+  .lx-wyg__inner {
+    position: relative;
+    z-index: 1;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .lx-wyg__header {
+    text-align: center;
+    max-width: 560px;
+    margin: 0 auto 36px;
+  }
+
+  .lx-wyg__eyebrow {
+    margin: 0 0 12px;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--lx-wyg-accent);
+  }
+
+  .lx-wyg__title {
+    margin: 0 0 12px;
+    font-size: clamp(1.55rem, 4.8vw, 2.35rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.12;
+  }
+
+  .lx-wyg__lede {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--lx-wyg-muted);
+  }
+
+  .lx-wyg__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border-top: 1px solid var(--lx-wyg-line);
+  }
+
+  @media (min-width: 720px) {
+    .lx-wyg__grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .lx-wyg__item {
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    gap: 14px;
+    align-items: start;
+    padding: 22px 4px 22px 0;
+    border-bottom: 1px solid var(--lx-wyg-line);
+  }
+
+  @media (min-width: 720px) {
+    .lx-wyg__item:nth-child(odd) {
+      padding-right: 28px;
+      border-right: 1px solid var(--lx-wyg-line);
+    }
+    .lx-wyg__item:nth-child(even) {
+      padding-left: 28px;
+    }
+  }
+
+  .lx-wyg__mark {
+    width: 8px;
+    height: 8px;
+    margin-top: 8px;
+    border-radius: 50%;
+    background: var(--lx-wyg-accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--lx-wyg-accent) 18%, transparent);
+  }
+
+  .lx-wyg__item h3 {
+    margin: 0 0 6px;
+    font-size: 1.02rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  .lx-wyg__item p {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--lx-wyg-muted);
+  }
+
+  .lx-wyg__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 32px;
+  }
+
+  .lx-wyg__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 22px;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+  }
+
+  .lx-wyg__btn--primary {
+    background: var(--lx-wyg-accent);
+    color: #0a0a0a;
+    border: 1px solid var(--lx-wyg-accent);
+  }
+
+  .lx-wyg__btn--ghost {
+    background: transparent;
+    color: var(--lx-wyg-ink);
+    border: 1px solid var(--lx-wyg-line);
+  }
+
+  .lx-wyg__btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .lx-wyg__btn--ghost:hover {
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lx-wyg__btn {
+      transition: none;
+    }
+  }
+</style>

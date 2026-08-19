@@ -1,6 +1,6 @@
 'use client'
 
-import { CompletionToggle } from '@/components/tracker/TrackerPrimitives'
+import { CompletionToggle, trackerSurface } from '@/components/tracker/TrackerPrimitives'
 import { colors, spacing } from '@/lib/design-tokens'
 import type { TrackerCompletion, TrackerSupplementItem } from '@/lib/daily-tracker/types'
 
@@ -48,13 +48,19 @@ export function SupplementsModule({ supplements, completion, saving, onPatch }: 
               <div
                 key={supp.id}
                 style={{
+                  ...trackerSurface,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 14,
                   padding: '16px 18px',
                   borderRadius: 16,
-                  background: taken ? colors.successMuted : colors.bgElevated,
-                  border: `1px solid ${taken ? 'rgba(34,197,94,0.2)' : colors.borderSubtle}`,
+                  ...(taken
+                    ? {
+                        background:
+                          'linear-gradient(135deg, rgba(34,197,94,0.14) 0%, rgba(24,24,27,0.92) 60%)',
+                        border: '1px solid rgba(34,197,94,0.24)',
+                      }
+                    : null),
                   marginBottom: 10,
                 }}
               >

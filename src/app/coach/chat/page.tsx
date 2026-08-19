@@ -7,6 +7,7 @@ import { CoachShell } from '@/components/ui/CoachShell'
 import { brandTitle } from '@/lib/brand'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { formatRelativeActivity } from '@/lib/coach-chat-ui'
+import { getPlanTierTheme, isEnrollmentCodeClient } from '@/lib/client-plan-tier'
 import { openCoachChatWithClient } from '@/lib/coach-open-chat'
 import { colors, shadows } from '@/lib/coach-theme'
 import { requireCoach } from '@/lib/coach-session'
@@ -210,6 +211,7 @@ function CoachChatListInner() {
           const profile = conv.profiles
           const name = profile?.name || profile?.email || 'Client'
           const unread = (conv.unread_by_coach ?? 0) > 0
+          const tier = getPlanTierTheme(conv.plan_slug)
           return (
             <Link key={conv.id} href={`/coach/chat/${conv.id}`} style={{ textDecoration: 'none' }}>
               <div className="card-hover" style={{
@@ -220,6 +222,8 @@ function CoachChatListInner() {
                 marginBottom: 12,
                 borderRadius: 16,
                 border: `1px solid ${unread ? 'rgba(249,115,22,0.3)' : colors.borderSubtle}`,
+                // Plan length stripe mirrors the work queue so both surfaces read the same way.
+                borderLeft: `5px solid ${tier.stripe}`,
                 backgroundColor: unread ? colors.accentMuted : colors.bgCard,
                 boxShadow: shadows.sm,
               }}>
@@ -244,6 +248,24 @@ function CoachChatListInner() {
                   <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {conv.last_message_preview ?? 'No messages yet'}
                   </p>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                    <span style={{
+                      padding: '1px 8px',
+                      borderRadius: 999,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      background: tier.chipBg,
+                      color: tier.chipText,
+                      border: `1px solid ${tier.chipBorder}`,
+                    }}>
+                      {tier.label}
+                    </span>
+                    {isEnrollmentCodeClient(conv.access_source) && (
+                      <span style={{ fontSize: 9, fontWeight: 600, color: colors.textMuted, letterSpacing: '0.04em' }}>
+                        enrollment code
+                      </span>
+                    )}
+                  </span>
                 </div>
                 {unread && (
                   <span style={{ backgroundColor: colors.accent, color: colors.textInverse, borderRadius: 999, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>

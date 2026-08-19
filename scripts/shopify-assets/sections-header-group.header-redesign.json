@@ -1,0 +1,25 @@
+{
+  "type": "header",
+  "name": "Header",
+  "sections": {
+    "lx_header_redesign": {
+      "type": "lurvox-header-redesign",
+      "settings": {
+        "brand_name": "LURVOX",
+        "menu": "main-menu",
+        "show_login_rail": true,
+        "login_homepage_only": true,
+        "login_prompt": "",
+        "login_label": "EXISTING CLIENT OR PAYMENT DONE? LOG IN",
+        "login_url": "https://app.lurvox.in/login",
+        "coach_label": "",
+        "coach_url": "https://app.lurvox.in/coach/login",
+        "cta_label": "Choose plan",
+        "cta_url": "/#shopify-section-blocks_C9E4qf",
+        "talk_label": "Talk to a coach",
+        "talk_url": "https://wa.me/919220451577?text=i%20want%20a%20free%20consultation%20call%20and%20more%20info"
+      }
+    }
+  },
+  "order": ["lx_header_redesign"]
+}

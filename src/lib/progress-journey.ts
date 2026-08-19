@@ -72,25 +72,29 @@ export async function loadProgressJourney(
   userId: string
 ): Promise<ProgressJourneyData> {
   const [profileRes, checkinsRes, journeyRes, plansRes, workoutsRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', userId).single(),
+    supabase
+      .from('profiles')
+      .select('id, weight, onboarding_completed_at, updated_at, progress_photo_front, progress_photo_side, progress_photo_back')
+      .eq('id', userId)
+      .single(),
     supabase
       .from('checkins')
-      .select('*')
+      .select('id, checkin_type, coaching_week, coaching_day, submitted_at, reviewed_at, weight, waist, chest, thigh, navel, diet_adherence, workout_adherence, energy_level, notes, coach_response, progress_photo_front, progress_photo_side, progress_photo_back')
       .eq('client_id', userId)
       .order('submitted_at', { ascending: true }),
     supabase
       .from('journey_entries')
-      .select('*')
+      .select('id, checkin_id, entry_date, weight, photo_front, photo_side, photo_back, extra_photos, checkin_summary, plan_version')
       .eq('client_id', userId)
       .order('entry_date', { ascending: true }),
     supabase
       .from('plans')
-      .select('*')
+      .select('id, title, phase, delivered_at')
       .eq('client_id', userId)
       .order('created_at', { ascending: true }),
     supabase
       .from('workouts')
-      .select('*')
+      .select('id, name, duration, calories, date, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: true }),
   ])

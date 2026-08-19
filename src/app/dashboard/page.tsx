@@ -301,7 +301,11 @@ export default function Dashboard() {
     checkinSchedule?.nextCheckinStatus === 'available' && checkinSchedule.nextCheckin
       ? checkinSchedule.nextCheckin
       : checkinSchedule?.weekCheckins.find((task) => task.status === 'available') ?? null;
-  /** Always keep a sticky check-in strip: due CTA, or countdown to the next slot. */
+  /**
+   * The sticky banner is always shown once the schedule is anchored: the open window when a
+   * check-in is due, otherwise a countdown to the next Wednesday / Sunday slot. Late-week
+   * starters skip their first slots, so this is how they learn when they are actually up.
+   */
   const stickyCheckin = dueCheckin ?? checkinSchedule?.nextCheckin ?? null;
   const stickyCheckinMode = dueCheckin ? 'due' : 'countdown';
 

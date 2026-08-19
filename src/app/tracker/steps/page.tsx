@@ -11,7 +11,7 @@ export default function StepsTrackerPage() {
     <TrackerModulePage
       title="Step Tracker"
       isAvailable={Boolean(sections?.steps)}
-      emptyMessage="No step goal found in your active plan. Add a steps target in your cardio section (e.g. 10000 steps daily)."
+      emptyMessage="No step goal in your active plan yet. Open your plan, or ask your coach to add a daily steps target."
     >
       {sections?.steps && day && (
         <StepsModule steps={sections.steps} completion={day.completion} saving={saving} onPatch={patchCompletion} />

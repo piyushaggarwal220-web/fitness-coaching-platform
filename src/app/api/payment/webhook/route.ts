@@ -5,6 +5,7 @@ import { getCoachingPlan } from '@/lib/payments/plans'
 import {
   expectedAmountPaiseFromOrderNotes,
   normalizeDiscountCode,
+  supplementAddonPaiseFromNotes,
 } from '@/lib/payments/checkout-discounts'
 import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
 import { notifyAffiliateCodeUsage } from '@/lib/payments/affiliate-notify'
@@ -270,6 +271,7 @@ export async function POST(request: Request) {
       razorpayPaymentId: payment.id,
       razorpayOrderId: payment.order_id,
       amountPaise: payment.amount,
+      supplementAddonPaise: supplementAddonPaiseFromNotes(notes),
     })
 
     const discountCode = normalizeDiscountCode(notes.discount_code)

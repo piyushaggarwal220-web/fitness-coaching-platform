@@ -9,16 +9,30 @@ import { coachPageStyles as styles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/coach-theme';
 import { requireCoach } from '@/lib/coach-session';
 import { formatPlanDate } from '@/lib/plans';
-import type { Coach, PlanWithClient } from '@/types/database';
+import type { Coach } from '@/types/database';
 
 const supabase = createClient();
+
+type PlanListRow = {
+  id: string
+  client_id: string
+  coach_id: string
+  title: string
+  phase: string | null
+  version: number
+  active: boolean
+  delivered_at: string | null
+  updated_at: string
+  created_at: string
+  profiles?: { name: string | null; email: string | null } | null
+}
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 
 export default function CoachPlansPage() {
   const router = useRouter();
   const [coach, setCoach] = useState<Coach | null>(null);
-  const [plans, setPlans] = useState<PlanWithClient[]>([]);
+  const [plans, setPlans] = useState<PlanListRow[]>([]);
   const [clientFilter, setClientFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [loading, setLoading] = useState(true);
@@ -33,7 +47,7 @@ export default function CoachPlansPage() {
 
       const { data, error: plansError } = await supabase
         .from('plans')
-        .select('*, profiles:client_id(name, email)')
+        .select('id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, profiles:client_id(name, email)')
         .eq('coach_id', coachData.id)
         .order('updated_at', { ascending: false });
 
@@ -43,7 +57,7 @@ export default function CoachPlansPage() {
         return;
       }
 
-      setPlans((data as PlanWithClient[]) ?? []);
+      setPlans((data as unknown as PlanListRow[]) ?? []);
       setLoading(false);
     };
     load();

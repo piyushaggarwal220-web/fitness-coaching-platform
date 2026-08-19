@@ -1,0 +1,357 @@
+{% comment %}
+  LURVOX — match stock header / offer strip to black + #ff6200 site theme.
+{% endcomment %}
+<style id="lx-header-match">
+  :root {
+    --lx-nav-bg: #050505;
+    --lx-nav-ink: #ffffff;
+    --lx-nav-muted: rgba(255, 255, 255, 0.72);
+    --lx-nav-orange: #ff6200;
+    --lx-nav-line: rgba(255, 98, 0, 0.28);
+  }
+
+  /* Offer strip above nav — pure black + orange (kill brown gradient) */
+  .lurvox-offer-strip,
+  #lurvox-offer-strip-live,
+  .lurvox-offer-strip.lurvox-offer-strip--home {
+    background: #050505 !important;
+    background-image:
+      radial-gradient(ellipse 70% 120% at 50% -40%, rgba(255, 98, 0, 0.28), transparent 60%) !important;
+    border-bottom: 1px solid rgba(255, 98, 0, 0.35) !important;
+    color: #fff !important;
+  }
+
+  .lurvox-offer-strip::before,
+  .lurvox-offer-strip::after {
+    display: none !important;
+  }
+
+  .lurvox-offer-strip__inner {
+    color: #fff !important;
+  }
+
+  .lurvox-offer-strip__copy,
+  .lurvox-offer-strip__copy strong,
+  .lurvox-offer-strip strong {
+    color: var(--lx-nav-orange) !important;
+  }
+
+  .lurvox-offer-strip__timer {
+    border: 1px solid var(--lx-nav-orange) !important;
+    background: rgba(255, 98, 0, 0.12) !important;
+    color: #fff !important;
+    border-radius: 999px !important;
+  }
+
+  .lurvox-offer-strip__timer strong {
+    color: #fff !important;
+  }
+
+  @media screen and (max-width: 749px) {
+    .lurvox-offer-strip__inner,
+    #lurvox-offer-strip-live .lurvox-offer-strip__inner {
+      gap: 6px !important;
+      padding: 7px 10px !important;
+      min-height: 36px !important;
+      font-size: 11.5px !important;
+      justify-content: space-between !important;
+    }
+
+    .lurvox-offer-strip__emoji,
+    .lurvox-offer-strip__clock {
+      display: none !important;
+    }
+
+    .lurvox-offer-strip__copy {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11.5px !important;
+    }
+
+    .lurvox-offer-strip__timer {
+      flex: 0 0 auto;
+      padding: 3px 8px !important;
+      font-size: 11px !important;
+    }
+
+    .header__row--top {
+      min-height: 52px !important;
+    }
+
+    .header__icon,
+    .header__icon svg {
+      width: 22px !important;
+      height: 22px !important;
+    }
+
+    /* Stop accidental horizontal scroll on phones */
+    html, body {
+      max-width: 100% !important;
+      overflow-x: clip !important;
+    }
+
+    .shopify-section,
+    .shopify-section-group-header-group,
+    main,
+    #MainContent {
+      max-width: 100% !important;
+      overflow-x: clip !important;
+    }
+
+    .lx-flow--after .lx-flow__inner {
+      width: 100% !important;
+      max-width: 100% !important;
+      padding: 0 !important;
+    }
+
+    .lx-flow--after .lx-flow__btn {
+      width: 100% !important;
+    }
+
+    .lx-close {
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+      padding-bottom: 28px !important;
+    }
+
+    .lx-close__title {
+      font-size: 1.35rem !important;
+      max-width: 14ch !important;
+    }
+
+    .lx-wyg {
+      padding: 28px 14px 24px !important;
+    }
+  }
+
+  @media screen and (max-width: 380px) {
+    .lurvox-offer-strip__copy {
+      font-size: 10.5px !important;
+      letter-spacing: 0 !important;
+    }
+  }
+
+  /* Main header bar */
+  .shopify-section-group-header-group.header-section,
+  header-component.header,
+  .header,
+  .header__row,
+  .header__row.color-scheme-1,
+  .header__underlay,
+  .header__underlay-closed {
+    background: var(--lx-nav-bg) !important;
+    background-color: var(--lx-nav-bg) !important;
+    color: var(--lx-nav-ink) !important;
+    --color-background: 5 5 5 !important;
+    --color-foreground: 255 255 255 !important;
+    --color-foreground-heading: 255 255 255 !important;
+  }
+
+  .header__row--top {
+    border-bottom: 1px solid rgba(255, 98, 0, 0.22) !important;
+    box-shadow: 0 1px 0 rgba(255, 98, 0, 0.08);
+  }
+
+  .header__heading,
+  .header__heading-link,
+  .header__heading-logo,
+  .header__heading-logo img,
+  .header h1,
+  .header a {
+    color: var(--lx-nav-ink) !important;
+    opacity: 1 !important;
+  }
+
+  .header__icon,
+  .header__icon .svg-wrapper,
+  .header__icon svg,
+  .header-drawer-icon,
+  .header__icon--menu,
+  .header summary.header__icon {
+    color: var(--lx-nav-ink) !important;
+    opacity: 1 !important;
+  }
+
+  /* Hide Shopify Account / Sign in — existing clients use the login rail; keep phone/call */
+  header .account-button,
+  header .account-button.header-actions__action,
+  header shopify-account,
+  header account-button,
+  header .header-actions__action--account,
+  header a.header__icon[href*="/account"],
+  header a[href="/account"],
+  header a[href="/account/login"],
+  header a[aria-label="Account" i],
+  header button[aria-label="Account" i],
+  header .header__icon--account,
+  .menu-drawer__account,
+  .menu-drawer__account-container,
+  .shopify-section-group-header-group a[href="/account"],
+  .shopify-section-group-header-group a[href="/account/login"] {
+    display: none !important;
+  }
+
+  /* Talk / phone action — orange accent */
+  .header a[aria-label*="Talk" i],
+  .header a[href*="book-a-free-call"],
+  .header a[href*="talk-to-a-coach"],
+  .header a[href*="wa.me"],
+  .header a[href*="tel:"],
+  header-component a[aria-label*="Talk" i],
+  header-component a[href*="book-a-free-call"] {
+    color: var(--lx-nav-orange) !important;
+  }
+
+  .header a[aria-label*="Talk" i] svg,
+  .header a[href*="book-a-free-call"] svg,
+  header-component a[aria-label*="Talk" i] svg,
+  header-component a[href*="book-a-free-call"] svg,
+  .header a[aria-label*="Talk" i] .svg-wrapper,
+  header-component a[aria-label*="Talk" i] .svg-wrapper {
+    color: var(--lx-nav-orange) !important;
+  }
+
+  .header a[aria-label*="Talk" i] path,
+  header-component a[aria-label*="Talk" i] path {
+    stroke: var(--lx-nav-orange) !important;
+  }
+
+  /* Logo stays crisp white */
+  .header__heading-logo,
+  .header__heading-logo-wrapper img,
+  .header__heading img {
+    filter: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Sticky polish */
+  header-component[sticky] {
+    backdrop-filter: saturate(1.1) blur(10px);
+    -webkit-backdrop-filter: saturate(1.1) blur(10px);
+  }
+
+  header-component[sticky][data-sticky-state="active"] .header__row--top,
+  header-component[sticky][data-scroll-direction] .header__row--top {
+    background: rgba(5, 5, 5, 0.94) !important;
+  }
+
+  /* Mobile drawer */
+  .menu-drawer,
+  .menu-drawer__inner-container,
+  .menu-drawer__navigation,
+  .menu-drawer__utility-links,
+  .header-drawer,
+  #menu-drawer {
+    background: #050505 !important;
+    color: #fff !important;
+  }
+
+  .menu-drawer__menu-item,
+  .menu-drawer a,
+  .menu-drawer__menu-item-text {
+    color: #fff !important;
+  }
+
+  .menu-drawer__menu-item:hover,
+  .menu-drawer__menu-item:focus {
+    color: var(--lx-nav-orange) !important;
+  }
+
+  .lurvox-drawer-login,
+  .lurvox-drawer-login-wrap a {
+    background: rgba(255, 98, 0, 0.12) !important;
+    border: 1px solid rgba(255, 98, 0, 0.45) !important;
+    color: #fff !important;
+  }
+
+  @media screen and (min-width: 750px) {
+    .header__row--top {
+      min-height: 64px;
+    }
+  }
+
+  /* Existing client login rail under the discount strip */
+  .lurvox-client-login,
+  aside.lurvox-client-login,
+  .shopify-section-group-header-group .lurvox-client-login {
+    display: block !important;
+    visibility: visible !important;
+    height: 36px !important;
+    max-height: 36px !important;
+    opacity: 1 !important;
+    overflow: hidden !important;
+  }
+
+  .lurvox-client-login__copy {
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+  }
+
+  a.lx-header-login {
+    display: inline-flex !important;
+    align-items: center;
+    color: #ff8a3d !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    white-space: nowrap;
+    margin: 0 6px 0 0;
+    letter-spacing: 0.01em;
+  }
+
+  a.lx-header-login:hover {
+    color: #ffb07a !important;
+  }
+
+  @media screen and (max-width: 749px) {
+    a.lx-header-login {
+      font-size: 12px !important;
+    }
+  }
+</style>
+<script>
+  (function () {
+    var URL = 'https://app.lurvox.in/login';
+    function makeLink(id, label) {
+      var a = document.createElement('a');
+      a.id = id;
+      a.className = 'lx-header-login';
+      a.href = URL;
+      a.textContent = label;
+      a.setAttribute('aria-label', 'Existing client log in');
+      return a;
+    }
+    function place() {
+      if (!document.getElementById('lx-header-login')) {
+        var host =
+          document.querySelector('.header-actions') ||
+          document.querySelector('.header__icons') ||
+          document.querySelector('[class*="header-actions"]') ||
+          document.querySelector('header-component .header__column--right');
+        if (host) {
+          host.insertBefore(makeLink('lx-header-login', 'Log in'), host.firstChild);
+        }
+      }
+      if (!document.getElementById('lx-drawer-login')) {
+        var drawer =
+          document.querySelector('.menu-drawer__utility-links') ||
+          document.querySelector('.menu-drawer__inner-container');
+        if (drawer) {
+          var wrap = document.createElement('div');
+          wrap.className = 'lurvox-drawer-login-wrap';
+          wrap.style.padding = '12px 16px';
+          wrap.appendChild(makeLink('lx-drawer-login', 'Existing client? Log in'));
+          drawer.appendChild(wrap);
+        }
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', place);
+    } else {
+      place();
+    }
+  })();
+</script>

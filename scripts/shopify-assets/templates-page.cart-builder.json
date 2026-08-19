@@ -1,0 +1,16 @@
+{
+  "sections": {
+    "main": {
+      "type": "lurvox-cart-builder",
+      "settings": {
+        "eyebrow": "Build your package",
+        "heading": "Choose your plan, then add boosts",
+        "subheading": "One coaching plan required. Add Testo boost, Aura improver, or Height improver if you want them.",
+        "checkout_base": "https://app.lurvox.in/checkout",
+        "fineprint": "Draft on theme new new. Add-ons are previewed in cart; checkout currently charges the coaching plan.",
+        "accent_color": "#FF6200"
+      }
+    }
+  },
+  "order": ["main"]
+}

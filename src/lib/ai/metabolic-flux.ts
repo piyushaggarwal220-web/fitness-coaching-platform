@@ -106,7 +106,7 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
   const dietByLevel: Record<MetabolicFluxLevel, string> = {
     steady: [
       'Calorie bias: STEADY; prioritize adherence over throughput.',
-      'Fat loss: 350 to 450 kcal deficit (do not crash). Muscle gain: 150 to 250 kcal surplus. Recomp: maintenance.',
+      'Fat loss: 300 to 400 kcal deficit (do not crash). Muscle gain: 150 to 250 kcal surplus. Recomp: maintenance.',
       'Keep food volume manageable; avoid forcing large meals if appetite is limited.',
       'Floor still at least 1600 kcal unless a clinician context says otherwise.',
       'If eating is already low and weight is not dropping: reverse diet (raise calories gradually), never cut further.',
@@ -124,7 +124,7 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
     high_flux: [
       'Calorie bias: HIGH FLUX; higher energy-in paired with higher energy-out.',
       'Fat loss: mild 150 to 250 kcal deficit (keep intake relatively high; create the gap mainly via steps/training).',
-      'Muscle gain: assertive 300 to 450 kcal surplus with high meal volume, still without forcing food they cannot finish.',
+      'Muscle gain: assertive 300 to 400 kcal surplus with high meal volume, still without forcing food they cannot finish.',
       'Recomp: clear training-day surplus (about 200 to 300) and near-maintenance rest days.',
       'Use denser + higher-volume foods so hitting calories is realistic; never below 1600 kcal.',
       'If hunger is low, spread calories across more feedings rather than cutting the target.',

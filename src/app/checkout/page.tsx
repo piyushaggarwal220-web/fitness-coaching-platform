@@ -6,11 +6,12 @@ import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { BRAND_NAME } from '@/lib/brand';
 import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
+import { planDurationLabel, planGoalName } from '@/lib/payments/plan-pages';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
-import { trackMetaEvent } from '@/lib/analytics/meta-pixel';
+import { queueMetaPurchase } from '@/lib/analytics/meta-pixel';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
 import {
   formatInrFromPaise,
@@ -18,6 +19,7 @@ import {
   discountPaiseForPlan,
   getFirstTimerDiscountCode,
   isFirstTimerDiscountCode,
+  SUPPLEMENT_PROTOCOL_ADDON_PAISE,
 } from '@/lib/payments/checkout-discounts';
 import {
   affiliateDiscountPaise,
@@ -74,6 +76,7 @@ function CheckoutForm() {
   const [error, setError] = useState('');
   const [razorpayReady, setRazorpayReady] = useState(false);
   const [policyAgreementAccepted, setPolicyAgreementAccepted] = useState(false);
+  const [supplementAddon, setSupplementAddon] = useState(false);
   const [verificationId, setVerificationId] = useState('');
   const [emailCode, setEmailCode] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
@@ -101,8 +104,14 @@ function CheckoutForm() {
   const verifyRef = useRef<HTMLDivElement>(null);
   const testMode = isPaymentBypassClient();
   const isTrialCheckout = plan.isTrial === true;
-  const payablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
-  const payableDisplay = appliedDiscount?.displaySalePrice ?? plan.displayPrice;
+  const planPayablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
+  // Optional paid add-on. Off by default so it never pressures the coaching decision.
+  const supplementAddonAvailable = !isTrialCheckout;
+  const supplementAddonApplied = supplementAddon && supplementAddonAvailable;
+  const payablePaise = planPayablePaise + (supplementAddonApplied ? SUPPLEMENT_PROTOCOL_ADDON_PAISE : 0);
+  const payableDisplay = supplementAddonApplied
+    ? formatInrFromPaise(payablePaise)
+    : appliedDiscount?.displaySalePrice ?? plan.displayPrice;
   const firstTimerPreviewPaise = firstTimerSalePaise(plan.slug);
   const firstTimerPreviewDisplay =
     firstTimerPreviewPaise != null ? formatInrFromPaise(firstTimerPreviewPaise) : plan.displayPrice;
@@ -329,7 +338,7 @@ function CheckoutForm() {
       );
     }
     if (!policyAgreementAccepted) {
-      missing.push('Tick the box to agree to Terms & Refund Policy');
+      missing.push('Tick the box to agree to the Terms & Conditions');
     }
     if (!testMode && !razorpayReady) {
       missing.push('Wait for the payment form to finish loading');
@@ -484,17 +493,16 @@ function CheckoutForm() {
     }
 
     if (!testMode) {
-      trackMetaEvent(
-        'Purchase',
-        {
-          value: payablePaise / 100,
-          currency: 'INR',
-          content_name: `${plan.name} coaching plan`,
-          content_ids: [plan.slug],
-          content_type: 'product',
-        },
-        { eventID: `razorpay_${payload.razorpay_payment_id}` }
-      );
+      // Queue + image beacon + fbq; flush retries on create-account/login after redirect.
+      queueMetaPurchase({
+        eventID: `razorpay_${payload.razorpay_payment_id}`,
+        value: payablePaise / 100,
+        currency: 'INR',
+        content_name: `${plan.name} coaching plan`,
+        content_ids: [plan.slug],
+        content_type: 'product',
+      });
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
     continueAfterPayment(verifyData.redirectTo ?? '/create-account');
@@ -536,6 +544,7 @@ function CheckoutForm() {
           policyAgreementAccepted,
           verificationId: verificationId || undefined,
           discountCode: appliedDiscount?.code || undefined,
+          supplementAddon: supplementAddonApplied,
         }),
       });
 
@@ -647,11 +656,11 @@ function CheckoutForm() {
                   <span style={styles.trustBadge}>Razorpay Secure</span>
                 </div>
                 <p style={styles.trustLine}>
-                  Personal plan in <strong>24–48 hours</strong> after onboarding — or request a{' '}
-                  <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>
-                    full refund within 7 days
-                  </Link>{' '}
-                  if delivery fails.
+                  Secure checkout via Razorpay. By paying, you agree to our{' '}
+                  <Link href="/terms" target="_blank" style={styles.inlineLink}>
+                    Terms &amp; Conditions
+                  </Link>
+                  .
                 </p>
               </div>
             )}
@@ -680,7 +689,8 @@ function CheckoutForm() {
                         ...(selected ? styles.planChipSelected : null),
                       }}
                     >
-                      <span style={styles.planChipName}>{item.name}</span>
+                      <span style={styles.planChipName}>{planGoalName(item.slug)}</span>
+                      <span style={styles.planChipDuration}>{planDurationLabel(item.slug)}</span>
                       <span style={styles.planChipPrice}>{saleLabel}</span>
                       <span style={styles.planChipMrp}>{item.displayPrice}</span>
                     </Link>
@@ -699,7 +709,9 @@ function CheckoutForm() {
               <div style={styles.orderRow}>
                 <div>
                   <div style={styles.orderPlanName}>
-                    {plan.name}{isTrialCheckout ? '' : ' coaching'}
+                    {isTrialCheckout
+                      ? `${plan.name} coaching`
+                      : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
                   </div>
                   <div style={styles.orderPlanMeta}>
                     Workout · diet · check-ins · coach chat
@@ -774,14 +786,47 @@ function CheckoutForm() {
                   )}
                 </div>
               )}
+
+              {supplementAddonAvailable && (
+                <div style={styles.addonBlock}>
+                  <label style={styles.addonRow} htmlFor="checkout-supplement-addon">
+                    <input
+                      id="checkout-supplement-addon"
+                      type="checkbox"
+                      checked={supplementAddon}
+                      onChange={(e) => setSupplementAddon(e.target.checked)}
+                      style={styles.addonCheckbox}
+                    />
+                    <span style={styles.addonBody}>
+                      <span style={styles.addonTitleRow}>
+                        <strong style={styles.addonTitle}>Add a natural testosterone support protocol</strong>
+                        <span style={styles.addonPrice}>
+                          + {formatInrFromPaise(SUPPLEMENT_PROTOCOL_ADDON_PAISE)}
+                        </span>
+                      </span>
+                      <span style={styles.addonCopy}>
+                        A written protocol built from your own answers: how to support your body’s
+                        own testosterone through training, sleep, body fat and nutrition, which
+                        supplements are worth it, what to skip, and which blood markers to get
+                        checked. Not a hormone or drug. Optional.
+                      </span>
+                    </span>
+                  </label>
+                  {supplementAddon && (
+                    <p style={styles.addonTotalNote}>
+                      Total becomes <strong>{payableDisplay}</strong> · uncheck any time before paying
+                    </p>
+                  )}
+                </div>
+              )}
             </section>
 
             <p style={styles.leagueNote}>
               {isTrialCheckout
                 ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
                 : plan.slug === '12_months'
-                  ? 'Includes Consistency League entry and Crazy League eligibility (prizes up to ₹5,000).'
-                  : 'Includes Consistency League entry. Crazy League prizes need the 12-month plan.'}
+                  ? 'Includes a weekly coach phone call. 12 month exclusive.'
+                  : 'Personal workout, diet, coach chat, and weekly check-ins are included.'}
             </p>
 
             {error && <div style={styles.error}>{error}</div>}
@@ -872,7 +917,11 @@ function CheckoutForm() {
             <section style={{ ...styles.orderSummary, marginBottom: 16 }}>
               <div style={styles.orderRow}>
                 <div>
-                  <div style={styles.orderPlanName}>{plan.name}</div>
+                  <div style={styles.orderPlanName}>
+                    {isTrialCheckout
+                      ? plan.name
+                      : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+                  </div>
                   <div style={styles.orderPlanMeta}>{email.trim() || '—'}</div>
                 </div>
                 <div style={styles.orderPriceCol}>
@@ -897,7 +946,7 @@ function CheckoutForm() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {COACHING_PLAN_LIST.map((item) => (
                     <Link key={item.slug} href={`/checkout?plan=${item.slug}`} style={styles.validateBtn}>
-                      {item.name} · {item.displayPrice}
+                      {planGoalName(item.slug)} · {item.displayPrice}
                     </Link>
                   ))}
                 </div>
@@ -1006,10 +1055,10 @@ function CheckoutForm() {
                 />
                 <span id="checkout-policy-agreement" style={styles.policyText}>
                   I agree to the{' '}
-                  <Link href="/terms" target="_blank" style={styles.inlineLink}>Terms</Link>
-                  {' '}and{' '}
-                  <Link href="/refund-policy" target="_blank" style={styles.inlineLink}>Refund Policy</Link>.
-                  Results guarantee needs documented claims and ≥90% on-time check-ins. Statutory rights still apply.
+                  <Link href="/terms" target="_blank" style={styles.inlineLink}>
+                    Terms &amp; Conditions
+                  </Link>
+                  . All guarantees, refunds, upgrades, and service rules are only as stated there.
                 </span>
               </label>
 
@@ -1264,9 +1313,19 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: `0 0 0 1px ${colors.accent}`,
   },
   planChipName: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: 800,
+    color: colors.textPrimary,
+    letterSpacing: '-0.02em',
+    lineHeight: 1.2,
+  },
+  planChipDuration: {
+    fontSize: 10,
+    fontWeight: 650,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase' as const,
+    color: colors.textMuted,
+    marginTop: 1,
   },
   planChipPrice: {
     fontSize: 15,
@@ -1410,6 +1469,59 @@ const styles: Record<string, CSSProperties> = {
     color: colors.textMuted,
     fontSize: 12,
     lineHeight: 1.45,
+  },
+  addonBlock: {
+    marginTop: spacing[3],
+    paddingTop: spacing[3],
+    borderTop: `1px dashed ${colors.borderSubtle}`,
+  },
+  addonRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+    cursor: 'pointer',
+  },
+  addonCheckbox: {
+    width: 18,
+    height: 18,
+    marginTop: 2,
+    flexShrink: 0,
+    accentColor: colors.accent,
+    cursor: 'pointer',
+  },
+  addonBody: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 4,
+    minWidth: 0,
+  },
+  addonTitleRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing[2],
+  },
+  addonTitle: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: colors.textPrimary,
+  },
+  addonPrice: {
+    fontSize: 14,
+    fontWeight: 800,
+    color: colors.accent,
+    fontVariantNumeric: 'tabular-nums' as const,
+    whiteSpace: 'nowrap' as const,
+  },
+  addonCopy: {
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: colors.textMuted,
+  },
+  addonTotalNote: {
+    margin: `${spacing[2]}px 0 0 30px`,
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   testBanner: {
     backgroundColor: colors.warningMuted,

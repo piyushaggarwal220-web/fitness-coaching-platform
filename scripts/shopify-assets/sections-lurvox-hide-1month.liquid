@@ -1,0 +1,81 @@
+{% comment %}
+  LURVOX: hide retired trial / 1-month only.
+  Do NOT hide ₹999 — that is the current 3-month Quick Reset.
+{% endcomment %}
+<style id="lurvox-hide-1month-style">
+  /* lurvox-hide-retired-plans-v2 */
+  [data-plan-link*="trial"],
+  [data-plan-link*="1_week_trial"],
+  [data-plan-link*="1_month"],
+  [data-plan-link*="1-month"],
+  [data-plan-price="179"],
+  [data-plan-price="499"],
+  a[href*="plans/1-month"],
+  a[href*="plan=1_month"],
+  a[href*="1_week_trial"],
+  [data-cta-button],
+  [class*="ai-transformation-plan-cta-wrapper"] {
+    display: none !important;
+  }
+
+  /* Ensure current 3/6/12 month cards stay visible */
+  [data-plan-link*="3_months"],
+  [data-plan-link*="6_months"],
+  [data-plan-link*="12_months"],
+  [data-plan-price="999"],
+  [data-plan-price="1699"],
+  [data-plan-price="2999"],
+  [data-plan-price="1299"],
+  [data-plan-price="2099"],
+  [data-plan-price="3499"] {
+    display: block !important;
+  }
+</style>
+<script>
+(function () {
+  function wire() {
+    document
+      .querySelectorAll('[data-cta-button],[class*="ai-transformation-plan-cta-wrapper"]')
+      .forEach(function (el) {
+        el.style.setProperty('display', 'none', 'important')
+      })
+    document
+      .querySelectorAll('[class*="ai-transformation-plan-card-"][data-plan-link]')
+      .forEach(function (card) {
+        var link = card.getAttribute('data-plan-link') || ''
+        if (/trial|1_week|1_month|1-month/i.test(link)) {
+          card.style.setProperty('display', 'none', 'important')
+          return
+        }
+        if (/3_months|6_months|12_months/i.test(link) || /^(999|1699|2999|1299|2099|3499)$/.test(card.getAttribute('data-plan-price') || '')) {
+          card.style.setProperty('display', 'block', 'important')
+        }
+        if (card.dataset.lurvoxTapWired === '1') return
+        card.dataset.lurvoxTapWired = '1'
+        card.style.cursor = 'pointer'
+        card.addEventListener(
+          'click',
+          function (e) {
+            var href = card.getAttribute('data-plan-link')
+            if (!href) return
+            e.preventDefault()
+            e.stopPropagation()
+            window.location.href = href
+          },
+          true
+        )
+      })
+  }
+  wire()
+  document.addEventListener('DOMContentLoaded', wire)
+  setTimeout(wire, 400)
+  setTimeout(wire, 1500)
+})()
+</script>
+{% schema %}
+{
+  "name": "LURVOX hide 1-month",
+  "settings": [],
+  "presets": [{ "name": "LURVOX hide 1-month" }]
+}
+{% endschema %}

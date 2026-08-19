@@ -1,0 +1,17 @@
+{
+  "sections": {
+    "main": {
+      "type": "lurvox-talk-to-coach",
+      "settings": {
+        "eyebrow": "Free coach call",
+        "heading": "Book a free consultation call",
+        "subheading": "Tell us a bit about yourself. A coach will call you back — no payment required.",
+        "form_heading": "Your details",
+        "button_label": "Request free consultation call",
+        "fineprint": "Free consultation · No payment on this page · A coach typically responds within a few hours",
+        "accent_color": "#FF6200"
+      }
+    }
+  },
+  "order": ["main"]
+}

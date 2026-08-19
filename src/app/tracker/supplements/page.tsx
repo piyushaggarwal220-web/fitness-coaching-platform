@@ -11,7 +11,7 @@ export default function SupplementsTrackerPage() {
     <TrackerModulePage
       title="Supplement Tracker"
       isAvailable={Boolean(sections?.supplements.length)}
-      emptyMessage="No supplements found in your active plan."
+      emptyMessage="No supplements listed in your active plan yet. Open your plan, or ask your coach to add them."
     >
       {sections && day && (
         <SupplementsModule

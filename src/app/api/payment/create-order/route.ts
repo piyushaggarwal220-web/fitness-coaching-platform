@@ -13,7 +13,9 @@ import {
 } from '@/lib/payments/checkout-otp'
 import {
   checkoutDiscountNotes,
+  checkoutTotalPaise,
   resolveCheckoutPricing,
+  supplementAddonPaise,
 } from '@/lib/payments/checkout-discounts'
 import { assertTrialPurchaseEligible } from '@/lib/payments/trial-eligibility'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -26,6 +28,8 @@ type CreateOrderBody = {
   policyAgreementAccepted?: boolean
   verificationId?: string
   discountCode?: string
+  /** Opt-in for the paid personalised supplement protocol. */
+  supplementAddon?: boolean
 }
 
 export async function POST(request: Request) {
@@ -111,7 +115,11 @@ export async function POST(request: Request) {
     )
   }
   const { pricing } = pricingResult
-  const discountNotes = checkoutDiscountNotes(pricing)
+  // The add-on is never available on the trial, which exists only to sample coaching.
+  const supplementAddon = Boolean(body.supplementAddon) && !plan.isTrial
+  const addonPaise = supplementAddonPaise(supplementAddon)
+  const totalPaise = checkoutTotalPaise(pricing, supplementAddon)
+  const discountNotes = checkoutDiscountNotes(pricing, { supplementAddon })
 
   if (shouldBypassPayment()) {
     const orderId = `test_order_${Date.now()}`
@@ -126,19 +134,21 @@ export async function POST(request: Request) {
     return NextResponse.json({
       testMode: true,
       orderId,
-      amount: pricing.amountPaise,
+      amount: totalPaise,
       currency: 'INR',
       keyId: 'test',
       plan: pricing.plan,
       discount: pricing.discount,
       listAmountPaise: pricing.listAmountPaise,
+      supplementAddon,
+      supplementAddonPaise: addonPaise,
     })
   }
 
   try {
     const receipt = `plan_${plan.slug}_${Date.now()}`
     const order = await createRazorpayOrder({
-      amountPaise: pricing.amountPaise,
+      amountPaise: totalPaise,
       receipt,
       notes: {
         plan_slug: plan.slug,
@@ -162,6 +172,8 @@ export async function POST(request: Request) {
       plan: pricing.plan,
       discount: pricing.discount,
       listAmountPaise: pricing.listAmountPaise,
+      supplementAddon,
+      supplementAddonPaise: addonPaise,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create order'

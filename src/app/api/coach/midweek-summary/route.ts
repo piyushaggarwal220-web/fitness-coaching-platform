@@ -121,6 +121,7 @@ export async function POST(request: Request) {
       const result = await backfillMidWeekReplies({
         coachId: auth.coachId,
         limit: body.limit,
+        force: Boolean(body.force),
       })
       return NextResponse.json({ ok: true, ...result })
     } catch (err) {

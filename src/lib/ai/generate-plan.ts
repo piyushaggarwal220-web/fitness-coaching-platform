@@ -24,7 +24,8 @@ import {
   loadPublishedPromptsForAction,
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
-import { syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
+import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
+import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import { profileToComplexityInput } from '@/lib/complexity/profile-input'
 import {
   getPromptCategoryForAction,
@@ -75,6 +76,8 @@ export type GeneratePlanInput = {
   activePlan?: Plan | null
   /** Newly generated diet context for weekly workout updates. */
   updatedDietPlan?: Plan | null
+  /** Client journey snapshot (coaching week, missed check-ins, past requests). Appended fresh, never cached. */
+  clientJourney?: string | null
   progressImages?: {
     mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
     data: string
@@ -205,7 +208,9 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   '- Set nutrition_plan.calories, protein, carbs, and fat to the rounded AVERAGE daily totals from the 7-day plan (sum each day, divide by 7). NEVER use 0 or placeholder values.',
   '- Header macros MUST match the meal plan: if meals show (P: Xg | C: Yg | F: Zg | ~K kcal) lines, totals must reflect those sums.',
   '- Include a clear daily average line in the prose, e.g. "Daily averages: ~1850 kcal | P: 130g | C: 200g | F: 55g" matching the header fields.',
-  '- Protein targets should be ambitious only when realistic: if the client cannot comfortably take high protein (digestion, appetite, veg limits, budget, notes), use a gentler protein total and coach getting as much as possible — never force aggressive floors or "must hit Xg" wording.',
+  '- CALORIE CONSISTENCY: any calorie number you state in the conversational note (e.g. "I\'m giving you ~1850 calories this week") MUST equal the daily average and the header calories. Never state a different daily calorie target in the prose than the food math produces. If you mention a deficit/surplus, phrase it as a change (e.g. "about 150 kcal lower than last week") — do not state a second daily total.',
+  SAFE_RATE_OF_CHANGE_RULE,
+  '- Protein: do not push high g/kg by default. Comfortable amounts beat maximising; lower protein (even ~0.5g/kg in special cases) is acceptable when it fits the client. Never force aggressive floors or "must hit Xg" wording. NEVER falsify protein — header and daily averages must match the actual meal macros; if the diet is low protein, show the low number.',
   '- Never write "Welcome to week N", "Week N update", or any coaching-week handoff greeting in diet prose. Mesocycle week numbers are internal only.',
   '- Diet text must contain ONLY food / nutrition. Never include Cardio, Steps, Conditioning, or Supplements sections in the diet prose.',
   '- Every day under a Day N header must include the FULL meal list written out in actual words with portions, cooking fats, and macro lines.',
@@ -498,6 +503,7 @@ async function buildPlanPrompts(
     validationMode?: PlanValidationMode
     actionId?: CoachAiActionId
     promptVersion?: string
+    clientJourney?: string | null
   } = {}
 ) {
   const { result: base, report } = await compileCachedPrompt({
@@ -535,6 +541,8 @@ async function buildPlanPrompts(
 
   const userPrompt = [
     base.userPrompt,
+    // Journey snapshot is appended fresh (not block-cached) so week/skip/request context is never stale.
+    options.clientJourney?.trim() ? options.clientJourney.trim() : null,
     useLibraryTemplate ? null : PLAN_TASK_INSTRUCTIONS,
     options.retry ? RETRY_INSTRUCTIONS : null,
     options.completenessHint
@@ -632,6 +640,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         validationMode,
         actionId: input.actionId,
         promptVersion,
+        clientJourney: input.clientJourney,
       }
     )
 
@@ -711,6 +720,26 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         lastValidationError = completeness.error ?? 'Plan incomplete.'
         completenessHint = completeness.error
         continue
+      }
+    }
+
+    // Force the non-negotiable diet numbers (floor + no large weekly swing) on diet generations.
+    // Retry on violation; on the final attempt keep the best draft so the client still gets a plan
+    // (these flows land as coach-review drafts, not auto-published).
+    const enforcesDiet = validationMode === 'nutrition_focus' || validationMode === 'full'
+    if (enforcesDiet && !supportSection && providerMode !== 'mock') {
+      const safety = enforceDietSafety(plan.nutrition_plan, {
+        previousCalories: parseHeaderCalories(input.activePlan?.nutrition_plan),
+      })
+      if (!safety.ok) {
+        lastValidationError = safety.error
+        if (attempt < maxAttempts - 1) {
+          completenessHint = safety.hint
+          continue
+        }
+        console.warn(
+          `[generate-plan] diet safety not satisfied after ${maxAttempts} attempts (client ${input.profile.id}): ${safety.error}`
+        )
       }
     }
 

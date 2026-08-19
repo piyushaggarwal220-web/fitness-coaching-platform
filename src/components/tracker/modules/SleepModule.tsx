@@ -5,6 +5,7 @@ import {
   ChipSelector,
   ProgressBar,
   trackerInputStyle,
+  trackerSurfaceInset,
 } from '@/components/tracker/TrackerPrimitives'
 import { colors, spacing } from '@/lib/design-tokens'
 import { qualityLabelToScore } from '@/lib/daily-tracker/display'
@@ -53,11 +54,11 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: spacing[4] }}>
-        <div style={{ padding: spacing[3], borderRadius: 14, background: colors.bgElevated, border: `1px solid ${colors.borderSubtle}` }}>
+        <div style={{ ...trackerSurfaceInset, padding: spacing[3], borderRadius: 14 }}>
           <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase' }}>Sleep Goal</div>
           <div style={{ fontSize: 28, fontWeight: 800, marginTop: 8 }}>{goal}h</div>
         </div>
-        <div style={{ padding: spacing[3], borderRadius: 14, background: colors.bgElevated, border: `1px solid ${colors.borderSubtle}` }}>
+        <div style={{ ...trackerSurfaceInset, padding: spacing[3], borderRadius: 14 }}>
           <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase' }}>Actual Sleep</div>
           <input
             type="number"

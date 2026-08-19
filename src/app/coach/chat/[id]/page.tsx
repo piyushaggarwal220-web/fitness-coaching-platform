@@ -8,6 +8,8 @@ import { CoachShell } from '@/components/ui/CoachShell'
 import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { coachPageStyles as styles } from '@/lib/coach-page-styles'
 import { readApiJson } from '@/lib/api-response'
+import { getPlanTierTheme, isEnrollmentCodeClient } from '@/lib/client-plan-tier'
+import type { AccessSource } from '@/lib/entitlements'
 import { safeInternalPath } from '@/lib/safe-navigation'
 import { colors } from '@/lib/coach-theme'
 import type { CoachConversation, ConversationMessage } from '@/types/database'
@@ -34,6 +36,8 @@ function CoachChatDetailInner() {
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState<string | null>(null)
   const [activePlanId, setActivePlanId] = useState<string | null>(null)
+  const [planSlug, setPlanSlug] = useState<string | null>(null)
+  const [accessSource, setAccessSource] = useState<AccessSource | null>(null)
   const [copyHint, setCopyHint] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -66,6 +70,8 @@ function CoachChatDetailInner() {
             viewer?: 'client' | 'coach'
             client?: { name?: string; phone?: string | null }
             activePlanId?: string | null
+            plan_slug?: string | null
+            access_source?: AccessSource | null
           }>(detailResponse)
 
           if (!detail.ok) {
@@ -102,6 +108,8 @@ function CoachChatDetailInner() {
           const phone = detail.data.client?.phone?.trim()
           setClientPhone(phone || null)
           setActivePlanId(detail.data.activePlanId ?? null)
+          setPlanSlug(detail.data.plan_slug ?? null)
+          setAccessSource(detail.data.access_source ?? null)
           setMessages(messageResult.data.messages ?? [])
           setLoading(false)
           return
@@ -203,15 +211,41 @@ function CoachChatDetailInner() {
     </Link>
   )
 
+  const tier = getPlanTierTheme(planSlug)
+  const enrollment = isEnrollmentCodeClient(accessSource)
+
   return (
     <CoachShell narrow fullHeight>
       <div className="coach-chat-detail">
-        <div className="coach-chat-detail-header">
+        <div
+          className="coach-chat-detail-header"
+          style={{ borderLeft: `4px solid ${tier.stripe}`, paddingLeft: 10 }}
+        >
           <Link href={back.href} className="coach-chat-detail-back" aria-label={back.label}>
             ←
           </Link>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1 style={{ margin: 0 }}>{clientName}</h1>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  padding: '1px 8px',
+                  borderRadius: 999,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  background: tier.chipBg,
+                  color: tier.chipText,
+                  border: `1px solid ${tier.chipBorder}`,
+                }}
+              >
+                {tier.label}
+              </span>
+              {enrollment && (
+                <span style={{ fontSize: 9, fontWeight: 600, color: colors.textMuted, letterSpacing: '0.04em' }}>
+                  enrollment code
+                </span>
+              )}
+            </div>
             {phoneBlock}
             <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {profileLink}

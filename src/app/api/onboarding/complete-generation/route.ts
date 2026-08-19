@@ -1,6 +1,7 @@
 import { after, NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
+import { generateSupplementProtocol } from '@/lib/ai/supplement-protocol'
 import {
   canRetryInitialGeneration,
   enqueueInitialPlanGeneration,
@@ -153,6 +154,19 @@ export async function POST(request: Request) {
       processInitialPlanGeneration(job.id).catch((err) => {
         console.error(
           '[onboarding/complete-generation] background generation failed:',
+          err instanceof Error ? err.message : err
+        )
+      })
+    )
+  }
+
+  // Paid add-on: build it now that the onboarding answers it depends on exist, so it is
+  // waiting for them rather than generated on first open. No-ops if they did not buy it.
+  if (completedProfile?.supplement_protocol_entitled) {
+    after(() =>
+      generateSupplementProtocol({ clientId: auth.user.id }).catch((err) => {
+        console.error(
+          '[onboarding/complete-generation] supplement protocol failed:',
           err instanceof Error ? err.message : err
         )
       })

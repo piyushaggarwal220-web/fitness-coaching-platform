@@ -35,6 +35,8 @@ const COACH_FETCH_RETRY_DELAYS_MS = [0, 200, 500, 1000, 1500]
 const SESSION_RETRY_DELAYS_MS = [0, 300, 800, 1500]
 /** Short-lived client profile seed so post-onboarding navigations skip a stale incomplete read. */
 const CLIENT_SESSION_CACHE_TTL_MS = 60_000
+/** Deduplicate concurrent restores and reuse a warm result across portal sections. */
+const SESSION_CACHE_TTL_MS = 15_000
 
 type CachedClientSession = {
   user: SessionUser
@@ -43,10 +45,14 @@ type CachedClientSession = {
 }
 
 let clientSessionCache: CachedClientSession | null = null
+let inFlightRestore: Promise<SessionRestoreResult> | null = null
+let cachedRestore: { result: SessionRestoreResult; at: number } | null = null
 
 /** Drop any in-memory auth/profile seed (call on login + logout). */
 export function invalidateSessionCache(): void {
   clientSessionCache = null
+  cachedRestore = null
+  inFlightRestore = null
 }
 
 /**
@@ -61,6 +67,16 @@ export function seedAuthenticatedClientSession(
     user: { id: user.id, email: user.email },
     profile,
     cachedAt: Date.now(),
+  }
+  cachedRestore = {
+    at: Date.now(),
+    result: {
+      status: 'authenticated',
+      user,
+      role: 'client',
+      profile,
+      coach: null,
+    },
   }
 }
 
@@ -362,7 +378,7 @@ export function redirectToLogin(
   router.push(destination)
 }
 
-export async function restoreSession(
+async function restoreSessionUncached(
   supabase: SupabaseClient
 ): Promise<SessionRestoreResult> {
   const { user } = await ensureAuthSession(supabase)
@@ -383,8 +399,21 @@ export async function restoreSession(
     }
   }
 
-  const detection = await detectUserRole(supabase, user.id)
+  // Single parallel role lookup — avoid a second coach/admin round-trip below.
+  const [{ profile: roleProfile, error: profileError }, { coach, error: coachError }] =
+    await Promise.all([
+      fetchAdminProfile(supabase, user.id),
+      fetchCoachRecord(supabase, user.id),
+    ])
+
+  const detection = resolveDetectedRole({
+    profile: roleProfile,
+    profileError,
+    coach,
+    coachError,
+  })
   const role = detection.role
+  logSessionRestore('role_resolved', { userId: user.id, role })
 
   if (detection.error && !detection.definitive) {
     logSessionRestore('profile_unavailable', {
@@ -396,13 +425,12 @@ export async function restoreSession(
   }
 
   if (role === 'coach') {
-    const { coach, error } = await fetchCoachRecord(supabase, user.id)
     if (coach) {
       return { status: 'authenticated', user, role, profile: null, coach }
     }
-    if (error) {
-      logSessionRestore('profile_unavailable', { userId: user.id, role, error })
-      return { status: 'profile_unavailable', user, role, profileError: error }
+    if (coachError) {
+      logSessionRestore('profile_unavailable', { userId: user.id, role, error: coachError })
+      return { status: 'profile_unavailable', user, role, profileError: coachError }
     }
     return {
       status: 'profile_unavailable',
@@ -413,19 +441,18 @@ export async function restoreSession(
   }
 
   if (role === 'admin') {
-    const { profile, error } = await fetchAdminProfile(supabase, user.id)
-    if (profile && isAdminRole(profile.role)) {
+    if (roleProfile && isAdminRole(roleProfile.role)) {
       return {
         status: 'authenticated',
         user,
         role,
-        profile: profile as OnboardingProfile,
+        profile: roleProfile as OnboardingProfile,
         coach: null,
       }
     }
-    if (error) {
-      logSessionRestore('profile_unavailable', { userId: user.id, role, error })
-      return { status: 'profile_unavailable', user, role, profileError: error }
+    if (profileError) {
+      logSessionRestore('profile_unavailable', { userId: user.id, role, error: profileError })
+      return { status: 'profile_unavailable', user, role, profileError }
     }
     return { status: 'unauthenticated' }
   }
@@ -450,5 +477,41 @@ export async function restoreSession(
     role: 'client',
     profile: null,
     coach: null,
+  }
+}
+
+export async function restoreSession(
+  supabase: SupabaseClient
+): Promise<SessionRestoreResult> {
+  const now = Date.now()
+  if (cachedRestore && now - cachedRestore.at < SESSION_CACHE_TTL_MS) {
+    return cachedRestore.result
+  }
+
+  if (inFlightRestore) {
+    return inFlightRestore
+  }
+
+  inFlightRestore = restoreSessionUncached(supabase)
+    .then((result) => {
+      if (result.status === 'authenticated') {
+        cachedRestore = { result, at: Date.now() }
+      } else if (result.status === 'unauthenticated') {
+        cachedRestore = null
+      }
+      return result
+    })
+    .finally(() => {
+      inFlightRestore = null
+    })
+
+  return inFlightRestore
+}
+
+/** Drop a cached client profile so the next restore picks up payment/onboarding changes. */
+export function invalidateClientSessionCache(): void {
+  clientSessionCache = null
+  if (cachedRestore?.result.status === 'authenticated' && cachedRestore.result.role === 'client') {
+    cachedRestore = null
   }
 }

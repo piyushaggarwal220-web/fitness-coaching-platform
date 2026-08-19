@@ -10,8 +10,63 @@ import {
   type WorkQueueTask,
 } from '@/lib/coach-work-queue'
 import { colors } from '@/lib/coach-theme'
+import { getPlanTierTheme, isEnrollmentCodeClient } from '@/lib/client-plan-tier'
 import { motionClass } from '@/lib/motion'
 import { useCoachConversationRealtime } from '@/hooks/useSupabaseRealtime'
+import type { AccessSource } from '@/lib/entitlements'
+
+function PlanTierTags({
+  planSlug,
+  accessSource,
+  compact = false,
+}: {
+  planSlug?: string | null
+  accessSource?: AccessSource | null
+  compact?: boolean
+}) {
+  const theme = getPlanTierTheme(planSlug)
+  const enrollment = isEnrollmentCodeClient(accessSource)
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: compact ? 0 : 8,
+        flexWrap: 'wrap',
+      }}
+    >
+      <span
+        style={{
+          display: 'inline-block',
+          padding: compact ? '1px 7px' : '2px 9px',
+          borderRadius: 999,
+          fontSize: compact ? 10 : 11,
+          fontWeight: 700,
+          letterSpacing: '0.02em',
+          background: theme.chipBg,
+          color: theme.chipText,
+          border: `1px solid ${theme.chipBorder}`,
+        }}
+      >
+        {theme.label}
+      </span>
+      {enrollment && (
+        <span
+          style={{
+            fontSize: compact ? 9 : 10,
+            fontWeight: 600,
+            color: colors.textMuted,
+            letterSpacing: '0.04em',
+          }}
+        >
+          enrollment code
+        </span>
+      )}
+    </span>
+  )
+}
 
 const COMPLETED_KEY = 'coach-queue-completed'
 const COMPLETED_MAX = 400
@@ -289,10 +344,12 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
           padding: 16,
           borderRadius: 16,
           border: `1px solid rgba(249,115,22,0.25)`,
+          borderLeft: `5px solid ${getPlanTierTheme(current.planSlug).stripe}`,
           background: `linear-gradient(135deg, ${colors.accentMuted} 0%, ${colors.bgElevated} 100%)`,
           cursor: 'pointer',
         }}
       >
+        <PlanTierTags planSlug={current.planSlug} accessSource={current.accessSource} />
         <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>{current.title}</p>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: colors.textSecondary }}>{current.subtitle}</p>
         {current.coachNextSteps && current.coachNextSteps.length > 0 ? (
@@ -336,12 +393,12 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
-                padding: '10px 0',
+                padding: '10px 0 10px 10px',
                 borderTop: `1px solid ${colors.divider}`,
+                borderLeft: `4px solid ${getPlanTierTheme(task.planSlug).stripe}`,
                 flexWrap: 'wrap',
               }}
             >
-              <span style={{ color: colors.textMuted, flexShrink: 0 }}>↓</span>
               <button
                 type="button"
                 onClick={() => openTask(task.href)}
@@ -357,7 +414,10 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
                   minWidth: 0,
                 }}
               >
-                {task.title} — {task.subtitle}
+                <PlanTierTags planSlug={task.planSlug} accessSource={task.accessSource} compact />
+                <span style={{ display: 'block', marginTop: 4 }}>
+                  {task.title} — {task.subtitle}
+                </span>
               </button>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 <button type="button" onClick={() => openTask(task.href)} style={rowStartBtn}>

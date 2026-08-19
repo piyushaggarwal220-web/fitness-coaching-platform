@@ -4,6 +4,7 @@ import "./globals.css";
 import "@/components/dev/dev-panel.css";
 import { DevPanelRoot } from "@/components/dev/DevPanelRoot";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
+import { PendingMetaPurchaseFlush } from "@/components/analytics/PendingMetaPurchaseFlush";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
 import { ChunkLoadRecovery } from "@/components/pwa/ChunkLoadRecovery";
 import { SessionKeepalive } from "@/components/auth/SessionKeepalive";
@@ -71,6 +72,7 @@ export default function RootLayout({
         <ChunkLoadRecovery />
         <PwaRegister />
         <MetaPixel />
+        <PendingMetaPurchaseFlush />
         <DevPanelRoot />
       </body>
     </html>

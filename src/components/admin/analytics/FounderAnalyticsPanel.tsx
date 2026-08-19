@@ -174,6 +174,7 @@ export function FounderAnalyticsPanel() {
         <div style={s.card}>
           <h3 style={sectionTitle}>Customers</h3>
           <MetricRow label="Total clients" value={String(data.customers.totalCustomers)} />
+          <MetricRow label="Active today" value={String(data.customers.activeToday)} />
           <MetricRow label="Active plans" value={String(data.customers.activeCustomers)} />
           <MetricRow label="Paid (Razorpay)" value={String(data.enrollment.paidClients)} />
           <MetricRow label="Enrollment codes" value={String(data.enrollment.enrollmentClients)} />

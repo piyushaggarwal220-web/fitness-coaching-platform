@@ -1,0 +1,1301 @@
+{% comment %}
+  LURVOX Homepage Redesign — Athletic Editorial
+  Draft-theme only. Do not publish without review.
+{% endcomment %}
+
+<section class="lx-home" id="lx-home" data-lx-home>
+  <div class="lx-home__grain" aria-hidden="true"></div>
+
+  {%- comment -%} 1. Hero {%- endcomment -%}
+  <header class="lx-home__hero">
+    <div class="lx-home__hero-media" aria-hidden="true">
+      {%- if section.settings.hero_image != blank -%}
+        {{
+          section.settings.hero_image
+          | image_url: width: 2400
+          | image_tag:
+            loading: 'eager',
+            class: 'lx-home__hero-img',
+            widths: '800, 1200, 1600, 2400',
+            sizes: '100vw',
+            alt: ''
+        }}
+      {%- endif -%}
+      <div class="lx-home__hero-veil"></div>
+    </div>
+
+    <div class="lx-home__hero-copy lx-home__reveal">
+      <p class="lx-home__brand">{{ section.settings.brand_name }}</p>
+      <h1 class="lx-home__headline">{{ section.settings.hero_headline }}</h1>
+      <p class="lx-home__lede">{{ section.settings.hero_lede }}</p>
+      <div class="lx-home__cta-row">
+        <a class="lx-home__btn lx-home__btn--primary" href="#plans">{{ section.settings.hero_cta_label }}</a>
+        <a class="lx-home__btn lx-home__btn--ghost" href="#how-it-works">{{ section.settings.hero_secondary_label }}</a>
+      </div>
+    </div>
+  </header>
+
+  {%- comment -%} 2. Trust {%- endcomment -%}
+  <div class="lx-home__trust lx-home__reveal" aria-label="Social proof">
+    <p class="lx-home__trust-line">
+      <span>{{ section.settings.trust_reviews }}</span>
+      <span class="lx-home__trust-dot" aria-hidden="true"></span>
+      <span>{{ section.settings.trust_outcomes }}</span>
+      <span class="lx-home__trust-dot" aria-hidden="true"></span>
+      <span>{{ section.settings.trust_coach }}</span>
+    </p>
+  </div>
+
+  {%- comment -%} 3. How coaching works {%- endcomment -%}
+  <section class="lx-home__block" id="how-it-works">
+    <div class="lx-home__block-inner lx-home__reveal">
+      <p class="lx-home__label">{{ section.settings.how_label }}</p>
+      <h2 class="lx-home__title">{{ section.settings.how_title }}</h2>
+      <p class="lx-home__copy">{{ section.settings.how_copy }}</p>
+      <ol class="lx-home__steps">
+        <li>
+          <span class="lx-home__step-num">01</span>
+          <div>
+            <h3>{{ section.settings.step_1_title }}</h3>
+            <p>{{ section.settings.step_1_body }}</p>
+          </div>
+        </li>
+        <li>
+          <span class="lx-home__step-num">02</span>
+          <div>
+            <h3>{{ section.settings.step_2_title }}</h3>
+            <p>{{ section.settings.step_2_body }}</p>
+          </div>
+        </li>
+        <li>
+          <span class="lx-home__step-num">03</span>
+          <div>
+            <h3>{{ section.settings.step_3_title }}</h3>
+            <p>{{ section.settings.step_3_body }}</p>
+          </div>
+        </li>
+        <li>
+          <span class="lx-home__step-num">04</span>
+          <div>
+            <h3>{{ section.settings.step_4_title }}</h3>
+            <p>{{ section.settings.step_4_body }}</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  {%- comment -%} 4. What you get {%- endcomment -%}
+  <section class="lx-home__block lx-home__block--journey" id="what-you-get">
+    <div class="lx-home__block-inner lx-home__reveal">
+      <p class="lx-home__label">{{ section.settings.wyg_label }}</p>
+      <h2 class="lx-home__title">{{ section.settings.wyg_title }}</h2>
+      <p class="lx-home__copy">{{ section.settings.wyg_copy }}</p>
+      <div class="lx-home__journey">
+        <article>
+          <h3>{{ section.settings.wyg_1_title }}</h3>
+          <p>{{ section.settings.wyg_1_body }}</p>
+        </article>
+        <article>
+          <h3>{{ section.settings.wyg_2_title }}</h3>
+          <p>{{ section.settings.wyg_2_body }}</p>
+        </article>
+        <article>
+          <h3>{{ section.settings.wyg_3_title }}</h3>
+          <p>{{ section.settings.wyg_3_body }}</p>
+        </article>
+        <article>
+          <h3>{{ section.settings.wyg_4_title }}</h3>
+          <p>{{ section.settings.wyg_4_body }}</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} 5. Transformations {%- endcomment -%}
+  <section class="lx-home__block lx-home__block--gallery" id="transformations">
+    <div class="lx-home__block-inner lx-home__reveal">
+      <p class="lx-home__label">{{ section.settings.gallery_label }}</p>
+      <h2 class="lx-home__title">{{ section.settings.gallery_title }}</h2>
+      <p class="lx-home__copy">{{ section.settings.gallery_copy }}</p>
+    </div>
+    <div class="lx-home__gallery" role="list">
+      {%- for i in (1..6) -%}
+        {%- assign img_key = 'transform_image_' | append: i -%}
+        {%- assign title_key = 'transform_title_' | append: i -%}
+        {%- assign name_key = 'transform_name_' | append: i -%}
+        {%- assign img = section.settings[img_key] -%}
+        {%- if img != blank -%}
+          <figure class="lx-home__gallery-item" role="listitem">
+            {{
+              img
+              | image_url: width: 1200
+              | image_tag:
+                loading: 'lazy',
+                class: 'lx-home__gallery-img',
+                widths: '400, 700, 1000, 1200',
+                sizes: '(min-width: 900px) 33vw, 85vw',
+                alt: section.settings[title_key]
+            }}
+            <figcaption>
+              <strong>{{ section.settings[title_key] }}</strong>
+              <span>{{ section.settings[name_key] }}</span>
+            </figcaption>
+          </figure>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  </section>
+
+  {%- comment -%} 6. Plans {%- endcomment -%}
+  <section class="lx-home__block lx-home__block--plans" id="plans" data-lx-plans>
+    <div class="lx-home__block-inner lx-home__reveal">
+      <p class="lx-home__label">{{ section.settings.plans_label }}</p>
+      <h2 class="lx-home__title">{{ section.settings.plans_title }}</h2>
+      <p class="lx-home__copy">{{ section.settings.plans_copy }}</p>
+
+      <div class="lx-home__urgency" data-lx-urgency data-hours="8">
+        <p class="lx-home__urgency-label">Price increases in</p>
+        <p class="lx-home__urgency-timer" data-lx-countdown>08:00:00</p>
+        <p class="lx-home__urgency-note">Lock today’s pricing before the next increase.</p>
+      </div>
+
+      <div class="lx-home__plan-grid" role="radiogroup" aria-label="Coaching plans">
+        {%- for i in (1..4) -%}
+          {%- assign enabled_key = 'plan_' | append: i | append: '_enabled' -%}
+          {%- unless i == 1 -%}
+            {%- if section.settings[enabled_key] -%}
+            {%- assign label_key = 'plan_' | append: i | append: '_label' -%}
+            {%- assign badge_key = 'plan_' | append: i | append: '_badge' -%}
+            {%- assign duration_key = 'plan_' | append: i | append: '_duration' -%}
+            {%- assign price_key = 'plan_' | append: i | append: '_price' -%}
+            {%- assign original_key = 'plan_' | append: i | append: '_original' -%}
+            {%- assign savings_key = 'plan_' | append: i | append: '_savings' -%}
+            {%- assign monthly_key = 'plan_' | append: i | append: '_monthly' -%}
+            {%- assign desc_key = 'plan_' | append: i | append: '_desc' -%}
+            {%- assign link_key = 'plan_' | append: i | append: '_link' -%}
+            {%- assign default_key = 'plan_' | append: i | append: '_default' -%}
+            <label
+              class="lx-home__plan{% if section.settings[default_key] %} is-selected{% endif %}"
+              data-plan-card
+            >
+              <input
+                type="radio"
+                name="lx-plan"
+                value="{{ i }}"
+                data-plan-link="{{ section.settings[link_key] }}"
+                {% if section.settings[default_key] %}checked{% endif %}
+              >
+              {%- if section.settings[badge_key] != blank -%}
+                <span class="lx-home__plan-badge">{{ section.settings[badge_key] }}</span>
+              {%- endif -%}
+              <span class="lx-home__plan-label">{{ section.settings[label_key] }}</span>
+              <span class="lx-home__plan-duration">{{ section.settings[duration_key] }}</span>
+              <span class="lx-home__plan-price">
+                <span class="lx-home__plan-currency">₹</span>{{ section.settings[price_key] }}
+              </span>
+              {%- if section.settings[original_key] != blank -%}
+                <span class="lx-home__plan-original">₹{{ section.settings[original_key] }}</span>
+              {%- endif -%}
+              {%- if section.settings[savings_key] != blank -%}
+                <span class="lx-home__plan-savings">{{ section.settings[savings_key] }}</span>
+              {%- endif -%}
+              <span class="lx-home__plan-monthly">{{ section.settings[monthly_key] }}</span>
+              <span class="lx-home__plan-desc">{{ section.settings[desc_key] }}</span>
+            </label>
+            {%- endif -%}
+          {%- endunless -%}
+        {%- endfor -%}
+      </div>
+
+      <div class="lx-home__plan-actions">
+        <a class="lx-home__btn lx-home__btn--primary lx-home__btn--wide" href="{{ section.settings.plan_3_link }}" data-plan-cta>
+          {{ section.settings.plans_cta }}
+        </a>
+        <p class="lx-home__plan-note">{{ section.settings.plans_note }}</p>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} 7. Consistency League tease {%- endcomment -%}
+  <section class="lx-home__block lx-home__block--league" id="league">
+    <div class="lx-home__block-inner lx-home__reveal">
+      <p class="lx-home__label">{{ section.settings.league_label }}</p>
+      <h2 class="lx-home__title">{{ section.settings.league_title }}</h2>
+      <p class="lx-home__copy">{{ section.settings.league_copy }}</p>
+      <a class="lx-home__btn lx-home__btn--ghost" href="{{ section.settings.league_link }}">
+        {{ section.settings.league_cta }}
+      </a>
+    </div>
+  </section>
+
+  {%- comment -%} 8. FAQ {%- endcomment -%}
+  <section class="lx-home__block" id="faq">
+    <div class="lx-home__block-inner lx-home__reveal">
+      <p class="lx-home__label">{{ section.settings.faq_label }}</p>
+      <h2 class="lx-home__title">{{ section.settings.faq_title }}</h2>
+      <div class="lx-home__faq">
+        {%- for i in (1..6) -%}
+          {%- assign q_key = 'faq_q_' | append: i -%}
+          {%- assign a_key = 'faq_a_' | append: i -%}
+          {%- if section.settings[q_key] != blank -%}
+            <details class="lx-home__faq-item">
+              <summary>{{ section.settings[q_key] }}</summary>
+              <p>{{ section.settings[a_key] }}</p>
+            </details>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} 9. Final CTA {%- endcomment -%}
+  <section class="lx-home__finale" id="start">
+    <div class="lx-home__finale-inner lx-home__reveal">
+      <p class="lx-home__brand lx-home__brand--sm">{{ section.settings.brand_name }}</p>
+      <h2 class="lx-home__finale-title">{{ section.settings.finale_title }}</h2>
+      <p class="lx-home__copy">{{ section.settings.finale_copy }}</p>
+      <div class="lx-home__cta-row">
+        <a class="lx-home__btn lx-home__btn--primary" href="#plans">{{ section.settings.finale_cta }}</a>
+        {%- if section.settings.contact_link != blank -%}
+          <a class="lx-home__btn lx-home__btn--ghost" href="{{ section.settings.contact_link }}">
+            {{ section.settings.contact_label }}
+          </a>
+        {%- endif -%}
+      </div>
+    </div>
+  </section>
+</section>
+
+{% stylesheet %}
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
+
+  .lx-home {
+    --lx-ink: #0b0c0e;
+    --lx-ink-2: #12141a;
+    --lx-surface: #181b22;
+    --lx-line: rgba(244, 239, 232, 0.12);
+    --lx-text: #f3efe8;
+    --lx-muted: rgba(243, 239, 232, 0.68);
+    --lx-ember: #e85d04;
+    --lx-ember-hot: #ff7a1a;
+    --lx-ember-soft: rgba(232, 93, 4, 0.16);
+    --lx-max: 1120px;
+    --lx-pad: clamp(20px, 4vw, 40px);
+    position: relative;
+    overflow: clip;
+    background: var(--lx-ink);
+    color: var(--lx-text);
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .lx-home__grain {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.35;
+    background-image:
+      radial-gradient(ellipse 70% 40% at 50% -5%, rgba(232, 93, 4, 0.18), transparent 55%),
+      radial-gradient(ellipse 50% 30% at 100% 40%, rgba(232, 93, 4, 0.06), transparent 50%),
+      linear-gradient(180deg, #0f1115 0%, var(--lx-ink) 30%, #090a0c 100%);
+  }
+
+  .lx-home__hero,
+  .lx-home__trust,
+  .lx-home__block-inner,
+  .lx-home__finale-inner {
+    position: relative;
+    z-index: 1;
+  }
+
+  .lx-home__hero {
+    display: grid;
+    min-height: min(100svh, 920px);
+    place-items: end stretch;
+  }
+
+  .lx-home__hero-media {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .lx-home__hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 20%;
+    filter: saturate(0.92) contrast(1.05);
+  }
+
+  .lx-home__hero-veil {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(11, 12, 14, 0.45) 0%, rgba(11, 12, 14, 0.62) 38%, rgba(11, 12, 14, 0.97) 100%),
+      linear-gradient(90deg, rgba(11, 12, 14, 0.7) 0%, transparent 58%);
+  }
+
+  .lx-home__hero-copy {
+    position: relative;
+    z-index: 2;
+    width: min(var(--lx-max), calc(100% - 2 * var(--lx-pad)));
+    margin: 0 auto;
+    padding: clamp(100px, 18vw, 160px) 0 clamp(96px, 14vw, 140px);
+  }
+
+  .lx-home__brand {
+    margin: 0 0 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(42px, 9vw, 88px);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 0.92;
+    text-transform: uppercase;
+  }
+
+  .lx-home__brand--sm {
+    font-size: clamp(28px, 5vw, 40px);
+    margin-bottom: 16px;
+  }
+
+  .lx-home__headline {
+    margin: 0 0 16px;
+    max-width: 16ch;
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(26px, 4.6vw, 44px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+  }
+
+  .lx-home__lede,
+  .lx-home__copy {
+    margin: 0;
+    max-width: 34rem;
+    color: var(--lx-muted);
+    font-size: clamp(15px, 1.7vw, 17px);
+    line-height: 1.65;
+  }
+
+  .lx-home__cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .lx-home__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 22px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: transform 220ms ease, background 220ms ease, border-color 220ms ease, color 220ms ease;
+  }
+
+  .lx-home__btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .lx-home__btn--primary {
+    background: var(--lx-ember);
+    color: #140900;
+  }
+
+  .lx-home__btn--primary:hover {
+    background: var(--lx-ember-hot);
+  }
+
+  .lx-home__btn--ghost {
+    border-color: var(--lx-line);
+    background: transparent;
+    color: var(--lx-text);
+  }
+
+  .lx-home__btn--ghost:hover {
+    border-color: rgba(243, 239, 232, 0.35);
+  }
+
+  .lx-home__btn--wide {
+    width: min(100%, 420px);
+  }
+
+  .lx-home__trust {
+    width: min(var(--lx-max), calc(100% - 2 * var(--lx-pad)));
+    margin: 0 auto;
+    padding: 8px 0 40px;
+    border-bottom: 1px solid var(--lx-line);
+  }
+
+  .lx-home__trust-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin: 0;
+    color: var(--lx-muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .lx-home__trust-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--lx-ember);
+    opacity: 0.8;
+  }
+
+  .lx-home__block {
+    position: relative;
+    z-index: 1;
+    padding: clamp(56px, 10vw, 104px) 0;
+  }
+
+  .lx-home__block-inner {
+    width: min(var(--lx-max), calc(100% - 2 * var(--lx-pad)));
+    margin: 0 auto;
+  }
+
+  .lx-home__label {
+    margin: 0 0 12px;
+    color: var(--lx-ember);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .lx-home__title {
+    margin: 0 0 16px;
+    max-width: 18ch;
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 4.8vw, 46px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    text-shadow:
+      0 0 24px rgba(255, 255, 255, 0.1),
+      0 0 38px rgba(232, 93, 4, 0.12);
+  }
+
+  .lx-home__block .lx-home__copy {
+    margin-bottom: 36px;
+  }
+
+  .lx-home__steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--lx-line);
+  }
+
+  .lx-home__steps li {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 16px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--lx-line);
+  }
+
+  .lx-home__step-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--lx-ember);
+    letter-spacing: -0.02em;
+  }
+
+  .lx-home__steps h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 650;
+  }
+
+  .lx-home__steps p {
+    margin: 0;
+    color: var(--lx-muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .lx-home__journey {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .lx-home__journey article {
+    padding: 24px 0 8px;
+    border-top: 1px solid var(--lx-line);
+  }
+
+  .lx-home__journey h3 {
+    margin: 0 0 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .lx-home__journey p {
+    margin: 0;
+    color: var(--lx-muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .lx-home__block--gallery {
+    padding-bottom: clamp(40px, 6vw, 64px);
+  }
+
+  .lx-home__gallery {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(260px, 32vw);
+    gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 0 var(--lx-pad) 8px;
+    scrollbar-width: thin;
+  }
+
+  .lx-home__gallery-item {
+    position: relative;
+    margin: 0;
+    scroll-snap-align: start;
+    overflow: hidden;
+    min-height: 360px;
+    background: var(--lx-surface);
+  }
+
+  .lx-home__gallery-img {
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .lx-home__gallery-item figcaption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 48px 16px 16px;
+    background: linear-gradient(180deg, transparent, rgba(11, 12, 14, 0.92));
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .lx-home__gallery-item strong {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .lx-home__gallery-item span {
+    color: var(--lx-muted);
+    font-size: 13px;
+  }
+
+  .lx-home__block--plans {
+    background:
+      linear-gradient(180deg, transparent, rgba(232, 93, 4, 0.05) 40%, transparent),
+      var(--lx-ink);
+  }
+
+  .lx-home__plan-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .lx-home__urgency {
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 98, 0, 0.35);
+    border-radius: 16px;
+    background:
+      linear-gradient(180deg, rgba(255, 98, 0, 0.12), rgba(255, 98, 0, 0.04));
+    text-align: center;
+    box-shadow: 0 0 28px rgba(255, 98, 0, 0.12);
+  }
+
+  .lx-home__urgency-label {
+    margin: 0 0 6px;
+    color: #ff8a3d;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .lx-home__urgency-timer {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.7rem, 7vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    text-shadow:
+      0 0 10px rgba(255, 98, 0, 0.45),
+      0 0 28px rgba(255, 98, 0, 0.22);
+  }
+
+  .lx-home__urgency-note {
+    margin: 6px 0 0;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.78rem;
+  }
+
+  .lx-home__plan {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 22px 20px 20px;
+    border: 1px solid var(--lx-line);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    transition: border-color 200ms ease, background 200ms ease, transform 200ms ease;
+  }
+
+  .lx-home__plan input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .lx-home__plan:hover,
+  .lx-home__plan.is-selected {
+    border-color: rgba(232, 93, 4, 0.55);
+    background: linear-gradient(160deg, var(--lx-ember-soft), transparent 55%), rgba(255, 255, 255, 0.03);
+  }
+
+  .lx-home__plan.is-selected {
+    transform: translateY(-2px);
+  }
+
+  .lx-home__plan-badge {
+    align-self: flex-start;
+    margin-bottom: 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--lx-ember);
+    color: #140900;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .lx-home__plan-label {
+    color: var(--lx-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .lx-home__plan-duration {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .lx-home__plan-price {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    margin-top: 4px;
+    font-family: 'Syne', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    text-shadow: 0 0 22px rgba(232, 93, 4, 0.24);
+  }
+
+  .lx-home__plan-currency {
+    font-size: 22px;
+  }
+
+  .lx-home__plan-original {
+    color: var(--lx-muted);
+    font-size: 13px;
+    text-decoration: line-through;
+  }
+
+  .lx-home__plan-savings {
+    color: var(--lx-ember-hot);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .lx-home__plan-monthly {
+    color: var(--lx-muted);
+    font-size: 13px;
+  }
+
+  .lx-home__plan-desc {
+    margin-top: 8px;
+    color: var(--lx-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .lx-home__plan-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .lx-home__plan-note {
+    margin: 0;
+    color: var(--lx-muted);
+    font-size: 13px;
+  }
+
+  .lx-home__block--league {
+    border-block: 1px solid var(--lx-line);
+    background: linear-gradient(120deg, rgba(232, 93, 4, 0.08), transparent 50%), var(--lx-ink-2);
+  }
+
+  .lx-home__faq {
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--lx-line);
+  }
+
+  .lx-home__faq-item {
+    border-bottom: 1px solid var(--lx-line);
+  }
+
+  .lx-home__faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .lx-home__faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .lx-home__faq-item summary::after {
+    content: '+';
+    float: right;
+    color: var(--lx-ember);
+    font-weight: 600;
+  }
+
+  .lx-home__faq-item[open] summary::after {
+    content: '–';
+  }
+
+  .lx-home__faq-item p {
+    margin: 0 0 18px;
+    max-width: 48rem;
+    color: var(--lx-muted);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .lx-home__finale {
+    position: relative;
+    z-index: 1;
+    padding: clamp(72px, 12vw, 128px) 0 clamp(96px, 14vw, 140px);
+  }
+
+  .lx-home__finale-inner {
+    width: min(var(--lx-max), calc(100% - 2 * var(--lx-pad)));
+    margin: 0 auto;
+  }
+
+  .lx-home__finale-title {
+    margin: 0 0 16px;
+    max-width: 16ch;
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5.5vw, 52px);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+  }
+
+  .lx-home__reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 700ms ease, transform 700ms ease;
+  }
+
+  .lx-home__reveal.is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  .lx-home__hero-copy.lx-home__reveal,
+  .lx-home__trust.lx-home__reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (min-width: 900px) {
+    .lx-home__plan-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .lx-home__gallery {
+      grid-auto-columns: minmax(300px, 28vw);
+    }
+
+    .lx-home__steps li {
+      grid-template-columns: 88px 1fr;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .lx-home__journey,
+    .lx-home__plan-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .lx-home__trust-dot {
+      display: none;
+    }
+
+    .lx-home__trust-line {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lx-home__reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+
+    .lx-home__btn {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    const root = document.querySelector('[data-lx-home]');
+    if (!root) return;
+
+    const reveals = root.querySelectorAll('.lx-home__reveal');
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-in');
+              io.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+      );
+      reveals.forEach((el) => io.observe(el));
+    } else {
+      reveals.forEach((el) => el.classList.add('is-in'));
+    }
+
+    const plans = root.querySelector('[data-lx-plans]');
+    if (!plans) return;
+    const cta = plans.querySelector('[data-plan-cta]');
+    const cards = plans.querySelectorAll('[data-plan-card]');
+    const radios = plans.querySelectorAll('input[name="lx-plan"]');
+
+    function syncPlan() {
+      const selected = plans.querySelector('input[name="lx-plan"]:checked');
+      cards.forEach((card) => card.classList.remove('is-selected'));
+      if (!selected) return;
+      selected.closest('[data-plan-card]')?.classList.add('is-selected');
+      if (cta && selected.dataset.planLink) cta.setAttribute('href', selected.dataset.planLink);
+    }
+
+    radios.forEach((radio) => radio.addEventListener('change', syncPlan));
+    syncPlan();
+
+    const urgency = root.querySelector('[data-lx-urgency]');
+    const countdownEl = urgency && urgency.querySelector('[data-lx-countdown]');
+    if (urgency && countdownEl) {
+      const hours = parseInt(urgency.getAttribute('data-hours'), 10) || 8;
+      const storageKey = 'lurvox-urgency-countdown-end-v2';
+      const durationMs = hours * 60 * 60 * 1000;
+      let endTime = 0;
+      try {
+        const stored = localStorage.getItem(storageKey);
+        const parsed = stored ? parseInt(stored, 10) : NaN;
+        if (Number.isFinite(parsed) && parsed > Date.now()) endTime = parsed;
+      } catch (e) {}
+      if (!endTime) {
+        endTime = Date.now() + durationMs;
+        try { localStorage.setItem(storageKey, String(endTime)); } catch (e) {}
+      }
+      const tick = () => {
+        let distance = endTime - Date.now();
+        if (distance <= 0) {
+          endTime = Date.now() + durationMs;
+          try { localStorage.setItem(storageKey, String(endTime)); } catch (e) {}
+          distance = durationMs;
+        }
+        const h = Math.floor(distance / 3600000);
+        const m = Math.floor((distance % 3600000) / 60000);
+        const s = Math.floor((distance % 60000) / 1000);
+        countdownEl.textContent =
+          String(h).padStart(2, '0') + ':' +
+          String(m).padStart(2, '0') + ':' +
+          String(s).padStart(2, '0');
+      };
+      tick();
+      setInterval(tick, 1000);
+    }
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "LURVOX Home Redesign",
+  "tag": "section",
+  "class": "section-lx-home-redesign",
+  "settings": [
+    { "type": "text", "id": "brand_name", "label": "Brand", "default": "LURVOX" },
+    { "type": "image_picker", "id": "hero_image", "label": "Hero image" },
+    {
+      "type": "text",
+      "id": "hero_headline",
+      "label": "Hero headline",
+      "default": "Build the body you’ve always wanted."
+    },
+    {
+      "type": "textarea",
+      "id": "hero_lede",
+      "label": "Hero supporting line",
+      "default": "Personal workout + diet, weekly coach reviews, and a system that updates with you — not a static PDF."
+    },
+    { "type": "text", "id": "hero_cta_label", "label": "Hero CTA", "default": "Choose your plan" },
+    { "type": "text", "id": "hero_secondary_label", "label": "Hero secondary", "default": "See how it works" },
+    { "type": "text", "id": "trust_reviews", "label": "Trust line 1", "default": "7,000+ verified reviews" },
+    { "type": "text", "id": "trust_outcomes", "label": "Trust line 2", "default": "Transformations in 90 days" },
+    { "type": "text", "id": "trust_coach", "label": "Trust line 3", "default": "Real human coaches" },
+    { "type": "text", "id": "how_label", "label": "How label", "default": "How coaching works" },
+    {
+      "type": "text",
+      "id": "how_title",
+      "label": "How title",
+      "default": "Pay once. Get a coach. Stay on track."
+    },
+    {
+      "type": "textarea",
+      "id": "how_copy",
+      "label": "How copy",
+      "default": "Checkout unlocks the client app the same day. Your first personal plan lands in 24–48 hours. Every week after that, your coach adjusts from real data."
+    },
+    { "type": "text", "id": "step_1_title", "label": "Step 1 title", "default": "Checkout & create login" },
+    {
+      "type": "textarea",
+      "id": "step_1_body",
+      "label": "Step 1 body",
+      "default": "Pay once, set up your account, and enter the client app the same day."
+    },
+    { "type": "text", "id": "step_2_title", "label": "Step 2 title", "default": "Assessment + progress photos" },
+    {
+      "type": "textarea",
+      "id": "step_2_body",
+      "label": "Step 2 body",
+      "default": "Goals, schedule, diet prefs, injuries, and photos — so coaching starts personal."
+    },
+    { "type": "text", "id": "step_3_title", "label": "Step 3 title", "default": "Personal diet & workout" },
+    {
+      "type": "textarea",
+      "id": "step_3_body",
+      "label": "Step 3 body",
+      "default": "Delivered in 24–48 hours for gym, home, or mixed setups — veg/vegan friendly."
+    },
+    { "type": "text", "id": "step_4_title", "label": "Step 4 title", "default": "Weekly updates that stick" },
+    {
+      "type": "textarea",
+      "id": "step_4_body",
+      "label": "Step 4 body",
+      "default": "Daily trackers, coach chat, weekly check-ins, and plan updates from what you actually do."
+    },
+    { "type": "text", "id": "wyg_label", "label": "WYG label", "default": "After you pay" },
+    { "type": "text", "id": "wyg_title", "label": "WYG title", "default": "What you get. No guesswork." },
+    {
+      "type": "textarea",
+      "id": "wyg_copy",
+      "label": "WYG copy",
+      "default": "You are not buying a PDF. You get a personal coach, a personal plan, and a system that keeps updating with you."
+    },
+    { "type": "text", "id": "wyg_1_title", "label": "WYG 1 title", "default": "Day 1 access" },
+    {
+      "type": "textarea",
+      "id": "wyg_1_body",
+      "label": "WYG 1 body",
+      "default": "Instant account setup, onboarding assessment, and a real coach assigned to your case."
+    },
+    { "type": "text", "id": "wyg_2_title", "label": "WYG 2 title", "default": "Your personal plan" },
+    {
+      "type": "textarea",
+      "id": "wyg_2_body",
+      "label": "WYG 2 body",
+      "default": "Custom workout + diet matched to your life — first delivery in 24–48 hours."
+    },
+    { "type": "text", "id": "wyg_3_title", "label": "WYG 3 title", "default": "Every week support" },
+    {
+      "type": "textarea",
+      "id": "wyg_3_body",
+      "label": "WYG 3 body",
+      "default": "Weekly check-ins, plan updates from real data, and direct coach chat inside the app."
+    },
+    { "type": "text", "id": "wyg_4_title", "label": "WYG 4 title", "default": "Consistency League" },
+    {
+      "type": "textarea",
+      "id": "wyg_4_body",
+      "label": "WYG 4 body",
+      "default": "Monthly ladder with your squad — certificates, trophies, and prize money as you climb."
+    },
+    { "type": "text", "id": "gallery_label", "label": "Gallery label", "default": "Proof" },
+    {
+      "type": "text",
+      "id": "gallery_title",
+      "label": "Gallery title",
+      "default": "Bodies built with consistency."
+    },
+    {
+      "type": "textarea",
+      "id": "gallery_copy",
+      "label": "Gallery copy",
+      "default": "Real clients. Real coaching. Results that last beyond a 30-day challenge."
+    },
+    { "type": "image_picker", "id": "transform_image_1", "label": "Transform image 1" },
+    { "type": "text", "id": "transform_title_1", "label": "Transform title 1", "default": "Waist down. Confidence up." },
+    { "type": "text", "id": "transform_name_1", "label": "Transform name 1", "default": "Rahul K. · Mumbai" },
+    { "type": "image_picker", "id": "transform_image_2", "label": "Transform image 2" },
+    { "type": "text", "id": "transform_title_2", "label": "Transform title 2", "default": "Strength up. Fat down." },
+    { "type": "text", "id": "transform_name_2", "label": "Transform name 2", "default": "Aman P. · Delhi" },
+    { "type": "image_picker", "id": "transform_image_3", "label": "Transform image 3" },
+    { "type": "text", "id": "transform_title_3", "label": "Transform title 3", "default": "Built visible abs." },
+    { "type": "text", "id": "transform_name_3", "label": "Transform name 3", "default": "Vinayak S. · Bangalore" },
+    { "type": "image_picker", "id": "transform_image_4", "label": "Transform image 4" },
+    { "type": "text", "id": "transform_title_4", "label": "Transform title 4", "default": "Lean without extremes." },
+    { "type": "text", "id": "transform_name_4", "label": "Transform name 4", "default": "Priyanshu M. · Pune" },
+    { "type": "image_picker", "id": "transform_image_5", "label": "Transform image 5" },
+    { "type": "text", "id": "transform_title_5", "label": "Transform title 5", "default": "Transformed in 90 days." },
+    { "type": "text", "id": "transform_name_5", "label": "Transform name 5", "default": "Arjun J. · Hyderabad" },
+    { "type": "image_picker", "id": "transform_image_6", "label": "Transform image 6" },
+    { "type": "text", "id": "transform_title_6", "label": "Transform title 6", "default": "Stronger than ever." },
+    { "type": "text", "id": "transform_name_6", "label": "Transform name 6", "default": "Naman K. · Chennai" },
+    { "type": "text", "id": "plans_label", "label": "Plans label", "default": "Plans" },
+    { "type": "text", "id": "plans_title", "label": "Plans title", "default": "Choose your plan" },
+    {
+      "type": "textarea",
+      "id": "plans_copy",
+      "label": "Plans copy",
+      "default": "Same complete coaching on every plan — personal workout + diet, weekly reviews, daily trackers, coach chat, and plan updates. Longer plans simply cost less per month."
+    },
+    { "type": "text", "id": "plans_cta", "label": "Plans CTA", "default": "Start your transformation" },
+    {
+      "type": "text",
+      "id": "plans_note",
+      "label": "Plans note",
+      "default": "Every plan includes full coaching. No separate upsell for the core system."
+    },
+    { "type": "checkbox", "id": "plan_1_enabled", "label": "Plan 1 enabled", "default": false },
+    { "type": "text", "id": "plan_1_label", "label": "Plan 1 label", "default": "The Foundation" },
+    { "type": "text", "id": "plan_1_badge", "label": "Plan 1 badge" },
+    { "type": "text", "id": "plan_1_duration", "label": "Plan 1 duration", "default": "1 month" },
+    { "type": "text", "id": "plan_1_price", "label": "Plan 1 price", "default": "499" },
+    { "type": "text", "id": "plan_1_original", "label": "Plan 1 original" },
+    { "type": "text", "id": "plan_1_savings", "label": "Plan 1 savings" },
+    { "type": "text", "id": "plan_1_monthly", "label": "Plan 1 monthly", "default": "₹499/month" },
+    {
+      "type": "textarea",
+      "id": "plan_1_desc",
+      "label": "Plan 1 description",
+      "default": "Full coaching for 1 month. Perfect if you want to experience the system first."
+    },
+    {
+      "type": "text",
+      "id": "plan_1_link",
+      "label": "Plan 1 link",
+      "default": "https://app.lurvox.in/checkout?plan=1_month"
+    },
+    { "type": "checkbox", "id": "plan_1_default", "label": "Plan 1 default", "default": false },
+    { "type": "checkbox", "id": "plan_2_enabled", "label": "Plan 2 enabled", "default": true },
+    { "type": "text", "id": "plan_2_label", "label": "Plan 2 label", "default": "The Momentum Phase" },
+    { "type": "text", "id": "plan_2_badge", "label": "Plan 2 badge" },
+    { "type": "text", "id": "plan_2_duration", "label": "Plan 2 duration", "default": "3 months" },
+    { "type": "text", "id": "plan_2_price", "label": "Plan 2 price", "default": "1999" },
+    { "type": "text", "id": "plan_2_original", "label": "Plan 2 original", "default": "1997" },
+    { "type": "text", "id": "plan_2_savings", "label": "Plan 2 savings", "default": "SAVE ₹498" },
+    { "type": "text", "id": "plan_2_monthly", "label": "Plan 2 monthly", "default": "≈ ₹500/month" },
+    {
+      "type": "textarea",
+      "id": "plan_2_desc",
+      "label": "Plan 2 description",
+      "default": "Full coaching for 3 months — enough time to build habits with weekly accountability."
+    },
+    {
+      "type": "text",
+      "id": "plan_2_link",
+      "label": "Plan 2 link",
+      "default": "https://app.lurvox.in/checkout?plan=3_months"
+    },
+    { "type": "checkbox", "id": "plan_2_default", "label": "Plan 2 default", "default": false },
+    { "type": "checkbox", "id": "plan_3_enabled", "label": "Plan 3 enabled", "default": true },
+    { "type": "text", "id": "plan_3_label", "label": "Plan 3 label", "default": "The Transformation Phase" },
+    { "type": "text", "id": "plan_3_badge", "label": "Plan 3 badge", "default": "Most popular" },
+    { "type": "text", "id": "plan_3_duration", "label": "Plan 3 duration", "default": "6 months" },
+    { "type": "text", "id": "plan_3_price", "label": "Plan 3 price", "default": "2599" },
+    { "type": "text", "id": "plan_3_original", "label": "Plan 3 original", "default": "3794" },
+    { "type": "text", "id": "plan_3_savings", "label": "Plan 3 savings", "default": "SAVE ₹1,295" },
+    { "type": "text", "id": "plan_3_monthly", "label": "Plan 3 monthly", "default": "≈ ₹417/month" },
+    {
+      "type": "textarea",
+      "id": "plan_3_desc",
+      "label": "Plan 3 description",
+      "default": "Full coaching for 6 months. Best balance of results, support, and value."
+    },
+    {
+      "type": "text",
+      "id": "plan_3_link",
+      "label": "Plan 3 link",
+      "default": "https://app.lurvox.in/checkout?plan=6_months"
+    },
+    { "type": "checkbox", "id": "plan_3_default", "label": "Plan 3 default", "default": true },
+    { "type": "checkbox", "id": "plan_4_enabled", "label": "Plan 4 enabled", "default": true },
+    { "type": "text", "id": "plan_4_label", "label": "Plan 4 label", "default": "The Elite Phase" },
+    { "type": "text", "id": "plan_4_badge", "label": "Plan 4 badge", "default": "Best value" },
+    { "type": "text", "id": "plan_4_duration", "label": "Plan 4 duration", "default": "12 months" },
+    { "type": "text", "id": "plan_4_price", "label": "Plan 4 price", "default": "3599" },
+    { "type": "text", "id": "plan_4_original", "label": "Plan 4 original", "default": "6988" },
+    { "type": "text", "id": "plan_4_savings", "label": "Plan 4 savings", "default": "SAVE ₹2,989" },
+    { "type": "text", "id": "plan_4_monthly", "label": "Plan 4 monthly", "default": "≈ ₹333/month" },
+    {
+      "type": "textarea",
+      "id": "plan_4_desc",
+      "label": "Plan 4 description",
+      "default": "Full coaching for 12 months. Lowest monthly cost, weekly front coach calls, priority check-ins, and maximum consistency support."
+    },
+    {
+      "type": "text",
+      "id": "plan_4_link",
+      "label": "Plan 4 link",
+      "default": "https://app.lurvox.in/checkout?plan=12_months"
+    },
+    { "type": "checkbox", "id": "plan_4_default", "label": "Plan 4 default", "default": false },
+    { "type": "text", "id": "league_label", "label": "League label", "default": "Consistency League" },
+    {
+      "type": "text",
+      "id": "league_title",
+      "label": "League title",
+      "default": "Climb the ladder. Get rewarded for showing up."
+    },
+    {
+      "type": "textarea",
+      "id": "league_copy",
+      "label": "League copy",
+      "default": "Included with coaching. Monthly seasons. Top 10% promote. Certificates, trophies, and prize money as you rise."
+    },
+    { "type": "text", "id": "league_cta", "label": "League CTA", "default": "Explore the Consistency League" },
+    {
+      "type": "text",
+      "id": "league_link",
+      "label": "League link",
+      "default": "/pages/consistency-league"
+    },
+    { "type": "text", "id": "faq_label", "label": "FAQ label", "default": "FAQ" },
+    { "type": "text", "id": "faq_title", "label": "FAQ title", "default": "Questions before you start" },
+    { "type": "text", "id": "faq_q_1", "label": "FAQ Q1", "default": "What happens after I pay?" },
+    {
+      "type": "textarea",
+      "id": "faq_a_1",
+      "label": "FAQ A1",
+      "default": "You create your account, finish a short assessment with progress photos, and get a personal workout + diet within 24–48 hours. Then you use daily trackers, message your coach, submit weekly check-ins, and receive plan updates based on your real progress."
+    },
+    { "type": "text", "id": "faq_q_2", "label": "FAQ Q2", "default": "What exactly is included?" },
+    {
+      "type": "textarea",
+      "id": "faq_a_2",
+      "label": "FAQ A2",
+      "default": "Personal workout, personal diet, weekly coach check-ins, daily trackers, coach chat, progress photos/journey, Consistency League, and weekly plan updates. One price — no separate upsell for core coaching."
+    },
+    { "type": "text", "id": "faq_q_3", "label": "FAQ Q3", "default": "Will I get a real coach?" },
+    {
+      "type": "textarea",
+      "id": "faq_a_3",
+      "label": "FAQ A3",
+      "default": "Yes. A human coach reviews your assessment, check-ins, and progress. Tools help them work faster — they do not replace the coach. You also get direct coach chat inside the app."
+    },
+    { "type": "text", "id": "faq_q_4", "label": "FAQ Q4", "default": "Gym or home? Beginners? Vegetarians?" },
+    {
+      "type": "textarea",
+      "id": "faq_a_4",
+      "label": "FAQ A4",
+      "default": "All welcome. Plans are built for gym, home, or mixed setups, matched to your experience level, and diet is customized for vegetarian, vegan, and allergy needs."
+    },
+    { "type": "text", "id": "faq_q_5", "label": "FAQ Q5", "default": "What is the Consistency League?" },
+    {
+      "type": "textarea",
+      "id": "faq_a_5",
+      "label": "FAQ A5",
+      "default": "A monthly accountability ladder inside the app. You score points from daily trackers, check-ins, progress photos, and streaks. Top 10% promote each month. Certificates, trophies, and prize money as you rise."
+    },
+    { "type": "text", "id": "faq_q_6", "label": "FAQ Q6", "default": "What if I miss workouts or want to cancel?" },
+    {
+      "type": "textarea",
+      "id": "faq_a_6",
+      "label": "FAQ A6",
+      "default": "Tell your coach on the next check-in — plans adjust for busy weeks, travel, and missed sessions. To cancel, message us on WhatsApp and we will process it without pressure games."
+    },
+    {
+      "type": "text",
+      "id": "finale_title",
+      "label": "Finale title",
+      "default": "Pick your plan. Start Day 1."
+    },
+    {
+      "type": "textarea",
+      "id": "finale_copy",
+      "label": "Finale copy",
+      "default": "Personal workout + diet, weekly check-ins, daily trackers, and coach chat — all included."
+    },
+    { "type": "text", "id": "finale_cta", "label": "Finale CTA", "default": "Choose your plan" },
+    { "type": "text", "id": "contact_label", "label": "Contact label", "default": "Talk to us" },
+    { "type": "text", "id": "contact_link", "label": "Contact link", "default": "#faq" }
+  ],
+  "presets": [{ "name": "LURVOX Home Redesign" }]
+}
+{% endschema %}

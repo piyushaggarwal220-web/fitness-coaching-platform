@@ -16,6 +16,7 @@ import { readApiJson } from '@/lib/api-response';
 import { authenticateClient } from '@/lib/onboarding';
 import { mobileStyles } from '@/lib/mobile-styles';
 import { colors, spacing } from '@/lib/design-tokens';
+import { SuccessState } from '@/components/motion';
 import type { Checkin, MidWeekCheckinFormData, OnboardingProfile } from '@/types/database';
 
 const supabase = createClient();
@@ -117,7 +118,7 @@ export default function MidWeekCheckinPage() {
       if (!parsed.ok) throw new Error(parsed.error)
 
       setSuccess(
-        `Day 3 check-in submitted! Your coach typically replies in 5–8 hours. +5 league points when the season refreshes.`
+        'Day 3 check-in submitted! Your coach typically replies in 5–8 hours (not overnight). +5 league points when the season refreshes.'
       );
       setForm(INITIAL_MID_WEEK_FORM);
       setTimeout(() => router.push('/league'), 1800);
@@ -161,7 +162,7 @@ export default function MidWeekCheckinPage() {
         <p style={styles.subtitle}>Day 3 adherence check — how well are you sticking to the plan?</p>
 
         {error && <div style={styles.error}>{error}</div>}
-        {success && <div style={styles.success}>{success}</div>}
+        {success && <SuccessState message={success} />}
 
         <form onSubmit={handleSubmit}>
           <Card variant="elevated">

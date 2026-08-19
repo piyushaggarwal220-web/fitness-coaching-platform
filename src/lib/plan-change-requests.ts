@@ -1,5 +1,7 @@
 import 'server-only'
 import { editPlanSection } from '@/lib/ai/edit-plan-section'
+import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
+import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
   stripClientWeekHandoffLanguage,
@@ -235,6 +237,11 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
     const active = (activePlan as Plan | null) ?? null
     if (!active) throw new Error('No active plan to edit')
     const checkin = (latestCheckin as Checkin | null) ?? null
+    const clientJourney = await loadClientJourneySnapshot(admin, {
+      clientId: request.client_id,
+      profile: profile as OnboardingProfile,
+      currentCheckin: checkin,
+    })
 
     // Use the in-place section editor — NOT review_update_* weekly generators.
     // Weekly prompts made the model invent "next week" programs for small edit requests.
@@ -248,7 +255,11 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
       dayHint,
       'Every point in the client request must map to a concrete visible change.',
       'Do not redesign the whole week. Keep unrequested meals/exercises.',
-    ].join('\n')
+      SAFE_RATE_OF_CHANGE_RULE,
+      clientJourney?.trim() ? `Client journey:\n${clientJourney.trim()}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n')
 
     const profileTyped = profile as OnboardingProfile
     let nutritionPlan = active.nutrition_plan?.trim() || ''

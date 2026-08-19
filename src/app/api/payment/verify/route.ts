@@ -18,6 +18,7 @@ import {
 import {
   expectedAmountPaiseFromOrderNotes,
   normalizeDiscountCode,
+  supplementAddonPaiseFromNotes,
 } from '@/lib/payments/checkout-discounts'
 import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
 import { notifyAffiliateCodeUsage } from '@/lib/payments/affiliate-notify'
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
   let chargedAmountPaise = plan.amountPaise
   let appliedDiscountCode = ''
   let appliedDiscountPaise = 0
+  let supplementAddonPaid = 0
 
   if (!orderId) {
     return NextResponse.json(
@@ -142,6 +144,7 @@ export async function POST(request: Request) {
       const expectedAmount = expectedAmountPaiseFromOrderNotes(plan, trustedNotes)
       appliedDiscountCode = normalizeDiscountCode(trustedNotes.discount_code)
       appliedDiscountPaise = Number(trustedNotes.discount_paise ?? 0) || 0
+      supplementAddonPaid = supplementAddonPaiseFromNotes(trustedNotes)
 
       if (payment.amount !== expectedAmount) {
         return NextResponse.json(
@@ -204,6 +207,7 @@ export async function POST(request: Request) {
       razorpayPaymentId: paymentId || `test_pay_${Date.now()}`,
       razorpayOrderId: orderId || `test_order_${Date.now()}`,
       amountPaise: chargedAmountPaise,
+      supplementAddonPaise: supplementAddonPaid,
     })
 
     if (appliedDiscountCode && appliedDiscountPaise > 0) {

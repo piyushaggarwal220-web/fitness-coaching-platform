@@ -16,6 +16,22 @@ export const trackerInputStyle: CSSProperties = {
   minHeight: 48,
 }
 
+/**
+ * Shared glass surfaces so tracker cards read like the dashboard rather than flat grey blocks.
+ * `trackerSurface` is for standalone cards; `trackerSurfaceInset` for panels nested inside one.
+ */
+export const trackerSurface: CSSProperties = {
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(24,24,27,0.92) 60%)',
+  backdropFilter: 'blur(16px)',
+  border: `1px solid ${colors.borderSubtle}`,
+  boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+}
+
+export const trackerSurfaceInset: CSSProperties = {
+  background: 'rgba(255,255,255,0.045)',
+  border: `1px solid ${colors.borderSubtle}`,
+}
+
 export function SectionCard({
   title,
   subtitle,
@@ -241,9 +257,9 @@ export function ExpandableRow({
   return (
     <div
       style={{
+        ...trackerSurface,
         borderRadius: radius.md,
-        background: colors.bgElevated,
-        border: `1px solid ${completed ? 'rgba(34,197,94,0.15)' : colors.borderSubtle}`,
+        border: `1px solid ${completed ? 'rgba(34,197,94,0.18)' : colors.borderSubtle}`,
         marginBottom: 10,
         overflow: 'hidden',
       }}
@@ -493,10 +509,9 @@ export function TrackerPhaseFolder({
   return (
     <div
       style={{
+        ...trackerSurface,
         borderRadius: radius.md,
         marginBottom: 12,
-        background: colors.bgElevated,
-        border: `1px solid ${colors.borderSubtle}`,
         overflow: 'hidden',
       }}
     >

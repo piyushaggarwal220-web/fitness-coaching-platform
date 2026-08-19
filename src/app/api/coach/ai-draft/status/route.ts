@@ -3,6 +3,12 @@ import { sanitizeDraftFailureError } from '@/lib/ai/draft-error'
 import { resolveDraftPollingState } from '@/lib/ai/draft-status'
 import { getLatestDraftLogForCheckin } from '@/lib/ai/draft-workflow-log'
 import { loadLatestAiDraftForClient } from '@/lib/ai/weekly-plan-draft'
+import {
+  fetchCapturedPlanSlug,
+  nextAutoPlanUpdateWeek,
+  planUpdateCadenceLabel,
+  shouldAutoGenerateWeeklyPlanDraft,
+} from '@/lib/plan-update-cadence'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
@@ -48,10 +54,14 @@ export async function GET(request: Request) {
   const draft = await loadLatestAiDraftForClient(clientId, checkinId)
   const log = await getLatestDraftLogForCheckin(clientId, checkinId)
   const submittedAtMs = checkin?.submitted_at ? new Date(checkin.submitted_at).getTime() : 0
+  const planSlug = await fetchCapturedPlanSlug(clientId)
+  const coachingWeek = checkin?.coaching_week ?? 0
+  const autoDraftScheduled = shouldAutoGenerateWeeklyPlanDraft(planSlug, coachingWeek)
   const polling = resolveDraftPollingState({
     hasDraft: Boolean(draft),
     log,
     submittedAtMs,
+    expectAutoDraft: autoDraftScheduled,
   })
 
   return NextResponse.json({
@@ -63,5 +73,8 @@ export async function GET(request: Request) {
       ? sanitizeDraftFailureError(polling.failureRaw)
       : null,
     checkinWeek: checkin?.coaching_week ?? null,
+    autoDraftScheduled,
+    planUpdateCadence: planUpdateCadenceLabel(planSlug),
+    nextAutoUpdateWeek: nextAutoPlanUpdateWeek(planSlug, coachingWeek),
   })
 }

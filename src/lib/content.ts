@@ -251,18 +251,18 @@ export const pricing = {
   featuresIncluded: [
     'Personal workout plan',
     'Personal diet plan',
-    'Weekly coach check-ins',
+    'Mid week + weekly check ins',
     'Daily habit & health trackers',
     'Coach chat support',
     'Progress photos & journey',
-    'Weekly plan updates',
+    'Plan updates every 14 days on 3 months, every week on 6 and 12 months',
   ],
   plans: [
     {
       slug: '3_months',
       name: '3 Months',
-      price: '₹999',
-      perMonth: '≈ ₹333/month',
+      price: '₹1,299',
+      perMonth: '≈ ₹433/month',
       blurb: 'Quick Reset',
       save: 'BEST STARTER',
       popular: true,
@@ -270,8 +270,8 @@ export const pricing = {
     {
       slug: '6_months',
       name: '6 Months',
-      price: '₹1,699',
-      perMonth: '≈ ₹283/month',
+      price: '₹2,099',
+      perMonth: '≈ ₹350/month',
       blurb: 'Recomposition Starter',
       save: 'MOST POPULAR',
       popular: false,
@@ -279,8 +279,8 @@ export const pricing = {
     {
       slug: '12_months',
       name: '12 Months',
-      price: '₹2,999',
-      perMonth: '≈ ₹250/month',
+      price: '₹3,499',
+      perMonth: '≈ ₹292/month',
       blurb: 'Complete Transformation',
       save: 'BEST VALUE',
       popular: false,
@@ -356,7 +356,7 @@ export const finalCta = {
 } as const
 
 export const stickyCta = {
-  label: 'Start Today — From ₹999',
+  label: 'Start Today — From ₹1,299',
   mobileLabel: 'Start Today',
 } as const
 

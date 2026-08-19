@@ -1,7 +1,12 @@
 'use client'
 
 import { Button } from '@/components/ui/Button'
-import { ProgressBar, StatTile, trackerInputStyle } from '@/components/tracker/TrackerPrimitives'
+import {
+  ProgressBar,
+  StatTile,
+  trackerInputStyle,
+  trackerSurface,
+} from '@/components/tracker/TrackerPrimitives'
 import { colors, radius, spacing } from '@/lib/design-tokens'
 import type { TrackerCardioItem, TrackerCompletion } from '@/lib/daily-tracker/types'
 
@@ -26,9 +31,9 @@ export function CardioModule({ items, completion, saving, onPatch }: Props) {
           <div
             key={item.id}
             style={{
+              ...trackerSurface,
               padding: spacing[4],
               borderRadius: radius.lg,
-              background: colors.bgElevated,
               border: `1px solid ${isDone ? 'rgba(34,197,94,0.2)' : colors.borderSubtle}`,
               marginBottom: spacing[4],
             }}

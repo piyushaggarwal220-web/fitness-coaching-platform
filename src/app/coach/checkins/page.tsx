@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { CoachShell } from '@/components/ui/CoachShell';
@@ -29,6 +29,7 @@ export default function CoachCheckinsPage() {
   const [error, setError] = useState('');
   const [backfillMsg, setBackfillMsg] = useState('');
   const [backfilling, setBackfilling] = useState(false);
+  const autoBackfillStarted = useRef(false);
 
   useEffect(() => {
     const load = async () => {
@@ -95,7 +96,8 @@ export default function CoachCheckinsPage() {
     ).length,
   }), [queue]);
 
-  const runMidWeekBackfill = async () => {
+  const runMidWeekBackfill = async (opts?: { force?: boolean }) => {
+    const force = Boolean(opts?.force)
     setBackfilling(true)
     setBackfillMsg('')
     setError('')
@@ -103,7 +105,7 @@ export default function CoachCheckinsPage() {
       const res = await fetch('/api/coach/midweek-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ backfill: true, limit: 50 }),
+        body: JSON.stringify({ backfill: true, force, limit: 50 }),
       })
       const data = (await res.json().catch(() => null)) as {
         ok?: boolean
@@ -119,9 +121,13 @@ export default function CoachCheckinsPage() {
       }
       const failCount = data.failed?.length ?? 0
       setBackfillMsg(
-        `Mid week replies: ${data.generated ?? 0} generated, ${data.skipped ?? 0} already ready` +
-          (failCount ? `, ${failCount} failed` : '') +
-          `. Open a pending Day 3 check in to send.`
+        force
+          ? `Short human replies refreshed: ${data.generated ?? 0} updated` +
+              (failCount ? `, ${failCount} failed` : '') +
+              `. Open a Day 3 check in and tap Send to client now.`
+          : `Ready to send: ${data.generated ?? 0} new replies, ${data.skipped ?? 0} already drafted` +
+              (failCount ? `, ${failCount} failed` : '') +
+              `. Open a Day 3 check in and tap Send to client now.`
       )
     } catch {
       setError('Could not generate mid week replies')
@@ -129,6 +135,14 @@ export default function CoachCheckinsPage() {
       setBackfilling(false)
     }
   }
+
+  // After clients submit (including ones already waiting), draft AI replies in the background.
+  useEffect(() => {
+    if (loading || autoBackfillStarted.current) return
+    if (counts.pendingMidWeek <= 0) return
+    autoBackfillStarted.current = true
+    void runMidWeekBackfill({ force: false })
+  }, [loading, counts.pendingMidWeek])
 
   if (loading) {
     return <CoachShell loading />;
@@ -146,16 +160,18 @@ export default function CoachCheckinsPage() {
                 {counts.pendingMidWeek} mid week check in{counts.pendingMidWeek === 1 ? '' : 's'} awaiting reply
               </strong>
               <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-                Generate ready to send coach replies with AI, then open each check in to send.
+                {backfilling
+                  ? 'AI is drafting ready to send replies for submitted check ins…'
+                  : 'AI drafts a coach style reply for each submitted Day 3 check in. Open one and tap Send to client now.'}
               </p>
             </div>
             <button
               type="button"
               style={styles.primaryBtn}
               disabled={backfilling}
-              onClick={() => void runMidWeekBackfill()}
+              onClick={() => void runMidWeekBackfill({ force: true })}
             >
-              {backfilling ? 'Generating…' : 'Generate mid week replies'}
+              {backfilling ? 'Generating…' : 'Refresh mid week replies'}
             </button>
           </div>
         )}
@@ -226,6 +242,7 @@ function QueueCard({ item, onOpen }: { item: CoachCheckinQueueItem; onOpen: (id:
     item.status === 'completed' ? 'Completed' :
     item.status === 'missed' ? 'Missed' :
     item.status === 'due_today' ? 'Due today' :
+    item.type === 'mid_week' ? 'AI reply ready' :
     'Pending review';
 
   const content = (

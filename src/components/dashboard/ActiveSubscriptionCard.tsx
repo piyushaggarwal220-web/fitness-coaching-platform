@@ -9,6 +9,12 @@ import {
   subscriptionPlanActionLabel,
   type ActiveSubscription,
 } from '@/lib/subscription'
+import {
+  canOfferEarlyPlanUpgrade,
+  isLatePlanUpgrade,
+  PLAN_LATE_UPGRADE_COPY,
+  PLAN_UPGRADE_WINDOW_COPY,
+} from '@/lib/payments/plan-upgrade-window'
 import { colors, spacing } from '@/lib/design-tokens'
 
 type Props = {
@@ -19,6 +25,8 @@ export function ActiveSubscriptionCard({ subscription }: Props) {
   const router = useRouter()
   const isActive = subscription.status === 'active'
   const renewSoon = isSubscriptionRenewalUrgent(subscription)
+  const earlyUpgrade = canOfferEarlyPlanUpgrade(subscription)
+  const lateUpgrade = isLatePlanUpgrade(subscription)
   const actionLabel = subscriptionPlanActionLabel(subscription)
   const href = checkoutHrefForSubscription(subscription)
 
@@ -94,10 +102,36 @@ export function ActiveSubscriptionCard({ subscription }: Props) {
               </p>
             </div>
           </div>
-          {isActive && subscription.daysRemaining != null && (
+          {earlyUpgrade && (
             <p
               style={{
                 margin: '12px 0 0',
+                fontSize: 13,
+                fontWeight: 600,
+                color: colors.accent,
+                lineHeight: 1.4,
+              }}
+            >
+              {PLAN_UPGRADE_WINDOW_COPY}
+            </p>
+          )}
+          {lateUpgrade && (
+            <p
+              style={{
+                margin: '12px 0 0',
+                fontSize: 13,
+                fontWeight: 600,
+                color: colors.textSecondary,
+                lineHeight: 1.4,
+              }}
+            >
+              {PLAN_LATE_UPGRADE_COPY}
+            </p>
+          )}
+          {isActive && subscription.daysRemaining != null && (
+            <p
+              style={{
+                margin: earlyUpgrade || lateUpgrade ? '8px 0 0' : '12px 0 0',
                 fontSize: 13,
                 fontWeight: renewSoon ? 700 : 500,
                 color: renewSoon ? colors.accent : colors.textSecondary,
@@ -126,7 +160,7 @@ export function ActiveSubscriptionCard({ subscription }: Props) {
               gap: 4,
             }}
           >
-            {renewSoon && isActive ? 'Tap to renew / upgrade' : actionLabel}
+            {renewSoon && isActive && !earlyUpgrade ? 'Tap to renew / upgrade' : actionLabel}
             <ChevronRight size={16} aria-hidden />
           </p>
         </div>
