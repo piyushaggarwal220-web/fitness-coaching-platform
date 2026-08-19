@@ -1,5 +1,9 @@
 /**
  * Force plan prices to ₹999 / ₹1,699 / ₹2,999 everywhere on live MAIN + pages.
+ *
+ * Auth (first match wins):
+ * - SHOPIFY_ADMIN_ACCESS_TOKEN env
+ * - $TEMP/shopify-auth-token.json (or /tmp/shopify-auth-token.json)
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -10,9 +14,21 @@ const GQL = 'https://9uwyq1-0j.myshopify.com/admin/api/2025-01/graphql.json'
 const APP = 'https://app.lurvox.in'
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const ASSETS = path.join(ROOT, 'scripts', 'shopify-assets')
-const token = JSON.parse(
-  fs.readFileSync(path.join(process.env.TEMP, 'shopify-auth-token.json'), 'utf8')
-).access_token
+const TEMP_DIR = process.env.TEMP || process.env.TMPDIR || '/tmp'
+
+function loadToken() {
+  const fromEnv = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN?.trim()
+  if (fromEnv) return fromEnv
+  const tokenPath = path.join(TEMP_DIR, 'shopify-auth-token.json')
+  if (!fs.existsSync(tokenPath)) {
+    throw new Error(
+      `Missing Shopify token. Set SHOPIFY_ADMIN_ACCESS_TOKEN or write ${tokenPath}`
+    )
+  }
+  return JSON.parse(fs.readFileSync(tokenPath, 'utf8')).access_token
+}
+
+const token = loadToken()
 const headers = { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' }
 
 const themes = (await (await fetch(`${REST}/themes.json`, { headers })).json()).themes
@@ -95,44 +111,83 @@ function applyPlanSettings(s) {
   if ('col_3_price' in s) s.col_3_price = '₹2,999'
 }
 
-/** Rewrite old sale/list copy → new. Order: highest old prices first so chains don't collide. */
+/**
+ * Rewrite old sale copy → ₹999 / ₹1,699 / ₹2,999.
+ * Uses placeholders so chained replaces cannot collide (e.g. 2699→1699→999).
+ */
 function rewritePriceText(text) {
   if (!text || typeof text !== 'string') return text
   let next = text
   const pairs = [
-    [/₹\s*3,?699/gi, '₹2,999'],
-    [/₹\s*2,?699/gi, '₹1,699'],
-    [/₹\s*1,?699/gi, '₹999'],
-    [/₹\s*3,?599/gi, '₹2,999'],
-    [/₹\s*2,?599/gi, '₹1,699'],
-    [/₹\s*1,?999/gi, '₹999'],
-    [/₹\s*9,?249/gi, '₹7,499'],
-    [/₹\s*6,?749/gi, '₹4,249'],
-    [/Rs\.?\s*3,?699/gi, 'Rs 2999'],
-    [/Rs\.?\s*2,?699/gi, 'Rs 1699'],
-    [/Rs\.?\s*1,?699/gi, 'Rs 999'],
-    [/"3699"/g, '"2999"'],
-    [/"2699"/g, '"1699"'],
-    [/"1699"/g, '"999"'],
-    [/"3599"/g, '"2999"'],
-    [/"2599"/g, '"1699"'],
-    [/"1999"/g, '"999"'],
-    [/"9249"/g, '"7499"'],
-    [/"6749"/g, '"4249"'],
-    [/≈\s*₹566\/month/gi, '≈ ₹333/month'],
-    [/≈\s*₹450\/month/gi, '≈ ₹283/month'],
-    [/≈\s*₹308\/month/gi, '≈ ₹250/month'],
+    // Current live sale prices (Aug 2026)
+    [/₹\s*3,?999/gi, '__LX_P12__'],
+    [/₹\s*2,?699/gi, '__LX_P6__'],
+    [/₹\s*1,?499/gi, '__LX_P3__'],
+    [/Rs\.?\s*3,?999/gi, '__LX_RS12__'],
+    [/Rs\.?\s*2,?699/gi, '__LX_RS6__'],
+    [/Rs\.?\s*1,?499/gi, '__LX_RS3__'],
+    [/"3999"/g, '"__LX_N12__"'],
+    [/"2699"/g, '"__LX_N6__"'],
+    [/"1499"/g, '"__LX_N3__"'],
+    [/data-value="3999"/g, 'data-value="__LX_N12__"'],
+    [/data-value="2699"/g, 'data-value="__LX_N6__"'],
+    [/data-value="1499"/g, 'data-value="__LX_N3__"'],
+    [/data-plan-price="3999"/g, 'data-plan-price="__LX_N12__"'],
+    [/data-plan-price="2699"/g, 'data-plan-price="__LX_N6__"'],
+    [/data-plan-price="1499"/g, 'data-plan-price="__LX_N3__"'],
+    // Older sale ladders
+    [/₹\s*3,?699/gi, '__LX_P12__'],
+    [/₹\s*3,?499/gi, '__LX_P12__'],
+    [/₹\s*3,?599/gi, '__LX_P12__'],
+    [/₹\s*2,?099/gi, '__LX_P6__'],
+    [/₹\s*2,?599/gi, '__LX_P6__'],
+    [/₹\s*1,?299/gi, '__LX_P3__'],
+    [/₹\s*1,?999/gi, '__LX_P3__'],
+    [/Rs\.?\s*3,?699/gi, '__LX_RS12__'],
+    [/Rs\.?\s*2,?099/gi, '__LX_RS6__'],
+    [/Rs\.?\s*1,?299/gi, '__LX_RS3__'],
+    [/"3699"/g, '"__LX_N12__"'],
+    [/"3499"/g, '"__LX_N12__"'],
+    [/"3599"/g, '"__LX_N12__"'],
+    [/"2099"/g, '"__LX_N6__"'],
+    [/"2599"/g, '"__LX_N6__"'],
+    [/"1299"/g, '"__LX_N3__"'],
+    [/"1999"/g, '"__LX_N3__"'],
+    [/data-value="3699"/g, 'data-value="__LX_N12__"'],
+    [/data-value="2099"/g, 'data-value="__LX_N6__"'],
+    [/data-value="1299"/g, 'data-value="__LX_N3__"'],
+    // Monthly / day copy for current + older sales (placeholders avoid 500→333→250 chains)
+    [/≈\s*₹500\/mo(?:nth)?/gi, '__LX_M3__'],
+    [/≈\s*₹450\/mo(?:nth)?/gi, '__LX_M6__'],
+    [/≈\s*₹333\/mo(?:nth)?/gi, '__LX_M12__'],
+    [/≈\s*₹566\/month/gi, '__LX_M3__'],
+    [/≈\s*₹350\/month/gi, '__LX_M6__'],
+    [/≈\s*₹308\/month/gi, '__LX_M12__'],
+    [/≈\s*₹292\/month/gi, '__LX_M12__'],
+    [/₹500\/mo/gi, '__LX_MS3__'],
+    [/₹450\/mo/gi, '__LX_MS6__'],
+    [/₹333\/mo/gi, '__LX_MS12__'],
     [/From ₹566\/mo/gi, 'From ₹333/mo'],
     [/from ₹566\/mo/gi, 'from ₹333/mo'],
     [/≈ ₹19\/day/gi, '≈ ₹333/mo'],
     [/≈ ₹15\/day/gi, '≈ ₹283/mo'],
     [/≈ ₹10\/day/gi, '≈ ₹250/mo'],
-    [/data-value="3699"/g, 'data-value="2999"'],
-    [/data-value="2699"/g, 'data-value="1699"'],
-    [/data-value="1699"/g, 'data-value="999"'],
-    [/SAVE ₹5,?550/gi, 'SAVE ₹4,500'],
-    [/SAVE ₹4,?050/gi, 'SAVE ₹2,550'],
-    [/SAVE ₹2,?550/gi, 'SAVE ₹1,500'],
+    // Placeholders → final prices
+    [/__LX_P12__/g, '₹2,999'],
+    [/__LX_P6__/g, '₹1,699'],
+    [/__LX_P3__/g, '₹999'],
+    [/__LX_RS12__/g, 'Rs 2999'],
+    [/__LX_RS6__/g, 'Rs 1699'],
+    [/__LX_RS3__/g, 'Rs 999'],
+    [/__LX_N12__/g, '2999'],
+    [/__LX_N6__/g, '1699'],
+    [/__LX_N3__/g, '999'],
+    [/__LX_M3__/g, '≈ ₹333/month'],
+    [/__LX_M6__/g, '≈ ₹283/month'],
+    [/__LX_M12__/g, '≈ ₹250/month'],
+    [/__LX_MS3__/g, '₹333/mo'],
+    [/__LX_MS6__/g, '₹283/mo'],
+    [/__LX_MS12__/g, '₹250/mo'],
   ]
   for (const [re, to] of pairs) next = next.replace(re, to)
   return next
@@ -141,8 +196,12 @@ function rewritePriceText(text) {
 const localUploads = [
   ['snippets/lurvox-conversion-boost.liquid', 'snippets-lurvox-conversion-boost.liquid'],
   ['snippets/lurvox-sales-closer.liquid', 'snippets-lurvox-sales-closer.liquid'],
+  ['snippets/lurvox-plan-compare-inline.liquid', 'snippets-lurvox-plan-compare-inline.liquid'],
   ['sections/lurvox-ad-landing.liquid', 'sections-lurvox-ad-landing.liquid'],
+  ['sections/lurvox-plan-finder.liquid', 'sections-lurvox-plan-finder.liquid'],
+  ['sections/lurvox-plan-compare.liquid', 'sections-lurvox-plan-compare.liquid'],
   ['blocks/ai_gen_block_361650c.liquid', 'blocks-ai_gen_block_361650c.liquid'],
+  ['templates/page.compare-plans.json', 'templates-page.compare-plans.json'],
 ]
 for (const [key, file] of localUploads) {
   const full = path.join(ASSETS, file)
@@ -206,6 +265,7 @@ const scanKeys = [
   'templates/page.plans.json',
   'templates/page.coaching-plans.json',
   'templates/page.start.json',
+  'templates/page.compare-plans.json',
 ]
 for (const key of scanKeys) {
   const raw = await get(key)
@@ -241,12 +301,18 @@ const home = await fetch(`https://www.lurvox.in/?v=${Date.now()}`, {
   headers: { 'Cache-Control': 'no-cache' },
 })
 const html = await home.text()
-console.log({
+const report = {
   homeStatus: home.status,
   has999: /₹\s*999|Rs\.?\s*999|>999</.test(html),
   has1699: /₹\s*1,?699/.test(html),
   has2999: /₹\s*2,?999/.test(html),
+  hasOld1499: /₹\s*1,?499/.test(html),
   hasOld2699: /₹\s*2,?699/.test(html),
-  hasOld3699: /₹\s*3,?699/.test(html),
-  hasOld566: /566\/mo/.test(html),
-})
+  hasOld3999: /₹\s*3,?999/.test(html),
+  card1499: /data-plan-price="1499"/.test(html),
+  card999: /data-plan-price="999"/.test(html),
+}
+console.log(report)
+if (report.hasOld1499 || report.hasOld2699 || report.hasOld3999 || report.card1499) {
+  process.exitCode = 2
+}
