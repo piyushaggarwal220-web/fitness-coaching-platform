@@ -273,7 +273,6 @@ export default function CoachDashboard() {
         <CoachWorkQueuePanel
           filter={queueFilter}
           onCountsChange={handleCountsChange}
-          coachId={coach?.id}
         />
       </section>
 
