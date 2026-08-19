@@ -1,3 +1,4 @@
+import { isCheckinPendingAutoReply } from '@/lib/checkin-auto-reply'
 import type { Checkin, CheckinType } from '@/types/database'
 
 /** Coaching weeks run Monday(1) → Sunday(7) IST, so day 3 = Wednesday and day 7 = Sunday. */
@@ -562,7 +563,19 @@ export function getCoachCheckinQueue(
     email: string | null
     checkin_schedule_started_at: string | null
   }[],
-  checkins: Pick<Checkin, 'id' | 'client_id' | 'checkin_type' | 'coaching_week' | 'coaching_day' | 'reviewed' | 'submitted_at' | 'due_at'>[],
+  checkins: Pick<
+    Checkin,
+    | 'id'
+    | 'client_id'
+    | 'checkin_type'
+    | 'coaching_week'
+    | 'coaching_day'
+    | 'reviewed'
+    | 'submitted_at'
+    | 'due_at'
+    | 'auto_reply_at'
+    | 'auto_replied_at'
+  >[],
   referenceDate: Date = new Date()
 ): CoachCheckinQueueItem[] {
   const items: CoachCheckinQueueItem[] = []
@@ -590,6 +603,7 @@ export function getCoachCheckinQueue(
           dueDate,
         }
         if (submission) {
+          if (!submission.reviewed && isCheckinPendingAutoReply(submission)) continue
           items.push({
             ...common,
             status: submission.reviewed ? 'completed' : 'pending_review',

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isCheckinPendingAutoReply } from '@/lib/checkin-auto-reply'
 import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
 import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
@@ -144,7 +145,7 @@ export async function getCoachWorkQueue(
       .order('locked_at', { ascending: true }),
     supabase
       .from('checkins')
-      .select('id, client_id, submitted_at, checkin_type, coaching_week')
+      .select('id, client_id, submitted_at, checkin_type, coaching_week, auto_reply_at, auto_replied_at, reviewed')
       .eq('coach_id', coachId)
       .eq('reviewed', false)
       .order('submitted_at', { ascending: true }),
@@ -254,6 +255,11 @@ export async function getCoachWorkQueue(
         : generation?.status === 'failed'
           ? 'AI plan generation failed'
           : 'AI plan is generating'
+    const isGenerating =
+      !readyDraftId &&
+      generation?.status !== 'failed' &&
+      (generation?.status === 'queued' || generation?.status === 'generating')
+    if (isGenerating) continue
     const href = readyDraftId
       ? `/coach/plan/${readyDraftId}`
       : generation?.status === 'failed'
@@ -280,6 +286,7 @@ export async function getCoachWorkQueue(
   }
 
   for (const change of planChangeRequests ?? []) {
+    if (change.status === 'generating') continue
     const name = clientNameById.get(change.client_id) ?? 'Client'
     const ready = change.status === 'draft_ready' || change.status === 'in_review'
     tasks.push({
@@ -302,6 +309,7 @@ export async function getCoachWorkQueue(
   }
 
   for (const checkin of pendingCheckins ?? []) {
+    if (isCheckinPendingAutoReply(checkin)) continue
     const name = clientNameById.get(checkin.client_id) ?? 'Client'
     tasks.push({
       id: `checkin-${checkin.id}`,

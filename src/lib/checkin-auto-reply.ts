@@ -15,6 +15,13 @@ import type { Checkin, CoachCheckinResponse, OnboardingProfile, Plan } from '@/t
 /** Never auto-reply to a check-in older than this — stale rows are the coach's call. */
 const MAX_AUTO_REPLY_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
+type AutoReplyQueueFields = Pick<Checkin, 'auto_reply_at' | 'auto_replied_at' | 'reviewed'>
+
+/** Cron will deliver the reply — hide from the coach manual work queue. */
+export function isCheckinPendingAutoReply(checkin: AutoReplyQueueFields): boolean {
+  return !checkin.reviewed && checkin.auto_reply_at != null && checkin.auto_replied_at == null
+}
+
 type AutoReplyOutcome =
   | { status: 'sent'; publishedPlanId?: string | null }
   | { status: 'skipped'; reason: string }

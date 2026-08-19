@@ -41,7 +41,7 @@ export default function CoachCheckinsPage() {
       const [{ data: checkinData, error: checkinsError }, { data: clientsData }] = await Promise.all([
         supabase
           .from('checkins')
-          .select('id, client_id, coach_id, submitted_at, checkin_type, coaching_week, coaching_day, due_at, reviewed, reviewed_at, profiles:client_id(name, email)')
+          .select('id, client_id, coach_id, submitted_at, checkin_type, coaching_week, coaching_day, due_at, reviewed, reviewed_at, auto_reply_at, auto_replied_at, profiles:client_id(name, email)')
           .eq('coach_id', coachData.id)
           .order('submitted_at', { ascending: false }),
         supabase

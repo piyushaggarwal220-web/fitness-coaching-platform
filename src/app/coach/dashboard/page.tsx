@@ -117,7 +117,8 @@ export default function CoachDashboard() {
           .from('checkins')
           .select('*', { count: 'exact', head: true })
           .eq('coach_id', coachData.id)
-          .eq('reviewed', false),
+          .eq('reviewed', false)
+          .is('auto_reply_at', null),
         supabase
           .from('plans')
           .select('*', { count: 'exact', head: true })

@@ -151,7 +151,7 @@ export const PLAN_COMPARE_ROWS: {
   {
     group: 'Value',
     label: 'Per month with WELCOME60',
-    cells: { '3_months': '₹433', '6_months': '₹350', '12_months': '₹292' },
+    cells: { '3_months': '₹500', '6_months': '₹450', '12_months': '₹333' },
   },
 ]
 

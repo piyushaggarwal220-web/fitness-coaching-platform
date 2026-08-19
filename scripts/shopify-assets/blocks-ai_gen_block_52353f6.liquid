@@ -992,7 +992,9 @@
       }
 
       autoplayAdvance() {
-        const next = (this.currentIndex + 1) % this.totalSlides;
+        // Clamp so it doesn't wrap back to the first slide.
+        const next = Math.min(this.currentIndex + 1, this.totalSlides - 1);
+        if (next === this.currentIndex) return;
         this.scrollToSlide(next);
       }
 

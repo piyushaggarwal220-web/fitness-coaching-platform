@@ -749,21 +749,23 @@
         const activeCard = this.querySelector('[data-card].active') || this.cards[0];
         const currentIndex = Math.max(Array.from(this.cards).indexOf(activeCard), 0);
         const total = this.cards.length;
+        // Clamp instead of modulo so the carousel doesn't "wrap" on mobile (looks like endless scrolling).
         const nextIndex = direction === 'next'
-          ? (currentIndex + 1) % total
-          : (currentIndex - 1 + total) % total;
+          ? Math.min(currentIndex + 1, total - 1)
+          : Math.max(currentIndex - 1, 0);
 
         const nextCard = this.cards[nextIndex];
-        if (!nextCard) return;
+        if (!nextCard || nextIndex === currentIndex) return;
 
         this.cards.forEach((card) => card.classList.remove('active'));
         nextCard.classList.add('active');
 
         /** Scrolls the gallery container only — never the page. */
-        const galleryRect = this.gallery.getBoundingClientRect();
-        const cardRect = nextCard.getBoundingClientRect();
-        const offset = (cardRect.left - galleryRect.left) - (galleryRect.width - cardRect.width) / 2;
-        const target = Math.max(this.gallery.scrollLeft + offset, 0);
+        // offsetLeft/clientWidth are more stable across phone viewport sizing than boundingClientRect math.
+        const targetRaw =
+          nextCard.offsetLeft - (this.gallery.clientWidth - nextCard.clientWidth) / 2;
+        const maxScroll = this.gallery.scrollWidth - this.gallery.clientWidth;
+        const target = Math.min(Math.max(targetRaw, 0), maxScroll);
 
         this.gallery.scrollTo({ left: target, behavior: 'smooth' });
       }

@@ -602,17 +602,19 @@
     function rewritePrices(root) {
       var scope = root || document;
       var matrix = scope.querySelector('.lx-matrix__table');
-      if (matrix && /2,?699|3,?699|₹999|₹1,?699|₹2,?999|₹1,?099/.test(matrix.textContent || '')) {
+      // If Shopify HTML cache served an older matrix, normalize to current sale targets.
+      if (matrix) {
         var strongs = matrix.querySelectorAll('thead strong');
         if (strongs.length >= 3) {
-          strongs[0].textContent = '₹1,299';
-          strongs[1].textContent = '₹2,099';
-          strongs[2].textContent = '₹3,499';
+          strongs[0].textContent = '₹1,499';
+          strongs[1].textContent = '₹2,699';
+          strongs[2].textContent = '₹3,999';
         }
       }
       document.querySelectorAll('.lx-conv__btn-sub, .lx-conv-sticky__meta').forEach(function (el) {
         if (/566|333|366/.test(el.textContent || '')) {
-          el.textContent = (el.textContent || '').replace(/566|333|366/g, '433');
+          // Normalize stale monthly numbers to the new 3-month monthly rate.
+          el.textContent = (el.textContent || '').replace(/566|333|366/g, '500');
         }
       });
     }

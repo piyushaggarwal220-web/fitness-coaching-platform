@@ -38,6 +38,7 @@ export default function CoachAnalyticsPage() {
         .select('*', { count: 'exact', head: true })
         .eq('coach_id', coach.id)
         .eq('reviewed', false)
+        .is('auto_reply_at', null)
 
       const { count: plans } = await supabase
         .from('plans')

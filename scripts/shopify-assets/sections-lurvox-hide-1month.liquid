@@ -25,6 +25,11 @@
   [data-plan-price="999"],
   [data-plan-price="1699"],
   [data-plan-price="2999"],
+  /* WELCOME60 sale prices */
+  [data-plan-price="1499"],
+  [data-plan-price="2699"],
+  [data-plan-price="3999"],
+  /* Legacy sale prices (keep visible for cached HTML) */
   [data-plan-price="1299"],
   [data-plan-price="2099"],
   [data-plan-price="3499"] {
@@ -47,7 +52,10 @@
           card.style.setProperty('display', 'none', 'important')
           return
         }
-        if (/3_months|6_months|12_months/i.test(link) || /^(999|1699|2999|1299|2099|3499)$/.test(card.getAttribute('data-plan-price') || '')) {
+        if (
+          /3_months|6_months|12_months/i.test(link) ||
+          /^(999|1699|2999|1499|2699|3999|1299|2099|3499)$/.test(card.getAttribute('data-plan-price') || '')
+        ) {
           card.style.setProperty('display', 'block', 'important')
         }
         if (card.dataset.lurvoxTapWired === '1') return
