@@ -48,7 +48,7 @@ export const PLAN_PAGE_COPY: Record<
     promise:
       'Built for a date on the calendar — a wedding, a vacation, a shoot, a reunion. Ninety days is a short runway to look visibly leaner and sharper for the event. It is a focused sprint, not the finished aesthetic look.',
     bestFor:
-      'Looking lean for a big day — a wedding, shoot, vacation, or reunion. A focused 90-day sprint. Not recommended if you want long-term results.',
+      'Lean for a wedding, shoot, or reunion. Short-term only — not built for lasting change.',
     goals: [
       'Look visibly leaner for your event',
       'A clear day-by-day plan to the deadline',
@@ -62,7 +62,7 @@ export const PLAN_PAGE_COPY: Record<
     promise:
       'This plan is for fat down and muscle up together. Six months is strong progress — not the full aesthetic finish. Upgrade free within 48 hours if you want the longer runway.',
     bestFor:
-      'Advanced athletes already under about 12% body fat, with good muscle, who want a tight recomposition block — not a first transformation.',
+      'You already train and want fat down + muscle up. A recomp block — not a first start.',
     goals: ['Fat loss with muscle', 'Clothes fit differently', 'Stay consistent past the honeymoon phase'],
   },
   '12_months': {
@@ -109,8 +109,8 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with fat loss',
     label: 'Best for',
     cells: {
-      '3_months': 'Looking lean for a big day. Not recommended for long-term results.',
-      '6_months': 'Advanced athletes already under 12% body fat, with good muscle.',
+      '3_months': 'Lean for a big day. Short-term only.',
+      '6_months': 'Already training. Recomp block.',
       '12_months': 'Beginners and intermediates who have plateaued, or want to start fresh.',
     },
   },

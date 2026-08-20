@@ -640,14 +640,14 @@
     // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
     var contrast = {
       '3_months': [
-        { kind: 'pick', text: 'Fat loss (your pick): looking lean for a big day. Honest 90-day sprint — not recommended if you want long-term results.' },
-        { kind: 'miss', text: '6 months is for advanced athletes already lean with muscle. 12 months is the real start for beginners and intermediates.' },
-        { kind: 'miss', text: 'Trade-off: updates every 14 days, no weekly coach call, and the changes fade if you stop after 90 days.' }
+        { kind: 'pick', text: 'Fat loss: lean for a big day. Short sprint — not long-term.' },
+        { kind: 'miss', text: '6 months is for people already training. 12 months is the real start.' },
+        { kind: 'miss', text: 'Updates every 14 days, no weekly coach call.' }
       ],
       '6_months': [
-        { kind: 'pick', text: 'Fat loss + muscle (your pick): for advanced athletes already under ~12% body fat with good muscle who want a tight recomposition block.' },
-        { kind: 'miss', text: '3 months is a big-day lean-up, not a training block. If you are still carrying fat or still learning the gym, 12 months is the better runway.' },
-        { kind: 'miss', text: 'Aesthetic (12 months) is the plan for beginners, intermediates, plateaus, and fresh starts — plus the weekly coach call.' }
+        { kind: 'pick', text: 'Fat loss + muscle: already training, want a recomp block.' },
+        { kind: 'miss', text: '3 months is a big-day lean-up only. Not a training block.' },
+        { kind: 'miss', text: '12 months is for beginners, plateaus, and fresh starts — plus the weekly coach call.' }
       ],
       '12_months': [
         { kind: 'pick', text: 'Aesthetic (your pick): best for beginners and intermediates — plateaued, starting fresh, or finally doing this properly. Weekly coach call included.' },
@@ -698,8 +698,11 @@
       var planKey = '12_months';
       // 90-day Fat loss is only for a date on the calendar — not a first transformation.
       if (timeline === 'fast') planKey = '3_months';
-      // 6 months is a recomposition block for already-lean advanced athletes.
-      else if (experience === 'advanced' && (body === 'fit' || goal === 'recomp' || goal === 'muscle')) {
+      // 6 months: already training, wants a recomp block.
+      else if (
+        (experience === 'advanced' || experience === 'some') &&
+        (body === 'fit' || goal === 'recomp' || goal === 'muscle')
+      ) {
         planKey = '6_months';
       }
       // Everyone else — beginner, intermediate, plateau, fresh start — lands on 12 months.
@@ -708,10 +711,10 @@
       var why = '';
       if (planKey === '3_months') {
         why =
-          'You want a real change in about 90 days. Fat loss is for looking lean for a big day — not for long-term results. If you want this to last, Aesthetic (12 months) is the honest plan.';
+          'Fat loss is a big-day lean-up — short-term only. For lasting change, Aesthetic (12 months) is the better pick.';
       } else if (planKey === '6_months') {
         why =
-          'Fat loss + muscle is for advanced athletes already lean (around 12% body fat) with good muscle. If you are still building the base, Aesthetic (12 months) is the better start.';
+          'Fat loss + muscle fits if you already train and want a recomp block. First-timers usually land on Aesthetic (12 months).';
       } else {
         why =
           'Your goal is to ' +

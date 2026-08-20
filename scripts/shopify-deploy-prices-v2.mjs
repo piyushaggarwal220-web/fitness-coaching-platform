@@ -67,12 +67,14 @@ function patchPrices(text) {
 
 function patchBestFor(text) {
   return text
-    .replace(/"plan_3_text": "90 day reset"/g, '"plan_3_text": "Looking lean for a big day. Not recommended for long-term results."')
-    .replace(/"plan_6_text": "Fat down, muscle up"/g, '"plan_6_text": "Advanced athletes already under 12% body fat, with good muscle."')
+    .replace(/"plan_3_text": "90 day reset"/g, '"plan_3_text": "Lean for a big day. Short-term only."')
+    .replace(/"plan_6_text": "Fat down, muscle up"/g, '"plan_6_text": "Already training. Recomp block."')
     .replace(/"plan_12_text": "Lifestyle change"/g, '"plan_12_text": "Beginners and intermediates who have plateaued, or want to start fresh."')
-    .replace(/"plan_3_text": "Lose fat \/ tone up"/g, '"plan_3_text": "Looking lean for a big day. Not recommended for long-term results."')
-    .replace(/"plan_6_text": "Fat down \+ muscle up"/g, '"plan_6_text": "Advanced athletes already under 12% body fat, with good muscle."')
+    .replace(/"plan_3_text": "Lose fat \/ tone up"/g, '"plan_3_text": "Lean for a big day. Short-term only."')
+    .replace(/"plan_6_text": "Fat down \+ muscle up"/g, '"plan_6_text": "Already training. Recomp block."')
     .replace(/"plan_12_text": "Finished aesthetic look"/g, '"plan_12_text": "Beginners and intermediates who have plateaued, or want to start fresh."')
+    .replace(/"plan_3_text": "Looking lean for a big day\. Not recommended for long-term results\."/g, '"plan_3_text": "Lean for a big day. Short-term only."')
+    .replace(/"plan_6_text": "Advanced athletes already under 12% body fat, with good muscle\."/g, '"plan_6_text": "Already training. Recomp block."')
 }
 
 // 1) Edited repo assets uploaded verbatim.
