@@ -606,15 +606,15 @@
       if (matrix) {
         var strongs = matrix.querySelectorAll('thead strong');
         if (strongs.length >= 3) {
-          strongs[0].textContent = '₹1,499';
-          strongs[1].textContent = '₹2,699';
-          strongs[2].textContent = '₹3,999';
+          strongs[0].textContent = '₹999';
+          strongs[1].textContent = '₹1,699';
+          strongs[2].textContent = '₹2,999';
         }
       }
       document.querySelectorAll('.lx-conv__btn-sub, .lx-conv-sticky__meta').forEach(function (el) {
-        if (/566|333|366/.test(el.textContent || '')) {
-          // Normalize stale monthly numbers to the new 3-month monthly rate.
-          el.textContent = (el.textContent || '').replace(/566|333|366/g, '500');
+        if (/566|500|450/.test(el.textContent || '')) {
+          // Normalize stale monthly numbers to the current 3-month monthly rate.
+          el.textContent = (el.textContent || '').replace(/566|500|450/g, '333');
         }
       });
     }

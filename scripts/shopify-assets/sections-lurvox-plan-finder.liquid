@@ -60,7 +60,7 @@
           <span data-pf-checkout-label>See this plan</span>
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden>
-          Prefer the finished look? Aesthetic · ₹333/mo
+          Prefer the finished look? Aesthetic · ₹250/mo
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="{{ talk_url }}">Talk to a coach</a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="/">Back to home</a>
@@ -600,8 +600,8 @@
         slug: '3_months',
         path: '3-months',
         label: 'Fat loss',
-        price: '₹1,499',
-        monthly: '₹500/mo',
+        price: '₹999',
+        monthly: '₹333/mo',
         per: '90 days',
         bullets: [
           '2 weekly check-ins',
@@ -613,8 +613,8 @@
         slug: '6_months',
         path: '6-months',
         label: 'Fat loss + muscle',
-        price: '₹2,699',
-        monthly: '₹450/mo',
+        price: '₹1,699',
+        monthly: '₹283/mo',
         per: '6 months',
         bullets: [
           '2 weekly check-ins',
@@ -626,8 +626,8 @@
         slug: '12_months',
         path: '12-months',
         label: 'Aesthetic body',
-        price: '₹3,999',
-        monthly: '₹333/mo',
+        price: '₹2,999',
+        monthly: '₹250/mo',
         per: '12 months',
         bullets: [
           'Lowest monthly rate with WELCOME60',
@@ -647,10 +647,10 @@
       '6_months': [
         { kind: 'pick', text: 'Fat loss + muscle (your pick): a 6-month runway with weekly plan updates — long enough to build shape, not just cut.' },
         { kind: 'miss', text: '3 months: a 90-day sprint that ends before muscle really shows, and it only updates every 14 days.' },
-        { kind: 'miss', text: 'Aesthetic (12 months) adds a weekly coach phone call and the lowest ₹333/mo rate — the upgrade if you want the finished look.' }
+        { kind: 'miss', text: 'Aesthetic (12 months) adds a weekly coach phone call and the lowest ₹250/mo rate — the upgrade if you want the finished look.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Aesthetic (your pick): the only plan with a weekly coach phone call, plus weekly plan updates and the lowest ₹333/mo rate.' },
+        { kind: 'pick', text: 'Aesthetic (your pick): the only plan with a weekly coach phone call, plus weekly plan updates and the lowest ₹250/mo rate.' },
         { kind: 'miss', text: '3 months: just 90 days and updates every 14 days — a first change, not the finished body.' },
         { kind: 'miss', text: '6 months: a solid runway, but no weekly coach call and it ends before the aesthetic look fully locks in.' }
       ]
@@ -728,7 +728,7 @@
           goalLabel +
           '. Aesthetic body is the recommended plan for lasting change' +
           (calls === 'yes' ? ', and it is the only one with a weekly coach phone call' : '') +
-          ' — lowest monthly rate at ₹333/mo with WELCOME60.';
+          ' — lowest monthly rate at ₹250/mo with WELCOME60.';
       } else {
         why =
           'Your goal is to ' +
