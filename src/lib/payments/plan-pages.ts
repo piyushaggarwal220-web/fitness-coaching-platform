@@ -48,7 +48,7 @@ export const PLAN_PAGE_COPY: Record<
     promise:
       'Built for a date on the calendar — a wedding, a vacation, a shoot, a reunion. Ninety days is a short runway to look visibly leaner and sharper for the event. It is a focused sprint, not the finished aesthetic look.',
     bestFor:
-      'You have weeks, not years, before a big day and want a real coach to make every one of them count. Choose this if you are training for an event or finally want to start.',
+      'Looking lean for a big day — a wedding, shoot, vacation, or reunion. A focused 90-day sprint. Not recommended if you want long-term results.',
     goals: [
       'Look visibly leaner for your event',
       'A clear day-by-day plan to the deadline',
@@ -62,7 +62,7 @@ export const PLAN_PAGE_COPY: Record<
     promise:
       'This plan is for fat down and muscle up together. Six months is strong progress — not the full aesthetic finish. Upgrade free within 48 hours if you want the longer runway.',
     bestFor:
-      'Look better in clothes while building shape. Choose this if you want recomposition, not only a short fat loss burst.',
+      'Advanced athletes already under about 12% body fat, with good muscle, who want a tight recomposition block — not a first transformation.',
     goals: ['Fat loss with muscle', 'Clothes fit differently', 'Stay consistent past the honeymoon phase'],
   },
   '12_months': {
@@ -72,7 +72,7 @@ export const PLAN_PAGE_COPY: Record<
     promise:
       'This is the recommended plan if you want a body you are proud of long term. Lowest monthly rate, weekly coach phone call, and a full year so you do not restart every 90 days.',
     bestFor:
-      'Go all in on how you look and how you live. Choose this if aesthetic transformation is the goal, not a 90 day experiment.',
+      'Beginners and intermediates — someone who has hit a plateau, or who wants to start fresh and actually finish the look.',
     goals: [
       'Aesthetic physique change',
       'Lowest monthly rate with WELCOME60',
@@ -109,9 +109,9 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with fat loss',
     label: 'Best for',
     cells: {
-      '3_months': 'Lose fat / tone up',
-      '6_months': 'Fat down + muscle up',
-      '12_months': 'Finished aesthetic look',
+      '3_months': 'Looking lean for a big day. Not recommended for long-term results.',
+      '6_months': 'Advanced athletes already under 12% body fat, with good muscle.',
+      '12_months': 'Beginners and intermediates who have plateaued, or want to start fresh.',
     },
   },
   {

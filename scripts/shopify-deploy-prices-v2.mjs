@@ -65,6 +65,16 @@ function patchPrices(text) {
     .replace(/₹\s*292(\/mo|\/month)?/g, '₹250$1')
 }
 
+function patchBestFor(text) {
+  return text
+    .replace(/"plan_3_text": "90 day reset"/g, '"plan_3_text": "Looking lean for a big day. Not recommended for long-term results."')
+    .replace(/"plan_6_text": "Fat down, muscle up"/g, '"plan_6_text": "Advanced athletes already under 12% body fat, with good muscle."')
+    .replace(/"plan_12_text": "Lifestyle change"/g, '"plan_12_text": "Beginners and intermediates who have plateaued, or want to start fresh."')
+    .replace(/"plan_3_text": "Lose fat \/ tone up"/g, '"plan_3_text": "Looking lean for a big day. Not recommended for long-term results."')
+    .replace(/"plan_6_text": "Fat down \+ muscle up"/g, '"plan_6_text": "Advanced athletes already under 12% body fat, with good muscle."')
+    .replace(/"plan_12_text": "Finished aesthetic look"/g, '"plan_12_text": "Beginners and intermediates who have plateaued, or want to start fresh."')
+}
+
 // 1) Edited repo assets uploaded verbatim.
 const repoFiles = [
   ['sections/lurvox-plan-finder.liquid', 'scripts/shopify-assets/sections-lurvox-plan-finder.liquid'],
@@ -90,7 +100,7 @@ for (const [key, rel] of repoFiles) {
 }
 for (const key of themeOnly) {
   const live = await get(key)
-  const patched = patchPrices(live)
+  const patched = patchBestFor(patchPrices(live))
   if (patched !== live) {
     files.push({ filename: key, body: { type: 'TEXT', value: patched } })
     console.log('patched', key)

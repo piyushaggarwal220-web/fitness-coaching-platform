@@ -640,19 +640,19 @@
     // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
     var contrast = {
       '3_months': [
-        { kind: 'pick', text: 'Fat loss (your pick): a focused 90-day reset — the fastest honest first change for a short deadline.' },
-        { kind: 'miss', text: '6 months & Aesthetic: longer runways you do not need yet if you are chasing one near-term date.' },
-        { kind: 'miss', text: 'Trade-off: this plan refreshes every 14 days and has no weekly coach call — that is the price of the short commit.' }
+        { kind: 'pick', text: 'Fat loss (your pick): looking lean for a big day. Honest 90-day sprint — not recommended if you want long-term results.' },
+        { kind: 'miss', text: '6 months is for advanced athletes already lean with muscle. 12 months is the real start for beginners and intermediates.' },
+        { kind: 'miss', text: 'Trade-off: updates every 14 days, no weekly coach call, and the changes fade if you stop after 90 days.' }
       ],
       '6_months': [
-        { kind: 'pick', text: 'Fat loss + muscle (your pick): a 6-month runway with weekly plan updates — long enough to build shape, not just cut.' },
-        { kind: 'miss', text: '3 months: a 90-day sprint that ends before muscle really shows, and it only updates every 14 days.' },
-        { kind: 'miss', text: 'Aesthetic (12 months) adds a weekly coach phone call and the lowest ₹250/mo rate — the upgrade if you want the finished look.' }
+        { kind: 'pick', text: 'Fat loss + muscle (your pick): for advanced athletes already under ~12% body fat with good muscle who want a tight recomposition block.' },
+        { kind: 'miss', text: '3 months is a big-day lean-up, not a training block. If you are still carrying fat or still learning the gym, 12 months is the better runway.' },
+        { kind: 'miss', text: 'Aesthetic (12 months) is the plan for beginners, intermediates, plateaus, and fresh starts — plus the weekly coach call.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Aesthetic (your pick): the only plan with a weekly coach phone call, plus weekly plan updates and the lowest ₹250/mo rate.' },
-        { kind: 'miss', text: '3 months: just 90 days and updates every 14 days — a first change, not the finished body.' },
-        { kind: 'miss', text: '6 months: a solid runway, but no weekly coach call and it ends before the aesthetic look fully locks in.' }
+        { kind: 'pick', text: 'Aesthetic (your pick): best for beginners and intermediates — plateaued, starting fresh, or finally doing this properly. Weekly coach call included.' },
+        { kind: 'miss', text: '3 months is only if you have a date on the calendar. It is not built for lasting change.' },
+        { kind: 'miss', text: '6 months is for already-lean advanced athletes. If that is not you yet, 12 months is the honest start.' }
       ]
     };
 
@@ -690,50 +690,35 @@
 
       var calls = answers.calls && answers.calls.id;
       var goal = answers.goal && answers.goal.id;
-      var history = answers.history && answers.history.id;
       var timeline = answers.timeline && answers.timeline.id;
-      var blocker = answers.blocker && answers.blocker.id;
       var commit = answers.commit && answers.commit.id;
-      var stress = answers.stress && answers.stress.id;
-      var injury = answers.injury && answers.injury.id;
+      var experience = answers.experience && answers.experience.id;
+      var body = answers.body && answers.body.id;
 
-      var planKey = '6_months';
-      // Aesthetic / all-in intent always lands on 12 months.
-      if (calls === 'yes' || goal === 'transform' || commit === 'allin') planKey = '12_months';
-      else if (
-        score <= -2 ||
-        (timeline === 'fast' && (goal === 'fat' || goal === 'muscle'))
-      ) {
-        planKey = '3_months';
-      } else if (
-        // Bias serious / long-road answers toward Aesthetic (12 months).
-        score >= 3 ||
-        blocker === 'consistency' ||
-        history === 'years' ||
-        stress === 'high' ||
-        injury === 'limit'
-      ) {
-        planKey = '12_months';
+      var planKey = '12_months';
+      // 90-day Fat loss is only for a date on the calendar — not a first transformation.
+      if (timeline === 'fast') planKey = '3_months';
+      // 6 months is a recomposition block for already-lean advanced athletes.
+      else if (experience === 'advanced' && (body === 'fit' || goal === 'recomp' || goal === 'muscle')) {
+        planKey = '6_months';
       }
+      // Everyone else — beginner, intermediate, plateau, fresh start — lands on 12 months.
+      else if (calls === 'yes' || goal === 'transform' || commit === 'allin') planKey = '12_months';
 
       var why = '';
       if (planKey === '3_months') {
         why =
-          'Your goal is to ' +
-          goalLabel +
-          '. Fat loss is the 90 day reset: enough time for a first change. If you want the finished look, Aesthetic (12 months) is the longer runway.';
-      } else if (planKey === '12_months') {
+          'You want a real change in about 90 days. Fat loss is for looking lean for a big day — not for long-term results. If you want this to last, Aesthetic (12 months) is the honest plan.';
+      } else if (planKey === '6_months') {
         why =
-          'Your goal is to ' +
-          goalLabel +
-          '. Aesthetic body is the recommended plan for lasting change' +
-          (calls === 'yes' ? ', and it is the only one with a weekly coach phone call' : '') +
-          ' — lowest monthly rate at ₹250/mo with WELCOME60.';
+          'Fat loss + muscle is for advanced athletes already lean (around 12% body fat) with good muscle. If you are still building the base, Aesthetic (12 months) is the better start.';
       } else {
         why =
           'Your goal is to ' +
           goalLabel +
-          '. Fat loss + muscle is a strong 6 month runway. If you want it to look finished (and get the weekly coach call), Aesthetic (12 months) is the upgrade.';
+          '. Aesthetic (12 months) is the plan for beginners and intermediates — plateaued, or starting fresh' +
+          (calls === 'yes' ? ', and it is the only one with a weekly coach phone call' : '') +
+          '. Lowest monthly rate at ₹250/mo with WELCOME60.';
       }
 
       return { planKey: planKey, why: why, goalLabel: goalLabel };
