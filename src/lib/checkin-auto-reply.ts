@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { isWithinQuietHours } from '@/lib/checkin-auto-reply-schedule'
+import { isWithinQuietHours, AUTO_REPLY_MIN_DELAY_MS } from '@/lib/checkin-auto-reply-schedule'
 import { serializeCoachResponse } from '@/lib/checkin'
 import { getCheckinTypeDisplayName } from '@/lib/checkin-schedule'
 import { postCoachCheckinFeedbackToChat } from '@/lib/coach-chat'
@@ -91,6 +91,14 @@ export async function sendCheckinAutoReply(
   checkin: Checkin
 ): Promise<AutoReplyOutcome> {
   if (checkin.reviewed) return { status: 'skipped', reason: 'already_reviewed' }
+
+  const submittedMs = new Date(checkin.submitted_at).getTime()
+  if (
+    Number.isFinite(submittedMs) &&
+    Date.now() - submittedMs < AUTO_REPLY_MIN_DELAY_MS
+  ) {
+    return { status: 'skipped', reason: 'min_delay_not_met' }
+  }
 
   const { data: profileRow } = await supabase
     .from('profiles')

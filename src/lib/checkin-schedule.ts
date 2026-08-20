@@ -359,7 +359,7 @@ export function getCheckinStatusLabel(status: CheckinTaskStatus): string {
     upcoming: 'Upcoming',
     available: 'Available',
     missed: 'Missed',
-    awaiting_review: 'Awaiting coach reply (usually 5–8h)',
+    awaiting_review: 'Awaiting coach reply (usually 3–8h)',
     skipped: 'Skipped',
   }[status]
 }

@@ -6,8 +6,8 @@
 const HOUR_MS = 60 * 60 * 1000
 const INDIA_TIME_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
 
-/** Replies land 5–8 hours after the client submits, so it never feels instant or robotic. */
-export const AUTO_REPLY_MIN_DELAY_MS = 5 * HOUR_MS
+/** Replies land 3–8 hours after the client submits, so it never feels instant or robotic. */
+export const AUTO_REPLY_MIN_DELAY_MS = 3 * HOUR_MS
 export const AUTO_REPLY_MAX_DELAY_MS = 8 * HOUR_MS
 
 /** Quiet hours in coaching time: nothing is sent between midnight and 08:00 IST. */
@@ -33,9 +33,9 @@ export function isWithinQuietHours(date: Date): boolean {
 }
 
 /**
- * When the automated reply for a check-in should go out: a random 5–8 hours after submission,
+ * When the automated reply for a check-in should go out: a random 3–8 hours after submission,
  * pushed into the morning (08:00–10:00 IST) if that lands during quiet hours so clients are
- * never messaged in the middle of the night.
+ * never messaged in the middle of the night. Never schedules sooner than 3 hours after submit.
  */
 export function computeAutoReplyAt(
   submittedAt: string | Date,
@@ -43,11 +43,23 @@ export function computeAutoReplyAt(
 ): Date {
   const submitted = submittedAt instanceof Date ? submittedAt : new Date(submittedAt)
   const base = Number.isNaN(submitted.getTime()) ? new Date() : submitted
+  const earliestMs = base.getTime() + AUTO_REPLY_MIN_DELAY_MS
   const spread = AUTO_REPLY_MAX_DELAY_MS - AUTO_REPLY_MIN_DELAY_MS
-  const target = new Date(base.getTime() + AUTO_REPLY_MIN_DELAY_MS + random() * spread)
+  let target = new Date(base.getTime() + AUTO_REPLY_MIN_DELAY_MS + random() * spread)
 
-  if (!isWithinQuietHours(target)) return target
+  if (isWithinQuietHours(target)) {
+    const morning = getIstDayStart(target).getTime() + QUIET_HOURS_END_HOUR * HOUR_MS
+    target = new Date(morning + random() * MORNING_SPREAD_MS)
+  }
 
-  const morning = getIstDayStart(target).getTime() + QUIET_HOURS_END_HOUR * HOUR_MS
-  return new Date(morning + random() * MORNING_SPREAD_MS)
+  if (target.getTime() < earliestMs) {
+    target = new Date(earliestMs)
+  }
+
+  if (isWithinQuietHours(target)) {
+    const morning = getIstDayStart(target).getTime() + QUIET_HOURS_END_HOUR * HOUR_MS
+    target = new Date(Math.max(earliestMs, morning + random() * MORNING_SPREAD_MS))
+  }
+
+  return target
 }

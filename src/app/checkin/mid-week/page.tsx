@@ -118,7 +118,7 @@ export default function MidWeekCheckinPage() {
       if (!parsed.ok) throw new Error(parsed.error)
 
       setSuccess(
-        'Day 3 check-in submitted! Your coach typically replies in 5–8 hours (not overnight). +5 league points when the season refreshes.'
+        'Day 3 check-in submitted! Your coach typically replies in 3–8 hours (not overnight). +5 league points when the season refreshes.'
       );
       setForm(INITIAL_MID_WEEK_FORM);
       setTimeout(() => router.push('/league'), 1800);

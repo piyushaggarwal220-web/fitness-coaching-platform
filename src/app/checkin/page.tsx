@@ -256,8 +256,8 @@ export default function CheckinPage() {
 
       setSuccess(
         photosOptional && !frontUrl && !sideUrl && !backUrl
-          ? 'Weekly check-in submitted! Measurements earn league points. Your coach typically replies in 5–8 hours (not overnight).'
-          : 'Weekly check-in submitted! Photos + measurements earn league points. Your coach typically replies in 5–8 hours (not overnight).'
+          ? 'Weekly check-in submitted! Measurements earn league points. Your coach typically replies in 3–8 hours (not overnight).'
+          : 'Weekly check-in submitted! Photos + measurements earn league points. Your coach typically replies in 3–8 hours (not overnight).'
       );
       setForm(INITIAL_WEEKLY_FORM);
       setPhotos({ front: null, side: null, back: null });
