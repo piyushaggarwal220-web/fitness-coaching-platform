@@ -606,21 +606,48 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       <div style={styles.contextBar}>
         <span style={{ color: peerOnline ? '#53d769' : wa.textMuted }}>{presenceText}</span>
         {viewer === 'client' && (
-          <button
-            type="button"
-            onClick={() => activeCallRequest
-              ? void updateCallRequest('cancelled')
-              : void createCallRequest()}
-            disabled={callRequestBusy}
-            style={styles.bookCallBtn}
-          >
-            <CalendarClock size={15} />
-            {activeCallRequest
-              ? activeCallRequest.status === 'scheduled'
-                ? `Call scheduled ${new Date(activeCallRequest.scheduled_for!).toLocaleString('en-IN')}`
-                : 'Call requested · Cancel'
-              : 'Book a call'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {activeCallRequest ? (
+              <>
+                <span
+                  style={{
+                    ...styles.bookCallBtn,
+                    cursor: 'default',
+                    background: 'rgba(83,215,105,0.14)',
+                    borderColor: 'rgba(83,215,105,0.4)',
+                    color: '#53d769',
+                  }}
+                >
+                  <CalendarClock size={15} />
+                  {activeCallRequest.status === 'scheduled' && activeCallRequest.scheduled_for
+                    ? `Call booked · ${new Date(activeCallRequest.scheduled_for).toLocaleString('en-IN')}`
+                    : 'Call booked — waiting for a time'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void updateCallRequest('cancelled')}
+                  disabled={callRequestBusy}
+                  style={{
+                    ...styles.bookCallBtn,
+                    padding: '7px 10px',
+                    color: wa.textMuted,
+                  }}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void createCallRequest()}
+                disabled={callRequestBusy}
+                style={styles.bookCallBtn}
+              >
+                <CalendarClock size={15} />
+                Book a call
+              </button>
+            )}
+          </div>
         )}
       </div>
 

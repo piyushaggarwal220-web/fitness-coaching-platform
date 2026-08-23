@@ -1,0 +1,84 @@
+﻿{% comment %} lurvox-hide-allow-trial-v1 — plan_1 may be 7-day trial {% endcomment %}
+{% comment %} lurvox-hide-1month-section-v1 {% endcomment %}
+<style id="lurvox-hide-1month-style">
+  [data-plan-index="1"][data-plan-price="999"],
+  [data-plan-index="1"][data-plan-price="499"] { display: none !important; }
+</style>
+<script>
+(function () {
+  function hideOneMonthPlan() {
+    document.querySelectorAll('[data-plan-index="1"][data-plan-price="999"],[data-plan-index="1"][data-plan-price="499"]').forEach(function (el) {
+      el.style.setProperty('display', 'none', 'important');
+      el.setAttribute('hidden', 'true');
+      el.setAttribute('aria-hidden', 'true');
+    });
+    document.querySelectorAll('a[href*="plans/1-month"], a[href*="plan=1_month"]').forEach(function (a) {
+      var href = a.getAttribute('href') || '';
+      a.setAttribute('href', href.replace(/plans\/1-month/g, 'plans/3-months').replace(/plan=1_month/g, 'plan=3_months'));
+    });
+    var cta = document.querySelector('[data-cta-button]');
+    if (cta && /1-month|1_month/.test(cta.getAttribute('href') || '')) {
+      var three = document.querySelector('[data-plan-index="2"]');
+      cta.setAttribute('href', (three && three.getAttribute('data-plan-link')) || 'https://app.lurvox.in/plans/3-months');
+    }
+    var selected = document.querySelector('[data-plan-index="1"].selected');
+    if (selected) {
+      selected.classList.remove('selected');
+      var next = document.querySelector('[data-plan-index="2"], [data-plan-index="3"], [data-plan-index="4"]');
+      if (next) {
+        next.classList.add('selected');
+        var nextCta = document.querySelector('[data-cta-button]');
+        if (nextCta && next.getAttribute('data-plan-link')) {
+          nextCta.setAttribute('href', next.getAttribute('data-plan-link'));
+        }
+      }
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hideOneMonthPlan);
+  else hideOneMonthPlan();
+  setTimeout(hideOneMonthPlan, 400);
+  setTimeout(hideOneMonthPlan, 1200);
+})();
+</script>
+<div class="lurvox-hide-1month-marker" hidden data-lurvox-hide-1month="1"></div>
+
+{% schema %}
+{
+  "name": "LURVOX hide 1-month",
+  "settings": [],
+  "presets": [{ "name": "LURVOX hide 1-month" }]
+}
+{% endschema %}
+
+<!-- lurvox-talk-wa-force-v1 removed: keep consult on-site -->
+
+{% comment %} /lurvox-talk-wa-force-v1 {% endcomment %}
+
+<!-- lurvox: WA talk force removed from hide-1month -->
+
+
+{% comment %} lurvox-force-show-trial-v1 {% endcomment %}
+<style id="lurvox-force-show-trial">
+  [data-plan-index="1"][data-plan-price="179"],
+  [data-plan-index="1"][data-plan-link*="trial"] {
+    display: block !important;
+    visibility: visible !important;
+  }
+</style>
+<script>
+(function () {
+  function showTrial() {
+    document.querySelectorAll('[data-plan-index="1"][data-plan-price="179"],[data-plan-index="1"][data-plan-link*="trial"]').forEach(function (el) {
+      el.style.removeProperty('display');
+      el.style.setProperty('display', 'block', 'important');
+      el.removeAttribute('hidden');
+      el.removeAttribute('aria-hidden');
+    });
+  }
+  showTrial();
+  document.addEventListener('DOMContentLoaded', showTrial);
+  setTimeout(showTrial, 50);
+  setTimeout(showTrial, 500);
+})();
+</script>
+{% comment %} /lurvox-force-show-trial-v1 {% endcomment %}

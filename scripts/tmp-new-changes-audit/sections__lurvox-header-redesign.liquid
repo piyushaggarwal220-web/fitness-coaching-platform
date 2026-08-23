@@ -1,0 +1,735 @@
+{% comment %}
+  LURVOX Header Redesign — Athletic Editorial
+  Draft-theme only. Replaces stock header + client-login strip.
+{% endcomment %}
+
+{%- assign menu = section.settings.menu -%}
+{%- assign brand = section.settings.brand_name | default: shop.name -%}
+
+<header class="lx-hdr" data-lx-hdr>
+  {%- if section.settings.show_login_rail -%}
+    {%- assign show_rail = true -%}
+    {%- if section.settings.login_homepage_only and request.page_type != 'index' -%}
+      {%- assign show_rail = false -%}
+    {%- endif -%}
+    {%- if show_rail -%}
+      <div class="lx-hdr__rail">
+        <div class="lx-hdr__rail-inner">
+          {%- if section.settings.login_prompt != blank -%}
+            <span class="lx-hdr__rail-prompt">{{ section.settings.login_prompt }}</span>
+          {%- endif -%}
+          <a class="lx-hdr__rail-link" href="{{ section.settings.login_url }}">
+            {{ section.settings.login_label }}
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M4 10h11M11 6l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    {%- endif -%}
+  {%- endif -%}
+
+  <div class="lx-hdr__bar">
+    <div class="lx-hdr__inner">
+      <button
+        class="lx-hdr__menu-btn"
+        type="button"
+        aria-expanded="false"
+        aria-controls="lx-hdr-drawer"
+        data-lx-hdr-open
+      >
+        <span class="visually-hidden">Menu</span>
+        <span class="lx-hdr__burger" aria-hidden="true"></span>
+      </button>
+
+      <a class="lx-hdr__brand" href="{{ routes.root_url }}">
+        {%- if section.settings.logo != blank -%}
+          {{
+            section.settings.logo
+            | image_url: width: 360
+            | image_tag:
+              class: 'lx-hdr__logo-img',
+              loading: 'eager',
+              widths: '120, 180, 240, 360',
+              alt: brand
+          }}
+        {%- else -%}
+          <span class="lx-hdr__wordmark">{{ brand }}</span>
+        {%- endif -%}
+      </a>
+
+      <nav class="lx-hdr__nav" aria-label="Primary">
+        {%- if menu != blank -%}
+          <ul class="lx-hdr__links">
+            {%- for link in menu.links -%}
+              {%- assign link_title_down = link.title | downcase -%}
+              {%- unless link.url contains '/coach/login' or link_title_down contains 'coach sign in' -%}
+              <li>
+                <a
+                  href="{{ link.url }}"
+                  class="lx-hdr__link{% if link.active %} is-active{% endif %}"
+                  {% if link.current %}aria-current="page"{% endif %}
+                >
+                  {{ link.title }}
+                </a>
+              </li>
+              {%- endunless -%}
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+      </nav>
+
+      <div class="lx-hdr__actions">
+        {%- if section.settings.coach_label != blank -%}
+          <a class="lx-hdr__ghost" href="{{ section.settings.coach_url }}">
+            {{ section.settings.coach_label }}
+          </a>
+        {%- endif -%}
+        {%- if section.settings.cta_label != blank -%}
+          <a class="lx-hdr__cta" href="{{ section.settings.cta_url }}">
+            <span>{{ section.settings.cta_label }}</span>
+          </a>
+        {%- endif -%}
+        <a
+          class="lx-hdr__talk"
+          href="{{ section.settings.talk_url }}"
+          {% if section.settings.talk_url contains 'http' %}
+            target="_blank"
+            rel="noopener noreferrer"
+          {% endif %}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M22 16.92v2a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h2a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>{{ section.settings.talk_label }}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="lx-hdr__drawer" id="lx-hdr-drawer" data-lx-hdr-drawer hidden>
+    <div class="lx-hdr__drawer-panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="lx-hdr__drawer-top">
+        <span class="lx-hdr__wordmark">{{ brand }}</span>
+        <button type="button" class="lx-hdr__close" data-lx-hdr-close aria-label="Close menu">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      {%- if menu != blank -%}
+        <ul class="lx-hdr__drawer-links">
+          {%- for link in menu.links -%}
+            {%- assign link_title_down = link.title | downcase -%}
+            {%- unless link.url contains '/coach/login' or link_title_down contains 'coach sign in' -%}
+            <li>
+              <a href="{{ link.url }}" {% if link.current %}aria-current="page"{% endif %}>
+                {{ link.title }}
+              </a>
+            </li>
+            {%- endunless -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+      <div class="lx-hdr__drawer-actions">
+        {%- if section.settings.coach_label != blank -%}
+          <a class="lx-hdr__ghost lx-hdr__ghost--block" href="{{ section.settings.coach_url }}">
+            {{ section.settings.coach_label }}
+          </a>
+        {%- endif -%}
+        {%- if section.settings.cta_label != blank -%}
+          <a class="lx-hdr__cta lx-hdr__cta--block" href="{{ section.settings.cta_url }}">
+            {{ section.settings.cta_label }}
+          </a>
+        {%- endif -%}
+        <a
+          class="lx-hdr__talk lx-hdr__talk--block"
+          href="{{ section.settings.talk_url }}"
+          {% if section.settings.talk_url contains 'http' %}
+            target="_blank"
+            rel="noopener noreferrer"
+          {% endif %}
+        >
+          {{ section.settings.talk_label }}
+        </a>
+        <a class="lx-hdr__drawer-login" href="{{ section.settings.login_url }}">
+          {{ section.settings.login_label }}
+        </a>
+      </div>
+    </div>
+    <button type="button" class="lx-hdr__backdrop" data-lx-hdr-close aria-label="Close menu"></button>
+  </div>
+</header>
+
+{% stylesheet %}
+  .lx-hdr {
+    --lx-hdr-ink: #0b0c0e;
+    --lx-hdr-ink-soft: rgba(11, 12, 14, 0.72);
+    --lx-hdr-text: #f3efe8;
+    --lx-hdr-muted: rgba(243, 239, 232, 0.62);
+    --lx-hdr-line: rgba(243, 239, 232, 0.1);
+    --lx-hdr-ember: #e85d04;
+    --lx-hdr-ember-hot: #ff7a1a;
+    --lx-hdr-max: 1120px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    font-family: var(--font-body-family, system-ui, sans-serif);
+    color: var(--lx-hdr-text);
+  }
+
+  .lx-hdr__rail {
+    background: #101218;
+    border-bottom: 1px solid var(--lx-hdr-line);
+  }
+
+  .lx-hdr__rail-inner {
+    width: min(var(--lx-hdr-max), calc(100% - 40px));
+    margin: 0 auto;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .lx-hdr__rail-prompt {
+    color: rgba(243, 239, 232, 0.72);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .lx-hdr__rail-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 0 18px;
+    border: 1px solid rgba(255, 160, 96, 0.72);
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ff7a1a, #e85d04);
+    box-shadow:
+      0 7px 24px rgba(232, 93, 4, 0.34),
+      0 0 20px rgba(255, 98, 0, 0.16),
+      inset 0 1px rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: filter 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+  }
+
+  .lx-hdr__rail-link:hover {
+    color: #ffffff;
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow:
+      0 9px 28px rgba(232, 93, 4, 0.44),
+      0 0 26px rgba(255, 98, 0, 0.22),
+      inset 0 1px rgba(255, 255, 255, 0.26);
+  }
+
+  .lx-hdr__bar {
+    background: rgba(8, 9, 11, 0.96);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--lx-hdr-line);
+  }
+
+  .lx-hdr.is-scrolled .lx-hdr__bar {
+    background: #0b0c0e;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  .lx-hdr__inner {
+    width: min(var(--lx-hdr-max), calc(100% - 32px));
+    margin: 0 auto;
+    min-height: 68px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .lx-hdr__menu-btn {
+    display: none;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border: 1px solid var(--lx-hdr-line);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--lx-hdr-text);
+    cursor: pointer;
+  }
+
+  .lx-hdr__burger,
+  .lx-hdr__burger::before,
+  .lx-hdr__burger::after {
+    display: block;
+    width: 16px;
+    height: 1.5px;
+    background: currentColor;
+    border-radius: 2px;
+  }
+
+  .lx-hdr__burger {
+    position: relative;
+  }
+
+  .lx-hdr__burger::before,
+  .lx-hdr__burger::after {
+    content: '';
+    position: absolute;
+    left: 0;
+  }
+
+  .lx-hdr__burger::before { top: -5px; }
+  .lx-hdr__burger::after { top: 5px; }
+
+  .lx-hdr__brand {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    justify-self: start;
+  }
+
+  .lx-hdr__wordmark {
+    font-family: var(--font-heading-family, system-ui, sans-serif);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+    line-height: 1;
+    text-shadow:
+      0 0 18px rgba(255, 255, 255, 0.13),
+      0 0 28px rgba(255, 98, 0, 0.12);
+  }
+
+  .lx-hdr__logo-img {
+    display: block;
+    height: 28px;
+    width: auto;
+  }
+
+  .lx-hdr__nav {
+    justify-self: center;
+  }
+
+  .lx-hdr__links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .lx-hdr__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    color: var(--lx-hdr-muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    transition: color 180ms ease, background 180ms ease;
+  }
+
+  .lx-hdr__link:hover,
+  .lx-hdr__link.is-active,
+  .lx-hdr__link[aria-current='page'] {
+    color: var(--lx-hdr-text);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .lx-hdr__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .lx-hdr__ghost,
+  .lx-hdr__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+  }
+
+  .lx-hdr__ghost {
+    border: 1px solid var(--lx-hdr-line);
+    color: var(--lx-hdr-text);
+    background: transparent;
+  }
+
+  .lx-hdr__ghost:hover {
+    border-color: rgba(243, 239, 232, 0.28);
+  }
+
+  .lx-hdr__cta {
+    background: var(--lx-hdr-ember);
+    color: #140900;
+  }
+
+  .lx-hdr__cta:hover {
+    background: var(--lx-hdr-ember-hot);
+    transform: translateY(-1px);
+  }
+
+  .lx-hdr__ghost--block,
+  .lx-hdr__cta--block {
+    width: 100%;
+  }
+
+  .lx-hdr__talk {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 0 13px;
+    border-radius: 999px;
+    border: 1px solid var(--lx-hdr-line);
+    color: var(--lx-hdr-text);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: border-color 180ms ease, color 180ms ease;
+  }
+
+  .lx-hdr__talk:hover {
+    border-color: var(--lx-hdr-ember);
+    color: var(--lx-hdr-ember-hot);
+  }
+
+  .lx-hdr__talk--block {
+    width: 100%;
+  }
+
+  .lx-hdr__drawer[hidden] {
+    display: none;
+  }
+
+  .lx-hdr__drawer:not([hidden]) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 2147483646;
+  }
+
+  .lx-hdr__backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(0, 0, 0, 0.72);
+    cursor: pointer;
+  }
+
+  .lx-hdr__drawer-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(86vw, 360px);
+    padding: 22px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+    background: #0d0f14;
+    border-right: 1px solid var(--lx-hdr-line);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translateX(0);
+    animation: lx-hdr-in 220ms ease;
+    z-index: 1;
+  }
+
+  @keyframes lx-hdr-in {
+    from { transform: translateX(-12px); opacity: 0.6; }
+    to { transform: none; opacity: 1; }
+  }
+
+  .lx-hdr__drawer-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .lx-hdr__close {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--lx-hdr-line);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--lx-hdr-text);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .lx-hdr__drawer-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .lx-hdr__drawer-links a {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 12px;
+    border-radius: 12px;
+    color: var(--lx-hdr-text);
+    font-family: var(--font-heading-family, system-ui, sans-serif);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+
+  .lx-hdr__drawer-links a[aria-current='page'],
+  .lx-hdr__drawer-links a:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--lx-hdr-ember-hot);
+  }
+
+  .lx-hdr__drawer-actions {
+    margin-top: auto;
+    display: grid;
+    gap: 10px;
+  }
+
+  .lx-hdr__drawer-login {
+    padding: 8px;
+    text-align: center;
+    color: var(--lx-hdr-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .lx-hdr__drawer-login:hover {
+    color: var(--lx-hdr-text);
+  }
+
+  @media (max-width: 899px) {
+    .lx-hdr__inner {
+      grid-template-columns: 44px minmax(0, 1fr) 44px;
+      gap: 8px;
+      min-height: 56px;
+      width: min(100% - 24px, var(--lx-hdr-max));
+    }
+
+    .lx-hdr__menu-btn {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      justify-self: start;
+    }
+
+    .lx-hdr__brand {
+      justify-self: center;
+      max-width: 100%;
+    }
+
+    .lx-hdr__wordmark {
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+
+    .lx-hdr__nav,
+    .lx-hdr__ghost,
+    .lx-hdr__bar .lx-hdr__cta {
+      display: none !important;
+    }
+
+    .lx-hdr__actions {
+      width: 44px;
+      justify-self: end;
+      justify-content: flex-end;
+      gap: 0;
+    }
+
+    .lx-hdr__talk {
+      width: 40px;
+      height: 40px;
+      min-height: 40px;
+      padding: 0;
+    }
+    .lx-hdr__bar .lx-hdr__talk span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+    .lx-hdr__drawer .lx-hdr__talk {
+      width: 100%;
+      padding: 0 14px;
+    }
+
+    .lx-hdr__rail-prompt {
+      display: none;
+    }
+
+    .lx-hdr__rail-inner {
+      width: min(100% - 24px, var(--lx-hdr-max));
+      min-height: 46px;
+    }
+
+    .lx-hdr__rail-link {
+      min-height: 34px;
+      padding: 0 13px;
+      font-size: clamp(10px, 2.8vw, 11.5px);
+      letter-spacing: 0.035em;
+      white-space: nowrap;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lx-hdr__drawer-panel,
+    .lx-hdr__cta,
+    .lx-hdr__ghost,
+    .lx-hdr__rail-link {
+      transition: none;
+      animation: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    const root = document.querySelector('[data-lx-hdr]');
+    if (!root) return;
+
+    const style = document.createElement('style');
+    style.textContent =
+      'html.lx-hdr-drawer-open .lurvox-fab,' +
+      'html.lx-hdr-drawer-open [data-lurvox-fab],' +
+      'html.lx-hdr-drawer-open #shopify-preview-bar-iframe,' +
+      'html.lx-hdr-drawer-open .shopify-preview-bar { display: none !important; }';
+    document.head.appendChild(style);
+
+    const drawer = root.querySelector('[data-lx-hdr-drawer]');
+    const openBtn = root.querySelector('[data-lx-hdr-open]');
+    const closeBtns = root.querySelectorAll('[data-lx-hdr-close]');
+
+    function setOpen(open) {
+      if (!drawer || !openBtn) return;
+      drawer.hidden = !open;
+      openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.documentElement.style.overflow = open ? 'hidden' : '';
+      document.documentElement.classList.toggle('lx-hdr-drawer-open', open);
+    }
+
+    openBtn?.addEventListener('click', () => setOpen(true));
+    closeBtns.forEach((btn) => btn.addEventListener('click', () => setOpen(false)));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    });
+
+    let ticking = false;
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          root.classList.toggle('is-scrolled', window.scrollY > 8);
+          ticking = false;
+        });
+      },
+      { passive: true }
+    );
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "LURVOX Header Redesign",
+  "tag": "section",
+  "class": "section-lx-hdr",
+  "settings": [
+    { "type": "text", "id": "brand_name", "label": "Brand name", "default": "LURVOX" },
+    { "type": "image_picker", "id": "logo", "label": "Logo image (optional)" },
+    { "type": "link_list", "id": "menu", "label": "Menu", "default": "main-menu" },
+    { "type": "checkbox", "id": "show_login_rail", "label": "Show client login rail", "default": true },
+    { "type": "checkbox", "id": "login_homepage_only", "label": "Login rail on homepage only", "default": true },
+    {
+      "type": "text",
+      "id": "login_prompt",
+      "label": "Login prompt",
+      "default": "Already training with LURVOX?"
+    },
+    {
+      "type": "text",
+      "id": "login_label",
+      "label": "Login label",
+      "default": "EXISTING CLIENT OR PAYMENT DONE? LOG IN"
+    },
+    {
+      "type": "text",
+      "id": "login_url",
+      "label": "Login URL",
+      "default": "https://app.lurvox.in/login"
+    },
+    {
+      "type": "text",
+      "id": "coach_label",
+      "label": "Coach link label",
+      "default": "Coach sign in"
+    },
+    {
+      "type": "text",
+      "id": "coach_url",
+      "label": "Coach URL",
+      "default": "https://app.lurvox.in/coach/login"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Primary CTA label",
+      "default": "Choose plan"
+    },
+    {
+      "type": "text",
+      "id": "cta_url",
+      "label": "Primary CTA URL",
+      "default": "/#shopify-section-blocks_C9E4qf"
+    },
+    {
+      "type": "text",
+      "id": "talk_label",
+      "label": "Talk icon label",
+      "default": "Talk to a coach"
+    },
+    {
+      "type": "text",
+      "id": "talk_url",
+      "label": "Talk URL",
+      "default": "/pages/talk-to-a-coach"
+    }
+  ],
+  "presets": [{ "name": "LURVOX Header Redesign" }]
+}
+{% endschema %}

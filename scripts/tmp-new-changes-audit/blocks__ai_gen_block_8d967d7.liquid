@@ -1,0 +1,634 @@
+{% doc %}
+  @prompt
+    Create a premium mobile-first CTA section placed directly below the FAQ section.
+    
+    SECTION WIDTH:
+    92vw
+    
+    Max width:
+    100%
+    
+    Background:
+    #050505
+    
+    Card design:
+    
+    background:
+    rgba(255,255,255,0.02)
+    
+    border:
+    1px solid rgba(255,255,255,0.06)
+    
+    border radius:
+    28px
+    
+    padding:
+    28px
+    
+    overflow:
+    hidden
+    
+    Add subtle premium shadow:
+    0 20px 60px rgba(0,0,0,0.45)
+    
+    Add extremely subtle orange ambient glow behind the card only:
+    rgba(255,98,0,0.03)
+    
+    No gradients.
+    
+    No glassmorphism overload.
+    
+    No gaming aesthetics.
+    
+    Atmosphere should feel premium and expensive.
+    
+    ━━━━━━━━━━━━━━
+    
+    HEADLINE
+    
+    Choose your LURVOX plan.
+    
+    Typography:
+    
+    Luxury editorial serif italic.
+    
+    Font size:
+    34px
+    
+    Font weight:
+    500
+    
+    Color:
+    #FFFFFF
+    
+    Line height:
+    1.15
+    
+    Letter spacing:
+    -0.02em
+    
+    ━━━━━━━━━━━━━━
+    
+    SUBHEADLINE
+    
+    Checkout → questionnaire + photos → plan built within 24 hours.
+    
+    Typography:
+    
+    18px
+    
+    Weight:
+    400
+    
+    Color:
+    rgba(255,255,255,0.72)
+    
+    Line height:
+    1.5
+    
+    Maximum width:
+    90%
+    
+    ━━━━━━━━━━━━━━
+    
+    CTA BUTTON
+    
+    Text:
+    
+    CHOOSE YOUR PLAN
+    
+    Button width:
+    100%
+    
+    Height:
+    64px
+    
+    Border radius:
+    999px
+    
+    Background:
+    #EFE5DF
+    
+    Text color:
+    #111111
+    
+    Font size:
+    16px
+    
+    Font weight:
+    800
+    
+    Letter spacing:
+    0.18em
+    
+    Text transform:
+    uppercase
+    
+    Add subtle shadow:
+    0 10px 30px rgba(0,0,0,0.25)
+    
+    Hover state:
+    
+    background:
+    #FFFFFF
+    
+    scale:
+    1.02
+    
+    transition:
+    300ms ease
+    
+    ━━━━━━━━━━━━━━
+    
+    SPACING
+    
+    Top padding:
+    32px
+    
+    Bottom padding:
+    32px
+    
+    Gap between headline and subheadline:
+    16px
+    
+    Gap between subheadline and button:
+    28px
+    
+    Everything must feel compact, premium and mobile first.
+    
+    Visual inspiration:
+    
+    Apple × Nike × Aman Resorts.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-premium-cta-{{ ai_gen_id }} {
+    display: block;
+    width: 92vw;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: {{ block.settings.section_padding_top }}px 0 {{ block.settings.section_padding_bottom }}px;
+    background-color: {{ block.settings.background_color }};
+  }
+
+  .ai-premium-cta-card-{{ ai_gen_id }} {
+    position: relative;
+    background: {{ block.settings.card_background }};
+    border: {{ block.settings.card_border_width }}px solid {{ block.settings.card_border_color }};
+    border-radius: {{ block.settings.card_border_radius }}px;
+    padding: {{ block.settings.card_padding }}px;
+    overflow: hidden;
+    box-shadow: {{ block.settings.card_shadow }};
+  }
+
+  .ai-premium-cta-card-{{ ai_gen_id }}::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: {{ block.settings.ambient_glow }};
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ai-premium-cta-content-{{ ai_gen_id }} {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: {{ block.settings.headline_to_subheadline_gap }}px;
+  }
+
+  .ai-premium-cta-headline-{{ ai_gen_id }} {
+    font-family: {{ block.settings.headline_font.family }}, {{ block.settings.headline_font.fallback_families }};
+    font-weight: {{ block.settings.headline_font.weight }};
+    font-style: {{ block.settings.headline_font.style }};
+    font-size: {{ block.settings.headline_size }}px;
+    line-height: {{ block.settings.headline_line_height }};
+    letter-spacing: -0.02em;
+    color: {{ block.settings.headline_color }};
+    margin: 0;
+  }
+
+  .ai-premium-cta-subheadline-wrapper-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: {{ block.settings.subheadline_to_button_gap }}px;
+  }
+
+  .ai-premium-cta-subheadline-{{ ai_gen_id }} {
+    font-size: {{ block.settings.subheadline_size }}px;
+    font-weight: {{ block.settings.subheadline_weight }};
+    line-height: {{ block.settings.subheadline_line_height }};
+    color: {{ block.settings.subheadline_color }};
+    max-width: {{ block.settings.subheadline_max_width }}%;
+    margin: 0;
+  }
+
+  .ai-premium-cta-button-{{ ai_gen_id }} {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: {{ block.settings.button_height }}px;
+    background: {{ block.settings.button_background }};
+    color: {{ block.settings.button_text_color }};
+    font-size: {{ block.settings.button_font_size }}px;
+    font-weight: {{ block.settings.button_font_weight }};
+    letter-spacing: 0.18em;
+    text-transform: {{ block.settings.button_text_transform }};
+    text-decoration: none;
+    border: none;
+    border-radius: {{ block.settings.button_border_radius }}px;
+    box-shadow: {{ block.settings.button_shadow }};
+    cursor: pointer;
+    transition: all {{ block.settings.button_transition_duration }}ms ease;
+  }
+
+  .ai-premium-cta-button-{{ ai_gen_id }}:hover {
+    background: {{ block.settings.button_hover_background }};
+    transform: scale(1.02);
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-premium-cta-{{ ai_gen_id }} {
+      width: {{ block.settings.mobile_width_percent }}%;
+    }
+  }
+{% endstyle %}
+
+<premium-cta-{{ ai_gen_id }} class="ai-premium-cta-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-premium-cta-card-{{ ai_gen_id }}">
+    <div class="ai-premium-cta-content-{{ ai_gen_id }}">
+      {% if block.settings.headline != blank %}
+        <h2 class="ai-premium-cta-headline-{{ ai_gen_id }}">{{ block.settings.headline }}</h2>
+      {% endif %}
+
+      <div class="ai-premium-cta-subheadline-wrapper-{{ ai_gen_id }}">
+        {% if block.settings.subheadline != blank %}
+          <p class="ai-premium-cta-subheadline-{{ ai_gen_id }}">{{ block.settings.subheadline }}</p>
+        {% endif %}
+
+        {% if block.settings.button_text != blank %}
+          <a href="{{ block.settings.button_link }}" class="ai-premium-cta-button-{{ ai_gen_id }}">
+            {{ block.settings.button_text }}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</premium-cta-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class PremiumCta{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        this.style.display = 'block';
+      }
+    }
+
+    customElements.define('premium-cta-{{ ai_gen_id }}', PremiumCta{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Premium CTA",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section"
+    },
+    {
+      "type": "range",
+      "id": "section_padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "section_padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#050505"
+    },
+    {
+      "type": "range",
+      "id": "mobile_width_percent",
+      "label": "Mobile width",
+      "min": 80,
+      "max": 100,
+      "step": 2,
+      "unit": "%",
+      "default": 92
+    },
+    {
+      "type": "header",
+      "content": "Card"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "Background",
+      "default": "rgba(255,255,255,0.02)"
+    },
+    {
+      "type": "range",
+      "id": "card_border_width",
+      "label": "Border width",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    {
+      "type": "color",
+      "id": "card_border_color",
+      "label": "Border color",
+      "default": "rgba(255,255,255,0.06)"
+    },
+    {
+      "type": "range",
+      "id": "card_border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 50,
+      "step": 2,
+      "unit": "px",
+      "default": 28
+    },
+    {
+      "type": "range",
+      "id": "card_padding",
+      "label": "Padding",
+      "min": 16,
+      "max": 60,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    },
+    {
+      "type": "text",
+      "id": "card_shadow",
+      "label": "Shadow",
+      "default": "0 20px 60px rgba(0,0,0,0.45)"
+    },
+    {
+      "type": "color",
+      "id": "ambient_glow",
+      "label": "Ambient glow",
+      "default": "rgba(255,98,0,0.03)"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "headline_to_subheadline_gap",
+      "label": "Headline to subheadline",
+      "min": 8,
+      "max": 40,
+      "step": 4,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "subheadline_to_button_gap",
+      "label": "Subheadline to button",
+      "min": 12,
+      "max": 48,
+      "step": 4,
+      "unit": "px",
+      "default": 28
+    },
+    {
+      "type": "header",
+      "content": "Headline"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Text",
+      "default": "Choose your LURVOX plan."
+    },
+    {
+      "type": "font_picker",
+      "id": "headline_font",
+      "label": "Font",
+      "default": "serif"
+    },
+    {
+      "type": "range",
+      "id": "headline_size",
+      "label": "Size",
+      "min": 20,
+      "max": 60,
+      "step": 2,
+      "unit": "px",
+      "default": 34
+    },
+    {
+      "type": "range",
+      "id": "headline_line_height",
+      "label": "Line height",
+      "min": 1,
+      "max": 2,
+      "step": 0.1,
+      "default": 1.2
+    },
+    {
+      "type": "color",
+      "id": "headline_color",
+      "label": "Color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "header",
+      "content": "Subheadline"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheadline",
+      "label": "Text",
+      "default": "Checkout → questionnaire + photos → plan built within 24 hours."
+    },
+    {
+      "type": "range",
+      "id": "subheadline_size",
+      "label": "Size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 18
+    },
+    {
+      "type": "range",
+      "id": "subheadline_weight",
+      "label": "Weight",
+      "min": 300,
+      "max": 700,
+      "step": 100,
+      "default": 400
+    },
+    {
+      "type": "range",
+      "id": "subheadline_line_height",
+      "label": "Line height",
+      "min": 1,
+      "max": 2,
+      "step": 0.1,
+      "default": 1.5
+    },
+    {
+      "type": "color",
+      "id": "subheadline_color",
+      "label": "Color",
+      "default": "rgba(255,255,255,0.72)"
+    },
+    {
+      "type": "range",
+      "id": "subheadline_max_width",
+      "label": "Max width",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 90
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "button_text",
+      "label": "Text",
+      "default": "CHOOSE YOUR PLAN"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Link"
+    },
+    {
+      "type": "range",
+      "id": "button_height",
+      "label": "Height",
+      "min": 40,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 100,
+      "step": 10,
+      "unit": "px",
+      "default": 100
+    },
+    {
+      "type": "color",
+      "id": "button_background",
+      "label": "Background",
+      "default": "#EFE5DF"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_background",
+      "label": "Hover background",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Text color",
+      "default": "#111111"
+    },
+    {
+      "type": "range",
+      "id": "button_font_size",
+      "label": "Font size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "button_font_weight",
+      "label": "Font weight",
+      "min": 400,
+      "max": 900,
+      "step": 100,
+      "default": 800
+    },
+    {
+      "type": "select",
+      "id": "button_text_transform",
+      "label": "Text transform",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "uppercase",
+          "label": "Uppercase"
+        }
+      ],
+      "default": "uppercase"
+    },
+    {
+      "type": "text",
+      "id": "button_shadow",
+      "label": "Shadow",
+      "default": "0 10px 30px rgba(0,0,0,0.25)"
+    },
+    {
+      "type": "range",
+      "id": "button_transition_duration",
+      "label": "Transition duration",
+      "min": 100,
+      "max": 500,
+      "step": 50,
+      "unit": "ms",
+      "default": 300
+    }
+  ],
+  "presets": [
+    {
+      "name": "Premium CTA"
+    }
+  ],
+  "tag": null
+}
+{% endschema %}

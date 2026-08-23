@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "activeMain": {
+    "id": "gid://shopify/OnlineStoreTheme/161206370555",
+    "name": "LURVOX Prices 2026-07-29 09:29"
+  },
+  "reviewTheme": {
+    "id": "gid://shopify/OnlineStoreTheme/161207976187",
+    "numericId": "161207976187",
+    "name": "LURVOX Price Review 1499-2499-3999 2026-07-29",
+    "role": "UNPUBLISHED"
+  },
+  "previewUrl": "https://www.lurvox.in/?preview_theme_id=161207976187",
+  "priceChanges": 3,
+  "changedAssets": [
+    "templates/index.json"
+  ],
+  "comparison": {
+    "inHomepage": true,
+    "directlyAfterPlans": true,
+    "mobileFixed": true,
+    "prices": [
+      "₹1,499",
+      "₹2,499",
+      "₹3,999"
+    ]
+  },
+  "whatMattersRemoved": true
+}

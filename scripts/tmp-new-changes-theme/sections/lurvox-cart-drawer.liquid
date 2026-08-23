@@ -1,0 +1,531 @@
+{%- if section.settings.enabled -%}
+  <div
+    id="lurvox-cart-drawer"
+    class="lurvox-cart"
+    hidden
+    aria-hidden="true"
+    data-discount-code="{{ section.settings.discount_code | default: 'WELCOME60' | escape }}"
+  >
+    <div class="lurvox-cart__backdrop" data-cart-close tabindex="-1"></div>
+    <aside class="lurvox-cart__panel" role="dialog" aria-modal="true" aria-label="Cart">
+      <header class="lurvox-cart__header">
+        <h2>Cart</h2>
+        <button type="button" class="lurvox-cart__close" data-cart-close aria-label="Close cart">×</button>
+      </header>
+
+      <div class="lurvox-cart__body">
+        <div class="lurvox-cart__empty" data-cart-empty>
+          Your cart is empty.
+        </div>
+
+        <div class="lurvox-cart__item" data-cart-item hidden>
+          <div class="lurvox-cart__item-main">
+            <div>
+              <p class="lurvox-cart__title" data-cart-title>Coaching plan</p>
+              <p class="lurvox-cart__meta" data-cart-duration>3 Months</p>
+              <p class="lurvox-cart__code-tag" data-cart-code-tag>WELCOME60</p>
+            </div>
+            <button type="button" class="lurvox-cart__remove" data-cart-remove aria-label="Remove">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+          <div class="lurvox-cart__prices">
+            <strong data-cart-sale>Rs. 1,600</strong>
+            <s data-cart-mrp>Rs. 4,000</s>
+          </div>
+        </div>
+
+        <div class="lurvox-cart__discount" data-cart-discount-wrap hidden>
+          <label for="lurvox-cart-discount-input">Discount</label>
+          <div class="lurvox-cart__discount-row">
+            <input
+              id="lurvox-cart-discount-input"
+              type="text"
+              value="{{ section.settings.discount_code | default: 'WELCOME60' }}"
+              readonly
+              aria-label="Discount code"
+            >
+            <span class="lurvox-cart__applied">Applied</span>
+          </div>
+          <div class="lurvox-cart__code-chip">
+            <span data-cart-code-chip>WELCOME60</span>
+          </div>
+        </div>
+      </div>
+
+      <footer class="lurvox-cart__footer" data-cart-footer hidden>
+        <div class="lurvox-cart__total">
+          <span>Estimated total</span>
+          <strong data-cart-total>Rs. 1,600</strong>
+        </div>
+        <a class="lurvox-cart__checkout" data-cart-checkout href="#">Check out</a>
+        <p class="lurvox-cart__note">60% off with code applied · secure checkout on LURVOX</p>
+      </footer>
+    </aside>
+  </div>
+
+  <button type="button" class="lurvox-cart-fab" data-cart-open hidden aria-label="Open cart">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M6 6L5 3H2"/></svg>
+    <span data-cart-fab-count>1</span>
+  </button>
+
+  <script>
+    (function () {
+      var root = document.getElementById('lurvox-cart-drawer');
+      if (!root || root.dataset.bound === '1') return;
+      root.dataset.bound = '1';
+
+      var defaultCode = root.getAttribute('data-discount-code') || 'WELCOME60';
+      var fab = document.querySelector('[data-cart-open]');
+      var itemEl = root.querySelector('[data-cart-item]');
+      var emptyEl = root.querySelector('[data-cart-empty]');
+      var discountWrap = root.querySelector('[data-cart-discount-wrap]');
+      var footer = root.querySelector('[data-cart-footer]');
+      var checkoutBtn = root.querySelector('[data-cart-checkout]');
+      var storageKey = 'lurvox-cart-v1';
+      var cart = null;
+
+      function money(n) {
+        var num = Number(n) || 0;
+        return 'Rs. ' + num.toLocaleString('en-IN');
+      }
+
+      function save() {
+        try {
+          if (cart) localStorage.setItem(storageKey, JSON.stringify(cart));
+          else localStorage.removeItem(storageKey);
+        } catch (e) {}
+      }
+
+      function load() {
+        try {
+          var raw = localStorage.getItem(storageKey);
+          if (!raw) return null;
+          return JSON.parse(raw);
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function openCart() {
+        root.hidden = false;
+        root.setAttribute('aria-hidden', 'false');
+        document.documentElement.classList.add('lurvox-cart-open');
+      }
+
+      function closeCart() {
+        root.hidden = true;
+        root.setAttribute('aria-hidden', 'true');
+        document.documentElement.classList.remove('lurvox-cart-open');
+      }
+
+      function render() {
+        var headerCount = document.querySelector('[data-lurvox-header-cart-count]');
+        if (!cart) {
+          itemEl.hidden = true;
+          discountWrap.hidden = true;
+          footer.hidden = true;
+          emptyEl.hidden = false;
+          if (fab) fab.hidden = true;
+          if (headerCount) {
+            headerCount.hidden = true;
+            headerCount.textContent = '0';
+          }
+          return;
+        }
+
+        emptyEl.hidden = true;
+        itemEl.hidden = false;
+        discountWrap.hidden = !cart.code;
+        footer.hidden = false;
+        if (fab) fab.hidden = true;
+        if (headerCount) {
+          headerCount.hidden = false;
+          headerCount.textContent = '1';
+        }
+
+        root.querySelector('[data-cart-title]').textContent = cart.title || 'Coaching plan';
+        root.querySelector('[data-cart-duration]').textContent = cart.duration || '';
+        var codeTag = root.querySelector('[data-cart-code-tag]');
+        var chip = root.querySelector('[data-cart-code-chip]');
+        if (cart.code) {
+          codeTag.hidden = false;
+          codeTag.textContent = cart.code;
+          if (chip) chip.textContent = cart.code;
+        } else {
+          codeTag.hidden = true;
+        }
+
+        var sale = Number(cart.sale) || 0;
+        var mrp = Number(cart.mrp) || 0;
+        root.querySelector('[data-cart-sale]').textContent = money(sale);
+        var mrpEl = root.querySelector('[data-cart-mrp]');
+        if (mrp > sale) {
+          mrpEl.hidden = false;
+          mrpEl.textContent = money(mrp);
+        } else {
+          mrpEl.hidden = true;
+        }
+        root.querySelector('[data-cart-total]').textContent = money(sale);
+        checkoutBtn.setAttribute('href', cart.checkoutUrl || '#');
+      }
+
+      function addToCart(detail) {
+        var sale = Number(detail.sale);
+        var mrp = Number(detail.mrp);
+        var hasDiscount = detail.applyDiscount !== false && mrp > sale && sale > 0;
+        cart = {
+          title: detail.title || 'LURVOX Coaching',
+          duration: detail.duration || '',
+          sale: sale,
+          mrp: mrp,
+          code: hasDiscount ? (detail.code || defaultCode) : '',
+          checkoutUrl: detail.checkoutUrl || detail.link || '#'
+        };
+        if (hasDiscount && cart.checkoutUrl && cart.checkoutUrl.indexOf('code=') === -1) {
+          cart.checkoutUrl += (cart.checkoutUrl.indexOf('?') === -1 ? '?' : '&') + 'code=' + encodeURIComponent(cart.code);
+        }
+        save();
+        render();
+        openCart();
+      }
+
+      cart = load();
+      render();
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', render, { once: true });
+      } else {
+        setTimeout(render, 0);
+      }
+
+      root.querySelectorAll('[data-cart-close]').forEach(function (el) {
+        el.addEventListener('click', closeCart);
+      });
+      if (fab) fab.addEventListener('click', openCart);
+      document.addEventListener('click', function (event) {
+        var headerTrigger = event.target && event.target.closest
+          ? event.target.closest('[data-lurvox-header-cart]')
+          : null;
+        if (!headerTrigger) return;
+        event.preventDefault();
+        if (cart) {
+          openCart();
+        } else {
+          var plans = document.querySelector('transformation-plan-selector');
+          if (plans) plans.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          else window.location.assign('/#plans');
+        }
+      });
+      root.querySelector('[data-cart-remove]').addEventListener('click', function () {
+        cart = null;
+        save();
+        render();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !root.hidden) closeCart();
+      });
+
+      window.addEventListener('lurvox:add-to-cart', function (event) {
+        if (!event.detail) return;
+        addToCart(event.detail);
+      });
+
+      window.lurvoxAddToCart = addToCart;
+    })();
+  </script>
+{%- endif -%}
+
+{% stylesheet %}
+  .lurvox-cart[hidden] { display: none !important; }
+
+  html.lurvox-cart-open {
+    overflow: hidden;
+  }
+
+  html.lurvox-cart-open .lurvox-fab,
+  html.lurvox-cart-open [data-lurvox-fab],
+  html.lurvox-cart-open .lurvox-fab-section,
+  html.lurvox-cart-open .lurvox-cart-fab,
+  html.lurvox-cart-open .lurvox-social-proof {
+    display: none !important;
+  }
+
+  [data-lurvox-header-cart] {
+    position: relative;
+    color: currentColor;
+  }
+
+  .lurvox-header-cart-count {
+    position: absolute;
+    top: 12px;
+    right: 10px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #ff6200;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .lurvox-header-cart-count[hidden] {
+    display: none !important;
+  }
+
+  .lurvox-cart__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10040;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .lurvox-cart__panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 10041;
+    display: flex;
+    flex-direction: column;
+    width: min(420px, 100vw);
+    height: 100%;
+    color: #111;
+    background: #fff;
+    box-shadow: -18px 0 50px rgba(0, 0, 0, 0.35);
+  }
+
+  .lurvox-cart__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid #ececec;
+  }
+
+  .lurvox-cart__header h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 650;
+  }
+
+  .lurvox-cart__close {
+    border: 0;
+    background: transparent;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    color: #444;
+  }
+
+  .lurvox-cart__body {
+    flex: 1;
+    overflow: auto;
+    padding: 18px 20px 28px;
+  }
+
+  .lurvox-cart__empty {
+    color: #777;
+    font-size: 14px;
+    padding: 24px 0;
+  }
+
+  .lurvox-cart__item {
+    padding-bottom: 18px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .lurvox-cart__item-main {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .lurvox-cart__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 650;
+  }
+
+  .lurvox-cart__meta {
+    margin: 4px 0 0;
+    color: #666;
+    font-size: 13px;
+  }
+
+  .lurvox-cart__code-tag {
+    margin: 8px 0 0;
+    color: #c2410c;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .lurvox-cart__remove {
+    border: 0;
+    background: transparent;
+    color: #888;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .lurvox-cart__prices {
+    margin-top: 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .lurvox-cart__prices strong {
+    font-size: 1.05rem;
+  }
+
+  .lurvox-cart__prices s {
+    color: #999;
+    font-size: 13px;
+  }
+
+  .lurvox-cart__discount {
+    margin-top: 22px;
+  }
+
+  .lurvox-cart__discount label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .lurvox-cart__discount-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .lurvox-cart__discount-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 14px;
+    background: #fafafa;
+  }
+
+  .lurvox-cart__applied {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: #111;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  .lurvox-cart__code-chip {
+    margin-top: 10px;
+  }
+
+  .lurvox-cart__code-chip span {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #fff4ec;
+    color: #c2410c;
+    border: 1px solid #fdba74;
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+  }
+
+  .lurvox-cart__footer {
+    padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+    border-top: 1px solid #ececec;
+    background: #fff;
+  }
+
+  .lurvox-cart__total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+    font-size: 15px;
+  }
+
+  .lurvox-cart__total strong {
+    font-size: 1.15rem;
+  }
+
+  .lurvox-cart__checkout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 52px;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .lurvox-cart__note {
+    margin: 10px 0 0;
+    text-align: center;
+    color: #888;
+    font-size: 11px;
+  }
+
+  .lurvox-cart-fab {
+    position: fixed;
+    right: 16px;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    z-index: 10030;
+    width: 52px;
+    height: 52px;
+    border: 0;
+    border-radius: 999px;
+    background: #ff6200;
+    color: #fff;
+    box-shadow: 0 10px 28px rgba(255, 98, 0, 0.35);
+    cursor: pointer;
+  }
+
+  .lurvox-cart-fab[hidden] { display: none !important; }
+
+  .lurvox-cart-fab span {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+  }
+
+  @media screen and (max-width: 749px) {
+    .lurvox-cart-fab {
+      bottom: max(88px, env(safe-area-inset-bottom));
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "LURVOX cart drawer",
+  "settings": [
+    { "type": "checkbox", "id": "enabled", "label": "Enable cart drawer", "default": true },
+    { "type": "text", "id": "discount_code", "label": "Auto-applied discount code", "default": "WELCOME60" }
+  ]
+}
+{% endschema %}

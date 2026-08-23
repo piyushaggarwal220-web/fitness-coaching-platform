@@ -1,0 +1,507 @@
+{%- liquid
+  assign enabled = section.settings.enabled
+  assign payment_url = section.settings.payment_help_url
+  assign consult_url = section.settings.consultation_url
+  assign bg = section.settings.background_color
+  assign accent = section.settings.accent_color
+  assign bottom = section.settings.bottom_spacing
+  assign radius = section.settings.border_radius
+  assign shadow = section.settings.shadow_strength
+
+  if payment_url == blank
+    assign payment_url = 'https://wa.me/919220451577?text=I%20have%20doubts%20and%20want%20a%20chat%20before%20payment.'
+  endif
+  if consult_url == blank
+    assign consult_url = '/pages/talk-to-a-coach'
+  endif
+
+  assign hide_template = false
+  if request.page_type == 'cart' or request.page_type == 'password'
+    assign hide_template = true
+  endif
+  if request.page_type == 'page' and page.handle == 'talk-to-a-coach'
+    assign hide_template = true
+  endif
+  if request.page_type == 'page' and page.handle == 'contact'
+    assign hide_template = true
+  endif
+-%}
+
+{% if enabled and hide_template == false %}
+  <section
+    id="lurvox-fab-{{ section.id }}"
+    class="lurvox-fab shopify-section"
+    data-lurvox-fab
+    style="
+      --lurvox-fab-bg: {{ bg }};
+      --lurvox-fab-accent: {{ accent }};
+      --lurvox-fab-bottom: {{ bottom }}px;
+      --lurvox-fab-radius: {{ radius }}px;
+      --lurvox-fab-shadow: {{ shadow | divided_by: 100.0 }};
+    "
+    aria-label="Quick actions"
+  >
+    <div class="lurvox-fab__shell">
+      <a
+        class="lurvox-fab__btn lurvox-fab__btn--ghost"
+        href="{{ payment_url }}"
+        {% if payment_url contains 'http' %}
+          target="_blank"
+          rel="noopener noreferrer"
+        {% endif %}
+      >
+        <span class="lurvox-fab__cluster">
+          <span class="lurvox-fab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2.75" y="5.75" width="18.5" height="12.5" rx="2.25" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M2.75 9.5H21.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M6.5 14.25H10.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="lurvox-fab__label">Payment Help</span>
+        </span>
+      </a>
+
+      <a
+        class="lurvox-fab__btn lurvox-fab__btn--primary"
+        href="{{ consult_url }}"
+        {% if consult_url contains 'http' %}
+          target="_blank"
+          rel="noopener noreferrer"
+        {% endif %}
+      >
+        <span class="lurvox-fab__cluster">
+          <span class="lurvox-fab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M8.2 4.85c.35-.75 1.25-1.1 2.05-.85l1.35.45c.7.25 1.1.95.95 1.65l-.45 1.85c-.1.45.05.9.4 1.2l1.55 1.35c.9.8 1.95 1.85 2.75 2.75l1.35 1.55c.3.35.75.5 1.2.4l1.85-.45c.7-.15 1.4.25 1.65.95l.45 1.35c.25.8-.1 1.7-.85 2.05-1.55.7-3.7.85-6.15-.85-2.35-1.65-4.5-3.95-6.15-6.55-1.7-2.45-1.55-4.6-.85-6.15Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <span class="lurvox-fab__label">Talk To A Coach</span>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <style>
+    #lurvox-fab-{{ section.id }} {
+      --lurvox-fab-text: #ffffff;
+      --lurvox-fab-text-muted: rgba(255, 255, 255, 0.72);
+      --lurvox-fab-border: rgba(255, 255, 255, 0.08);
+      --lurvox-fab-shell: rgba(8, 8, 8, 0.92);
+      --lurvox-fab-top: calc(16px + env(safe-area-inset-top, 0px));
+      --lurvox-fab-y: 0px;
+      display: none;
+      position: fixed;
+      z-index: 90;
+      left: 16px;
+      right: 16px;
+      top: var(--lurvox-fab-top);
+      bottom: auto;
+      margin: 0 auto;
+      max-width: 480px;
+      width: auto;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate3d(0, var(--lurvox-fab-y), 0);
+      transition:
+        opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #lurvox-fab-{{ section.id }}.is-visible {
+      opacity: 1;
+    }
+
+    #lurvox-fab-{{ section.id }}.is-suppressed {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #lurvox-fab-{{ section.id }}.is-suppressed .lurvox-fab__shell {
+      pointer-events: none;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__shell {
+      pointer-events: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--lurvox-fab-radius);
+      background: var(--lurvox-fab-shell);
+      border: 1px solid var(--lurvox-fab-border);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow:
+        0 20px 55px rgba(0, 0, 0, calc(0.45 * var(--lurvox-fab-shadow))),
+        0 0 0 1px rgba(255, 98, 0, calc(0.04 * var(--lurvox-fab-shadow))),
+        0 28px 70px rgba(255, 98, 0, calc(0.12 * var(--lurvox-fab-shadow)));
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      height: 54px;
+      padding: 0 12px;
+      border-radius: calc(var(--lurvox-fab-radius) - 8px);
+      text-decoration: none;
+      box-sizing: border-box;
+      transition:
+        transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        background 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__cluster {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      max-width: 100%;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__icon {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__icon svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__label {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--ghost {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid color-mix(in srgb, var(--lurvox-fab-accent) 70%, transparent);
+      color: var(--lurvox-fab-text);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--ghost .lurvox-fab__icon {
+      color: var(--lurvox-fab-accent);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary {
+      background: linear-gradient(180deg, #ff7a1a 0%, var(--lurvox-fab-accent) 100%);
+      border: 1px solid transparent;
+      color: var(--lurvox-fab-text);
+      box-shadow: 0 10px 28px rgba(255, 98, 0, 0.28);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary .lurvox-fab__icon {
+      color: #ffffff;
+    }
+
+    /* lurvox-talk-typography-only */
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary {
+      background: transparent !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+      color: #ff6200 !important;
+      animation: none !important;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary svg {
+      color: #ff6200 !important;
+    }
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:hover {
+      transform: translateY(-1px);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:active {
+      transform: scale(0.98);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:focus-visible {
+      outline: 2px solid var(--lurvox-fab-accent);
+      outline-offset: 2px;
+    }
+
+    @media screen and (max-width: 749px) {
+      #lurvox-fab-{{ section.id }} {
+        display: block;
+      }
+
+      body {
+        padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #lurvox-fab-{{ section.id }},
+      #lurvox-fab-{{ section.id }} .lurvox-fab__btn {
+        transition: none;
+      }
+
+      #lurvox-fab-{{ section.id }}.is-visible {
+        opacity: 1;
+      }
+    }
+  </style>
+
+  <script>
+    (function () {
+      var root = document.getElementById('lurvox-fab-{{ section.id }}');
+      if (!root) return;
+
+      var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var dockedTop = false;
+      var ready = false;
+      var frame = 0;
+      var safeBottom = 0;
+      var observed = [];
+
+      try {
+        var probe = document.createElement('div');
+        probe.style.cssText =
+          'position:absolute;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px);';
+        document.body.appendChild(probe);
+        safeBottom = parseFloat(window.getComputedStyle(probe).paddingBottom) || 0;
+        document.body.removeChild(probe);
+      } catch (e) {}
+
+      var getTopInset = function () {
+        return parseFloat(window.getComputedStyle(root).top) || 0;
+      };
+
+      var getBottomGap = function () {
+        var bottomSetting =
+          parseFloat(window.getComputedStyle(root).getPropertyValue('--lurvox-fab-bottom')) || 20;
+        return bottomSetting + safeBottom;
+      };
+
+      var applyY = function (y) {
+        root.style.setProperty('--lurvox-fab-y', Math.max(0, Math.round(y)) + 'px');
+      };
+
+      var measureAndPlace = function () {
+        if (!ready) return;
+        var height = root.offsetHeight;
+        if (!height) return;
+
+        if (dockedTop) {
+          // Keep current Y while fading out — sliding to top sweeps the bar
+          // across the plan cards and makes them look broken on mobile.
+          return;
+        }
+
+        // Use layout viewport (innerHeight), not visualViewport — avoids URL-bar jitter.
+        var y = window.innerHeight - height - getBottomGap() - getTopInset();
+        applyY(y);
+      };
+
+      var queuePlace = function () {
+        if (frame) cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(function () {
+          frame = 0;
+          measureAndPlace();
+        });
+      };
+
+      var setDockedTop = function (next) {
+        if (dockedTop === next) return;
+        dockedTop = next;
+        if (dockedTop) {
+          root.classList.add('is-suppressed');
+        } else {
+          root.classList.remove('is-suppressed');
+        }
+        queuePlace();
+      };
+
+      var isTargetInView = function (el) {
+        var rect = el.getBoundingClientRect();
+        var vh = window.innerHeight;
+        return rect.bottom > 0 && rect.top < vh;
+      };
+
+      var syncDockFromTargets = function () {
+        var visible = observed.some(isTargetInView);
+        setDockedTop(visible);
+      };
+
+      var reveal = function () {
+        ready = true;
+        root.style.transition = 'none';
+        measureAndPlace();
+        void root.offsetWidth;
+        if (!reducedMotion) root.style.transition = '';
+        root.classList.add('is-visible');
+        syncDockFromTargets();
+      };
+
+      var isRenderable = function (el) {
+        if (!el || !el.getClientRects || !el.getClientRects().length) return false;
+        var cs = window.getComputedStyle(el);
+        return cs.display !== 'none' && cs.visibility !== 'hidden';
+      };
+
+      var matchExactClass = function (prefix) {
+        var re = new RegExp('^' + prefix + '[a-zA-Z0-9]+$');
+        return Array.prototype.filter.call(
+          document.querySelectorAll('[class*="' + prefix + '"]'),
+          function (el) {
+            return Array.prototype.some.call(el.classList, function (className) {
+              return re.test(className);
+            });
+          }
+        );
+      };
+
+      var findTargets = function () {
+        // Prefer visible CTA wrappers. Hidden ones (display:none after direct-nav)
+        // never intersect, so the bar would stay stuck over the plan cards.
+        var wrappers = Array.prototype.filter.call(
+          document.querySelectorAll('[class*="ai-transformation-plan-cta-wrapper-"]'),
+          isRenderable
+        );
+        if (wrappers.length) return wrappers;
+
+        // Next: the cards list itself (not the whole section — the section top
+        // peeks into the hero and would hide the bar too early).
+        var cards = matchExactClass('ai-transformation-plan-cards-');
+        if (cards.length) return cards;
+
+        return matchExactClass('ai-transformation-plan-');
+      };
+
+      var bindCtaObserver = function () {
+        observed = findTargets();
+        if (!observed.length || !('IntersectionObserver' in window)) return;
+
+        var observer = new IntersectionObserver(
+          function () {
+            syncDockFromTargets();
+          },
+          {
+            root: null,
+            rootMargin: '-12% 0px -12% 0px',
+            threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+          }
+        );
+
+        observed.forEach(function (el) {
+          observer.observe(el);
+        });
+      };
+
+      bindCtaObserver();
+
+      window.addEventListener(
+        'resize',
+        function () {
+          queuePlace();
+          syncDockFromTargets();
+        },
+        { passive: true }
+      );
+
+      if (reducedMotion) {
+        root.style.transition = 'none';
+        reveal();
+        return;
+      }
+
+      if (document.readyState === 'complete') {
+        requestAnimationFrame(reveal);
+      } else {
+        window.addEventListener('load', function () {
+          requestAnimationFrame(reveal);
+        });
+      }
+    })();
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Mobile floating bar",
+  "tag": "section",
+  "class": "lurvox-fab-section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Enable Floating Bar",
+      "default": true
+    },
+    {
+      "type": "url",
+      "id": "payment_help_url",
+      "label": "Payment Help URL"
+    },
+    {
+      "type": "url",
+      "id": "consultation_url",
+      "label": "Book Consultation URL"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Colour",
+      "default": "#050505"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent Colour",
+      "default": "#FF6200"
+    },
+    {
+      "type": "range",
+      "id": "bottom_spacing",
+      "min": 8,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "label": "Bottom Spacing",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 12,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "label": "Border Radius",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "shadow_strength",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "label": "Shadow Strength",
+      "default": 100
+    }
+  ],
+  "presets": [
+    {
+      "name": "Mobile floating bar"
+    }
+  ]
+}
+{% endschema %}

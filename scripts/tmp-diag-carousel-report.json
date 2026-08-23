@@ -1,0 +1,502 @@
+{
+  "themes": [
+    {
+      "id": 159821693179,
+      "name": "Horizon",
+      "role": "unpublished"
+    },
+    {
+      "id": 161086767355,
+      "name": "LURVOX Sale Focus 2026-07-24 07:17",
+      "role": "main"
+    },
+    {
+      "id": 159821758715,
+      "name": "Horizon",
+      "role": "unpublished"
+    },
+    {
+      "id": 160799260923,
+      "name": "Copy of Horizon",
+      "role": "unpublished"
+    },
+    {
+      "id": 160830718203,
+      "name": "Horizon",
+      "role": "unpublished"
+    },
+    {
+      "id": 160835600635,
+      "name": "Copy of Horizon",
+      "role": "unpublished"
+    },
+    {
+      "id": 160835830011,
+      "name": "Copy of Horizon",
+      "role": "unpublished"
+    },
+    {
+      "id": 160888094971,
+      "name": "Copy of Copy of Horizon",
+      "role": "unpublished"
+    },
+    {
+      "id": 160984367355,
+      "name": "LURVOX Draft",
+      "role": "unpublished"
+    },
+    {
+      "id": 161075855611,
+      "name": "Copy of LURVOX Draft",
+      "role": "unpublished"
+    }
+  ],
+  "live": {
+    "id": 161086767355,
+    "name": "LURVOX Sale Focus 2026-07-24 07:17",
+    "role": "main"
+  },
+  "blocks": [
+    {
+      "key": "blocks/ai_gen_block_52353f6.liquid",
+      "role": "fitness-gallery",
+      "live": {
+        "label": "live",
+        "bytes": 19893,
+        "scriptCount": 0,
+        "hasDefine": false,
+        "defineCount": 0,
+        "hasSetupAutoplay": false,
+        "hasStopAutoplay": false,
+        "hasScrollIntoView": false,
+        "scripts": []
+      },
+      "localCopies": [
+        {
+          "label": "tmp-blocks-ai_gen_block_52353f6.liquid",
+          "bytes": 19710,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": true,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 2490,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": ".add('active');\n          } else {\n            thumb.classList.remove('active');\n          }\n        });\n      }\n    }\n\n    customElements.define('fitness-gallery-{{ ai_gen_id }}', FitnessGallery{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-live-ai_gen_block_52353f6.liquid",
+          "bytes": 22405,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": true,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 2538,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": ".add('active');\n          } else {\n            thumb.classList.remove('active');\n          }\n        });\n      }\n    }\n\n    customElements.define('fitness-gallery-{{ ai_gen_id }}', FitnessGallery{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-fixed-ai_gen_block_52353f6.liquid",
+          "bytes": 22858,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": false,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 2835,
+              "balance": {
+                "curly": -4,
+                "paren": -2
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "active');\n          }\n        });\n      }, this._autoplayMs);\n      }\n      }\n      }, this._resumeMs);\n      }\n\n    }\n\n    customElements.define('fitness-gallery-{{ ai_gen_id }}', FitnessGallery{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-patched-blocks-ai_gen_block_52353f6.liquid",
+          "bytes": 22405,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": true,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 2538,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": ".add('active');\n          } else {\n            thumb.classList.remove('active');\n          }\n        });\n      }\n    }\n\n    customElements.define('fitness-gallery-{{ ai_gen_id }}', FitnessGallery{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-autoplay-ai_gen_block_52353f6.liquid",
+          "bytes": 24674,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": true,
+          "hasStopAutoplay": true,
+          "hasScrollIntoView": true,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 4765,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "llback() {\n        this.stopAutoplay();\n        if (this._resumeTimer) clearTimeout(this._resumeTimer);\n      }\n\n    }\n\n    customElements.define('fitness-gallery-{{ ai_gen_id }}', FitnessGallery{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "blocks/ai_gen_block_cd3c949.liquid",
+      "role": "client-results",
+      "live": {
+        "label": "live",
+        "bytes": 33352,
+        "scriptCount": 0,
+        "hasDefine": false,
+        "defineCount": 0,
+        "hasSetupAutoplay": false,
+        "hasStopAutoplay": false,
+        "hasScrollIntoView": false,
+        "scripts": []
+      },
+      "localCopies": [
+        {
+          "label": "tmp-blocks-ai_gen_block_cd3c949.liquid",
+          "bytes": 22535,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": true,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 2086,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "    behavior: 'smooth',\n            block: 'nearest',\n            inline: 'center'\n          });\n        }\n      }\n    }\n\n    customElements.define('client-results-{{ ai_gen_id }}', ClientResults{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-live-ai_gen_block_cd3c949.liquid",
+          "bytes": 35454,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": true,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 2086,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "    behavior: 'smooth',\n            block: 'nearest',\n            inline: 'center'\n          });\n        }\n      }\n    }\n\n    customElements.define('client-results-{{ ai_gen_id }}', ClientResults{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-fixed-ai_gen_block_cd3c949.liquid",
+          "bytes": 37753,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": true,
+          "hasStopAutoplay": true,
+          "hasScrollIntoView": false,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 4271,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "Callback() {\n        this.stopAutoplay();\n        if (this._resumeTimer) clearTimeout(this._resumeTimer);\n      }\n\n    }\n\n    customElements.define('client-results-{{ ai_gen_id }}', ClientResults{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-patched-blocks-ai_gen_block_cd3c949.liquid",
+          "bytes": 35454,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": true,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 2086,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "    behavior: 'smooth',\n            block: 'nearest',\n            inline: 'center'\n          });\n        }\n      }\n    }\n\n    customElements.define('client-results-{{ ai_gen_id }}', ClientResults{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-autoplay-ai_gen_block_cd3c949.liquid",
+          "bytes": 37473,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": true,
+          "hasStopAutoplay": true,
+          "hasScrollIntoView": true,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 4105,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "Callback() {\n        this.stopAutoplay();\n        if (this._resumeTimer) clearTimeout(this._resumeTimer);\n      }\n\n    }\n\n    customElements.define('client-results-{{ ai_gen_id }}', ClientResults{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "blocks/ai_gen_block_a7d1b3c.liquid",
+      "role": "member-wins",
+      "live": {
+        "label": "live",
+        "bytes": 15024,
+        "scriptCount": 0,
+        "hasDefine": false,
+        "defineCount": 0,
+        "hasSetupAutoplay": false,
+        "hasStopAutoplay": false,
+        "hasScrollIntoView": false,
+        "scripts": []
+      },
+      "localCopies": [
+        {
+          "label": "tmp-blocks-ai_gen_block_a7d1b3c.liquid",
+          "bytes": 14611,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": false,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 1678,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "- 1;\n\n        this.prevButton.disabled = isAtStart;\n        this.nextButton.disabled = isAtEnd;\n      }\n    }\n\n    customElements.define('member-wins-carousel-{{ ai_gen_id }}', MemberWinsCarousel{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-live-ai_gen_block_a7d1b3c.liquid",
+          "bytes": 16718,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": false,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 1678,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "- 1;\n\n        this.prevButton.disabled = isAtStart;\n        this.nextButton.disabled = isAtEnd;\n      }\n    }\n\n    customElements.define('member-wins-carousel-{{ ai_gen_id }}', MemberWinsCarousel{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-fixed-ai_gen_block_a7d1b3c.liquid",
+          "bytes": 17485,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": false,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 2331,
+              "balance": {
+                "curly": -4,
+                "paren": -2
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "tton.disabled = isAtEnd;\n      }, this._autoplayMs);\n      }\n      }\n      }, this._resumeMs);\n      }\n\n    }\n\n    customElements.define('member-wins-carousel-{{ ai_gen_id }}', MemberWinsCarousel{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-patched-blocks-ai_gen_block_a7d1b3c.liquid",
+          "bytes": 16718,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": false,
+          "hasStopAutoplay": false,
+          "hasScrollIntoView": false,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 1678,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "- 1;\n\n        this.prevButton.disabled = isAtStart;\n        this.nextButton.disabled = isAtEnd;\n      }\n    }\n\n    customElements.define('member-wins-carousel-{{ ai_gen_id }}', MemberWinsCarousel{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        },
+        {
+          "label": "tmp-autoplay-ai_gen_block_a7d1b3c.liquid",
+          "bytes": 19386,
+          "scriptCount": 1,
+          "hasDefine": true,
+          "defineCount": 1,
+          "hasSetupAutoplay": true,
+          "hasStopAutoplay": true,
+          "hasScrollIntoView": false,
+          "scripts": [
+            {
+              "index": 0,
+              "bytes": 4346,
+              "balance": {
+                "curly": 0,
+                "paren": 0
+              },
+              "syntax": {
+                "ok": false,
+                "message": "Unexpected token '{'"
+              },
+              "hasDefine": true,
+              "tail": "{\n        this.stopAutoplay();\n        if (this._resumeTimer) clearTimeout(this._resumeTimer);\n      }\n\n    }\n\n    customElements.define('member-wins-carousel-{{ ai_gen_id }}', MemberWinsCarousel{{ ai_gen_id }});\n  })();"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

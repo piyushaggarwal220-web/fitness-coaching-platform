@@ -1,4 +1,5 @@
 import type { Checkin, Plan, PlanFormData } from '@/types/database'
+import { formatAdherenceDaysForPrompt } from '@/lib/checkin-adherence-days'
 
 export type CoachAiActionId =
   | 'initial_diet'
@@ -125,6 +126,11 @@ function checkinContext(checkin: Checkin): string {
     `Waist / navel: ${checkin.navel ?? checkin.waist ?? '—'} cm`,
     `Diet adherence: ${checkin.diet_adherence ?? checkin.adherence_score ?? '—'}/10`,
     `Workout adherence: ${checkin.workout_adherence ?? checkin.training_performance ?? '—'}/10`,
+    `Days followed diet: ${checkin.days_followed_diet ?? '—'}`,
+    `Days trained: ${checkin.days_followed_workout ?? '—'}`,
+    `Days sleep on target: ${checkin.days_followed_sleep ?? '—'}`,
+    `Days water on target: ${checkin.days_followed_water ?? '—'}`,
+    `Days steps on target: ${checkin.days_followed_steps ?? '—'}`,
     `Energy: ${checkin.energy_level ?? '—'}/10`,
     `Sleep: ${checkin.sleep_quality ?? '—'}/10`,
     `Stress: ${checkin.stress_level ?? '—'}/10`,
@@ -218,11 +224,13 @@ export function buildActionCoachInstructions(
         [
           'Update the diet plan based on the latest check-in.',
           checkin ? checkinContext(checkin) : '',
+          checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
           planContext(activePlan ?? null, ['nutrition']),
           'CRITICAL: Address every client request, struggle, question, and check-in flag with concrete meal/macro changes.',
           'Do NOT return a near-copy of the current diet. State what changed and why in the opening lines, then deliver a full 7-day plan that reflects those changes.',
           'If the client asked to swap foods, change portions, simplify meals, or fix hunger/adherence — those edits must be visible in the meal lists.',
-          'Never write "Welcome to week N", "Week N update", or similar week-handoff greetings in client-facing diet text. Mesocycle week numbers are internal only.',
+          'Put a short Diet tips block at the top of the diet prose based on days followed (simplify if low, polish if high). Also include a Hydration note with a daily water target.',
+          'The client-facing plan title/header MAY show Week N. Do not write Welcome to week N greetings in meal prose.',
           'Adjust nutrition_plan only.',
           'Always specify exact ghee/oil/butter amounts for cooked meals and a daily cooking-fat total.',
           'Obey the client meal-variety preference (same daily / 50-50 / different daily).',
@@ -238,12 +246,14 @@ export function buildActionCoachInstructions(
         [
           'Update the workout plan based on the latest check-in and Training Mesocycle context.',
           checkin ? checkinContext(checkin) : '',
+          checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
           planContext(activePlan ?? null, ['workout']),
           'CRITICAL: Address every client request, struggle, pain note, and check-in flag with concrete exercise/volume/split changes.',
           'Do NOT return a near-copy of the current workout. Opening lines must name what changed; day lists must show the edits.',
           'If the client asked for easier/harder sessions, different exercises, home vs gym, or injury workarounds — those must appear in the days.',
           'Obey mesocycle rules: week 1 of a month = NEW unique split + base volume; weeks 2–4 = same split with rising volume; after week 4 reset.',
-          'Do not mention the week number to the client. Never write "Welcome to week N" or any week-handoff greeting.',
+          'Open the workout with a short training-tips block based on days trained (deload/simplify if low, progress if high). Include a Sleep recovery note.',
+          'The plan header MAY show Week N. Do not write Welcome to week N in exercise lists.',
           'Adjust workout_plan only (strength / resistance training).',
           'Do NOT include Cardio or Supplements sections in the workout text; leave those JSON arrays empty.',
           'Keep nutrition_plan with placeholder macros and empty meals.',
@@ -257,8 +267,11 @@ export function buildActionCoachInstructions(
         [
           'Update the cardio plan based on the latest check-in.',
           checkin ? checkinContext(checkin) : '',
+          checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
           planContext(activePlan ?? null, ['cardio', 'workout']),
           'Put updates only in cardio_plan.sessions.',
+          'Always refresh daily steps AND walking/cardio. If steps days are low, give a realistic step floor and how to hit it. If high, progress slightly.',
+          'Include a short sleep and water reminder in session notes.',
           'Do not modify diet or workout content.',
         ]
           .filter(Boolean)
@@ -270,8 +283,10 @@ export function buildActionCoachInstructions(
         [
           'Update the supplement plan based on the latest check-in.',
           checkin ? checkinContext(checkin) : '',
+          checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
           planContext(activePlan ?? null, ['supplements', 'nutrition']),
           'Put updates only in supplement_plan.items.',
+          'Refresh timing notes if sleep or diet days were low (simpler stack).',
           'Do not modify diet or workout content.',
         ]
           .filter(Boolean)

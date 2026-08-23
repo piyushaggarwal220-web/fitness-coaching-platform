@@ -1,0 +1,1510 @@
+{
+  "generatedAt": "2026-08-16T09:08:31.940Z",
+  "gapLimit": 400,
+  "windowDays": 14,
+  "perPlanUsd": 0.08343985479452054,
+  "candidates": [
+    {
+      "planId": "eafdbf5b-4b2d-4d67-ab05-184b1d7ee4f4",
+      "clientId": "7d7bbad7-abc4-4220-8d0a-a3c2234add43",
+      "clientName": "SAI KAMALESH SADHU",
+      "clientEmail": "kamaleshsai9@gmail.com",
+      "title": "Week 2 Updated Plan",
+      "version": 3,
+      "active": true,
+      "deliveredAt": "2026-08-15T09:11:47.417+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1725,
+      "foodBasis": "meal-lines",
+      "confidence": "low",
+      "dailyLines": 0,
+      "mealLines": 5,
+      "headerCalories": null,
+      "headerMismatch": false,
+      "headerGap": null,
+      "conflictingClaims": [
+        {
+          "claimed": 2150,
+          "snippet": "Calories: ~2150 kcal"
+        },
+        {
+          "claimed": 2140,
+          "snippet": "Calories: ~2140 kcal"
+        },
+        {
+          "claimed": 2120,
+          "snippet": "Calories: ~2120 kcal"
+        },
+        {
+          "claimed": 2160,
+          "snippet": "Calories: ~2160 kcal"
+        },
+        {
+          "claimed": 2110,
+          "snippet": "Calories: ~2110 kcal"
+        }
+      ],
+      "activeDays": 14
+    },
+    {
+      "planId": "c68c1f6d-ef33-4fb9-a6de-78bad2b2b11c",
+      "clientId": "612c00ec-1681-4fb5-b8ac-8a7eb571a1b7",
+      "clientName": "Mohd Sameer",
+      "clientEmail": "drmohdsameermalik@gmail.com",
+      "title": "Client request",
+      "version": 5,
+      "active": true,
+      "deliveredAt": "2026-08-15T05:07:31.0568+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1489,
+      "foodBasis": "meal-lines",
+      "confidence": "low",
+      "dailyLines": 0,
+      "mealLines": 48,
+      "headerCalories": 1489,
+      "headerMismatch": false,
+      "headerGap": 0,
+      "conflictingClaims": [
+        {
+          "claimed": 1700,
+          "snippet": "Weekly Diet Plan: Sameer, you asked for a calorie reduction to 1700 kcal for faster fat loss over the next 6 months, down from the 2100 kcal plan I gave you las"
+        },
+        {
+          "claimed": 2100,
+          "snippet": "Weekly Diet Plan: Sameer, you asked for a calorie reduction to 1700 kcal for faster fat loss over the next 6 months, down from the 2100 kcal plan I gave you las"
+        },
+        {
+          "claimed": 1700,
+          "snippet": "Weekly Diet Plan: Sameer, you asked for a calorie reduction to 1700 kcal for faster fat loss over the next 6 months, down from the 2100 kcal plan I gave you las"
+        },
+        {
+          "claimed": 2100,
+          "snippet": "This is a serious cut, Sameer. You will feel hungrier than you did on 2100 calories. You will have less energy in the gym and during your college day. That's no"
+        },
+        {
+          "claimed": 1700,
+          "snippet": "Have 100g cooked jeera rice (measure it carefully, use a small bowl), 1 small katori moong dal or any dal available (around 120g, cooked with 1 tsp oil in the t"
+        }
+      ],
+      "activeDays": 14
+    },
+    {
+      "planId": "1d561b80-d5a9-4bba-9ac2-f4b8429c3274",
+      "clientId": "70b9c813-133b-4cbb-8afc-40e370156683",
+      "clientName": "Harshit Shukla",
+      "clientEmail": "harshitshuklajio@gmail.com",
+      "title": "Client request",
+      "version": 6,
+      "active": true,
+      "deliveredAt": "2026-08-12T05:57:28.985942+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1453,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 21,
+      "headerCalories": 1750,
+      "headerMismatch": true,
+      "headerGap": 297,
+      "conflictingClaims": [
+        {
+          "claimed": 1920,
+          "snippet": "You told me very clearly that this month you will be traveling city to city for job searching, so you want a simple and flexible diet. You also asked if you can"
+        },
+        {
+          "claimed": 1750,
+          "snippet": "You told me very clearly that this month you will be traveling city to city for job searching, so you want a simple and flexible diet. You also asked if you can"
+        }
+      ],
+      "activeDays": 12
+    },
+    {
+      "planId": "38640bb0-6a17-4a88-8acb-ac598d019c25",
+      "clientId": "675816a6-1bdd-436f-bacd-5bad6ff3fd5e",
+      "clientName": "Bhaktil",
+      "clientEmail": "bhaktilmaheta2500@gmail.com",
+      "title": "Week 2 Updated Plan",
+      "version": 3,
+      "active": true,
+      "deliveredAt": "2026-08-12T05:21:49.014+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 3050,
+      "foodBasis": "meal-lines",
+      "confidence": "low",
+      "dailyLines": 0,
+      "mealLines": 49,
+      "headerCalories": 2650,
+      "headerMismatch": true,
+      "headerGap": 400,
+      "conflictingClaims": [
+        {
+          "claimed": 2350,
+          "snippet": "You followed the diet perfectly at 10 out of 10 adherence, yet you gained only 500g in two weeks, lost your pump, and feel skinny. That tells me one thing loud "
+        },
+        {
+          "claimed": 2650,
+          "snippet": "I am raising your daily intake to around 2650 kcal with 150g protein, 365g carbs, and 70g fat. This is a proper muscle building surplus that matches your high a"
+        }
+      ],
+      "activeDays": 12
+    },
+    {
+      "planId": "409bad21-2fc5-435c-8e1c-ca5b92430ccc",
+      "clientId": "45e01ee8-af81-42f5-8074-7be9d5ab8ba7",
+      "clientName": "Kailash Singh thakur",
+      "clientEmail": "kailashsinghthakur23840@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-07-31T00:46:33.559199+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1234,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 1857,
+      "headerMismatch": true,
+      "headerGap": 623,
+      "conflictingClaims": [],
+      "activeDays": 12
+    },
+    {
+      "planId": "94a79fa4-a7b8-4a7b-9a2b-5cdcb0cc6cf9",
+      "clientId": "32562e13-3657-40f2-ba62-0a526969b69e",
+      "clientName": "Shashank Rai",
+      "clientEmail": "1997shashankrai@gmail.com",
+      "title": "Week 1 Updated Plan",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-12T05:56:15.246+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1737,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 28,
+      "headerCalories": 2280,
+      "headerMismatch": true,
+      "headerGap": 543,
+      "conflictingClaims": [],
+      "activeDays": 11
+    },
+    {
+      "planId": "49846d51-74ff-43d3-b108-c6fed7e855a5",
+      "clientId": "2626ba61-f7dc-44c2-9e18-02465231708c",
+      "clientName": "Harsh Vardhan Singh Rathore",
+      "clientEmail": "hvsrathod8@gmail.com",
+      "title": "Week 1 Updated Plan",
+      "version": 3,
+      "active": true,
+      "deliveredAt": "2026-08-05T04:21:01.816+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1766,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 39,
+      "headerCalories": 1900,
+      "headerMismatch": true,
+      "headerGap": 134,
+      "conflictingClaims": [
+        {
+          "claimed": 1260,
+          "snippet": "Here is what we are changing and why. Your current plan averaged around 1260 kcal as written, which was way too low. I told you to add portions to hit 1850 kcal"
+        },
+        {
+          "claimed": 1850,
+          "snippet": "Here is what we are changing and why. Your current plan averaged around 1260 kcal as written, which was way too low. I told you to add portions to hit 1850 kcal"
+        },
+        {
+          "claimed": 1900,
+          "snippet": "Here is what we are changing and why. Your current plan averaged around 1260 kcal as written, which was way too low. I told you to add portions to hit 1850 kcal"
+        },
+        {
+          "claimed": 1900,
+          "snippet": "Harsh, I see the weekly average came in a bit lower than the 1900 kcal target because some days like Day 2, Day 4, Day 5, and Day 6 are lighter. To bring the av"
+        },
+        {
+          "claimed": 1900,
+          "snippet": "Harsh, I see the weekly average came in a bit lower than the 1900 kcal target because some days like Day 2, Day 4, Day 5, and Day 6 are lighter. To bring the av"
+        }
+      ],
+      "activeDays": 11
+    },
+    {
+      "planId": "2d8b9e1a-d0b2-44b7-9120-48bf6d9c4031",
+      "clientId": "582dc218-55d8-4457-a811-3868a1918be8",
+      "clientName": "Dhruvkanakhara",
+      "clientEmail": "dhruvkankahara@gmail.com",
+      "title": "Client request",
+      "version": 3,
+      "active": true,
+      "deliveredAt": "2026-07-31T14:16:18.380974+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1779,
+      "foodBasis": "meal-lines",
+      "confidence": "low",
+      "dailyLines": 0,
+      "mealLines": 48,
+      "headerCalories": 1868,
+      "headerMismatch": true,
+      "headerGap": 89,
+      "conflictingClaims": [
+        {
+          "claimed": 1859,
+          "snippet": "Monday Total: P: 109g | C: 230g | F: 58g | ~1859 kcal"
+        },
+        {
+          "claimed": 1868,
+          "snippet": "Tuesday Total: P: 112g | C: 223g | F: 61g | ~1868 kcal"
+        },
+        {
+          "claimed": 1849,
+          "snippet": "Wednesday Total: P: 113g | C: 210g | F: 64g | ~1849 kcal"
+        },
+        {
+          "claimed": 1868,
+          "snippet": "Thursday Total: P: 111g | C: 229g | F: 59g | ~1868 kcal"
+        },
+        {
+          "claimed": 1000,
+          "snippet": "This is your cheat meal. Have whatever you're craving: pizza, burger, pasta, chips, or anything else you've been wanting. Keep it to one meal, enjoy it fully, a"
+        }
+      ],
+      "activeDays": 11
+    },
+    {
+      "planId": "451e5d0b-623e-4c96-a587-8772597ba5a4",
+      "clientId": "4702b130-40d1-468d-846b-943b2127efbd",
+      "clientName": "Mayank Rana",
+      "clientEmail": "mayankrana8886@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-07-28T03:12:54.540376+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1027,
+      "foodBasis": "meal-lines",
+      "confidence": "low",
+      "dailyLines": 0,
+      "mealLines": 19,
+      "headerCalories": 1857,
+      "headerMismatch": true,
+      "headerGap": 830,
+      "conflictingClaims": [],
+      "activeDays": 11
+    },
+    {
+      "planId": "4c21bd69-3522-4618-b0ee-3dad6aae4ee1",
+      "clientId": "91123749-2b8e-42c3-a3ac-30cde8bed31c",
+      "clientName": "Saif",
+      "clientEmail": "skmasoom02@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-07-26T10:23:29.827818+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1799,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2450,
+      "headerMismatch": true,
+      "headerGap": 651,
+      "conflictingClaims": [],
+      "activeDays": 10
+    },
+    {
+      "planId": "4abadd2e-c8df-4ed3-85da-0d362ec9942d",
+      "clientId": "6ee96e70-3288-4177-b550-7de8fdfb8e33",
+      "clientName": "Aditya Shiledar",
+      "clientEmail": "adityashiledar2002@gmail.com",
+      "title": "Client request",
+      "version": 3,
+      "active": true,
+      "deliveredAt": "2026-08-14T08:34:26.967+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1487,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1487,
+      "headerMismatch": false,
+      "headerGap": 0,
+      "conflictingClaims": [
+        {
+          "claimed": 2050,
+          "snippet": "Note: Your actual daily targets are ~2050 kcal | P: 128g | C: 248g | F: 65g. This plan shows the base meal foundation; you'll hit your full targets by adding po"
+        }
+      ],
+      "activeDays": 9
+    },
+    {
+      "planId": "4224b8bc-c2bd-481f-a583-66d0678cedab",
+      "clientId": "253d10bc-e4bf-4726-aa96-19e79c9a39ca",
+      "clientName": "Priyabrata Sahoo",
+      "clientEmail": "priyabrat.sahoo1992@gmail.com",
+      "title": "Updated Plan",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-12T04:56:21.301682+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1740,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 2150,
+      "headerMismatch": true,
+      "headerGap": 410,
+      "conflictingClaims": [
+        {
+          "claimed": 2150,
+          "snippet": "Here's your nutrition plan for the week. We're targeting body recomposition with a focus on building muscle while managing body fat. Given your banking schedule"
+        }
+      ],
+      "activeDays": 9
+    },
+    {
+      "planId": "0db7ffae-f892-45f9-8b91-67ebf2baa7fe",
+      "clientId": "9e4653bb-5e3f-4271-9005-569b7ccce3ca",
+      "clientName": "Bhama Holla",
+      "clientEmail": "bhamaholla6201@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-04T08:58:42.140552+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1121,
+      "foodBasis": "meal-lines",
+      "confidence": "low",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 1650,
+      "headerMismatch": true,
+      "headerGap": 529,
+      "conflictingClaims": [],
+      "activeDays": 8
+    },
+    {
+      "planId": "34ee078f-803b-4bfc-85e0-22cc12856836",
+      "clientId": "af2ac76f-3875-4e72-87ca-cb86277190b9",
+      "clientName": "Mayur Watekar",
+      "clientEmail": "mwatekar2627@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-05T11:04:34.132978+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1357,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 493,
+      "conflictingClaims": [
+        {
+          "claimed": 1850,
+          "snippet": "Weekly Diet Plan: Hey Mayur, given your night shift schedule and limited sleep, we need to keep things simple and sustainable. Your goal is recomposition, so we"
+        }
+      ],
+      "activeDays": 7
+    },
+    {
+      "planId": "1c0f646a-1dd1-4de4-8dc2-4d1d27e76178",
+      "clientId": "d5450880-a45c-4baa-92da-026e9fc737da",
+      "clientName": "Priyanshu Bhola",
+      "clientEmail": "bholapriyanshu11@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-07-29T02:47:35.753053+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1464,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 28,
+      "headerCalories": 2145,
+      "headerMismatch": true,
+      "headerGap": 681,
+      "conflictingClaims": [],
+      "activeDays": 7
+    },
+    {
+      "planId": "df050321-c758-4daa-8563-fe7987ead6fa",
+      "clientId": "2b4562d0-436c-412f-b8bb-56cb91986ea9",
+      "clientName": "Ayush Mohan",
+      "clientEmail": "ayush.mohan571@gmail.com",
+      "title": "AI Draft · Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-12T07:54:33.00817+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1543,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1950,
+      "headerMismatch": true,
+      "headerGap": 407,
+      "conflictingClaims": [],
+      "activeDays": 6
+    },
+    {
+      "planId": "d9107a2e-566c-412f-8a70-c0c2feb90a28",
+      "clientId": "c2683819-b12b-40f8-8c21-d9d65d3adc07",
+      "clientName": "Snehasis Jena",
+      "clientEmail": "jenasnehasis76@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-10T07:21:27.30689+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1429,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 421,
+      "conflictingClaims": [],
+      "activeDays": 6
+    },
+    {
+      "planId": "b3d1f90a-a692-486c-bf88-079853bb7711",
+      "clientId": "8d54e77b-c145-4c8d-a952-561d43a29d5e",
+      "clientName": "Anson Antony",
+      "clientEmail": "ansonputhenparambil@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-10T06:53:45.459311+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1321,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 529,
+      "conflictingClaims": [
+        {
+          "claimed": 1220,
+          "snippet": "Day 2 Total: P: 82g | C: 133g | F: 41g | ~1220 kcal"
+        },
+        {
+          "claimed": 1390,
+          "snippet": "Day 6 Total: P: 68g | C: 178g | F: 47g | ~1390 kcal"
+        },
+        {
+          "claimed": 1370,
+          "snippet": "Day 7 Total: P: 76g | C: 178g | F: 42g | ~1370 kcal"
+        }
+      ],
+      "activeDays": 6
+    },
+    {
+      "planId": "69863a82-1f04-4d7a-99c1-05dcc9e508cf",
+      "clientId": "a3562bf4-be32-4df4-bc07-fa0dcec306b6",
+      "clientName": "Deepanshu Uppal",
+      "clientEmail": "deepanshuuppal88@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-05T09:54:03.671379+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1781,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 2357,
+      "headerMismatch": true,
+      "headerGap": 576,
+      "conflictingClaims": [],
+      "activeDays": 6
+    },
+    {
+      "planId": "67088e37-17c1-4ec3-8352-466fe1bf6b2e",
+      "clientId": "769e816c-8313-4d7b-9d07-da9fbe23d28d",
+      "clientName": "NIKHIL MUDHIRAJ",
+      "clientEmail": "nikhilmudhiraj71@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-04T19:19:52.931438+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1314,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 536,
+      "conflictingClaims": [],
+      "activeDays": 6
+    },
+    {
+      "planId": "6cd7e9ac-2f65-4b9b-9ec6-a34589f172cf",
+      "clientId": "2bc9fbe3-83ce-4cc9-a120-11f4e2d75c04",
+      "clientName": "Krish singla",
+      "clientEmail": "singlakrish813@gmail.com",
+      "title": "Complete Coaching Plan (Draft)",
+      "version": 6,
+      "active": true,
+      "deliveredAt": "2026-08-02T13:41:34.005585+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 2039,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2450,
+      "headerMismatch": true,
+      "headerGap": 411,
+      "conflictingClaims": [],
+      "activeDays": 6
+    },
+    {
+      "planId": "614a0a27-17f6-44a5-8251-7cb5a1e6bb01",
+      "clientId": "78b764b7-2f0a-47fd-848a-3a777e4927df",
+      "clientName": "Jaswant Singh",
+      "clientEmail": "jaswantbhai364@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-02T11:24:34.997446+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1740,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2150,
+      "headerMismatch": true,
+      "headerGap": 410,
+      "conflictingClaims": [
+        {
+          "claimed": 1600,
+          "snippet": "Weekly Diet Plan: Jaswant, you're absolutely right to call that out. The numbers in the initial plan were way too low for someone as active as you, and I apolog"
+        },
+        {
+          "claimed": 2000,
+          "snippet": "You've proven you can lose fat and recomp at 1800 to 2000 kcal, so we're going to respect that and build from there. This week, we're setting you at 2150 kcal d"
+        },
+        {
+          "claimed": 2150,
+          "snippet": "You've proven you can lose fat and recomp at 1800 to 2000 kcal, so we're going to respect that and build from there. This week, we're setting you at 2150 kcal d"
+        }
+      ],
+      "activeDays": 6
+    },
+    {
+      "planId": "4cd2e715-3434-48b0-91be-e45f461f2f45",
+      "clientId": "6f32ae29-3337-4de0-baec-5ed54befa171",
+      "clientName": "Ankur",
+      "clientEmail": "ankurkardam94@gmail.com",
+      "title": "AI Draft · Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-07-27T06:34:41.878159+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1433,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1857,
+      "headerMismatch": true,
+      "headerGap": 424,
+      "conflictingClaims": [
+        {
+          "claimed": 1857,
+          "snippet": "A few things to keep in mind this week, Ankur. Your Monday fasting intake is lower by design, so the weekly average still lands around 1857 kcal per day. Make s"
+        }
+      ],
+      "activeDays": 6
+    },
+    {
+      "planId": "0bfe4d67-70f4-48b4-ba61-49545a043197",
+      "clientId": "b75d4160-00cd-4db5-87c5-fcbaec89e5dd",
+      "clientName": "Suman Parmar",
+      "clientEmail": "sumanparmar2000@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-12T05:38:14.950941+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1974,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 124,
+      "conflictingClaims": [
+        {
+          "claimed": 1550,
+          "snippet": "Also, you're absolutely right about the calorie math. The original plan was landing closer to 1550 kcal on average, not 1850. I've now bumped up portions slight"
+        },
+        {
+          "claimed": 1850,
+          "snippet": "Also, you're absolutely right about the calorie math. The original plan was landing closer to 1550 kcal on average, not 1850. I've now bumped up portions slight"
+        }
+      ],
+      "activeDays": 5
+    },
+    {
+      "planId": "55dd670f-a431-4665-9be5-a27758a89bac",
+      "clientId": "89f11dc0-dad9-4a3a-b600-2d6d4023dc29",
+      "clientName": "Sharath",
+      "clientEmail": "sharathchandraba23@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-10T10:39:22.176448+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1213,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1950,
+      "headerMismatch": true,
+      "headerGap": 737,
+      "conflictingClaims": [
+        {
+          "claimed": 1950,
+          "snippet": "Weekly Diet Plan: Hey Sharath, here's your 7 day plan to get you moving toward those visible abs. You've got solid goals visible shape, athletic physique, and f"
+        },
+        {
+          "claimed": 1950,
+          "snippet": "You're eating around 1950 kcal daily with solid protein (about 135g) spread across breakfast, lunch, dinner, and snacks. The meals are built around eggs, curd, "
+        }
+      ],
+      "activeDays": 5
+    },
+    {
+      "planId": "f1b7f22f-5117-4743-b754-92ea083d0c70",
+      "clientId": "129e36c7-1f31-4e1d-ae7f-81c7006294c3",
+      "clientName": "Daksh",
+      "clientEmail": "dakshsharma874500@gmail.com",
+      "title": "Week 1 Updated Plan",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-10T08:33:02.329062+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1601,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2150,
+      "headerMismatch": true,
+      "headerGap": 549,
+      "conflictingClaims": [],
+      "activeDays": 5
+    },
+    {
+      "planId": "8ab7599e-0ae3-46e4-a4d4-1cf1090be6d2",
+      "clientId": "0988261b-a579-4e7f-8171-91c63abc3b0f",
+      "clientName": "Mona Rai",
+      "clientEmail": "mona9oct@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-07-27T00:58:37.585412+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1339,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 1847,
+      "headerMismatch": true,
+      "headerGap": 508,
+      "conflictingClaims": [
+        {
+          "claimed": 1847,
+          "snippet": "Weekly Diet Plan: Hey Mona, I see you want to swap rotis for rice because rotis have been making you feel bloated since January. That is completely fine, we wil"
+        },
+        {
+          "claimed": 1847,
+          "snippet": "Your average daily intake across the week is approximately 1847 kcal, 132g protein, 196g carbs, and 54g fat. I have completely removed rotis and built every mea"
+        }
+      ],
+      "activeDays": 5
+    },
+    {
+      "planId": "6ad27281-b95a-4241-8eb2-69704686e15d",
+      "clientId": "4afb9f24-a485-43c9-af75-4c6e5d1314c9",
+      "clientName": "ANUBHAV DAS",
+      "clientEmail": "anubhavd065@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-12T08:37:42.936074+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1580,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2150,
+      "headerMismatch": true,
+      "headerGap": 570,
+      "conflictingClaims": [],
+      "activeDays": 4
+    },
+    {
+      "planId": "f6815e00-ac06-47cb-9b3e-b8465579a50c",
+      "clientId": "4400112f-9a4b-4c80-9a96-cb99dab6dc3f",
+      "clientName": "Prasanth jampana",
+      "clientEmail": "jampanasai6@gmail.com",
+      "title": "Client request",
+      "version": 6,
+      "active": true,
+      "deliveredAt": "2026-08-12T05:16:43.768817+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1988,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 2450,
+      "headerMismatch": true,
+      "headerGap": 462,
+      "conflictingClaims": [],
+      "activeDays": 4
+    },
+    {
+      "planId": "bbf39820-459d-4ff2-b2cb-7f8ea9ecf94a",
+      "clientId": "37ca31b5-f2c0-4110-a7ea-9fbdceb3a449",
+      "clientName": "Kunal Kukreja",
+      "clientEmail": "kunalkuk745@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-10T08:13:40.938116+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1816,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2650,
+      "headerMismatch": true,
+      "headerGap": 834,
+      "conflictingClaims": [],
+      "activeDays": 4
+    },
+    {
+      "planId": "7a7ed800-9005-44be-ad14-3af8f0b913af",
+      "clientId": "1e841c2f-fc1d-4b61-871a-45fa9d30f9e3",
+      "clientName": "Deepanshu",
+      "clientEmail": "deepanshudj001@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-08T03:01:18.333384+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1626,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 2150,
+      "headerMismatch": true,
+      "headerGap": 524,
+      "conflictingClaims": [],
+      "activeDays": 4
+    },
+    {
+      "planId": "46ec60d9-c84f-44a2-be22-386f315d4551",
+      "clientId": "523e1e42-8a13-4906-a05e-dc2bfa455fad",
+      "clientName": "Utham Chand",
+      "clientEmail": "uthamthestriker@gmail.com",
+      "title": "Updated Plan",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-14T07:57:59.976603+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1185,
+      "foodBasis": "meal-lines",
+      "confidence": "low",
+      "dailyLines": 0,
+      "mealLines": 14,
+      "headerCalories": 1185,
+      "headerMismatch": false,
+      "headerGap": 0,
+      "conflictingClaims": [
+        {
+          "claimed": 2100,
+          "snippet": "Weekly Diet Plan: Utham, I've reviewed your current diet and I'm impressed. You've been consistent for 3 years, you know your macros cold, and you're hitting so"
+        }
+      ],
+      "activeDays": 3
+    },
+    {
+      "planId": "2cb3c7ba-e68c-42ad-b6b8-a1215dcbdecd",
+      "clientId": "24ddf329-c901-4cc4-acea-0c7b3dc9824c",
+      "clientName": "Shashank",
+      "clientEmail": "srishashankravi@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-05T09:54:58.717455+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1396,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 454,
+      "conflictingClaims": [
+        {
+          "claimed": 1850,
+          "snippet": "Weekly Diet Plan: Hey Shashank, here's your first week of eating to drop that belly fat and build some real consistency. I know your schedule is wild with those"
+        }
+      ],
+      "activeDays": 3
+    },
+    {
+      "planId": "f6c14fa5-57de-4f61-aa2a-1aab27aceae3",
+      "clientId": "e4a57899-757f-4525-a82d-d06281686b37",
+      "clientName": "Bhupathiraju Vinay",
+      "clientEmail": "vinayvarma.bhr@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-01T14:50:58.62004+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1446,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 404,
+      "conflictingClaims": [
+        {
+          "claimed": 1850,
+          "snippet": "Weekly averages: approximately 1850 kcal per day, 130g protein, 200g carbs, 55g fat. Some days are lighter to give your digestion a break, others are a bit high"
+        }
+      ],
+      "activeDays": 3
+    },
+    {
+      "planId": "84ae3858-ab1d-4132-a7e9-125a5849111c",
+      "clientId": "1c21d016-2158-4eb5-82ad-1ccb82efb23b",
+      "clientName": "Meet kachhadiya",
+      "clientEmail": "meetkalpeshbhaikachhadiya5@gmail.com",
+      "title": "Client request",
+      "version": 3,
+      "active": true,
+      "deliveredAt": "2026-07-29T02:52:21.673232+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1366,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1865,
+      "headerMismatch": true,
+      "headerGap": 499,
+      "conflictingClaims": [
+        {
+          "claimed": 1865,
+          "snippet": "Now let me talk about this week diet plan. Your current eating is sitting around 1865 kcal per day with 132g protein, 203g carbs, and 57g fat. That is a solid d"
+        }
+      ],
+      "activeDays": 3
+    },
+    {
+      "planId": "15b86467-cf57-4fb3-9606-a51368f192b6",
+      "clientId": "2abeb0aa-47df-41d5-87d0-9d425f786e15",
+      "clientName": "Vinit Rai",
+      "clientEmail": "vinitraijnvabc@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-15T09:12:59.206899+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1701,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 1701,
+      "headerMismatch": false,
+      "headerGap": 0,
+      "conflictingClaims": [
+        {
+          "claimed": 2150,
+          "snippet": "Weekly averages: ~2150 kcal | P: 95g | C: 285g | F: 60g"
+        }
+      ],
+      "activeDays": 2
+    },
+    {
+      "planId": "a72f09fa-bf84-4add-9d41-d2bb9bd5f3cb",
+      "clientId": "2d834b97-26e9-4c00-983d-16ac0f0addfc",
+      "clientName": "Joel Fernandes",
+      "clientEmail": "joelfernandeswork@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-08-02T14:04:13.875637+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1364,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 21,
+      "headerCalories": 1929,
+      "headerMismatch": true,
+      "headerGap": 565,
+      "conflictingClaims": [
+        {
+          "claimed": 2700,
+          "snippet": "Now let's talk numbers. Because you are fasting two full days, your weekly calorie average drops significantly. On your five eating days, we are pushing intake "
+        },
+        {
+          "claimed": 1929,
+          "snippet": "Now let's talk numbers. Because you are fasting two full days, your weekly calorie average drops significantly. On your five eating days, we are pushing intake "
+        },
+        {
+          "claimed": 2858,
+          "snippet": "Eating Days (Wednesday to Sunday): 5 days averaging ~2858 kcal, 170g protein, 172g carbs, 58g fat per eating day."
+        },
+        {
+          "claimed": 1929,
+          "snippet": "Weekly Average: ~1929 kcal per day | P: 172g | C: 155g | F: 68g"
+        }
+      ],
+      "activeDays": 2
+    },
+    {
+      "planId": "dbe1b232-13b3-4f06-a14a-da26977f924d",
+      "clientId": "9c105056-f19c-4766-a458-aa3b8711648d",
+      "clientName": "Kashyap Sugandh",
+      "clientEmail": "kashyap.sugandh445@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-02T08:14:23.527+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1410,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1950,
+      "headerMismatch": true,
+      "headerGap": 540,
+      "conflictingClaims": [
+        {
+          "claimed": 1950,
+          "snippet": "Weekly Diet Plan: Hey Kashyap, here's your 7 day plan. You're looking to get visible abs and build lean muscle, and I know you're juggling work and study pressu"
+        }
+      ],
+      "activeDays": 2
+    },
+    {
+      "planId": "9f6aea7c-9001-4420-a259-e6a8accff5e6",
+      "clientId": "be5265be-0878-49b1-8ec1-21f012c25614",
+      "clientName": "Bhavana",
+      "clientEmail": "bhavananarayan852@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-07-29T09:36:41.369429+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1310,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 540,
+      "conflictingClaims": [
+        {
+          "claimed": 1850,
+          "snippet": "I've built your plan around roughly 1850 kcal per day with about 130g protein, 200g carbs, and 55g fat. That's a comfortable deficit to get the scale moving whi"
+        }
+      ],
+      "activeDays": 2
+    },
+    {
+      "planId": "d3cc5c92-0d6d-4370-a7e0-372f211de6d8",
+      "clientId": "523d634b-52a7-4a9b-8e4f-5c11c0172a7e",
+      "clientName": "Sabyasachi Dhar",
+      "clientEmail": "savyhere2k1@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-07-24T12:59:19.206644+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1291,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1857,
+      "headerMismatch": true,
+      "headerGap": 566,
+      "conflictingClaims": [],
+      "activeDays": 2
+    },
+    {
+      "planId": "4ecb968e-d562-4d72-a2ad-8367e7ffa75c",
+      "clientId": "e0ecd562-523d-4ef3-a3f4-05f8cc5f7f7b",
+      "clientName": "Rahul Kumar",
+      "clientEmail": "rahulyadavsingh2427@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-13T05:20:18.209938+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 2083,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 2083,
+      "headerMismatch": false,
+      "headerGap": 0,
+      "conflictingClaims": [
+        {
+          "claimed": 2650,
+          "snippet": "Weekly Diet Plan: Hey Rahul, here's your 7 day plan to start building muscle and filling out those arms without the bloat. You're eating around 2650 calories a "
+        }
+      ],
+      "activeDays": 1
+    },
+    {
+      "planId": "d87276e6-a326-450d-ae12-511e669b5f60",
+      "clientId": "97fce289-2389-45af-a992-fc6093e05824",
+      "clientName": "Soubhagya Mohanty",
+      "clientEmail": "soubhagya1606@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-13T04:34:11.115276+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1442,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 408,
+      "conflictingClaims": [
+        {
+          "claimed": 1850,
+          "snippet": "Weekly Diet Plan: Hey Soubhagya, here's your week of eating to support fat loss while building that consistency and moving toward a flatter stomach and V taper."
+        }
+      ],
+      "activeDays": 1
+    },
+    {
+      "planId": "7a91a3d5-08a1-4e1c-bfed-3f8d01470ed6",
+      "clientId": "b55b8ed0-cce5-4859-9320-a6192fc05912",
+      "clientName": "Sri Ram Chandru",
+      "clientEmail": "asriramchandru85@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-10T10:14:54.120726+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1279,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 571,
+      "conflictingClaims": [
+        {
+          "claimed": 1850,
+          "snippet": "Let's get you started with a solid week of eating that supports your fat loss and endurance goals while keeping things simple and sustainable. You're training 6"
+        }
+      ],
+      "activeDays": 1
+    },
+    {
+      "planId": "8442eeae-96be-4459-a2da-7afc179b074d",
+      "clientId": "ca353d29-3492-4b5a-8742-64f8829863a0",
+      "clientName": "Chaitanya Byreddi",
+      "clientEmail": "chaitanyabyreddi1045@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-10T10:13:28.712048+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1820,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2650,
+      "headerMismatch": true,
+      "headerGap": 830,
+      "conflictingClaims": [],
+      "activeDays": 1
+    },
+    {
+      "planId": "565d549e-a5cb-41fa-b9ec-d3142b601d87",
+      "clientId": "596ef645-ed9d-49ba-a05a-6ab8dea0922e",
+      "clientName": "Nikhil BR",
+      "clientEmail": "itznikhilbr@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-10T07:12:31.231596+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1596,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2050,
+      "headerMismatch": true,
+      "headerGap": 454,
+      "conflictingClaims": [],
+      "activeDays": 1
+    },
+    {
+      "planId": "d23be45b-d170-474f-82cc-4b6e10cc30eb",
+      "clientId": "eef4c3d9-1894-4159-a2c9-9a80d4ec754b",
+      "clientName": "Ranveer Singh",
+      "clientEmail": "ranveerrandhawa672@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-04T11:32:26.841561+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1693,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2150,
+      "headerMismatch": true,
+      "headerGap": 457,
+      "conflictingClaims": [],
+      "activeDays": 1
+    },
+    {
+      "planId": "1b82c46c-252c-4cfc-91c7-015631e4ce38",
+      "clientId": "1ff89fe7-d46d-49c2-8729-c4c0e06afc51",
+      "clientName": "Murli Bangar",
+      "clientEmail": "murlibangar01@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-04T07:59:25.06622+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 2190,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 2850,
+      "headerMismatch": true,
+      "headerGap": 660,
+      "conflictingClaims": [],
+      "activeDays": 1
+    },
+    {
+      "planId": "d44cc74e-1688-4b33-8cca-80c982d102f6",
+      "clientId": "0ca9650a-90d8-4c48-aeba-c6e01e17caed",
+      "clientName": "D pardhu",
+      "clientEmail": "pardhud16@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-02T14:02:14.350337+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 2150,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 2650,
+      "headerMismatch": true,
+      "headerGap": 500,
+      "conflictingClaims": [
+        {
+          "claimed": 2650,
+          "snippet": "You're 19, training 5 days a week, and chasing visible abs with maximum muscle. Your body is primed to grow and lean out at the same time if we get the food rig"
+        }
+      ],
+      "activeDays": 1
+    },
+    {
+      "planId": "a4c0dc2a-812b-4b56-9cf6-6a3502dd6d17",
+      "clientId": "c3265861-c7cb-4f12-900d-8bf5ebd0a012",
+      "clientName": "Vishal Awile",
+      "clientEmail": "vishalawile@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-01T14:52:37.263466+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1956,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 2450,
+      "headerMismatch": true,
+      "headerGap": 494,
+      "conflictingClaims": [
+        {
+          "claimed": 2450,
+          "snippet": "Weekly Diet Plan: Hey Vishal, here's your nutrition plan for the week. We're building toward that athletic physique and visible abs with a solid calorie intake "
+        }
+      ],
+      "activeDays": 1
+    },
+    {
+      "planId": "621bcd7a-88ff-4cf4-9716-5f587dc35599",
+      "clientId": "83c27fc3-756e-4770-8a44-e3eaf19faa12",
+      "clientName": "Saahib Rajput",
+      "clientEmail": "sahib.rajput@ba.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-05T09:55:43.226621+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1416,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 1850,
+      "headerMismatch": true,
+      "headerGap": 434,
+      "conflictingClaims": [],
+      "activeDays": 0
+    },
+    {
+      "planId": "0776d45a-2537-45b7-a211-e5b67ff697d4",
+      "clientId": "45972628-4cc2-4d61-b6fb-96bd87a9d55f",
+      "clientName": "Rudrasinh",
+      "clientEmail": "chauhanrudradat@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-08-02T08:07:34.741489+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 2021,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 42,
+      "headerCalories": 2850,
+      "headerMismatch": true,
+      "headerGap": 829,
+      "conflictingClaims": [],
+      "activeDays": 0
+    },
+    {
+      "planId": "a066357f-b719-4bca-8565-9638ddf5809f",
+      "clientId": "800002a0-cfbb-4e22-a317-d12b512cb5dc",
+      "clientName": "bhanu verma",
+      "clientEmail": "vermanandini415@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-07-30T04:19:22.857885+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1860,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2420,
+      "headerMismatch": true,
+      "headerGap": 560,
+      "conflictingClaims": [],
+      "activeDays": 0
+    },
+    {
+      "planId": "1d2757bb-416f-451f-b7a2-72e4c9186898",
+      "clientId": "f8a96eb6-8e3b-4729-b198-543b1a3e70b0",
+      "clientName": "Aditya Dhir",
+      "clientEmail": "adityadhir.consulting@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-07-28T03:13:23.377568+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1659,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 30,
+      "headerCalories": 2150,
+      "headerMismatch": true,
+      "headerGap": 491,
+      "conflictingClaims": [
+        {
+          "claimed": 2050,
+          "snippet": "Monday: P: 122g | C: 246g | F: 62g | ~2050 kcal"
+        },
+        {
+          "claimed": 2150,
+          "snippet": "Tuesday: P: 136g | C: 264g | F: 60g | ~2150 kcal"
+        },
+        {
+          "claimed": 2050,
+          "snippet": "Wednesday: P: 122g | C: 246g | F: 62g | ~2050 kcal"
+        },
+        {
+          "claimed": 2180,
+          "snippet": "Thursday: P: 140g | C: 270g | F: 60g | ~2180 kcal"
+        },
+        {
+          "claimed": 2150,
+          "snippet": "Friday: P: 136g | C: 254g | F: 62g | ~2150 kcal"
+        }
+      ],
+      "activeDays": 0
+    },
+    {
+      "planId": "1d27e224-3b8b-4137-a31c-f79bf0366785",
+      "clientId": "2badcdaa-5c13-49ed-9f76-88edd9154524",
+      "clientName": "Neetu garg",
+      "clientEmail": "ng946865@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-07-26T03:17:27.523872+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1316,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 28,
+      "headerCalories": 1853,
+      "headerMismatch": true,
+      "headerGap": 537,
+      "conflictingClaims": [
+        {
+          "claimed": 1850,
+          "snippet": "Weekly Diet Plan: Hi Neetu, here is your week-one diet plan built around fat loss while keeping your energy steady and your food volume satisfying. You are aimi"
+        }
+      ],
+      "activeDays": 0
+    },
+    {
+      "planId": "fd298824-eeaf-4a18-b38d-d104709d8723",
+      "clientId": "c03e8024-be16-4114-a6b3-3fa7d1c89a66",
+      "clientName": "Vaibhav rajput",
+      "clientEmail": "vaibhavrajputtt6@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-07-25T16:37:17.877853+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 2820,
+      "foodBasis": "meal-lines",
+      "confidence": "low",
+      "dailyLines": 0,
+      "mealLines": 7,
+      "headerCalories": 1857,
+      "headerMismatch": true,
+      "headerGap": 963,
+      "conflictingClaims": [
+        {
+          "claimed": 1850,
+          "snippet": "Weekly Diet Plan: Vaibhav, I hear you. Your schedule is brutal with two bike shifts and zero time to cook mid-day, so we're stripping this down to 3 solid meals"
+        },
+        {
+          "claimed": 1660,
+          "snippet": "Without whey: P: 98g | C: 198g | F: 56g | ~1660 kcal"
+        },
+        {
+          "claimed": 1760,
+          "snippet": "With whey (4 to 5 days per week): P: 118g | C: 201g | F: 57g | ~1760 kcal"
+        }
+      ],
+      "activeDays": 0
+    },
+    {
+      "planId": "78fd69fb-26fd-496b-8805-a8d8489726ba",
+      "clientId": "5f03137f-a635-490f-b09c-15eb48533797",
+      "clientName": "Yasharth Mishra",
+      "clientEmail": "102003yasharthmishra@gmail.com",
+      "title": "Client request",
+      "version": 2,
+      "active": true,
+      "deliveredAt": "2026-07-25T13:37:13.828799+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 1936,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 28,
+      "headerCalories": 2371,
+      "headerMismatch": true,
+      "headerGap": 435,
+      "conflictingClaims": [
+        {
+          "claimed": 2370,
+          "snippet": "Your weight is holding at 80 kg, energy is good, and training is solid. We're keeping calories around maintenance at roughly 2370 kcal per day with 147g protein"
+        }
+      ],
+      "activeDays": 0
+    },
+    {
+      "planId": "47ba5b67-8282-4a4a-975d-6408b8b1b93e",
+      "clientId": "067dd88f-4c4b-48ee-aeae-298d68bfb2a6",
+      "clientName": "Amal Tom",
+      "clientEmail": "amalktom2001@gmail.com",
+      "title": "Ready for coach note/review",
+      "version": 1,
+      "active": true,
+      "deliveredAt": "2026-07-23T14:20:32.331263+00:00",
+      "membershipActive": true,
+      "foodDerivedCalories": 2093,
+      "foodBasis": "meal-lines",
+      "confidence": "medium",
+      "dailyLines": 0,
+      "mealLines": 35,
+      "headerCalories": 2850,
+      "headerMismatch": true,
+      "headerGap": 757,
+      "conflictingClaims": [
+        {
+          "claimed": 2850,
+          "snippet": "Weekly Diet Plan: Hey Amal, here's your nutrition plan for the week. You're training hard 7 days a week and eating to build muscle, so we're putting you in a so"
+        },
+        {
+          "claimed": 2850,
+          "snippet": "Weekly Average: P: 165g | C: 310g | F: 85g | ~2850 kcal"
+        }
+      ],
+      "activeDays": 0
+    }
+  ]
+}

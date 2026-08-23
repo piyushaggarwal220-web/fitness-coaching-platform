@@ -356,8 +356,8 @@ export async function generateWeeklyPlanDraft(input: {
       currentCheckin: checkinTyped,
     })
     const sections: DraftSectionUsage[] = []
-    const skipCoreRefresh = shouldSkipCorePlanRefresh(checkinTyped, active)
-    const skipSupportRefresh = skipCoreRefresh || shouldSkipSupportPlanRefresh(checkinTyped, active)
+    const skipCoreRefresh = false
+    const skipSupportRefresh = false
 
     let dietForm: PlanFormData
     let updatedDietContext: Plan | null

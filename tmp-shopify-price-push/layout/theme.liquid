@@ -1,0 +1,368 @@
+<!-- lurvox-cache-bust 1787475051552 -->
+<!doctype html>
+<html
+  {% if request.design_mode %}
+    class="shopify-design-mode"
+  {% endif %}
+  lang="{{ request.locale.iso_code }}"
+>
+  <head>
+{%- comment -%} lx-no-league-urls {%- endcomment -%}
+{%- assign lx_path = request.path | downcase -%}
+{%- if lx_path contains '/pages/consistency-league' or lx_path contains '/pages/league' -%}
+  <script>window.location.replace('/');</script>
+{%- endif -%}
+{%- comment -%} /lx-no-league-urls {%- endcomment -%}
+    {%- if settings.favicon != blank -%}
+      <link
+        rel="icon"
+        type="image/png"
+        href="{{ settings.favicon | image_url: width: 32, height: 32 }}"
+      >
+    {%- endif -%}
+
+    {% # theme-check-disable RemoteAsset %}
+    {% comment %} This a way to wait for main content to load when navigating to a new page so that the view transitions can work consistently {% endcomment %}
+    {% if settings.transition_to_main_product or settings.page_transition_enabled %}
+      <link
+        rel="expect"
+        href="#MainContent"
+        blocking="render"
+        id="view-transition-render-blocker"
+      >
+    {% endif %}
+
+    {%- render 'meta-tags' -%}
+    {%- render 'stylesheets' -%}
+    {%- render 'fonts' -%}
+    {%- render 'scripts' -%}
+    {%- render 'theme-styles-variables' -%}
+    {%- render 'color-schemes' -%}
+
+    {% if request.design_mode %}
+      {%- render 'theme-editor' -%}
+    {% endif %}
+
+    {{ content_for_header }}
+    {% # theme-check-enable RemoteAsset %}
+
+    {% comment %}
+      Sticky/corrupt page.league binding for this handle ignores template updates.
+      Canonical league page is /pages/league (fresh copy + Crazy League 12-month rule).
+    {% endcomment %}
+    {% if request.page_type == 'page' and page.handle == 'consistency-league' %}
+      <link rel="canonical" href="/pages/league">
+      <meta http-equiv="refresh" content="0;url=/pages/league">
+      <script>location.replace('/pages/league');</script>
+    {% endif %}
+  
+  {% render 'lurvox-orange-glow' %}
+  <script src="{{ 'lurvox-tap-plan.js' | asset_url }}" defer></script>
+<!-- LXPRICE999_1786097552227 -->
+  {% render 'lurvox-header-match' %}
+{% comment %} lx-hide-header-account-layout {% endcomment %}
+<style id="lx-hide-header-account-layout">
+  .account-button,
+  shopify-account,
+  .header-actions__action:has(shopify-account),
+  .header-actions__action:has(.account-button),
+  .header button[aria-label="Account"],
+  .header a[aria-label="Account"] {
+    display: none !important;
+  }
+</style>
+<script>
+  (function () {
+    function hideAccount() {
+      document
+        .querySelectorAll('.account-button, shopify-account, .header button[aria-label="Account"], .header a[aria-label="Account"]')
+        .forEach(function (el) {
+          el.style.setProperty('display', 'none', 'important');
+          var wrap = el.closest('.header-actions__action');
+          if (wrap) wrap.style.setProperty('display', 'none', 'important');
+        });
+    }
+    hideAccount();
+    document.addEventListener('DOMContentLoaded', hideAccount);
+    setTimeout(hideAccount, 300);
+    setTimeout(hideAccount, 1200);
+  })();
+</script>
+</head>
+
+  <body class="page-width-{{ settings.page_width }} card-hover-effect-{{ settings.card_hover_effect }}">
+    {% render 'skip-to-content-link', href: '#MainContent', text: 'accessibility.skip_to_text' %}
+    <div id="header-group">
+      {% sections 'header-group' %}
+    </div>
+
+    <script>
+      // Inline header height and menu style calculations to prevent layout shift
+      // Note: Updates in calculateHeaderGroupHeight(), updateTransparentHeaderOffset() and setHeaderMenuStyle() utilities.js should be kept in sync with this function
+      (function setHeaderHeighCustomProperties() {
+        /*
+         * Header calculation functions for maintaining CSS variables
+         * Mimic calculateHeaderGroupHeight() in utilities.js
+         */
+        const header = document.querySelector('header-component');
+        const headerGroup = document.querySelector('#header-group');
+        const hasHeaderSection = headerGroup?.querySelector('.header-section');
+
+        if (!header || !headerGroup) return;
+
+        const headerTopRow = header.querySelector('.header__row--top');
+        const headerHeight = header.offsetHeight;
+
+        // Calculate the total height of the header group
+        let headerGroupHeight = 0;
+        const children = headerGroup.children;
+        for (let i = 0; i < children.length; i++) {
+          const element = children[i];
+          if (element === header || !(element instanceof HTMLElement)) continue;
+          headerGroupHeight += element.offsetHeight;
+        }
+
+        // Check for transparent header special case
+        if (header.hasAttribute('transparent') && header.parentElement?.nextElementSibling) {
+          headerGroupHeight += headerHeight;
+        }
+
+        // Set CSS variables
+        document.body.style.setProperty('--header-height', `${headerHeight}px`);
+        document.body.style.setProperty('--header-group-height', `${headerGroupHeight}px`);
+
+        if (headerTopRow) {
+          window.requestAnimationFrame(function () {
+            document.body.style.setProperty('--top-row-height', `${headerTopRow.offsetHeight}px`);
+          });
+        }
+
+        /**
+         * Updates CSS custom properties for transparent header offset calculation
+         * Mimic updateTransparentHeaderOffset() in utilities.js
+         */
+
+        if (!hasHeaderSection || !header?.hasAttribute('transparent')) {
+          document.body.style.setProperty('--transparent-header-offset-boolean', '0');
+          return;
+        }
+
+        const hasImmediateSection = hasHeaderSection.nextElementSibling?.classList.contains('shopify-section');
+
+        const shouldApplyOffset = !hasImmediateSection ? '1' : '0';
+        document.body.style.setProperty('--transparent-header-offset-boolean', shouldApplyOffset);
+      })();
+
+      (function setHeaderMenuStyle() {
+        const headerComponent = document.querySelector('#header-component');
+        if (headerComponent) {
+          const isTouchDevice = 'ontouchstart' in window && navigator.maxTouchPoints > 0;
+          const overflowList = headerComponent?.querySelector('overflow-list');
+          const hasReachedMinimum = overflowList && overflowList.hasAttribute('minimum-reached');
+          headerComponent.dataset.menuStyle = isTouchDevice || hasReachedMinimum ? 'drawer' : 'menu';
+        }
+      })();
+    </script>
+
+    <main
+      id="MainContent"
+      class="content-for-layout"
+      role="main"
+      data-page-transition-enabled="{{ settings.page_transition_enabled }}"
+      data-product-transition="{{ settings.transition_to_main_product }}"
+      data-template="{{ template }}"
+    >
+      {{ content_for_layout }}
+    </main>
+
+    <footer>
+      {% sections 'footer-group' %}
+    </footer>
+
+    {% render 'search-modal' %}
+
+    {% if settings.quick_add or settings.mobile_quick_add %}
+      {% render 'quick-add-modal' %}
+    {% endif %}
+  
+{% if request.page_type == 'page' %}
+<script>
+(function () {
+  function ensureLeagueBack() {
+    var hero = document.querySelector('.lx-league__hero');
+    if (!hero || hero.querySelector('.lx-league__back')) return;
+    var a = document.createElement('a');
+    a.className = 'lx-league__back';
+    a.href = '/';
+    a.textContent = '\u2190 Go back';
+    hero.insertBefore(a, hero.firstChild);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureLeagueBack);
+  } else {
+    ensureLeagueBack();
+  }
+})();
+</script>
+<style>
+  .lx-league__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0 1.25rem;
+    color: rgba(255,255,255,0.72);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .lx-league__back:hover { color: #fff; }
+</style>
+{% endif %}
+
+  {%- comment -%} lurvox-talk-cta-highlight · typography-only {%- endcomment -%}
+  <style>
+    a.header-actions__action[href*="talk-to-a-coach"] {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0;
+      border-radius: 0;
+      color: #ff6200 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      text-decoration: none;
+      animation: none !important;
+    }
+
+    a.header-actions__action[href*="talk-to-a-coach"] .svg-wrapper,
+    a.header-actions__action[href*="talk-to-a-coach"] svg {
+      color: #ff6200 !important;
+    }
+
+    a.header-actions__action[href*="talk-to-a-coach"] .lurvox-talk-cta__label {
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    @media screen and (max-width: 749px) {
+      a.header-actions__action[href*="talk-to-a-coach"] {
+        padding: 0;
+      }
+
+      a.header-actions__action[href*="talk-to-a-coach"] .lurvox-talk-cta__label {
+        font-size: 12px;
+      }
+    }
+
+/* lurvox-mobile-talk-cta-v1 */
+    @media screen and (max-width: 749px) {
+      a.header-actions__action[href*="talk-to-a-coach"] {
+        padding: 8px;
+        gap: 0;
+        min-width: 40px;
+        min-height: 40px;
+        justify-content: center;
+      }
+
+      a.header-actions__action[href*="talk-to-a-coach"] .lurvox-talk-cta__label {
+        display: none !important;
+      }
+    }
+/* /lurvox-mobile-talk-cta-v1 */
+
+/* lurvox-mobile-header-logo-v3 */
+    /* Do not alter .header__columns grid — Horizon uses multi-track template. */
+    @media screen and (max-width: 749px) {
+      #header-component .header-logo__image,
+      #header-component .header-logo img {
+        max-height: 36px !important;
+        width: auto !important;
+        height: auto !important;
+        object-fit: contain !important;
+      }
+
+      a.header-actions__action[href*="talk-to-a-coach"] .lurvox-talk-cta__label {
+        display: none !important;
+      }
+    }
+/* /lurvox-mobile-header-logo-v3 */
+
+  </style>
+  <script>
+    (function () {
+      var label = function () {
+        var links = document.querySelectorAll('a[href*="talk-to-a-coach"].header-actions__action');
+        for (var i = 0; i < links.length; i += 1) {
+          var link = links[i];
+          if (link.querySelector('.lurvox-talk-cta__label')) continue;
+          var span = document.createElement('span');
+          span.className = 'lurvox-talk-cta__label';
+          span.textContent = 'Talk to a coach';
+          link.appendChild(span);
+        }
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', label);
+      } else {
+        label();
+      }
+      document.addEventListener('shopify:section:load', label);
+    })();
+  </script>
+
+
+
+
+
+
+<!-- LX-WRITE-PROBE-1785314376837 -->
+<!-- lurvox-hide-1month-script-v1 -->
+<script src="{{ 'lurvox-hide-1month.js' | asset_url }}" defer></script>
+<!-- /lurvox-hide-1month-script-v1 -->
+<!-- lurvox-layout-talk-wa-v1 removed: keep consult on-site -->
+
+  <script src="https://cdn.shopify.com/s/files/1/0815/3133/9003/t/26/assets/lurvox-offer-overlay.js?v=1785960433919" defer></script>
+  {% render 'lurvox-find-float' %}
+{%- comment -%} lx-header-existing-login {%- endcomment -%}
+<style id="lx-header-existing-login-css">
+  a.lx-header-login {
+    display: inline-flex !important;
+    align-items: center;
+    color: #ff8a3d !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    white-space: nowrap;
+    margin: 0 8px 0 0;
+  }
+</style>
+<script>
+  (function () {
+    var URL = 'https://app.lurvox.in/login';
+    function add() {
+      if (document.getElementById('lx-header-login')) return;
+      var host = document.querySelector('.header-actions')
+        || document.querySelector('.header__icons')
+        || document.querySelector('[class*="header-actions"]');
+      if (!host) return;
+      var a = document.createElement('a');
+      a.id = 'lx-header-login';
+      a.className = 'lx-header-login';
+      a.href = URL;
+      a.textContent = 'Log in';
+      a.setAttribute('aria-label', 'Existing client log in');
+      host.insertBefore(a, host.firstChild);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add);
+    else add();
+  })();
+</script>
+{%- comment -%} /lx-header-existing-login {%- endcomment -%}
+
+</body>
+</html>

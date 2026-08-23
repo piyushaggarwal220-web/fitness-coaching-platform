@@ -19,6 +19,12 @@ export type ClientJourneyInput = {
   /** The check-in this plan is being generated for, if any. */
   currentCheckin?: Checkin | null
   referenceDate?: Date
+  tracker?: {
+    daysLogged: number
+    daysUsed: number
+    daysTrained: number
+    avgPercent: number | null
+  } | null
 }
 
 const MAX_MISSED_LISTED = 6
@@ -130,11 +136,27 @@ export function buildClientJourneySnapshot(input: ClientJourneyInput): string {
   }
 
   const submittedCount = checkins.length
+  const weeklyCount = checkins.filter((c) => c.checkin_type === 'weekly').length
+  const midWeekCount = checkins.filter((c) => c.checkin_type === 'mid_week').length
   lines.push(
-    `- Check-ins submitted so far: ${submittedCount}${
+    `- Check-ins submitted so far: ${submittedCount} (${weeklyCount} weekly, ${midWeekCount} mid-week)${
       submittedCount === 0 ? ' (this may be their first plan / no history yet)' : ''
     }.`
   )
+
+  if (input.tracker) {
+    const avg = input.tracker.avgPercent != null ? `${input.tracker.avgPercent}% avg` : 'no scores yet'
+    lines.push(
+      `- Daily tracker: ${input.tracker.daysUsed} days used of ${input.tracker.daysLogged} logged (${avg}); training logged on ${input.tracker.daysTrained} days.`
+    )
+  }
+
+  const current = input.currentCheckin
+  if (current) {
+    lines.push(
+      `- Latest check-in days followed: diet ${current.days_followed_diet ?? 'n/a'}, workout ${current.days_followed_workout ?? 'n/a'}, sleep ${current.days_followed_sleep ?? 'n/a'}, water ${current.days_followed_water ?? 'n/a'}, steps ${current.days_followed_steps ?? 'n/a'}.`
+    )
+  }
 
   // Missed / skipped check-ins.
   if (anchor && currentWeek && currentWeek > 1) {
@@ -207,7 +229,7 @@ export async function loadClientJourneySnapshot(
   }
 ): Promise<string> {
   try {
-    const [checkinsResult, requestsResult] = await Promise.all([
+    const [checkinsResult, requestsResult, trackerResult] = await Promise.all([
       admin
         .from('checkins')
         .select('*')
@@ -219,7 +241,20 @@ export async function loadClientJourneySnapshot(
         .eq('client_id', params.clientId)
         .order('locked_at', { ascending: false })
         .limit(20),
+      admin
+        .from('daily_tracker_days')
+        .select('overall_percent, scores')
+        .eq('client_id', params.clientId),
     ])
+
+    const trackerRows = trackerResult.data ?? []
+    const percents = trackerRows
+      .map((row) => row.overall_percent as number | null)
+      .filter((v): v is number => v != null)
+    const daysTrained = trackerRows.filter((row) => {
+      const scores = row.scores as { workout?: number } | null
+      return (scores?.workout ?? 0) > 0
+    }).length
 
     return buildClientJourneySnapshot({
       profile: params.profile,
@@ -227,6 +262,12 @@ export async function loadClientJourneySnapshot(
       planChangeRequests: (requestsResult.data as PlanChangeRequestRow[] | null) ?? [],
       currentCheckin: params.currentCheckin ?? null,
       referenceDate: params.referenceDate,
+      tracker: {
+        daysLogged: trackerRows.length,
+        daysUsed: percents.filter((p) => p > 0).length,
+        daysTrained,
+        avgPercent: percents.length ? Math.round(percents.reduce((a, b) => a + b, 0) / percents.length) : null,
+      },
     })
   } catch (err) {
     console.error('[client-journey] failed to load snapshot', err)

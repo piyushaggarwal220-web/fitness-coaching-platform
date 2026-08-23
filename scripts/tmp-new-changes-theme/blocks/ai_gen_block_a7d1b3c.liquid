@@ -1,0 +1,889 @@
+
+{% doc %}
+  @prompt
+    Create a premium horizontal member wins carousel.
+    
+    IMPORTANT:
+    
+    This is NOT a gallery.
+    This is NOT a vertical stack.
+    This is NOT a testimonial section.
+    This is NOT a masonry layout.
+    
+    Create a compact horizontal carousel only.
+    
+    ━━━━━━━━━━━━━━
+    
+    Section height:
+    420px maximum.
+    
+    Never exceed 420px.
+    
+    ━━━━━━━━━━━━━━
+    
+    Header row:
+    
+    Left side:
+    
+    REAL PEOPLE, REAL RESULTS
+    
+    Below:
+    
+    Member messages & reviews.
+    
+    Right side:
+    
+    Two premium circular arrows.
+    
+    Previous arrow.
+    Next arrow.
+    
+    Arrow size:
+    56px
+    
+    Transparent background.
+    
+    Border:
+    1px solid rgba(255,255,255,0.12)
+    
+    ━━━━━━━━━━━━━━
+    
+    Carousel:
+    
+    Horizontal only.
+    
+    Show:
+    
+    1 full screenshot card
+    
+    plus
+    
+    15% of next card.
+    
+    Never stack cards vertically.
+    
+    Never create multiple rows.
+    
+    Never create a grid.
+    
+    ━━━━━━━━━━━━━━
+    
+    Cards:
+    
+    White background.
+    
+    Border radius:
+    28px
+    
+    Thin border:
+    1px solid rgba(255,255,255,0.08)
+    
+    Padding:
+    0px
+    
+    Overflow hidden.
+    
+    ━━━━━━━━━━━━━━
+    
+    Images:
+    
+    Screenshots themselves are the content.
+    
+    No captions.
+    
+    No descriptions.
+    
+    No avatars.
+    
+    No labels.
+    
+    No text blocks.
+    
+    No placeholders.
+    
+    No upload containers.
+    
+    No white frames around screenshots.
+    
+    Image fills card directly.
+    
+    Use:
+    
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    
+    ━━━━━━━━━━━━━━
+    
+    Section style:
+    
+    Background:
+    #050505
+    
+    Thin premium border:
+    1px solid rgba(255,255,255,0.06)
+    
+    Border radius:
+    32px
+    
+    Padding:
+    24px
+    
+    No shadows.
+    
+    No gradients.
+    
+    No glow.
+    
+    ━━━━━━━━━━━━━━
+    
+    Visual inspiration:
+    
+    Premium SaaS testimonial carousel.
+    Apple editorial cards.
+    Stripe customer stories.
+    
+    The result must feel compact, premium and horizontally scrollable.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-member-wins-{{ ai_gen_id }} {
+    display: block;
+    width: {{ block.settings.desktop_width_percent }}%;
+    max-width: 100%;
+    background-color: {{ block.settings.background_color }};
+    border: 1px solid {{ block.settings.border_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    padding: {{ block.settings.padding }}px;
+    max-height: 420px;
+  }
+
+  .ai-member-wins-header-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 16px;
+  }
+
+  .ai-member-wins-header-text-{{ ai_gen_id }} {
+    flex: 1;
+  }
+
+  .ai-member-wins-title-{{ ai_gen_id }} {
+    color: {{ block.settings.title_color }};
+    font-size: {{ block.settings.title_size }}px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .ai-member-wins-subtitle-{{ ai_gen_id }} {
+    color: {{ block.settings.subtitle_color }};
+    font-size: {{ block.settings.subtitle_size }}px;
+    margin: 0;
+  }
+
+  .ai-member-wins-nav-{{ ai_gen_id }} {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .ai-member-wins-nav-button-{{ ai_gen_id }} {
+    width: {{ block.settings.arrow_size }}px;
+    height: {{ block.settings.arrow_size }}px;
+    border-radius: 50%;
+    background-color: transparent;
+    border: 1px solid {{ block.settings.arrow_border_color }};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+  }
+
+  .ai-member-wins-nav-button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.arrow_hover_bg }};
+    border-color: {{ block.settings.arrow_hover_border }};
+  }
+
+  .ai-member-wins-nav-button-{{ ai_gen_id }}:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .ai-member-wins-nav-button-{{ ai_gen_id }} svg {
+    width: 20px;
+    height: 20px;
+    stroke: {{ block.settings.arrow_color }};
+    stroke-width: 2;
+  }
+
+  .ai-member-wins-carousel-wrapper-{{ ai_gen_id }} {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ai-member-wins-carousel-{{ ai_gen_id }} {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .ai-member-wins-carousel-{{ ai_gen_id }}::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ai-member-wins-card-{{ ai_gen_id }} {
+    flex: 0 0 calc(100% - 15%);
+    background-color: {{ block.settings.card_background }};
+    border-radius: {{ block.settings.card_border_radius }}px;
+    border: 1px solid {{ block.settings.card_border_color }};
+    overflow: hidden;
+    padding: 0;
+    height: 300px;
+  }
+
+  .ai-member-wins-card-image-{{ ai_gen_id }} {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .ai-member-wins-card-placeholder-{{ ai_gen_id }} {
+    width: 100%;
+    height: 100%;
+    background-color: #f4f4f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .ai-member-wins-card-placeholder-{{ ai_gen_id }} svg {
+    width: 80px;
+    height: 80px;
+    opacity: 0.3;
+  }
+
+  .ai-member-wins-empty-state-{{ ai_gen_id }} {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-member-wins-{{ ai_gen_id }} {
+      padding: 16px;
+    }
+
+    .ai-member-wins-header-{{ ai_gen_id }} {
+      margin-bottom: 16px;
+    }
+
+    .ai-member-wins-title-{{ ai_gen_id }} {
+      font-size: {{ block.settings.title_size | times: 0.8 }}px;
+    }
+
+    .ai-member-wins-subtitle-{{ ai_gen_id }} {
+      font-size: {{ block.settings.subtitle_size | times: 0.9 }}px;
+    }
+
+    .ai-member-wins-nav-button-{{ ai_gen_id }} {
+      width: {{ block.settings.arrow_size | times: 0.8 }}px;
+      height: {{ block.settings.arrow_size | times: 0.8 }}px;
+    }
+
+    .ai-member-wins-card-{{ ai_gen_id }} {
+      height: 250px;
+    }
+  }
+{% endstyle %}
+
+<member-wins-carousel-{{ ai_gen_id }} class="ai-member-wins-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-member-wins-header-{{ ai_gen_id }}">
+    <div class="ai-member-wins-header-text-{{ ai_gen_id }}">
+      {% if block.settings.title != blank %}
+        <h2 class="ai-member-wins-title-{{ ai_gen_id }}">{{ block.settings.title }}</h2>
+      {% endif %}
+      {% if block.settings.subtitle != blank %}
+        <p class="ai-member-wins-subtitle-{{ ai_gen_id }}">{{ block.settings.subtitle }}</p>
+      {% endif %}
+    </div>
+    <div class="ai-member-wins-nav-{{ ai_gen_id }}">
+      <button
+        class="ai-member-wins-nav-button-{{ ai_gen_id }} ai-member-wins-prev-{{ ai_gen_id }}"
+        aria-label="Previous"
+        data-direction="prev"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <button
+        class="ai-member-wins-nav-button-{{ ai_gen_id }} ai-member-wins-next-{{ ai_gen_id }}"
+        aria-label="Next"
+        data-direction="next"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="ai-member-wins-carousel-wrapper-{{ ai_gen_id }}">
+    <div class="ai-member-wins-carousel-{{ ai_gen_id }}">
+      {% assign member_wins_count = 0 %}
+      {% for i in (1..40) %}
+        {% liquid
+          assign image_key = 'screenshot_' | append: i
+          assign screenshot = block.settings[image_key]
+        %}
+        {% if screenshot != blank %}
+          {% assign member_wins_count = member_wins_count | plus: 1 %}
+          <div class="ai-member-wins-card-{{ ai_gen_id }}">
+            <img
+              src="{{ screenshot | image_url: width: 800 }}"
+              alt="{{ screenshot.alt | escape }}"
+              loading="lazy"
+              width="{{ screenshot.width }}"
+              height="{{ screenshot.height }}"
+              class="ai-member-wins-card-image-{{ ai_gen_id }}"
+            >
+          </div>
+        {% endif %}
+      {% endfor %}
+      {% if member_wins_count == 0 %}
+        <div class="ai-member-wins-card-{{ ai_gen_id }}">
+          <div class="ai-member-wins-card-placeholder-{{ ai_gen_id }}">
+            {{ 'image' | placeholder_svg_tag }}
+            <div class="ai-member-wins-empty-state-{{ ai_gen_id }}">
+              Add member screenshots
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</member-wins-carousel-{{ ai_gen_id }}>
+
+<script>
+  {%- comment -%} lurvox-carousel-nav-restore-v3 {%- endcomment -%}
+  (function() {
+    class MemberWinsCarousel{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        this.carousel = this.querySelector('.ai-member-wins-carousel-{{ ai_gen_id }}');
+        this.prevButton = this.querySelector('.ai-member-wins-prev-{{ ai_gen_id }}');
+        this.nextButton = this.querySelector('.ai-member-wins-next-{{ ai_gen_id }}');
+        this.cards = this.querySelectorAll('.ai-member-wins-card-{{ ai_gen_id }}');
+
+        if (!this.carousel || !this.prevButton || !this.nextButton) return;
+
+        this.setupEventListeners();
+        this.updateButtonStates();
+        this.setupAutoplay();
+      }
+
+      setupEventListeners() {
+        this.prevButton.addEventListener('click', () => this.scrollByCard('prev'));
+        this.nextButton.addEventListener('click', () => this.scrollByCard('next'));
+        this.carousel.addEventListener('scroll', () => this.updateButtonStates());
+      }
+
+      cardStep() {
+        const cardWidth = this.cards.length > 0 ? this.cards[0].offsetWidth : this.carousel.clientWidth;
+        return cardWidth + 16;
+      }
+
+      /** Scrolls the carousel container only — never the page. */
+      scrollByCard(direction) {
+        this.carousel.scrollBy({
+          left: direction === 'prev' ? -this.cardStep() : this.cardStep(),
+          behavior: 'smooth'
+        });
+      }
+
+      autoplayAdvance() {
+        const maxScroll = this.carousel.scrollWidth - this.carousel.clientWidth;
+        if (this.carousel.scrollLeft >= maxScroll - 2) {
+          this.carousel.scrollTo({ left: 0, behavior: 'smooth' });
+          return;
+        }
+        this.scrollByCard('next');
+      }
+
+      updateButtonStates() {
+        const isAtStart = this.carousel.scrollLeft <= 0;
+        const isAtEnd = this.carousel.scrollLeft + this.carousel.offsetWidth >= this.carousel.scrollWidth - 1;
+
+        this.prevButton.disabled = isAtStart;
+        this.nextButton.disabled = isAtEnd;
+      }
+
+      setupAutoplay() {
+        this._autoplayMs = 3800;
+        this._resumeMs = 7000;
+        this._timer = null;
+        this._resumeTimer = null;
+        this._inView = false;
+
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          return;
+        }
+
+        // Only a deliberate interaction pauses autoplay — hovering does not,
+        // so a resting cursor can never stall the gallery.
+        const pauseThenResume = () => {
+          this.stopAutoplay();
+          if (this._resumeTimer) clearTimeout(this._resumeTimer);
+          this._resumeTimer = setTimeout(() => this.startAutoplay(), this._resumeMs);
+        };
+
+        ['pointerdown', 'touchstart', 'wheel', 'keydown'].forEach((eventName) => {
+          this.addEventListener(eventName, pauseThenResume, { passive: true });
+        });
+
+        const visibility = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              this._inView = entry.isIntersecting;
+              if (entry.isIntersecting) {
+                this.startAutoplay();
+              } else {
+                this.stopAutoplay();
+              }
+            });
+          },
+          { threshold: 0.25 }
+        );
+        visibility.observe(this);
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) {
+            this.stopAutoplay();
+          } else {
+            this.startAutoplay();
+          }
+        });
+      }
+
+      startAutoplay() {
+        this.stopAutoplay();
+        if (!this._inView || document.hidden) return;
+        this._timer = setInterval(() => {
+          try {
+            this.autoplayAdvance();
+          } catch (e) {}
+        }, this._autoplayMs);
+      }
+
+      stopAutoplay() {
+        if (this._timer) {
+          clearInterval(this._timer);
+          this._timer = null;
+        }
+      }
+
+      disconnectedCallback() {
+        this.stopAutoplay();
+        if (this._resumeTimer) clearTimeout(this._resumeTimer);
+      }
+    }
+
+    customElements.define('member-wins-carousel-{{ ai_gen_id }}', MemberWinsCarousel{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Member wins carousel",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Header"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "REAL PEOPLE, REAL RESULTS"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Subtitle",
+      "default": "Member messages & reviews."
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "label": "Title size",
+      "min": 10,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "subtitle_size",
+      "label": "Subtitle size",
+      "min": 10,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 13
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Title color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "subtitle_color",
+      "label": "Subtitle color",
+      "default": "rgba(255, 255, 255, 0.6)"
+    },
+    {
+      "type": "header",
+      "content": "Screenshots"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_1",
+      "label": "Screenshot 1"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_2",
+      "label": "Screenshot 2"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_3",
+      "label": "Screenshot 3"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_4",
+      "label": "Screenshot 4"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_5",
+      "label": "Screenshot 5"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_6",
+      "label": "Screenshot 6"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_7",
+      "label": "Screenshot 7"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_8",
+      "label": "Screenshot 8"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_9",
+      "label": "Screenshot 9"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_10",
+      "label": "Screenshot 10"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_11",
+      "label": "Screenshot 11"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_12",
+      "label": "Screenshot 12"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_13",
+      "label": "Screenshot 13"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_14",
+      "label": "Screenshot 14"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_15",
+      "label": "Screenshot 15"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_16",
+      "label": "Screenshot 16"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_17",
+      "label": "Screenshot 17"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_18",
+      "label": "Screenshot 18"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_19",
+      "label": "Screenshot 19"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_20",
+      "label": "Screenshot 20"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_21",
+      "label": "Screenshot 21"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_22",
+      "label": "Screenshot 22"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_23",
+      "label": "Screenshot 23"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_24",
+      "label": "Screenshot 24"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_25",
+      "label": "Screenshot 25"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_26",
+      "label": "Screenshot 26"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_27",
+      "label": "Screenshot 27"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_28",
+      "label": "Screenshot 28"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_29",
+      "label": "Screenshot 29"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_30",
+      "label": "Screenshot 30"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_31",
+      "label": "Screenshot 31"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_32",
+      "label": "Screenshot 32"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_33",
+      "label": "Screenshot 33"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_34",
+      "label": "Screenshot 34"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_35",
+      "label": "Screenshot 35"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_36",
+      "label": "Screenshot 36"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_37",
+      "label": "Screenshot 37"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_38",
+      "label": "Screenshot 38"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_39",
+      "label": "Screenshot 39"
+    },
+    {
+      "type": "image_picker",
+      "id": "screenshot_40",
+      "label": "Screenshot 40"
+    },
+    {
+      "type": "header",
+      "content": "Navigation arrows"
+    },
+    {
+      "type": "range",
+      "id": "arrow_size",
+      "label": "Arrow size",
+      "min": 40,
+      "max": 72,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "color",
+      "id": "arrow_color",
+      "label": "Arrow color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "arrow_border_color",
+      "label": "Border color",
+      "default": "rgba(255, 255, 255, 0.12)"
+    },
+    {
+      "type": "color",
+      "id": "arrow_hover_bg",
+      "label": "Hover background",
+      "default": "rgba(255, 255, 255, 0.05)"
+    },
+    {
+      "type": "color",
+      "id": "arrow_hover_border",
+      "label": "Hover border",
+      "default": "rgba(255, 255, 255, 0.2)"
+    },
+    {
+      "type": "header",
+      "content": "Card style"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "card_border_color",
+      "label": "Border color",
+      "default": "rgba(255, 255, 255, 0.08)"
+    },
+    {
+      "type": "range",
+      "id": "card_border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 28
+    },
+    {
+      "type": "header",
+      "content": "Section style"
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop width",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#050505"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border color",
+      "default": "rgba(255, 255, 255, 0.06)"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "padding",
+      "label": "Padding",
+      "min": 16,
+      "max": 48,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    }
+  ],
+  "presets": [
+    {
+      "name": "Member wins carousel"
+    }
+  ]
+}
+{% endschema %}

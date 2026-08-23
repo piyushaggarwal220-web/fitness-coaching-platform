@@ -1,0 +1,308 @@
+{%- liquid
+  assign enabled = section.settings.enabled
+  assign payment_url = section.settings.payment_help_url
+  assign consult_url = section.settings.consultation_url
+  assign bg = section.settings.background_color
+  assign accent = section.settings.accent_color
+  assign bottom = section.settings.bottom_spacing
+  assign radius = section.settings.border_radius
+  assign shadow = section.settings.shadow_strength
+
+  if payment_url == blank
+    assign payment_url = '/pages/contact'
+  endif
+  if consult_url == blank
+    assign consult_url = '/pages/talk-to-a-coach'
+  endif
+
+  assign hide_template = false
+  if request.page_type == 'cart' or request.page_type == 'password'
+    assign hide_template = true
+  endif
+-%}
+
+{% if enabled and hide_template == false %}
+  <div
+    id="lurvox-fab-{{ section.id }}"
+    class="lurvox-fab"
+    style="
+      --lurvox-fab-bg: {{ bg }};
+      --lurvox-fab-accent: {{ accent }};
+      --lurvox-fab-bottom: {{ bottom }}px;
+      --lurvox-fab-radius: {{ radius }}px;
+      --lurvox-fab-shadow: {{ shadow | divided_by: 100.0 }};
+    "
+    aria-label="Quick actions"
+  >
+    <div class="lurvox-fab__shell">
+      <a
+        class="lurvox-fab__btn lurvox-fab__btn--ghost"
+        href="{{ payment_url }}"
+        {% if payment_url contains 'http' %}
+          target="_blank"
+          rel="noopener noreferrer"
+        {% endif %}
+      >
+        <span class="lurvox-fab__cluster">
+          <span class="lurvox-fab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2.75" y="5.75" width="18.5" height="12.5" rx="2.25" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M2.75 9.5H21.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M6.5 14.25H10.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="lurvox-fab__label">Payment Help</span>
+        </span>
+      </a>
+
+      <a
+        class="lurvox-fab__btn lurvox-fab__btn--primary"
+        href="{{ consult_url }}"
+        {% if consult_url contains 'http' %}
+          target="_blank"
+          rel="noopener noreferrer"
+        {% endif %}
+      >
+        <span class="lurvox-fab__cluster">
+          <span class="lurvox-fab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M8.2 4.85c.35-.75 1.25-1.1 2.05-.85l1.35.45c.7.25 1.1.95.95 1.65l-.45 1.85c-.1.45.05.9.4 1.2l1.55 1.35c.9.8 1.95 1.85 2.75 2.75l1.35 1.55c.3.35.75.5 1.2.4l1.85-.45c.7-.15 1.4.25 1.65.95l.45 1.35c.25.8-.1 1.7-.85 2.05-1.55.7-3.7.85-6.15-.85-2.35-1.65-4.5-3.95-6.15-6.55-1.7-2.45-1.55-4.6-.85-6.15Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <span class="lurvox-fab__label">Book Consultation</span>
+        </span>
+      </a>
+    </div>
+  </div>
+
+  <style>
+    #shopify-section-{{ section.id }},
+    .lurvox-fab-section {
+      display: none !important;
+    }
+
+    @media screen and (max-width: 749px) {
+      #shopify-section-{{ section.id }},
+      .lurvox-fab-section {
+        display: block !important;
+        position: fixed !important;
+        left: 16px !important;
+        right: 16px !important;
+        bottom: calc(var(--lurvox-fab-bottom, 20px) + env(safe-area-inset-bottom, 0px)) !important;
+        z-index: 9999 !important;
+        width: auto !important;
+        max-width: 480px !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        background: transparent !important;
+        pointer-events: none;
+        animation: lurvox-fab-rise-{{ section.id }} 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      body {
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+    }
+
+    @keyframes lurvox-fab-rise-{{ section.id }} {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 18px, 0);
+      }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+      }
+    }
+
+    #lurvox-fab-{{ section.id }} {
+      --lurvox-fab-text: #ffffff;
+      --lurvox-fab-border: rgba(255, 255, 255, 0.08);
+      --lurvox-fab-shell: rgba(8, 8, 8, 0.92);
+      width: 100%;
+      pointer-events: none;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__shell {
+      pointer-events: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--lurvox-fab-radius);
+      background: var(--lurvox-fab-shell);
+      border: 1px solid var(--lurvox-fab-border);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow:
+        0 20px 55px rgba(0, 0, 0, calc(0.45 * var(--lurvox-fab-shadow))),
+        0 28px 70px rgba(255, 98, 0, calc(0.12 * var(--lurvox-fab-shadow)));
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      height: 54px;
+      padding: 0 12px;
+      border-radius: calc(var(--lurvox-fab-radius) - 8px);
+      text-decoration: none;
+      box-sizing: border-box;
+      transition:
+        transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__cluster {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      max-width: 100%;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__icon {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+      color: inherit;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__icon svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__label {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      white-space: nowrap;
+      color: #ffffff;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--ghost {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 98, 0, 0.7);
+      color: #ffffff;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--ghost .lurvox-fab__icon {
+      color: var(--lurvox-fab-accent);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary {
+      background: linear-gradient(180deg, #ff7a1a 0%, var(--lurvox-fab-accent) 100%);
+      border: 1px solid transparent;
+      color: #ffffff;
+      box-shadow: 0 10px 28px rgba(255, 98, 0, 0.28);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary .lurvox-fab__icon {
+      color: #ffffff;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:hover {
+      transform: translateY(-1px);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:active {
+      transform: scale(0.98);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:focus-visible {
+      outline: 2px solid var(--lurvox-fab-accent);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #shopify-section-{{ section.id }},
+      .lurvox-fab-section {
+        animation: none !important;
+      }
+    }
+  </style>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Mobile floating bar",
+  "tag": "section",
+  "class": "lurvox-fab-section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Enable Floating Bar",
+      "default": true
+    },
+    {
+      "type": "url",
+      "id": "payment_help_url",
+      "label": "Payment Help URL"
+    },
+    {
+      "type": "url",
+      "id": "consultation_url",
+      "label": "Book Consultation URL"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Colour",
+      "default": "#050505"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent Colour",
+      "default": "#FF6200"
+    },
+    {
+      "type": "range",
+      "id": "bottom_spacing",
+      "min": 8,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "label": "Bottom Spacing",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 12,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "label": "Border Radius",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "shadow_strength",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "label": "Shadow Strength",
+      "default": 100
+    }
+  ],
+  "presets": [
+    {
+      "name": "Mobile floating bar"
+    }
+  ]
+}
+{% endschema %}

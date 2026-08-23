@@ -1,0 +1,515 @@
+{% doc %}
+  @prompt
+    Create a completely new micro-section directly below the sticky CTA button and directly above the FAQ section.
+    
+    Delete the existing trust section completely.
+    
+    Do not create trust badges.
+    
+    Do not create feature cards.
+    
+    Do not create icon grids.
+    
+    Do not create ecommerce reassurance blocks.
+    
+    This section should feel like a premium onboarding summary panel from:
+    
+    • Porsche configurator
+    • Mercedes AMG package summary
+    • Apple checkout confirmation
+    
+    The section must occupy very little vertical space while increasing trust and conversion.
+    
+    ━━━━━━━━━━━━━━━━━━━━━━
+    
+    SECTION HEIGHT
+    
+    Maximum height:
+    110px to 140px total.
+    
+    The entire section must fit comfortably inside a single mobile screenshot together with the CTA above and FAQ heading below.
+    
+    No excessive spacing.
+    
+    ━━━━━━━━━━━━━━━━━━━━━━
+    
+    CONTAINER DESIGN
+    
+    Everything lives inside ONE premium micro-container.
+    
+    Container style:
+    
+    Background:
+    rgba(255,255,255,0.025)
+    
+    Border:
+    1px solid rgba(255,255,255,0.08)
+    
+    Border Radius:
+    20px
+    
+    Padding:
+    18px top/bottom
+    20px left/right
+    
+    No shadows.
+    
+    No gradients.
+    
+    No glow effects.
+    
+    No glassmorphism blur.
+    
+    Visual feeling:
+    
+    Luxury automotive configuration summary.
+    
+    ━━━━━━━━━━━━━━━━━━━━━━
+    
+    TOP ROW
+    
+    Create one single premium information row:
+    
+    SECURE PAYMENT • WHATSAPP SUPPORT • GYM & HOME • 24H DELIVERY
+    
+    Requirements:
+    
+    • Uppercase typography
+    • Font size 10px to 11px
+    • Letter spacing 1.8px
+    • Font weight 600
+    • Color rgba(255,255,255,0.72)
+    • Center aligned
+    • Dot separators only
+    • No emojis
+    • No icons
+    • No backgrounds
+    
+    Desktop:
+    Single line.
+    
+    Mobile:
+    Automatically wraps into two perfectly centered rows.
+    
+    ━━━━━━━━━━━━━━━━━━━━━━
+    
+    PROCESS FLOW
+    
+    Directly below create a premium onboarding flow.
+    
+    Line 1:
+    
+    Assessment Form + Progress Photos
+    
+    Line 2:
+    
+    ↓
+    
+    Line 3:
+    
+    Personalised Nutrition + Training System Delivered Within 24 Hours
+    
+    Requirements:
+    
+    • Perfect center alignment
+    • Compact spacing
+    • White text
+    • Semi-bold typography
+    • Highlight:
+      - Assessment Form
+      - Progress Photos
+      - Delivered Within 24 Hours
+    
+    Arrow opacity:
+    50%
+    
+    No boxes.
+    
+    No arrows with backgrounds.
+    
+    No icons.
+    
+    ━━━━━━━━━━━━━━━━━━━━━━
+    
+    SPACING
+    
+    Top row to process flow:
+    12px
+    
+    Container bottom spacing:
+    20px
+    
+    FAQ should begin immediately after this section.
+    
+    ━━━━━━━━━━━━━━━━━━━━━━
+    
+    COLOR SYSTEM
+    
+    Background:
+    #050505
+    
+    Primary Text:
+    #FFFFFF
+    
+    Secondary Text:
+    rgba(255,255,255,0.72)
+    
+    Accent:
+    #FF6200
+    
+    ━━━━━━━━━━━━━━━━━━━━━━
+    
+    VISUAL GOAL
+    
+    The final result should feel like:
+    
+    A premium confirmation module that reassures the user immediately before reading FAQs.
+    
+    The section should feel:
+    
+    • Premium
+    • Compact
+    • Understated
+    • Automotive inspired
+    • Fitness focused
+    • Conversion focused
+    
+    Avoid anything that resembles:
+    
+    • Shopify trust badges
+    • Ecommerce footers
+    • Generic icon sections
+    • Cheap landing pages
+    
+    The final result should feel like it belongs inside a $3,000 premium coaching funnel.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-premium-onboarding-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+    padding: 0 20px {{ block.settings.bottom_spacing }}px;
+    background-color: {{ block.settings.section_background }};
+  }
+
+  .ai-premium-onboarding-container-{{ ai_gen_id }} {
+    max-width: 100%;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: {{ block.settings.container_radius }}px;
+    padding: {{ block.settings.container_padding_vertical }}px {{ block.settings.container_padding_horizontal }}px;
+  }
+
+  .ai-premium-onboarding-top-row-{{ ai_gen_id }} {
+    text-align: center;
+    margin-bottom: {{ block.settings.row_spacing }}px;
+  }
+
+  .ai-premium-onboarding-features-{{ ai_gen_id }} {
+    font-size: {{ block.settings.features_font_size }}px;
+    font-weight: {{ block.settings.features_font_weight }};
+    letter-spacing: {{ block.settings.features_letter_spacing }}px;
+    text-transform: uppercase;
+    color: {{ block.settings.features_color }};
+    line-height: 1.6;
+  }
+
+  .ai-premium-onboarding-separator-{{ ai_gen_id }} {
+    margin: 0 8px;
+    opacity: 0.7;
+  }
+
+  .ai-premium-onboarding-process-{{ ai_gen_id }} {
+    text-align: center;
+  }
+
+  .ai-premium-onboarding-process-line-{{ ai_gen_id }} {
+    font-size: {{ block.settings.process_font_size }}px;
+    font-weight: {{ block.settings.process_font_weight }};
+    color: {{ block.settings.process_color }};
+    line-height: 1.5;
+    margin: 4px 0;
+  }
+
+  .ai-premium-onboarding-arrow-{{ ai_gen_id }} {
+    opacity: {{ block.settings.arrow_opacity }};
+    font-size: {{ block.settings.process_font_size }}px;
+  }
+
+  .ai-premium-onboarding-highlight-{{ ai_gen_id }} {
+    color: {{ block.settings.highlight_color }};
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-premium-onboarding-features-{{ ai_gen_id }} {
+      font-size: {{ block.settings.features_font_size | times: 0.9 }}px;
+    }
+
+    .ai-premium-onboarding-process-line-{{ ai_gen_id }} {
+      font-size: {{ block.settings.process_font_size | times: 0.9 }}px;
+    }
+  }
+{% endstyle %}
+
+<premium-onboarding-{{ ai_gen_id }}
+  class="ai-premium-onboarding-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-premium-onboarding-container-{{ ai_gen_id }}">
+    <div class="ai-premium-onboarding-top-row-{{ ai_gen_id }}">
+      <div class="ai-premium-onboarding-features-{{ ai_gen_id }}">
+        {{ block.settings.feature_1 }}<span class="ai-premium-onboarding-separator-{{ ai_gen_id }}">•</span>{{ block.settings.feature_2 }}<span class="ai-premium-onboarding-separator-{{ ai_gen_id }}">•</span>{{ block.settings.feature_3 }}<span class="ai-premium-onboarding-separator-{{ ai_gen_id }}">•</span>{{ block.settings.feature_4 }}
+      </div>
+    </div>
+
+    <div class="ai-premium-onboarding-process-{{ ai_gen_id }}">
+      <div class="ai-premium-onboarding-process-line-{{ ai_gen_id }}">
+        <span class="ai-premium-onboarding-highlight-{{ ai_gen_id }}">{{ block.settings.process_step_1_highlight }}</span> {{ block.settings.process_step_1_text }} <span class="ai-premium-onboarding-highlight-{{ ai_gen_id }}">{{ block.settings.process_step_1_highlight_2 }}</span>
+      </div>
+      <div class="ai-premium-onboarding-process-line-{{ ai_gen_id }} ai-premium-onboarding-arrow-{{ ai_gen_id }}">
+        ↓
+      </div>
+      <div class="ai-premium-onboarding-process-line-{{ ai_gen_id }}">
+        {{ block.settings.process_step_2_text_1 }} {{ block.settings.process_step_2_text_2 }} <span class="ai-premium-onboarding-highlight-{{ ai_gen_id }}">{{ block.settings.process_step_2_highlight }}</span>
+      </div>
+    </div>
+  </div>
+</premium-onboarding-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class PremiumOnboarding{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+      }
+    }
+
+    customElements.define('premium-onboarding-{{ ai_gen_id }}', PremiumOnboarding{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Premium onboarding",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Container style"
+    },
+    {
+      "type": "color",
+      "id": "section_background",
+      "label": "Section background",
+      "default": "#050505"
+    },
+    {
+      "type": "range",
+      "id": "container_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "container_padding_vertical",
+      "label": "Padding vertical",
+      "min": 10,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 18
+    },
+    {
+      "type": "range",
+      "id": "container_padding_horizontal",
+      "label": "Padding horizontal",
+      "min": 10,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "bottom_spacing",
+      "label": "Bottom spacing",
+      "min": 0,
+      "max": 60,
+      "step": 5,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "Top row features"
+    },
+    {
+      "type": "text",
+      "id": "feature_1",
+      "label": "Feature 1",
+      "default": "SECURE PAYMENT"
+    },
+    {
+      "type": "text",
+      "id": "feature_2",
+      "label": "Feature 2",
+      "default": "WHATSAPP SUPPORT"
+    },
+    {
+      "type": "text",
+      "id": "feature_3",
+      "label": "Feature 3",
+      "default": "GYM & HOME"
+    },
+    {
+      "type": "text",
+      "id": "feature_4",
+      "label": "Feature 4",
+      "default": "24H DELIVERY"
+    },
+    {
+      "type": "range",
+      "id": "features_font_size",
+      "label": "Font size",
+      "min": 8,
+      "max": 16,
+      "step": 1,
+      "unit": "px",
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "features_font_weight",
+      "label": "Font weight",
+      "min": 400,
+      "max": 700,
+      "step": 100,
+      "default": 600
+    },
+    {
+      "type": "range",
+      "id": "features_letter_spacing",
+      "label": "Letter spacing",
+      "min": 0,
+      "max": 3,
+      "step": 0.1,
+      "unit": "px",
+      "default": 1.8
+    },
+    {
+      "type": "color",
+      "id": "features_color",
+      "label": "Text color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "header",
+      "content": "Process flow"
+    },
+    {
+      "type": "text",
+      "id": "process_step_1_highlight",
+      "label": "Step 1 highlight 1",
+      "default": "Assessment Form"
+    },
+    {
+      "type": "text",
+      "id": "process_step_1_text",
+      "label": "Step 1 text",
+      "default": "+"
+    },
+    {
+      "type": "text",
+      "id": "process_step_1_highlight_2",
+      "label": "Step 1 highlight 2",
+      "default": "Progress Photos"
+    },
+    {
+      "type": "text",
+      "id": "process_step_2_text_1",
+      "label": "Step 2 part 1",
+      "default": "Personalised Nutrition + Training System"
+    },
+    {
+      "type": "text",
+      "id": "process_step_2_text_2",
+      "label": "Step 2 part 2",
+      "default": "Delivered Within"
+    },
+    {
+      "type": "text",
+      "id": "process_step_2_highlight",
+      "label": "Step 2 highlight",
+      "default": "24 Hours"
+    },
+    {
+      "type": "range",
+      "id": "process_font_size",
+      "label": "Font size",
+      "min": 10,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "default": 13
+    },
+    {
+      "type": "range",
+      "id": "process_font_weight",
+      "label": "Font weight",
+      "min": 400,
+      "max": 700,
+      "step": 100,
+      "default": 600
+    },
+    {
+      "type": "color",
+      "id": "process_color",
+      "label": "Text color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "highlight_color",
+      "label": "Highlight color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "range",
+      "id": "arrow_opacity",
+      "label": "Arrow opacity",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "default": 0.5
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "row_spacing",
+      "label": "Row spacing",
+      "min": 6,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "default": 12
+    }
+  ],
+  "presets": [
+    {
+      "name": "Premium onboarding"
+    }
+  ]
+}
+{% endschema %}

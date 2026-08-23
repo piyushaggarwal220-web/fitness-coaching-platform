@@ -1,0 +1,973 @@
+{% doc %}
+  @prompt
+    Create a premium mobile-first transformation gallery called:
+    
+    CLIENT RESULTS
+    
+    This section will use ONLY ONE IMAGE per transformation.
+    
+    The uploaded image already contains BOTH the before and after photos inside a single image.
+    
+    VERY IMPORTANT:
+    
+    Do NOT create:
+    
+    • before image field
+    • after image field
+    • image comparison slider
+    • split image layout
+    • dual image containers
+    • image reveal effects
+    
+    Each transformation card must contain:
+    
+    ONE image upload field only.
+    
+    The image must display exactly as uploaded.
+    
+    Never crop.
+    
+    Never zoom.
+    
+    Never split.
+    
+    Never use object-fit: cover.
+    
+    Use:
+    
+    object-fit: contain;
+    
+    width: 100%;
+    
+    height: auto;
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    HEADER
+    
+    Small label:
+    
+    REAL CLIENT RESULTS
+    
+    Headline:
+    
+    Built By Consistency.
+    
+    Subheadline:
+    
+    Real people.
+    Real transformations.
+    Real accountability.
+    
+    Maximum width:
+    280px
+    
+    Center aligned.
+    
+    Typography must fit mobile screens.
+    
+    No oversized text.
+    
+    No clipping.
+    
+    No overflow.
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    BACKGROUND
+    
+    Do NOT use plain black.
+    
+    Create a premium layered background:
+    
+    Base:
+    #050505
+    
+    Add:
+    
+    subtle graphite texture:
+    rgba(255,255,255,0.015)
+    
+    soft orange ambient glow:
+    rgba(255,98,0,0.03)
+    
+    Place glows behind cards only.
+    
+    No gradients.
+    
+    No gaming aesthetics.
+    
+    No neon effects.
+    
+    The atmosphere should feel expensive and premium.
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    CARD DESIGN
+    
+    Card width:
+    
+    86vw
+    
+    Card spacing:
+    
+    16px
+    
+    Neighbour cards partially visible.
+    
+    Enable horizontal swipe.
+    
+    Enable CSS scroll snap.
+    
+    Card design:
+    
+    background:
+    rgba(255,255,255,0.025)
+    
+    border:
+    1px solid rgba(255,255,255,0.06)
+    
+    border radius:
+    28px
+    
+    padding:
+    16px
+    
+    overflow:
+    hidden
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    IMAGE CONTAINER
+    
+    This is the hero element.
+    
+    Rules:
+    
+    display uploaded image immediately.
+    
+    No placeholder.
+    
+    No empty container.
+    
+    No fixed image height.
+    
+    Image container height must adapt automatically to uploaded image height.
+    
+    If no image exists:
+    
+    hide entire card.
+    
+    Never display empty black boxes.
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    TOP IMAGE BADGE
+    
+    Floating badge:
+    
+    CLIENT RESULT
+    
+    Background:
+    rgba(0,0,0,0.65)
+    
+    Border:
+    1px solid rgba(255,255,255,0.08)
+    
+    Radius:
+    999px
+    
+    Padding:
+    8px 14px
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    RESULT HEADLINE
+    
+    Examples:
+    
+    Waist Down. Confidence Up.
+    
+    Strength Up. Fat Down.
+    
+    Built Visible Abs.
+    
+    Lean Without Extremes.
+    
+    Typography:
+    
+    serif italic
+    
+    22px
+    
+    Luxury editorial style.
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    DESCRIPTION
+    
+    Maximum:
+    
+    2 lines.
+    
+    Examples:
+    
+    Structured training.
+    Predictable progress.
+    
+    Consistency replaced guesswork.
+    
+    Use:
+    
+    rgba(255,255,255,0.72)
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    CLIENT FOOTER
+    
+    Left side:
+    
+    Client initials inside premium circular avatar.
+    
+    Under it:
+    
+    Name
+    City
+    
+    Right side:
+    
+    ✓ Verified Result
+    
+    Small premium badge.
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    ACTIVE CARD
+    
+    Selected card:
+    
+    scale 1
+    
+    border glow:
+    rgba(255,98,0,0.12)
+    
+    Inactive cards:
+    
+    opacity:
+    0.75
+    
+    scale:
+    0.96
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    PERFORMANCE
+    
+    Mobile first.
+    
+    iPhone Safari optimized.
+    
+    No layout shifts.
+    
+    No oversized typography.
+    
+    No text clipping.
+    
+    No image overflow.
+    
+    No blank containers.
+    
+    Hide cards automatically if image upload is missing.
+    
+    ━━━━━━━━━━━━━━━━━━━
+    
+    The final result should feel like a premium fitness campaign rather than a Shopify testimonial section.
+    
+    Visual inspiration:
+    
+    Nike × Gymshark × Apple.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-client-results-{{ ai_gen_id }} {
+    display: block;
+    position: relative;
+    width: 100%;
+    background: #050505;
+    padding: 60px 0 80px;
+    overflow: hidden;
+  }
+
+  .ai-client-results-{{ ai_gen_id }}::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 30% 40%, rgba(255, 98, 0, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 70% 60%, rgba(255, 98, 0, 0.03) 0%, transparent 50%),
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.015) 2px, rgba(255, 255, 255, 0.015) 4px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ai-client-results-header-{{ ai_gen_id }} {
+    text-align: center;
+    margin: 0 auto 48px;
+    max-width: 280px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .ai-client-results-label-{{ ai_gen_id }} {
+    font-family: {{ block.settings.label_font.family }}, {{ block.settings.label_font.fallback_families }};
+    font-weight: {{ block.settings.label_font.weight }};
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0 0 16px;
+  }
+
+  .ai-client-results-headline-{{ ai_gen_id }} {
+    font-family: {{ block.settings.headline_font.family }}, {{ block.settings.headline_font.fallback_families }};
+    font-weight: {{ block.settings.headline_font.weight }};
+    font-size: 32px;
+    line-height: 1.1;
+    color: #ffffff;
+    margin: 0 0 16px;
+  }
+
+  .ai-client-results-subheadline-{{ ai_gen_id }} {
+    font-family: {{ block.settings.subheadline_font.family }}, {{ block.settings.subheadline_font.fallback_families }};
+    font-weight: {{ block.settings.subheadline_font.weight }};
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.65);
+    margin: 0;
+  }
+
+  .ai-client-results-carousel-{{ ai_gen_id }} {
+    position: relative;
+    z-index: 1;
+  }
+
+  .ai-client-results-scroll-{{ ai_gen_id }} {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 calc((100vw - 86vw) / 2);
+  }
+
+  .ai-client-results-scroll-{{ ai_gen_id }}::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ai-client-results-card-{{ ai_gen_id }} {
+    flex: 0 0 86vw;
+    scroll-snap-align: center;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 28px;
+    padding: 16px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.75;
+    transform: scale(0.96);
+  }
+
+  .ai-client-results-card-{{ ai_gen_id }}.active {
+    opacity: 1;
+    transform: scale(1);
+    border-color: rgba(255, 98, 0, 0.12);
+  }
+
+  .ai-client-results-image-wrapper-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .ai-client-results-image-{{ ai_gen_id }} {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+  }
+
+  .ai-client-results-badge-{{ ai_gen_id }} {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-family: {{ block.settings.badge_font.family }}, {{ block.settings.badge_font.fallback_families }};
+    font-weight: {{ block.settings.badge_font.weight }};
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+  }
+
+  .ai-client-results-content-{{ ai_gen_id }} {
+    padding: 0 8px;
+  }
+
+  .ai-client-results-result-headline-{{ ai_gen_id }} {
+    font-family: {{ block.settings.result_headline_font.family }}, {{ block.settings.result_headline_font.fallback_families }};
+    font-weight: {{ block.settings.result_headline_font.weight }};
+    font-style: italic;
+    font-size: 22px;
+    line-height: 1.3;
+    color: #ffffff;
+    margin: 0 0 12px;
+  }
+
+  .ai-client-results-description-{{ ai_gen_id }} {
+    font-family: {{ block.settings.description_font.family }}, {{ block.settings.description_font.fallback_families }};
+    font-weight: {{ block.settings.description_font.weight }};
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.72);
+    margin: 0 0 24px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ai-client-results-footer-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ai-client-results-client-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ai-client-results-avatar-{{ ai_gen_id }} {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255, 98, 0, 0.2), rgba(255, 98, 0, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: {{ block.settings.avatar_font.family }}, {{ block.settings.avatar_font.fallback_families }};
+    font-weight: {{ block.settings.avatar_font.weight }};
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    flex-shrink: 0;
+  }
+
+  .ai-client-results-client-info-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ai-client-results-client-name-{{ ai_gen_id }} {
+    font-family: {{ block.settings.client_name_font.family }}, {{ block.settings.client_name_font.fallback_families }};
+    font-weight: {{ block.settings.client_name_font.weight }};
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+  }
+
+  .ai-client-results-client-city-{{ ai_gen_id }} {
+    font-family: {{ block.settings.client_city_font.family }}, {{ block.settings.client_city_font.fallback_families }};
+    font-weight: {{ block.settings.client_city_font.weight }};
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+  }
+
+  .ai-client-results-verified-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    font-family: {{ block.settings.verified_font.family }}, {{ block.settings.verified_font.fallback_families }};
+    font-weight: {{ block.settings.verified_font.weight }};
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .ai-client-results-verified-icon-{{ ai_gen_id }} {
+    width: 12px;
+    height: 12px;
+    color: #4ade80;
+  }
+{% endstyle %}
+
+<client-results-{{ ai_gen_id }} class="ai-client-results-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-client-results-header-{{ ai_gen_id }}">
+    <div class="ai-client-results-label-{{ ai_gen_id }}">{{ block.settings.label }}</div>
+    <h2 class="ai-client-results-headline-{{ ai_gen_id }}">{{ block.settings.headline }}</h2>
+    <div class="ai-client-results-subheadline-{{ ai_gen_id }}">{{ block.settings.subheadline }}</div>
+  </div>
+
+  <div class="ai-client-results-carousel-{{ ai_gen_id }}">
+    <div class="ai-client-results-scroll-{{ ai_gen_id }}" data-scroll-container>
+      {% for i in (1..6) %}
+        {% liquid
+          assign image_key = 'transformation_image_' | append: i
+          assign result_headline_key = 'result_headline_' | append: i
+          assign description_key = 'description_' | append: i
+          assign client_initials_key = 'client_initials_' | append: i
+          assign client_name_key = 'client_name_' | append: i
+          assign client_city_key = 'client_city_' | append: i
+
+          assign transformation_image = block.settings[image_key]
+          assign result_headline = block.settings[result_headline_key]
+          assign description = block.settings[description_key]
+          assign client_initials = block.settings[client_initials_key]
+          assign client_name = block.settings[client_name_key]
+          assign client_city = block.settings[client_city_key]
+        %}
+
+        {% if transformation_image != blank %}
+          <div class="ai-client-results-card-{{ ai_gen_id }}" data-card>
+            <div class="ai-client-results-image-wrapper-{{ ai_gen_id }}">
+              <img
+                src="{{ transformation_image | image_url: width: 800 }}"
+                alt="{{ result_headline | escape }}"
+                class="ai-client-results-image-{{ ai_gen_id }}"
+                loading="lazy"
+                width="{{ transformation_image.width }}"
+                height="{{ transformation_image.height }}"
+              >
+              <div class="ai-client-results-badge-{{ ai_gen_id }}">CLIENT RESULT</div>
+            </div>
+
+            <div class="ai-client-results-content-{{ ai_gen_id }}">
+              {% if result_headline != blank %}
+                <h3 class="ai-client-results-result-headline-{{ ai_gen_id }}">{{ result_headline }}</h3>
+              {% endif %}
+
+              {% if description != blank %}
+                <p class="ai-client-results-description-{{ ai_gen_id }}">{{ description }}</p>
+              {% endif %}
+
+              <div class="ai-client-results-footer-{{ ai_gen_id }}">
+                <div class="ai-client-results-client-{{ ai_gen_id }}">
+                  {% if client_initials != blank %}
+                    <div class="ai-client-results-avatar-{{ ai_gen_id }}">{{ client_initials }}</div>
+                  {% endif %}
+                  <div class="ai-client-results-client-info-{{ ai_gen_id }}">
+                    {% if client_name != blank %}
+                      <div class="ai-client-results-client-name-{{ ai_gen_id }}">{{ client_name }}</div>
+                    {% endif %}
+                    {% if client_city != blank %}
+                      <div class="ai-client-results-client-city-{{ ai_gen_id }}">{{ client_city }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="ai-client-results-verified-{{ ai_gen_id }}">
+                  <svg class="ai-client-results-verified-icon-{{ ai_gen_id }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Verified Result
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</client-results-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class ClientResults{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        this.scrollContainer = this.querySelector('[data-scroll-container]');
+        this.cards = this.querySelectorAll('[data-card]');
+        
+        if (!this.scrollContainer || this.cards.length === 0) return;
+
+        this.setupScrollObserver();
+        this.updateActiveCard();
+      }
+
+      setupScrollObserver() {
+        this.scrollContainer.addEventListener('scroll', () => {
+          this.updateActiveCard();
+        });
+      }
+
+      updateActiveCard() {
+        const containerRect = this.scrollContainer.getBoundingClientRect();
+        const containerCenter = containerRect.left + containerRect.width / 2;
+
+        let closestCard = null;
+        let closestDistance = Infinity;
+
+        this.cards.forEach((card) => {
+          const cardRect = card.getBoundingClientRect();
+          const cardCenter = cardRect.left + cardRect.width / 2;
+          const distance = Math.abs(containerCenter - cardCenter);
+
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestCard = card;
+          }
+        });
+
+        this.cards.forEach((card) => {
+          card.classList.remove('active');
+        });
+
+        if (closestCard) {
+          closestCard.classList.add('active');
+        }
+      }
+    }
+
+    customElements.define('client-results-{{ ai_gen_id }}', ClientResults{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Client results",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Header"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "default": "REAL CLIENT RESULTS"
+    },
+    {
+      "type": "font_picker",
+      "id": "label_font",
+      "label": "Label font",
+      "default": "inter_n5"
+    },
+    {
+      "type": "text",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Built By Consistency."
+    },
+    {
+      "type": "font_picker",
+      "id": "headline_font",
+      "label": "Headline font",
+      "default": "inter_n7"
+    },
+    {
+      "type": "textarea",
+      "id": "subheadline",
+      "label": "Subheadline",
+      "default": "Real people.\nReal transformations.\nReal accountability."
+    },
+    {
+      "type": "font_picker",
+      "id": "subheadline_font",
+      "label": "Subheadline font",
+      "default": "inter_n4"
+    },
+    {
+      "type": "header",
+      "content": "Transformation 1"
+    },
+    {
+      "type": "image_picker",
+      "id": "transformation_image_1",
+      "label": "Transformation image"
+    },
+    {
+      "type": "text",
+      "id": "result_headline_1",
+      "label": "Result headline",
+      "default": "Waist Down. Confidence Up."
+    },
+    {
+      "type": "textarea",
+      "id": "description_1",
+      "label": "Description",
+      "default": "Structured training.\nPredictable progress."
+    },
+    {
+      "type": "text",
+      "id": "client_initials_1",
+      "label": "Client initials",
+      "default": "RK"
+    },
+    {
+      "type": "text",
+      "id": "client_name_1",
+      "label": "Client name",
+      "default": "Rahul K."
+    },
+    {
+      "type": "text",
+      "id": "client_city_1",
+      "label": "Client city",
+      "default": "Mumbai"
+    },
+    {
+      "type": "header",
+      "content": "Transformation 2"
+    },
+    {
+      "type": "image_picker",
+      "id": "transformation_image_2",
+      "label": "Transformation image"
+    },
+    {
+      "type": "text",
+      "id": "result_headline_2",
+      "label": "Result headline",
+      "default": "Strength Up. Fat Down."
+    },
+    {
+      "type": "textarea",
+      "id": "description_2",
+      "label": "Description",
+      "default": "Consistency replaced guesswork."
+    },
+    {
+      "type": "text",
+      "id": "client_initials_2",
+      "label": "Client initials",
+      "default": "AP"
+    },
+    {
+      "type": "text",
+      "id": "client_name_2",
+      "label": "Client name",
+      "default": "Arjun P."
+    },
+    {
+      "type": "text",
+      "id": "client_city_2",
+      "label": "Client city",
+      "default": "Delhi"
+    },
+    {
+      "type": "header",
+      "content": "Transformation 3"
+    },
+    {
+      "type": "image_picker",
+      "id": "transformation_image_3",
+      "label": "Transformation image"
+    },
+    {
+      "type": "text",
+      "id": "result_headline_3",
+      "label": "Result headline",
+      "default": "Built Visible Abs."
+    },
+    {
+      "type": "textarea",
+      "id": "description_3",
+      "label": "Description",
+      "default": "Lean without extremes."
+    },
+    {
+      "type": "text",
+      "id": "client_initials_3",
+      "label": "Client initials",
+      "default": "SM"
+    },
+    {
+      "type": "text",
+      "id": "client_name_3",
+      "label": "Client name",
+      "default": "Sanjay M."
+    },
+    {
+      "type": "text",
+      "id": "client_city_3",
+      "label": "Client city",
+      "default": "Bangalore"
+    },
+    {
+      "type": "header",
+      "content": "Transformation 4"
+    },
+    {
+      "type": "image_picker",
+      "id": "transformation_image_4",
+      "label": "Transformation image"
+    },
+    {
+      "type": "text",
+      "id": "result_headline_4",
+      "label": "Result headline"
+    },
+    {
+      "type": "textarea",
+      "id": "description_4",
+      "label": "Description"
+    },
+    {
+      "type": "text",
+      "id": "client_initials_4",
+      "label": "Client initials"
+    },
+    {
+      "type": "text",
+      "id": "client_name_4",
+      "label": "Client name"
+    },
+    {
+      "type": "text",
+      "id": "client_city_4",
+      "label": "Client city"
+    },
+    {
+      "type": "header",
+      "content": "Transformation 5"
+    },
+    {
+      "type": "image_picker",
+      "id": "transformation_image_5",
+      "label": "Transformation image"
+    },
+    {
+      "type": "text",
+      "id": "result_headline_5",
+      "label": "Result headline"
+    },
+    {
+      "type": "textarea",
+      "id": "description_5",
+      "label": "Description"
+    },
+    {
+      "type": "text",
+      "id": "client_initials_5",
+      "label": "Client initials"
+    },
+    {
+      "type": "text",
+      "id": "client_name_5",
+      "label": "Client name"
+    },
+    {
+      "type": "text",
+      "id": "client_city_5",
+      "label": "Client city"
+    },
+    {
+      "type": "header",
+      "content": "Transformation 6"
+    },
+    {
+      "type": "image_picker",
+      "id": "transformation_image_6",
+      "label": "Transformation image"
+    },
+    {
+      "type": "text",
+      "id": "result_headline_6",
+      "label": "Result headline"
+    },
+    {
+      "type": "textarea",
+      "id": "description_6",
+      "label": "Description"
+    },
+    {
+      "type": "text",
+      "id": "client_initials_6",
+      "label": "Client initials"
+    },
+    {
+      "type": "text",
+      "id": "client_name_6",
+      "label": "Client name"
+    },
+    {
+      "type": "text",
+      "id": "client_city_6",
+      "label": "Client city"
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "font_picker",
+      "id": "badge_font",
+      "label": "Badge font",
+      "default": "inter_n5"
+    },
+    {
+      "type": "font_picker",
+      "id": "result_headline_font",
+      "label": "Result headline font",
+      "default": "serif"
+    },
+    {
+      "type": "font_picker",
+      "id": "description_font",
+      "label": "Description font",
+      "default": "inter_n4"
+    },
+    {
+      "type": "font_picker",
+      "id": "avatar_font",
+      "label": "Avatar font",
+      "default": "inter_n5"
+    },
+    {
+      "type": "font_picker",
+      "id": "client_name_font",
+      "label": "Client name font",
+      "default": "inter_n5"
+    },
+    {
+      "type": "font_picker",
+      "id": "client_city_font",
+      "label": "Client city font",
+      "default": "inter_n4"
+    },
+    {
+      "type": "font_picker",
+      "id": "verified_font",
+      "label": "Verified badge font",
+      "default": "inter_n5"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Client results"
+    }
+  ]
+}
+{% endschema %}

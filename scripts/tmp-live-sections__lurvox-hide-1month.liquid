@@ -1,0 +1,45 @@
+{% comment %} lurvox-tap-plan-force-v1 1785953539799 {% endcomment %}
+<style id="lurvox-hide-1month-style">
+  [data-plan-index="1"],
+  [data-plan-price="179"],
+  [data-plan-price="999"],
+  [data-plan-price="499"],
+  [data-plan-link*="trial"],
+  [data-plan-link*="1_week_trial"],
+  [data-cta-button],
+  [class*="ai-transformation-plan-cta-wrapper"] {
+    display: none !important;
+  }
+</style>
+<script>
+(function(){
+  function wire(){
+    document.querySelectorAll('[data-cta-button],[class*="ai-transformation-plan-cta-wrapper"]').forEach(function(el){
+      el.style.setProperty('display','none','important');
+    });
+    document.querySelectorAll('[class*="ai-transformation-plan-card-"][data-plan-link]').forEach(function(card){
+      if (card.dataset.lurvoxTapWired === '1') return;
+      card.dataset.lurvoxTapWired = '1';
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', function(e){
+        var link = card.getAttribute('data-plan-link');
+        if (!link) return;
+        e.preventDefault();
+        e.stopPropagation();
+        window.location.href = link;
+      }, true);
+    });
+  }
+  wire();
+  document.addEventListener('DOMContentLoaded', wire);
+  setTimeout(wire, 400);
+  setTimeout(wire, 1500);
+})();
+</script>
+{% schema %}
+{
+  "name": "LURVOX hide 1-month",
+  "settings": [],
+  "presets": [{ "name": "LURVOX hide 1-month" }]
+}
+{% endschema %}

@@ -1,0 +1,1471 @@
+{% doc %}
+  @prompt
+    IMPORTANT ANIMATION REQUIREMENT
+    
+    This section must visually continue the motion language established in Section 1.
+    
+    The visitor should feel like they are still inside the same premium experience.
+    
+    Do NOT create a static section.
+    
+    Do NOT instantly display content.
+    
+    Every major element must enter the viewport through elegant scroll-triggered animations.
+    
+    The section should feel alive and cinematic.
+    
+    ⸻
+    
+    PREMIUM SCROLL STORYTELLING
+    
+    As the visitor scrolls into the section:
+    
+    1. Small label fades upward.
+    2. Divider line animates from left to right.
+    3. Headline reveals line-by-line.
+    4. Subheadline fades upward with slight delay.
+    5. Transformation cards reveal sequentially.
+    6. Statistics animate only when visible.
+    7. Testimonials appear progressively.
+    
+    The entire section should unfold naturally as the visitor scrolls.
+    
+    ⸻
+    
+    HEADLINE ANIMATION
+    
+    “REAL TRANSFORMATIONS” label:
+    
+    * Fade in
+    * Move upward
+    * 0.8 second duration
+    
+    Luxury divider:
+    
+    * Animate width from 0% to 100%
+    * Smooth easing
+    
+    Headline:
+    
+    “Results You Can See. Confidence You Can Feel.”
+    
+    Animation:
+    
+    * Line-by-line reveal
+    * Soft blur-to-sharp transition
+    * Fade upward
+    * Luxury easing curve
+    
+    Subheadline:
+    
+    * Delayed reveal
+    * Fade upward
+    * Soft opacity transition
+    
+    ⸻
+    
+    TRANSFORMATION CARD ANIMATIONS
+    
+    Cards must NOT appear instantly.
+    
+    Cards should reveal one after another.
+    
+    Animation sequence:
+    
+    Card 1:
+    Fade up
+    
+    Card 2:
+    Fade up with delay
+    
+    Card 3:
+    Fade up with delay
+    
+    Card 4:
+    Fade up with delay
+    
+    Card 5:
+    Fade up with delay
+    
+    Use premium stagger timing.
+    
+    Create a luxury storytelling effect.
+    
+    ⸻
+    
+    CARD HOVER EXPERIENCE
+    
+    Desktop:
+    
+    * Smooth elevation
+    * Soft gold glow
+    * Depth increase
+    * Subtle scale effect
+    * Reflection sweep
+    
+    Mobile:
+    
+    * Touch feedback
+    * Gentle scaling
+    * Smooth card movement
+    
+    ⸻
+    
+    BEFORE/AFTER SLIDER EXPERIENCE
+    
+    When card enters viewport:
+    
+    * Slider container fades in
+    * Image reveals smoothly
+    * Glass border becomes visible
+    * Gold edge highlight animates
+    
+    The transformation reveal should feel premium and intentional.
+    
+    ⸻
+    
+    STATISTICS SECTION
+    
+    When statistics enter viewport:
+    
+    * Counters animate upward
+    * Numbers count smoothly
+    * Labels fade upward
+    * Entire row appears sequentially
+    
+    Only animate once.
+    
+    ⸻
+    
+    TESTIMONIAL SLIDER ANIMATIONS
+    
+    When testimonials appear:
+    
+    * Cards fade upward
+    * Slight stagger timing
+    * Smooth horizontal movement
+    
+    Cards should feel premium and editorial.
+    
+    ⸻
+    
+    SECTION TRANSITION EFFECT
+    
+    Create a smooth visual bridge between Section 1 and Section 2.
+    
+    Use:
+    
+    * Ambient gold lighting
+    * Shared motion language
+    * Consistent fade timing
+    * Consistent easing curves
+    
+    The visitor should never feel that they entered a new disconnected section.
+    
+    ⸻
+    
+    MOTION DESIGN STANDARD
+    
+    Reference:
+    
+    Apple Product Pages
+    
+    Rolex Storytelling Pages
+    
+    Tesla Product Launch Sections
+    
+    Luxury Hospitality Websites
+    
+    Animations should feel:
+    
+    * Cinematic
+    * Intentional
+    * Smooth
+    * Premium
+    * Expensive
+    
+    Never flashy.
+    
+    Never aggressive.
+    
+    Never distracting.
+    
+    Every animation should increase perceived value and trust.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-transformations-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+    background: {{ block.settings.background_color }};
+    padding: {{ block.settings.section_padding_top }}px 20px {{ block.settings.section_padding_bottom }}px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 1400px;
+    height: 100%;
+    background: radial-gradient(ellipse at top, {{ block.settings.ambient_glow_color }}15 0%, transparent 60%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view::before {
+    opacity: 1;
+  }
+
+  .ai-transformations-container-{{ ai_gen_id }} {
+    max-width: {{ block.settings.container_width }}px;
+    margin: 0 auto;
+  }
+
+  .ai-transformations-header-{{ ai_gen_id }} {
+    text-align: center;
+    margin-bottom: {{ block.settings.header_spacing }}px;
+  }
+
+  .ai-transformations-label-{{ ai_gen_id }} {
+    display: inline-block;
+    font-size: {{ block.settings.label_size }}px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: {{ block.settings.label_color }};
+    margin-bottom: 24px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformations-label-{{ ai_gen_id }} {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .ai-transformations-divider-{{ ai_gen_id }} {
+    width: {{ block.settings.divider_width }}px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, {{ block.settings.divider_color }}, transparent);
+    margin: 0 auto 32px;
+    transform: scaleX(0);
+    transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformations-divider-{{ ai_gen_id }} {
+    transform: scaleX(1);
+  }
+
+  .ai-transformations-headline-{{ ai_gen_id }} {
+    font-size: {{ block.settings.headline_size }}px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: {{ block.settings.headline_color }};
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .ai-transformations-headline-line-{{ ai_gen_id }} {
+    display: block;
+    opacity: 0;
+    transform: translateY(30px);
+    filter: blur(10px);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformations-headline-line-{{ ai_gen_id }}:nth-child(1) {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+    transition-delay: 0.5s;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformations-headline-line-{{ ai_gen_id }}:nth-child(2) {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+    transition-delay: 0.7s;
+  }
+
+  .ai-transformations-subheadline-{{ ai_gen_id }} {
+    font-size: {{ block.settings.subheadline_size }}px;
+    line-height: 1.6;
+    color: {{ block.settings.subheadline_color }};
+    max-width: 700px;
+    margin: 0 auto;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.9s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.9s;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformations-subheadline-{{ ai_gen_id }} {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .ai-transformations-grid-{{ ai_gen_id }} {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: {{ block.settings.card_gap }}px;
+    margin-bottom: {{ block.settings.stats_spacing }}px;
+  }
+
+  .ai-transformation-card-{{ ai_gen_id }} {
+    background: {{ block.settings.card_background }};
+    border-radius: {{ block.settings.card_border_radius }}px;
+    overflow: hidden;
+    position: relative;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px {{ block.settings.card_shadow_color }}10;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformation-card-{{ ai_gen_id }}:nth-child(1) {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 1.1s;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformation-card-{{ ai_gen_id }}:nth-child(2) {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 1.3s;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformation-card-{{ ai_gen_id }}:nth-child(3) {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 1.5s;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformation-card-{{ ai_gen_id }}:nth-child(4) {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 1.7s;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-in-view .ai-transformation-card-{{ ai_gen_id }}:nth-child(5) {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 1.9s;
+  }
+
+  @media (hover: hover) {
+    .ai-transformation-card-{{ ai_gen_id }}:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 40px {{ block.settings.hover_glow_color }}25, 0 0 60px {{ block.settings.hover_glow_color }}15;
+    }
+
+    .ai-transformation-card-{{ ai_gen_id }}::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, {{ block.settings.hover_glow_color }}15, transparent);
+      transition: left 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .ai-transformation-card-{{ ai_gen_id }}:hover::after {
+      left: 100%;
+    }
+  }
+
+  @media (hover: none) {
+    .ai-transformation-card-{{ ai_gen_id }}:active {
+      transform: scale(0.98);
+    }
+  }
+
+  .ai-card-slider-container-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: {{ block.settings.image_border_radius }}px {{ block.settings.image_border_radius }}px 0 0;
+    background: #f5f5f5;
+  }
+
+  .ai-card-slider-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    user-select: none;
+  }
+
+  .ai-card-before-{{ ai_gen_id }},
+  .ai-card-after-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ai-card-before-{{ ai_gen_id }} img,
+  .ai-card-after-{{ ai_gen_id }} img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .ai-card-after-{{ ai_gen_id }} {
+    clip-path: inset(0 50% 0 0);
+    transition: clip-path 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ai-card-slider-handle-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 4px;
+    height: 100%;
+    background: {{ block.settings.slider_handle_color }};
+    transform: translateX(-50%);
+    cursor: ew-resize;
+    transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ai-card-slider-handle-{{ ai_gen_id }}::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    background: {{ block.settings.slider_handle_color }};
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .ai-card-slider-handle-{{ ai_gen_id }}::after {
+    content: '⟷';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .ai-card-labels-{{ ai_gen_id }} {
+    position: absolute;
+    top: 16px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 16px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .ai-card-label-{{ ai_gen_id }} {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    backdrop-filter: blur(10px);
+  }
+
+  .ai-card-content-{{ ai_gen_id }} {
+    padding: 24px;
+  }
+
+  .ai-card-name-{{ ai_gen_id }} {
+    font-size: {{ block.settings.card_name_size }}px;
+    font-weight: 600;
+    color: {{ block.settings.card_text_color }};
+    margin-bottom: 8px;
+  }
+
+  .ai-card-result-{{ ai_gen_id }} {
+    font-size: {{ block.settings.card_result_size }}px;
+    color: {{ block.settings.card_result_color }};
+    line-height: 1.5;
+  }
+
+  .ai-transformations-stats-{{ ai_gen_id }} {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+    text-align: center;
+    padding: {{ block.settings.stats_padding }}px 0;
+    margin-bottom: {{ block.settings.testimonials_spacing }}px;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-stats-in-view .ai-transformations-stats-{{ ai_gen_id }} {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .ai-stat-number-{{ ai_gen_id }} {
+    font-size: {{ block.settings.stat_number_size }}px;
+    font-weight: 700;
+    color: {{ block.settings.stat_number_color }};
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  .ai-stat-label-{{ ai_gen_id }} {
+    font-size: {{ block.settings.stat_label_size }}px;
+    color: {{ block.settings.stat_label_color }};
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .ai-transformations-testimonials-{{ ai_gen_id }} {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+  }
+
+  .ai-testimonial-card-{{ ai_gen_id }} {
+    background: {{ block.settings.testimonial_background }};
+    border-radius: {{ block.settings.testimonial_border_radius }}px;
+    padding: 32px;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px {{ block.settings.card_shadow_color }}08;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-testimonials-in-view .ai-testimonial-card-{{ ai_gen_id }}:nth-child(1) {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.2s;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-testimonials-in-view .ai-testimonial-card-{{ ai_gen_id }}:nth-child(2) {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.4s;
+  }
+
+  .ai-transformations-{{ ai_gen_id }}.ai-testimonials-in-view .ai-testimonial-card-{{ ai_gen_id }}:nth-child(3) {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.6s;
+  }
+
+  .ai-testimonial-quote-{{ ai_gen_id }} {
+    font-size: {{ block.settings.testimonial_text_size }}px;
+    line-height: 1.6;
+    color: {{ block.settings.testimonial_text_color }};
+    margin-bottom: 20px;
+    font-style: italic;
+  }
+
+  .ai-testimonial-author-{{ ai_gen_id }} {
+    font-size: {{ block.settings.testimonial_author_size }}px;
+    font-weight: 600;
+    color: {{ block.settings.testimonial_author_color }};
+  }
+
+  @media screen and (max-width: 768px) {
+    .ai-transformations-headline-{{ ai_gen_id }} {
+      font-size: calc({{ block.settings.headline_size }}px * 0.6);
+    }
+
+    .ai-transformations-subheadline-{{ ai_gen_id }} {
+      font-size: calc({{ block.settings.subheadline_size }}px * 0.9);
+    }
+
+    .ai-transformations-grid-{{ ai_gen_id }} {
+      grid-template-columns: 1fr;
+    }
+
+    .ai-stat-number-{{ ai_gen_id }} {
+      font-size: calc({{ block.settings.stat_number_size }}px * 0.7);
+    }
+  }
+{% endstyle %}
+
+<transformation-section-{{ ai_gen_id }} class="ai-transformations-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-transformations-container-{{ ai_gen_id }}">
+    <div class="ai-transformations-header-{{ ai_gen_id }}">
+      {% if block.settings.label != blank %}
+        <div class="ai-transformations-label-{{ ai_gen_id }}">{{ block.settings.label }}</div>
+      {% endif %}
+
+      {% if block.settings.show_divider %}
+        <div class="ai-transformations-divider-{{ ai_gen_id }}"></div>
+      {% endif %}
+
+      {% if block.settings.headline != blank %}
+        <h2 class="ai-transformations-headline-{{ ai_gen_id }}">
+          {% assign headline_parts = block.settings.headline | split: '.' %}
+          {% for part in headline_parts %}
+            {% if part != blank %}
+              <span class="ai-transformations-headline-line-{{ ai_gen_id }}">{{ part | strip }}{% unless forloop.last %}.{% endunless %}</span>
+            {% endif %}
+          {% endfor %}
+        </h2>
+      {% endif %}
+
+      {% if block.settings.subheadline != blank %}
+        <div class="ai-transformations-subheadline-{{ ai_gen_id }}">{{ block.settings.subheadline }}</div>
+      {% endif %}
+    </div>
+
+    <div class="ai-transformations-grid-{{ ai_gen_id }}">
+      {% for i in (1..5) %}
+        {% assign card_enabled_key = 'card_' | append: i | append: '_enabled' %}
+        {% assign card_name_key = 'card_' | append: i | append: '_name' %}
+        {% assign card_result_key = 'card_' | append: i | append: '_result' %}
+        {% assign card_before_key = 'card_' | append: i | append: '_before_image' %}
+        {% assign card_after_key = 'card_' | append: i | append: '_after_image' %}
+
+        {% if block.settings[card_enabled_key] %}
+          <div class="ai-transformation-card-{{ ai_gen_id }}" data-card="{{ i }}">
+            <div class="ai-card-slider-container-{{ ai_gen_id }}">
+              <div class="ai-card-slider-{{ ai_gen_id }}" data-slider="{{ i }}">
+                <div class="ai-card-before-{{ ai_gen_id }}">
+                  {% if block.settings[card_before_key] %}
+                    <img src="{{ block.settings[card_before_key] | image_url: width: 800 }}" alt="Before" loading="lazy">
+                  {% else %}
+                    <div style="width: 100%; height: 100%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; color: #999;">Before</div>
+                  {% endif %}
+                </div>
+                <div class="ai-card-after-{{ ai_gen_id }}" data-after="{{ i }}">
+                  {% if block.settings[card_after_key] %}
+                    <img src="{{ block.settings[card_after_key] | image_url: width: 800 }}" alt="After" loading="lazy">
+                  {% else %}
+                    <div style="width: 100%; height: 100%; background: #c0c0c0; display: flex; align-items: center; justify-content: center; color: #666;">After</div>
+                  {% endif %}
+                </div>
+                <div class="ai-card-slider-handle-{{ ai_gen_id }}" data-handle="{{ i }}"></div>
+                <div class="ai-card-labels-{{ ai_gen_id }}">
+                  <span class="ai-card-label-{{ ai_gen_id }}">Before</span>
+                  <span class="ai-card-label-{{ ai_gen_id }}">After</span>
+                </div>
+              </div>
+            </div>
+            <div class="ai-card-content-{{ ai_gen_id }}">
+              {% if block.settings[card_name_key] != blank %}
+                <div class="ai-card-name-{{ ai_gen_id }}">{{ block.settings[card_name_key] }}</div>
+              {% endif %}
+              {% if block.settings[card_result_key] != blank %}
+                <div class="ai-card-result-{{ ai_gen_id }}">{{ block.settings[card_result_key] }}</div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% if block.settings.show_stats %}
+      <div class="ai-transformations-stats-{{ ai_gen_id }}" data-stats>
+        {% for i in (1..4) %}
+          {% assign stat_number_key = 'stat_' | append: i | append: '_number' %}
+          {% assign stat_label_key = 'stat_' | append: i | append: '_label' %}
+          {% if block.settings[stat_number_key] != blank %}
+            <div class="ai-stat-{{ ai_gen_id }}">
+              <div class="ai-stat-number-{{ ai_gen_id }}" data-target="{{ block.settings[stat_number_key] }}">0</div>
+              <div class="ai-stat-label-{{ ai_gen_id }}">{{ block.settings[stat_label_key] }}</div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if block.settings.show_testimonials %}
+      <div class="ai-transformations-testimonials-{{ ai_gen_id }}" data-testimonials>
+        {% for i in (1..3) %}
+          {% assign testimonial_quote_key = 'testimonial_' | append: i | append: '_quote' %}
+          {% assign testimonial_author_key = 'testimonial_' | append: i | append: '_author' %}
+          {% if block.settings[testimonial_quote_key] != blank %}
+            <div class="ai-testimonial-card-{{ ai_gen_id }}">
+              <div class="ai-testimonial-quote-{{ ai_gen_id }}">"{{ block.settings[testimonial_quote_key] }}"</div>
+              <div class="ai-testimonial-author-{{ ai_gen_id }}">{{ block.settings[testimonial_author_key] }}</div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</transformation-section-{{ ai_gen_id }}>
+
+<script>
+(function() {
+  class TransformationSection{{ ai_gen_id }} extends HTMLElement {
+    constructor() {
+      super();
+      this.hasAnimated = false;
+      this.statsAnimated = false;
+      this.testimonialsAnimated = false;
+    }
+
+    connectedCallback() {
+      this.setupIntersectionObserver();
+      this.setupSliders();
+    }
+
+    setupIntersectionObserver() {
+      const options = {
+        threshold: 0.15,
+        rootMargin: '0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !this.hasAnimated) {
+            this.classList.add('ai-in-view');
+            this.hasAnimated = true;
+          }
+        });
+      }, options);
+
+      observer.observe(this);
+
+      const statsElement = this.querySelector('[data-stats]');
+      if (statsElement) {
+        const statsObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && !this.statsAnimated) {
+              this.classList.add('ai-stats-in-view');
+              this.animateStats();
+              this.statsAnimated = true;
+            }
+          });
+        }, options);
+
+        statsObserver.observe(statsElement);
+      }
+
+      const testimonialsElement = this.querySelector('[data-testimonials]');
+      if (testimonialsElement) {
+        const testimonialsObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && !this.testimonialsAnimated) {
+              this.classList.add('ai-testimonials-in-view');
+              this.testimonialsAnimated = true;
+            }
+          });
+        }, options);
+
+        testimonialsObserver.observe(testimonialsElement);
+      }
+    }
+
+    setupSliders() {
+      const sliders = this.querySelectorAll('[data-slider]');
+      
+      sliders.forEach(slider => {
+        const handle = slider.querySelector('[data-handle]');
+        const afterImage = slider.querySelector('[data-after]');
+        let isDragging = false;
+
+        const updateSlider = (clientX) => {
+          const rect = slider.getBoundingClientRect();
+          const x = clientX - rect.left;
+          const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+          
+          handle.style.left = percentage + '%';
+          afterImage.style.clipPath = `inset(0 ${100 - percentage}% 0 0)`;
+        };
+
+        const startDrag = (e) => {
+          isDragging = true;
+          e.preventDefault();
+        };
+
+        const stopDrag = () => {
+          isDragging = false;
+        };
+
+        const onMove = (e) => {
+          if (!isDragging) return;
+          const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+          updateSlider(clientX);
+        };
+
+        handle.addEventListener('mousedown', startDrag);
+        handle.addEventListener('touchstart', startDrag);
+        
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('touchmove', onMove);
+        
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+
+        slider.addEventListener('click', (e) => {
+          if (e.target === handle) return;
+          const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+          updateSlider(clientX);
+        });
+      });
+    }
+
+    animateStats() {
+      const statNumbers = this.querySelectorAll('[data-target]');
+      
+      statNumbers.forEach(stat => {
+        const target = parseInt(stat.getAttribute('data-target'));
+        const duration = 2000;
+        const increment = target / (duration / 16);
+        let current = 0;
+
+        const updateNumber = () => {
+          current += increment;
+          if (current < target) {
+            stat.textContent = Math.floor(current);
+            requestAnimationFrame(updateNumber);
+          } else {
+            stat.textContent = target;
+          }
+        };
+
+        setTimeout(() => updateNumber(), 200);
+      });
+    }
+  }
+
+  customElements.define('transformation-section-{{ ai_gen_id }}', TransformationSection{{ ai_gen_id }});
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Transformations showcase",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "default": "REAL TRANSFORMATIONS"
+    },
+    {
+      "type": "range",
+      "id": "label_size",
+      "label": "Label size",
+      "min": 10,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "color",
+      "id": "label_color",
+      "label": "Label color",
+      "default": "#D4AF37"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_divider",
+      "label": "Show divider",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "divider_width",
+      "label": "Divider width",
+      "min": 50,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "default": 120
+    },
+    {
+      "type": "color",
+      "id": "divider_color",
+      "label": "Divider color",
+      "default": "#D4AF37"
+    },
+    {
+      "type": "text",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Results You Can See. Confidence You Can Feel."
+    },
+    {
+      "type": "range",
+      "id": "headline_size",
+      "label": "Headline size",
+      "min": 24,
+      "max": 80,
+      "step": 2,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "color",
+      "id": "headline_color",
+      "label": "Headline color",
+      "default": "#000000"
+    },
+    {
+      "type": "textarea",
+      "id": "subheadline",
+      "label": "Subheadline",
+      "default": "Join thousands who have transformed their lives with our proven program"
+    },
+    {
+      "type": "range",
+      "id": "subheadline_size",
+      "label": "Subheadline size",
+      "min": 14,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 18
+    },
+    {
+      "type": "color",
+      "id": "subheadline_color",
+      "label": "Subheadline color",
+      "default": "#666666"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "container_width",
+      "label": "Container width",
+      "min": 800,
+      "max": 1600,
+      "step": 50,
+      "unit": "px",
+      "default": 1200
+    },
+    {
+      "type": "range",
+      "id": "section_padding_top",
+      "label": "Top padding",
+      "min": 40,
+      "max": 200,
+      "step": 10,
+      "unit": "px",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "section_padding_bottom",
+      "label": "Bottom padding",
+      "min": 40,
+      "max": 200,
+      "step": 10,
+      "unit": "px",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "header_spacing",
+      "label": "Header spacing",
+      "min": 40,
+      "max": 120,
+      "step": 10,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "card_gap",
+      "label": "Card gap",
+      "min": 16,
+      "max": 60,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "ambient_glow_color",
+      "label": "Ambient glow",
+      "default": "#D4AF37"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "Card background",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "card_shadow_color",
+      "label": "Card shadow",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "hover_glow_color",
+      "label": "Hover glow",
+      "default": "#D4AF37"
+    },
+    {
+      "type": "header",
+      "content": "Card style"
+    },
+    {
+      "type": "range",
+      "id": "card_border_radius",
+      "label": "Card border radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "image_border_radius",
+      "label": "Image border radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "slider_handle_color",
+      "label": "Slider handle",
+      "default": "#D4AF37"
+    },
+    {
+      "type": "range",
+      "id": "card_name_size",
+      "label": "Name size",
+      "min": 14,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 18
+    },
+    {
+      "type": "color",
+      "id": "card_text_color",
+      "label": "Name color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "card_result_size",
+      "label": "Result size",
+      "min": 12,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "color",
+      "id": "card_result_color",
+      "label": "Result color",
+      "default": "#666666"
+    },
+    {
+      "type": "header",
+      "content": "Card 1"
+    },
+    {
+      "type": "checkbox",
+      "id": "card_1_enabled",
+      "label": "Enable card 1",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "card_1_name",
+      "label": "Name",
+      "default": "Sarah M."
+    },
+    {
+      "type": "text",
+      "id": "card_1_result",
+      "label": "Result",
+      "default": "Lost 25 lbs in 12 weeks"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_1_before_image",
+      "label": "Before image"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_1_after_image",
+      "label": "After image"
+    },
+    {
+      "type": "header",
+      "content": "Card 2"
+    },
+    {
+      "type": "checkbox",
+      "id": "card_2_enabled",
+      "label": "Enable card 2",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "card_2_name",
+      "label": "Name",
+      "default": "Michael R."
+    },
+    {
+      "type": "text",
+      "id": "card_2_result",
+      "label": "Result",
+      "default": "Gained 15 lbs muscle"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_2_before_image",
+      "label": "Before image"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_2_after_image",
+      "label": "After image"
+    },
+    {
+      "type": "header",
+      "content": "Card 3"
+    },
+    {
+      "type": "checkbox",
+      "id": "card_3_enabled",
+      "label": "Enable card 3",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "card_3_name",
+      "label": "Name",
+      "default": "Jessica L."
+    },
+    {
+      "type": "text",
+      "id": "card_3_result",
+      "label": "Result",
+      "default": "Transformed in 90 days"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_3_before_image",
+      "label": "Before image"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_3_after_image",
+      "label": "After image"
+    },
+    {
+      "type": "header",
+      "content": "Card 4"
+    },
+    {
+      "type": "checkbox",
+      "id": "card_4_enabled",
+      "label": "Enable card 4",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "card_4_name",
+      "label": "Name"
+    },
+    {
+      "type": "text",
+      "id": "card_4_result",
+      "label": "Result"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_4_before_image",
+      "label": "Before image"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_4_after_image",
+      "label": "After image"
+    },
+    {
+      "type": "header",
+      "content": "Card 5"
+    },
+    {
+      "type": "checkbox",
+      "id": "card_5_enabled",
+      "label": "Enable card 5",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "card_5_name",
+      "label": "Name"
+    },
+    {
+      "type": "text",
+      "id": "card_5_result",
+      "label": "Result"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_5_before_image",
+      "label": "Before image"
+    },
+    {
+      "type": "image_picker",
+      "id": "card_5_after_image",
+      "label": "After image"
+    },
+    {
+      "type": "header",
+      "content": "Statistics"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_stats",
+      "label": "Show statistics",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "stats_spacing",
+      "label": "Stats spacing",
+      "min": 40,
+      "max": 120,
+      "step": 10,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "stats_padding",
+      "label": "Stats padding",
+      "min": 20,
+      "max": 100,
+      "step": 10,
+      "unit": "px",
+      "default": 60
+    },
+    {
+      "type": "text",
+      "id": "stat_1_number",
+      "label": "Stat 1 number",
+      "default": "5000"
+    },
+    {
+      "type": "text",
+      "id": "stat_1_label",
+      "label": "Stat 1 label",
+      "default": "Transformations"
+    },
+    {
+      "type": "text",
+      "id": "stat_2_number",
+      "label": "Stat 2 number",
+      "default": "95"
+    },
+    {
+      "type": "text",
+      "id": "stat_2_label",
+      "label": "Stat 2 label",
+      "default": "Success Rate"
+    },
+    {
+      "type": "text",
+      "id": "stat_3_number",
+      "label": "Stat 3 number",
+      "default": "12"
+    },
+    {
+      "type": "text",
+      "id": "stat_3_label",
+      "label": "Stat 3 label",
+      "default": "Week Program"
+    },
+    {
+      "type": "text",
+      "id": "stat_4_number",
+      "label": "Stat 4 number",
+      "default": "100"
+    },
+    {
+      "type": "text",
+      "id": "stat_4_label",
+      "label": "Stat 4 label",
+      "default": "Money Back"
+    },
+    {
+      "type": "range",
+      "id": "stat_number_size",
+      "label": "Number size",
+      "min": 32,
+      "max": 80,
+      "step": 2,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "color",
+      "id": "stat_number_color",
+      "label": "Number color",
+      "default": "#D4AF37"
+    },
+    {
+      "type": "range",
+      "id": "stat_label_size",
+      "label": "Label size",
+      "min": 10,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "color",
+      "id": "stat_label_color",
+      "label": "Label color",
+      "default": "#666666"
+    },
+    {
+      "type": "header",
+      "content": "Testimonials"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_testimonials",
+      "label": "Show testimonials",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "testimonials_spacing",
+      "label": "Testimonials spacing",
+      "min": 0,
+      "max": 100,
+      "step": 10,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "color",
+      "id": "testimonial_background",
+      "label": "Background",
+      "default": "#F9F9F9"
+    },
+    {
+      "type": "range",
+      "id": "testimonial_border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "textarea",
+      "id": "testimonial_1_quote",
+      "label": "Testimonial 1 quote",
+      "default": "This program changed my life. I feel stronger and more confident than ever."
+    },
+    {
+      "type": "text",
+      "id": "testimonial_1_author",
+      "label": "Testimonial 1 author",
+      "default": "Sarah M."
+    },
+    {
+      "type": "textarea",
+      "id": "testimonial_2_quote",
+      "label": "Testimonial 2 quote",
+      "default": "The results speak for themselves. Best investment I've ever made."
+    },
+    {
+      "type": "text",
+      "id": "testimonial_2_author",
+      "label": "Testimonial 2 author",
+      "default": "Michael R."
+    },
+    {
+      "type": "textarea",
+      "id": "testimonial_3_quote",
+      "label": "Testimonial 3 quote",
+      "default": "I never thought I could achieve these results. Thank you!"
+    },
+    {
+      "type": "text",
+      "id": "testimonial_3_author",
+      "label": "Testimonial 3 author",
+      "default": "Jessica L."
+    },
+    {
+      "type": "range",
+      "id": "testimonial_text_size",
+      "label": "Quote size",
+      "min": 14,
+      "max": 22,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "testimonial_text_color",
+      "label": "Quote color",
+      "default": "#333333"
+    },
+    {
+      "type": "range",
+      "id": "testimonial_author_size",
+      "label": "Author size",
+      "min": 12,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "color",
+      "id": "testimonial_author_color",
+      "label": "Author color",
+      "default": "#000000"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Transformations showcase"
+    }
+  ]
+}
+{% endschema %}

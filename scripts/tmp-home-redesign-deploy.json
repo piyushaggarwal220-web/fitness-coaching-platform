@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "published": false,
+  "wroteToMain": false,
+  "draftThemeId": "gid://shopify/OnlineStoreTheme/161176715515",
+  "draftThemeName": "LURVOX Home Redesign 2026-07-28",
+  "mainThemeId": "gid://shopify/OnlineStoreTheme/161206370555",
+  "mainThemeName": "LURVOX Prices 2026-07-29 09:29",
+  "upserted": [
+    "sections/lurvox-home-redesign.liquid",
+    "sections/lurvox-header-redesign.liquid",
+    "sections/lurvox-plan-compare.liquid",
+    "templates/index.json",
+    "sections/header-group.json"
+  ],
+  "previewUrl": "https://www.lurvox.in/?preview_theme_id=161176715515",
+  "liveUrl": "https://www.lurvox.in/",
+  "note": "Live MAIN was not modified. Preview includes the homepage, header, prices, and comparison table."
+}

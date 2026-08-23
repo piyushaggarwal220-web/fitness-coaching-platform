@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "lurvox_page_content": {
+      "type": "lurvox-page-content",
+      "settings": {}
+    }
+  },
+  "order": [
+    "lurvox_page_content"
+  ]
+}

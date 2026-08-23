@@ -1,0 +1,18 @@
+{% comment %} lurvox-hide-trial-and-1month-v1 {% endcomment %}
+<style id="lurvox-hide-1month-style">
+  [data-plan-index="1"],
+  [data-plan-price="179"],
+  [data-plan-price="999"],
+  [data-plan-price="499"],
+  [data-plan-link*="trial"],
+  [data-plan-link*="1_week_trial"] {
+    display: none !important;
+  }
+</style>
+{% schema %}
+{
+  "name": "LURVOX hide 1-month",
+  "settings": [],
+  "presets": [{ "name": "LURVOX hide 1-month" }]
+}
+{% endschema %}

@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "league_main": {
+      "type": "lurvox-consistency-league",
+      "settings": {}
+    }
+  },
+  "order": [
+    "league_main"
+  ]
+}

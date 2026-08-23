@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { BRAND_NAME } from '@/lib/brand'
 import { authStyles } from '@/lib/auth-styles'
@@ -23,6 +23,8 @@ const GOAL_OPTIONS = (['3_months', '6_months', '12_months'] as const).map((slug)
   duration: PLAN_PAGE_COPY[slug].durationLabel,
 }))
 
+const CONSULT_BOOKED_KEY = 'lurvox_consult_booked'
+
 export default function TalkToCoachPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -34,6 +36,15 @@ export default function TalkToCoachPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [remaining, setRemaining] = useState<number | null>(null)
+  const [booked, setBooked] = useState(false)
+
+  useEffect(() => {
+    try {
+      setBooked(window.localStorage.getItem(CONSULT_BOOKED_KEY) === '1')
+    } catch {
+      /* ignore */
+    }
+  }, [])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -77,8 +88,14 @@ export default function TalkToCoachPage() {
         return
       }
 
-      setSuccess('Thanks — we received your message. A coach will get back to you soon.')
+      setSuccess('Call booked. A coach will call you at your preferred time.')
       if (typeof payload.remaining === 'number') setRemaining(payload.remaining)
+      setBooked(true)
+      try {
+        window.localStorage.setItem(CONSULT_BOOKED_KEY, '1')
+      } catch {
+        /* ignore */
+      }
       setName('')
       setEmail('')
       setPhone('')
@@ -96,13 +113,15 @@ export default function TalkToCoachPage() {
     <div style={authStyles.page}>
       <div style={{ ...authStyles.card, maxWidth: 480 }}>
         <p style={authStyles.logo}>{BRAND_NAME}</p>
-        <h1 style={authStyles.title}>Talk to a coach</h1>
+        <h1 style={authStyles.title}>{booked ? 'Call booked' : 'Talk to a coach'}</h1>
         <p style={{ margin: '0 0 24px', textAlign: 'center', color: colors.textSecondary, lineHeight: 1.5 }}>
-          Free consultation — pick your goal and we&apos;ll help you decide if LURVOX is the right fit.
+          {booked
+            ? 'We have your request. A coach will call you at the time you picked. No need to submit again.'
+            : <>Free consultation — pick your goal and we&apos;ll help you decide if LURVOX is the right fit.</>}
         </p>
 
         {error && <p style={authStyles.error}>{error}</p>}
-        {success && (
+        {(success || booked) && (
           <p style={{
             backgroundColor: colors.successMuted,
             color: colors.success,
@@ -112,15 +131,16 @@ export default function TalkToCoachPage() {
             textAlign: 'center',
             fontSize: 14,
           }}>
-            {success}
+            {success || 'Call booked. A coach will call you soon.'}
           </p>
         )}
-        {remaining != null && remaining === 0 && !success && (
+        {remaining != null && remaining === 0 && !success && !booked && (
           <p style={{ ...authStyles.error, marginBottom: 16 }}>
             You have used both consultation requests for this email and phone combination.
           </p>
         )}
 
+        {!booked && (
         <form onSubmit={handleSubmit} style={authStyles.form}>
           <div style={authStyles.inputGroup}>
             <label htmlFor="name" style={authStyles.label}>Name</label>
@@ -236,6 +256,7 @@ export default function TalkToCoachPage() {
             {loading ? 'Sending…' : 'Send message'}
           </button>
         </form>
+        )}
 
         <p style={{ marginTop: 24, textAlign: 'center', fontSize: 13, color: colors.textMuted }}>
           Already a client?{' '}

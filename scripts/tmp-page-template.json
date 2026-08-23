@@ -1,0 +1,172 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "disabled": true,
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "blocks_VrR4ep": {
+      "type": "_blocks",
+      "blocks": {
+        "ai_gen_block_361650c_9rdfNq": {
+          "type": "ai_gen_block_361650c",
+          "settings": {
+            "top_label": "YOUR TRANSFORMATION STARTS HERE",
+            "headline": "Choose The Journey That Matches Your Ambition",
+            "subheadline": "Every transformation begins with commitment. Select the level of support, accountability and guidance that aligns with your goals.",
+            "plan_1_enabled": true,
+            "plan_1_label": "THE FOUNDATION",
+            "plan_1_badge": "",
+            "plan_1_duration": "1 MONTH",
+            "plan_1_price": "500",
+            "plan_1_original_price": "",
+            "plan_1_savings": "",
+            "plan_1_monthly": "₹500/month",
+            "plan_1_description": "For those ready to take the first step.",
+            "plan_1_footer": "Start building momentum.",
+            "plan_1_link": "",
+            "plan_1_default": false,
+            "plan_2_enabled": true,
+            "plan_2_label": "THE MOMENTUM PHASE",
+            "plan_2_badge": "",
+            "plan_2_duration": "3 MONTHS",
+            "plan_2_price": "900",
+            "plan_2_original_price": "1500",
+            "plan_2_savings": "SAVE ₹600",
+            "plan_2_monthly": "≈ ₹300/month",
+            "plan_2_description": "For those committed to building sustainable habits.",
+            "plan_2_footer": "Create consistency and sustainable progress.",
+            "plan_2_link": "",
+            "plan_2_default": false,
+            "plan_3_enabled": true,
+            "plan_3_label": "THE TRANSFORMATION PHASE",
+            "plan_3_badge": "⭐ MOST POPULAR",
+            "plan_3_duration": "6 MONTHS",
+            "plan_3_price": "1500",
+            "plan_3_original_price": "3000",
+            "plan_3_savings": "SAVE ₹1500",
+            "plan_3_monthly": "≈ ₹250/month",
+            "plan_3_description": "The ideal balance between accountability, support and measurable results.",
+            "plan_3_footer": "Recommended for clients seeking meaningful and sustainable transformation.",
+            "plan_3_link": "",
+            "plan_3_default": true,
+            "plan_4_enabled": true,
+            "plan_4_label": "THE ELITE PHASE",
+            "plan_4_badge": "BEST VALUE",
+            "plan_4_duration": "12 MONTHS",
+            "plan_4_price": "2400",
+            "plan_4_original_price": "6000",
+            "plan_4_savings": "SAVE ₹3600",
+            "plan_4_monthly": "≈ ₹200/month",
+            "plan_4_description": "Our most complete transformation experience.",
+            "plan_4_footer": "Designed for complete lifestyle transformation.",
+            "plan_4_link": "",
+            "plan_4_default": false,
+            "show_urgency": true,
+            "urgency_label": "PRICE INCREASES IN",
+            "countdown_hours": 8,
+            "urgency_subtext": "Lock today's pricing before the next increase.",
+            "cta_text": "START YOUR TRANSFORMATION",
+            "trust_stat": "27,000+ transformations completed",
+            "trust_item_1": "Secure Checkout",
+            "trust_item_2": "WhatsApp Support Included",
+            "trust_item_3": "Delivered Within 48 Hours",
+            "trust_item_4": "Works For Gym And Home Training",
+            "background_color": "#050505",
+            "text_color": "#ffffff",
+            "secondary_text_color": "#ffffffb8",
+            "accent_color": "#ffffff",
+            "card_background": "#ffffff05",
+            "selected_card_background": "#ff62000f",
+            "selected_border_color": "#ff620066",
+            "glow_color": "#ff620059",
+            "button_hover_color": "#e55800",
+            "border_radius": 24,
+            "button_border_radius": 16,
+            "section_padding_mobile": 40,
+            "section_padding_desktop": 80
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "ai_gen_block_361650c_9rdfNq"
+      ],
+      "name": "Plan selector",
+      "settings": {
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "flex-start",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 12,
+        "section_width": "page-width",
+        "section_height": "",
+        "section_height_custom": 50,
+        "color_scheme": "",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    }
+  },
+  "order": [
+    "main",
+    "blocks_VrR4ep"
+  ]
+}

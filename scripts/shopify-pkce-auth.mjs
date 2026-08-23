@@ -119,4 +119,4 @@ server.listen(PORT, '127.0.0.1', () => {
 setTimeout(() => {
   console.error('Timed out waiting for browser auth')
   process.exit(1)
-}, 300000)
+}, 900000)

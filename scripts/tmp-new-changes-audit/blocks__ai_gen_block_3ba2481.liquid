@@ -1,0 +1,237 @@
+{% doc %}
+  @prompt
+    DO NOT CREATE A NEW SECTION.
+    
+    DO NOT CREATE A CONTAINER.
+    
+    DO NOT CREATE A CARD.
+    
+    DO NOT CREATE A BUTTON.
+    
+    DO NOT CREATE A BLOCK.
+    
+    DO NOT ADD ANY EXTRA VERTICAL SPACE.
+    
+    DO NOT CHANGE THE LAYOUT.
+    
+    The page structure must remain EXACTLY the same.
+    
+    Only insert a decorative scroll indicator directly between the existing CTA button and the next section.
+    
+    The indicator must be part of the existing background, not a separate element.
+    
+    Create a premium downward chevron (⌄) using a thin outline with 20–30% opacity, colored in the same orange used throughout the hero section.
+    
+    Place it centered horizontally, approximately 24px below the CTA button and 24px above the next section.
+    
+    Behind it, add the exact same soft orange radial glow used in the hero background so it visually melts into the page.
+    
+    Animate ONLY this indicator:
+    • slow floating movement (6px up and down)
+    • gentle opacity pulse (30% → 70% → 30%)
+    • duration 2.5 seconds
+    • infinite loop
+    • ease-in-out
+    
+    The indicator must feel like it is emerging from the background itself.
+    
+    There must be NO white space, NO visible container, NO divider line, NO border, and NO independent background behind it.
+    
+    The next section should begin immediately underneath, making the entire page feel like one continuous premium experience.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-scroll-indicator-{{ ai_gen_id }} {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .ai-scroll-indicator-glow-{{ ai_gen_id }} {
+    position: absolute;
+    left: 50%;
+    top: {{ block.settings.spacing_top }}px;
+    transform: translateX(-50%);
+    width: {{ block.settings.glow_size }}px;
+    height: {{ block.settings.glow_size }}px;
+    background: radial-gradient(circle, {{ block.settings.indicator_color }}{{ block.settings.glow_opacity_hex }} 0%, rgba(0,0,0,0) 70%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .ai-scroll-indicator-chevron-{{ ai_gen_id }} {
+    position: absolute;
+    left: 50%;
+    top: {{ block.settings.spacing_top }}px;
+    transform: translateX(-50%);
+    width: {{ block.settings.chevron_size }}px;
+    height: {{ block.settings.chevron_size }}px;
+    pointer-events: none;
+    z-index: 2;
+    animation: ai-scroll-float-{{ ai_gen_id }} {{ block.settings.animation_duration }}s ease-in-out infinite;
+  }
+
+  .ai-scroll-indicator-chevron-{{ ai_gen_id }} svg {
+    width: 100%;
+    height: 100%;
+    stroke: {{ block.settings.indicator_color }};
+    stroke-width: {{ block.settings.stroke_width }};
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  @keyframes ai-scroll-float-{{ ai_gen_id }} {
+    0%, 100% {
+      transform: translateX(-50%) translateY(0);
+      opacity: {{ block.settings.opacity_min | divided_by: 100.0 }};
+    }
+    50% {
+      transform: translateX(-50%) translateY({{ block.settings.float_distance }}px);
+      opacity: {{ block.settings.opacity_max | divided_by: 100.0 }};
+    }
+  }
+{% endstyle %}
+
+<div class="ai-scroll-indicator-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-scroll-indicator-glow-{{ ai_gen_id }}"></div>
+  <div class="ai-scroll-indicator-chevron-{{ ai_gen_id }}">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Scroll indicator",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Indicator style"
+    },
+    {
+      "type": "color",
+      "id": "indicator_color",
+      "label": "Color",
+      "default": "#FF6B35"
+    },
+    {
+      "type": "range",
+      "id": "chevron_size",
+      "label": "Chevron size",
+      "min": 20,
+      "max": 60,
+      "step": 2,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "stroke_width",
+      "label": "Stroke width",
+      "min": 1,
+      "max": 3,
+      "step": 0.5,
+      "unit": "px",
+      "default": 1.5
+    },
+    {
+      "type": "header",
+      "content": "Glow effect"
+    },
+    {
+      "type": "range",
+      "id": "glow_size",
+      "label": "Glow size",
+      "min": 50,
+      "max": 200,
+      "step": 10,
+      "unit": "px",
+      "default": 120
+    },
+    {
+      "type": "select",
+      "id": "glow_opacity_hex",
+      "label": "Glow opacity",
+      "options": [
+        { "value": "0D", "label": "5%" },
+        { "value": "1A", "label": "10%" },
+        { "value": "26", "label": "15%" },
+        { "value": "33", "label": "20%" },
+        { "value": "40", "label": "25%" },
+        { "value": "4D", "label": "30%" }
+      ],
+      "default": "26"
+    },
+    {
+      "type": "header",
+      "content": "Animation"
+    },
+    {
+      "type": "range",
+      "id": "animation_duration",
+      "label": "Duration",
+      "min": 2,
+      "max": 4,
+      "step": 0.5,
+      "unit": "s",
+      "default": 2.5
+    },
+    {
+      "type": "range",
+      "id": "float_distance",
+      "label": "Float distance",
+      "min": 4,
+      "max": 12,
+      "step": 2,
+      "unit": "px",
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "opacity_min",
+      "label": "Minimum opacity",
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "unit": "%",
+      "default": 30
+    },
+    {
+      "type": "range",
+      "id": "opacity_max",
+      "label": "Maximum opacity",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 70
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "spacing_top",
+      "label": "Top spacing",
+      "min": 16,
+      "max": 48,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    }
+  ],
+  "presets": [
+    {
+      "name": "Scroll indicator"
+    }
+  ]
+}
+{% endschema %}

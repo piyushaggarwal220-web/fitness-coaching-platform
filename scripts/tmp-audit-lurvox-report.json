@@ -1,0 +1,600 @@
+{
+  "pages": [
+    {
+      "page": "https://www.lurvox.in/",
+      "status": 200,
+      "linkCount": 29,
+      "assetCount": 76
+    },
+    {
+      "page": "https://www.lurvox.in/pages/league",
+      "status": 503,
+      "linkCount": 0,
+      "assetCount": 0
+    },
+    {
+      "page": "https://www.lurvox.in/pages/plans",
+      "status": 503,
+      "linkCount": 0,
+      "assetCount": 0
+    }
+  ],
+  "floatingPanel": {
+    "cdnStatus": 200,
+    "cdnContentType": "text/javascript",
+    "cdnBytes": 3583,
+    "cdnLineCount": 96,
+    "cdnLines78to84": [
+      "}",
+      "",
+      "<script>",
+      "(function(){",
+      "  function ensureLeagueBack(){",
+      "    var hero=document.querySelector('.lx-league__hero');",
+      "    if(!hero||hero.querySelector('.lx-league__back')) return;"
+    ],
+    "themeAssetExists": true,
+    "themeBytes": 2520,
+    "themeLineCount": 81,
+    "themeLines78to84": [
+      "  else ensureLeagueBack();",
+      "})();",
+      "</script>",
+      ""
+    ]
+  },
+  "brokenLinks": [
+    {
+      "foundOn": "https://www.lurvox.in/",
+      "url": "https://monorail-edge.shopifysvc.com/",
+      "status": 404,
+      "finalUrl": "https://monorail-edge.shopifysvc.com/"
+    },
+    {
+      "foundOn": "https://www.lurvox.in/",
+      "url": "https://www.lurvox.in/customer_authentication/redirect?locale=en&region_country=IN",
+      "status": 406,
+      "finalUrl": "https://shopify.com/81531339003/account?buyer_flags=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI5dXd5cTEtMGoubXlzaG9waWZ5LmNvbSIsImZsYWdzIjpbXSwiZXhwIjoxNzg1NTc1NDA2LCJuYmYiOjE3ODQ5NzA2MDZ9.hRQmi4DepbHSkhhry7JKbgAj5xf6Zs3ijf0aQ-2lmVQ&locale=en&region_country=IN"
+    },
+    {
+      "foundOn": "https://www.lurvox.in/",
+      "url": "https://www.lurvox.in/pages/league",
+      "status": 503,
+      "finalUrl": "https://www.lurvox.in/pages/league"
+    },
+    {
+      "foundOn": "https://www.lurvox.in/",
+      "url": "https://www.lurvox.in/#shopify-section-blocks_C9E4qf",
+      "status": 503,
+      "finalUrl": "https://www.lurvox.in/"
+    }
+  ],
+  "brokenAssets": [],
+  "allChecked": [
+    {
+      "url": "https://www.lurvox.in/",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/overflow-list.css?v=16727044177065489451784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/overflow-list.css?v=16727044177065489451784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/base.css?v=110558660533795380521784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/base.css?v=110558660533795380521784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/fonts/inter/inter_n4.b2a3f24c19b4de56e8871f609e73ca7f6d2e2bb9.woff2",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/fonts/inter/inter_n4.b2a3f24c19b4de56e8871f609e73ca7f6d2e2bb9.woff2"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/fonts/inter/inter_n5.d7101d5e168594dd06f56f290dd759fba5431d97.woff2",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/fonts/inter/inter_n5.d7101d5e168594dd06f56f290dd759fba5431d97.woff2"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/fonts/inter/inter_n7.02711e6b374660cfc7915d1afc1c204e633421e4.woff2",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/fonts/inter/inter_n7.02711e6b374660cfc7915d1afc1c204e633421e4.woff2"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/utilities.js?v=28506172887375975941784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/utilities.js?v=28506172887375975941784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/component.js?v=184240237101443119871784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/component.js?v=184240237101443119871784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/section-renderer.js?v=123311117485513785771784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/section-renderer.js?v=123311117485513785771784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/section-hydration.js?v=108434990705342316311784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/section-hydration.js?v=108434990705342316311784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/morph.js?v=104045809772310330131784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/morph.js?v=104045809772310330131784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/focus.js?v=60436577539430446401784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/focus.js?v=60436577539430446401784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/recently-viewed-products.js?v=94729125001750262651784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/recently-viewed-products.js?v=94729125001750262651784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/scrolling.js?v=162288454571026455011784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/scrolling.js?v=162288454571026455011784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/events.js?v=1118589085892804011784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/events.js?v=1118589085892804011784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/compiled_assets/styles.css?v=140599562469974783221784963563",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/compiled_assets/styles.css?v=140599562469974783221784963563"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/compiled_assets/styles.css?v=140599562469974783221784963563&subset=ABIBAAAAAAAABgAAAAAAAAAAAAAMgAAAgMAhAAYAAEBEuA",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/compiled_assets/styles.css?v=140599562469974783221784963563&subset=ABIBAAAAAAAABgAAAAAAAAAAAAAMgAAAgMAhAAYAAEBEuA"
+    },
+    {
+      "url": "https://monorail-edge.shopifysvc.com/",
+      "status": 404,
+      "finalUrl": "https://monorail-edge.shopifysvc.com/"
+    },
+    {
+      "url": "https://app.lurvox.in/login",
+      "status": 200,
+      "finalUrl": "https://app.lurvox.in/login"
+    },
+    {
+      "url": "https://www.lurvox.in/collections/all",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/collections/all"
+    },
+    {
+      "url": "https://www.lurvox.in/pages/contact",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/pages/contact"
+    },
+    {
+      "url": "https://app.lurvox.in/coach/login",
+      "status": 200,
+      "finalUrl": "https://app.lurvox.in/coach/login"
+    },
+    {
+      "url": "https://www.lurvox.in/customer_authentication/redirect?locale=en&region_country=IN",
+      "status": 406,
+      "finalUrl": "https://shopify.com/81531339003/account?buyer_flags=eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI5dXd5cTEtMGoubXlzaG9waWZ5LmNvbSIsImZsYWdzIjpbXSwiZXhwIjoxNzg1NTc1NDA2LCJuYmYiOjE3ODQ5NzA2MDZ9.hRQmi4DepbHSkhhry7JKbgAj5xf6Zs3ijf0aQ-2lmVQ&locale=en&region_country=IN"
+    },
+    {
+      "url": "https://www.lurvox.in/pages/talk-to-a-coach",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/pages/talk-to-a-coach"
+    },
+    {
+      "url": "https://www.lurvox.in/pages/league",
+      "status": 503,
+      "finalUrl": "https://www.lurvox.in/pages/league"
+    },
+    {
+      "url": "https://www.lurvox.in/#shopify-section-blocks_C9E4qf",
+      "status": 503,
+      "finalUrl": "https://www.lurvox.in/"
+    },
+    {
+      "url": "https://www.shopify.com/?utm_campaign=poweredby&amp;utm_medium=shopify&amp;utm_source=onlinestore",
+      "status": 200,
+      "finalUrl": "https://www.shopify.com/?utm_campaign=poweredby&amp;utm_medium=shopify&amp;utm_source=onlinestore"
+    },
+    {
+      "url": "https://wa.me/919220451577?text=I%20have%20doubts%20and%20want%20a%20chat%20before%20payment.",
+      "status": 200,
+      "finalUrl": "https://api.whatsapp.com/send/?phone=919220451577&text=I+have+doubts+and+want+a+chat+before+payment.&type=phone_number&app_absent=0"
+    },
+    {
+      "url": "https://www.lurvox.in/products/build-the-body-youve-always-wanted-in-90-days",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/products/build-the-body-youve-always-wanted-in-90-days"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-14_at_2.02.49_PM.jpg?height=36&amp;v=1784017999",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-14_at_2.02.49_PM.jpg?height=36&amp;v=1784017999"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-14_at_2.19.35_PM.jpg?v=1784019011&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-14_at_2.19.35_PM.jpg?v=1784019011&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.36_PM.jpg?v=1784105236&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.36_PM.jpg?v=1784105236&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.33_PM.jpg?v=1784105306&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.33_PM.jpg?v=1784105306&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.27_PM.jpg?v=1784105392&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.27_PM.jpg?v=1784105392&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.30_PM.jpg?v=1784105682&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.30_PM.jpg?v=1784105682&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-14_at_2.19.35_PM.jpg?v=1784019011&width=100",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-14_at_2.19.35_PM.jpg?v=1784019011&width=100"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.36_PM.jpg?v=1784105236&width=100",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.36_PM.jpg?v=1784105236&width=100"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.33_PM.jpg?v=1784105306&width=100",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.33_PM.jpg?v=1784105306&width=100"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.27_PM.jpg?v=1784105392&width=100",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.27_PM.jpg?v=1784105392&width=100"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.30_PM.jpg?v=1784105682&width=100",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_2.16.30_PM.jpg?v=1784105682&width=100"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.28.22_PM.jpg?v=1784098735&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.28.22_PM.jpg?v=1784098735&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.03.20_PM.jpg?v=1784098457&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.03.20_PM.jpg?v=1784098457&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.02.53_PM.jpg?v=1784098567&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.02.53_PM.jpg?v=1784098567&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.03.19_PM.jpg?v=1784098525&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.03.19_PM.jpg?v=1784098525&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.02.20_PM.jpg?v=1784098681&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.02.20_PM.jpg?v=1784098681&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.02.53_PM_5a4a3a03-b62e-400d-bc41-bd62b51986f4.jpg?v=1784098854&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.02.53_PM_5a4a3a03-b62e-400d-bc41-bd62b51986f4.jpg?v=1784098854&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.56.13_PM.jpg?v=1784100406&width=1200",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.56.13_PM.jpg?v=1784100406&width=1200"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.50.21_PM.jpg?v=1784100049&width=1200",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.50.21_PM.jpg?v=1784100049&width=1200"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.39.28_PM.jpg?v=1784099398&width=1200",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.39.28_PM.jpg?v=1784099398&width=1200"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.45.27_PM.jpg?v=1784099749&width=1200",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_12.45.27_PM.jpg?v=1784099749&width=1200"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_10.55.14_AM.jpg?v=1784093499&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_10.55.14_AM.jpg?v=1784093499&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_10.51.19_AM.jpg?v=1784093603&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_10.51.19_AM.jpg?v=1784093603&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_10.58.13_AM.jpg?v=1784093650&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_10.58.13_AM.jpg?v=1784093650&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_11.00.37_AM.jpg?v=1784093691&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_11.00.37_AM.jpg?v=1784093691&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_10.51.26_AM.jpg?v=1784093735&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_10.51.26_AM.jpg?v=1784093735&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_11.21.05_AM.jpg?v=1784094707&width=800",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-15_at_11.21.05_AM.jpg?v=1784094707&width=800"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-14_at_2.02.49_PM.jpg?v=1784017999&amp;width=3840",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsApp_Image_2026-07-14_at_2.02.49_PM.jpg?v=1784017999&amp;width=3840"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/files/WhatsAppImage2026-07-14at1.15.07PM.jpg?v=1784015251&amp;width=500",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/files/WhatsAppImage2026-07-14at1.15.07PM.jpg?v=1784015251&amp;width=500"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shopifycloud/importmap-polyfill/es-modules-shim.2.4.0.js",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shopifycloud/importmap-polyfill/es-modules-shim.2.4.0.js"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/view-transitions.js?v=7106414069516106341784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/view-transitions.js?v=7106414069516106341784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/popover-polyfill.js?v=119029313658895111201784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/popover-polyfill.js?v=119029313658895111201784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/overflow-list.js?v=46858356770684902511784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/overflow-list.js?v=46858356770684902511784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/quick-add.js?v=114575661933533593881784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/quick-add.js?v=114575661933533593881784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/cart-discount.js?v=107077853990124422021784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/cart-discount.js?v=107077853990124422021784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/dialog.js?v=150888536568694194021784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/dialog.js?v=150888536568694194021784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/variant-picker.js?v=24924540959574313291784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/variant-picker.js?v=24924540959574313291784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/product-card.js?v=28695665944407642501784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/product-card.js?v=28695665944407642501784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/product-form.js?v=142170751179338062901784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/product-form.js?v=142170751179338062901784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/fly-to-cart.js?v=48483246440248933081784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/fly-to-cart.js?v=48483246440248933081784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/accordion-custom.js?v=97588419883090888471784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/accordion-custom.js?v=97588419883090888471784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/media.js?v=37825095869491791421784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/media.js?v=37825095869491791421784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/product-price.js?v=83480980452100801711784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/product-price.js?v=83480980452100801711784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/product-sku.js?v=121804655373531320511784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/product-sku.js?v=121804655373531320511784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/product-title-truncation.js?v=81744426891537421781784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/product-title-truncation.js?v=81744426891537421781784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/product-inventory.js?v=81520546963552472391784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/product-inventory.js?v=81520546963552472391784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/show-more.js?v=94563802205717136101784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/show-more.js?v=94563802205717136101784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/slideshow.js?v=168726587398279102001784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/slideshow.js?v=168726587398279102001784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/layered-slideshow.js?v=30135417790894624731784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/layered-slideshow.js?v=30135417790894624731784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/anchored-popover.js?v=95953304814728754461784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/anchored-popover.js?v=95953304814728754461784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/floating-panel.js?v=65014223657550707731784886951",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/floating-panel.js?v=65014223657550707731784886951"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/video-background.js?v=25237992823806706551784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/video-background.js?v=25237992823806706551784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/component-quantity-selector.js?v=67906657287482036641784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/component-quantity-selector.js?v=67906657287482036641784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/media-gallery.js?v=14624021005636302161784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/media-gallery.js?v=14624021005636302161784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/rte-formatter.js?v=40306132146590816021784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/rte-formatter.js?v=40306132146590816021784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/volume-pricing.js?v=15442793518842484731784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/volume-pricing.js?v=15442793518842484731784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/price-per-item.js?v=144512917617120124431784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/price-per-item.js?v=144512917617120124431784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/volume-pricing-info.js?v=94479640769665442661784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/volume-pricing-info.js?v=94479640769665442661784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/auto-close-details.js?v=58350291535404441581784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/auto-close-details.js?v=58350291535404441581784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/checkouts/internal/preloads.js?locale=en-IN",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/checkouts/internal/preloads.js?locale=en-IN"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shopifycloud/shop-js/modules/v2/loader.init-shop-cart-sync.en.esm.js",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shopifycloud/shop-js/modules/v2/loader.init-shop-cart-sync.en.esm.js"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shopifycloud/storefront/assets/storefront/load_feature-1bd60354.js",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shopifycloud/storefront/assets/storefront/load_feature-1bd60354.js"
+    },
+    {
+      "url": "https://cdn.shopify.com/shopifycloud/storefront/assets/storefront/origin_trials-5059b83f.js",
+      "status": 200,
+      "finalUrl": "https://cdn.shopify.com/shopifycloud/storefront/assets/storefront/origin_trials-5059b83f.js"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shopifycloud/perf-kit/shopify-perf-kit-3.7.0.min.js",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shopifycloud/perf-kit/shopify-perf-kit-3.7.0.min.js"
+    },
+    {
+      "url": "https://cdn.shopify.com/storefront/web-components/account.js",
+      "status": 200,
+      "finalUrl": "https://cdn.shopify.com/storefront/web-components/account.js"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/header-drawer.js?v=121243031541024704371784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/header-drawer.js?v=121243031541024704371784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/header-menu.js?v=97820922056036071501784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/header-menu.js?v=97820922056036071501784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/cart-icon.js?v=157241182139685326961784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/cart-icon.js?v=157241182139685326961784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/cart-drawer.js?v=35649724213056774541784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/cart-drawer.js?v=35649724213056774541784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/component-cart-items.js?v=165440327125931659001784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/component-cart-items.js?v=165440327125931659001784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/component-cart-quantity-selector.js?v=105130809908858639751784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/component-cart-quantity-selector.js?v=105130809908858639751784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/header-actions.js?v=121308165565653895611784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/header-actions.js?v=121308165565653895611784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/header.js?v=36718054510661947891784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/header.js?v=36718054510661947891784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/predictive-search.js?v=149240552485540508541784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/predictive-search.js?v=149240552485540508541784877483"
+    },
+    {
+      "url": "https://www.lurvox.in/cdn/shop/t/10/assets/gift-card-recipient-form.js?v=129634859299628245901784877483",
+      "status": 200,
+      "finalUrl": "https://www.lurvox.in/cdn/shop/t/10/assets/gift-card-recipient-form.js?v=129634859299628245901784877483"
+    },
+    {
+      "url": "https://cdn.shopify.com/storefront/standard-actions.js",
+      "status": 200,
+      "finalUrl": "https://cdn.shopify.com/storefront/standard-actions.js"
+    }
+  ]
+}

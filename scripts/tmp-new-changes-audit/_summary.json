@@ -1,0 +1,550 @@
+{
+  "themeId": "161375289595",
+  "assetCount": 500,
+  "candidates": [
+    {
+      "key": "assets/announcement-bar.js",
+      "size": 2809,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "assets/cart-discount.js",
+      "size": 6939,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "assets/cart-drawer.js",
+      "size": 4584,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "assets/header-actions.js",
+      "size": 1151,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "assets/header-drawer.js",
+      "size": 5469,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "assets/header-menu.js",
+      "size": 12678,
+      "timer": true,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "assets/header.js",
+      "size": 8632,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "assets/icon-account.svg",
+      "size": 430,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "assets/icon-discount.svg",
+      "size": 592,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "assets/icon-menu.svg",
+      "size": 341,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "assets/layered-slideshow.js",
+      "size": 18566,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "assets/media-gallery.js",
+      "size": 2618,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "assets/slideshow.js",
+      "size": 28223,
+      "timer": false,
+      "login": true,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "assets/volume-pricing-info.js",
+      "size": 2301,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "assets/volume-pricing.js",
+      "size": 508,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "blocks/menu.liquid",
+      "size": 8583,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "blocks/_announcement.liquid",
+      "size": 7078,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "blocks/_carousel-content.liquid",
+      "size": 6138,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "blocks/_featured-product-gallery.liquid",
+      "size": 1830,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "blocks/_featured-product-information-carousel.liquid",
+      "size": 6111,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "blocks/_header-logo.liquid",
+      "size": 5787,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "blocks/_header-menu.liquid",
+      "size": 25517,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "blocks/_product-card-gallery.liquid",
+      "size": 4584,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "blocks/_product-media-gallery.liquid",
+      "size": 7859,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "config/settings_data.json",
+      "size": 27775,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "config/settings_schema.json",
+      "size": 54262,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "layout/theme.liquid",
+      "size": 9574,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "sections/carousel.liquid",
+      "size": 9780,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "sections/header-announcements.liquid",
+      "size": 4782,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "sections/header-group.json",
+      "size": 3471,
+      "timer": false,
+      "login": true,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "sections/header.liquid",
+      "size": 48665,
+      "timer": false,
+      "login": true,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "sections/layered-slideshow.liquid",
+      "size": 15012,
+      "timer": false,
+      "login": true,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "sections/lurvox-header-redesign.liquid",
+      "size": 19468,
+      "timer": false,
+      "login": true,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "sections/lurvox-plan-compare.liquid",
+      "size": 18581,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "sections/search-header.liquid",
+      "size": 1896,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "sections/slideshow.liquid",
+      "size": 16328,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/card-gallery.liquid",
+      "size": 14497,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/header-actions.liquid",
+      "size": 20886,
+      "timer": false,
+      "login": true,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "snippets/header-drawer.liquid",
+      "size": 56965,
+      "timer": false,
+      "login": true,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "snippets/header-row.liquid",
+      "size": 2962,
+      "timer": false,
+      "login": true,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "snippets/lurvox-plan-compare-inline.liquid",
+      "size": 15383,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "snippets/mega-menu-list.liquid",
+      "size": 13954,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "snippets/menu-font-styles.liquid",
+      "size": 1173,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "snippets/predictive-search-resource-carousel.liquid",
+      "size": 1564,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/product-media-gallery-content-styles.liquid",
+      "size": 1534,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/product-media-gallery-content.liquid",
+      "size": 36795,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/resource-list-carousel.liquid",
+      "size": 3938,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/slideshow-arrow.liquid",
+      "size": 2541,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/slideshow-arrows.liquid",
+      "size": 2257,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/slideshow-controls.liquid",
+      "size": 16119,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/slideshow-slide.liquid",
+      "size": 2612,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/slideshow-styles.liquid",
+      "size": 4956,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/slideshow.liquid",
+      "size": 4842,
+      "timer": false,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "snippets/submenu-font-styles.liquid",
+      "size": 2833,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "snippets/util-mega-menu-img-sizes-attr.liquid",
+      "size": 3352,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "snippets/volume-pricing-info.liquid",
+      "size": 10418,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "templates/index.json",
+      "size": 37683,
+      "timer": true,
+      "login": true,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "blocks/ai_gen_block_52353f6.liquid",
+      "size": 26110,
+      "timer": true,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "blocks/ai_gen_block_3ba2481.liquid",
+      "size": 6002,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "blocks/ai_gen_block_361650c.liquid",
+      "size": 45059,
+      "timer": true,
+      "login": true,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "blocks/ai_gen_block_973d4c3.liquid",
+      "size": 12032,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "blocks/ai_gen_block_cd3c949.liquid",
+      "size": 38933,
+      "timer": true,
+      "login": true,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "blocks/ai_gen_block_a7d1b3c.liquid",
+      "size": 19264,
+      "timer": true,
+      "login": false,
+      "carousel": true,
+      "plan": false
+    },
+    {
+      "key": "blocks/ai_gen_block_6803fe6.liquid",
+      "size": 32548,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "blocks/ai_gen_block_19d52f6.liquid",
+      "size": 10315,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": false
+    },
+    {
+      "key": "blocks/ai_gen_block_66d8696.liquid",
+      "size": 24030,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "blocks/ai_gen_block_8d967d7.liquid",
+      "size": 13283,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": true
+    },
+    {
+      "key": "blocks/ai_gen_block_99f4724.liquid",
+      "size": 52339,
+      "timer": false,
+      "login": false,
+      "carousel": false,
+      "plan": true
+    }
+  ]
+}

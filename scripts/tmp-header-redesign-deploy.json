@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "published": false,
+  "wroteToMain": false,
+  "draftThemeId": "gid://shopify/OnlineStoreTheme/161176977659",
+  "draftThemeName": "LURVOX Header Redesign 2026-07-28",
+  "mainThemeId": "gid://shopify/OnlineStoreTheme/161112981755",
+  "mainThemeName": "LURVOX Mobile Home Fix 2026-07-25 10-11",
+  "upserted": [
+    "sections/lurvox-header-redesign.liquid",
+    "sections/header-group.json"
+  ],
+  "previewUrl": "https://www.lurvox.in/?preview_theme_id=161176977659",
+  "liveUrl": "https://www.lurvox.in/",
+  "note": "Published homepage content kept. Only header redesigned on draft."
+}

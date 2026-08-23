@@ -1,0 +1,32 @@
+{
+  "sections": {
+    "main": {
+      "type": "lurvox-talk-to-coach",
+      "settings": {
+        "eyebrow": "Free coach call",
+        "heading": "Book a free consultation call",
+        "subheading": "Tell us about yourself and which plan you’re considering. A coach will call you back — no payment required.",
+        "plans_heading": "Choose a plan you’re interested in",
+        "plans_note": "You can change this on the call. Selecting a plan helps your coach prepare.",
+        "form_heading": "Your details",
+        "button_label": "Request free consultation call",
+        "fineprint": "Free consultation · No payment on this page · A coach typically responds within a few hours",
+        "plan_1_name": "3 Months",
+        "plan_1_price": "₹1,499",
+        "plan_1_meta": "≈ ₹500\/month",
+        "plan_2_name": "6 Months",
+        "plan_2_price": "₹2,499",
+        "plan_2_meta": "≈ ₹417\/month · Most popular",
+        "plan_2_badge": "Popular",
+        "plan_3_name": "12 Months",
+        "plan_3_price": "₹3,999",
+        "plan_3_meta": "≈ ₹333\/month · Best value",
+        "plan_3_badge": "Best value",
+        "accent_color": "#FF6200"
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

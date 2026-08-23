@@ -1,0 +1,703 @@
+{% comment %}
+  LURVOX conversion boost — trust + how it works (draft).
+{% endcomment %}
+
+{%- assign consult_url = '/pages/talk-to-a-coach' -%}
+{%- assign start_url = '/pages/find-your-plan' -%}
+{%- assign terms_url = 'https://app.lurvox.in/terms' -%}
+
+<section class="lx-conv" id="lx-conv" data-lx-conv aria-label="Why LURVOX">
+  <div class="lx-conv__trust" aria-label="Trust signals">
+    <p class="lx-conv__trust-item"><strong>Personal plan</strong> in 24–48 hrs</p>
+    <span class="lx-conv__dot" aria-hidden="true"></span>
+    <p class="lx-conv__trust-item"><strong>Human coach</strong> — not a PDF</p>
+    <span class="lx-conv__dot" aria-hidden="true"></span>
+    <p class="lx-conv__trust-item"><strong>UPI / Razorpay</strong> checkout</p>
+    <span class="lx-conv__dot" aria-hidden="true"></span>
+    <p class="lx-conv__trust-item"><strong>Terms</strong> apply to every plan</p>
+  </div>
+
+  <div class="lx-conv__badges" aria-label="Secure payment">
+    <span class="lx-conv__badge">UPI</span>
+    <span class="lx-conv__badge">Cards</span>
+    <span class="lx-conv__badge">Netbanking</span>
+    <span class="lx-conv__badge">Razorpay Secure</span>
+    <span class="lx-conv__badge">SSL Encrypted</span>
+  </div>
+
+  <div class="lx-conv__how" id="how-it-works">
+    <p class="lx-conv__eyebrow">How LURVOX works</p>
+    <h2 class="lx-conv__title">Assessment → personal plan → weekly coaching</h2>
+    <p class="lx-conv__lede">
+      Built for India: vegetarian and home cooked diets, gym or home workouts, and a real coach in the app.
+    </p>
+    <ol class="lx-conv__steps">
+      <li>
+        <span class="lx-conv__num">01</span>
+        <div>
+          <h3>Tell us your body & schedule</h3>
+          <p>Short assessment + progress photos after checkout.</p>
+        </div>
+      </li>
+      <li>
+        <span class="lx-conv__num">02</span>
+        <div>
+          <h3>Get your personal plan</h3>
+          <p>Workout + diet matched to you within 24–48 hours.</p>
+        </div>
+      </li>
+      <li>
+        <span class="lx-conv__num">03</span>
+        <div>
+          <h3>Train with daily trackers</h3>
+          <p>Log workouts, meals, sleep, steps — coach sees what matters.</p>
+        </div>
+      </li>
+      <li>
+        <span class="lx-conv__num">04</span>
+        <div>
+          <h3>Weekly reviews</h3>
+          <p>Plan updates when you stall. Your coach adjusts from real check-ins.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="lx-conv__risk">
+      <p>
+        Refunds and guarantees (if any) are only as stated in our
+        <a href="{{ terms_url }}" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>.
+      </p>
+    </div>
+
+    <div class="lx-conv__actions">
+      <a class="lx-conv__btn lx-conv__btn--primary" href="{{ start_url }}">
+        <span class="lx-conv__btn-main">Find your plan</span>
+        <span class="lx-conv__btn-sub">Quick quiz</span>
+      </a>
+      <a class="lx-conv__btn lx-conv__btn--ghost" href="#plans">Compare 3 · 6 · 12</a>
+    </div>
+  </div>
+</section>
+
+<div class="lx-conv-sticky" data-lx-conv-sticky aria-label="Find your plan or talk to a coach">
+  <a class="lx-conv-sticky__start" href="{{ start_url }}">
+    <span class="lx-conv-sticky__label">Find your plan</span>
+    <span class="lx-conv-sticky__meta">Quick quiz</span>
+  </a>
+  <a class="lx-conv-sticky__talk" href="{{ consult_url }}">
+    <span class="lx-conv-sticky__label">Talk to coach</span>
+    <span class="lx-conv-sticky__meta">Book a free call</span>
+  </a>
+</div>
+
+<style id="lx-conv-css">
+  .lx-conv {
+    --lx-orange: #ff6200;
+    --lx-orange-soft: rgba(255, 98, 0, 0.14);
+    --lx-line: rgba(255, 255, 255, 0.12);
+    --lx-muted: rgba(255, 255, 255, 0.68);
+    background: #050505;
+    color: #fff;
+    padding: 28px 18px 36px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .lx-conv__trust {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 14px;
+    max-width: 960px;
+    margin: 0 auto 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--lx-line);
+    border-radius: 14px;
+    background:
+      radial-gradient(circle at 12% -40%, rgba(255, 98, 0, 0.22), transparent 55%),
+      #0b0b0b;
+  }
+
+  .lx-conv__trust-item {
+    margin: 0;
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+    color: var(--lx-muted);
+  }
+
+  .lx-conv__trust-item strong {
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .lx-conv__dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--lx-orange);
+    opacity: 0.85;
+  }
+
+  .lx-conv__badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    max-width: 960px;
+    margin: 0 auto 26px;
+  }
+
+  .lx-conv__badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .lx-conv__how {
+    max-width: 920px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .lx-conv__eyebrow {
+    margin: 0 0 8px;
+    color: var(--lx-orange);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .lx-conv__title {
+    margin: 0 0 10px;
+    font-size: clamp(1.35rem, 3.6vw, 1.85rem);
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .lx-conv__lede {
+    margin: 0 auto 22px;
+    max-width: 62ch;
+    color: var(--lx-muted);
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  .lx-conv__steps {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+    text-align: left;
+  }
+
+  @media (min-width: 760px) {
+    .lx-conv__steps {
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+  }
+
+  .lx-conv__steps li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: start;
+    padding: 14px 14px 15px;
+    border: 1px solid var(--lx-line);
+    border-radius: 12px;
+    background: #0a0a0a;
+  }
+
+  .lx-conv__num {
+    color: var(--lx-orange);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    padding-top: 2px;
+  }
+
+  .lx-conv__steps h3 {
+    margin: 0 0 4px;
+    font-size: 14.5px;
+    font-weight: 750;
+  }
+
+  .lx-conv__steps p {
+    margin: 0;
+    color: var(--lx-muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .lx-conv__risk {
+    max-width: 64ch;
+    margin: 0 auto 20px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 98, 0, 0.35);
+    background: rgba(255, 98, 0, 0.08);
+    text-align: left;
+  }
+
+  .lx-conv__risk p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .lx-conv__risk a {
+    color: #ffb07a;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .lx-conv__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .lx-conv__btn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-height: 48px;
+    padding: 8px 20px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    font-weight: 750;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .lx-conv__btn-main {
+    font-weight: 800;
+    line-height: 1.15;
+  }
+
+  .lx-conv__btn-sub {
+    font-size: 11px;
+    font-weight: 650;
+    opacity: 0.78;
+    letter-spacing: 0.01em;
+  }
+
+  .lx-conv__btn--primary {
+    color: #111;
+    background: linear-gradient(180deg, #ff7a24 0%, #ff6200 100%);
+    border: 1px solid #ff6200;
+    box-shadow: 0 8px 22px rgba(255, 98, 0, 0.28);
+  }
+
+  .lx-conv__btn--ghost {
+    color: #fff;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    flex-direction: row;
+  }
+
+  .lx-conv__btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .lx-conv__btn--ghost:hover {
+    border-color: var(--lx-orange);
+    background: var(--lx-orange-soft);
+  }
+
+  /* lurvox-sticky-mobile-v3 */
+  .lx-conv-sticky {
+    position: fixed;
+    left: 50%;
+    right: auto;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 80;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 8px;
+    width: min(440px, calc(100vw - 20px));
+    max-width: calc(100vw - 20px);
+    margin: 0;
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .lx-conv-sticky__start,
+  .lx-conv-sticky__talk {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+    padding: 7px 8px;
+    border-radius: 14px;
+    text-decoration: none;
+    text-align: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    box-shadow:
+      0 12px 28px rgba(0, 0, 0, 0.42),
+      0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  .lx-conv-sticky__start {
+    color: #140a00;
+    background: linear-gradient(180deg, #ff8a3d 0%, #ff6200 55%, #f05500 100%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .lx-conv-sticky__talk {
+    color: #fff;
+    background: #141414;
+    border: 1px solid rgba(255, 98, 0, 0.45);
+  }
+
+  .lx-conv-sticky__label {
+    font-size: 12.5px;
+    font-weight: 850;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lx-conv-sticky__meta {
+    font-size: 10.5px;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    opacity: 0.82;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 380px) {
+    .lx-conv-sticky {
+      gap: 6px;
+      width: calc(100vw - 16px);
+    }
+
+    .lx-conv-sticky__start,
+    .lx-conv-sticky__talk {
+      min-height: 46px;
+      padding: 6px 4px;
+      border-radius: 12px;
+    }
+
+    .lx-conv-sticky__label {
+      font-size: 11.5px;
+    }
+
+    .lx-conv-sticky__meta {
+      font-size: 9.5px;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .lx-conv-sticky {
+      left: auto;
+      right: 22px;
+      bottom: 22px;
+      width: 360px;
+      max-width: 360px;
+      transform: none;
+    }
+  }
+
+  body.lx-conv-sticky-hide .lx-conv-sticky {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 12px);
+  }
+
+  @media (min-width: 900px) {
+    body.lx-conv-sticky-hide .lx-conv-sticky {
+      transform: translateY(12px);
+    }
+  }
+
+  /* Space so sticky doesn't cover content / get clipped */
+  @media (max-width: 899px) {
+    body {
+      padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+  }
+
+  /* Hide legacy FAB — dual sticky replaces it */
+  .lurvox-fab,
+  [data-lurvox-fab],
+  #lurvox-fab-mobile_floating_bar {
+    display: none !important;
+  }
+
+  /* Keep social-proof toast above sticky */
+  .lurvox-social-proof,
+  [class*="lurvox-social-proof"],
+  .shopify-section-group-header-group [class*="social-proof"] {
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* lurvox-mobile-page-fit-v1 — stop CTAs / gallery blowing past phone width */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  .content-for-layout,
+  .shopify-section.section-wrapper,
+  .section,
+  .shopify-block {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .shopify-block:has([data-lx-hero-cta]),
+  .shopify-block:has([class*="ai-fitness-gallery-"]) {
+    overflow-x: clip;
+  }
+
+  [class*="ai-fitness-gallery-"]:not([class*="__"]) {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: clip !important;
+  }
+
+  [class*="ai-fitness-gallery__main-"],
+  [class*="ai-fitness-gallery__container-"] {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  [class*="ai-fitness-gallery__review-text-"] {
+    letter-spacing: 0.04em !important;
+    line-height: 1.35 !important;
+    padding: 0 4px;
+    overflow-wrap: anywhere;
+  }
+
+  [class*="ai-fitness-gallery__headline-"] {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    box-sizing: border-box;
+  }
+
+  [class*="ai-fitness-gallery__headline-"] h2 {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  [data-lx-hero-cta] {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 12px 12px 8px !important;
+  }
+
+  [data-lx-hero-cta] > a {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+  }
+
+  [data-lx-hero-cta] > a.lx-hero-cta-text,
+  [data-lx-hero-cta] > a[href="/pages/talk-to-a-coach"] {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    align-self: center !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 3px !important;
+    opacity: 0.85;
+  }
+
+  .lx-conv__actions {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .lx-conv__btn {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 420px) {
+    .lx-conv__actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .lx-conv__btn {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var sticky = document.querySelector('[data-lx-conv-sticky]');
+    if (sticky) {
+      var hideNear = function () {
+        var closer = document.getElementById('start');
+        var footer = document.querySelector('footer, .shopify-section-group-footer-group');
+        var near = false;
+        if (closer) {
+          var r = closer.getBoundingClientRect();
+          near = r.top < window.innerHeight - 80;
+        } else if (footer) {
+          var fr = footer.getBoundingClientRect();
+          near = fr.top < window.innerHeight - 40;
+        }
+        document.body.classList.toggle('lx-conv-sticky-hide', near);
+      };
+      hideNear();
+      window.addEventListener('scroll', hideNear, { passive: true });
+    }
+
+    // Keep plan prices consistent if Shopify HTML cache serves a stale matrix.
+    function rewritePrices(root) {
+      var scope = root || document;
+      var matrix = scope.querySelector('.lx-matrix__table');
+      // If Shopify HTML cache served an older matrix, normalize to current sale targets.
+      if (matrix) {
+        var strongs = matrix.querySelectorAll('thead strong');
+        if (strongs.length >= 3) {
+          strongs[0].textContent = '₹1,299';
+          strongs[1].textContent = '₹2,099';
+          strongs[2].textContent = '₹3,499';
+        }
+      }
+      document.querySelectorAll('.lx-conv__btn-sub, .lx-conv-sticky__meta').forEach(function (el) {
+        if (/566|500|450|333|283|250/.test(el.textContent || '')) {
+          el.textContent = (el.textContent || '').replace(/566|500|450|333|283|250/g, '433');
+        }
+      });
+    }
+    rewritePrices(document);
+    document.addEventListener('DOMContentLoaded', function () {
+      rewritePrices(document);
+    });
+
+    // Ensure #plans anchors resolve (matrix / plan picker).
+    function ensurePlansAnchor() {
+      if (document.getElementById('plans')) return;
+      var target =
+        document.querySelector('.lx-matrix') ||
+        document.querySelector('[class*="ai-transformation-plan-"]:not([class*="__"])') ||
+        document.getElementById('start');
+      if (target && !target.id) target.id = 'plans';
+    }
+    ensurePlansAnchor();
+    document.addEventListener('DOMContentLoaded', ensurePlansAnchor);
+    window.addEventListener('load', ensurePlansAnchor);
+    setTimeout(ensurePlansAnchor, 0);
+    setTimeout(ensurePlansAnchor, 250);
+
+    // Keep Talk CTAs on the working consult form page.
+    function normalizeTalkLinks() {
+      document.querySelectorAll('a[href*="/pages/book-a-free-call"]').forEach(function (a) {
+        a.setAttribute('href', '/pages/talk-to-a-coach');
+      });
+    }
+    normalizeTalkLinks();
+    document.addEventListener('DOMContentLoaded', normalizeTalkLinks);
+
+    // lurvox-matrix-choose-rewrite-v1
+    function rewriteMatrixChoose() {
+      var map = {
+        '3-months': ['https://app.lurvox.in/plans/3-months', 'See plan'],
+        '6-months': ['https://app.lurvox.in/plans/6-months', 'See plan'],
+        '12-months': ['https://app.lurvox.in/plans/12-months', 'See plan'],
+        '3_months': ['https://app.lurvox.in/plans/3-months', 'See plan'],
+        '6_months': ['https://app.lurvox.in/plans/6-months', 'See plan'],
+        '12_months': ['https://app.lurvox.in/plans/12-months', 'See plan']
+      };
+      document.querySelectorAll('.lx-matrix__table a').forEach(function (a) {
+        var href = a.getAttribute('href') || '';
+        Object.keys(map).forEach(function (key) {
+          if (href.indexOf(key) !== -1) {
+            a.setAttribute('href', map[key][0]);
+            if (/^Choose$/i.test((a.textContent || '').trim())) a.textContent = map[key][1];
+          }
+        });
+      });
+    }
+    function formatPlanCardPrices() {
+      document.querySelectorAll('[class*="ai-transformation-plan-card-original-price"],[class*="ai-transformation-plan-card-price-"]').forEach(function (el) {
+        var t = (el.textContent || '').trim();
+        var m = t.match(/^(₹|Rs\s*)(\d+)$/i);
+        if (!m) return;
+        var n = Number(m[2]);
+        if (!Number.isFinite(n) || n < 1000) return;
+        el.textContent = '₹' + n.toLocaleString('en-IN');
+      });
+    }
+    function rewriteCheckoutToPlanPages() {
+      var map = {
+        '3_months': 'https://app.lurvox.in/plans/3-months',
+        '6_months': 'https://app.lurvox.in/plans/6-months',
+        '12_months': 'https://app.lurvox.in/plans/12-months'
+      };
+      document.querySelectorAll('a[href*="app.lurvox.in/checkout"]').forEach(function (a) {
+        var href = a.getAttribute('href') || '';
+        Object.keys(map).forEach(function (slug) {
+          if (href.indexOf('plan=' + slug) !== -1) {
+            a.setAttribute('href', map[slug]);
+          }
+        });
+      });
+    }
+    rewriteMatrixChoose();
+    rewriteCheckoutToPlanPages();
+    formatPlanCardPrices();
+    document.addEventListener('DOMContentLoaded', function () {
+      rewriteMatrixChoose();
+      rewriteCheckoutToPlanPages();
+      formatPlanCardPrices();
+    });
+  })();
+</script>

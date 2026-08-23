@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 /**
- * Sends check-in replies that have come due (3–8h after submission, never 00:00–08:00 IST).
+ * Sends check-in replies that have come due (3–6h after submission, including overnight).
  *
  * Driven every 15 minutes by pg_cron in Supabase rather than a Vercel cron, because the Vercel
  * plan only permits once-daily schedules. Safe to call more often — each check-in is claimed

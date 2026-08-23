@@ -1,0 +1,329 @@
+{% comment %}
+  LURVOX sales closer — multi-plan bottom CTA + risk reversal + badges (draft).
+{% endcomment %}
+
+{%- assign consult_url = '/pages/talk-to-a-coach' -%}
+{%- assign terms_url = 'https://app.lurvox.in/terms' -%}
+
+<section class="lx-close" id="start" data-lx-close aria-label="Choose your plan and start">
+  <p class="lx-close__eyebrow">Ready to start</p>
+  <h2 class="lx-close__title">Pick the plan that matches your goal</h2>
+  <p class="lx-close__lede"> Goal first. Time is the runway. <strong>Debloat</strong> is 90 days to look sharper for a date. <strong>Fat loss</strong> is 6 months. <strong>Fat loss + muscle</strong> is 12 months — the aesthetic body, with the weekly coach phone call.</p>
+
+  {%- comment -%} Prices live once in #plans cards — closer stays decision support only {%- endcomment -%}
+  <a class="lx-close__jump" href="#plans">See plans &amp; prices above</a>
+
+  <div class="lx-close__badges" aria-label="Secure checkout">
+    <span>🔒 Razorpay Secure</span>
+    <span>UPI</span>
+    <span>Cards</span>
+    <span>Netbanking</span>
+    <span>SSL</span>
+  </div>
+
+  <div class="lx-close__guarantee">
+    <p>
+      Service rules, refunds, and any guarantees are only in our
+      <a href="{{ terms_url }}" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>.
+    </p>
+  </div>
+
+  <p class="lx-close__alt">
+    Still deciding?
+    <a href="{{ consult_url }}" data-funnel="talk_to_coach">Book a free call</a>
+    · or
+    <a href="#plans">compare plans above</a>
+  </p>
+</section>
+
+<style id="lx-close-css">
+  .lx-close {
+    --lx-orange: #ff6200;
+    --lx-muted: rgba(255, 255, 255, 0.68);
+    --lx-line: rgba(255, 255, 255, 0.12);
+    background: #050505;
+    color: #fff;
+    padding: 40px 18px 48px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    text-align: center;
+  }
+
+  .lx-close__eyebrow {
+    margin: 0 0 8px;
+    color: var(--lx-orange);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .lx-close__title {
+    margin: 0 auto 10px;
+    max-width: 18ch;
+    font-size: clamp(1.45rem, 4vw, 2rem);
+    line-height: 1.15;
+    font-weight: 850;
+    letter-spacing: -0.02em;
+  }
+
+  @media screen and (max-width: 749px) {
+    .lx-close {
+      padding: 28px 14px 36px;
+    }
+
+    .lx-close__title {
+      max-width: 16ch;
+      font-size: 1.4rem;
+    }
+
+    .lx-close__lede {
+      font-size: 13.5px;
+      margin-bottom: 18px;
+    }
+
+    .lx-close__jump {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 18px;
+      font-size: 0.95rem;
+    }
+
+    .lx-close__guarantee {
+      text-align: left;
+      font-size: 13px;
+    }
+  }
+
+  .lx-close__lede {
+    margin: 0 auto 24px;
+    max-width: 58ch;
+    color: var(--lx-muted);
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  .lx-close__lede strong {
+    color: #fff;
+  }
+
+  .lx-close__jump {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 22px;
+    padding: 14px 22px;
+    min-height: 52px;
+    border-radius: 14px;
+    background: #ff6200;
+    color: #0a0a0a !important;
+    text-decoration: none !important;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    box-shadow: 0 10px 26px rgba(255, 98, 0, 0.28);
+  }
+
+  .lx-close__jump:hover {
+    filter: brightness(1.05);
+  }
+
+  .lx-close__plans {
+    display: none;
+  }
+
+  @media (min-width: 760px) {
+    .lx-close__plans {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+  }
+
+  .lx-close__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 18px 16px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--lx-line);
+    background: #0b0b0b;
+    color: inherit;
+    text-decoration: none;
+    text-align: left;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .lx-close__card:hover {
+    border-color: rgba(255, 98, 0, 0.55);
+    transform: translateY(-2px);
+  }
+
+  .lx-close__card--pop {
+    border-color: rgba(255, 98, 0, 0.55);
+    background:
+      radial-gradient(circle at 80% -20%, rgba(255, 98, 0, 0.22), transparent 55%),
+      #100c09;
+  }
+
+  .lx-close__pill {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--lx-orange);
+    color: #111;
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: 0.04em;
+  }
+
+  .lx-close__dur {
+    color: var(--lx-orange);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+  }
+
+  .lx-close__name {
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .lx-close__price {
+    font-size: 22px;
+    font-weight: 850;
+  }
+
+  .lx-close__price small {
+    display: inline-block;
+    margin-left: 4px;
+    color: var(--lx-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .lx-close__note {
+    color: var(--lx-muted);
+    font-size: 12.5px;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+
+  .lx-close__cta {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ff8a3d 0%, #ff6200 100%);
+    color: #140a00;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    box-shadow: 0 8px 18px rgba(255, 98, 0, 0.22);
+  }
+
+  .lx-close__card:not(.lx-close__card--pop) .lx-close__cta {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: none;
+  }
+
+  .lx-close__card--pop .lx-close__cta {
+    color: #140a00;
+  }
+
+  .lx-close__badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 12px;
+    margin: 0 auto 16px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  .lx-close__badges span {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .lx-close__guarantee {
+    max-width: 720px;
+    margin: 0 auto 16px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 98, 0, 0.32);
+    background: rgba(255, 98, 0, 0.07);
+    text-align: left;
+  }
+
+  .lx-close__guarantee p {
+    margin: 0 0 8px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .lx-close__guarantee p:last-child {
+    margin-bottom: 0;
+  }
+
+  .lx-close__guarantee a {
+    color: #ffb07a;
+    text-underline-offset: 2px;
+  }
+
+  .lx-close__alt {
+    margin: 0;
+    color: var(--lx-muted);
+    font-size: 13.5px;
+  }
+
+  .lx-close__alt a {
+    color: #fff;
+    font-weight: 700;
+  }
+</style>
+
+<script>
+  (function () {
+    var root = document.querySelector('[data-lx-close]');
+    if (!root || root.dataset.funnelBound === '1') return;
+    root.dataset.funnelBound = '1';
+    root.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      var step = a.getAttribute('data-funnel');
+      if (!step && /checkout\?plan=/.test(href)) step = 'plan_click';
+      if (!step) return;
+      var plan = (href.match(/plan=([^&]+)/) || [])[1];
+      var extra = { plan: plan, source: 'sales_closer' };
+      try {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push(Object.assign({ event: 'lurvox_' + step, funnel_step: step }, extra));
+      } catch (err) {}
+      try {
+        if (typeof window.fbq === 'function') {
+          window.fbq('trackCustom', 'Lurvox_' + step, extra);
+          if (step === 'plan_click') {
+            window.fbq('track', 'AddToCart', { content_type: 'product', content_ids: plan ? [plan] : [], currency: 'INR' });
+          }
+          if (step === 'talk_to_coach') window.fbq('track', 'Contact');
+        }
+      } catch (err2) {}
+    });
+  })();
+</script>

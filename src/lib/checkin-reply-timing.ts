@@ -2,13 +2,13 @@
  * Check-in reply delivery timing — keeps responses feeling human, not instant.
  *
  * Policy:
- * - Minimum wait after submit before coach feedback can reach the client: 4 hours
- * - Usual / expected window communicated to clients: 3–8 hours
+ * - Minimum wait after submit before coach feedback can reach the client: 3 hours
+ * - Usual / expected window communicated to clients: 3–6 hours
  */
 
-export const CHECKIN_REPLY_MIN_WAIT_MS = 4 * 60 * 60 * 1000
+export const CHECKIN_REPLY_MIN_WAIT_MS = 3 * 60 * 60 * 1000
 export const CHECKIN_REPLY_USUAL_MIN_HOURS = 3
-export const CHECKIN_REPLY_USUAL_MAX_HOURS = 8
+export const CHECKIN_REPLY_USUAL_MAX_HOURS = 6
 export const CHECKIN_REPLY_TARGET_WAIT_MS = CHECKIN_REPLY_USUAL_MIN_HOURS * 60 * 60 * 1000
 export const CHECKIN_REPLY_OVERDUE_MS = CHECKIN_REPLY_USUAL_MAX_HOURS * 60 * 60 * 1000
 

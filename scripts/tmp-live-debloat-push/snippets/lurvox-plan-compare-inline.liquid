@@ -1,0 +1,495 @@
+{% doc %}
+Renders the LURVOX plan feature matrix directly beneath the homepage plan cards.
+{% enddoc %}
+
+<section class="lx-matrix" id="plans" aria-labelledby="lx-matrix-title">
+  <div class="lx-matrix__heading">
+    <p>Compare plans</p>
+    <h2 id="lx-matrix-title">Look sharper in 90 days. Fat loss in 6 months. Aesthetic in 12.</h2>
+  </div>
+
+  <div class="lx-matrix__frame">
+    <table class="lx-matrix__table">
+      <thead>
+        <tr>
+          <th scope="col">Plan details</th>
+          <th scope="col">
+            <span>Look sharper</span>
+            <small>90 days · debloat · ₹433/mo</small>
+            <strong>₹1,299</strong>
+          </th>
+          <th scope="col">
+            <small>Popular</small>
+            <span>Fat loss</span>
+            <small>6 months · ₹350/mo</small>
+            <strong>₹2,099</strong>
+          </th>
+          <th scope="col" class="is-featured is-best">
+            <small>Recommended</small>
+            <span>Fat loss + muscle</span>
+            <small>12 months · ₹292/mo</small>
+            <strong>₹3,499</strong>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="lx-matrix__group"><th scope="colgroup" colspan="4">Opens with debloat</th></tr>
+        <tr>
+          <th scope="row">Best for</th>
+          <td>Look sharper for a date. Debloat only.</td>
+          <td>Fat loss. Not muscle, not an event sprint.</td>
+          <td class="is-featured is-best">Fat loss + muscle. Aesthetic body.</td>
+        </tr>
+        <tr>
+          <th scope="row">Core coaching (workout, diet, coach, 2 check ins, trackers, photos)</th>
+          <td><span class="lx-matrix__yes" aria-label="Included">✓</span></td>
+          <td><span class="lx-matrix__yes" aria-label="Included">✓</span></td>
+          <td class="is-featured"><span class="lx-matrix__yes" aria-label="Included">✓</span></td>
+        </tr>
+        <tr>
+          <th scope="row">Plan updates</th>
+          <td>Every 14 days</td>
+          <td>Every week</td>
+          <td class="is-featured">Every week</td>
+        </tr>
+        <tr class="lx-matrix__group"><th scope="colgroup" colspan="4">More with fat loss</th></tr>
+        <tr>
+          <th scope="row">Fuller stack (weekly updates, cardio, supplements, journey, plateau coaching)</th>
+          <td><span class="lx-matrix__no" aria-label="Not included">×</span></td>
+          <td><span class="lx-matrix__yes" aria-label="Included">✓</span></td>
+          <td class="is-featured"><span class="lx-matrix__yes" aria-label="Included">✓</span></td>
+        </tr>
+        <tr class="lx-matrix__group"><th scope="colgroup" colspan="4">Everything with fat loss + muscle</th></tr>
+        <tr>
+          <th scope="row">Weekly coach phone call</th>
+          <td><span class="lx-matrix__no" aria-label="Not included">×</span></td>
+          <td><span class="lx-matrix__no" aria-label="Not included">×</span></td>
+          <td class="is-featured is-best"><span class="lx-matrix__yes" aria-label="Included">✓</span></td>
+        </tr>
+        <tr>
+          <th scope="row">Lowest monthly rate</th>
+          <td><span class="lx-matrix__no" aria-label="Not included">×</span></td>
+          <td><span class="lx-matrix__no" aria-label="Not included">×</span></td>
+          <td class="is-featured is-best"><span class="lx-matrix__yes" aria-label="Included">✓</span></td>
+        </tr>
+        <tr class="lx-matrix__group"><th scope="colgroup" colspan="4">Value</th></tr>
+<tr>
+          <th scope="row">Per month with WELCOME60</th>
+          <td>₹433</td>
+          <td>₹350</td>
+          <td class="is-featured is-best">₹292</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row"><span class="visually-hidden">Choose a plan</span></th>
+          <td><a href="https://app.lurvox.in/plans/3-months">See plan</a></td>
+          <td><a href="https://app.lurvox.in/plans/6-months">See plan</a></td>
+          <td class="is-featured is-best"><a class="is-best" href="https://app.lurvox.in/plans/12-months">See Fat loss + muscle</a></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>
+
+{% stylesheet %}
+  .lx-matrix {
+    width: min(100%, 980px);
+    margin: 0 auto;
+    padding: 28px 0 42px;
+    color: #f7f4ee;
+  }
+
+  .lx-matrix__heading {
+    margin-bottom: 18px;
+  }
+
+  .lx-matrix__heading p {
+    margin: 0 0 7px;
+    color: #ff6200;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .lx-matrix__heading h2 {
+    max-width: 16em;
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.55rem, 4vw, 2.25rem);
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+    text-shadow: 0 0 28px rgba(255, 98, 0, 0.14);
+  }
+
+  .lx-matrix__frame {
+    overflow: hidden;
+    border: 1px solid rgba(255, 98, 0, 0.48);
+    border-radius: 18px;
+    background: rgba(10, 10, 12, 0.96);
+    box-shadow:
+      0 24px 64px rgba(0, 0, 0, 0.38),
+      0 0 18px rgba(255, 98, 0, 0.34),
+      0 0 42px rgba(255, 98, 0, 0.24),
+      0 0 76px rgba(255, 98, 0, 0.12),
+      inset 0 0 34px rgba(255, 98, 0, 0.075);
+  }
+
+  .lx-matrix__table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .lx-matrix__table th,
+  .lx-matrix__table td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+    text-shadow:
+      0 0 1px rgba(255, 255, 255, 0.82),
+      0 0 7px rgba(255, 98, 0, 0.5),
+      0 0 18px rgba(255, 98, 0, 0.24);
+  }
+
+  .lx-matrix__table thead th {
+    padding: 18px 8px 15px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: 0.05em;
+    text-align: center;
+    text-transform: uppercase;
+    vertical-align: bottom;
+    text-shadow:
+      0 0 2px rgba(255, 255, 255, 0.72),
+      0 0 8px rgba(255, 98, 0, 0.62),
+      0 0 22px rgba(255, 98, 0, 0.3);
+  }
+
+  .lx-matrix__table thead th:first-child,
+  .lx-matrix__table tbody th {
+    width: 43%;
+    text-align: left;
+  }
+
+  .lx-matrix__table thead th span,
+  .lx-matrix__table thead th strong {
+    display: block;
+  }
+
+  .lx-matrix__table thead th strong {
+    margin-top: 5px;
+    color: #ff6200;
+    font-size: 0.95rem;
+    letter-spacing: 0;
+    text-shadow:
+      0 0 3px rgba(255, 200, 160, 0.92),
+      0 0 9px rgba(255, 98, 0, 0.82),
+      0 0 24px rgba(255, 98, 0, 0.5),
+      0 0 48px rgba(255, 98, 0, 0.24);
+  }
+
+  .lx-matrix__table thead small {
+    display: inline-flex;
+    margin-bottom: 6px;
+    padding: 3px 6px;
+    border-radius: 999px;
+    background: #ff6200;
+    color: #190900;
+    font-size: 0.5rem;
+    letter-spacing: 0.06em;
+  }
+
+  .lx-matrix__table tbody th {
+    padding: 13px 14px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.28;
+  }
+
+  .lx-matrix__group th {
+    padding: 14px 14px 8px;
+    color: #ff6200;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: left;
+    background: rgba(255, 98, 0, 0.07);
+    border-bottom: 1px solid rgba(255, 98, 0, 0.22);
+  }
+
+  .lx-matrix__table tbody td {
+    padding: 11px 4px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .lx-matrix__table .is-featured {
+    background: rgba(255, 98, 0, 0.055);
+    box-shadow: inset 1px 0 rgba(255, 98, 0, 0.1), inset -1px 0 rgba(255, 98, 0, 0.1);
+  }
+
+  .lx-matrix__table thead th:last-child,
+  .lx-matrix__table tbody td:last-child,
+  .lx-matrix__table tfoot td:last-child,
+  .lx-matrix__table .is-best {
+    background:
+      linear-gradient(180deg, rgba(255, 130, 45, 0.16), rgba(255, 98, 0, 0.06));
+    box-shadow:
+      inset 1px 0 rgba(255, 130, 45, 0.26),
+      inset -1px 0 rgba(255, 130, 45, 0.16);
+  }
+
+  .lx-matrix__yes,
+  .lx-matrix__no {
+    display: inline-grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .lx-matrix__yes {
+    background: #20b86a;
+    color: #fff;
+    box-shadow:
+      0 0 9px rgba(32, 184, 106, 0.72),
+      0 0 18px rgba(32, 184, 106, 0.38),
+      0 0 28px rgba(255, 98, 0, 0.2);
+  }
+
+  .lx-matrix__no {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .lx-matrix__exclusive th,
+  .lx-matrix__exclusive td {
+    background-color: rgba(255, 98, 0, 0.075);
+    border-top: 1px solid rgba(255, 98, 0, 0.22);
+    border-bottom-color: rgba(255, 98, 0, 0.22);
+  }
+
+  .lx-matrix__exclusive th span {
+    display: block;
+    color: #fff;
+    text-shadow:
+      0 0 8px rgba(255, 98, 0, 0.42),
+      0 0 20px rgba(255, 98, 0, 0.18);
+  }
+
+  .lx-matrix__exclusive th em {
+    display: inline-flex;
+    margin-top: 6px;
+    padding: 3px 7px;
+    border: 1px solid rgba(255, 98, 0, 0.36);
+    border-radius: 999px;
+    color: #ff8a3d;
+    font-size: 0.58rem;
+    font-weight: 800;
+    font-style: normal;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(255, 98, 0, 0.42);
+  }
+
+  .lx-matrix__table tfoot th,
+  .lx-matrix__table tfoot td {
+    padding: 15px 4px;
+    border-bottom: 0;
+    text-align: center;
+  }
+
+  .lx-matrix__table tfoot a {
+    display: inline-flex;
+    min-height: 32px;
+    padding: 0 11px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    color: #fff;
+    font-size: 0.63rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .lx-matrix__table tfoot a.is-featured {
+    border-color: #ff6200;
+    background: #ff6200;
+    color: #1a0900;
+  }
+
+  .lx-matrix__table tfoot a.is-best {
+    border-color: #ff8a3d;
+    color: #ffb17a;
+    box-shadow: 0 0 14px rgba(255, 98, 0, 0.2);
+  }
+
+  @media (max-width: 640px) {
+    .lx-matrix {
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      padding: 20px 12px 28px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .lx-matrix__heading {
+      margin-bottom: 12px;
+      padding: 0;
+    }
+
+    .lx-matrix__heading h2 {
+      max-width: none;
+      font-size: 1.4rem;
+      line-height: 1.15;
+    }
+
+    .lx-matrix__frame {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .lx-matrix__table {
+      width: 100%;
+      min-width: 0;
+      table-layout: fixed;
+    }
+
+    .lx-matrix__table thead th:first-child,
+    .lx-matrix__table tbody th,
+    .lx-matrix__table tfoot th {
+      width: 34%;
+    }
+
+    .lx-matrix__table thead th:not(:first-child),
+    .lx-matrix__table tbody td,
+    .lx-matrix__table tfoot td {
+      width: 22%;
+    }
+
+    .lx-matrix__table thead th {
+      padding: 12px 3px 10px;
+      font-size: 0.58rem;
+      letter-spacing: 0.02em;
+      word-break: break-word;
+    }
+
+    .lx-matrix__table thead th:first-child {
+      padding-left: 10px;
+      padding-right: 6px;
+      text-align: left;
+    }
+
+    .lx-matrix__table thead th strong {
+      margin-top: 3px;
+      font-size: 0.78rem;
+      letter-spacing: -0.02em;
+    }
+
+    .lx-matrix__table thead small {
+      margin-bottom: 4px;
+      padding: 2px 5px;
+      font-size: 0.42rem;
+      letter-spacing: 0.04em;
+    }
+
+    .lx-matrix__table tbody th {
+      padding: 10px 8px 10px 10px;
+      font-size: 0.7rem;
+      line-height: 1.25;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+
+    .lx-matrix__table tbody td {
+      padding: 8px 2px;
+      vertical-align: middle;
+    }
+
+    .lx-matrix__exclusive th em {
+      margin-top: 4px;
+      padding: 2px 5px;
+      font-size: 0.42rem;
+      letter-spacing: 0.02em;
+      max-width: 100%;
+      white-space: normal;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .lx-matrix__yes,
+    .lx-matrix__no {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      font-size: 0.58rem;
+    }
+
+    .lx-matrix__table tfoot th,
+    .lx-matrix__table tfoot td {
+      padding: 10px 2px 12px;
+    }
+
+    .lx-matrix__table tfoot a {
+      display: inline-flex;
+      width: calc(100% - 4px);
+      max-width: 100%;
+      min-height: 30px;
+      padding: 0 4px;
+      box-sizing: border-box;
+      font-size: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .lx-matrix {
+      padding: 18px 8px 24px;
+    }
+
+    .lx-matrix__table thead th:first-child,
+    .lx-matrix__table tbody th,
+    .lx-matrix__table tfoot th {
+      width: 32%;
+    }
+
+    .lx-matrix__table thead th strong {
+      font-size: 0.7rem;
+    }
+
+    .lx-matrix__table tbody th {
+      padding: 9px 6px 9px 8px;
+      font-size: 0.64rem;
+    }
+
+    .lx-matrix__yes,
+    .lx-matrix__no {
+      width: 16px;
+      height: 16px;
+      font-size: 0.52rem;
+    }
+
+    .lx-matrix__table tfoot a {
+      font-size: 0.46rem;
+      min-height: 28px;
+    }
+  }
+{% endstylesheet %}

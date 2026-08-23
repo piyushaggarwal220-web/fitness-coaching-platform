@@ -1,0 +1,32 @@
+{% comment %} lurvox-tap-force-section 1785954197680 {% endcomment %}
+<style>
+  [data-cta-button],
+  [class*="ai-transformation-plan-cta-wrapper"] { display: none !important; }
+</style>
+<script>
+(function(){
+  function wire(){
+    document.querySelectorAll('[data-cta-button],[class*="ai-transformation-plan-cta-wrapper"]').forEach(function(el){
+      el.style.setProperty('display','none','important');
+    });
+    document.querySelectorAll('[class*="ai-transformation-plan-card-"][data-plan-link]').forEach(function(card){
+      if (card.dataset.lurvoxTapWired === '1') return;
+      card.dataset.lurvoxTapWired = '1';
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', function(e){
+        var link = card.getAttribute('data-plan-link');
+        if (!link) return;
+        e.preventDefault(); e.stopPropagation();
+        window.location.href = link;
+      }, true);
+    });
+  }
+  wire();
+  document.addEventListener('DOMContentLoaded', wire);
+  setTimeout(wire, 400);
+  setTimeout(wire, 1500);
+})();
+</script>
+{% schema %}
+{ "name": "LURVOX tap plan force", "settings": [], "presets": [{ "name": "LURVOX tap plan force" }] }
+{% endschema %}

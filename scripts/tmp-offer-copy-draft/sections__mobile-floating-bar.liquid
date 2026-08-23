@@ -1,0 +1,313 @@
+{%- liquid
+  assign enabled = section.settings.enabled
+  assign consult_url = section.settings.consultation_url
+  assign consult_label = section.settings.consultation_label
+  assign bg = section.settings.background_color
+  assign accent = section.settings.accent_color
+  assign bottom = section.settings.bottom_spacing
+  assign radius = section.settings.border_radius
+  assign shadow = section.settings.shadow_strength
+
+  if consult_url == blank
+    assign consult_url = '/pages/book-a-free-call'
+  endif
+  if consult_label == blank
+    assign consult_label = 'Book a free consultation call with a coach'
+  endif
+
+  assign hide_template = false
+  if request.page_type == 'cart' or request.page_type == 'password'
+    assign hide_template = true
+  endif
+  if request.page_type == 'page' and page.handle == 'talk-to-a-coach'
+    assign hide_template = true
+  endif
+  if request.page_type == 'page' and page.handle == 'contact'
+    assign hide_template = true
+  endif
+-%}
+
+{% if enabled and hide_template == false %}
+  <section
+    id="lurvox-fab-{{ section.id }}"
+    class="lurvox-fab shopify-section lurvox-fab--single"
+    data-lurvox-fab
+    style="
+      --lurvox-fab-bg: {{ bg }};
+      --lurvox-fab-accent: {{ accent }};
+      --lurvox-fab-bottom: {{ bottom }}px;
+      --lurvox-fab-radius: {{ radius }}px;
+      --lurvox-fab-shadow: {{ shadow | divided_by: 100.0 }};
+    "
+    aria-label="Book a free consultation"
+  >
+    <div class="lurvox-fab__shell">
+      <a
+        class="lurvox-fab__btn lurvox-fab__btn--primary lurvox-fab__btn--single"
+        href="{{ consult_url }}"
+        {% if consult_url contains 'http' %}
+          target="_blank"
+          rel="noopener noreferrer"
+        {% endif %}
+      >
+        <span class="lurvox-fab__cluster">
+          <span class="lurvox-fab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M8.2 4.85c.35-.75 1.25-1.1 2.05-.85l1.35.45c.7.25 1.1.95.95 1.65l-.45 1.85c-.1.45.05.9.4 1.2l1.55 1.35c.9.8 1.95 1.85 2.75 2.75l1.35 1.55c.3.35.75.5 1.2.4l1.85-.45c.7-.15 1.4.25 1.65.95l.45 1.35c.25.8-.1 1.7-.85 2.05-1.55.7-3.7.85-6.15-.85-2.35-1.65-4.5-3.95-6.15-6.55-1.7-2.45-1.55-4.6-.85-6.15Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <span class="lurvox-fab__label">{{ consult_label }}</span>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <style>
+    /* lurvox-fab-pin-bottom-v2 — CSS-only fixed bottom, never hide mid-scroll */
+    #lurvox-fab-{{ section.id }} {
+      --lurvox-fab-text: #ffffff;
+      --lurvox-fab-border: rgba(255, 255, 255, 0.12);
+      --lurvox-fab-shell: rgba(12, 12, 12, 0.96);
+      display: none;
+      position: fixed;
+      z-index: 2147483000;
+      left: 12px;
+      right: 12px;
+      top: auto;
+      bottom: calc(var(--lurvox-fab-bottom) + env(safe-area-inset-bottom, 0px));
+      margin: 0 auto;
+      max-width: 480px;
+      width: auto;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate3d(0, 10px, 0);
+      transition:
+        opacity 320ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #lurvox-fab-{{ section.id }}.is-visible {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__shell {
+      pointer-events: auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding: 8px;
+      border-radius: var(--lurvox-fab-radius);
+      background: var(--lurvox-fab-shell);
+      border: 1px solid var(--lurvox-fab-border);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow:
+        0 16px 40px rgba(0, 0, 0, calc(0.55 * var(--lurvox-fab-shadow))),
+        0 0 0 1px rgba(255, 98, 0, calc(0.08 * var(--lurvox-fab-shadow)));
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      min-height: 52px;
+      height: auto;
+      padding: 12px 14px;
+      border-radius: calc(var(--lurvox-fab-radius) - 8px);
+      text-decoration: none;
+      box-sizing: border-box;
+      transition:
+        transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+        background 180ms cubic-bezier(0.22, 1, 0.36, 1);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__cluster {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      max-width: 100%;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__icon {
+      display: inline-flex;
+      width: 17px;
+      height: 17px;
+      flex: 0 0 17px;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__icon svg {
+      width: 17px;
+      height: 17px;
+      display: block;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__label {
+      font-size: 13.5px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+      white-space: normal;
+      text-align: center;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--ghost {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid color-mix(in srgb, var(--lurvox-fab-accent) 65%, transparent);
+      color: var(--lurvox-fab-text);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--ghost .lurvox-fab__icon {
+      color: var(--lurvox-fab-accent);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary {
+      background: linear-gradient(180deg, #ff7a1a 0%, var(--lurvox-fab-accent) 100%);
+      border: 1px solid transparent;
+      color: #ffffff;
+      box-shadow: 0 8px 22px rgba(255, 98, 0, 0.28);
+      font-weight: 700;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn--primary .lurvox-fab__icon {
+      color: #ffffff;
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:active {
+      transform: scale(0.98);
+    }
+
+    #lurvox-fab-{{ section.id }} .lurvox-fab__btn:focus-visible {
+      outline: 2px solid var(--lurvox-fab-accent);
+      outline-offset: 2px;
+    }
+
+    @media screen and (max-width: 749px) {
+      #lurvox-fab-{{ section.id }} {
+        display: block;
+      }
+
+      body {
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #lurvox-fab-{{ section.id }},
+      #lurvox-fab-{{ section.id }} .lurvox-fab__btn {
+        transition: none;
+      }
+
+      #lurvox-fab-{{ section.id }}.is-visible {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+
+  <script>
+    (function () {
+      var root = document.getElementById('lurvox-fab-{{ section.id }}');
+      if (!root) return;
+
+      // Reparent to <body> so footer/header stacking never clips or hides it mid-scroll.
+      var pinToBody = function () {
+        if (root.parentElement !== document.body) {
+          document.body.appendChild(root);
+        }
+        root.classList.add('is-visible');
+      };
+
+      if (document.body) {
+        pinToBody();
+      } else {
+        document.addEventListener('DOMContentLoaded', pinToBody);
+      }
+      window.addEventListener('load', pinToBody);
+    })();
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Mobile floating bar",
+  "tag": "section",
+  "class": "lurvox-fab-section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Enable Floating Bar",
+      "default": true
+    },
+    {
+      "type": "url",
+      "id": "consultation_url",
+      "label": "Consultation WhatsApp URL",
+      "info": "Defaults to wa.me/919220451577 with a free consultation message"
+    },
+    {
+      "type": "text",
+      "id": "consultation_label",
+      "label": "Button label",
+      "default": "Book a free consultation call with a coach"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Colour",
+      "default": "#050505"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent Colour",
+      "default": "#FF6200"
+    },
+    {
+      "type": "range",
+      "id": "bottom_spacing",
+      "min": 8,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "label": "Bottom Spacing",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 12,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "label": "Border Radius",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "shadow_strength",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "label": "Shadow Strength",
+      "default": 100
+    }
+  ],
+  "presets": [
+    {
+      "name": "Mobile floating bar"
+    }
+  ]
+}
+{% endschema %}

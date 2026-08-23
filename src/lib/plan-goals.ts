@@ -157,9 +157,9 @@ export const PLAN_GOAL_TIER_META: Record<
   PlanGoalTier,
   { title: string; shortLabel: string; accent: string }
 > = {
-  '3_months': { title: '3 Months', shortLabel: 'Momentum', accent: '#38bdf8' },
-  '6_months': { title: '6 Months', shortLabel: 'Transformation', accent: '#a78bfa' },
-  '12_months': { title: '12 Months', shortLabel: 'Full Journey', accent: '#fbbf24' },
+  '3_months': { title: 'Look sharper', shortLabel: '90 days', accent: '#38bdf8' },
+  '6_months': { title: 'Fat loss', shortLabel: '6 months', accent: '#a78bfa' },
+  '12_months': { title: 'Fat loss + muscle', shortLabel: '12 months', accent: '#fbbf24' },
 }
 
 /** Flat catalog of every plan-gated goal. */

@@ -1,0 +1,316 @@
+{%- comment -%} Homepage offer strip — LURVOX dark + orange. {%- endcomment -%}
+{%- if section.settings.enabled -%}
+  <aside
+    id="lurvox-offer-strip-home"
+    class="lurvox-offer-strip lurvox-offer-strip--home"
+    aria-label="{{ section.settings.code | default: 'WELCOME60' | escape }} for 60% off"
+    hidden
+  >
+    <a class="lurvox-offer-strip__inner" href="{{ section.settings.cta_url | default: '/#plans' }}">
+      <span class="lurvox-offer-strip__emoji" aria-hidden="true">🎉</span>
+      <span class="lurvox-offer-strip__copy">
+        <strong>{{ section.settings.code | default: 'WELCOME60' }}</strong>
+        for 60% OFF ENDS SOON
+      </span>
+      <span
+        class="lurvox-offer-strip__timer"
+        data-lurvox-countdown
+        data-countdown-start="{{ section.settings.countdown_hours | default: 8 }}"
+        data-countdown-floor="{{ section.settings.countdown_floor_hours | default: 5 }}"
+        data-countdown-key="lurvox-sale-countdown-v1"
+      >
+        <span class="lurvox-offer-strip__clock" aria-hidden="true">⏱️</span>
+        <strong data-lurvox-countdown-value>08:00:00</strong>
+      </span>
+    </a>
+  </aside>
+
+  <style id="lurvox-offer-home-css">
+    .lurvox-client-login,
+    aside.lurvox-client-login,
+    .shopify-section-group-header-group .lurvox-client-login {
+      display: none !important;
+    }
+
+    .lurvox-offer-strip,
+    #lurvox-offer-strip-live {
+      position: relative;
+      z-index: 40;
+      width: 100%;
+      overflow: hidden;
+      color: #ffffff !important;
+      background:
+        radial-gradient(circle at 18% -80%, rgba(255, 98, 0, 0.42), transparent 52%),
+        linear-gradient(105deg, #100b08 0%, #17100c 48%, #090909 100%) !important;
+      border-bottom: 1px solid rgba(255, 98, 0, 0.38) !important;
+    }
+
+    .lurvox-offer-strip[hidden] {
+      display: none !important;
+    }
+
+    .lurvox-offer-strip__inner,
+    #lurvox-offer-strip-live a {
+      position: relative;
+      z-index: 1;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: nowrap;
+      gap: 8px !important;
+      min-height: 40px !important;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 8px 14px !important;
+      color: #ffffff !important;
+      text-decoration: none;
+      white-space: nowrap;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+    }
+
+    .lurvox-offer-strip__emoji {
+      font-size: 14px;
+      line-height: 1;
+      filter: drop-shadow(0 0 8px rgba(255, 98, 0, 0.45));
+    }
+
+    .lurvox-offer-strip__copy {
+      color: rgba(255, 255, 255, 0.92);
+      text-transform: uppercase;
+      font-size: 12.5px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+    }
+
+    .lurvox-offer-strip__copy strong {
+      color: #ff6200;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+    }
+
+    .lurvox-offer-strip__timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 98, 0, 0.5);
+      background: rgba(255, 98, 0, 0.14);
+      color: #ffffff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .lurvox-offer-strip__clock {
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .lurvox-offer-strip__timer strong {
+      display: inline-block;
+      min-width: 5.6em;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+
+    .lurvox-drawer-login-wrap {
+      margin: 16px 0 8px;
+      padding: 0 4px;
+    }
+
+    .lurvox-drawer-login {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      text-decoration: none;
+      color: #fff;
+      background: linear-gradient(105deg, #17100c 0%, #100b08 100%);
+      border: 1px solid color-mix(in srgb, #ff6200 45%, transparent);
+    }
+
+    .lurvox-drawer-login strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .lurvox-drawer-login small {
+      display: block;
+      margin-top: 2px;
+      color: rgba(255, 255, 255, 0.58);
+      font-size: 11px;
+    }
+
+    @media screen and (max-width: 749px) {
+      .lurvox-offer-strip__inner {
+        min-height: 36px;
+        gap: 5px;
+        padding: 7px 8px;
+        font-size: 11.5px;
+      }
+      .lurvox-offer-strip__copy {
+        font-size: 11px;
+      }
+      .lurvox-offer-strip__timer {
+        padding: 3px 8px;
+      }
+      .lurvox-offer-strip__timer strong {
+        font-size: 11.5px;
+        min-width: 5.2em;
+      }
+    }
+  </style>
+
+  <script>
+    (function () {
+      var strip = document.getElementById('lurvox-offer-strip-home');
+      if (!strip) return;
+
+      function placeStrip() {
+        if (document.getElementById('lurvox-offer-strip-live')) return;
+        // Homepage uses this strip only — hide header-group offer strip(s).
+        document.querySelectorAll('.lurvox-client-login, .shopify-section-group-header-group .lurvox-offer-strip').forEach(function (el) {
+          el.style.display = 'none';
+        });
+        var node = strip.cloneNode(true);
+        node.id = 'lurvox-offer-strip-live';
+        node.hidden = false;
+        node.removeAttribute('hidden');
+        var old = document.querySelector('.lurvox-client-login');
+        if (old && old.parentNode) {
+          old.parentNode.insertBefore(node, old);
+        } else {
+          var headerGroup = document.querySelector('.shopify-section-group-header-group');
+          if (headerGroup) headerGroup.insertBefore(node, headerGroup.firstChild);
+          else document.body.insertBefore(node, document.body.firstChild);
+        }
+        wireCountdown(node);
+      }
+
+      function wireCountdown(root) {
+        var el = root.querySelector('[data-lurvox-countdown]');
+        if (!el || el.dataset.wired === '1') return;
+        el.dataset.wired = '1';
+        var startHours = parseInt(el.getAttribute('data-countdown-start'), 10) || 8;
+        var floorHours = parseInt(el.getAttribute('data-countdown-floor'), 10) || 5;
+        if (floorHours >= startHours) floorHours = Math.max(0, startHours - 1);
+        var storageKey = el.getAttribute('data-countdown-key') || 'lurvox-sale-countdown-v1';
+        var startMs = startHours * 60 * 60 * 1000;
+        var floorMs = floorHours * 60 * 60 * 1000;
+        var endTime = 0;
+        try {
+          var stored = localStorage.getItem(storageKey);
+          var parsed = stored ? parseInt(stored, 10) : NaN;
+          if (Number.isFinite(parsed) && parsed > Date.now()) endTime = parsed;
+        } catch (e) {}
+        if (!endTime) {
+          endTime = Date.now() + startMs;
+          try { localStorage.setItem(storageKey, String(endTime)); } catch (e) {}
+        }
+        function tick() {
+          var distance = endTime - Date.now();
+          if (distance <= floorMs) {
+            endTime = Date.now() + startMs;
+            try { localStorage.setItem(storageKey, String(endTime)); } catch (e) {}
+            distance = startMs;
+          }
+          var h = Math.floor(distance / 3600000);
+          var m = Math.floor((distance % 3600000) / 60000);
+          var s = Math.floor((distance % 60000) / 1000);
+          var valueEl = el.querySelector('[data-lurvox-countdown-value]');
+          if (valueEl) {
+            valueEl.textContent =
+              String(h).padStart(2, '0') + ':' +
+              String(m).padStart(2, '0') + ':' +
+              String(s).padStart(2, '0');
+          }
+        }
+        tick();
+        setInterval(tick, 1000);
+      }
+
+      function injectDrawerLogin() {
+        if (document.querySelector('.lurvox-drawer-login')) return;
+        var targets = document.querySelectorAll(
+          'header-drawer .menu-drawer__navigation, .menu-drawer__navigation, #menu-drawer nav, .menu-drawer__menu'
+        );
+        if (!targets.length) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'lurvox-drawer-login-wrap';
+        wrap.innerHTML =
+          '<a class="lurvox-drawer-login" href="https://app.lurvox.in/login">' +
+          '<span><strong>Existing client login</strong>' +
+          '<small>Already paid or returning client</small></span>' +
+          '<span aria-hidden="true">→</span></a>';
+        targets.forEach(function (nav) {
+          if (nav.querySelector('.lurvox-drawer-login')) return;
+          nav.insertBefore(wrap.cloneNode(true), nav.firstChild);
+        });
+      }
+
+      placeStrip();
+      injectDrawerLogin();
+      document.addEventListener('DOMContentLoaded', function () {
+        placeStrip();
+        injectDrawerLogin();
+      });
+      setTimeout(injectDrawerLogin, 800);
+      setTimeout(injectDrawerLogin, 2000);
+    })();
+  </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "LURVOX offer home",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Show offer strip",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "code",
+      "label": "Coupon code",
+      "default": "WELCOME60"
+    },
+    {
+      "type": "range",
+      "id": "countdown_hours",
+      "label": "Countdown start hours",
+      "min": 1,
+      "max": 24,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "countdown_floor_hours",
+      "label": "Reset when hours left reach",
+      "min": 0,
+      "max": 12,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "text",
+      "id": "cta_url",
+      "label": "CTA link",
+      "default": "/#plans"
+    }
+  ],
+  "presets": [{ "name": "LURVOX offer home" }]
+}
+{% endschema %}

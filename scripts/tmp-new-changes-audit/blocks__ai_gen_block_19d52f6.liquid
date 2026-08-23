@@ -1,0 +1,417 @@
+{% doc %}
+  @prompt
+    Create a brand-new homepage section called "Premium Contact Header."
+    
+    This section exists only as a premium animated heading that sits directly above the existing Shopify Contact Form block.
+    
+    Do not include any form fields.
+    
+    Do not include any buttons.
+    
+    Do not recreate the contact form.
+    
+    Do not modify Shopify's existing Contact Form.
+    
+    This section is purely visual and must align perfectly with the contact form below so they appear as one premium section.
+    
+    DESIGN
+    
+    Background:
+    Transparent.
+    
+    No card.
+    
+    No border.
+    
+    Maximum width:
+    620px.
+    
+    Centered.
+    
+    Add a very soft radial orange glow behind the content that blends naturally into the page.
+    
+    Leave approximately 28px spacing below this section so the Shopify Contact Form connects seamlessly.
+    
+    MICRO LABEL
+    
+    PRIVATE COACH SUPPORT
+    
+    Uppercase.
+    
+    Letter spacing: 6px.
+    
+    Orange (#F26A3D).
+    
+    Animate with a gentle fade and upward reveal.
+    
+    HEADLINE
+    
+    Talk To A Coach
+    
+    Large bold white typography matching every hero heading on the website.
+    
+    Reveal one line at a time with a smooth upward mask animation.
+    
+    Duration:
+    750ms.
+    
+    Use cubic-bezier(0.22,1,0.36,1).
+    
+    No bounce.
+    
+    No scaling.
+    
+    DESCRIPTION
+    
+    Have questions before getting started? Leave your details below and one of our coaches will personally get back to you as soon as possible.
+    
+    Centered.
+    
+    Maximum width: 520px.
+    
+    Soft grey (#C7C7C7).
+    
+    Fade upward after the headline with a 120ms delay.
+    
+    ANIMATION
+    
+    Play only once.
+    
+    Trigger using Intersection Observer.
+    
+    Animate only the first time the section enters the viewport.
+    
+    No looping.
+    
+    No floating effects.
+    
+    No particles.
+    
+    No excessive motion.
+    
+    Everything should feel refined, premium and effortless.
+    
+    MOBILE
+    
+    Perfectly centered.
+    
+    Generous breathing room.
+    
+    Typography identical to the rest of the website.
+    
+    The transition between this heading section and the Shopify Contact Form below should feel like one continuous premium experience, similar to Apple's product pages and Mercedes-Benz's digital design language.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-contact-header-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+    background: transparent;
+    padding: 60px 20px 28px;
+    text-align: center;
+  }
+
+  .ai-contact-header-container-{{ ai_gen_id }} {
+    max-width: 620px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .ai-contact-header-glow-{{ ai_gen_id }} {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: {{ block.settings.glow_size }}px;
+    height: {{ block.settings.glow_size }}px;
+    background: radial-gradient(circle, {{ block.settings.glow_color }}{{ block.settings.glow_opacity | divided_by: 100.0 | times: 255 | round | prepend: '0' | slice: -2, 2 }}, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ai-contact-header-content-{{ ai_gen_id }} {
+    position: relative;
+    z-index: 1;
+  }
+
+  .ai-contact-header-label-{{ ai_gen_id }} {
+    font-size: {{ block.settings.label_size }}px;
+    font-weight: 600;
+    color: {{ block.settings.label_color }};
+    text-transform: uppercase;
+    letter-spacing: {{ block.settings.label_spacing }}px;
+    margin: 0 0 20px;
+    opacity: 0;
+  }
+
+  .ai-contact-header-label-{{ ai_gen_id }}.ai-animated-{{ ai_gen_id }} {
+    animation: ai-fade-up-{{ ai_gen_id }} 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .ai-contact-header-title-{{ ai_gen_id }} {
+    font-size: {{ block.settings.title_size }}px;
+    font-weight: 700;
+    color: {{ block.settings.title_color }};
+    line-height: 1.1;
+    margin: 0 0 24px;
+  }
+
+  .ai-contact-header-title-line-{{ ai_gen_id }} {
+    display: block;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .ai-contact-header-title-line-{{ ai_gen_id }}.ai-animated-{{ ai_gen_id }} {
+    animation: ai-fade-up-{{ ai_gen_id }} 750ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .ai-contact-header-description-{{ ai_gen_id }} {
+    font-size: {{ block.settings.description_size }}px;
+    color: {{ block.settings.description_color }};
+    line-height: 1.6;
+    max-width: 520px;
+    margin: 0 auto;
+    opacity: 0;
+  }
+
+  .ai-contact-header-description-{{ ai_gen_id }}.ai-animated-{{ ai_gen_id }} {
+    animation: ai-fade-up-{{ ai_gen_id }} 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: 120ms;
+  }
+
+  @keyframes ai-fade-up-{{ ai_gen_id }} {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-contact-header-{{ ai_gen_id }} {
+      padding: 40px 20px 28px;
+    }
+
+    .ai-contact-header-label-{{ ai_gen_id }} {
+      font-size: {{ block.settings.label_size | times: 0.8 }}px;
+      letter-spacing: {{ block.settings.label_spacing | times: 0.7 }}px;
+    }
+
+    .ai-contact-header-title-{{ ai_gen_id }} {
+      font-size: {{ block.settings.title_size | times: 0.6 }}px;
+    }
+
+    .ai-contact-header-description-{{ ai_gen_id }} {
+      font-size: {{ block.settings.description_size | times: 0.9 }}px;
+    }
+  }
+{% endstyle %}
+
+<premium-contact-header-{{ ai_gen_id }}
+  class="ai-contact-header-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-contact-header-container-{{ ai_gen_id }}">
+    <div class="ai-contact-header-glow-{{ ai_gen_id }}"></div>
+    
+    <div class="ai-contact-header-content-{{ ai_gen_id }}">
+      {% if block.settings.label != blank %}
+        <div class="ai-contact-header-label-{{ ai_gen_id }}" data-animate>
+          {{ block.settings.label }}
+        </div>
+      {% endif %}
+
+      {% if block.settings.title != blank %}
+        <h2 class="ai-contact-header-title-{{ ai_gen_id }}">
+          {% assign title_lines = block.settings.title | split: '<br>' %}
+          {% for line in title_lines %}
+            <span class="ai-contact-header-title-line-{{ ai_gen_id }}" data-animate style="animation-delay: {{ forloop.index0 | times: 100 }}ms;">{{ line }}</span>
+          {% endfor %}
+        </h2>
+      {% endif %}
+
+      {% if block.settings.description != blank %}
+        <div class="ai-contact-header-description-{{ ai_gen_id }}" data-animate>
+          {{ block.settings.description }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</premium-contact-header-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class PremiumContactHeader{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+        this.hasAnimated = false;
+      }
+
+      connectedCallback() {
+        this.setupIntersectionObserver();
+      }
+
+      setupIntersectionObserver() {
+        const options = {
+          root: null,
+          rootMargin: '0px',
+          threshold: 0.2
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !this.hasAnimated) {
+              this.animateElements();
+              this.hasAnimated = true;
+              observer.unobserve(this);
+            }
+          });
+        }, options);
+
+        observer.observe(this);
+      }
+
+      animateElements() {
+        const animatedElements = this.querySelectorAll('[data-animate]');
+        animatedElements.forEach((element) => {
+          element.classList.add('ai-animated-{{ ai_gen_id }}');
+        });
+      }
+    }
+
+    customElements.define('premium-contact-header-{{ ai_gen_id }}', PremiumContactHeader{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Premium contact header",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Label"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label text",
+      "default": "PRIVATE COACH SUPPORT"
+    },
+    {
+      "type": "range",
+      "id": "label_size",
+      "label": "Label size",
+      "min": 10,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "label_spacing",
+      "label": "Letter spacing",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "unit": "px",
+      "default": 6
+    },
+    {
+      "type": "color",
+      "id": "label_color",
+      "label": "Label color",
+      "default": "#F26A3D"
+    },
+    {
+      "type": "header",
+      "content": "Headline"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "title",
+      "label": "Title",
+      "default": "Talk To A Coach"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "label": "Title size",
+      "min": 24,
+      "max": 72,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Title color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "header",
+      "content": "Description"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description text",
+      "default": "Have questions before getting started? Leave your details below and one of our coaches will personally get back to you as soon as possible."
+    },
+    {
+      "type": "range",
+      "id": "description_size",
+      "label": "Description size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "description_color",
+      "label": "Description color",
+      "default": "#C7C7C7"
+    },
+    {
+      "type": "header",
+      "content": "Glow effect"
+    },
+    {
+      "type": "range",
+      "id": "glow_size",
+      "label": "Glow size",
+      "min": 200,
+      "max": 600,
+      "step": 50,
+      "unit": "px",
+      "default": 400
+    },
+    {
+      "type": "color",
+      "id": "glow_color",
+      "label": "Glow color",
+      "default": "#F26A3D"
+    },
+    {
+      "type": "range",
+      "id": "glow_opacity",
+      "label": "Glow opacity",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 15
+    }
+  ],
+  "presets": [
+    {
+      "name": "Premium contact header"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,18 @@
+{
+  "mainId": "gid://shopify/OnlineStoreTheme/161112981755",
+  "mainName": "LURVOX Mobile Home Fix 2026-07-25 10-11",
+  "files": {
+    "sections/header-group.json": {
+      "len": 3724,
+      "saved": "sections__header-group.json"
+    },
+    "sections/header.liquid": {
+      "len": 48665,
+      "saved": "sections__header.liquid"
+    },
+    "sections/lurvox-client-login.liquid": {
+      "len": 5665,
+      "saved": "sections__lurvox-client-login.liquid"
+    }
+  }
+}
