@@ -46,19 +46,83 @@ const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_mont
  */
 export const SUPPLEMENT_PROTOCOL_ADDON_PAISE = 39900
 export const SUPPLEMENT_PROTOCOL_ADDON_LABEL = 'Natural testosterone support protocol'
+/** Each optional checkout add-on is billed at the same published price. */
+export const CHECKOUT_ADDON_UNIT_PAISE = SUPPLEMENT_PROTOCOL_ADDON_PAISE
+
+export const CHECKOUT_ADDON_IDS = ['testo_boost', 'anxiety_removal', 'face_maxxing'] as const
+export type CheckoutAddonId = (typeof CHECKOUT_ADDON_IDS)[number]
+
+export const CHECKOUT_ADDONS: { id: CheckoutAddonId; name: string; copy: string }[] = [
+  {
+    id: 'testo_boost',
+    name: 'Testo boost',
+    copy: 'A written protocol from your answers: training, sleep, body fat, and which supplements are worth it. Not a hormone or drug.',
+  },
+  {
+    id: 'anxiety_removal',
+    name: 'Anxiety removal',
+    copy: 'Coach-built habits for stress, sleep, and a calmer week. Not therapy and not medicine.',
+  },
+  {
+    id: 'face_maxxing',
+    name: 'Face maxxing',
+    copy: 'Face-focused habits: sleep, salt, skin, posture, and grooming. Lifestyle only — not a medical or surgical plan.',
+  },
+]
+
 /** Razorpay order-note key, also used to reconstruct the charge at verification time. */
 const SUPPLEMENT_ADDON_NOTE_KEY = 'addon_supplement_paise'
+const CHECKOUT_ADDON_IDS_NOTE_KEY = 'addon_ids'
+const CHECKOUT_ADDON_TOTAL_NOTE_KEY = 'addon_total_paise'
+
+export function parseCheckoutAddonIds(input: unknown): CheckoutAddonId[] {
+  const raw = Array.isArray(input)
+    ? input
+    : typeof input === 'string'
+      ? input.split(/[,\s]+/)
+      : []
+  const allowed = new Set<string>(CHECKOUT_ADDON_IDS)
+  const ids: CheckoutAddonId[] = []
+  for (const value of raw) {
+    const id = String(value ?? '').trim()
+    if (allowed.has(id) && !ids.includes(id as CheckoutAddonId)) {
+      ids.push(id as CheckoutAddonId)
+    }
+  }
+  return ids
+}
+
+export function checkoutAddonsPaise(ids: readonly CheckoutAddonId[]): number {
+  return ids.length * CHECKOUT_ADDON_UNIT_PAISE
+}
 
 export function supplementAddonPaise(enabled: boolean | null | undefined): number {
   return enabled ? SUPPLEMENT_PROTOCOL_ADDON_PAISE : 0
 }
 
-/** Amount actually charged: discounted coaching plan plus any add-on. */
+export function checkoutAddonsFromNotes(
+  notes: Record<string, string | undefined> | null | undefined
+): { ids: CheckoutAddonId[]; paise: number } {
+  const ids = parseCheckoutAddonIds(notes?.[CHECKOUT_ADDON_IDS_NOTE_KEY])
+  const total = notes?.[CHECKOUT_ADDON_TOTAL_NOTE_KEY]
+    ? Number(notes[CHECKOUT_ADDON_TOTAL_NOTE_KEY])
+    : NaN
+  if (ids.length > 0 && total === checkoutAddonsPaise(ids)) {
+    return { ids, paise: total }
+  }
+  if (supplementAddonPaiseFromNotes(notes) > 0) {
+    return { ids: ['testo_boost'], paise: SUPPLEMENT_PROTOCOL_ADDON_PAISE }
+  }
+  return { ids: [], paise: 0 }
+}
+
+/** Amount actually charged: discounted coaching plan plus selected add-ons. */
 export function checkoutTotalPaise(
   pricing: Pick<CheckoutPricing, 'amountPaise'>,
-  supplementAddon: boolean | null | undefined
+  addons: boolean | readonly CheckoutAddonId[] | null | undefined
 ): number {
-  return pricing.amountPaise + supplementAddonPaise(supplementAddon)
+  if (Array.isArray(addons)) return pricing.amountPaise + checkoutAddonsPaise(addons)
+  return pricing.amountPaise + supplementAddonPaise(addons)
 }
 
 /** Add-on amount recorded on the Razorpay order, so verify/webhook can trust it. */
@@ -397,7 +461,7 @@ export function expectedAmountPaiseFromOrderNotes(
   plan: CoachingPlan,
   notes: Record<string, string | undefined> | null | undefined
 ): number {
-  return expectedPlanAmountPaiseFromOrderNotes(plan, notes) + supplementAddonPaiseFromNotes(notes)
+  return expectedPlanAmountPaiseFromOrderNotes(plan, notes) + checkoutAddonsFromNotes(notes).paise
 }
 
 /** Expected coaching-only amount, before any add-on. */
@@ -455,7 +519,7 @@ function expectedPlanAmountPaiseFromOrderNotes(
 
 export function checkoutDiscountNotes(
   pricing: CheckoutPricing,
-  options?: { supplementAddon?: boolean | null }
+  options?: { supplementAddon?: boolean | null; addonIds?: readonly CheckoutAddonId[] | null }
 ): Record<string, string> {
   const notes: Record<string, string> = {
     amount_paise: String(pricing.amountPaise),
@@ -471,8 +535,13 @@ export function checkoutDiscountNotes(
     }
   }
 
-  if (options?.supplementAddon) {
-    notes[SUPPLEMENT_ADDON_NOTE_KEY] = String(SUPPLEMENT_PROTOCOL_ADDON_PAISE)
+  const addonIds = parseCheckoutAddonIds(options?.addonIds ?? (options?.supplementAddon ? ['testo_boost'] : []))
+  if (addonIds.length > 0) {
+    notes[CHECKOUT_ADDON_IDS_NOTE_KEY] = addonIds.join(',')
+    notes[CHECKOUT_ADDON_TOTAL_NOTE_KEY] = String(checkoutAddonsPaise(addonIds))
+    if (addonIds.includes('testo_boost')) {
+      notes[SUPPLEMENT_ADDON_NOTE_KEY] = String(SUPPLEMENT_PROTOCOL_ADDON_PAISE)
+    }
   }
 
   return notes
@@ -483,3 +552,8 @@ export function promoKindLabel(kind: PromoCodeKind | CheckoutDiscountKind): stri
   if (kind === 'first_timer') return 'Promo'
   return 'Discount'
 }
+
+/** Names used by the checkout page (same catalog). */
+export { CHECKOUT_ADDONS as CHECKOUT_ADDONS }
+export { parseCheckoutAddonIds as parseCheckoutAddonIds }
+export { checkoutAddonsPaise as checkoutAddonsPaise }

@@ -17,12 +17,14 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
 import { formatPlanDayHeadersForClient } from '@/lib/plan-day-labels';
-import { clientFacingPlanTitle } from '@/lib/plan-metadata';
+import { clientFacingPlanTitle, parsePlanMeta, extractWeekFromTitle } from '@/lib/plan-metadata';
+import { planGoalName, planDurationLabel } from '@/lib/payments/plan-pages';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
 import { colors, spacing } from '@/lib/design-tokens';
 import type { Plan } from '@/types/database';
+import { ADDON_PROTOCOL_HREF, ADDON_PROTOCOL_PAGE_TITLE, ADDON_PROTOCOL_SUBTITLE, entitledAddonIds, type AddonProtocolId } from '@/lib/addon-protocols';
 
 const supabase = createClient();
 
@@ -35,7 +37,9 @@ export default function ClientPlanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<PlanSection | null>(null);
-  const [hasSupplementProtocol, setHasSupplementProtocol] = useState(false);
+  const [entitledAddons, setEntitledAddons] = useState<AddonProtocolId[]>([])
+  const [membershipName, setMembershipName] = useState('')
+  const [membershipDuration, setMembershipDuration] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -46,7 +50,19 @@ export default function ClientPlanPage() {
       }
 
       setPlanDelivered(result.profile?.plan_delivered === true);
-      setHasSupplementProtocol(result.profile?.supplement_protocol_entitled === true);
+      setEntitledAddons(entitledAddonIds(result.profile));
+
+      const { data: purchase } = await supabase
+        .from('purchases')
+        .select('plan_slug, plan_name, status, created_at')
+        .eq('user_id', result.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (purchase?.plan_slug) {
+        setMembershipName(planGoalName(purchase.plan_slug) || purchase.plan_name || '')
+        setMembershipDuration(planDurationLabel(purchase.plan_slug))
+      }
 
       const { data, error: planError } = await supabase
         .from('plans')
@@ -145,6 +161,8 @@ export default function ClientPlanPage() {
   }
 
   const sections = resolvePlanSectionsFromPlan(plan)
+  const planMeta = parsePlanMeta(plan)
+  const weekNumber = planMeta.week ?? extractWeekFromTitle(plan.title)
 
   const accordionItems = [
     {
@@ -161,7 +179,7 @@ export default function ClientPlanPage() {
     },
     { key: 'supplements' as const, title: 'Supplements', icon: <Pill size={20} color={colors.accent} />, content: sections.supplements },
     { key: 'cardio' as const, title: 'Cardio', icon: <Footprints size={20} />, content: sections.cardio },
-    { key: 'notes' as const, title: 'Coach Notes', icon: <ClipboardList size={20} />, content: sections.coachNotes },
+    { key: 'notes' as const, title: 'Lifestyle & tips', icon: <ClipboardList size={20} />, content: sections.coachNotes },
   ].filter((item) => item.content.trim().length > 0)
 
   return (
@@ -177,13 +195,24 @@ export default function ClientPlanPage() {
         }}
       >
         <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: colors.accent, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          {BRAND_NAME} · Your Plan
+          {BRAND_NAME} · {membershipDuration || 'Your Plan'}
         </p>
         <h1 style={{ margin: '8px 0 0', fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-          {clientFacingPlanTitle(plan.title)}
+          {membershipName || clientFacingPlanTitle(plan.title)}
         </h1>
-        {plan.phase && <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 16 }}>{plan.phase}</p>}
+        {membershipName ? (
+          <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 16 }}>
+            {clientFacingPlanTitle(plan.title)}
+          </p>
+        ) : plan.phase ? (
+          <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 16 }}>{plan.phase}</p>
+        ) : null}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2], marginTop: spacing[4], alignItems: 'center' }}>
+          {weekNumber != null && (
+            <span style={{ backgroundColor: colors.accentMuted, color: colors.accent, padding: '4px 12px', borderRadius: 999, fontSize: 13, fontWeight: 700 }}>
+              Week {weekNumber}
+            </span>
+          )}
           <span style={{ backgroundColor: colors.accentMuted, color: colors.accent, padding: '4px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
             v{plan.version}
           </span>
@@ -211,9 +240,10 @@ export default function ClientPlanPage() {
         ))}
       </div>
 
-      {hasSupplementProtocol && (
+      {entitledAddons.map((addonId) => (
         <Link
-          href="/supplement-protocol"
+          key={addonId}
+          href={ADDON_PROTOCOL_HREF[addonId]}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -231,16 +261,16 @@ export default function ClientPlanPage() {
             <Pill size={20} color={colors.accent} aria-hidden />
             <span>
               <span style={{ display: 'block', fontWeight: 700, color: colors.textPrimary }}>
-                Testosterone support protocol
+                {ADDON_PROTOCOL_PAGE_TITLE[addonId]}
               </span>
               <span style={{ display: 'block', fontSize: 13, color: colors.textMuted }}>
-                Training, sleep, nutrition and supplements
+                {ADDON_PROTOCOL_SUBTITLE[addonId]}
               </span>
             </span>
           </span>
           <span style={{ color: colors.accent, fontSize: 20 }} aria-hidden>›</span>
         </Link>
-      )}
+      ))}
 
       <PlanChangeRequestPanel />
     </ClientShell>

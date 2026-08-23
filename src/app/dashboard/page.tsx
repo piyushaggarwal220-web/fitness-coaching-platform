@@ -29,7 +29,8 @@ import {
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { formatPlanDate } from '@/lib/plans';
-import { clientFacingPlanTitle } from '@/lib/plan-metadata';
+import { clientFacingPlanTitle, parsePlanMeta } from '@/lib/plan-metadata';
+import { planGoalName } from '@/lib/payments/plan-pages';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
@@ -148,7 +149,7 @@ export default function Dashboard() {
             .limit(24),
           supabase
             .from('plans')
-            .select('id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, diet_opened_at, workout_opened_at')
+            .select('id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, diet_opened_at, workout_opened_at, coach_notes')
             .eq('client_id', userId)
             .eq('active', true)
             .order('updated_at', { ascending: false })
@@ -309,7 +310,22 @@ export default function Dashboard() {
   const stickyCheckin = dueCheckin ?? checkinSchedule?.nextCheckin ?? null;
   const stickyCheckinMode = dueCheckin ? 'due' : 'countdown';
 
-  const firstName = profile?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
+  const latestWeekly = allCheckins.find((c) => c.checkin_type === 'weekly') ?? null
+  const planMeta = activePlan ? parsePlanMeta(activePlan) : null
+  const planWeekLabel = planMeta?.week ?? checkinSchedule?.activeCoachingWeek ?? null
+  const planFromLatestCheckin = Boolean(
+    latestWeekly && planMeta?.checkinId && planMeta.checkinId === latestWeekly.id
+  )
+  const planAwaitingCheckinUpdate = Boolean(
+    latestWeekly && !latestWeekly.reviewed && !planFromLatestCheckin
+  )
+  const planFreshnessLabel = !activePlan
+    ? null
+    : planFromLatestCheckin
+      ? `Updated from your Week ${planWeekLabel ?? latestWeekly?.coaching_week ?? ''} check-in`
+      : planAwaitingCheckinUpdate
+        ? 'Waiting for your new plan from this check-in'
+        : 'Same plan as before this check-in'
   const quickLinks = [
     {
       key: 'tracker',
@@ -324,7 +340,11 @@ export default function Dashboard() {
     {
       key: 'plan',
       title: 'Plan',
-      subtitle: activePlan ? `${clientFacingPlanTitle(activePlan.title)} · v${activePlan.version}` : 'Open your coaching plan',
+      subtitle: purchase?.plan_slug
+        ? `${planGoalName(purchase.plan_slug)}${activePlan ? ` · v${activePlan.version}` : ''}`
+        : activePlan
+          ? `${clientFacingPlanTitle(activePlan.title)} · v${activePlan.version}`
+          : 'Open your coaching plan',
       href: '/plan',
       icon: ClipboardList,
       badge: activePlan ? 'Ready' : null,
@@ -411,11 +431,22 @@ export default function Dashboard() {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontWeight: 700, fontSize: 17, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {activePlan ? clientFacingPlanTitle(activePlan.title) : profile.plan_delivered ? 'Plan pending activation' : 'Plan in preparation'}
+            {purchase?.plan_slug
+              ? planGoalName(purchase.plan_slug)
+              : activePlan
+                ? clientFacingPlanTitle(activePlan.title)
+                : profile.plan_delivered
+                  ? 'Plan pending activation'
+                  : 'Plan in preparation'}
           </p>
           {activePlan && (
             <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-              v{activePlan.version} · Updated {formatPlanDate(activePlan.updated_at)}
+              {planWeekLabel != null ? `Week ${planWeekLabel} · ` : ''}v{activePlan.version} · Updated {formatPlanDate(activePlan.updated_at)}
+            </p>
+          )}
+          {planFreshnessLabel && (
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: planFromLatestCheckin ? colors.success : colors.textSecondary }}>
+              {planFreshnessLabel}
             </p>
           )}
           {status?.coachName && (
@@ -779,6 +810,36 @@ export default function Dashboard() {
               })}
             </div>
           )}
+        </section>
+      )}
+
+      {checkinSchedule && checkinSchedule.missedCheckins.length > 0 && (
+        <section style={{ marginBottom: spacing[7] }}>
+          <SectionHeader title="Missed check-ins" subtitle="Windows that closed without a submission" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
+            {checkinSchedule.missedCheckins.slice(0, 8).map((task) => (
+              <Card key={`missed-${task.type}-${task.coachingWeek}`} variant="elevated">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: spacing[3] }}>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>{getCheckinTypeDisplayName(task.type)}</p>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
+                      Week {task.coachingWeek} · Day {task.coachingDay}
+                    </p>
+                  </div>
+                  <span style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: colors.danger,
+                    backgroundColor: colors.dangerMuted,
+                    padding: '6px 12px',
+                    borderRadius: 999,
+                  }}>
+                    Missed
+                  </span>
+                </div>
+              </Card>
+            ))}
+          </div>
         </section>
       )}
 

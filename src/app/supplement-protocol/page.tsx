@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useCallback, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { FlaskConical, RefreshCw } from 'lucide-react'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { Card } from '@/components/ui/Card'
@@ -9,6 +9,11 @@ import { authenticateClient } from '@/lib/onboarding'
 import { colors, spacing } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { createClient } from '@/lib/supabase/client'
+import {
+  ADDON_PROTOCOL_PAGE_TITLE,
+  ADDON_PROTOCOL_SUBTITLE,
+  parseAddonProtocolId,
+} from '@/lib/addon-protocols'
 
 const supabase = createClient()
 
@@ -82,8 +87,10 @@ function ProtocolBody({ content }: { content: string }) {
   )
 }
 
-export default function SupplementProtocolPage() {
+function SupplementProtocolInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const addonId = parseAddonProtocolId(searchParams.get('addon'))
   const [loading, setLoading] = useState(true)
   const [retrying, setRetrying] = useState(false)
   const [data, setData] = useState<ProtocolResponse | null>(null)
@@ -92,14 +99,14 @@ export default function SupplementProtocolPage() {
   const load = useCallback(async (method: 'GET' | 'POST' = 'GET') => {
     setError('')
     try {
-      const res = await fetch('/api/supplement-protocol', { method })
+      const res = await fetch(`/api/supplement-protocol?addon=${encodeURIComponent(addonId)}`, { method })
       const json = (await res.json()) as ProtocolResponse & { error?: string }
       if (!res.ok) throw new Error(json.error ?? 'Could not load your protocol.')
       setData(json)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load your protocol.')
     }
-  }, [])
+  }, [addonId])
 
   useEffect(() => {
     const init = async () => {
@@ -126,7 +133,7 @@ export default function SupplementProtocolPage() {
     : null
 
   return (
-    <ClientShell loading={loading} title="Testosterone support">
+    <ClientShell loading={loading} title={ADDON_PROTOCOL_PAGE_TITLE[addonId]}>
       <p
         style={{
           margin: `0 0 ${spacing[4]}px`,
@@ -135,8 +142,8 @@ export default function SupplementProtocolPage() {
         }}
       >
         {generatedLabel
-          ? `Built from your onboarding answers · ${generatedLabel}`
-          : 'Built from your onboarding answers'}
+          ? `${ADDON_PROTOCOL_SUBTITLE[addonId]} · ${generatedLabel}`
+          : ADDON_PROTOCOL_SUBTITLE[addonId]}
       </p>
 
       {error && <div style={{ ...mobileStyles.error, marginBottom: spacing[4] }}>{error}</div>}
@@ -217,3 +224,12 @@ export default function SupplementProtocolPage() {
     </ClientShell>
   )
 }
+
+export default function SupplementProtocolPage() {
+  return (
+    <Suspense fallback={<ClientShell loading title="Protocol" />}>
+      <SupplementProtocolInner />
+    </Suspense>
+  )
+}
+

@@ -30,6 +30,13 @@ export function resolvePlanFromPath(pathSlug: string | undefined): CoachingPlan 
   return getCoachingPlan(catalogSlug)
 }
 
+/** Customer-facing product names. Duration is secondary. */
+export const PLAN_PRODUCT_NAME: Record<LongCoachingPlanSlug, string> = {
+  '3_months': 'Look sharper',
+  '6_months': 'Fat loss',
+  '12_months': 'Fat loss + muscle',
+}
+
 export const PLAN_PAGE_COPY: Record<
   LongCoachingPlanSlug,
   {
@@ -42,39 +49,43 @@ export const PLAN_PAGE_COPY: Record<
   }
 > = {
   '3_months': {
-    eyebrow: 'Short deadline',
-    goalName: 'Fat loss',
+    eyebrow: 'Look sharper',
+    goalName: PLAN_PRODUCT_NAME['3_months'],
     durationLabel: '90 days',
     promise:
-      'Built for a date on the calendar — a wedding, a vacation, a shoot, a reunion. Ninety days is a short runway to look visibly leaner and sharper for the event. It is a focused sprint, not the finished aesthetic look.',
+      'Look sharper for a wedding, trip, shoot, or reunion. Ninety days is a debloat — tightness and a cleaner look, not deep fat loss and not muscle. If you want actual fat loss, that is 6 months.',
     bestFor:
-      'Lean for a wedding, shoot, or reunion. Short-term only — not built for lasting change.',
+      'A date on the calendar. Look tighter and sharper. Not true fat loss.',
     goals: [
-      'Look visibly leaner for your event',
-      'A clear day-by-day plan to the deadline',
-      'First visible change in 90 days',
+      'Look tighter and sharper for the event',
+      'A clear plan to the date',
+      'A debloat — not a fat-loss or muscle plan',
     ],
   },
   '6_months': {
-    eyebrow: 'Goal plan',
-    goalName: 'Fat loss + muscle',
+    eyebrow: 'Fat loss',
+    goalName: PLAN_PRODUCT_NAME['6_months'],
     durationLabel: '6 months',
     promise:
-      'This plan is for fat down and muscle up together. Six months is strong progress — not the full aesthetic finish. Upgrade free within 48 hours if you want the longer runway.',
+      'This is the fat-loss plan. Six months is enough time to drop fat for real — not a 90 day debloat, and not fat loss plus new muscle. If you want muscle with the fat loss, that is 12 months.',
     bestFor:
-      'You already train and want fat down + muscle up. A recomp block — not a first start.',
-    goals: ['Fat loss with muscle', 'Clothes fit differently', 'Stay consistent past the honeymoon phase'],
+      'You want fat down. Not an event sprint, not an aesthetic rebuild.',
+    goals: [
+      'Real fat loss, not just a tighter look',
+      'Clothes fit smaller',
+      'Stay consistent past 90 days',
+    ],
   },
   '12_months': {
-    eyebrow: 'Recommended',
-    goalName: 'Aesthetic body',
+    eyebrow: 'Fat loss + muscle',
+    goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
     promise:
-      'This is the recommended plan if you want a body you are proud of long term. Lowest monthly rate, weekly coach phone call, and a full year so you do not restart every 90 days.',
+      'Fat down and muscle up — the aesthetic body. A full year so both can happen. Not a 90 day sharper look, not fat loss only. Lowest monthly rate, weekly coach phone call.',
     bestFor:
-      'Beginners and intermediates — someone who has hit a plateau, or who wants to start fresh and actually finish the look.',
+      'Most people who want the finished look — leaner and more muscular.',
     goals: [
-      'Aesthetic physique change',
+      'Fat loss with muscle (aesthetic)',
       'Lowest monthly rate with WELCOME60',
       'Weekly coach phone call (12 month exclusive)',
     ],
@@ -84,7 +95,7 @@ export const PLAN_PAGE_COPY: Record<
 export function planGoalName(slug: AnyCoachingPlanSlug | string): string {
   if (slug === '1_week_trial') return 'Trial'
   if (slug === '1_month') return '1 month'
-  return PLAN_PAGE_COPY[slug as LongCoachingPlanSlug]?.goalName ?? 'Coaching'
+  return PLAN_PRODUCT_NAME[slug as LongCoachingPlanSlug] ?? 'Coaching'
 }
 
 export function planDurationLabel(slug: AnyCoachingPlanSlug | string): string {
@@ -106,38 +117,38 @@ export const PLAN_COMPARE_ROWS: {
   cells: Record<LongCoachingPlanSlug, PlanCompareCell>
 }[] = [
   {
-    group: 'Opens with fat loss',
+    group: 'Opens with debloat',
     label: 'Best for',
     cells: {
-      '3_months': 'Lean for a big day. Short-term only.',
-      '6_months': 'Already training. Recomp block.',
-      '12_months': 'Beginners and intermediates who have plateaued, or want to start fresh.',
+      '3_months': 'Look sharper for a date. Debloat only.',
+      '6_months': 'Fat loss. Not muscle, not an event sprint.',
+      '12_months': 'Fat loss + muscle. Aesthetic body.',
     },
   },
   {
-    group: 'Opens with fat loss',
+    group: 'Opens with debloat',
     label: 'Core coaching',
     hint: 'Workout, diet, coach chat, 2 check ins, trackers, photos. First plan in 24 to 48 hours.',
     cells: { ...YES },
   },
   {
-    group: 'Opens with fat loss',
+    group: 'Opens with debloat',
     label: 'Plan updates',
     cells: { '3_months': 'Every 14 days', '6_months': 'Every week', '12_months': 'Every week' },
   },
   {
-    group: 'More with fat loss + muscle',
+    group: 'More with fat loss',
     label: 'Fuller coaching stack',
     hint: 'Weekly plan updates, cardio, supplements, journey, plateau coaching past 90 days.',
     cells: { ...FROM_6 },
   },
   {
-    group: 'Everything with aesthetic',
+    group: 'Everything with fat loss + muscle',
     label: 'Weekly coach phone call',
     cells: { ...FROM_12 },
   },
   {
-    group: 'Everything with aesthetic',
+    group: 'Everything with fat loss + muscle',
     label: 'Lowest monthly rate',
     hint: 'Full year accountability.',
     cells: { ...FROM_12 },

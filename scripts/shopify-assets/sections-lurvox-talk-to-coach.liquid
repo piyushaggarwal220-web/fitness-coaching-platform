@@ -27,6 +27,11 @@
     </header>
 
     <div class="lx-consult__grid">
+      <div class="lx-consult__booked" id="lx-consult-booked-{{ section.id }}" hidden>
+        <p class="lx-consult__booked-kicker">Confirmed</p>
+        <h2 class="lx-consult__booked-title">Call booked</h2>
+        <p class="lx-consult__booked-copy">We have your request. A coach will call you at the time you picked. No need to submit again.</p>
+      </div>
       <form class="lx-consult__form" id="lx-consult-form-{{ section.id }}" novalidate>
         <h2 class="lx-consult__form-title">{{ section.settings.form_heading | default: 'Your details' }}</h2>
 
@@ -72,18 +77,18 @@
           <p class="lx-consult__timing-hint">Pick the outcome. Duration is secondary.</p>
           <div class="lx-consult__goal-options" role="radiogroup" aria-label="Your goal">
             <label class="lx-consult__goal-opt">
-              <input type="radio" name="goal" value="Fat loss" data-duration="90 days" required>
-              <span class="lx-consult__goal-primary">Fat loss</span>
-              <span class="lx-consult__goal-secondary">90 days</span>
+              <input type="radio" name="goal" value="Look sharper" data-duration="90 days" required>
+              <span class="lx-consult__goal-primary">Look sharper</span>
+              <span class="lx-consult__goal-secondary">90 days · debloat</span>
             </label>
             <label class="lx-consult__goal-opt">
-              <input type="radio" name="goal" value="Fat loss + muscle" data-duration="6 months">
-              <span class="lx-consult__goal-primary">Fat loss + muscle</span>
+              <input type="radio" name="goal" value="Fat loss" data-duration="6 months">
+              <span class="lx-consult__goal-primary">Fat loss</span>
               <span class="lx-consult__goal-secondary">6 months</span>
             </label>
             <label class="lx-consult__goal-opt">
-              <input type="radio" name="goal" value="Aesthetic body" data-duration="12 months">
-              <span class="lx-consult__goal-primary">Aesthetic body</span>
+              <input type="radio" name="goal" value="Fat loss + muscle" data-duration="12 months">
+              <span class="lx-consult__goal-primary">Fat loss + muscle</span>
               <span class="lx-consult__goal-secondary">12 months</span>
             </label>
           </div>
@@ -397,6 +402,31 @@
     }
   }
 
+  #lx-consult-{{ section.id }} .lx-consult__booked {
+    border: 1px solid var(--lx-line);
+    background: var(--lx-surface);
+    border-radius: 16px;
+    padding: 28px 22px;
+    text-align: center;
+  }
+  #lx-consult-{{ section.id }} .lx-consult__booked-kicker {
+    margin: 0 0 8px;
+    color: #86efac;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  #lx-consult-{{ section.id }} .lx-consult__booked-title {
+    margin: 0 0 10px;
+    font-size: 1.6rem;
+  }
+  #lx-consult-{{ section.id }} .lx-consult__booked-copy {
+    margin: 0;
+    color: var(--lx-muted);
+    line-height: 1.5;
+  }
+
   #lx-consult-{{ section.id }} .lx-consult__status {
     min-height: 1.2em;
     margin: 0 0 12px;
@@ -453,10 +483,23 @@
 <script>
   (function () {
     var form = document.getElementById('lx-consult-form-{{ section.id }}');
+    var bookedEl = document.getElementById('lx-consult-booked-{{ section.id }}');
+    var titleEl = document.querySelector('#lx-consult-{{ section.id }} .lx-consult__title');
     if (!form) return;
     var statusEl = document.getElementById('lx-consult-status-{{ section.id }}');
     var submitBtn = document.getElementById('lx-consult-submit-{{ section.id }}');
     var apiUrl = {{ api_url | json }};
+    var bookedKey = 'lurvox_consult_booked';
+
+    function showBooked() {
+      form.hidden = true;
+      if (bookedEl) bookedEl.hidden = false;
+      if (titleEl) titleEl.textContent = 'Call booked';
+    }
+
+    try {
+      if (window.localStorage.getItem(bookedKey) === '1') showBooked();
+    } catch (e) {}
 
     function setStatus(message, type) {
       if (!statusEl) return;
@@ -514,8 +557,9 @@
           var res = _ref.res;
           var data = _ref.data;
           if (res.ok && data && data.ok) {
-            setStatus('Thanks — we received your request. A coach will call you soon.', 'success');
-            form.reset();
+            setStatus('Call booked. A coach will call you soon.', 'success');
+            try { window.localStorage.setItem(bookedKey, '1'); } catch (e) {}
+            showBooked();
             return;
           }
           var err = (data && data.error) || 'Something went wrong. Please try again.';

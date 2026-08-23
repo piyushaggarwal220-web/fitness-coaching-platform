@@ -193,6 +193,8 @@ export type Profile = {
   checkin_schedule_started_at?: string | null
   /** Purchased the supplement protocol add-on, so the document is owed to them. */
   supplement_protocol_entitled?: boolean | null
+  anxiety_protocol_entitled?: boolean | null
+  face_maxxing_entitled?: boolean | null
   complexity_score?: number | null
   complexity_raw_score?: number | null
   complexity_tier?: 'low' | 'medium' | 'high' | null
@@ -326,6 +328,7 @@ export type Purchase = {
   supplement_addon?: boolean
   /** Portion of amount_paise attributable to the supplement protocol add-on. */
   supplement_addon_paise?: number
+  checkout_addon_ids?: string[]
   created_at: string
 }
 
@@ -341,6 +344,7 @@ export type SupplementProtocol = {
   content: string | null
   error_message: string | null
   generated_at: string | null
+  addon_id?: string
   created_at: string
   updated_at: string
 }
@@ -411,6 +415,11 @@ export type Checkin = {
   adherence_score: number | null
   diet_adherence: number | null
   workout_adherence: number | null
+  days_followed_diet: number | null
+  days_followed_workout: number | null
+  days_followed_sleep: number | null
+  days_followed_water: number | null
+  days_followed_steps: number | null
   sleep_quality: number | null
   stress_level: number | null
   motivation_level: number | null
@@ -488,6 +497,11 @@ export type CheckinFormData = {
 export type MidWeekCheckinFormData = {
   diet_adherence: string
   workout_adherence: string
+  days_followed_diet: string
+  days_followed_workout: string
+  days_followed_sleep: string
+  days_followed_water: string
+  days_followed_steps: string
   energy_level: string
   sleep_quality: string
   stress_level: string
@@ -506,6 +520,11 @@ export type WeeklyCheckinFormData = {
   navel: string
   diet_adherence: string
   workout_adherence: string
+  days_followed_diet: string
+  days_followed_workout: string
+  days_followed_sleep: string
+  days_followed_water: string
+  days_followed_steps: string
   energy_level: string
   sleep_quality: string
   stress_level: string

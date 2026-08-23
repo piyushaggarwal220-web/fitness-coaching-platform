@@ -7,6 +7,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
 import type { CoachingPlan } from '@/lib/payments/plans'
 import { getCoachingPlan, subscriptionExpiryFromPlan } from '@/lib/payments/plans'
+import type { CheckoutAddonId } from '@/lib/payments/checkout-discounts'
+import { checkoutAddonsPaise } from '@/lib/payments/checkout-discounts'
 import type { Purchase } from '@/types/database'
 
 const CLAIM_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -23,8 +25,10 @@ export type RecordCapturedPaymentInput = {
   razorpayPaymentId: string
   razorpayOrderId: string
   amountPaise: number
-  /** Portion of amountPaise paid for the supplement protocol add-on (0 when not purchased). */
+  /** Portion of amountPaise paid for the testo protocol add-on (0 when not purchased). */
   supplementAddonPaise?: number
+  /** All paid checkout add-on ids (testo, anxiety, face). */
+  checkoutAddonIds?: CheckoutAddonId[]
 }
 
 export type RecordCapturedPaymentResult = {
@@ -158,6 +162,10 @@ export async function recordCapturedPayment(
   const admin = createAdminClient()
   const email = input.email.trim().toLowerCase()
   const name = input.name.trim()
+  const addonIds = input.checkoutAddonIds ?? []
+  const testoPaid = addonIds.includes('testo_boost') || (input.supplementAddonPaise ?? 0) > 0
+  const addonTotalPaise =
+    addonIds.length > 0 ? checkoutAddonsPaise(addonIds) : (input.supplementAddonPaise ?? 0)
 
   logPurchaseStep('payment_record_started', {
     email,
@@ -231,8 +239,9 @@ export async function recordCapturedPayment(
         plan_slug: input.plan.slug,
         plan_name: input.plan.name,
         amount_paise: input.amountPaise,
-        supplement_addon: (input.supplementAddonPaise ?? 0) > 0,
-        supplement_addon_paise: input.supplementAddonPaise ?? 0,
+        supplement_addon: testoPaid,
+        supplement_addon_paise: addonTotalPaise,
+        checkout_addon_ids: addonIds,
         customer_email: nextEmail,
         customer_name: existingPurchase.customer_name || name || null,
         customer_phone: existingPurchase.customer_phone || input.phone || null,
@@ -282,8 +291,9 @@ export async function recordCapturedPayment(
       plan_slug: input.plan.slug,
       plan_name: input.plan.name,
       amount_paise: input.amountPaise,
-      supplement_addon: (input.supplementAddonPaise ?? 0) > 0,
-      supplement_addon_paise: input.supplementAddonPaise ?? 0,
+      supplement_addon: testoPaid,
+      supplement_addon_paise: addonTotalPaise,
+      checkout_addon_ids: addonIds,
       currency: 'INR',
       status: 'captured',
       customer_email: email,
@@ -598,10 +608,18 @@ export async function claimPurchaseWithPassword(
     profilePayload.access_source = 'purchase'
   }
 
-  // Paid add-on: entitlement sticks to the profile so the document is owed even if the client
-  // renews later. Never revoked here — a second purchase without the add-on must not remove it.
-  if (purchase.supplement_addon) {
+  // Paid add-ons: entitlement sticks to the profile so the document is owed even if they renew.
+  const claimedAddonIds = Array.isArray((purchase as Purchase & { checkout_addon_ids?: string[] }).checkout_addon_ids)
+    ? ((purchase as Purchase & { checkout_addon_ids?: string[] }).checkout_addon_ids as string[])
+    : []
+  if (purchase.supplement_addon || claimedAddonIds.includes('testo_boost')) {
     profilePayload.supplement_protocol_entitled = true
+  }
+  if (claimedAddonIds.includes('anxiety_removal')) {
+    profilePayload.anxiety_protocol_entitled = true
+  }
+  if (claimedAddonIds.includes('face_maxxing')) {
+    profilePayload.face_maxxing_entitled = true
   }
 
   const { error: profileError } = await admin.from('profiles').upsert(profilePayload)

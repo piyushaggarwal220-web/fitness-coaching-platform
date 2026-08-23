@@ -132,11 +132,16 @@ export default function AdminPurchaseDetailPage() {
               <Info label="Plan Slug" value={purchase.plan_slug} />
               <Info label="Amount" value={formatInr(purchase.amount_paise / 100)} />
               <Info
-                label="Testosterone Support Protocol Add-on"
+                label="Checkout add-ons"
                 value={
-                  purchase.supplement_addon
-                    ? `Yes · ${formatInr((purchase.supplement_addon_paise ?? 0) / 100)}`
-                    : 'No'
+                  (purchase.checkout_addon_ids?.length
+                    ? purchase.checkout_addon_ids.join(', ')
+                    : purchase.supplement_addon
+                      ? 'testo_boost'
+                      : 'None') +
+                  (purchase.supplement_addon_paise
+                    ? ` · ${formatInr(purchase.supplement_addon_paise / 100)}`
+                    : '')
                 }
               />
               <Info label="Currency" value={purchase.currency} />

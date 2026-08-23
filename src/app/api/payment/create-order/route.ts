@@ -14,8 +14,9 @@ import {
 import {
   checkoutDiscountNotes,
   checkoutTotalPaise,
+  checkoutAddonsPaise,
+  parseCheckoutAddonIds,
   resolveCheckoutPricing,
-  supplementAddonPaise,
 } from '@/lib/payments/checkout-discounts'
 import { assertTrialPurchaseEligible } from '@/lib/payments/trial-eligibility'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -30,6 +31,8 @@ type CreateOrderBody = {
   discountCode?: string
   /** Opt-in for the paid personalised supplement protocol. */
   supplementAddon?: boolean
+  /** Optional paid add-ons (testo, anxiety, face). One or many. */
+  addonIds?: string[]
 }
 
 export async function POST(request: Request) {
@@ -115,11 +118,17 @@ export async function POST(request: Request) {
     )
   }
   const { pricing } = pricingResult
-  // The add-on is never available on the trial, which exists only to sample coaching.
-  const supplementAddon = Boolean(body.supplementAddon) && !plan.isTrial
-  const addonPaise = supplementAddonPaise(supplementAddon)
-  const totalPaise = checkoutTotalPaise(pricing, supplementAddon)
-  const discountNotes = checkoutDiscountNotes(pricing, { supplementAddon })
+  // Add-ons are never available on the trial, which exists only to sample coaching.
+  const addonIds = plan.isTrial
+    ? []
+    : parseCheckoutAddonIds([
+        ...(Array.isArray(body.addonIds) ? body.addonIds : []),
+        ...(body.supplementAddon ? (['testo_boost'] as const) : []),
+      ])
+  const testoAddon = addonIds.includes('testo_boost')
+  const addonPaise = checkoutAddonsPaise(addonIds)
+  const totalPaise = checkoutTotalPaise(pricing, addonIds)
+  const discountNotes = checkoutDiscountNotes(pricing, { addonIds })
 
   if (shouldBypassPayment()) {
     const orderId = `test_order_${Date.now()}`
@@ -140,8 +149,9 @@ export async function POST(request: Request) {
       plan: pricing.plan,
       discount: pricing.discount,
       listAmountPaise: pricing.listAmountPaise,
-      supplementAddon,
+      supplementAddon: testoAddon,
       supplementAddonPaise: addonPaise,
+      addonIds,
     })
   }
 
@@ -172,8 +182,9 @@ export async function POST(request: Request) {
       plan: pricing.plan,
       discount: pricing.discount,
       listAmountPaise: pricing.listAmountPaise,
-      supplementAddon,
+      supplementAddon: testoAddon,
       supplementAddonPaise: addonPaise,
+      addonIds,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create order'

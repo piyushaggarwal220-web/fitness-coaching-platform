@@ -60,7 +60,7 @@
           <span data-pf-checkout-label>See this plan</span>
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden>
-          Prefer the finished look? Aesthetic · ₹292/mo
+          Prefer fat loss + muscle? 12 months · ₹292/mo
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="{{ talk_url }}">Talk to a coach</a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="/">Back to home</a>
@@ -442,7 +442,8 @@
         key: 'goal',
         q: 'What is your main goal right now?',
         options: [
-          { id: 'fat', label: 'Lose fat / tone up', score: -1, goal: 'lose fat and tone up' },
+          { id: 'debloat', label: 'Look sharper for a date / event', score: -2, goal: 'look sharper for an event' },
+          { id: 'fat', label: 'Lose fat', score: -1, goal: 'lose fat' },
           { id: 'muscle', label: 'Build strength / add shape', score: 0, goal: 'build strength and shape' },
           { id: 'recomp', label: 'Fat down and muscle up', score: 1, goal: 'recompose. Fat down, muscle up' },
           { id: 'transform', label: 'A complete transformation', score: 2, goal: 'a complete transformation' }
@@ -599,7 +600,7 @@
       '3_months': {
         slug: '3_months',
         path: '3-months',
-        label: 'Fat loss',
+        label: 'Look sharper',
         price: '₹1,299',
         monthly: '₹433/mo',
         per: '90 days',
@@ -612,20 +613,20 @@
       '6_months': {
         slug: '6_months',
         path: '6-months',
-        label: 'Fat loss + muscle',
+        label: 'Fat loss',
         price: '₹2,099',
         monthly: '₹350/mo',
         per: '6 months',
         bullets: [
           '2 weekly check-ins',
           'Weekly plan updates',
-          'More runway than a 90 day sprint'
+          'Real fat loss — not a 90 day debloat'
         ]
       },
       '12_months': {
         slug: '12_months',
         path: '12-months',
-        label: 'Aesthetic body',
+        label: 'Fat loss + muscle',
         price: '₹3,499',
         monthly: '₹292/mo',
         per: '12 months',
@@ -640,19 +641,19 @@
     // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
     var contrast = {
       '3_months': [
-        { kind: 'pick', text: 'Fat loss: lean for a big day. Short sprint — not long-term.' },
-        { kind: 'miss', text: '6 months is for people already training. 12 months is the real start.' },
+        { kind: 'pick', text: 'Debloat: look sharper for a date. Short sprint — not real fat loss.' },
+        { kind: 'miss', text: '6 months is fat loss. 12 months is fat loss + muscle (aesthetic).' },
         { kind: 'miss', text: 'Updates every 14 days, no weekly coach call.' }
       ],
       '6_months': [
-        { kind: 'pick', text: 'Fat loss + muscle: already training, want a recomp block.' },
-        { kind: 'miss', text: '3 months is a big-day lean-up only. Not a training block.' },
-        { kind: 'miss', text: '12 months is for beginners, plateaus, and fresh starts — plus the weekly coach call.' }
+        { kind: 'pick', text: 'Fat loss: six months to drop fat for real. Not a debloat, not muscle.' },
+        { kind: 'miss', text: '3 months is a sharper look for a date. Not fat loss.' },
+        { kind: 'miss', text: '12 months is fat loss + muscle — the aesthetic body — plus the weekly coach call.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Aesthetic (your pick): best for beginners and intermediates — plateaued, starting fresh, or finally doing this properly. Weekly coach call included.' },
-        { kind: 'miss', text: '3 months is only if you have a date on the calendar. It is not built for lasting change.' },
-        { kind: 'miss', text: '6 months is for already-lean advanced athletes. If that is not you yet, 12 months is the honest start.' }
+        { kind: 'pick', text: 'Fat loss + muscle (your pick): aesthetic body. Fat down and muscle up. Weekly coach call included.' },
+        { kind: 'miss', text: '3 months is a debloat for a date. It is not fat loss or muscle.' },
+        { kind: 'miss', text: '6 months is fat loss only. No muscle-building goal.' }
       ]
     };
 
@@ -696,30 +697,22 @@
       var body = answers.body && answers.body.id;
 
       var planKey = '12_months';
-      // 90-day Fat loss is only for a date on the calendar — not a first transformation.
-      if (timeline === 'fast') planKey = '3_months';
-      // 6 months: already training, wants a recomp block.
-      else if (
-        (experience === 'advanced' || experience === 'some') &&
-        (body === 'fit' || goal === 'recomp' || goal === 'muscle')
-      ) {
-        planKey = '6_months';
-      }
-      // Everyone else — beginner, intermediate, plateau, fresh start — lands on 12 months.
-      else if (calls === 'yes' || goal === 'transform' || commit === 'allin') planKey = '12_months';
+      if (goal === 'debloat' || timeline === 'fast') planKey = '3_months';
+      else if (goal === 'fat') planKey = '6_months';
+      else if (calls === 'yes' || goal === 'transform' || goal === 'recomp' || goal === 'muscle' || commit === 'allin') planKey = '12_months';
 
       var why = '';
       if (planKey === '3_months') {
         why =
-          'Fat loss is a big-day lean-up — short-term only. For lasting change, Aesthetic (12 months) is the better pick.';
+          'Debloat is a sharper look for a date — not real fat loss. Fat loss is 6 months. Fat loss + muscle is 12 months.';
       } else if (planKey === '6_months') {
         why =
-          'Fat loss + muscle fits if you already train and want a recomp block. First-timers usually land on Aesthetic (12 months).';
+          'Fat loss is 6 months — enough time to drop fat for real. If you also want muscle (aesthetic), 12 months is the plan.';
       } else {
         why =
           'Your goal is to ' +
           goalLabel +
-          '. Aesthetic (12 months) is the plan for beginners and intermediates — plateaued, or starting fresh' +
+          '. Fat loss + muscle (12 months) is the aesthetic plan' +
           (calls === 'yes' ? ', and it is the only one with a weekly coach phone call' : '') +
           '. Lowest monthly rate at ₹292/mo with WELCOME60.';
       }
@@ -760,7 +753,7 @@
       }
       checkoutEl.href = url;
       checkoutLabelEl.textContent =
-        rec.planKey === '12_months' ? 'See Aesthetic body' : 'See this plan';
+        rec.planKey === '12_months' ? 'See Fat loss + muscle' : 'See this plan';
       if (upgradeEl) {
         upgradeEl.hidden = rec.planKey === '12_months';
         upgradeEl.href = planBase + '/12-months';

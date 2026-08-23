@@ -2,6 +2,7 @@ import { after, NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { generateSupplementProtocol } from '@/lib/ai/supplement-protocol'
+import { entitledAddonIds } from '@/lib/addon-protocols'
 import {
   canRetryInitialGeneration,
   enqueueInitialPlanGeneration,
@@ -162,11 +163,11 @@ export async function POST(request: Request) {
 
   // Paid add-on: build it now that the onboarding answers it depends on exist, so it is
   // waiting for them rather than generated on first open. No-ops if they did not buy it.
-  if (completedProfile?.supplement_protocol_entitled) {
+  for (const addonId of entitledAddonIds(completedProfile)) {
     after(() =>
-      generateSupplementProtocol({ clientId: auth.user.id }).catch((err) => {
+      generateSupplementProtocol({ clientId: auth.user.id, addonId }).catch((err) => {
         console.error(
-          '[onboarding/complete-generation] supplement protocol failed:',
+          `[onboarding/complete-generation] ${addonId} protocol failed:`,
           err instanceof Error ? err.message : err
         )
       })

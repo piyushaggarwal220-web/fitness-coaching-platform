@@ -1,5 +1,5 @@
-/**
- * Natural Testosterone Support Protocol — the paid checkout add-on.
+﻿/**
+ * Natural Testosterone Support Protocol â€” the paid checkout add-on.
  *
  * Built from the client's own onboarding answers (goal, budget, diet, training, sleep, medical
  * notes) so it is a real deliverable rather than generic advice. Deliberately conservative: it
@@ -13,8 +13,10 @@ import { generateClaudeResponse } from '@/lib/ai/anthropic'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile, SupplementProtocol } from '@/types/database'
+import type { AddonProtocolId } from '@/lib/addon-protocols'
+import { profileEntitledForAddon } from '@/lib/addon-protocols'
 
-const PROMPT_VERSION = 'testosterone-support-protocol-v1'
+const TESTO_PROMPT_VERSION = 'testosterone-support-protocol-v1'
 
 function value(raw: unknown): string {
   if (raw == null) return 'not provided'
@@ -90,57 +92,141 @@ const SYSTEM_PROMPT = [
   'Write in plain English an average reader understands. Use rupees for costs. No hype, no bro-science.',
 ].join(' ')
 
-function buildUserPrompt(profile: OnboardingProfile): string {
+function promptsForAddon(addonId: AddonProtocolId): { version: string; system: string; sections: string } {
+  if (addonId === 'anxiety_removal') {
+    return {
+      version: 'anxiety-removal-protocol-v1',
+      system: [
+        'You are a senior lifestyle coach at LURVOX writing for one Indian client.',
+        'You write a paid Anxiety removal protocol: daily habits for stress, sleep, and a calmer week.',
+        'You are NOT a therapist, psychiatrist, or doctor. This is coaching, not treatment.',
+        'You NEVER recommend prescription medicine, diagnose anxiety disorders, or replace therapy.',
+        'If they mention panic, self-harm, or severe distress, tell them to see a qualified clinician.',
+        'Write in plain English. Use rupees if you mention costs. No hype.',
+      ].join(' '),
+      sections: [
+        'Write their Anxiety removal protocol in Markdown using EXACTLY these six sections, in order:',
+        '',
+        '## What this protocol is (and is not)',
+        'Say this is coach-built habits for a calmer week, not therapy and not medicine.',
+        'Tie 2â€“3 stress or sleep patterns from their answers to what you will work on.',
+        '',
+        '## Sleep and evenings',
+        'Give a concrete wind-down and sleep window based on their sleep answers.',
+        '',
+        '## Daytime stress habits',
+        'Short, doable tools: walks, breathing, caffeine timing, work breaks. No clinical CBT worksheets.',
+        '',
+        '## Training and body',
+        'How their training days should feel so they do not add more stress. Tailor to location and days per week.',
+        '',
+        '## Food, caffeine and supplements',
+        'At most 2 supplements with genuine evidence for sleep or stress (e.g. magnesium glycinate if food is short). Never herbal â€œanxiety cureâ€ blends. Costs in rupees.',
+        '',
+        '## When to get extra help',
+        'List signs they should see a doctor or therapist. Repeat this is not treatment.',
+      ].join('\n'),
+    }
+  }
+
+  if (addonId === 'face_maxxing') {
+    return {
+      version: 'face-maxxing-protocol-v1',
+      system: [
+        'You are a senior lifestyle coach at LURVOX writing for one Indian client.',
+        'You write a paid Face maxxing protocol: sleep, salt, skin, posture, and grooming.',
+        'Lifestyle only. You NEVER recommend surgery, fillers, prescriptions, or medical treatments.',
+        'You never promise a jawline, height, or bone change. Be honest about what habits can and cannot do.',
+        'Write in plain English. Use rupees for product costs. No hype.',
+      ].join(' '),
+      sections: [
+        'Write their Face maxxing protocol in Markdown using EXACTLY these six sections, in order:',
+        '',
+        '## What actually changes a face',
+        'Sleep, body fat, salt/water, skin care, posture, and grooming. Not surgery. Tie to THIS person.',
+        '',
+        '## Sleep and body fat',
+        'How sleep debt and high body fat show on the face. Targets from their answers.',
+        '',
+        '## Salt, water and puffiness',
+        'Practical salt and water habits. No extreme â€œdry outâ€ diets.',
+        '',
+        '## Skin, sun and grooming',
+        'A simple AM/PM routine they can buy in India, with rupee costs. No prescription retinoids unless they already use them via a doctor.',
+        '',
+        '## Posture, chewing and daily look',
+        'Posture and basic grooming. No mewing-as-miracle or bone-changing claims.',
+        '',
+        '## Stay safe',
+        'This is lifestyle, not a medical or surgical plan. See a dermatologist for skin disease.',
+      ].join('\n'),
+    }
+  }
+
+  return {
+    version: TESTO_PROMPT_VERSION,
+    system: SYSTEM_PROMPT,
+    sections: [
+      'Write their Natural Testosterone Support Protocol in Markdown using EXACTLY these six sections, in order:',
+      '',
+      '## What actually drives your testosterone',
+      'Plainly explain that natural testosterone is mostly driven by body fat, strength training, sleep, stress and a few nutrients, not by pills.',
+      'Tie it to THIS person: call out the 2 to 3 levers that matter most for them based on their answers (e.g. high body fat, poor sleep, high stress, low training age).',
+      'Be encouraging but realistic. No guarantees, no numbers promised.',
+      '',
+      '## Train and move for it',
+      'Give concrete training guidance that supports testosterone: heavy compound lifts, progressive overload, not overtraining, managing excessive cardio.',
+      'Tailor it to their training location, experience, days per week and goal.',
+      '',
+      '## Sleep, stress and body fat',
+      'Explain how sleep debt, chronic stress and high body fat suppress natural testosterone.',
+      'Give specific, doable targets tied to their answers (sleep hours, steps, stress, waist/body fat direction).',
+      '',
+      '## Food and nutrients that help',
+      'Cover the nutrition levers: enough calories (not crash dieting), protein, healthy fats, and micronutrients like zinc, magnesium and vitamin D.',
+      'Prefer food sources first and tie to their diet, budget and what they already eat. If their food already covers a need, say so and do not sell a product.',
+      '',
+      '## Supplements worth it vs a waste of money',
+      'List at most 3 or 4 supplements with genuine evidence for THIS person (commonly vitamin D if deficient, magnesium, zinc, creatine, and adequate protein).',
+      'For each: what it does, the dose, when to take it, and a realistic monthly cost in rupees.',
+      'Then name the popular testosterone-booster products that are a waste of money (e.g. tribulus, most proprietary "test booster" blends) and why in one line each.',
+      'Include anything from their current supplement list they should stop buying.',
+      '',
+      '## Get tested and stay safe',
+      'List the few blood markers worth checking (e.g. total and free testosterone, vitamin D, thyroid, fasting glucose) and say a doctor or lab must interpret them, not a coach.',
+      'State clearly that this is lifestyle and nutrition guidance, not medical advice, and not hormone therapy.',
+      'Tell them to see a doctor before starting anything if they take medication or have a health condition, and that suspected low testosterone needs a doctor.',
+    ].join('\n'),
+  }
+}
+
+function buildUserPrompt(profile: OnboardingProfile, addonId: AddonProtocolId = 'testo_boost'): string {
+  const { sections } = promptsForAddon(addonId)
   return [
     buildClientFacts(profile),
     '',
-    'Write their Natural Testosterone Support Protocol in Markdown using EXACTLY these six sections, in order:',
-    '',
-    '## What actually drives your testosterone',
-    'Plainly explain that natural testosterone is mostly driven by body fat, strength training, sleep, stress and a few nutrients, not by pills.',
-    'Tie it to THIS person: call out the 2 to 3 levers that matter most for them based on their answers (e.g. high body fat, poor sleep, high stress, low training age).',
-    'Be encouraging but realistic. No guarantees, no numbers promised.',
-    '',
-    '## Train and move for it',
-    'Give concrete training guidance that supports testosterone: heavy compound lifts, progressive overload, not overtraining, managing excessive cardio.',
-    'Tailor it to their training location, experience, days per week and goal.',
-    '',
-    '## Sleep, stress and body fat',
-    'Explain how sleep debt, chronic stress and high body fat suppress natural testosterone.',
-    'Give specific, doable targets tied to their answers (sleep hours, steps, stress, waist/body fat direction).',
-    '',
-    '## Food and nutrients that help',
-    'Cover the nutrition levers: enough calories (not crash dieting), protein, healthy fats, and micronutrients like zinc, magnesium and vitamin D.',
-    'Prefer food sources first and tie to their diet, budget and what they already eat. If their food already covers a need, say so and do not sell a product.',
-    '',
-    '## Supplements worth it vs a waste of money',
-    'List at most 3 or 4 supplements with genuine evidence for THIS person (commonly vitamin D if deficient, magnesium, zinc, creatine, and adequate protein).',
-    'For each: what it does, the dose, when to take it, and a realistic monthly cost in rupees.',
-    'Then name the popular testosterone-booster products that are a waste of money (e.g. tribulus, most proprietary "test booster" blends) and why in one line each.',
-    'Include anything from their current supplement list they should stop buying.',
-    '',
-    '## Get tested and stay safe',
-    'List the few blood markers worth checking (e.g. total and free testosterone, vitamin D, thyroid, fasting glucose) and say a doctor or lab must interpret them, not a coach.',
-    'State clearly that this is lifestyle and nutrition guidance, not medical advice, and not hormone therapy.',
-    'Tell them to see a doctor before starting anything if they take medication or have a health condition, and that suspected low testosterone needs a doctor.',
+    sections,
     '',
     'Rules:',
     'Address them by first name once at the start, then get straight into it.',
     'Keep the whole document between 550 and 850 words.',
     'No bold-everything, no emojis, no marketing language.',
-    'Never imply this raises testosterone to a guaranteed level or replaces medical treatment.',
     'Do not mention AI, prompts, or that this was generated.',
     'If their answers are missing key information, say what you assumed rather than inventing detail.',
   ].join('\n')
 }
 
-/** Current protocol row for a client, if any. */
-export async function loadSupplementProtocol(clientId: string): Promise<SupplementProtocol | null> {
+/** Current protocol row for a client and add-on, if any. */
+export async function loadSupplementProtocol(
+  clientId: string,
+  addonId: AddonProtocolId = 'testo_boost'
+): Promise<SupplementProtocol | null> {
   const admin = createAdminClient()
   const { data } = await admin
     .from('supplement_protocols')
     .select('*')
     .eq('client_id', clientId)
+    .eq('addon_id', addonId)
     .maybeSingle()
 
   return (data as SupplementProtocol | null) ?? null
@@ -155,14 +241,17 @@ export type GenerateSupplementProtocolResult = {
 
 /**
  * Generate (or regenerate) the protocol and store it. Requires the client to have paid for the
- * add-on — the entitlement is checked here so no caller can hand out the paid document by mistake.
+ * add-on â€” the entitlement is checked here so no caller can hand out the paid document by mistake.
  */
 export async function generateSupplementProtocol(input: {
   clientId: string
   purchaseId?: string | null
   force?: boolean
+  addonId?: AddonProtocolId
 }): Promise<GenerateSupplementProtocolResult> {
   const admin = createAdminClient()
+  const addonId = input.addonId ?? 'testo_boost'
+  const prompt = promptsForAddon(addonId)
 
   const { data: profileRow } = await admin
     .from('profiles')
@@ -175,11 +264,11 @@ export async function generateSupplementProtocol(input: {
   }
 
   const profile = profileRow as OnboardingProfile
-  if (!profile.supplement_protocol_entitled) {
+  if (!profileEntitledForAddon(profile, addonId)) {
     return { status: 'skipped', content: null, error: 'not_entitled', cached: false }
   }
 
-  const existing = await loadSupplementProtocol(input.clientId)
+  const existing = await loadSupplementProtocol(input.clientId, addonId)
   if (!input.force && existing?.status === 'ready' && existing.content?.trim()) {
     return { status: 'ready', content: existing.content, error: null, cached: true }
   }
@@ -194,8 +283,8 @@ export async function generateSupplementProtocol(input: {
 
   try {
     const result = await generateClaudeResponse({
-      systemPrompt: SYSTEM_PROMPT,
-      userPrompt: buildUserPrompt(profile),
+      systemPrompt: prompt.system,
+      userPrompt: buildUserPrompt(profile, addonId),
       model: MODELS.CLAUDE_SONNET,
       maxTokens: 2000,
       temperature: 0.4,
@@ -208,6 +297,7 @@ export async function generateSupplementProtocol(input: {
       {
         client_id: input.clientId,
         purchase_id: input.purchaseId ?? existing?.purchase_id ?? null,
+        addon_id: addonId,
         version: nextVersion,
         status: 'ready',
         content,
@@ -215,7 +305,7 @@ export async function generateSupplementProtocol(input: {
         generated_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-      { onConflict: 'client_id' }
+      { onConflict: 'client_id,addon_id' }
     )
 
     await logAiGeneration({
@@ -223,7 +313,7 @@ export async function generateSupplementProtocol(input: {
       coachId: profile.coach_id ?? null,
       action: 'supplement_protocol',
       model: result.model,
-      promptVersion: PROMPT_VERSION,
+      promptVersion: prompt.version,
       latencyMs: Date.now() - started,
       promptTokens: result.inputTokens,
       completionTokens: result.outputTokens,
@@ -231,7 +321,7 @@ export async function generateSupplementProtocol(input: {
       validationResult: 'ok',
       success: true,
       knowledgeRefs: null,
-      renderedOutput: { clientId: input.clientId, version: nextVersion },
+      renderedOutput: { clientId: input.clientId, version: nextVersion, addonId },
     })
 
     return { status: 'ready', content, error: null, cached: false }
@@ -242,13 +332,14 @@ export async function generateSupplementProtocol(input: {
       {
         client_id: input.clientId,
         purchase_id: input.purchaseId ?? existing?.purchase_id ?? null,
+        addon_id: addonId,
         version: existing?.version ?? 1,
         // Keep any previously delivered document readable instead of blanking the page.
         status: existing?.content?.trim() ? 'ready' : 'failed',
         error_message: message,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: 'client_id' }
+      { onConflict: 'client_id,addon_id' }
     )
 
     await logAiGeneration({
@@ -256,7 +347,7 @@ export async function generateSupplementProtocol(input: {
       coachId: profile.coach_id ?? null,
       action: 'supplement_protocol',
       model: MODELS.CLAUDE_SONNET,
-      promptVersion: PROMPT_VERSION,
+      promptVersion: prompt.version,
       latencyMs: Date.now() - started,
       promptTokens: null,
       completionTokens: null,
@@ -264,7 +355,7 @@ export async function generateSupplementProtocol(input: {
       validationResult: message,
       success: false,
       knowledgeRefs: null,
-      renderedOutput: { clientId: input.clientId },
+      renderedOutput: { clientId: input.clientId, addonId },
     })
 
     return { status: 'failed', content: existing?.content ?? null, error: message, cached: false }
@@ -273,11 +364,12 @@ export async function generateSupplementProtocol(input: {
 
 /** Generate on first read if the client is owed the document but it does not exist yet. */
 export async function ensureSupplementProtocol(
-  clientId: string
+  clientId: string,
+  addonId: AddonProtocolId = 'testo_boost'
 ): Promise<GenerateSupplementProtocolResult> {
-  const existing = await loadSupplementProtocol(clientId)
+  const existing = await loadSupplementProtocol(clientId, addonId)
   if (existing?.status === 'ready' && existing.content?.trim()) {
     return { status: 'ready', content: existing.content, error: null, cached: true }
   }
-  return generateSupplementProtocol({ clientId })
+  return generateSupplementProtocol({ clientId, addonId })
 }

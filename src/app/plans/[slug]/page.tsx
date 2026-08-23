@@ -8,6 +8,7 @@ import {
   ALL_PLAN_PAGE_PATHS,
   PLAN_INCLUSIONS,
   PLAN_PAGE_COPY,
+  PLAN_PRODUCT_NAME,
   RETIRED_PLAN_PAGE_REDIRECTS,
   planDurationLabel,
   planGoalName,
@@ -41,9 +42,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!plan) return { title: brandTitle('Plan') }
   const planSlug = plan.slug as LongCoachingPlanSlug
   const copy = PLAN_PAGE_COPY[planSlug]
+  const productName = PLAN_PRODUCT_NAME[planSlug]
   return {
-    title: brandTitle(`${copy.goalName} · ${copy.durationLabel}`),
-    description: `${copy.goalName} coaching (${copy.durationLabel}) — from ${plan.displayPrice}. Personal workout, diet, weekly check-ins, and coach chat.`,
+    title: brandTitle(`${productName} · ${copy.durationLabel}`),
+    description: `${productName} coaching (${copy.durationLabel}) — from ${plan.displayPrice}. Personal workout, diet, weekly check-ins, and coach chat.`,
   }
 }
 
@@ -91,6 +93,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
 
   const planSlug = plan.slug as LongCoachingPlanSlug
   const copy = PLAN_PAGE_COPY[planSlug]
+  const productName = PLAN_PRODUCT_NAME[planSlug]
   const marketingBase = resolveMarketingBaseUrl()
   const others = siblingPlans(planSlug)
   const saleDisplay = saleLabel(planSlug) ?? plan.displayPrice
@@ -129,9 +132,9 @@ export default async function PlanLandingPage({ params }: PageProps) {
       </header>
 
       <main style={styles.main}>
-        <p style={styles.eyebrow}>{copy.eyebrow}</p>
+        <p style={styles.eyebrow}>{productName}</p>
         <h1 className="plan-page-title">
-          {copy.goalName}
+          {productName}
           <span style={{ display: 'block', marginTop: 6, fontSize: '0.55em', fontWeight: 650, color: 'rgba(255,255,255,0.55)' }}>
             {copy.durationLabel}
           </span>

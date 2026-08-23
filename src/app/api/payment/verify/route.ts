@@ -18,6 +18,7 @@ import {
 import {
   expectedAmountPaiseFromOrderNotes,
   normalizeDiscountCode,
+  checkoutAddonsFromNotes,
   supplementAddonPaiseFromNotes,
 } from '@/lib/payments/checkout-discounts'
 import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
   let appliedDiscountCode = ''
   let appliedDiscountPaise = 0
   let supplementAddonPaid = 0
+  let paidAddonIds: import('@/lib/payments/checkout-discounts').CheckoutAddonId[] = []
 
   if (!orderId) {
     return NextResponse.json(
@@ -144,7 +146,11 @@ export async function POST(request: Request) {
       const expectedAmount = expectedAmountPaiseFromOrderNotes(plan, trustedNotes)
       appliedDiscountCode = normalizeDiscountCode(trustedNotes.discount_code)
       appliedDiscountPaise = Number(trustedNotes.discount_paise ?? 0) || 0
-      supplementAddonPaid = supplementAddonPaiseFromNotes(trustedNotes)
+      const addons = checkoutAddonsFromNotes(trustedNotes)
+      paidAddonIds = addons.ids
+      supplementAddonPaid = addons.ids.includes('testo_boost')
+        ? 39900
+        : 0
 
       if (payment.amount !== expectedAmount) {
         return NextResponse.json(
@@ -208,6 +214,7 @@ export async function POST(request: Request) {
       razorpayOrderId: orderId || `test_order_${Date.now()}`,
       amountPaise: chargedAmountPaise,
       supplementAddonPaise: supplementAddonPaid,
+      checkoutAddonIds: paidAddonIds,
     })
 
     if (appliedDiscountCode && appliedDiscountPaise > 0) {
