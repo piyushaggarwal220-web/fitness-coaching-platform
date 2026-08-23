@@ -510,6 +510,10 @@ export default function Dashboard() {
     </Card>
   ) : null;
 
+  const firstName = (profile?.name || user?.email?.split('@')[0] || 'there')
+    .trim()
+    .split(/\s+/)[0]
+
   return (
     <ClientShell
       loading={loading}
