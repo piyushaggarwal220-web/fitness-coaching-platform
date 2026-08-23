@@ -95,6 +95,7 @@ export type ClientCheckinSchedule = {
   /** @deprecated Use activeCoachingWeek. */
   coachingWeek: number
   developmentScheduleMessage: string | null
+  missedCheckins: CheckinTask[]
 }
 
 export type CoachClientCheckinSummary = {
@@ -368,6 +369,24 @@ export function getCheckinTypeDisplayName(type: CheckinType): string {
   return type === 'mid_week' ? 'Mid-Week Check-in' : 'Weekly Check-in'
 }
 
+function collectMissedCheckins(
+  scheduleStartedAt: string | Date,
+  checkins: CheckinRef[],
+  activeCoachingWeek: number,
+  referenceDate: Date
+): CheckinTask[] {
+  const missed: CheckinTask[] = []
+  for (let week = 1; week <= activeCoachingWeek; week++) {
+    for (const type of ['mid_week', 'weekly'] as CheckinType[]) {
+      const scheduled = buildScheduledCheckin(scheduleStartedAt, week, type)
+      const submission = findSubmission(checkins, week, type)
+      const task = resolveTaskStatus(scheduled, submission, referenceDate, scheduleStartedAt)
+      if (task.status === 'missed') missed.push(task)
+    }
+  }
+  return missed
+}
+
 export function getClientCheckinSchedule(
   scheduleStartedAt: string | Date | null | undefined,
   checkins: CheckinRef[],
@@ -389,6 +408,7 @@ export function getClientCheckinSchedule(
       countdownLabel: null,
       countdownDetailed: null,
       developmentScheduleMessage: null,
+      missedCheckins: [],
     }
   }
 
@@ -403,6 +423,12 @@ export function getClientCheckinSchedule(
   })
   const todayTasks = weekCheckins.filter((task) =>
     task.status === 'available' || task.status === 'awaiting_review'
+  )
+  const missedCheckins = collectMissedCheckins(
+    scheduleStartedAt,
+    checkins,
+    activeCoachingWeek,
+    referenceDate
   )
 
   if (options?.bypassSchedule) {
@@ -431,6 +457,7 @@ export function getClientCheckinSchedule(
       countdownLabel: nextScheduled ? formatCountdown(0) : null,
       countdownDetailed: nextScheduled ? formatDetailedCountdown(0) : null,
       developmentScheduleMessage: 'Check-ins available immediately.',
+      missedCheckins,
     }
   }
 
@@ -455,6 +482,7 @@ export function getClientCheckinSchedule(
     countdownLabel: countdownMs != null ? formatCountdown(countdownMs) : null,
     countdownDetailed: countdownMs != null ? formatDetailedCountdown(countdownMs) : null,
     developmentScheduleMessage: null,
+    missedCheckins,
   }
 }
 

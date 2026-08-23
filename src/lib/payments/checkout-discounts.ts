@@ -122,7 +122,7 @@ export function checkoutTotalPaise(
   addons: boolean | readonly CheckoutAddonId[] | null | undefined
 ): number {
   if (Array.isArray(addons)) return pricing.amountPaise + checkoutAddonsPaise(addons)
-  return pricing.amountPaise + supplementAddonPaise(addons)
+  return pricing.amountPaise + supplementAddonPaise(Boolean(addons))
 }
 
 /** Add-on amount recorded on the Razorpay order, so verify/webhook can trust it. */
@@ -552,8 +552,3 @@ export function promoKindLabel(kind: PromoCodeKind | CheckoutDiscountKind): stri
   if (kind === 'first_timer') return 'Promo'
   return 'Discount'
 }
-
-/** Names used by the checkout page (same catalog). */
-export { CHECKOUT_ADDONS as CHECKOUT_ADDONS }
-export { parseCheckoutAddonIds as parseCheckoutAddonIds }
-export { checkoutAddonsPaise as checkoutAddonsPaise }

@@ -121,5 +121,3 @@ export function CheckoutAddonPicker({ selectedIds, onToggle }: Props) {
     </section>
   )
 }
-
-export { CheckoutAddonPicker as CheckoutAddonPicker }
