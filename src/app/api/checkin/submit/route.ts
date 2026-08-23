@@ -18,6 +18,8 @@ import { computeAutoReplyAt } from '@/lib/checkin-auto-reply-schedule'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { parseAdherenceDays } from '@/lib/checkin-adherence-days'
+import { areProgressPhotosOptional } from '@/lib/checkin'
 import type { CheckinType } from '@/types/database'
 
 /** Allow long-running weekly draft generation after the response returns. */
@@ -36,6 +38,11 @@ type MidWeekBody = {
   pain_injuries?: string | null
   questions_for_coach?: string | null
   additional_comments?: string | null
+  days_followed_diet: number
+  days_followed_workout: number
+  days_followed_sleep: number
+  days_followed_water: number
+  days_followed_steps: number
 }
 
 type WeeklyBody = {
@@ -62,6 +69,11 @@ type WeeklyBody = {
   progress_photo_back?: string | null
   extra_photos?: string[]
   plan_version?: number | null
+  days_followed_diet: number
+  days_followed_workout: number
+  days_followed_sleep: number
+  days_followed_water: number
+  days_followed_steps: number
 }
 
 type SubmitBody = MidWeekBody | WeeklyBody
@@ -78,6 +90,8 @@ function validateBody(body: SubmitBody, options?: { gender?: string | null }): s
     if (!isScore(body.sleep_quality)) return 'Invalid sleep quality.'
     if (!isScore(body.stress_level)) return 'Invalid stress level.'
     if (!isScore(body.hunger_level)) return 'Invalid hunger level.'
+    const midDays = parseAdherenceDays(body, 3)
+    if (midDays.error) return midDays.error
     if (!body.adherence_wins?.trim()) return 'Adherence wins are required.'
     if (!body.adherence_struggles?.trim()) return 'Adherence struggles are required.'
     return null
@@ -89,6 +103,8 @@ function validateBody(body: SubmitBody, options?: { gender?: string | null }): s
   if (!body.navel || body.navel <= 0) return 'Invalid belly (navel) measurement.'
   if (!isScore(body.diet_adherence)) return 'Invalid diet adherence.'
   if (!isScore(body.workout_adherence)) return 'Invalid workout adherence.'
+  const weeklyDays = parseAdherenceDays(body, 7)
+  if (weeklyDays.error) return weeklyDays.error
   if (!isScore(body.energy_level)) return 'Invalid energy level.'
   if (!isScore(body.sleep_quality)) return 'Invalid sleep quality.'
   if (!isScore(body.stress_level)) return 'Invalid stress level.'
@@ -96,8 +112,7 @@ function validateBody(body: SubmitBody, options?: { gender?: string | null }): s
   if (!isScore(body.motivation_level)) return 'Invalid motivation level.'
   if (!isScore(body.progress_rating)) return 'Invalid progress rating.'
   if (!body.progress_notes?.trim()) return 'Progress notes are required.'
-  // Match onboarding: photos are optional for female clients
-  if (options?.gender !== 'female') {
+  if (!areProgressPhotosOptional(options?.gender)) {
     if (!body.progress_photo_front || !body.progress_photo_side || !body.progress_photo_back) {
       return 'Progress photos are required.'
     }
@@ -229,6 +244,11 @@ export async function POST(request: Request) {
       sleep_quality: body.sleep_quality,
       stress_level: body.stress_level,
       hunger_level: body.hunger_level,
+      days_followed_diet: body.days_followed_diet,
+      days_followed_workout: body.days_followed_workout,
+      days_followed_sleep: body.days_followed_sleep,
+      days_followed_water: body.days_followed_water,
+      days_followed_steps: body.days_followed_steps,
       adherence_score: body.diet_adherence,
       training_performance: body.workout_adherence,
       pain_injuries: body.pain_injuries ?? null,

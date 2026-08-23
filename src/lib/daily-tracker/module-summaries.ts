@@ -1,4 +1,5 @@
 import { getCategoryDisplayScores, splitSnapshot } from './display'
+import { withDerivedSleepHours } from './sleep-duration'
 import type { DailyTrackerDay } from './types'
 
 export type TrackerModuleId =
@@ -118,7 +119,7 @@ export function buildModuleSummaries(day: DailyTrackerDay): TrackerModuleSummary
   }
 
   if (sections.sleep) {
-    const hours = completion.sleep?.hours
+    const hours = withDerivedSleepHours(completion.sleep)?.hours
     const goal = sections.sleep.targetHours ?? 8
     modules.push({
       id: 'sleep',

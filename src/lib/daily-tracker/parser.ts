@@ -19,6 +19,7 @@ import type {
   WorkoutPhaseBlock,
 } from './types'
 import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
+import { withDerivedSleepHours } from './sleep-duration'
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
@@ -356,15 +357,24 @@ function isExplicitRestDayText(text: string): boolean {
   return withoutHeader.length < 8
 }
 
+function stripExerciseListPrefix(value: string): string {
+  return value
+    .replace(/^(?:[A-Za-z]\d+[.)]\s*|\d+[.)]\s*)/, '')
+    .replace(/^(?:core|finisher|accessories?|abs?)\s*:\s*/i, '')
+    .trim()
+}
+
 function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: number): TrackerExerciseItem | null {
-  const trimmed = stripMarkdownDecorators(line.replace(/^[-*•]\s*/, '').trim())
+  const trimmed = stripExerciseListPrefix(
+    stripMarkdownDecorators(line.replace(/^[-*•]\s*/, '').trim())
+  )
   if (!trimmed || trimmed.startsWith('#')) return null
   // Skip day / phase headers — they are handled separately
   if (/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(trimmed)) {
     return null
   }
   if (PHASE_HEADERS.test(trimmed)) return null
-  // Skip multi-exercise core dump lines; handled by splitCoreExercises
+  // Skip multi-exercise core dump lines; handled by expandCompositeExerciseLines
   if (/^core\s*:/i.test(trimmed) && /,/.test(trimmed)) return null
 
   // Rep token: fixed, hyphen range, or AI "N to M" prose range (plan style forbids hyphens).
@@ -385,7 +395,31 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     'i'
   )
 
-  const match = trimmed.match(setsReps) ?? trimmed.match(setsOf) ?? trimmed.match(compact)
+  // "Bench Press: 4 sets, 8 to 10 reps" (comma instead of x/of)
+  const setsComma = new RegExp(
+    String.raw`^(.+?)\s*:?\s*(\d+)\s*sets?\s*,\s*${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
+    'i'
+  )
+  // Timed holds: "Plank 45 seconds" / "Side plank: 30s"
+  const timedHold = trimmed.match(
+    /^(.+?)\s*:?\s*(\d+)\s*(?:x\s*)?(s|sec|secs|seconds|min|mins|minutes)\b/i
+  )
+
+  const match = trimmed.match(setsReps) ?? trimmed.match(setsOf) ?? trimmed.match(setsComma) ?? trimmed.match(compact)
+  if (!match && timedHold && timedHold[1]!.trim().length >= 2) {
+    const holdName = timedHold[1]!.trim().replace(/:$/, '')
+    const amount = timedHold[2]!
+    const unit = timedHold[3]!.toLowerCase()
+    const reps = /m/.test(unit) ? `${amount} min` : `${amount}s`
+    return withTrackingMeta({
+      id: `ex-${phase}-${slug(holdName)}-${index}`,
+      name: holdName,
+      targetSets: 1,
+      targetReps: reps,
+      phase,
+      restSeconds: 20,
+    })
+  }
   if (!match) return null
 
   let name = match[1]!.trim().replace(/:$/, '').trim()
@@ -423,12 +457,51 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
 /** Split "Core: Move A 3 sets x 12, Move B 2 sets x 10" into separate exercise lines. */
 function expandCompositeExerciseLines(line: string): string[] {
   const trimmed = stripMarkdownDecorators(line.replace(/^[-*•]\s*/, '').trim())
-  const coreMatch = trimmed.match(/^core\s*:\s*(.+)$/i)
-  if (!coreMatch || !coreMatch[1]!.includes(',')) return [line]
-  return coreMatch[1]!
-    .split(',')
-    .map((part) => part.trim())
-    .filter(Boolean)
+  const labeled = trimmed.match(/^(?:core|finisher|accessories?|abs?)\s*:\s*(.+)$/i)
+  if (labeled && /[,;]/.test(labeled[1]!)) {
+    return labeled[1]!
+      .split(/[,;]/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+  }
+  return [line]
+}
+
+const LOOSE_MOVEMENT =
+  /\b(press|squat|deadlift|hinge|row|curl|raise|flye?|lunge|plank|hold|carry|pull|push(?:-?up)?|extension|crunch|twist|stretch|walk|swing|thrust|dip|chin|hang|pulldown|pullover|face\s*pull|kickback|abduction|adduction|calf|glute|hip|core|dead\s*bug|bird\s*dog|pallof)\b/i
+
+/** Names without "sets x reps" still belong on the tracker (core finishers, holds, A1/A2). */
+function parseLooseExerciseLine(
+  line: string,
+  phase: WorkoutExercisePhase,
+  index: number
+): TrackerExerciseItem | null {
+  const trimmed = stripExerciseListPrefix(
+    stripMarkdownDecorators(line.replace(/^[-*•]\s*/, '').trim())
+  )
+  if (!trimmed || trimmed.startsWith('#')) return null
+  if (/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(trimmed)) {
+    return null
+  }
+  if (PHASE_HEADERS.test(trimmed)) return null
+  if (/^(note|notes|rest|optional|superset|circuit|round|then|also|hint)\b/i.test(trimmed)) {
+    return null
+  }
+  if (/\b(should|ensure|remember|make sure|client|coach)\b/i.test(trimmed)) return null
+  const words = trimmed.split(/\s+/).filter(Boolean)
+  if (trimmed.length < 3 || trimmed.length > 70 || words.length > 10) return null
+  const allowLoose =
+    phase !== 'main' || LOOSE_MOVEMENT.test(trimmed) || /^(?:[A-Za-z]\d+[.)]|\d+[.)])/.test(line.trim())
+  if (!allowLoose) return null
+
+  return withTrackingMeta({
+    id: `ex-${phase}-${slug(trimmed)}-${index}`,
+    name: trimmed.replace(/[.:]+$/, '').trim(),
+    targetSets: phase === 'cooldown' || phase === 'warmup' ? 1 : 3,
+    targetReps: phase === 'cooldown' || phase === 'warmup' ? 'as needed' : '8-12',
+    phase,
+    restSeconds: phase === 'main' ? 60 : 30,
+  })
 }
 
 function parseWorkoutPhases(section: string): {
@@ -502,7 +575,9 @@ function parseWorkoutPhases(section: string): {
       const rest = inlinePhase[2]!.trim()
       let matchedInline = false
       for (const candidate of expandCompositeExerciseLines(rest)) {
-        const exercise = parseExerciseLine(candidate, currentPhase, exerciseIndex)
+        const exercise =
+          parseExerciseLine(candidate, currentPhase, exerciseIndex) ??
+          parseLooseExerciseLine(candidate, currentPhase, exerciseIndex)
         if (exercise) {
           addExercise(exercise)
           matchedInline = true
@@ -521,7 +596,9 @@ function parseWorkoutPhases(section: string): {
 
     let matchedExercise = false
     for (const candidate of expandCompositeExerciseLines(trimmed)) {
-      const exercise = parseExerciseLine(candidate, currentPhase, exerciseIndex)
+      const exercise =
+        parseExerciseLine(candidate, currentPhase, exerciseIndex) ??
+        parseLooseExerciseLine(candidate, currentPhase, exerciseIndex)
       if (exercise) {
         addExercise(exercise)
         matchedExercise = true
@@ -1294,7 +1371,7 @@ export function mergeCompletion(previous: TrackerCompletion, next: TrackerComple
     nextSleep: TrackerCompletion['sleep']
   ): TrackerCompletion['sleep'] => {
     if (!nextSleep) return prev
-    if (!prev) return nextSleep
+    if (!prev) return withDerivedSleepHours(nextSleep)
     const out = { ...prev }
     for (const key of Object.keys(nextSleep) as (keyof NonNullable<TrackerCompletion['sleep']>)[]) {
       if (!Object.prototype.hasOwnProperty.call(nextSleep, key)) continue
@@ -1305,7 +1382,7 @@ export function mergeCompletion(previous: TrackerCompletion, next: TrackerComple
         ;(out as Record<string, unknown>)[key] = value
       }
     }
-    return out
+    return withDerivedSleepHours(out)
   }
 
   return {

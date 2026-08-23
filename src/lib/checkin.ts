@@ -104,6 +104,17 @@ export function validateMidWeekForm(data: MidWeekCheckinFormData): string | null
   return null
 }
 
+/** Onboarding + weekly check-in: photos are optional for women. */
+export function areProgressPhotosOptional(gender: string | null | undefined): boolean {
+  const normalized = (gender ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+  return (
+    normalized === 'female' ||
+    normalized === 'woman' ||
+    normalized === 'women' ||
+    normalized === 'f'
+  )
+}
+
 export function validateWeeklyCheckinForm(
   data: WeeklyCheckinFormData,
   photos: { front: File | null; side: File | null; back: File | null },
@@ -127,8 +138,7 @@ export function validateWeeklyCheckinForm(
   if (!isScoreValid(data.motivation_level)) return 'Motivation must be between 1 and 10.'
   if (!isScoreValid(data.progress_rating)) return 'Rate your progress between 1 and 10.'
   if (!data.progress_notes.trim()) return 'Describe your progress compared to last week.'
-  // Match onboarding: photos are optional for female clients
-  if (options?.gender === 'female') return null
+  if (areProgressPhotosOptional(options?.gender)) return null
   if (!photos.front) return 'Front progress photo is required.'
   if (!photos.side) return 'Side progress photo is required.'
   if (!photos.back) return 'Back progress photo is required.'

@@ -13,6 +13,7 @@ import { MeasurementScroller, NumberScroller } from '@/components/ui/Measurement
 import { PhotoCompareStrip } from '@/components/journey/PhotoCompareStrip';
 import {
   INITIAL_WEEKLY_FORM,
+  areProgressPhotosOptional,
   uploadCheckinPhoto,
   validateWeeklyCheckinForm,
 } from '@/lib/checkin';
@@ -185,7 +186,7 @@ export default function CheckinPage() {
     }
   };
 
-  const photosOptional = profile?.gender === 'female'
+  const photosOptional = areProgressPhotosOptional(profile?.gender)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -207,9 +208,15 @@ export default function CheckinPage() {
       if (!user) { router.push('/login'); return; }
 
       // Sequential uploads are far more reliable on mobile than Promise.all of 3–6 large POSTs.
-      const frontUrl = await uploadCheckinPhoto(supabase, user.id, photos.front!, 'front')
-      const sideUrl = await uploadCheckinPhoto(supabase, user.id, photos.side!, 'side')
-      const backUrl = await uploadCheckinPhoto(supabase, user.id, photos.back!, 'back')
+      const frontUrl = photos.front
+        ? await uploadCheckinPhoto(supabase, user.id, photos.front, 'front')
+        : null
+      const sideUrl = photos.side
+        ? await uploadCheckinPhoto(supabase, user.id, photos.side, 'side')
+        : null
+      const backUrl = photos.back
+        ? await uploadCheckinPhoto(supabase, user.id, photos.back, 'back')
+        : null
       const extraUrls: string[] = []
       for (let i = 0; i < extraPhotos.length; i += 1) {
         extraUrls.push(await uploadCheckinPhoto(supabase, user.id, extraPhotos[i]!, `extra_${i}`))
@@ -227,6 +234,11 @@ export default function CheckinPage() {
           navel: Number(form.navel),
           diet_adherence: Number(form.diet_adherence),
           workout_adherence: Number(form.workout_adherence),
+          days_followed_diet: Number(form.days_followed_diet),
+          days_followed_workout: Number(form.days_followed_workout),
+          days_followed_sleep: Number(form.days_followed_sleep),
+          days_followed_water: Number(form.days_followed_water),
+          days_followed_steps: Number(form.days_followed_steps),
           energy_level: Number(form.energy_level),
           sleep_quality: Number(form.sleep_quality),
           stress_level: Number(form.stress_level),
@@ -256,8 +268,8 @@ export default function CheckinPage() {
 
       setSuccess(
         photosOptional && !frontUrl && !sideUrl && !backUrl
-          ? 'Weekly check-in submitted! Measurements earn league points. Your coach typically replies in 3–8 hours (not overnight).'
-          : 'Weekly check-in submitted! Photos + measurements earn league points. Your coach typically replies in 3–8 hours (not overnight).'
+          ? 'Weekly check-in submitted! Measurements earn league points. Your coach typically replies in 3–6 hours (including overnight).'
+          : 'Weekly check-in submitted! Photos + measurements earn league points. Your coach typically replies in 3–6 hours (including overnight).'
       );
       setForm(INITIAL_WEEKLY_FORM);
       setPhotos({ front: null, side: null, back: null });
@@ -375,6 +387,15 @@ export default function CheckinPage() {
             <h2 style={sectionTitle}>How did this week go?</h2>
             <Slider label="Diet adherence" name="diet_adherence" value={form.diet_adherence || '5'} onChange={handleChange} />
             <Slider label="Workout adherence" name="workout_adherence" value={form.workout_adherence || '5'} onChange={handleChange} />
+            <h3 style={{ margin: '8px 0 4px', fontSize: 15, fontWeight: 700 }}>Days you stuck to the plan (out of 7)</h3>
+            <p style={{ margin: '0 0 8px', fontSize: 13, color: colors.textMuted }}>
+              Count full days you followed each habit this week. Your next plan tips are based on this.
+            </p>
+            <Slider label="Diet days followed" name="days_followed_diet" value={form.days_followed_diet || '4'} onChange={handleChange} min={0} max={7} />
+            <Slider label="Training days completed" name="days_followed_workout" value={form.days_followed_workout || '4'} onChange={handleChange} min={0} max={7} />
+            <Slider label="Sleep days on target" name="days_followed_sleep" value={form.days_followed_sleep || '4'} onChange={handleChange} min={0} max={7} />
+            <Slider label="Water days on target" name="days_followed_water" value={form.days_followed_water || '4'} onChange={handleChange} min={0} max={7} />
+            <Slider label="Steps days on target" name="days_followed_steps" value={form.days_followed_steps || '4'} onChange={handleChange} min={0} max={7} />
             <Slider label="Energy" name="energy_level" value={form.energy_level || '5'} onChange={handleChange} />
             <Slider label="Sleep" name="sleep_quality" value={form.sleep_quality || '5'} onChange={handleChange} />
             <Slider label="Stress" name="stress_level" value={form.stress_level || '5'} onChange={handleChange} />

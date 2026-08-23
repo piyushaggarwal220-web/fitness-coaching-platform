@@ -1,4 +1,5 @@
 import { areAllSetsComplete, getExerciseSets } from './exercise-utils'
+import { hasSleepLogged, withDerivedSleepHours } from './sleep-duration'
 import type {
   TrackerCategoryScores,
   TrackerCompletion,
@@ -74,13 +75,14 @@ export function calculateTrackerScores(
   const sleepItem = snapshot.items.find((i) => i.type === 'sleep')
   let sleep = 100
   if (sleepItem && sleepItem.type === 'sleep') {
-    const hours = completion.sleep?.hours
-    const quality = completion.sleep?.quality
+    const logged = withDerivedSleepHours(completion.sleep)
+    const hours = logged?.hours
+    const quality = logged?.quality
     if (hours != null && sleepItem.targetHours) {
       sleep = Math.min(100, pct(hours, sleepItem.targetHours))
     } else if (quality != null) {
       sleep = Math.round((quality / 10) * 100)
-    } else if (!completion.sleep?.bedtime) {
+    } else if (!hasSleepLogged(logged)) {
       sleep = 0
     }
   }
@@ -158,7 +160,7 @@ export function isItemComplete(item: TrackerSnapshotItem, completion: TrackerCom
     case 'water':
       return (completion.water?.ml ?? 0) >= item.targetMl * 0.8
     case 'sleep':
-      return Boolean(completion.sleep?.hours || completion.sleep?.quality)
+      return hasSleepLogged(withDerivedSleepHours(completion.sleep))
     case 'note':
       return true
     default:

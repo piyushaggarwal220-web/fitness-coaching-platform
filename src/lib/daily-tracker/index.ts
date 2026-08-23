@@ -4,6 +4,7 @@ export * from './module-summaries'
 export * from './types'
 export * from './parser'
 export * from './scores'
+export * from './sleep-duration'
 export * from './tracker-draft'
 export {
   getActivePlan,

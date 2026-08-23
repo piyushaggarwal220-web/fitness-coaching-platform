@@ -168,27 +168,20 @@ export function WorkoutModule({
         mobility: true,
         main: true,
         finisher: true,
-        cooldown: false,
+        cooldown: true,
       } as const
     }
     const warmupBlock = workout.phases.find((phase) => phase.phase === 'warmup')
-    const mainBlock = workout.phases.find((phase) => phase.phase === 'main')
     const warmupDone =
       warmupBlock?.exercises.every((ex) => completion.exercises?.[ex.id]?.completed) ?? true
-    const mainDone =
-      !mainBlock ||
-      mainBlock.exercises.length === 0 ||
-      mainBlock.exercises.every((ex) => completion.exercises?.[ex.id]?.completed)
     return {
       warmup: hasWarmup && !warmupDone,
       mobility: true,
       main: !hasWarmup || warmupDone,
       finisher: true,
-      // Open Post-Workout when main work is done (or overall progress is high) —
-      // do not wait on a percent that can be diluted by a long cooldown list.
-      cooldown: mainDone || progress.percent >= 70,
+      cooldown: true,
     } as const
-  }, [workout, completion.exercises, progress.percent, hasWarmup])
+  }, [workout, completion.exercises, hasWarmup])
 
   const persistSession = useCallback(
     (next: {

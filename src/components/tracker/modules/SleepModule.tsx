@@ -1,6 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/Button'
 import {
   ChipSelector,
   ProgressBar,
@@ -9,6 +8,7 @@ import {
 } from '@/components/tracker/TrackerPrimitives'
 import { colors, spacing } from '@/lib/design-tokens'
 import { qualityLabelToScore } from '@/lib/daily-tracker/display'
+import { sleepHoursFromBedAndWake } from '@/lib/daily-tracker/sleep-duration'
 import type {
   SleepQualityLabel,
   TrackerCompletion,
@@ -42,7 +42,16 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
   const goal = sleep.targetHours ?? 8
   const percent = sleepScore
 
-  const patch = (next: Partial<typeof data>) => void onPatch({ sleep: next })
+  const patch = (next: Partial<typeof data>) => {
+    const merged = { ...data, ...next }
+    const derived =
+      merged.hours == null
+        ? sleepHoursFromBedAndWake(merged.bedtime, merged.wakeTime)
+        : null
+    void onPatch({
+      sleep: derived != null ? { ...next, hours: derived } : next,
+    })
+  }
 
   return (
     <div>
@@ -78,6 +87,12 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
           />
         </div>
       </div>
+
+      <p style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.45, marginBottom: spacing[3] }}>
+        Night shift is fine — log the sleep you just finished. If you slept across midnight (for
+        example 8:00 AM to 4:00 PM, or 10:00 PM to 6:00 AM), enter both times and we&apos;ll count
+        the hours automatically.
+      </p>
 
       <label style={{ display: 'block', marginBottom: spacing[3] }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: colors.textSecondary }}>Bed Time</span>

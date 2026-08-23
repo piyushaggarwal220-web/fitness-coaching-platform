@@ -371,7 +371,19 @@ export async function getOrCreateTodayTracker(
     .select()
     .single()
 
-  if (error || !inserted) return { day: null, error: error?.message ?? 'Failed to create tracker' }
+  if (error || !inserted) {
+    const uniqueViolation = error?.code === '23505'
+    if (uniqueViolation) {
+      const { data: raced } = await supabase
+        .from('daily_tracker_days')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('log_date', logDate)
+        .maybeSingle()
+      if (raced) return { day: rowToDay(raced as Record<string, unknown>), error: null }
+    }
+    return { day: null, error: error?.message ?? 'Failed to create tracker' }
+  }
   return { day: rowToDay(inserted as Record<string, unknown>), error: null }
 }
 
@@ -383,7 +395,7 @@ export async function updateTrackerCompletion(
 ): Promise<{ day: DailyTrackerDay | null; error: string | null }> {
   // Optimistic concurrency: concurrent PATCHes from rapid set logging + "Save workout"
   // used to overwrite each other (last write wins with a stale read). Retry on conflict.
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     const { data: existing, error: loadError } = await supabase
       .from('daily_tracker_days')
       .select('*')
@@ -423,7 +435,7 @@ export async function updateTrackerCompletion(
 
   return {
     day: null,
-    error: 'Could not save your workout because another update finished first. Please tap Save again.',
+    error: 'Could not save your tracker because another update finished first. Please tap Save again.',
   }
 }
 

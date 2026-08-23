@@ -102,6 +102,11 @@ export default function MidWeekCheckinPage() {
           checkinType: 'mid_week',
           diet_adherence: Number(form.diet_adherence),
           workout_adherence: Number(form.workout_adherence),
+          days_followed_diet: Number(form.days_followed_diet),
+          days_followed_workout: Number(form.days_followed_workout),
+          days_followed_sleep: Number(form.days_followed_sleep),
+          days_followed_water: Number(form.days_followed_water),
+          days_followed_steps: Number(form.days_followed_steps),
           energy_level: Number(form.energy_level),
           sleep_quality: Number(form.sleep_quality),
           stress_level: Number(form.stress_level),
@@ -118,7 +123,7 @@ export default function MidWeekCheckinPage() {
       if (!parsed.ok) throw new Error(parsed.error)
 
       setSuccess(
-        'Day 3 check-in submitted! Your coach typically replies in 3–8 hours (not overnight). +5 league points when the season refreshes.'
+        'Day 3 check-in submitted! Your coach typically replies in 3–6 hours (including overnight). +5 league points when the season refreshes.'
       );
       setForm(INITIAL_MID_WEEK_FORM);
       setTimeout(() => router.push('/league'), 1800);
@@ -169,6 +174,15 @@ export default function MidWeekCheckinPage() {
             <h2 style={styles.sectionTitle}>Adherence this week (1–10)</h2>
             <Slider label="Diet adherence" name="diet_adherence" value={form.diet_adherence || '5'} onChange={handleChange} />
             <Slider label="Workout adherence" name="workout_adherence" value={form.workout_adherence || '5'} onChange={handleChange} />
+            <h3 style={{ margin: '8px 0 4px', fontSize: 15, fontWeight: 700 }}>Days you stuck to the plan (out of 3)</h3>
+            <p style={{ margin: '0 0 8px', fontSize: 13, color: colors.textMuted }}>
+              Count full days since your last weekly check-in. Tips on the next plan use this.
+            </p>
+            <Slider label="Diet days followed" name="days_followed_diet" value={form.days_followed_diet || '2'} onChange={handleChange} min={0} max={3} />
+            <Slider label="Training days completed" name="days_followed_workout" value={form.days_followed_workout || '2'} onChange={handleChange} min={0} max={3} />
+            <Slider label="Sleep days on target" name="days_followed_sleep" value={form.days_followed_sleep || '2'} onChange={handleChange} min={0} max={3} />
+            <Slider label="Water days on target" name="days_followed_water" value={form.days_followed_water || '2'} onChange={handleChange} min={0} max={3} />
+            <Slider label="Steps days on target" name="days_followed_steps" value={form.days_followed_steps || '2'} onChange={handleChange} min={0} max={3} />
             <Slider label="Energy" name="energy_level" value={form.energy_level || '5'} onChange={handleChange} />
             <Slider label="Sleep quality" name="sleep_quality" value={form.sleep_quality || '5'} onChange={handleChange} />
             <Slider label="Stress" name="stress_level" value={form.stress_level || '5'} onChange={handleChange} />
