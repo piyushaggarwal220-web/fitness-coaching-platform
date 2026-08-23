@@ -36,6 +36,11 @@ export const INITIAL_CHECKIN_FORM: CheckinFormData = {
 export const INITIAL_MID_WEEK_FORM: MidWeekCheckinFormData = {
   diet_adherence: '',
   workout_adherence: '',
+  days_followed_diet: '2',
+  days_followed_workout: '2',
+  days_followed_sleep: '2',
+  days_followed_water: '2',
+  days_followed_steps: '2',
   energy_level: '',
   sleep_quality: '',
   stress_level: '',
@@ -54,6 +59,11 @@ export const INITIAL_WEEKLY_FORM: WeeklyCheckinFormData = {
   navel: '',
   diet_adherence: '',
   workout_adherence: '',
+  days_followed_diet: '4',
+  days_followed_workout: '4',
+  days_followed_sleep: '4',
+  days_followed_water: '4',
+  days_followed_steps: '4',
   energy_level: '',
   sleep_quality: '',
   stress_level: '',
@@ -72,9 +82,19 @@ function isScoreValid(value: string): boolean {
   return !Number.isNaN(n) && n >= 1 && n <= 10
 }
 
+function isDaysValid(value: string, max: number): boolean {
+  const n = Number(value)
+  return Number.isInteger(n) && n >= 0 && n <= max
+}
+
 export function validateMidWeekForm(data: MidWeekCheckinFormData): string | null {
   if (!isScoreValid(data.diet_adherence)) return 'Diet adherence must be between 1 and 10.'
   if (!isScoreValid(data.workout_adherence)) return 'Workout adherence must be between 1 and 10.'
+  if (!isDaysValid(data.days_followed_diet, 3)) return 'How many of the last 3 days did you follow the diet? (0–3)'
+  if (!isDaysValid(data.days_followed_workout, 3)) return 'How many of the last 3 days did you train? (0–3)'
+  if (!isDaysValid(data.days_followed_sleep, 3)) return 'How many of the last 3 days did you sleep well? (0–3)'
+  if (!isDaysValid(data.days_followed_water, 3)) return 'How many of the last 3 days did you hit your water? (0–3)'
+  if (!isDaysValid(data.days_followed_steps, 3)) return 'How many of the last 3 days did you hit your steps? (0–3)'
   if (!isScoreValid(data.energy_level)) return 'Energy must be between 1 and 10.'
   if (!isScoreValid(data.sleep_quality)) return 'Sleep quality must be between 1 and 10.'
   if (!isScoreValid(data.stress_level)) return 'Stress must be between 1 and 10.'
@@ -95,6 +115,11 @@ export function validateWeeklyCheckinForm(
   if (!data.navel || Number(data.navel) <= 0) return 'Scroll to select your belly (navel) measurement.'
   if (!isScoreValid(data.diet_adherence)) return 'Diet adherence must be between 1 and 10.'
   if (!isScoreValid(data.workout_adherence)) return 'Workout adherence must be between 1 and 10.'
+  if (!isDaysValid(data.days_followed_diet, 7)) return 'How many of the last 7 days did you follow the diet? (0–7)'
+  if (!isDaysValid(data.days_followed_workout, 7)) return 'How many of the last 7 days did you train? (0–7)'
+  if (!isDaysValid(data.days_followed_sleep, 7)) return 'How many of the last 7 days did you sleep well? (0–7)'
+  if (!isDaysValid(data.days_followed_water, 7)) return 'How many of the last 7 days did you hit your water? (0–7)'
+  if (!isDaysValid(data.days_followed_steps, 7)) return 'How many of the last 7 days did you hit your steps? (0–7)'
   if (!isScoreValid(data.energy_level)) return 'Energy must be between 1 and 10.'
   if (!isScoreValid(data.sleep_quality)) return 'Sleep must be between 1 and 10.'
   if (!isScoreValid(data.stress_level)) return 'Stress must be between 1 and 10.'
