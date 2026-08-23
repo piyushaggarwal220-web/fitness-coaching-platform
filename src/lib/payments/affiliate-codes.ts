@@ -4,15 +4,15 @@ type PaidPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
 
 /** Public storefront sale prices that affiliate extras stack on (must match checkout-discounts). */
 const PUBLIC_SALE_PAISE: Record<PaidPlanSlug, number> = {
-  '3_months': 99900,
-  '6_months': 169900,
-  '12_months': 299900,
+  '3_months': 129900,
+  '6_months': 209900,
+  '12_months': 349900,
 }
 
 export type AffiliateCodeConfig = {
   code: string
   referrerLabel: string
-  /** Extra percent off the public sale prices (999 / 1699 / 2999). */
+  /** Extra percent off the public sale prices (1299 / 2099 / 3499). */
   extraPercentOffSale: number
   notes: string
 }
@@ -24,7 +24,7 @@ export const AFFILIATE_CODES: Record<string, AffiliateCodeConfig> = {
     referrerLabel: 'Luke',
     extraPercentOffSale: 5,
     notes:
-      'Affiliate code for Luke — public sale (₹999 / ₹1,699 / ₹2,999) plus an extra 5% off. Team is emailed on each successful use.',
+      'Affiliate code for Luke — public sale (₹1,299 / ₹2,099 / ₹3,499) plus an extra 5% off. Team is emailed on each successful use.',
   },
 }
 
@@ -40,7 +40,7 @@ export function isAffiliateDiscountCode(raw: string | null | undefined): boolean
 
 /**
  * Payable amount for an affiliate code: sale price minus extra percent,
- * rounded to whole rupees (e.g. ₹999 → ₹949).
+ * rounded to whole rupees (e.g. ₹1,299 → ₹1,234).
  */
 export function affiliateSalePaise(
   rawCode: string | null | undefined,

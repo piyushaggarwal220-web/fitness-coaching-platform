@@ -1,7 +1,6 @@
 /**
- * Deploy plan prices to the live storefront: ₹999 / ₹1,699 / ₹2,999
- * (monthly ₹333 / ₹283 / ₹250).
- * Undoes any wrong intermediate deploys (₹1,499 / ₹2,699 / ₹3,999 etc.).
+ * Deploy plan prices to the live storefront: ₹1,299 / ₹2,099 / ₹3,499
+ * (monthly ₹433 / ₹350 / ₹292).
  * Uploads edited repo assets and fetch-patches theme-only JSON templates.
  */
 import fs from 'node:fs'
@@ -29,40 +28,41 @@ async function get(key) {
     `${REST}/themes/${THEME}/assets.json?asset[key]=${encodeURIComponent(key)}`,
     { headers: { 'X-Shopify-Access-Token': token } }
   )
+  if (res.status === 404) return null
   if (!res.ok) throw new Error(`get ${key} ${res.status}`)
-  return (await res.json()).asset.value
+  return (await res.json()).asset?.value ?? null
 }
 
 // Price string replacements applied to live JSON templates (theme-only files).
 function patchPrices(text) {
   return text
-    // Plan card settings (numeric strings) — force correct sale prices
-    .replace(/"plan_2_price": "\d+"/g, '"plan_2_price": "999"')
-    .replace(/"plan_3_price": "\d+"/g, '"plan_3_price": "1699"')
-    .replace(/"plan_4_price": "\d+"/g, '"plan_4_price": "2999"')
-    .replace(/"plan_2_monthly": "[^"]*"/g, '"plan_2_monthly": "≈ ₹333/month"')
-    .replace(/"plan_3_monthly": "[^"]*"/g, '"plan_3_monthly": "≈ ₹283/month"')
-    .replace(/"plan_4_monthly": "[^"]*"/g, '"plan_4_monthly": "≈ ₹250/month"')
-    // Display prices (wrong / old → correct)
-    .replace(/₹\s*1,499/g, '₹999')
-    .replace(/₹\s*1,299/g, '₹999')
-    .replace(/₹\s*1,099/g, '₹999')
-    .replace(/₹\s*2,699/g, '₹1,699')
-    .replace(/₹\s*2,599/g, '₹1,699')
-    .replace(/₹\s*2,499/g, '₹1,699')
-    .replace(/₹\s*2,099/g, '₹1,699')
-    .replace(/₹\s*3,999/g, '₹2,999')
-    .replace(/₹\s*3,699/g, '₹2,999')
-    .replace(/₹\s*3,599/g, '₹2,999')
-    .replace(/₹\s*3,499/g, '₹2,999')
-    // Monthly rates in free text (wrong intermediate → correct band)
-    .replace(/₹\s*500(\/mo|\/month)?/g, '₹333$1')
-    .replace(/₹\s*566(\/mo|\/month)?/g, '₹333$1')
-    .replace(/₹\s*433(\/mo|\/month)?/g, '₹333$1')
-    .replace(/₹\s*366(\/mo|\/month)?/g, '₹333$1')
-    .replace(/₹\s*450(\/mo|\/month)?/g, '₹283$1')
-    .replace(/₹\s*350(\/mo|\/month)?/g, '₹283$1')
-    .replace(/₹\s*292(\/mo|\/month)?/g, '₹250$1')
+    .replace(/"plan_2_price": "\d+"/g, '"plan_2_price": "1299"')
+    .replace(/"plan_3_price": "\d+"/g, '"plan_3_price": "2099"')
+    .replace(/"plan_4_price": "\d+"/g, '"plan_4_price": "3499"')
+    .replace(/"plan_2_monthly": "[^"]*"/g, '"plan_2_monthly": "≈ ₹433/month"')
+    .replace(/"plan_3_monthly": "[^"]*"/g, '"plan_3_monthly": "≈ ₹350/month"')
+    .replace(/"plan_4_monthly": "[^"]*"/g, '"plan_4_monthly": "≈ ₹292/month"')
+    .replace(/"col_1_price": "[^"]*"/g, '"col_1_price": "₹1,299"')
+    .replace(/"col_2_price": "[^"]*"/g, '"col_2_price": "₹2,099"')
+    .replace(/"col_3_price": "[^"]*"/g, '"col_3_price": "₹3,499"')
+    .replace(/₹\s*3,999/g, '₹3,499')
+    .replace(/₹\s*3,699/g, '₹3,499')
+    .replace(/₹\s*3,599/g, '₹3,499')
+    .replace(/₹\s*2,999/g, '₹3,499')
+    .replace(/₹\s*2,699/g, '₹2,099')
+    .replace(/₹\s*2,599/g, '₹2,099')
+    .replace(/₹\s*2,499/g, '₹2,099')
+    .replace(/₹\s*1,699/g, '₹2,099')
+    .replace(/₹\s*1,499/g, '₹1,299')
+    .replace(/₹\s*1,099/g, '₹1,299')
+    .replace(/₹\s*999(?!\d)/g, '₹1,299')
+    .replace(/₹\s*333(\/mo|\/month)?/g, '₹433$1')
+    .replace(/₹\s*283(\/mo|\/month)?/g, '₹350$1')
+    .replace(/₹\s*250\/mo/g, '₹292/mo')
+    .replace(/₹\s*250\/month/g, '₹292/month')
+    .replace(/₹\s*500(\/mo|\/month)?/g, '₹433$1')
+    .replace(/₹\s*566(\/mo|\/month)?/g, '₹433$1')
+    .replace(/₹\s*450(\/mo|\/month)?/g, '₹350$1')
 }
 
 function patchBestFor(text) {
@@ -85,12 +85,15 @@ const repoFiles = [
   ['sections/lurvox-ad-landing.liquid', 'scripts/shopify-assets/sections-lurvox-ad-landing.liquid'],
   ['sections/lurvox-hide-1month.liquid', 'scripts/shopify-assets/sections-lurvox-hide-1month.liquid'],
   ['sections/lurvox-plan-compare.liquid', 'scripts/shopify-assets/sections-lurvox-plan-compare.liquid'],
+  ['sections/lurvox-cart-builder.liquid', 'scripts/shopify-assets/sections-lurvox-cart-builder.liquid'],
+  ['blocks/ai_gen_block_361650c.liquid', 'scripts/shopify-assets/blocks-ai_gen_block_361650c.liquid'],
   ['templates/page.compare-plans.json', 'scripts/shopify-assets/templates-page.compare-plans.json'],
 ]
 
 // 2) Theme-only JSON templates: fetch live, patch prices, re-upload.
 const themeOnly = [
   'templates/index.json',
+  'templates/page.json',
   'templates/page.compare-detail.json',
   'templates/page.compare-short.json',
   'templates/page.compare-stair.json',
@@ -102,6 +105,10 @@ for (const [key, rel] of repoFiles) {
 }
 for (const key of themeOnly) {
   const live = await get(key)
+  if (!live) {
+    console.log('skip missing', key)
+    continue
+  }
   const patched = patchBestFor(patchPrices(live))
   if (patched !== live) {
     files.push({ filename: key, body: { type: 'TEXT', value: patched } })
@@ -113,6 +120,7 @@ for (const key of themeOnly) {
 
 // Cache-bust the layout so storefront HTML cache refreshes.
 let layout = await get('layout/theme.liquid')
+if (!layout) throw new Error('layout/theme.liquid missing')
 const stamp = Date.now()
 layout = /<!-- lurvox-cache-bust \d+ -->/.test(layout)
   ? layout.replace(/<!-- lurvox-cache-bust \d+ -->/, `<!-- lurvox-cache-bust ${stamp} -->`)
