@@ -815,9 +815,6 @@ function CheckoutForm() {
                     </div>
                   )}
                 </div>
-              )}
-
-              )}
             </section>
 
             <p style={styles.leagueNote}>

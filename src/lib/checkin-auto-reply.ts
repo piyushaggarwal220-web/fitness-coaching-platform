@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { isWithinQuietHours, AUTO_REPLY_MIN_DELAY_MS } from '@/lib/checkin-auto-reply-schedule'
+import { AUTO_REPLY_MIN_DELAY_MS } from '@/lib/checkin-auto-reply-schedule'
 import { serializeCoachResponse } from '@/lib/checkin'
 import { getCheckinTypeDisplayName } from '@/lib/checkin-schedule'
 import { postCoachCheckinFeedbackToChat } from '@/lib/coach-chat'
@@ -12,15 +12,10 @@ import { activatePlan } from '@/lib/plans'
 import { clientCoachNotes, fallbackPublishCoachNotes } from '@/lib/plan-metadata'
 import type { Checkin, CoachCheckinResponse, OnboardingProfile, Plan } from '@/types/database'
 
+export { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
+
 /** Never auto-reply to a check-in older than this — stale rows are the coach's call. */
 const MAX_AUTO_REPLY_AGE_MS = 7 * 24 * 60 * 60 * 1000
-
-type AutoReplyQueueFields = Pick<Checkin, 'auto_reply_at' | 'auto_replied_at' | 'reviewed'>
-
-/** Cron will deliver the reply — hide from the coach manual work queue. */
-export function isCheckinPendingAutoReply(checkin: AutoReplyQueueFields): boolean {
-  return !checkin.reviewed && checkin.auto_reply_at != null && checkin.auto_replied_at == null
-}
 
 type AutoReplyOutcome =
   | { status: 'sent'; publishedPlanId?: string | null }
@@ -211,11 +206,6 @@ export async function processDueCheckinAutoReplies(
     failed: 0,
     deferredForQuietHours: false,
     details: [],
-  }
-
-  // Hard stop: never message clients overnight, even if the scheduler fires or catches up then.
-  if (isWithinQuietHours(now)) {
-    return { ...empty, deferredForQuietHours: true }
   }
 
   const { data: rows, error } = await supabase

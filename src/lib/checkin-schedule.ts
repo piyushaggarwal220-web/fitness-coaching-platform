@@ -1,4 +1,4 @@
-import { isCheckinPendingAutoReply } from '@/lib/checkin-auto-reply'
+import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
 import type { Checkin, CheckinType } from '@/types/database'
 
 /** Coaching weeks run Monday(1) → Sunday(7) IST, so day 3 = Wednesday and day 7 = Sunday. */
