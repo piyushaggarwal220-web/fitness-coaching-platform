@@ -260,10 +260,10 @@ export const pricing = {
   plans: [
     {
       slug: '3_months',
-      name: 'Look sharper',
+      name: 'Reduce bloating',
       price: '₹1,299',
       perMonth: '≈ ₹433/month',
-      blurb: 'Look sharper',
+      blurb: 'Look special for an event. No long-term effects.',
       save: 'BEST STARTER',
       popular: true,
     },
@@ -281,7 +281,7 @@ export const pricing = {
       name: 'Fat loss + muscle',
       price: '₹3,499',
       perMonth: '≈ ₹292/month',
-      blurb: 'Fat loss + muscle',
+      blurb: 'Best for an aesthetic body and a complete transformation.',
       save: 'BEST VALUE',
       popular: false,
     },

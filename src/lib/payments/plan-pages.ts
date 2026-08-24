@@ -32,7 +32,7 @@ export function resolvePlanFromPath(pathSlug: string | undefined): CoachingPlan 
 
 /** Customer-facing product names. Duration is secondary. */
 export const PLAN_PRODUCT_NAME: Record<LongCoachingPlanSlug, string> = {
-  '3_months': 'Look sharper',
+  '3_months': 'Reduce bloating',
   '6_months': 'Fat loss',
   '12_months': 'Fat loss + muscle',
 }
@@ -49,17 +49,17 @@ export const PLAN_PAGE_COPY: Record<
   }
 > = {
   '3_months': {
-    eyebrow: 'Look sharper',
+    eyebrow: 'Reduce bloating',
     goalName: PLAN_PRODUCT_NAME['3_months'],
     durationLabel: '90 days',
     promise:
-      'Look sharper for a wedding, trip, shoot, or reunion. Ninety days is a debloat — tightness and a cleaner look, not deep fat loss and not muscle. If you want actual fat loss, that is 6 months.',
+      'Look special for an event. No long-term effects. Ninety days is a short bloating / tightness window — not deep fat loss and not muscle. If you want actual fat loss, that is 6 months.',
     bestFor:
-      'A date on the calendar. Look tighter and sharper. Not true fat loss.',
+      'An event on the calendar. Look special for that day. No long-term effects.',
     goals: [
-      'Look tighter and sharper for the event',
+      'Look special for the event',
       'A clear plan to the date',
-      'A debloat — not a fat-loss or muscle plan',
+      'No long-term effects — not a fat-loss or muscle plan',
     ],
   },
   '6_months': {
@@ -81,11 +81,11 @@ export const PLAN_PAGE_COPY: Record<
     goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
     promise:
-      'Fat down and muscle up — the aesthetic body. A full year so both can happen. Not a 90 day sharper look, not fat loss only. Lowest monthly rate, weekly coach phone call.',
+      'Best for an aesthetic body and a complete transformation. A full year so fat loss and muscle can both happen. Not a 90 day event look, not fat loss only. Lowest monthly rate, weekly coach phone call.',
     bestFor:
-      'Most people who want the finished look — leaner and more muscular.',
+      'An aesthetic body and a complete transformation.',
     goals: [
-      'Fat loss with muscle (aesthetic)',
+      'Aesthetic body and complete transformation',
       'Lowest monthly rate with WELCOME60',
       'Weekly coach phone call (12 month exclusive)',
     ],
@@ -120,9 +120,9 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with debloat',
     label: 'Best for',
     cells: {
-      '3_months': 'Look sharper for a date. Debloat only.',
+      '3_months': 'Look special for an event. No long-term effects.',
       '6_months': 'Fat loss. Not muscle, not an event sprint.',
-      '12_months': 'Fat loss + muscle. Aesthetic body.',
+      '12_months': 'An aesthetic body and a complete transformation.',
     },
   },
   {

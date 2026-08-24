@@ -442,7 +442,7 @@
         key: 'goal',
         q: 'What is your main goal right now?',
         options: [
-          { id: 'debloat', label: 'Look sharper for a date / event', score: -2, goal: 'look sharper for an event' },
+          { id: 'debloat', label: 'Reduce bloating — look special for an event', score: -2, goal: 'look special for an event' },
           { id: 'fat', label: 'Lose fat', score: -1, goal: 'lose fat' },
           { id: 'muscle', label: 'Build strength / add shape', score: 0, goal: 'build strength and shape' },
           { id: 'recomp', label: 'Fat down and muscle up', score: 1, goal: 'recompose. Fat down, muscle up' },
@@ -600,7 +600,7 @@
       '3_months': {
         slug: '3_months',
         path: '3-months',
-        label: 'Look sharper',
+        label: 'Reduce bloating',
         price: '₹1,299',
         monthly: '₹433/mo',
         per: '90 days',
@@ -633,7 +633,7 @@
         bullets: [
           'Lowest monthly rate with WELCOME60',
           'Weekly plan updates',
-          'Weekly coach phone call included'
+          'Best for an aesthetic body and a complete transformation'
         ]
       }
     };
@@ -641,18 +641,18 @@
     // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
     var contrast = {
       '3_months': [
-        { kind: 'pick', text: 'Debloat: look sharper for a date. Short sprint — not real fat loss.' },
+        { kind: 'pick', text: 'Reduce bloating: look special for an event. No long-term effects.' },
         { kind: 'miss', text: '6 months is fat loss. 12 months is fat loss + muscle (aesthetic).' },
         { kind: 'miss', text: 'Updates every 14 days, no weekly coach call.' }
       ],
       '6_months': [
         { kind: 'pick', text: 'Fat loss: six months to drop fat for real. Not a debloat, not muscle.' },
-        { kind: 'miss', text: '3 months is a sharper look for a date. Not fat loss.' },
-        { kind: 'miss', text: '12 months is fat loss + muscle — the aesthetic body — plus the weekly coach call.' }
+        { kind: 'miss', text: '3 months reduces bloating to look special for an event. No long-term effects. Not fat loss.' },
+        { kind: 'miss', text: '12 months is best for an aesthetic body and a complete transformation — plus the weekly coach call.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Fat loss + muscle (your pick): aesthetic body. Fat down and muscle up. Weekly coach call included.' },
-        { kind: 'miss', text: '3 months is a debloat for a date. It is not fat loss or muscle.' },
+        { kind: 'pick', text: 'Fat loss + muscle (your pick): best for an aesthetic body and a complete transformation. Weekly coach call included.' },
+        { kind: 'miss', text: '3 months reduces bloating for an event. No long-term effects. It is not fat loss or muscle.' },
         { kind: 'miss', text: '6 months is fat loss only. No muscle-building goal.' }
       ]
     };
@@ -704,7 +704,7 @@
       var why = '';
       if (planKey === '3_months') {
         why =
-          'Debloat is a sharper look for a date — not real fat loss. Fat loss is 6 months. Fat loss + muscle is 12 months.';
+          'Reduce bloating is for looking special at an event — not real fat loss, and no long-term effects. Fat loss is 6 months. Fat loss + muscle is 12 months.';
       } else if (planKey === '6_months') {
         why =
           'Fat loss is 6 months — enough time to drop fat for real. If you also want muscle (aesthetic), 12 months is the plan.';
@@ -712,7 +712,7 @@
         why =
           'Your goal is to ' +
           goalLabel +
-          '. Fat loss + muscle (12 months) is the aesthetic plan' +
+          '. Fat loss + muscle (12 months) is best for an aesthetic body and a complete transformation' +
           (calls === 'yes' ? ', and it is the only one with a weekly coach phone call' : '') +
           '. Lowest monthly rate at ₹292/mo with WELCOME60.';
       }
