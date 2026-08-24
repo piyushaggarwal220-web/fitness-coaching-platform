@@ -606,15 +606,15 @@
       if (matrix) {
         var strongs = matrix.querySelectorAll('thead strong');
         if (strongs.length >= 3) {
-          strongs[0].textContent = '₹1,299';
-          strongs[1].textContent = '₹2,099';
+          strongs[0].textContent = '₹1,499';
+          strongs[1].textContent = '₹2,699';
           strongs[2].textContent = '₹3,499';
         }
       }
       document.querySelectorAll('.lx-conv__btn-sub, .lx-conv-sticky__meta').forEach(function (el) {
-        if (/566|500|450|333|283|250/.test(el.textContent || '')) {
-          el.textContent = (el.textContent || '').replace(/566|500|450|333|283|250/g, '433');
-        }
+        el.textContent = (el.textContent || '')
+          .replace(/₹433/g, '₹500')
+          .replace(/₹350/g, '₹450');
       });
     }
     rewritePrices(document);

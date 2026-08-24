@@ -261,8 +261,8 @@ export const pricing = {
     {
       slug: '3_months',
       name: 'Fat loss',
-      price: '₹1,299',
-      perMonth: '≈ ₹433/month',
+      price: '₹1,499',
+      perMonth: '≈ ₹500/month',
       blurb: 'Fat loss',
       save: 'BEST STARTER',
       popular: true,
@@ -270,8 +270,8 @@ export const pricing = {
     {
       slug: '6_months',
       name: 'Fat loss + muscle gain',
-      price: '₹2,099',
-      perMonth: '≈ ₹350/month',
+      price: '₹2,699',
+      perMonth: '≈ ₹450/month',
       blurb: 'Fat loss + muscle gain',
       save: 'MOST POPULAR',
       popular: false,
@@ -356,7 +356,7 @@ export const finalCta = {
 } as const
 
 export const stickyCta = {
-  label: 'Start Today — From ₹1,299',
+  label: 'Start Today — From ₹1,499',
   mobileLabel: 'Start Today',
 } as const
 
