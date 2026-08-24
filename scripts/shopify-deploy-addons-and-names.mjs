@@ -1,5 +1,5 @@
 /**
- * Push Reduce bloating copy + related sections to the live theme.
+ * Push Fat loss / Fat loss + muscle gain / Aesthetic body copy to the live theme.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -32,46 +32,75 @@ function file(rel, dest) {
   }
 }
 
+function patchThemeSettings(obj) {
+  if (!obj || typeof obj !== 'object') return
+  if (Array.isArray(obj)) {
+    for (const item of obj) patchThemeSettings(item)
+    return
+  }
+
+  const labels = {
+    plan_2_label: 'Fat loss',
+    plan_3_label: 'Fat loss + muscle gain',
+    plan_4_label: 'Aesthetic body',
+    plan_2_description: 'Fat loss',
+    plan_3_description: 'Fat loss + muscle gain',
+    plan_4_description: 'Aesthetic body',
+    plan_4_footer: 'Best for: Aesthetic body',
+  }
+  for (const [key, value] of Object.entries(labels)) {
+    if (typeof obj[key] === 'string') obj[key] = value
+  }
+
+  if (typeof obj.col_1_label === 'string' && /reduce bloating|look sharper|debloat/i.test(obj.col_1_label)) {
+    obj.col_1_label = 'Fat loss'
+  }
+  if (obj.col_2_label === 'Fat loss') obj.col_2_label = 'Fat loss + muscle gain'
+  if (
+    typeof obj.col_3_label === 'string' &&
+    /fat loss \+ muscle/i.test(obj.col_3_label) &&
+    !/gain/i.test(obj.col_3_label)
+  ) {
+    obj.col_3_label = 'Aesthetic body'
+  }
+  if (typeof obj.headline === 'string' && /reduce bloating|look sharper|fat loss \+ muscle in 12/i.test(obj.headline)) {
+    obj.headline = 'Fat loss in 90 days. Fat loss + muscle gain in 6 months. Aesthetic body in 12.'
+  }
+  if (
+    typeof obj.subheadline === 'string' &&
+    /reduce bloating|look sharper|complete transformation|debloat/i.test(obj.subheadline)
+  ) {
+    obj.subheadline =
+      'Fat loss · 90 days. Fat loss + muscle gain · 6 months. Aesthetic body · 12 months. WELCOME60 = 60% off'
+  }
+  if (typeof obj.plan_3_text === 'string' && /big day|event|debloat|short-term/i.test(obj.plan_3_text)) {
+    obj.plan_3_text = 'Fat loss'
+  }
+  if (typeof obj.plan_6_text === 'string' && /recomp|already training|not muscle/i.test(obj.plan_6_text)) {
+    obj.plan_6_text = 'Fat loss + muscle gain'
+  }
+  if (typeof obj.plan_12_text === 'string' && /complete transformation|aesthetic body and/i.test(obj.plan_12_text)) {
+    obj.plan_12_text = 'Aesthetic body'
+  }
+
+  for (const value of Object.values(obj)) patchThemeSettings(value)
+}
+
 function rewriteThemeJson(raw) {
-  let content = raw
-  const brace = content.indexOf('{')
-  if (brace < 0) return { content, changed: false }
-  const prefix = content.slice(0, brace)
-  let json = content.slice(brace)
-  const next = json
-    .replaceAll('Look sharper', 'Reduce bloating')
-    .replaceAll(
-      'Look special for an event. No long-term effects. A 90-day tighter look — not real fat loss.',
-      'Look special for an event. No long-term effects.'
-    )
-    .replaceAll(
-      'Look sharper for a wedding, trip, or shoot. A 90-day tighter look — not real fat loss.',
-      'Look special for an event. No long-term effects.'
-    )
-    .replaceAll('Best for: looking sharper for a date', 'Best for: looking special for an event. No long-term effects.')
-    .replaceAll('looking sharper for a date', 'looking special for an event. No long-term effects.')
-    .replaceAll(
-      'Fat down and muscle up — the aesthetic body. Lowest ₹/month + weekly coach call.',
-      'Best for an aesthetic body and a complete transformation.'
-    )
-    .replaceAll('Best for: fat loss + muscle', 'Best for: aesthetic body and complete transformation')
-    .replaceAll(
-      'Fat down and muscle up — the aesthetic body. Lowest ₹/month + weekly coach call.',
-      'Best for an aesthetic body and a complete transformation.'
-    )
-    .replaceAll(
-      'Beginners and intermediates who have plateaued, or want to start fresh.',
-      'An aesthetic body and a complete transformation.'
-    )
-    .replaceAll(
-      'Most people who want the finished look — leaner and more muscular.',
-      'An aesthetic body and a complete transformation.'
-    )
-    .replaceAll(
-      'Fat down and muscle up — the aesthetic body.',
-      'Best for an aesthetic body and a complete transformation.'
-    )
-  return { content: prefix + next, changed: next !== json }
+  const brace = raw.indexOf('{')
+  if (brace < 0) return { content: raw, changed: false }
+  const prefix = raw.slice(0, brace)
+  let parsed
+  try {
+    parsed = JSON.parse(raw.slice(brace))
+  } catch {
+    return { content: raw, changed: false }
+  }
+  const before = JSON.stringify(parsed)
+  patchThemeSettings(parsed)
+  const after = JSON.stringify(parsed)
+  if (before === after) return { content: raw, changed: false }
+  return { content: prefix + JSON.stringify(parsed, null, 2) + '\n', changed: true }
 }
 
 const liquidFiles = [

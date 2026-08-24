@@ -32,9 +32,9 @@ export function resolvePlanFromPath(pathSlug: string | undefined): CoachingPlan 
 
 /** Customer-facing product names. Duration is secondary. */
 export const PLAN_PRODUCT_NAME: Record<LongCoachingPlanSlug, string> = {
-  '3_months': 'Reduce bloating',
-  '6_months': 'Fat loss',
-  '12_months': 'Fat loss + muscle',
+  '3_months': 'Fat loss',
+  '6_months': 'Fat loss + muscle gain',
+  '12_months': 'Aesthetic body',
 }
 
 export const PLAN_PAGE_COPY: Record<
@@ -49,43 +49,40 @@ export const PLAN_PAGE_COPY: Record<
   }
 > = {
   '3_months': {
-    eyebrow: 'Reduce bloating',
+    eyebrow: 'Fat loss',
     goalName: PLAN_PRODUCT_NAME['3_months'],
     durationLabel: '90 days',
     promise:
-      'Look special for an event. No long-term effects. Ninety days is a short bloating / tightness window — not deep fat loss and not muscle. If you want actual fat loss, that is 6 months.',
-    bestFor:
-      'An event on the calendar. Look special for that day. No long-term effects.',
+      'This is the fat-loss plan. Ninety days to drop fat with a coach. If you also want muscle gain, that is 6 months. If you want an aesthetic body, that is 12 months.',
+    bestFor: 'Fat loss',
     goals: [
-      'Look special for the event',
-      'A clear plan to the date',
-      'No long-term effects — not a fat-loss or muscle plan',
+      'Fat loss in 90 days',
+      'A clear diet and workout plan',
+      'Coach check-ins twice a week',
     ],
   },
   '6_months': {
-    eyebrow: 'Fat loss',
+    eyebrow: 'Fat loss + muscle gain',
     goalName: PLAN_PRODUCT_NAME['6_months'],
     durationLabel: '6 months',
     promise:
-      'This is the fat-loss plan. Six months is enough time to drop fat for real — not a 90 day debloat, and not fat loss plus new muscle. If you want muscle with the fat loss, that is 12 months.',
-    bestFor:
-      'You want fat down. Not an event sprint, not an aesthetic rebuild.',
+      'Fat loss + muscle gain. Six months so you can drop fat and add muscle. For a finished aesthetic body, that is 12 months.',
+    bestFor: 'Fat loss + muscle gain',
     goals: [
-      'Real fat loss, not just a tighter look',
-      'Clothes fit smaller',
-      'Stay consistent past 90 days',
+      'Fat loss + muscle gain',
+      'Clothes fit smaller and tighter',
+      'Weekly plan updates',
     ],
   },
   '12_months': {
-    eyebrow: 'Fat loss + muscle',
+    eyebrow: 'Aesthetic body',
     goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
     promise:
-      'Best for an aesthetic body and a complete transformation. A full year so fat loss and muscle can both happen. Not a 90 day event look, not fat loss only. Lowest monthly rate, weekly coach phone call.',
-    bestFor:
-      'An aesthetic body and a complete transformation.',
+      'Aesthetic body. A full year so fat loss and muscle can both show as a finished look. Lowest monthly rate, weekly coach phone call.',
+    bestFor: 'Aesthetic body',
     goals: [
-      'Aesthetic body and complete transformation',
+      'Aesthetic body',
       'Lowest monthly rate with WELCOME60',
       'Weekly coach phone call (12 month exclusive)',
     ],
@@ -120,9 +117,9 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with debloat',
     label: 'Best for',
     cells: {
-      '3_months': 'Look special for an event. No long-term effects.',
-      '6_months': 'Fat loss. Not muscle, not an event sprint.',
-      '12_months': 'An aesthetic body and a complete transformation.',
+      '3_months': 'Fat loss',
+      '6_months': 'Fat loss + muscle gain',
+      '12_months': 'Aesthetic body',
     },
   },
   {

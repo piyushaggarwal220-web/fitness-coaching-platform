@@ -159,13 +159,14 @@ export function clientFacingPlanTitle(title: string | null | undefined): string 
   cleaned = cleaned.replace(/\(\s*Draft\s*\)\s*$/i, '').trim()
 
   cleaned = cleaned
-    .replace(/\b12[\s-]*months?\b/gi, 'Fat loss + muscle')
-    .replace(/\b6[\s-]*months?\b/gi, 'Fat loss')
-    .replace(/\b3[\s-]*months?\b/gi, 'Reduce bloating')
-    .replace(/\b90[\s-]*days?\b/gi, 'Reduce bloating')
-    .replace(/\bDebloat\b/gi, 'Reduce bloating')
-    .replace(/\bLook sharper\b/gi, 'Reduce bloating')
-    .replace(/\bAesthetic body\b/gi, 'Fat loss + muscle')
+    .replace(/\b12[\s-]*months?\b/gi, 'Aesthetic body')
+    .replace(/\b6[\s-]*months?\b/gi, 'Fat loss + muscle gain')
+    .replace(/\b3[\s-]*months?\b/gi, 'Fat loss')
+    .replace(/\b90[\s-]*days?\b/gi, 'Fat loss')
+    .replace(/\bDebloat\b/gi, 'Fat loss')
+    .replace(/\bReduce bloating\b/gi, 'Fat loss')
+    .replace(/\bLook sharper\b/gi, 'Fat loss')
+    .replace(/\bFat loss \+ muscle(?! gain)\b/gi, 'Aesthetic body')
 
   return cleaned || 'Coaching Plan'
 }

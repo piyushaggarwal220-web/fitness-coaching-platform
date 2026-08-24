@@ -1,7 +1,7 @@
 {% comment %}
   LURVOX — Find your plan (tap quiz)
   Full intake quiz → recommend a goal-based plan page (not checkout)
-  cache-bust 1786509500004
+  cache-bust 1786509500005
 {% endcomment %}
 
 {%- liquid
@@ -442,11 +442,11 @@
         key: 'goal',
         q: 'What is your main goal right now?',
         options: [
-          { id: 'debloat', label: 'Reduce bloating — look special for an event', score: -2, goal: 'look special for an event' },
-          { id: 'fat', label: 'Lose fat', score: -1, goal: 'lose fat' },
+          { id: 'debloat', label: 'Fat loss — 90 days', score: -2, goal: 'fat loss' },
+          { id: 'fat', label: 'Fat loss + muscle gain', score: -1, goal: 'fat loss and muscle gain' },
           { id: 'muscle', label: 'Build strength / add shape', score: 0, goal: 'build strength and shape' },
           { id: 'recomp', label: 'Fat down and muscle up', score: 1, goal: 'recompose. Fat down, muscle up' },
-          { id: 'transform', label: 'A complete transformation', score: 2, goal: 'a complete transformation' }
+          { id: 'transform', label: 'Aesthetic body', score: 2, goal: 'an aesthetic body' }
         ]
       },
       {
@@ -600,7 +600,7 @@
       '3_months': {
         slug: '3_months',
         path: '3-months',
-        label: 'Reduce bloating',
+        label: 'Fat loss',
         price: '₹1,299',
         monthly: '₹433/mo',
         per: '90 days',
@@ -613,27 +613,27 @@
       '6_months': {
         slug: '6_months',
         path: '6-months',
-        label: 'Fat loss',
+        label: 'Fat loss + muscle gain',
         price: '₹2,099',
         monthly: '₹350/mo',
         per: '6 months',
         bullets: [
           '2 weekly check-ins',
           'Weekly plan updates',
-          'Real fat loss — not a 90 day debloat'
+          'Fat loss + muscle gain'
         ]
       },
       '12_months': {
         slug: '12_months',
         path: '12-months',
-        label: 'Fat loss + muscle',
+        label: 'Aesthetic body',
         price: '₹3,499',
         monthly: '₹292/mo',
         per: '12 months',
         bullets: [
           'Lowest monthly rate with WELCOME60',
           'Weekly plan updates',
-          'Best for an aesthetic body and a complete transformation'
+          'Aesthetic body'
         ]
       }
     };
@@ -641,19 +641,19 @@
     // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
     var contrast = {
       '3_months': [
-        { kind: 'pick', text: 'Reduce bloating: look special for an event. No long-term effects.' },
-        { kind: 'miss', text: '6 months is fat loss. 12 months is fat loss + muscle (aesthetic).' },
+        { kind: 'pick', text: 'Fat loss: 90 days to drop fat with a coach.' },
+        { kind: 'miss', text: '6 months is fat loss + muscle gain. 12 months is aesthetic body.' },
         { kind: 'miss', text: 'Updates every 14 days, no weekly coach call.' }
       ],
       '6_months': [
-        { kind: 'pick', text: 'Fat loss: six months to drop fat for real. Not a debloat, not muscle.' },
-        { kind: 'miss', text: '3 months reduces bloating to look special for an event. No long-term effects. Not fat loss.' },
-        { kind: 'miss', text: '12 months is best for an aesthetic body and a complete transformation — plus the weekly coach call.' }
+        { kind: 'pick', text: 'Fat loss + muscle gain: six months to drop fat and add muscle.' },
+        { kind: 'miss', text: '3 months is fat loss only. 12 months is the aesthetic body finish.' },
+        { kind: 'miss', text: '12 months includes the weekly coach call and the lowest monthly rate.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Fat loss + muscle (your pick): best for an aesthetic body and a complete transformation. Weekly coach call included.' },
-        { kind: 'miss', text: '3 months reduces bloating for an event. No long-term effects. It is not fat loss or muscle.' },
-        { kind: 'miss', text: '6 months is fat loss only. No muscle-building goal.' }
+        { kind: 'pick', text: 'Aesthetic body (your pick): a full year so fat loss and muscle can both show. Weekly coach call included.' },
+        { kind: 'miss', text: '3 months is fat loss. 6 months is fat loss + muscle gain.' },
+        { kind: 'miss', text: 'Shorter plans do not include the weekly coach phone call.' }
       ]
     };
 
@@ -704,15 +704,15 @@
       var why = '';
       if (planKey === '3_months') {
         why =
-          'Reduce bloating is for looking special at an event — not real fat loss, and no long-term effects. Fat loss is 6 months. Fat loss + muscle is 12 months.';
+          'Fat loss is 90 days. Fat loss + muscle gain is 6 months. Aesthetic body is 12 months.';
       } else if (planKey === '6_months') {
         why =
-          'Fat loss is 6 months — enough time to drop fat for real. If you also want muscle (aesthetic), 12 months is the plan.';
+          'Fat loss + muscle gain is 6 months — enough time to drop fat and add muscle. Aesthetic body is 12 months.';
       } else {
         why =
           'Your goal is to ' +
           goalLabel +
-          '. Fat loss + muscle (12 months) is best for an aesthetic body and a complete transformation' +
+          '. Aesthetic body (12 months) is the finished look' +
           (calls === 'yes' ? ', and it is the only one with a weekly coach phone call' : '') +
           '. Lowest monthly rate at ₹292/mo with WELCOME60.';
       }
@@ -753,7 +753,7 @@
       }
       checkoutEl.href = url;
       checkoutLabelEl.textContent =
-        rec.planKey === '12_months' ? 'See Fat loss + muscle' : 'See this plan';
+        rec.planKey === '12_months' ? 'See Aesthetic body' : 'See this plan';
       if (upgradeEl) {
         upgradeEl.hidden = rec.planKey === '12_months';
         upgradeEl.href = planBase + '/12-months';

@@ -157,9 +157,9 @@ export const PLAN_GOAL_TIER_META: Record<
   PlanGoalTier,
   { title: string; shortLabel: string; accent: string }
 > = {
-  '3_months': { title: 'Reduce bloating', shortLabel: '90 days', accent: '#38bdf8' },
-  '6_months': { title: 'Fat loss', shortLabel: '6 months', accent: '#a78bfa' },
-  '12_months': { title: 'Fat loss + muscle', shortLabel: '12 months', accent: '#fbbf24' },
+  '3_months': { title: 'Fat loss', shortLabel: '90 days', accent: '#38bdf8' },
+  '6_months': { title: 'Fat loss + muscle gain', shortLabel: '6 months', accent: '#a78bfa' },
+  '12_months': { title: 'Aesthetic body', shortLabel: '12 months', accent: '#fbbf24' },
 }
 
 /** Flat catalog of every plan-gated goal. */
