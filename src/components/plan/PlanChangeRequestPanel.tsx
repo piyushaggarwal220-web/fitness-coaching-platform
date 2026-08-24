@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import { colors, radius, spacing } from '@/lib/design-tokens'
+import { readApiJson } from '@/lib/read-api-json'
 
 type Scope = 'diet' | 'workout' | 'both'
 
@@ -44,10 +45,21 @@ export function PlanChangeRequestPanel() {
     setError('')
     try {
       const res = await fetch('/api/plan-change-requests')
-      const data = await res.json()
+      const data = await readApiJson<{
+        error?: string
+        quota?: QuotaState
+        openRequest?: OpenRequest
+      }>(res)
       if (!res.ok) throw new Error(data.error ?? 'Could not load change limits')
-      setQuota(data.quota)
+      setQuota(data.quota ?? null)
       setOpenRequest(data.openRequest ?? null)
+      if (data.openRequest?.status === 'generating') {
+        void fetch('/api/plan-change-requests/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId: data.openRequest.id }),
+        })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load change limits')
     } finally {
@@ -74,8 +86,19 @@ export function PlanChangeRequestPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestText, scope }),
       })
-      const data = await res.json()
+      const data = await readApiJson<{
+        error?: string
+        message?: string
+        request?: { id: string }
+      }>(res)
       if (!res.ok) throw new Error(data.error ?? 'Could not lock in changes')
+      if (data.request?.id) {
+        void fetch('/api/plan-change-requests/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId: data.request.id }),
+        })
+      }
       setSuccess(
         data.message ??
           'Your changes are locked in. Your coach will review your request shortly.'

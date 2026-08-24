@@ -1,9 +1,8 @@
-import { after, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import {
   createLockedPlanChangeRequest,
   getPlanChangeQuota,
-  processPlanChangeRequest,
   type PlanChangeScope,
 } from '@/lib/plan-change-requests'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -106,11 +105,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: created.error }, { status: created.status })
   }
 
-  after(() =>
-    processPlanChangeRequest(created.request.id).catch((err) => {
-      console.error('[plan-change] background failed', err)
-    })
-  )
+  // Do not run AI in `after()` on this request — Vercel can answer the POST
+  // with plain-text "Payment required" (402), which breaks the client form.
+  // The browser starts generation via /api/plan-change-requests/process.
 
   return NextResponse.json({
     ok: true,
