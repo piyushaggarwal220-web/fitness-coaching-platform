@@ -149,6 +149,20 @@ export function getCurrentLeagueSeason(reference = new Date()): LeagueSeasonWind
   }
 }
 
+/** Last fully completed calendar-month season (UTC). */
+export function getPreviousLeagueSeason(reference = new Date()): LeagueSeasonWindow {
+  return getCurrentLeagueSeason(
+    new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth() - 1, 1))
+  )
+}
+
+/** Bronze–Gold winners earn a virtual certificate (not a trophy or prize money). */
+export const VIRTUAL_CERTIFICATE_TIERS: LeagueTier[] = ['bronze', 'silver', 'gold']
+
+export function isVirtualCertificateTier(tier: LeagueTier): boolean {
+  return VIRTUAL_CERTIFICATE_TIERS.includes(tier)
+}
+
 export function dateInRange(date: string, startsOn: string, endsOn: string): boolean {
   return date >= startsOn && date <= endsOn
 }

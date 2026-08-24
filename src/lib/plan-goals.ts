@@ -157,7 +157,7 @@ export const PLAN_GOAL_TIER_META: Record<
   PlanGoalTier,
   { title: string; shortLabel: string; accent: string }
 > = {
-  '3_months': { title: 'Look sharper', shortLabel: '90 days', accent: '#38bdf8' },
+  '3_months': { title: 'Reduce bloating', shortLabel: '90 days', accent: '#38bdf8' },
   '6_months': { title: 'Fat loss', shortLabel: '6 months', accent: '#a78bfa' },
   '12_months': { title: 'Fat loss + muscle', shortLabel: '12 months', accent: '#fbbf24' },
 }

@@ -3,6 +3,8 @@ import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
 import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
 import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
+import { listPendingLeagueCertificateWinners } from '@/lib/league/service'
+import { LEAGUE_TIER_LABELS } from '@/lib/league/scoring'
 
 export type WorkQueueTaskType =
   | 'initial_plan'
@@ -11,6 +13,7 @@ export type WorkQueueTaskType =
   | 'call_request'
   | 'unread_chat'
   | 'issue_report'
+  | 'league_certificate'
   | 'other'
 
 export type WorkQueueTask = {
@@ -371,6 +374,35 @@ export async function getCoachWorkQueue(
     })
   }
 
+  try {
+    const certificateWinners = await listPendingLeagueCertificateWinners(supabase, coachId)
+    for (const winner of certificateWinners) {
+      const name = clientNameById.get(winner.clientId) ?? winner.displayName
+      const monthLabel = new Date(`${winner.endsOn}T00:00:00.000Z`).toLocaleString('en-IN', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      })
+      tasks.push({
+        id: `league-cert-${winner.seasonKey}-${winner.clientId}`,
+        type: 'league_certificate',
+        title: 'Send virtual certificate',
+        subtitle: `${name} · ${LEAGUE_TIER_LABELS[winner.tier]} top 10% · ${monthLabel}`,
+        href: `/coach/client/${winner.clientId}`,
+        clientId: winner.clientId,
+        clientName: name,
+        priority: QUEUE_PRIORITY,
+        createdAt: `${winner.endsOn}T23:59:59.000Z`,
+        coachNextSteps: [
+          `Issue the virtual certificate for finishing top 10% of ${LEAGUE_TIER_LABELS[winner.tier]} in ${monthLabel}.`,
+          'Mark this complete after the client has the certificate.',
+        ],
+      })
+    }
+  } catch (error) {
+    console.error('[work-queue] league certificate leftovers failed', error)
+  }
+
   const completionByTaskId = new Map(
     (completedRows ?? []).map((row) => [
       row.task_id as string,
@@ -413,6 +445,7 @@ export type WorkQueueCounts = {
   call_request: number
   unread_chat: number
   issue_report: number
+  league_certificate: number
   other: number
   total: number
 }
@@ -425,6 +458,7 @@ export function getWorkQueueCounts(tasks: WorkQueueTask[]): WorkQueueCounts {
     call_request: 0,
     unread_chat: 0,
     issue_report: 0,
+    league_certificate: 0,
     other: 0,
     total: tasks.length,
   }

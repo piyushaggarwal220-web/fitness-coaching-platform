@@ -161,9 +161,10 @@ export function clientFacingPlanTitle(title: string | null | undefined): string 
   cleaned = cleaned
     .replace(/\b12[\s-]*months?\b/gi, 'Fat loss + muscle')
     .replace(/\b6[\s-]*months?\b/gi, 'Fat loss')
-    .replace(/\b3[\s-]*months?\b/gi, 'Look sharper')
-    .replace(/\b90[\s-]*days?\b/gi, 'Look sharper')
-    .replace(/\bDebloat\b/gi, 'Look sharper')
+    .replace(/\b3[\s-]*months?\b/gi, 'Reduce bloating')
+    .replace(/\b90[\s-]*days?\b/gi, 'Reduce bloating')
+    .replace(/\bDebloat\b/gi, 'Reduce bloating')
+    .replace(/\bLook sharper\b/gi, 'Reduce bloating')
     .replace(/\bAesthetic body\b/gi, 'Fat loss + muscle')
 
   return cleaned || 'Coaching Plan'

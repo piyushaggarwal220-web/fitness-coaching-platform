@@ -35,11 +35,11 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
   },
   '3_months': {
     slug: '3_months',
-    name: 'Look sharper',
+    name: 'Reduce bloating',
     displayPrice: '₹2,499',
     amountPaise: 249900,
     durationMonths: 3,
-    saveLabel: 'Look sharper',
+    saveLabel: 'Reduce bloating',
   },
   '6_months': {
     slug: '6_months',

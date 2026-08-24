@@ -84,6 +84,7 @@ const FILTER_LABELS: Record<WorkQueueFilter, string> = {
   call_request: 'Call Requests',
   unread_chat: 'Unread Chats',
   issue_report: 'Issue Reports',
+  league_certificate: 'Certificates',
   other: 'Everything Else',
 }
 

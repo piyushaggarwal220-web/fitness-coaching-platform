@@ -17,6 +17,7 @@ const CARDS: { key: WorkQueueFilter; label: string; countKey: keyof WorkQueueCou
   { key: 'call_request', label: 'Call Requests', countKey: 'call_request' },
   { key: 'unread_chat', label: 'Unread Chats', countKey: 'unread_chat' },
   { key: 'issue_report', label: 'Issue Reports', countKey: 'issue_report' },
+  { key: 'league_certificate', label: 'Certificates', countKey: 'league_certificate' },
 ]
 
 export function CoachWorkSummaryCards({ counts, filter, onFilter }: CoachWorkSummaryCardsProps) {

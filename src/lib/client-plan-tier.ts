@@ -42,7 +42,7 @@ const THEMES: Record<ClientPlanTier, PlanTierTheme> = {
   },
   '3_months': {
     tier: '3_months',
-    label: 'Look sharper',
+    label: 'Reduce bloating',
     stripe: '#ffffff',
     chipBg: '#ffffff',
     chipText: '#52525b',

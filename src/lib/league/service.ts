@@ -9,6 +9,8 @@ import { getActiveSubscription } from '@/lib/subscription'
 import {
   assignDivisionStandings,
   getCurrentLeagueSeason,
+  getPreviousLeagueSeason,
+  isVirtualCertificateTier,
   getLeagueMissions,
   leagueDisplayName,
   normalizeLeagueTier,
@@ -216,14 +218,159 @@ async function loadClientLeagueInput(
   }
 }
 
-export async function recomputeCoachLeagueStandings(coachId: string): Promise<{
+export type LeagueCertificateWinner = {
+  clientId: string
+  displayName: string
+  tier: LeagueTier
+  rank: number
+  points: number
+  seasonKey: string
+  endsOn: string
+}
+
+function winnersFromStandings(
+  standings: LeagueStandingRow[],
+  season: { seasonKey: string; endsOn: string }
+): LeagueCertificateWinner[] {
+  return standings
+    .filter((row) => row.promotionZone && isVirtualCertificateTier(row.tier))
+    .map((row) => ({
+      clientId: row.clientId,
+      displayName: row.displayName,
+      tier: row.tier,
+      rank: row.rank,
+      points: row.points,
+      seasonKey: season.seasonKey,
+      endsOn: season.endsOn,
+    }))
+}
+
+/**
+ * Closed-season Bronze–Gold top 10% who still need a virtual certificate issued.
+ * Uses saved standings when present; otherwise scores the previous month once.
+ */
+export async function listPendingLeagueCertificateWinners(
+  admin: ReturnType<typeof createAdminClient>,
+  coachId: string
+): Promise<LeagueCertificateWinner[]> {
+  const today = new Date().toISOString().slice(0, 10)
+  const previous = getPreviousLeagueSeason()
+  if (today <= previous.endsOn) return []
+
+  const { data: closedSeasons, error: seasonsError } = await admin
+    .from('league_seasons')
+    .select('id, season_key, starts_on, ends_on')
+    .lt('ends_on', today)
+    .order('ends_on', { ascending: false })
+    .limit(3)
+
+  if (seasonsError) throw new Error(seasonsError.message)
+
+  const seasons = closedSeasons ?? []
+  if (!seasons.some((row) => row.season_key === previous.seasonKey)) {
+    const ensured = await ensureSeason(admin, previous)
+    seasons.unshift({
+      id: ensured.id,
+      season_key: ensured.seasonKey,
+      starts_on: ensured.startsOn,
+      ends_on: ensured.endsOn,
+    })
+  }
+
+  const winners: LeagueCertificateWinner[] = []
+  const seen = new Set<string>()
+
+  for (const season of seasons.slice(0, 3)) {
+    const seasonKey = season.season_key as string
+    const endsOn = season.ends_on as string
+    const startsOn = season.starts_on as string
+    const seasonId = season.id as string
+
+    const { data: rows, error } = await admin
+      .from('league_standings')
+      .select('client_id, points, streak_days, tier, rank')
+      .eq('season_id', seasonId)
+      .eq('coach_id', coachId)
+
+    if (error) throw new Error(error.message)
+
+    let standings: LeagueStandingRow[]
+    if ((rows ?? []).length > 0) {
+      const grouped = new Map<LeagueTier, typeof rows>()
+      for (const row of rows ?? []) {
+        const tier = normalizeLeagueTier(row.tier as string)
+        const list = grouped.get(tier) ?? []
+        list.push(row)
+        grouped.set(tier, list)
+      }
+      standings = []
+      for (const [tier, list] of grouped) {
+        const sorted = [...list].sort(
+          (a, b) =>
+            (b.points as number) - (a.points as number) ||
+            ((a.rank as number) ?? 0) - ((b.rank as number) ?? 0)
+        )
+        const assigned = assignDivisionStandings(
+          sorted.map((row) => ({ points: row.points as number })),
+          tier
+        )
+        sorted.forEach((row, index) => {
+          standings.push({
+            clientId: row.client_id as string,
+            displayName: leagueDisplayName(null),
+            points: row.points as number,
+            streakDays: (row.streak_days as number) ?? 0,
+            tier,
+            rank: (row.rank as number) ?? index + 1,
+            promotionZone: assigned[index]?.promotionZone ?? false,
+          })
+        })
+      }
+    } else if (seasonKey === previous.seasonKey) {
+      const recomputed = await recomputeCoachLeagueStandings(coachId, {
+        seasonKey,
+        startsOn,
+        endsOn,
+      })
+      standings = recomputed.standings
+    } else {
+      continue
+    }
+
+    for (const winner of winnersFromStandings(standings, { seasonKey, endsOn })) {
+      const key = `${seasonKey}:${winner.clientId}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      winners.push(winner)
+    }
+  }
+
+  const nameIds = [...new Set(winners.map((w) => w.clientId))]
+  if (nameIds.length > 0) {
+    const { data: profiles } = await admin
+      .from('profiles')
+      .select('id, name')
+      .in('id', nameIds)
+    const names = new Map((profiles ?? []).map((p) => [p.id as string, p.name as string | null]))
+    for (const winner of winners) {
+      winner.displayName = leagueDisplayName(names.get(winner.clientId) ?? winner.displayName)
+    }
+  }
+
+  return winners
+}
+
+export async function recomputeCoachLeagueStandings(
+  coachId: string,
+  seasonWindow = getCurrentLeagueSeason()
+): Promise<{
   seasonKey: string
   startsOn: string
   endsOn: string
   standings: LeagueStandingRow[]
 }> {
   const admin = createAdminClient()
-  const seasonRow = await ensureSeason(admin)
+  const seasonRow = await ensureSeason(admin, seasonWindow)
   const season = {
     seasonKey: seasonRow.seasonKey,
     startsOn: seasonRow.startsOn,

@@ -307,6 +307,21 @@ export async function resolveWorkQueueTask(
       return { ok: true, resolved: true }
     }
 
+    case 'league_certificate': {
+      if (!task.clientId) {
+        return { ok: false, resolved: false, error: 'Missing client for certificate task.' }
+      }
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('id, coach_id')
+        .eq('id', task.clientId)
+        .maybeSingle()
+      if (!profile || profile.coach_id !== coachId) {
+        return { ok: false, resolved: false, error: 'Client is not assigned to you.' }
+      }
+      return { ok: true, resolved: true }
+    }
+
     default:
       return { ok: false, resolved: false, error: 'This task type cannot be completed from the queue.' }
   }
