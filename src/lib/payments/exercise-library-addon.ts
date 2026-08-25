@@ -69,7 +69,7 @@ export async function fulfillExerciseLibraryAddon(input: {
     .single()
 
   if (error || !inserted) {
-    logPurchaseStep('exercise_library_record_failed', { userId: input.userId, error: error?.message })
+    logPurchaseStep('payment_record_failed', { userId: input.userId, error: error?.message, addon: 'exercise_library' })
     throw new Error(error?.message ?? 'Failed to record exercise library purchase')
   }
 
