@@ -1,4 +1,10 @@
 import type { GeneratedNutritionPlan } from '@/lib/ai/generate-plan'
+import {
+  DIET_FLOOR_HARD_KCAL,
+  DIET_FLOOR_TARGET_KCAL,
+} from '@/lib/ai/plan-quality-rules'
+
+export { DIET_FLOOR_TARGET_KCAL }
 
 type MacroTotals = {
   calories: number
@@ -12,6 +18,25 @@ const MEAL_MACRO_LINE =
 
 const DAILY_SUMMARY_LINE =
   /~?\s*(\d{3,4})\s*kcal\s*\|\s*(\d+)\s*g\s*protein\s*\|\s*(\d+)\s*g\s*carbs\s*\|\s*(\d+)\s*g\s*fat/gi
+
+/** "Daily averages: ~1850 kcal | P: 95g | C: 200g | F: 55g" */
+const DAILY_P_SUMMARY_LINE =
+  /daily\s+(?:total|totals|average|averages)\s*:?\s*~?\s*(\d{3,4})\s*kcal\s*\|\s*P:\s*(\d+)\s*g\s*\|\s*C:\s*(\d+)\s*g\s*\|\s*F:\s*(\d+)\s*g/gi
+
+function isDailyTotalOrAverageLine(line: string): boolean {
+  return /daily\s+(?:total|totals|average|averages)/i.test(line)
+}
+
+function isNewMealOrDayHeader(line: string): boolean {
+  const t = line.replace(/^\*{1,2}|#{1,3}\s*/, '').trim()
+  if (!t) return false
+  if (/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(t)) {
+    return true
+  }
+  return /^(breakfast|lunch|dinner|snack|late snack|evening snack|mid[- ]?morning|morning meal|evening meal|pre[- ]?workout|post[- ]?workout)\b/i.test(
+    t
+  )
+}
 
 const HEADER_CALORIES = /calories:\s*(\d+)/i
 const HEADER_PROTEIN = /protein:\s*(\d+)\s*g/i
@@ -56,31 +81,60 @@ function averageMacros(totals: MacroTotals[]): MacroTotals | null {
 
 function parseMealMacroLines(text: string): MacroTotals[] {
   const perMeal: MacroTotals[] = []
-  let match: RegExpExecArray | null
-  const pattern = new RegExp(MEAL_MACRO_LINE.source, 'gi')
-  while ((match = pattern.exec(text)) !== null) {
+  const lines = text.split(/\r?\n/)
+  let acceptNextMacro = true
+  for (const line of lines) {
+    if (isNewMealOrDayHeader(line)) acceptNextMacro = true
+    if (isDailyTotalOrAverageLine(line)) continue
+    const pattern = new RegExp(MEAL_MACRO_LINE.source, 'gi')
+    const match = pattern.exec(line)
+    if (!match) continue
+    if (!acceptNextMacro) continue
     perMeal.push({
       protein: parseInt(match[1]!, 10),
       carbs: parseInt(match[2]!, 10),
       fat: parseInt(match[3]!, 10),
       calories: parseInt(match[4]!, 10),
     })
+    acceptNextMacro = false
   }
   return perMeal
 }
 
 function parseDailySummaryLines(text: string): MacroTotals[] {
   const daily: MacroTotals[] = []
-  let match: RegExpExecArray | null
-  const pattern = new RegExp(DAILY_SUMMARY_LINE.source, 'gi')
-  while ((match = pattern.exec(text)) !== null) {
+  const push = (calories: string, protein: string, carbs: string, fat: string) => {
     daily.push({
-      calories: parseInt(match[1]!, 10),
-      protein: parseInt(match[2]!, 10),
-      carbs: parseInt(match[3]!, 10),
-      fat: parseInt(match[4]!, 10),
+      calories: parseInt(calories, 10),
+      protein: parseInt(protein, 10),
+      carbs: parseInt(carbs, 10),
+      fat: parseInt(fat, 10),
     })
   }
+
+  let match: RegExpExecArray | null
+  const pFormat = new RegExp(DAILY_P_SUMMARY_LINE.source, 'gi')
+  while ((match = pFormat.exec(text)) !== null) {
+    push(match[1]!, match[2]!, match[3]!, match[4]!)
+  }
+
+  const proteinWord = new RegExp(DAILY_SUMMARY_LINE.source, 'gi')
+  while ((match = proteinWord.exec(text)) !== null) {
+    const around = text.slice(Math.max(0, match.index - 40), match.index + match[0].length)
+    if (isDailyTotalOrAverageLine(around) && /P:\s*\d+/i.test(around)) continue
+    push(match[1]!, match[2]!, match[3]!, match[4]!)
+  }
+
+  for (const line of text.split(/\r?\n/)) {
+    if (!isDailyTotalOrAverageLine(line)) continue
+    if (/daily\s+(?:total|totals|average|averages)\s*:?\s*~?\s*\d{3,4}\s*kcal\s*\|\s*P:/i.test(line)) {
+      continue
+    }
+    const mealShape = new RegExp(MEAL_MACRO_LINE.source, 'i').exec(line)
+    if (!mealShape) continue
+    push(mealShape[4]!, mealShape[1]!, mealShape[2]!, mealShape[3]!)
+  }
+
   return daily
 }
 
@@ -138,10 +192,6 @@ const MAX_DAILY_KCAL = 5000
 /** Tolerance before a conversational calorie claim is treated as a mismatch and rewritten. */
 const KCAL_MISMATCH_TOLERANCE = 40
 
-/** Diet safety limits enforced on generated plans (never below the floor, no large weekly swings). */
-export const DIET_FLOOR_TARGET_KCAL = 1600
-/** Reject (and retry) only when clearly under the floor; small rounding under 1600 is tolerated. */
-const DIET_FLOOR_HARD_KCAL = 1500
 /** Hard cap on week-to-week daily-calorie change (400 kcal rule + rounding headroom). */
 const MAX_WEEKLY_KCAL_JUMP = 450
 
@@ -176,6 +226,7 @@ export function enforceDietSafety(
       hint:
         `The daily average came out to about ${cals} kcal, which is below the ${DIET_FLOOR_TARGET_KCAL} kcal floor. ` +
         `Rebuild all 7 days with more food so the daily average is at least ${DIET_FLOOR_TARGET_KCAL} kcal. ` +
+        `Do not cut calories to hit protein. If a lower intake seemed indicated, still stay at ${DIET_FLOOR_TARGET_KCAL}+ and flag the coach. ` +
         'Never program a crash diet, and keep any deficit within 400 kcal of maintenance.',
     }
   }

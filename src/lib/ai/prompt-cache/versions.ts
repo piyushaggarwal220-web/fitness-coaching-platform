@@ -1,5 +1,6 @@
 import { createHash } from 'crypto'
 import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
+import { PLAN_QUALITY_RULES_VERSION } from '@/lib/ai/plan-quality-rules'
 import { clientCoachNotes } from '@/lib/plan-metadata'
 import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
 
@@ -57,6 +58,7 @@ export function onboardingVersion(profile: OnboardingProfile): string {
 
 export function hardConstraintsVersion(profile: OnboardingProfile): string {
   const sig = stableStringify({
+    rules: PLAN_QUALITY_RULES_VERSION,
     diet_preference: profile.diet_preference,
     injuries: profile.injuries,
     medical_notes: profile.medical_notes,

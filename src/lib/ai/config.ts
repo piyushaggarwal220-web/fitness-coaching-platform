@@ -31,7 +31,8 @@ export const LIMITS = {
   /**
    * Full diet/workout weeks (every day written out, no cross-day shortcuts) need
    * the model’s full output ceiling — lower values produced truncated / half plans.
-   * Claude Sonnet max output is 64k; prefer completeness over token savings.
+   * Claude Sonnet max output is 64k. Use the full ceiling so diet/workout weeks
+   * are complete and higher quality, not truncated half-plans.
    */
   MAX_PLAN_TOKENS: 64000,
   /** Cardio / supplements / coach notes — shorter outputs, still roomy enough to finish. */

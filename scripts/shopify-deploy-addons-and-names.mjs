@@ -49,9 +49,9 @@ function patchThemeSettings(obj) {
     plan_2_description: 'Fat loss',
     plan_3_description: 'Fat loss + muscle gain',
     plan_4_description: 'Aesthetic body',
-    plan_2_footer: 'Best for: looking good for an event, not long term',
-    plan_3_footer: 'Best for: advanced athlete, looking for little guidance',
-    plan_4_footer: 'Best for: aesthetic body',
+    plan_2_footer: 'Best for: looking sharp for an event, not long term',
+    plan_3_footer: 'Best for: advanced athletes who want little refinement',
+    plan_4_footer: 'Best for: complete aesthetic transformation',
     subheadline:
       'Fat loss · 90 days. Fat loss + muscle gain · 6 months. Aesthetic body · 12 months. WELCOME60 = 60% off',
   }
@@ -81,13 +81,13 @@ function patchThemeSettings(obj) {
       'Fat loss · 90 days. Fat loss + muscle gain · 6 months. Aesthetic body · 12 months. WELCOME60 = 60% off'
   }
   if (typeof obj.plan_3_text === 'string' && obj.feature === 'Best for') {
-    obj.plan_3_text = 'Looking good for an event, not long term'
+    obj.plan_3_text = 'Looking sharp for an event, not long term'
   }
   if (typeof obj.plan_6_text === 'string' && obj.feature === 'Best for') {
-    obj.plan_6_text = 'Advanced athlete, looking for little guidance'
+    obj.plan_6_text = 'Advanced athletes who want little refinement'
   }
-  if (typeof obj.plan_12_text === 'string' && /complete transformation|aesthetic body and/i.test(obj.plan_12_text)) {
-    obj.plan_12_text = 'Aesthetic body'
+  if (typeof obj.plan_12_text === 'string' && obj.feature === 'Best for') {
+    obj.plan_12_text = 'Complete aesthetic transformation'
   }
 
   for (const value of Object.values(obj)) patchThemeSettings(value)

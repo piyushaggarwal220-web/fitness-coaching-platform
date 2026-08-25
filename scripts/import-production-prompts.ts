@@ -11,6 +11,7 @@ import {
   verifyImportedPrompts,
 } from '../src/lib/admin/prompt-import'
 import { createAdminClient } from '../src/lib/supabase/admin'
+import { invalidatePromptLibrary } from '../src/lib/ai/prompt-cache'
 
 async function main(): Promise<void> {
   const manifestPath = path.join(process.cwd(), 'prompts', 'production', 'manifest.json')
@@ -64,6 +65,10 @@ async function main(): Promise<void> {
   }
 
   const allOk = result.errors.length === 0 && coreVerification.ok && homeVerification.ok
+  if (result.imported.some((item) => item.status === 'created' || item.status === 'republished')) {
+    await invalidatePromptLibrary()
+    console.log('Invalidated prompt-library cache.')
+  }
   process.exit(allOk ? 0 : 1)
 }
 

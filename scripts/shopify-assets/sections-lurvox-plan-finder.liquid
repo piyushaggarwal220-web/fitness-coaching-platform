@@ -1,7 +1,7 @@
 {% comment %}
   LURVOX — Find your plan (tap quiz)
   Full intake quiz → recommend a goal-based plan page (not checkout)
-  cache-bust 1786509500005
+  cache-bust 1787660000001
 {% endcomment %}
 
 {%- liquid
@@ -442,57 +442,55 @@
         key: 'goal',
         q: 'What is your main goal right now?',
         options: [
-          { id: 'debloat', label: 'Fat loss — 90 days', score: -2, goal: 'fat loss' },
-          { id: 'fat', label: 'Fat loss + muscle gain', score: -1, goal: 'fat loss and muscle gain' },
-          { id: 'muscle', label: 'Build strength / add shape', score: 0, goal: 'build strength and shape' },
-          { id: 'recomp', label: 'Fat down and muscle up', score: 1, goal: 'recompose. Fat down, muscle up' },
-          { id: 'transform', label: 'Aesthetic body', score: 2, goal: 'an aesthetic body' }
+          { id: 'event', label: 'Looking sharp for an event, not long term', score: -4, goal: 'look sharp for an event' },
+          { id: 'refine', label: 'I am an advanced athlete. I want little refinement', score: 1, goal: 'refine an already-trained body' },
+          { id: 'transform', label: 'Complete aesthetic transformation', score: 5, goal: 'a complete aesthetic transformation' }
         ]
       },
       {
         key: 'body',
         q: 'How would you describe your starting point?',
         options: [
-          { id: 'soft', label: 'Softer / carrying extra fat', score: -1 },
-          { id: 'skinny_fat', label: 'Skinny fat. Soft midsection', score: 1 },
+          { id: 'soft', label: 'Softer / carrying extra fat', score: 2 },
+          { id: 'skinny_fat', label: 'Skinny fat. Soft midsection', score: 2 },
           { id: 'thin', label: 'Thin / hard to gain', score: 0 },
-          { id: 'fit', label: 'Already somewhat fit', score: 1 }
+          { id: 'fit', label: 'Already trained and fairly lean', score: -2 }
         ]
       },
       {
         key: 'history',
         q: 'How long have you been trying to change your body?',
         options: [
-          { id: 'never', label: 'This is my first real attempt', score: -1 },
+          { id: 'never', label: 'This is my first real attempt', score: 0 },
           { id: 'months', label: 'A few months, on and off', score: 0 },
-          { id: 'years', label: 'Years of starting and stopping', score: 2 }
+          { id: 'years', label: 'Years of starting and stopping', score: 0 }
         ]
       },
       {
         key: 'experience',
         q: 'How experienced are you with training?',
         options: [
-          { id: 'beginner', label: 'Beginner. I need structure', score: 0 },
+          { id: 'beginner', label: 'Beginner. I need the full system', score: 3 },
           { id: 'some', label: 'Some experience, inconsistent', score: 1 },
-          { id: 'advanced', label: 'I know what I am doing. I need accountability', score: 2 }
+          { id: 'advanced', label: 'Advanced. I mostly need refinement', score: -2 }
         ]
       },
       {
         key: 'time',
         q: 'How many days a week can you realistically train?',
         options: [
-          { id: 'low', label: '0 to 2 days', score: 1 },
+          { id: 'low', label: '0 to 2 days', score: 0 },
           { id: 'mid', label: '3 to 4 days', score: 0 },
-          { id: 'high', label: '5+ days', score: -1 }
+          { id: 'high', label: '5+ days', score: 0 }
         ]
       },
       {
         key: 'session',
         q: 'How long can a training session be?',
         options: [
-          { id: 'short', label: 'Under 30 minutes', score: 1 },
+          { id: 'short', label: 'Under 30 minutes', score: 0 },
           { id: 'normal', label: '30 to 60 minutes', score: 0 },
-          { id: 'long', label: '60+ minutes when needed', score: -1 }
+          { id: 'long', label: '60+ minutes when needed', score: 0 }
         ]
       },
       {
@@ -510,25 +508,25 @@
         options: [
           { id: 'home', label: 'Home cooked food. Keep it simple', score: 0 },
           { id: 'mix', label: 'Home food + some eating out', score: 0 },
-          { id: 'lost', label: 'I do not know what to eat', score: 1 }
+          { id: 'lost', label: 'I do not know what to eat', score: 0 }
         ]
       },
       {
         key: 'sleep',
         q: 'How is your sleep most nights?',
         options: [
-          { id: 'good', label: 'Mostly solid', score: -1 },
+          { id: 'good', label: 'Mostly solid', score: 0 },
           { id: 'ok', label: 'Hit or miss', score: 0 },
-          { id: 'poor', label: 'Poor. I wake tired', score: 1 }
+          { id: 'poor', label: 'Poor. I wake tired', score: 0 }
         ]
       },
       {
         key: 'stress',
         q: 'How stressed is your week usually?',
         options: [
-          { id: 'low', label: 'Manageable', score: -1 },
+          { id: 'low', label: 'Manageable', score: 0 },
           { id: 'mid', label: 'Busy but doable', score: 0 },
-          { id: 'high', label: 'Very high. I burn out easily', score: 2 }
+          { id: 'high', label: 'Very high. I burn out easily', score: 0 }
         ]
       },
       {
@@ -536,17 +534,17 @@
         q: 'Any injuries or pain we should plan around?',
         options: [
           { id: 'none', label: 'Nothing major', score: 0 },
-          { id: 'mild', label: 'Mild aches now and then', score: 1 },
-          { id: 'limit', label: 'Yes. It limits how I train', score: 2 }
+          { id: 'mild', label: 'Mild aches now and then', score: 0 },
+          { id: 'limit', label: 'Yes. It limits how I train', score: 0 }
         ]
       },
       {
         key: 'blocker',
         q: 'What usually stops you?',
         options: [
-          { id: 'time', label: 'No time', score: -1 },
+          { id: 'time', label: 'No time', score: 0 },
           { id: 'food', label: 'Food / diet confusion', score: 0 },
-          { id: 'consistency', label: 'I start strong, then quit', score: 2 },
+          { id: 'consistency', label: 'I start strong, then quit', score: 0 },
           { id: 'knowledge', label: 'I do not know the right plan', score: 0 }
         ]
       },
@@ -554,9 +552,9 @@
         key: 'accountability',
         q: 'What kind of support actually works for you?',
         options: [
-          { id: 'self', label: 'I am mostly self-driven', score: -1 },
+          { id: 'self', label: 'I am mostly self-driven. Little guidance', score: -2 },
           { id: 'checkins', label: 'I need regular check ins', score: 1 },
-          { id: 'push', label: 'I need a coach who keeps me accountable', score: 2 }
+          { id: 'push', label: 'I need a coach on me for the long run', score: 2 }
         ]
       },
       {
@@ -564,7 +562,7 @@
         q: 'Have you worked with a coach before?',
         options: [
           { id: 'no', label: 'Never', score: 0 },
-          { id: 'failed', label: 'Yes, but it did not stick', score: 2 },
+          { id: 'failed', label: 'Yes, but it did not stick', score: 0 },
           { id: 'yes', label: 'Yes, and it helped', score: 0 }
         ]
       },
@@ -572,25 +570,26 @@
         key: 'timeline',
         q: 'When do you want to see a real change?',
         options: [
-          { id: 'fast', label: 'In about 90 days', score: -2 },
+          { id: 'fast', label: 'In about 90 days. I have a date', score: -3 },
           { id: 'steady', label: 'In about 6 months', score: 1 },
-          { id: 'patient', label: 'No rush. I want it to stick', score: 2 }
+          { id: 'patient', label: 'I want a complete change. No rush', score: 4 }
         ]
       },
       {
         key: 'commit',
         q: 'How serious is this attempt for you?',
         options: [
-          { id: 'try', label: 'I want to try and see', score: -1 },
+          { id: 'try', label: 'I want to try and see', score: -2 },
           { id: 'ready', label: 'I am ready to follow a plan', score: 1 },
-          { id: 'allin', label: 'This is non negotiable for me', score: 2 }
+          { id: 'allin', label: 'This is non negotiable for me', score: 3 }
         ]
       },
       {
         key: 'calls',
         q: 'Do you want a weekly coach phone call?',
         options: [
-          { id: 'yes', label: 'Yes. Call me every week', score: 3 },
+          { id: 'yes', label: 'Yes. Call me every week', score: 6 },
+          { id: 'maybe', label: 'Maybe, if it is part of the plan', score: 2 },
           { id: 'no', label: 'App chat + check ins is enough', score: 0 }
         ]
       }
@@ -641,19 +640,19 @@
     // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
     var contrast = {
       '3_months': [
-        { kind: 'pick', text: 'Fat loss: 90 days to drop fat with a coach.' },
-        { kind: 'miss', text: '6 months is fat loss + muscle gain. 12 months is aesthetic body.' },
-        { kind: 'miss', text: 'Updates every 14 days, no weekly coach call.' }
+        { kind: 'pick', text: 'Best for looking sharp for an event, not long term.' },
+        { kind: 'miss', text: '6 months is for advanced athletes who want little refinement.' },
+        { kind: 'miss', text: '12 months is the complete aesthetic transformation, with the weekly coach call.' }
       ],
       '6_months': [
-        { kind: 'pick', text: 'Fat loss + muscle gain: six months to drop fat and add muscle.' },
-        { kind: 'miss', text: '3 months is fat loss only. 12 months is the aesthetic body finish.' },
-        { kind: 'miss', text: '12 months includes the weekly coach call and the lowest monthly rate.' }
+        { kind: 'pick', text: 'Best for advanced athletes who want little refinement.' },
+        { kind: 'miss', text: '3 months is for an event, not a long-term rebuild.' },
+        { kind: 'miss', text: '12 months is the complete aesthetic transformation, with the weekly coach call.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Aesthetic body (your pick): a full year so fat loss and muscle can both show. Weekly coach call included.' },
-        { kind: 'miss', text: '3 months is fat loss. 6 months is fat loss + muscle gain.' },
-        { kind: 'miss', text: 'Shorter plans do not include the weekly coach phone call.' }
+        { kind: 'pick', text: 'Best for a complete aesthetic transformation. Weekly coach call included.' },
+        { kind: 'miss', text: '3 months is for looking sharp for an event, not long term.' },
+        { kind: 'miss', text: '6 months is a shorter refinement block for advanced athletes.' }
       ]
     };
 
@@ -690,30 +689,22 @@
       });
 
       var calls = answers.calls && answers.calls.id;
-      var goal = answers.goal && answers.goal.id;
-      var timeline = answers.timeline && answers.timeline.id;
-      var commit = answers.commit && answers.commit.id;
-      var experience = answers.experience && answers.experience.id;
-      var body = answers.body && answers.body.id;
-
       var planKey = '12_months';
-      if (goal === 'debloat' || timeline === 'fast') planKey = '3_months';
-      else if (goal === 'fat') planKey = '6_months';
-      else if (calls === 'yes' || goal === 'transform' || goal === 'recomp' || goal === 'muscle' || commit === 'allin') planKey = '12_months';
+      if (calls === 'yes') planKey = '12_months';
+      else if (score <= 1) planKey = '3_months';
+      else if (score <= 8) planKey = '6_months';
 
       var why = '';
       if (planKey === '3_months') {
-        why =
-          'Fat loss is 90 days. Fat loss + muscle gain is 6 months. Aesthetic body is 12 months.';
+        why = 'This is the short plan: looking sharp for an event, not long term.';
       } else if (planKey === '6_months') {
-        why =
-          'Fat loss + muscle gain is 6 months — enough time to drop fat and add muscle. Aesthetic body is 12 months.';
+        why = 'This is for advanced athletes who want little refinement. Six months of fat loss + muscle gain.';
       } else {
         why =
-          'Your goal is to ' +
+          'Your goal is ' +
           goalLabel +
-          '. Aesthetic body (12 months) is the finished look' +
-          (calls === 'yes' ? ', and it is the only one with a weekly coach phone call' : '') +
+          '. Complete aesthetic transformation is 12 months' +
+          (calls === 'yes' ? ', and it is the only plan with a weekly coach phone call' : '') +
           '. Lowest monthly rate at ₹292/mo with WELCOME60.';
       }
 

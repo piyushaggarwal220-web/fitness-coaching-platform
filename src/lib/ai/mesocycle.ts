@@ -13,15 +13,15 @@ export type MesocycleContext = {
 }
 
 const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
-  1: 'BASE volume: lowest of the month. Establish the split, leave 2 to 3 reps in reserve on compounds.',
-  2: 'BUILD volume: about 10 to 15 percent above week 1 (add a set or a few reps on main lifts).',
-  3: 'PUSH volume: about 10 to 15 percent above week 2. Keep form strict; still leave about 1 to 2 RIR on compounds.',
-  4: 'PEAK volume: highest of the month (about 10 to 15 percent above week 3). Hardest productive week before the reset.',
+  1: 'BASE volume: lowest of the month. 2 to 3 working sets per exercise, about 5 to 7 working exercises per session. Leave 2 to 3 reps in reserve on compounds. Do not stack extra sets.',
+  2: 'BUILD volume: progress via load or a few extra reps on main lifts, not extra working sets. Stay at 2 to 3 sets (4 only on one main compound). Never 5+ sets.',
+  3: 'PUSH volume: add load or tighter RIR, not junk sets. Still 2 to 3 working sets per exercise.',
+  4: 'PEAK volume: hardest productive week via load, reps, or RIR, still capped at 3 working sets (4 on one compound). Never 5+ sets.',
 }
 
 /** Calorie guidance paired with mesocycle intensity (food rises with training load). */
 const CALORIE_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
-  1: 'BASE calories: after a new split / lower volume reset, reduce calories a little from last month peak (about 5 to 10 percent or 100 to 200 kcal) so intake matches the lighter week. Do not crash cut.',
+  1: 'BASE calories: after a new split / lower volume reset, reduce calories a little from last month peak (about 5 to 10 percent or 100 to 200 kcal) so intake matches the lighter week. Do not crash cut. Never go below 1800 kcal; if a trim would break that floor, hold 1800 and flag the coach.',
   2: 'BUILD calories: raise intake slightly with the volume bump (about 50 to 150 kcal or more carbs around training) so recovery keeps up.',
   3: 'PUSH calories: raise again with intensity (another about 50 to 150 kcal vs week 2) favoring carbs/protein around workouts.',
   4: 'PEAK calories: highest food of the month to support peak volume. After this week, next mesocycle week 1 drops volume AND trims calories again.',
@@ -66,9 +66,9 @@ export function formatMesocyclePromptSection(
     `- Volume target: ${meso.volumeGuidance}`,
     `- Calorie target (pair with volume): ${meso.calorieGuidance}`,
     meso.requiresNewSplit
-      ? '- Split rule: NEW unique split this week (month start / reset). Do not recycle last month\'s day structure. Drop volume to BASE and trim calories a little from last peak.'
-      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Raise volume AND calories together per the week targets.',
-    '- Cycle rule: intensity/volume up each week inside the month → calories up with it. New month (new split, lower volume) → calories down a little, then climb again.',
+      ? '- Split rule: NEW split vs last month. Proven templates (full body, upper/lower, PPL) are valid if they fit this client. Do not recycle last month\'s day structure. Drop working sets to BASE (2 to 3) and trim calories a little from last peak, never below 1800 kcal.'
+      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Progress load/reps/RIR AND calories together. Do not add extra working sets or invent a new split.',
+    '- Cycle rule: intensity up each week inside the month → calories up with it. New month (new split, lower volume) → calories down a little, then climb again. Never add working sets past the 2 to 3 cap (4 on one compound) just to hit a percent increase.',
     '',
     '### Prior workout / split hint (rotate away when a new split is required)',
     priorSplitSummary,

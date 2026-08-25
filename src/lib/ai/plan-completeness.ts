@@ -134,7 +134,7 @@ export function assessPlanCompleteness(
       const found = dietDays.length > 0 ? dietDays.join(', ') : 'none'
       return {
         ok: false,
-        error: `Diet plan is incomplete: need all 7 days labeled Day 1 to Day 7. Found: ${found}.`,
+        error: `Diet plan is incomplete: need all 7 days labeled Day 1 (Monday) through Day 7 (Sunday). Found: ${found}.`,
         dietDayCount: Math.max(weekdaysFound.length, dayNFound.length),
         workoutDayCount: workoutDays.length,
         dietDays,
@@ -154,7 +154,7 @@ export function assessPlanCompleteness(
     if (covered < expected) {
       return {
         ok: false,
-        error: `Workout plan is incomplete: need ${expected} training day${expected === 1 ? '' : 's'} (got ${covered}). Label each day clearly as Day 1, Day 2, ….`,
+        error: `Workout plan is incomplete: need ${expected} training day${expected === 1 ? '' : 's'} (got ${covered}). Label each day as Day 1 (Monday), Day 2 (Tuesday), ….`,
         dietDayCount: dietDays.length,
         workoutDayCount: covered,
         dietDays,

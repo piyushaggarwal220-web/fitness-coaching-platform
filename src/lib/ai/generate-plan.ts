@@ -26,6 +26,11 @@ import {
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
 import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
+import {
+  DAY_HEADER_PROMPT_RULES,
+  PROTEIN_CALORIE_PROMPT_RULES,
+  WORKOUT_VOLUME_PROMPT_RULES,
+} from '@/lib/ai/plan-quality-rules'
 import { profileToComplexityInput } from '@/lib/complexity/profile-input'
 import {
   getPromptCategoryForAction,
@@ -180,8 +185,8 @@ const RETRY_INSTRUCTIONS = [
   'Your previous response failed validation.',
   'Return ONLY a corrected JSON object with no extra text and no markdown fences.',
   'Escape all newlines inside JSON strings as \\n. Ensure the JSON parses cleanly.',
-  'If this is a diet plan: include Day 1 through Day 7 as separate labeled day sections with meals under each day. Do not skip days. Do not use weekday names (Monday, Tuesday, …) as day headers.',
-  'If this is a workout plan: include every required training day labeled Day 1, Day 2, Day 3, … with exercises. Do not leave empty day sections. Do not use weekday names as day headers.',
+  'If this is a diet plan: include Day 1 (Monday) through Day 7 (Sunday) as separate labeled day sections with meals under each day. Do not skip days. Never use a bare weekday or a bare Day N without the weekday in parentheses.',
+  'If this is a workout plan: include every required day labeled Day 1 (Monday), Day 2 (Tuesday), … Day 7 (Sunday) with exercises on training days. Do not leave empty day sections. Never use a bare weekday or a bare Day N without the weekday in parentheses.',
 ].join(' ')
 
 const COMPLETENESS_RETRY_PREFIX =
@@ -203,22 +208,24 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   'The JSON must match this exact top-level structure:',
   PLAN_JSON_SCHEMA,
   '- Put the full client-facing diet plan prose in nutrition_plan.meals as ONE item: { "meal": "Weekly Diet Plan", "example": "<entire copy-paste diet plan>" }.',
-  '- CRITICAL: The diet prose MUST include all 7 days as separate labeled sections: Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7. Never use weekday names (Monday–Sunday) as day headers. Never skip a day. Never write "same every day" without repeating the full day blocks.',
+  '- CRITICAL: The diet prose MUST include all 7 days as separate labeled sections: Day 1 (Monday) through Day 7 (Sunday). Never skip a day. Never write "same every day" without repeating the full day blocks.',
+  DAY_HEADER_PROMPT_RULES,
   '- Each day section must include breakfast, lunch, dinner, and snacks with concrete foods and approximate portions.',
   '- Set nutrition_plan.calories, protein, carbs, and fat to the rounded AVERAGE daily totals from the 7-day plan (sum each day, divide by 7). NEVER use 0 or placeholder values.',
-  '- Header macros MUST match the meal plan: if meals show (P: Xg | C: Yg | F: Zg | ~K kcal) lines, totals must reflect those sums.',
-  '- Include a clear daily average line in the prose, e.g. "Daily averages: ~1850 kcal | P: 130g | C: 200g | F: 55g" matching the header fields.',
+  '- Header macros MUST match the meal plan: if meals show (P: Xg | C: Yg | F: Zg | ~K kcal) lines, totals must reflect those sums. Count only the primary option per meal, never primary plus swap.',
+  '- Include a clear daily average line in the prose, e.g. "Daily averages: ~1850 kcal | P: 95g | C: 200g | F: 55g" matching the header fields. Protein in that line is the honest food sum, not a prettier higher number.',
   '- CALORIE CONSISTENCY: any calorie number you state in the conversational note (e.g. "I\'m giving you ~1850 calories this week") MUST equal the daily average and the header calories. Never state a different daily calorie target in the prose than the food math produces. If you mention a deficit/surplus, phrase it as a change (e.g. "about 150 kcal lower than last week") — do not state a second daily total.',
   SAFE_RATE_OF_CHANGE_RULE,
-  '- Protein: do not push high g/kg by default. Comfortable amounts beat maximising; lower protein (even ~0.5g/kg in special cases) is acceptable when it fits the client. Never force aggressive floors or "must hit Xg" wording. NEVER falsify protein — header and daily averages must match the actual meal macros; if the diet is low protein, show the low number.',
+  PROTEIN_CALORIE_PROMPT_RULES,
+  '- Write a complete 7-day diet. Use the full output budget. Do not skip days or thin out meals to save tokens.',
   '- Never write "Welcome to week N" as a greeting in diet prose. You MAY label the plan header with Week N so the client can see which coaching week this is.',
   '- Diet text must contain ONLY food / nutrition. Never include Cardio, Steps, Conditioning, or Supplements sections in the diet prose.',
   '- Every day under a Day N header must include the FULL meal list written out in actual words with portions, cooking fats, and macro lines.',
-  '- NEVER use cross-day references such as "same as Day 1", "repeat Day 2", "follow Day 1", "as above", or "use Day 1\'s plan". If a day intentionally mirrors another day, rewrite that day\'s complete meals again under the new day header. The daily tracker cannot resolve day-to-day pointers.',
+  '- NEVER use cross-day references such as "same as Day 1", "repeat Day 2", "follow Day 1", "as above", or "use Monday\'s plan". If a day intentionally mirrors another day, rewrite that day\'s complete meals again under the new day header. The daily tracker cannot resolve day-to-day pointers.',
   '- Set workout_plan.overview to "N/A" and workout_plan.days to [].',
   '- cardio_plan.sessions MUST be [].',
   '- supplement_plan.items MUST be [].',
-  '- coach_notes must be an empty string or under 200 characters.',
+  '- coach_notes must be empty unless you held calories at the 1800 kcal floor as an exception — then one short coach flag only, under 200 characters.',
 ].join('\n')
 
 const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
@@ -229,18 +236,21 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   '- Put the full client-facing workout plan prose in workout_plan.overview.',
   '- workout_plan.overview must include exercises, sets, reps, and weekly structure — not internal coach analysis.',
   '- DAILY TRACKER COMPATIBILITY (required): the client app parses workout_plan.overview into tracker fields.',
-  '- Use "sets x reps" format with a plain letter x (e.g. "Barbell Bench Press: 4 sets x 8 reps" or "4 sets x 6 to 8 reps"). Prefer "Exercise: N sets x M reps".',
+  '- Use "sets x reps" format with a plain letter x (e.g. "Barbell Bench Press: 3 sets x 8 reps" or "3 sets x 6 to 8 reps"). Prefer "Exercise: N sets x M reps".',
   '- The text before the colon MUST be a real movement name (Goblet Squat, Barbell Bench Press, Romanian Deadlift). Never a goal sentence ("Core endurance for the full race effort") and never a muscle-group-only line ("Lower", "Upper Push").',
   '- For timed work use "Exercise: N sets x M sec" or "Exercise: M min".',
-  '- CRITICAL day headers: label every training/rest day as "Day N (Weekday)" with the weekday in parentheses immediately after the number, e.g. "Day 1 (Monday): Lower Power", "Day 2 (Tuesday): Upper Push". Day 1 MUST be Monday, Day 2 Tuesday, … Day 7 Sunday. Never use bare "Day N" alone and never use weekday-only headers.',
+  DAY_HEADER_PROMPT_RULES,
+  '- Example training header: "Day 1 (Monday): Lower Power". Label rest and recovery days the same way (e.g. "Day 3 (Wednesday): Rest").',
   '- Prefer also filling workout_plan.days with one object per day (day, focus, exercises) using the same Day N (Weekday) labels.',
   '- Never write "Welcome to week N" as a greeting in workout prose. You MAY label the plan header with Week N.',
-  '- Workout text must contain ONLY strength / resistance training. Never include a Cardio, Steps, Conditioning, or Supplements section.',
+  '- Main body is strength / resistance training. You MAY weave a one-line daily step target and a short sleep note. Never add Cardio, Conditioning, or Supplements section headers, and do not write a full cardio or supplement program here (those are generated separately).',
   '- Every training day must list every exercise with sets x reps (or duration) in full under that day header — one exercise per line.',
-  '- NEVER use cross-day references such as "same as Day 1", "repeat Day 2", "follow Day 3\'s workout", or "as above". If two days share a session, rewrite the complete exercise list under both headers. The daily tracker cannot resolve day-to-day pointers.',
+  '- NEVER use cross-day references such as "same as Day 1", "repeat Day 2", "follow Thursday\'s workout", or "as above". If two days share a session, rewrite the complete exercise list under both headers. The daily tracker cannot resolve day-to-day pointers.',
   '- Keep each day self-contained: warm-up (optional), main lifts, then that day\'s Post-Workout stretches if any. Do NOT put the next day\'s lifts under Post-Workout / Recovery / Stretching of the previous day.',
   '- Do not use a lone line "Recovery" or "Stretching" between days — that can make the tracker swallow the next session into Post-Workout. Use "Post-Workout:" only for cooldown stretches of the CURRENT day, or one shared cooldown AFTER all day blocks.',
   '- Do not hide the working sets inside paragraph prose only; the tracker needs scannable exercise lines.',
+  WORKOUT_VOLUME_PROMPT_RULES,
+  '- Write a complete week. Use the full output budget. Do not skip days or drop exercises to save tokens.',
   '- Set nutrition_plan calories/protein/carbs/fat to 0 and nutrition_plan.meals to [].',
   '- cardio_plan.sessions MUST be [].',
   '- supplement_plan.items MUST be [].',
@@ -699,7 +709,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       lastValidationError =
         'Plan response was truncated (hit max output tokens). Retrying with a complete week required.'
       completenessHint =
-        'Previous output was cut off. Write a complete plan that still fits, with every required day labeled. Prefer concise meal/exercise lines over long commentary.'
+        'Previous output was cut off. Write the COMPLETE plan with every required day. Use the full output budget for a better plan. Cut only fluff commentary if space is tight — never skip days or meals.'
       continue
     }
 

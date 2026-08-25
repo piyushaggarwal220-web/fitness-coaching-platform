@@ -1,6 +1,11 @@
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { LIMITS, MODELS, PLAN_GENERATION_TEMPERATURE } from '@/lib/ai/config'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
+import {
+  DAY_HEADER_PROMPT_RULES,
+  PROTEIN_CALORIE_PROMPT_RULES,
+  WORKOUT_VOLUME_PROMPT_RULES,
+} from '@/lib/ai/plan-quality-rules'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
 import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
@@ -99,6 +104,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     'Rules:',
     '- This is NOT a weekly plan update. Do not design "next week". Edit the CURRENT plan text.',
     '- Preserve useful structure: day headers should stay as Day N (Weekday) with Day 1 = Monday (e.g. Day 1 (Monday)), meal names, exercise lines with sets x reps (plain letter x).',
+    DAY_HEADER_PROMPT_RULES,
     '- Apply the client request with VISIBLE edits — do not return a near-copy or paraphrase of the current plan.',
     '- Make only the changes needed to satisfy the request — keep calories/macros/split/days the same unless the request requires changing them.',
     '- Do not rewrite unrelated days, invent a new program phase, or add weekly progression narrative.',
@@ -107,7 +113,9 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
     '- Use plain section titles and put list items on separate lines without symbol prefixes.',
     '- For workout sections: one exercise per line under each day header as "Exercise: N sets x M reps" (or timed duration). The name before the colon must be a real lift or movement, not a coaching sentence or a muscle-group-only label. The daily tracker parses these lines.',
-    '- For nutrition sections: do not push protein higher just because options exist. Keep amounts comfortable; lower protein is fine in special cases (even ~0.5g/kg). Never inflate macro lines or totals — if protein is low in the meals, show it low.',
+    WORKOUT_VOLUME_PROMPT_RULES,
+    '- For nutrition sections: if protein is hard to hit with allowed foods, lower protein and keep calories high. Never inflate protein numbers. Daily totals count only the primary meal option. Minimum 1800 kcal unless the coach already set otherwise.',
+    PROTEIN_CALORIE_PROMPT_RULES,
     '- Do not invent unsafe extreme restrictions or medical claims.',
     '- Never introduce cross-day references ("same as Day 1", "repeat Day 2", "follow Day 3\'s plan", "as above"). Every day must keep its full meal or exercise list written out so the daily tracker can parse it.',
     '- Never put the next day\'s exercises under Post-Workout / Recovery / Stretching of the previous day.',

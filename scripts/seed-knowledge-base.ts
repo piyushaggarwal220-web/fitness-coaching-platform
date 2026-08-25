@@ -3,6 +3,7 @@
  * Run: npx tsx --env-file=.env.local scripts/seed-knowledge-base.ts
  */
 import { createAdminClient } from '../src/lib/supabase/admin'
+import { invalidateKnowledgeBase } from '../src/lib/ai/prompt-cache'
 import type { AiKnowledgeCategory } from '../src/types/database'
 
 const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }[] = [
@@ -10,31 +11,31 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Fat loss fundamentals',
     category: 'fat_loss',
     content:
-      'Target a sustainable 300–500 kcal daily deficit. Protein around 1.6–2.0 g/kg is optional when it fits naturally — not a target to push toward. Do not maximise protein just because the client could add more; comfortable adherence beats high grams. Lower protein (including ~0.5 g/kg in special cases) can be fine. Never falsify protein totals. Keep fibre/volume high for satiety when helpful. Weigh 3–4 mornings per week; trend matters more than single readings. Never drop below ~1600 kcal without medical oversight.',
+      'Target a sustainable 250–400 kcal daily deficit (never more than 400 from maintenance). Protein around 1.6–2.0 g/kg is optional when it fits naturally — not a target to push toward. If allowed foods cannot hit that protein, lower protein and keep calories high (minimum 1800 kcal) so the client can function. Never cut calories to chase protein grams, and never write protein higher than the meals actually contain. Daily totals count only the primary meal option, never primary plus swap. Weigh 3–4 mornings per week; trend matters more than single readings. If a lower intake than 1800 kcal seems indicated, still write 1800+ and flag the coach.',
   },
   {
     title: 'Muscle gain fundamentals',
     category: 'muscle_gain',
     content:
-      'Target a 200–300 kcal surplus. Protein 1.6–2.0 g/kg is optional when comfortable — do not push protein just because food options exist. Lower protein can work; never falsify macros. Progress load or reps when all prescribed sets are completed with good form. Sleep 7–9 hours for recovery.',
+      'Target a 200–300 kcal surplus. Protein 1.6–2.0 g/kg is optional when comfortable — if it is not possible with their foods, lower protein and keep calories in surplus. Never inflate protein numbers. Progress load or reps when all prescribed sets are completed with good form. Sleep 7–9 hours for recovery.',
   },
   {
     title: 'Recomposition guidance',
     category: 'recomposition',
     content:
-      'At maintenance or slight deficit. Protein need not be maximised; moderate or even low protein (~0.5 g/kg in special cases) is acceptable when it fits the client. Never invent high protein numbers. Combine resistance training 3–5 days/week with moderate cardio.',
+      'At maintenance or slight deficit. Protein need not be maximised; if high protein is not possible, lower it and keep calories up for daily functioning. Never invent high protein numbers. Combine resistance training 3–5 days/week with moderate cardio.',
   },
   {
     title: 'Strength programming',
     category: 'strength',
     content:
-      'Prioritise compound lifts, 3–6 rep ranges for main lifts, longer rest (2–4 min). Deload every 4–8 weeks or when performance stalls with poor recovery.',
+      'Prioritise compound lifts, 3–6 rep ranges for main lifts, longer rest (2–4 min). 2–3 working sets per exercise (4 only on one main compound). Never 5+ working sets. Deload every 4–8 weeks or when performance stalls with poor recovery.',
   },
   {
     title: 'Nutrition principles',
     category: 'nutrition',
     content:
-      'Build meals around foods the client will actually eat — vegetables, carbs they enjoy, and a comfortable amount of protein. Do not push protein higher just because they have options to increase it. Lower protein plans are fine when honest and sustainable; never inflate meal or header protein numbers. Hydration ~2–3 L/day unless medically restricted.',
+      'Build meals around foods the client will actually eat. If protein is hard to hit, reduce protein and keep calories at or above 1800 kcal using carbs and fats they already eat. Never inflate meal or header protein numbers. Hydration ~2–3 L/day unless medically restricted.',
   },
   {
     title: 'Cardio guidelines',
@@ -70,25 +71,25 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Female-specific considerations',
     category: 'female',
     content:
-      'Account for menstrual cycle energy fluctuations; maintain protein and iron-rich foods. Avoid extreme deficits.',
+      'Account for menstrual cycle energy fluctuations. Keep calories at or above 1800 kcal for daily functioning. Protein can be moderate if high protein is not possible; never inflate numbers. Prefer iron-rich foods. Avoid extreme deficits.',
   },
   {
     title: 'Beginner training',
     category: 'beginner',
     content:
-      'Full-body or upper/lower 3 days/week. Teach form before load. 8–15 reps, 2–3 sets per exercise.',
+      'Full-body or upper/lower 3 days/week. Teach form before load. 8–15 reps, 2–3 working sets per exercise. Do not add extra sets for volume.',
   },
   {
     title: 'Intermediate training',
     category: 'intermediate',
     content:
-      'Use structured splits (PPL, upper/lower). Periodise volume and intensity. Track loads.',
+      'Use structured splits (PPL, upper/lower). 3 working sets per exercise is enough; 4 only on one main compound. Do not stack 5+ sets. Track loads.',
   },
   {
     title: 'Advanced training',
     category: 'advanced',
     content:
-      'Individualise volume landmarks and mesocycles. Autoregulate load via RPE/RIR.',
+      'Individualise volume landmarks and mesocycles. Still cap working sets: 3 per exercise, 4 on one main compound only. Autoregulate load via RPE/RIR.',
   },
 ]
 
@@ -100,7 +101,7 @@ async function main(): Promise<void> {
   for (const entry of ENTRIES) {
     const { data: existing } = await admin
       .from('ai_knowledge')
-      .select('id, content')
+      .select('id, content, version')
       .eq('category', entry.category)
       .eq('title', entry.title)
       .eq('active', true)
@@ -111,7 +112,7 @@ async function main(): Promise<void> {
       if (row.content === entry.content) continue
       const { error } = await admin
         .from('ai_knowledge')
-        .update({ content: entry.content })
+        .update({ content: entry.content, version: (row.version ?? 1) + 1 })
         .eq('id', row.id)
       if (error) {
         console.error(`FAIL update ${entry.category}: ${error.message}`)
@@ -139,6 +140,10 @@ async function main(): Promise<void> {
   }
 
   console.log(`\nDone. created=${created}, updated=${updated}`)
+  if (created > 0 || updated > 0) {
+    await invalidateKnowledgeBase()
+    console.log('Invalidated knowledge-base prompt cache.')
+  }
   process.exit(0)
 }
 

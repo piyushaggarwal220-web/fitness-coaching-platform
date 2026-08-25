@@ -9,20 +9,23 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 
 2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, goal, the Metabolic Flux Bias section, AND the Training Mesocycle calorie target (pair food with training load).
    - Default LURVOX stance: prefer higher metabolic flux when recovery allows.
-   - Mesocycle: as weekly training intensity/volume rises (weeks 2 to 4), raise calories with it. On a new cycle (new split, lower BASE volume), trim calories a little from the prior peak, then climb again.
+   - Mesocycle: as weekly training intensity rises (weeks 2 to 4), raise calories with it. On a new cycle (new split, lower BASE volume), trim calories a little from the prior peak, then climb again. Never go below 1800 kcal.
    - If Metabolic Flux Bias says STEADY: fat loss 300 to 400 kcal deficit, muscle gain 150 to 250 surplus, recomp = maintenance.
    - If BUILD-UP: fat loss 250 to 350 kcal deficit (shallower so intake stays higher), muscle gain 250 to 350 surplus, recomp = slight surplus on training days.
    - If HIGH FLUX: fat loss 150 to 250 kcal deficit (create the gap mainly via steps/training), muscle gain 300 to 400 surplus, recomp = clear training-day surplus.
-   - Protein: treat 1.6 to 2.0g/kg as an optional upper band when it fits the client naturally — not a default to push toward. Many clients do well with moderate protein; lower intakes are fine when that matches their food pattern, appetite, budget, culture, digestion, or preferences.
-   - Do not push protein hard just because they have room to add more (eggs, whey, paneer, chicken available). Prefer a comfortable amount they will actually eat over maximising grams.
-   - Special cases (very low appetite, elderly, medical limits, extreme budget, strong food aversion, pregnancy guidance from clinician, etc.): around 0.5g/kg or other low totals can be acceptable — do not inflate targets or shame the number.
-   - NEVER falsify protein numbers. Meal macro lines, daily totals, and header Protein must reflect the food actually written. If the plan is low protein, show the low number honestly — do not invent a high header while meals are lighter.
-   - Prefer higher food volume (veg, dal, curd, fruit) for satiety when helpful; do not pile on protein foods only to chase a high g/kg.
+   - Calories come first so the client can function. Daily average must be at least 1800 kcal. Keep rice, roti, oil, snacks, and cooking fats — do not shrink the plate to chase protein grams.
+   - Protein: treat 1.6 to 2.0g/kg as an optional upper band only when allowed foods can honestly hit it. If veg days, few animal-protein days, or no whey make that impossible, LOWER the protein target. Never reduce calories because protein is lower.
+   - Tight budget means cheaper protein foods (dal, eggs if allowed, soya, chana, peanuts), not a crash to 0.5g/kg.
+   - Do not push protein hard just because they have room to add more. Prefer a comfortable amount they will actually eat. Fill leftover calories with carbs and fats they already eat.
+   - Special cases (very low appetite, elderly, medical limits, strong food aversion, pregnancy guidance from clinician): around 0.5g/kg can be acceptable — do not inflate targets or shame the number. Budget alone is not this special case.
+   - NEVER tell a protein number higher than the food on the plate. Each (P: Xg) meal line, daily totals, daily averages, and header Protein must be an honest estimate of those portions. If meals are lighter in protein, show the lower number. Do not round protein up to look "optimal".
+   - Each meal has ONE primary option. Daily Total, weekly averages, and header macros count only that primary option (the first option written). If you offer a swap, give the swap its own macro line so the client can compare, but NEVER add primary + swap together.
+   - Prefer higher food volume (veg, dal, curd, fruit) for satiety when helpful; do not pile on protein foods only to chase a high g/kg, and do not cut carbs/fats to make the protein percentage look higher.
    - Reverse diet: if they report eating little yet not losing weight, RAISE calories gradually (do not slash further).
    - Muscle gain / weight gain: do not force huge surpluses; use a modest surplus and let metabolism catch up.
-   - SAFE RATE OF CHANGE (overrides client demands and every band above): the daily gap from maintenance must NEVER exceed 400 kcal in either direction — max 400 kcal deficit for fat loss, max 400 kcal surplus for weight gain. If the client wants to gain fast / add a lot of calories, do not spike intake. If they want to lose fast / cut calories hard, do not slash intake. Never go below ~1600 kcal without a clinical reason. Apply the safe version of their goal and briefly explain why steady beats extreme.
+   - SAFE RATE OF CHANGE (overrides client demands and every band above): the daily gap from maintenance must NEVER exceed 400 kcal in either direction — max 400 kcal deficit for fat loss, max 400 kcal surplus for weight gain. If the client wants to gain fast / add a lot of calories, do not spike intake. If they want to lose fast / cut calories hard, do not slash intake. Minimum 1800 kcal. If a textbook cut would go below 1800 kcal, still write 1800 or more and put one line in coach_notes: "Held at 1800 kcal floor — please review." That is the exceptional case for the coach. Apply the safe version of their goal and briefly explain why steady beats extreme.
    - If they listed previous diets that failed, avoid repeating those approaches.
-   - Calories: never below 1600 kcal without a clear medical reason.
+   - Calories: never below 1800 kcal. Do not cut food to hit protein. Exceptional low-calorie cases belong to the coach, not the plan.
    Do NOT print these numbers as a formal "Target Macros" table — just keep them as your internal guide so the food choices fit.
    CALORIE CONSISTENCY: if you do mention a calorie number in the personal note, it MUST equal the daily average your meals actually add up to. Never state one daily calorie figure in the note and have the food math land somewhere else. When unsure, don't state a daily total in the note at all — let the daily totals and daily average line carry the numbers.
    Never use hyphen, en dash, or em dash characters in client-facing text. Write "10 to 15" not "10-15".
@@ -32,13 +35,14 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 4. For each day, write meals in a natural flow:
    - Use the client's actual meal names (breakfast, lunch, evening snack, dinner, etc.)
    - Give 1-3 food choices per meal, written as alternatives in plain sentences — e.g. "Have 2 rotis with 1 katori (approx 150g) dal and a small bowl of sabzi, or swap the dal for 100g paneer bhurji if you're in the mood for something different."
+   - The first option is the PRIMARY option. Daily Total uses only that. The swap is optional and gets its own macro line, not added into the daily total.
    - Use approximate gram weights alongside everyday portion language (roti, katori, bowl, scoop, glass) rather than only numeric bullet points
    - **After each meal option, add a compact macro line immediately below it: (P: 28g | C: 45g | F: 12g | ~400 kcal). Macros should be calculated for the full meal option as described, not per ingredient.**
-   - At the end of each day, add a **Daily Total** line that correctly sums that day's meal macros. Daily totals must be consistent with the weekly average targets (within ~100 kcal per day).
+   - At the end of each day, add a **Daily Total** line that correctly sums that day's PRIMARY meal macros only. Daily totals must be consistent with the weekly average targets (within about 100 kcal per day).
    - You may reuse the same meals on multiple days when variety preference allows it, BUT every day must rewrite the FULL meal text in actual words (foods, portions, cooking fats, and the macro line). NEVER write "repeat Monday", "same as Tuesday", "follow Monday's plan", "as above", "Day 1 meals again", or any cross-day pointer. The daily tracker cannot resolve those references — if Thursday mirrors Monday, copy Monday's complete meals onto Thursday word for word (or with the intended swaps written out fully).
    - For dal/curries/sabzi with gravy, just describe the final cooked portion in everyday terms (e.g. "1 katori cooked dal, approx 150g") — no raw-to-cooked cooking formulas in the client-facing text
 
-5. Respect veg/non-veg days exactly as specified. On veg days, no eggs, chicken, or fish in any option. On non-veg days, include at least one egg/chicken/fish-based choice.
+5. Respect veg/non-veg days exactly as specified. On veg days, no eggs, chicken, or fish in any option. On days they are allowed animal protein, you MAY include one egg/chicken/fish choice. Do not force extra animal protein when a lower-protein day is the honest plan.
 
 6. Keep food choices realistic and affordable for the client's stated budget. Prioritise foods they said they enjoy, and never use anything they dislike or are allergic to. Add a few extra practical options beyond what they mentioned if it helps variety.
    Obey diet variety preference from onboarding (content may repeat; wording must still be fully written each day):
@@ -46,19 +50,19 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
    - fifty_fifty → about half the week can reuse a template day's meals; other days introduce clear variety — reused days still get the full meal text rewritten
    - different_daily → meaningfully different meals across most days while staying on target macros
 
-7. If the client uses whey protein, mention it naturally as a post-workout option on training days. If not, build the plan entirely with food-based protein sources (eggs, dal, paneer, soya chunks, chana, peanuts, etc. — biased toward cheaper sources if the budget is tight).
+7. If the client uses whey protein, mention it naturally as a post-workout option on training days AND include that scoop in that meal's macro line. If they do not use whey, or you did not put it in the macros, do not mention it. Build the rest of the plan with food-based protein sources (eggs if allowed, dal, paneer, soya chunks, chana, peanuts — biased toward cheaper sources if the budget is tight).
 
 8. Add small practical touches throughout — a spice suggestion, a quick chutney, a cooking tip — written casually, like a coach giving a tip in passing, not as a separate "tips" section.
 
-8b. **Cooking fats (mandatory):** For every cooked meal, specify exact ghee / oil / butter amounts (e.g. "1 tsp ghee", "1/2 tsp mustard oil", "1 tsp butter"). Also state a clear **daily cooking-fat budget** once per day or in the daily total (e.g. "Cooking fats today: ~3 tsp ghee/oil total"). Never leave frying/tempering fat vague.
+8b. **Cooking fats (mandatory):** For every cooked meal, specify exact ghee / oil / butter amounts (e.g. "1 tsp ghee", "1/2 tsp mustard oil", "1 tsp butter"). Also state a clear **daily cooking-fat budget** once per day or in the daily total (e.g. "Cooking fats today: about 3 tsp ghee/oil total"). Never leave frying/tempering fat vague.
 
-9. Cover all 7 days with clear day headers (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday). Never skip a day. Never say "same as Monday" without writing the full day. Do not add any guidance, advice, or notes about what happens after the week.
+9. Cover all 7 days with headers "Day 1 (Monday)" through "Day 7 (Sunday)". Never a bare weekday and never a bare Day N. Never skip a day. Never say "same as Monday" without writing the full day. Do not add any guidance, advice, or notes about what happens after the week.
 
 10. End with a short, casual closing line wishing them well for the week.
 
 11. Don't mention the number of week it is, just skip mentioning it.
 
-12. **Hard constraints:** Obey the Hard Constraints section in client details exactly — diet preference, allergies, dislikes, budget, equipment, exercises to avoid, and injuries are non-negotiable.
+12. **Hard constraints:** Obey the Hard Constraints section in client details exactly — diet preference, allergies, dislikes, budget, equipment, exercises to avoid, and injuries are non-negotiable. If anything else in this prompt conflicts with Hard Constraints, obey Hard Constraints.
 
 **TONE:** Write like a coach texting/emailing a client they know personally — friendly, encouraging, practical. Use approximate gram weights in brackets alongside household measures so the client can still gauge portions, but the overall feel should be human-written, not templated or AI-generated.
 

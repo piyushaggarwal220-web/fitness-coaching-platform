@@ -97,6 +97,19 @@ assert(
 const manifest = read('prompts/production/manifest.json')
 assert('manifest includes system_prompt for republish', manifest.includes('"system_prompt"'))
 
+assert(
+  'diet prompts use Day N (Weekday) headers',
+  dietFiles.every((file) => read(file).includes('Day 1 (Monday)'))
+)
+assert(
+  'diet prompts count only the primary meal option',
+  dietFiles.every((file) => /primary option/i.test(read(file)))
+)
+assert(
+  'workout prompts keep training-days cap and leftover rest days',
+  workoutFiles.every((file) => /training days per week is a hard cap/i.test(read(file)) || /exact count/i.test(read(file)))
+)
+
 if (failed > 0) {
   console.error(`\n${failed} full-day plan prompt checks failed`)
   process.exit(1)

@@ -1,9 +1,23 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "main": {
       "type": "lurvox-plan-compare",
       "blocks": {
-        "g_open": { "type": "heading", "settings": { "heading": "Opens with 3 months" } },
+        "g_open": {
+          "type": "heading",
+          "settings": {
+            "heading": "Opens with 3 months"
+          }
+        },
         "r_best": {
           "type": "row",
           "settings": {
@@ -37,7 +51,12 @@
             "plan_12_text": "Every week"
           }
         },
-        "g_more": { "type": "heading", "settings": { "heading": "More with 6 months" } },
+        "g_more": {
+          "type": "heading",
+          "settings": {
+            "heading": "More with 6 months"
+          }
+        },
         "r_stack": {
           "type": "row",
           "settings": {
@@ -47,7 +66,12 @@
             "plan_12": true
           }
         },
-        "g_all": { "type": "heading", "settings": { "heading": "Everything with 12 months" } },
+        "g_all": {
+          "type": "heading",
+          "settings": {
+            "heading": "Everything with 12 months"
+          }
+        },
         "r_call": {
           "type": "row",
           "settings": {
@@ -66,7 +90,12 @@
             "plan_12": true
           }
         },
-        "g_value": { "type": "heading", "settings": { "heading": "Value" } },
+        "g_value": {
+          "type": "heading",
+          "settings": {
+            "heading": "Value"
+          }
+        },
         "r_month": {
           "type": "row",
           "settings": {
@@ -74,9 +103,9 @@
             "plan_3": true,
             "plan_6": true,
             "plan_12": true,
-            "plan_3_text": "₹500",
-            "plan_6_text": "₹450",
-            "plan_12_text": "₹292"
+            "plan_3_text": "₹333",
+            "plan_6_text": "₹283",
+            "plan_12_text": "₹333"
           }
         }
       },
@@ -95,21 +124,23 @@
       ],
       "settings": {
         "eyebrow": "Compare plans",
-        "headline": "3 months starts you. 6 months adds more. 12 months is everything.",
-        "subheadline": "Every longer plan includes everything below it. Weekly coach phone call is 12 months only.",
-        "col_1_label": "3 MONTHS",
-        "col_1_price": "₹1,499",
-        "col_1_link": "https://app.lurvox.in/plans/3-months",
-        "col_2_label": "6 MONTHS",
-        "col_2_price": "₹2,699",
-        "col_2_link": "https://app.lurvox.in/plans/6-months",
-        "col_3_label": "12 MONTHS",
-        "col_3_price": "₹3,499",
-        "col_3_link": "https://app.lurvox.in/plans/12-months",
-        "find_url": "/pages/find-your-plan",
-        "home_url": "/#plans"
+        "headline": "Goal first. Duration second.",
+        "subheadline": "Every longer plan includes everything below it. Aesthetic body is the recommended plan — lowest cost per month and the only one with a weekly coach phone call.",
+        "col_1_label": "Fat loss",
+        "col_1_price": "₹999 · ₹333\/mo",
+        "col_1_link": "https:\/\/app.lurvox.in\/plans\/3-months",
+        "col_2_label": "Fat loss + muscle",
+        "col_2_price": "₹1,699 · ₹283\/mo",
+        "col_2_link": "https:\/\/app.lurvox.in\/plans\/6-months",
+        "col_3_label": "Aesthetic body",
+        "col_3_price": "₹2,999 · ₹333\/mo",
+        "col_3_link": "https:\/\/app.lurvox.in\/plans\/12-months",
+        "find_url": "\/pages\/find-your-plan",
+        "home_url": "\/#plans"
       }
     }
   },
-  "order": ["main"]
+  "order": [
+    "main"
+  ]
 }

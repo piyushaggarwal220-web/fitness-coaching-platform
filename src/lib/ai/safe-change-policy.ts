@@ -8,7 +8,7 @@ export const SAFE_RATE_OF_CHANGE_RULE = [
   '- HARD CAP: the daily calorie gap from maintenance must never exceed 400 kcal in EITHER direction. Maximum 400 kcal deficit for fat loss. Maximum 400 kcal surplus for weight gain. There is no exception for motivated clients, deadlines, or events.',
   '- Weight GAIN / bulking: if the client asks to "gain fast", "bulk hard", or "add a lot of calories", do NOT spike calories. Stay at or below a 400 kcal surplus and explain that faster gain is mostly fat, and steady gain is what lasts.',
   '- Fat LOSS / cutting: if the client asks to "lose fast", "crash", or "cut calories hard", do NOT slash calories. Stay at or below a 400 kcal deficit and explain that a moderate deficit protects muscle, energy, and results.',
-  '- Never program below about 1600 kcal/day without a clear clinical reason, regardless of the request.',
+  '- Never program below 1800 kcal/day. If a lower intake seems indicated, still write 1800+ and flag the coach in coach_notes.',
   '- Do not make large week-to-week calorie jumps in either direction. Adjust gradually.',
   '- Acknowledge the client\'s goal warmly, apply the safe version of what they asked, and briefly say why you are not going more extreme. Stay on solid ground.',
 ].join('\n')

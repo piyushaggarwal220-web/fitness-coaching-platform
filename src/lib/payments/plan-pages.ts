@@ -54,7 +54,7 @@ export const PLAN_PAGE_COPY: Record<
     durationLabel: '90 days',
     promise:
       'This is the fat-loss plan. Ninety days to drop fat with a coach. If you also want muscle gain, that is 6 months. If you want an aesthetic body, that is 12 months.',
-    bestFor: 'looking good for an event, not long term',
+    bestFor: 'looking sharp for an event, not long term',
     goals: [
       'Fat loss in 90 days',
       'A clear diet and workout plan',
@@ -67,7 +67,7 @@ export const PLAN_PAGE_COPY: Record<
     durationLabel: '6 months',
     promise:
       'Fat loss + muscle gain. Six months so you can drop fat and add muscle. For a finished aesthetic body, that is 12 months.',
-    bestFor: 'advanced athlete, looking for little guidance',
+    bestFor: 'advanced athletes who want little refinement',
     goals: [
       'Fat loss + muscle gain',
       'Clothes fit smaller and tighter',
@@ -80,7 +80,7 @@ export const PLAN_PAGE_COPY: Record<
     durationLabel: '12 months',
     promise:
       'Aesthetic body. A full year so fat loss and muscle can both show as a finished look. Lowest monthly rate, weekly coach phone call.',
-    bestFor: 'Aesthetic body',
+    bestFor: 'complete aesthetic transformation',
     goals: [
       'Aesthetic body',
       'Lowest monthly rate with WELCOME60',
@@ -117,9 +117,9 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with debloat',
     label: 'Best for',
     cells: {
-      '3_months': 'Looking good for an event, not long term',
-      '6_months': 'Advanced athlete, looking for little guidance',
-      '12_months': 'Aesthetic body',
+      '3_months': 'Looking sharp for an event, not long term',
+      '6_months': 'Advanced athletes who want little refinement',
+      '12_months': 'Complete aesthetic transformation',
     },
   },
   {
