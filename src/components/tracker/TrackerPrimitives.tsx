@@ -490,21 +490,36 @@ export function TrackerFolder({
   )
 }
 
-/** Nested folder inside workout for warmup / main / cooldown */
+/** Nested folder inside workout for pre / main / post sections */
 export function TrackerPhaseFolder({
   title,
   subtitle,
+  hint,
   progress,
   children,
   defaultOpen = true,
+  open: openProp,
+  onOpenChange,
+  accent = colors.accent,
+  icon,
 }: {
   title: string
   subtitle?: string
+  hint?: string
   progress?: number
   children: ReactNode
   defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  accent?: string
+  icon?: ReactNode
 }) {
-  const [open, setOpen] = useState(defaultOpen)
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen)
+  const open = openProp ?? uncontrolledOpen
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next)
+    if (openProp == null) setUncontrolledOpen(next)
+  }
 
   return (
     <div
@@ -513,30 +528,53 @@ export function TrackerPhaseFolder({
         borderRadius: radius.md,
         marginBottom: 12,
         overflow: 'hidden',
+        borderLeft: `3px solid ${accent}`,
       }}
     >
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
         style={{
           width: '100%',
           display: 'flex',
           alignItems: 'center',
           gap: 10,
           padding: '14px 16px',
-          background: 'transparent',
+          background: open ? `${accent}14` : 'transparent',
           border: 'none',
           cursor: 'pointer',
           textAlign: 'left',
           color: colors.textPrimary,
         }}
       >
+        {icon ? (
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: `${accent}22`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            {icon}
+          </div>
+        ) : null}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>{title}</div>
-          {subtitle && <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>{subtitle}</div>}
+          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em' }}>{title}</div>
+          {hint && (
+            <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2, lineHeight: 1.35 }}>{hint}</div>
+          )}
+          {subtitle && (
+            <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: hint ? 4 : 2 }}>{subtitle}</div>
+          )}
         </div>
         {progress != null && (
-          <span style={{ fontSize: 12, fontWeight: 700, color: colors.accent }}>{progress}%</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: accent }}>{progress}%</span>
         )}
         <ChevronDown
           size={18}

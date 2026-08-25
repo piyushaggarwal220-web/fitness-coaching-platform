@@ -22,7 +22,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 5
+export const TRACKER_PARSER_VERSION = 6
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
@@ -357,7 +357,7 @@ const DAY_HEADER_BOUNDARY =
   '(?:#{1,3}\\s*|\\*{0,2})?(?:day\\s*\\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\\b'
 
 const PHASE_LABELS: Record<WorkoutExercisePhase, string> = {
-  warmup: 'Warm-up',
+  warmup: 'Pre-Workout',
   mobility: 'Mobility',
   main: 'Main Workout',
   finisher: 'Finisher',

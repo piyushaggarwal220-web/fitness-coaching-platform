@@ -123,7 +123,7 @@ export function ensureWarmupPhase(workout: TrackerWorkoutItem): TrackerWorkoutIt
   const warmupPhase: WorkoutPhaseBlock = {
     id: `${dayKey}__phase-warmup`,
     phase: 'warmup',
-    label: 'Warm-up',
+    label: 'Pre-Workout',
     exercises: warmupExercises,
   }
   const phases = [warmupPhase, ...normalized.phases.filter((phase) => phase.phase !== 'warmup')]

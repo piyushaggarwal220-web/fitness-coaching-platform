@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Loader2, X } from 'lucide-react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { colors, layout, radius, spacing } from '@/lib/design-tokens'
 
 type FormPayload = {
   configured: boolean
@@ -22,6 +22,7 @@ type Props = {
 }
 
 export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
+  const titleId = useId()
   const [loading, setLoading] = useState(true)
   const [videoReady, setVideoReady] = useState(false)
   const [data, setData] = useState<FormPayload | null>(null)
@@ -60,6 +61,19 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
     }
   }, [exerciseName])
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
   const title = data?.name || exerciseName
   const mediaSrc = `/api/exercises/form/media?${new URLSearchParams({ name: exerciseName })}`
   const showVideo = Boolean(!data?.error && (loading || data?.hasVideo))
@@ -69,16 +83,19 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-labelledby="exercise-form-title"
+      aria-labelledby={titleId}
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 140,
-        background: 'rgba(0,0,0,0.72)',
+        zIndex: 160,
+        background: 'rgba(0,0,0,0.78)',
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: 'flex-start',
         justifyContent: 'center',
-        padding: spacing[3],
+        paddingTop: `calc(${layout.topBarHeight}px + env(safe-area-inset-top, 0px) + 8px)`,
+        paddingRight: 12,
+        paddingBottom: `calc(${layout.bottomNavHeight}px + env(safe-area-inset-bottom, 0px) + 8px)`,
+        paddingLeft: 12,
       }}
       onClick={onClose}
     >
@@ -86,14 +103,15 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
         style={{
           width: '100%',
           maxWidth: 520,
-          maxHeight: '88vh',
+          height: '100%',
+          maxHeight: '100%',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           background: colors.bgElevated,
           border: `1px solid ${colors.borderSubtle}`,
           borderRadius: radius.lg,
-          padding: spacing[4],
+          boxShadow: '0 24px 64px rgba(0,0,0,0.45)',
         }}
         onClick={(event) => event.stopPropagation()}
       >
@@ -104,6 +122,7 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
             gap: 12,
             alignItems: 'flex-start',
             flexShrink: 0,
+            padding: `${spacing[4]}px ${spacing[4]}px 0`,
           }}
         >
           <div style={{ minWidth: 0 }}>
@@ -111,12 +130,13 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
               FORM
             </p>
             <h2
-              id="exercise-form-title"
+              id={titleId}
               style={{
                 margin: '4px 0 0',
                 fontSize: 20,
                 color: colors.textPrimary,
                 overflowWrap: 'anywhere',
+                lineHeight: 1.25,
               }}
             >
               {title}
@@ -126,69 +146,87 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
             type="button"
             onClick={onClose}
             aria-label="Close form"
+            autoFocus
             style={{
-              border: 'none',
-              background: 'transparent',
+              width: 40,
+              height: 40,
+              borderRadius: radius.full,
+              border: `1px solid ${colors.borderSubtle}`,
+              background: colors.bgCard,
               color: colors.textMuted,
               cursor: 'pointer',
-              padding: 4,
+              padding: 0,
               flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <X size={22} />
+            <X size={20} />
           </button>
         </div>
 
+        {showVideo || showSpinner ? (
+          <div
+            style={{
+              position: 'relative',
+              flexShrink: 0,
+              width: 'calc(100% - 40px)',
+              margin: '14px 20px 0',
+              aspectRatio: '16 / 9',
+              borderRadius: 12,
+              overflow: 'hidden',
+              background: '#000',
+            }}
+          >
+            {showVideo && data?.hasVideo ? (
+              <video
+                controls
+                playsInline
+                preload="auto"
+                onLoadedData={() => setVideoReady(true)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  background: '#000',
+                }}
+                src={mediaSrc}
+              />
+            ) : null}
+            {showSpinner ? (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  background: 'rgba(0,0,0,0.55)',
+                  color: colors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                <Loader2 size={28} color={colors.accent} style={{ animation: 'spin 1s linear infinite' }} />
+                Loading form…
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div
           style={{
-            position: 'relative',
-            flexShrink: 0,
-            width: '100%',
-            aspectRatio: '16 / 9',
-            marginTop: 14,
-            borderRadius: 12,
-            overflow: 'hidden',
-            background: '#000',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto',
+            marginTop: 12,
+            padding: `0 ${spacing[4]}px ${spacing[4]}px`,
+            WebkitOverflowScrolling: 'touch',
           }}
         >
-          {showVideo && data?.hasVideo ? (
-            <video
-              controls
-              playsInline
-              preload="auto"
-              onLoadedData={() => setVideoReady(true)}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                background: '#000',
-              }}
-              src={mediaSrc}
-            />
-          ) : null}
-          {showSpinner ? (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                background: 'rgba(0,0,0,0.55)',
-                color: colors.textSecondary,
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              <Loader2 size={28} color={colors.accent} style={{ animation: 'spin 1s linear infinite' }} />
-              Loading form…
-            </div>
-          ) : null}
-        </div>
-
-        <div style={{ flex: 1, minHeight: 0, overflow: 'auto', marginTop: 12 }}>
           {data?.error ? (
             <p style={{ margin: 0, color: colors.danger }}>{data.error}</p>
           ) : !loading && !data?.configured ? (
@@ -213,11 +251,11 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
                     paddingLeft: 18,
                     color: colors.textSecondary,
                     fontSize: 14,
-                    lineHeight: 1.5,
+                    lineHeight: 1.55,
                   }}
                 >
                   {data.steps.map((step, index) => (
-                    <li key={`${index}-${step.slice(0, 24)}`} style={{ marginBottom: 8 }}>
+                    <li key={`${index}-${step.slice(0, 24)}`} style={{ marginBottom: 10 }}>
                       {step}
                     </li>
                   ))}

@@ -12,6 +12,7 @@ assert.equal(applyExerciseAliases(normalizeExerciseQuery('RDL')), 'romanian dead
 assert.equal(applyExerciseAliases(normalizeExerciseQuery('Skull crushers')), 'lying tricep extension')
 assert.equal(applyExerciseAliases(normalizeExerciseQuery('BB Bench Press')), 'barbell bench press')
 assert.equal(shouldSkipExerciseForm('Rest'), true)
+assert.equal(shouldSkipExerciseForm('Hip Flexor Stretch'), true)
 assert.equal(shouldSkipExerciseForm('Barbell Bench Press'), false)
 assert.equal(
   shouldSkipExerciseForm(

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Check, Pause, Play, Save, Square } from 'lucide-react'
+import { Check, Dumbbell, Flame, Pause, Play, Save, Square, Wind } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { RestTimer } from '@/components/tracker/RestTimer'
 import { ExerciseFormSheet } from '@/components/tracker/ExerciseFormSheet'
@@ -36,7 +36,7 @@ import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
 import { shouldSkipExerciseForm } from '@/lib/exercise-form/normalize'
 import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
-import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
+import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem, WorkoutExercisePhase } from '@/lib/daily-tracker/types'
 
 type WorkoutDayOption = { key: string; label: string }
 
@@ -109,6 +109,46 @@ function formatDuration(totalSeconds: number) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
+function phaseChrome(phase: WorkoutExercisePhase) {
+  switch (phase) {
+    case 'warmup':
+      return {
+        title: 'Pre-Workout',
+        hint: 'Easy cardio, mobility, light groove sets',
+        accent: '#38bdf8',
+        icon: <Flame size={18} color="#38bdf8" />,
+      }
+    case 'mobility':
+      return {
+        title: 'Mobility',
+        hint: 'Joints and range of motion',
+        accent: '#818cf8',
+        icon: <Wind size={18} color="#818cf8" />,
+      }
+    case 'main':
+      return {
+        title: 'Main Workout',
+        hint: 'Working lifts',
+        accent: colors.accent,
+        icon: <Dumbbell size={18} color={colors.accent} />,
+      }
+    case 'finisher':
+      return {
+        title: 'Finisher',
+        hint: 'Core or last push',
+        accent: '#f472b6',
+        icon: <Dumbbell size={18} color="#f472b6" />,
+      }
+    case 'cooldown':
+      return {
+        title: 'Post-Workout',
+        hint: 'Stretches and cool-down',
+        accent: '#34d399',
+        icon: <Wind size={18} color="#34d399" />,
+      }
+  }
+}
+
 export function WorkoutModule({
   workouts,
   workoutDays,
@@ -148,6 +188,7 @@ export function WorkoutModule({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [formExercise, setFormExercise] = useState<string | null>(null)
+  const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({})
 
   const progress = getWorkoutProgress(workout, completion)
   const volume = computeWorkoutVolume(
@@ -158,33 +199,23 @@ export function WorkoutModule({
   const currentEx = workout
     ? getCurrentExercise(workout.exercises, completion.exercises)
     : null
+  const currentExId = currentEx?.id ?? null
+
+  useEffect(() => {
+    if (!workout || !currentExId) return
+    const currentBlock = workout.phases.find((block) =>
+      block.exercises.some((ex) => ex.id === currentExId)
+    )
+    if (!currentBlock) return
+    setOpenPhases((prev) => {
+      if (prev[currentBlock.id]) return prev
+      return { ...prev, [currentBlock.id]: true }
+    })
+  }, [workout, currentExId])
   const sessionTitle = workout
     ? [workout.dayLabel, workout.focus].filter(Boolean).join(' · ')
     : ''
-  const hasWarmup = workout?.phases.some((phase) => phase.phase === 'warmup') ?? false
   const workoutSaved = completion.workoutSession?.status === 'saved'
-
-  const phaseDefaults = useMemo(() => {
-    if (!workout) {
-      return {
-        warmup: false,
-        mobility: true,
-        main: true,
-        finisher: true,
-        cooldown: true,
-      } as const
-    }
-    const warmupBlock = workout.phases.find((phase) => phase.phase === 'warmup')
-    const warmupDone =
-      warmupBlock?.exercises.every((ex) => completion.exercises?.[ex.id]?.completed) ?? true
-    return {
-      warmup: hasWarmup && !warmupDone,
-      mobility: true,
-      main: !hasWarmup || warmupDone,
-      finisher: true,
-      cooldown: true,
-    } as const
-  }, [workout, completion.exercises, hasWarmup])
 
   const persistSession = useCallback(
     (next: {
@@ -597,56 +628,12 @@ export function WorkoutModule({
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: spacing[3] }}>
-          <button
-            type="button"
-            onClick={() => (sessionRunning ? stopSession() : startSession())}
-            style={{
-              height: 48,
-              borderRadius: 12,
-              border: 'none',
-              background: sessionRunning ? colors.bgElevated : colors.accent,
-              color: sessionRunning ? colors.textPrimary : colors.textInverse,
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
-            {sessionRunning ? <Pause size={18} /> : <Play size={18} />}
-            {sessionRunning ? 'Stop' : elapsedMs > 0 ? 'Resume' : 'Start'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmSaveOpen(true)}
-            disabled={saving}
-            style={{
-              height: 48,
-              borderRadius: 12,
-              border: 'none',
-              background: workoutSaved ? colors.successMuted : colors.accentMuted,
-              color: workoutSaved ? colors.success : colors.textPrimary,
-              fontWeight: 800,
-              cursor: saving ? 'wait' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
-            <Save size={18} />
-            {workoutSaved ? 'Save again' : 'Save workout'}
-          </button>
-        </div>
-
         <button
           type="button"
           onClick={resetSession}
           disabled={elapsedMs === 0 && !sessionRunning}
           style={{
-            marginTop: 8,
+            marginTop: 10,
             width: '100%',
             height: 40,
             borderRadius: 12,
@@ -677,24 +664,31 @@ export function WorkoutModule({
         <ProgressBar percent={workoutScore} height={10} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: spacing[4] }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: spacing[4] }}>
         <StatTile label="Exercises" value={`${progress.completed}/${progress.total}`} />
-        <StatTile label="Est. time" value={remainingMin > 0 ? `${remainingMin} min` : '—'} />
+        <StatTile label="Est. left" value={remainingMin > 0 ? `${remainingMin} min` : 'Done'} />
         <StatTile label="Volume" value={volume > 0 ? `${volume.toLocaleString()} kg` : '—'} />
-        <StatTile label="Current" value={currentEx?.name?.split(' ').slice(0, 2).join(' ') ?? '—'} />
       </div>
 
-      {workout.phases.map((block) => (
+      {workout.phases.map((block) => {
+        const chrome = phaseChrome(block.phase)
+        const phaseProgress = getPhaseProgress(block, completion)
+        return (
         <TrackerPhaseFolder
           key={block.id}
-          title={block.label}
-          subtitle={`${getPhaseProgress(block, completion).completed}/${block.exercises.length} exercises`}
-          progress={getPhaseProgress(block, completion).percent}
-          defaultOpen={
-            block.phase === 'warmup' ||
-            phaseDefaults[block.phase] ||
-            block.exercises.some((ex) => ex.id === currentEx?.id)
+          title={chrome.title}
+          hint={chrome.hint}
+          subtitle={`${phaseProgress.completed}/${block.exercises.length} moves`}
+          progress={phaseProgress.percent}
+          accent={chrome.accent}
+          icon={chrome.icon}
+          open={
+            openPhases[block.id] ??
+            (currentEx
+              ? block.exercises.some((ex) => ex.id === currentEx.id)
+              : block.phase === 'warmup')
           }
+          onOpenChange={(next) => setOpenPhases((prev) => ({ ...prev, [block.id]: next }))}
         >
           {block.exercises.map((ex) => {
             const exData = completion.exercises?.[ex.id]
@@ -743,7 +737,9 @@ export function WorkoutModule({
                       >
                         {ex.name?.trim() || 'Exercise'}
                       </div>
-                      {ex.name?.trim() && !shouldSkipExerciseForm(ex.name) ? (
+                      {ex.name?.trim() &&
+                      block.phase !== 'cooldown' &&
+                      !shouldSkipExerciseForm(ex.name) ? (
                         <button
                           type="button"
                           onClick={() => setFormExercise(ex.name.trim())}
@@ -997,7 +993,8 @@ export function WorkoutModule({
             )
           })}
         </TrackerPhaseFolder>
-      ))}
+        )
+      })}
 
       {rest && (
         <RestTimer
