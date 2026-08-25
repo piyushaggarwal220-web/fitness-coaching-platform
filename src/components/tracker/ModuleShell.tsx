@@ -114,6 +114,23 @@ export function ModuleEmpty({ message }: { message: string }) {
         >
           Back to tracker
         </Link>
+        <Link
+          href="/client/report-issue?about=tracker"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '10px 16px',
+            borderRadius: radius.full,
+            background: colors.bgElevated,
+            color: colors.textPrimary,
+            border: `1px solid ${colors.borderSubtle}`,
+            textDecoration: 'none',
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          Send feedback
+        </Link>
       </div>
     </div>
   )

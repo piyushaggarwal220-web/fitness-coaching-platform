@@ -70,7 +70,7 @@ export default function ClientSupportNewPage() {
       <div style={{ ...s.containerNarrow, padding: 0, maxWidth: '100%' }}>
         <Link href="/client/support" style={s.backLink}>← Back to support</Link>
         <h1 style={{ ...s.title, marginTop: 8 }}>{brandTitle('New request')}</h1>
-        <p style={s.subtitle}>Describe what you need help with. Your coach will respond in the support queue.</p>
+        <p style={s.subtitle}>Ask a question, complain about a plan, or send a review. Coaches pick this up in the support queue.</p>
 
         {error && <div style={s.error}>{error}</div>}
 

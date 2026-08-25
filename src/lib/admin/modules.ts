@@ -126,8 +126,8 @@ export const ADMIN_MODULES: AdminModule[] = [
   },
   {
     id: 'issues',
-    title: 'Issue Reports',
-    description: 'Client-submitted bug reports and technical issues.',
+    title: 'Feedback',
+    description: 'Client reviews, complaints, and bug reports.',
     href: '/admin/issues',
     status: 'implemented',
     showInNav: true,

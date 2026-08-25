@@ -627,6 +627,9 @@ export type SupportRequestCategory =
   | 'workout_update'
   | 'pain_injury'
   | 'general'
+  | 'plan_complaint'
+  | 'plan_review'
+  | 'platform_feedback'
 
 export type SupportRequestStatus = 'open' | 'claimed' | 'closed'
 
@@ -996,7 +999,17 @@ export type UserNotification = {
 }
 
 export type IssueStatus = 'open' | 'investigating' | 'resolved' | 'closed'
-export type IssueCategory = 'bug' | 'feature' | 'account' | 'billing' | 'other'
+export type IssueCategory =
+  | 'bug'
+  | 'feature'
+  | 'account'
+  | 'billing'
+  | 'other'
+  | 'plan_complaint'
+  | 'plan_review'
+  | 'platform_review'
+
+export type IssueTopic = 'plan' | 'tracker' | 'platform'
 
 export type IssueReport = {
   id: string
@@ -1005,6 +1018,8 @@ export type IssueReport = {
   description: string
   screenshot_url: string | null
   system_info: Record<string, unknown> | null
+  rating: number | null
+  topic: IssueTopic | null
   status: IssueStatus
   admin_notes: string | null
   resolved_at: string | null

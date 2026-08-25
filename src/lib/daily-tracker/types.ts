@@ -162,6 +162,8 @@ export type TrackerSnapshot = {
   planId: string
   planVersion: number
   planTitle: string
+  /** Bumped when exercise/meal parsing rules change so stored days refresh. */
+  parserVersion?: number
   /** Active plan updated_at when this snapshot was built — used to detect mid-day plan edits */
   planUpdatedAt?: string
   /**

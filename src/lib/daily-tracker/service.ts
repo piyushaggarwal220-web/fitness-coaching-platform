@@ -7,7 +7,13 @@ import {
   hasCoachingDayStarted,
 } from '@/lib/checkin-schedule'
 import type { OnboardingProfile, Plan } from '@/types/database'
-import { buildTrackerSnapshot, mergeCompletion, planContentSignature, remapWorkoutDayKey } from './parser'
+import {
+  TRACKER_PARSER_VERSION,
+  buildTrackerSnapshot,
+  mergeCompletion,
+  planContentSignature,
+  remapWorkoutDayKey,
+} from './parser'
 import { averageRpe, calculateTrackerScores } from './scores'
 import type {
   DailyTrackerDay,
@@ -132,7 +138,10 @@ function snapshotContentFingerprint(snapshot: DailyTrackerDay['snapshot']): stri
       const names = (item.exercises ?? [])
         .map((ex) => `${ex.name}:${ex.targetSets}:${ex.targetReps}`)
         .join(',')
-      return `workout:${item.id}:${item.title}:${item.workoutDay ?? ''}:${names}`
+      const phases = (item.phases ?? [])
+        .map((phase) => `${phase.phase}:${phase.exercises.map((ex) => ex.name).join(',')}`)
+        .join('/')
+      return `workout:${item.id}:${item.title}:${item.workoutDay ?? ''}:${names}:${phases}`
     }
     if (item.type === 'cardio') {
       return `cardio:${item.id}:${item.title}:${item.target ?? ''}:${item.unit ?? ''}`
@@ -283,7 +292,9 @@ export async function getOrCreateTodayTracker(
       getWorkoutPhaseSignature(existingDay.snapshot) !== getWorkoutPhaseSignature(snapshot)
     const contentChanged =
       snapshotContentFingerprint(existingDay.snapshot) !== snapshotContentFingerprint(snapshot)
+    const parserStale = existingDay.snapshot.parserVersion !== TRACKER_PARSER_VERSION
     const needsRebuild =
+      parserStale ||
       existingDay.plan_version !== plan.version ||
       existingDay.plan_id !== plan.id ||
       existingDay.snapshot.planId !== plan.id ||

@@ -15,6 +15,9 @@ export const SUPPORT_CATEGORIES: { value: SupportRequestCategory; label: string 
   { value: 'diet_update', label: 'Diet Update' },
   { value: 'workout_update', label: 'Workout Update' },
   { value: 'pain_injury', label: 'Pain / Injury' },
+  { value: 'plan_complaint', label: 'Plan complaint' },
+  { value: 'plan_review', label: 'Plan review' },
+  { value: 'platform_feedback', label: 'App / platform feedback' },
   { value: 'general', label: 'General' },
 ]
 

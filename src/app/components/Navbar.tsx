@@ -51,7 +51,7 @@ export default function Navbar() {
                 <Link href="/dashboard" style={styles.link} onClick={() => setIsOpen(false)}>Dashboard</Link>
                 <Link href="/workouts" style={styles.link} onClick={() => setIsOpen(false)}>Workouts</Link>
                 <Link href="/client/support" style={styles.link} onClick={() => setIsOpen(false)}>Support</Link>
-                <Link href="/client/report-issue" style={styles.link} onClick={() => setIsOpen(false)}>Report Issue</Link>
+                <Link href="/client/report-issue" style={styles.link} onClick={() => setIsOpen(false)}>Feedback</Link>
                 <button type="button" onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
               </>
             ) : (

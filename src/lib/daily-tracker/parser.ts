@@ -21,6 +21,9 @@ import type {
 import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
+/** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
+export const TRACKER_PARSER_VERSION = 2
+
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
 function slug(value: string): string {
@@ -1309,6 +1312,7 @@ export function buildTrackerSnapshot(
     planId: plan.id,
     planVersion: plan.version,
     planTitle: plan.title,
+    parserVersion: TRACKER_PARSER_VERSION,
     planUpdatedAt: plan.updated_at,
     planContentSignature: planContentSignature(plan),
     items,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AdminShell } from '@/components/admin/AdminShell'
-import { formatIssueCategory, formatIssueStatus, ISSUE_STATUSES } from '@/lib/issue-reports'
+import { formatIssueCategory, formatIssueStatus, formatIssueTopic, ISSUE_STATUSES } from '@/lib/issue-reports'
 import { brandTitle } from '@/lib/brand'
 import { adminStyles as s } from '@/lib/admin/styles'
 import type { IssueReport, IssueStatus } from '@/types/database'
@@ -37,8 +37,8 @@ export default function AdminIssuesPage() {
   return (
     <AdminShell>
       <div style={s.container}>
-        <h1 style={s.title}>{brandTitle('Issue Reports')}</h1>
-        <p style={s.subtitle}>Client-submitted bug reports and technical issues.</p>
+        <h1 style={s.title}>{brandTitle('Feedback')}</h1>
+        <p style={s.subtitle}>Reviews, complaints, and bug reports from clients.</p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         <button type="button" onClick={() => setFilter('all')} style={filter === 'all' ? s.primaryBtn : s.secondaryBtn}>All</button>
         {ISSUE_STATUSES.map((st) => (
@@ -64,7 +64,11 @@ export default function AdminIssuesPage() {
                 <span style={{ fontSize: 13, textTransform: 'capitalize', fontWeight: 600 }}>{formatIssueStatus(issue.status)}</span>
               </div>
               <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
-                {formatIssueCategory(issue.category)} · {new Date(issue.created_at).toLocaleString()}
+                {formatIssueCategory(issue.category)}
+                {formatIssueTopic(issue.topic) ? ` · ${formatIssueTopic(issue.topic)}` : ''}
+                {issue.rating ? ` · ${issue.rating}/5` : ''}
+                {' · '}
+                {new Date(issue.created_at).toLocaleString()}
               </div>
               <p style={{ margin: '0 0 12px', lineHeight: 1.5 }}>{issue.description}</p>
               {issue.screenshot_url && (

@@ -225,6 +225,15 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           plan.
         </p>
       )}
+
+      <p style={{ marginTop: spacing[5], textAlign: 'center' }}>
+        <Link
+          href="/client/report-issue?about=tracker"
+          style={{ color: colors.textMuted, fontSize: 13, fontWeight: 600 }}
+        >
+          Tracker looks wrong? Rebuild from plan, or send feedback
+        </Link>
+      </p>
     </div>
   )
 }

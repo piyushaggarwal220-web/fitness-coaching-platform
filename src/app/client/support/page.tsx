@@ -66,7 +66,7 @@ export default function ClientSupportPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
           <div>
             <h1 style={{ ...s.title, marginTop: 0 }}>{brandTitle('Support')}</h1>
-            <p style={{ ...s.subtitle, marginBottom: 0 }}>Submit structured coaching requests to your coach.</p>
+            <p style={{ ...s.subtitle, marginBottom: 0 }}>Ask your coach a question, or send a plan complaint or review.</p>
           </div>
           <Link href="/client/support/new" style={{ ...s.primaryBtn, textDecoration: 'none', alignSelf: 'center' }}>
             New request
