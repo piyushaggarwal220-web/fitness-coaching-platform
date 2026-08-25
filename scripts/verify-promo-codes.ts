@@ -115,21 +115,21 @@ pass('migration creates promo_codes with discount/referral kinds')
 
 assert.equal(isAffiliateDiscountCode('luke'), true)
 assert.equal(getAffiliateCode('LUKE')?.extraPercentOffSale, 5)
-assert.equal(affiliateSalePaise('LUKE', '3_months'), 94900)
-assert.equal(affiliateSalePaise('LUKE', '6_months'), 161400)
-assert.equal(affiliateSalePaise('LUKE', '12_months'), 284900)
-assert.equal(affiliateDiscountPaise('LUKE', '3_months', 249900), 155000)
-assert.equal(affiliateDiscountPaise('LUKE', '6_months', 424900), 263500)
-assert.equal(affiliateDiscountPaise('LUKE', '12_months', 749900), 465000)
-pass('LUKE affiliate code is sale + 5% (₹949 / ₹1,614 / ₹2,849)')
+assert.equal(affiliateSalePaise('LUKE', '3_months'), 123400)
+assert.equal(affiliateSalePaise('LUKE', '6_months'), 199400)
+assert.equal(affiliateSalePaise('LUKE', '12_months'), 332400)
+assert.equal(affiliateDiscountPaise('LUKE', '3_months', 249900), 126500)
+assert.equal(affiliateDiscountPaise('LUKE', '6_months', 424900), 225500)
+assert.equal(affiliateDiscountPaise('LUKE', '12_months', 749900), 417500)
+pass('LUKE affiliate code is sale + 5% (₹1,234 / ₹1,994 / ₹3,324)')
 
 const lukeExpected = expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'], {
-  amount_paise: '94900',
+  amount_paise: '123400',
   list_amount_paise: '249900',
-  discount_paise: '155000',
+  discount_paise: '126500',
   discount_code: 'LUKE',
 })
-assert.equal(lukeExpected, 94900)
+assert.equal(lukeExpected, 123400)
 pass('order notes accept LUKE affiliate amounts')
 
 const lukeMigration = readFileSync(
