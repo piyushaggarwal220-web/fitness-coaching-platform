@@ -548,6 +548,62 @@ Plank: 45 seconds`,
   )
 }
 
+{
+  const leakedSectionsPlan: Plan = {
+    ...planV1,
+    id: 'plan-leaked-sections',
+    workout_plan: `Day 1 (Monday): Lower Power
+Warm-up:
+- Arm circles 2x15
+- Bodyweight squat 2x10
+- Goblet Squat: 3 sets x 8 reps
+
+Main Workout:
+- Romanian Deadlift: 3 sets x 8 reps
+
+Post-Workout:
+- Tricep Rope Pushdown: 3 sets x 12 reps
+- Hip Flexor Stretch: 2x30s
+`,
+  }
+  const leakedSnap = buildTrackerSnapshot(leakedSectionsPlan)
+  const leakedWorkout = leakedSnap.items.find((i) => i.type === 'workout')
+  const leakedWarm =
+    leakedWorkout?.type === 'workout'
+      ? leakedWorkout.phases.find((p) => p.phase === 'warmup')?.exercises ?? []
+      : []
+  const leakedMain =
+    leakedWorkout?.type === 'workout'
+      ? leakedWorkout.phases.find((p) => p.phase === 'main')?.exercises ?? []
+      : []
+  const leakedCool =
+    leakedWorkout?.type === 'workout'
+      ? leakedWorkout.phases.find((p) => p.phase === 'cooldown')?.exercises ?? []
+      : []
+  assert(
+    'working squat in Warm-up is rehomed to Main Workout',
+    leakedMain.some((ex) => /goblet squat/i.test(ex.name)) &&
+      !leakedWarm.some((ex) => /goblet squat/i.test(ex.name))
+  )
+  assert(
+    'light bodyweight squat stays in Warm-up',
+    leakedWarm.some((ex) => /bodyweight squat/i.test(ex.name))
+  )
+  assert(
+    'pushdown in Post-Workout is rehomed to Main Workout',
+    leakedMain.some((ex) => /pushdown/i.test(ex.name)) &&
+      !leakedCool.some((ex) => /pushdown/i.test(ex.name))
+  )
+  assert(
+    'stretches stay in Post-Workout',
+    leakedCool.some((ex) => /hip flexor/i.test(ex.name))
+  )
+  assert(
+    'RDL stays in Main Workout',
+    leakedMain.some((ex) => /romanian deadlift/i.test(ex.name))
+  )
+}
+
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)
   process.exit(1)

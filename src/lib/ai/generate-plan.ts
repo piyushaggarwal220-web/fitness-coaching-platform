@@ -30,6 +30,7 @@ import {
   DAY_HEADER_PROMPT_RULES,
   EXERCISE_NAME_PROMPT_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
+  WORKOUT_SECTION_PROMPT_RULES,
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
 import { profileToComplexityInput } from '@/lib/complexity/profile-input'
@@ -248,8 +249,9 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   '- Main body is strength / resistance training. You MAY weave a one-line daily step target and a short sleep note. Never add Cardio, Conditioning, or Supplements section headers, and do not write a full cardio or supplement program here (those are generated separately).',
   '- Every training day must list every exercise with sets x reps (or duration) in full under that day header — one exercise per line.',
   '- NEVER use cross-day references such as "same as Day 1", "repeat Day 2", "follow Thursday\'s workout", or "as above". If two days share a session, rewrite the complete exercise list under both headers. The daily tracker cannot resolve day-to-day pointers.',
-  '- Keep each day self-contained: warm-up (optional), main lifts, then that day\'s Post-Workout stretches if any. Do NOT put the next day\'s lifts under Post-Workout / Recovery / Stretching of the previous day.',
-  '- Do not use a lone line "Recovery" or "Stretching" between days — that can make the tracker swallow the next session into Post-Workout. Use "Post-Workout:" only for cooldown stretches of the CURRENT day, or one shared cooldown AFTER all day blocks.',
+  '- Keep each day self-contained: Warm-up, Main Workout, then that day\'s Post-Workout stretches. Do NOT put the next day\'s lifts under Post-Workout / Recovery / Stretching of the previous day.',
+  WORKOUT_SECTION_PROMPT_RULES,
+  '- Do not use a lone line "Recovery" or "Stretching" between days — that can make the tracker swallow the next session into Post-Workout. Use "Post-Workout:" only for cooldown stretches of the CURRENT day. Never a shared warmup before Day 1 or a shared stretch list after the week.',
   '- Do not hide the working sets inside paragraph prose only; the tracker needs scannable exercise lines.',
   WORKOUT_VOLUME_PROMPT_RULES,
   '- Write a complete week. Use the full output budget. Do not skip days or drop exercises to save tokens.',

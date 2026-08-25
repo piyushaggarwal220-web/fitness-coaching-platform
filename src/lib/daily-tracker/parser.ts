@@ -22,7 +22,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 4
+export const TRACKER_PARSER_VERSION = 5
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
@@ -292,7 +292,7 @@ function parseMeals(diet: string): {
 }
 
 const PHASE_HEADERS =
-  /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|working\s+sets?|strength|hypertrophy|accessory|accessories|compound|cool[- ]?down|post[- ]?workout(?:\s+stretching)?|stretching|recovery|finisher)\s*:?\s*$/i
+  /^(?:#{1,3}\s*)?(warm[- ]?up|pre[- ]?workout|activation|mobility|prep|main(?:\s+workout)?|working\s+sets?|strength|hypertrophy|accessory|accessories|compound|cool[- ]?down|post[- ]?workout(?:\s+stretching)?|stretching|recovery|finisher)\s*:?\s*$/i
 
 /** Muscle-group or session labels with no movement — not tracker exercises. */
 const SESSION_LABEL_ONLY =
@@ -328,6 +328,9 @@ const DAY_SESSION_HEADER =
 const PHASE_MAP: Record<string, WorkoutExercisePhase> = {
   'warm-up': 'warmup',
   warmup: 'warmup',
+  'pre-workout': 'warmup',
+  'pre workout': 'warmup',
+  preworkout: 'warmup',
   activation: 'warmup',
   prep: 'warmup',
   mobility: 'mobility',
@@ -609,7 +612,7 @@ function parseWorkoutPhases(section: string): {
 
     // "Post-workout: walk, then hip flexor stretches" (header + content on one line)
     const inlinePhase = trimmed.match(
-      /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|cool[- ]?down|post[- ]?workout(?:\s+stretching)?|stretching|recovery|finisher)\s*[:\-–—]\s+(.+)$/i
+      /^(?:#{1,3}\s*)?(warm[- ]?up|pre[- ]?workout|activation|mobility|prep|main(?:\s+workout)?|cool[- ]?down|post[- ]?workout(?:\s+stretching)?|stretching|recovery|finisher)\s*[:\-–—]\s+(.+)$/i
     )
     if (inlinePhase) {
       const key = inlinePhase[1]!.toLowerCase().replace(/\s+/g, ' ')
@@ -652,6 +655,8 @@ function parseWorkoutPhases(section: string): {
       noteLines.push(stripMarkdownDecorators(trimmed.replace(/^#{1,3}\s*/, '')))
     }
   }
+
+  rehomeLeakedPhaseBuckets(phaseBuckets)
 
   const phaseOrder: WorkoutExercisePhase[] = ['warmup', 'mobility', 'main', 'finisher', 'cooldown']
   const phases: WorkoutPhaseBlock[] = phaseOrder
@@ -989,22 +994,70 @@ function workoutSharedRegions(fullWorkout: string): string {
   return text.slice(0, dayStart).trim()
 }
 
-/** Strength compounds accidentally captured into shared cooldown must be dropped. */
-function looksLikeMainLiftInCooldown(ex: TrackerExerciseItem): boolean {
-  const name = ex.name.toLowerCase()
-  if (/\b(stretch|mobility|foam\s*roll|breathing|cool\s*down|walk|pose|hold)\b/i.test(name)) {
+/** Strength compounds accidentally captured into warmup/cooldown are moved back to main. */
+function looksLikeStrengthMovement(name: string): boolean {
+  const n = name.toLowerCase()
+  if (
+    /\b(stretch|mobility|foam\s*roll|breathing|cool\s*down|walk|pose|hold|circle|swing|opener)\b/i.test(
+      n
+    )
+  ) {
     return false
   }
-  const strengthName =
-    /\b(bench|squat|deadlift|press|row|pull[- ]?up|chin[- ]?up|lunge|rdl|hip\s*thrust|curl|extension|flye?|raise|pulldown|dip|hack\s*squat|leg\s*press)\b/i.test(
-      name
-    )
-  if (!strengthName) return false
+  return /\b(bench|squat|deadlift|press|row|pull[- ]?up|chin[- ]?up|lunge|rdl|hip\s*thrust|curl|extension|flye?|raise|pulldown|pushdown|kickback|dip|hack\s*squat|leg\s*press|tricep|bicep)\b/i.test(
+    n
+  )
+}
+
+function looksLikeMainLiftInCooldown(ex: TrackerExerciseItem): boolean {
+  if (!looksLikeStrengthMovement(ex.name)) return false
   const sets = ex.targetSets ?? 0
   const reps = String(ex.targetReps ?? '')
-  const timedStretch = /\b(\d+\s*s|\d+\s*sec|hold|seconds?)\b/i.test(reps) || /\b\d+\s*s\b/i.test(name)
+  const timedStretch = /\b(\d+\s*s|\d+\s*sec|hold|seconds?)\b/i.test(reps) || /\b\d+\s*s\b/i.test(ex.name)
   if (timedStretch) return false
   return sets >= 2 || Boolean(reps && /^\d/.test(reps))
+}
+
+function looksLikeWorkingLiftInWarmup(ex: TrackerExerciseItem): boolean {
+  if (
+    /\b(circle|swing|walk|jog|jacks|skip|cat.?cow|inchworm|opener|mobility|arm circles|leg swings|jumping jack)\b/i.test(
+      ex.name
+    )
+  ) {
+    return false
+  }
+  if (!looksLikeStrengthMovement(ex.name)) return false
+  const sets = ex.targetSets ?? 0
+  const lightActivation =
+    /\b(bodyweight|air squat|glute bridge|band pull|pull.?apart)\b/i.test(ex.name) && sets <= 2
+  if (lightActivation) return false
+  if (sets >= 3) return true
+  return (
+    sets >= 2 &&
+    /\b(barbell|dumbbell|cable|machine|smith|ez[- ]?bar|kettlebell|goblet|pushdown|pulldown|rdl|deadlift|bench|hip\s*thrust|hack\s*squat|leg\s*press|tricep|bicep)\b/i.test(
+      ex.name
+    )
+  )
+}
+
+function rehomeLeakedPhaseBuckets(phaseBuckets: Map<WorkoutExercisePhase, TrackerExerciseItem[]>) {
+  const warmup = phaseBuckets.get('warmup') ?? []
+  const cooldown = phaseBuckets.get('cooldown') ?? []
+  const leakedWarm = warmup.filter(looksLikeWorkingLiftInWarmup)
+  const keepWarm = warmup.filter((ex) => !looksLikeWorkingLiftInWarmup(ex))
+  const leakedCool = cooldown.filter(looksLikeMainLiftInCooldown)
+  const keepCool = cooldown.filter((ex) => !looksLikeMainLiftInCooldown(ex))
+  if (keepWarm.length) phaseBuckets.set('warmup', keepWarm)
+  else phaseBuckets.delete('warmup')
+  if (keepCool.length) phaseBuckets.set('cooldown', keepCool)
+  else phaseBuckets.delete('cooldown')
+  if (leakedWarm.length === 0 && leakedCool.length === 0) return
+  const main = phaseBuckets.get('main') ?? []
+  phaseBuckets.set('main', [
+    ...leakedWarm.map((ex) => ({ ...ex, phase: 'main' as const })),
+    ...main,
+    ...leakedCool.map((ex) => ({ ...ex, phase: 'main' as const })),
+  ])
 }
 
 function sharedPhasePatterns(phase: 'warmup' | 'cooldown'): RegExp[] {
@@ -1046,7 +1099,9 @@ function parseSharedPhaseBlock(
   if (structured.length > 0) {
     return structured
       .filter((ex) => !/steps|intensity|rep ranges/i.test(ex.name))
+      .filter((ex) => ex.phase === phase)
       .filter((ex) => !(phase === 'cooldown' && looksLikeMainLiftInCooldown(ex)))
+      .filter((ex) => !(phase === 'warmup' && looksLikeWorkingLiftInWarmup(ex)))
       .map((ex, idx) => ({
         ...ex,
         phase,
@@ -1120,15 +1175,13 @@ function mergePhaseExercises(
     }
   }
 
+  // Drop / rehome strength compounds that still landed in the wrong folder.
+  rehomeLeakedPhaseBuckets(byPhase)
+
   // Always include a warm-up block — use plan warmup when present, otherwise defaults
   if ((byPhase.get('warmup')?.length ?? 0) === 0) {
     for (const ex of DEFAULT_WARMUP_EXERCISES) add(ex)
   }
-
-  // Drop any strength compounds that still landed in cooldown (bad AI layout).
-  const cleanedCooldown = (byPhase.get('cooldown') ?? []).filter((ex) => !looksLikeMainLiftInCooldown(ex))
-  if (cleanedCooldown.length > 0) byPhase.set('cooldown', cleanedCooldown)
-  else byPhase.delete('cooldown')
 
   const phaseOrder: WorkoutExercisePhase[] = ['warmup', 'mobility', 'main', 'finisher', 'cooldown']
   const phases: WorkoutPhaseBlock[] = phaseOrder

@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'protein-cal-1800-sets-names-v3'
+export const PLAN_QUALITY_RULES_VERSION = 'protein-cal-1800-sets-names-sections-v4'
 
 /** Minimum daily calories for generated diets. Do not cut below this to chase protein. */
 export const DIET_FLOOR_TARGET_KCAL = 1800
@@ -40,4 +40,15 @@ export const EXERCISE_NAME_PROMPT_RULES = [
   '- Put the tool in the name when it matters: "Barbell Bench Press", "Dumbbell Romanian Deadlift", "Resistance Band Row".',
   '- One movement per line. No nicknames (skull crushers, BB bench), no two lifts in one name, no muscle-group-only labels.',
   '- Use ordinary coach English. Do not copy a vendor catalog, and never pick a catalog name that would break equipment or injury constraints.',
+].join('\n')
+
+export const WORKOUT_SECTION_PROMPT_RULES = [
+  'TRACKER SECTIONS (non-negotiable, every training day):',
+  '- Under each Day N (Weekday) header, put these exact labels on their own lines, in this order: Warm-up: then Main Workout: then Post-Workout:.',
+  '- Warm-up: only easy cardio, joint circles, bodyweight activations, and 1 or 2 very light groove sets. Never working sets of the day\'s main lifts.',
+  '- Main Workout: every working lift (compounds, accessories, core finisher). Goblet Squat, RDL, presses, rows, pushdowns, and curls belong here only.',
+  '- Post-Workout: only stretches, an easy walk, or breathing. Never strength lifts.',
+  '- Do not write a shared warmup essay before Day 1 or a shared stretching block after the week that lists lifts. Repeat the three headers under every training day.',
+  '- Never a lone line Recovery or Stretching. Those make the tracker treat the next lifts as Post-Workout.',
+  '- Finish Post-Workout before the next Day N header.',
 ].join('\n')

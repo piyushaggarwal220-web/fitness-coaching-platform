@@ -110,6 +110,23 @@ assert(
   workoutFiles.every((file) => /training days per week is a hard cap/i.test(read(file)) || /exact count/i.test(read(file)))
 )
 
+const workoutSectionPhrases = ['Warm-up:', 'Main Workout:', 'Post-Workout:', 'shared warmup']
+for (const file of workoutFiles) {
+  const body = read(file)
+  for (const phrase of workoutSectionPhrases) {
+    assert(`${file} includes tracker section phrase "${phrase}"`, body.includes(phrase))
+  }
+}
+
+assert(
+  'generate-plan workout instructions include tracker section rules',
+  generatePlanSrc.includes('WORKOUT_SECTION_PROMPT_RULES')
+)
+assert(
+  'generate-plan workout instructions forbid a shared cooldown after the week',
+  !generatePlanSrc.includes('shared cooldown AFTER all day blocks')
+)
+
 if (failed > 0) {
   console.error(`\n${failed} full-day plan prompt checks failed`)
   process.exit(1)
