@@ -115,6 +115,16 @@ export const ADMIN_MODULES: AdminModule[] = [
     tables: ['talk_to_coach_submissions', 'profiles', 'purchases'],
   },
   {
+    id: 'transformation-scores',
+    title: 'Transformations',
+    description: 'Ranked client transformation scores with links to profiles.',
+    href: '/admin/transformation-scores',
+    status: 'implemented',
+    showInNav: true,
+    navOrder: 79,
+    tables: ['profiles', 'checkins'],
+  },
+  {
     id: 'support',
     title: 'Support Queue',
     description: 'Oversight of client coaching support requests.',

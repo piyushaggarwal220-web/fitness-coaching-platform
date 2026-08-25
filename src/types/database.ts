@@ -4,6 +4,8 @@ export type Coach = {
   name: string | null
   hard_cap: number | null
   last_seen_at?: string | null
+  bio?: string | null
+  display_photo_path?: string | null
 }
 
 export type ClientProfile = {

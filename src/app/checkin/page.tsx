@@ -116,7 +116,7 @@ export default function CheckinPage() {
           reason === 'plan_not_delivered'
             ? 'Your check-in schedule will begin when your coach delivers your first plan.'
             : reason === 'window_closed'
-              ? 'This weekly check-in window has closed (48 hours). Please wait for your next scheduled check-in.'
+              ? 'This weekly check-in window has closed. You can submit Sunday through Tuesday. Please wait for next week.'
             : reason === 'waiting_mid_week'
               ? 'Complete your Day 3 mid-week check-in first (or wait if that window closed).'
               : reason === 'already_submitted'
@@ -318,8 +318,8 @@ export default function CheckinPage() {
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>{brandTitle('Weekly Check-In')}</h1>
         <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 15 }}>
           {photosOptional
-            ? 'Day 7 progress update — photos optional'
-            : 'Day 7 progress update — photos required'}
+            ? 'Day 7 progress update — open Sunday through Tuesday. Photos optional'
+            : 'Day 7 progress update — open Sunday through Tuesday. Photos required'}
         </p>
       </div>
 

@@ -11,6 +11,7 @@ import {
   LifeBuoy,
   ListOrdered,
   MessageCircle,
+  UserRound,
   Users,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -32,6 +33,7 @@ const COACH_DRAWER_ITEMS: DrawerNavItem[] = [
   { href: '/coach/checkins', label: 'Check-ins', icon: <ClipboardList size={20} /> },
   { href: '/coach/plans', label: 'Plans', icon: <FileText size={20} /> },
   { href: '/coach/support', label: 'Support', icon: <LifeBuoy size={20} /> },
+  { href: '/coach/profile', label: 'Profile', icon: <UserRound size={20} /> },
   { href: '/coach/analytics', label: 'Analytics', icon: <BarChart3 size={20} /> },
 ]
 

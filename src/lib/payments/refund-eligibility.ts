@@ -1,6 +1,6 @@
 import {
-  CHECKIN_SUBMISSION_WINDOW_MS,
   getDueDate,
+  getCheckinSubmissionWindowMs,
   MID_WEEK_DAY,
   WEEKLY_DAY,
 } from '@/lib/checkin-schedule'
@@ -37,7 +37,7 @@ function validDate(value: string | null | undefined): Date | null {
 
 /**
  * Computes guarantee eligibility from the anchored schedule and persisted timestamps.
- * The 48-hour window is [due_at, due_at + 48h); exactly +48h is late.
+ * On-time means submitted in [due_at, due_at + window). Mid-week is 48h; weekly is Sunday–Tuesday (72h).
  */
 export function computeRefundCheckinEligibility(input: {
   scheduleStartedAt: string | null
@@ -87,7 +87,7 @@ export function computeRefundCheckinEligibility(input: {
 
       dueCount += 1
       const submittedAt = validDate(submission?.submittedAt)
-      const deadline = authoritativeDue.getTime() + CHECKIN_SUBMISSION_WINDOW_MS
+      const deadline = authoritativeDue.getTime() + getCheckinSubmissionWindowMs(slot.type)
       if (
         submittedAt &&
         submittedAt.getTime() >= authoritativeDue.getTime() &&
@@ -131,7 +131,7 @@ export function computeRefundCheckinEligibility(input: {
       percentage,
       thresholdPercent: REFUND_CHECKIN_THRESHOLD_PERCENT,
       evaluatedAt,
-      reason: 'At least one due check-in still has an open 48-hour submission window.',
+      reason: 'At least one due check-in still has an open submission window.',
     }
   }
 

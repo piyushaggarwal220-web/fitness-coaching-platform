@@ -5,7 +5,12 @@ import type { Checkin, CheckinType } from '@/types/database'
 export const MID_WEEK_DAY = 3
 export const WEEKLY_DAY = 7
 export const COACHING_WEEK_LENGTH = 7
-export const CHECKIN_SUBMISSION_WINDOW_MS = 48 * 60 * 60 * 1000
+/** Mid-week (Wednesday) stays open for 48 hours. */
+export const MIDWEEK_SUBMISSION_WINDOW_MS = 48 * 60 * 60 * 1000
+/** Weekly opens Sunday 00:00 IST and stays open through Tuesday (closes Wednesday 00:00 IST). */
+export const WEEKLY_SUBMISSION_WINDOW_MS = 72 * 60 * 60 * 1000
+/** @deprecated Prefer getCheckinSubmissionWindowMs(type). Alias of the mid-week 48h window. */
+export const CHECKIN_SUBMISSION_WINDOW_MS = MIDWEEK_SUBMISSION_WINDOW_MS
 const DAY_MS = 24 * 60 * 60 * 1000
 const INDIA_TIME_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
 export const COACHING_TIME_ZONE = 'Asia/Kolkata'
@@ -123,23 +128,33 @@ function anchorDate(anchor: string | Date): Date {
   return date
 }
 
-export function getCheckinWindowEnd(dueDate: Date): Date {
-  return new Date(dueDate.getTime() + CHECKIN_SUBMISSION_WINDOW_MS)
+export function getCheckinSubmissionWindowMs(type?: CheckinType | null): number {
+  return type === 'weekly' ? WEEKLY_SUBMISSION_WINDOW_MS : MIDWEEK_SUBMISSION_WINDOW_MS
+}
+
+export function getCheckinWindowEnd(dueDate: Date, type?: CheckinType | null): Date {
+  return new Date(dueDate.getTime() + getCheckinSubmissionWindowMs(type))
 }
 
 export function isWithinCheckinSubmissionWindow(
   dueDate: Date,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  type?: CheckinType | null
 ): boolean {
   const now = referenceDate.getTime()
-  return now >= dueDate.getTime() && now < getCheckinWindowEnd(dueDate).getTime()
+  return now >= dueDate.getTime() && now < getCheckinWindowEnd(dueDate, type).getTime()
 }
 
 export function isCheckinSubmissionWindowClosed(
   dueDate: Date,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  type?: CheckinType | null
 ): boolean {
-  return referenceDate.getTime() >= getCheckinWindowEnd(dueDate).getTime()
+  return referenceDate.getTime() >= getCheckinWindowEnd(dueDate, type).getTime()
+}
+
+export function describeCheckinWindow(type: CheckinType): string {
+  return type === 'weekly' ? 'Sunday to Tuesday' : '48 hours'
 }
 
 /** Elapsed 24-hour coaching periods, 1-indexed from first plan delivery. */
@@ -271,7 +286,7 @@ function isSkippedMissedSlot(
   if (hasSubmission(checkins, week, type)) return false
   const { dueDate } = buildScheduledCheckin(scheduleStartedAt, week, type)
   if (isSlotBeforeScheduleStart(scheduleStartedAt, dueDate)) return true
-  return isCheckinSubmissionWindowClosed(dueDate, referenceDate)
+  return isCheckinSubmissionWindowClosed(dueDate, referenceDate, type)
 }
 
 export function getActiveCoachingWeek(
@@ -307,10 +322,10 @@ function resolveTaskStatus(
   if (scheduleStartedAt && isSlotBeforeScheduleStart(scheduleStartedAt, scheduled.dueDate)) {
     return { ...scheduled, status: 'skipped' }
   }
-  if (isWithinCheckinSubmissionWindow(scheduled.dueDate, referenceDate)) {
+  if (isWithinCheckinSubmissionWindow(scheduled.dueDate, referenceDate, scheduled.type)) {
     return { ...scheduled, status: 'available' }
   }
-  if (isCheckinSubmissionWindowClosed(scheduled.dueDate, referenceDate)) {
+  if (isCheckinSubmissionWindowClosed(scheduled.dueDate, referenceDate, scheduled.type)) {
     return { ...scheduled, status: 'missed' }
   }
   return { ...scheduled, status: 'upcoming' }
@@ -511,7 +526,7 @@ export function isCheckinAvailableToday(
   if (requiresOpenMidWeekFirst(scheduleStartedAt, checkins, week, type, referenceDate)) return false
   const scheduled = buildScheduledCheckin(scheduleStartedAt, week, type)
   return options?.bypassSchedule === true ||
-    isWithinCheckinSubmissionWindow(scheduled.dueDate, referenceDate)
+    isWithinCheckinSubmissionWindow(scheduled.dueDate, referenceDate, type)
 }
 
 export type CheckinUnavailableReason =
@@ -532,8 +547,8 @@ export function getCheckinUnavailableReason(
   if (hasSubmission(checkins, week, type)) return 'already_submitted'
   if (requiresOpenMidWeekFirst(scheduleStartedAt, checkins, week, type, referenceDate)) return 'waiting_mid_week'
   const scheduled = buildScheduledCheckin(scheduleStartedAt, week, type)
-  if (isWithinCheckinSubmissionWindow(scheduled.dueDate, referenceDate)) return null
-  return isCheckinSubmissionWindowClosed(scheduled.dueDate, referenceDate) ? 'window_closed' : 'not_yet'
+  if (isWithinCheckinSubmissionWindow(scheduled.dueDate, referenceDate, type)) return null
+  return isCheckinSubmissionWindowClosed(scheduled.dueDate, referenceDate, type) ? 'window_closed' : 'not_yet'
 }
 
 export function resolveCheckinSubmissionSlot(
@@ -638,9 +653,9 @@ export function getCoachCheckinQueue(
             checkinId: submission.id,
             submittedAt: submission.submitted_at,
           })
-        } else if (isWithinCheckinSubmissionWindow(dueDate, referenceDate)) {
+        } else if (isWithinCheckinSubmissionWindow(dueDate, referenceDate, type)) {
           items.push({ ...common, status: 'due_today' })
-        } else if (isCheckinSubmissionWindowClosed(dueDate, referenceDate)) {
+        } else if (isCheckinSubmissionWindowClosed(dueDate, referenceDate, type)) {
           items.push({ ...common, status: 'missed' })
         } else if (week === activeWeek) {
           items.push({ ...common, status: 'upcoming' })

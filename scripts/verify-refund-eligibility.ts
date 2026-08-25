@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { getDueDate, MID_WEEK_DAY, WEEKLY_DAY } from '../src/lib/checkin-schedule'
+import { getDueDate, MID_WEEK_DAY, WEEKLY_DAY, WEEKLY_SUBMISSION_WINDOW_MS } from '../src/lib/checkin-schedule'
 import { computeRefundCheckinEligibility } from '../src/lib/payments/refund-eligibility'
 import type { CheckinType } from '../src/types/database'
 
@@ -18,16 +18,17 @@ function submission(week: number, type: CheckinType, offsetMs: number) {
 }
 
 const fortyEightHours = 48 * 60 * 60 * 1000
+const seventyTwoHours = WEEKLY_SUBMISSION_WINDOW_MS
 const tenDue = Array.from({ length: 5 }, (_, index) => index + 1).flatMap((week) => [
   submission(week, 'mid_week', 60 * 60 * 1000),
   submission(week, 'weekly', 60 * 60 * 1000),
 ])
-const afterTenWindows = new Date(getDueDate(anchor, 5, WEEKLY_DAY).getTime() + fortyEightHours + 1)
+const afterTenWindows = new Date(getDueDate(anchor, 5, WEEKLY_DAY).getTime() + seventyTwoHours - 1)
 
 const exactNinety = computeRefundCheckinEligibility({
   scheduleStartedAt: anchor.toISOString(),
   submissions: tenDue.map((row, index) =>
-    index === 9 ? submission(5, 'weekly', fortyEightHours) : row
+    index === 9 ? submission(5, 'weekly', seventyTwoHours) : row
   ),
   evaluatedAt: afterTenWindows,
 })
@@ -40,7 +41,7 @@ const belowThreshold = computeRefundCheckinEligibility({
   scheduleStartedAt: anchor.toISOString(),
   submissions: tenDue.map((row, index) =>
     index >= 8
-      ? submission(index === 8 ? 5 : 5, index === 8 ? 'mid_week' : 'weekly', fortyEightHours)
+      ? submission(5, index === 8 ? 'mid_week' : 'weekly', index === 8 ? fortyEightHours : seventyTwoHours)
       : row
   ),
   evaluatedAt: afterTenWindows,
@@ -76,7 +77,7 @@ assert.equal(openWindow.status, 'pending')
 const noDue = computeRefundCheckinEligibility({
   scheduleStartedAt: anchor.toISOString(),
   submissions: [],
-  evaluatedAt: anchor,
+  evaluatedAt: new Date(firstDue.getTime() - 1),
 })
 assert.equal(noDue.dueCount, 0)
 assert.equal(noDue.status, 'ineligible')

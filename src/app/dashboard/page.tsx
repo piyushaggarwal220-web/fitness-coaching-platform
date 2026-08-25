@@ -25,6 +25,7 @@ import {
   getClientCheckinSchedule,
   getCheckinStatusLabel,
   getCheckinTypeDisplayName,
+  describeCheckinWindow,
   hasCoachingDayStarted,
 } from '@/lib/checkin-schedule';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
@@ -175,7 +176,7 @@ export default function Dashboard() {
             .eq('user_id', userId)
             .gte('date', weekAgoStr),
           coachId
-            ? supabase.from('coaches').select('id, name, user_id, hard_cap').eq('id', coachId).maybeSingle()
+            ? supabase.from('coaches').select('id, name, user_id, hard_cap, bio, display_photo_path').eq('id', coachId).maybeSingle()
             : Promise.resolve({ data: null, error: null }),
           coachId
             ? supabase.from('coach_conversations').select('unread_by_client').eq('client_id', userId).maybeSingle()
@@ -675,6 +676,8 @@ export default function Dashboard() {
             profile={profile}
             activePlan={activePlan}
             coachName={status.coachName ?? coach?.name}
+            coachBio={coach?.bio}
+            coachPhotoPath={coach?.display_photo_path}
           />
         )}
         <NotificationActivationGate />
@@ -754,7 +757,7 @@ export default function Dashboard() {
                       <div>
                         <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, fontWeight: 600 }}>
                           {checkinSchedule.nextCheckinStatus === 'available'
-                            ? 'Available now (48h window)'
+                            ? `Available now (${describeCheckinWindow(checkinSchedule.nextCheckin.type)})`
                             : checkinSchedule.nextCheckinStatus === 'missed'
                               ? 'Missed — wait for next'
                               : 'Available in'}

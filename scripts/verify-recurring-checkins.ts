@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   CHECKIN_SUBMISSION_WINDOW_MS,
+  WEEKLY_SUBMISSION_WINDOW_MS,
   buildScheduledCheckin,
   getCheckinUnavailableReason,
   getClientCheckinSchedule,
@@ -81,12 +82,23 @@ function main() {
   const oneMsBefore = new Date(day3.dueDate.getTime() - 1)
   const exactDue = new Date(day3.dueDate)
   const oneMsBeforeClose = new Date(day3.dueDate.getTime() + CHECKIN_SUBMISSION_WINDOW_MS - 1)
-  const exactClose = getCheckinWindowEnd(day3.dueDate)
-  check('Window is closed before exact due instant', !isWithinCheckinSubmissionWindow(day3.dueDate, oneMsBefore))
-  check('Window opens at exact due instant', isWithinCheckinSubmissionWindow(day3.dueDate, exactDue))
-  check('Window remains open one millisecond before close', isWithinCheckinSubmissionWindow(day3.dueDate, oneMsBeforeClose))
-  check('Window closes at exact +48h boundary', !isWithinCheckinSubmissionWindow(day3.dueDate, exactClose))
+  const exactClose = getCheckinWindowEnd(day3.dueDate, 'mid_week')
+  check('Window is closed before exact due instant', !isWithinCheckinSubmissionWindow(day3.dueDate, oneMsBefore, 'mid_week'))
+  check('Window opens at exact due instant', isWithinCheckinSubmissionWindow(day3.dueDate, exactDue, 'mid_week'))
+  check('Window remains open one millisecond before close', isWithinCheckinSubmissionWindow(day3.dueDate, oneMsBeforeClose, 'mid_week'))
+  check('Window closes at exact +48h boundary', !isWithinCheckinSubmissionWindow(day3.dueDate, exactClose, 'mid_week'))
   check('Coaching day uses elapsed 24-hour periods', getCoachingDay(anchor, exactDue) === 3)
+
+  const weeklyOpenTue = new Date(day7.dueDate.getTime() + WEEKLY_SUBMISSION_WINDOW_MS - 1)
+  const weeklyClose = getCheckinWindowEnd(day7.dueDate, 'weekly')
+  check(
+    'Weekly stays open through Tuesday (72h)',
+    isWithinCheckinSubmissionWindow(day7.dueDate, weeklyOpenTue, 'weekly')
+  )
+  check(
+    'Weekly closes at Wednesday midnight (end of Tuesday)',
+    !isWithinCheckinSubmissionWindow(day7.dueDate, weeklyClose, 'weekly')
+  )
 
   console.log('\nRecurrence and progression:')
   const week1Complete = [

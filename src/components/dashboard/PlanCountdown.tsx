@@ -12,15 +12,25 @@ import {
   isPlanFullyReady,
 } from '@/lib/purchase-dashboard'
 import { colors, spacing } from '@/lib/design-tokens'
+import { createClient } from '@/lib/supabase/client'
+import { resolveStorageUrl } from '@/lib/storage/media-url'
 import type { OnboardingProfile, Plan } from '@/types/database'
 
 type PlanCountdownProps = {
   profile: OnboardingProfile
   activePlan: Plan | null
   coachName?: string | null
+  coachBio?: string | null
+  coachPhotoPath?: string | null
 }
 
-export function PlanCountdownCard({ profile, activePlan, coachName }: PlanCountdownProps) {
+export function PlanCountdownCard({
+  profile,
+  activePlan,
+  coachName,
+  coachBio,
+  coachPhotoPath,
+}: PlanCountdownProps) {
   const router = useRouter()
   const [countdown, setCountdown] = useState(() => formatPlanCountdown(profile))
 
@@ -34,6 +44,23 @@ export function PlanCountdownCard({ profile, activePlan, coachName }: PlanCountd
   const planReady = isPlanFullyReady(activePlan, profile)
   const openedCore = hasOpenedDietAndWorkout(activePlan)
   const displayCoach = coachName?.trim() || 'Your coach'
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      if (!coachPhotoPath) {
+        setPhotoUrl(null)
+        return
+      }
+      const url = await resolveStorageUrl(createClient(), 'avatars', coachPhotoPath)
+      if (!cancelled) setPhotoUrl(url)
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [coachPhotoPath])
 
   // Once diet + workout have been opened, leave the upper slot for the tracker.
   if (planReady && openedCore) return null
@@ -42,7 +69,7 @@ export function PlanCountdownCard({ profile, activePlan, coachName }: PlanCountd
   if (profile.coach_id && !profile.onboarding_complete) {
     return (
       <Card variant="glass" style={{ marginBottom: spacing[4] }}>
-        <CoachAssignedHeader coachName={displayCoach} />
+        <CoachAssignedHeader coachName={displayCoach} photoUrl={photoUrl} bio={coachBio} />
         <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
           Complete onboarding so {displayCoach.split(' ')[0]} can build your personal diet and workout.
           Your plan is delivered within {PLAN_DELIVERY_HOURS} hours after onboarding.
@@ -100,7 +127,10 @@ export function PlanCountdownCard({ profile, activePlan, coachName }: PlanCountd
         paddingTop: spacing[4],
         borderRadius: '16px 16px 0 0',
       }} />
-      <CoachAssignedHeader coachName={displayCoach} />
+      <CoachAssignedHeader coachName={displayCoach} photoUrl={photoUrl} bio={coachBio} />
+      {coachBio?.trim() ? (
+        <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>{coachBio.trim()}</p>
+      ) : null}
       <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
         {displayCoach} is preparing your personalized diet and workout plan.
       </p>
@@ -125,20 +155,35 @@ export function PlanCountdownCard({ profile, activePlan, coachName }: PlanCountd
   )
 }
 
-function CoachAssignedHeader({ coachName }: { coachName: string }) {
+function CoachAssignedHeader({
+  coachName,
+  photoUrl,
+}: {
+  coachName: string
+  photoUrl?: string | null
+  bio?: string | null
+}) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-      <div style={{
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        backgroundColor: colors.accentMuted,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <UserRound size={22} color={colors.accent} />
+      <div
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 14,
+          backgroundColor: colors.accentMuted,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          overflow: 'hidden',
+        }}
+      >
+        {photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <UserRound size={22} color={colors.accent} />
+        )}
       </div>
       <div style={{ minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: colors.accent, letterSpacing: '0.08em', textTransform: 'uppercase' }}>

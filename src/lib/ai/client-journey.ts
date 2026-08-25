@@ -64,7 +64,7 @@ function buildMissedList(
     for (const type of ['mid_week', 'weekly'] as CheckinType[]) {
       if (hasSubmissionForSlot(checkins, week, type)) continue
       const scheduled = buildScheduledCheckin(scheduleStartedAt, week, type)
-      if (isCheckinSubmissionWindowClosed(scheduled.dueDate, referenceDate)) {
+      if (isCheckinSubmissionWindowClosed(scheduled.dueDate, referenceDate, type)) {
         missed.push(`Week ${week} ${getCheckinTypeDisplayName(type)}`)
       }
     }

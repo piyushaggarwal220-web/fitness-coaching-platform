@@ -8,28 +8,22 @@ import { CoachShell } from '@/components/ui/CoachShell'
 import { colors } from '@/lib/coach-theme'
 import { createClient } from '@/lib/supabase/client'
 import { requireCoach } from '@/lib/coach-session'
-import { INITIAL_PLAN_ACTIONS, mergePlanForms, type AiReasoningDisplay } from '@/lib/coach/ai-actions'
-import { runCoachAiAction } from '@/lib/coach/ai-action-client'
-import {
-  saveAiReasoningToSession,
-  savePlanDraftToSession,
-  saveWorkoutRetryError,
-} from '@/lib/ai/plan-format'
+import { INITIAL_PLAN_ACTIONS, type AiReasoningDisplay } from '@/lib/coach/ai-actions'
+import { savePlanDraftToSession } from '@/lib/ai/plan-format'
 import { getOnboardingLabel } from '@/lib/onboarding'
 import { formatFitnessGoal } from '@/lib/coach-utils'
-import { persistAiPlanDraft, planToForm, restorePlanAsDraft } from '@/lib/plans'
+import { planToForm, restorePlanAsDraft } from '@/lib/plans'
 import { ClientContextCard } from '@/components/coach/ai-actions/ClientContextCard'
 import { PlanCompareDrawer } from '@/components/coach/ai-actions/PlanCompareDrawer'
 import { PlanVersionList } from '@/components/coach/ai-actions/PlanVersionList'
 import { ActionCard, AiReasoningPanel, GenerationStatus, MessageClientButton, OptionalCoachNote } from '@/components/coach/ai-actions/shared'
 import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
-import type { Coach, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
+import type { Coach, OnboardingProfile, Plan } from '@/types/database'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import type { InitialPlanGenerationJob } from '@/lib/initial-plan-generation'
 
 const supabase = createClient()
-const GENERATION_TIMEOUT_MS = 4 * 60 * 1000
 
 export default function CoachGeneratePlanPage() {
   const router = useRouter()
@@ -129,42 +123,42 @@ export default function CoachGeneratePlanPage() {
     setStepLabel(null)
   }
 
-  const openEditor = (formData: PlanFormData, ai?: AiReasoningDisplay | null) => {
-    savePlanDraftToSession(clientId, formData)
-    if (ai) saveAiReasoningToSession(clientId, ai)
-    router.push(`/coach/plan/new?clientId=${clientId}&fromAi=1`)
-  }
-
-  const persistDraftSafely = async (formData: PlanFormData, title: string) => {
-    if (!coach || !client) return
-    const { error: persistError } = await persistAiPlanDraft(supabase, {
-      clientId: client.id,
-      coachId: coach.id,
-      form: formData,
-      title,
+  const queueBackgroundJob = async (body: Record<string, unknown>) => {
+    const response = await fetch('/api/coach/generate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     })
-    if (persistError) {
-      console.warn('[generate-plan] server draft persist failed:', persistError)
+    const data = (await response.json()) as { success?: boolean; error?: string; message?: string }
+    if (!response.ok && response.status !== 202) {
+      throw new Error(data.error ?? 'Could not start generation.')
     }
+    if (!data.success) throw new Error(data.error ?? 'Could not start generation.')
+    return data.message ?? 'Generation continues in the background. You can leave this page.'
   }
 
-  const withTimeout = async <T,>(promise: Promise<T>, label: string): Promise<T> => {
-    let timeoutId: ReturnType<typeof setTimeout> | undefined
-    try {
-      return await Promise.race([
-        promise,
-        new Promise<T>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            reject(
-              new Error(
-                `${label} is taking longer than 4 minutes. Check your connection and retry — a partial draft may already be saved.`
-              )
-            )
-          }, GENERATION_TIMEOUT_MS)
-        }),
-      ])
-    } finally {
-      if (timeoutId) clearTimeout(timeoutId)
+  const pollJobStatus = async () => {
+    const response = await fetch(`/api/coach/generate-plan/status?clientId=${clientId}`)
+    if (!response.ok) return
+    const data = (await response.json()) as {
+      status: 'idle' | 'generating' | 'ready' | 'failed'
+      draftPlanId: string | null
+      error: string | null
+    }
+    if (data.status === 'generating') {
+      setBusy((prev) => prev ?? 'complete')
+      setStatus('AI is still writing this plan in the background. You can leave this page.')
+      return
+    }
+    if (data.status === 'ready' && data.draftPlanId) {
+      if (!busy) return
+      resetGenerationUi()
+      router.push(`/coach/plan/${data.draftPlanId}`)
+      return
+    }
+    if (data.status === 'failed') {
+      resetGenerationUi()
+      setError(data.error ?? 'Background generation failed.')
     }
   }
 
@@ -181,39 +175,17 @@ export default function CoachGeneratePlanPage() {
           : actionId === 'initial_cardio'
             ? 'Cardio'
             : 'Supplements'
-    setStepLabel(`Step 1 of 1 · ${label}`)
-    setStatus(`Generating ${label.toLowerCase()} plan…`)
+    setStepLabel(`Background · ${label}`)
+    setStatus(`Queued ${label.toLowerCase()} plan. You can leave this page.`)
 
     try {
-      const result = await withTimeout(
-        runCoachAiAction({ action: actionId, clientId: client.id, coachNote }),
-        `${label} generation`
-      )
-
-      if (abortRef.current) return
-
-      if (!result.success || !result.formData) {
-        resetGenerationUi()
-        setError(result.error ?? 'Generation failed.')
-        return
-      }
-
-      if (result.aiReasoning) setReasoning(result.aiReasoning)
-
-      const formData = {
-        ...result.formData,
-        title:
-          actionId === 'initial_diet'
-            ? 'Diet Plan (Draft)'
-            : actionId === 'initial_workout'
-              ? 'Workout Plan (Draft)'
-              : actionId === 'initial_cardio'
-                ? 'Cardio Plan (Draft)'
-                : 'Supplement Plan (Draft)',
-      }
-      await persistDraftSafely(formData, `AI Draft · ${formData.title}`)
-      resetGenerationUi()
-      openEditor(formData, result.aiReasoning)
+      const message = await queueBackgroundJob({
+        clientId: client.id,
+        action: actionId,
+        coachNote,
+        async: true,
+      })
+      setStatus(message)
     } catch (err) {
       resetGenerationUi()
       setError(err instanceof Error ? err.message : 'Generation failed.')
@@ -225,146 +197,37 @@ export default function CoachGeneratePlanPage() {
     abortRef.current = false
     setBusy('complete')
     setError('')
-    setStepLabel('Step 1 of 4 · Diet')
-    setStatus('Generating diet plan…')
+    setStepLabel('Background · Complete plan')
+    setStatus('Queued diet, workout, cardio, and supplements. You can leave this page.')
 
     try {
-      const dietResult = await withTimeout(
-        runCoachAiAction({
-          action: 'initial_diet',
-          clientId: client.id,
-          coachNote,
-        }),
-        'Diet generation'
-      )
-
-      if (abortRef.current) return
-
-      if (!dietResult.success || !dietResult.formData) {
-        resetGenerationUi()
-        setError(dietResult.error ?? 'Diet plan generation failed.')
-        return
-      }
-
-      let merged = {
-        ...dietResult.formData,
-        title: 'Complete Coaching Plan (Draft)',
-      }
-      await persistDraftSafely(merged, 'AI Draft · Initial Diet')
-
-      setStepLabel('Step 2 of 4 · Workout')
-      setStatus('Diet ready · Generating workout plan…')
-      const workoutResult = await withTimeout(
-        runCoachAiAction({
-          action: 'initial_workout',
-          clientId: client.id,
-          coachNote,
-        }),
-        'Workout generation'
-      )
-
-      if (abortRef.current) return
-
-      if (workoutResult.aiReasoning) setReasoning(workoutResult.aiReasoning)
-
-      if (!workoutResult.success || !workoutResult.formData) {
-        savePlanDraftToSession(clientId, merged)
-        saveWorkoutRetryError(clientId, workoutResult.error ?? 'Workout plan generation failed.')
-        if (dietResult.aiReasoning) saveAiReasoningToSession(clientId, dietResult.aiReasoning)
-        resetGenerationUi()
-        router.push(`/coach/plan/new?clientId=${clientId}&fromAi=1&retryWorkout=1`)
-        return
-      }
-
-      merged = mergePlanForms(merged, {
-        workout_plan: workoutResult.formData.workout_plan,
-        coach_notes: [merged.coach_notes, workoutResult.formData.coach_notes].filter(Boolean).join('\n\n'),
+      const message = await queueBackgroundJob({
+        clientId: client.id,
+        complete: true,
+        async: true,
+        coachNote,
       })
-      await persistDraftSafely(merged, 'AI Draft · Diet + Workout')
-
-      // Soft-fail cardio/supplements: diet + workout must still open for review.
-      let cardioReasoning: AiReasoningDisplay | undefined
-      let supplementReasoning: AiReasoningDisplay | undefined
-      const softFailNotes: string[] = []
-
-      setStepLabel('Step 3 of 4 · Cardio')
-      setStatus('Workout ready · Generating cardio plan…')
-      try {
-        const cardioResult = await withTimeout(
-          runCoachAiAction({
-            action: 'initial_cardio',
-            clientId: client.id,
-            coachNote,
-          }),
-          'Cardio generation'
-        )
-        if (abortRef.current) return
-        if (cardioResult.success && cardioResult.formData?.cardio_plan) {
-          merged = mergePlanForms(merged, {
-            cardio_plan: cardioResult.formData.cardio_plan,
-          })
-          cardioReasoning = cardioResult.aiReasoning
-          await persistDraftSafely(merged, 'AI Draft · Diet + Workout + Cardio')
-        } else {
-          softFailNotes.push(cardioResult.error ?? 'Cardio section skipped')
-        }
-      } catch (cardioErr) {
-        softFailNotes.push(
-          cardioErr instanceof Error ? cardioErr.message : 'Cardio section skipped'
-        )
-      }
-
-      if (abortRef.current) return
-
-      setStepLabel('Step 4 of 4 · Supplements')
-      setStatus('Generating supplement plan…')
-      try {
-        const supplementResult = await withTimeout(
-          runCoachAiAction({
-            action: 'initial_supplements',
-            clientId: client.id,
-            coachNote,
-          }),
-          'Supplement generation'
-        )
-        if (abortRef.current) return
-        if (supplementResult.success && supplementResult.formData?.supplement_plan) {
-          merged = mergePlanForms(merged, {
-            supplement_plan: supplementResult.formData.supplement_plan,
-          })
-          supplementReasoning = supplementResult.aiReasoning
-        } else {
-          softFailNotes.push(supplementResult.error ?? 'Supplements section skipped')
-        }
-      } catch (suppErr) {
-        softFailNotes.push(
-          suppErr instanceof Error ? suppErr.message : 'Supplements section skipped'
-        )
-      }
-
-      if (abortRef.current) return
-
-      await persistDraftSafely(merged, 'AI Draft · Initial Plan')
-      resetGenerationUi()
-      if (softFailNotes.length > 0) {
-        setError(
-          `Diet and workout are ready. Optional sections need a retry: ${softFailNotes.join(' · ')}`
-        )
-      }
-      openEditor(
-        merged,
-        supplementReasoning ?? cardioReasoning ?? workoutResult.aiReasoning ?? dietResult.aiReasoning
-      )
+      setStatus(message)
     } catch (err) {
       resetGenerationUi()
       setError(err instanceof Error ? err.message : 'Generation failed.')
     }
   }
 
+  useEffect(() => {
+    if (!clientId || loading) return undefined
+    const tick = () => {
+      void pollJobStatus()
+    }
+    tick()
+    const id = setInterval(tick, 5000)
+    return () => clearInterval(id)
+  }, [clientId, loading])
+
   const cancelGeneration = () => {
     abortRef.current = true
     resetGenerationUi()
-    setError('Generation cancelled. You can retry anytime — any completed section may already be saved as a server draft.')
+    setError('Stopped watching this page. Generation keeps running in the background.')
   }
 
   const handleRestore = async (plan: Plan) => {
@@ -434,8 +297,7 @@ export default function CoachGeneratePlanPage() {
 
           <h1 style={s.title}>{brandTitle('AI coaching actions')}</h1>
           <p style={s.subtitle}>
-            {client.name || client.email}
-            {coach?.name ? ` · Coach ${coach.name}` : ''}
+            Generate a complete plan or a single section. Work continues in the background if you leave this page.
           </p>
 
           {metricsBlocked && (

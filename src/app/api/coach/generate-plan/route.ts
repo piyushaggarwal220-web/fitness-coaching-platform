@@ -19,6 +19,11 @@ import {
   mergePlanForms,
   type CoachAiActionId,
 } from '@/lib/coach/ai-actions'
+import {
+  isInitialPlanAction,
+  markManualPlanStarted,
+  queueManualPlanJob,
+} from '@/lib/coach/background-initial-plan'
 import { createClient } from '@/lib/supabase/server'
 import { planToForm } from '@/lib/plans'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
@@ -33,6 +38,10 @@ type GeneratePlanRequestBody = {
   coachInstructions?: string
   checkinId?: string
   draftPlanContext?: Partial<PlanFormData> | null
+  /** Queue work with after() so leaving the page does not stop generation. */
+  async?: boolean
+  /** Run diet → workout → cardio → supplements as one background job. */
+  complete?: boolean
 }
 
 function actionValidationMode(
@@ -163,6 +172,27 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { success: false, error: 'Client not found or not assigned to you' },
       { status: 404 }
+    )
+  }
+
+  const runAsync = body.async === true
+  const runComplete = body.complete === true
+  if (runAsync && (runComplete || isInitialPlanAction(actionId))) {
+    const mode = runComplete ? 'complete' : actionId
+    await markManualPlanStarted({ clientId, coachId: coach.id, mode })
+    queueManualPlanJob({
+      clientId,
+      coachId: coach.id,
+      coachNote: coachNote?.trim() || null,
+      mode,
+    })
+    return NextResponse.json(
+      {
+        success: true,
+        queued: true,
+        message: 'Generation continues in the background. You can leave this page.',
+      },
+      { status: 202 }
     )
   }
 

@@ -199,17 +199,17 @@ export async function POST(request: Request) {
     const today = new Date()
 
     if (!shouldBypassCheckinScheduleServer(request.headers.get('host'))) {
-      if (isCheckinSubmissionWindowClosed(scheduled.dueDate, today)) {
+      if (isCheckinSubmissionWindowClosed(scheduled.dueDate, today, scheduled.type)) {
         return NextResponse.json(
           {
             success: false,
             error:
-              'This check-in window has closed (48 hours). Please wait for your next scheduled check-in.',
+              'This check-in window has closed. Please wait for your next scheduled check-in.',
           },
           { status: 403 }
         )
       }
-      if (!isWithinCheckinSubmissionWindow(scheduled.dueDate, today)) {
+      if (!isWithinCheckinSubmissionWindow(scheduled.dueDate, today, scheduled.type)) {
         return NextResponse.json(
           { success: false, error: 'This check-in is not available yet.' },
           { status: 403 }

@@ -163,7 +163,7 @@ export const NotificationTemplates = {
   weeklyCheckinReminder: (opts?: { checkinLabel?: string; coachingWeek?: number }) => ({
     type: 'weekly_checkin_reminder' as NotificationType,
     title: 'Weekly check-in due',
-    body: 'Time for your weekly progress check-in. Keep your coach updated!',
+    body: 'Weekly check-in is open Sunday through Tuesday. Keep your coach updated!',
     actionUrl: '/checkin',
     metadata: {
       checkinType: 'weekly' as const,

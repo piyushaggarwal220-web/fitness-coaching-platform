@@ -4,8 +4,7 @@ import { Calendar, ChevronRight, Timer } from 'lucide-react'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
-import { getCheckinTypeDisplayName } from '@/lib/checkin-schedule'
-import type { ScheduledCheckin } from '@/lib/checkin-schedule'
+import { getCheckinTypeDisplayName, describeCheckinWindow, type ScheduledCheckin } from '@/lib/checkin-schedule'
 import { colors, layout, spacing } from '@/lib/design-tokens'
 
 type Props = {
@@ -105,7 +104,7 @@ export function CheckinDueBanner({
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textSecondary }}>
           {isDue
-            ? 'Available now · tap to start'
+            ? `Available now (${describeCheckinWindow(checkin.type)}) · tap to start`
             : countdownLabel?.trim()
               ? `Available in ${countdownLabel.trim()}`
               : 'Next check-in coming up'}

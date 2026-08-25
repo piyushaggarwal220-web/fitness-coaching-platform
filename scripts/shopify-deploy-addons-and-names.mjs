@@ -43,10 +43,17 @@ function patchThemeSettings(obj) {
     plan_2_label: 'Fat loss',
     plan_3_label: 'Fat loss + muscle gain',
     plan_4_label: 'Aesthetic body',
+    plan_2_badge: 'FAT LOSS',
+    plan_3_badge: 'MUSCLE GAIN',
+    plan_4_badge: 'AESTHETIC',
     plan_2_description: 'Fat loss',
     plan_3_description: 'Fat loss + muscle gain',
     plan_4_description: 'Aesthetic body',
-    plan_4_footer: 'Best for: Aesthetic body',
+    plan_2_footer: 'Best for: looking good for an event, not long term',
+    plan_3_footer: 'Best for: advanced athlete, looking for little guidance',
+    plan_4_footer: 'Best for: aesthetic body',
+    subheadline:
+      'Fat loss · 90 days. Fat loss + muscle gain · 6 months. Aesthetic body · 12 months. WELCOME60 = 60% off',
   }
   for (const [key, value] of Object.entries(labels)) {
     if (typeof obj[key] === 'string') obj[key] = value
@@ -73,11 +80,11 @@ function patchThemeSettings(obj) {
     obj.subheadline =
       'Fat loss · 90 days. Fat loss + muscle gain · 6 months. Aesthetic body · 12 months. WELCOME60 = 60% off'
   }
-  if (typeof obj.plan_3_text === 'string' && /big day|event|debloat|short-term/i.test(obj.plan_3_text)) {
-    obj.plan_3_text = 'Fat loss'
+  if (typeof obj.plan_3_text === 'string' && obj.feature === 'Best for') {
+    obj.plan_3_text = 'Looking good for an event, not long term'
   }
-  if (typeof obj.plan_6_text === 'string' && /recomp|already training|not muscle/i.test(obj.plan_6_text)) {
-    obj.plan_6_text = 'Fat loss + muscle gain'
+  if (typeof obj.plan_6_text === 'string' && obj.feature === 'Best for') {
+    obj.plan_6_text = 'Advanced athlete, looking for little guidance'
   }
   if (typeof obj.plan_12_text === 'string' && /complete transformation|aesthetic body and/i.test(obj.plan_12_text)) {
     obj.plan_12_text = 'Aesthetic body'
