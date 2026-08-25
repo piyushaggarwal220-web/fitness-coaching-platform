@@ -352,7 +352,7 @@ export function mediaResponseFromCache(
   const match = rangeHeader?.trim().match(/^bytes=(\d*)-(\d*)$/i)
   if (!match) {
     headers.set('Content-Length', String(size))
-    return new Response(body, { status: 200, headers })
+    return new Response(Buffer.from(body), { status: 200, headers })
   }
   const start = match[1] ? Number(match[1]) : 0
   const requestedEnd = match[2] ? Number(match[2]) : size - 1
@@ -369,7 +369,7 @@ export function mediaResponseFromCache(
   const end = Math.min(requestedEnd, size - 1)
   headers.set('Content-Length', String(end - start + 1))
   headers.set('Content-Range', `bytes ${start}-${end}/${size}`)
-  return new Response(body.slice(start, end + 1), { status: 206, headers })
+  return new Response(Buffer.from(body.subarray(start, end + 1)), { status: 206, headers })
 }
 
 export function isAllowedMuscleWikiMediaUrl(url: string): boolean {
