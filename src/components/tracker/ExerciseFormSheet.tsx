@@ -1,9 +1,28 @@
 'use client'
 
-import { useEffect, useId, useMemo, useState } from 'react'
-import { Loader2, X } from 'lucide-react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import Script from 'next/script'
+import { Loader2, Lock, Play, X } from 'lucide-react'
 import { colors, layout, radius, spacing } from '@/lib/design-tokens'
 import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
+import {
+  EXERCISE_LIBRARY_ADDON_PAISE,
+  formatInrFromPaise,
+} from '@/lib/payments/checkout-discounts'
+
+type RazorpayHandlerResponse = {
+  razorpay_order_id: string
+  razorpay_payment_id: string
+  razorpay_signature: string
+}
+type RazorpayInstance = { open: () => void }
+type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance
+
+declare global {
+  interface Window {
+    Razorpay?: RazorpayConstructor
+  }
+}
 
 type VideoOption = { gender: FormDemoGender; angle: string; hasPoster?: boolean }
 
@@ -23,31 +42,15 @@ type FormPayload = {
   videos: VideoOption[]
   exerciseId: number | null
   hasVideo: boolean
+  locked?: boolean
+  entitled?: boolean
+  pricePaise?: number
   error?: string
 }
 
 type Props = {
   exerciseName: string
   onClose: () => void
-}
-
-const GENDER_PREF_KEY = 'lurvox-form-gender'
-const ANGLE_PREF_KEY = 'lurvox-form-angle'
-
-function readPref(key: string): string | null {
-  try {
-    return window.localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-function writePref(key: string, value: string) {
-  try {
-    window.localStorage.setItem(key, value)
-  } catch {
-    /* ignore */
-  }
 }
 
 function Chip({ label }: { label: string }) {
@@ -69,44 +72,151 @@ function Chip({ label }: { label: string }) {
   )
 }
 
-function Toggle({
-  options,
-  value,
-  onChange,
-  ariaLabel,
+function angleLabel(angle: string) {
+  return angle.replace(/[-_]/g, ' ')
+}
+
+function orderAngles(angles: string[]): string[] {
+  const rank = ['front', 'side', 'rear', 'back', '45']
+  const unique = [...new Set(angles.map((angle) => angle.toLowerCase() || 'front'))]
+  return unique.sort((a, b) => {
+    const ia = rank.indexOf(a)
+    const ib = rank.indexOf(b)
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b)
+  })
+}
+
+function FormAnglePlayer({
+  exerciseName,
+  gender,
+  angle,
+  autoLoad,
+  onPlaying,
 }: {
-  options: { value: string; label: string }[]
-  value: string
-  onChange: (value: string) => void
-  ariaLabel: string
+  exerciseName: string
+  gender: FormDemoGender
+  angle: string
+  autoLoad: boolean
+  onPlaying: (video: HTMLVideoElement) => void
 }) {
-  if (options.length === 0) return null
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [activated, setActivated] = useState(autoLoad)
+  const [ready, setReady] = useState(false)
+  const mediaSrc = `/api/exercises/form/media?${new URLSearchParams({
+    name: exerciseName,
+    gender,
+    angle,
+  })}`
+
+  useEffect(() => {
+    if (!activated || autoLoad) return
+    const video = videoRef.current
+    if (!video) return
+    void video.play().catch(() => {
+      /* user gesture may still be required on some browsers */
+    })
+  }, [activated, autoLoad])
+
   return (
-    <div role="group" aria-label={ariaLabel} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-      {options.map((option) => {
-        const active = option.value === value
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
+    <div>
+      <p
+        style={{
+          margin: '0 0 6px',
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: colors.textMuted,
+        }}
+      >
+        {angleLabel(angle)}
+      </p>
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: '16 / 9',
+          borderRadius: 12,
+          overflow: 'hidden',
+          background: '#000',
+        }}
+      >
+        {activated ? (
+          <video
+            ref={videoRef}
+            controls
+            playsInline
+            preload={autoLoad ? 'auto' : 'none'}
+            onLoadedData={() => setReady(true)}
+            onPlay={(event) => onPlaying(event.currentTarget)}
             style={{
-              height: 32,
-              padding: '0 12px',
-              borderRadius: 999,
-              border: `1px solid ${active ? colors.accent : colors.borderSubtle}`,
-              background: active ? colors.accentMuted : colors.bgCard,
-              color: active ? colors.accent : colors.textSecondary,
-              fontWeight: 700,
-              fontSize: 12,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              background: '#000',
+            }}
+            src={mediaSrc}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setActivated(true)}
+            aria-label={`Load ${angleLabel(angle)} form video`}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              border: 0,
+              background: 'transparent',
+              color: colors.textSecondary,
               cursor: 'pointer',
-              textTransform: 'capitalize',
+              fontSize: 13,
+              fontWeight: 700,
             }}
           >
-            {option.label}
+            <span
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: colors.accent,
+                color: colors.textInverse,
+              }}
+            >
+              <Play size={22} fill="currentColor" />
+            </span>
+            Tap to load {angleLabel(angle)}
           </button>
-        )
-      })}
+        )}
+        {activated && !ready ? (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              background: 'rgba(0,0,0,0.45)',
+              color: colors.textSecondary,
+              fontSize: 13,
+              fontWeight: 700,
+              pointerEvents: 'none',
+            }}
+          >
+            <Loader2 size={24} color={colors.accent} style={{ animation: 'spin 1s linear infinite' }} />
+            Loading {angleLabel(angle)}…
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -114,40 +224,20 @@ function Toggle({
 export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
   const titleId = useId()
   const [loading, setLoading] = useState(true)
-  const [videoReady, setVideoReady] = useState(false)
   const [data, setData] = useState<FormPayload | null>(null)
-  const [gender, setGender] = useState<FormDemoGender>('male')
-  const [angle, setAngle] = useState('front')
+  const [unlocking, setUnlocking] = useState(false)
+  const [unlockError, setUnlockError] = useState<string | null>(null)
+  const activeVideoRef = useRef<HTMLVideoElement | null>(null)
 
-  useEffect(() => {
+  const loadForm = useCallback(() => {
     let cancelled = false
     setLoading(true)
-    setVideoReady(false)
     const params = new URLSearchParams({ name: exerciseName })
     void fetch(`/api/exercises/form?${params}`, { credentials: 'include' })
       .then(async (res) => {
         const json = (await res.json()) as FormPayload & { error?: string }
         if (!res.ok) throw new Error(json.error ?? 'Could not load form')
-        if (cancelled) return
-        setData(json)
-        const options = json.videos ?? []
-        const storedGender = readPref(GENDER_PREF_KEY)
-        const storedAngle = readPref(ANGLE_PREF_KEY)
-        const nextGender: FormDemoGender =
-          storedGender === 'female' || storedGender === 'male'
-            ? storedGender
-            : json.preferredGender === 'female'
-              ? 'female'
-              : 'male'
-        const genderOptions = options.filter((item) => item.gender === nextGender)
-        const fallbackGender = genderOptions.length > 0 ? nextGender : options[0]?.gender ?? 'male'
-        const anglePool = options.filter((item) => item.gender === fallbackGender)
-        const nextAngle =
-          storedAngle && anglePool.some((item) => item.angle === storedAngle)
-            ? storedAngle
-            : anglePool.find((item) => item.angle === 'front')?.angle ?? anglePool[0]?.angle ?? 'front'
-        setGender(fallbackGender)
-        setAngle(nextAngle)
+        if (!cancelled) setData(json)
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -178,6 +268,8 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
     }
   }, [exerciseName])
 
+  useEffect(() => loadForm(), [loadForm])
+
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -191,27 +283,99 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
     }
   }, [onClose])
 
-  const options = data?.videos ?? []
-  const genderOptions = useMemo(() => {
-    const seen = new Set<FormDemoGender>()
-    for (const item of options) seen.add(item.gender)
-    return [...seen].map((value) => ({ value, label: value }))
-  }, [options])
-  const angleOptions = useMemo(() => {
-    return options
-      .filter((item) => item.gender === gender)
-      .map((item) => ({ value: item.angle, label: item.angle }))
-  }, [options, gender])
+  const handleUnlock = async () => {
+    setUnlockError(null)
+    setUnlocking(true)
+    try {
+      const orderRes = await fetch('/api/payment/addons/exercise-library', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const orderData = (await orderRes.json().catch(() => null)) as
+        | {
+            error?: string
+            alreadyUnlocked?: boolean
+            testMode?: boolean
+            orderId?: string
+            amount?: number
+            currency?: string
+            keyId?: string
+            email?: string
+            name?: string
+            phone?: string
+          }
+        | null
+      if (orderData?.alreadyUnlocked) {
+        setUnlocking(false)
+        loadForm()
+        return
+      }
+      if (!orderRes.ok || !orderData?.orderId) {
+        throw new Error(orderData?.error ?? 'Could not start checkout')
+      }
 
-  const title = data?.name || exerciseName
-  const mediaParams = new URLSearchParams({ name: exerciseName, gender, angle })
-  const mediaSrc = `/api/exercises/form/media?${mediaParams}`
-  const hasPoster = options.some(
-    (item) => item.gender === gender && item.angle === angle && item.hasPoster
+      const finish = async (payload: RazorpayHandlerResponse) => {
+        const verifyRes = await fetch('/api/payment/addons/exercise-library', {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        const verifyData = (await verifyRes.json().catch(() => null)) as { error?: string } | null
+        if (!verifyRes.ok) throw new Error(verifyData?.error ?? 'Payment could not be confirmed')
+        setUnlocking(false)
+        loadForm()
+      }
+
+      if (orderData.testMode) {
+        await finish({
+          razorpay_order_id: orderData.orderId,
+          razorpay_payment_id: `test_payment_${Date.now()}`,
+          razorpay_signature: 'test_signature',
+        })
+        return
+      }
+
+      if (!window.Razorpay) {
+        throw new Error('Payment checkout is still loading. Tap Unlock again in a moment.')
+      }
+
+      const rzp = new window.Razorpay({
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency ?? 'INR',
+        name: 'LURVOX',
+        description: 'Exercise library',
+        order_id: orderData.orderId,
+        prefill: {
+          name: orderData.name,
+          email: orderData.email,
+          contact: orderData.phone,
+        },
+        handler: (response: RazorpayHandlerResponse) => {
+          void finish(response).catch((err: unknown) => {
+            setUnlockError(err instanceof Error ? err.message : 'Payment could not be confirmed')
+            setUnlocking(false)
+          })
+        },
+        modal: {
+          ondismiss: () => setUnlocking(false),
+        },
+      })
+      rzp.open()
+    } catch (err) {
+      setUnlockError(err instanceof Error ? err.message : 'Could not start checkout')
+      setUnlocking(false)
+    }
+  }
+
+  const gender: FormDemoGender = data?.preferredGender === 'female' ? 'female' : 'male'
+  const angles = useMemo(
+    () => orderAngles((data?.videos ?? []).map((item) => item.angle)),
+    [data?.videos]
   )
-  const posterSrc = hasPoster ? `${mediaSrc}&kind=poster` : undefined
-  const showVideo = Boolean(!data?.error && (loading || data?.hasVideo))
-  const showSpinner = loading || (showVideo && data?.hasVideo && !videoReady)
+  const title = data?.name || exerciseName
+  const showPlayers = Boolean(!data?.error && data?.hasVideo && angles.length > 0)
   const metaChips = [
     data?.category,
     data?.difficulty,
@@ -219,6 +383,12 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
     data?.mechanic,
     ...(data?.grips ?? []).map((grip) => `${grip} grip`),
   ].filter((value): value is string => Boolean(value))
+
+  const handlePlaying = (video: HTMLVideoElement) => {
+    const previous = activeVideoRef.current
+    if (previous && previous !== video && !previous.paused) previous.pause()
+    activeVideoRef.current = video
+  }
 
   return (
     <div
@@ -307,59 +477,6 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
           </button>
         </div>
 
-        {showVideo || showSpinner ? (
-          <div
-            style={{
-              position: 'relative',
-              flexShrink: 0,
-              width: 'calc(100% - 40px)',
-              margin: '14px 20px 0',
-              aspectRatio: '16 / 9',
-              borderRadius: 12,
-              overflow: 'hidden',
-              background: '#000',
-            }}
-          >
-            {showVideo && data?.hasVideo ? (
-              <video
-                key={`${gender}-${angle}`}
-                controls
-                playsInline
-                preload="auto"
-                poster={posterSrc}
-                onLoadedData={() => setVideoReady(true)}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  background: '#000',
-                }}
-                src={mediaSrc}
-              />
-            ) : null}
-            {showSpinner ? (
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  background: 'rgba(0,0,0,0.55)',
-                  color: colors.textSecondary,
-                  fontSize: 13,
-                  fontWeight: 700,
-                }}
-              >
-                <Loader2 size={28} color={colors.accent} style={{ animation: 'spin 1s linear infinite' }} />
-                Loading form…
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
         <div
           style={{
             flex: 1,
@@ -370,54 +487,97 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
             WebkitOverflowScrolling: 'touch',
           }}
         >
-          {data?.error ? (
+          {loading ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                minHeight: 160,
+                color: colors.textSecondary,
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              <Loader2 size={28} color={colors.accent} style={{ animation: 'spin 1s linear infinite' }} />
+              Loading form…
+            </div>
+          ) : data?.error ? (
             <p style={{ margin: 0, color: colors.danger }}>{data.error}</p>
-          ) : !loading && !data?.configured ? (
+          ) : data?.locked ? (
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  gap: 10,
+                  padding: '18px 8px 8px',
+                }}
+              >
+                <Lock size={28} color={colors.accent} />
+                <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: colors.textPrimary }}>
+                  Exercise library is locked
+                </p>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: colors.textSecondary }}>
+                  Form videos are a {formatInrFromPaise(data.pricePaise ?? EXERCISE_LIBRARY_ADDON_PAISE)} add-on.
+                  Unlock once to see the demo for every lift in your tracker.
+                </p>
+                {unlockError ? (
+                  <p style={{ margin: 0, color: colors.danger, fontSize: 13 }}>{unlockError}</p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void handleUnlock()}
+                  disabled={unlocking}
+                  style={{
+                    marginTop: 6,
+                    height: 48,
+                    width: '100%',
+                    maxWidth: 320,
+                    border: 0,
+                    borderRadius: radius.full,
+                    background: colors.accent,
+                    color: colors.textInverse,
+                    fontWeight: 800,
+                    fontSize: 15,
+                    cursor: unlocking ? 'wait' : 'pointer',
+                  }}
+                >
+                  {unlocking
+                    ? 'Opening checkout…'
+                    : `Unlock for ${formatInrFromPaise(data.pricePaise ?? EXERCISE_LIBRARY_ADDON_PAISE)}`}
+                </button>
+                <p style={{ margin: 0, fontSize: 12, color: colors.textMuted }}>
+                  You can also add it at checkout when you buy or renew a plan.
+                </p>
+              </div>
+            </div>
+          ) : !data?.configured ? (
             <p style={{ margin: 0, color: colors.textSecondary, lineHeight: 1.45 }}>
               Form videos are not connected yet. Follow your coach&apos;s notes, or ask in chat.
             </p>
-          ) : !loading && (data?.skipped || !data?.found) ? (
+          ) : data?.skipped || !data?.found ? (
             <p style={{ margin: 0, color: colors.textSecondary, lineHeight: 1.45 }}>
               No form video for this move. Follow your coach&apos;s notes, or ask in chat.
             </p>
-          ) : !loading && data?.found ? (
+          ) : (
             <>
-              {genderOptions.length > 1 || angleOptions.length > 1 ? (
-                <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
-                  {genderOptions.length > 1 ? (
-                    <Toggle
-                      ariaLabel="Demo model"
-                      options={genderOptions}
-                      value={gender}
-                      onChange={(value) => {
-                        const next = value === 'female' ? 'female' : 'male'
-                        setGender(next)
-                        writePref(GENDER_PREF_KEY, next)
-                        setVideoReady(false)
-                        const nextAngles = options.filter((item) => item.gender === next)
-                        if (!nextAngles.some((item) => item.angle === angle)) {
-                          const nextAngle =
-                            nextAngles.find((item) => item.angle === 'front')?.angle ??
-                            nextAngles[0]?.angle ??
-                            'front'
-                          setAngle(nextAngle)
-                          writePref(ANGLE_PREF_KEY, nextAngle)
-                        }
-                      }}
+              {showPlayers ? (
+                <div style={{ display: 'grid', gap: 14, marginBottom: 14 }}>
+                  {angles.map((angle, index) => (
+                    <FormAnglePlayer
+                      key={angle}
+                      exerciseName={exerciseName}
+                      gender={gender}
+                      angle={angle}
+                      autoLoad={index === 0}
+                      onPlaying={handlePlaying}
                     />
-                  ) : null}
-                  {angleOptions.length > 1 ? (
-                    <Toggle
-                      ariaLabel="Camera angle"
-                      options={angleOptions}
-                      value={angle}
-                      onChange={(value) => {
-                        setAngle(value)
-                        writePref(ANGLE_PREF_KEY, value)
-                        setVideoReady(false)
-                      }}
-                    />
-                  ) : null}
+                  ))}
                 </div>
               ) : null}
 
@@ -456,10 +616,13 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
                 </p>
               )}
             </>
-          ) : null}
+          )}
         </div>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {data?.locked ? (
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+      ) : null}
     </div>
   )
 }

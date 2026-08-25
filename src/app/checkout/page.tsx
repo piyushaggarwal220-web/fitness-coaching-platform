@@ -20,7 +20,7 @@ import {
   getFirstTimerDiscountCode,
   isFirstTimerDiscountCode,
   CHECKOUT_ADDONS,
-  CHECKOUT_ADDON_UNIT_PAISE,
+  checkoutAddonPaise,
   checkoutAddonsPaise,
   parseCheckoutAddonIds,
   type CheckoutAddonId,
@@ -750,9 +750,11 @@ function CheckoutForm() {
                   <div key={id} style={{ ...styles.orderRow, marginTop: 10 }}>
                     <div>
                       <div style={styles.orderPlanName}>{addon.name}</div>
-                      <div style={styles.orderPlanMeta}>Add-on protocol</div>
+                      <div style={styles.orderPlanMeta}>
+                        {id === 'exercise_library' ? 'Add-on · form videos' : 'Add-on protocol'}
+                      </div>
                     </div>
-                    <span style={styles.orderSummaryPrice}>+ {formatInrFromPaise(CHECKOUT_ADDON_UNIT_PAISE)}</span>
+                    <span style={styles.orderSummaryPrice}>+ {formatInrFromPaise(checkoutAddonPaise(id))}</span>
                   </div>
                 )
               })}

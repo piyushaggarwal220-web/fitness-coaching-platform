@@ -258,6 +258,120 @@ export function listFormVideoOptions(videos: MuscleWikiVideo[]): Array<{
   return out
 }
 
+/** Only the onboarding gender — never offer the other model as a browse option. */
+export function videosForDemoGender(
+  videos: MuscleWikiVideo[],
+  preferred: FormDemoGender
+): ReturnType<typeof listFormVideoOptions> {
+  const all = listFormVideoOptions(videos)
+  const match = all.filter((item) => item.gender === preferred)
+  return match.length > 0 ? match : all
+}
+
+const ANGLE_ORDER = ['front', 'side', 'rear', 'back', '45']
+
+export function orderFormAngles(angles: string[]): string[] {
+  const unique = [...new Set(angles.map((angle) => angle.toLowerCase() || 'front'))]
+  return unique.sort((a, b) => {
+    const ia = ANGLE_ORDER.indexOf(a)
+    const ib = ANGLE_ORDER.indexOf(b)
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b)
+  })
+}
+
+type CachedMedia = { body: Uint8Array; contentType: string }
+const MEDIA_CACHE_MAX_ITEMS = 24
+const MEDIA_CACHE_MAX_BYTES = 80 * 1024 * 1024
+const mediaCache = new Map<string, CachedMedia>()
+const mediaInflight = new Map<string, Promise<CachedMedia>>()
+let mediaCacheBytes = 0
+
+function rememberMedia(url: string, item: CachedMedia) {
+  const previous = mediaCache.get(url)
+  if (previous) {
+    mediaCache.delete(url)
+    mediaCacheBytes -= previous.body.byteLength
+  }
+  mediaCache.set(url, item)
+  mediaCacheBytes += item.body.byteLength
+  while (
+    mediaCache.size > 0 &&
+    (mediaCache.size > MEDIA_CACHE_MAX_ITEMS || mediaCacheBytes > MEDIA_CACHE_MAX_BYTES)
+  ) {
+    const oldest = mediaCache.keys().next().value
+    if (!oldest || oldest === url) break
+    const drop = mediaCache.get(oldest)
+    mediaCache.delete(oldest)
+    if (drop) mediaCacheBytes -= drop.body.byteLength
+  }
+}
+
+/**
+ * Fetch a MuscleWiki clip once, then serve repeats/range requests from memory.
+ * HTML5 <video> fires several Range GETs; forwarding each one bills another credit.
+ */
+export async function getCachedMuscleWikiMedia(url: string): Promise<CachedMedia> {
+  const hit = mediaCache.get(url)
+  if (hit) {
+    mediaCache.delete(url)
+    mediaCache.set(url, hit)
+    return hit
+  }
+  const pending = mediaInflight.get(url)
+  if (pending) return pending
+  const job = (async () => {
+    const res = await fetchMuscleWikiMedia(url, null)
+    if (!res.ok) throw new Error(`MuscleWiki media ${res.status}`)
+    const body = new Uint8Array(await res.arrayBuffer())
+    const item = {
+      body,
+      contentType: res.headers.get('content-type') ?? 'video/mp4',
+    }
+    rememberMedia(url, item)
+    return item
+  })()
+  mediaInflight.set(url, job)
+  try {
+    return await job
+  } finally {
+    mediaInflight.delete(url)
+  }
+}
+
+export function mediaResponseFromCache(
+  item: CachedMedia,
+  rangeHeader: string | null
+): Response {
+  const { body, contentType } = item
+  const size = body.byteLength
+  const headers = new Headers({
+    'Content-Type': contentType,
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'private, max-age=86400, immutable',
+  })
+  const match = rangeHeader?.trim().match(/^bytes=(\d*)-(\d*)$/i)
+  if (!match) {
+    headers.set('Content-Length', String(size))
+    return new Response(body, { status: 200, headers })
+  }
+  const start = match[1] ? Number(match[1]) : 0
+  const requestedEnd = match[2] ? Number(match[2]) : size - 1
+  if (
+    !Number.isFinite(start) ||
+    !Number.isFinite(requestedEnd) ||
+    start < 0 ||
+    start >= size ||
+    requestedEnd < start
+  ) {
+    headers.set('Content-Range', `bytes */${size}`)
+    return new Response(null, { status: 416, headers })
+  }
+  const end = Math.min(requestedEnd, size - 1)
+  headers.set('Content-Length', String(end - start + 1))
+  headers.set('Content-Range', `bytes ${start}-${end}/${size}`)
+  return new Response(body.slice(start, end + 1), { status: 206, headers })
+}
+
 export function isAllowedMuscleWikiMediaUrl(url: string): boolean {
   try {
     const parsed = new URL(url)

@@ -8,7 +8,9 @@ import {
 import {
   inferEquipmentCategory,
   listFormVideoOptions,
+  orderFormAngles,
   pickFormVideo,
+  videosForDemoGender,
   type MuscleWikiVideo,
 } from '../src/lib/exercise-form/musclewiki'
 
@@ -58,6 +60,10 @@ assert.equal(
   listFormVideoOptions(demoVideos).some((item) => item.gender === 'female' && item.hasPoster),
   true
 )
+assert.equal(videosForDemoGender(demoVideos, 'female').every((item) => item.gender === 'female'), true)
+assert.equal(videosForDemoGender(demoVideos, 'female').length, 1)
+assert.equal(videosForDemoGender(demoVideos, 'male').length, 2)
+assert.deepEqual(orderFormAngles(['side', 'front', 'rear']), ['front', 'side', 'rear'])
 
 console.log('Exercise form lookup checks passed.')
 

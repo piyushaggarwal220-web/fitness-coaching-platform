@@ -161,6 +161,7 @@ export default function Dashboard() {
             .from('purchases')
             .select('id, user_id, status, amount_paise, currency, created_at, plan_name, plan_slug')
             .eq('user_id', userId)
+            .neq('plan_slug', 'exercise_library')
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle(),

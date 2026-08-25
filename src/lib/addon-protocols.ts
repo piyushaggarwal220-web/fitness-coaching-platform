@@ -1,7 +1,7 @@
-import type { CheckoutAddonId } from '@/lib/payments/checkout-discounts'
-import { CHECKOUT_ADDONS } from '@/lib/payments/checkout-discounts'
+import { CHECKOUT_ADDONS, type CheckoutAddonId } from '@/lib/payments/checkout-discounts'
 
-export type AddonProtocolId = CheckoutAddonId
+export const ADDON_PROTOCOL_IDS = ['testo_boost', 'anxiety_removal', 'face_maxxing'] as const
+export type AddonProtocolId = (typeof ADDON_PROTOCOL_IDS)[number]
 
 export const ADDON_PROTOCOL_HREF: Record<AddonProtocolId, string> = {
   testo_boost: '/supplement-protocol?addon=testo_boost',
@@ -30,6 +30,10 @@ export function addonProtocolName(id: AddonProtocolId): string {
   return CHECKOUT_ADDONS.find((item) => item.id === id)?.name ?? ADDON_PROTOCOL_PAGE_TITLE[id]
 }
 
+export function isAddonProtocolId(id: CheckoutAddonId | string): id is AddonProtocolId {
+  return (ADDON_PROTOCOL_IDS as readonly string[]).includes(id)
+}
+
 export function profileEntitledForAddon(
   profile: {
     supplement_protocol_entitled?: boolean | null
@@ -49,7 +53,11 @@ export function entitledAddonIds(profile: {
   anxiety_protocol_entitled?: boolean | null
   face_maxxing_entitled?: boolean | null
 } | null | undefined): AddonProtocolId[] {
-  return (['testo_boost', 'anxiety_removal', 'face_maxxing'] as const).filter((id) =>
-    profileEntitledForAddon(profile, id)
-  )
+  return ADDON_PROTOCOL_IDS.filter((id) => profileEntitledForAddon(profile, id))
+}
+
+export function profileEntitledForExerciseLibrary(
+  profile: { exercise_library_entitled?: boolean | null } | null | undefined
+): boolean {
+  return profile?.exercise_library_entitled === true
 }

@@ -3,8 +3,8 @@ import {
   getMuscleWikiExercise,
   inferEquipmentCategory,
   isMuscleWikiConfigured,
-  listFormVideoOptions,
   searchMuscleWiki,
+  videosForDemoGender,
   type FormDemoGender,
   type MuscleWikiExercise,
   type MuscleWikiVideo,
@@ -180,6 +180,7 @@ function rankHits(query: string, hits: MuscleWikiExercise[]) {
 }
 
 export function publicFormPayload(result: ExerciseFormResult, preferredGender: FormDemoGender) {
+  const videos = videosForDemoGender(result.videos, preferredGender)
   return {
     configured: result.configured,
     skipped: result.skipped,
@@ -193,9 +194,9 @@ export function publicFormPayload(result: ExerciseFormResult, preferredGender: F
     mechanic: result.details.mechanic,
     grips: result.details.grips,
     exerciseId: result.exerciseId,
-    preferredGender,
-    videos: listFormVideoOptions(result.videos),
-    hasVideo: result.videos.length > 0,
+    preferredGender: videos[0]?.gender ?? preferredGender,
+    videos,
+    hasVideo: videos.length > 0,
   }
 }
 

@@ -1,7 +1,9 @@
 import { requireApiUser } from '@/lib/api-auth'
+import { profileEntitledForExerciseLibrary } from '@/lib/addon-protocols'
 import { lookupExerciseForm } from '@/lib/exercise-form/lookup'
 import {
-  fetchMuscleWikiMedia,
+  getCachedMuscleWikiMedia,
+  mediaResponseFromCache,
   pickFormVideo,
   type FormDemoGender,
 } from '@/lib/exercise-form/musclewiki'
@@ -11,6 +13,15 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
+
+  const { data: profile } = await auth.supabase
+    .from('profiles')
+    .select('exercise_library_entitled')
+    .eq('id', auth.user.id)
+    .maybeSingle()
+  if (!profileEntitledForExerciseLibrary(profile)) {
+    return new Response('Exercise library locked', { status: 403 })
+  }
 
   const url = new URL(request.url)
   const name = url.searchParams.get('name')?.trim() ?? ''
@@ -32,23 +43,9 @@ export async function GET(request: Request) {
       return new Response('No form poster', { status: 404 })
     }
 
+    const cached = await getCachedMuscleWikiMedia(mediaUrl)
     const range = kind === 'video' ? request.headers.get('range') : null
-    const upstream = await fetchMuscleWikiMedia(mediaUrl, range)
-    const headers = new Headers()
-    for (const key of [
-      'content-type',
-      'content-length',
-      'content-range',
-      'accept-ranges',
-      'cache-control',
-    ]) {
-      const value = upstream.headers.get(key)
-      if (value) headers.set(key, value)
-    }
-    if (!headers.has('Cache-Control')) {
-      headers.set('Cache-Control', kind === 'poster' ? 'private, max-age=86400' : 'private, no-store')
-    }
-    return new Response(upstream.body, { status: upstream.status, headers })
+    return mediaResponseFromCache(cached, range)
   } catch {
     return new Response('Form video unavailable', { status: 502 })
   }

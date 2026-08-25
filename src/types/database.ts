@@ -197,6 +197,7 @@ export type Profile = {
   supplement_protocol_entitled?: boolean | null
   anxiety_protocol_entitled?: boolean | null
   face_maxxing_entitled?: boolean | null
+  exercise_library_entitled?: boolean | null
   complexity_score?: number | null
   complexity_raw_score?: number | null
   complexity_tier?: 'low' | 'medium' | 'high' | null

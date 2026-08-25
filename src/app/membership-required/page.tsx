@@ -66,6 +66,7 @@ export default function MembershipRequiredPage() {
         .select('plan_slug, plan_name, created_at, status')
         .eq('user_id', user.id)
         .in('status', ['captured', 'redeemed'])
+        .neq('plan_slug', 'exercise_library')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()

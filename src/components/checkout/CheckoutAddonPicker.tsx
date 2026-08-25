@@ -3,6 +3,8 @@
 import {
   CHECKOUT_ADDONS,
   CHECKOUT_ADDON_UNIT_PAISE,
+  EXERCISE_LIBRARY_ADDON_PAISE,
+  checkoutAddonPaise,
   formatInrFromPaise,
   type CheckoutAddonId,
 } from '@/lib/payments/checkout-discounts'
@@ -13,30 +15,10 @@ type Props = {
   onToggle: (id: CheckoutAddonId) => void
 }
 
-const PROTOCOLS: { id: CheckoutAddonId; name: string; copy: string }[] = [
-  {
-    id: 'testo_boost',
-    name: 'Testo boost',
-    copy: 'Training, sleep, body fat, and which supplements are worth it. Not a hormone or drug.',
-  },
-  {
-    id: 'anxiety_removal',
-    name: 'Anxiety removal',
-    copy: 'Habits for stress, sleep, and a calmer week. Not therapy and not medicine.',
-  },
-  {
-    id: 'face_maxxing',
-    name: 'Face maxxing',
-    copy: 'Sleep, salt, skin, posture, and grooming. Lifestyle only — not medical or surgical.',
-  },
-]
-
 export function CheckoutAddonPicker({ selectedIds, onToggle }: Props) {
-  const catalog = CHECKOUT_ADDONS?.length >= 3 ? CHECKOUT_ADDONS : PROTOCOLS
-
   return (
     <section
-      aria-label="Optional add-on protocols"
+      aria-label="Optional add-ons"
       style={{
         margin: '18px 0 8px',
         padding: 14,
@@ -55,14 +37,14 @@ export function CheckoutAddonPicker({ selectedIds, onToggle }: Props) {
           color: colors.accent,
         }}
       >
-        Optional protocols
+        Optional add-ons
       </p>
       <p style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.45, color: colors.textMuted }}>
-        Same price each ({formatInrFromPaise(CHECKOUT_ADDON_UNIT_PAISE)}). Pick one, two, or all
-        three.
+        Not included in coaching. Protocols are {formatInrFromPaise(CHECKOUT_ADDON_UNIT_PAISE)} each.
+        Exercise library is {formatInrFromPaise(EXERCISE_LIBRARY_ADDON_PAISE)}.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {catalog.map((addon) => {
+        {CHECKOUT_ADDONS.map((addon) => {
           const on = selectedIds.includes(addon.id)
           return (
             <label
@@ -107,11 +89,11 @@ export function CheckoutAddonPicker({ selectedIds, onToggle }: Props) {
                     {addon.name}
                   </strong>
                   <span style={{ fontSize: 14, fontWeight: 800, color: colors.accent, whiteSpace: 'nowrap' }}>
-                    + {formatInrFromPaise(CHECKOUT_ADDON_UNIT_PAISE)}
+                    + {formatInrFromPaise(checkoutAddonPaise(addon.id))}
                   </span>
                 </span>
                 <span style={{ fontSize: 12, lineHeight: 1.45, color: colors.textMuted }}>
-                  {'copy' in addon ? addon.copy : ''}
+                  {addon.copy}
                 </span>
               </span>
             </label>

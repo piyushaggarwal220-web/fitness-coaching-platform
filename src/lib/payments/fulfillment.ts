@@ -621,6 +621,9 @@ export async function claimPurchaseWithPassword(
   if (claimedAddonIds.includes('face_maxxing')) {
     profilePayload.face_maxxing_entitled = true
   }
+  if (claimedAddonIds.includes('exercise_library')) {
+    profilePayload.exercise_library_entitled = true
+  }
 
   const { error: profileError } = await admin.from('profiles').upsert(profilePayload)
   if (profileError) {

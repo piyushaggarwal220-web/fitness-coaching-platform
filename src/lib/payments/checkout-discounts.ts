@@ -46,11 +46,26 @@ const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_mont
  */
 export const SUPPLEMENT_PROTOCOL_ADDON_PAISE = 39900
 export const SUPPLEMENT_PROTOCOL_ADDON_LABEL = 'Natural testosterone support protocol'
-/** Each optional checkout add-on is billed at the same published price. */
+/** Protocol add-ons stay at this published price. */
 export const CHECKOUT_ADDON_UNIT_PAISE = SUPPLEMENT_PROTOCOL_ADDON_PAISE
+/** Form-video library add-on (MuscleWiki). Not discounted with the plan. */
+export const EXERCISE_LIBRARY_ADDON_PAISE = 30000
+export const EXERCISE_LIBRARY_ADDON_ID = 'exercise_library' as const
 
-export const CHECKOUT_ADDON_IDS = ['testo_boost', 'anxiety_removal', 'face_maxxing'] as const
+export const CHECKOUT_ADDON_IDS = [
+  'testo_boost',
+  'anxiety_removal',
+  'face_maxxing',
+  EXERCISE_LIBRARY_ADDON_ID,
+] as const
 export type CheckoutAddonId = (typeof CHECKOUT_ADDON_IDS)[number]
+
+export const CHECKOUT_ADDON_PRICE_PAISE: Record<CheckoutAddonId, number> = {
+  testo_boost: SUPPLEMENT_PROTOCOL_ADDON_PAISE,
+  anxiety_removal: SUPPLEMENT_PROTOCOL_ADDON_PAISE,
+  face_maxxing: SUPPLEMENT_PROTOCOL_ADDON_PAISE,
+  exercise_library: EXERCISE_LIBRARY_ADDON_PAISE,
+}
 
 export const CHECKOUT_ADDONS: { id: CheckoutAddonId; name: string; copy: string }[] = [
   {
@@ -68,7 +83,20 @@ export const CHECKOUT_ADDONS: { id: CheckoutAddonId; name: string; copy: string 
     name: 'Face maxxing',
     copy: 'Face-focused habits: sleep, salt, skin, posture, and grooming. Lifestyle only — not a medical or surgical plan.',
   },
+  {
+    id: 'exercise_library',
+    name: 'Exercise library',
+    copy: 'Form videos for every lift in your workout tracker. Front view loads first; extra angles load only if you tap them.',
+  },
 ]
+
+export function checkoutAddonPaise(id: CheckoutAddonId): number {
+  return CHECKOUT_ADDON_PRICE_PAISE[id]
+}
+
+export function isExerciseLibraryAddon(id: string | null | undefined): boolean {
+  return id === EXERCISE_LIBRARY_ADDON_ID
+}
 
 /** Razorpay order-note key, also used to reconstruct the charge at verification time. */
 const SUPPLEMENT_ADDON_NOTE_KEY = 'addon_supplement_paise'
@@ -93,7 +121,7 @@ export function parseCheckoutAddonIds(input: unknown): CheckoutAddonId[] {
 }
 
 export function checkoutAddonsPaise(ids: readonly CheckoutAddonId[]): number {
-  return ids.length * CHECKOUT_ADDON_UNIT_PAISE
+  return ids.reduce((sum, id) => sum + CHECKOUT_ADDON_PRICE_PAISE[id], 0)
 }
 
 export function supplementAddonPaise(enabled: boolean | null | undefined): number {

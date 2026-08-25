@@ -1,14 +1,46 @@
 import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireApiUser } from '@/lib/api-auth'
+import { profileEntitledForExerciseLibrary } from '@/lib/addon-protocols'
 import { lookupExerciseForm, publicFormPayload } from '@/lib/exercise-form/lookup'
 import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
+import { EXERCISE_LIBRARY_ADDON_PAISE } from '@/lib/payments/checkout-discounts'
 
 export const dynamic = 'force-dynamic'
 
-async function preferredDemoGender(supabase: SupabaseClient, userId: string): Promise<FormDemoGender> {
-  const { data } = await supabase.from('profiles').select('gender').eq('id', userId).maybeSingle()
-  return String(data?.gender ?? '').toLowerCase() === 'female' ? 'female' : 'male'
+async function loadFormProfile(supabase: SupabaseClient, userId: string) {
+  const { data } = await supabase
+    .from('profiles')
+    .select('gender, exercise_library_entitled')
+    .eq('id', userId)
+    .maybeSingle()
+  return {
+    gender: (String(data?.gender ?? '').toLowerCase() === 'female' ? 'female' : 'male') as FormDemoGender,
+    entitled: profileEntitledForExerciseLibrary(data),
+  }
+}
+
+function lockedPayload() {
+  return {
+    success: true,
+    locked: true,
+    entitled: false,
+    pricePaise: EXERCISE_LIBRARY_ADDON_PAISE,
+    configured: true,
+    skipped: false,
+    found: false,
+    name: null,
+    steps: [],
+    muscles: [],
+    category: null,
+    difficulty: null,
+    force: null,
+    mechanic: null,
+    grips: [],
+    videos: [],
+    exerciseId: null,
+    hasVideo: false,
+  }
 }
 
 export async function GET(request: Request) {
@@ -21,13 +53,17 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [result, gender] = await Promise.all([
-      lookupExerciseForm(name),
-      preferredDemoGender(auth.supabase, auth.user.id),
-    ])
+    const profile = await loadFormProfile(auth.supabase, auth.user.id)
+    if (!profile.entitled) {
+      return NextResponse.json(lockedPayload())
+    }
+    const result = await lookupExerciseForm(name)
     return NextResponse.json({
       success: true,
-      ...publicFormPayload(result, gender),
+      locked: false,
+      entitled: true,
+      pricePaise: EXERCISE_LIBRARY_ADDON_PAISE,
+      ...publicFormPayload(result, profile.gender),
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Form lookup failed'

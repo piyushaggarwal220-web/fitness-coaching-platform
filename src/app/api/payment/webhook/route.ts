@@ -6,6 +6,7 @@ import {
   expectedAmountPaiseFromOrderNotes,
   normalizeDiscountCode,
   checkoutAddonsFromNotes,
+  EXERCISE_LIBRARY_ADDON_PAISE,
 } from '@/lib/payments/checkout-discounts'
 import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
 import { notifyAffiliateCodeUsage } from '@/lib/payments/affiliate-notify'
@@ -18,6 +19,10 @@ import {
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
 import { createAdminClient } from '@/lib/supabase/admin'
+import {
+  fulfillExerciseLibraryAddon,
+  isExerciseLibraryAddonOrder,
+} from '@/lib/payments/exercise-library-addon'
 import { getOrderPolicyAcknowledgement } from '@/lib/payments/policy-acknowledgement'
 import { isCurrentPolicyAcknowledgement } from '@/lib/policies'
 
@@ -220,6 +225,28 @@ export async function POST(request: Request) {
     }
 
     const planSlug = notes.plan_slug
+    if (isExerciseLibraryAddonOrder(notes)) {
+      const userId = notes.user_id?.trim()
+      const email = (notes.customer_email || payment.email || '').trim().toLowerCase()
+      const name = (notes.customer_name || '').trim() || 'Member'
+      if (!userId || !email) {
+        return NextResponse.json({ success: false, error: 'Missing exercise library buyer' }, { status: 422 })
+      }
+      if (payment.amount !== EXERCISE_LIBRARY_ADDON_PAISE) {
+        return NextResponse.json({ success: false, error: 'Amount mismatch' }, { status: 422 })
+      }
+      const result = await fulfillExerciseLibraryAddon({
+        userId,
+        email,
+        name,
+        phone: notes.customer_phone || payment.contact || null,
+        razorpayPaymentId: payment.id,
+        razorpayOrderId: payment.order_id,
+        amountPaise: payment.amount,
+      })
+      return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: 'exercise_library' })
+    }
+
     // Resolve active + legacy plans so in-flight retired purchases can still fulfill.
     const plan = planSlug ? getCoachingPlan(planSlug) : null
     if (!planSlug || !plan) {

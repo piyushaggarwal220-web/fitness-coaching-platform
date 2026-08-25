@@ -44,6 +44,7 @@ export async function fetchCapturedPlanSlug(userId: string): Promise<string | nu
     .select('plan_slug')
     .eq('user_id', userId)
     .eq('status', 'captured')
+    .neq('plan_slug', 'exercise_library')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
