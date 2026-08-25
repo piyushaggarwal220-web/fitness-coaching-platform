@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Pause, Play, Save, Square } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { RestTimer } from '@/components/tracker/RestTimer'
+import { ExerciseFormSheet } from '@/components/tracker/ExerciseFormSheet'
 import {
   ProgressBar,
   StatTile,
@@ -32,6 +33,7 @@ import {
   getWorkoutProgress,
 } from '@/lib/daily-tracker/display'
 import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
+import { shouldSkipExerciseForm } from '@/lib/exercise-form/normalize'
 import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
 import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
@@ -145,6 +147,7 @@ export function WorkoutModule({
   )
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const [formExercise, setFormExercise] = useState<string | null>(null)
 
   const progress = getWorkoutProgress(workout, completion)
   const volume = computeWorkoutVolume(
@@ -740,6 +743,27 @@ export function WorkoutModule({
                       >
                         {ex.name?.trim() || 'Exercise'}
                       </div>
+                      {ex.name?.trim() && !shouldSkipExerciseForm(ex.name) ? (
+                        <button
+                          type="button"
+                          onClick={() => setFormExercise(ex.name.trim())}
+                          style={{
+                            flexShrink: 0,
+                            height: 28,
+                            padding: '0 10px',
+                            borderRadius: 999,
+                            border: `1px solid ${colors.accent}`,
+                            background: colors.accentMuted,
+                            color: colors.accent,
+                            fontWeight: 800,
+                            fontSize: 11,
+                            letterSpacing: '0.06em',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          FORM
+                        </button>
+                      ) : null}
                     </div>
                     <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>
                       {formatExerciseTarget(ex)}
@@ -1123,6 +1147,9 @@ export function WorkoutModule({
           </div>
         </div>
       )}
+      {formExercise ? (
+        <ExerciseFormSheet exerciseName={formExercise} onClose={() => setFormExercise(null)} />
+      ) : null}
     </div>
   )
 }

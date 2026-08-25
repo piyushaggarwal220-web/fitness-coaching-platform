@@ -28,6 +28,8 @@
     "verify:plan-metadata": "tsx scripts/verify-plan-metadata.ts",
     "verify:plan-goals": "tsx scripts/verify-plan-goals.ts",
     "verify:daily-tracker": "tsx scripts/verify-daily-tracker.ts",
+    "verify:exercise-form": "tsx scripts/verify-exercise-form.ts",
+    "verify:exercise-form-live": "tsx --env-file=.env.local scripts/verify-exercise-form.ts --live",
     "verify:prompt-cache": "tsx scripts/verify-prompt-cache.ts",
     "verify:chat-policy": "tsx scripts/verify-chat-policy-workflow.ts",
     "verify:weekly-checkin-chat": "tsx scripts/verify-weekly-checkin-chat-policy.ts",
