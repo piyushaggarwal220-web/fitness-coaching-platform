@@ -1,8 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   getMuscleWikiExercise,
+  inferEquipmentCategory,
   isMuscleWikiConfigured,
+  listFormVideoOptions,
   searchMuscleWiki,
+  type FormDemoGender,
   type MuscleWikiExercise,
   type MuscleWikiVideo,
 } from '@/lib/exercise-form/musclewiki'
@@ -16,6 +19,15 @@ import {
 const HIT_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MISS_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const MIN_ACCEPT_SCORE = 36
+const CACHE_VERSION = 'v2'
+
+export type ExerciseFormDetails = {
+  category: string | null
+  difficulty: string | null
+  force: string | null
+  mechanic: string | null
+  grips: string[]
+}
 
 export type ExerciseFormResult = {
   configured: boolean
@@ -27,9 +39,14 @@ export type ExerciseFormResult = {
   muscles: string[]
   videos: MuscleWikiVideo[]
   exerciseId: number | null
+  details: ExerciseFormDetails
 }
 
 const memory = new Map<string, { expiresAt: number; value: ExerciseFormResult }>()
+
+function emptyDetails(): ExerciseFormDetails {
+  return { category: null, difficulty: null, force: null, mechanic: null, grips: [] }
+}
 
 function emptyResult(
   query: string,
@@ -45,6 +62,7 @@ function emptyResult(
     muscles: [],
     videos: [],
     exerciseId: null,
+    details: emptyDetails(),
     ...extras,
   }
 }
@@ -56,11 +74,43 @@ function fromExercise(query: string, exercise: MuscleWikiExercise): ExerciseForm
     found: true,
     query,
     name: exercise.name,
-    steps: exercise.steps.slice(0, 8),
-    muscles: exercise.muscles.slice(0, 6),
+    steps: exercise.steps,
+    muscles: exercise.muscles,
     videos: exercise.videos,
     exerciseId: exercise.id,
+    details: {
+      category: exercise.category,
+      difficulty: exercise.difficulty,
+      force: exercise.force,
+      mechanic: exercise.mechanic,
+      grips: exercise.grips,
+    },
   }
+}
+
+function cacheKey(query: string): string {
+  return `${CACHE_VERSION}:${query}`
+}
+
+function unpackCachedVideos(raw: unknown): {
+  videos: MuscleWikiVideo[]
+  details: ExerciseFormDetails
+} {
+  if (Array.isArray(raw)) {
+    return { videos: raw as MuscleWikiVideo[], details: emptyDetails() }
+  }
+  if (raw && typeof raw === 'object' && Array.isArray((raw as { items?: unknown }).items)) {
+    const packed = raw as { items: MuscleWikiVideo[]; details?: Partial<ExerciseFormDetails> }
+    return {
+      videos: packed.items,
+      details: {
+        ...emptyDetails(),
+        ...packed.details,
+        grips: Array.isArray(packed.details?.grips) ? packed.details.grips : [],
+      },
+    }
+  }
+  return { videos: [], details: emptyDetails() }
 }
 
 async function readCache(nameKey: string): Promise<ExerciseFormResult | null> {
@@ -78,12 +128,14 @@ async function readCache(nameKey: string): Promise<ExerciseFormResult | null> {
     if (!Number.isFinite(fetchedAt)) return null
     const ttl = data.found ? HIT_TTL_MS : MISS_TTL_MS
     if (Date.now() - fetchedAt > ttl) return null
+    const packed = unpackCachedVideos(data.videos)
     const value = emptyResult(nameKey, {
       found: Boolean(data.found),
       name: (data.display_name as string | null) ?? null,
       steps: Array.isArray(data.steps) ? (data.steps as string[]) : [],
       muscles: Array.isArray(data.muscles) ? (data.muscles as string[]) : [],
-      videos: Array.isArray(data.videos) ? (data.videos as MuscleWikiVideo[]) : [],
+      videos: packed.videos,
+      details: packed.details,
       exerciseId: data.musclewiki_id != null ? Number(data.musclewiki_id) : null,
     })
     memory.set(nameKey, { expiresAt: fetchedAt + ttl, value })
@@ -105,7 +157,7 @@ async function writeCache(nameKey: string, value: ExerciseFormResult): Promise<v
         display_name: value.name,
         steps: value.steps,
         muscles: value.muscles,
-        videos: value.videos,
+        videos: { v: 2, items: value.videos, details: value.details },
         found: value.found,
         fetched_at: new Date().toISOString(),
       },
@@ -113,6 +165,37 @@ async function writeCache(nameKey: string, value: ExerciseFormResult): Promise<v
     )
   } catch {
     /* table may not exist yet — memory cache still helps warm instances */
+  }
+}
+
+function rankHits(query: string, hits: MuscleWikiExercise[]) {
+  const category = inferEquipmentCategory(query)
+  return hits
+    .map((hit) => {
+      let score = matchScore(query, hit.name)
+      if (category && hit.category?.toLowerCase() === category) score += 8
+      return { hit, score }
+    })
+    .sort((a, b) => b.score - a.score)
+}
+
+export function publicFormPayload(result: ExerciseFormResult, preferredGender: FormDemoGender) {
+  return {
+    configured: result.configured,
+    skipped: result.skipped,
+    found: result.found,
+    name: result.name,
+    steps: result.steps,
+    muscles: result.muscles,
+    category: result.details.category,
+    difficulty: result.details.difficulty,
+    force: result.details.force,
+    mechanic: result.details.mechanic,
+    grips: result.details.grips,
+    exerciseId: result.exerciseId,
+    preferredGender,
+    videos: listFormVideoOptions(result.videos),
+    hasVideo: result.videos.length > 0,
   }
 }
 
@@ -125,22 +208,21 @@ export async function lookupExerciseForm(rawName: string): Promise<ExerciseFormR
     return emptyResult(query, { configured: false })
   }
 
-  const cached = await readCache(query)
+  const key = cacheKey(query)
+  const cached = await readCache(key)
   if (cached) return cached
 
-  const hits = await searchMuscleWiki(query, 5)
-  const ranked = hits
-    .map((hit) => ({ hit, score: matchScore(query, hit.name) }))
-    .sort((a, b) => b.score - a.score)
+  const hits = await searchMuscleWiki(query, 8)
+  const ranked = rankHits(query, hits)
   const best = ranked[0]
   if (!best || best.score < MIN_ACCEPT_SCORE) {
     const miss = emptyResult(query)
-    await writeCache(query, miss)
+    await writeCache(key, miss)
     return miss
   }
 
   const detailed = (await getMuscleWikiExercise(best.hit.id)) ?? best.hit
   const value = fromExercise(query, detailed)
-  await writeCache(query, value)
+  await writeCache(key, value)
   return value
 }

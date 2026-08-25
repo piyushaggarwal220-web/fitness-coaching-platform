@@ -5,6 +5,12 @@ import {
   normalizeExerciseQuery,
   shouldSkipExerciseForm,
 } from '../src/lib/exercise-form/normalize'
+import {
+  inferEquipmentCategory,
+  listFormVideoOptions,
+  pickFormVideo,
+  type MuscleWikiVideo,
+} from '../src/lib/exercise-form/musclewiki'
 
 assert.equal(normalizeExerciseQuery('Barbell Bench Press: 3 sets x 8'), 'barbell bench press')
 assert.equal(normalizeExerciseQuery('Goblet Squat (heels elevated)'), 'goblet squat')
@@ -22,6 +28,36 @@ assert.equal(
 )
 assert.ok(matchScore('goblet squat', 'Goblet Squat') >= 80)
 assert.ok(matchScore('romanian deadlift', 'Barbell Curl') < 36)
+assert.equal(inferEquipmentCategory('barbell bench press'), 'barbell')
+assert.equal(inferEquipmentCategory('cable tricep pushdown'), 'cable')
+
+const demoVideos: MuscleWikiVideo[] = [
+  {
+    url: 'https://api.musclewiki.com/stream/videos/branded/male-front.mp4',
+    gender: 'male',
+    angle: 'front',
+    previewUrl: 'https://api.musclewiki.com/stream/images/og_images/male-front.jpg',
+  },
+  {
+    url: 'https://api.musclewiki.com/stream/videos/branded/male-side.mp4',
+    gender: 'male',
+    angle: 'side',
+    previewUrl: null,
+  },
+  {
+    url: 'https://api.musclewiki.com/stream/videos/branded/female-front.mp4',
+    gender: 'female',
+    angle: 'front',
+    previewUrl: 'https://api.musclewiki.com/stream/images/og_images/female-front.jpg',
+  },
+]
+assert.equal(pickFormVideo(demoVideos, 'female', 'front')?.gender, 'female')
+assert.equal(pickFormVideo(demoVideos, 'male', 'side')?.angle, 'side')
+assert.equal(listFormVideoOptions(demoVideos).length, 3)
+assert.equal(
+  listFormVideoOptions(demoVideos).some((item) => item.gender === 'female' && item.hasPoster),
+  true
+)
 
 console.log('Exercise form lookup checks passed.')
 
@@ -39,6 +75,13 @@ if (process.argv.includes('--live')) {
         steps: result.steps.length,
         muscles: result.muscles,
         videos: result.videos.length,
+        angles: [...new Set(result.videos.map((video) => video.angle))],
+        genders: [...new Set(result.videos.map((video) => video.gender))],
+        category: result.details.category,
+        difficulty: result.details.difficulty,
+        force: result.details.force,
+        mechanic: result.details.mechanic,
+        grips: result.details.grips,
         exerciseId: result.exerciseId,
         samplePath: video ? new URL(video.url).pathname : null,
       })
@@ -46,8 +89,8 @@ if (process.argv.includes('--live')) {
     if (!result.configured) {
       throw new Error('MUSCLEWIKI_API_KEY is not loaded')
     }
-    if (!result.found || !video) {
-      throw new Error('MuscleWiki search returned no usable form for Goblet Squat')
+    if (!result.found || !video || result.videos.length < 2 || !result.details.category) {
+      throw new Error('MuscleWiki search returned an incomplete form for Goblet Squat')
     }
     const media = await fetchMuscleWikiMedia(video.url, 'bytes=0-2047')
     const type = media.headers.get('content-type') ?? ''

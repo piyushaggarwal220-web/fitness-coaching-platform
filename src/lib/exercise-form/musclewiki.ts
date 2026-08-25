@@ -1,5 +1,7 @@
 const BASE = 'https://api.musclewiki.com'
 
+export type FormDemoGender = 'male' | 'female'
+
 export type MuscleWikiVideo = {
   url: string
   gender: 'male' | 'female' | 'unknown'
@@ -13,6 +15,11 @@ export type MuscleWikiExercise = {
   steps: string[]
   muscles: string[]
   videos: MuscleWikiVideo[]
+  category: string | null
+  difficulty: string | null
+  force: string | null
+  mechanic: string | null
+  grips: string[]
 }
 
 function apiKey(): string | null {
@@ -51,7 +58,16 @@ function asList(value: unknown): unknown[] {
   if (Array.isArray(rec.results)) return rec.results
   if (Array.isArray(rec.exercises)) return rec.exercises
   if (Array.isArray(rec.data)) return rec.data
+  const keys = Object.keys(rec)
+  if (keys.length > 0 && keys.every((key) => /^\d+$/.test(key))) {
+    return keys.sort((a, b) => Number(a) - Number(b)).map((key) => rec[key])
+  }
   return []
+}
+
+function optionalText(value: unknown): string | null {
+  const text = typeof value === 'string' ? value.trim() : ''
+  return text || null
 }
 
 function stringList(value: unknown): string[] {
@@ -104,12 +120,14 @@ function parseVideos(raw: unknown): MuscleWikiVideo[] {
     const gender: MuscleWikiVideo['gender'] =
       genderRaw === 'female' || genderRaw === 'male' ? genderRaw : inferred.gender
     const angle = String(rec?.angle ?? rec?.view ?? rec?.camera ?? inferred.angle).toLowerCase()
-    const preview =
-      (typeof rec?.preview === 'string' && rec.preview) ||
-      (typeof rec?.thumbnail === 'string' && rec.thumbnail) ||
-      (typeof rec?.preview_url === 'string' && rec.preview_url) ||
-      null
-    videos.push({ url: resolved, gender, angle, previewUrl: preview })
+    const preview = resolveMediaUrl(
+      (typeof rec?.og_image === 'string' && rec.og_image) ||
+        (typeof rec?.preview === 'string' && rec.preview) ||
+        (typeof rec?.thumbnail === 'string' && rec.thumbnail) ||
+        (typeof rec?.preview_url === 'string' && rec.preview_url) ||
+        ''
+    )
+    videos.push({ url: resolved, gender, angle: angle || inferred.angle, previewUrl: preview })
   }
   return videos
 }
@@ -132,17 +150,65 @@ function parseExercise(raw: unknown): MuscleWikiExercise | null {
     steps: stringList(rec.steps ?? rec.instructions),
     muscles: [...new Set(muscles)],
     videos: parseVideos(rec.videos ?? rec.videoURL ?? rec.video_urls),
+    category: optionalText(rec.category ?? rec.equipment),
+    difficulty: optionalText(rec.difficulty),
+    force: optionalText(rec.force),
+    mechanic: optionalText(rec.mechanic),
+    grips: stringList(rec.grips),
   }
 }
 
-export async function searchMuscleWiki(query: string, limit = 5): Promise<MuscleWikiExercise[]> {
+export function inferEquipmentCategory(query: string): string | null {
+  const q = query.toLowerCase()
+  if (/\b(barbell|bb)\b/.test(q)) return 'barbell'
+  if (/\b(dumbbell|db)\b/.test(q)) return 'dumbbell'
+  if (/\bcable\b/.test(q)) return 'cable'
+  if (/\bsmith\b/.test(q)) return 'smith machine'
+  if (/\bkettlebell\b/.test(q)) return 'kettlebells'
+  if (/\b(band|resistance band)\b/.test(q)) return 'bands'
+  if (/\b(machine|leg press|hack squat|lat pulldown)\b/.test(q)) return 'machine'
+  return null
+}
+
+async function collectSearchHits(path: string, into: Map<number, MuscleWikiExercise>): Promise<void> {
+  const json = await mwFetch(path)
+  for (const row of asList(json).map(parseExercise)) {
+    if (row && !into.has(row.id)) into.set(row.id, row)
+  }
+}
+
+export async function searchMuscleWiki(query: string, limit = 8): Promise<MuscleWikiExercise[]> {
   const q = encodeURIComponent(query)
-  const json = await mwFetch(`/search?q=${q}&limit=${Math.max(1, Math.min(10, limit))}`)
-  return asList(json).map(parseExercise).filter((row): row is MuscleWikiExercise => Boolean(row))
+  const capped = Math.max(1, Math.min(20, limit))
+  const category = inferEquipmentCategory(query)
+  const hits = new Map<number, MuscleWikiExercise>()
+  try {
+    await collectSearchHits(`/search?q=${q}&limit=${capped}`, hits)
+  } catch {
+    /* fall through */
+  }
+  if (hits.size === 0 && category) {
+    try {
+      await collectSearchHits(
+        `/search?q=${q}&limit=${capped}&category=${encodeURIComponent(category)}`,
+        hits
+      )
+    } catch {
+      /* fall through */
+    }
+  }
+  if (hits.size === 0) {
+    try {
+      await collectSearchHits(`/exercises?search=${q}&limit=${capped}`, hits)
+    } catch {
+      /* ignore */
+    }
+  }
+  return [...hits.values()]
 }
 
 export async function getMuscleWikiExercise(id: number): Promise<MuscleWikiExercise | null> {
-  const json = await mwFetch(`/exercises/${id}`)
+  const json = await mwFetch(`/exercises/${id}?detail=true`)
   const rec = asRecord(json)
   const payload = rec?.exercise ?? rec?.data ?? json
   const parsed = parseExercise(payload)
@@ -161,15 +227,35 @@ export async function getMuscleWikiExercise(id: number): Promise<MuscleWikiExerc
 
 export function pickFormVideo(
   videos: MuscleWikiVideo[],
-  gender: 'male' | 'female' = 'male'
+  gender: FormDemoGender = 'male',
+  angle?: string | null
 ): MuscleWikiVideo | null {
   if (videos.length === 0) return null
-  const preferred = videos.find(
-    (v) => v.gender === gender && /front/i.test(v.angle)
-  )
-  if (preferred) return preferred
-  const sameGender = videos.find((v) => v.gender === gender)
-  return sameGender ?? videos[0] ?? null
+  const wantedAngle = (angle ?? 'front').toLowerCase()
+  const sameGender = videos.filter((v) => v.gender === gender)
+  const pool = sameGender.length > 0 ? sameGender : videos
+  const exact = pool.find((v) => v.angle.toLowerCase() === wantedAngle)
+  if (exact) return exact
+  const front = pool.find((v) => /front/i.test(v.angle))
+  return front ?? pool[0] ?? null
+}
+
+export function listFormVideoOptions(videos: MuscleWikiVideo[]): Array<{
+  gender: FormDemoGender
+  angle: string
+  hasPoster: boolean
+}> {
+  const seen = new Set<string>()
+  const out: Array<{ gender: FormDemoGender; angle: string; hasPoster: boolean }> = []
+  for (const video of videos) {
+    if (video.gender !== 'male' && video.gender !== 'female') continue
+    const angle = video.angle.toLowerCase() || 'front'
+    const key = `${video.gender}:${angle}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ gender: video.gender, angle, hasPoster: Boolean(video.previewUrl) })
+  }
+  return out
 }
 
 export function isAllowedMuscleWikiMediaUrl(url: string): boolean {

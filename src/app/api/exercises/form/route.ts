@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireApiUser } from '@/lib/api-auth'
-import { lookupExerciseForm } from '@/lib/exercise-form/lookup'
+import { lookupExerciseForm, publicFormPayload } from '@/lib/exercise-form/lookup'
+import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
 
 export const dynamic = 'force-dynamic'
+
+async function preferredDemoGender(supabase: SupabaseClient, userId: string): Promise<FormDemoGender> {
+  const { data } = await supabase.from('profiles').select('gender').eq('id', userId).maybeSingle()
+  return String(data?.gender ?? '').toLowerCase() === 'female' ? 'female' : 'male'
+}
 
 export async function GET(request: Request) {
   const auth = await requireApiUser()
@@ -14,17 +21,13 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await lookupExerciseForm(name)
+    const [result, gender] = await Promise.all([
+      lookupExerciseForm(name),
+      preferredDemoGender(auth.supabase, auth.user.id),
+    ])
     return NextResponse.json({
       success: true,
-      configured: result.configured,
-      skipped: result.skipped,
-      found: result.found,
-      name: result.name,
-      steps: result.steps,
-      muscles: result.muscles,
-      exerciseId: result.exerciseId,
-      hasVideo: result.videos.length > 0,
+      ...publicFormPayload(result, gender),
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Form lookup failed'
