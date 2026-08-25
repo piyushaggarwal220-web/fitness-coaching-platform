@@ -461,6 +461,37 @@ if (mondayWorkout?.type === 'workout') {
   )
 }
 
+{
+  const weekdayHeaderPlan: Plan = {
+    ...planV1,
+    workout_plan: `Day 4 (Thursday): Lower Hypertrophy and Core Density
+Lower
+Goblet Squat: 4 sets x 10
+Romanian Deadlift: 3 sets x 8
+Core endurance for the full race effort
+Hanging Knee Raise: 3 sets x 12`,
+  }
+  const snap = buildTrackerSnapshot(weekdayHeaderPlan)
+  const workout = snap.items.find((i) => i.type === 'workout')
+  const names = workout?.type === 'workout' ? workout.exercises.map((ex) => ex.name) : []
+  assert(
+    'Day N (Weekday) header is not stored as an exercise name',
+    !names.some((name) => /day 4|thursday|lower hypertrophy/i.test(name))
+  )
+  assert(
+    'muscle-group-only line Lower is not an exercise',
+    !names.some((name) => /^lower$/i.test(name.trim()))
+  )
+  assert(
+    'purpose sentence is not used as the exercise name',
+    !names.some((name) => /core endurance for the full race/i.test(name))
+  )
+  assert(
+    'real lifts still parse under Day N (Weekday) headers',
+    names.some((name) => /goblet squat/i.test(name)) && names.some((name) => /hanging knee raise/i.test(name))
+  )
+}
+
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)
   process.exit(1)

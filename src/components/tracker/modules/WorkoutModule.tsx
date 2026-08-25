@@ -542,7 +542,9 @@ export function WorkoutModule({
           <div style={{ fontSize: 11, color: colors.accent, fontWeight: 700, textTransform: 'uppercase' }}>
             Today&apos;s Workout
           </div>
-          <div style={{ fontSize: 22, fontWeight: 800, marginTop: 6 }}>{sessionTitle}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, marginTop: 6, overflowWrap: 'anywhere', lineHeight: 1.25 }}>
+            {sessionTitle}
+          </div>
         </div>
       )}
 
@@ -726,7 +728,18 @@ export function WorkoutModule({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <div style={{ fontWeight: 800, fontSize: 17 }}>{ex.name}</div>
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          fontSize: 17,
+                          color: colors.textPrimary,
+                          overflowWrap: 'anywhere',
+                          wordBreak: 'break-word',
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {ex.name?.trim() || 'Exercise'}
+                      </div>
                     </div>
                     <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>
                       {formatExerciseTarget(ex)}

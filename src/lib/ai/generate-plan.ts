@@ -230,6 +230,7 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   '- workout_plan.overview must include exercises, sets, reps, and weekly structure — not internal coach analysis.',
   '- DAILY TRACKER COMPATIBILITY (required): the client app parses workout_plan.overview into tracker fields.',
   '- Use "sets x reps" format with a plain letter x (e.g. "Barbell Bench Press: 4 sets x 8 reps" or "4 sets x 6 to 8 reps"). Prefer "Exercise: N sets x M reps".',
+  '- The text before the colon MUST be a real movement name (Goblet Squat, Barbell Bench Press, Romanian Deadlift). Never a goal sentence ("Core endurance for the full race effort") and never a muscle-group-only line ("Lower", "Upper Push").',
   '- For timed work use "Exercise: N sets x M sec" or "Exercise: M min".',
   '- CRITICAL day headers: label every training/rest day as "Day N (Weekday)" with the weekday in parentheses immediately after the number, e.g. "Day 1 (Monday): Lower Power", "Day 2 (Tuesday): Upper Push". Day 1 MUST be Monday, Day 2 Tuesday, … Day 7 Sunday. Never use bare "Day N" alone and never use weekday-only headers.',
   '- Prefer also filling workout_plan.days with one object per day (day, focus, exercises) using the same Day N (Weekday) labels.',

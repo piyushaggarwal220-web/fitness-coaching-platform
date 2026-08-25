@@ -291,6 +291,17 @@ function parseMeals(diet: string): {
 const PHASE_HEADERS =
   /^(?:#{1,3}\s*)?(warm[- ]?up|activation|mobility|prep|main(?:\s+workout)?|working\s+sets?|strength|hypertrophy|accessory|accessories|compound|cool[- ]?down|post[- ]?workout(?:\s+stretching)?|stretching|recovery|finisher)\s*:?\s*$/i
 
+/** Muscle-group or session labels with no movement — not tracker exercises. */
+const SESSION_LABEL_ONLY =
+  /^(?:#{1,3}\s*)?(?:lower|upper|push|pull|legs?|chest|back|shoulders?|arms?|glutes?|core)(?:\s+(?:body|day|session|emphasis|hypertrophy|strength|power|density|push|pull)){0,3}\s*:?\s*$/i
+
+/** Coaching purpose sentences the model sometimes writes instead of a lift name. */
+const PURPOSE_AS_NAME =
+  /\b(endurance|race effort|for the full|transformation|aesthetic|build the|develop your|improve your)\b/i
+
+const DAY_SESSION_HEADER =
+  /^(?:(day\s*\d+)|(monday|tuesday|wednesday|thursday|friday|saturday|sunday))(?:\s*\((monday|tuesday|wednesday|thursday|friday|saturday|sunday)\))?\s*[-–—:]\s*(.+)/i
+
 const PHASE_MAP: Record<string, WorkoutExercisePhase> = {
   'warm-up': 'warmup',
   warmup: 'warmup',
@@ -373,7 +384,8 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   if (/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(trimmed)) {
     return null
   }
-  if (PHASE_HEADERS.test(trimmed)) return null
+  if (PHASE_HEADERS.test(trimmed) || SESSION_LABEL_ONLY.test(trimmed)) return null
+  if (PURPOSE_AS_NAME.test(trimmed)) return null
   // Skip multi-exercise core dump lines; handled by expandCompositeExerciseLines
   if (/^core\s*:/i.test(trimmed) && /,/.test(trimmed)) return null
 
@@ -408,6 +420,9 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   const match = trimmed.match(setsReps) ?? trimmed.match(setsOf) ?? trimmed.match(setsComma) ?? trimmed.match(compact)
   if (!match && timedHold && timedHold[1]!.trim().length >= 2) {
     const holdName = timedHold[1]!.trim().replace(/:$/, '')
+    if (!/[a-z]/i.test(holdName) || SESSION_LABEL_ONLY.test(holdName) || PURPOSE_AS_NAME.test(holdName)) {
+      return null
+    }
     const amount = timedHold[2]!
     const unit = timedHold[3]!.toLowerCase()
     const reps = /m/.test(unit) ? `${amount} min` : `${amount}s`
@@ -483,7 +498,8 @@ function parseLooseExerciseLine(
   if (/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(trimmed)) {
     return null
   }
-  if (PHASE_HEADERS.test(trimmed)) return null
+  if (PHASE_HEADERS.test(trimmed) || SESSION_LABEL_ONLY.test(trimmed)) return null
+  if (PURPOSE_AS_NAME.test(trimmed)) return null
   if (/^(note|notes|rest|optional|superset|circuit|round|then|also|hint)\b/i.test(trimmed)) {
     return null
   }
@@ -532,12 +548,10 @@ function parseWorkoutPhases(section: string): {
     if (!trimmed) continue
 
     if (!headerConsumed) {
-      const dayFocusMatch = trimmed.match(
-        /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\s*[-–—:]\s*(.+)/i
-      )
+      const dayFocusMatch = trimmed.match(DAY_SESSION_HEADER)
       if (dayFocusMatch) {
-        dayLabel = capitalizeDay(dayFocusMatch[1]!)
-        focus = dayFocusMatch[2]!.trim().replace(/\*+$/, '').trim()
+        dayLabel = capitalizeDay(dayFocusMatch[1] || dayFocusMatch[2]!)
+        focus = dayFocusMatch[4]!.trim().replace(/\*+$/, '').trim()
         headerConsumed = true
         continue
       }
@@ -558,10 +572,11 @@ function parseWorkoutPhases(section: string): {
       headerConsumed = true
     }
 
-    const phaseMatch = trimmed.match(PHASE_HEADERS)
-    if (phaseMatch) {
-      const key = phaseMatch[1]!.toLowerCase().replace(/\s+/g, ' ')
-      currentPhase = PHASE_MAP[key] ?? 'main'
+    if (PHASE_HEADERS.test(trimmed) || SESSION_LABEL_ONLY.test(trimmed)) {
+      const key = trimmed.toLowerCase().replace(/\s+/g, ' ').replace(/:$/, '')
+      if (PHASE_HEADERS.test(trimmed)) {
+        currentPhase = PHASE_MAP[key] ?? 'main'
+      }
       continue
     }
 
@@ -850,10 +865,7 @@ function parseWorkoutFocus(section: string): string | undefined {
   if (!firstLine) return undefined
   const withoutDay = firstLine
     .replace(/^#{1,3}\s*/, '')
-    .replace(
-      /^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*[-–—:]\s*/i,
-      ''
-    )
+    .replace(DAY_SESSION_HEADER, '$4')
     .trim()
   if (!withoutDay || /^[-*•]/.test(withoutDay)) return undefined
   if (/^\d+\s*[x×]/.test(withoutDay)) return undefined

@@ -106,7 +106,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     '- Keep language natural, human, and coach-ready in plain text, not JSON.',
     '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
     '- Use plain section titles and put list items on separate lines without symbol prefixes.',
-    '- For workout sections: one exercise per line under each day header as "Exercise: N sets x M reps" (or timed duration). The daily tracker parses these lines.',
+    '- For workout sections: one exercise per line under each day header as "Exercise: N sets x M reps" (or timed duration). The name before the colon must be a real lift or movement, not a coaching sentence or a muscle-group-only label. The daily tracker parses these lines.',
     '- For nutrition sections: do not push protein higher just because options exist. Keep amounts comfortable; lower protein is fine in special cases (even ~0.5g/kg). Never inflate macro lines or totals — if protein is low in the meals, show it low.',
     '- Do not invent unsafe extreme restrictions or medical claims.',
     '- Never introduce cross-day references ("same as Day 1", "repeat Day 2", "follow Day 3\'s plan", "as above"). Every day must keep its full meal or exercise list written out so the daily tracker can parse it.',
