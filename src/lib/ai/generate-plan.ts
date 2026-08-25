@@ -28,6 +28,7 @@ import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from 
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   DAY_HEADER_PROMPT_RULES,
+  EXERCISE_NAME_PROMPT_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
@@ -238,6 +239,7 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   '- DAILY TRACKER COMPATIBILITY (required): the client app parses workout_plan.overview into tracker fields.',
   '- Use "sets x reps" format with a plain letter x (e.g. "Barbell Bench Press: 3 sets x 8 reps" or "3 sets x 6 to 8 reps"). Prefer "Exercise: N sets x M reps".',
   '- The text before the colon MUST be a real movement name (Goblet Squat, Barbell Bench Press, Romanian Deadlift). Never a goal sentence ("Core endurance for the full race effort") and never a muscle-group-only line ("Lower", "Upper Push").',
+  EXERCISE_NAME_PROMPT_RULES,
   '- For timed work use "Exercise: N sets x M sec" or "Exercise: M min".',
   DAY_HEADER_PROMPT_RULES,
   '- Example training header: "Day 1 (Monday): Lower Power". Label rest and recovery days the same way (e.g. "Day 3 (Wednesday): Rest").',

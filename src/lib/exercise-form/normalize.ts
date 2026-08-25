@@ -10,6 +10,39 @@ export function normalizeExerciseQuery(raw: string): string {
     .trim()
 }
 
+const EXERCISE_ALIASES: Record<string, string> = {
+  rdl: 'romanian deadlift',
+  rdls: 'romanian deadlift',
+  ohp: 'overhead press',
+  'military press': 'overhead press',
+  'skull crusher': 'lying tricep extension',
+  'skull crushers': 'lying tricep extension',
+  skullcrusher: 'lying tricep extension',
+  skullcrushers: 'lying tricep extension',
+  'lat pull down': 'lat pulldown',
+  'lat pull downs': 'lat pulldown',
+  'face pulls': 'face pull',
+  'hip thrusts': 'hip thrust',
+  pullups: 'pull up',
+  'pull ups': 'pull up',
+  chinups: 'chin up',
+  'chin ups': 'chin up',
+  pushups: 'push up',
+  'push ups': 'push up',
+}
+
+/** Expand coach nicknames/abbreviations into a MuscleWiki-friendly search query. */
+export function applyExerciseAliases(query: string): string {
+  const key = query.trim().toLowerCase().replace(/\s+/g, ' ')
+  if (!key) return key
+  if (EXERCISE_ALIASES[key]) return EXERCISE_ALIASES[key]
+  return key
+    .replace(/\bbb\b/g, 'barbell')
+    .replace(/\bdb\b/g, 'dumbbell')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 const SKIP_EXACT = new Set([
   'rest',
   'recovery',

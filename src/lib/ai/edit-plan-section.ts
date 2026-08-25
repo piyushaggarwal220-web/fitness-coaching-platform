@@ -3,6 +3,7 @@ import { LIMITS, MODELS, PLAN_GENERATION_TEMPERATURE } from '@/lib/ai/config'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import {
   DAY_HEADER_PROMPT_RULES,
+  EXERCISE_NAME_PROMPT_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
@@ -113,6 +114,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
     '- Use plain section titles and put list items on separate lines without symbol prefixes.',
     '- For workout sections: one exercise per line under each day header as "Exercise: N sets x M reps" (or timed duration). The name before the colon must be a real lift or movement, not a coaching sentence or a muscle-group-only label. The daily tracker parses these lines.',
+    EXERCISE_NAME_PROMPT_RULES,
     WORKOUT_VOLUME_PROMPT_RULES,
     '- For nutrition sections: if protein is hard to hit with allowed foods, lower protein and keep calories high. Never inflate protein numbers. Daily totals count only the primary meal option. Minimum 1800 kcal unless the coach already set otherwise.',
     PROTEIN_CALORIE_PROMPT_RULES,

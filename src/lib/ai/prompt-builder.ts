@@ -11,6 +11,7 @@ import { getOnboardingLabel } from '@/lib/onboarding'
 import { clientCoachNotes } from '@/lib/plan-metadata'
 import {
   DAY_HEADER_PROMPT_RULES,
+  EXERCISE_NAME_PROMPT_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
@@ -493,6 +494,7 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
   lines.push(DAY_HEADER_PROMPT_RULES)
   lines.push(PROTEIN_CALORIE_PROMPT_RULES)
   lines.push(WORKOUT_VOLUME_PROMPT_RULES)
+  lines.push(EXERCISE_NAME_PROMPT_RULES)
   lines.push(
     'If any knowledge-base or library line conflicts with these hard constraints, obey the hard constraints.'
   )

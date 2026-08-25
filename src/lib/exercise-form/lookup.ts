@@ -9,6 +9,7 @@ import {
 import {
   matchScore,
   normalizeExerciseQuery,
+  applyExerciseAliases,
   shouldSkipExerciseForm,
 } from '@/lib/exercise-form/normalize'
 
@@ -116,7 +117,7 @@ async function writeCache(nameKey: string, value: ExerciseFormResult): Promise<v
 }
 
 export async function lookupExerciseForm(rawName: string): Promise<ExerciseFormResult> {
-  const query = normalizeExerciseQuery(rawName)
+  const query = applyExerciseAliases(normalizeExerciseQuery(rawName))
   if (shouldSkipExerciseForm(rawName) || !query) {
     return emptyResult(query, { skipped: true })
   }

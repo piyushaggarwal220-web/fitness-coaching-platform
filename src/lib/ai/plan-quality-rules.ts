@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'protein-cal-1800-sets-v2'
+export const PLAN_QUALITY_RULES_VERSION = 'protein-cal-1800-sets-names-v3'
 
 /** Minimum daily calories for generated diets. Do not cut below this to chase protein. */
 export const DIET_FLOOR_TARGET_KCAL = 1800
@@ -33,4 +33,11 @@ export const WORKOUT_VOLUME_PROMPT_RULES = [
   '- Fit the stated session duration. Prefer fewer quality sets over junk volume.',
   '- Training days per week is a hard cap. Label all 7 calendar days. Remaining days after training days are rest or active recovery. Do not add extra training days. Do not require both a recovery day AND a rest day if that would steal a training day or overflow 7 days. If they train 6 days, one rest. If 7, no extra rest day.',
   '- Proven splits are fine (full body, upper/lower, PPL) when they fit days, duration, equipment, and injuries. Personalise exercise selection. Do not invent unsafe novelty just to be unique.',
+].join('\n')
+
+export const EXERCISE_NAME_PROMPT_RULES = [
+  'EXERCISE NAMES (for in-app form videos):',
+  '- Put the tool in the name when it matters: "Barbell Bench Press", "Dumbbell Romanian Deadlift", "Resistance Band Row".',
+  '- One movement per line. No nicknames (skull crushers, BB bench), no two lifts in one name, no muscle-group-only labels.',
+  '- Use ordinary coach English. Do not copy a vendor catalog, and never pick a catalog name that would break equipment or injury constraints.',
 ].join('\n')
