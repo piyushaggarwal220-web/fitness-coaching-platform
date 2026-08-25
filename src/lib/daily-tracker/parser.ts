@@ -22,7 +22,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 2
+export const TRACKER_PARSER_VERSION = 4
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
@@ -302,6 +302,26 @@ const SESSION_LABEL_ONLY =
 const PURPOSE_AS_NAME =
   /\b(endurance|race effort|for the full|transformation|aesthetic|build the|develop your|improve your)\b/i
 
+/** True when a tracker "exercise name" is actually coach chatter or a tempo cue. */
+export function isCoachingExerciseName(text: string): boolean {
+  const t = String(text ?? '').replace(/\s+/g, ' ').trim()
+  if (!t) return true
+  if (PURPOSE_AS_NAME.test(t)) return true
+  if (t.length > 64) return true
+  const words = t.split(' ').filter(Boolean)
+  if (words.length > 10) return true
+  if (
+    /^(focus on|keep the|remember|make sure|these are|this is|today we|you(?:'ll| will)|i want you|aim to|try to|be sure|let's|lets)\b/i.test(
+      t
+    )
+  ) {
+    return true
+  }
+  if (/[—.!?]/.test(t) && words.length >= 6) return true
+  if (/\b(anchors?|tempo|controlled|on the way down|strength anchors)\b/i.test(t)) return true
+  return false
+}
+
 const DAY_SESSION_HEADER =
   /^(?:(day\s*\d+)|(monday|tuesday|wednesday|thursday|friday|saturday|sunday))(?:\s*\((monday|tuesday|wednesday|thursday|friday|saturday|sunday)\))?\s*[-–—:]\s*(.+)/i
 
@@ -339,10 +359,6 @@ const PHASE_LABELS: Record<WorkoutExercisePhase, string> = {
   main: 'Main Workout',
   finisher: 'Finisher',
   cooldown: 'Post-Workout',
-}
-
-function capitalizeDay(value: string): string {
-  return toProgramDayLabel(value)
 }
 
 /** True when the day block is clearly a rest / off day (not a failed exercise parse). */
@@ -388,7 +404,7 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     return null
   }
   if (PHASE_HEADERS.test(trimmed) || SESSION_LABEL_ONLY.test(trimmed)) return null
-  if (PURPOSE_AS_NAME.test(trimmed)) return null
+  if (isCoachingExerciseName(trimmed)) return null
   // Skip multi-exercise core dump lines; handled by expandCompositeExerciseLines
   if (/^core\s*:/i.test(trimmed) && /,/.test(trimmed)) return null
 
@@ -415,15 +431,20 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     String.raw`^(.+?)\s*:?\s*(\d+)\s*sets?\s*,\s*${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
     'i'
   )
-  // Timed holds: "Plank 45 seconds" / "Side plank: 30s"
+  // Timed holds: "Plank 45 seconds" / "Side plank: 30s" — must be the whole line,
+  // not a tempo cue buried in coaching prose like "(2-3s)".
   const timedHold = trimmed.match(
-    /^(.+?)\s*:?\s*(\d+)\s*(?:x\s*)?(s|sec|secs|seconds|min|mins|minutes)\b/i
+    /^(.{2,60}?)\s*:?\s*(\d+)\s*(?:x\s*)?(s|sec|secs|seconds|min|mins|minutes)\b(?:\s*(?:each(?:\s+side)?|hold|\/side)?)?\s*$/i
   )
 
   const match = trimmed.match(setsReps) ?? trimmed.match(setsOf) ?? trimmed.match(setsComma) ?? trimmed.match(compact)
   if (!match && timedHold && timedHold[1]!.trim().length >= 2) {
     const holdName = timedHold[1]!.trim().replace(/:$/, '')
-    if (!/[a-z]/i.test(holdName) || SESSION_LABEL_ONLY.test(holdName) || PURPOSE_AS_NAME.test(holdName)) {
+    if (
+      !/[a-z]/i.test(holdName) ||
+      SESSION_LABEL_ONLY.test(holdName) ||
+      isCoachingExerciseName(holdName)
+    ) {
       return null
     }
     const amount = timedHold[2]!
@@ -443,7 +464,7 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   let name = match[1]!.trim().replace(/:$/, '').trim()
   // Drop leading labels like "Core: "
   name = name.replace(/^(?:core|finisher|accessory)\s*:\s*/i, '').trim()
-  if (!name || name.length < 2) return null
+  if (!name || name.length < 2 || isCoachingExerciseName(name)) return null
 
   const restMatch = trimmed.match(
     /(?:rest|recover(?:y)?)\s*(?:for\s*)?(\d+)\s*(?:[-–]\s*\d+)?\s*(s|sec|secs|seconds|m|min|mins|minutes)?/i
@@ -502,7 +523,7 @@ function parseLooseExerciseLine(
     return null
   }
   if (PHASE_HEADERS.test(trimmed) || SESSION_LABEL_ONLY.test(trimmed)) return null
-  if (PURPOSE_AS_NAME.test(trimmed)) return null
+  if (isCoachingExerciseName(trimmed)) return null
   if (/^(note|notes|rest|optional|superset|circuit|round|then|also|hint)\b/i.test(trimmed)) {
     return null
   }
@@ -553,7 +574,10 @@ function parseWorkoutPhases(section: string): {
     if (!headerConsumed) {
       const dayFocusMatch = trimmed.match(DAY_SESSION_HEADER)
       if (dayFocusMatch) {
-        dayLabel = capitalizeDay(dayFocusMatch[1] || dayFocusMatch[2]!)
+        dayLabel = resolvePlanDayMeta(
+          dayFocusMatch[1] || dayFocusMatch[2]!,
+          dayFocusMatch[3]
+        ).label
         focus = dayFocusMatch[4]!.trim().replace(/\*+$/, '').trim()
         headerConsumed = true
         continue
@@ -562,7 +586,7 @@ function parseWorkoutPhases(section: string): {
         /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\s*$/i
       )
       if (dayOnly) {
-        dayLabel = capitalizeDay(dayOnly[1]!)
+        dayLabel = toProgramDayLabel(dayOnly[1]!)
         headerConsumed = true
         continue
       }
@@ -1352,6 +1376,14 @@ function mergeSetLog(
     out.completed = next.completed
   }
   return out
+}
+
+/** After a new plan is delivered, drop frozen day picks so diet/workout show the updated week. */
+export function dropSelectedDaysForPlanChange(completion: TrackerCompletion): TrackerCompletion {
+  const next = { ...completion }
+  delete next.selectedDietDay
+  delete next.selectedWorkoutDay
+  return next
 }
 
 export function mergeCompletion(previous: TrackerCompletion, next: TrackerCompletion): TrackerCompletion {

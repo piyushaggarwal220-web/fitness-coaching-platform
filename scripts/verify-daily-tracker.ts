@@ -1,5 +1,6 @@
 import {
   buildTrackerSnapshot,
+  dropSelectedDaysForPlanChange,
   mergeCompletion,
   planContentSignature,
   remapWorkoutDayKey,
@@ -68,7 +69,9 @@ assert(
 )
 assert(
   'parses day label and focus',
-  workoutItem?.type === 'workout' && workoutItem.dayLabel === 'Day 1' && workoutItem.focus === 'Chest + Triceps'
+  workoutItem?.type === 'workout' &&
+    workoutItem.dayLabel === 'Day 1 (Monday)' &&
+    workoutItem.focus === 'Chest + Triceps'
 )
 assert('parses cardio steps', snapV1.items.some((i) => i.type === 'cardio'))
 assert('parses supplements', snapV1.items.some((i) => i.type === 'supplement'))
@@ -110,9 +113,9 @@ assert('parses multi-day diet days list', (dietSnap.dietDays?.length ?? 0) >= 2)
 assert('parses monday meals', mondayMeals.length >= 2)
 assert('parses tuesday meals', tuesdayMeals.length >= 2)
 assert(
-  'labels diet days as Day N',
-  dietSnap.dietDays?.some((d) => d.key === 'monday' && d.label === 'Day 1') === true &&
-    dietSnap.dietDays?.some((d) => d.key === 'tuesday' && d.label === 'Day 2') === true
+  'labels diet days as Day N (Weekday)',
+  dietSnap.dietDays?.some((d) => d.key === 'monday' && d.label === 'Day 1 (Monday)') === true &&
+    dietSnap.dietDays?.some((d) => d.key === 'tuesday' && d.label === 'Day 2 (Tuesday)') === true
 )
 assert(
   'meal ids include day',
@@ -220,6 +223,28 @@ assert(
   'snapshot signature matches helper',
   snapV2.planContentSignature === planContentSignature(planV2)
 )
+assert(
+  'plan change drops frozen diet/workout day picks',
+  dropSelectedDaysForPlanChange({
+    selectedDietDay: 'monday',
+    selectedWorkoutDay: 'tuesday',
+    meals: { 'meal-monday-breakfast': { completed: true } },
+  }).selectedDietDay == null &&
+    dropSelectedDaysForPlanChange({
+      selectedDietDay: 'monday',
+      selectedWorkoutDay: 'tuesday',
+      meals: { 'meal-monday-breakfast': { completed: true } },
+    }).selectedWorkoutDay == null
+)
+assert(
+  'plan change keeps meal checkmarks',
+  Boolean(
+    dropSelectedDaysForPlanChange({
+      selectedDietDay: 'monday',
+      meals: { 'meal-monday-breakfast': { completed: true } },
+    }).meals?.['meal-monday-breakfast']?.completed
+  )
+)
 
 const { scores, overall } = calculateTrackerScores(snapV1, {
   meals: Object.fromEntries(
@@ -277,9 +302,9 @@ const weekdaySnap = buildTrackerSnapshot(weekdayPlan)
 const weekdayDays = weekdaySnap.workoutDays ?? []
 assert('keeps rest day in workoutDays', weekdayDays.some((d) => d.key === 'wednesday'))
 assert(
-  'labels weekday workout days as Day N',
-  weekdayDays.some((d) => d.key === 'monday' && d.label === 'Day 1') &&
-    weekdayDays.some((d) => d.key === 'tuesday' && d.label === 'Day 2')
+  'labels weekday workout days as Day N (Weekday)',
+  weekdayDays.some((d) => d.key === 'monday' && d.label === 'Day 1 (Monday)') &&
+    weekdayDays.some((d) => d.key === 'tuesday' && d.label === 'Day 2 (Tuesday)')
 )
 assert(
   'rest day has Rest focus',
@@ -312,12 +337,19 @@ Main Workout
 }
 const dayNDays = buildTrackerSnapshot(dayNPlan).workoutDays ?? []
 assert(
-  'does not invent Day N = weekday without coaching context',
-  suggestedWorkoutDayKey(dayNDays, istMonday) === null
+  'Day 1 plan infers Monday so today (Monday) maps to day-1',
+  suggestedWorkoutDayKey(dayNDays, istMonday) === 'day-1'
 )
 assert(
-  'maps Day N via coaching day-in-week',
-  suggestedWorkoutDayKey(dayNDays, istMonday, { coachingDayInWeek: 2 }) === 'day-2'
+  'maps bare Day N labels via coaching day-in-week',
+  suggestedWorkoutDayKey(
+    [
+      { key: 'day-1', label: 'Day 1' },
+      { key: 'day-2', label: 'Day 2' },
+    ],
+    istMonday,
+    { coachingDayInWeek: 2 }
+  ) === 'day-2'
 )
 assert(
   'remaps day-1 selection onto monday key',
@@ -329,9 +361,9 @@ assert(
 )
 
 assert(
-  'formats plan prose weekday headers as Day N',
-  formatPlanDayHeadersForClient('Monday — Push\nBench 4x8\n\nDay 2 (Wednesday) — Pull\nRow 4x8') ===
-    'Day 1 — Push\nBench 4x8\n\nDay 2 — Pull\nRow 4x8'
+  'formats plan prose headers with weekdays',
+  formatPlanDayHeadersForClient('Monday — Push\nBench 4x8\n\nDay 2 (Wednesday) — Pull\nRow 4x8\n\nDay 3 — Rest') ===
+    'Day 1 (Monday) — Push\nBench 4x8\n\nDay 2 (Wednesday) — Pull\nRow 4x8\n\nDay 3 (Wednesday) — Rest'
 )
 
 // AI plan style forbids hyphens and writes "6 to 8" — must parse as training, not Rest.
@@ -489,6 +521,30 @@ Hanging Knee Raise: 3 sets x 12`,
   assert(
     'real lifts still parse under Day N (Weekday) headers',
     names.some((name) => /goblet squat/i.test(name)) && names.some((name) => /hanging knee raise/i.test(name))
+  )
+}
+
+{
+  const coachingCuePlan: Plan = {
+    ...planV1,
+    workout_plan: `Day 1 (Monday): Lower Power
+Goblet Squat: 3 sets x 8
+Focus on the squat and RDL today — these are your strength anchors. Keep the tempo controlled on the way down (2-3s). Rest 20 seconds
+Romanian Deadlift: 3 sets x 8
+Plank: 45 seconds`,
+  }
+  const coachingNames = (buildTrackerSnapshot(coachingCuePlan).items.find((i) => i.type === 'workout') as
+    | { exercises: { name: string }[] }
+    | undefined)?.exercises.map((ex) => ex.name) ?? []
+  assert(
+    'coaching tempo sentence is not stored as an exercise',
+    !coachingNames.some((name) => /focus on the squat|strength anchors|tempo controlled/i.test(name))
+  )
+  assert(
+    'real lifts still parse next to coaching prose',
+    coachingNames.some((name) => /goblet squat/i.test(name)) &&
+      coachingNames.some((name) => /romanian deadlift/i.test(name)) &&
+      coachingNames.some((name) => /^plank$/i.test(name))
   )
 }
 

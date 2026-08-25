@@ -64,6 +64,12 @@ export function shouldSkipExerciseForm(name: string): boolean {
   if (key.length < 3) return true
   if (SKIP_EXACT.has(key)) return true
   if (/^(rest|recovery)(\s+day)?$/.test(key)) return true
+  if (name.length > 64 || name.split(/\s+/).length > 10) return true
+  if (
+    /^(focus on|keep the|remember|make sure|these are|this is|today we)\b/i.test(name.trim())
+  ) {
+    return true
+  }
   return false
 }
 
