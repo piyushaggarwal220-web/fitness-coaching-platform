@@ -231,7 +231,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           href="/client/report-issue?about=tracker"
           style={{ color: colors.textMuted, fontSize: 13, fontWeight: 600 }}
         >
-          Tracker looks wrong? Rebuild from plan, or send feedback
+          Tracker looks wrong? Tap Refresh, or send feedback
         </Link>
       </p>
     </div>

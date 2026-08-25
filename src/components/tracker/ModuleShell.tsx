@@ -70,7 +70,7 @@ export function ModuleEmpty({ message }: { message: string }) {
     >
       <p style={{ margin: 0 }}>{message}</p>
       <p style={{ margin: '12px 0 0', fontSize: 13, color: colors.textMuted }}>
-        If this looks wrong, open your plan or use Rebuild from plan on the tracker.
+        If this looks wrong, open your plan or tap Refresh on the tracker.
       </p>
       <div
         style={{

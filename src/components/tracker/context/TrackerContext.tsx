@@ -43,6 +43,8 @@ type TrackerContextValue = {
   saving: boolean
   rebuilding: boolean
   error: string | null
+  /** Bumps after a full rebuild so workout UI remounts from a clean snapshot. */
+  rebootNonce: number
   /** Returns true when the patch was accepted by the server. */
   patchCompletion: (patch: TrackerCompletion) => Promise<boolean>
   refresh: () => Promise<void>
@@ -172,6 +174,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [rebuilding, setRebuilding] = useState(false)
+  const [rebootNonce, setRebootNonce] = useState(0)
   const dayIdRef = useRef<string | null>(null)
   const queueRef = useRef<PatchQueue>({
     pending: null,
@@ -382,8 +385,17 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const rebuildFromPlan = useCallback(async (): Promise<boolean> => {
     setRebuilding(true)
     try {
-      // Flush any queued edits first so the server has them before it rebuilds the snapshot.
-      await flushQueueRef.current()
+      // Drop unsynced patches — a reboot starts from the plan, not local edits.
+      const queue = queueRef.current
+      if (queue.debounceTimer) {
+        clearTimeout(queue.debounceTimer)
+        queue.debounceTimer = null
+      }
+      queue.pending = null
+      const waiters = queue.waiters
+      queue.waiters = []
+      waiters.forEach((resolve) => resolve(false))
+
       await ensureAuthSession(supabase)
 
       const res = await fetch('/api/tracker/today', {
@@ -406,6 +418,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       dayIdRef.current = rebuiltDay.id
       setView(data.view)
       setError(null)
+      setRebootNonce((n) => n + 1)
       return true
     } catch {
       setError('Could not rebuild from your plan. Please try again.')
@@ -426,6 +439,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     saving,
     rebuilding,
     error,
+    rebootNonce,
     patchCompletion,
     refresh: load,
     rebuildFromPlan,

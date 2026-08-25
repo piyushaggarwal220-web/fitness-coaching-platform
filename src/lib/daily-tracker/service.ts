@@ -10,6 +10,7 @@ import type { OnboardingProfile, Plan } from '@/types/database'
 import {
   TRACKER_PARSER_VERSION,
   buildTrackerSnapshot,
+  dropSelectedDaysForPlanChange,
   mergeCompletion,
   planContentSignature,
   remapWorkoutDayKey,
@@ -237,6 +238,14 @@ function sanitizeCompletionForSnapshot(
   return next
 }
 
+/** Refresh reboots the workout tracker: drop logged sets/session, keep other modules. */
+function rebootWorkoutCompletion(completion: TrackerCompletion): TrackerCompletion {
+  const next: TrackerCompletion = { ...completion }
+  delete next.exercises
+  next.workoutSession = null
+  return next
+}
+
 export async function getOrCreateTodayTracker(
   supabase: SupabaseClient,
   clientId: string,
@@ -293,16 +302,18 @@ export async function getOrCreateTodayTracker(
     const contentChanged =
       snapshotContentFingerprint(existingDay.snapshot) !== snapshotContentFingerprint(snapshot)
     const parserStale = existingDay.snapshot.parserVersion !== TRACKER_PARSER_VERSION
-    const needsRebuild =
-      parserStale ||
-      existingDay.plan_version !== plan.version ||
+    const planSourceChanged =
       existingDay.plan_id !== plan.id ||
       existingDay.snapshot.planId !== plan.id ||
+      planContentChanged ||
+      contentChanged
+    const needsRebuild =
+      parserStale ||
+      planSourceChanged ||
+      existingDay.plan_version !== plan.version ||
       existingDay.snapshot.planVersion !== plan.version ||
       planEditedAfterSnapshot ||
-      planContentChanged ||
       workoutStructureChanged ||
-      contentChanged ||
       (newHasWorkout && !existingHasWorkout) ||
       (newHasMeals && !existingHasMeals) ||
       snapshot.items.length !== existingDay.snapshot.items.length
@@ -311,9 +322,8 @@ export async function getOrCreateTodayTracker(
     const coachingFieldsStale =
       existingDay.coaching_day !== coachingDay || existingDay.coaching_week !== coachingWeek
 
-    // `force` lets a client explicitly rebuild today's snapshot from the active plan when the
-    // automatic change detection misses an edit (a common "my tracker is showing the wrong
-    // workout" report). Logged progress is preserved via sanitizeCompletionForSnapshot.
+    // `force` (Refresh) rebuilds today's snapshot from the active plan and reboots
+    // workout sets/timer so the workout tracker starts from the latest plan.
     if (!needsRebuild && !force && !coachingFieldsStale) {
       return { day: existingDay, error: null }
     }
@@ -337,7 +347,10 @@ export async function getOrCreateTodayTracker(
       return { day: rowToDay(touched as Record<string, unknown>), error: null }
     }
 
-    const completion = sanitizeCompletionForSnapshot(existingDay.completion, snapshot)
+    const sanitized = planSourceChanged
+      ? dropSelectedDaysForPlanChange(sanitizeCompletionForSnapshot(existingDay.completion, snapshot))
+      : sanitizeCompletionForSnapshot(existingDay.completion, snapshot)
+    const completion = force ? rebootWorkoutCompletion(sanitized) : sanitized
     const { scores, overall } = calculateTrackerScores(snapshot, completion)
     const { data: updated, error } = await supabase
       .from('daily_tracker_days')
@@ -472,7 +485,13 @@ export async function refreshTodayTrackerAfterPlanPublish(
 
   if (existing) {
     const current = rowToDay(existing as Record<string, unknown>)
-    const completion = sanitizeCompletionForSnapshot(current.completion, snapshot)
+    const planSourceChanged =
+      current.plan_id !== plan.id ||
+      current.snapshot.planId !== plan.id ||
+      current.snapshot.planContentSignature !== planContentSignature(plan)
+    const completion = planSourceChanged
+      ? dropSelectedDaysForPlanChange(sanitizeCompletionForSnapshot(current.completion, snapshot))
+      : sanitizeCompletionForSnapshot(current.completion, snapshot)
     const { scores, overall } = calculateTrackerScores(snapshot, completion)
     await supabase
       .from('daily_tracker_days')

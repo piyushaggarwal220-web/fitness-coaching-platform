@@ -5,7 +5,7 @@ import { TrackerModulePage } from '@/components/tracker/ModulePageGate'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
 
 export default function WorkoutTrackerPage() {
-  const { sections, day, scores, saving, error, patchCompletion } = useTracker()
+  const { sections, day, scores, saving, error, patchCompletion, rebootNonce } = useTracker()
   const hasWorkouts = (sections?.workouts.length ?? 0) > 0
 
   return (
@@ -16,6 +16,7 @@ export default function WorkoutTrackerPage() {
     >
       {hasWorkouts && day && scores && sections && (
         <WorkoutModule
+          key={rebootNonce}
           workouts={sections.workouts}
           workoutDays={day.snapshot.workoutDays}
           completion={day.completion}
