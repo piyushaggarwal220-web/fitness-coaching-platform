@@ -34,7 +34,7 @@
 
         <section class="lx-cart__block">
           <h2 class="lx-cart__block-title">2. Add-ons</h2>
-          <p class="lx-cart__block-hint">Optional. Stack as many as you want.</p>
+          <p class="lx-cart__block-hint">Optional. Take all four for ₹999, or pick one at a time.</p>
           <div class="lx-cart__addons" data-cart-addons></div>
         </section>
       </div>
@@ -188,6 +188,17 @@
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--lx-accent) 30%, transparent);
   }
 
+  #lx-cart-{{ section.id }} .lx-cart__card.is-offer {
+    border-color: color-mix(in srgb, var(--lx-accent) 55%, var(--lx-line));
+    background: color-mix(in srgb, var(--lx-accent) 10%, #1a1a1a);
+  }
+
+  #lx-cart-{{ section.id }} .lx-cart__card-price s {
+    margin-right: 6px;
+    color: var(--lx-muted);
+    font-weight: 600;
+  }
+
   #lx-cart-{{ section.id }} .lx-cart__card-name {
     font-size: 1rem;
     font-weight: 750;
@@ -327,8 +338,16 @@
         name: 'Face maxxing',
         meta: 'Sleep, skin, posture, and grooming for a sharper face. Lifestyle only.',
         paise: 39900
+      },
+      {
+        id: 'exercise_library',
+        name: 'Exercise library',
+        meta: 'Form videos for every lift in your workout tracker.',
+        paise: 30000
       }
     ];
+    var ADDON_BUNDLE_PAISE = 99900;
+    var ADDON_LIST_PAISE = addons.reduce(function (sum, addon) { return sum + addon.paise; }, 0);
 
     var state = { planSlug: '3_months', addonIds: [] };
     try {
@@ -362,6 +381,15 @@
       return addons.filter(function (a) { return state.addonIds.indexOf(a.id) >= 0; });
     }
 
+    function allAddonsSelected() {
+      return addons.every(function (addon) { return state.addonIds.indexOf(addon.id) >= 0; });
+    }
+
+    function addonsTotalPaise() {
+      if (allAddonsSelected()) return ADDON_BUNDLE_PAISE;
+      return selectedAddons().reduce(function (sum, addon) { return sum + addon.paise; }, 0);
+    }
+
     function renderPlans() {
       plansEl.innerHTML = '';
       plans.forEach(function (plan) {
@@ -385,6 +413,25 @@
 
     function renderAddons() {
       addonsEl.innerHTML = '';
+      var bundleOn = allAddonsSelected();
+      var bundleBtn = document.createElement('button');
+      bundleBtn.type = 'button';
+      bundleBtn.className = 'lx-cart__card is-offer' + (bundleOn ? ' is-selected' : '');
+      bundleBtn.setAttribute('aria-pressed', bundleOn ? 'true' : 'false');
+      bundleBtn.innerHTML =
+        '<div class="lx-cart__card-name">All add-ons</div>' +
+        '<div class="lx-cart__card-price"><s>' + inr(ADDON_LIST_PAISE) + '</s>' + inr(ADDON_BUNDLE_PAISE) + '</div>' +
+        '<div class="lx-cart__card-meta">Testo, anxiety, face maxxing, and the exercise library. Save ' +
+        inr(ADDON_LIST_PAISE - ADDON_BUNDLE_PAISE) +
+        (bundleOn ? ' · added' : ' · tap to add all') +
+        '</div>';
+      bundleBtn.addEventListener('click', function () {
+        state.addonIds = bundleOn ? [] : addons.map(function (addon) { return addon.id; });
+        persist();
+        render();
+      });
+      addonsEl.appendChild(bundleBtn);
+
       addons.forEach(function (addon) {
         var on = state.addonIds.indexOf(addon.id) >= 0;
         var btn = document.createElement('button');
@@ -393,7 +440,7 @@
         btn.setAttribute('aria-pressed', on ? 'true' : 'false');
         btn.innerHTML =
           '<div class="lx-cart__card-name">' + addon.name + '</div>' +
-          '<div class="lx-cart__card-price">+' + inr(addon.paise) + '</div>' +
+          '<div class="lx-cart__card-price">' + (bundleOn ? 'Included' : '+' + inr(addon.paise)) + '</div>' +
           '<div class="lx-cart__card-meta">' + addon.meta + (on ? ' · added' : ' · tap to add') + '</div>';
         btn.addEventListener('click', function () {
           if (on) state.addonIds = state.addonIds.filter(function (id) { return id !== addon.id; });
@@ -408,7 +455,9 @@
     function renderSummary() {
       var plan = selectedPlan();
       var chosen = selectedAddons();
-      var total = plan.salePaise;
+      var bundleOn = allAddonsSelected();
+      var addonPaise = addonsTotalPaise();
+      var total = plan.salePaise + addonPaise;
       linesEl.innerHTML = '';
 
       var planLine = document.createElement('li');
@@ -416,18 +465,26 @@
       planLine.innerHTML = '<span>' + plan.name + '</span><span>' + inr(plan.salePaise) + '</span>';
       linesEl.appendChild(planLine);
 
-      chosen.forEach(function (addon) {
-        total += addon.paise;
-        var line = document.createElement('li');
-        line.className = 'lx-cart__line';
-        line.innerHTML = '<span>' + addon.name + '</span><span>+' + inr(addon.paise) + '</span>';
-        linesEl.appendChild(line);
-      });
+      if (bundleOn) {
+        var bundleLine = document.createElement('li');
+        bundleLine.className = 'lx-cart__line';
+        bundleLine.innerHTML = '<span>All add-ons</span><span>+' + inr(ADDON_BUNDLE_PAISE) + '</span>';
+        linesEl.appendChild(bundleLine);
+      } else {
+        chosen.forEach(function (addon) {
+          var line = document.createElement('li');
+          line.className = 'lx-cart__line';
+          line.innerHTML = '<span>' + addon.name + '</span><span>+' + inr(addon.paise) + '</span>';
+          linesEl.appendChild(line);
+        });
+      }
 
       totalEl.textContent = inr(total);
-      saleNoteEl.textContent = chosen.length
-        ? chosen.length + ' add-on' + (chosen.length === 1 ? '' : 's') + ' selected'
-        : 'No add-ons yet';
+      saleNoteEl.textContent = bundleOn
+        ? 'All add-ons for ' + inr(ADDON_BUNDLE_PAISE)
+        : chosen.length
+          ? chosen.length + ' add-on' + (chosen.length === 1 ? '' : 's') + ' selected'
+          : 'No add-ons yet';
 
       var url = checkoutBase + '?plan=' + encodeURIComponent(plan.slug);
       if (chosen.length) url += '&addons=' + encodeURIComponent(chosen.map(function (a) { return a.id; }).join(','));

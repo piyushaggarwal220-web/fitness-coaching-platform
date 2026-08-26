@@ -20,8 +20,12 @@ import {
   getFirstTimerDiscountCode,
   isFirstTimerDiscountCode,
   CHECKOUT_ADDONS,
+  CHECKOUT_ADDON_IDS,
+  CHECKOUT_ADDON_BUNDLE_PAISE,
+  CHECKOUT_ADDON_BUNDLE_LIST_PAISE,
   checkoutAddonPaise,
   checkoutAddonsPaise,
+  isCheckoutAddonBundle,
   parseCheckoutAddonIds,
   type CheckoutAddonId,
 } from '@/lib/payments/checkout-discounts';
@@ -714,6 +718,11 @@ function CheckoutForm() {
                     current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
                   )
                 }}
+                onToggleBundle={() => {
+                  setAddonIds((current) =>
+                    isCheckoutAddonBundle(current) ? [] : [...CHECKOUT_ADDON_IDS]
+                  )
+                }}
               />
             )}
 
@@ -738,26 +747,45 @@ function CheckoutForm() {
                 <div style={styles.orderPriceCol}>
                   {!isTrialCheckout && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
                   <span style={styles.orderSummaryPrice}>
-                    {isTrialCheckout ? plan.displayPrice : payableDisplay}
+                    {isTrialCheckout ? plan.displayPrice : formatInrFromPaise(planPayablePaise)}
                   </span>
                 </div>
               </div>
 
-              {selectedAddonIds.map((id) => {
-                const addon = CHECKOUT_ADDONS.find((item) => item.id === id)
-                if (!addon) return null
-                return (
-                  <div key={id} style={{ ...styles.orderRow, marginTop: 10 }}>
-                    <div>
-                      <div style={styles.orderPlanName}>{addon.name}</div>
-                      <div style={styles.orderPlanMeta}>
-                        {id === 'exercise_library' ? 'Add-on · form videos' : 'Add-on protocol'}
-                      </div>
+              {isCheckoutAddonBundle(selectedAddonIds) ? (
+                <div style={{ ...styles.orderRow, marginTop: 10 }}>
+                  <div>
+                    <div style={styles.orderPlanName}>All add-ons</div>
+                    <div style={styles.orderPlanMeta}>
+                      Testo, anxiety, face maxxing, and exercise library
                     </div>
-                    <span style={styles.orderSummaryPrice}>+ {formatInrFromPaise(checkoutAddonPaise(id))}</span>
                   </div>
-                )
-              })}
+                  <div style={styles.orderPriceCol}>
+                    <s style={styles.orderSummaryMrp}>
+                      {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_LIST_PAISE)}
+                    </s>
+                    <span style={styles.orderSummaryPrice}>
+                      + {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_PAISE)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                selectedAddonIds.map((id) => {
+                  const addon = CHECKOUT_ADDONS.find((item) => item.id === id)
+                  if (!addon) return null
+                  return (
+                    <div key={id} style={{ ...styles.orderRow, marginTop: 10 }}>
+                      <div>
+                        <div style={styles.orderPlanName}>{addon.name}</div>
+                        <div style={styles.orderPlanMeta}>
+                          {id === 'exercise_library' ? 'Add-on · form videos' : 'Add-on protocol'}
+                        </div>
+                      </div>
+                      <span style={styles.orderSummaryPrice}>+ {formatInrFromPaise(checkoutAddonPaise(id))}</span>
+                    </div>
+                  )
+                })
+              )}
                 <div style={styles.offerBanner}>
                   <div style={styles.offerBannerTop}>
                     <strong>{discountLockedIn ? '60% off applied' : '60% off with code'}</strong>
@@ -925,10 +953,44 @@ function CheckoutForm() {
                 <div style={styles.orderPriceCol}>
                   {!isTrialCheckout && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
                   <span style={styles.orderSummaryPrice}>
-                    {isTrialCheckout ? plan.displayPrice : payableDisplay}
+                    {isTrialCheckout ? plan.displayPrice : formatInrFromPaise(planPayablePaise)}
                   </span>
                 </div>
               </div>
+              {isCheckoutAddonBundle(selectedAddonIds) ? (
+                <div style={{ ...styles.orderRow, marginTop: 10 }}>
+                  <div>
+                    <div style={styles.orderPlanName}>All add-ons</div>
+                    <div style={styles.orderPlanMeta}>
+                      Testo, anxiety, face maxxing, and exercise library
+                    </div>
+                  </div>
+                  <div style={styles.orderPriceCol}>
+                    <s style={styles.orderSummaryMrp}>
+                      {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_LIST_PAISE)}
+                    </s>
+                    <span style={styles.orderSummaryPrice}>
+                      + {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_PAISE)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                selectedAddonIds.map((id) => {
+                  const addon = CHECKOUT_ADDONS.find((item) => item.id === id)
+                  if (!addon) return null
+                  return (
+                    <div key={id} style={{ ...styles.orderRow, marginTop: 10 }}>
+                      <div>
+                        <div style={styles.orderPlanName}>{addon.name}</div>
+                        <div style={styles.orderPlanMeta}>
+                          {id === 'exercise_library' ? 'Add-on · form videos' : 'Add-on protocol'}
+                        </div>
+                      </div>
+                      <span style={styles.orderSummaryPrice}>+ {formatInrFromPaise(checkoutAddonPaise(id))}</span>
+                    </div>
+                  )
+                })
+              )}
             </section>
 
             {testMode && (

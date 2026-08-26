@@ -94,6 +94,22 @@ export function checkoutAddonPaise(id: CheckoutAddonId): number {
   return CHECKOUT_ADDON_PRICE_PAISE[id]
 }
 
+/** Published à-la-carte total if every add-on is bought separately. */
+export const CHECKOUT_ADDON_BUNDLE_LIST_PAISE = CHECKOUT_ADDON_IDS.reduce(
+  (sum, id) => sum + CHECKOUT_ADDON_PRICE_PAISE[id],
+  0
+)
+/** Checkout offer: all add-ons together. */
+export const CHECKOUT_ADDON_BUNDLE_PAISE = 99900
+
+export function checkoutAddonsListPaise(ids: readonly CheckoutAddonId[]): number {
+  return ids.reduce((sum, id) => sum + CHECKOUT_ADDON_PRICE_PAISE[id], 0)
+}
+
+export function isCheckoutAddonBundle(ids: readonly CheckoutAddonId[]): boolean {
+  return CHECKOUT_ADDON_IDS.every((id) => ids.includes(id))
+}
+
 export function isExerciseLibraryAddon(id: string | null | undefined): boolean {
   return id === EXERCISE_LIBRARY_ADDON_ID
 }
@@ -121,7 +137,8 @@ export function parseCheckoutAddonIds(input: unknown): CheckoutAddonId[] {
 }
 
 export function checkoutAddonsPaise(ids: readonly CheckoutAddonId[]): number {
-  return ids.reduce((sum, id) => sum + CHECKOUT_ADDON_PRICE_PAISE[id], 0)
+  if (isCheckoutAddonBundle(ids)) return CHECKOUT_ADDON_BUNDLE_PAISE
+  return checkoutAddonsListPaise(ids)
 }
 
 export function supplementAddonPaise(enabled: boolean | null | undefined): number {
