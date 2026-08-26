@@ -33,8 +33,8 @@ export function resolvePlanFromPath(pathSlug: string | undefined): CoachingPlan 
 /** Customer-facing product names. Duration is secondary. */
 export const PLAN_PRODUCT_NAME: Record<LongCoachingPlanSlug, string> = {
   '3_months': 'Fat loss',
-  '6_months': 'Get Lean & Toned',
-  '12_months': 'Build Your Dream Body',
+  '6_months': 'Get Lean & Strong',
+  '12_months': 'Build Your Dream Physique',
 }
 
 export const PLAN_PAGE_COPY: Record<
@@ -53,7 +53,7 @@ export const PLAN_PAGE_COPY: Record<
     goalName: PLAN_PRODUCT_NAME['3_months'],
     durationLabel: '90 days',
     promise:
-      'This is the Fat loss plan. Ninety days to drop fat fast and look sharp. If you want Get Lean & Toned, that is 6 months. If you want to Build Your Dream Body, that is 12 months, with a weekly coach phone call included.',
+      'This is the Fat loss plan. Ninety days to drop fat fast and look sharp. If you want Get Lean & Strong, that is 6 months. If you want to Build Your Dream Physique, that is 12 months, with a weekly coach phone call included.',
     bestFor: 'dropping fat fast and looking sharp — results in 90 days',
     goals: [
       'Fat loss in 90 days',
@@ -62,27 +62,27 @@ export const PLAN_PAGE_COPY: Record<
     ],
   },
   '6_months': {
-    eyebrow: 'Get Lean & Toned',
+    eyebrow: 'Get Lean & Strong',
     goalName: PLAN_PRODUCT_NAME['6_months'],
     durationLabel: '6 months',
     promise:
-      'Get Lean & Toned. Six months to build a lean, athletic body with visible muscle tone. To Build Your Dream Body, that is 12 months, with a weekly coach phone call included.',
-    bestFor: 'building a lean, athletic body with visible muscle tone',
+      'Get Lean & Strong. Six months to lose fat while building real strength and a lean, muscular look. To Build Your Dream Physique, that is 12 months, with a weekly coach phone call included.',
+    bestFor: 'losing fat while building real strength and a lean, muscular look',
     goals: [
-      'Get Lean & Toned',
+      'Get Lean & Strong',
       'Clothes fit smaller and tighter',
       'Weekly plan updates',
     ],
   },
   '12_months': {
-    eyebrow: 'Build Your Dream Body',
+    eyebrow: 'Build Your Dream Physique',
     goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
     promise:
-      'Build Your Dream Body is 12 months, with a weekly coach phone call included. A full year so fat loss and muscle can both show as a finished look. Lowest monthly rate.',
-    bestFor: 'a full body transformation with the most complete coaching experience',
+      'Build Your Dream Physique is 12 months, with a weekly coach phone call included. A full year so fat loss and muscle can both show as a finished look. Lowest monthly rate.',
+    bestFor: 'building the complete physique you\'ve always wanted — diet, muscle, definition, and long-term results',
     goals: [
-      'Build Your Dream Body',
+      'Build Your Dream Physique',
       'Lowest monthly rate with WELCOME60',
       'Weekly coach phone call included',
     ],
@@ -118,8 +118,8 @@ export const PLAN_COMPARE_ROWS: {
     label: 'Best for',
     cells: {
       '3_months': 'Dropping fat fast and looking sharp — results in 90 days',
-      '6_months': 'Building a lean, athletic body with visible muscle tone',
-      '12_months': 'A full body transformation with the most complete coaching experience',
+      '6_months': 'Losing fat while building real strength and a lean, muscular look',
+      '12_months': 'Building the complete physique you\'ve always wanted — diet, muscle, definition, and long-term results',
     },
   },
   {
@@ -140,12 +140,12 @@ export const PLAN_COMPARE_ROWS: {
     cells: { ...FROM_6 },
   },
   {
-    group: 'Everything with Get Lean & Toned',
+    group: 'Everything with Build Your Dream Physique',
     label: 'Weekly coach phone call',
     cells: { ...FROM_12 },
   },
   {
-    group: 'Everything with Get Lean & Toned',
+    group: 'Everything with Build Your Dream Physique',
     label: 'Lowest monthly rate',
     hint: 'Full year accountability.',
     cells: { ...FROM_12 },

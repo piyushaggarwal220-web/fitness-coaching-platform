@@ -1106,9 +1106,11 @@
 
     .ai-transformation-plan-badge-{{ ai_gen_id }} {
       max-width: 100%;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: unset !important;
+      text-align: center;
+      line-height: 1.25 !important;
     }
 
     .ai-transformation-plan-card-duration-{{ ai_gen_id }} {
@@ -1477,7 +1479,8 @@
     {
       "type": "text",
       "id": "plan_2_badge",
-      "label": "Badge"
+      "label": "Badge",
+      "default": "Debloat"
     },
     {
       "type": "text",
@@ -1519,7 +1522,7 @@
       "type": "text",
       "id": "plan_2_footer",
       "label": "Footer text",
-      "default": "Best for: looking sharp for an event, not long term"
+      "default": "Best for: dropping fat fast and looking sharp — results in 90 days"
     },
     {
       "type": "url",
@@ -1546,13 +1549,13 @@
       "type": "text",
       "id": "plan_3_label",
       "label": "Label",
-      "default": "Fat loss + muscle gain"
+      "default": "Get Lean & Strong"
     },
     {
       "type": "text",
       "id": "plan_3_badge",
       "label": "Badge",
-      "default": "⭐ MOST POPULAR"
+      "default": "Recomp"
     },
     {
       "type": "text",
@@ -1588,13 +1591,13 @@
       "type": "textarea",
       "id": "plan_3_description",
       "label": "Description",
-      "default": "Fat loss + muscle gain"
+      "default": "Get Lean & Strong"
     },
     {
       "type": "text",
       "id": "plan_3_footer",
       "label": "Footer text",
-      "default": "Best for: advanced athletes who want little refinement"
+      "default": "Best for: losing fat while building real strength and a lean, muscular look"
     },
     {
       "type": "url",
@@ -1621,13 +1624,13 @@
       "type": "text",
       "id": "plan_4_label",
       "label": "Label",
-      "default": "Aesthetic body"
+      "default": "Build Your Dream Physique"
     },
     {
       "type": "text",
       "id": "plan_4_badge",
       "label": "Badge",
-      "default": " BEST VALUE"
+      "default": "Complete transformation"
     },
     {
       "type": "text",
@@ -1663,13 +1666,13 @@
       "type": "textarea",
       "id": "plan_4_description",
       "label": "Description",
-      "default": "Aesthetic body"
+      "default": "Build Your Dream Physique"
     },
     {
       "type": "text",
       "id": "plan_4_footer",
       "label": "Footer text",
-      "default": "Best for: complete aesthetic transformation"
+      "default": "Best for: building the complete physique you've always wanted — diet, muscle, definition, and long-term results"
     },
     {
       "type": "url",
