@@ -216,7 +216,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
                 <span style={styles.check} aria-hidden>
                   ✓
                 </span>
-                Weekly coach phone call. 12 month exclusive
+                Weekly coach phone call included
               </li>
             )}
           </ul>

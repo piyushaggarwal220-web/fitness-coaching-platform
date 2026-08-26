@@ -158,8 +158,8 @@ export const PLAN_GOAL_TIER_META: Record<
   { title: string; shortLabel: string; accent: string }
 > = {
   '3_months': { title: 'Fat loss', shortLabel: '90 days', accent: '#38bdf8' },
-  '6_months': { title: 'Fat loss + muscle gain', shortLabel: '6 months', accent: '#a78bfa' },
-  '12_months': { title: 'Aesthetic body', shortLabel: '12 months', accent: '#fbbf24' },
+  '6_months': { title: 'Get Lean & Toned', shortLabel: '6 months', accent: '#a78bfa' },
+  '12_months': { title: 'Build Your Dream Body', shortLabel: '12 months', accent: '#fbbf24' },
 }
 
 /** Flat catalog of every plan-gated goal. */

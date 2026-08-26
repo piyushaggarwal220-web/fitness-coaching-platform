@@ -33,8 +33,8 @@ export function resolvePlanFromPath(pathSlug: string | undefined): CoachingPlan 
 /** Customer-facing product names. Duration is secondary. */
 export const PLAN_PRODUCT_NAME: Record<LongCoachingPlanSlug, string> = {
   '3_months': 'Fat loss',
-  '6_months': 'Fat loss + muscle gain',
-  '12_months': 'Aesthetic body',
+  '6_months': 'Get Lean & Toned',
+  '12_months': 'Build Your Dream Body',
 }
 
 export const PLAN_PAGE_COPY: Record<
@@ -53,8 +53,8 @@ export const PLAN_PAGE_COPY: Record<
     goalName: PLAN_PRODUCT_NAME['3_months'],
     durationLabel: '90 days',
     promise:
-      'This is the fat-loss plan. Ninety days to drop fat with a coach. If you also want muscle gain, that is 6 months. If you want an aesthetic body, that is 12 months.',
-    bestFor: 'looking sharp for an event, not long term',
+      'This is the Fat loss plan. Ninety days to drop fat fast and look sharp. If you want Get Lean & Toned, that is 6 months. If you want to Build Your Dream Body, that is 12 months, with a weekly coach phone call included.',
+    bestFor: 'dropping fat fast and looking sharp — results in 90 days',
     goals: [
       'Fat loss in 90 days',
       'A clear diet and workout plan',
@@ -62,29 +62,29 @@ export const PLAN_PAGE_COPY: Record<
     ],
   },
   '6_months': {
-    eyebrow: 'Fat loss + muscle gain',
+    eyebrow: 'Get Lean & Toned',
     goalName: PLAN_PRODUCT_NAME['6_months'],
     durationLabel: '6 months',
     promise:
-      'Fat loss + muscle gain. Six months so you can drop fat and add muscle. For a finished aesthetic body, that is 12 months.',
-    bestFor: 'advanced athletes who want little refinement',
+      'Get Lean & Toned. Six months to build a lean, athletic body with visible muscle tone. To Build Your Dream Body, that is 12 months, with a weekly coach phone call included.',
+    bestFor: 'building a lean, athletic body with visible muscle tone',
     goals: [
-      'Fat loss + muscle gain',
+      'Get Lean & Toned',
       'Clothes fit smaller and tighter',
       'Weekly plan updates',
     ],
   },
   '12_months': {
-    eyebrow: 'Aesthetic body',
+    eyebrow: 'Build Your Dream Body',
     goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
     promise:
-      'Aesthetic body. A full year so fat loss and muscle can both show as a finished look. Lowest monthly rate, weekly coach phone call.',
-    bestFor: 'complete aesthetic transformation',
+      'Build Your Dream Body is 12 months, with a weekly coach phone call included. A full year so fat loss and muscle can both show as a finished look. Lowest monthly rate.',
+    bestFor: 'a full body transformation with the most complete coaching experience',
     goals: [
-      'Aesthetic body',
+      'Build Your Dream Body',
       'Lowest monthly rate with WELCOME60',
-      'Weekly coach phone call (12 month exclusive)',
+      'Weekly coach phone call included',
     ],
   },
 }
@@ -117,9 +117,9 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with debloat',
     label: 'Best for',
     cells: {
-      '3_months': 'Looking sharp for an event, not long term',
-      '6_months': 'Advanced athletes who want little refinement',
-      '12_months': 'Complete aesthetic transformation',
+      '3_months': 'Dropping fat fast and looking sharp — results in 90 days',
+      '6_months': 'Building a lean, athletic body with visible muscle tone',
+      '12_months': 'A full body transformation with the most complete coaching experience',
     },
   },
   {
@@ -140,12 +140,12 @@ export const PLAN_COMPARE_ROWS: {
     cells: { ...FROM_6 },
   },
   {
-    group: 'Everything with fat loss + muscle',
+    group: 'Everything with Get Lean & Toned',
     label: 'Weekly coach phone call',
     cells: { ...FROM_12 },
   },
   {
-    group: 'Everything with fat loss + muscle',
+    group: 'Everything with Get Lean & Toned',
     label: 'Lowest monthly rate',
     hint: 'Full year accountability.',
     cells: { ...FROM_12 },

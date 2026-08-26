@@ -823,7 +823,7 @@ function CheckoutForm() {
               {isTrialCheckout
                 ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
                 : plan.slug === '12_months'
-                  ? 'Includes a weekly coach phone call. 12 month exclusive.'
+                  ? 'Weekly coach phone call included. 12 month exclusive.'
                   : 'Personal workout, diet, coach chat, and weekly check-ins are included.'}
             </p>
 

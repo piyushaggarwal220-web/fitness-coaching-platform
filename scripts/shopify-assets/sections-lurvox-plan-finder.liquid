@@ -1,7 +1,7 @@
 {% comment %}
   LURVOX — Find your plan (tap quiz)
   Full intake quiz → recommend a goal-based plan page (not checkout)
-  cache-bust 1787660000001
+  cache-bust 1787744000001
 {% endcomment %}
 
 {%- liquid
@@ -23,10 +23,10 @@
 
   <div class="lx-pf__inner page-width">
     <header class="lx-pf__header" data-pf-header>
-      <p class="lx-pf__eyebrow">{{ section.settings.eyebrow | default: 'Plan finder' }}</p>
-      <h1 class="lx-pf__title">{{ section.settings.heading | default: 'What plan do you actually need?' }}</h1>
+      <p class="lx-pf__eyebrow">{{ section.settings.eyebrow | default: 'CHOOSE YOUR GOAL' }}</p>
+      <h1 class="lx-pf__title">{{ section.settings.heading | default: 'Pick your goal. We handle the rest.' }}</h1>
       <p class="lx-pf__subtitle">
-        {{ section.settings.subheading | default: 'Answer each question honestly. We match a goal, then send you to that plan page. No payment here.' }}
+        {{ section.settings.subheading | default: 'Fat loss, Get Lean & Toned, or Build Your Dream Body. Answer honestly — we send you to that plan page. No payment here.' }}
       </p>
     </header>
 
@@ -60,7 +60,7 @@
           <span data-pf-checkout-label>See this plan</span>
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden>
-          Prefer fat loss + muscle? 12 months · ₹292/mo
+          Prefer Build Your Dream Body? 12 months · ₹292/mo
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="{{ talk_url }}">Talk to a coach</a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="/">Back to home</a>
@@ -442,9 +442,9 @@
         key: 'goal',
         q: 'What is your main goal right now?',
         options: [
-          { id: 'event', label: 'Looking sharp for an event, not long term', score: -4, goal: 'look sharp for an event' },
-          { id: 'refine', label: 'I am an advanced athlete. I want little refinement', score: 1, goal: 'refine an already-trained body' },
-          { id: 'transform', label: 'Complete aesthetic transformation', score: 5, goal: 'a complete aesthetic transformation' }
+          { id: 'event', label: 'Fat loss — drop fat fast and look sharp in 90 days', score: -4, goal: 'Fat loss' },
+          { id: 'refine', label: 'Get Lean & Toned — lean, athletic body with visible muscle', score: 1, goal: 'Get Lean & Toned' },
+          { id: 'transform', label: 'Build Your Dream Body — full transformation with weekly coach calls', score: 5, goal: 'Build Your Dream Body' }
         ]
       },
       {
@@ -604,35 +604,35 @@
         monthly: '₹433/mo',
         per: '90 days',
         bullets: [
+          'Best for dropping fat fast and looking sharp — results in 90 days',
           '2 weekly check-ins',
-          'Plan updates every 14 days',
-          'Coach in the app for your goal'
+          'Plan updates every 14 days'
         ]
       },
       '6_months': {
         slug: '6_months',
         path: '6-months',
-        label: 'Fat loss + muscle gain',
+        label: 'Get Lean & Toned',
         price: '₹2,099',
         monthly: '₹350/mo',
         per: '6 months',
         bullets: [
+          'Best for building a lean, athletic body with visible muscle tone',
           '2 weekly check-ins',
-          'Weekly plan updates',
-          'Fat loss + muscle gain'
+          'Weekly plan updates'
         ]
       },
       '12_months': {
         slug: '12_months',
         path: '12-months',
-        label: 'Aesthetic body',
+        label: 'Build Your Dream Body',
         price: '₹3,499',
         monthly: '₹292/mo',
         per: '12 months',
         bullets: [
-          'Lowest monthly rate with WELCOME60',
-          'Weekly plan updates',
-          'Aesthetic body'
+          'Best for a full body transformation with the most complete coaching',
+          'Weekly coach phone call included',
+          'Lowest monthly rate with WELCOME60'
         ]
       }
     };
@@ -640,19 +640,19 @@
     // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
     var contrast = {
       '3_months': [
-        { kind: 'pick', text: 'Best for looking sharp for an event, not long term.' },
-        { kind: 'miss', text: '6 months is for advanced athletes who want little refinement.' },
-        { kind: 'miss', text: '12 months is the complete aesthetic transformation, with the weekly coach call.' }
+        { kind: 'pick', text: 'Best for dropping fat fast and looking sharp — results in 90 days.' },
+        { kind: 'miss', text: '6 months is for building a lean, athletic body with visible muscle tone.' },
+        { kind: 'miss', text: 'Build Your Dream Body is 12 months, with a weekly coach phone call included.' }
       ],
       '6_months': [
-        { kind: 'pick', text: 'Best for advanced athletes who want little refinement.' },
-        { kind: 'miss', text: '3 months is for an event, not a long-term rebuild.' },
-        { kind: 'miss', text: '12 months is the complete aesthetic transformation, with the weekly coach call.' }
+        { kind: 'pick', text: 'Best for building a lean, athletic body with visible muscle tone.' },
+        { kind: 'miss', text: '3 months is for dropping fat fast and looking sharp in 90 days.' },
+        { kind: 'miss', text: 'Build Your Dream Body is 12 months, with a weekly coach phone call included.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Best for a complete aesthetic transformation. Weekly coach call included.' },
-        { kind: 'miss', text: '3 months is for looking sharp for an event, not long term.' },
-        { kind: 'miss', text: '6 months is a shorter refinement block for advanced athletes.' }
+        { kind: 'pick', text: 'Build Your Dream Body is 12 months, with a weekly coach phone call included.' },
+        { kind: 'miss', text: '3 months is for dropping fat fast and looking sharp in 90 days.' },
+        { kind: 'miss', text: '6 months is for building a lean, athletic body with visible muscle tone.' }
       ]
     };
 
@@ -696,15 +696,14 @@
 
       var why = '';
       if (planKey === '3_months') {
-        why = 'This is the short plan: looking sharp for an event, not long term.';
+        why = 'This is the short plan: dropping fat fast and looking sharp — results in 90 days.';
       } else if (planKey === '6_months') {
-        why = 'This is for advanced athletes who want little refinement. Six months of fat loss + muscle gain.';
+        why = 'This is for building a lean, athletic body with visible muscle tone. Six months of Get Lean & Toned.';
       } else {
         why =
           'Your goal is ' +
           goalLabel +
-          '. Complete aesthetic transformation is 12 months' +
-          (calls === 'yes' ? ', and it is the only plan with a weekly coach phone call' : '') +
+          '. Build Your Dream Body is 12 months, with a weekly coach phone call included' +
           '. Lowest monthly rate at ₹292/mo with WELCOME60.';
       }
 
@@ -744,7 +743,7 @@
       }
       checkoutEl.href = url;
       checkoutLabelEl.textContent =
-        rec.planKey === '12_months' ? 'See Aesthetic body' : 'See this plan';
+        rec.planKey === '12_months' ? 'See Build Your Dream Body' : 'See this plan';
       if (upgradeEl) {
         upgradeEl.hidden = rec.planKey === '12_months';
         upgradeEl.href = planBase + '/12-months';
@@ -823,19 +822,19 @@
       "type": "text",
       "id": "eyebrow",
       "label": "Eyebrow",
-      "default": "Plan finder"
+      "default": "CHOOSE YOUR GOAL"
     },
     {
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "What plan do you actually need?"
+      "default": "Pick your goal. We handle the rest."
     },
     {
       "type": "textarea",
       "id": "subheading",
       "label": "Subheading",
-      "default": "Answer each question honestly. We match a goal, then send you to that plan page. No payment here."
+      "default": "Fat loss, Get Lean & Toned, or Build Your Dream Body. Answer honestly — we send you to that plan page. No payment here."
     },
     {
       "type": "text",
