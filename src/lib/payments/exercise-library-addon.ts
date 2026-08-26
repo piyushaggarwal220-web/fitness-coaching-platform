@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import {
   EXERCISE_LIBRARY_ADDON_ID,
+  EXERCISE_LIBRARY_ADDON_LABEL,
   EXERCISE_LIBRARY_ADDON_PAISE,
 } from '@/lib/payments/checkout-discounts'
 
@@ -52,7 +53,7 @@ export async function fulfillExerciseLibraryAddon(input: {
       razorpay_payment_id: input.razorpayPaymentId,
       razorpay_order_id: input.razorpayOrderId,
       plan_slug: EXERCISE_LIBRARY_PLAN_SLUG,
-      plan_name: 'Exercise library',
+      plan_name: EXERCISE_LIBRARY_ADDON_LABEL,
       amount_paise: EXERCISE_LIBRARY_ADDON_PAISE,
       currency: 'INR',
       status: 'captured',

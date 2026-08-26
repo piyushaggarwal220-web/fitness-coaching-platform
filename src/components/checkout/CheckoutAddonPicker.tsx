@@ -5,7 +5,6 @@ import {
   CHECKOUT_ADDON_UNIT_PAISE,
   CHECKOUT_ADDON_BUNDLE_PAISE,
   CHECKOUT_ADDON_BUNDLE_LIST_PAISE,
-  EXERCISE_LIBRARY_ADDON_PAISE,
   checkoutAddonPaise,
   formatInrFromPaise,
   isCheckoutAddonBundle,
@@ -47,9 +46,8 @@ export function CheckoutAddonPicker({ selectedIds, onToggle, onToggleBundle }: P
         Optional add-ons
       </p>
       <p style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.45, color: colors.textMuted }}>
-        Not included in coaching. Protocols are {formatInrFromPaise(CHECKOUT_ADDON_UNIT_PAISE)} each.
-        Exercise library is {formatInrFromPaise(EXERCISE_LIBRARY_ADDON_PAISE)}. Take all four for{' '}
-        {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_PAISE)}.
+        Not included in coaching. Each add-on is {formatInrFromPaise(CHECKOUT_ADDON_UNIT_PAISE)}.
+        Take all four for {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_PAISE)}.
       </p>
 
       <label
@@ -100,7 +98,7 @@ export function CheckoutAddonPicker({ selectedIds, onToggle, onToggleBundle }: P
             </span>
           </span>
           <span style={{ fontSize: 12, lineHeight: 1.45, color: colors.textMuted }}>
-            Testo boost, anxiety removal, face maxxing, and the exercise library — save{' '}
+            Testo boost, anxiety removal, face maxxing, and exercise form videos — save{' '}
             {formatInrFromPaise(bundleSave)}.
           </span>
         </span>

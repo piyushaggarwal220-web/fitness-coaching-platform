@@ -48,8 +48,9 @@ export const SUPPLEMENT_PROTOCOL_ADDON_PAISE = 39900
 export const SUPPLEMENT_PROTOCOL_ADDON_LABEL = 'Natural testosterone support protocol'
 /** Protocol add-ons stay at this published price. */
 export const CHECKOUT_ADDON_UNIT_PAISE = SUPPLEMENT_PROTOCOL_ADDON_PAISE
-/** Form-video library add-on (MuscleWiki). Not discounted with the plan. */
-export const EXERCISE_LIBRARY_ADDON_PAISE = 30000
+/** Form videos for lifts in the workout tracker. Not discounted with the plan. */
+export const EXERCISE_LIBRARY_ADDON_PAISE = CHECKOUT_ADDON_UNIT_PAISE
+export const EXERCISE_LIBRARY_ADDON_LABEL = 'Exercise form videos'
 export const EXERCISE_LIBRARY_ADDON_ID = 'exercise_library' as const
 
 export const CHECKOUT_ADDON_IDS = [
@@ -85,7 +86,7 @@ export const CHECKOUT_ADDONS: { id: CheckoutAddonId; name: string; copy: string 
   },
   {
     id: 'exercise_library',
-    name: 'Exercise library',
+    name: 'Exercise form videos',
     copy: 'Form videos for every lift in your workout tracker. Front view loads first; extra angles load only if you tap them.',
   },
 ]

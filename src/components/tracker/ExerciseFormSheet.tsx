@@ -6,6 +6,7 @@ import { Loader2, Lock, Play, X } from 'lucide-react'
 import { colors, layout, radius, spacing } from '@/lib/design-tokens'
 import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
 import {
+  EXERCISE_LIBRARY_ADDON_LABEL,
   EXERCISE_LIBRARY_ADDON_PAISE,
   formatInrFromPaise,
 } from '@/lib/payments/checkout-discounts'
@@ -345,7 +346,7 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
         amount: orderData.amount,
         currency: orderData.currency ?? 'INR',
         name: 'LURVOX',
-        description: 'Exercise library',
+        description: EXERCISE_LIBRARY_ADDON_LABEL,
         order_id: orderData.orderId,
         prefill: {
           name: orderData.name,
@@ -520,7 +521,7 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
               >
                 <Lock size={28} color={colors.accent} />
                 <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: colors.textPrimary }}>
-                  Exercise library is locked
+                  Exercise form videos are locked
                 </p>
                 <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: colors.textSecondary }}>
                   Form videos are a {formatInrFromPaise(data.pricePaise ?? EXERCISE_LIBRARY_ADDON_PAISE)} add-on.

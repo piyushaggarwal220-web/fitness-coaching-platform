@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
   if (!profile?.payment_confirmed) {
     return NextResponse.json(
-      { error: 'Start a coaching plan first, then unlock the exercise library.' },
+      { error: 'Start a coaching plan first, then unlock exercise form videos.' },
       { status: 403 }
     )
   }

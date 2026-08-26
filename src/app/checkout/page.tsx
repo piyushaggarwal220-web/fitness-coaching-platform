@@ -757,7 +757,7 @@ function CheckoutForm() {
                   <div>
                     <div style={styles.orderPlanName}>All add-ons</div>
                     <div style={styles.orderPlanMeta}>
-                      Testo, anxiety, face maxxing, and exercise library
+                      Testo, anxiety, face maxxing, and exercise form videos
                     </div>
                   </div>
                   <div style={styles.orderPriceCol}>
@@ -962,7 +962,7 @@ function CheckoutForm() {
                   <div>
                     <div style={styles.orderPlanName}>All add-ons</div>
                     <div style={styles.orderPlanMeta}>
-                      Testo, anxiety, face maxxing, and exercise library
+                      Testo, anxiety, face maxxing, and exercise form videos
                     </div>
                   </div>
                   <div style={styles.orderPriceCol}>
