@@ -1437,9 +1437,27 @@ export async function saveOnboardingProgress(
     delete payload.terms_accepted_at
   }
 
-  const { error } = await supabase.from('profiles').upsert(payload)
+  // Update the existing row. Upsert can send omitted columns as NULL and trip
+  // NOT NULL on payment_confirmed (and would also try to insert a second row).
+  const { data: existing, error: existingError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', userId)
+    .maybeSingle()
+  if (existingError) throw new Error(existingError.message)
 
-  if (error) throw new Error(error.message)
+  if (existing) {
+    const { id: _profileId, ...updatePayload } = payload
+    const { error } = await supabase.from('profiles').update(updatePayload).eq('id', userId)
+    if (error) throw new Error(error.message)
+  } else {
+    const { error } = await supabase.from('profiles').insert({
+      ...payload,
+      payment_confirmed: false,
+      onboarding_complete: payload.onboarding_complete ?? false,
+    })
+    if (error) throw new Error(error.message)
+  }
 
   if (options.complete) {
     invalidateForEvent('onboarding_submitted', userId)

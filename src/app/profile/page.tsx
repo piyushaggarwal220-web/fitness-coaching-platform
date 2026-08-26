@@ -162,19 +162,22 @@ export default function Profile() {
 
     const stillNeedsReview = guard.needsReview && !confirmMetrics
     const now = new Date().toISOString()
-    const { error } = await supabase.from('profiles').upsert({
-      id: user.id,
-      name: profile.name.trim(),
-      age,
-      fitness_goal: profile.fitness_goal || null,
-      weight,
-      height,
-      phone: profile.phone.trim() || null,
-      complexity_input_needs_review: stillNeedsReview,
-      complexity_input_review_reasons: stillNeedsReview ? guard.reasons : [],
-      profile_settings_edited_at: now,
-      updated_at: now,
-    })
+    const { error } = await supabase.from('profiles').upsert(
+      {
+        id: user.id,
+        name: profile.name.trim(),
+        age,
+        fitness_goal: profile.fitness_goal || null,
+        weight,
+        height,
+        phone: profile.phone.trim() || null,
+        complexity_input_needs_review: stillNeedsReview,
+        complexity_input_review_reasons: stillNeedsReview ? guard.reasons : [],
+        profile_settings_edited_at: now,
+        updated_at: now,
+      },
+      { onConflict: 'id', ignoreDuplicates: false, defaultToNull: false }
+    )
 
     if (error) {
       setMessage('Error saving profile: ' + error.message)
