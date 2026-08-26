@@ -5,6 +5,8 @@ import {
   normalizeExerciseQuery,
   shouldSkipExerciseForm,
 } from '../src/lib/exercise-form/normalize'
+import { exerciseFormUnlockKey, FREE_EXERCISE_FORM_LIFETIME_CAP } from '../src/lib/exercise-form/free-unlocks'
+import { EXERCISE_LIBRARY_ADDON_PAISE } from '../src/lib/payments/checkout-discounts'
 import {
   inferEquipmentCategory,
   listFormVideoOptions,
@@ -22,6 +24,20 @@ assert.equal(applyExerciseAliases(normalizeExerciseQuery('BB Bench Press')), 'ba
 assert.equal(shouldSkipExerciseForm('Rest'), true)
 assert.equal(shouldSkipExerciseForm('Hip Flexor Stretch'), true)
 assert.equal(shouldSkipExerciseForm('Barbell Bench Press'), false)
+assert.equal(EXERCISE_LIBRARY_ADDON_PAISE, 34900)
+assert.equal(FREE_EXERCISE_FORM_LIFETIME_CAP, 3)
+assert.equal(
+  exerciseFormUnlockKey({ found: true, exerciseId: 42, query: 'bench press', name: 'Barbell Bench Press' }),
+  'mw:42'
+)
+assert.equal(
+  exerciseFormUnlockKey({ found: true, exerciseId: null, query: 'goblet squat', name: 'Goblet Squat' }),
+  'q:goblet squat'
+)
+assert.equal(
+  exerciseFormUnlockKey({ found: false, exerciseId: null, query: 'rest', name: null }),
+  null
+)
 assert.equal(
   shouldSkipExerciseForm(
     'Focus on the squat and RDL today — these are your strength anchors. Keep the tempo controlled on the way down (2-'

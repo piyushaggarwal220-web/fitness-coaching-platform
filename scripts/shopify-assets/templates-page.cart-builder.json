@@ -3,11 +3,11 @@
     "main": {
       "type": "lurvox-cart-builder",
       "settings": {
-        "eyebrow": "Build your package",
-        "heading": "Choose your plan, then add boosts",
-        "subheading": "One coaching plan required. Add Testo boost, Aura improver, or Height improver if you want them.",
+        "eyebrow": "Choose your plan",
+        "heading": "Pick your coaching plan",
+        "subheading": "One plan. One-time payment. Workout, diet, check-ins, and coach chat included.",
         "checkout_base": "https://app.lurvox.in/checkout",
-        "fineprint": "Draft on theme new new. Add-ons are previewed in cart; checkout currently charges the coaching plan.",
+        "fineprint": "Checkout opens on app.lurvox.in with your selected plan. One-time payment.",
         "accent_color": "#FF6200"
       }
     }

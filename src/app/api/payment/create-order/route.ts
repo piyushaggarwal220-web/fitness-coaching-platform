@@ -14,8 +14,6 @@ import {
 import {
   checkoutDiscountNotes,
   checkoutTotalPaise,
-  checkoutAddonsPaise,
-  parseCheckoutAddonIds,
   resolveCheckoutPricing,
 } from '@/lib/payments/checkout-discounts'
 import { assertTrialPurchaseEligible } from '@/lib/payments/trial-eligibility'
@@ -29,9 +27,9 @@ type CreateOrderBody = {
   policyAgreementAccepted?: boolean
   verificationId?: string
   discountCode?: string
-  /** Opt-in for the paid personalised supplement protocol. */
+  /** Ignored. Checkout no longer sells add-ons. */
   supplementAddon?: boolean
-  /** Optional paid add-ons (testo, anxiety, face). One or many. */
+  /** Ignored. Checkout no longer sells add-ons. */
   addonIds?: string[]
 }
 
@@ -118,17 +116,9 @@ export async function POST(request: Request) {
     )
   }
   const { pricing } = pricingResult
-  // Add-ons are never available on the trial, which exists only to sample coaching.
-  const addonIds = plan.isTrial
-    ? []
-    : parseCheckoutAddonIds([
-        ...(Array.isArray(body.addonIds) ? body.addonIds : []),
-        ...(body.supplementAddon ? (['testo_boost'] as const) : []),
-      ])
-  const testoAddon = addonIds.includes('testo_boost')
-  const addonPaise = checkoutAddonsPaise(addonIds)
-  const totalPaise = checkoutTotalPaise(pricing, addonIds)
-  const discountNotes = checkoutDiscountNotes(pricing, { addonIds })
+  const addonIds: string[] = []
+  const totalPaise = checkoutTotalPaise(pricing, [])
+  const discountNotes = checkoutDiscountNotes(pricing)
 
   if (shouldBypassPayment()) {
     const orderId = `test_order_${Date.now()}`
@@ -149,8 +139,8 @@ export async function POST(request: Request) {
       plan: pricing.plan,
       discount: pricing.discount,
       listAmountPaise: pricing.listAmountPaise,
-      supplementAddon: testoAddon,
-      supplementAddonPaise: addonPaise,
+      supplementAddon: false,
+      supplementAddonPaise: 0,
       addonIds,
     })
   }
@@ -182,8 +172,8 @@ export async function POST(request: Request) {
       plan: pricing.plan,
       discount: pricing.discount,
       listAmountPaise: pricing.listAmountPaise,
-      supplementAddon: testoAddon,
-      supplementAddonPaise: addonPaise,
+      supplementAddon: false,
+      supplementAddonPaise: 0,
       addonIds,
     })
   } catch (err) {

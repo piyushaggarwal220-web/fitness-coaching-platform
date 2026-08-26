@@ -1,6 +1,6 @@
-{% comment %}
-  LURVOX — Cart builder (draft)
-  Pick a coaching plan + optional add-ons, then continue to app checkout.
+  {% comment %}
+  LURVOX — Cart builder
+  Pick a coaching plan, then continue to app checkout. Add-ons are not sold here.
 {% endcomment %}
 
 {%- liquid
@@ -17,25 +17,19 @@
   <div class="lx-cart__bg" aria-hidden="true"></div>
   <div class="lx-cart__inner page-width">
     <header class="lx-cart__header">
-      <p class="lx-cart__eyebrow">{{ section.settings.eyebrow | default: 'Build your package' }}</p>
-      <h1 class="lx-cart__title">{{ section.settings.heading | default: 'Choose your plan, then add boosts' }}</h1>
+      <p class="lx-cart__eyebrow">{{ section.settings.eyebrow | default: 'Choose your plan' }}</p>
+      <h1 class="lx-cart__title">{{ section.settings.heading | default: 'Pick your coaching plan' }}</h1>
       <p class="lx-cart__subtitle">
-        {{ section.settings.subheading | default: 'One coaching plan required. Add-ons are optional upgrades you can stack.' }}
+        {{ section.settings.subheading | default: 'One plan. One-time payment. Workout, diet, check-ins, and coach chat included.' }}
       </p>
     </header>
 
     <div class="lx-cart__grid">
       <div class="lx-cart__main">
         <section class="lx-cart__block">
-          <h2 class="lx-cart__block-title">1. Coaching plan</h2>
-          <p class="lx-cart__block-hint">Pick one base plan</p>
+          <h2 class="lx-cart__block-title">Coaching plan</h2>
+          <p class="lx-cart__block-hint">Pick one plan. One-time payment.</p>
           <div class="lx-cart__plans" data-cart-plans role="radiogroup" aria-label="Coaching plan"></div>
-        </section>
-
-        <section class="lx-cart__block">
-          <h2 class="lx-cart__block-title">2. Add-ons</h2>
-          <p class="lx-cart__block-hint">Optional. Take all four for ₹999, or pick one at a time.</p>
-          <div class="lx-cart__addons" data-cart-addons></div>
         </section>
       </div>
 
@@ -49,7 +43,7 @@
         <p class="lx-cart__sale-note" data-cart-sale-note></p>
         <a class="lx-cart__checkout" data-cart-checkout href="#">Continue to checkout</a>
         <p class="lx-cart__fine">
-          {{ section.settings.fineprint | default: 'Draft preview. Checkout opens on app.lurvox.in with your selected plan and add-ons.' }}
+          {{ section.settings.fineprint | default: 'Checkout opens on app.lurvox.in with your selected plan. One-time payment.' }}
         </p>
       </aside>
     </div>
@@ -294,7 +288,7 @@
     if (!root) return;
 
     var checkoutBase = (root.getAttribute('data-checkout-base') || 'https://app.lurvox.in/checkout').replace(/\/$/, '');
-    var STORAGE_KEY = 'lx_draft_cart_v1';
+    var STORAGE_KEY = 'lx_draft_cart_v2';
 
     var plans = [
       {
@@ -320,44 +314,13 @@
       }
     ];
 
-    var addons = [
-      {
-        id: 'testo_boost',
-        name: 'Testo boost',
-        meta: 'Training + recovery focus for strength, drive, and muscle response.',
-        paise: 39900
-      },
-      {
-        id: 'anxiety_removal',
-        name: 'Anxiety removal',
-        meta: 'Stress, sleep, and calmer-week habits with your coach. Not therapy.',
-        paise: 39900
-      },
-      {
-        id: 'face_maxxing',
-        name: 'Face maxxing',
-        meta: 'Sleep, skin, posture, and grooming for a sharper face. Lifestyle only.',
-        paise: 39900
-      },
-      {
-        id: 'exercise_library',
-        name: 'Exercise form videos',
-        meta: 'Form videos for every lift in your workout tracker.',
-        paise: 39900
-      }
-    ];
-    var ADDON_BUNDLE_PAISE = 99900;
-    var ADDON_LIST_PAISE = addons.reduce(function (sum, addon) { return sum + addon.paise; }, 0);
-
-    var state = { planSlug: '3_months', addonIds: [] };
+    var state = { planSlug: '3_months' };
     try {
       var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (saved && saved.planSlug) state.planSlug = saved.planSlug;
-      if (saved && Array.isArray(saved.addonIds)) state.addonIds = saved.addonIds;
     } catch (e) {}
 
     var plansEl = root.querySelector('[data-cart-plans]');
-    var addonsEl = root.querySelector('[data-cart-addons]');
     var linesEl = root.querySelector('[data-cart-lines]');
     var totalEl = root.querySelector('[data-cart-total]');
     var saleNoteEl = root.querySelector('[data-cart-sale-note]');
@@ -375,19 +338,6 @@
 
     function selectedPlan() {
       return plans.find(function (p) { return p.slug === state.planSlug; }) || plans[0];
-    }
-
-    function selectedAddons() {
-      return addons.filter(function (a) { return state.addonIds.indexOf(a.id) >= 0; });
-    }
-
-    function allAddonsSelected() {
-      return addons.every(function (addon) { return state.addonIds.indexOf(addon.id) >= 0; });
-    }
-
-    function addonsTotalPaise() {
-      if (allAddonsSelected()) return ADDON_BUNDLE_PAISE;
-      return selectedAddons().reduce(function (sum, addon) { return sum + addon.paise; }, 0);
     }
 
     function renderPlans() {
@@ -411,53 +361,9 @@
       });
     }
 
-    function renderAddons() {
-      addonsEl.innerHTML = '';
-      var bundleOn = allAddonsSelected();
-      var bundleBtn = document.createElement('button');
-      bundleBtn.type = 'button';
-      bundleBtn.className = 'lx-cart__card is-offer' + (bundleOn ? ' is-selected' : '');
-      bundleBtn.setAttribute('aria-pressed', bundleOn ? 'true' : 'false');
-      bundleBtn.innerHTML =
-        '<div class="lx-cart__card-name">All add-ons</div>' +
-        '<div class="lx-cart__card-price"><s>' + inr(ADDON_LIST_PAISE) + '</s>' + inr(ADDON_BUNDLE_PAISE) + '</div>' +
-        '<div class="lx-cart__card-meta">Testo, anxiety, face maxxing, and exercise form videos. Save ' +
-        inr(ADDON_LIST_PAISE - ADDON_BUNDLE_PAISE) +
-        (bundleOn ? ' · added' : ' · tap to add all') +
-        '</div>';
-      bundleBtn.addEventListener('click', function () {
-        state.addonIds = bundleOn ? [] : addons.map(function (addon) { return addon.id; });
-        persist();
-        render();
-      });
-      addonsEl.appendChild(bundleBtn);
-
-      addons.forEach(function (addon) {
-        var on = state.addonIds.indexOf(addon.id) >= 0;
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'lx-cart__card' + (on ? ' is-selected' : '');
-        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        btn.innerHTML =
-          '<div class="lx-cart__card-name">' + addon.name + '</div>' +
-          '<div class="lx-cart__card-price">' + (bundleOn ? 'Included' : '+' + inr(addon.paise)) + '</div>' +
-          '<div class="lx-cart__card-meta">' + addon.meta + (on ? ' · added' : ' · tap to add') + '</div>';
-        btn.addEventListener('click', function () {
-          if (on) state.addonIds = state.addonIds.filter(function (id) { return id !== addon.id; });
-          else state.addonIds.push(addon.id);
-          persist();
-          render();
-        });
-        addonsEl.appendChild(btn);
-      });
-    }
-
     function renderSummary() {
       var plan = selectedPlan();
-      var chosen = selectedAddons();
-      var bundleOn = allAddonsSelected();
-      var addonPaise = addonsTotalPaise();
-      var total = plan.salePaise + addonPaise;
+      var total = plan.salePaise;
       linesEl.innerHTML = '';
 
       var planLine = document.createElement('li');
@@ -465,37 +371,16 @@
       planLine.innerHTML = '<span>' + plan.name + '</span><span>' + inr(plan.salePaise) + '</span>';
       linesEl.appendChild(planLine);
 
-      if (bundleOn) {
-        var bundleLine = document.createElement('li');
-        bundleLine.className = 'lx-cart__line';
-        bundleLine.innerHTML = '<span>All add-ons</span><span>+' + inr(ADDON_BUNDLE_PAISE) + '</span>';
-        linesEl.appendChild(bundleLine);
-      } else {
-        chosen.forEach(function (addon) {
-          var line = document.createElement('li');
-          line.className = 'lx-cart__line';
-          line.innerHTML = '<span>' + addon.name + '</span><span>+' + inr(addon.paise) + '</span>';
-          linesEl.appendChild(line);
-        });
-      }
-
       totalEl.textContent = inr(total);
-      saleNoteEl.textContent = bundleOn
-        ? 'All add-ons for ' + inr(ADDON_BUNDLE_PAISE)
-        : chosen.length
-          ? chosen.length + ' add-on' + (chosen.length === 1 ? '' : 's') + ' selected'
-          : 'No add-ons yet';
+      saleNoteEl.textContent = 'One-time payment · was ' + inr(plan.listPaise);
 
-      var url = checkoutBase + '?plan=' + encodeURIComponent(plan.slug);
-      if (chosen.length) url += '&addons=' + encodeURIComponent(chosen.map(function (a) { return a.id; }).join(','));
-      checkoutEl.href = url;
+      checkoutEl.href = checkoutBase + '?plan=' + encodeURIComponent(plan.slug);
       checkoutEl.classList.toggle('is-disabled', !plan);
       checkoutEl.textContent = 'Continue to checkout · ' + inr(total);
     }
 
     function render() {
       renderPlans();
-      renderAddons();
       renderSummary();
     }
 
@@ -509,13 +394,13 @@
   "tag": "section",
   "class": "section-lx-cart",
   "settings": [
-    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Build your package" },
-    { "type": "text", "id": "heading", "label": "Heading", "default": "Choose your plan, then add boosts" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Choose your plan" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Pick your coaching plan" },
     {
       "type": "textarea",
       "id": "subheading",
       "label": "Subheading",
-      "default": "One coaching plan required. Add-ons are optional upgrades you can stack."
+      "default": "One plan. One-time payment. Workout, diet, check-ins, and coach chat included."
     },
     {
       "type": "text",
@@ -527,7 +412,7 @@
       "type": "textarea",
       "id": "fineprint",
       "label": "Fine print",
-      "default": "Draft preview. Checkout opens on app.lurvox.in with your selected plan and add-ons."
+      "default": "Checkout opens on app.lurvox.in with your selected plan. One-time payment."
     },
     { "type": "color", "id": "accent_color", "label": "Accent", "default": "#FF6200" }
   ],

@@ -19,15 +19,6 @@ import {
   discountPaiseForPlan,
   getFirstTimerDiscountCode,
   isFirstTimerDiscountCode,
-  CHECKOUT_ADDONS,
-  CHECKOUT_ADDON_IDS,
-  CHECKOUT_ADDON_BUNDLE_PAISE,
-  CHECKOUT_ADDON_BUNDLE_LIST_PAISE,
-  checkoutAddonPaise,
-  checkoutAddonsPaise,
-  isCheckoutAddonBundle,
-  parseCheckoutAddonIds,
-  type CheckoutAddonId,
 } from '@/lib/payments/checkout-discounts';
 import {
   affiliateDiscountPaise,
@@ -39,7 +30,6 @@ import {
   getSaleCountdownRemainingMs,
 } from '@/lib/sale-countdown';
 import { CheckoutTransformationCarousel } from '@/components/checkout/TransformationCarousel';
-import { CheckoutAddonPicker } from '@/components/checkout/CheckoutAddonPicker';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
@@ -85,7 +75,6 @@ function CheckoutForm() {
   const [error, setError] = useState('');
   const [razorpayReady, setRazorpayReady] = useState(false);
   const [policyAgreementAccepted, setPolicyAgreementAccepted] = useState(false);
-  const [addonIds, setAddonIds] = useState<CheckoutAddonId[]>([]);
   const [verificationId, setVerificationId] = useState('');
   const [emailCode, setEmailCode] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
@@ -114,20 +103,13 @@ function CheckoutForm() {
   const testMode = isPaymentBypassClient();
   const isTrialCheckout = plan.isTrial === true;
   const planPayablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
-  const addonsAvailable = !isTrialCheckout;
-  const selectedAddonIds = addonsAvailable ? addonIds : [];
-  const payablePaise = planPayablePaise + checkoutAddonsPaise(selectedAddonIds);
+  const payablePaise = planPayablePaise;
   const payableDisplay = formatInrFromPaise(payablePaise);
   const firstTimerPreviewPaise = firstTimerSalePaise(plan.slug);
   const firstTimerPreviewDisplay =
     firstTimerPreviewPaise != null ? formatInrFromPaise(firstTimerPreviewPaise) : plan.displayPrice;
   const firstTimerSavingsPaise =
     firstTimerPreviewPaise != null ? plan.amountPaise - firstTimerPreviewPaise : null;
-
-  useEffect(() => {
-    const fromUrl = parseCheckoutAddonIds(searchParams.get('addons'));
-    if (fromUrl.length) setAddonIds(fromUrl);
-  }, [searchParams]);
 
   useEffect(() => {
     setEnrollmentHref(null);
@@ -555,7 +537,6 @@ function CheckoutForm() {
           policyAgreementAccepted,
           verificationId: verificationId || undefined,
           discountCode: appliedDiscount?.code || undefined,
-          addonIds: selectedAddonIds,
         }),
       });
 
@@ -710,22 +691,6 @@ function CheckoutForm() {
               </div>
             )}
 
-            {addonsAvailable && (
-              <CheckoutAddonPicker
-                selectedIds={selectedAddonIds}
-                onToggle={(id) => {
-                  setAddonIds((current) =>
-                    current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-                  )
-                }}
-                onToggleBundle={() => {
-                  setAddonIds((current) =>
-                    isCheckoutAddonBundle(current) ? [] : [...CHECKOUT_ADDON_IDS]
-                  )
-                }}
-              />
-            )}
-
             {isTrialCheckout && (
               <div style={styles.trialBadge}>
                 {plan.name} · {plan.displayPrice}
@@ -751,41 +716,6 @@ function CheckoutForm() {
                   </span>
                 </div>
               </div>
-
-              {isCheckoutAddonBundle(selectedAddonIds) ? (
-                <div style={{ ...styles.orderRow, marginTop: 10 }}>
-                  <div>
-                    <div style={styles.orderPlanName}>All add-ons</div>
-                    <div style={styles.orderPlanMeta}>
-                      Testo, anxiety, face maxxing, and exercise form videos
-                    </div>
-                  </div>
-                  <div style={styles.orderPriceCol}>
-                    <s style={styles.orderSummaryMrp}>
-                      {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_LIST_PAISE)}
-                    </s>
-                    <span style={styles.orderSummaryPrice}>
-                      + {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_PAISE)}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                selectedAddonIds.map((id) => {
-                  const addon = CHECKOUT_ADDONS.find((item) => item.id === id)
-                  if (!addon) return null
-                  return (
-                    <div key={id} style={{ ...styles.orderRow, marginTop: 10 }}>
-                      <div>
-                        <div style={styles.orderPlanName}>{addon.name}</div>
-                        <div style={styles.orderPlanMeta}>
-                          {id === 'exercise_library' ? 'Add-on · form videos' : 'Add-on protocol'}
-                        </div>
-                      </div>
-                      <span style={styles.orderSummaryPrice}>+ {formatInrFromPaise(checkoutAddonPaise(id))}</span>
-                    </div>
-                  )
-                })
-              )}
                 <div style={styles.offerBanner}>
                   <div style={styles.offerBannerTop}>
                     <strong>{discountLockedIn ? '60% off applied' : '60% off with code'}</strong>
@@ -957,40 +887,6 @@ function CheckoutForm() {
                   </span>
                 </div>
               </div>
-              {isCheckoutAddonBundle(selectedAddonIds) ? (
-                <div style={{ ...styles.orderRow, marginTop: 10 }}>
-                  <div>
-                    <div style={styles.orderPlanName}>All add-ons</div>
-                    <div style={styles.orderPlanMeta}>
-                      Testo, anxiety, face maxxing, and exercise form videos
-                    </div>
-                  </div>
-                  <div style={styles.orderPriceCol}>
-                    <s style={styles.orderSummaryMrp}>
-                      {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_LIST_PAISE)}
-                    </s>
-                    <span style={styles.orderSummaryPrice}>
-                      + {formatInrFromPaise(CHECKOUT_ADDON_BUNDLE_PAISE)}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                selectedAddonIds.map((id) => {
-                  const addon = CHECKOUT_ADDONS.find((item) => item.id === id)
-                  if (!addon) return null
-                  return (
-                    <div key={id} style={{ ...styles.orderRow, marginTop: 10 }}>
-                      <div>
-                        <div style={styles.orderPlanName}>{addon.name}</div>
-                        <div style={styles.orderPlanMeta}>
-                          {id === 'exercise_library' ? 'Add-on · form videos' : 'Add-on protocol'}
-                        </div>
-                      </div>
-                      <span style={styles.orderSummaryPrice}>+ {formatInrFromPaise(checkoutAddonPaise(id))}</span>
-                    </div>
-                  )
-                })
-              )}
             </section>
 
             {testMode && (

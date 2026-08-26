@@ -48,8 +48,8 @@ export const SUPPLEMENT_PROTOCOL_ADDON_PAISE = 39900
 export const SUPPLEMENT_PROTOCOL_ADDON_LABEL = 'Natural testosterone support protocol'
 /** Protocol add-ons stay at this published price. */
 export const CHECKOUT_ADDON_UNIT_PAISE = SUPPLEMENT_PROTOCOL_ADDON_PAISE
-/** Form videos for lifts in the workout tracker. Not discounted with the plan. */
-export const EXERCISE_LIBRARY_ADDON_PAISE = CHECKOUT_ADDON_UNIT_PAISE
+/** Form videos for lifts in the workout tracker. Sold in-app, not on checkout. */
+export const EXERCISE_LIBRARY_ADDON_PAISE = 34900
 export const EXERCISE_LIBRARY_ADDON_LABEL = 'Exercise form videos'
 export const EXERCISE_LIBRARY_ADDON_ID = 'exercise_library' as const
 
@@ -153,7 +153,9 @@ export function checkoutAddonsFromNotes(
   const total = notes?.[CHECKOUT_ADDON_TOTAL_NOTE_KEY]
     ? Number(notes[CHECKOUT_ADDON_TOTAL_NOTE_KEY])
     : NaN
-  if (ids.length > 0 && total === checkoutAddonsPaise(ids)) {
+  // Trust the amount written onto the Razorpay order so older add-on carts still verify
+  // after catalogue prices change. New checkout orders do not attach add-ons.
+  if (ids.length > 0 && Number.isFinite(total) && total >= 0) {
     return { ids, paise: total }
   }
   if (supplementAddonPaiseFromNotes(notes) > 0) {
