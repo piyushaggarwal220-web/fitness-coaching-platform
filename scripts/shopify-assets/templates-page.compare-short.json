@@ -25,9 +25,9 @@
             "plan_3": true,
             "plan_6": true,
             "plan_12": true,
-            "plan_3_text": "Dropping fat fast and looking sharp — results in 90 days",
-            "plan_6_text": "Losing fat while building real strength and a lean, muscular look",
-            "plan_12_text": "Building the complete physique you've always wanted — diet, muscle, definition, and long-term results"
+            "plan_3_text": "Looking sharp on a special event, not long term results",
+            "plan_6_text": "Losing fat while building muscle",
+            "plan_12_text": "Building an athletic body — fat loss, muscle gain, and stamina"
           }
         },
         "r_core": {
@@ -125,17 +125,17 @@
       "settings": {
         "eyebrow": "Compare plans",
         "headline": "Pick your goal. We handle the rest.",
-        "subheadline": "Every longer plan includes everything below it. Build Your Dream Physique is the recommended plan — lowest cost per month and the only one with a weekly coach phone call.",
+        "subheadline": "Every longer plan includes everything below it. Athletic body is the recommended plan — fat loss, muscle gain, and stamina, with a weekly coach phone call.",
         "col_1_label": "Fat loss",
         "col_1_price": "₹1,299 · ₹433\/mo",
         "col_1_link": "https:\/\/app.lurvox.in\/plans\/3-months",
-        "col_2_label": "Get Lean & Strong",
+        "col_2_label": "Fat loss + muscle gain",
         "col_2_price": "₹2,099 · ₹350\/mo",
         "col_2_link": "https:\/\/app.lurvox.in\/plans\/6-months",
-        "col_3_label": "Build Your Dream Physique",
+        "col_3_label": "Athletic body",
         "col_3_price": "₹3,499 · ₹292\/mo",
         "col_3_link": "https:\/\/app.lurvox.in\/plans\/12-months",
-        "find_url": "\/pages\/find-your-plan",
+        "find_url": "\/pages\/choose-your-plan",
         "home_url": "\/#plans"
       }
     }

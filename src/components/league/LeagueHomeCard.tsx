@@ -11,13 +11,16 @@ import {
   normalizeLeagueTier,
   type LeagueStandingRow,
   type LeagueTier,
-} from '@/lib/league/scoring'
+import { LEAGUE_ROOM_MIN_OPT_INS } from '@/lib/league/room'
 
 type LeaguePayload = {
   optIn: boolean
   me: LeagueStandingRow | null
   standings: LeagueStandingRow[]
   division?: LeagueTier
+  roomOpen?: boolean
+  optInCount?: number
+  optInTarget?: number
 }
 
 /** Compact Consistency League summary for the client home dashboard. */
@@ -47,6 +50,9 @@ export function LeagueHomeCard() {
   const tier = normalizeLeagueTier(data?.me?.tier ?? data?.division ?? 'bronze')
   const tierColor = LEAGUE_TIER_DETAILS[tier].color
   const loading = !data
+  const roomOpen = data?.roomOpen ?? false
+  const optInCount = data?.optInCount ?? 0
+  const optInTarget = data?.optInTarget ?? LEAGUE_ROOM_MIN_OPT_INS
 
   return (
     <section style={{ marginBottom: spacing[7] }}>
@@ -100,6 +106,15 @@ export function LeagueHomeCard() {
           <div style={{ flex: 1, minWidth: 0 }}>
             {loading ? (
               <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Loading standings…</p>
+            ) : !roomOpen ? (
+              <>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
+                  {data.optIn ? 'You are on the waitlist' : 'League room not open yet'}
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
+                  Opens at {optInTarget} members · {optInCount} joined
+                </p>
+              </>
             ) : !data.optIn ? (
               <>
                 <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>

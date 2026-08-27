@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import { Check, ChevronRight } from 'lucide-react'
+import { WearableConnect } from '@/components/tracker/WearableConnect'
 import { ProgressRing } from '@/components/tracker/ProgressRing'
 import { TrackerRefreshControls } from '@/components/tracker/TrackerRefreshControls'
+import { useTracker } from '@/components/tracker/context/TrackerContext'
 import { colors, radius, spacing } from '@/lib/design-tokens'
 import { buildModuleSummaries } from '@/lib/daily-tracker/module-summaries'
 import type { TodayTrackerView } from '@/lib/daily-tracker/types'
@@ -47,6 +49,7 @@ function HeroStat({ label, value, highlight }: { label: string; value: string; h
 
 export function TrackerHub({ view }: { view: TodayTrackerView }) {
   const modules = buildModuleSummaries(view.day)
+  const { patchCompletion, saving } = useTracker()
 
   return (
     <div>
@@ -225,6 +228,13 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           plan.
         </p>
       )}
+
+      <WearableConnect
+        variant="hub"
+        completion={view.day.completion}
+        saving={saving}
+        onPatch={patchCompletion}
+      />
 
       <p style={{ marginTop: spacing[5], textAlign: 'center' }}>
         <Link

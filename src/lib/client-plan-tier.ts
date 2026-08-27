@@ -26,7 +26,7 @@ export type PlanTierTheme = {
 const THEMES: Record<ClientPlanTier, PlanTierTheme> = {
   '12_months': {
     tier: '12_months',
-    label: 'Build Your Dream Physique',
+    label: 'Athletic body',
     stripe: '#ea580c',
     chipBg: 'rgba(234, 88, 12, 0.12)',
     chipText: '#c2410c',
@@ -34,7 +34,7 @@ const THEMES: Record<ClientPlanTier, PlanTierTheme> = {
   },
   '6_months': {
     tier: '6_months',
-    label: 'Get Lean & Strong',
+    label: 'Fat loss + muscle gain',
     stripe: '#71717a',
     chipBg: 'rgba(113, 113, 122, 0.14)',
     chipText: '#3f3f46',

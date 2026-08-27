@@ -3,11 +3,11 @@
   One bar, two actions. Hide each button on its own page.
 {% endcomment %}
 
-{%- assign find_url = '/pages/find-your-plan' -%}
+{%- assign find_url = '/pages/choose-your-plan' -%}
 {%- assign talk_url = '/pages/talk-to-a-coach' -%}
 {%- assign on_finder = false -%}
 {%- assign on_talk = false -%}
-{%- if request.page_type == 'page' and page.handle == 'find-your-plan' -%}
+{%- if request.page_type == 'page' and page.handle == 'choose-your-plan' -%}
   {%- assign on_finder = true -%}
 {%- endif -%}
 {%- if request.page_type == 'page' and page.handle == 'talk-to-a-coach' -%}

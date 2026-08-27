@@ -181,6 +181,7 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
   const [completing, setCompleting] = useState(false)
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
   const [completeError, setCompleteError] = useState('')
+  const [copiedPrompt, setCopiedPrompt] = useState(false)
   const [coachId, setCoachId] = useState<string | null>(null)
   const loadGenerationRef = useRef(0)
 
@@ -370,6 +371,20 @@ export function CoachWorkQueuePanel({ filter = 'all', onCountsChange }: CoachWor
         <button type="button" onClick={() => openTask(current.href)} style={primaryBtn}>
           Start
         </button>
+        {current.copyPrompt ? (
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard.writeText(current.copyPrompt ?? '').then(() => {
+                setCopiedPrompt(true)
+                window.setTimeout(() => setCopiedPrompt(false), 2000)
+              })
+            }}
+            style={completeBtn}
+          >
+            {copiedPrompt ? 'Prompt copied' : 'Copy ChatGPT prompt'}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => void handleComplete(current)}

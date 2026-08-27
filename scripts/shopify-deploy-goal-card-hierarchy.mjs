@@ -60,9 +60,9 @@ s.plan_2_label = 'Fat loss'
 s.plan_2_duration = '90 DAYS'
 s.plan_3_label = 'Fat loss + muscle'
 s.plan_3_duration = '6 MONTHS'
-s.plan_4_label = 'Aesthetic body'
+s.plan_4_label = 'Build Your Dream Body'
 s.plan_4_duration = '12 MONTHS'
-s.headline = 'Pick your goal. Duration comes second.'
+s.headline = 'Pick your goal. We handle the rest.'
 
 let layout = await get('layout/theme.liquid')
 const stamp = Date.now()

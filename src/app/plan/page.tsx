@@ -178,7 +178,7 @@ export default function ClientPlanPage() {
       content: formatPlanDayHeadersForClient(sections.workout),
     },
     { key: 'supplements' as const, title: 'Supplements', icon: <Pill size={20} color={colors.accent} />, content: sections.supplements },
-    { key: 'cardio' as const, title: 'Cardio', icon: <Footprints size={20} />, content: sections.cardio },
+    { key: 'cardio' as const, title: 'Cardio', icon: <Footprints size={20} />, content: formatPlanDayHeadersForClient(sections.cardio) },
     { key: 'notes' as const, title: 'Lifestyle & tips', icon: <ClipboardList size={20} />, content: sections.coachNotes },
   ].filter((item) => item.content.trim().length > 0)
 

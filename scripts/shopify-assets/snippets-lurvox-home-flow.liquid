@@ -5,17 +5,17 @@
 
 {%- liquid
   assign mode = mode | default: 'find'
-  assign find_url = '/pages/find-your-plan'
+  assign find_url = '/pages/choose-your-plan'
   assign how_url = '/pages/how-lurvox-works'
-  assign compare_url = '/pages/compare-fit'
+  assign compare_url = '/pages/compare-fit?view=compare-short'
 -%}
 
 {%- if mode == 'find' -%}
   <section class="lx-flow" aria-label="Find your plan">
     <div class="lx-flow__inner">
       <a class="lx-flow__btn lx-flow__btn--primary" href="{{ find_url }}">
-        <span class="lx-flow__main">Tap to know what plan you need</span>
-        <span class="lx-flow__sub">Quick quiz · no payment</span>
+        <span class="lx-flow__main">Find My Plan — Free Quiz</span>
+        <span class="lx-flow__sub">2 minutes · no payment · instant recommendation</span>
       </a>
     </div>
   </section>

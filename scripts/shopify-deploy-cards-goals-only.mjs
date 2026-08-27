@@ -36,7 +36,7 @@ s.plan_3_duration = '6 MONTHS'
 s.plan_3_description = 'Fat down, muscle up, clothes fit differently.'
 s.plan_3_footer = 'Best for: recomp past 90 days'
 
-s.plan_4_label = 'Aesthetic body'
+s.plan_4_label = 'Build Your Dream Body'
 s.plan_4_duration = '12 MONTHS'
 s.plan_4_description = 'Full physique and lifestyle change.'
 s.plan_4_footer = 'Best for: all-in aesthetic goal'

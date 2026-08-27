@@ -173,7 +173,7 @@
     </div>
 
     <div class="lx-plan-compare__footer">
-      <a class="lx-plan-compare__quiz" href="{{ section.settings.find_url | default: '/pages/find-your-plan' }}">
+      <a class="lx-plan-compare__quiz" href="{{ section.settings.find_url | default: '/pages/choose-your-plan' }}">
         <span class="lx-plan-compare__quiz-main">Tap to know which plan is best for you</span>
         <span class="lx-plan-compare__quiz-sub">Quick quiz · no payment</span>
       </a>
@@ -539,18 +539,18 @@
   "class": "section-lx-plan-compare",
   "settings": [
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Compare plans" },
-    { "type": "text", "id": "headline", "label": "Headline", "default": "Fat loss in 90 days. Get Lean & Strong in 6 months. Build Your Dream Physique in 12." },
-    { "type": "textarea", "id": "subheadline", "label": "Subheadline", "default": "Fat loss is 90 days. Get Lean & Strong is 6 months. Build Your Dream Physique is 12 months." },
+    { "type": "text", "id": "headline", "label": "Headline", "default": "Fat loss in 90 days. Fat loss + muscle gain in 6 months. Athletic body in 12." },
+    { "type": "textarea", "id": "subheadline", "label": "Subheadline", "default": "Fat loss is 90 days. Fat loss + muscle gain is 6 months. Athletic body is 12 months." },
     { "type": "text", "id": "col_1_label", "label": "Column 1 label", "default": "Fat loss" },
     { "type": "text", "id": "col_1_price", "label": "Column 1 price", "default": "₹1,299" },
     { "type": "text", "id": "col_1_link", "label": "Column 1 link", "default": "https://app.lurvox.in/plans/3-months" },
-    { "type": "text", "id": "col_2_label", "label": "Column 2 label", "default": "Get Lean & Strong" },
+    { "type": "text", "id": "col_2_label", "label": "Column 2 label", "default": "Fat loss + muscle gain" },
     { "type": "text", "id": "col_2_price", "label": "Column 2 price", "default": "₹2,099" },
     { "type": "text", "id": "col_2_link", "label": "Column 2 link", "default": "https://app.lurvox.in/plans/6-months" },
-    { "type": "text", "id": "col_3_label", "label": "Column 3 label", "default": "Build Your Dream Physique" },
+    { "type": "text", "id": "col_3_label", "label": "Column 3 label", "default": "Athletic body" },
     { "type": "text", "id": "col_3_price", "label": "Column 3 price", "default": "₹3,499" },
     { "type": "text", "id": "col_3_link", "label": "Column 3 link", "default": "https://app.lurvox.in/plans/12-months" },
-    { "type": "text", "id": "find_url", "label": "Find plan quiz URL", "default": "/pages/find-your-plan" },
+    { "type": "text", "id": "find_url", "label": "Find plan quiz URL", "default": "/pages/choose-your-plan" },
     { "type": "text", "id": "home_url", "label": "Home plans URL", "default": "/#plans" }
   ],
   "blocks": [
@@ -580,7 +580,7 @@
       "name": "LURVOX plan compare",
       "blocks": [
         { "type": "heading", "settings": { "heading": "Opens with 3 months" } },
-        { "type": "row", "settings": { "feature": "Best for", "plan_3": true, "plan_6": true, "plan_12": true, "plan_3_text": "Dropping fat fast and looking sharp — results in 90 days", "plan_6_text": "Losing fat while building real strength and a lean, muscular look", "plan_12_text": "Building the complete physique you've always wanted — diet, muscle, definition, and long-term results" } },
+        { "type": "row", "settings": { "feature": "Best for", "plan_3": true, "plan_6": true, "plan_12": true, "plan_3_text": "Looking sharp on a special event, not long term results", "plan_6_text": "Losing fat while building muscle", "plan_12_text": "Building an athletic body — fat loss, muscle gain, and stamina" } },
         { "type": "row", "settings": { "feature": "Core coaching (workout, diet, coach, 2 check ins, trackers, photos)", "plan_3": true, "plan_6": true, "plan_12": true } },
         { "type": "row", "settings": { "feature": "Plan updates", "plan_3": true, "plan_6": true, "plan_12": true, "plan_3_text": "Every 14 days", "plan_6_text": "Every week", "plan_12_text": "Every week" } },
         { "type": "heading", "settings": { "heading": "More with 6 months" } },

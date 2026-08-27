@@ -1,7 +1,7 @@
 {
   "sections": {
     "main": {
-      "type": "lurvox-cart-builder",
+      "type": "lurvox-cart-builder-v3",
       "settings": {
         "eyebrow": "Choose your plan",
         "heading": "Pick your coaching plan",

@@ -1010,10 +1010,9 @@ export function WorkoutModule({
       <div aria-hidden style={{ height: rest ? 220 : 88 }} />
 
       <div
+        className="client-chrome"
         style={{
           ...mobileStyles.stickyBottom,
-          maxWidth: layout.maxWidthWide,
-          margin: '0 auto',
           display: 'flex',
           gap: 8,
           zIndex: 95,

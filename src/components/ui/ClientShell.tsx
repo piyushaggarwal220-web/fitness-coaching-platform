@@ -73,7 +73,6 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
         overflow: 'hidden',
         backgroundColor: 'var(--bg-primary)',
         zIndex: 50,
-        maxWidth: layout.maxWidthWide,
         margin: '0 auto',
         minHeight: 0,
         width: '100%',
@@ -107,10 +106,10 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
   return (
     <>
       {!hideTopBar && <TopBar title={title} onMenuClick={() => setDrawerOpen(true)} />}
-      <main style={mainStyle} className={fullHeight ? 'chat-main' : undefined}>
+      <main style={mainStyle} className={fullHeight ? 'chat-main client-chrome' : undefined}>
         {fullHeight ? children : (
           <PageTransition>
-            <div style={mobileStyles.container}>
+            <div style={mobileStyles.container} className="client-container">
               {children}
             </div>
           </PageTransition>

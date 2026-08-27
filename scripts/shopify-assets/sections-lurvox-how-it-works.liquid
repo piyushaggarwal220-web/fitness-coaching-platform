@@ -3,10 +3,10 @@
 {% endcomment %}
 
 {%- liquid
-  assign find_url = section.settings.find_url | default: '/pages/find-your-plan'
+  assign find_url = section.settings.find_url | default: '/pages/choose-your-plan'
   assign plans_url = section.settings.plans_url | default: '/#plans'
   assign terms_url = section.settings.terms_url | default: 'https://app.lurvox.in/terms'
-  assign compare_url = section.settings.compare_url | default: '/pages/compare-fit'
+  assign compare_url = section.settings.compare_url | default: '/pages/compare-fit?view=compare-short'
 -%}
 
 <section class="lx-how" id="how-lurvox-works" aria-label="How LURVOX works">
@@ -145,8 +145,8 @@
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "How LURVOX works" },
     { "type": "text", "id": "title", "label": "Title", "default": "From checkout to weekly coaching" },
     { "type": "textarea", "id": "lede", "label": "Intro", "default": "Built for India: vegetarian and home cooked diets, gym or home workouts, and a real coach in the app. Not a PDF dump." },
-    { "type": "text", "id": "find_url", "label": "Find plan URL", "default": "/pages/find-your-plan" },
-    { "type": "text", "id": "compare_url", "label": "Compare URL", "default": "/pages/compare-fit" },
+    { "type": "text", "id": "find_url", "label": "Find plan URL", "default": "/pages/choose-your-plan" },
+    { "type": "text", "id": "compare_url", "label": "Compare URL", "default": "/pages/compare-fit?view=compare-short" },
     { "type": "text", "id": "plans_url", "label": "Home plans URL", "default": "/#plans" },
     { "type": "text", "id": "refund_url", "label": "Refund URL", "default": "/pages/refund-policy" }
   ],

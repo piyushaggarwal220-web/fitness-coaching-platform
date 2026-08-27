@@ -1,5 +1,6 @@
 'use client'
 
+import { WearableConnect } from '@/components/tracker/WearableConnect'
 import {
   ChipSelector,
   ProgressBar,
@@ -142,6 +143,13 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, color: colors.textSecondary }}>Wake-up feeling</div>
         <ChipSelector options={WAKE} value={data.wakeFeeling} onChange={(v) => patch({ wakeFeeling: v })} />
       </div>
+
+      <WearableConnect
+        variant="sleep"
+        completion={completion}
+        saving={saving}
+        onPatch={onPatch}
+      />
     </div>
   )
 }

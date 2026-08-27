@@ -1,11 +1,11 @@
 {
   "sections": {
     "main": {
-      "type": "lurvox-plan-finder",
+      "type": "lurvox-plan-finder-v3",
       "settings": {
         "eyebrow": "CHOOSE YOUR GOAL",
         "heading": "Pick your goal. We handle the rest.",
-        "subheading": "Fat loss, Get Lean & Strong, or Build Your Dream Physique. Answer honestly — we send you to that plan page. No payment here.",
+        "subheading": "Fat loss, Fat loss + muscle gain, or Athletic body. Answer honestly — we send you to that plan page. No payment here.",
         "plan_base": "https://app.lurvox.in/plans",
         "talk_url": "/pages/talk-to-a-coach",
         "plans_url": "/pages/compare-fit?view=compare-short",

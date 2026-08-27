@@ -1511,5 +1511,11 @@ export function mergeCompletion(previous: TrackerCompletion, next: TrackerComple
         : next.workoutSession !== undefined
           ? { ...previous.workoutSession, ...next.workoutSession }
           : previous.workoutSession,
+    wearable:
+      next.wearable === null
+        ? undefined
+        : next.wearable !== undefined
+          ? { ...previous.wearable, ...next.wearable }
+          : previous.wearable,
   }
 }

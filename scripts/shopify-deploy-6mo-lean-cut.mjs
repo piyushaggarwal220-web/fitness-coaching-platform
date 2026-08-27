@@ -44,8 +44,8 @@ const plans = index.sections?.home_blocks_v2?.blocks?.ai_gen_block_361650c_qqYKX
 if (!plans?.settings) throw new Error('Plan cards block not found in index.json')
 
 const s = plans.settings
-s.top_label = 'GOAL FIRST'
-s.headline = 'Pick your goal. Duration comes second.'
+s.top_label = 'CHOOSE YOUR GOAL'
+s.headline = 'Pick your goal. We handle the rest.'
 s.subheadline =
   'Fat loss · 90 days. Get leaner, keep muscle · 6 months. Fat loss + muscle · 12 months (recommended). WELCOME60 = 60% off'
 

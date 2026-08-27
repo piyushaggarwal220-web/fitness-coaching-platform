@@ -43,19 +43,19 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
   },
   '6_months': {
     slug: '6_months',
-    name: 'Get Lean & Strong',
+    name: 'Fat loss + muscle gain',
     displayPrice: '₹4,249',
     amountPaise: 424900,
     durationMonths: 6,
-    saveLabel: 'Get Lean & Strong',
+    saveLabel: 'Fat loss + muscle gain',
   },
   '12_months': {
     slug: '12_months',
-    name: 'Build Your Dream Physique',
+    name: 'Athletic body',
     displayPrice: '₹7,499',
     amountPaise: 749900,
     durationMonths: 12,
-    saveLabel: 'Build Your Dream Physique',
+    saveLabel: 'Athletic body',
     best: true,
   },
 }

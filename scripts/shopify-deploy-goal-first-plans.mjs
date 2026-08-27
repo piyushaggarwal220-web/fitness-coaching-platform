@@ -63,7 +63,7 @@ matrix = matrix
   .replace(
     `<span>12 months</span>
             <strong>₹2,999</strong>`,
-    `<span>Aesthetic body</span>
+    `<span>Build Your Dream Body</span>
             <small>12 months</small>
             <strong>₹2,999</strong>`
   )
@@ -95,7 +95,7 @@ fs.writeFileSync(path.join(ROOT, 'scripts/shopify-assets/snippets-lurvox-plan-co
 let closer = read('scripts/shopify-assets/snippets-lurvox-sales-closer.liquid')
 closer = closer.replace(
   /These are goal plans with a timeline attached\.[^<]*/,
-  'Goal first. Time is the runway. <strong>Fat loss</strong> is a 90 day reset. <strong>Fat loss + muscle</strong> is 6 months. <strong>Aesthetic body</strong> is 12 months, with the weekly coach phone call.'
+  'Goal first. Time is the runway. <strong>Fat loss</strong> is a 90 day reset. <strong>Fat loss + muscle</strong> is 6 months. <strong>Build Your Dream Body</strong> is 12 months, with the weekly coach phone call.'
 )
 fs.writeFileSync(path.join(ROOT, 'scripts/shopify-assets/snippets-lurvox-sales-closer.liquid'), closer)
 
@@ -105,7 +105,7 @@ finder = finder
   .replace("per: '90 day goal · 3 months'", "per: '90 days'")
   .replace("label: 'Recomposition'", "label: 'Fat loss + muscle'")
   .replace("per: 'Fat down, muscle up · 6 months'", "per: '6 months'")
-  .replace("label: 'Complete Transformation'", "label: 'Aesthetic body'")
+  .replace("label: 'Complete Transformation'", "label: 'Build Your Dream Body'")
   .replace("per: 'Lifestyle change · 12 months'", "per: '12 months'")
   .replace(
     "'Your goal is to ' +\n          goalLabel +\n          '. Quick Reset is the 90 day goal plan: enough time to see a first change without locking a full year.';",
@@ -113,7 +113,7 @@ finder = finder
   )
   .replace(
     "'Your goal is to ' +\n          goalLabel +\n          '. Complete Transformation is the all-in plan' +",
-    "'Your goal is to ' +\n          goalLabel +\n          '. Aesthetic body is the all-in plan' +"
+    "'Your goal is to ' +\n          goalLabel +\n          '. Build Your Dream Body is the all-in plan' +"
   )
   .replace(
     "'Your goal is to ' +\n          goalLabel +\n          '. Recomposition is the 6 month goal plan: fat down, muscle up, with weekly reviews so you do not stall after 90 days.';",
@@ -126,10 +126,10 @@ const plans = index.sections?.home_blocks_v2?.blocks?.ai_gen_block_361650c_qqYKX
 if (!plans?.settings) throw new Error('Plan cards block not found in index.json')
 
 const s = plans.settings
-s.top_label = 'GOAL FIRST'
-s.headline = 'Pick your goal. Duration comes second.'
+s.top_label = 'CHOOSE YOUR GOAL'
+s.headline = 'Pick your goal. We handle the rest.'
 s.subheadline =
-  'Fat loss · 90 days. Fat loss + muscle · 6 months. Aesthetic body · 12 months. WELCOME60 = 60% off'
+  'Fat loss · 90 days. Fat loss + muscle · 6 months. Build Your Dream Body · 12 months. WELCOME60 = 60% off'
 
 s.plan_2_label = 'Fat loss'
 s.plan_2_badge = 'START HERE'
@@ -143,7 +143,7 @@ s.plan_3_duration = '6 MONTHS'
 s.plan_3_description = 'Drop fat while building shape and strength.'
 s.plan_3_footer = 'Duration: 6 months. Weekly plan updates so you do not stall after 90 days.'
 
-s.plan_4_label = 'Aesthetic body'
+s.plan_4_label = 'Build Your Dream Body'
 s.plan_4_badge = 'FULL STACK'
 s.plan_4_duration = '12 MONTHS'
 s.plan_4_description = 'The complete physique and lifestyle change.'
@@ -202,7 +202,7 @@ try {
   if (sec?.settings) {
     sec.settings.col_1_label = 'Fat loss'
     sec.settings.col_2_label = 'Fat loss + muscle'
-    sec.settings.col_3_label = 'Aesthetic body'
+    sec.settings.col_3_label = 'Build Your Dream Body'
     sec.settings.headline = sec.settings.headline?.includes('month')
       ? 'Goal first. Duration second.'
       : sec.settings.headline

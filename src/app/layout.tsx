@@ -5,11 +5,13 @@ import "@/components/dev/dev-panel.css";
 import { DevPanelRoot } from "@/components/dev/DevPanelRoot";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { PendingMetaPurchaseFlush } from "@/components/analytics/PendingMetaPurchaseFlush";
+import { PhoneViewportLock } from "@/components/pwa/PhoneViewportLock";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
 import { ChunkLoadRecovery } from "@/components/pwa/ChunkLoadRecovery";
 import { SessionKeepalive } from "@/components/auth/SessionKeepalive";
 import { initWhatsAppProvider } from "@/lib/notifications/whatsapp-provider";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
+import { PHONE_VIEWPORT_BOOTSTRAP } from "@/lib/phone-viewport";
 
 initWhatsAppProvider();
 
@@ -65,11 +67,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
       <body>
+        <script dangerouslySetInnerHTML={{ __html: PHONE_VIEWPORT_BOOTSTRAP }} />
         {children}
         <SessionKeepalive />
         <ChunkLoadRecovery />
+        <PhoneViewportLock />
         <PwaRegister />
         <MetaPixel />
         <PendingMetaPurchaseFlush />

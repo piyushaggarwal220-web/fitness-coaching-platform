@@ -4,6 +4,7 @@
 import {
   ALL_PLAN_GOAL_OPTIONS,
   GOAL_BODY_TYPE_ORDER,
+  PLAN_GOAL_TIER_META,
   getGoalByValue,
   getGoalsForBodyType,
   getLockedGoals,
@@ -25,7 +26,10 @@ function assert(label: string, condition: boolean) {
   }
 }
 
-assert('catalog has three body paths', GOAL_BODY_TYPE_ORDER.length === 3)
+assert('3_months title is Fat loss', PLAN_GOAL_TIER_META['3_months'].title === 'Fat loss')
+assert('6_months title is Fat loss + muscle gain', PLAN_GOAL_TIER_META['6_months'].title === 'Fat loss + muscle gain')
+assert('12_months title is Athletic body', PLAN_GOAL_TIER_META['12_months'].title === 'Athletic body')
+assert('12_months includes build_stamina', getGoalByValue('build_stamina')?.tier === '12_months')
 assert('catalog has many selectable goals', ALL_PLAN_GOAL_OPTIONS.length >= 40)
 
 for (const bodyType of GOAL_BODY_TYPE_ORDER) {

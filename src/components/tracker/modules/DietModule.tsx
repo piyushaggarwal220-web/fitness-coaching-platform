@@ -53,12 +53,16 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
     [onPatch]
   )
 
+  const dietContentKey = meals.map((m) => `${m.id}:${m.foods}`).join('|')
   const didAutoSelectDietDay = useRef(false)
+  useEffect(() => {
+    didAutoSelectDietDay.current = false
+  }, [dietContentKey])
   useEffect(() => {
     if (!multiDay || selectedKey || !suggestion || saving || didAutoSelectDietDay.current) return
     didAutoSelectDietDay.current = true
     selectDietDay(suggestion)
-  }, [multiDay, selectedKey, suggestion, saving, selectDietDay])
+  }, [multiDay, selectedKey, suggestion, saving, selectDietDay, dietContentKey])
 
   const visibleMeals = useMemo(() => {
     if (!multiDay) return meals

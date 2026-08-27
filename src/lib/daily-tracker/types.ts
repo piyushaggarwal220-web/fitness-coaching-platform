@@ -231,6 +231,12 @@ export type TrackerCompletion = {
     /** True when the client paused the timer (still in progress) */
     paused?: boolean
   } | null
+  /** Watch the client is logging steps/sleep from. */
+  wearable?: {
+    source?: 'apple_watch' | 'galaxy_watch' | 'fitbit'
+    lastImportedAt?: string
+    lastImportedKind?: 'steps' | 'sleep' | 'both'
+  } | null
 }
 
 export type TrackerCategoryScores = {

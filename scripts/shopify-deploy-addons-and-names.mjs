@@ -1,5 +1,5 @@
 /**
- * Push Fat loss / Fat loss + muscle gain / Aesthetic body copy to the live theme.
+ * Push Fat loss / Get Lean & Toned / Build Your Dream Body copy to the live theme.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -41,19 +41,21 @@ function patchThemeSettings(obj) {
 
   const labels = {
     plan_2_label: 'Fat loss',
-    plan_3_label: 'Fat loss + muscle gain',
-    plan_4_label: 'Aesthetic body',
+    plan_3_label: 'Get Lean & Toned',
+    plan_4_label: 'Build Your Dream Body',
     plan_2_badge: 'FAT LOSS',
     plan_3_badge: 'MUSCLE GAIN',
     plan_4_badge: 'AESTHETIC',
     plan_2_description: 'Fat loss',
-    plan_3_description: 'Fat loss + muscle gain',
-    plan_4_description: 'Aesthetic body',
-    plan_2_footer: 'Best for: looking sharp for an event, not long term',
-    plan_3_footer: 'Best for: advanced athletes who want little refinement',
-    plan_4_footer: 'Best for: complete aesthetic transformation',
+    plan_3_description: 'Get Lean & Toned',
+    plan_4_description: 'Build Your Dream Body',
+    plan_2_footer: 'Best for: dropping fat fast and looking sharp — results in 90 days',
+    plan_3_footer: 'Best for: building a lean, athletic body with visible muscle tone',
+    plan_4_footer: 'Best for: a full body transformation with the most complete coaching experience',
     subheadline:
-      'Fat loss · 90 days. Fat loss + muscle gain · 6 months. Aesthetic body · 12 months. WELCOME60 = 60% off',
+      'Fat loss · 90 days. Get Lean & Toned · 6 months. Build Your Dream Body · 12 months. WELCOME60 = 60% off',
+    top_label: 'CHOOSE YOUR GOAL',
+    headline: 'Pick your goal. We handle the rest.',
   }
   for (const [key, value] of Object.entries(labels)) {
     if (typeof obj[key] === 'string') obj[key] = value
@@ -62,32 +64,32 @@ function patchThemeSettings(obj) {
   if (typeof obj.col_1_label === 'string' && /reduce bloating|look sharper|debloat/i.test(obj.col_1_label)) {
     obj.col_1_label = 'Fat loss'
   }
-  if (obj.col_2_label === 'Fat loss') obj.col_2_label = 'Fat loss + muscle gain'
+  if (obj.col_2_label === 'Fat loss') obj.col_2_label = 'Get Lean & Toned'
   if (
     typeof obj.col_3_label === 'string' &&
     /fat loss \+ muscle/i.test(obj.col_3_label) &&
     !/gain/i.test(obj.col_3_label)
   ) {
-    obj.col_3_label = 'Aesthetic body'
+    obj.col_3_label = 'Build Your Dream Body'
   }
   if (typeof obj.headline === 'string' && /reduce bloating|look sharper|fat loss \+ muscle in 12/i.test(obj.headline)) {
-    obj.headline = 'Fat loss in 90 days. Fat loss + muscle gain in 6 months. Aesthetic body in 12.'
+    obj.headline = 'Fat loss in 90 days. Get Lean & Toned in 6 months. Build Your Dream Body in 12.'
   }
   if (
     typeof obj.subheadline === 'string' &&
     /reduce bloating|look sharper|complete transformation|debloat/i.test(obj.subheadline)
   ) {
     obj.subheadline =
-      'Fat loss · 90 days. Fat loss + muscle gain · 6 months. Aesthetic body · 12 months. WELCOME60 = 60% off'
+      'Fat loss · 90 days. Get Lean & Toned · 6 months. Build Your Dream Body · 12 months. WELCOME60 = 60% off'
   }
   if (typeof obj.plan_3_text === 'string' && obj.feature === 'Best for') {
-    obj.plan_3_text = 'Looking sharp for an event, not long term'
+    obj.plan_3_text = 'Dropping fat fast and looking sharp — results in 90 days'
   }
   if (typeof obj.plan_6_text === 'string' && obj.feature === 'Best for') {
-    obj.plan_6_text = 'Advanced athletes who want little refinement'
+    obj.plan_6_text = 'Building a lean, athletic body with visible muscle tone'
   }
   if (typeof obj.plan_12_text === 'string' && obj.feature === 'Best for') {
-    obj.plan_12_text = 'Complete aesthetic transformation'
+    obj.plan_12_text = 'A full body transformation with the most complete coaching experience'
   }
 
   for (const value of Object.values(obj)) patchThemeSettings(value)

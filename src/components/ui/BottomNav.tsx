@@ -19,6 +19,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
 
   return (
     <nav
+      className="client-chrome"
       style={{
         position: 'fixed',
         bottom: 0,
@@ -34,8 +35,6 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
-        maxWidth: layout.maxWidthWide,
-        margin: '0 auto',
       }}
       aria-label="Main navigation"
     >

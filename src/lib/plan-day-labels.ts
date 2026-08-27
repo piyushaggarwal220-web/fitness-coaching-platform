@@ -9,21 +9,50 @@ export const WEEKDAY_PROGRAM_DAY: Record<string, number> = {
   sunday: 7,
 }
 
+const WEEKDAY_BY_PROGRAM_DAY: Record<number, string> = {
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+  7: 'Sunday',
+}
+
 const WEEKDAY_ALT = 'Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday'
 
-/** Display label for a day token (`day 3`, `Monday`) → `Day 3` / `Day 1`. */
+function titleCaseWeekday(value: string): string {
+  return value.replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+export function weekdayNameForProgramDay(dayN: number): string | null {
+  return WEEKDAY_BY_PROGRAM_DAY[dayN] ?? null
+}
+
+/** `Day 1 (Monday)` … `Day 7 (Sunday)`. */
+export function formatProgramDayLabel(dayN: number, weekdayHint?: string | null): string {
+  const hint = weekdayHint?.trim()
+  if (hint) {
+    const named = WEEKDAY_PROGRAM_DAY[hint.toLowerCase()]
+    if (named) return `Day ${dayN} (${titleCaseWeekday(hint)})`
+  }
+  const weekday = weekdayNameForProgramDay(dayN)
+  return weekday ? `Day ${dayN} (${weekday})` : `Day ${dayN}`
+}
+
+/** Display label for a day token (`day 3`, `Monday`) → `Day 3 (Wednesday)` / `Day 1 (Monday)`. */
 export function toProgramDayLabel(dayToken: string): string {
   const normalized = dayToken.toLowerCase().replace(/\s+/g, ' ').trim()
   const dayN = normalized.match(/^day\s*(\d+)$/)
-  if (dayN) return `Day ${Number(dayN[1])}`
+  if (dayN) return formatProgramDayLabel(Number(dayN[1]))
   const n = WEEKDAY_PROGRAM_DAY[normalized]
-  if (n) return `Day ${n}`
+  if (n) return formatProgramDayLabel(n)
   return normalized.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 /**
  * Resolve tracker day identity from a header token.
- * Labels are always Day N. Weekday keys are kept when present so calendar "Today" matching still works.
+ * Labels always include the weekday so diet/workout pickers read "Day 1 (Monday)".
  */
 export function resolvePlanDayMeta(
   dayToken: string,
@@ -38,7 +67,7 @@ export function resolvePlanDayMeta(
 
   if (dayN) {
     const n = Number(dayN[1])
-    const label = `Day ${n}`
+    const label = formatProgramDayLabel(n, hint)
     if (hint && WEEKDAY_PROGRAM_DAY[hint]) {
       return { key: slug(hint), label }
     }
@@ -47,39 +76,53 @@ export function resolvePlanDayMeta(
 
   const n = WEEKDAY_PROGRAM_DAY[token]
   if (n) {
-    return { key: slug(token), label: `Day ${n}` }
+    return { key: slug(token), label: formatProgramDayLabel(n) }
   }
 
   return { key: slug(token), label: toProgramDayLabel(token) }
 }
 
 /**
- * Rewrite day headers in diet/workout prose for client display.
+ * Rewrite day headers in diet/workout/cardio prose for client display.
  * Does not change stored plan text — display-only.
- * Examples: `Monday` → `Day 1`, `Day 2 (Wednesday) — Legs` → `Day 2 — Legs`.
+ * Examples: `Monday` → `Day 1 (Monday)`, `Day 2` → `Day 2 (Tuesday)`.
  */
 export function formatPlanDayHeadersForClient(text: string): string {
   if (!text.trim()) return text
 
-  // Day N (Weekday) … → Day N …
+  const prefix = `^([\\t ]*(?:#{1,3}[\\t ]*)?(?:\\*{0,2})?)`
+
+  // Day N (Weekday) … → keep weekday, normalize spacing
   let out = text.replace(
     new RegExp(
-      `^([\\t ]*(?:#{1,3}[\\t ]*)?(?:\\*{0,2})?)Day\\s*(\\d+)\\s*[(\\[–—:\\-]+\\s*(?:${WEEKDAY_ALT})\\s*[)\\]]?(.*)$`,
+      `${prefix}Day\\s*(\\d+)\\s*[(\\[–—:\\-]+\\s*(${WEEKDAY_ALT})\\s*[)\\]]?(.*)$`,
       'gim'
     ),
-    (_match, prefix: string, n: string, rest: string) => `${prefix}Day ${Number(n)}${rest ?? ''}`
+    (_match, pfx: string, n: string, weekday: string, rest: string) =>
+      `${pfx}Day ${Number(n)} (${titleCaseWeekday(weekday)})${rest ?? ''}`
   )
 
-  // Pure weekday headers (optional markdown stars / focus suffix) → Day N …
+  // Pure weekday headers → Day N (Weekday)
   out = out.replace(
     new RegExp(
-      `^([\\t ]*(?:#{1,3}[\\t ]*)?(?:\\*{0,2})?)(${WEEKDAY_ALT})(?:\\*{0,2})?(\\s*[–—:\\-].*)?\\s*$`,
+      `${prefix}(${WEEKDAY_ALT})(?:\\*{0,2})?(\\s*[–—:\\-].*)?\\s*$`,
       'gim'
     ),
-    (match, prefix: string, weekday: string, rest = '') => {
+    (match, pfx: string, weekday: string, rest = '') => {
       const n = WEEKDAY_PROGRAM_DAY[weekday.toLowerCase()]
       if (!n) return match
-      return `${prefix}Day ${n}${rest}`
+      return `${pfx}Day ${n} (${weekday})${rest}`
+    }
+  )
+
+  // Bare Day N (no weekday yet) → Day N (Weekday) using Monday = Day 1
+  out = out.replace(
+    new RegExp(`${prefix}Day\\s*(\\d+)(?!\\s*\\()(.*)$`, 'gim'),
+    (match, pfx: string, n: string, rest: string) => {
+      const dayN = Number(n)
+      const weekday = weekdayNameForProgramDay(dayN)
+      if (!weekday) return match
+      return `${pfx}Day ${dayN} (${weekday})${rest ?? ''}`
     }
   )
 

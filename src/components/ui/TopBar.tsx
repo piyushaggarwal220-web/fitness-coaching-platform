@@ -32,6 +32,7 @@ export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) 
 
   return (
     <header
+      className="client-chrome"
       style={{
         position: 'fixed',
         top: 0,
@@ -51,8 +52,6 @@ export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) 
         paddingRight: spacing[3],
         paddingBottom: 0,
         paddingLeft: spacing[3],
-        maxWidth: layout.maxWidthWide,
-        margin: '0 auto',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2], minWidth: 0 }}>

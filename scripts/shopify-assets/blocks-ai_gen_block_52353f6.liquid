@@ -532,6 +532,9 @@
   .ai-fitness-gallery__cta-{{ ai_gen_id }}[data-lx-hero-cta-single] .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} {
     flex: none;
     width: 100%;
+    min-height: 58px;
+    padding: 14px 22px;
+    font-size: 16px;
   }
 
   .ai-fitness-gallery__cta-{{ ai_gen_id }}[data-lx-hero-cta-single] .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }},
@@ -582,7 +585,7 @@
     }
   }
 
-  /* lurvox-mobile-fitness-gallery-v2 */
+  /* lurvox-mobile-fitness-gallery-v3 — native horizontal swipe */
   .ai-fitness-gallery-{{ ai_gen_id }} {
     max-width: 100%;
     min-width: 0;
@@ -602,18 +605,21 @@
     max-width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    overflow: hidden !important;
-    scroll-snap-type: none;
-    scroll-behavior: auto;
-    /* Not a nested scroller — vertical swipe scrolls the page */
-    touch-action: pan-y;
+    overflow: auto hidden !important;
+    scroll-snap-type: x mandatory !important;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
+    cursor: grab;
   }
 
   .ai-fitness-gallery__slide-{{ ai_gen_id }},
   .ai-fitness-gallery__image-{{ ai_gen_id }} {
-    touch-action: pan-y;
+    touch-action: pan-x pan-y;
     -webkit-user-drag: none;
     user-select: none;
+    pointer-events: none;
   }
 
   .ai-fitness-gallery__slide-{{ ai_gen_id }} {
@@ -677,7 +683,7 @@
       flex-basis: auto;
     }
   }
-  /* /lurvox-mobile-fitness-gallery-v2 */
+  /* /lurvox-mobile-fitness-gallery-v3 */
 {% endstyle %}
 
 <!-- AUTO_SCROLL_MARKER_1784966547853 -->
@@ -764,11 +770,11 @@
 
   {%- comment -%} lurvox-hero-cta-v6-one-primary {%- endcomment -%}
   <div class="ai-fitness-gallery__cta-{{ ai_gen_id }}" data-lx-hero-cta data-lx-hero-cta-single>
-    <a class="ai-fitness-gallery__cta-primary-{{ ai_gen_id }}" href="/pages/find-your-plan">
-      Tap to know what plan you need
-      <small>Quick quiz · no payment</small>
+    <a class="ai-fitness-gallery__cta-primary-{{ ai_gen_id }}" href="/pages/choose-your-plan">
+      Find My Plan — Free Quiz
+      <small>2 minutes · no payment · instant recommendation</small>
     </a>
-    <a class="ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} lx-hero-cta-text" href="#plans">See plans &amp; prices</a>
+    <a class="ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} lx-hero-cta-text" href="#plans">See Plans &amp; Prices →</a>
   </div>
 </fitness-gallery-{{ ai_gen_id }}>
 
@@ -817,21 +823,45 @@
       box-sizing: border-box !important;
     }
 
-    .ai-fitness-gallery__cta-primary-{{ ai_gen_id }},
-    .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} {
+    .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} {
       flex: none !important;
       width: 100% !important;
       max-width: 100% !important;
-      min-height: 52px !important;
-      padding: 12px 16px !important;
-      font-size: 15px !important;
+      min-height: 58px !important;
+      padding: 14px 16px !important;
+      font-size: 16px !important;
       border-radius: 14px !important;
+    }
+
+    .ai-fitness-gallery__cta-{{ ai_gen_id }}[data-lx-hero-cta-single] .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }},
+    .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }}.lx-hero-cta-text {
+      flex: none !important;
+      width: auto !important;
+      max-width: 100% !important;
+      min-height: 0 !important;
+      padding: 4px 6px !important;
+      font-size: 0.92rem !important;
+      font-weight: 650 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      border: none !important;
     }
 
     .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} small {
       font-size: 12px !important;
-      white-space: nowrap;
+      white-space: normal;
     }
+  }
+</style>
+
+<style>
+  /* lx-carousel-swipe-v3-tail */
+  .ai-fitness-gallery__main-{{ ai_gen_id }} {
+    overflow: auto hidden !important;
+    scroll-snap-type: x mandatory !important;
+    touch-action: pan-x pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: contain;
   }
 </style>
 
@@ -856,7 +886,6 @@
 
         this.setupEventListeners();
         this.setupScrollSnap();
-        this.setupPageScrollFriendlySwipe();
         this.setupAutoplay();
       }
 
@@ -882,71 +911,6 @@
         this.galleryMain.addEventListener('scroll', () => {
           this.updateActiveThumb();
         }, { passive: true });
-      }
-
-      setupPageScrollFriendlySwipe() {
-        const main = this.galleryMain;
-        if (!main) return;
-
-        let startX = 0;
-        let startY = 0;
-        let startLeft = 0;
-        let axis = null;
-
-        const point = (e) => {
-          if (e.touches && e.touches[0]) return e.touches[0];
-          return e;
-        };
-
-        const onStart = (e) => {
-          const p = point(e);
-          startX = p.clientX;
-          startY = p.clientY;
-          startLeft = main.scrollLeft;
-          axis = null;
-          main.scrollTo({ left: startLeft, behavior: 'auto' });
-        };
-
-        const onMove = (e) => {
-          const p = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
-          if (!p) return;
-          const dx = p.clientX - startX;
-          const dy = p.clientY - startY;
-
-          if (axis == null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-            axis = Math.abs(dx) > Math.abs(dy) * 1.15 ? 'x' : 'y';
-          }
-
-          if (axis === 'x') {
-            if (e.cancelable) e.preventDefault();
-            main.scrollLeft = startLeft - dx;
-          }
-          // axis y: do nothing so the page can scroll
-        };
-
-        const onEnd = () => {
-          if (axis === 'x') {
-            const galleryRect = main.getBoundingClientRect();
-            const center = galleryRect.left + galleryRect.width / 2;
-            let nearest = this.currentIndex;
-            let best = Infinity;
-            this.slides.forEach((slide, i) => {
-              const r = slide.getBoundingClientRect();
-              const dist = Math.abs(r.left + r.width / 2 - center);
-              if (dist < best) {
-                best = dist;
-                nearest = i;
-              }
-            });
-            this.scrollToSlide(nearest);
-          }
-          axis = null;
-        };
-
-        main.addEventListener('touchstart', onStart, { passive: true });
-        main.addEventListener('touchmove', onMove, { passive: false });
-        main.addEventListener('touchend', onEnd, { passive: true });
-        main.addEventListener('touchcancel', onEnd, { passive: true });
       }
 
       setupScrollSnap() {

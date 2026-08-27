@@ -33,8 +33,8 @@ export function resolvePlanFromPath(pathSlug: string | undefined): CoachingPlan 
 /** Customer-facing product names. Duration is secondary. */
 export const PLAN_PRODUCT_NAME: Record<LongCoachingPlanSlug, string> = {
   '3_months': 'Fat loss',
-  '6_months': 'Get Lean & Strong',
-  '12_months': 'Build Your Dream Physique',
+  '6_months': 'Fat loss + muscle gain',
+  '12_months': 'Athletic body',
 }
 
 export const PLAN_PAGE_COPY: Record<
@@ -53,8 +53,8 @@ export const PLAN_PAGE_COPY: Record<
     goalName: PLAN_PRODUCT_NAME['3_months'],
     durationLabel: '90 days',
     promise:
-      'This is the Fat loss plan. Ninety days to drop fat fast and look sharp. If you want Get Lean & Strong, that is 6 months. If you want to Build Your Dream Physique, that is 12 months, with a weekly coach phone call included.',
-    bestFor: 'dropping fat fast and looking sharp — results in 90 days',
+      'This is the Fat loss plan. Ninety days for looking sharp on a special event, not long term results. Fat loss + muscle gain is 6 months. Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.',
+    bestFor: 'looking sharp on a special event, not long term results',
     goals: [
       'Fat loss in 90 days',
       'A clear diet and workout plan',
@@ -62,28 +62,28 @@ export const PLAN_PAGE_COPY: Record<
     ],
   },
   '6_months': {
-    eyebrow: 'Get Lean & Strong',
+    eyebrow: 'Fat loss + muscle gain',
     goalName: PLAN_PRODUCT_NAME['6_months'],
     durationLabel: '6 months',
     promise:
-      'Get Lean & Strong. Six months to lose fat while building real strength and a lean, muscular look. To Build Your Dream Physique, that is 12 months, with a weekly coach phone call included.',
-    bestFor: 'losing fat while building real strength and a lean, muscular look',
+      'Fat loss + muscle gain. Six months to lose fat while building muscle. Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.',
+    bestFor: 'losing fat while building muscle',
     goals: [
-      'Get Lean & Strong',
+      'Fat loss + muscle gain',
       'Clothes fit smaller and tighter',
       'Weekly plan updates',
     ],
   },
   '12_months': {
-    eyebrow: 'Build Your Dream Physique',
+    eyebrow: 'Athletic body',
     goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
     promise:
-      'Build Your Dream Physique is 12 months, with a weekly coach phone call included. A full year so fat loss and muscle can both show as a finished look. Lowest monthly rate.',
-    bestFor: 'building the complete physique you\'ve always wanted — diet, muscle, definition, and long-term results',
+      'Athletic body is 12 months of fat loss, muscle gain, and stamina, with a weekly coach phone call included. A full year so the look and the engine both show. Lowest monthly rate.',
+    bestFor: 'building an athletic body — fat loss, muscle gain, and stamina',
     goals: [
-      'Build Your Dream Physique',
-      'Lowest monthly rate with WELCOME60',
+      'Athletic body',
+      'Fat loss, muscle gain, and stamina',
       'Weekly coach phone call included',
     ],
   },
@@ -117,9 +117,9 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with debloat',
     label: 'Best for',
     cells: {
-      '3_months': 'Dropping fat fast and looking sharp — results in 90 days',
-      '6_months': 'Losing fat while building real strength and a lean, muscular look',
-      '12_months': 'Building the complete physique you\'ve always wanted — diet, muscle, definition, and long-term results',
+      '3_months': 'Looking sharp on a special event, not long term results',
+      '6_months': 'Losing fat while building muscle',
+      '12_months': 'Building an athletic body — fat loss, muscle gain, and stamina',
     },
   },
   {
@@ -140,12 +140,12 @@ export const PLAN_COMPARE_ROWS: {
     cells: { ...FROM_6 },
   },
   {
-    group: 'Everything with Build Your Dream Physique',
+    group: 'Everything with Athletic body',
     label: 'Weekly coach phone call',
     cells: { ...FROM_12 },
   },
   {
-    group: 'Everything with Build Your Dream Physique',
+    group: 'Everything with Athletic body',
     label: 'Lowest monthly rate',
     hint: 'Full year accountability.',
     cells: { ...FROM_12 },

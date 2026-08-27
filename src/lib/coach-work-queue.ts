@@ -4,6 +4,7 @@ import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
 import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
 import { listPendingLeagueCertificateWinners } from '@/lib/league/service'
+import { buildLeagueCertificateChatGptPrompt } from '@/lib/league/certificate-prompt'
 import { LEAGUE_TIER_LABELS } from '@/lib/league/scoring'
 
 export type WorkQueueTaskType =
@@ -29,6 +30,8 @@ export type WorkQueueTask = {
   createdAt: string
   /** Coach-facing next steps when a task needs recovery (e.g. failed AI generation). */
   coachNextSteps?: string[]
+  /** Paste-ready ChatGPT prompt (virtual certificate). */
+  copyPrompt?: string
   /** Latest purchased plan slug, used to colour the card by commitment length. */
   planSlug?: string | null
   /** Distinguishes paying clients from enrollment-code seats. */
@@ -395,8 +398,15 @@ export async function getCoachWorkQueue(
         createdAt: `${winner.endsOn}T23:59:59.000Z`,
         coachNextSteps: [
           `Issue the virtual certificate for finishing top 10% of ${LEAGUE_TIER_LABELS[winner.tier]} in ${monthLabel}.`,
-          'Mark this complete after the client has the certificate.',
+          'Copy the ChatGPT prompt, generate the certificate image, send it to the client, then mark this complete.',
         ],
+        copyPrompt: buildLeagueCertificateChatGptPrompt({
+          displayName: name,
+          tier: winner.tier,
+          rank: winner.rank,
+          points: winner.points,
+          monthLabel,
+        }),
       })
     }
   } catch (error) {

@@ -42,9 +42,9 @@ async function gql(query, variables) {
 const index = JSON.parse(await get('templates/index.json'))
 const s = index.sections.home_blocks_v2.blocks.ai_gen_block_361650c_qqYKXh.settings
 
-s.headline = 'Pick your goal. Duration comes second.'
+s.headline = 'Pick your goal. We handle the rest.'
 s.subheadline =
-  'Fat loss · 90 days. Fat loss + muscle · 6 months. Aesthetic body · 12 months (recommended). WELCOME60 = 60% off'
+  'Fat loss · 90 days. Fat loss + muscle · 6 months. Build Your Dream Body · 12 months (recommended). WELCOME60 = 60% off'
 
 s.plan_2_label = 'Fat loss'
 s.plan_2_badge = 'START HERE'
@@ -62,7 +62,7 @@ s.plan_3_footer = 'Best for: recomp past 90 days'
 s.plan_3_monthly = '≈ ₹283/month'
 s.plan_3_price = '1699'
 
-s.plan_4_label = 'Aesthetic body'
+s.plan_4_label = 'Build Your Dream Body'
 s.plan_4_badge = 'RECOMMENDED'
 s.plan_4_duration = '12 MONTHS'
 s.plan_4_description = 'Finished physique + lifestyle. Lowest ₹/month + weekly coach call.'

@@ -1,7 +1,7 @@
 {% comment %}
   LURVOX — Find your plan (tap quiz)
   Full intake quiz → recommend a goal-based plan page (not checkout)
-  cache-bust 1787744000001
+  cache-bust 1787768000004
 {% endcomment %}
 
 {%- liquid
@@ -19,6 +19,7 @@
   data-talk-url="{{ talk_url }}"
   data-plans-url="{{ plans_url }}"
 >
+  <!-- lx-pf-js-v4 -->
   <div class="lx-pf__bg" aria-hidden="true"></div>
 
   <div class="lx-pf__inner page-width">
@@ -26,7 +27,7 @@
       <p class="lx-pf__eyebrow">{{ section.settings.eyebrow | default: 'CHOOSE YOUR GOAL' }}</p>
       <h1 class="lx-pf__title">{{ section.settings.heading | default: 'Pick your goal. We handle the rest.' }}</h1>
       <p class="lx-pf__subtitle">
-        {{ section.settings.subheading | default: 'Fat loss, Get Lean & Strong, or Build Your Dream Physique. Answer honestly — we send you to that plan page. No payment here.' }}
+        {{ section.settings.subheading | default: 'Fat loss, Fat loss + muscle gain, or Athletic body. Answer honestly — we send you to that plan page. No payment here.' }}
       </p>
     </header>
 
@@ -60,7 +61,7 @@
           <span data-pf-checkout-label>See this plan</span>
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden>
-          Prefer Build Your Dream Physique? 12 months · ₹292/mo
+          Prefer Athletic body? 12 months · ₹3,499
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="{{ talk_url }}">Talk to a coach</a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="/">Back to home</a>
@@ -442,9 +443,9 @@
         key: 'goal',
         q: 'What is your main goal right now?',
         options: [
-          { id: 'event', label: 'Fat loss — drop fat fast and look sharp in 90 days', score: -4, goal: 'Fat loss' },
-          { id: 'refine', label: 'Get Lean & Strong — lose fat while building real strength and a lean, muscular look', score: 1, goal: 'Get Lean & Strong' },
-          { id: 'transform', label: 'Build Your Dream Physique — complete physique with weekly coach calls', score: 5, goal: 'Build Your Dream Physique' }
+          { id: 'event', label: 'Fat loss — looking sharp on a special event, not long term results', score: -4, goal: 'Fat loss' },
+          { id: 'refine', label: 'Fat loss + muscle gain — lose fat while building muscle over 6 months', score: 1, goal: 'Fat loss + muscle gain' },
+          { id: 'transform', label: 'Athletic body — fat loss, muscle gain, and stamina over 12 months', score: 5, goal: 'Athletic body' }
         ]
       },
       {
@@ -570,9 +571,18 @@
         key: 'timeline',
         q: 'When do you want to see a real change?',
         options: [
-          { id: 'fast', label: 'In about 90 days. I have a date', score: -3 },
-          { id: 'steady', label: 'In about 6 months', score: 1 },
-          { id: 'patient', label: 'I want a complete change. No rush', score: 4 }
+          { id: 'fast', label: 'In about 90 days. Fat loss is the priority', score: -3 },
+          { id: 'steady', label: 'In about 6 months. Fat loss and muscle together', score: 1 },
+          { id: 'patient', label: 'I want an athletic body. Fat loss, muscle, and stamina', score: 4 }
+        ]
+      },
+      {
+        key: 'stamina',
+        q: 'Do you also want to build stamina?',
+        options: [
+          { id: 'looks', label: 'Mostly looks. Fat loss is enough', score: -1 },
+          { id: 'energy', label: 'I want more energy in daily life', score: 1 },
+          { id: 'athlete', label: 'Yes. Fat loss, muscle, and real stamina', score: 5 }
         ]
       },
       {
@@ -601,10 +611,9 @@
         path: '3-months',
         label: 'Fat loss',
         price: '₹1,299',
-        monthly: '₹433/mo',
         per: '90 days',
         bullets: [
-          'Best for dropping fat fast and looking sharp — results in 90 days',
+          'Best for looking sharp on a special event, not long term results',
           '2 weekly check-ins',
           'Plan updates every 14 days'
         ]
@@ -612,12 +621,11 @@
       '6_months': {
         slug: '6_months',
         path: '6-months',
-        label: 'Get Lean & Strong',
+        label: 'Fat loss + muscle gain',
         price: '₹2,099',
-        monthly: '₹350/mo',
         per: '6 months',
         bullets: [
-          'Best for: losing fat while building real strength and a lean, muscular look',
+          'Best for: losing fat while building muscle',
           '2 weekly check-ins',
           'Weekly plan updates'
         ]
@@ -625,14 +633,13 @@
       '12_months': {
         slug: '12_months',
         path: '12-months',
-        label: 'Build Your Dream Physique',
+        label: 'Athletic body',
         price: '₹3,499',
-        monthly: '₹292/mo',
         per: '12 months',
         bullets: [
-          'Best for: building the complete physique you've always wanted — diet, muscle, definition, and long-term results',
+          'Best for: fat loss, muscle gain, and stamina',
           'Weekly coach phone call included',
-          'Lowest monthly rate with WELCOME60'
+          'One-time payment with WELCOME60'
         ]
       }
     };
@@ -640,19 +647,19 @@
     // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
     var contrast = {
       '3_months': [
-        { kind: 'pick', text: 'Best for dropping fat fast and looking sharp — results in 90 days.' },
-        { kind: 'miss', text: '6 months is for losing fat while building real strength and a lean, muscular look.' },
-        { kind: 'miss', text: 'Build Your Dream Physique is 12 months, with a weekly coach phone call included.' }
+        { kind: 'pick', text: 'Best for looking sharp on a special event, not long term results.' },
+        { kind: 'miss', text: '6 months is Fat loss + muscle gain.' },
+        { kind: 'miss', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.' }
       ],
       '6_months': [
-        { kind: 'pick', text: 'Best for: losing fat while building real strength and a lean, muscular look.' },
-        { kind: 'miss', text: '3 months is for dropping fat fast and looking sharp in 90 days.' },
-        { kind: 'miss', text: 'Build Your Dream Physique is 12 months, with a weekly coach phone call included.' }
+        { kind: 'pick', text: 'Best for: losing fat while building muscle.' },
+        { kind: 'miss', text: '3 months is for looking sharp on a special event, not long term results.' },
+        { kind: 'miss', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Build Your Dream Physique is 12 months, with a weekly coach phone call included.' },
-        { kind: 'miss', text: '3 months is for dropping fat fast and looking sharp in 90 days.' },
-        { kind: 'miss', text: '6 months is for losing fat while building real strength and a lean, muscular look.' }
+        { kind: 'pick', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.' },
+        { kind: 'miss', text: '3 months is for looking sharp on a special event, not long term results.' },
+        { kind: 'miss', text: '6 months is Fat loss + muscle gain.' }
       ]
     };
 
@@ -689,22 +696,23 @@
       });
 
       var calls = answers.calls && answers.calls.id;
+      var stamina = answers.stamina && answers.stamina.id;
       var planKey = '12_months';
-      if (calls === 'yes') planKey = '12_months';
+      if (calls === 'yes' || stamina === 'athlete') planKey = '12_months';
       else if (score <= 1) planKey = '3_months';
       else if (score <= 8) planKey = '6_months';
 
       var why = '';
       if (planKey === '3_months') {
-        why = 'This is the short plan: dropping fat fast and looking sharp — results in 90 days.';
+        why = 'This is the short plan: looking sharp on a special event, not long term results.';
       } else if (planKey === '6_months') {
-        why = 'This is for losing fat while building real strength and a lean, muscular look. Six months of Get Lean & Strong.';
+        why = 'This is Fat loss + muscle gain. Six months to lose fat while building muscle.';
       } else {
         why =
           'Your goal is ' +
           goalLabel +
-          '. Build Your Dream Physique is 12 months, with a weekly coach phone call included' +
-          '. Lowest monthly rate at ₹292/mo with WELCOME60.';
+          '. Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included' +
+          '. One-time payment with WELCOME60.';
       }
 
       return { planKey: planKey, why: why, goalLabel: goalLabel };
@@ -722,7 +730,7 @@
       if (headerEl) headerEl.hidden = true;
       resultEl.hidden = false;
       titleEl.textContent = plan.label;
-      priceEl.textContent = plan.price + ' · ' + plan.monthly + ' · ' + plan.per;
+      priceEl.textContent = plan.price + ' · ' + plan.per;
       whyEl.textContent = rec.why;
       bulletsEl.innerHTML = '';
       (plan.bullets || []).forEach(function (line) {
@@ -743,7 +751,7 @@
       }
       checkoutEl.href = url;
       checkoutLabelEl.textContent =
-        rec.planKey === '12_months' ? 'See Build Your Dream Physique' : 'See this plan';
+        rec.planKey === '12_months' ? 'See Athletic body' : 'See this plan';
       if (upgradeEl) {
         upgradeEl.hidden = rec.planKey === '12_months';
         upgradeEl.href = planBase + '/12-months';
@@ -834,7 +842,7 @@
       "type": "textarea",
       "id": "subheading",
       "label": "Subheading",
-      "default": "Fat loss, Get Lean & Strong, or Build Your Dream Physique. Answer honestly — we send you to that plan page. No payment here."
+      "default": "Fat loss, Fat loss + muscle gain, or Athletic body. Answer honestly — we send you to that plan page. No payment here."
     },
     {
       "type": "text",

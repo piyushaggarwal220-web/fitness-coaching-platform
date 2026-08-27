@@ -31,6 +31,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, skipped: true, status: row.status })
   }
 
+  // Exclusive claim inside processPlanChangeRequest — duplicate POSTs from
+  // submit+refresh must not each insert an AI draft.
   await processPlanChangeRequest(requestId)
   return NextResponse.json({ ok: true })
 }

@@ -5,6 +5,7 @@ import {
   isCrazyLeagueEligible,
   nextEligibleLeagueDivision,
 } from '@/lib/league/eligibility'
+import { leagueRoomStatus, type LeagueRoomStatus } from '@/lib/league/room'
 import { getActiveSubscription } from '@/lib/subscription'
 import {
   assignDivisionStandings,
@@ -124,6 +125,27 @@ export async function promoteClientLeagueDivision(clientId: string): Promise<{
 
   if (updateError) throw new Error(updateError.message)
   return { from, to: next, blockedByCrazyGate: false }
+}
+
+/** Members with a coach who have opted into Consistency League. */
+export async function countLeagueOptIns(
+  admin: ReturnType<typeof createAdminClient>
+): Promise<number> {
+  const { count, error } = await admin
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('league_opt_in', true)
+    .not('coach_id', 'is', null)
+
+  if (error) throw new Error(error.message)
+  return count ?? 0
+}
+
+async function loadLeagueRoomStatus(
+  admin: ReturnType<typeof createAdminClient>
+): Promise<LeagueRoomStatus> {
+  const optInCount = await countLeagueOptIns(admin)
+  return leagueRoomStatus(optInCount)
 }
 
 async function ensureSeason(
@@ -267,15 +289,8 @@ export async function listPendingLeagueCertificateWinners(
   if (seasonsError) throw new Error(seasonsError.message)
 
   const seasons = closedSeasons ?? []
-  if (!seasons.some((row) => row.season_key === previous.seasonKey)) {
-    const ensured = await ensureSeason(admin, previous)
-    seasons.unshift({
-      id: ensured.id,
-      season_key: ensured.seasonKey,
-      starts_on: ensured.startsOn,
-      ends_on: ensured.endsOn,
-    })
-  }
+  // Only issue certificates for rooms that actually ran. Do not create a
+  // closed season just to score a month that never opened.
 
   const winners: LeagueCertificateWinner[] = []
   const seen = new Set<string>()
@@ -368,8 +383,14 @@ export async function recomputeCoachLeagueStandings(
   startsOn: string
   endsOn: string
   standings: LeagueStandingRow[]
+  room: LeagueRoomStatus
 }> {
   const admin = createAdminClient()
+  const room = await loadLeagueRoomStatus(admin)
+  if (!room.roomOpen) {
+    return { ...seasonWindow, standings: [], room }
+  }
+
   const seasonRow = await ensureSeason(admin, seasonWindow)
   const season = {
     seasonKey: seasonRow.seasonKey,
@@ -393,7 +414,7 @@ export async function recomputeCoachLeagueStandings(
       .eq('season_id', seasonRow.id)
       .eq('coach_id', coachId)
     if (deleteError) throw new Error(deleteError.message)
-    return { ...season, standings: [] }
+    return { ...season, standings: [], room }
   }
 
   const clientIds = roster.map((c) => c.id as string)
@@ -526,7 +547,7 @@ export async function recomputeCoachLeagueStandings(
     if (error) throw new Error(error.message)
   }
 
-  return { ...season, standings }
+  return { ...season, standings, room }
 }
 
 export async function getLeagueSnapshotForClient(
@@ -546,9 +567,13 @@ export async function getLeagueSnapshotForClient(
   planSlug: string | null
   crazyGateBlocked: boolean
   worldLeaderboardStatus: 'coming_soon'
+  roomOpen: boolean
+  optInCount: number
+  optInTarget: number
 }> {
   const season = getCurrentLeagueSeason()
   const admin = createAdminClient()
+  const room = await loadLeagueRoomStatus(admin)
   const eligibilityMap = await loadCrazyEligibilityByClientId(admin, [clientId])
   const crazyEligible = eligibilityMap.get(clientId) ?? false
 
@@ -573,6 +598,11 @@ export async function getLeagueSnapshotForClient(
     ? await enforceCrazyDivisionEligibility(admin, clientId, rawDivision, crazyEligible)
     : rawDivision
   const crazyGateBlocked = !crazyEligible
+  const roomFields = {
+    roomOpen: room.roomOpen,
+    optInCount: room.optInCount,
+    optInTarget: room.optInTarget,
+  }
 
   if (!profile?.coach_id) {
     return {
@@ -589,17 +619,22 @@ export async function getLeagueSnapshotForClient(
       planSlug,
       crazyGateBlocked,
       worldLeaderboardStatus: 'coming_soon' as const,
+      ...roomFields,
     }
   }
 
-  const recomputed = await recomputeCoachLeagueStandings(profile.coach_id as string)
-  const divisionStandings = recomputed.standings
-    .filter((row) => row.tier === myDivision)
-    .map((row, index) => ({
-      ...row,
-      rank: index + 1,
-      isSelf: row.clientId === clientId,
-    }))
+  const recomputed = room.roomOpen
+    ? await recomputeCoachLeagueStandings(profile.coach_id as string)
+    : { ...season, standings: [] as LeagueStandingRow[], room }
+  const divisionStandings = room.roomOpen
+    ? recomputed.standings
+        .filter((row) => row.tier === myDivision)
+        .map((row, index) => ({
+          ...row,
+          rank: index + 1,
+          isSelf: row.clientId === clientId,
+        }))
+    : []
 
   let me =
     divisionStandings.find((s) => s.clientId === clientId) ??
@@ -621,9 +656,9 @@ export async function getLeagueSnapshotForClient(
   const personal = scoreClientForSeason(personalInput, season)
   const missions = getLeagueMissions(personalInput, season)
 
-  if (!profile.league_opt_in) {
+  if (!profile.league_opt_in || !room.roomOpen) {
     return {
-      optIn: false,
+      optIn: Boolean(profile.league_opt_in),
       seasonKey: recomputed.seasonKey,
       startsOn: recomputed.startsOn,
       endsOn: recomputed.endsOn,
@@ -646,6 +681,7 @@ export async function getLeagueSnapshotForClient(
       planSlug,
       crazyGateBlocked,
       worldLeaderboardStatus: 'coming_soon' as const,
+      ...roomFields,
     }
   }
 
@@ -671,5 +707,6 @@ export async function getLeagueSnapshotForClient(
     planSlug,
     crazyGateBlocked,
     worldLeaderboardStatus: 'coming_soon' as const,
+    ...roomFields,
   }
 }

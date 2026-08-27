@@ -29,6 +29,20 @@ const SCOPE_OPTIONS: { value: Scope; label: string }[] = [
   { value: 'both', label: 'Diet + workout' },
 ]
 
+const inFlightProcessIds = new Set<string>()
+
+function startPlanChangeProcess(requestId: string) {
+  if (!requestId || inFlightProcessIds.has(requestId)) return
+  inFlightProcessIds.add(requestId)
+  void fetch('/api/plan-change-requests/process', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestId }),
+  }).catch(() => {
+    inFlightProcessIds.delete(requestId)
+  })
+}
+
 export function PlanChangeRequestPanel() {
   const [quota, setQuota] = useState<QuotaState | null>(null)
   const [openRequest, setOpenRequest] = useState<OpenRequest>(null)
@@ -54,11 +68,7 @@ export function PlanChangeRequestPanel() {
       setQuota(data.quota ?? null)
       setOpenRequest(data.openRequest ?? null)
       if (data.openRequest?.status === 'generating') {
-        void fetch('/api/plan-change-requests/process', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requestId: data.openRequest.id }),
-        })
+        startPlanChangeProcess(data.openRequest.id)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load change limits')
@@ -93,11 +103,7 @@ export function PlanChangeRequestPanel() {
       }>(res)
       if (!res.ok) throw new Error(data.error ?? 'Could not lock in changes')
       if (data.request?.id) {
-        void fetch('/api/plan-change-requests/process', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requestId: data.request.id }),
-        })
+        startPlanChangeProcess(data.request.id)
       }
       setSuccess(
         data.message ??

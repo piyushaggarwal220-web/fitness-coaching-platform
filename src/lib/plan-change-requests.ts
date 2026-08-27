@@ -6,8 +6,14 @@ import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
   stripClientWeekHandoffLanguage,
 } from '@/lib/ai/plan-prose-guards'
+import {
+  canClaimPlanChangeGeneration,
+  notesBelongToPlanChangeRequest,
+  planChangeRequestMarker,
+  stillOwnsPlanChangeClaim,
+} from '@/lib/plan-change-policy'
 import { encodePlanMeta } from '@/lib/plan-metadata'
-import { persistAiPlanDraft } from '@/lib/plans'
+import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 
@@ -172,7 +178,7 @@ export async function createLockedPlanChangeRequest(input: {
       scope: input.scope,
       status: 'generating',
       locked_at: now,
-      generation_started_at: now,
+      generation_started_at: null,
       created_at: now,
       updated_at: now,
     })
@@ -194,24 +200,115 @@ export async function createLockedPlanChangeRequest(input: {
   return { ok: true, request: data as PlanChangeRequestRow }
 }
 
-/** Background processor: in-place edit draft from client lock-in, then queue for coach. */
-export async function processPlanChangeRequest(requestId: string): Promise<void> {
-  const admin = createAdminClient()
-  const { data: row, error } = await admin
+type AdminClient = ReturnType<typeof createAdminClient>
+
+async function findDraftForPlanChangeRequest(
+  admin: AdminClient,
+  clientId: string,
+  requestId: string
+): Promise<{ id: string } | null> {
+  const { data } = await admin
+    .from('plans')
+    .select('id, coach_notes')
+    .eq('client_id', clientId)
+    .eq('active', false)
+    .is('delivered_at', null)
+    .ilike('title', 'AI Draft%')
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  const match = (data ?? []).find((row) =>
+    notesBelongToPlanChangeRequest(row.coach_notes, requestId)
+  )
+  return match ? { id: match.id } : null
+}
+
+async function claimPlanChangeRequest(
+  admin: AdminClient,
+  requestId: string
+): Promise<PlanChangeRequestRow | null> {
+  const now = new Date().toISOString()
+  const { data: unclaimed } = await admin
+    .from('plan_change_requests')
+    .update({ generation_started_at: now, updated_at: now })
+    .eq('id', requestId)
+    .eq('status', 'generating')
+    .is('draft_plan_id', null)
+    .is('generation_started_at', null)
+    .select('*')
+    .maybeSingle()
+
+  if (unclaimed) return unclaimed as PlanChangeRequestRow
+
+  const { data: current } = await admin
     .from('plan_change_requests')
     .select('*')
     .eq('id', requestId)
     .maybeSingle()
 
-  if (error || !row) {
-    console.error('[plan-change] missing request', requestId, error?.message)
-    return
+  const row = current as PlanChangeRequestRow | null
+  if (
+    !row ||
+    !canClaimPlanChangeGeneration({
+      status: row.status,
+      generationStartedAt: row.generation_started_at,
+      draftPlanId: row.draft_plan_id,
+    })
+  ) {
+    return null
   }
 
-  const request = row as PlanChangeRequestRow
-  if (request.status !== 'generating') return
+  const { data: reclaimed } = await admin
+    .from('plan_change_requests')
+    .update({ generation_started_at: now, updated_at: now })
+    .eq('id', requestId)
+    .eq('status', 'generating')
+    .is('draft_plan_id', null)
+    .eq('generation_started_at', row.generation_started_at)
+    .select('*')
+    .maybeSingle()
+
+  return (reclaimed as PlanChangeRequestRow | null) ?? null
+}
+
+async function markPlanChangeDraftReady(
+  admin: AdminClient,
+  requestId: string,
+  draftId: string
+): Promise<void> {
+  const now = new Date().toISOString()
+  await admin
+    .from('plan_change_requests')
+    .update({
+      status: 'draft_ready',
+      draft_plan_id: draftId,
+      draft_ready_at: now,
+      updated_at: now,
+      error_message: null,
+    })
+    .eq('id', requestId)
+    .eq('status', 'generating')
+}
+
+/** Background processor: in-place edit draft from client lock-in, then queue for coach. */
+export async function processPlanChangeRequest(requestId: string): Promise<void> {
+  const admin = createAdminClient()
+  const request = await claimPlanChangeRequest(admin, requestId)
+  if (!request) return
+
+  const claimedStartedAt = request.generation_started_at
+  if (!claimedStartedAt) return
 
   try {
+    const existingDraft = await findDraftForPlanChangeRequest(
+      admin,
+      request.client_id,
+      request.id
+    )
+    if (existingDraft) {
+      await markPlanChangeDraftReady(admin, request.id, existingDraft.id)
+      return
+    }
     const [{ data: profile }, { data: activePlan }, { data: latestCheckin }] = await Promise.all([
       admin.from('profiles').select('*').eq('id', request.client_id).single(),
       request.active_plan_id
@@ -343,37 +440,67 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
       },
       [
         'Client requested edits (locked in). Review carefully before delivering.',
-        `Request id: ${request.id}`,
+        planChangeRequestMarker(request.id),
         `Scope: ${request.scope}`,
         `Request:\n${request.request_text}`,
       ].join('\n\n')
     )
 
-    const { data: draft, error: draftError } = await persistAiPlanDraft(admin, {
-      clientId: request.client_id,
-      coachId: request.coach_id,
-      form: { ...merged, coach_notes: metaNotes ?? '' },
-      title: 'AI Draft · Client request',
-    })
-
-    if (draftError || !draft) throw new Error(draftError ?? 'Failed to save draft')
-
-    const now = new Date().toISOString()
-    await admin
+    const { data: lease } = await admin
       .from('plan_change_requests')
-      .update({
-        status: 'draft_ready',
-        draft_plan_id: draft.id,
-        draft_ready_at: now,
-        updated_at: now,
-        error_message: null,
-      })
+      .select('status, generation_started_at, draft_plan_id')
       .eq('id', request.id)
-      // Don't reopen a request the coach already completed/cancelled from the queue.
-      .eq('status', 'generating')
+      .maybeSingle()
+    if (
+      !lease ||
+      !stillOwnsPlanChangeClaim(
+        {
+          status: lease.status,
+          generation_started_at: lease.generation_started_at,
+        },
+        claimedStartedAt
+      )
+    ) {
+      return
+    }
+
+    const reuseDraft =
+      (lease.draft_plan_id ? { id: lease.draft_plan_id } : null) ??
+      (await findDraftForPlanChangeRequest(admin, request.client_id, request.id))
+
+    const form = { ...merged, coach_notes: metaNotes ?? '' }
+    const saved = reuseDraft
+      ? await updateAiPlanDraft(admin, reuseDraft.id, form, 'AI Draft · Client request')
+      : await persistAiPlanDraft(admin, {
+          clientId: request.client_id,
+          coachId: request.coach_id,
+          form,
+          title: 'AI Draft · Client request',
+        })
+
+    if (saved.error || !saved.data) throw new Error(saved.error ?? 'Failed to save draft')
+
+    await markPlanChangeDraftReady(admin, request.id, saved.data.id)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Generation failed'
     console.error('[plan-change] process failed', requestId, message)
+    const { data: lease } = await admin
+      .from('plan_change_requests')
+      .select('status, generation_started_at')
+      .eq('id', requestId)
+      .maybeSingle()
+    if (
+      !lease ||
+      !stillOwnsPlanChangeClaim(
+        {
+          status: lease.status,
+          generation_started_at: lease.generation_started_at,
+        },
+        claimedStartedAt
+      )
+    ) {
+      return
+    }
     await admin
       .from('plan_change_requests')
       .update({
@@ -384,5 +511,6 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
       })
       .eq('id', requestId)
       .eq('status', 'generating')
+      .eq('generation_started_at', claimedStartedAt)
   }
 }

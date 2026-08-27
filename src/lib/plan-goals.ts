@@ -126,6 +126,8 @@ export const PLAN_GOAL_CATALOG: readonly PlanGoalOption[] = [
   { value: 'complete_fat_loss_transformation', label: 'Complete Fat Loss Transformation', tier: '12_months', bodyTypes: ['lose_fat_fast'] },
   { value: 'stay_lean_long_term', label: 'Stay Lean Long-Term', tier: '12_months', bodyTypes: ['lose_fat_fast'] },
   { value: 'big_body_transformation', label: 'Big Body Transformation', tier: '12_months', bodyTypes: ['lose_fat_fast'] },
+  { value: 'build_stamina', label: 'Build Stamina', tier: '12_months', bodyTypes: ['lose_fat_fast', 'skinny_fat', 'weight_gain'] },
+  { value: 'athletic_conditioning', label: 'Athletic Conditioning', tier: '12_months', bodyTypes: ['lose_fat_fast', 'skinny_fat'] },
 
   // ── Optional physique · women ────────────────────────────────────────
   { value: 'tone_and_firm', label: 'Tone & Firm', tier: '3_months', section: 'physique', genders: F },
@@ -158,8 +160,8 @@ export const PLAN_GOAL_TIER_META: Record<
   { title: string; shortLabel: string; accent: string }
 > = {
   '3_months': { title: 'Fat loss', shortLabel: '90 days', accent: '#38bdf8' },
-  '6_months': { title: 'Get Lean & Strong', shortLabel: '6 months', accent: '#a78bfa' },
-  '12_months': { title: 'Build Your Dream Physique', shortLabel: '12 months', accent: '#fbbf24' },
+  '6_months': { title: 'Fat loss + muscle gain', shortLabel: '6 months', accent: '#a78bfa' },
+  '12_months': { title: 'Athletic body', shortLabel: '12 months', accent: '#fbbf24' },
 }
 
 /** Flat catalog of every plan-gated goal. */
@@ -226,6 +228,8 @@ export const PLAN_GOAL_COACHING_CATEGORY: Record<string, string> = {
   complete_fat_loss_transformation: 'fat_loss',
   stay_lean_long_term: 'fat_loss',
   big_body_transformation: 'fat_loss',
+  build_stamina: 'athletic_performance',
+  athletic_conditioning: 'athletic_performance',
   tone_and_firm: 'recomposition',
   slim_waist: 'fat_loss',
   lifted_glutes: 'muscle_gain',

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { WearableConnect } from '@/components/tracker/WearableConnect'
 import { Button } from '@/components/ui/Button'
 import { ProgressBar, trackerInputStyle } from '@/components/tracker/TrackerPrimitives'
 import { colors, spacing } from '@/lib/design-tokens'
@@ -64,9 +65,14 @@ export function StepsModule({ steps, completion, saving, onPatch }: Props) {
         />
       )}
 
-      <p style={{ marginTop: spacing[4], fontSize: 12, color: colors.textMuted, textAlign: 'center' }}>
-        Wearable sync coming soon
-      </p>
+      <WearableConnect
+        variant="steps"
+        completion={completion}
+        saving={saving}
+        onPatch={onPatch}
+        stepsId={steps.id}
+        stepsTarget={target}
+      />
     </div>
   )
 }

@@ -33,6 +33,7 @@ import {
   type LeagueTier,
 } from '@/lib/league/scoring'
 import { CRAZY_GATE_COPY, nextEligibleLeagueDivision } from '@/lib/league/eligibility'
+import { LEAGUE_ROOM_MIN_OPT_INS } from '@/lib/league/room'
 import { useRouter } from 'next/navigation'
 import styles from './league.module.css'
 
@@ -52,6 +53,9 @@ type LeaguePayload = {
   crazyGateBlocked?: boolean
   planSlug?: string | null
   worldLeaderboardStatus?: 'coming_soon'
+  roomOpen?: boolean
+  optInCount?: number
+  optInTarget?: number
 }
 
 export default function LeaguePage() {
@@ -127,6 +131,10 @@ export default function LeaguePage() {
     ? Math.max(4, Math.min(100, ((data.me.points - currentTierFloor) / (nextFloor - currentTierFloor)) * 100))
     : data?.me?.promotionZone ? 100 : 12
   const daysRemaining = data ? remainingDays(data.endsOn) : 0
+  const roomOpen = data?.roomOpen ?? false
+  const optInCount = data?.optInCount ?? 0
+  const optInTarget = data?.optInTarget ?? LEAGUE_ROOM_MIN_OPT_INS
+  const waitlistRemaining = Math.max(0, optInTarget - optInCount)
   const promotionCount = Math.max(1, Math.ceil((data?.standings.length ?? 0) * 0.1))
   const completedMissions = data?.missions.filter((mission) => mission.completed).length ?? 0
   const showCrazyGate = Boolean(data?.crazyGateBlocked) || blockedByCrazyGate
@@ -141,7 +149,11 @@ export default function LeaguePage() {
         )}
 
         <section className={styles.hero} aria-labelledby="league-rank-heading">
-          <p className={styles.eyebrow}>Monthly league · {daysRemaining} days left</p>
+          <p className={styles.eyebrow}>
+            {roomOpen
+              ? `Monthly league · ${daysRemaining} days left`
+              : `League room opens at ${optInTarget} members · ${optInCount} joined`}
+          </p>
           <h1 id="league-rank-heading" className={styles.heroTitle}>{LEAGUE_TIER_LABELS[tier]}</h1>
           <p className={styles.heroSub}>
             {LEAGUE_TIER_DETAILS[tier].short}. Top 10% this month advance to the next league.
@@ -301,13 +313,37 @@ export default function LeaguePage() {
           <div className={styles.sectionHeader}>
             <div>
               <h2 id="standings-heading">Season board</h2>
-              <p>{data?.optIn ? 'Green edge marks the top 10% promotion zone' : 'Private until you choose to join'}</p>
+              <p>
+                {!roomOpen
+                  ? `Need ${waitlistRemaining} more member${waitlistRemaining === 1 ? '' : 's'} to open the league room`
+                  : data?.optIn
+                    ? 'Green edge marks the top 10% promotion zone'
+                    : 'Private until you choose to join'}
+              </p>
             </div>
             <Users size={21} color={colors.accent} aria-hidden />
           </div>
 
           {!data?.coachId ? (
             <EmptyBoard icon={<Info size={22} />} text="A coach assignment is needed before a squad league can form." />
+          ) : !roomOpen ? (
+            <div className={styles.board}>
+              <EmptyBoard
+                icon={<Users size={24} />}
+                text={`The league room stays closed until ${optInTarget} members opt in. ${optInCount} / ${optInTarget} have joined.`}
+              />
+              <div style={{ padding: '0 14px 14px' }}>
+                {data.optIn ? (
+                  <Button fullWidth variant="ghost" loading={saving} onClick={() => void toggleOptIn(false)}>
+                    Leave the waitlist
+                  </Button>
+                ) : (
+                  <Button fullWidth loading={saving} onClick={() => void toggleOptIn(true)}>
+                    Opt in — {waitlistRemaining} more to open
+                  </Button>
+                )}
+              </div>
+            </div>
           ) : !data.optIn ? (
             <div className={styles.board}>
               <EmptyBoard
@@ -344,7 +380,7 @@ export default function LeaguePage() {
             </div>
           )}
 
-          {data?.optIn && (
+          {data?.optIn && roomOpen && (
             <Button fullWidth variant="ghost" loading={saving} style={{ marginTop: 8 }} onClick={() => void toggleOptIn(false)}>
               Leave public standings
             </Button>
@@ -370,7 +406,7 @@ export default function LeaguePage() {
         <div className={styles.privacy}>
           <strong style={{ color: colors.textPrimary }}>Privacy stays in your control.</strong> League participation is optional.
           The board shows only first name and last initial inside your coach’s squad. Weight, measurements, photos, and tracker details are never shown.
-          {' '}Use the join or leave control above to manage participation.
+          {' '}The league room opens when {LEAGUE_ROOM_MIN_OPT_INS} members opt in. Use the join or leave control above to manage participation.
         </div>
       </div>
     </ClientShell>
