@@ -11,6 +11,7 @@ import {
   normalizeLeagueTier,
   type LeagueStandingRow,
   type LeagueTier,
+} from '@/lib/league/scoring'
 import { LEAGUE_ROOM_MIN_OPT_INS } from '@/lib/league/room'
 
 type LeaguePayload = {

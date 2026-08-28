@@ -186,7 +186,8 @@ export function WearableConnect({
   }
 
   const clearFitbitQuery = () => {
-    if (!searchParams.get('fitbit')) return
+    if (typeof window === 'undefined') return
+    if (!new URLSearchParams(window.location.search).get('fitbit')) return
     router.replace(pathname)
   }
 
