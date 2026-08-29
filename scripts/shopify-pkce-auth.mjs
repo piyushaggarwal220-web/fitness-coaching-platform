@@ -2,10 +2,10 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import http from 'node:http'
 import { spawn } from 'node:child_process'
+import { SHOPIFY_AUTH_URL_PATH, SHOPIFY_STORE, SHOPIFY_TOKEN_PATH, toBoolean } from './shopify-utils.mjs'
 
-const STORE = '9uwyq1-0j.myshopify.com'
-const CLIENT_ID = '7e9cb568cfd431c538f36d1ad3f2b4f6'
-const PORT = 13387
+const CLIENT_ID = process.env.SHOPIFY_CLIENT_ID?.trim() || '7e9cb568cfd431c538f36d1ad3f2b4f6'
+const PORT = Number(process.env.SHOPIFY_AUTH_PORT || 13387)
 const REDIRECT = `http://127.0.0.1:${PORT}/auth/callback`
 const SCOPES = [
   'read_products',
@@ -57,9 +57,31 @@ const params = new URLSearchParams({
   code_challenge_method: 'S256',
 })
 
-const authUrl = `https://${STORE}/admin/oauth/authorize?${params.toString()}`
-fs.writeFileSync(process.env.TEMP + '\\shopify-auth-url.txt', authUrl)
+const authUrl = `https://${SHOPIFY_STORE}/admin/oauth/authorize?${params.toString()}`
+fs.writeFileSync(SHOPIFY_AUTH_URL_PATH, authUrl)
 console.log('AUTH_URL=' + authUrl)
+
+function tryOpenBrowser(url) {
+  if (!toBoolean(process.env.SHOPIFY_OPEN_BROWSER, false)) {
+    return false
+  }
+
+  const commands =
+    process.platform === 'win32'
+      ? [['cmd', ['/c', 'start', '', url]]]
+      : process.platform === 'darwin'
+        ? [['open', [url]]]
+        : [['xdg-open', [url]]]
+
+  for (const [command, args] of commands) {
+    try {
+      spawn(command, args, { detached: true, stdio: 'ignore' }).unref()
+      return true
+    } catch {}
+  }
+
+  return false
+}
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -78,9 +100,11 @@ const server = http.createServer(async (req, res) => {
     if (err) throw new Error(err)
     if (!code) throw new Error('Missing code')
     if (gotState !== state) throw new Error('State mismatch')
-    if (shop && !shop.includes('9uwyq1-0j')) throw new Error('Shop mismatch: ' + shop)
+    if (shop && !shop.includes(SHOPIFY_STORE.replace('.myshopify.com', ''))) {
+      throw new Error('Shop mismatch: ' + shop)
+    }
 
-    const tokenRes = await fetch(`https://${STORE}/admin/oauth/access_token`, {
+    const tokenRes = await fetch(`https://${SHOPIFY_STORE}/admin/oauth/access_token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -93,10 +117,7 @@ const server = http.createServer(async (req, res) => {
     const text = await tokenRes.text()
     if (!tokenRes.ok) throw new Error(`Token exchange failed: ${tokenRes.status} ${text}`)
     const token = JSON.parse(text)
-    fs.writeFileSync(
-      process.env.TEMP + '\\shopify-auth-token.json',
-      JSON.stringify(token, null, 2)
-    )
+    fs.writeFileSync(SHOPIFY_TOKEN_PATH, JSON.stringify(token, null, 2))
     res.writeHead(200, { 'Content-Type': 'text/html' })
     res.end(
       '<html><body style="font-family:sans-serif;padding:40px"><h1>Connected</h1><p>You can close this tab and return to Cursor.</p></body></html>'
@@ -113,7 +134,10 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log('Listening on', REDIRECT)
-  spawn('cmd', ['/c', 'start', '', authUrl], { detached: true, stdio: 'ignore' }).unref()
+  console.log(`Auth URL saved to ${SHOPIFY_AUTH_URL_PATH}`)
+  if (!tryOpenBrowser(authUrl)) {
+    console.log('Open the AUTH_URL in a browser to finish authentication.')
+  }
 })
 
 setTimeout(() => {
