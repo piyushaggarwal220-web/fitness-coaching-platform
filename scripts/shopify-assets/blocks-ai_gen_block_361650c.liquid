@@ -693,10 +693,6 @@
     transform: translate(-50%, -50%) scale(1) !important;
     background: {{ block.settings.accent_color }} !important;
   }
-  /* lurvox-plan-direct-nav */
-  .ai-transformation-plan-cta-wrapper-{{ ai_gen_id }} {
-    display: none !important;
-  }
 
 /* lurvox-mobile-plan-cards-v2 */
   @media screen and (max-width: 749px) {
@@ -942,10 +938,6 @@
     display: none !important;
   }
 
-  .ai-transformation-plan-cta-wrapper-{{ ai_gen_id }} {
-    display: none !important;
-  }
-
   @media screen and (min-width: 750px) {
     .ai-transformation-plan-{{ ai_gen_id }} {
       padding-left: 40px !important;
@@ -1147,13 +1139,6 @@
     }
   }
 {% endstyle %}
-
-<style>
-  /* lurvox-plan-direct-nav — plan card click opens plan page; hide confusing dual CTA */
-  .ai-transformation-plan-cta-wrapper-{{ ai_gen_id }} {
-    display: none !important;
-  }
-</style>
 
 <transformation-plan-selector-{{ ai_gen_id }}
   class="ai-transformation-plan-{{ ai_gen_id }}"

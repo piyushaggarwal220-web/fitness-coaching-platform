@@ -137,6 +137,8 @@ function patchFunnel(text) {
 // 1) Edited repo assets uploaded verbatim.
 const repoFiles = [
   ['sections/lurvox-plan-finder.liquid', 'scripts/shopify-assets/sections-lurvox-plan-finder.liquid'],
+  ['sections/lurvox-plan-finder-v3.liquid', 'scripts/shopify-assets/sections-lurvox-plan-finder-v3.liquid'],
+  ['sections/lurvox-tap-plan-force.liquid', 'scripts/shopify-assets/sections-lurvox-tap-plan-force.liquid'],
   ['snippets/lurvox-plan-compare-inline.liquid', 'scripts/shopify-assets/snippets-lurvox-plan-compare-inline.liquid'],
   ['snippets/lurvox-conversion-boost.liquid', 'scripts/shopify-assets/snippets-lurvox-conversion-boost.liquid'],
   ['sections/lurvox-ad-landing.liquid', 'scripts/shopify-assets/sections-lurvox-ad-landing.liquid'],
