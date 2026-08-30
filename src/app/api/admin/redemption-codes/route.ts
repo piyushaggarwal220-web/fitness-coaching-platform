@@ -3,7 +3,7 @@ import { requireAdminApi } from '@/lib/admin/api-auth'
 import { createRedemptionCode, updateRedemptionCode } from '@/lib/redemption-codes'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AnyCoachingPlanSlug, CoachingPlanSlug } from '@/lib/payments/plans'
-import { getCoachingPlan, getPurchasablePlan, isValidPlanSlug } from '@/lib/payments/plans'
+import { getPurchasablePlan } from '@/lib/payments/plans'
 
 export async function GET() {
   const auth = await requireAdminApi()
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   }
-  if (!isValidPlanSlug(planSlug) || planSlug === '1_week_trial' || !getPurchasablePlan(planSlug)) {
+  if (!getPurchasablePlan(planSlug)) {
     return NextResponse.json({ error: 'Invalid plan slug' }, { status: 400 })
   }
 
@@ -88,8 +88,7 @@ export async function PATCH(request: Request) {
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
   if (planSlug !== undefined) {
-    const resolved = getCoachingPlan(String(planSlug))
-    if (!resolved || String(planSlug) === '1_week_trial') {
+    if (!getPurchasablePlan(String(planSlug))) {
       return NextResponse.json({ error: 'Invalid plan slug' }, { status: 400 })
     }
   }

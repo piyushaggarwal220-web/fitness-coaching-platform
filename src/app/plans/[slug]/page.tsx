@@ -222,7 +222,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
                 {planGoalName(other.slug)}
                 <span style={{ opacity: 0.65, fontWeight: 500 }}>
                   {' '}
-                  · {planDurationLabel(other.slug)} · {saleLabel(other.slug) ?? other.displayPrice}
+                  · {planDurationLabel(other.slug)} · {other.displayPrice}
                 </span>
               </Link>
             ))}
