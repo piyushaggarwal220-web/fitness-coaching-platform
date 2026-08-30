@@ -51,11 +51,30 @@ assert(
   })
 )
 assert(
-  'draft already saved cannot be claimed again',
+  'draft already ready cannot be claimed again',
   !canClaimPlanChangeGeneration({
     status: 'generating',
     generationStartedAt: null,
     draftPlanId: 'draft-1',
+    draftReadyAt: '2026-08-25T12:05:00.000Z',
+  })
+)
+assert(
+  'reserved draft in-flight cannot be stolen',
+  !canClaimPlanChangeGeneration({
+    status: 'generating',
+    generationStartedAt: new Date().toISOString(),
+    draftPlanId: 'draft-1',
+    draftReadyAt: null,
+  })
+)
+assert(
+  'stale reserved draft can be reclaimed',
+  canClaimPlanChangeGeneration({
+    status: 'generating',
+    generationStartedAt: new Date(Date.now() - PLAN_CHANGE_CLAIM_STALE_MS - 1000).toISOString(),
+    draftPlanId: 'draft-1',
+    draftReadyAt: null,
   })
 )
 assert(

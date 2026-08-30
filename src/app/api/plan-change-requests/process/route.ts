@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
   const { data: row } = await admin
     .from('plan_change_requests')
-    .select('id, client_id, status')
+    .select('id, client_id, status, draft_plan_id, draft_ready_at')
     .eq('id', requestId)
     .maybeSingle()
 
@@ -28,6 +28,10 @@ export async function POST(request: Request) {
   }
 
   if (row.status !== 'generating') {
+    return NextResponse.json({ ok: true, skipped: true, status: row.status })
+  }
+
+  if (row.draft_plan_id && row.draft_ready_at) {
     return NextResponse.json({ ok: true, skipped: true, status: row.status })
   }
 

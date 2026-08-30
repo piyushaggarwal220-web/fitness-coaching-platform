@@ -17,10 +17,18 @@ export function canClaimPlanChangeGeneration(input: {
   status: string
   generationStartedAt: string | null
   draftPlanId: string | null
+  draftReadyAt?: string | null
   nowMs?: number
 }): boolean {
   if (input.status !== 'generating') return false
-  if (input.draftPlanId) return false
+  if (input.draftReadyAt) return false
+  if (input.draftPlanId) {
+    if (!input.generationStartedAt) return false
+    const startedAt = new Date(input.generationStartedAt).getTime()
+    if (!Number.isFinite(startedAt)) return false
+    const now = input.nowMs ?? Date.now()
+    return now - startedAt >= PLAN_CHANGE_CLAIM_STALE_MS
+  }
   if (!input.generationStartedAt) return true
   const startedAt = new Date(input.generationStartedAt).getTime()
   if (!Number.isFinite(startedAt)) return true

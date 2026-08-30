@@ -255,3 +255,186 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     throw err
   }
 }
+
+export type EditPlanForClientChangeInput = {
+  scope: 'diet' | 'workout' | 'both'
+  nutritionText: string
+  workoutText: string
+  clientRequest: string
+  coachNote?: string | null
+  clientName?: string | null
+  clientId?: string
+}
+
+export type EditPlanForClientChangeResult = {
+  nutritionPlan: string
+  workoutPlan: string
+  model: string
+  inputTokens: number
+  outputTokens: number
+  summary: string
+}
+
+function extractBothSections(raw: string): { nutritionPlan: string; workoutPlan: string } | null {
+  const trimmed = raw.trim()
+  if (!trimmed.startsWith('{')) return null
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      nutritionPlan?: unknown
+      nutrition_plan?: unknown
+      workoutPlan?: unknown
+      workout_plan?: unknown
+    }
+    const nutritionPlan = parsed.nutritionPlan ?? parsed.nutrition_plan
+    const workoutPlan = parsed.workoutPlan ?? parsed.workout_plan
+    if (typeof nutritionPlan !== 'string' || typeof workoutPlan !== 'string') return null
+    if (!nutritionPlan.trim() || !workoutPlan.trim()) return null
+    return { nutritionPlan: nutritionPlan.trim(), workoutPlan: workoutPlan.trim() }
+  } catch {
+    return null
+  }
+}
+
+/** One AI call for diet + workout client change requests (avoids duplicate section runs). */
+export async function editPlanForClientChange(
+  input: EditPlanForClientChangeInput
+): Promise<EditPlanForClientChangeResult> {
+  if (input.scope === 'diet') {
+    const diet = await editPlanSection({
+      section: 'nutrition',
+      currentText: input.nutritionText,
+      clientRequest: input.clientRequest,
+      coachNote: input.coachNote,
+      clientName: input.clientName,
+      clientId: input.clientId,
+    })
+    return {
+      nutritionPlan: diet.revisedText,
+      workoutPlan: input.workoutText,
+      model: diet.model,
+      inputTokens: diet.inputTokens,
+      outputTokens: diet.outputTokens,
+      summary: diet.summary,
+    }
+  }
+
+  if (input.scope === 'workout') {
+    const workout = await editPlanSection({
+      section: 'workout',
+      currentText: input.workoutText,
+      clientRequest: input.clientRequest,
+      coachNote: input.coachNote,
+      clientName: input.clientName,
+      clientId: input.clientId,
+    })
+    return {
+      nutritionPlan: input.nutritionText,
+      workoutPlan: workout.revisedText,
+      model: workout.model,
+      inputTokens: workout.inputTokens,
+      outputTokens: workout.outputTokens,
+      summary: workout.summary,
+    }
+  }
+
+  const clientRequest = input.clientRequest.trim()
+  if (!clientRequest) throw new Error('Client request is required.')
+
+  const systemPrompt = [
+    'You are an expert fitness coach editor doing an IN-PLACE edit of the client\'s current plan.',
+    'Revise diet and workout sections based on the client request in ONE response.',
+    'Output ONLY valid JSON with keys "nutritionPlan" and "workoutPlan" (plain text values, no markdown fences).',
+    'Rules:',
+    '- This is NOT a weekly plan update. Edit the CURRENT plan text only.',
+    '- Apply visible edits for the request; keep unrequested days/meals/exercises unchanged.',
+    '- Preserve day headers as Day N (Weekday). Workout lines: "Exercise: N sets x M reps".',
+    DAY_HEADER_PROMPT_RULES,
+    EXERCISE_NAME_PROMPT_RULES,
+    WORKOUT_SECTION_PROMPT_RULES,
+    WORKOUT_VOLUME_PROMPT_RULES,
+    PROTEIN_CALORIE_PROMPT_RULES,
+    `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
+    '- No cross-day references. No weekly progression narrative.',
+  ].join('\n')
+
+  const userPrompt = [
+    input.clientName ? `Client: ${input.clientName}` : null,
+    '## Client request',
+    clientRequest,
+    input.coachNote?.trim() ? `\n## Extra coach guidance\n${input.coachNote.trim()}` : null,
+    '',
+    '## Current nutrition plan',
+    input.nutritionText.trim() || '(empty)',
+    '',
+    '## Current workout plan',
+    input.workoutText.trim() || '(empty)',
+  ]
+    .filter((line) => line != null)
+    .join('\n')
+
+  const providerMode = getPlanProviderMode()
+  const started = Date.now()
+  const model = MODELS.CLAUDE_SONNET
+  const response = await callPlanProvider(providerMode, {
+    systemPrompt,
+    userPrompt,
+    model,
+    maxTokens: LIMITS.MAX_SECTION_EDIT_TOKENS,
+    temperature: PLAN_GENERATION_TEMPERATURE,
+    mockText: JSON.stringify({
+      nutritionPlan: buildMockRevision({
+        section: 'nutrition',
+        currentText: input.nutritionText,
+        clientRequest,
+        coachNote: input.coachNote,
+        clientName: input.clientName,
+        clientId: input.clientId,
+      }),
+      workoutPlan: buildMockRevision({
+        section: 'workout',
+        currentText: input.workoutText,
+        clientRequest,
+        coachNote: input.coachNote,
+        clientName: input.clientName,
+        clientId: input.clientId,
+      }),
+    }),
+  })
+
+  const parsed = extractBothSections(response.text)
+  if (!parsed) {
+    throw new ClaudeResponseError('AI returned an invalid combined plan edit.')
+  }
+
+  const nutritionPlan = stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.nutritionPlan))
+  const workoutPlan = stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.workoutPlan))
+  if (!nutritionPlan || !workoutPlan) {
+    throw new ClaudeResponseError('AI returned empty section text.')
+  }
+
+  const summary = `Updated diet and workout from client request.`
+
+  await logAiGeneration({
+    clientId: input.clientId ?? null,
+    coachId: null,
+    action: 'edit_plan_both',
+    model: response.model,
+    latencyMs: Date.now() - started,
+    promptTokens: response.inputTokens,
+    completionTokens: response.outputTokens,
+    retryCount: 0,
+    validationResult: 'ok',
+    success: true,
+    knowledgeRefs: null,
+    renderedOutput: { summary },
+  }).catch(() => undefined)
+
+  return {
+    nutritionPlan,
+    workoutPlan,
+    model: response.model,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
+    summary,
+  }
+}

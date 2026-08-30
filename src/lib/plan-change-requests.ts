@@ -1,10 +1,9 @@
 import 'server-only'
-import { editPlanSection } from '@/lib/ai/edit-plan-section'
+import { editPlanForClientChange } from '@/lib/ai/edit-plan-section'
 import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
-  stripClientWeekHandoffLanguage,
 } from '@/lib/ai/plan-prose-guards'
 import {
   canClaimPlanChangeGeneration,
@@ -22,7 +21,7 @@ export const PLAN_CHANGE_MONTHLY_LIMIT = 5
 export const PLAN_CHANGE_MIN_CHARS = 10
 export const PLAN_CHANGE_MAX_CHARS = 4000
 
-/** Word-overlap similarity; near 1.0 means the model barely changed the plan. */
+/** Word-overlap similarity; used only for logging near-copy edits. */
 export function planTextSimilarity(a: string, b: string): number {
   const tokenize = (s: string) =>
     new Set(
@@ -42,6 +41,14 @@ export function planTextSimilarity(a: string, b: string): number {
 }
 
 const NEAR_COPY_SIMILARITY = 0.93
+
+function logNearCopyWarning(section: string, similarity: number, requestId: string): void {
+  if (similarity >= NEAR_COPY_SIMILARITY) {
+    console.warn(
+      `[plan-change] ${section} edit was very similar to the active plan (${similarity.toFixed(2)}) for request ${requestId}`
+    )
+  }
+}
 
 export type PlanChangeScope = 'diet' | 'workout' | 'both'
 
@@ -207,20 +214,78 @@ async function findDraftForPlanChangeRequest(
   clientId: string,
   requestId: string
 ): Promise<{ id: string } | null> {
+  const marker = planChangeRequestMarker(requestId)
   const { data } = await admin
     .from('plans')
     .select('id, coach_notes')
     .eq('client_id', clientId)
     .eq('active', false)
     .is('delivered_at', null)
-    .ilike('title', 'AI Draft%')
+    .ilike('coach_notes', `%${marker}%`)
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(1)
 
-  const match = (data ?? []).find((row) =>
-    notesBelongToPlanChangeRequest(row.coach_notes, requestId)
-  )
-  return match ? { id: match.id } : null
+  const match = data?.[0]
+  return match && notesBelongToPlanChangeRequest(match.coach_notes, requestId)
+    ? { id: match.id }
+    : null
+}
+
+async function reservePlanChangeDraft(
+  admin: AdminClient,
+  request: PlanChangeRequestRow,
+  active: Plan,
+  metaNotes: string
+): Promise<string> {
+  if (request.draft_plan_id) return request.draft_plan_id
+
+  const existing = await findDraftForPlanChangeRequest(admin, request.client_id, request.id)
+  if (existing) {
+    await admin
+      .from('plan_change_requests')
+      .update({ draft_plan_id: existing.id, updated_at: new Date().toISOString() })
+      .eq('id', request.id)
+      .is('draft_plan_id', null)
+    return existing.id
+  }
+
+  const form: PlanFormData = {
+    client_id: request.client_id,
+    title: 'AI Draft · Client request',
+    phase: active.phase ?? '',
+    nutrition_plan: active.nutrition_plan?.trim() || '',
+    workout_plan: active.workout_plan?.trim() || '',
+    cardio_plan: active.cardio_plan?.trim() || '',
+    supplement_plan: active.supplement_plan?.trim() || '',
+    coach_notes: metaNotes,
+  }
+
+  const saved = await persistAiPlanDraft(admin, {
+    clientId: request.client_id,
+    coachId: request.coach_id,
+    form,
+    title: 'AI Draft · Client request',
+  })
+  if (saved.error || !saved.data) throw new Error(saved.error ?? 'Failed to reserve draft')
+
+  const { data: linked } = await admin
+    .from('plan_change_requests')
+    .update({ draft_plan_id: saved.data.id, updated_at: new Date().toISOString() })
+    .eq('id', request.id)
+    .is('draft_plan_id', null)
+    .select('draft_plan_id')
+    .maybeSingle()
+
+  if (linked?.draft_plan_id) return linked.draft_plan_id
+
+  const { data: row } = await admin
+    .from('plan_change_requests')
+    .select('draft_plan_id')
+    .eq('id', request.id)
+    .maybeSingle()
+  if (row?.draft_plan_id) return row.draft_plan_id as string
+
+  return saved.data.id
 }
 
 async function claimPlanChangeRequest(
@@ -253,6 +318,7 @@ async function claimPlanChangeRequest(
       status: row.status,
       generationStartedAt: row.generation_started_at,
       draftPlanId: row.draft_plan_id,
+      draftReadyAt: row.draft_ready_at,
     })
   ) {
     return null
@@ -300,15 +366,6 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
   if (!claimedStartedAt) return
 
   try {
-    const existingDraft = await findDraftForPlanChangeRequest(
-      admin,
-      request.client_id,
-      request.id
-    )
-    if (existingDraft) {
-      await markPlanChangeDraftReady(admin, request.id, existingDraft.id)
-      return
-    }
     const [{ data: profile }, { data: activePlan }, { data: latestCheckin }] = await Promise.all([
       admin.from('profiles').select('*').eq('id', request.client_id).single(),
       request.active_plan_id
@@ -359,80 +416,6 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
       .join('\n')
 
     const profileTyped = profile as OnboardingProfile
-    let nutritionPlan = active.nutrition_plan?.trim() || ''
-    let workoutPlan = active.workout_plan?.trim() || ''
-
-    if (request.scope === 'diet' || request.scope === 'both') {
-      const dietEdit = await editPlanSection({
-        section: 'nutrition',
-        currentText: nutritionPlan,
-        clientRequest: request.request_text,
-        coachNote,
-        clientName: profileTyped.name,
-        clientId: request.client_id,
-      })
-      nutritionPlan = stripClientWeekHandoffLanguage(dietEdit.revisedText)
-
-      if (
-        active.nutrition_plan?.trim() &&
-        planTextSimilarity(active.nutrition_plan, nutritionPlan) >= NEAR_COPY_SIMILARITY
-      ) {
-        const retry = await editPlanSection({
-          section: 'nutrition',
-          currentText: active.nutrition_plan,
-          clientRequest: request.request_text,
-          coachNote: [
-            coachNote,
-            'RETRY: previous revision was too similar. Apply the requested food/portion changes clearly.',
-          ].join('\n'),
-          clientName: profileTyped.name,
-          clientId: request.client_id,
-        })
-        nutritionPlan = stripClientWeekHandoffLanguage(retry.revisedText)
-      }
-    }
-
-    if (request.scope === 'workout' || request.scope === 'both') {
-      const workoutEdit = await editPlanSection({
-        section: 'workout',
-        currentText: workoutPlan,
-        clientRequest: request.request_text,
-        coachNote,
-        clientName: profileTyped.name,
-        clientId: request.client_id,
-      })
-      workoutPlan = stripClientWeekHandoffLanguage(workoutEdit.revisedText)
-
-      if (
-        active.workout_plan?.trim() &&
-        planTextSimilarity(active.workout_plan, workoutPlan) >= NEAR_COPY_SIMILARITY
-      ) {
-        const retry = await editPlanSection({
-          section: 'workout',
-          currentText: active.workout_plan,
-          clientRequest: request.request_text,
-          coachNote: [
-            coachNote,
-            'RETRY: previous revision was too similar. Apply the requested exercise/volume changes clearly.',
-          ].join('\n'),
-          clientName: profileTyped.name,
-          clientId: request.client_id,
-        })
-        workoutPlan = stripClientWeekHandoffLanguage(retry.revisedText)
-      }
-    }
-
-    const merged: PlanFormData = {
-      client_id: request.client_id,
-      title: 'AI Draft · Client request',
-      phase: active.phase ?? '',
-      nutrition_plan: nutritionPlan,
-      workout_plan: workoutPlan,
-      cardio_plan: active.cardio_plan?.trim() || '',
-      supplement_plan: active.supplement_plan?.trim() || '',
-      coach_notes: '',
-    }
-
     const metaNotes = encodePlanMeta(
       {
         generatedBy: 'ai',
@@ -445,6 +428,49 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
         `Request:\n${request.request_text}`,
       ].join('\n\n')
     )
+
+    const draftId = await reservePlanChangeDraft(admin, request, active, metaNotes ?? '')
+
+    const nutritionPlan = active.nutrition_plan?.trim() || ''
+    const workoutPlan = active.workout_plan?.trim() || ''
+
+    const edited = await editPlanForClientChange({
+      scope: request.scope,
+      nutritionText: nutritionPlan,
+      workoutText: workoutPlan,
+      clientRequest: request.request_text,
+      coachNote,
+      clientName: profileTyped.name,
+      clientId: request.client_id,
+    })
+
+    if (request.scope === 'diet' || request.scope === 'both') {
+      logNearCopyWarning(
+        'nutrition',
+        planTextSimilarity(nutritionPlan, edited.nutritionPlan),
+        request.id
+      )
+    }
+    if (request.scope === 'workout' || request.scope === 'both') {
+      logNearCopyWarning(
+        'workout',
+        planTextSimilarity(workoutPlan, edited.workoutPlan),
+        request.id
+      )
+    }
+
+    const merged: PlanFormData = {
+      client_id: request.client_id,
+      title: 'AI Draft · Client request',
+      phase: active.phase ?? '',
+      nutrition_plan:
+        request.scope === 'workout' ? nutritionPlan : edited.nutritionPlan,
+      workout_plan:
+        request.scope === 'diet' ? workoutPlan : edited.workoutPlan,
+      cardio_plan: active.cardio_plan?.trim() || '',
+      supplement_plan: active.supplement_plan?.trim() || '',
+      coach_notes: metaNotes ?? '',
+    }
 
     const { data: lease } = await admin
       .from('plan_change_requests')
@@ -464,19 +490,10 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
       return
     }
 
-    const reuseDraft =
-      (lease.draft_plan_id ? { id: lease.draft_plan_id } : null) ??
-      (await findDraftForPlanChangeRequest(admin, request.client_id, request.id))
+    const reuseDraft = { id: draftId }
 
     const form = { ...merged, coach_notes: metaNotes ?? '' }
-    const saved = reuseDraft
-      ? await updateAiPlanDraft(admin, reuseDraft.id, form, 'AI Draft · Client request')
-      : await persistAiPlanDraft(admin, {
-          clientId: request.client_id,
-          coachId: request.coach_id,
-          form,
-          title: 'AI Draft · Client request',
-        })
+    const saved = await updateAiPlanDraft(admin, reuseDraft.id, form, 'AI Draft · Client request')
 
     if (saved.error || !saved.data) throw new Error(saved.error ?? 'Failed to save draft')
 
