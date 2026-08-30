@@ -192,8 +192,22 @@ const MAX_DAILY_KCAL = 5000
 /** Tolerance before a conversational calorie claim is treated as a mismatch and rewritten. */
 const KCAL_MISMATCH_TOLERANCE = 40
 
-/** Hard cap on week-to-week daily-calorie change (400 kcal rule + rounding headroom). */
-const MAX_WEEKLY_KCAL_JUMP = 450
+/** When a client only swaps foods, keep daily calories within this band of the prior plan. */
+export const EDIT_CALORIE_PRESERVE_TOLERANCE = 75
+
+/**
+ * Week-to-week calorie moves. Cuts are tighter than raises — a 2100 → 1780 drop
+ * (320 kcal) used to pass a ±450 band and land on the floor, which clients feel as
+ * "suddenly too low". Prefer gradual trims of ~100–200 kcal.
+ */
+export const MAX_WEEKLY_KCAL_INCREASE = 300
+export const MAX_WEEKLY_KCAL_DECREASE = 200
+
+function clampCaloriesToWeeklyBand(target: number, previous: number): number {
+  const max = previous + MAX_WEEKLY_KCAL_INCREASE
+  const min = Math.max(previous - MAX_WEEKLY_KCAL_DECREASE, DIET_FLOOR_TARGET_KCAL)
+  return Math.min(Math.max(target, min), max)
+}
 
 /** Read the "Calories: NNNN" header from a stored plan's nutrition string. */
 export function parseHeaderCalories(text: string | null | undefined): number | null {
@@ -233,21 +247,140 @@ export function enforceDietSafety(
 
   const prev = opts.previousCalories
   if (typeof prev === 'number' && prev > 0) {
-    const jump = Math.abs(cals - prev)
-    if (jump > MAX_WEEKLY_KCAL_JUMP) {
-      const direction = cals > prev ? 'increase' : 'decrease'
+    const delta = cals - prev
+    if (delta > MAX_WEEKLY_KCAL_INCREASE) {
       return {
         ok: false,
-        error: `Weekly calorie ${direction} of ${jump} kcal (${prev} → ${cals}) exceeds the ${MAX_WEEKLY_KCAL_JUMP} kcal limit.`,
+        error: `Weekly calorie increase of ${delta} kcal (${prev} → ${cals}) exceeds the ${MAX_WEEKLY_KCAL_INCREASE} kcal limit.`,
         hint:
-          `Last week averaged about ${prev} kcal/day and this draft is about ${cals} kcal/day — a ${jump} kcal ${direction}. ` +
-          'Do not make large week-to-week calorie swings. ' +
-          `Keep the new daily average within ${MAX_WEEKLY_KCAL_JUMP} kcal of ${prev} unless a clear medical reason requires otherwise.`,
+          `Last week averaged about ${prev} kcal/day and this draft is about ${cals} kcal/day — a ${delta} kcal increase. ` +
+          `Raise gradually: keep the new daily average within ${MAX_WEEKLY_KCAL_INCREASE} kcal above ${prev}.`,
+      }
+    }
+    if (delta < -MAX_WEEKLY_KCAL_DECREASE) {
+      const drop = Math.abs(delta)
+      const safeFloor = Math.max(prev - MAX_WEEKLY_KCAL_DECREASE, DIET_FLOOR_TARGET_KCAL)
+      return {
+        ok: false,
+        error: `Weekly calorie decrease of ${drop} kcal (${prev} → ${cals}) exceeds the ${MAX_WEEKLY_KCAL_DECREASE} kcal limit.`,
+        hint:
+          `Last week averaged about ${prev} kcal/day and this draft is about ${cals} kcal/day — a ${drop} kcal cut. ` +
+          `That is too sharp (example: do not jump from ~2100 down to ~1780). Trim at most ${MAX_WEEKLY_KCAL_DECREASE} kcal ` +
+          `(stay at about ${safeFloor}+ kcal). Never drop to the ${DIET_FLOOR_TARGET_KCAL} floor just because protein was hard to hit.`,
       }
     }
   }
 
   return { ok: true }
+}
+
+function rewriteNutritionHeader(text: string, macros: MacroTotals): string {
+  const lines = text.split('\n')
+  let touchedCal = false
+  let touchedP = false
+  let touchedC = false
+  let touchedF = false
+
+  const mapped = lines.map((line) => {
+    if (HEADER_CALORIES.test(line)) {
+      touchedCal = true
+      return `Calories: ${macros.calories}`
+    }
+    if (HEADER_PROTEIN.test(line)) {
+      touchedP = true
+      return `Protein: ${macros.protein}g`
+    }
+    if (HEADER_CARBS.test(line)) {
+      touchedC = true
+      return `Carbs: ${macros.carbs}g`
+    }
+    if (HEADER_FAT.test(line)) {
+      touchedF = true
+      return `Fat: ${macros.fat}g`
+    }
+    return line
+  })
+
+  const prefix: string[] = []
+  if (!touchedCal) prefix.push(`Calories: ${macros.calories}`)
+  if (!touchedP) prefix.push(`Protein: ${macros.protein}g`)
+  if (!touchedC) prefix.push(`Carbs: ${macros.carbs}g`)
+  if (!touchedF) prefix.push(`Fat: ${macros.fat}g`)
+
+  if (prefix.length === 0) return mapped.join('\n')
+  return [...prefix, ...mapped].join('\n')
+}
+
+export type StabilizeDietCaloriesOptions = {
+  previousCalories?: number | null
+  /** When true, hold the prior daily average unless the client asked to change calories. */
+  preserveCalories?: boolean
+}
+
+/**
+ * After an in-place diet edit, keep calories stable for food swaps and enforce floor / weekly caps.
+ */
+export function stabilizeDietCaloriesAfterEdit(
+  text: string,
+  opts: StabilizeDietCaloriesOptions = {}
+): string {
+  const trimmed = text.trim()
+  if (!trimmed) return trimmed
+
+  const previous =
+    (typeof opts.previousCalories === 'number' && opts.previousCalories > 0
+      ? opts.previousCalories
+      : null) ?? parseHeaderCalories(trimmed)
+  const inferred = inferMacrosFromDietText(trimmed)
+  const headerProtein = parseInt(trimmed.match(HEADER_PROTEIN)?.[1] ?? '0', 10)
+  const headerCarbs = parseInt(trimmed.match(HEADER_CARBS)?.[1] ?? '0', 10)
+  const headerFat = parseInt(trimmed.match(HEADER_FAT)?.[1] ?? '0', 10)
+
+  let targetCalories = inferred?.calories ?? previous ?? DIET_FLOOR_TARGET_KCAL
+
+  if (opts.preserveCalories && typeof previous === 'number' && previous > 0) {
+    targetCalories = previous
+  } else if (typeof previous === 'number' && previous > 0) {
+    targetCalories = clampCaloriesToWeeklyBand(targetCalories, previous)
+  }
+
+  targetCalories = Math.max(targetCalories, DIET_FLOOR_TARGET_KCAL)
+
+  const macros: MacroTotals = {
+    calories: targetCalories,
+    protein:
+      opts.preserveCalories && headerProtein > 0
+        ? headerProtein
+        : inferred?.protein ?? headerProtein,
+    carbs: inferred?.carbs ?? headerCarbs,
+    fat: inferred?.fat ?? headerFat,
+  }
+
+  let out = rewriteNutritionHeader(trimmed, macros)
+  out = reconcileDietProseCalories(out, targetCalories)
+  return out
+}
+
+/** Clamp generated JSON macros when safety retry is exhausted. */
+export function clampGeneratedNutritionCalories(
+  plan: GeneratedNutritionPlan,
+  opts: { previousCalories?: number | null } = {}
+): GeneratedNutritionPlan {
+  let cals = plan.calories
+  if (typeof cals !== 'number' || !Number.isFinite(cals) || cals <= 0) return plan
+
+  cals = Math.max(cals, DIET_FLOOR_TARGET_KCAL)
+  const prev = opts.previousCalories
+  if (typeof prev === 'number' && prev > 0) {
+    cals = clampCaloriesToWeeklyBand(cals, prev)
+  }
+
+  if (cals === plan.calories) return plan
+  return {
+    ...plan,
+    calories: cals,
+    meals: reconcileMealsProse(plan.meals, cals),
+  }
 }
 
 /** Lines that ARE the source of truth (meal macro lines / daily totals) must never be rewritten. */

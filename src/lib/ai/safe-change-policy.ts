@@ -9,6 +9,6 @@ export const SAFE_RATE_OF_CHANGE_RULE = [
   '- Weight GAIN / bulking: if the client asks to "gain fast", "bulk hard", or "add a lot of calories", do NOT spike calories. Stay at or below a 400 kcal surplus and explain that faster gain is mostly fat, and steady gain is what lasts.',
   '- Fat LOSS / cutting: if the client asks to "lose fast", "crash", or "cut calories hard", do NOT slash calories. Stay at or below a 400 kcal deficit and explain that a moderate deficit protects muscle, energy, and results.',
   '- Never program below 1800 kcal/day. If a lower intake seems indicated, still write 1800+ and flag the coach in coach_notes.',
-  '- Do not make large week-to-week calorie jumps in either direction. Adjust gradually.',
+  '- Do not make large week-to-week calorie jumps. From an established plan (e.g. ~2100 kcal), trim at most about 150 to 200 kcal at a time — never slash down toward 1800 in one update unless the client was already near that floor.',
   '- Acknowledge the client\'s goal warmly, apply the safe version of what they asked, and briefly say why you are not going more extreme. Stay on solid ground.',
 ].join('\n')

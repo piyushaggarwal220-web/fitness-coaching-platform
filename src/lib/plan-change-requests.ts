@@ -407,8 +407,8 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
     const coachNote = [
       CLIENT_PLAN_EDIT_WEEK_RULES,
       dayHint,
-      'Every point in the client request must map to a concrete visible change.',
-      'Do not redesign the whole week. Keep unrequested meals/exercises.',
+      'Change only what the client asked for — swap the named foods/exercises, not the whole week.',
+      'If they did not mention calories, macros, deficit, or surplus, keep the same daily calorie average.',
       SAFE_RATE_OF_CHANGE_RULE,
       clientJourney?.trim() ? `Client journey:\n${clientJourney.trim()}` : '',
     ]

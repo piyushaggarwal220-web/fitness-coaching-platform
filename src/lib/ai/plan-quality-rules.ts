@@ -24,6 +24,14 @@ export const PROTEIN_CALORIE_PROMPT_RULES = [
   `- If a textbook cut would go below ${DIET_FLOOR_TARGET_KCAL} kcal, still write ${DIET_FLOOR_TARGET_KCAL} or more and put one line in coach_notes: "Held at ${DIET_FLOOR_TARGET_KCAL} kcal floor — please review." That is the exceptional case for the coach.`,
 ].join('\n')
 
+export const EDIT_CALORIE_PRESERVATION_RULES = [
+  'SMALL EDIT CALORIE RULE (when the client did NOT ask to change calories/macros):',
+  '- Swap only the requested foods. Keep the same daily calorie average (within ~75 kcal).',
+  '- Do not rewrite unrelated days. Do not redesign the week. Do not "rebalance" macros.',
+  '- Adjust portion sizes slightly if needed so the daily average stays where it was.',
+  '- Header Calories/Protein/Carbs/Fat must still match the meal math.',
+].join('\n')
+
 export const WORKOUT_VOLUME_PROMPT_RULES = [
   'TRAINING VOLUME (non-negotiable):',
   '- Default 2 to 3 working sets per exercise. Beginners 2 to 3. Intermediate 3. Advanced 3, and at most 4 on one main compound only.',

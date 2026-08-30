@@ -3,12 +3,19 @@ import { LIMITS, MODELS, PLAN_GENERATION_TEMPERATURE } from '@/lib/ai/config'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import {
   DAY_HEADER_PROMPT_RULES,
+  EDIT_CALORIE_PRESERVATION_RULES,
   EXERCISE_NAME_PROMPT_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   WORKOUT_SECTION_PROMPT_RULES,
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
+import { clientRequestTouchesCalories } from '@/lib/ai/calorie-targets'
+import {
+  parseHeaderCalories,
+  stabilizeDietCaloriesAfterEdit,
+} from '@/lib/ai/nutrition-macro-sync'
+import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
   stripClientWeekHandoffLanguage,
@@ -24,6 +31,7 @@ export type EditPlanSectionInput = {
   coachNote?: string | null
   clientName?: string | null
   clientId?: string
+  previousCalories?: number | null
 }
 
 export type EditPlanSectionResult = {
@@ -100,6 +108,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
   }
 
   const section = sectionLabel(input.section)
+  const touchesCalories = input.section === 'nutrition' && clientRequestTouchesCalories(clientRequest)
   const systemPrompt = [
     'You are an expert fitness coach editor doing an IN-PLACE edit of the client\'s current plan.',
     `Revise the client's ${section} based on the client's request.`,
@@ -107,8 +116,11 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     '- This is NOT a weekly plan update. Do not design "next week". Edit the CURRENT plan text.',
     '- Preserve useful structure: day headers should stay as Day N (Weekday) with Day 1 = Monday (e.g. Day 1 (Monday)), meal names, exercise lines with sets x reps (plain letter x).',
     DAY_HEADER_PROMPT_RULES,
-    '- Apply the client request with VISIBLE edits — do not return a near-copy or paraphrase of the current plan.',
+    touchesCalories
+      ? '- Apply the client request with clear, targeted edits in the affected meals/exercises only.'
+      : '- Apply the client request with minimal edits — change only what they asked for. A near-copy of unchanged days is correct.',
     '- Make only the changes needed to satisfy the request — keep calories/macros/split/days the same unless the request requires changing them.',
+    touchesCalories ? SAFE_RATE_OF_CHANGE_RULE : EDIT_CALORIE_PRESERVATION_RULES,
     '- Do not rewrite unrelated days, invent a new program phase, or add weekly progression narrative.',
     '- If the request names specific foods, exercises, days, or constraints, those must appear differently in the revised text.',
     '- Keep language natural, human, and coach-ready in plain text, not JSON.',
@@ -192,16 +204,25 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         )
       }
 
-      const revisedText = stripClientWeekHandoffLanguage(
+      const revisedRaw = stripClientWeekHandoffLanguage(
         normalizeAiPlanProse(extractRevisedText(response.text))
       )
-      if (!revisedText) {
+      if (!revisedRaw) {
         if (attempt < maxAttempts - 1) continue
         throw new ClaudeResponseError('AI returned an empty revision.')
       }
 
-      // Reject near-copies so client requests actually land (retry once with stronger hint).
-      if (currentText && attempt === 0) {
+      const revisedText =
+        input.section === 'nutrition'
+          ? stabilizeDietCaloriesAfterEdit(revisedRaw, {
+              previousCalories:
+                input.previousCalories ?? parseHeaderCalories(currentText),
+              preserveCalories: !touchesCalories,
+            })
+          : revisedRaw
+
+      // Reject near-copies only when the client asked for a broad rewrite (not a single food swap).
+      if (currentText && attempt === 0 && touchesCalories) {
         const similarity = planTextSimilarityLocal(currentText, revisedText)
         if (similarity >= 0.93) {
           continue
@@ -307,6 +328,7 @@ export async function editPlanForClientChange(
       coachNote: input.coachNote,
       clientName: input.clientName,
       clientId: input.clientId,
+      previousCalories: parseHeaderCalories(input.nutritionText),
     })
     return {
       nutritionPlan: diet.revisedText,
@@ -340,19 +362,23 @@ export async function editPlanForClientChange(
   const clientRequest = input.clientRequest.trim()
   if (!clientRequest) throw new Error('Client request is required.')
 
+  const touchesCalories = clientRequestTouchesCalories(clientRequest)
   const systemPrompt = [
     'You are an expert fitness coach editor doing an IN-PLACE edit of the client\'s current plan.',
     'Revise diet and workout sections based on the client request in ONE response.',
     'Output ONLY valid JSON with keys "nutritionPlan" and "workoutPlan" (plain text values, no markdown fences).',
     'Rules:',
     '- This is NOT a weekly plan update. Edit the CURRENT plan text only.',
-    '- Apply visible edits for the request; keep unrequested days/meals/exercises unchanged.',
+    touchesCalories
+      ? '- Apply clear edits for the request; keep unrequested days/meals/exercises unchanged.'
+      : '- Apply minimal edits for the request; unchanged days may stay identical.',
     '- Preserve day headers as Day N (Weekday). Workout lines: "Exercise: N sets x M reps".',
     DAY_HEADER_PROMPT_RULES,
     EXERCISE_NAME_PROMPT_RULES,
     WORKOUT_SECTION_PROMPT_RULES,
     WORKOUT_VOLUME_PROMPT_RULES,
     PROTEIN_CALORIE_PROMPT_RULES,
+    touchesCalories ? SAFE_RATE_OF_CHANGE_RULE : EDIT_CALORIE_PRESERVATION_RULES,
     `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
     '- No cross-day references. No weekly progression narrative.',
   ].join('\n')
@@ -406,7 +432,13 @@ export async function editPlanForClientChange(
     throw new ClaudeResponseError('AI returned an invalid combined plan edit.')
   }
 
-  const nutritionPlan = stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.nutritionPlan))
+  const nutritionPlan = stabilizeDietCaloriesAfterEdit(
+    stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.nutritionPlan)),
+    {
+      previousCalories: parseHeaderCalories(input.nutritionText),
+      preserveCalories: !touchesCalories,
+    }
+  )
   const workoutPlan = stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.workoutPlan))
   if (!nutritionPlan || !workoutPlan) {
     throw new ClaudeResponseError('AI returned empty section text.')

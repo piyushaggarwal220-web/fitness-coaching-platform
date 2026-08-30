@@ -1,3 +1,4 @@
+import { formatCalorieTargetPrompt } from '@/lib/ai/calorie-targets'
 import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
 import {
   formatMesocyclePromptSection,
@@ -202,6 +203,8 @@ function buildClientProfileSection(profile: OnboardingProfile): string {
     `- Injuries: ${hasMeaningfulText(profile.injuries) ? profile.injuries!.trim() : 'None reported'}`,
     `- Medical notes: ${hasMeaningfulText(profile.medical_notes) ? profile.medical_notes!.trim() : 'None reported'}`,
   ]
+  const calorieTarget = formatCalorieTargetPrompt(profile)
+  if (calorieTarget) lines.push('', calorieTarget)
   return lines.join('\n')
 }
 

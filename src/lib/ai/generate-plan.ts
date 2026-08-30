@@ -24,7 +24,7 @@ import {
   loadPublishedPromptsForAction,
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
-import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
+import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros, clampGeneratedNutritionCalories } from '@/lib/ai/nutrition-macro-sync'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   DAY_HEADER_PROMPT_RULES,
@@ -756,6 +756,12 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         console.warn(
           `[generate-plan] diet safety not satisfied after ${maxAttempts} attempts (client ${input.profile.id}): ${safety.error}`
         )
+        plan = {
+          ...plan,
+          nutrition_plan: clampGeneratedNutritionCalories(plan.nutrition_plan, {
+            previousCalories: parseHeaderCalories(input.activePlan?.nutrition_plan),
+          }),
+        }
       }
     }
 

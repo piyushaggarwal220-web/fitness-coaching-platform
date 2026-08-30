@@ -3,6 +3,14 @@ import 'server-only'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
 import { getOrCreateConversation } from '@/lib/coach-chat'
 import { hasClientEntitlement } from '@/lib/entitlements'
+import {
+  getInitialWeeklyCallWindow,
+} from '@/lib/weekly-call-timing'
+
+export {
+  INITIAL_WEEKLY_CALL_DELAY_MS,
+  getInitialWeeklyCallWindow,
+} from '@/lib/weekly-call-timing'
 
 const DEFAULT_WEEKDAY = 6
 const DEFAULT_HOUR_IST = 11
@@ -141,6 +149,33 @@ async function closeStaleWeeklyCallIfNeeded(
     .in('status', ['requested', 'scheduled'])
 }
 
+/** Drop auto weekly calls booked before the 2-week waiting period ends. */
+async function cancelPrematureWeeklyCalls(
+  admin: SupabaseClient,
+  clientId: string
+): Promise<void> {
+  const now = new Date().toISOString()
+  const { data: rows } = await admin
+    .from('call_requests')
+    .select('id')
+    .eq('client_id', clientId)
+    .eq('source', 'weekly_entitlement')
+    .in('status', ['requested', 'scheduled'])
+
+  for (const row of rows ?? []) {
+    await admin
+      .from('call_requests')
+      .update({
+        status: 'cancelled',
+        resolved_at: now,
+        coach_note: 'Auto-closed — weekly calls start after the first 2 coaching weeks',
+        updated_at: now,
+      })
+      .eq('id', row.id)
+      .in('status', ['requested', 'scheduled'])
+  }
+}
+
 export async function ensureWeeklyCallForClient(
   admin: SupabaseClient,
   clientId: string,
@@ -151,11 +186,22 @@ export async function ensureWeeklyCallForClient(
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('coach_id, preferred_call_weekday, preferred_call_hour_ist, plan_delivered')
+    .select(
+      'coach_id, preferred_call_weekday, preferred_call_hour_ist, plan_delivered, checkin_schedule_started_at'
+    )
     .eq('id', clientId)
     .maybeSingle()
   if (!profile?.coach_id) return { created: false, reason: 'no_coach' }
   if (!profile.plan_delivered) return { created: false, reason: 'plan_not_delivered' }
+  if (!profile.checkin_schedule_started_at) {
+    return { created: false, reason: 'no_schedule_anchor' }
+  }
+
+  const window = getInitialWeeklyCallWindow(profile.checkin_schedule_started_at)
+  if (!window.eligible) {
+    await cancelPrematureWeeklyCalls(admin, clientId)
+    return { created: false, reason: 'within_initial_2_weeks' }
+  }
 
   await closeStaleWeeklyCallIfNeeded(admin, clientId)
 
@@ -181,7 +227,13 @@ export async function ensureWeeklyCallForClient(
 
   const weekday = profile.preferred_call_weekday ?? DEFAULT_WEEKDAY
   const hourIst = profile.preferred_call_hour_ist ?? DEFAULT_HOUR_IST
-  const scheduledFor = computeNextCallSlotUtc(weekday, hourIst, options?.after ?? new Date())
+  // First (and subsequent) slots must land on/after the 2-week mark.
+  const afterCandidate = options?.after ?? new Date()
+  const after =
+    afterCandidate.getTime() > window.earliestAfter.getTime()
+      ? afterCandidate
+      : window.earliestAfter
+  const scheduledFor = computeNextCallSlotUtc(weekday, hourIst, after)
   const now = new Date().toISOString()
 
   const { data: created, error } = await admin
