@@ -4,13 +4,18 @@ import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import {
   DAY_HEADER_PROMPT_RULES,
   EDIT_CALORIE_PRESERVATION_RULES,
+  EDIT_EXPENDITURE_FIRST_RULES,
   EXERCISE_NAME_PROMPT_RULES,
+  HIGH_FLUX_PHILOSOPHY_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   WORKOUT_SECTION_PROMPT_RULES,
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
-import { clientRequestTouchesCalories } from '@/lib/ai/calorie-targets'
+import {
+  clientRequestNeedsExpenditureFocus,
+  clientRequestTouchesCalories,
+} from '@/lib/ai/calorie-targets'
 import {
   parseHeaderCalories,
   stabilizeDietCaloriesAfterEdit,
@@ -108,7 +113,17 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
   }
 
   const section = sectionLabel(input.section)
-  const touchesCalories = input.section === 'nutrition' && clientRequestTouchesCalories(clientRequest)
+  const needsExpenditure = clientRequestNeedsExpenditureFocus(clientRequest)
+  const touchesCalories =
+    input.section === 'nutrition' &&
+    clientRequestTouchesCalories(clientRequest) &&
+    !needsExpenditure
+  const preserveCalories = !touchesCalories || needsExpenditure
+  const calorieRules = needsExpenditure
+    ? EDIT_EXPENDITURE_FIRST_RULES
+    : touchesCalories
+      ? SAFE_RATE_OF_CHANGE_RULE
+      : EDIT_CALORIE_PRESERVATION_RULES
   const systemPrompt = [
     'You are an expert fitness coach editor doing an IN-PLACE edit of the client\'s current plan.',
     `Revise the client's ${section} based on the client's request.`,
@@ -120,7 +135,8 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
       ? '- Apply the client request with clear, targeted edits in the affected meals/exercises only.'
       : '- Apply the client request with minimal edits — change only what they asked for. A near-copy of unchanged days is correct.',
     '- Make only the changes needed to satisfy the request — keep calories/macros/split/days the same unless the request requires changing them.',
-    touchesCalories ? SAFE_RATE_OF_CHANGE_RULE : EDIT_CALORIE_PRESERVATION_RULES,
+    calorieRules,
+    HIGH_FLUX_PHILOSOPHY_RULES,
     '- Do not rewrite unrelated days, invent a new program phase, or add weekly progression narrative.',
     '- If the request names specific foods, exercises, days, or constraints, those must appear differently in the revised text.',
     '- Keep language natural, human, and coach-ready in plain text, not JSON.',
@@ -217,7 +233,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
           ? stabilizeDietCaloriesAfterEdit(revisedRaw, {
               previousCalories:
                 input.previousCalories ?? parseHeaderCalories(currentText),
-              preserveCalories: !touchesCalories,
+              preserveCalories,
             })
           : revisedRaw
 
@@ -362,7 +378,14 @@ export async function editPlanForClientChange(
   const clientRequest = input.clientRequest.trim()
   if (!clientRequest) throw new Error('Client request is required.')
 
-  const touchesCalories = clientRequestTouchesCalories(clientRequest)
+  const needsExpenditure = clientRequestNeedsExpenditureFocus(clientRequest)
+  const touchesCalories = clientRequestTouchesCalories(clientRequest) && !needsExpenditure
+  const preserveCalories = !touchesCalories || needsExpenditure
+  const calorieRules = needsExpenditure
+    ? EDIT_EXPENDITURE_FIRST_RULES
+    : touchesCalories
+      ? SAFE_RATE_OF_CHANGE_RULE
+      : EDIT_CALORIE_PRESERVATION_RULES
   const systemPrompt = [
     'You are an expert fitness coach editor doing an IN-PLACE edit of the client\'s current plan.',
     'Revise diet and workout sections based on the client request in ONE response.',
@@ -378,7 +401,8 @@ export async function editPlanForClientChange(
     WORKOUT_SECTION_PROMPT_RULES,
     WORKOUT_VOLUME_PROMPT_RULES,
     PROTEIN_CALORIE_PROMPT_RULES,
-    touchesCalories ? SAFE_RATE_OF_CHANGE_RULE : EDIT_CALORIE_PRESERVATION_RULES,
+    HIGH_FLUX_PHILOSOPHY_RULES,
+    calorieRules,
     `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
     '- No cross-day references. No weekly progression narrative.',
   ].join('\n')
@@ -436,7 +460,7 @@ export async function editPlanForClientChange(
     stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.nutritionPlan)),
     {
       previousCalories: parseHeaderCalories(input.nutritionText),
-      preserveCalories: !touchesCalories,
+      preserveCalories,
     }
   )
   const workoutPlan = stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.workoutPlan))

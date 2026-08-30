@@ -409,6 +409,7 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
       dayHint,
       'Change only what the client asked for — swap the named foods/exercises, not the whole week.',
       'If they did not mention calories, macros, deficit, or surplus, keep the same daily calorie average.',
+      'If they mention a plateau or not losing weight, raise steps/training — do NOT cut calories.',
       SAFE_RATE_OF_CHANGE_RULE,
       clientJourney?.trim() ? `Client journey:\n${clientJourney.trim()}` : '',
     ]

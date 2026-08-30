@@ -1,5 +1,7 @@
-import type { OnboardingProfile } from '@/types/database'
+import type { MetabolicFluxLevel } from '@/lib/ai/metabolic-flux'
+import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
 import { DIET_FLOOR_TARGET_KCAL } from '@/lib/ai/plan-quality-rules'
+import type { OnboardingProfile } from '@/types/database'
 
 const ACTIVITY_MULTIPLIER: Record<string, number> = {
   sedentary: 1.2,
@@ -11,7 +13,15 @@ const ACTIVITY_MULTIPLIER: Record<string, number> = {
 /** True when the client explicitly asked to change intake targets. */
 export function clientRequestTouchesCalories(request: string): boolean {
   const t = request.toLowerCase()
-  return /\b(calor(?:y|ies)?|kcal|macros?|deficit|surplus|bulk(?:ing)?|cut(?:ting)?|eat\s+more|eat\s+less|hungry|not\s+losing|not\s+gaining|maintenance|protein\s+target|carbs?|fat\s+target|increase\s+food|decrease\s+food|portion)\b/i.test(
+  return /\b(calor(?:y|ies)?|kcal|macros?|deficit|surplus|bulk(?:ing)?|cut(?:ting)?|eat\s+more|eat\s+less|hungry|maintenance|protein\s+target|carbs?|fat\s+target|increase\s+food|decrease\s+food|portion)\b/i.test(
+    t
+  )
+}
+
+/** Plateau / stall language — respond with higher output, not lower calories. */
+export function clientRequestNeedsExpenditureFocus(request: string): boolean {
+  const t = request.toLowerCase()
+  return /\b(not\s+losing|not\s+gaining|plateau|stuck|stall(?:ed|ing)?|no\s+progress|weight\s+not\s+(?:moving|changing|dropping)|slow\s+progress|not\s+seeing\s+results)\b/i.test(
     t
   )
 }
@@ -49,8 +59,18 @@ export function estimateMaintenanceCalories(input: {
   return Number.isFinite(maintenance) && maintenance > 0 ? maintenance : Math.round(weight * 30)
 }
 
+const FAT_LOSS_DEFICIT: Record<MetabolicFluxLevel, { min: number; max: number }> = {
+  steady: { min: 350, max: 150 },
+  build_up: { min: 300, max: 100 },
+  high_flux: { min: 250, max: 50 },
+}
+
 /** Suggested daily target band for prompts — never below the platform floor. */
-export function calorieTargetBand(maintenance: number, goalHint?: string | null): {
+export function calorieTargetBand(
+  maintenance: number,
+  goalHint?: string | null,
+  fluxLevel: MetabolicFluxLevel = 'high_flux'
+): {
   maintenance: number
   min: number
   max: number
@@ -60,14 +80,15 @@ export function calorieTargetBand(maintenance: number, goalHint?: string | null)
   let max = maintenance * 1.1
 
   if (/fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)) {
-    min = maintenance - 400
-    max = maintenance - 150
+    const deficit = FAT_LOSS_DEFICIT[fluxLevel]
+    min = maintenance - deficit.min
+    max = maintenance - deficit.max
   } else if (/gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)) {
     min = maintenance + 150
     max = maintenance + 400
   } else if (/recomp|recomposition|athletic|performance|maintain/.test(goal)) {
-    min = maintenance - 100
-    max = maintenance + 150
+    min = maintenance - 50
+    max = maintenance + 200
   }
 
   min = Math.max(Math.round(min), DIET_FLOOR_TARGET_KCAL)
@@ -78,7 +99,7 @@ export function calorieTargetBand(maintenance: number, goalHint?: string | null)
 
 export function formatCalorieTargetPrompt(profile: Pick<
   OnboardingProfile,
-  'weight' | 'height' | 'age' | 'gender' | 'activity_level' | 'fitness_goal'
+  'weight' | 'height' | 'age' | 'gender' | 'activity_level' | 'fitness_goal' | 'onboarding_data' | 'sleep_duration' | 'training_experience' | 'injuries'
 >): string | null {
   const maintenance = estimateMaintenanceCalories({
     weightKg: profile.weight,
@@ -89,11 +110,14 @@ export function formatCalorieTargetPrompt(profile: Pick<
   })
   if (!maintenance) return null
 
-  const band = calorieTargetBand(maintenance, profile.fitness_goal)
+  const flux = resolveMetabolicFluxPlan(profile as OnboardingProfile)
+  const band = calorieTargetBand(maintenance, profile.fitness_goal, flux.level)
   return [
     'CALORIE TARGET (use this math — do not guess lower):',
     `- Estimated maintenance: ~${band.maintenance} kcal/day.`,
+    `- Metabolic flux level: ${flux.label}.`,
     `- Program this client between ~${band.min} and ~${band.max} kcal/day for their goal.`,
+    '- High-flux rule: create fat-loss gaps mainly through steps/training/cardio, not by slashing food first.',
     `- Never below ${DIET_FLOOR_TARGET_KCAL} kcal/day. If food portions sum lower, add carbs/fats the client will eat.`,
     '- Header calories, daily average lines, and meal (P:…| ~K kcal) lines must all match.',
   ].join('\n')

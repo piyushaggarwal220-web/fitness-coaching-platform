@@ -29,6 +29,7 @@ import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   DAY_HEADER_PROMPT_RULES,
   EXERCISE_NAME_PROMPT_RULES,
+  HIGH_FLUX_PHILOSOPHY_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   WORKOUT_SECTION_PROMPT_RULES,
   WORKOUT_VOLUME_PROMPT_RULES,
@@ -218,6 +219,7 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   '- Include a clear daily average line in the prose, e.g. "Daily averages: ~1850 kcal | P: 95g | C: 200g | F: 55g" matching the header fields. Protein in that line is the honest food sum, not a prettier higher number.',
   '- CALORIE CONSISTENCY: any calorie number you state in the conversational note (e.g. "I\'m giving you ~1850 calories this week") MUST equal the daily average and the header calories. Never state a different daily calorie target in the prose than the food math produces. If you mention a deficit/surplus, phrase it as a change (e.g. "about 150 kcal lower than last week") — do not state a second daily total.',
   SAFE_RATE_OF_CHANGE_RULE,
+  HIGH_FLUX_PHILOSOPHY_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   '- Write a complete 7-day diet. Use the full output budget. Do not skip days or thin out meals to save tokens.',
   '- Never write "Welcome to week N" as a greeting in diet prose. You MAY label the plan header with Week N so the client can see which coaching week this is.',

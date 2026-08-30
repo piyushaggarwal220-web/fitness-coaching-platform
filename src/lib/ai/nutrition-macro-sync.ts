@@ -266,7 +266,7 @@ export function enforceDietSafety(
         hint:
           `Last week averaged about ${prev} kcal/day and this draft is about ${cals} kcal/day — a ${drop} kcal cut. ` +
           `That is too sharp (example: do not jump from ~2100 down to ~1780). Trim at most ${MAX_WEEKLY_KCAL_DECREASE} kcal ` +
-          `(stay at about ${safeFloor}+ kcal). Never drop to the ${DIET_FLOOR_TARGET_KCAL} floor just because protein was hard to hit.`,
+          `(stay at about ${safeFloor}+ kcal) and only after raising steps/training. Never drop to the ${DIET_FLOOR_TARGET_KCAL} floor just because protein was hard to hit.`,
       }
     }
   }

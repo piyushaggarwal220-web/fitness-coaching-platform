@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'protein-cal-1800-sets-names-sections-v4'
+export const PLAN_QUALITY_RULES_VERSION = 'protein-cal-1800-sets-names-sections-high-flux-v5'
 
 /** Minimum daily calories for generated diets. Do not cut below this to chase protein. */
 export const DIET_FLOOR_TARGET_KCAL = 1800
@@ -30,6 +30,22 @@ export const EDIT_CALORIE_PRESERVATION_RULES = [
   '- Do not rewrite unrelated days. Do not redesign the week. Do not "rebalance" macros.',
   '- Adjust portion sizes slightly if needed so the daily average stays where it was.',
   '- Header Calories/Protein/Carbs/Fat must still match the meal math.',
+].join('\n')
+
+export const HIGH_FLUX_PHILOSOPHY_RULES = [
+  'HIGH FLUX PHILOSOPHY (non-negotiable):',
+  '- Push higher caloric intake paired with higher output (steps, training, cardio).',
+  '- Increase expenditure before reducing calories — especially for fat loss and plateaus.',
+  '- Fat loss: mild deficit (about 150 to 250 kcal below maintenance at high flux) while steps/training carry most of the gap.',
+  '- Never respond to "not losing" or a plateau by slashing food; raise steps/training first.',
+].join('\n')
+
+export const EDIT_EXPENDITURE_FIRST_RULES = [
+  'PLATEAU / STALL EDIT (client wants progress but did NOT ask to cut calories):',
+  '- Do NOT reduce daily calories, portions, or carbs/fats to force fat loss.',
+  '- HOLD the current calorie average (within ~75 kcal). You may improve food quality or timing only.',
+  '- Tell the client the next lever is steps/training/cardio — not eating less.',
+  '- For workout edits: raise daily step targets and/or add sustainable walking/LISS within their schedule and volume caps.',
 ].join('\n')
 
 export const WORKOUT_VOLUME_PROMPT_RULES = [

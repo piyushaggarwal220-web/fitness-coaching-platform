@@ -1,4 +1,5 @@
 import {
+  clientRequestNeedsExpenditureFocus,
   clientRequestTouchesCalories,
   estimateMaintenanceCalories,
   calorieTargetBand,
@@ -27,6 +28,14 @@ assert(
   'food swap does not count as calorie request',
   clientRequestTouchesCalories('Swap chicken for paneer on Tuesday lunch') === false
 )
+assert(
+  'plateau does not count as explicit calorie request',
+  clientRequestTouchesCalories('I am not losing weight anymore') === false
+)
+assert(
+  'detects plateau expenditure focus',
+  clientRequestNeedsExpenditureFocus('I am not losing weight anymore') === true
+)
 
 const maintenance = estimateMaintenanceCalories({
   weightKg: 70,
@@ -37,9 +46,11 @@ const maintenance = estimateMaintenanceCalories({
 })
 assert('maintenance estimate is realistic', Boolean(maintenance && maintenance >= 2000 && maintenance <= 3200))
 
-const band = calorieTargetBand(maintenance ?? 2200, 'fat_loss')
-assert('fat loss band stays above floor', band.min >= 1800)
-assert('fat loss band caps deficit', band.max <= (maintenance ?? 2200))
+const highFluxBand = calorieTargetBand(maintenance ?? 2200, 'fat_loss', 'high_flux')
+const legacyBand = calorieTargetBand(maintenance ?? 2200, 'fat_loss', 'steady')
+assert('high flux fat loss band stays above floor', highFluxBand.min >= 1800)
+assert('high flux band is shallower than steady', highFluxBand.min > legacyBand.min)
+assert('high flux band caps deficit', highFluxBand.max <= (maintenance ?? 2200))
 
 const priorDiet = `Calories: 2100
 Protein: 120g

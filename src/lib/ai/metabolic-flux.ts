@@ -48,14 +48,14 @@ function parsePreference(raw: string | null | undefined): FluxCapacityPreference
 
 /**
  * Resolve how hard to push caloric intake AND training/steps together.
- * Default leans toward build_up (higher flux) when the client has not answered yet.
+ * Default is high_flux when the client has not answered yet.
  * Sleep, stress, injuries, and experience cap aggressiveness.
  */
 export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicFluxPlan {
   const preference =
     parsePreference(profile.onboarding_data?.lifestyle?.fluxCapacity) ?? null
-  // Product default: push toward higher flux unless the client opted steady or recovery forbids it.
-  let level: MetabolicFluxLevel = preference ?? 'build_up'
+  // Product default: push toward high flux unless the client opted steady or recovery forbids it.
+  let level: MetabolicFluxLevel = preference ?? 'high_flux'
   const dampenReasons: string[] = []
 
   if (profile.sleep_duration === 'less_than_6') {
@@ -87,15 +87,15 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
     }
   }
 
-  // Strong recovery + advanced: allow nudging missing/steady answers toward build_up only (never force high_flux).
   if (
     !preference &&
     profile.training_experience === 'advanced' &&
     (profile.sleep_duration === '7_to_8' || profile.sleep_duration === '8_plus') &&
     profile.onboarding_data?.lifestyle?.stressLevel === 'low' &&
-    level === 'build_up'
+    level === 'build_up' &&
+    dampenReasons.length === 0
   ) {
-    // Keep build_up; prompt text already pushes upper band within level.
+    level = 'high_flux'
   }
 
   const labels: Record<MetabolicFluxLevel, string> = {
@@ -106,8 +106,9 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
 
   const dietByLevel: Record<MetabolicFluxLevel, string> = {
     steady: [
-      'Calorie bias: STEADY; prioritize adherence over throughput.',
-      'Fat loss: 250 to 400 kcal deficit (never more than 400 from maintenance; do not crash). Muscle gain: 150 to 250 kcal surplus. Recomp: maintenance.',
+      'Calorie bias: STEADY; prioritize adherence, but still raise output before cutting food.',
+      'Fat loss: maintenance to shallow 200 to 300 kcal deficit. When progress stalls, add steps/training/cardio FIRST — never slash calories as the first lever.',
+      'Muscle gain: 150 to 250 kcal surplus. Recomp: maintenance.',
       'Keep food volume manageable; avoid forcing large meals if appetite is limited.',
       `Floor still at least ${DIET_FLOOR_TARGET_KCAL} kcal. If a lower intake seems indicated, stay at the floor and flag the coach.`,
       'If eating is already low and weight is not dropping: reverse diet (raise calories gradually), never cut further.',
@@ -115,7 +116,7 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
     ].join(' '),
     build_up: [
       'Calorie bias: BUILD-UP toward higher metabolic flux (eat more while moving more).',
-      'Fat loss: shallower 250 to 350 kcal deficit so absolute intake stays higher while steps/training rise.',
+      'Fat loss: mild 200 to 300 kcal deficit — create most of the gap via steps/training, not food cuts.',
       'Muscle gain: 250 to 350 kcal surplus with enough carbs around training; do not force huge meals.',
       'Recomp: slight surplus on training days / maintenance on rest (about plus or minus 100 kcal).',
       'Prefer higher-volume meals (veg, lean protein, dairy/curd, fruit) so the client can eat more without feeling restricted.',
@@ -170,8 +171,9 @@ export function buildMetabolicFluxSection(profile: OnboardingProfile): string {
 
   return [
     '## Metabolic Flux Bias (MUST follow; scale intake AND output together)',
-    'LURVOX preference: push clients toward higher metabolic flux (higher caloric intake + higher training/steps), scaled to this client; never a crash deficit with low output, and never huge calories with sedentary days.',
-    'Also pair with mesocycle: calories rise with weekly intensity; trim a little when a new lower-volume cycle starts.',
+    'LURVOX preference: push clients toward HIGH metabolic flux — higher caloric intake paired with higher training/steps. Increase expenditure before reducing calories. Never a crash deficit with low output, and never huge calories with sedentary days.',
+    'When progress stalls or the client is "not losing": raise steps/cardio/training density first; do NOT cut food unless intake is already well above maintenance and output is maxed within their schedule.',
+    'Pair with mesocycle: calories rise with weekly intensity inside the month. On a new lower-volume month, HOLD calories (do not trim) and raise steps/cardio if fat loss is the goal.',
     `- Effective level: ${preferenceLabel}`,
     plan.dampenReasons.length > 0
       ? `- Safety dampeners applied: ${plan.dampenReasons.join('; ')}`
