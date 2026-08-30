@@ -719,14 +719,16 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       continue
     }
 
-    const { plan, error } = parseGeneratedPlanResponse(response.text, {
+    const parsed = parseGeneratedPlanResponse(response.text, {
       mode: validationMode,
     })
-    if (!plan) {
-      lastValidationError = error ?? 'Invalid plan JSON.'
+    if (!parsed.plan) {
+      lastValidationError = parsed.error ?? 'Invalid plan JSON.'
       completenessHint = null
       continue
     }
+
+    let plan = parsed.plan
 
     if (!supportSection && providerMode !== 'mock') {
       const completeness = assessPlanCompleteness(plan, {
