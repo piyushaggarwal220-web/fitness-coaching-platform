@@ -13,8 +13,10 @@
   a[href*="plans/1-month"],
   a[href*="plan=1_month"],
   a[href*="1_week_trial"],
-  [data-cta-button],
-  [class*="ai-transformation-plan-cta-wrapper"] {
+  a[data-cta-button][href*="1-month"],
+  a[data-cta-button][href*="1_month"],
+  a[data-cta-button][href*="trial"],
+  a[data-cta-button][href*="1_week"] {
     display: none !important;
   }
 
@@ -39,11 +41,14 @@
 <script>
 (function () {
   function wire() {
-    document
-      .querySelectorAll('[data-cta-button],[class*="ai-transformation-plan-cta-wrapper"]')
-      .forEach(function (el) {
+    document.querySelectorAll('a[data-cta-button]').forEach(function (el) {
+      var href = el.getAttribute('href') || ''
+      if (/trial|1_week|1_month|1-month/i.test(href)) {
         el.style.setProperty('display', 'none', 'important')
-      })
+      } else {
+        el.style.removeProperty('display')
+      }
+    })
     document
       .querySelectorAll('[class*="ai-transformation-plan-card-"][data-plan-link]')
       .forEach(function (card) {

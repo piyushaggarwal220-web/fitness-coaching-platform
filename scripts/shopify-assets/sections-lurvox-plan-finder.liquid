@@ -57,7 +57,7 @@
         After you start: coach assigned · Day 1 personal plan · mid-week and weekly check-ins in the app.
       </p>
       <div class="lx-pf__result-actions">
-        <a class="lx-pf__btn lx-pf__btn--primary" data-pf-checkout href="#">
+        <a class="lx-pf__btn lx-pf__btn--primary" data-pf-checkout href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/3-months">
           <span data-pf-checkout-label>See this plan</span>
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden>

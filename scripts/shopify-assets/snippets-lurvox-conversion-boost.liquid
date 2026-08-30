@@ -677,27 +677,10 @@
         el.textContent = '₹' + n.toLocaleString('en-IN');
       });
     }
-    function rewriteCheckoutToPlanPages() {
-      var map = {
-        '3_months': 'https://app.lurvox.in/plans/3-months',
-        '6_months': 'https://app.lurvox.in/plans/6-months',
-        '12_months': 'https://app.lurvox.in/plans/12-months'
-      };
-      document.querySelectorAll('a[href*="app.lurvox.in/checkout"]').forEach(function (a) {
-        var href = a.getAttribute('href') || '';
-        Object.keys(map).forEach(function (slug) {
-          if (href.indexOf('plan=' + slug) !== -1) {
-            a.setAttribute('href', map[slug]);
-          }
-        });
-      });
-    }
     rewriteMatrixChoose();
-    rewriteCheckoutToPlanPages();
     formatPlanCardPrices();
     document.addEventListener('DOMContentLoaded', function () {
       rewriteMatrixChoose();
-      rewriteCheckoutToPlanPages();
       formatPlanCardPrices();
     });
   })();
