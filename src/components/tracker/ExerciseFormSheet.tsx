@@ -1,29 +1,16 @@
 'use client'
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import Script from 'next/script'
 import { Loader2, Lock, Play, X } from 'lucide-react'
 import { colors, layout, radius, spacing } from '@/lib/design-tokens'
 import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
 import {
-  EXERCISE_LIBRARY_ADDON_LABEL,
   EXERCISE_LIBRARY_ADDON_PAISE,
   formatInrFromPaise,
 } from '@/lib/payments/checkout-discounts'
-
-type RazorpayHandlerResponse = {
-  razorpay_order_id: string
-  razorpay_payment_id: string
-  razorpay_signature: string
-}
-type RazorpayInstance = { open: () => void }
-type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance
-
-declare global {
-  interface Window {
-    Razorpay?: RazorpayConstructor
-  }
-}
+import { startExerciseLibraryCheckout } from '@/lib/payments/exercise-library-checkout-client'
 
 type VideoOption = { gender: FormDemoGender; angle: string; hasPoster?: boolean }
 
@@ -292,84 +279,17 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
     setUnlockError(null)
     setUnlocking(true)
     try {
-      const orderRes = await fetch('/api/payment/addons/exercise-library', {
-        method: 'POST',
-        credentials: 'include',
-      })
-      const orderData = (await orderRes.json().catch(() => null)) as
-        | {
-            error?: string
-            alreadyUnlocked?: boolean
-            testMode?: boolean
-            orderId?: string
-            amount?: number
-            currency?: string
-            keyId?: string
-            email?: string
-            name?: string
-            phone?: string
-          }
-        | null
-      if (orderData?.alreadyUnlocked) {
-        setUnlocking(false)
+      const result = await startExerciseLibraryCheckout()
+      if (result.status === 'success' || result.status === 'already_unlocked') {
         loadForm()
         return
       }
-      if (!orderRes.ok || !orderData?.orderId) {
-        throw new Error(orderData?.error ?? 'Could not start checkout')
+      if (result.status === 'error') {
+        setUnlockError(result.message)
       }
-
-      const finish = async (payload: RazorpayHandlerResponse) => {
-        const verifyRes = await fetch('/api/payment/addons/exercise-library', {
-          method: 'PUT',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        const verifyData = (await verifyRes.json().catch(() => null)) as { error?: string } | null
-        if (!verifyRes.ok) throw new Error(verifyData?.error ?? 'Payment could not be confirmed')
-        setUnlocking(false)
-        loadForm()
-      }
-
-      if (orderData.testMode) {
-        await finish({
-          razorpay_order_id: orderData.orderId,
-          razorpay_payment_id: `test_payment_${Date.now()}`,
-          razorpay_signature: 'test_signature',
-        })
-        return
-      }
-
-      if (!window.Razorpay) {
-        throw new Error('Payment checkout is still loading. Tap Unlock again in a moment.')
-      }
-
-      const rzp = new window.Razorpay({
-        key: orderData.keyId,
-        amount: orderData.amount,
-        currency: orderData.currency ?? 'INR',
-        name: 'LURVOX',
-        description: EXERCISE_LIBRARY_ADDON_LABEL,
-        order_id: orderData.orderId,
-        prefill: {
-          name: orderData.name,
-          email: orderData.email,
-          contact: orderData.phone,
-        },
-        handler: (response: RazorpayHandlerResponse) => {
-          void finish(response).catch((err: unknown) => {
-            setUnlockError(err instanceof Error ? err.message : 'Payment could not be confirmed')
-            setUnlocking(false)
-          })
-        },
-        modal: {
-          ondismiss: () => setUnlocking(false),
-        },
-      })
-      rzp.open()
     } catch (err) {
       setUnlockError(err instanceof Error ? err.message : 'Could not start checkout')
+    } finally {
       setUnlocking(false)
     }
   }
@@ -559,6 +479,18 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
                 <p style={{ margin: 0, fontSize: 12, color: colors.textMuted }}>
                   One-time payment. Your 3 free videos stay unlocked.
                 </p>
+                <Link
+                  href="/library/unlock"
+                  style={{
+                    marginTop: 4,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: colors.accent,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Pay in your browser instead
+                </Link>
               </div>
             </div>
           ) : !data?.configured ? (

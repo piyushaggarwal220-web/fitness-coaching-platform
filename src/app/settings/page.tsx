@@ -7,7 +7,12 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard'
 import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner'
+import { profileEntitledForExerciseLibrary } from '@/lib/addon-protocols'
 import { authenticateClient } from '@/lib/onboarding'
+import {
+  EXERCISE_LIBRARY_ADDON_PAISE,
+  formatInrFromPaise,
+} from '@/lib/payments/checkout-discounts'
 import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription'
 import { createClient } from '@/lib/supabase/client'
 import { colors, spacing } from '@/lib/design-tokens'
@@ -57,6 +62,19 @@ export default function ClientSettingsPage() {
     <ClientShell title="Settings">
       {renewalPrompt && <MembershipRenewalBanner prompt={renewalPrompt} />}
       {subscription && <ActiveSubscriptionCard subscription={subscription} />}
+
+      {!profileEntitledForExerciseLibrary(profile) ? (
+        <Card variant="elevated" style={{ marginBottom: spacing[3] }}>
+          <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 16 }}>Exercise form videos</p>
+          <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textSecondary }}>
+            Unlock every lift in your workout tracker for {formatInrFromPaise(EXERCISE_LIBRARY_ADDON_PAISE)},
+            one-time. Pay securely in your browser.
+          </p>
+          <Button fullWidth onClick={() => router.push('/library/unlock')}>
+            Unlock form videos
+          </Button>
+        </Card>
+      ) : null}
 
       <Card variant="glass">
         <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 16 }}>Account</p>
