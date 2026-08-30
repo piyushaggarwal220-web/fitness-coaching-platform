@@ -9,6 +9,10 @@
       "schedule": "0 3 * * *"
     },
     {
+      "path": "/api/cron/weekly-call-schedule",
+      "schedule": "0 4 * * *"
+    },
+    {
       "path": "/api/cron/notification-delivery",
       "schedule": "15 4 * * *"
     }

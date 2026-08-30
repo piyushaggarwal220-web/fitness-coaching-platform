@@ -93,15 +93,18 @@ export function DrawerNav({ open, onClose, items, title, subtitle, theme = 'dark
         className={`drawer-panel safe-top safe-bottom ${visible ? '' : 'drawer-panel--closing'}`}
         style={{
           width: 'min(320px, 85vw)',
+          height: '100%',
+          maxHeight: '100dvh',
           backgroundColor: colors.bgSecondary,
           borderRight: `1px solid ${colors.divider}`,
           boxShadow: theme === 'light' ? '8px 0 40px rgba(24,24,27,0.12)' : '8px 0 40px rgba(0,0,0,0.45)',
           display: 'flex',
           flexDirection: 'column',
           padding: `${spacing[4]}px ${spacing[3]}px`,
+          overflow: 'hidden',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing[5] }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing[5], flexShrink: 0 }}>
           <div>
             <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.02em' }}>{title}</p>
             {subtitle && (
@@ -130,7 +133,18 @@ export function DrawerNav({ open, onClose, items, title, subtitle, theme = 'dark
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            paddingBottom: spacing[2],
+          }}
+        >
           {items.map((item, index) => {
             const active = pathname === item.href || (item.href !== '/dashboard' && item.href !== '/coach/dashboard' && item.href !== '/admin' && pathname.startsWith(item.href))
             return (
@@ -179,7 +193,7 @@ export function DrawerNav({ open, onClose, items, title, subtitle, theme = 'dark
           })}
         </div>
 
-        <p style={{ margin: `${spacing[4]}px 0 0`, fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+        <p style={{ margin: `${spacing[4]}px 0 0`, fontSize: 11, color: colors.textMuted, textAlign: 'center', flexShrink: 0 }}>
           Premium coaching platform
         </p>
       </nav>

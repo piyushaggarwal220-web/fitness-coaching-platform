@@ -11,6 +11,7 @@ import {
   LifeBuoy,
   ListOrdered,
   MessageCircle,
+  TrendingUp,
   UserRound,
   Users,
 } from 'lucide-react'
@@ -31,6 +32,7 @@ const COACH_DRAWER_ITEMS: DrawerNavItem[] = [
   { href: '/coach/queue', label: 'Queue', icon: <ListOrdered size={20} /> },
   { href: '/coach/chat', label: 'Chats', icon: <MessageCircle size={20} /> },
   { href: '/coach/checkins', label: 'Check-ins', icon: <ClipboardList size={20} /> },
+  { href: '/coach/transformations', label: 'Transformations', icon: <TrendingUp size={20} /> },
   { href: '/coach/plans', label: 'Plans', icon: <FileText size={20} /> },
   { href: '/coach/support', label: 'Support', icon: <LifeBuoy size={20} /> },
   { href: '/coach/profile', label: 'Profile', icon: <UserRound size={20} /> },

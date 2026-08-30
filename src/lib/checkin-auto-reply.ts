@@ -54,6 +54,13 @@ async function resolveReply(
     })
     if (activateError) return { error: `publish_failed: ${activateError}` }
 
+    try {
+      const { ensureWeeklyCallForClient } = await import('@/lib/weekly-call-schedule')
+      await ensureWeeklyCallForClient(supabase, draft.client_id)
+    } catch (err) {
+      console.error('[checkin-auto-reply] weekly call schedule failed', err)
+    }
+
     const message = clientCoachNotes(draft.coach_notes).trim() || fallbackPublishCoachNotes(draft)
     return { feedback: message, publishedPlanId: draft.id }
   }

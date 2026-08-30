@@ -21,12 +21,20 @@ export type TransformationScoreRow = {
   checkinCount: number
   photoPairs: number
   weeksActive: number | null
+  marketingPhotoConsent: boolean
+  marketingQuoteConsent: boolean
+  showcaseStatus: string | null
   breakdown: {
     body: number
     consistency: number
     photos: number
     time: number
   }
+}
+
+export type LoadTransformationScoresOptions = {
+  coachId?: string
+  clientIds?: string[]
 }
 
 function gradeFor(score: number): TransformationScoreRow['grade'] {
@@ -36,23 +44,48 @@ function gradeFor(score: number): TransformationScoreRow['grade'] {
   return 'D'
 }
 
-export async function loadTransformationScores(): Promise<TransformationScoreRow[]> {
+export async function loadTransformationScores(
+  options: LoadTransformationScoresOptions = {}
+): Promise<TransformationScoreRow[]> {
   const admin = createAdminClient()
-  const { data: profiles } = await admin
+
+  let profileQuery = admin
     .from('profiles')
-    .select('id, name, email, weight, onboarding_data, checkin_schedule_started_at, progress_photo_front, progress_photo_side, progress_photo_back')
+    .select(
+      'id, name, email, weight, onboarding_data, checkin_schedule_started_at, progress_photo_front, progress_photo_side, progress_photo_back, marketing_photo_consent_at, marketing_quote_consent_at, coach_id'
+    )
     .eq('onboarding_complete', true)
-    .limit(400)
+
+  if (options.coachId) {
+    profileQuery = profileQuery.eq('coach_id', options.coachId)
+  }
+  if (options.clientIds?.length) {
+    profileQuery = profileQuery.in('id', options.clientIds)
+  }
+
+  const { data: profiles } = await profileQuery.limit(400)
 
   const ids = (profiles ?? []).map((p) => p.id as string)
   if (ids.length === 0) return []
 
-  const { data: checkins } = await admin
-    .from('checkins')
-    .select('client_id, weight, submitted_at, diet_adherence, workout_adherence, progress_photo_front, checkin_type')
-    .in('client_id', ids)
-    .eq('checkin_type', 'weekly')
-    .order('submitted_at', { ascending: true })
+  const [{ data: checkins }, { data: showcases }] = await Promise.all([
+    admin
+      .from('checkins')
+      .select('client_id, weight, submitted_at, diet_adherence, workout_adherence, progress_photo_front, checkin_type')
+      .in('client_id', ids)
+      .eq('checkin_type', 'weekly')
+      .order('submitted_at', { ascending: true }),
+    admin
+      .from('transformation_showcases')
+      .select('client_id, status')
+      .in('client_id', ids)
+      .in('status', ['candidate', 'approved', 'published']),
+  ])
+
+  const showcaseByClient = new Map<string, string>()
+  for (const row of showcases ?? []) {
+    showcaseByClient.set(row.client_id as string, row.status as string)
+  }
 
   const byClient = new Map<string, typeof checkins>()
   for (const row of checkins ?? []) {
@@ -99,7 +132,12 @@ export async function loadTransformationScores(): Promise<TransformationScoreRow
 
     let weeksActive: number | null = null
     if (profile.checkin_schedule_started_at) {
-      weeksActive = Math.max(0, Math.floor((now - new Date(profile.checkin_schedule_started_at as string).getTime()) / (7 * 24 * 60 * 60 * 1000)))
+      weeksActive = Math.max(
+        0,
+        Math.floor(
+          (now - new Date(profile.checkin_schedule_started_at as string).getTime()) / (7 * 24 * 60 * 60 * 1000)
+        )
+      )
     }
     const time = Math.min(10, Math.round(((weeksActive ?? 0) / 12) * 10))
 
@@ -118,9 +156,21 @@ export async function loadTransformationScores(): Promise<TransformationScoreRow
       checkinCount: list.length,
       photoPairs,
       weeksActive,
+      marketingPhotoConsent: Boolean(profile.marketing_photo_consent_at),
+      marketingQuoteConsent: Boolean(profile.marketing_quote_consent_at),
+      showcaseStatus: showcaseByClient.get(profile.id as string) ?? null,
       breakdown: { body, consistency, photos, time },
     })
   }
 
   return rows.sort((a, b) => b.score - a.score)
+}
+
+export function scoreRowForShowcase(row: TransformationScoreRow): boolean {
+  return (
+    (row.grade === 'A' || row.grade === 'B') &&
+    row.photoPairs === 1 &&
+    (row.weeksActive ?? 0) >= 4 &&
+    row.checkinCount >= 2
+  )
 }

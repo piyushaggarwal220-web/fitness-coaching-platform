@@ -188,6 +188,11 @@ function CoachNewPlanForm() {
         return;
       }
       await syncTrackerAfterPlanPublishAsync(created.client_id, created.id);
+      void fetch('/api/coach/weekly-call/ensure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: created.client_id }),
+      });
     }
 
     if (fromAi && form.client_id) {

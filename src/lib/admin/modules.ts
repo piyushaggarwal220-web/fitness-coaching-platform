@@ -121,7 +121,7 @@ export const ADMIN_MODULES: AdminModule[] = [
     href: '/admin/transformation-scores',
     status: 'implemented',
     showInNav: true,
-    navOrder: 79,
+    navOrder: 32,
     tables: ['profiles', 'checkins'],
   },
   {

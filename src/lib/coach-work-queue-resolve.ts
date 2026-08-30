@@ -233,6 +233,12 @@ export async function resolveWorkQueueTask(
           coach_id: plan.coach_id ?? coachId,
         })
         if (activateError) return { ok: false, resolved: false, error: activateError }
+        try {
+          const { ensureWeeklyCallForClient } = await import('@/lib/weekly-call-schedule')
+          await ensureWeeklyCallForClient(admin, plan.client_id)
+        } catch (err) {
+          console.error('[work-queue-resolve] weekly call schedule failed', err)
+        }
       } else {
         const { error: syncError } = await syncPlanDeliveredFlag(admin, task.clientId)
         if (syncError) return { ok: false, resolved: false, error: syncError }
@@ -279,6 +285,12 @@ export async function resolveWorkQueueTask(
               coach_id: draft.coach_id ?? coachId,
             })
             if (activateError) return { ok: false, resolved: false, error: activateError }
+            try {
+              const { ensureWeeklyCallForClient } = await import('@/lib/weekly-call-schedule')
+              await ensureWeeklyCallForClient(admin, draft.client_id)
+            } catch (err) {
+              console.error('[work-queue-resolve] weekly call schedule failed', err)
+            }
           } else {
             await admin
               .from('plan_change_requests')

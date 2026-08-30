@@ -6,7 +6,7 @@ import {
 } from '@/lib/chat-api-access'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { CallRequestStatus } from '@/types/database'
+import type { CallRequest, CallRequestStatus } from '@/types/database'
 
 const FINAL_STATUSES = new Set<CallRequestStatus>(['completed', 'declined', 'cancelled'])
 const COACH_STATUSES = new Set<CallRequestStatus>([
@@ -223,6 +223,21 @@ export async function PATCH(request: Request) {
       actionUrl: '/client/chat',
       metadata: { callRequestId: current.id, status: body.status },
     })
+  }
+
+  if (body.status === 'completed' && (current as CallRequest).source === 'weekly_entitlement') {
+    try {
+      const { scheduleNextWeeklyCallAfterCompletion } = await import('@/lib/weekly-call-schedule')
+      await scheduleNextWeeklyCallAfterCompletion(admin, {
+        id: current.id,
+        client_id: current.client_id,
+        coach_id: current.coach_id,
+        scheduled_for: current.scheduled_for,
+        source: (current as CallRequest).source,
+      })
+    } catch (err) {
+      console.error('[call-requests] next weekly call schedule failed', err)
+    }
   }
 
   return NextResponse.json({ request: updated })

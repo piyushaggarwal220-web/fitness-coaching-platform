@@ -25,6 +25,10 @@ export default function ClientSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<OnboardingProfile | null>(null)
   const [purchase, setPurchase] = useState<Purchase | null>(null)
+  const [photoConsent, setPhotoConsent] = useState(false)
+  const [quoteConsent, setQuoteConsent] = useState(false)
+  const [consentBusy, setConsentBusy] = useState(false)
+  const [consentMsg, setConsentMsg] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -34,6 +38,8 @@ export default function ClientSettingsPage() {
         return
       }
       setProfile(result.profile)
+      setPhotoConsent(Boolean(result.profile.marketing_photo_consent_at))
+      setQuoteConsent(Boolean(result.profile.marketing_quote_consent_at))
 
       const { data } = await supabase
         .from('purchases')
@@ -50,6 +56,25 @@ export default function ClientSettingsPage() {
     void load()
   }, [router])
 
+  const saveConsent = async (next: { photoConsent?: boolean; quoteConsent?: boolean }) => {
+    setConsentBusy(true)
+    setConsentMsg('')
+    const res = await fetch('/api/client/marketing-consent', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    })
+    const data = await res.json()
+    setConsentBusy(false)
+    if (!res.ok) {
+      setConsentMsg(data.error ?? 'Could not save consent.')
+      return
+    }
+    if (next.photoConsent != null) setPhotoConsent(next.photoConsent)
+    if (next.quoteConsent != null) setQuoteConsent(next.quoteConsent)
+    setConsentMsg('Saved.')
+  }
+
   const subscription = getActiveSubscription(
     purchase,
     profile?.subscription_expires_at ?? null
@@ -62,6 +87,42 @@ export default function ClientSettingsPage() {
     <ClientShell title="Settings">
       {renewalPrompt && <MembershipRenewalBanner prompt={renewalPrompt} />}
       {subscription && <ActiveSubscriptionCard subscription={subscription} />}
+
+      <Card variant="elevated" style={{ marginBottom: spacing[3] }}>
+        <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 16 }}>Install Lurvox app</p>
+        <p style={{ margin: '0 0 16px', fontSize: 14, color: colors.textSecondary }}>
+          Add Lurvox to your home screen for faster check-ins, tracker, and coach chat.
+        </p>
+        <Button fullWidth onClick={() => router.push('/install')}>
+          Android & iPhone install guide
+        </Button>
+      </Card>
+
+      <Card variant="glass" style={{ marginBottom: spacing[3] }}>
+        <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 16 }}>Share your transformation</p>
+        <p style={{ margin: '0 0 12px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
+          Optional. Lets your coach nominate your before/after for the Lurvox website. You can withdraw anytime.
+        </p>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10, fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={photoConsent}
+            disabled={consentBusy}
+            onChange={(e) => void saveConsent({ photoConsent: e.target.checked })}
+          />
+          <span>I agree Lurvox may use my progress photos (without my full name) in marketing.</span>
+        </label>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={quoteConsent}
+            disabled={consentBusy}
+            onChange={(e) => void saveConsent({ quoteConsent: e.target.checked })}
+          />
+          <span>I agree Lurvox may use a short quote from my check-ins or feedback in marketing.</span>
+        </label>
+        {consentMsg && <p style={{ margin: '10px 0 0', fontSize: 13, color: colors.textMuted }}>{consentMsg}</p>}
+      </Card>
 
       {!profileEntitledForExerciseLibrary(profile) ? (
         <Card variant="elevated" style={{ marginBottom: spacing[3] }}>

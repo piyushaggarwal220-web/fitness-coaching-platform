@@ -1,6 +1,6 @@
 /**
- * Deploy plan prices to the live storefront: ₹1,299 / ₹2,099 / ₹3,499
- * (monthly ₹433 / ₹350 / ₹292).
+ * Deploy plan prices to the live storefront: ₹1,799 / ₹2,799 / ₹4,499
+ * (monthly ₹600 / ₹467 / ₹375).
  * Uploads edited repo assets and fetch-patches theme-only JSON templates.
  */
 import fs from 'node:fs'
@@ -10,9 +10,16 @@ import { fileURLToPath } from 'node:url'
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const REST = 'https://9uwyq1-0j.myshopify.com/admin/api/2025-01'
 const GQL = `${REST}/graphql.json`
-const token = JSON.parse(
-  fs.readFileSync(path.join(process.env.TEMP, 'shopify-auth-token.json'), 'utf8')
-).access_token
+const tokenPath = path.join(process.env.TEMP, 'shopify-auth-token.json')
+const token =
+  process.env.SHOPIFY_ACCESS_TOKEN ||
+  (fs.existsSync(tokenPath)
+    ? JSON.parse(fs.readFileSync(tokenPath, 'utf8')).access_token
+    : null)
+if (!token) {
+  console.error('Missing Shopify token. Run: node scripts/shopify-pkce-auth.mjs')
+  process.exit(1)
+}
 const H = { 'X-Shopify-Access-Token': token, 'Content-Type': 'application/json' }
 
 const themes = (await (await fetch(`${REST}/themes.json`, { headers: { 'X-Shopify-Access-Token': token } })).json()).themes
@@ -36,40 +43,71 @@ async function get(key) {
 // Price string replacements applied to live JSON templates (theme-only files).
 function patchPrices(text) {
   return text
-    .replace(/"plan_2_price": "\d+"/g, '"plan_2_price": "1299"')
-    .replace(/"plan_3_price": "\d+"/g, '"plan_3_price": "2099"')
-    .replace(/"plan_4_price": "\d+"/g, '"plan_4_price": "3499"')
+    .replace(/"plan_2_price": "\d+"/g, '"plan_2_price": "1799"')
+    .replace(/"plan_3_price": "\d+"/g, '"plan_3_price": "2799"')
+    .replace(/"plan_4_price": "\d+"/g, '"plan_4_price": "4499"')
+    .replace(/"plan_2_original_price": "[^"]*"/g, '"plan_2_original_price": ""')
+    .replace(/"plan_3_original_price": "[^"]*"/g, '"plan_3_original_price": ""')
+    .replace(/"plan_4_original_price": "[^"]*"/g, '"plan_4_original_price": ""')
+    .replace(/"plan_2_savings": "[^"]*"/g, '"plan_2_savings": ""')
+    .replace(/"plan_3_savings": "[^"]*"/g, '"plan_3_savings": ""')
+    .replace(/"plan_4_savings": "[^"]*"/g, '"plan_4_savings": ""')
     .replace(/"plan_2_badge": "[^"]*"/g, '"plan_2_badge": "Debloat"')
     .replace(/"plan_3_badge": "[^"]*"/g, '"plan_3_badge": "Recomp"')
     .replace(/"plan_4_badge": "[^"]*"/g, '"plan_4_badge": "Complete transformation"')
-    .replace(/"plan_2_monthly": "[^"]*"/g, '"plan_2_monthly": "≈ ₹433/month"')
-    .replace(/"plan_3_monthly": "[^"]*"/g, '"plan_3_monthly": "≈ ₹350/month"')
-    .replace(/"plan_4_monthly": "[^"]*"/g, '"plan_4_monthly": "≈ ₹292/month"')
-    .replace(/"plan_2_savings": "[^"]*"/g, '"plan_2_savings": "60% OFF · SAVE ₹1,200"')
-    .replace(/"plan_3_savings": "[^"]*"/g, '"plan_3_savings": "60% OFF · SAVE ₹2,150"')
-    .replace(/"plan_4_savings": "[^"]*"/g, '"plan_4_savings": "60% OFF · SAVE ₹4,000"')
-    .replace(/START — Rs \d+/g, 'START — Rs 433')
-    .replace(/₹1,499 · ₹500\\?\/mo/g, '₹1,299 · ₹433/mo')
-    .replace(/₹2,699 · ₹450\\?\/mo/g, '₹2,099 · ₹350/mo')
-    .replace(/₹999 · ₹333\\?\/mo/g, '₹1,299 · ₹433/mo')
-    .replace(/₹1,699 · ₹283\\?\/mo/g, '₹2,099 · ₹350/mo')
-    .replace(/₹2,999 · ₹333\\?\/mo/g, '₹3,499 · ₹292/mo')
-    .replace(/"col_1_price": "₹1,499"/g, '"col_1_price": "₹1,299"')
-    .replace(/"col_2_price": "₹2,699"/g, '"col_2_price": "₹2,099"')
-    .replace(/"col_1_price": "₹999"/g, '"col_1_price": "₹1,299"')
-    .replace(/"col_2_price": "₹1,699"/g, '"col_2_price": "₹2,099"')
-    .replace(/"col_3_price": "₹2,999"/g, '"col_3_price": "₹3,499"')
-    .replace(/"plan_3_text": "₹500"/g, '"plan_3_text": "₹433"')
-    .replace(/"plan_6_text": "₹450"/g, '"plan_6_text": "₹350"')
-    .replace(/"plan_3_text": "₹333"/g, '"plan_3_text": "₹433"')
-    .replace(/"plan_6_text": "₹283"/g, '"plan_6_text": "₹350"')
-    .replace(/"plan_12_text": "₹333"/g, '"plan_12_text": "₹292"')
-    .replace(/data-plan-price=\\"1499\\"/g, 'data-plan-price=\\"1299\\"')
-    .replace(/data-plan-price=\\"2699\\"/g, 'data-plan-price=\\"2099\\"')
-    .replace(/₹1,499/g, '₹1,299')
-    .replace(/₹2,699/g, '₹2,099')
-    .replace(/₹1499/g, '₹1299')
-    .replace(/₹2699/g, '₹2099')
+    .replace(/"plan_2_monthly": "[^"]*"/g, '"plan_2_monthly": "≈ ₹600/month"')
+    .replace(/"plan_3_monthly": "[^"]*"/g, '"plan_3_monthly": "≈ ₹467/month"')
+    .replace(/"plan_4_monthly": "[^"]*"/g, '"plan_4_monthly": "≈ ₹375/month"')
+    .replace(/Per month with WELCOME60/g, 'Per month')
+    .replace(/WELCOME60 applied at checkout/g, 'One-time payment')
+    .replace(/One-time payment with WELCOME60/g, 'One-time payment')
+    .replace(/START — Rs \d+/g, 'START — Rs 600')
+    .replace(/₹1,499 · ₹500\\?\/mo/g, '₹1,799 · ₹600/mo')
+    .replace(/₹2,699 · ₹450\\?\/mo/g, '₹2,799 · ₹467/mo')
+    .replace(/₹999 · ₹333\\?\/mo/g, '₹1,799 · ₹600/mo')
+    .replace(/₹1,699 · ₹283\\?\/mo/g, '₹2,799 · ₹467/mo')
+    .replace(/₹2,999 · ₹333\\?\/mo/g, '₹4,499 · ₹375/mo')
+    .replace(/₹1,299 · ₹433\\?\/mo/g, '₹1,799 · ₹600/mo')
+    .replace(/₹2,099 · ₹350\\?\/mo/g, '₹2,799 · ₹467/mo')
+    .replace(/₹3,499 · ₹292\\?\/mo/g, '₹4,499 · ₹375/mo')
+    .replace(/"col_1_price": "₹1,499"/g, '"col_1_price": "₹1,799"')
+    .replace(/"col_2_price": "₹2,699"/g, '"col_2_price": "₹2,799"')
+    .replace(/"col_1_price": "₹999"/g, '"col_1_price": "₹1,799"')
+    .replace(/"col_2_price": "₹1,699"/g, '"col_2_price": "₹2,799"')
+    .replace(/"col_3_price": "₹2,999"/g, '"col_3_price": "₹4,499"')
+    .replace(/"col_1_price": "₹1,299[^"]*"/g, '"col_1_price": "₹1,799 · ₹600/mo"')
+    .replace(/"col_2_price": "₹2,099[^"]*"/g, '"col_2_price": "₹2,799 · ₹467/mo"')
+    .replace(/"col_3_price": "₹3,499[^"]*"/g, '"col_3_price": "₹4,499 · ₹375/mo"')
+    .replace(/"plan_3_text": "₹500"/g, '"plan_3_text": "₹600"')
+    .replace(/"plan_6_text": "₹450"/g, '"plan_6_text": "₹467"')
+    .replace(/"plan_3_text": "₹333"/g, '"plan_3_text": "₹600"')
+    .replace(/"plan_6_text": "₹283"/g, '"plan_6_text": "₹467"')
+    .replace(/"plan_12_text": "₹333"/g, '"plan_12_text": "₹375"')
+    .replace(/"plan_3_text": "₹433"/g, '"plan_3_text": "₹600"')
+    .replace(/"plan_6_text": "₹350"/g, '"plan_6_text": "₹467"')
+    .replace(/"plan_12_text": "₹292"/g, '"plan_12_text": "₹375"')
+    .replace(/data-plan-price=\\"1499\\"/g, 'data-plan-price=\\"1799\\"')
+    .replace(/data-plan-price=\\"2699\\"/g, 'data-plan-price=\\"2799\\"')
+    .replace(/data-plan-price=\\"3999\\"/g, 'data-plan-price=\\"4499\\"')
+    .replace(/data-plan-price=\\"1299\\"/g, 'data-plan-price=\\"1799\\"')
+    .replace(/data-plan-price=\\"2099\\"/g, 'data-plan-price=\\"2799\\"')
+    .replace(/data-plan-price=\\"3499\\"/g, 'data-plan-price=\\"4499\\"')
+    .replace(/₹7,499/g, '₹4,499')
+    .replace(/₹4,249/g, '₹2,799')
+    .replace(/₹2,499/g, '₹1,799')
+    .replace(/₹3,499/g, '₹4,499')
+    .replace(/₹2,099/g, '₹2,799')
+    .replace(/₹1,299/g, '₹1,799')
+    .replace(/₹7499/g, '₹4499')
+    .replace(/₹4249/g, '₹2799')
+    .replace(/₹2499/g, '₹1799')
+    .replace(/₹3499/g, '₹4499')
+    .replace(/₹2099/g, '₹2799')
+    .replace(/₹1299/g, '₹1799')
+    .replace(/60% OFF[^"]*/g, '')
+    .replace(/&code=WELCOME60/g, '')
+    .replace(/WELCOME60 = 60% off/g, '')
+    .replace(/\. WELCOME60[^"]*/g, '.')
 }
 
 function patchBestFor(text) {

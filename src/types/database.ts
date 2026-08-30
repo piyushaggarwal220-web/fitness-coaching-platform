@@ -198,6 +198,10 @@ export type Profile = {
   anxiety_protocol_entitled?: boolean | null
   face_maxxing_entitled?: boolean | null
   exercise_library_entitled?: boolean | null
+  preferred_call_weekday?: number | null
+  preferred_call_hour_ist?: number | null
+  marketing_photo_consent_at?: string | null
+  marketing_quote_consent_at?: string | null
   complexity_score?: number | null
   complexity_raw_score?: number | null
   complexity_tier?: 'low' | 'medium' | 'high' | null
@@ -956,6 +960,7 @@ export type CallRequest = {
   client_id: string
   coach_id: string
   status: CallRequestStatus
+  source?: 'client_requested' | 'weekly_entitlement'
   requested_at: string
   scheduled_for: string | null
   coach_note: string | null

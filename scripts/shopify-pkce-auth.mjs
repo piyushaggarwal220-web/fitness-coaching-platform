@@ -1,7 +1,11 @@
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 import http from 'node:http'
+import path from 'node:path'
 import { spawn } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 const STORE = '9uwyq1-0j.myshopify.com'
 const CLIENT_ID = '7e9cb568cfd431c538f36d1ad3f2b4f6'
@@ -58,8 +62,34 @@ const params = new URLSearchParams({
 })
 
 const authUrl = `https://${STORE}/admin/oauth/authorize?${params.toString()}`
-fs.writeFileSync(process.env.TEMP + '\\shopify-auth-url.txt', authUrl)
+fs.writeFileSync(path.join(process.env.TEMP, 'shopify-auth-url.txt'), authUrl)
+
+const htmlPath = path.join(ROOT, 'shopify-auth-open.html')
+fs.writeFileSync(
+  htmlPath,
+  `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>LURVOX Shopify connect</title>
+  <meta http-equiv="refresh" content="0;url=${authUrl.replace(/"/g, '&quot;')}" />
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 48px auto; padding: 0 20px; line-height: 1.5; }
+    a { color: #ff6200; word-break: break-all; }
+    code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Connecting to Shopify…</h1>
+  <p>If your browser does not redirect automatically, click below. Do <strong>not</strong> copy a shortened URL from the address bar.</p>
+  <p><a href="${authUrl.replace(/"/g, '&quot;')}">Continue to Shopify login</a></p>
+  <p>After approval you should see <code>Connected</code>. Then return to Cursor and say <strong>done</strong>.</p>
+</body>
+</html>`
+)
+
 console.log('AUTH_URL=' + authUrl)
+console.log('AUTH_HTML=' + htmlPath)
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -113,7 +143,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log('Listening on', REDIRECT)
-  spawn('cmd', ['/c', 'start', '', authUrl], { detached: true, stdio: 'ignore' }).unref()
+  spawn('cmd', ['/c', 'start', '', htmlPath], { detached: true, stdio: 'ignore' }).unref()
 })
 
 setTimeout(() => {

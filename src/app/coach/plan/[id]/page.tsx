@@ -175,6 +175,11 @@ export default function CoachPlanDetailPage() {
       );
       setPlan({ ...plan, active: true, delivered_at: new Date().toISOString() });
       setHistory((h) => h.map((p) => ({ ...p, active: p.id === plan.id })));
+      void fetch('/api/coach/weekly-call/ensure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: plan.client_id }),
+      });
     }
     setActionLoading(false);
   };

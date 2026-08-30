@@ -88,6 +88,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: activateError }, { status: 422 })
   }
 
+  try {
+    const { ensureWeeklyCallForClient } = await import('@/lib/weekly-call-schedule')
+    await ensureWeeklyCallForClient(admin, plan.client_id, { actorUserId: user.id })
+  } catch (err) {
+    console.error('[ai-draft/publish] weekly call schedule failed', err)
+  }
+
   logDraftWorkflow({
     event: 'publish_completed',
     clientId,

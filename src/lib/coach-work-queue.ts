@@ -157,7 +157,7 @@ export async function getCoachWorkQueue(
       .order('submitted_at', { ascending: true }),
     supabase
       .from('call_requests')
-      .select('id, conversation_id, client_id, status, requested_at, scheduled_for')
+      .select('id, conversation_id, client_id, status, requested_at, scheduled_for, source')
       .eq('coach_id', coachId)
       .in('status', ['requested', 'scheduled'])
       .order('requested_at', { ascending: true }),
@@ -332,10 +332,15 @@ export async function getCoachWorkQueue(
 
   for (const request of callRequests ?? []) {
     const name = clientNameById.get(request.client_id) ?? 'Client'
+    const isWeekly = (request as { source?: string }).source === 'weekly_entitlement'
+    const weeklyLabel = isWeekly ? 'Weekly 12-mo call' : 'Call'
     tasks.push({
       id: `call-${request.id}`,
       type: 'call_request',
-      title: request.status === 'scheduled' ? `Scheduled call with ${name}` : `Call requested by ${name}`,
+      title:
+        request.status === 'scheduled'
+          ? `${weeklyLabel} with ${name}`
+          : `${weeklyLabel} requested by ${name}`,
       subtitle: request.scheduled_for
         ? new Date(request.scheduled_for).toLocaleString('en-IN')
         : 'Open chat to schedule or resolve',
