@@ -270,14 +270,9 @@ export async function activatePlan(
     console.error('[activatePlan] tracker refresh failed', err)
   }
 
-  try {
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    const { ensureWeeklyCallForClient } = await import('@/lib/weekly-call-schedule')
-    const admin = createAdminClient()
-    await ensureWeeklyCallForClient(admin, plan.client_id)
-  } catch (err) {
-    console.error('[activatePlan] weekly call schedule failed', err)
-  }
+  // Weekly 12-month calls are scheduled by server callers (publish route, work queue,
+  // check-in auto-reply, cron) and by coach UI via /api/coach/weekly-call/ensure —
+  // do not import weekly-call-schedule here; plans.ts is used from client components.
 
   return { error: null }
 }
