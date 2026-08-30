@@ -122,6 +122,18 @@ function patchBestFor(text) {
     .replace(/"plan_6_text": "Advanced athletes already under 12% body fat, with good muscle\."/g, '"plan_6_text": "Already training. Recomp block."')
 }
 
+function patchFunnel(text) {
+  return text
+    .replace(
+      /"plan_1_link": "https:\\\/\\\/app\.lurvox\.in\\\/checkout\?plan=1_week_trial"/g,
+      '"plan_1_link": "https:\\/\\/app.lurvox.in\\/plans\\/12-months"'
+    )
+    .replace(
+      /"lurvox_hide_1month_cl": \{\s*\n\s*"type": "custom-liquid",/g,
+      '"lurvox_hide_1month_cl": {\n          "type": "custom-liquid",\n          "disabled": true,'
+    )
+}
+
 // 1) Edited repo assets uploaded verbatim.
 const repoFiles = [
   ['sections/lurvox-plan-finder.liquid', 'scripts/shopify-assets/sections-lurvox-plan-finder.liquid'],
@@ -133,6 +145,7 @@ const repoFiles = [
   ['sections/lurvox-cart-builder.liquid', 'scripts/shopify-assets/sections-lurvox-cart-builder.liquid'],
   ['sections/lurvox-talk-to-coach.liquid', 'scripts/shopify-assets/sections-lurvox-talk-to-coach.liquid'],
   ['blocks/ai_gen_block_361650c.liquid', 'scripts/shopify-assets/blocks-ai_gen_block_361650c.liquid'],
+  ['assets/lurvox-tap-plan.js', 'scripts/shopify-assets/assets/lurvox-tap-plan.js'],
 ]
 
 // 2) Theme-only JSON templates: fetch live, patch prices, re-upload.
@@ -155,7 +168,7 @@ for (const key of themeOnly) {
     console.log('skip missing', key)
     continue
   }
-  const patched = patchBestFor(patchPrices(live))
+  const patched = patchFunnel(patchBestFor(patchPrices(live)))
   if (patched !== live) {
     files.push({ filename: key, body: { type: 'TEXT', value: patched } })
     console.log('patched', key)
