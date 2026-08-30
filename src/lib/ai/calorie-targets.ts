@@ -28,9 +28,9 @@ export function clientRequestNeedsExpenditureFocus(request: string): boolean {
 
 /** Mifflin-St Jeor maintenance estimate (kcal/day). Falls back to weight × 30 when data is thin. */
 export function estimateMaintenanceCalories(input: {
-  weightKg?: number | null
-  heightCm?: number | null
-  age?: number | null
+  weightKg?: number | string | null
+  heightCm?: number | string | null
+  age?: number | string | null
   gender?: string | null
   activityLevel?: string | null
 }): number | null {
