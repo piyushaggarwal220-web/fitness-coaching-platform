@@ -50,6 +50,13 @@ export function toProgramDayLabel(dayToken: string): string {
   return normalized.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+export type PlanDayMeta = {
+  key: string
+  label: string
+  /** True when the plan header named a weekday (Monday / Day 2 (Wednesday)), not inferred from Day N. */
+  calendarAligned: boolean
+}
+
 /**
  * Resolve tracker day identity from a header token.
  * Labels always include the weekday so diet/workout pickers read "Day 1 (Monday)".
@@ -57,7 +64,7 @@ export function toProgramDayLabel(dayToken: string): string {
 export function resolvePlanDayMeta(
   dayToken: string,
   weekdayHint?: string | null
-): { key: string; label: string } {
+): PlanDayMeta {
   const token = dayToken.toLowerCase().replace(/\s+/g, ' ').trim()
   const hint = weekdayHint?.toLowerCase().trim() || null
   const dayN = token.match(/^day\s*(\d+)$/)
@@ -69,17 +76,17 @@ export function resolvePlanDayMeta(
     const n = Number(dayN[1])
     const label = formatProgramDayLabel(n, hint)
     if (hint && WEEKDAY_PROGRAM_DAY[hint]) {
-      return { key: slug(hint), label }
+      return { key: slug(hint), label, calendarAligned: true }
     }
-    return { key: `day-${n}`, label }
+    return { key: `day-${n}`, label, calendarAligned: false }
   }
 
   const n = WEEKDAY_PROGRAM_DAY[token]
   if (n) {
-    return { key: slug(token), label: formatProgramDayLabel(n) }
+    return { key: slug(token), label: formatProgramDayLabel(n), calendarAligned: true }
   }
 
-  return { key: slug(token), label: toProgramDayLabel(token) }
+  return { key: slug(token), label: toProgramDayLabel(token), calendarAligned: false }
 }
 
 /**

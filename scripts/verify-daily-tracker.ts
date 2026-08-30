@@ -344,12 +344,24 @@ assert(
   'maps bare Day N labels via coaching day-in-week',
   suggestedWorkoutDayKey(
     [
-      { key: 'day-1', label: 'Day 1' },
-      { key: 'day-2', label: 'Day 2' },
+      { key: 'day-1', label: 'Day 1 (Monday)', calendarAligned: false },
+      { key: 'day-2', label: 'Day 2 (Tuesday)', calendarAligned: false },
     ],
     istMonday,
     { coachingDayInWeek: 2 }
   ) === 'day-2'
+)
+assert(
+  'rolling Day N plan uses coaching day not IST calendar on start mid-week',
+  suggestedWorkoutDayKey(
+    [
+      { key: 'day-1', label: 'Day 1 (Monday)', calendarAligned: false },
+      { key: 'day-2', label: 'Day 2 (Tuesday)', calendarAligned: false },
+      { key: 'day-3', label: 'Day 3 (Wednesday)', calendarAligned: false },
+    ],
+    new Date('2026-08-06T06:30:00.000Z'),
+    { coachingDayInWeek: 1 }
+  ) === 'day-1'
 )
 assert(
   'remaps day-1 selection onto monday key',

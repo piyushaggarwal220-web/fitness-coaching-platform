@@ -157,6 +157,13 @@ export type TrackerSnapshotItem =
   | TrackerSleepItem
   | TrackerNoteItem
 
+export type TrackerPlanDayOption = {
+  key: string
+  label: string
+  /** Header named a weekday — align tracker with IST calendar, not coaching day-in-week. */
+  calendarAligned?: boolean
+}
+
 export type TrackerSnapshot = {
   generatedAt: string
   planId: string
@@ -173,9 +180,9 @@ export type TrackerSnapshot = {
   planContentSignature?: string
   items: TrackerSnapshotItem[]
   /** Available diet day options from the plan (when multi-day) */
-  dietDays?: { key: string; label: string }[]
+  dietDays?: TrackerPlanDayOption[]
   /** Available workout day options from the plan (when multi-day) */
-  workoutDays?: { key: string; label: string }[]
+  workoutDays?: TrackerPlanDayOption[]
 }
 
 export type MealCompletion = { completed: boolean; notes?: string }

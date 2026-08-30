@@ -58,6 +58,34 @@ function formatBulletLines(items: unknown[], indent = '  • '): string {
     .join('\n')
 }
 
+function formatExerciseLine(item: unknown): string {
+  if (typeof item === 'string') return item.trim()
+  if (!isRecord(item)) return formatScalar(item)
+
+  const name =
+    (typeof item.name === 'string' && item.name.trim()) ||
+    (typeof item.exercise === 'string' && item.exercise.trim()) ||
+    (typeof item.movement === 'string' && item.movement.trim()) ||
+    ''
+
+  const sets = item.sets ?? item.target_sets ?? item.targetSets
+  const reps = item.reps ?? item.target_reps ?? item.targetReps
+  const duration = item.duration ?? item.hold ?? item.time
+
+  if (name && sets != null && reps != null) {
+    return `${name}: ${sets} sets x ${formatScalar(reps)} reps`
+  }
+  if (name && sets != null && duration != null) {
+    return `${name}: ${sets} sets x ${formatScalar(duration)}`
+  }
+  if (name && sets != null) {
+    return `${name}: ${sets} sets`
+  }
+  if (name) return name
+
+  return formatScalar(item)
+}
+
 function formatWorkoutDays(days: unknown[]): string {
   if (days.length === 0) return ''
 
@@ -71,12 +99,28 @@ function formatWorkoutDays(days: unknown[]): string {
         .join(' — ')
 
       const exercises = day.exercises ?? day.movements ?? day.lifts
-      const exerciseBlock = Array.isArray(exercises) ? formatBulletLines(exercises) : ''
+      const exerciseBlock = Array.isArray(exercises)
+        ? exercises.map((ex) => `  • ${formatExerciseLine(ex)}`).filter(Boolean).join('\n')
+        : ''
+
+      const warmup = day.warmup ?? day.warm_up
+      const warmupBlock = Array.isArray(warmup)
+        ? ['Warm-up', ...warmup.map((ex) => `  • ${formatExerciseLine(ex)}`)].join('\n')
+        : typeof warmup === 'string' && warmup.trim()
+          ? `Warm-up\n${warmup.trim()}`
+          : ''
+
+      const cooldown = day.cooldown ?? day.post_workout ?? day.postWorkout
+      const cooldownBlock = Array.isArray(cooldown)
+        ? ['Post-Workout', ...cooldown.map((ex) => `  • ${formatExerciseLine(ex)}`)].join('\n')
+        : typeof cooldown === 'string' && cooldown.trim()
+          ? `Post-Workout\n${cooldown.trim()}`
+          : ''
 
       const notes = typeof day.notes === 'string' ? day.notes.trim() : ''
       const extra = notes ? `  Note: ${notes}` : ''
 
-      return [heading, exerciseBlock, extra].filter(Boolean).join('\n')
+      return [heading, warmupBlock, exerciseBlock, cooldownBlock, extra].filter(Boolean).join('\n')
     })
     .filter(Boolean)
     .join('\n\n')

@@ -109,6 +109,38 @@ type EnsureWeeklyCallResult = {
   reason?: string
 }
 
+/** Past weekly slots that were never marked complete block new auto-schedules. */
+async function closeStaleWeeklyCallIfNeeded(
+  admin: SupabaseClient,
+  clientId: string
+): Promise<void> {
+  const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
+  const { data: stale } = await admin
+    .from('call_requests')
+    .select('id, scheduled_for, status, source')
+    .eq('client_id', clientId)
+    .eq('source', 'weekly_entitlement')
+    .in('status', ['requested', 'scheduled'])
+    .lt('scheduled_for', cutoff)
+    .order('scheduled_for', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!stale?.id) return
+
+  const now = new Date().toISOString()
+  await admin
+    .from('call_requests')
+    .update({
+      status: 'cancelled',
+      resolved_at: now,
+      coach_note: 'Auto-closed — weekly slot passed without completion',
+      updated_at: now,
+    })
+    .eq('id', stale.id)
+    .in('status', ['requested', 'scheduled'])
+}
+
 export async function ensureWeeklyCallForClient(
   admin: SupabaseClient,
   clientId: string,
@@ -124,6 +156,8 @@ export async function ensureWeeklyCallForClient(
     .maybeSingle()
   if (!profile?.coach_id) return { created: false, reason: 'no_coach' }
   if (!profile.plan_delivered) return { created: false, reason: 'plan_not_delivered' }
+
+  await closeStaleWeeklyCallIfNeeded(admin, clientId)
 
   const { data: active } = await admin
     .from('call_requests')

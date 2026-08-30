@@ -270,6 +270,15 @@ export async function activatePlan(
     console.error('[activatePlan] tracker refresh failed', err)
   }
 
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const { ensureWeeklyCallForClient } = await import('@/lib/weekly-call-schedule')
+    const admin = createAdminClient()
+    await ensureWeeklyCallForClient(admin, plan.client_id)
+  } catch (err) {
+    console.error('[activatePlan] weekly call schedule failed', err)
+  }
+
   return { error: null }
 }
 

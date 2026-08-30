@@ -9,6 +9,7 @@ import type {
   TrackerMealItem,
   TrackerNoteItem,
   TrackerPeriod,
+  TrackerPlanDayOption,
   TrackerSleepItem,
   TrackerSnapshot,
   TrackerSnapshotItem,
@@ -22,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 6
+export const TRACKER_PARSER_VERSION = 7
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
@@ -137,13 +138,13 @@ function capitalizeLabel(value: string): string {
   return value.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-function parseDietDayBlocks(diet: string): { key: string; label: string; body: string }[] {
+function parseDietDayBlocks(diet: string): (TrackerPlanDayOption & { body: string })[] {
   const normalized = diet.replace(/\r\n/g, '\n')
   const blocks = normalized.split(
     /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b)/i
   )
 
-  const days: { key: string; label: string; body: string }[] = []
+  const days: (TrackerPlanDayOption & { body: string })[] = []
 
   for (const block of blocks) {
     const lines = block.split('\n')
@@ -154,14 +155,14 @@ function parseDietDayBlocks(diet: string): { key: string; label: string; body: s
     if (!dayMatch) continue
     const dayToken = (dayMatch[1] || dayMatch[2] || '').toLowerCase().replace(/\s+/g, ' ')
     const weekdayHint = dayMatch[3]?.toLowerCase()
-    const { key, label } = resolvePlanDayMeta(dayToken, weekdayHint)
+    const { key, label, calendarAligned } = resolvePlanDayMeta(dayToken, weekdayHint)
     const body = lines.slice(1).join('\n').trim()
     if (!body) continue
-    days.push({ key, label, body })
+    days.push({ key, label, calendarAligned, body })
   }
 
   if (days.length > 0) return days
-  return [{ key: 'default', label: 'Today', body: diet.trim() }]
+  return [{ key: 'default', label: 'Today', calendarAligned: false, body: diet.trim() }]
 }
 
 function parseMealsInDay(
@@ -271,14 +272,14 @@ function parseMeals(diet: string): {
 
   const dayBlocks = parseDietDayBlocks(diet)
   const meals: TrackerMealItem[] = []
-  const dietDays: { key: string; label: string }[] = []
+  const dietDays: TrackerPlanDayOption[] = []
 
   for (const day of dayBlocks) {
     const dayMeals = parseMealsInDay(day.body, day.key, day.label)
     if (dayMeals.length === 0) continue
     meals.push(...dayMeals)
     if (day.key !== 'default') {
-      dietDays.push({ key: day.key, label: day.label })
+      dietDays.push({ key: day.key, label: day.label, calendarAligned: day.calendarAligned })
     }
   }
 
@@ -415,12 +416,12 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   const repsToken = String.raw`(\d+(?:\s*(?:-|–|to)\s*\d+)?|AMRAP|\d+\s*s)`
   // AI coach format: "Barbell Bench Press: 5 sets x 6 to 8 reps (...)"
   const setsReps = new RegExp(
-    String.raw`^(.+?)\s*:?\s*(\d+)\s*sets?\s*[x×]\s*${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
+    String.raw`^(.+?)\s*[:–—]?\s*(\d+)\s*sets?\s*[x×]\s*${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
     'i'
   )
   // Alternate AI phrasing: "Bench Press: 4 sets of 8 to 10 reps"
   const setsOf = new RegExp(
-    String.raw`^(.+?)\s*:?\s*(\d+)\s*sets?\s+of\s+${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
+    String.raw`^(.+?)\s*[:–—]?\s*(\d+)\s*sets?\s+of\s+${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
     'i'
   )
   // Compact format: "Bench Press 4x8 @ 60 kg" / "Squat 4x6-8"
@@ -602,6 +603,17 @@ function parseWorkoutPhases(section: string): {
       headerConsumed = true
     }
 
+    // Next-day header leaked into this block (common after Post-Workout) — stop parsing.
+    if (
+      headerConsumed &&
+      (DAY_SESSION_HEADER.test(trimmed) ||
+        /^(?:#{1,3}\s*)?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(
+          trimmed
+        ))
+    ) {
+      break
+    }
+
     if (PHASE_HEADERS.test(trimmed) || SESSION_LABEL_ONLY.test(trimmed)) {
       const key = trimmed.toLowerCase().replace(/\s+/g, ' ').replace(/:$/, '')
       if (PHASE_HEADERS.test(trimmed)) {
@@ -683,14 +695,14 @@ function parseExercises(text: string): TrackerExerciseItem[] {
   return parseWorkoutPhases(text).exercises
 }
 
-function splitWorkoutDayBlocks(workoutText: string): { key: string; label: string; body: string }[] {
+function splitWorkoutDayBlocks(workoutText: string): (TrackerPlanDayOption & { body: string })[] {
   if (!workoutText.trim()) return []
 
   const blocks = workoutText.split(
     /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b)/i
   )
 
-  const days: { key: string; label: string; body: string }[] = []
+  const days: (TrackerPlanDayOption & { body: string })[] = []
   for (const block of blocks) {
     const first = stripMarkdownDecorators(block.split('\n')[0] ?? '').trim()
     const dayMatch = first.match(
@@ -699,34 +711,40 @@ function splitWorkoutDayBlocks(workoutText: string): { key: string; label: strin
     if (!dayMatch) continue
     const dayToken = (dayMatch[1] || dayMatch[2] || '').toLowerCase().replace(/\s+/g, ' ')
     const weekdayHint = dayMatch[3]?.toLowerCase()
-    const { key, label } = resolvePlanDayMeta(dayToken, weekdayHint)
-    days.push({ key, label, body: block.trim() })
+    const { key, label, calendarAligned } = resolvePlanDayMeta(dayToken, weekdayHint)
+    days.push({ key, label, calendarAligned, body: block.trim() })
   }
 
   if (days.length > 0) return days
-  return [{ key: 'default', label: 'Today', body: workoutText.trim() }]
+  return [{ key: 'default', label: 'Today', calendarAligned: false, body: workoutText.trim() }]
+}
+
+function isCalendarAlignedPlan(days: Pick<TrackerPlanDayOption, 'key' | 'calendarAligned'>[]): boolean {
+  return days.some((d) => d.calendarAligned === true || WEEKDAY_PROGRAM_DAY[d.key] != null)
 }
 
 /** Suggest which plan day matches today (IST weekday / Day N). */
 export function suggestedWorkoutDayKey(
-  days: { key: string; label: string }[],
+  days: TrackerPlanDayOption[],
   referenceDate = new Date(),
   options?: { coachingDayInWeek?: number }
 ): string | null {
   if (days.length === 0) return null
 
   const dayName = getIstWeekdayName(referenceDate)
+  const calendarAligned = isCalendarAlignedPlan(days)
+
   // Legacy / hybrid plans keep weekday keys (monday…) even when labels show Day 1…
   const byWeekday = days.find((d) => d.key === dayName)
   if (byWeekday) return byWeekday.key
 
-  // Labels that name today's weekday (e.g. "Day 4 (Thursday)") win over Day N math.
-  const byLabelWeekday = days.find((d) => new RegExp(`\\b${dayName}\\b`, 'i').test(d.label))
-  if (byLabelWeekday) return byLabelWeekday.key
+  // Labels that name today's weekday (e.g. "Day 4 (Thursday)") — only for calendar-bound plans.
+  if (calendarAligned) {
+    const byLabelWeekday = days.find((d) => new RegExp(`\\b${dayName}\\b`, 'i').test(d.label))
+    if (byLabelWeekday) return byLabelWeekday.key
+  }
 
-  const weekdayAligned = days.some((d) =>
-    /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(d.label)
-  )
+  const weekdayAligned = calendarAligned
 
   const calendarProgramDay = WEEKDAY_PROGRAM_DAY[dayName]
   const coachingDay = options?.coachingDayInWeek
@@ -761,7 +779,7 @@ export function suggestedWorkoutDayKey(
 /** Remap a previous workout-day selection onto a rebuilt snapshot's day keys. */
 export function remapWorkoutDayKey(
   previousKey: string | null | undefined,
-  days: { key: string; label: string }[]
+  days: TrackerPlanDayOption[]
 ): string | undefined {
   if (!previousKey || days.length === 0) return undefined
   if (days.some((d) => d.key === previousKey)) return previousKey
@@ -809,7 +827,7 @@ function prefixIdsForWorkoutDay<T extends { id: string }>(items: T[], dayKey: st
 
 function parseWorkouts(workoutText: string): {
   workouts: TrackerWorkoutItem[]
-  workoutDays: { key: string; label: string }[]
+  workoutDays: TrackerPlanDayOption[]
 } {
   if (!workoutText.trim()) return { workouts: [], workoutDays: [] }
 
@@ -817,7 +835,7 @@ function parseWorkouts(workoutText: string): {
   const sharedCooldown = extractSharedPhaseExercises(workoutText, 'cooldown')
   const blocks = splitWorkoutDayBlocks(workoutText)
   const workouts: TrackerWorkoutItem[] = []
-  const workoutDays: { key: string; label: string }[] = []
+  const workoutDays: TrackerPlanDayOption[] = []
 
   for (const day of blocks) {
     const parsed = parseWorkoutPhases(day.body)
@@ -847,7 +865,7 @@ function parseWorkouts(workoutText: string): {
         exercises: [],
         sortOrder: 50,
       })
-      workoutDays.push({ key: day.key, label: day.label })
+      workoutDays.push({ key: day.key, label: day.label, calendarAligned: day.calendarAligned })
       continue
     }
 
@@ -885,7 +903,7 @@ function parseWorkouts(workoutText: string): {
     })
 
     if (day.key !== 'default') {
-      workoutDays.push({ key: day.key, label: day.label })
+      workoutDays.push({ key: day.key, label: day.label, calendarAligned: day.calendarAligned })
     }
   }
 
@@ -1004,7 +1022,7 @@ function looksLikeStrengthMovement(name: string): boolean {
   ) {
     return false
   }
-  return /\b(bench|squat|deadlift|press|row|pull[- ]?up|chin[- ]?up|lunge|rdl|hip\s*thrust|curl|extension|flye?|raise|pulldown|pushdown|kickback|dip|hack\s*squat|leg\s*press|tricep|bicep)\b/i.test(
+  return /\b(bench|squat|deadlift|press|row|pull[- ]?up|chin[- ]?up|lunge|rdl|hip\s*thrust|curl|extension|flye?|raise|pulldown|pushdown|kickback|dip|hack\s*squat|leg\s*press|tricep|bicep|shrug|clean|snatch|split\s*squat|step[- ]?up|good\s*morning|lat\s*pulldown|face\s*pull|skull\s*crush|overhead)\b/i.test(
     n
   )
 }
@@ -1121,8 +1139,9 @@ function extractSharedPhaseExercises(
   phase: 'warmup' | 'cooldown'
 ): TrackerExerciseItem[] {
   const normalized = fullWorkout.replace(/\r\n/g, '\n')
-  // Prefer preamble (before first day) so in-day Post-Workout is not treated as shared.
-  const regions = [workoutSharedRegions(normalized), normalized]
+  // Only preamble (before first day). Never scan the full plan — in-day Post-Workout
+  // blocks were being treated as shared and leaking the next day's lifts.
+  const regions = [workoutSharedRegions(normalized)]
   const patterns = sharedPhasePatterns(phase)
 
   for (const text of regions) {

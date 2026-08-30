@@ -177,6 +177,11 @@ export function WorkoutModule({
     return workouts.find((w) => w.workoutDay === selectedKey) ?? null
   }, [workouts, multiDay, selectedKey])
 
+  const workoutContentKey = workouts
+    .map((w) => `${w.workoutDay ?? 'default'}:${w.exercises.map((ex) => ex.name).join(',')}`)
+    .join('|')
+  const coachingDayKey = view?.schedule.coachingDay ?? 0
+
   const [bootClock] = useState(() => restoreSessionClock(completion.workoutSession))
   const [sessionRunning, setSessionRunning] = useState(bootClock.running)
   const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(bootClock.startedAt)
@@ -288,8 +293,11 @@ export function WorkoutModule({
   )
 
   // One-shot: if nothing is picked yet, follow today's suggested day so the hub isn't stuck at 0%.
-  // After the client taps "Change day", we leave the picker alone.
+  // After the client taps "Change day", we leave the picker alone until coaching day or plan changes.
   const didAutoSelectWorkoutDay = useRef(false)
+  useEffect(() => {
+    didAutoSelectWorkoutDay.current = false
+  }, [workoutContentKey, coachingDayKey])
   useEffect(() => {
     if (!multiDay || selectedKey || !suggestion || saving || didAutoSelectWorkoutDay.current) return
     didAutoSelectWorkoutDay.current = true
