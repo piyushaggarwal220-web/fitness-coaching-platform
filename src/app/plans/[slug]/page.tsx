@@ -18,7 +18,6 @@ import {
   type LongCoachingPlanSlug,
 } from '@/lib/payments/plan-pages'
 import type { CoachingPlanSlug } from '@/lib/payments/plans'
-import { formatInrFromPaise, firstTimerSalePaise } from '@/lib/payments/checkout-discounts'
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
 
 const body = DM_Sans({
@@ -47,11 +46,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: brandTitle(`${productName} · ${copy.durationLabel}`),
     description: `${productName} coaching (${copy.durationLabel}) — from ${plan.displayPrice}. Personal workout, diet, weekly check-ins, and coach chat.`,
   }
-}
-
-function saleLabel(slug: string) {
-  const salePaise = firstTimerSalePaise(slug)
-  return salePaise != null ? formatInrFromPaise(salePaise) : null
 }
 
 const AFTER_PAYMENT_STEPS: { title: string; text: string }[] = [
@@ -96,7 +90,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
   const productName = PLAN_PRODUCT_NAME[planSlug]
   const marketingBase = resolveMarketingBaseUrl()
   const others = siblingPlans(planSlug)
-  const saleDisplay = saleLabel(planSlug) ?? plan.displayPrice
+  const saleDisplay = plan.displayPrice
 
   return (
     <div className={body.variable} style={styles.page}>
@@ -143,18 +137,12 @@ export default async function PlanLandingPage({ params }: PageProps) {
 
         <div style={styles.priceBlock}>
           <p style={styles.price}>{saleDisplay}</p>
-          <p style={styles.save}>
-            <span style={{ textDecoration: 'line-through', color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>
-              {plan.displayPrice}
-            </span>
-            {' '}with WELCOME60
-          </p>
           {(plan.popular || plan.best) && (
             <p style={styles.badge}>{plan.best ? 'Best value' : 'Most popular'}</p>
           )}
-          <p style={styles.codeHint}>
-            Apply <strong style={{ color: '#ffb07a' }}>WELCOME60</strong> at checkout for 60% off
-          </p>
+          {planSlug === '12_months' ? (
+            <p style={styles.codeHint}>Includes weekly coach phone call · 12-month exclusive</p>
+          ) : null}
         </div>
 
         <p style={styles.bestFor}>

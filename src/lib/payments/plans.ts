@@ -1,7 +1,7 @@
-export type CoachingPlanSlug = '3_months' | '6_months' | '12_months' | '1_week_trial'
+export type CoachingPlanSlug = '3_months' | '6_months' | '12_months'
 
-/** Historical slug kept for existing purchases / entitlements only. */
-export type LegacyCoachingPlanSlug = '1_month'
+/** Historical slugs kept for existing purchases / entitlements only. */
+export type LegacyCoachingPlanSlug = '1_month' | '1_week_trial'
 
 export type AnyCoachingPlanSlug = CoachingPlanSlug | LegacyCoachingPlanSlug
 
@@ -12,48 +12,39 @@ export type CoachingPlan = {
   amountPaise: number
   /** Month-based duration; use 0 when `durationDays` is set. */
   durationMonths: number
-  /** Day-based duration (e.g. trial). Prefer over months when set. */
+  /** Day-based duration (e.g. retired trial). Prefer over months when set. */
   durationDays?: number
   saveLabel: string
   popular?: boolean
   best?: boolean
-  /** Once-per-lifetime paid trial — not a long-term plan. */
+  /** Retired paid trial — not purchasable. */
   isTrial?: boolean
 }
 
 /** Active coaching plan catalog — amounts match storefront pricing. */
 export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
-  '1_week_trial': {
-    slug: '1_week_trial',
-    name: '7-Day All-Access Trial',
-    displayPrice: '₹179',
-    amountPaise: 17900,
-    durationMonths: 0,
-    durationDays: 7,
-    saveLabel: 'All features · once per person',
-    isTrial: true,
-  },
   '3_months': {
     slug: '3_months',
     name: 'Fat loss',
-    displayPrice: '₹2,499',
-    amountPaise: 249900,
+    displayPrice: '₹1,799',
+    amountPaise: 179900,
     durationMonths: 3,
     saveLabel: 'Fat loss',
   },
   '6_months': {
     slug: '6_months',
     name: 'Fat loss + muscle gain',
-    displayPrice: '₹4,249',
-    amountPaise: 424900,
+    displayPrice: '₹2,799',
+    amountPaise: 279900,
     durationMonths: 6,
     saveLabel: 'Fat loss + muscle gain',
+    popular: true,
   },
   '12_months': {
     slug: '12_months',
     name: 'Athletic body',
-    displayPrice: '₹7,499',
-    amountPaise: 749900,
+    displayPrice: '₹4,499',
+    amountPaise: 449900,
     durationMonths: 12,
     saveLabel: 'Athletic body',
     best: true,
@@ -70,12 +61,19 @@ export const LEGACY_COACHING_PLANS: Record<LegacyCoachingPlanSlug, CoachingPlan>
     durationMonths: 1,
     saveLabel: 'No commitment',
   },
+  '1_week_trial': {
+    slug: '1_week_trial',
+    name: '7-Day All-Access Trial',
+    displayPrice: '₹179',
+    amountPaise: 17900,
+    durationMonths: 0,
+    durationDays: 7,
+    saveLabel: 'All features · once per person',
+    isTrial: true,
+  },
 }
 
-/** Long plans shown on main checkout (excludes trial). */
-export const COACHING_PLAN_LIST = Object.values(COACHING_PLANS).filter((p) => !p.isTrial)
-
-export const TRIAL_PLAN = COACHING_PLANS['1_week_trial']
+export const COACHING_PLAN_LIST = Object.values(COACHING_PLANS)
 
 export function getCoachingPlan(slug: string | null | undefined): CoachingPlan | null {
   if (!slug) return null
@@ -84,7 +82,7 @@ export function getCoachingPlan(slug: string | null | undefined): CoachingPlan |
   return null
 }
 
-/** Purchasable plans only — rejects retired slugs like `1_month`. */
+/** Purchasable plans only — rejects retired slugs like `1_month` and `1_week_trial`. */
 export function getPurchasablePlan(slug: string | null | undefined): CoachingPlan | null {
   if (!slug || !(slug in COACHING_PLANS)) return null
   return COACHING_PLANS[slug as CoachingPlanSlug]

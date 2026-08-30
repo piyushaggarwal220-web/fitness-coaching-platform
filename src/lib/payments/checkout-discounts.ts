@@ -19,20 +19,19 @@ import type { PromoCodeKind } from '@/types/database'
 /** Default public promo code (override with FIRST_TIMER_DISCOUNT_CODE). Open to all customers. */
 export const DEFAULT_FIRST_TIMER_DISCOUNT_CODE = 'WELCOME60'
 
-type FirstTimerPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
+type FirstTimerPlanSlug = CoachingPlanSlug
 
 /** Public sale percent off list price. Trial is not eligible. Available to all customers. */
 export const FIRST_TIMER_DISCOUNT_PERCENT = 60
 
 /**
- * Exact payable amounts with WELCOME60 (₹1,299 / ₹2,099 / ₹3,499).
- * Kept as fixed sale targets so storefront and checkout match psychological pricing
- * while list MRP stays at the catalog amounts.
+ * Legacy WELCOME60 sale targets — aligned with catalog list prices (no standing discount).
+ * Promo codes can still reduce below these amounts at checkout.
  */
 export const FIRST_TIMER_SALE_PAISE: Record<FirstTimerPlanSlug, number> = {
-  '3_months': 129900,
-  '6_months': 209900,
-  '12_months': 349900,
+  '3_months': 179900,
+  '6_months': 279900,
+  '12_months': 449900,
 }
 
 const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_months'])
@@ -235,7 +234,8 @@ export function discountPaiseForPlan(
     getPurchasablePlan(planSlug)?.amountPaise
   if (!list || list <= 0) return null
   const sale = FIRST_TIMER_SALE_PAISE[planSlug as FirstTimerPlanSlug]
-  if (sale != null && sale > 0 && sale < list) {
+  if (sale != null && sale > 0) {
+    if (sale >= list) return 0
     return list - sale
   }
   return Math.round((list * FIRST_TIMER_DISCOUNT_PERCENT) / 100)

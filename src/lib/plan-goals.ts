@@ -8,8 +8,8 @@ import { planPathForSlug } from '@/lib/payments/plan-pages'
 export const PLAN_GOAL_MIN = 2
 export const PLAN_GOAL_MAX = 4
 
-/** Goal tiers are long plans only — trial does not unlock goal picking. */
-export type PlanGoalTier = Exclude<CoachingPlanSlug, '1_week_trial'>
+/** Goal tiers match active coaching plans. */
+export type PlanGoalTier = CoachingPlanSlug
 
 export type PlanGoalGender = 'female' | 'male'
 

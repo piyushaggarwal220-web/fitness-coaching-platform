@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPurchasablePlan, isTrialPlanSlug } from '@/lib/payments/plans'
+import { getPurchasablePlan } from '@/lib/payments/plans'
 import { shouldBypassPayment } from '@/lib/config'
 import { createRazorpayOrder, getRazorpayKeyId } from '@/lib/payments/razorpay'
 import {
@@ -16,7 +16,6 @@ import {
   checkoutTotalPaise,
   resolveCheckoutPricing,
 } from '@/lib/payments/checkout-discounts'
-import { assertTrialPurchaseEligible } from '@/lib/payments/trial-eligibility'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 type CreateOrderBody = {
@@ -87,20 +86,6 @@ export async function POST(request: Request) {
 
   const acknowledgement = createPolicyAcknowledgement(request)
   const admin = createAdminClient()
-
-  if (isTrialPlanSlug(plan.slug)) {
-    const trialCheck = await assertTrialPurchaseEligible({
-      admin,
-      email: body.email!,
-      phone: body.phone!,
-    })
-    if (!trialCheck.ok) {
-      return NextResponse.json(
-        { error: trialCheck.error, missing: ['Trial eligibility'], reason: trialCheck.reason },
-        { status: trialCheck.status }
-      )
-    }
-  }
 
   const pricingResult = await resolveCheckoutPricing({
     admin,

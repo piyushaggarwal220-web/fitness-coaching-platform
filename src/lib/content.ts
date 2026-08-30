@@ -261,26 +261,26 @@ export const pricing = {
     {
       slug: '3_months',
       name: 'Fat loss',
-      price: '₹1,299',
-      perMonth: '≈ ₹433/month',
+      price: '₹1,799',
+      perMonth: '≈ ₹600/month',
       blurb: 'Fat loss',
       save: 'BEST STARTER',
-      popular: true,
+      popular: false,
     },
     {
       slug: '6_months',
       name: 'Fat loss + muscle gain',
-      price: '₹2,099',
-      perMonth: '≈ ₹350/month',
+      price: '₹2,799',
+      perMonth: '≈ ₹467/month',
       blurb: 'Fat loss + muscle gain',
       save: 'MOST POPULAR',
-      popular: false,
+      popular: true,
     },
     {
       slug: '12_months',
       name: 'Athletic body',
-      price: '₹3,499',
-      perMonth: '≈ ₹292/month',
+      price: '₹4,499',
+      perMonth: '≈ ₹375/month',
       blurb: 'Athletic body · 12 months · fat loss, muscle, stamina · weekly coach phone call',
       save: 'BEST VALUE',
       popular: false,
@@ -356,7 +356,7 @@ export const finalCta = {
 } as const
 
 export const stickyCta = {
-  label: 'Start Today — From ₹1,299',
+  label: 'Start Today — From ₹1,799',
   mobileLabel: 'Start Today',
 } as const
 

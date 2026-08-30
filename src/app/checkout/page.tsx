@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { BRAND_NAME } from '@/lib/brand';
-import { COACHING_PLAN_LIST, getCoachingPlan } from '@/lib/payments/plans';
+import { COACHING_PLAN_LIST, getPurchasablePlan } from '@/lib/payments/plans';
 import { planDurationLabel, planGoalName } from '@/lib/payments/plan-pages';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
@@ -63,9 +63,10 @@ declare global {
 
 function CheckoutForm() {
   const searchParams = useSearchParams();
-  const initialPlan = searchParams.get('plan') ?? '3_months';
+  const rawPlan = searchParams.get('plan') ?? '3_months';
+  const initialPlan = rawPlan === '1_week_trial' ? '3_months' : rawPlan;
   const codeFromUrl = (searchParams.get('code') ?? '').trim().toUpperCase();
-  const plan = getCoachingPlan(initialPlan) ?? getCoachingPlan('3_months')!;
+  const plan = getPurchasablePlan(initialPlan) ?? getPurchasablePlan('3_months')!;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -84,9 +85,7 @@ function CheckoutForm() {
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
   const welcomeCode = getFirstTimerDiscountCode();
-  const [referralCode, setReferralCode] = useState(
-    codeFromUrl || (plan.isTrial ? '' : welcomeCode)
-  );
+  const [referralCode, setReferralCode] = useState(codeFromUrl);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountPreview | null>(null);
   const [saleCountdown, setSaleCountdown] = useState('08:00:00');
   const [applyingCode, setApplyingCode] = useState(false);
@@ -120,7 +119,7 @@ function CheckoutForm() {
     } else if (codeFromUrl) {
       setReferralCode(codeFromUrl);
     } else {
-      setReferralCode((prev) => prev || welcomeCode);
+      setReferralCode((prev) => prev);
     }
   }, [plan.slug, isTrialCheckout, codeFromUrl, welcomeCode]);
 
@@ -156,7 +155,7 @@ function CheckoutForm() {
     if (!isFirstTimerDiscountCode(code)) return null;
     const discountPaise = discountPaiseForPlan(plan.slug, plan.amountPaise);
     const amountPaise = firstTimerSalePaise(plan.slug, plan.amountPaise);
-    if (discountPaise == null || amountPaise == null) return null;
+    if (discountPaise == null || amountPaise == null || discountPaise <= 0) return null;
     return {
       code: getFirstTimerDiscountCode(),
       discountPaise,
@@ -244,7 +243,7 @@ function CheckoutForm() {
   }, [email, referralCode, plan.slug, isTrialCheckout]);
 
   const clearReferralCode = () => {
-    setReferralCode(isTrialCheckout ? '' : welcomeCode);
+    setReferralCode('');
     setAppliedDiscount(null);
     setEnrollmentHref(null);
     setError('');
@@ -608,12 +607,16 @@ function CheckoutForm() {
     );
   }
 
-  const pricePrimary = appliedDiscount?.displaySalePrice ?? firstTimerPreviewDisplay;
+  const pricePrimary = appliedDiscount?.displaySalePrice ?? plan.displayPrice;
   const priceMrp = appliedDiscount?.displayListPrice ?? plan.displayPrice;
   const discountLockedIn = Boolean(appliedDiscount);
+  const showListStrike =
+    !isTrialCheckout && (discountLockedIn || planPayablePaise < plan.amountPaise);
   const offerSaveDisplay =
     appliedDiscount?.displayDiscount
-    ?? (firstTimerSavingsPaise != null ? formatInrFromPaise(firstTimerSavingsPaise) : null);
+    ?? (firstTimerSavingsPaise != null && firstTimerSavingsPaise > 0
+      ? formatInrFromPaise(firstTimerSavingsPaise)
+      : null);
 
   return (
     <div style={{ ...styles.page, ...(checkoutScreen === 2 ? styles.pageWithSticky : null) }}>
@@ -661,8 +664,6 @@ function CheckoutForm() {
               <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
                 {COACHING_PLAN_LIST.map((item) => {
                   const selected = item.slug === plan.slug;
-                  const sale = firstTimerSalePaise(item.slug);
-                  const saleLabel = sale != null ? formatInrFromPaise(sale) : item.displayPrice;
                   return (
                     <Link
                       key={item.slug}
@@ -673,7 +674,7 @@ function CheckoutForm() {
                         trackFunnelStep('checkout_plan_switch', {
                           plan: item.slug,
                           plan_name: item.name,
-                          value: (sale ?? item.amountPaise) / 100,
+                          value: item.amountPaise / 100,
                         })
                       }
                       style={{
@@ -683,8 +684,9 @@ function CheckoutForm() {
                     >
                       <span style={styles.planChipName}>{planGoalName(item.slug)}</span>
                       <span style={styles.planChipDuration}>{planDurationLabel(item.slug)}</span>
-                      <span style={styles.planChipPrice}>{saleLabel}</span>
-                      <span style={styles.planChipMrp}>{item.displayPrice}</span>
+                      <span style={styles.planChipPrice}>{item.displayPrice}</span>
+                      {item.popular ? <span style={styles.planChipMrp}>Most popular</span> : null}
+                      {item.best ? <span style={styles.planChipMrp}>Best value</span> : null}
                     </Link>
                   );
                 })}
@@ -710,7 +712,7 @@ function CheckoutForm() {
                   </div>
                 </div>
                 <div style={styles.orderPriceCol}>
-                  {!isTrialCheckout && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
+                  {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
                   <span style={styles.orderSummaryPrice}>
                     {isTrialCheckout ? plan.displayPrice : formatInrFromPaise(planPayablePaise)}
                   </span>
@@ -718,13 +720,13 @@ function CheckoutForm() {
               </div>
                 <div style={styles.offerBanner}>
                   <div style={styles.offerBannerTop}>
-                    <strong>{discountLockedIn ? '60% off applied' : '60% off with code'}</strong>
-                    {offerSaveDisplay && <span style={styles.offerSave}>Save {offerSaveDisplay}</span>}
+                    <strong>{discountLockedIn ? 'Discount applied' : 'Have a promo code?'}</strong>
+                    {offerSaveDisplay ? <span style={styles.offerSave}>Save {offerSaveDisplay}</span> : null}
                   </div>
                   <p style={styles.offerBannerText}>
                     {discountLockedIn
                       ? `You pay ${appliedDiscount!.displaySalePrice} today.`
-                      : 'Enter your code and tap Apply — available for new and returning customers.'}
+                      : 'Enter a referral or promo code and tap Apply.'}
                   </p>
                   {discountLockedIn ? (
                     <div style={styles.appliedCodeRow}>
@@ -742,7 +744,7 @@ function CheckoutForm() {
                           setEnrollmentHref(null);
                           setAppliedDiscount(null);
                         }}
-                        placeholder={welcomeCode}
+                        placeholder="Promo code"
                         autoComplete="off"
                         aria-label="Discount code"
                         style={{ ...styles.input, marginTop: 0, flex: 1, minHeight: 48 }}
@@ -881,7 +883,7 @@ function CheckoutForm() {
                   <div style={styles.orderPlanMeta}>{email.trim() || '—'}</div>
                 </div>
                 <div style={styles.orderPriceCol}>
-                  {!isTrialCheckout && <s style={styles.orderSummaryMrp}>{priceMrp}</s>}
+                  {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
                   <span style={styles.orderSummaryPrice}>
                     {isTrialCheckout ? plan.displayPrice : formatInrFromPaise(planPayablePaise)}
                   </span>

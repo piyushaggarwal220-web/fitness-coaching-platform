@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { recordCapturedPayment, issuePurchaseClaimToken } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
-import { getCoachingPlan, isTrialPlanSlug } from '@/lib/payments/plans'
+import { getCoachingPlan, getPurchasablePlan } from '@/lib/payments/plans'
 import {
   fetchRazorpayPayment,
   fetchRazorpayOrder,
@@ -24,7 +24,6 @@ import {
 import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
 import { notifyAffiliateCodeUsage } from '@/lib/payments/affiliate-notify'
 import { recordPromoCodeUsage } from '@/lib/payments/promo-codes'
-import { assertTrialPurchaseEligible } from '@/lib/payments/trial-eligibility'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveAppBaseUrl } from '@/lib/admin/portal-urls'
 
@@ -53,26 +52,20 @@ export async function POST(request: Request) {
   if (!plan) {
     return NextResponse.json({ success: false, error: 'Invalid plan' }, { status: 400 })
   }
+  if (!getPurchasablePlan(plan.slug)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'This plan is no longer available. Choose a 3, 6, or 12 month plan at checkout.',
+      },
+      { status: 400 }
+    )
+  }
   if (!clientEmail) {
     return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 })
   }
   if (!clientName) {
     return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
-  }
-
-  if (isTrialPlanSlug(plan.slug)) {
-    const phone = body.phone?.trim() || ''
-    const trialCheck = await assertTrialPurchaseEligible({
-      admin: createAdminClient(),
-      email: clientEmail,
-      phone,
-    })
-    if (!trialCheck.ok) {
-      return NextResponse.json(
-        { success: false, error: trialCheck.error, reason: trialCheck.reason },
-        { status: trialCheck.status }
-      )
-    }
   }
 
   const orderId = body.razorpay_order_id ?? ''

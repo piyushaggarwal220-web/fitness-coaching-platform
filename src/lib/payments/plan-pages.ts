@@ -1,8 +1,8 @@
 import type { AnyCoachingPlanSlug, CoachingPlan, CoachingPlanSlug } from '@/lib/payments/plans'
 import { COACHING_PLAN_LIST, COACHING_PLANS, getCoachingPlan } from '@/lib/payments/plans'
 
-/** Public marketing plan pages (excludes trial). */
-export type LongCoachingPlanSlug = Exclude<CoachingPlanSlug, '1_week_trial'>
+/** Public marketing plan pages. */
+export type LongCoachingPlanSlug = CoachingPlanSlug
 
 /** Public URL segment → catalog slug */
 export const PLAN_PAGE_PATHS = {
@@ -158,8 +158,8 @@ export const PLAN_COMPARE_ROWS: {
   },
   {
     group: 'Value',
-    label: 'Per month with WELCOME60',
-    cells: { '3_months': '₹433', '6_months': '₹350', '12_months': '₹292' },
+    label: 'Per month',
+    cells: { '3_months': '₹600', '6_months': '₹467', '12_months': '₹375' },
   },
 ]
 
