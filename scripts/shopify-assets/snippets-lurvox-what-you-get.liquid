@@ -21,45 +21,27 @@
     <ul class="lx-wyg__grid">
       <li class="lx-wyg__item">
         <span class="lx-wyg__mark" aria-hidden="true"></span>
-        <div>
-          <h3>Personal workout + diet</h3>
-          <p>Built for your body, schedule, and food prefs. Delivered in 24 to 48 hours after onboarding.</p>
-        </div>
+        <h3>Personal workout + diet</h3>
       </li>
       <li class="lx-wyg__item">
         <span class="lx-wyg__mark" aria-hidden="true"></span>
-        <div>
-          <h3>Human coach in the app</h3>
-          <p>Direct coach chat. A real person owns your case. Tools help them, they don’t replace them.</p>
-        </div>
+        <h3>Human coach in the app</h3>
       </li>
       <li class="lx-wyg__item">
         <span class="lx-wyg__mark" aria-hidden="true"></span>
-        <div>
-          <h3>Mid week + weekly check ins</h3>
-          <p>Photos, measurements, and adherence reviewed so the plan moves with your real progress.</p>
-        </div>
+        <h3>Mid week + weekly check ins</h3>
       </li>
       <li class="lx-wyg__item">
         <span class="lx-wyg__mark" aria-hidden="true"></span>
-        <div>
-          <h3>Daily trackers</h3>
-          <p>Workout, meals, water, sleep, steps, and habits. All in one place your coach can see.</p>
-        </div>
+        <h3>Daily trackers</h3>
       </li>
       <li class="lx-wyg__item">
         <span class="lx-wyg__mark" aria-hidden="true"></span>
-        <div>
-          <h3>Journey + progress photos</h3>
-          <p>A timeline of check ins and photos so you see proof you’re moving, not guessing.</p>
-        </div>
+        <h3>Journey + progress photos</h3>
       </li>
       <li class="lx-wyg__item">
         <span class="lx-wyg__mark" aria-hidden="true"></span>
-        <div>
-          <h3>Plan tweaks when you stall</h3>
-          <p>When progress slows, your coach adjusts workouts and diet. Not a static PDF you outgrow.</p>
-        </div>
+        <h3>Plan tweaks when you stall</h3>
       </li>
     </ul>
 
@@ -74,7 +56,7 @@
     position: relative;
     color: var(--lx-wyg-ink);
     background: #050505;
-    padding: clamp(48px, 8vw, 88px) 16px;
+    padding: clamp(36px, 6vw, 64px) 16px;
     overflow: hidden;
   }
 
@@ -84,7 +66,7 @@
     }
 
     .lx-wyg__header {
-      margin: 0 auto 22px;
+      margin: 0 auto 18px;
       text-align: left;
     }
 
@@ -99,17 +81,12 @@
     }
 
     .lx-wyg__item {
-      padding: 16px 0;
+      padding: 12px 0;
       gap: 12px;
     }
 
     .lx-wyg__item h3 {
       font-size: 0.98rem;
-    }
-
-    .lx-wyg__item p {
-      font-size: 0.86rem;
-      line-height: 1.45;
     }
   }
 
@@ -132,7 +109,7 @@
   .lx-wyg__header {
     text-align: center;
     max-width: 560px;
-    margin: 0 auto 36px;
+    margin: 0 auto 28px;
   }
 
   .lx-wyg__eyebrow {
@@ -171,51 +148,42 @@
 
   @media (min-width: 720px) {
     .lx-wyg__grid {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 
   .lx-wyg__item {
     display: grid;
     grid-template-columns: 14px 1fr;
-    gap: 14px;
-    align-items: start;
-    padding: 22px 4px 22px 0;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 4px 14px 0;
     border-bottom: 1px solid var(--lx-wyg-line);
   }
 
   @media (min-width: 720px) {
-    .lx-wyg__item:nth-child(odd) {
-      padding-right: 28px;
-      border-right: 1px solid var(--lx-wyg-line);
-    }
-    .lx-wyg__item:nth-child(even) {
-      padding-left: 28px;
+    .lx-wyg__item {
+      border-right: none;
+      padding-right: 16px;
+      padding-left: 0;
     }
   }
 
   .lx-wyg__mark {
     width: 8px;
     height: 8px;
-    margin-top: 8px;
+    margin-top: 0;
     border-radius: 50%;
     background: var(--lx-wyg-accent);
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--lx-wyg-accent) 18%, transparent);
   }
 
   .lx-wyg__item h3 {
-    margin: 0 0 6px;
-    font-size: 1.02rem;
+    margin: 0;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: -0.02em;
-    line-height: 1.25;
-  }
-
-  .lx-wyg__item p {
-    margin: 0;
-    font-size: 0.92rem;
-    line-height: 1.5;
-    color: var(--lx-wyg-muted);
+    line-height: 1.3;
   }
 
   .lx-wyg__actions {
