@@ -54,7 +54,7 @@ function LoginForm() {
 
       const role = profile?.role;
       if (role === 'coach') {
-        router.push('/coach');
+        router.push('/coach/dashboard');
         setLoading(false);
         return;
       }
