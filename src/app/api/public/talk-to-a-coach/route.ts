@@ -35,14 +35,9 @@ function corsHeaders(origin: string | null): HeadersInit {
   return {}
 }
 
-function normalizeEmail(raw: string): string {
-  return raw.trim().toLowerCase()
-}
-
-function buildFingerprint(email: string, phone: string): string {
-  const normalizedEmail = normalizeEmail(email)
+function buildFingerprint(phone: string): string {
   const normalizedPhone = normalizePhoneForWhatsApp(phone) ?? phone.replace(/\D/g, '')
-  return `${normalizedEmail}|${normalizedPhone}`.toLowerCase()
+  return normalizedPhone.toLowerCase()
 }
 
 function escapeHtml(value: string): string {
@@ -55,7 +50,6 @@ function escapeHtml(value: string): string {
 
 function buildNotifyEmail(input: {
   name: string
-  email: string
   phone: string
   message: string
   preferredTime: string
@@ -66,13 +60,12 @@ function buildNotifyEmail(input: {
     '',
     `Name: ${input.name}`,
     `Phone / WhatsApp: ${input.phone}`,
-    `Email: ${input.email}`,
     `Preferred call time: ${input.preferredTime}`,
     '',
     'Goal / message:',
     input.message,
     '',
-    'Reply to this person by email or WhatsApp to schedule the call.',
+    'Call or WhatsApp this person to schedule the consultation.',
   ].join('\n')
 
   const html = `
@@ -82,11 +75,10 @@ function buildNotifyEmail(input: {
       <table style="border-collapse:collapse;width:100%;max-width:560px">
         <tr><td style="padding:8px 0;font-weight:600;width:140px">Name</td><td style="padding:8px 0">${escapeHtml(input.name)}</td></tr>
         <tr><td style="padding:8px 0;font-weight:600">Phone / WhatsApp</td><td style="padding:8px 0">${escapeHtml(input.phone)}</td></tr>
-        <tr><td style="padding:8px 0;font-weight:600">Email</td><td style="padding:8px 0"><a href="mailto:${escapeHtml(input.email)}">${escapeHtml(input.email)}</a></td></tr>
         <tr><td style="padding:8px 0;font-weight:600">Preferred call time</td><td style="padding:8px 0">${escapeHtml(input.preferredTime)}</td></tr>
       </table>
       <div style="margin-top:16px;padding:14px 16px;background:#f6f6f6;border-radius:10px;white-space:pre-wrap">${escapeHtml(input.message)}</div>
-      <p style="margin:16px 0 0;color:#555;font-size:13px">Reply by email or WhatsApp to schedule the call.</p>
+      <p style="margin:16px 0 0;color:#555;font-size:13px">Call or WhatsApp this person to schedule the consultation.</p>
     </div>
   `
 
@@ -112,16 +104,12 @@ export async function POST(request: Request) {
   }
 
   const name = body.name?.trim() ?? ''
-  const email = body.email?.trim() ?? ''
   const phone = body.phone?.trim() ?? ''
   const message = body.message?.trim() ?? ''
   const preferredTime = body.preferredTime?.trim() ?? ''
 
   if (!name || name.length < 2) {
     return NextResponse.json({ ok: false, error: 'Please enter your name.' }, { status: 400, headers })
-  }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ ok: false, error: 'Please enter a valid email.' }, { status: 400, headers })
   }
   if (!phone || phone.replace(/\D/g, '').length < 10) {
     return NextResponse.json({ ok: false, error: 'Please enter a valid phone number.' }, { status: 400, headers })
@@ -139,7 +127,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const fingerprint = buildFingerprint(email, phone)
+  const fingerprint = buildFingerprint(phone)
   const admin = createAdminClient()
 
   const { count, error: countError } = await admin
@@ -168,11 +156,10 @@ export async function POST(request: Request) {
     )
   }
 
-  const normalizedEmail = normalizeEmail(email)
   const storedMessage = `Preferred call time: ${preferredTime}\n\n${message}`
   const { error: insertError } = await admin.from('talk_to_coach_submissions').insert({
     name,
-    email: normalizedEmail,
+    email: null,
     phone,
     message: storedMessage,
     fingerprint,
@@ -188,7 +175,6 @@ export async function POST(request: Request) {
 
   const notify = buildNotifyEmail({
     name,
-    email: normalizedEmail,
     phone,
     message,
     preferredTime,
@@ -198,7 +184,6 @@ export async function POST(request: Request) {
     subject: notify.subject,
     text: notify.text,
     html: notify.html,
-    replyTo: normalizedEmail,
   })
   if (!emailed.ok) {
     console.error('[talk-to-a-coach] notify email failed:', emailed.error)

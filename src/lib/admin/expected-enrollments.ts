@@ -1,4 +1,5 @@
 import { COACHING_TIME_ZONE, getCoachingDateKey } from '@/lib/checkin-schedule'
+import { normalizePhoneForWhatsApp } from '@/lib/phone'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export type ExpectedEnrollmentLead = {
@@ -111,14 +112,19 @@ export async function getExpectedEnrollments(): Promise<ExpectedEnrollmentsPaylo
   const dayMap = new Map<string, ExpectedEnrollmentLead[]>()
   const overdueLeads: ExpectedEnrollmentLead[] = []
   const anytimeLeads: ExpectedEnrollmentLead[] = []
-  const seenEmails = new Set<string>()
+  const seenPhones = new Set<string>()
 
   for (const row of submissions ?? []) {
+    const phoneRaw = String(row.phone ?? '').trim()
+    const phone = normalizePhoneForWhatsApp(phoneRaw) ?? phoneRaw.replace(/\D/g, '')
+    if (!phone || phone.length < 10) continue
+
     const email = String(row.email ?? '')
       .trim()
       .toLowerCase()
-    if (!email || enrolledEmails.has(email) || seenEmails.has(email)) continue
-    seenEmails.add(email)
+    if (email && enrolledEmails.has(email)) continue
+    if (seenPhones.has(phone)) continue
+    seenPhones.add(phone)
 
     const { preferredTime, goal } = parsePreferredTime(String(row.message ?? ''))
     const submittedAt = String(row.created_at)
@@ -128,8 +134,8 @@ export async function getExpectedEnrollments(): Promise<ExpectedEnrollmentsPaylo
     const lead: ExpectedEnrollmentLead = {
       id: String(row.id),
       name: String(row.name ?? ''),
-      email,
-      phone: String(row.phone ?? ''),
+      email: email || '—',
+      phone: phoneRaw || phone,
       preferredTime,
       goal: goal || '—',
       submittedAt,

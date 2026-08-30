@@ -1,6 +1,6 @@
 {% comment %}
   LURVOX — Book a free consultation call
-  On-site form only (name, phone, email, goal). No plan picker.
+  On-site form only (name, phone, goal). No plan picker.
   Posts to app.lurvox.in API.
 {% endcomment %}
 
@@ -47,29 +47,16 @@
           >
         </div>
 
-        <div class="lx-consult__row">
-          <div class="lx-consult__field">
-            <label for="lx-consult-phone-{{ section.id }}">Phone / WhatsApp</label>
-            <input
-              id="lx-consult-phone-{{ section.id }}"
-              name="phone"
-              type="tel"
-              required
-              autocomplete="tel"
-              placeholder="+91 98765 43210"
-            >
-          </div>
-          <div class="lx-consult__field">
-            <label for="lx-consult-email-{{ section.id }}">Email</label>
-            <input
-              id="lx-consult-email-{{ section.id }}"
-              name="email"
-              type="email"
-              required
-              autocomplete="email"
-              placeholder="you@email.com"
-            >
-          </div>
+        <div class="lx-consult__field">
+          <label for="lx-consult-phone-{{ section.id }}">Phone / WhatsApp</label>
+          <input
+            id="lx-consult-phone-{{ section.id }}"
+            name="phone"
+            type="tel"
+            required
+            autocomplete="tel"
+            placeholder="+91 98765 43210"
+          >
         </div>
 
         <fieldset class="lx-consult__goals">
@@ -537,7 +524,6 @@
 
       var payload = {
         name: form.name.value.trim(),
-        email: form.email.value.trim(),
         phone: form.phone.value.trim(),
         message: message,
         preferredTime: preferred

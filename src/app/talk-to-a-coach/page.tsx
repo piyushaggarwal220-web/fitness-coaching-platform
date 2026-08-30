@@ -27,7 +27,6 @@ const CONSULT_BOOKED_KEY = 'lurvox_consult_booked'
 
 export default function TalkToCoachPage() {
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [goalSlug, setGoalSlug] = useState<LongCoachingPlanSlug | ''>('')
   const [notes, setNotes] = useState('')
@@ -73,7 +72,7 @@ export default function TalkToCoachPage() {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, message, preferredTime }),
+        body: JSON.stringify({ name, phone, message, preferredTime }),
       })
       const payload = (await res.json().catch(() => null)) as {
         ok?: boolean
@@ -97,7 +96,6 @@ export default function TalkToCoachPage() {
         /* ignore */
       }
       setName('')
-      setEmail('')
       setPhone('')
       setGoalSlug('')
       setNotes('')
@@ -136,7 +134,7 @@ export default function TalkToCoachPage() {
         )}
         {remaining != null && remaining === 0 && !success && !booked && (
           <p style={{ ...authStyles.error, marginBottom: 16 }}>
-            You have used both consultation requests for this email and phone combination.
+            You have used both consultation requests for this phone number.
           </p>
         )}
 
@@ -152,18 +150,6 @@ export default function TalkToCoachPage() {
               required
               style={authStyles.input}
               autoComplete="name"
-            />
-          </div>
-          <div style={authStyles.inputGroup}>
-            <label htmlFor="email" style={authStyles.label}>Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={authStyles.input}
-              autoComplete="email"
             />
           </div>
           <div style={authStyles.inputGroup}>

@@ -164,9 +164,11 @@ export default function AdminExpectedEnrollmentsPage() {
                           <tr key={lead.id}>
                             <td style={s.td}>
                               <div>{lead.name || '—'}</div>
-                              <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>
-                                {lead.email}
-                              </div>
+                              {lead.email && lead.email !== '—' ? (
+                                <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>
+                                  {lead.email}
+                                </div>
+                              ) : null}
                             </td>
                             <td style={s.td}>{lead.phone || '—'}</td>
                             <td style={s.td}>{lead.preferredTime || 'Not set'}</td>
