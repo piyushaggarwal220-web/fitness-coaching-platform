@@ -319,6 +319,32 @@ export async function resolveWorkQueueTask(
       return { ok: true, resolved: true }
     }
 
+    case 'journey_setup': {
+      if (!task.clientId) {
+        return { ok: false, resolved: false, error: 'Missing client for journey task.' }
+      }
+
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('id, coach_id, journey_goal')
+        .eq('id', task.clientId)
+        .maybeSingle()
+
+      if (!profile || profile.coach_id !== coachId) {
+        return { ok: false, resolved: false, error: 'Client is not assigned to you.' }
+      }
+
+      if (!profile.journey_goal?.trim()) {
+        return {
+          ok: false,
+          resolved: false,
+          error: 'Set and save the journey plan on the client profile first.',
+        }
+      }
+
+      return { ok: true, resolved: true }
+    }
+
     case 'league_certificate': {
       if (!task.clientId) {
         return { ok: false, resolved: false, error: 'Missing client for certificate task.' }

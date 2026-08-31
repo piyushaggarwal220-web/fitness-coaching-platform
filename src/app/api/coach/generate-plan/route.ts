@@ -24,6 +24,7 @@ import {
   markManualPlanStarted,
   queueManualPlanJob,
 } from '@/lib/coach/background-initial-plan'
+import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
@@ -174,6 +175,21 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { success: false, error: 'Client not found or not assigned to you' },
       { status: 404 }
+    )
+  }
+
+  const manualDelivery = coachRequiresManualPlanDelivery(coach.id)
+  if (
+    manualDelivery &&
+    isInitialPlanAction(actionId) &&
+    !profile.journey_goal?.trim()
+  ) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Set the client journey plan on their profile before generating an initial draft.',
+      },
+      { status: 422 }
     )
   }
 

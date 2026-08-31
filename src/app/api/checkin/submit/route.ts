@@ -15,6 +15,7 @@ import {
 import { formatMidWeekCheckinChatMessage } from '@/lib/checkin-chat'
 import { postCheckinToCoachChat } from '@/lib/coach-chat'
 import { computeAutoReplyAt } from '@/lib/checkin-auto-reply-schedule'
+import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -230,6 +231,7 @@ export async function POST(request: Request) {
     }
 
     const dueDateStr = scheduled.dueDate.toISOString().slice(0, 10)
+    const manualPlanDelivery = coachRequiresManualPlanDelivery(profile.coach_id)
     const baseRow = {
       client_id: user.id,
       coach_id: profile.coach_id,
@@ -253,8 +255,10 @@ export async function POST(request: Request) {
       training_performance: body.workout_adherence,
       pain_injuries: body.pain_injuries ?? null,
       reviewed: false,
-      // Schedules the automated reply; the coach can still answer first, which cancels it.
-      auto_reply_at: computeAutoReplyAt(new Date()).toISOString(),
+      // Manual-delivery coaches review every check-in themselves — no auto-reply timer.
+      auto_reply_at: manualPlanDelivery
+        ? null
+        : computeAutoReplyAt(new Date()).toISOString(),
     }
 
     let insertRow: Record<string, unknown>
@@ -407,7 +411,8 @@ export async function POST(request: Request) {
 
     if (body.checkinType === 'weekly') {
       const planSlug = await fetchCapturedPlanSlug(user.id)
-      const autoUpdate = shouldAutoGenerateWeeklyPlanDraft(planSlug, scheduled.coachingWeek)
+      const autoUpdate =
+        shouldAutoGenerateWeeklyPlanDraft(planSlug, scheduled.coachingWeek) && !manualPlanDelivery
 
       if (autoUpdate) {
         // Mark in-flight before the response returns so coaches see Generating immediately.

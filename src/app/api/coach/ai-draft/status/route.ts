@@ -9,6 +9,7 @@ import {
   planUpdateCadenceLabel,
   shouldAutoGenerateWeeklyPlanDraft,
 } from '@/lib/plan-update-cadence'
+import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
 
   const { data: client } = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, coach_id')
     .eq('id', clientId)
     .eq('coach_id', coach.id)
     .maybeSingle()
@@ -57,11 +58,12 @@ export async function GET(request: Request) {
   const planSlug = await fetchCapturedPlanSlug(clientId)
   const coachingWeek = checkin?.coaching_week ?? 0
   const autoDraftScheduled = shouldAutoGenerateWeeklyPlanDraft(planSlug, coachingWeek)
+  const manualDelivery = coachRequiresManualPlanDelivery(client.coach_id)
   const polling = resolveDraftPollingState({
     hasDraft: Boolean(draft),
     log,
     submittedAtMs,
-    expectAutoDraft: autoDraftScheduled,
+    expectAutoDraft: autoDraftScheduled && !manualDelivery,
   })
 
   return NextResponse.json({
@@ -73,7 +75,7 @@ export async function GET(request: Request) {
       ? sanitizeDraftFailureError(polling.failureRaw)
       : null,
     checkinWeek: checkin?.coaching_week ?? null,
-    autoDraftScheduled,
+    autoDraftScheduled: autoDraftScheduled && !manualDelivery,
     planUpdateCadence: planUpdateCadenceLabel(planSlug),
     nextAutoUpdateWeek: nextAutoPlanUpdateWeek(planSlug, coachingWeek),
   })

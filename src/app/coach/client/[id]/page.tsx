@@ -226,7 +226,11 @@ export default function CoachClientDetailPage() {
           <CoachClientProfileEdit client={client} onSaved={setClient} />
         </div>
 
-        <CoachClientJourneyPlanEdit client={client} onSaved={setClient} />
+        <CoachClientJourneyPlanEdit
+          client={client}
+          coachId={coach?.id ?? ''}
+          onSaved={setClient}
+        />
 
         <CoachClientJourneyPanel clientId={client.id} />
 

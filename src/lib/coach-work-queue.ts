@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
+import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
 import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
@@ -9,6 +10,7 @@ import { LEAGUE_TIER_LABELS } from '@/lib/league/scoring'
 
 export type WorkQueueTaskType =
   | 'initial_plan'
+  | 'journey_setup'
   | 'plan_change_request'
   | 'checkin_review'
   | 'call_request'
@@ -141,7 +143,7 @@ export async function getCoachWorkQueue(
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, name, email, plan_delivered, onboarding_complete, created_at, payment_confirmed, access_source, subscription_expires_at')
+      .select('id, name, email, plan_delivered, onboarding_complete, created_at, payment_confirmed, access_source, subscription_expires_at, journey_goal')
       .eq('coach_id', coachId),
     supabase
       .from('plan_change_requests')
@@ -243,6 +245,8 @@ export async function getCoachWorkQueue(
 
   const issues = (issueRows ?? []).filter((issue) => clientNameById.has(issue.client_id))
 
+  const manualPlanDelivery = coachRequiresManualPlanDelivery(coachId)
+
   for (const client of clients ?? []) {
     // Only surface plan work after onboarding completion is persisted.
     // Incomplete clients never reach the dashboard, so they are not queue work.
@@ -255,12 +259,34 @@ export async function getCoachWorkQueue(
     const clientName = clientNameById.get(client.id) ?? 'Client'
     const readyDraftId =
       (generation?.status === 'ready' && generation.draft_plan_id) || draft?.id || null
+
+    if (manualPlanDelivery && !client.journey_goal?.trim()) {
+      tasks.push({
+        id: `journey-${client.id}`,
+        type: 'journey_setup',
+        title: 'Set client journey plan',
+        subtitle: `${clientName} · define the coaching roadmap before generating a draft`,
+        href: `/coach/client/${client.id}#journey-plan`,
+        clientId: client.id,
+        clientName,
+        priority: QUEUE_PRIORITY,
+        createdAt: client.created_at ?? new Date().toISOString(),
+        coachNextSteps: [
+          'Open the client profile and write the journey goal (multi-phase roadmap).',
+          'Save the journey plan, then generate an AI draft for your review.',
+        ],
+      })
+      continue
+    }
+
     const title =
       generation?.status === 'ready' || readyDraftId
         ? 'Ready for coach note/review'
         : generation?.status === 'failed'
           ? 'AI plan generation failed'
-          : 'AI plan is generating'
+          : manualPlanDelivery && !readyDraftId && !generation
+            ? 'Generate initial plan draft'
+            : 'AI plan is generating'
     const isGenerating =
       !readyDraftId &&
       generation?.status !== 'failed' &&
@@ -270,7 +296,9 @@ export async function getCoachWorkQueue(
       ? `/coach/plan/${readyDraftId}`
       : generation?.status === 'failed'
         ? `/coach/client/${client.id}/generate-plan`
-        : `/coach/client/${client.id}`
+        : manualPlanDelivery && !readyDraftId && !generation
+          ? `/coach/client/${client.id}#journey-plan`
+          : `/coach/client/${client.id}`
     const failedGuidance =
       generation?.status === 'failed'
         ? getGenerationFailureGuidance(generation.error_code, generation.error_message)
@@ -287,7 +315,14 @@ export async function getCoachWorkQueue(
       clientName,
       priority: QUEUE_PRIORITY,
       createdAt: generation?.queued_at ?? draft?.created_at ?? client.created_at ?? new Date().toISOString(),
-      coachNextSteps: failedGuidance?.nextSteps,
+      coachNextSteps:
+        failedGuidance?.nextSteps ??
+        (manualPlanDelivery && !readyDraftId && !generation
+          ? [
+              'Journey plan is saved. Generate an AI draft from the client profile.',
+              'Review the draft, add a coach note, then deliver to the client.',
+            ]
+          : undefined),
     })
   }
 
@@ -451,7 +486,7 @@ export async function getCoachWorkQueue(
   )
 }
 
-export type WorkQueueFilter = WorkQueueTaskType | 'all'
+export type WorkQueueFilter = Exclude<WorkQueueTaskType, 'journey_setup'> | 'all'
 
 export type WorkQueueCounts = {
   initial_plan: number
@@ -478,12 +513,19 @@ export function getWorkQueueCounts(tasks: WorkQueueTask[]): WorkQueueCounts {
     total: tasks.length,
   }
   for (const task of tasks) {
-    counts[task.type] += 1
+    if (task.type === 'journey_setup') {
+      counts.initial_plan += 1
+    } else {
+      counts[task.type] += 1
+    }
   }
   return counts
 }
 
 export function filterWorkQueue(tasks: WorkQueueTask[], filter: WorkQueueFilter): WorkQueueTask[] {
   if (filter === 'all') return tasks
+  if (filter === 'initial_plan') {
+    return tasks.filter((t) => t.type === 'initial_plan' || t.type === 'journey_setup')
+  }
   return tasks.filter((t) => t.type === filter)
 }

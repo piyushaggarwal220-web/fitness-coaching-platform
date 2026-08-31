@@ -12,6 +12,7 @@ import {
   type InitialPlanGenerationJob,
   validatePersistedOnboardingAnswers,
 } from '@/lib/initial-plan-generation'
+import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -117,6 +118,16 @@ export async function POST(request: Request) {
       status: 'skipped',
       reason: 'plan_already_delivered',
       deduplicated: true,
+    })
+  }
+
+  if (!shouldAutoEnqueueInitialPlan(completedProfile)) {
+    return NextResponse.json({
+      success: true,
+      status: 'awaiting_coach_journey',
+      deduplicated: false,
+      message:
+        'Your coach will review your intake and prepare your personalized plan. You will be notified when it is ready.',
     })
   }
 

@@ -8,6 +8,7 @@ import {
   shouldStartInitialGeneration,
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
+import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -49,6 +50,14 @@ export async function POST() {
     .not('delivered_at', 'is', null)
   if ((deliveredCount ?? 0) > 0) {
     return NextResponse.json({ success: true, status: 'skipped', reason: 'plan_already_delivered' })
+  }
+
+  if (!shouldAutoEnqueueInitialPlan(completed)) {
+    return NextResponse.json({
+      success: true,
+      status: 'awaiting_coach_journey',
+      reason: 'manual_coach_delivery',
+    })
   }
 
   const result = await enqueueInitialPlanGeneration(admin, completed)

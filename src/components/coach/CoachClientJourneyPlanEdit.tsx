@@ -2,22 +2,33 @@
 
 import { useState, type CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { colors } from '@/lib/coach-theme'
 import { coachPageStyles as pageStyles } from '@/lib/coach-page-styles'
 import type { CoachClientDetail } from '@/types/database'
 
 type CoachClientJourneyPlanEditProps = {
   client: CoachClientDetail
+  coachId: string
   onSaved: (updated: CoachClientDetail) => void
 }
 
 const supabase = createClient()
 
-export function CoachClientJourneyPlanEdit({ client, onSaved }: CoachClientJourneyPlanEditProps) {
+export function CoachClientJourneyPlanEdit({ client, coachId, onSaved }: CoachClientJourneyPlanEditProps) {
   const [journeyGoal, setJourneyGoal] = useState(client.journey_goal ?? '')
   const [journeySummary, setJourneySummary] = useState(client.journey_summary ?? '')
   const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [message, setMessage] = useState('')
+
+  const manualDelivery = coachRequiresManualPlanDelivery(coachId)
+  const journeySaved = Boolean(client.journey_goal?.trim())
+  const canGenerateDraft =
+    manualDelivery &&
+    journeySaved &&
+    !client.plan_delivered &&
+    client.onboarding_complete === true
 
   const handleSave = async () => {
     setSaving(true)
@@ -43,16 +54,55 @@ export function CoachClientJourneyPlanEdit({ client, onSaved }: CoachClientJourn
     setJourneyGoal(goal ?? '')
     setJourneySummary(summary ?? '')
     onSaved({ ...client, journey_goal: goal, journey_summary: summary })
-    setMessage('Journey plan saved. Every AI diet/workout update will include this.')
+    setMessage(
+      manualDelivery && goal
+        ? 'Journey plan saved. Generate an AI draft when you are ready to review it.'
+        : 'Journey plan saved. Every AI diet/workout update will include this.'
+    )
     setSaving(false)
   }
 
+  const handleGenerateDraft = async () => {
+    if (!journeyGoal.trim()) {
+      setMessage('Save a journey goal before generating a draft.')
+      return
+    }
+
+    setGenerating(true)
+    setMessage('')
+
+    const response = await fetch(`/api/coach/clients/${client.id}/start-initial-plan`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    const result = (await response.json().catch(() => null)) as
+      | { success?: boolean; error?: string; draftPlanId?: string; status?: string }
+      | null
+
+    setGenerating(false)
+
+    if (!response.ok || !result?.success) {
+      setMessage(result?.error ?? 'Could not start plan generation.')
+      return
+    }
+
+    if (result.draftPlanId) {
+      setMessage('Draft is ready — open it from your work queue to review and deliver.')
+      return
+    }
+
+    setMessage(
+      'AI draft generation started. It will appear in your work queue when ready for review.'
+    )
+  }
+
   return (
-    <section style={styles.card}>
+    <section id="journey-plan" style={styles.card}>
       <h2 style={styles.title}>Journey plan (AI memory)</h2>
       <p style={styles.lede}>
-        After a coach call, set the long-term roadmap and where the client is right now. AI uses this on
-        every plan update so diet calories and food choices stay aligned with their phase.
+        {manualDelivery
+          ? 'Step 1: After a coach call, write the long-term roadmap and current phase. Step 2: Generate an AI draft. Step 3: Review the draft and deliver it to the client — nothing is sent automatically.'
+          : 'After a coach call, set the long-term roadmap and where the client is right now. AI uses this on every plan update so diet calories and food choices stay aligned with their phase.'}
       </p>
 
       {client.client_goal_details?.trim() ? (
@@ -93,9 +143,19 @@ export function CoachClientJourneyPlanEdit({ client, onSaved }: CoachClientJourn
       </p>
 
       <div style={styles.actions}>
-        <button type="button" onClick={handleSave} disabled={saving} style={pageStyles.primaryBtn}>
+        <button type="button" onClick={handleSave} disabled={saving || generating} style={pageStyles.primaryBtn}>
           {saving ? 'Saving…' : 'Save journey plan'}
         </button>
+        {canGenerateDraft ? (
+          <button
+            type="button"
+            onClick={() => void handleGenerateDraft()}
+            disabled={generating || saving || !journeyGoal.trim()}
+            style={pageStyles.secondaryBtn}
+          >
+            {generating ? 'Starting draft…' : 'Generate initial plan draft'}
+          </button>
+        ) : null}
       </div>
       {message ? <p style={styles.message}>{message}</p> : null}
     </section>

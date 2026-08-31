@@ -19,6 +19,7 @@ import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { resolveVisionMediaType, type VisionSafeMediaType } from '@/lib/photo'
 import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
+import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
 
@@ -567,6 +568,7 @@ export async function backfillMissingInitialPlanJobs(
   for (const row of clients) {
     if (started.length >= limit) break
     if (hasJob.has(row.id) || hasDelivered.has(row.id)) continue
+    if (!shouldAutoEnqueueInitialPlan(row as OnboardingProfile)) continue
     const profile = row as OnboardingProfile
     const result = await enqueueInitialPlanGeneration(admin, profile)
     if (!result.job || result.error) continue

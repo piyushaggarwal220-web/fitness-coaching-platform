@@ -44,6 +44,7 @@ import { LeagueHomeCard } from '@/components/league/LeagueHomeCard';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
+import { clientRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy';
 import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
 import { isItemComplete } from '@/lib/daily-tracker/scores';
@@ -242,6 +243,7 @@ export default function Dashboard() {
           profileData.onboarding_complete &&
           !profileData.plan_delivered &&
           !planData &&
+          !clientRequiresManualPlanDelivery(profileData) &&
           (!job || job.status === 'queued' || job.status === 'failed')
         if (needsEnsure) {
           void fetch('/api/onboarding/ensure-generation', {
@@ -549,20 +551,25 @@ export default function Dashboard() {
       )}
       {renewalPrompt && <MembershipRenewalBanner prompt={renewalPrompt} />}
 
-      {generationJob && !activePlan && profile?.plan_delivered !== true && (
+      {(generationJob || clientRequiresManualPlanDelivery(profile)) &&
+        !activePlan &&
+        profile?.plan_delivered !== true &&
+        profile?.onboarding_complete && (
         <div style={{
           marginBottom: spacing[4],
           padding: spacing[3],
           borderRadius: 14,
-          backgroundColor: generationJob.status === 'failed' ? colors.dangerMuted : colors.accentMuted,
-          color: generationJob.status === 'failed' ? colors.danger : colors.textPrimary,
+          backgroundColor: generationJob?.status === 'failed' ? colors.dangerMuted : colors.accentMuted,
+          color: generationJob?.status === 'failed' ? colors.danger : colors.textPrimary,
           fontSize: 14,
           lineHeight: 1.5,
         }}>
           <strong>
-            {generationJob.status === 'queued' || generationJob.status === 'generating'
+            {!generationJob && clientRequiresManualPlanDelivery(profile)
               ? 'Your coach is preparing your personalized plan.'
-              : generationJob.status === 'ready'
+              : generationJob?.status === 'queued' || generationJob?.status === 'generating'
+              ? 'Your coach is preparing your personalized plan.'
+              : generationJob?.status === 'ready'
                 ? 'Your coach is reviewing your plan and will share it with you soon.'
                 : 'Your coach is working on your plan. Please check back shortly.'}
           </strong>
