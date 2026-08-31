@@ -1,8 +1,4 @@
-import {
-  estimateMaintenanceCalories,
-  calorieTargetBand,
-} from '@/lib/ai/calorie-targets'
-import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
+import { resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import {
   inferMacrosFromDietText,
   parseHeaderCalories,
@@ -56,14 +52,8 @@ export function evaluateHighFluxPlanReview(input: {
     ? inferMacrosFromDietText(input.nutritionPlan)
     : null
   const calories = foodMacros?.calories ?? headerCalories
-  const floor = resolveDietFloorKcal(input.profile.weight)
-  const maintenance = estimateMaintenanceCalories({
-    weightKg: input.profile.weight,
-    heightCm: null,
-    age: null,
-    gender: null,
-    activityLevel: input.profile.onboarding_data?.lifestyle?.dailySteps ? 'moderately_active' : null,
-  })
+  const targets = resolveClientCalorieTargets(input.profile as OnboardingProfile)
+  const floor = targets?.floorKcal ?? resolveDietFloorKcal(input.profile.weight)
 
   if (
     headerCalories != null &&
@@ -85,14 +75,12 @@ export function evaluateHighFluxPlanReview(input: {
       })
     }
 
-    if (maintenance) {
-      const flux = resolveMetabolicFluxPlan(input.profile as OnboardingProfile)
-      const band = calorieTargetBand(maintenance, input.profile.fitness_goal, flux.level, floor)
-      const preferredMin = band.preferred
+    if (targets) {
+      const preferredMin = targets.preferred
       if (calories < preferredMin - 40) {
         flags.push({
           level: 'warning',
-          message: `Calories (~${calories} kcal) are below the preferred high-flux target (~${preferredMin}–${band.max} kcal). Default to the upper half of the band, not the minimum.`,
+          message: `Calories (~${calories} kcal) are below the profile target (~${preferredMin} kcal; maintenance ~${targets.maintenance}). Regenerate — no manual calorie notes needed.`,
         })
       }
     }

@@ -48,7 +48,7 @@ export function PlanSectionAiEditModal({
 
   const generate = async (instructionOverride?: string) => {
     const instruction = (instructionOverride ?? coachInstruction).trim()
-    if (!instruction) {
+    if (!instruction && section !== 'nutrition' && !instructionOverride) {
       setStatusVariant('error')
       setStatus('Enter your coaching instruction first.')
       return
@@ -67,7 +67,7 @@ export function PlanSectionAiEditModal({
           clientId,
           section,
           currentText,
-          coachInstruction: instruction,
+          coachInstruction: instruction || undefined,
           remakeFromScratch: Boolean(instructionOverride),
         }),
       })
@@ -103,19 +103,24 @@ export function PlanSectionAiEditModal({
           Regenerate {label} with AI
         </h2>
         <p style={{ margin: '0 0 20px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-          Tell the AI what you want in this section. It will write a fresh plan — not patch the old
-          one — and won&apos;t mention edits or changes in the client-facing text. Review the draft,
-          apply it to the editor, then save or deliver.
+          {section === 'nutrition'
+            ? 'Maintenance and daily calories are calculated from the client profile automatically. Optional notes steer meal style; leave blank to regenerate at profile targets.'
+            : 'Tell the AI what you want in this section. It will write a fresh plan — not patch the old one — and won\'t mention edits in the client-facing text.'}{' '}
+          Review the draft, apply it to the editor, then save or deliver.
         </p>
 
         <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
-          Coach instruction *
+          {section === 'nutrition' ? 'Optional notes' : 'Coach instruction *'}
         </label>
         <textarea
           value={coachInstruction}
           onChange={(e) => setCoachInstruction(e.target.value)}
           rows={5}
-          placeholder="e.g. Raise daily average to maintenance (~2200 kcal). Keep Indian meals, same training days…"
+          placeholder={
+            section === 'nutrition'
+              ? 'e.g. Keep Indian vegetarian meals, same 6-day split…'
+              : 'e.g. Add a fourth day for shoulders, keep compound focus…'
+          }
           disabled={generating}
           style={{
             ...s.noteInput,
@@ -143,7 +148,7 @@ export function PlanSectionAiEditModal({
             onClick={() => void generate()}
             style={{ flex: '1 1 160px' }}
           >
-            {generating ? 'Generating…' : revisedText ? 'Regenerate' : 'Regenerate with coach instruction'}
+            {generating ? 'Generating…' : revisedText ? 'Regenerate' : section === 'nutrition' ? 'Regenerate from profile' : 'Regenerate with coach instruction'}
           </Button>
           <Button
             variant="secondary"

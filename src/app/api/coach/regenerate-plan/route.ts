@@ -37,12 +37,8 @@ export async function POST(request: Request) {
   }
 
   const clientId = body.clientId?.trim()
-  const coachInstruction = body.coachInstruction?.trim()
   if (!clientId) {
     return NextResponse.json({ error: 'clientId is required' }, { status: 400 })
-  }
-  if (!coachInstruction) {
-    return NextResponse.json({ error: 'coachInstruction is required' }, { status: 400 })
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -68,7 +64,7 @@ export async function POST(request: Request) {
         nutrition_plan: body.nutrition_plan ?? '',
         workout_plan: body.workout_plan ?? '',
       },
-      coachInstruction,
+      coachInstruction: body.coachInstruction?.trim() || null,
     })
 
     return NextResponse.json({

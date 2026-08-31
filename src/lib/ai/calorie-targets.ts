@@ -10,6 +10,31 @@ const ACTIVITY_MULTIPLIER: Record<string, number> = {
   very_active: 1.725,
 }
 
+export type ClientCalorieTargets = {
+  maintenance: number
+  min: number
+  max: number
+  preferred: number
+  floorKcal: number
+  fluxLabel: string
+  fluxLevel: MetabolicFluxLevel
+  activityLevel: string
+}
+
+type CalorieProfile = Pick<
+  OnboardingProfile,
+  | 'weight'
+  | 'height'
+  | 'age'
+  | 'gender'
+  | 'activity_level'
+  | 'fitness_goal'
+  | 'onboarding_data'
+  | 'sleep_duration'
+  | 'training_experience'
+  | 'injuries'
+>
+
 /** True when intake change language appears in client or coach text. */
 export function requestTouchesCalories(...parts: Array<string | null | undefined>): boolean {
   return parts.some((part) => part?.trim() && clientRequestTouchesCalories(part))
@@ -37,6 +62,32 @@ export function clientRequestNeedsExpenditureFocus(request: string): boolean {
   return /\b(not\s+losing|not\s+gaining|plateau|stuck|stall(?:ed|ing)?|no\s+progress|weight\s+not\s+(?:moving|changing|dropping)|slow\s+progress|not\s+seeing\s+results)\b/i.test(
     t
   )
+}
+
+function parseTrainingDaysPerWeek(profile: Pick<OnboardingProfile, 'onboarding_data'>): number | null {
+  const raw = profile.onboarding_data?.training?.daysPerWeek
+  const days = typeof raw === 'number' ? raw : parseInt(String(raw ?? ''), 10)
+  return Number.isFinite(days) && days > 0 ? days : null
+}
+
+/** Boost activity tier when the client trains most days — maintenance must reflect gym load. */
+export function resolveEffectiveActivityLevel(
+  profile: Pick<OnboardingProfile, 'activity_level' | 'onboarding_data'>
+): string {
+  const base = profile.activity_level?.trim() || 'moderately_active'
+  let level = ACTIVITY_MULTIPLIER[base] ? base : 'moderately_active'
+  const days = parseTrainingDaysPerWeek(profile)
+
+  if (days != null && days >= 6) {
+    level = 'very_active'
+  } else if (days != null && days >= 4) {
+    if (level === 'sedentary' || level === 'lightly_active') level = 'moderately_active'
+    else if (level === 'moderately_active') level = 'very_active'
+  } else if (days != null && days >= 3 && level === 'sedentary') {
+    level = 'lightly_active'
+  }
+
+  return level
 }
 
 /** Mifflin-St Jeor maintenance estimate (kcal/day). Falls back to weight × 30 when data is thin. */
@@ -89,7 +140,6 @@ export function calorieTargetBand(
   maintenance: number
   min: number
   max: number
-  /** Default target — upper half of band; AI should land here, not at min. */
   preferred: number
 } {
   const goal = (goalHint ?? '').toLowerCase()
@@ -103,7 +153,7 @@ export function calorieTargetBand(
   } else if (/gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)) {
     min = maintenance + 150
     max = maintenance + 400
-  } else if (/recomp|recomposition|athletic|performance|maintain/.test(goal)) {
+  } else if (/recomp|recomposition|athletic|performance|maintain|strength/.test(goal)) {
     min = maintenance - 50
     max = maintenance + 200
   }
@@ -116,31 +166,71 @@ export function calorieTargetBand(
   return { maintenance: Math.round(maintenance), min, max, preferred }
 }
 
-export function formatCalorieTargetPrompt(profile: Pick<
-  OnboardingProfile,
-  'weight' | 'height' | 'age' | 'gender' | 'activity_level' | 'fitness_goal' | 'onboarding_data' | 'sleep_duration' | 'training_experience' | 'injuries'
->): string | null {
+/** Single source of truth: maintenance + band from profile (no coach input). */
+export function resolveClientCalorieTargets(profile: CalorieProfile): ClientCalorieTargets | null {
+  const activityLevel = resolveEffectiveActivityLevel(profile)
   const maintenance = estimateMaintenanceCalories({
     weightKg: profile.weight,
     heightCm: profile.height,
     age: profile.age,
     gender: profile.gender,
-    activityLevel: profile.activity_level,
+    activityLevel,
   })
   if (!maintenance) return null
 
   const flux = resolveMetabolicFluxPlan(profile as OnboardingProfile)
   const floorKcal = resolveDietFloorKcal(profile.weight)
   const band = calorieTargetBand(maintenance, profile.fitness_goal, flux.level, floorKcal)
+
+  return {
+    maintenance: band.maintenance,
+    min: band.min,
+    max: band.max,
+    preferred: band.preferred,
+    floorKcal,
+    fluxLabel: flux.label,
+    fluxLevel: flux.level,
+    activityLevel,
+  }
+}
+
+/** Injected into every diet prompt — exact numbers from profile math. */
+export function formatMandatoryCalorieTargetBlock(profile: CalorieProfile): string | null {
+  const targets = resolveClientCalorieTargets(profile)
+  if (!targets) return null
+
+  const days = parseTrainingDaysPerWeek(profile)
+  const trainingNote =
+    days != null ? ` Training ${days} days/week factored into activity (${targets.activityLevel}).` : ''
+
   return [
-    'CALORIE TARGET (computed in code — do not guess lower):',
-    `- Estimated maintenance: ~${band.maintenance} kcal/day.`,
-    `- Metabolic flux level: ${flux.label}.`,
-    `- Allowed band: ~${band.min} to ~${band.max} kcal/day.`,
-    `- REQUIRED daily average from meal math: ~${band.preferred} kcal/day (upper half of band).`,
-    '- Every Daily Total / daily average line must land near this target. The Calories header must match the weekly average of those lines — never a higher header with lower meal totals.',
-    '- High-flux rule: eat on the higher side AND raise steps/training/cardio in the same plan. Never low food + high output only, or high food + sedentary days.',
-    `- Never below ${floorKcal} kcal/day in meal lines. If portions sum lower, add carbs/fats the client will eat until Daily Totals hit the target.`,
-    '- Header calories, daily average lines, and meal (P:…| ~K kcal) lines must all match.',
+    'AUTOMATED CALORIE TARGET (computed from client profile — mandatory, no guessing):',
+    `- Maintenance (Mifflin-St Jeor): ${targets.maintenance} kcal/day.${trainingNote}`,
+    `- Metabolic flux: ${targets.fluxLabel}.`,
+    `- Allowed band: ${targets.min} to ${targets.max} kcal/day.`,
+    `- REQUIRED daily average in meal lines: ${targets.preferred} kcal/day (±50 kcal).`,
+    `- nutrition_plan.calories MUST be ${targets.preferred}. Calories header MUST be ${targets.preferred}.`,
+    `- Every Daily Total line must average ${targets.preferred} kcal when summed across the week.`,
+    `- Do NOT use round guesses (1800, 2000, etc.) unless they equal ${targets.preferred}.`,
+    `- If portions sum below ${targets.min}, increase roti/rice/dal/paneer/snacks/oil until Daily Totals hit ${targets.preferred}.`,
+    '- Header, weekly average, and each meal macro line must agree.',
   ].join('\n')
+}
+
+/** Default diet rewrite instruction when the coach does not type anything. */
+export function autoDietCoachInstruction(profile: CalorieProfile): string {
+  const targets = resolveClientCalorieTargets(profile)
+  if (!targets) {
+    return 'Rebuild the full 7-day diet from the client profile with honest meal-level calorie math. No edit meta.'
+  }
+  return [
+    `Rebuild the full 7-day diet from the client profile.`,
+    `Required daily average: ${targets.preferred} kcal/day (maintenance ~${targets.maintenance}, band ${targets.min}-${targets.max}).`,
+    `Every Daily Total must land near ${targets.preferred} kcal.`,
+    'No edit meta.',
+  ].join(' ')
+}
+
+export function formatCalorieTargetPrompt(profile: CalorieProfile): string | null {
+  return formatMandatoryCalorieTargetBlock(profile)
 }

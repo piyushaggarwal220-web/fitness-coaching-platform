@@ -337,7 +337,7 @@ export default function CoachGeneratePlanPage() {
                       href={`/coach/plan/${backgroundJob.draft_plan_id}?regen=1`}
                       style={s.noteToggle}
                     >
-                      Regenerate with coach instruction
+                      Regenerate from profile
                     </Link>
                     <Link
                       href={`/coach/plan/${backgroundJob.draft_plan_id}?remake=1`}

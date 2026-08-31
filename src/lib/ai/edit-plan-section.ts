@@ -13,13 +13,7 @@ import {
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
-import {
-  clientRequestNeedsExpenditureFocus,
-  estimateMaintenanceCalories,
-  formatCalorieTargetPrompt,
-  requestTargetsMaintenance,
-  requestTouchesCalories,
-} from '@/lib/ai/calorie-targets'
+import { formatMandatoryCalorieTargetBlock, resolveClientCalorieTargets, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction } from '@/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
 import {
   parseHeaderCalories,
@@ -83,6 +77,18 @@ function resolveEditInstruction(input: EditPlanSectionInput): {
   }
   if (client) {
     return { instruction: client, source: input.editSource ?? 'client' }
+  }
+  if (input.section === 'nutrition' && input.profile) {
+    return { instruction: autoDietCoachInstruction(input.profile), source: 'coach' }
+  }
+  if (input.remakeFromScratch) {
+    return {
+      instruction:
+        input.section === 'workout'
+          ? 'Remake the workout plan completely from the client profile. Ignore the current draft text. Full week with Day 1 (Monday) through Day 7. No edit meta.'
+          : 'Remake the diet plan completely from the client profile. Ignore the current draft text. Full 7-day plan with matching header and daily totals. No edit meta.',
+      source: 'coach',
+    }
   }
   throw new Error('Coach instruction or client request is required.')
 }
@@ -152,20 +158,17 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
   const touchesCalories =
     input.section === 'nutrition' && requestTouchesCalories(instruction, input.coachNote) && !needsExpenditure
   const targetsMaintenance = requestTargetsMaintenance(instruction, input.coachNote)
-  const preserveCalories = !touchesCalories || needsExpenditure
-  const maintenanceKcal =
-    input.profile && targetsMaintenance
-      ? estimateMaintenanceCalories({
-          weightKg: input.profile.weight,
-          heightCm: input.profile.height,
-          age: input.profile.age,
-          gender: input.profile.gender,
-          activityLevel: input.profile.activity_level,
-        })
+  const preserveCalories =
+    input.section !== 'nutrition' || input.remakeFromScratch
+      ? !touchesCalories || needsExpenditure
+      : false
+  const profileTargets =
+    input.section === 'nutrition' && input.profile
+      ? resolveClientCalorieTargets(input.profile)
       : null
-  const calorieTargetPrompt =
-    input.section === 'nutrition' && touchesCalories && input.profile
-      ? formatCalorieTargetPrompt(input.profile)
+  const mandatoryCalorieTarget =
+    input.section === 'nutrition' && input.profile
+      ? formatMandatoryCalorieTargetBlock(input.profile)
       : null
   const calorieRules = needsExpenditure
     ? EDIT_EXPENDITURE_FIRST_RULES
@@ -185,9 +188,9 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     '- Preserve useful structure: day headers as Day N (Weekday) with Day 1 = Monday, meal names, exercise lines with sets x reps (plain letter x).',
     DAY_HEADER_PROMPT_RULES,
     calorieRules,
-    calorieTargetPrompt,
-    targetsMaintenance && maintenanceKcal
-      ? `MAINTENANCE TARGET: Rebuild portions so the daily average lands at ~${maintenanceKcal} kcal/day (maintenance). Header, daily totals, and meal lines must all match.`
+    mandatoryCalorieTarget,
+    targetsMaintenance && profileTargets
+      ? `MAINTENANCE TARGET: Rebuild portions so the daily average lands at ~${profileTargets.maintenance} kcal/day (maintenance). Header, daily totals, and meal lines must all match.`
       : null,
     HIGH_FLUX_PHILOSOPHY_RULES,
     HIGH_FLUX_OUTPUT_PAIRING_RULES,
@@ -292,8 +295,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
                 input.previousCalories ?? parseHeaderCalories(currentText),
               preserveCalories,
               floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
-              explicitTargetKcal:
-                targetsMaintenance && maintenanceKcal ? maintenanceKcal : undefined,
+              explicitTargetKcal: profileTargets?.preferred,
             })
           : revisedRaw
 
@@ -450,18 +452,8 @@ export async function editPlanForClientChange(
   const touchesCalories = requestTouchesCalories(clientRequest, input.coachNote) && !needsExpenditure
   const targetsMaintenance = requestTargetsMaintenance(clientRequest, input.coachNote)
   const preserveCalories = !touchesCalories || needsExpenditure
-  const maintenanceKcal =
-    input.profile && targetsMaintenance
-      ? estimateMaintenanceCalories({
-          weightKg: input.profile.weight,
-          heightCm: input.profile.height,
-          age: input.profile.age,
-          gender: input.profile.gender,
-          activityLevel: input.profile.activity_level,
-        })
-      : null
-  const calorieTargetPrompt =
-    touchesCalories && input.profile ? formatCalorieTargetPrompt(input.profile) : null
+  const profileTargets = input.profile ? resolveClientCalorieTargets(input.profile) : null
+  const mandatoryCalorieTarget = input.profile ? formatMandatoryCalorieTargetBlock(input.profile) : null
   const calorieRules = needsExpenditure
     ? EDIT_EXPENDITURE_FIRST_RULES
     : touchesCalories
@@ -482,9 +474,9 @@ export async function editPlanForClientChange(
     HIGH_FLUX_PHILOSOPHY_RULES,
     HIGH_FLUX_OUTPUT_PAIRING_RULES,
     calorieRules,
-    calorieTargetPrompt,
-    targetsMaintenance && maintenanceKcal
-      ? `MAINTENANCE TARGET: Rebuild portions so the daily average lands at ~${maintenanceKcal} kcal/day (maintenance). Header, daily totals, and meal lines must all match.`
+    mandatoryCalorieTarget,
+    targetsMaintenance && profileTargets
+      ? `MAINTENANCE TARGET: Rebuild portions so the daily average lands at ~${profileTargets.maintenance} kcal/day (maintenance). Header, daily totals, and meal lines must all match.`
       : null,
     `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
     '- No cross-day references. No weekly progression narrative.',
@@ -549,7 +541,7 @@ export async function editPlanForClientChange(
       previousCalories: parseHeaderCalories(input.nutritionText),
       preserveCalories,
       floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
-      explicitTargetKcal: targetsMaintenance && maintenanceKcal ? maintenanceKcal : undefined,
+      explicitTargetKcal: profileTargets?.preferred,
     }
   )
   const workoutPlan = stripPlanEditMetaLanguage(

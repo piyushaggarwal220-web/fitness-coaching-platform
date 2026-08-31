@@ -71,7 +71,7 @@ export function PlanDraftReviewActions({
         )}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           <button type="button" style={s.noteToggle} onClick={openRegen}>
-            Regenerate with coach instruction
+            Regenerate from profile
           </button>
           <button type="button" style={s.noteToggle} onClick={openRemake}>
             Remake from scratch

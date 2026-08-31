@@ -39,23 +39,18 @@ export function PlanCoachRegenerateModal({
   }
 
   const generate = async () => {
-    const instruction = coachInstruction.trim()
-    if (!instruction) {
-      setStatusVariant('error')
-      setStatus('Enter your coaching instruction first.')
-      return
-    }
-
     setGenerating(true)
     setStatusVariant('loading')
-    setStatus('Regenerating diet and workout from your instruction. This may take a few minutes.')
+    setStatus(
+      'Regenerating diet and workout using profile-calculated maintenance and calorie targets. This may take a few minutes.'
+    )
     try {
       const res = await fetch('/api/coach/regenerate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId,
-          coachInstruction: instruction,
+          coachInstruction: coachInstruction.trim() || undefined,
           nutrition_plan: nutritionPlan,
           workout_plan: workoutPlan,
         }),
@@ -90,25 +85,26 @@ export function PlanCoachRegenerateModal({
     >
       <div style={s.drawer} onClick={(e) => e.stopPropagation()}>
         <h2 id="ai-regen-plan-title" style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 800 }}>
-          Regenerate with coach instruction
+          Regenerate plan from profile
         </h2>
         <p style={{ margin: '0 0 20px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-          Tell the AI what to change. It rewrites diet and workout using the current draft as
-          background — not a full profile-only remake. Client-facing text will not mention edits.
+          Maintenance and daily calories are calculated automatically from the client&apos;s weight,
+          height, age, activity, training days, and goal. No calorie notes needed — optional notes
+          below only steer meal style or priorities.
         </p>
 
         <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
-          Coach instruction *
+          Optional notes
         </label>
         <textarea
           value={coachInstruction}
           onChange={(e) => setCoachInstruction(e.target.value)}
-          rows={5}
-          placeholder="e.g. Raise daily average to maintenance (~2200 kcal). Keep Indian meals, same training days…"
+          rows={4}
+          placeholder="e.g. Keep Indian vegetarian meals, same 6-day split…"
           disabled={generating}
           style={{
             ...s.noteInput,
-            minHeight: 120,
+            minHeight: 96,
             resize: 'vertical',
             fontFamily: 'inherit',
           }}

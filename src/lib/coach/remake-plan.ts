@@ -6,6 +6,7 @@ import {
   generatedSupplementFormData,
   generatedWorkoutFormData,
 } from '@/lib/ai/plan-format'
+import { formatMandatoryCalorieTargetBlock } from '@/lib/ai/calorie-targets'
 import { FRESH_PLAN_OUTPUT_RULES } from '@/lib/ai/plan-prose-guards'
 import {
   buildActionCoachInstructions,
@@ -36,8 +37,9 @@ function validationMode(actionId: CoachAiActionId): PlanValidationMode {
   return 'full'
 }
 
-function buildRemakeCoachNote(custom?: string | null): string {
-  return [REMAKE_PLAN_PREFIX, custom?.trim()].filter(Boolean).join('\n\n')
+function buildRemakeCoachNote(profile: OnboardingProfile, custom?: string | null): string {
+  const autoCalories = formatMandatoryCalorieTargetBlock(profile)
+  return [REMAKE_PLAN_PREFIX, autoCalories, custom?.trim()].filter(Boolean).join('\n\n')
 }
 
 async function generateRemakeSection(
@@ -72,7 +74,7 @@ export async function generateRemadeCompletePlan(input: {
   profile: OnboardingProfile
   coachInstruction?: string | null
 }): Promise<PlanFormData> {
-  const coachNote = buildRemakeCoachNote(input.coachInstruction)
+  const coachNote = buildRemakeCoachNote(input.profile, input.coachInstruction)
   const clientJourney = await loadClientJourneySnapshot(input.admin, {
     clientId: input.profile.id,
     profile: input.profile,

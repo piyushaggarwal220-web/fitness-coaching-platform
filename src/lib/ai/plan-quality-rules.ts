@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'food-math-enforcement-v7'
+export const PLAN_QUALITY_RULES_VERSION = 'auto-maintenance-v8'
 
 /** Platform minimum daily calories before weight-based floor applies. */
 export const DIET_FLOOR_BASE_KCAL = 1900

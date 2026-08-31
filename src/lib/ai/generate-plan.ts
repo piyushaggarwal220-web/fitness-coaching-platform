@@ -25,8 +25,7 @@ import {
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
 import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
-import { calorieTargetBand, estimateMaintenanceCalories } from '@/lib/ai/calorie-targets'
-import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
+import { formatMandatoryCalorieTargetBlock, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   DAY_HEADER_PROMPT_RULES,
@@ -555,9 +554,19 @@ async function buildPlanPrompts(
     validationMode: options.validationMode,
   })
 
+  const includesDietOutput =
+    options.validationMode === 'nutrition_focus' ||
+    options.validationMode === 'full' ||
+    options.actionId === 'initial_diet' ||
+    options.actionId === 'review_update_diet'
+  const mandatoryCalorieTarget = includesDietOutput
+    ? formatMandatoryCalorieTargetBlock(profile)
+    : null
+
   const systemPrompt = [
     base.systemPrompt,
     outputInstructions,
+    mandatoryCalorieTarget,
     CLIENT_FACING_PLAN_STYLE_INSTRUCTIONS,
   ]
     .filter(Boolean)
@@ -762,24 +771,13 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     const enforcesDiet = validationMode === 'nutrition_focus' || validationMode === 'full'
     if (enforcesDiet && !supportSection && providerMode !== 'mock') {
       const floorKcal = resolveDietFloorKcal(input.profile.weight)
-      const maintenance = estimateMaintenanceCalories({
-        weightKg: input.profile.weight,
-        heightCm: input.profile.height,
-        age: input.profile.age,
-        gender: input.profile.gender,
-        activityLevel: input.profile.activity_level,
-      })
-      const flux = resolveMetabolicFluxPlan(input.profile)
-      const band =
-        maintenance != null
-          ? calorieTargetBand(maintenance, input.profile.fitness_goal, flux.level, floorKcal)
-          : null
+      const targets = resolveClientCalorieTargets(input.profile)
       const previousCalories = parseHeaderCalories(input.activePlan?.nutrition_plan)
       const safety = enforceDietSafety(plan.nutrition_plan, {
         previousCalories,
         floorKcal,
-        preferredMinKcal: band?.preferred,
-        maintenanceKcal: maintenance,
+        preferredMinKcal: targets?.preferred,
+        maintenanceKcal: targets?.maintenance ?? null,
       })
       if (!safety.ok) {
         lastValidationError = safety.error

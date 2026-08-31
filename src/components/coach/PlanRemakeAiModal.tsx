@@ -81,12 +81,12 @@ export function PlanRemakeAiModal({ clientId, open, onClose, onApply }: Props) {
           Remake entire plan with AI
         </h2>
         <p style={{ margin: '0 0 20px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-          Starts completely fresh from the client&apos;s profile — ignores the current draft. Optional
-          notes steer style or priorities; the client-facing plan will not mention edits or changes.
+          Starts completely fresh from the client&apos;s profile — ignores the current draft.
+          Maintenance and calories are calculated automatically; optional notes steer style only.
         </p>
 
         <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
-          Coach notes (optional)
+          Optional notes
         </label>
         <textarea
           value={coachInstruction}

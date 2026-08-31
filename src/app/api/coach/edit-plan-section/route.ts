@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   if (!isSection(body.section)) {
     return NextResponse.json({ error: 'section must be nutrition or workout' }, { status: 400 })
   }
-  if (!coachInstruction && !clientRequest) {
+  if (!coachInstruction && !clientRequest && body.section !== 'nutrition' && body.remakeFromScratch !== true) {
     return NextResponse.json(
       { error: 'coachInstruction or clientRequest is required' },
       { status: 400 }

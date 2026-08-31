@@ -1,16 +1,14 @@
 import { editPlanSection } from '@/lib/ai/edit-plan-section'
+import { autoDietCoachInstruction } from '@/lib/ai/calorie-targets'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
 
-/** Rewrite diet + workout from the coach instruction, using the current draft as background. */
+/** Rewrite diet + workout using profile-computed calorie targets (coach notes optional). */
 export async function regeneratePlanWithCoachInstruction(input: {
   profile: OnboardingProfile
   draft: Pick<PlanFormData, 'nutrition_plan' | 'workout_plan'>
-  coachInstruction: string
+  coachInstruction?: string | null
 }): Promise<Pick<PlanFormData, 'nutrition_plan' | 'workout_plan'>> {
-  const instruction = input.coachInstruction.trim()
-  if (!instruction) {
-    throw new Error('Coach instruction is required.')
-  }
+  const instruction = input.coachInstruction?.trim() || autoDietCoachInstruction(input.profile)
 
   const shared = {
     coachInstruction: instruction,

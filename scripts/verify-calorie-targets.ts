@@ -1,8 +1,10 @@
 import {
-  clientRequestNeedsExpenditureFocus,
-  clientRequestTouchesCalories,
   estimateMaintenanceCalories,
   calorieTargetBand,
+  resolveClientCalorieTargets,
+  resolveEffectiveActivityLevel,
+  clientRequestTouchesCalories,
+  clientRequestNeedsExpenditureFocus,
 } from '../src/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '../src/lib/ai/plan-quality-rules'
 import {
@@ -176,6 +178,25 @@ assert(
     },
     { floorKcal: 1900, preferredMinKcal: 2100, maintenanceKcal: 2400 }
   ).ok === false
+)
+
+const sixDayProfile = {
+  weight: 72,
+  height: 175,
+  age: 24,
+  gender: 'male',
+  activity_level: 'moderately_active',
+  fitness_goal: 'recomposition',
+  onboarding_data: { training: { daysPerWeek: 6 } },
+} as const
+assert(
+  '6-day training bumps activity for maintenance',
+  resolveEffectiveActivityLevel(sixDayProfile) === 'very_active'
+)
+const sixDayTargets = resolveClientCalorieTargets(sixDayProfile)
+assert(
+  '6-day lifter gets maintenance above 2400 kcal',
+  Boolean(sixDayTargets && sixDayTargets.maintenance >= 2400 && sixDayTargets.preferred >= 1900)
 )
 
 if (failed > 0) {
