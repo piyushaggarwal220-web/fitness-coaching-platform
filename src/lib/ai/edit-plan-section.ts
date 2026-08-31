@@ -25,6 +25,7 @@ import {
   parseHeaderCalories,
   syncStoredDietText,
 } from '@/lib/ai/nutrition-macro-sync'
+import { REMAKE_PLAN_PREFIX } from '@/lib/coach/remake-plan'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
@@ -48,6 +49,8 @@ export type EditPlanSectionInput = {
   clientRequest?: string | null
   coachNote?: string | null
   editSource?: PlanEditSource
+  /** When true, ignore current text and rewrite the section from profile. */
+  remakeFromScratch?: boolean
   clientName?: string | null
   clientId?: string
   previousCalories?: number | null
@@ -175,8 +178,10 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
       : 'You are an expert fitness coach rewriting a client plan section based on the client\'s request.',
     `Produce a fresh, complete ${section} — not an in-place patch of the old text.`,
     'Rules:',
-    FRESH_PLAN_OUTPUT_RULES,
-    '- Use the current plan below only as background (foods they eat, exercises they use, schedule). Rewrite the full section applying the instruction.',
+    input.remakeFromScratch ? REMAKE_PLAN_PREFIX : FRESH_PLAN_OUTPUT_RULES,
+    input.remakeFromScratch
+      ? '- Discard the current draft entirely. Use client profile/context only.'
+      : '- Use the current plan below only as background (foods they eat, exercises they use, schedule). Rewrite the full section applying the instruction.',
     '- Preserve useful structure: day headers as Day N (Weekday) with Day 1 = Monday, meal names, exercise lines with sets x reps (plain letter x).',
     DAY_HEADER_PROMPT_RULES,
     calorieRules,
@@ -209,12 +214,15 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     input.clientName ? `Client: ${input.clientName}` : null,
     `Section: ${section}`,
     source === 'coach' ? 'Task: coach-directed fresh rewrite.' : 'Task: client-requested fresh rewrite.',
+    input.remakeFromScratch ? 'Mode: REMAKE FROM SCRATCH — ignore current draft body.' : null,
     '',
     source === 'coach' ? '## Coach instruction' : '## Client request',
     instruction,
     input.coachNote?.trim() ? `\n## Additional context\n${input.coachNote.trim()}` : null,
     '',
-    '## Current plan (background context only — rewrite from scratch, do not patch in place)',
+    input.remakeFromScratch
+      ? '## Current plan (ignore — profile-driven remake only)'
+      : '## Current plan (background context only — rewrite from scratch, do not patch in place)',
     currentText || '(empty — write a complete starter section that matches the instruction)',
   ]
     .filter((line) => line != null)
@@ -289,8 +297,8 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
             })
           : revisedRaw
 
-      // Reject near-copies only when the client asked for a broad rewrite (not a single food swap).
-      if (currentText && attempt === 0 && touchesCalories) {
+      // Reject near-copies when the coach asked for a targeted rewrite (not a scratch remake).
+      if (currentText && attempt === 0 && touchesCalories && !input.remakeFromScratch) {
         const similarity = planTextSimilarityLocal(currentText, revisedText)
         if (similarity >= 0.93) {
           continue

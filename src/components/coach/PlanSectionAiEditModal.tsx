@@ -33,6 +33,10 @@ export function PlanSectionAiEditModal({
   if (!open) return null
 
   const label = section === 'nutrition' ? 'diet' : 'workout'
+  const scratchInstruction =
+    section === 'nutrition'
+      ? 'Remake the diet plan completely from the client profile. Ignore the current draft text. Full 7-day plan with matching header and daily totals. No edit meta.'
+      : 'Remake the workout plan completely from the client profile. Ignore the current draft text. Full week with Day 1 (Monday) through Day 7. No edit meta.'
 
   const resetAndClose = () => {
     setCoachInstruction('')
@@ -42,8 +46,9 @@ export function PlanSectionAiEditModal({
     onClose()
   }
 
-  const generate = async () => {
-    if (!coachInstruction.trim()) {
+  const generate = async (instructionOverride?: string) => {
+    const instruction = (instructionOverride ?? coachInstruction).trim()
+    if (!instruction) {
       setStatusVariant('error')
       setStatus('Enter your coaching instruction first.')
       return
@@ -62,7 +67,8 @@ export function PlanSectionAiEditModal({
           clientId,
           section,
           currentText,
-          coachInstruction: coachInstruction.trim(),
+          coachInstruction: instruction,
+          remakeFromScratch: Boolean(instructionOverride),
         }),
       })
       const data = (await res.json()) as {
@@ -138,6 +144,14 @@ export function PlanSectionAiEditModal({
             style={{ flex: '1 1 160px' }}
           >
             {generating ? 'Generating…' : revisedText ? 'Regenerate' : 'Generate plan'}
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={generating}
+            onClick={() => void generate(scratchInstruction)}
+            style={{ flex: '1 1 160px' }}
+          >
+            Remake from scratch
           </Button>
           {revisedText != null && (
             <Button

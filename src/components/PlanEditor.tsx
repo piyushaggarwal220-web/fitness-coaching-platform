@@ -5,7 +5,9 @@ import {
   AiEditSectionButton,
   PlanSectionAiEditModal,
 } from '@/components/coach/PlanSectionAiEditModal';
+import { PlanRemakeAiModal } from '@/components/coach/PlanRemakeAiModal';
 import { coachPageStyles as styles } from '@/lib/coach-page-styles';
+import { colors } from '@/lib/coach-theme';
 import type { PlanSectionKind } from '@/lib/ai/edit-plan-section';
 import type { ClientProfile, PlanFormData } from '@/types/database';
 
@@ -33,6 +35,7 @@ export function PlanEditor({
   onInitialAiSectionConsumed,
 }: PlanEditorProps) {
   const [aiSection, setAiSection] = useState<PlanSectionKind | null>(null);
+  const [remakeOpen, setRemakeOpen] = useState(false);
   const clientId = form.client_id?.trim() || '';
   const canAiEdit = enableAiEdit && Boolean(clientId) && Boolean(onFormPatch);
 
@@ -61,6 +64,23 @@ export function PlanEditor({
           </select>
         </Field>
       )}
+
+      <div style={localStyles.aiBar}>
+        {canAiEdit ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setRemakeOpen(true)}
+              style={localStyles.remakeBtn}
+            >
+              Remake entire plan with AI
+            </button>
+            <span style={localStyles.aiHint}>
+              Plan not working? Remake everything from scratch, or regenerate one section below.
+            </span>
+          </>
+        ) : null}
+      </div>
 
       <div style={localStyles.row}>
         <Field label="Plan title" required>
@@ -100,6 +120,18 @@ export function PlanEditor({
       <Field label="Coach notes">
         <textarea name="coach_notes" value={form.coach_notes} onChange={onChange} rows={4} style={styles.textarea} placeholder="Client-facing coaching message and priorities..." />
       </Field>
+
+      {canAiEdit && remakeOpen && (
+        <PlanRemakeAiModal
+          clientId={clientId}
+          open
+          onClose={() => setRemakeOpen(false)}
+          onApply={(patch) => {
+            onFormPatch?.(patch)
+            setRemakeOpen(false)
+          }}
+        />
+      )}
 
       {canAiEdit && aiSection && (
         <PlanSectionAiEditModal
@@ -145,6 +177,27 @@ function Field({
 
 const localStyles: Record<string, CSSProperties> = {
   wrap: { display: 'flex', flexDirection: 'column', gap: 18 },
+  aiBar: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    padding: '12px 14px',
+    borderRadius: 10,
+    border: `1px solid ${colors.accentMuted}`,
+    backgroundColor: colors.accentMuted,
+  },
+  remakeBtn: {
+    alignSelf: 'flex-start',
+    border: `1px solid ${colors.accent}`,
+    background: colors.bgElevated,
+    color: colors.accent,
+    borderRadius: 8,
+    padding: '8px 14px',
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  aiHint: { fontSize: 12, color: colors.textMuted, lineHeight: 1.45 },
   row: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 },
   field: { display: 'flex', flexDirection: 'column', gap: 6 },
   labelRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 },

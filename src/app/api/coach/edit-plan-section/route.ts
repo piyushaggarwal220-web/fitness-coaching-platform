@@ -15,6 +15,7 @@ type Body = {
   /** Legacy / client change-request field. */
   clientRequest?: string
   coachNote?: string
+  remakeFromScratch?: boolean
 }
 
 function isSection(value: string | undefined): value is PlanSectionKind {
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
       clientRequest: clientRequest || undefined,
       coachNote: body.coachNote,
       editSource: coachInstruction ? 'coach' : 'client',
+      remakeFromScratch: body.remakeFromScratch === true,
       clientName: client.name,
       clientId,
       profile: client,
