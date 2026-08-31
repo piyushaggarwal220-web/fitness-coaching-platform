@@ -56,7 +56,8 @@ assert('maintenance estimate is realistic', Boolean(maintenance && maintenance >
 const highFluxBand = calorieTargetBand(maintenance ?? 2200, 'fat_loss', 'high_flux', resolveDietFloorKcal(70))
 const legacyBand = calorieTargetBand(maintenance ?? 2200, 'fat_loss', 'steady', resolveDietFloorKcal(70))
 assert('high flux fat loss band stays above floor', highFluxBand.min >= 1900)
-assert('high flux preferred is in upper half of band', highFluxBand.preferred >= highFluxBand.min + (highFluxBand.max - highFluxBand.min) * 0.5)
+assert('high flux fat loss target is maintenance minus shallow deficit', highFluxBand.preferred === (maintenance ?? 2200) - 125)
+assert('high flux target sits inside band', highFluxBand.preferred >= highFluxBand.min && highFluxBand.preferred <= highFluxBand.max)
 assert('high flux band is shallower than steady', highFluxBand.min > legacyBand.min)
 assert('high flux band caps deficit', highFluxBand.max <= (maintenance ?? 2200))
 
@@ -196,7 +197,11 @@ assert(
 const sixDayTargets = resolveClientCalorieTargets(sixDayProfile)
 assert(
   '6-day lifter gets maintenance above 2400 kcal',
-  Boolean(sixDayTargets && sixDayTargets.maintenance >= 2400 && sixDayTargets.preferred >= 1900)
+  Boolean(sixDayTargets && sixDayTargets.maintenance >= 2400)
+)
+assert(
+  '6-day recomp target equals maintenance (real number)',
+  Boolean(sixDayTargets && sixDayTargets.preferred === sixDayTargets.maintenance)
 )
 
 if (failed > 0) {

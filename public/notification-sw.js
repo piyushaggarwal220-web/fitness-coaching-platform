@@ -1,6 +1,6 @@
 /* Lurvox service worker — push + instant shell / asset caching */
 
-const CACHE_VERSION = 'v8'
+const CACHE_VERSION = 'v9'
 const SHELL_CACHE = `lurvox-shell-${CACHE_VERSION}`
 const STATIC_CACHE = `lurvox-static-${CACHE_VERSION}`
 const PAGE_CACHE = `lurvox-pages-${CACHE_VERSION}`

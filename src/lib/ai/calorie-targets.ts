@@ -130,7 +130,32 @@ const FAT_LOSS_DEFICIT: Record<MetabolicFluxLevel, { min: number; max: number }>
   high_flux: { min: 130, max: 40 },
 }
 
-/** Suggested daily target band for prompts — never below the platform floor. */
+/** One precise daily kcal from maintenance + goal — not a band guess. */
+function resolveGoalCalorieTarget(
+  maintenance: number,
+  goalHint: string | null | undefined,
+  fluxLevel: MetabolicFluxLevel,
+  floorKcal: number
+): number {
+  const goal = (goalHint ?? '').toLowerCase()
+  const m = Math.round(maintenance)
+
+  if (/fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)) {
+    // High-flux philosophy: ~100–150 kcal below maintenance; gap mostly from output.
+    const belowMaintenance =
+      fluxLevel === 'high_flux' ? 125 : fluxLevel === 'build_up' ? 125 : 200
+    return Math.max(m - belowMaintenance, floorKcal)
+  }
+  if (/gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)) {
+    return m + 275
+  }
+  if (/recomp|recomposition|athletic|performance|maintain|strength/.test(goal)) {
+    return m
+  }
+  return m
+}
+
+/** Goal band for tolerance checks; preferred is the single real target inside it. */
 export function calorieTargetBand(
   maintenance: number,
   goalHint?: string | null,
@@ -161,16 +186,8 @@ export function calorieTargetBand(
   min = Math.max(Math.round(min), floorKcal)
   max = Math.max(Math.round(max), min + 100)
 
-  // High-flux clients get extra food — bias toward the upper band, not the minimum.
-  const preferredBias =
-    fluxLevel === 'high_flux' ? 0.9 : fluxLevel === 'build_up' ? 0.8 : 0.72
-  let preferred = Math.round(min + (max - min) * preferredBias)
-  if (
-    fluxLevel === 'high_flux' &&
-    /recomp|recomposition|athletic|performance|maintain|strength/.test(goal)
-  ) {
-    preferred = max
-  }
+  let preferred = resolveGoalCalorieTarget(maintenance, goalHint, fluxLevel, floorKcal)
+  preferred = Math.min(Math.max(preferred, min), max)
 
   return { maintenance: Math.round(maintenance), min, max, preferred }
 }
@@ -216,12 +233,12 @@ export function formatMandatoryCalorieTargetBlock(profile: CalorieProfile): stri
     'AUTOMATED CALORIE TARGET (computed from client profile — mandatory, no guessing):',
     `- Maintenance (Mifflin-St Jeor): ${targets.maintenance} kcal/day.${trainingNote}`,
     `- Metabolic flux: ${targets.fluxLabel}.`,
-    `- Allowed band: ${targets.min} to ${targets.max} kcal/day.`,
-    `- REQUIRED daily average in meal lines: ${targets.preferred} kcal/day (±50 kcal). This is HIGH food intake — never starvation portions (1500–1800 kcal).`,
+    `- Goal-adjusted target: ${targets.preferred} kcal/day (±50 kcal) — this is the real number from maintenance + goal, not a round guess.`,
+    `- Allowed tolerance band: ${targets.min} to ${targets.max} kcal/day.`,
     `- nutrition_plan.calories MUST be ${targets.preferred}. Calories header MUST be ${targets.preferred}.`,
     `- Every Daily Total line must average ${targets.preferred} kcal when summed across the week.`,
-    `- Do NOT use round low guesses (1500, 1600, 1800, 2000) unless they equal ${targets.preferred}.`,
-    `- If portions sum below ${targets.min}, increase roti/rice/dal/paneer/snacks/oil until Daily Totals hit ${targets.preferred}.`,
+    `- Do NOT use round low guesses (1500, 1600, 1800) unless they equal ${targets.preferred}.`,
+    `- If portions sum below ${targets.preferred - 50}, increase roti/rice/dal/paneer/snacks/oil until Daily Totals hit ${targets.preferred}.`,
     '- Header, weekly average, and each meal macro line must agree.',
   ].join('\n')
 }
