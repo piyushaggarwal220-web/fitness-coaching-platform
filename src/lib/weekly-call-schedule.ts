@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import 'server-only'
+import { enforceClientCallPolicy } from '@/lib/call-booking-policy-server'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
 import { getOrCreateConversation } from '@/lib/coach-chat'
 import { hasClientEntitlement } from '@/lib/entitlements'
@@ -149,33 +150,6 @@ async function closeStaleWeeklyCallIfNeeded(
     .in('status', ['requested', 'scheduled'])
 }
 
-/** Drop auto weekly calls booked before the 2-week waiting period ends. */
-async function cancelPrematureWeeklyCalls(
-  admin: SupabaseClient,
-  clientId: string
-): Promise<void> {
-  const now = new Date().toISOString()
-  const { data: rows } = await admin
-    .from('call_requests')
-    .select('id')
-    .eq('client_id', clientId)
-    .eq('source', 'weekly_entitlement')
-    .in('status', ['requested', 'scheduled'])
-
-  for (const row of rows ?? []) {
-    await admin
-      .from('call_requests')
-      .update({
-        status: 'cancelled',
-        resolved_at: now,
-        coach_note: 'Auto-closed — weekly calls start after the first 2 coaching weeks',
-        updated_at: now,
-      })
-      .eq('id', row.id)
-      .in('status', ['requested', 'scheduled'])
-  }
-}
-
 export async function ensureWeeklyCallForClient(
   admin: SupabaseClient,
   clientId: string,
@@ -197,9 +171,10 @@ export async function ensureWeeklyCallForClient(
     return { created: false, reason: 'no_schedule_anchor' }
   }
 
+  await enforceClientCallPolicy(admin, clientId)
+
   const window = getInitialWeeklyCallWindow(profile.checkin_schedule_started_at)
   if (!window.eligible) {
-    await cancelPrematureWeeklyCalls(admin, clientId)
     return { created: false, reason: 'within_initial_2_weeks' }
   }
 

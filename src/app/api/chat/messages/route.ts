@@ -3,6 +3,7 @@ import { logApiDev } from '@/lib/api-dev-log'
 import { markConversationRead, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
 import { requireConversationParticipant } from '@/lib/chat-api-access'
 import { getCoachResponseTargetFromAnchor } from '@/lib/chat-response-target'
+import { enforceClientCallPolicy, loadClientCallBookingPolicy } from '@/lib/call-booking-policy-server'
 import { hasClientEntitlement } from '@/lib/entitlements'
 
 export async function GET(request: Request) {
@@ -123,6 +124,12 @@ export async function GET(request: Request) {
       ? getCoachResponseTargetFromAnchor(firstUnanswered[0].created_at, unansweredCount ?? 1)
       : null
 
+    let bookingPolicy = null
+    if (reader === 'client') {
+      await enforceClientCallPolicy(admin, participant.conversation.client_id)
+      bookingPolicy = await loadClientCallBookingPolicy(admin, participant.conversation.client_id)
+    }
+
     return NextResponse.json({
       success: true,
       messages: chronological,
@@ -130,6 +137,7 @@ export async function GET(request: Request) {
       callRequests: callRequests ?? [],
       peerLastSeenAt,
       responseTarget,
+      bookingPolicy,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to load messages'

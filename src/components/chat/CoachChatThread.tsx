@@ -22,6 +22,7 @@ import {
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
 } from '@/lib/coach-working-hours'
+import type { CallBookingPolicy } from '@/lib/call-booking-policy'
 import { CalendarClock, Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
 
 /** WhatsApp-like dark palette (client portal) */
@@ -147,6 +148,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [peerLastSeenAt, setPeerLastSeenAt] = useState<string | null>(null)
   const [serverResponseTarget, setServerResponseTarget] = useState<CoachResponseTarget | null>(null)
   const [callRequests, setCallRequests] = useState<CallRequest[]>([])
+  const [callBookingPolicy, setCallBookingPolicy] = useState<CallBookingPolicy | null>(null)
   const [callRequestBusy, setCallRequestBusy] = useState(false)
   const [scheduledFor, setScheduledFor] = useState('')
   const [now, setNow] = useState(0)
@@ -207,6 +209,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       messages?: ConversationMessage[]
       peerTyping?: boolean
       callRequests?: CallRequest[]
+      bookingPolicy?: CallBookingPolicy | null
       peerLastSeenAt?: string | null
       responseTarget?: CoachResponseTarget | null
       error?: string
@@ -271,6 +274,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     }
     if (typeof parsed.data.peerTyping === 'boolean') setPeerTyping(parsed.data.peerTyping)
     if (parsed.data.callRequests) setCallRequests(parsed.data.callRequests)
+    if ('bookingPolicy' in parsed.data) setCallBookingPolicy(parsed.data.bookingPolicy ?? null)
     if ('peerLastSeenAt' in parsed.data) setPeerLastSeenAt(parsed.data.peerLastSeenAt ?? null)
     if ('responseTarget' in parsed.data) setServerResponseTarget(parsed.data.responseTarget ?? null)
   }, [conversationId, viewer])
@@ -636,7 +640,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                   Cancel
                 </button>
               </>
-            ) : (
+            ) : callBookingPolicy?.canRequestManualCall ? (
               <button
                 type="button"
                 onClick={() => void createCallRequest()}
@@ -646,7 +650,24 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                 <CalendarClock size={15} />
                 Book a call
               </button>
-            )}
+            ) : callBookingPolicy?.message ? (
+              <span
+                style={{
+                  ...styles.bookCallBtn,
+                  cursor: 'default',
+                  maxWidth: 280,
+                  whiteSpace: 'normal',
+                  lineHeight: 1.35,
+                  fontSize: 12,
+                  color: wa.textMuted,
+                  background: 'rgba(255,255,255,0.04)',
+                  borderColor: 'rgba(255,255,255,0.1)',
+                }}
+              >
+                <CalendarClock size={15} style={{ flexShrink: 0 }} />
+                {callBookingPolicy.message}
+              </span>
+            ) : null}
           </div>
         )}
       </div>
@@ -674,14 +695,25 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
       {viewer === 'coach' && activeCallRequest && (
         <div style={styles.callRequestPanel}>
-          <strong>Call request: {activeCallRequest.status}</strong>
-          <input
-            type="datetime-local"
-            value={scheduledFor}
-            onChange={(event) => setScheduledFor(event.target.value)}
-            style={styles.scheduleInput}
-          />
-          <button type="button" onClick={() => void updateCallRequest('scheduled')} disabled={callRequestBusy} style={styles.callAction}>Schedule</button>
+          <strong>
+            Call request: {activeCallRequest.status}
+            {activeCallRequest.source === 'weekly_entitlement' ? ' · Weekly (auto)' : ''}
+          </strong>
+          {activeCallRequest.status === 'scheduled' && activeCallRequest.scheduled_for ? (
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: wa.textMuted }}>
+              Scheduled: {new Date(activeCallRequest.scheduled_for).toLocaleString('en-IN')}
+            </p>
+          ) : activeCallRequest.source !== 'weekly_entitlement' ? (
+            <input
+              type="datetime-local"
+              value={scheduledFor}
+              onChange={(event) => setScheduledFor(event.target.value)}
+              style={styles.scheduleInput}
+            />
+          ) : null}
+          {activeCallRequest.source !== 'weekly_entitlement' && activeCallRequest.status === 'requested' ? (
+            <button type="button" onClick={() => void updateCallRequest('scheduled')} disabled={callRequestBusy} style={styles.callAction}>Schedule</button>
+          ) : null}
           <button type="button" onClick={() => void updateCallRequest('completed')} disabled={callRequestBusy} style={styles.callAction}>Complete</button>
           <button type="button" onClick={() => void updateCallRequest('declined')} disabled={callRequestBusy} style={styles.callAction}>Decline</button>
           <button type="button" onClick={() => void updateCallRequest('cancelled')} disabled={callRequestBusy} style={styles.callAction}>Cancel</button>

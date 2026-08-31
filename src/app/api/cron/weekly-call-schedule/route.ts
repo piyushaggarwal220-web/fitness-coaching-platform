@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { enforceClientCallPolicy } from '@/lib/call-booking-policy-server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { scheduleWeeklyCallsForAllEligible } from '@/lib/weekly-call-schedule'
 
@@ -28,9 +29,19 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient()
+
+  const { data: activeClients } = await admin
+    .from('call_requests')
+    .select('client_id')
+    .in('status', ['requested', 'scheduled'])
+  const clientIds = [...new Set((activeClients ?? []).map((row) => row.client_id))]
+  for (const clientId of clientIds) {
+    await enforceClientCallPolicy(admin, clientId)
+  }
+
   const summary = await scheduleWeeklyCallsForAllEligible(admin)
-  console.log('[cron/weekly-call-schedule]', summary)
-  return NextResponse.json(summary)
+  console.log('[cron/weekly-call-schedule]', { cleaned: clientIds.length, ...summary })
+  return NextResponse.json({ cleaned: clientIds.length, ...summary })
 }
 
 export async function POST(request: Request) {

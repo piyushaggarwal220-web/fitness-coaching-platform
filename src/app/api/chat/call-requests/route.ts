@@ -4,6 +4,9 @@ import {
   requireConversationParticipant,
   requireConversationParticipantForUser,
 } from '@/lib/chat-api-access'
+import { loadClientCallBookingPolicy, enforceClientCallPolicy } from '@/lib/call-booking-policy-server'
+import { earliestAllowedCallTime } from '@/lib/call-booking-policy'
+import { getClientPlanSlug } from '@/lib/weekly-call-schedule'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CallRequest, CallRequestStatus } from '@/types/database'
@@ -44,7 +47,16 @@ export async function GET(request: Request) {
     console.error('[call-requests] list failed', { conversationId, error: error.message })
     return NextResponse.json({ error: 'Call requests are temporarily unavailable. Please retry.' }, { status: 500 })
   }
-  return NextResponse.json({ requests: data ?? [] })
+
+  let bookingPolicy = null
+  if (access.participant.viewer === 'client') {
+    bookingPolicy = await loadClientCallBookingPolicy(
+      access.admin,
+      access.participant.conversation.client_id
+    )
+  }
+
+  return NextResponse.json({ requests: data ?? [], bookingPolicy })
 }
 
 export async function POST(request: Request) {
@@ -61,6 +73,15 @@ export async function POST(request: Request) {
   }
 
   const { admin, participant, userId } = access
+  await enforceClientCallPolicy(admin, participant.conversation.client_id)
+  const bookingPolicy = await loadClientCallBookingPolicy(admin, participant.conversation.client_id)
+  if (!bookingPolicy.canRequestManualCall) {
+    return NextResponse.json(
+      { error: bookingPolicy.message ?? 'Call booking is not available for your plan.' },
+      { status: 403 }
+    )
+  }
+
   const { data: existing } = await admin
     .from('call_requests')
     .select('*')
@@ -179,6 +200,40 @@ export async function PATCH(request: Request) {
   if (scheduledDate && scheduledDate.getTime() <= Date.now()) {
     return NextResponse.json({ error: 'Scheduled call time must be in the future' }, { status: 400 })
   }
+
+  if (body.status === 'scheduled' && scheduledDate && isCoach) {
+    const [{ data: profile }, planSlug] = await Promise.all([
+      admin
+        .from('profiles')
+        .select('checkin_schedule_started_at')
+        .eq('id', current.client_id)
+        .maybeSingle(),
+      getClientPlanSlug(admin, current.client_id),
+    ])
+    const earliest = earliestAllowedCallTime({
+      planSlug,
+      checkinScheduleStartedAt: profile?.checkin_schedule_started_at ?? null,
+    })
+    if (earliest && scheduledDate.getTime() < earliest.getTime()) {
+      return NextResponse.json(
+        {
+          error:
+            'Weekly calls cannot be scheduled during the first 2 coaching weeks. Pick a time after that window.',
+        },
+        { status: 400 }
+      )
+    }
+    if ((current as CallRequest).source === 'client_requested' && planSlug === '12_months') {
+      return NextResponse.json(
+        {
+          error:
+            '12-month weekly calls are auto-scheduled. Mark complete or cancel — do not manually set a time on client requests.',
+        },
+        { status: 403 }
+      )
+    }
+  }
+
   const scheduledFor = scheduledDate?.toISOString() ?? current.scheduled_for
   const now = new Date().toISOString()
   const resolvedAt = FINAL_STATUSES.has(body.status) ? now : null
