@@ -3,7 +3,10 @@ import {
   calorieTargetBand,
 } from '@/lib/ai/calorie-targets'
 import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
-import { parseHeaderCalories } from '@/lib/ai/nutrition-macro-sync'
+import {
+  inferMacrosFromDietText,
+  parseHeaderCalories,
+} from '@/lib/ai/nutrition-macro-sync'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -48,7 +51,11 @@ export function evaluateHighFluxPlanReview(input: {
   workoutPlan?: string | null
 }): HighFluxReviewFlag[] {
   const flags: HighFluxReviewFlag[] = []
-  const calories = parseHeaderCalories(input.nutritionPlan)
+  const headerCalories = parseHeaderCalories(input.nutritionPlan)
+  const foodMacros = input.nutritionPlan?.trim()
+    ? inferMacrosFromDietText(input.nutritionPlan)
+    : null
+  const calories = foodMacros?.calories ?? headerCalories
   const floor = resolveDietFloorKcal(input.profile.weight)
   const maintenance = estimateMaintenanceCalories({
     weightKg: input.profile.weight,
@@ -57,6 +64,18 @@ export function evaluateHighFluxPlanReview(input: {
     gender: null,
     activityLevel: input.profile.onboarding_data?.lifestyle?.dailySteps ? 'moderately_active' : null,
   })
+
+  if (
+    headerCalories != null &&
+    foodMacros != null &&
+    foodMacros.calories > 0 &&
+    Math.abs(headerCalories - foodMacros.calories) > 40
+  ) {
+    flags.push({
+      level: 'warning',
+      message: `Header says ~${headerCalories} kcal/day but meal lines average ~${foodMacros.calories} kcal. Regenerate — portions must match the target.`,
+    })
+  }
 
   if (calories != null) {
     if (calories <= floor + 80) {

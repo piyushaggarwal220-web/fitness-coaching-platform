@@ -10,6 +10,8 @@ import {
   parseHeaderCalories,
   syncStoredDietText,
   dietTextHasCalorieConflict,
+  enforceDietSafety,
+  getAuthoritativeNutritionCalories,
 } from '../src/lib/ai/nutrition-macro-sync'
 
 let failed = 0
@@ -131,6 +133,49 @@ assert(
 assert(
   'rewrites stale 1806 prose after sync',
   !/about 1806 calories/i.test(syncedMismatch)
+)
+
+const lowFoodHighHeader = `Calories: 1800
+Protein: 55g
+Carbs: 235g
+Fat: 42g
+
+Weekly Diet Plan: about 1800 calories per day.
+Day 1 (Monday)
+Breakfast: oats
+(P: 12g | C: 48g | F: 10g | ~310 kcal)
+Mid morning snack: apple
+(P: 4g | C: 28g | F: 9g | ~180 kcal)
+Lunch: roti dal
+(P: 18g | C: 62g | F: 10g | ~420 kcal)
+Evening snack: curd
+(P: 8g | C: 32g | F: 4g | ~180 kcal)
+Dinner: roti chana
+(P: 16g | C: 58g | F: 11g | ~400 kcal)
+Daily Total: P: 58g | C: 228g | F: 44g | ~1490 kcal
+Day 2 (Tuesday)
+Daily Total: P: 53g | C: 244g | F: 41g | ~1540 kcal
+Weekly Summary
+Daily averages: ~1515 kcal | P: 55g | C: 235g | F: 42g`
+
+assert('detects 1800 header vs ~1515 food', dietTextHasCalorieConflict(lowFoodHighHeader))
+const syncedLowFood = syncStoredDietText(lowFoodHighHeader)
+assert(
+  'sync pulls header down to food math (not fake 1800/1900)',
+  parseHeaderCalories(syncedLowFood) === 1515
+)
+assert(
+  'enforce rejects meal math below floor',
+  enforceDietSafety(
+    {
+      calories: 1800,
+      protein: 55,
+      carbs: 235,
+      fat: 42,
+      meals: [{ example: lowFoodHighHeader.split('\n').slice(4).join('\n') }],
+    },
+    { floorKcal: 1900, preferredMinKcal: 2100, maintenanceKcal: 2400 }
+  ).ok === false
 )
 
 if (failed > 0) {

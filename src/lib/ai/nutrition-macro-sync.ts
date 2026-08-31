@@ -251,35 +251,89 @@ export function parseHeaderCalories(text: string | null | undefined): number | n
 
 export type DietSafetyResult = { ok: true } | { ok: false; error: string; hint: string }
 
+export type DietSafetyOptions = {
+  previousCalories?: number | null
+  floorKcal?: number
+  preferredMinKcal?: number
+  maintenanceKcal?: number | null
+}
+
+/** Daily average from meal / daily-total lines when present; otherwise JSON header field. */
+export function getAuthoritativeNutritionCalories(plan: GeneratedNutritionPlan): number {
+  const prose = collectDietProse(plan.meals)
+  const inferred = inferMacrosFromDietText(prose)
+  const mealLines = parseMealMacroLines(prose)
+  const dailyLines = parseDailySummaryLines(prose)
+  const trustFoodTotals = mealLines.length > 0 || dailyLines.length > 0
+
+  if (trustFoodTotals && inferred && inferred.calories > 0) {
+    return inferred.calories
+  }
+
+  if (typeof plan.calories === 'number' && Number.isFinite(plan.calories) && plan.calories > 0) {
+    return plan.calories
+  }
+
+  return inferred?.calories ?? 0
+}
+
+function buildLowCalorieHint(
+  cals: number,
+  opts: DietSafetyOptions,
+  floorKcal: number,
+  reason: 'floor' | 'preferred'
+): string {
+  const target =
+    reason === 'preferred' && typeof opts.preferredMinKcal === 'number'
+      ? opts.preferredMinKcal
+      : floorKcal
+  const maintenance =
+    typeof opts.maintenanceKcal === 'number' && opts.maintenanceKcal > 0
+      ? ` Maintenance is ~${opts.maintenanceKcal} kcal — do not write 1800 (or any round guess) unless meal lines sum there.`
+      : ''
+  return (
+    `Meal math averages ~${cals} kcal/day but the target is at least ~${target} kcal/day.${maintenance} ` +
+    `Rebuild all 7 days: increase portions (roti, rice, dal, paneer, snacks, oil/ghee) so each Daily Total lands near ~${target} kcal. ` +
+    'The Calories header and weekly average must match those Daily Total lines — never a higher header with lower meals.'
+  )
+}
+
 /**
  * Enforce the non-negotiable diet numbers AFTER generation: at least the floor, and no large
- * week-to-week calorie swing. Returns a retry hint on violation so the model must fix it.
+ * week-to-week calorie swing. Uses meal-line math when available (not the JSON header alone).
  */
 export function enforceDietSafety(
   plan: GeneratedNutritionPlan,
-  opts: {
-    previousCalories?: number | null
-    floorKcal?: number
-    preferredMinKcal?: number
-  } = {}
+  opts: DietSafetyOptions = {}
 ): DietSafetyResult {
-  const cals = plan.calories
-  if (typeof cals !== 'number' || !Number.isFinite(cals) || cals <= 0) {
-    return { ok: true } // consistency layer already guards missing totals
+  const cals = getAuthoritativeNutritionCalories(plan)
+  if (!Number.isFinite(cals) || cals <= 0) {
+    return { ok: true }
   }
 
   const floorKcal = opts.floorKcal ?? DIET_FLOOR_TARGET_KCAL
   const floorHardKcal = Math.max(DIET_FLOOR_HARD_KCAL, floorKcal - 20)
 
+  const headerCals =
+    typeof plan.calories === 'number' && Number.isFinite(plan.calories) && plan.calories > 0
+      ? plan.calories
+      : null
+  if (
+    headerCals != null &&
+    Math.abs(headerCals - cals) > KCAL_MISMATCH_TOLERANCE
+  ) {
+    return {
+      ok: false,
+      error: `Header calories ${headerCals} do not match meal totals (~${cals} kcal/day).`,
+      hint: buildLowCalorieHint(cals, opts, floorKcal, 'preferred'),
+    }
+  }
+
   if (cals < floorHardKcal) {
     return {
       ok: false,
       error: `Diet daily calories ${cals} are below the ${floorKcal} kcal floor.`,
-      hint:
-        `The daily average came out to about ${cals} kcal, which is below the ${floorKcal} kcal floor. ` +
-        `Rebuild all 7 days with more food so the daily average is at least ${floorKcal} kcal. ` +
-        `Do not cut calories to hit protein. If a lower intake seemed indicated, still stay at ${floorKcal}+ and flag the coach. ` +
-        'Never program a crash diet, and keep any deficit within 400 kcal of maintenance.',
+      hint: buildLowCalorieHint(cals, opts, floorKcal, 'floor'),
     }
   }
 
@@ -288,10 +342,7 @@ export function enforceDietSafety(
     return {
       ok: false,
       error: `Diet daily calories ${cals} are below the high-flux preferred target (~${preferredMin} kcal).`,
-      hint:
-        `The daily average came out to about ${cals} kcal, which is too low for high flux. ` +
-        `Target the UPPER HALF of the calorie band — at least ~${preferredMin} kcal/day — and pair with higher steps/training/cardio. ` +
-        `Add carbs/fats the client will eat; do not sit at the band minimum.`,
+      hint: buildLowCalorieHint(cals, opts, floorKcal, 'preferred'),
     }
   }
 
@@ -410,7 +461,11 @@ export function stabilizeDietCaloriesAfterEdit(
       Math.abs(inferred.calories - previous) <= EDIT_CALORIE_PRESERVE_TOLERANCE
     ) {
       targetCalories = previous
-    } else if (typeof previous === 'number' && previous > 0) {
+    } else if (
+      typeof previous === 'number' &&
+      previous > 0 &&
+      Math.abs(inferred.calories - previous) <= KCAL_MISMATCH_TOLERANCE
+    ) {
       targetCalories = clampCaloriesToWeeklyBand(
         inferred.calories,
         previous,
@@ -433,7 +488,7 @@ export function stabilizeDietCaloriesAfterEdit(
   }
 
   if (typeof opts.explicitTargetKcal === 'number' && opts.explicitTargetKcal > floorKcal) {
-    if (!opts.preserveCalories) {
+    if (!opts.preserveCalories && !hasReliableFoodTotals(trimmed)) {
       targetCalories = Math.max(targetCalories, opts.explicitTargetKcal)
       if (typeof previous === 'number' && previous > 0) {
         targetCalories = clampCaloriesToWeeklyBand(
@@ -446,7 +501,10 @@ export function stabilizeDietCaloriesAfterEdit(
     }
   }
 
-  targetCalories = Math.max(targetCalories, floorKcal)
+  // Only inflate a header when meal math is missing — never lie above food-derived totals.
+  if (!hasReliableFoodTotals(trimmed)) {
+    targetCalories = Math.max(targetCalories, floorKcal)
+  }
 
   const macros: MacroTotals = {
     calories: targetCalories,

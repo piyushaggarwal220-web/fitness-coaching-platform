@@ -133,13 +133,14 @@ export function formatCalorieTargetPrompt(profile: Pick<
   const floorKcal = resolveDietFloorKcal(profile.weight)
   const band = calorieTargetBand(maintenance, profile.fitness_goal, flux.level, floorKcal)
   return [
-    'CALORIE TARGET (use this math — do not guess lower):',
+    'CALORIE TARGET (computed in code — do not guess lower):',
     `- Estimated maintenance: ~${band.maintenance} kcal/day.`,
     `- Metabolic flux level: ${flux.label}.`,
     `- Allowed band: ~${band.min} to ~${band.max} kcal/day.`,
-    `- DEFAULT TARGET (high flux): ~${band.preferred} kcal/day — stay in the UPPER HALF of the band, not the minimum.`,
+    `- REQUIRED daily average from meal math: ~${band.preferred} kcal/day (upper half of band).`,
+    '- Every Daily Total / daily average line must land near this target. The Calories header must match the weekly average of those lines — never a higher header with lower meal totals.',
     '- High-flux rule: eat on the higher side AND raise steps/training/cardio in the same plan. Never low food + high output only, or high food + sedentary days.',
-    `- Never below ${floorKcal} kcal/day. If food portions sum lower, add carbs/fats the client will eat.`,
+    `- Never below ${floorKcal} kcal/day in meal lines. If portions sum lower, add carbs/fats the client will eat until Daily Totals hit the target.`,
     '- Header calories, daily average lines, and meal (P:…| ~K kcal) lines must all match.',
   ].join('\n')
 }

@@ -24,7 +24,7 @@ import {
   loadPublishedPromptsForAction,
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
-import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros, clampGeneratedNutritionCalories } from '@/lib/ai/nutrition-macro-sync'
+import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
 import { calorieTargetBand, estimateMaintenanceCalories } from '@/lib/ai/calorie-targets'
 import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
@@ -610,9 +610,16 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   let lastRawResponse = ''
   // Support sections soft-fail upstream — one attempt avoids a second expensive call.
   // Diet/workout get a third attempt when days are missing or output truncates.
-  const maxAttempts = providerMode === 'mock' ? 1 : supportSection ? 1 : 3
   const maxTokens = supportSection ? LIMITS.MAX_SUPPORT_PLAN_TOKENS : LIMITS.MAX_PLAN_TOKENS
   const validationMode = input.validationMode ?? 'full'
+  const maxAttempts =
+    providerMode === 'mock'
+      ? 1
+      : supportSection
+        ? 1
+        : validationMode === 'nutrition_focus' || validationMode === 'full'
+          ? 4
+          : 3
 
   let libraryPrompts: { actionTemplate: string; systemTemplate: string | null } | undefined
   let promptVersion = process.env.AI_PROMPT_VERSION?.trim() || 'v1'
@@ -772,6 +779,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         previousCalories,
         floorKcal,
         preferredMinKcal: band?.preferred,
+        maintenanceKcal: maintenance,
       })
       if (!safety.ok) {
         lastValidationError = safety.error
@@ -779,17 +787,9 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
           completenessHint = safety.hint
           continue
         }
-        console.warn(
-          `[generate-plan] diet safety not satisfied after ${maxAttempts} attempts (client ${input.profile.id}): ${safety.error}`
+        throw new GeneratePlanError(
+          `Diet plan failed calorie safety after ${maxAttempts} attempts: ${safety.error}`
         )
-        plan = {
-          ...plan,
-          nutrition_plan: clampGeneratedNutritionCalories(plan.nutrition_plan, {
-            previousCalories,
-            floorKcal,
-            preferredMinKcal: band?.preferred,
-          }),
-        }
       }
     }
 
