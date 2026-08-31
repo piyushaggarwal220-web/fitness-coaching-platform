@@ -332,6 +332,20 @@ export default function CoachGeneratePlanPage() {
                   <Link href={`/coach/plan/${backgroundJob.draft_plan_id}`} style={s.noteToggle}>
                     Review draft, add note, and deliver
                   </Link>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
+                    <Link
+                      href={`/coach/plan/${backgroundJob.draft_plan_id}?regen=1`}
+                      style={s.noteToggle}
+                    >
+                      Regenerate with coach instruction
+                    </Link>
+                    <Link
+                      href={`/coach/plan/${backgroundJob.draft_plan_id}?remake=1`}
+                      style={s.noteToggle}
+                    >
+                      Remake from scratch
+                    </Link>
+                  </div>
                 </div>
               )}
               {backgroundJob.status === 'failed' && (() => {

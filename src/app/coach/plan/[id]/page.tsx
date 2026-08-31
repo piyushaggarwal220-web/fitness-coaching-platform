@@ -8,6 +8,7 @@ import { CoachShell } from '@/components/ui/CoachShell';
 import { coachPageStyles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/coach-theme';
 import { PlanEditor } from '@/components/PlanEditor';
+import { PlanDraftReviewActions } from '@/components/coach/PlanDraftReviewActions';
 import { evaluateHighFluxPlanReview } from '@/lib/ai/high-flux-review';
 import {
   activatePlan,
@@ -32,6 +33,8 @@ export default function CoachPlanDetailPage() {
   const searchParams = useSearchParams();
   const planId = typeof params.id === 'string' ? params.id : '';
   const openAiOnLoad = searchParams.get('ai') === '1';
+  const initialReviewAction =
+    searchParams.get('regen') === '1' ? 'regen' : searchParams.get('remake') === '1' ? 'remake' : null;
 
   const [plan, setPlan] = useState<PlanWithClient | null>(null);
   const [history, setHistory] = useState<Plan[]>([]);
@@ -46,6 +49,9 @@ export default function CoachPlanDetailPage() {
     OnboardingProfile,
     'weight' | 'fitness_goal' | 'onboarding_data' | 'sleep_duration' | 'training_experience' | 'injuries'
   > | null>(null);
+  const [initialReviewActionConsumed, setInitialReviewActionConsumed] = useState(false);
+  const reviewAction =
+    initialReviewActionConsumed || !initialReviewAction ? null : initialReviewAction;
   const [autoOpenAiSection, setAutoOpenAiSection] = useState<'nutrition' | 'workout' | null>(
     openAiOnLoad ? 'nutrition' : null
   );
@@ -134,6 +140,15 @@ export default function CoachPlanDetailPage() {
     setError('');
     setSuccess('AI revision applied to the editor. Save or deliver to update the client tracker.');
   };
+
+  const clearReviewQueryParams = () => {
+    setInitialReviewActionConsumed(true);
+    if (initialReviewAction) {
+      router.replace(`/coach/plan/${planId}`);
+    }
+  };
+
+  const isDraftForReview = Boolean(plan && !plan.active && !plan.delivered_at);
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
@@ -335,6 +350,15 @@ export default function CoachPlanDetailPage() {
         </div>
 
         <form onSubmit={handleSave} style={styles.form}>
+          {isDraftForReview && form && (
+            <PlanDraftReviewActions
+              clientId={form.client_id}
+              form={form}
+              onFormPatch={handleFormPatch}
+              initialAction={reviewAction}
+              onInitialActionConsumed={clearReviewQueryParams}
+            />
+          )}
           <PlanEditor
             form={form}
             onChange={handleChange}
