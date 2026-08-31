@@ -338,7 +338,7 @@ export function enforceDietSafety(
   }
 
   const preferredMin = opts.preferredMinKcal
-  if (typeof preferredMin === 'number' && preferredMin > floorKcal && cals < preferredMin - 40) {
+  if (typeof preferredMin === 'number' && preferredMin > floorKcal && cals < preferredMin - 25) {
     return {
       ok: false,
       error: `Diet daily calories ${cals} are below the high-flux preferred target (~${preferredMin} kcal).`,

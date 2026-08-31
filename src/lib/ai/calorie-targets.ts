@@ -161,7 +161,16 @@ export function calorieTargetBand(
   min = Math.max(Math.round(min), floorKcal)
   max = Math.max(Math.round(max), min + 100)
 
-  const preferred = Math.round(min + (max - min) * 0.72)
+  // High-flux clients get extra food — bias toward the upper band, not the minimum.
+  const preferredBias =
+    fluxLevel === 'high_flux' ? 0.9 : fluxLevel === 'build_up' ? 0.8 : 0.72
+  let preferred = Math.round(min + (max - min) * preferredBias)
+  if (
+    fluxLevel === 'high_flux' &&
+    /recomp|recomposition|athletic|performance|maintain|strength/.test(goal)
+  ) {
+    preferred = max
+  }
 
   return { maintenance: Math.round(maintenance), min, max, preferred }
 }
@@ -208,10 +217,10 @@ export function formatMandatoryCalorieTargetBlock(profile: CalorieProfile): stri
     `- Maintenance (Mifflin-St Jeor): ${targets.maintenance} kcal/day.${trainingNote}`,
     `- Metabolic flux: ${targets.fluxLabel}.`,
     `- Allowed band: ${targets.min} to ${targets.max} kcal/day.`,
-    `- REQUIRED daily average in meal lines: ${targets.preferred} kcal/day (±50 kcal).`,
+    `- REQUIRED daily average in meal lines: ${targets.preferred} kcal/day (±50 kcal). This is HIGH food intake — never starvation portions (1500–1800 kcal).`,
     `- nutrition_plan.calories MUST be ${targets.preferred}. Calories header MUST be ${targets.preferred}.`,
     `- Every Daily Total line must average ${targets.preferred} kcal when summed across the week.`,
-    `- Do NOT use round guesses (1800, 2000, etc.) unless they equal ${targets.preferred}.`,
+    `- Do NOT use round low guesses (1500, 1600, 1800, 2000) unless they equal ${targets.preferred}.`,
     `- If portions sum below ${targets.min}, increase roti/rice/dal/paneer/snacks/oil until Daily Totals hit ${targets.preferred}.`,
     '- Header, weekly average, and each meal macro line must agree.',
   ].join('\n')
