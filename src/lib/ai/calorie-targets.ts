@@ -220,46 +220,96 @@ export function resolveClientCalorieTargets(profile: CalorieProfile): ClientCalo
   }
 }
 
-/** Rule-based calorie guidance for prompts — no fixed kcal the model must hit. */
+const ACTIVITY_MULTIPLIER_LABEL: Record<string, string> = {
+  sedentary: '1.2 (sedentary)',
+  lightly_active: '1.375 (lightly active)',
+  moderately_active: '1.55 (moderately active)',
+  very_active: '1.725 (very active)',
+}
+
+function formatBmrFormula(gender: string | null | undefined): string {
+  const g = (gender ?? '').toLowerCase()
+  if (g === 'female') return '10×weight(kg) + 6.25×height(cm) − 5×age − 161'
+  if (g === 'male') return '10×weight(kg) + 6.25×height(cm) − 5×age + 5'
+  return '10×weight(kg) + 6.25×height(cm) − 5×age − 78 (neutral estimate)'
+}
+
+function formatGoalAdjustmentLine(
+  goal: string,
+  maintenance: number,
+  preferred: number
+): string {
+  if (/fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)) {
+    return `Fat loss: maintenance (~${maintenance}) minus a mild high-flux deficit (~100–150 kcal) → plan around ~${preferred} kcal/day. Most gap from steps/training, not food slashing.`
+  }
+  if (/gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)) {
+    return `Muscle gain: maintenance (~${maintenance}) plus surplus → plan around ~${preferred} kcal/day.`
+  }
+  if (/recomp|recomposition|athletic|performance|maintain|strength/.test(goal)) {
+    return `Recomp / performance: plan at maintenance (~${preferred} kcal/day) — enough to train hard and recover.`
+  }
+  return `Default: plan near maintenance (~${preferred} kcal/day) unless goal clearly needs deficit or surplus.`
+}
+
+/** Rule-based calorie guidance — teach Mifflin-St Jeor + profile inputs; reference kcal, not a hard chase number. */
 export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | null {
   const targets = resolveClientCalorieTargets(profile)
   const flux = resolveMetabolicFluxPlan(profile as OnboardingProfile)
   const days = parseTrainingDaysPerWeek(profile)
   const goal = (profile.fitness_goal ?? '').toLowerCase()
   const weight = Number(profile.weight)
-  const hasSize = Number.isFinite(weight) && weight > 0
+  const height = Number(profile.height)
+  const age = Number(profile.age)
+  const hasFormulaInputs =
+    Number.isFinite(weight) &&
+    weight > 0 &&
+    Number.isFinite(height) &&
+    height > 0 &&
+    Number.isFinite(age) &&
+    age > 0
+
+  const activityLevel = targets?.activityLevel ?? profile.activity_level ?? 'moderately_active'
+  const activityFactor =
+    ACTIVITY_MULTIPLIER_LABEL[activityLevel] ?? ACTIVITY_MULTIPLIER_LABEL.moderately_active!
 
   const trainingNote =
     days != null && days >= 5
-      ? `Trains ${days} days/week — portions must reflect real gym load, not a desk-job diet.`
+      ? `Training ${days} days/week — activity tier bumped to ${activityLevel} for maintenance math.`
       : days != null && days >= 3
-        ? `Trains ${days} days/week — fuel recovery between sessions.`
+        ? `Training ${days} days/week — factor gym load into portion sizes.`
         : null
 
-  const goalLine = /fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)
-    ? 'Fat loss: only a mild deficit. Most of the gap comes from steps/training/cardio — never a crash diet.'
-    : /gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)
-      ? 'Muscle gain: surplus above maintenance — extra roti/rice/snacks, not skimpy meals.'
-      : /recomp|recomposition|athletic|performance|maintain|strength/.test(goal)
-        ? 'Recomp / performance: maintenance-level food — enough to train hard and recover.'
-        : 'Default to maintenance-level portions unless the profile clearly calls for a small deficit or surplus.'
-
-  const sizeLine = hasSize
-    ? `Client ~${Math.round(weight)} kg — larger, active people need more total food, not 1500–1800 kcal templates.`
-    : 'Use profile size and activity to judge generous vs restrictive portions — no one-size-fits-all 1800 kcal plan.'
+  const formulaSection = hasFormulaInputs
+    ? [
+        'CALORIE METHOD — use Mifflin-St Jeor (platform standard; do not guess round numbers like 1800):',
+        `1. BMR = ${formatBmrFormula(profile.gender)}`,
+        `   Inputs: ${Math.round(weight)} kg, ${Math.round(height)} cm, ${Math.round(age)} y, ${profile.gender ?? 'unspecified'}.`,
+        `2. Maintenance = BMR × ${activityFactor}`,
+        targets
+          ? `   Reference maintenance: ~${targets.maintenance} kcal/day.`
+          : null,
+        targets
+          ? `3. Goal adjustment: ${formatGoalAdjustmentLine(goal, targets.maintenance, targets.preferred)}`
+          : '3. Adjust maintenance for goal (mild deficit for fat loss, surplus for bulk, at maintenance for recomp).',
+        targets
+          ? `4. Build all 7 days so honest meal math averages ~${targets.preferred} kcal/day (±100). Calories header must match meal totals.`
+          : '4. Build all 7 days with honest meal math; header must match meal totals.',
+      ]
+    : [
+        'CALORIE METHOD — use Mifflin-St Jeor when weight, height, and age are available:',
+        `BMR = ${formatBmrFormula(profile.gender)}; Maintenance = BMR × activity factor (${activityFactor}).`,
+        weight > 0
+          ? `Client ~${Math.round(weight)} kg — if height/age missing, estimate maintenance generously from size and training load (not a 1500–1800 template).`
+          : 'Estimate maintenance from profile size and activity — no one-size-fits-all crash diet.',
+      ]
 
   return [
-    'CALORIE GUIDANCE (rules from profile — no fixed kcal number to chase):',
+    ...formulaSection,
     `- Metabolic flux: ${targets?.fluxLabel ?? flux.label}. Pair higher intake with higher output when flux is high.`,
-    `- Goal: ${goalLine}`,
-    sizeLine,
     trainingNote,
-    `- Activity tier: ${targets?.activityLevel ?? profile.activity_level ?? 'moderately_active'}.`,
-    '- Write honest meal-level math: Calories header, weekly average, and each Daily Total / meal line must agree.',
-    '- Never inflate the header above what the food portions actually sum to.',
-    '- Active young lifters should not get starvation plans — if portions feel tight, add rice, roti, dal, paneer, snacks, and cooking fat.',
-    '- If protein is hard to hit with allowed foods, lower the protein target — never cut carbs/fats/oil to chase grams.',
-    '- Fat loss or plateaus: raise steps/training first; do not slash food to force progress.',
+    '- Never inflate the header above what portions actually sum to.',
+    '- If protein is hard to hit with allowed foods, lower protein — never cut rice/roti/oil to chase grams.',
+    '- Plateaus: raise steps/training first; do not slash food.',
   ]
     .filter((line): line is string => line != null)
     .join('\n')
@@ -274,7 +324,7 @@ export function formatMandatoryCalorieTargetBlock(profile: CalorieProfile): stri
 export function autoDietCoachInstruction(profile: CalorieProfile): string {
   return [
     'Rebuild the full 7-day diet from the client profile.',
-    'Follow the CALORIE GUIDANCE rules: maintenance-level food for active clients, honest meal math, header matches portions.',
+    'Use the Mifflin-St Jeor CALORIE METHOD in the prompt: compute maintenance from weight/height/age/activity, adjust for goal, build meals to that reference with honest math.',
     'No edit meta.',
   ].join(' ')
 }
