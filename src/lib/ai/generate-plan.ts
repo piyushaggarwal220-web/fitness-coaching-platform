@@ -25,7 +25,7 @@ import {
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
 import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
-import { formatMandatoryCalorieTargetBlock, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
+import { formatCalorieGuidanceBlock } from '@/lib/ai/calorie-targets'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   DAY_HEADER_PROMPT_RULES,
@@ -560,7 +560,7 @@ async function buildPlanPrompts(
     options.actionId === 'initial_diet' ||
     options.actionId === 'review_update_diet'
   const mandatoryCalorieTarget = includesDietOutput
-    ? formatMandatoryCalorieTargetBlock(profile)
+    ? formatCalorieGuidanceBlock(profile)
     : null
 
   const systemPrompt = [
@@ -771,13 +771,10 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     const enforcesDiet = validationMode === 'nutrition_focus' || validationMode === 'full'
     if (enforcesDiet && !supportSection && providerMode !== 'mock') {
       const floorKcal = resolveDietFloorKcal(input.profile.weight)
-      const targets = resolveClientCalorieTargets(input.profile)
       const previousCalories = parseHeaderCalories(input.activePlan?.nutrition_plan)
       const safety = enforceDietSafety(plan.nutrition_plan, {
         previousCalories,
         floorKcal,
-        preferredMinKcal: targets?.preferred,
-        maintenanceKcal: targets?.maintenance ?? null,
       })
       if (!safety.ok) {
         lastValidationError = safety.error

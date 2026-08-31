@@ -220,43 +220,65 @@ export function resolveClientCalorieTargets(profile: CalorieProfile): ClientCalo
   }
 }
 
-/** Injected into every diet prompt — exact numbers from profile math. */
-export function formatMandatoryCalorieTargetBlock(profile: CalorieProfile): string | null {
+/** Rule-based calorie guidance for prompts — no fixed kcal the model must hit. */
+export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | null {
   const targets = resolveClientCalorieTargets(profile)
-  if (!targets) return null
-
+  const flux = resolveMetabolicFluxPlan(profile as OnboardingProfile)
   const days = parseTrainingDaysPerWeek(profile)
+  const goal = (profile.fitness_goal ?? '').toLowerCase()
+  const weight = Number(profile.weight)
+  const hasSize = Number.isFinite(weight) && weight > 0
+
   const trainingNote =
-    days != null ? ` Training ${days} days/week factored into activity (${targets.activityLevel}).` : ''
+    days != null && days >= 5
+      ? `Trains ${days} days/week — portions must reflect real gym load, not a desk-job diet.`
+      : days != null && days >= 3
+        ? `Trains ${days} days/week — fuel recovery between sessions.`
+        : null
+
+  const goalLine = /fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)
+    ? 'Fat loss: only a mild deficit. Most of the gap comes from steps/training/cardio — never a crash diet.'
+    : /gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)
+      ? 'Muscle gain: surplus above maintenance — extra roti/rice/snacks, not skimpy meals.'
+      : /recomp|recomposition|athletic|performance|maintain|strength/.test(goal)
+        ? 'Recomp / performance: maintenance-level food — enough to train hard and recover.'
+        : 'Default to maintenance-level portions unless the profile clearly calls for a small deficit or surplus.'
+
+  const sizeLine = hasSize
+    ? `Client ~${Math.round(weight)} kg — larger, active people need more total food, not 1500–1800 kcal templates.`
+    : 'Use profile size and activity to judge generous vs restrictive portions — no one-size-fits-all 1800 kcal plan.'
 
   return [
-    'AUTOMATED CALORIE TARGET (computed from client profile — mandatory, no guessing):',
-    `- Maintenance (Mifflin-St Jeor): ${targets.maintenance} kcal/day.${trainingNote}`,
-    `- Metabolic flux: ${targets.fluxLabel}.`,
-    `- Goal-adjusted target: ${targets.preferred} kcal/day (±50 kcal) — this is the real number from maintenance + goal, not a round guess.`,
-    `- Allowed tolerance band: ${targets.min} to ${targets.max} kcal/day.`,
-    `- nutrition_plan.calories MUST be ${targets.preferred}. Calories header MUST be ${targets.preferred}.`,
-    `- Every Daily Total line must average ${targets.preferred} kcal when summed across the week.`,
-    `- Do NOT use round low guesses (1500, 1600, 1800) unless they equal ${targets.preferred}.`,
-    `- If portions sum below ${targets.preferred - 50}, increase roti/rice/dal/paneer/snacks/oil until Daily Totals hit ${targets.preferred}.`,
-    '- Header, weekly average, and each meal macro line must agree.',
-  ].join('\n')
+    'CALORIE GUIDANCE (rules from profile — no fixed kcal number to chase):',
+    `- Metabolic flux: ${targets?.fluxLabel ?? flux.label}. Pair higher intake with higher output when flux is high.`,
+    `- Goal: ${goalLine}`,
+    sizeLine,
+    trainingNote,
+    `- Activity tier: ${targets?.activityLevel ?? profile.activity_level ?? 'moderately_active'}.`,
+    '- Write honest meal-level math: Calories header, weekly average, and each Daily Total / meal line must agree.',
+    '- Never inflate the header above what the food portions actually sum to.',
+    '- Active young lifters should not get starvation plans — if portions feel tight, add rice, roti, dal, paneer, snacks, and cooking fat.',
+    '- If protein is hard to hit with allowed foods, lower the protein target — never cut carbs/fats/oil to chase grams.',
+    '- Fat loss or plateaus: raise steps/training first; do not slash food to force progress.',
+  ]
+    .filter((line): line is string => line != null)
+    .join('\n')
+}
+
+/** @deprecated Use formatCalorieGuidanceBlock — kept for imports. */
+export function formatMandatoryCalorieTargetBlock(profile: CalorieProfile): string | null {
+  return formatCalorieGuidanceBlock(profile)
 }
 
 /** Default diet rewrite instruction when the coach does not type anything. */
 export function autoDietCoachInstruction(profile: CalorieProfile): string {
-  const targets = resolveClientCalorieTargets(profile)
-  if (!targets) {
-    return 'Rebuild the full 7-day diet from the client profile with honest meal-level calorie math. No edit meta.'
-  }
   return [
-    `Rebuild the full 7-day diet from the client profile.`,
-    `Required daily average: ${targets.preferred} kcal/day (maintenance ~${targets.maintenance}, band ${targets.min}-${targets.max}).`,
-    `Every Daily Total must land near ${targets.preferred} kcal.`,
+    'Rebuild the full 7-day diet from the client profile.',
+    'Follow the CALORIE GUIDANCE rules: maintenance-level food for active clients, honest meal math, header matches portions.',
     'No edit meta.',
   ].join(' ')
 }
 
 export function formatCalorieTargetPrompt(profile: CalorieProfile): string | null {
-  return formatMandatoryCalorieTargetBlock(profile)
+  return formatCalorieGuidanceBlock(profile)
 }

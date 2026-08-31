@@ -13,7 +13,7 @@ import {
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
-import { formatMandatoryCalorieTargetBlock, resolveClientCalorieTargets, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction } from '@/lib/ai/calorie-targets'
+import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction } from '@/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
 import {
   parseHeaderCalories,
@@ -162,13 +162,9 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     input.section !== 'nutrition' || input.remakeFromScratch
       ? !touchesCalories || needsExpenditure
       : false
-  const profileTargets =
-    input.section === 'nutrition' && input.profile
-      ? resolveClientCalorieTargets(input.profile)
-      : null
   const mandatoryCalorieTarget =
     input.section === 'nutrition' && input.profile
-      ? formatMandatoryCalorieTargetBlock(input.profile)
+      ? formatCalorieGuidanceBlock(input.profile)
       : null
   const calorieRules = needsExpenditure
     ? EDIT_EXPENDITURE_FIRST_RULES
@@ -189,8 +185,8 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     DAY_HEADER_PROMPT_RULES,
     calorieRules,
     mandatoryCalorieTarget,
-    targetsMaintenance && profileTargets
-      ? `MAINTENANCE TARGET: Rebuild portions so the daily average lands at ~${profileTargets.maintenance} kcal/day (maintenance). Header, daily totals, and meal lines must all match.`
+    targetsMaintenance
+      ? 'MAINTENANCE FOCUS: Rebuild portions to maintenance-level food — generous enough to train and recover. Header, daily totals, and meal lines must all match.'
       : null,
     HIGH_FLUX_PHILOSOPHY_RULES,
     HIGH_FLUX_OUTPUT_PAIRING_RULES,
@@ -295,7 +291,6 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
                 input.previousCalories ?? parseHeaderCalories(currentText),
               preserveCalories,
               floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
-              explicitTargetKcal: profileTargets?.preferred,
             })
           : revisedRaw
 
@@ -452,8 +447,7 @@ export async function editPlanForClientChange(
   const touchesCalories = requestTouchesCalories(clientRequest, input.coachNote) && !needsExpenditure
   const targetsMaintenance = requestTargetsMaintenance(clientRequest, input.coachNote)
   const preserveCalories = !touchesCalories || needsExpenditure
-  const profileTargets = input.profile ? resolveClientCalorieTargets(input.profile) : null
-  const mandatoryCalorieTarget = input.profile ? formatMandatoryCalorieTargetBlock(input.profile) : null
+  const mandatoryCalorieTarget = input.profile ? formatCalorieGuidanceBlock(input.profile) : null
   const calorieRules = needsExpenditure
     ? EDIT_EXPENDITURE_FIRST_RULES
     : touchesCalories
@@ -475,8 +469,8 @@ export async function editPlanForClientChange(
     HIGH_FLUX_OUTPUT_PAIRING_RULES,
     calorieRules,
     mandatoryCalorieTarget,
-    targetsMaintenance && profileTargets
-      ? `MAINTENANCE TARGET: Rebuild portions so the daily average lands at ~${profileTargets.maintenance} kcal/day (maintenance). Header, daily totals, and meal lines must all match.`
+    targetsMaintenance
+      ? 'MAINTENANCE FOCUS: Rebuild portions to maintenance-level food — generous enough to train and recover. Header, daily totals, and meal lines must all match.'
       : null,
     `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
     '- No cross-day references. No weekly progression narrative.',
@@ -541,7 +535,6 @@ export async function editPlanForClientChange(
       previousCalories: parseHeaderCalories(input.nutritionText),
       preserveCalories,
       floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
-      explicitTargetKcal: profileTargets?.preferred,
     }
   )
   const workoutPlan = stripPlanEditMetaLanguage(

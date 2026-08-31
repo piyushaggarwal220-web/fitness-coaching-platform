@@ -6,7 +6,7 @@ import {
   generatedSupplementFormData,
   generatedWorkoutFormData,
 } from '@/lib/ai/plan-format'
-import { formatMandatoryCalorieTargetBlock } from '@/lib/ai/calorie-targets'
+import { formatCalorieGuidanceBlock } from '@/lib/ai/calorie-targets'
 import { FRESH_PLAN_OUTPUT_RULES } from '@/lib/ai/plan-prose-guards'
 import {
   buildActionCoachInstructions,
@@ -38,7 +38,7 @@ function validationMode(actionId: CoachAiActionId): PlanValidationMode {
 }
 
 function buildRemakeCoachNote(profile: OnboardingProfile, custom?: string | null): string {
-  const autoCalories = formatMandatoryCalorieTargetBlock(profile)
+  const autoCalories = formatCalorieGuidanceBlock(profile)
   return [REMAKE_PLAN_PREFIX, autoCalories, custom?.trim()].filter(Boolean).join('\n\n')
 }
 

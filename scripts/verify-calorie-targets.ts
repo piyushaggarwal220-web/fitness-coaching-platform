@@ -177,8 +177,21 @@ assert(
       fat: 42,
       meals: [{ example: lowFoodHighHeader.split('\n').slice(4).join('\n') }],
     },
-    { floorKcal: 1900, preferredMinKcal: 2100, maintenanceKcal: 2400 }
+    { floorKcal: 1900 }
   ).ok === false
+)
+assert(
+  'enforce allows above-floor plans without exact preferred target',
+  enforceDietSafety(
+    {
+      calories: 2118,
+      protein: 120,
+      carbs: 220,
+      fat: 65,
+      meals: [],
+    },
+    { floorKcal: 1900, preferredMinKcal: 3331 }
+  ).ok === true
 )
 
 const sixDayProfile = {

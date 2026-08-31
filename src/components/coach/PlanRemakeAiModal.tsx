@@ -82,7 +82,7 @@ export function PlanRemakeAiModal({ clientId, open, onClose, onApply }: Props) {
         </h2>
         <p style={{ margin: '0 0 20px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
           Starts completely fresh from the client&apos;s profile — ignores the current draft.
-          Maintenance and calories are calculated automatically; optional notes steer style only.
+          Calorie rules (maintenance-level food, high flux pairing) apply automatically; optional notes steer style only.
         </p>
 
         <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>

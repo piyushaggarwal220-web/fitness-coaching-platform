@@ -337,15 +337,6 @@ export function enforceDietSafety(
     }
   }
 
-  const preferredMin = opts.preferredMinKcal
-  if (typeof preferredMin === 'number' && preferredMin > floorKcal && cals < preferredMin - 25) {
-    return {
-      ok: false,
-      error: `Diet daily calories ${cals} are below the high-flux preferred target (~${preferredMin} kcal).`,
-      hint: buildLowCalorieHint(cals, opts, floorKcal, 'preferred'),
-    }
-  }
-
   const prev = opts.previousCalories
   if (typeof prev === 'number' && prev > 0) {
     const delta = cals - prev
@@ -534,11 +525,7 @@ export function clampGeneratedNutritionCalories(
   if (typeof cals !== 'number' || !Number.isFinite(cals) || cals <= 0) return plan
 
   const floorKcal = opts.floorKcal ?? DIET_FLOOR_TARGET_KCAL
-  const preferredMin = opts.preferredMinKcal
   cals = Math.max(cals, floorKcal)
-  if (typeof preferredMin === 'number' && preferredMin > floorKcal) {
-    cals = Math.max(cals, preferredMin)
-  }
   const prev = opts.previousCalories
   if (typeof prev === 'number' && prev > 0) {
     cals = clampCaloriesToWeeklyBand(cals, prev, floorKcal)

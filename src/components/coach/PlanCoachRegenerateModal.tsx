@@ -88,9 +88,8 @@ export function PlanCoachRegenerateModal({
           Regenerate plan from profile
         </h2>
         <p style={{ margin: '0 0 20px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-          Maintenance and daily calories are calculated automatically from the client&apos;s weight,
-          height, age, activity, training days, and goal. No calorie notes needed — optional notes
-          below only steer meal style or priorities.
+          Calorie rules (maintenance-level food, high flux pairing) come from the client profile
+          automatically. Optional notes below only steer meal style or priorities.
         </p>
 
         <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>

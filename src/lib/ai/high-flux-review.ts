@@ -75,14 +75,12 @@ export function evaluateHighFluxPlanReview(input: {
       })
     }
 
-    if (targets) {
-      const preferredMin = targets.preferred
-      if (calories < preferredMin - 40) {
-        flags.push({
-          level: 'warning',
-          message: `Calories (~${calories} kcal) are below the profile target (~${preferredMin} kcal; maintenance ~${targets.maintenance}). Regenerate — no manual calorie notes needed.`,
-        })
-      }
+    if (targets && calories < targets.min) {
+      flags.push({
+        level: 'warning',
+        message:
+          'Daily calories look low for this client\'s size, training load, and goal. Consider regenerating with more generous portions — active lifters need maintenance-level food, not crash-diet templates.',
+      })
     }
   }
 

@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'real-calorie-target-v10'
+export const PLAN_QUALITY_RULES_VERSION = 'calorie-guidance-v11'
 
 /** Platform minimum daily calories before weight-based floor applies. */
 export const DIET_FLOOR_BASE_KCAL = 1900
@@ -45,8 +45,8 @@ export const EDIT_CALORIE_PRESERVATION_RULES = [
 export const HIGH_FLUX_PHILOSOPHY_RULES = [
   'HIGH FLUX PHILOSOPHY (non-negotiable):',
   '- Push HIGHER caloric intake paired with HIGHER output (steps, training, cardio). Both sides up — never low food + hope they walk, and never high food + sedentary days.',
-  '- Use the AUTOMATED CALORIE TARGET number exactly — it is maintenance adjusted for goal (not a band guess).',
-  '- Fat loss: mild deficit (~100–150 kcal below maintenance at high flux). Create most of the gap via steps/training/cardio.',
+  '- Follow CALORIE GUIDANCE rules from the profile — maintenance-level food for active clients, shallow deficit only for fat loss, honest header/meal math.',
+  '- Fat loss: mild deficit only; create most of the gap via steps/training/cardio.',
   '- Never respond to "not losing" or a plateau by slashing food; raise steps/training first.',
 ].join('\n')
 
