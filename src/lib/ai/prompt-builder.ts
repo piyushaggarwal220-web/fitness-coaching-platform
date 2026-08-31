@@ -13,6 +13,7 @@ import { clientCoachNotes } from '@/lib/plan-metadata'
 import {
   DAY_HEADER_PROMPT_RULES,
   EXERCISE_NAME_PROMPT_RULES,
+  HIGH_FLUX_OUTPUT_PAIRING_RULES,
   HIGH_FLUX_PHILOSOPHY_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   WORKOUT_SECTION_PROMPT_RULES,
@@ -501,6 +502,7 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
 
   lines.push(DAY_HEADER_PROMPT_RULES)
   lines.push(HIGH_FLUX_PHILOSOPHY_RULES)
+  lines.push(HIGH_FLUX_OUTPUT_PAIRING_RULES)
   lines.push(PROTEIN_CALORIE_PROMPT_RULES)
   lines.push(WORKOUT_VOLUME_PROMPT_RULES)
   lines.push(EXERCISE_NAME_PROMPT_RULES)

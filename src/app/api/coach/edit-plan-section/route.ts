@@ -10,6 +10,9 @@ type Body = {
   clientId?: string
   section?: string
   currentText?: string
+  /** Coach-facing instruction (plan editor). */
+  coachInstruction?: string
+  /** Legacy / client change-request field. */
   clientRequest?: string
   coachNote?: string
 }
@@ -41,6 +44,7 @@ export async function POST(request: Request) {
   }
 
   const clientId = body.clientId?.trim()
+  const coachInstruction = body.coachInstruction?.trim()
   const clientRequest = body.clientRequest?.trim()
   if (!clientId) {
     return NextResponse.json({ error: 'clientId is required' }, { status: 400 })
@@ -48,13 +52,18 @@ export async function POST(request: Request) {
   if (!isSection(body.section)) {
     return NextResponse.json({ error: 'section must be nutrition or workout' }, { status: 400 })
   }
-  if (!clientRequest) {
-    return NextResponse.json({ error: 'clientRequest is required' }, { status: 400 })
+  if (!coachInstruction && !clientRequest) {
+    return NextResponse.json(
+      { error: 'coachInstruction or clientRequest is required' },
+      { status: 400 }
+    )
   }
 
   const { data: client } = await supabase
     .from('profiles')
-    .select('id, name, payment_confirmed, access_source, subscription_expires_at')
+    .select(
+      'id, name, payment_confirmed, access_source, subscription_expires_at, weight, height, age, gender, activity_level, fitness_goal, onboarding_data, sleep_duration, training_experience, injuries'
+    )
     .eq('id', clientId)
     .eq('coach_id', coach.id)
     .maybeSingle()
@@ -67,10 +76,13 @@ export async function POST(request: Request) {
     const result = await editPlanSection({
       section: body.section,
       currentText: body.currentText ?? '',
-      clientRequest,
+      coachInstruction: coachInstruction || undefined,
+      clientRequest: clientRequest || undefined,
       coachNote: body.coachNote,
+      editSource: coachInstruction ? 'coach' : 'client',
       clientName: client.name,
       clientId,
+      profile: client,
     })
 
     return NextResponse.json({

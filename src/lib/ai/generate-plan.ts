@@ -25,12 +25,16 @@ import {
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
 import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros, clampGeneratedNutritionCalories } from '@/lib/ai/nutrition-macro-sync'
+import { calorieTargetBand, estimateMaintenanceCalories } from '@/lib/ai/calorie-targets'
+import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   DAY_HEADER_PROMPT_RULES,
   EXERCISE_NAME_PROMPT_RULES,
+  HIGH_FLUX_OUTPUT_PAIRING_RULES,
   HIGH_FLUX_PHILOSOPHY_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
+  resolveDietFloorKcal,
   WORKOUT_SECTION_PROMPT_RULES,
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
@@ -220,6 +224,7 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   '- CALORIE CONSISTENCY: any calorie number you state in the conversational note (e.g. "I\'m giving you ~1850 calories this week") MUST equal the daily average and the header calories. Never state a different daily calorie target in the prose than the food math produces. If you mention a deficit/surplus, phrase it as a change (e.g. "about 150 kcal lower than last week") — do not state a second daily total.',
   SAFE_RATE_OF_CHANGE_RULE,
   HIGH_FLUX_PHILOSOPHY_RULES,
+  HIGH_FLUX_OUTPUT_PAIRING_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   '- Write a complete 7-day diet. Use the full output budget. Do not skip days or thin out meals to save tokens.',
   '- Never write "Welcome to week N" as a greeting in diet prose. You MAY label the plan header with Week N so the client can see which coaching week this is.',
@@ -229,7 +234,7 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   '- Set workout_plan.overview to "N/A" and workout_plan.days to [].',
   '- cardio_plan.sessions MUST be [].',
   '- supplement_plan.items MUST be [].',
-  '- coach_notes must be empty unless you held calories at the 1800 kcal floor as an exception — then one short coach flag only, under 200 characters.',
+  '- coach_notes must be empty unless you held calories at the platform kcal floor as an exception — then one short coach flag only, under 200 characters.',
 ].join('\n')
 
 const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
@@ -256,6 +261,7 @@ const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [
   '- Do not use a lone line "Recovery" or "Stretching" between days — that can make the tracker swallow the next session into Post-Workout. Use "Post-Workout:" only for cooldown stretches of the CURRENT day. Never a shared warmup before Day 1 or a shared stretch list after the week.',
   '- Do not hide the working sets inside paragraph prose only; the tracker needs scannable exercise lines.',
   WORKOUT_VOLUME_PROMPT_RULES,
+  HIGH_FLUX_OUTPUT_PAIRING_RULES,
   '- Write a complete week. Use the full output budget. Do not skip days or drop exercises to save tokens.',
   '- Set nutrition_plan calories/protein/carbs/fat to 0 and nutrition_plan.meals to [].',
   '- cardio_plan.sessions MUST be [].',
@@ -748,8 +754,24 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     // (these flows land as coach-review drafts, not auto-published).
     const enforcesDiet = validationMode === 'nutrition_focus' || validationMode === 'full'
     if (enforcesDiet && !supportSection && providerMode !== 'mock') {
+      const floorKcal = resolveDietFloorKcal(input.profile.weight)
+      const maintenance = estimateMaintenanceCalories({
+        weightKg: input.profile.weight,
+        heightCm: input.profile.height,
+        age: input.profile.age,
+        gender: input.profile.gender,
+        activityLevel: input.profile.activity_level,
+      })
+      const flux = resolveMetabolicFluxPlan(input.profile)
+      const band =
+        maintenance != null
+          ? calorieTargetBand(maintenance, input.profile.fitness_goal, flux.level, floorKcal)
+          : null
+      const previousCalories = parseHeaderCalories(input.activePlan?.nutrition_plan)
       const safety = enforceDietSafety(plan.nutrition_plan, {
-        previousCalories: parseHeaderCalories(input.activePlan?.nutrition_plan),
+        previousCalories,
+        floorKcal,
+        preferredMinKcal: band?.preferred,
       })
       if (!safety.ok) {
         lastValidationError = safety.error
@@ -763,7 +785,9 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         plan = {
           ...plan,
           nutrition_plan: clampGeneratedNutritionCalories(plan.nutrition_plan, {
-            previousCalories: parseHeaderCalories(input.activePlan?.nutrition_plan),
+            previousCalories,
+            floorKcal,
+            preferredMinKcal: band?.preferred,
           }),
         }
       }

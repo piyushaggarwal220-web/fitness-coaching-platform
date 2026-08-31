@@ -1,4 +1,5 @@
 import type { GeneratedPlan } from '@/lib/ai/generate-plan'
+import { syncStoredDietText } from '@/lib/ai/nutrition-macro-sync'
 import { stripClientWeekHandoffLanguage } from '@/lib/ai/plan-prose-guards'
 import { applyParsedSectionsToFormData } from '@/lib/plan-section-parser'
 import type { PlanFormData } from '@/types/database'
@@ -249,16 +250,18 @@ export function generatedPlanToFormData(
 
   const mealsText = formatMeals(generated.nutrition_plan.meals)
   const nutritionText = normalizeAiPlanProse(
-    [
-      `Calories: ${generated.nutrition_plan.calories}`,
-      `Protein: ${generated.nutrition_plan.protein}g`,
-      `Carbs: ${generated.nutrition_plan.carbs}g`,
-      `Fat: ${generated.nutrition_plan.fat}g`,
-      mealsText ? '' : null,
-      mealsText || null,
-    ]
-      .filter((line) => line !== null)
-      .join('\n')
+    syncStoredDietText(
+      [
+        `Calories: ${generated.nutrition_plan.calories}`,
+        `Protein: ${generated.nutrition_plan.protein}g`,
+        `Carbs: ${generated.nutrition_plan.carbs}g`,
+        `Fat: ${generated.nutrition_plan.fat}g`,
+        mealsText ? '' : null,
+        mealsText || null,
+      ]
+        .filter((line) => line !== null)
+        .join('\n')
+    )
   )
 
   return applyParsedSectionsToFormData({

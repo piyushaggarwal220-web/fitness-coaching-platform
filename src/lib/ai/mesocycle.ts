@@ -1,3 +1,5 @@
+import { DIET_FLOOR_BASE_KCAL } from '@/lib/ai/plan-quality-rules'
+
 /** Mesocycle helpers for monthly split rotation and weeks 1–4 volume ramps. */
 
 export type MesocycleContext = {
@@ -21,7 +23,7 @@ const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
 
 /** Calorie guidance paired with mesocycle intensity (food rises with training load). */
 const CALORIE_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
-  1: 'BASE calories: after a new split / lower volume reset, HOLD calories at last month\'s level (within ~100 kcal). Do NOT trim food to match lighter training — reduce volume only. If fat loss is the goal, raise step targets instead. Never go below 1800 kcal.',
+  1: `BASE calories: after a new split / lower volume reset, HOLD calories at last month's level (within ~100 kcal). Do NOT trim food to match lighter training — reduce volume only. If fat loss is the goal, raise step targets instead. Never go below ${DIET_FLOOR_BASE_KCAL} kcal.`,
   2: 'BUILD calories: raise intake slightly with the volume bump (about 50 to 150 kcal or more carbs around training) so recovery keeps up.',
   3: 'PUSH calories: raise again with intensity (another about 50 to 150 kcal vs week 2) favoring carbs/protein around workouts.',
   4: 'PEAK calories: highest food of the month to support peak volume. Next mesocycle week 1 drops volume but keeps calories flat — adjust output (steps/cardio) if needed, not food down.',
@@ -66,7 +68,7 @@ export function formatMesocyclePromptSection(
     `- Volume target: ${meso.volumeGuidance}`,
     `- Calorie target (pair with volume): ${meso.calorieGuidance}`,
     meso.requiresNewSplit
-      ? '- Split rule: NEW split vs last month. Proven templates (full body, upper/lower, PPL) are valid if they fit this client. Do not recycle last month\'s day structure. Drop working sets to BASE (2 to 3) and HOLD calories — raise steps/cardio if fat loss is the goal, never below 1800 kcal.'
+      ? `- Split rule: NEW split vs last month. Proven templates (full body, upper/lower, PPL) are valid if they fit this client. Do not recycle last month's day structure. Drop working sets to BASE (2 to 3) and HOLD calories — raise steps/cardio if fat loss is the goal, never below ${DIET_FLOOR_BASE_KCAL} kcal.`
       : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Progress load/reps/RIR AND calories together. Do not add extra working sets or invent a new split.',
     '- Cycle rule: intensity up each week inside the month → calories up with it. New month (new split, lower volume) → HOLD calories and raise output if needed, then climb food again with volume. Never add working sets past the 2 to 3 cap (4 on one compound) just to hit a percent increase.',
     '',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -8,6 +8,7 @@ import { CoachShell } from '@/components/ui/CoachShell';
 import { coachPageStyles } from '@/lib/coach-page-styles';
 import { colors } from '@/lib/coach-theme';
 import { PlanEditor } from '@/components/PlanEditor';
+import { evaluateHighFluxPlanReview } from '@/lib/ai/high-flux-review';
 import {
   activatePlan,
   deactivatePlan,
@@ -21,7 +22,7 @@ import { prepareCoachNotesForSave } from '@/lib/plan-metadata';
 import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-sync';
 import { requireCoach } from '@/lib/coach-session';
 import { PlanVersionHistory } from '@/components/coach/PlanVersionHistory';
-import type { Plan, PlanFormData, PlanWithClient } from '@/types/database';
+import type { OnboardingProfile, Plan, PlanFormData, PlanWithClient } from '@/types/database';
 
 const supabase = createClient();
 
@@ -41,9 +42,23 @@ export default function CoachPlanDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [clientProfile, setClientProfile] = useState<Pick<
+    OnboardingProfile,
+    'weight' | 'fitness_goal' | 'onboarding_data' | 'sleep_duration' | 'training_experience' | 'injuries'
+  > | null>(null);
   const [autoOpenAiSection, setAutoOpenAiSection] = useState<'nutrition' | 'workout' | null>(
     openAiOnLoad ? 'nutrition' : null
   );
+
+  const highFluxFlags = useMemo(() => {
+    if (!clientProfile || !form) return [];
+    return evaluateHighFluxPlanReview({
+      profile: clientProfile,
+      nutritionPlan: form.nutrition_plan,
+      cardioPlan: form.cardio_plan,
+      workoutPlan: form.workout_plan,
+    });
+  }, [clientProfile, form]);
 
   useEffect(() => {
     const load = async () => {
@@ -68,6 +83,16 @@ export default function CoachPlanDetailPage() {
       const record = planData as PlanWithClient;
       setPlan(record);
       setForm(planToForm(record));
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('weight, fitness_goal, onboarding_data, sleep_duration, training_experience, injuries')
+        .eq('id', record.client_id)
+        .single();
+
+      if (profileData) {
+        setClientProfile(profileData);
+      }
 
       const { data: historyData } = await supabase
         .from('plans')
@@ -278,6 +303,22 @@ export default function CoachPlanDetailPage() {
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 
+        {highFluxFlags.length > 0 && (
+          <div style={styles.reviewBox}>
+            <p style={styles.reviewTitle}>High-flux review</p>
+            <ul style={styles.reviewList}>
+              {highFluxFlags.map((flag, index) => (
+                <li
+                  key={index}
+                  style={flag.level === 'warning' ? styles.reviewWarning : styles.reviewInfo}
+                >
+                  {flag.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div style={styles.actions}>
           {plan.active ? (
             <button type="button" onClick={handleDeactivate} disabled={actionLoading} style={styles.secondaryBtn}>
@@ -338,4 +379,14 @@ const styles: Record<string, CSSProperties> = {
   historyItem: { ...coachPageStyles.listItem, cursor: 'pointer', textAlign: 'left', width: '100%' },
   historyItemCurrent: { borderColor: colors.accent, backgroundColor: colors.accentMuted },
   errorBox: { ...coachPageStyles.card, borderColor: colors.danger, marginTop: 20 },
+  reviewBox: {
+    ...coachPageStyles.card,
+    borderColor: colors.accent,
+    marginBottom: 20,
+    backgroundColor: colors.bgElevated,
+  },
+  reviewTitle: { margin: '0 0 8px 0', fontSize: 14, fontWeight: 700, color: colors.textPrimary },
+  reviewList: { margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6 },
+  reviewWarning: { color: colors.danger, fontSize: 13, lineHeight: 1.45 },
+  reviewInfo: { color: colors.textMuted, fontSize: 13, lineHeight: 1.45 },
 };

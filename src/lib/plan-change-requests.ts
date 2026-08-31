@@ -4,6 +4,7 @@ import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
+  FRESH_PLAN_OUTPUT_RULES,
 } from '@/lib/ai/plan-prose-guards'
 import {
   canClaimPlanChangeGeneration,
@@ -405,10 +406,11 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
         : 'Client may still be on early coaching days. Edit the CURRENT plan only.'
 
     const coachNote = [
+      FRESH_PLAN_OUTPUT_RULES,
       CLIENT_PLAN_EDIT_WEEK_RULES,
       dayHint,
-      'Change only what the client asked for — swap the named foods/exercises, not the whole week.',
-      'If they did not mention calories, macros, deficit, or surplus, keep the same daily calorie average.',
+      'Apply the client request when rewriting — do not mention the request or edits in client-facing plan text.',
+      'If they did not mention calories, macros, deficit, or surplus, keep a similar daily calorie average unless the request requires otherwise.',
       'If they mention a plateau or not losing weight, raise steps/training — do NOT cut calories.',
       SAFE_RATE_OF_CHANGE_RULE,
       clientJourney?.trim() ? `Client journey:\n${clientJourney.trim()}` : '',

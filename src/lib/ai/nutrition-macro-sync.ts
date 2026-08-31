@@ -23,6 +23,14 @@ const DAILY_SUMMARY_LINE =
 const DAILY_P_SUMMARY_LINE =
   /daily\s+(?:total|totals|average|averages)\s*:?\s*~?\s*(\d{3,4})\s*kcal\s*\|\s*P:\s*(\d+)\s*g\s*\|\s*C:\s*(\d+)\s*g\s*\|\s*F:\s*(\d+)\s*g/gi
 
+/** "Daily Total: P: 119g | C: 248g | F: 70g | ~2080 kcal" (kcal at end — common in AI output) */
+const DAILY_TOTAL_P_END_KCAL =
+  /daily\s+(?:total|totals)\s*:?\s*P:\s*(\d+)\s*g\s*\|\s*C:\s*(\d+)\s*g\s*\|\s*F:\s*(\d+)\s*g\s*\|\s*~?\s*(\d{3,4})\s*kcal/gi
+
+/** "Daily averages across the 7 days: about 1980 kcal | P: 109g ..." */
+const WEEKLY_AVERAGE_P_LINE =
+  /daily\s+averages?\s+(?:across[^:\n]*)?:?\s*(?:about\s+)?~?\s*(\d{3,4})\s*kcal\s*\|\s*P:\s*(\d+)\s*g\s*\|\s*C:\s*(\d+)\s*g\s*\|\s*F:\s*(\d+)\s*g/gi
+
 function isDailyTotalOrAverageLine(line: string): boolean {
   return /daily\s+(?:total|totals|average|averages)/i.test(line)
 }
@@ -113,6 +121,16 @@ function parseDailySummaryLines(text: string): MacroTotals[] {
   }
 
   let match: RegExpExecArray | null
+  const pEndFormat = new RegExp(DAILY_TOTAL_P_END_KCAL.source, 'gi')
+  while ((match = pEndFormat.exec(text)) !== null) {
+    push(match[4]!, match[1]!, match[2]!, match[3]!)
+  }
+
+  const weeklyAvg = new RegExp(WEEKLY_AVERAGE_P_LINE.source, 'gi')
+  while ((match = weeklyAvg.exec(text)) !== null) {
+    push(match[1]!, match[2]!, match[3]!, match[4]!)
+  }
+
   const pFormat = new RegExp(DAILY_P_SUMMARY_LINE.source, 'gi')
   while ((match = pFormat.exec(text)) !== null) {
     push(match[1]!, match[2]!, match[3]!, match[4]!)
@@ -136,6 +154,14 @@ function parseDailySummaryLines(text: string): MacroTotals[] {
   }
 
   return daily
+}
+
+/** Full-week daily totals or enough meal lines — safe to override a stale header. */
+function hasReliableFoodTotals(text: string): boolean {
+  const daily = parseDailySummaryLines(text)
+  if (daily.length >= 7) return true
+  if (daily.length >= 2) return true
+  return parseMealMacroLines(text).length >= 14
 }
 
 function sumByDay(mealMacros: MacroTotals[]): MacroTotals | null {
@@ -203,9 +229,14 @@ export const EDIT_CALORIE_PRESERVE_TOLERANCE = 75
 export const MAX_WEEKLY_KCAL_INCREASE = 300
 export const MAX_WEEKLY_KCAL_DECREASE = 200
 
-function clampCaloriesToWeeklyBand(target: number, previous: number): number {
-  const max = previous + MAX_WEEKLY_KCAL_INCREASE
-  const min = Math.max(previous - MAX_WEEKLY_KCAL_DECREASE, DIET_FLOOR_TARGET_KCAL)
+function clampCaloriesToWeeklyBand(
+  target: number,
+  previous: number,
+  floorKcal: number = DIET_FLOOR_TARGET_KCAL,
+  minRaiseTarget?: number
+): number {
+  const max = Math.max(previous + MAX_WEEKLY_KCAL_INCREASE, minRaiseTarget ?? 0)
+  const min = Math.max(previous - MAX_WEEKLY_KCAL_DECREASE, floorKcal)
   return Math.min(Math.max(target, min), max)
 }
 
@@ -226,22 +257,41 @@ export type DietSafetyResult = { ok: true } | { ok: false; error: string; hint: 
  */
 export function enforceDietSafety(
   plan: GeneratedNutritionPlan,
-  opts: { previousCalories?: number | null } = {}
+  opts: {
+    previousCalories?: number | null
+    floorKcal?: number
+    preferredMinKcal?: number
+  } = {}
 ): DietSafetyResult {
   const cals = plan.calories
   if (typeof cals !== 'number' || !Number.isFinite(cals) || cals <= 0) {
     return { ok: true } // consistency layer already guards missing totals
   }
 
-  if (cals < DIET_FLOOR_HARD_KCAL) {
+  const floorKcal = opts.floorKcal ?? DIET_FLOOR_TARGET_KCAL
+  const floorHardKcal = Math.max(DIET_FLOOR_HARD_KCAL, floorKcal - 20)
+
+  if (cals < floorHardKcal) {
     return {
       ok: false,
-      error: `Diet daily calories ${cals} are below the ${DIET_FLOOR_TARGET_KCAL} kcal floor.`,
+      error: `Diet daily calories ${cals} are below the ${floorKcal} kcal floor.`,
       hint:
-        `The daily average came out to about ${cals} kcal, which is below the ${DIET_FLOOR_TARGET_KCAL} kcal floor. ` +
-        `Rebuild all 7 days with more food so the daily average is at least ${DIET_FLOOR_TARGET_KCAL} kcal. ` +
-        `Do not cut calories to hit protein. If a lower intake seemed indicated, still stay at ${DIET_FLOOR_TARGET_KCAL}+ and flag the coach. ` +
+        `The daily average came out to about ${cals} kcal, which is below the ${floorKcal} kcal floor. ` +
+        `Rebuild all 7 days with more food so the daily average is at least ${floorKcal} kcal. ` +
+        `Do not cut calories to hit protein. If a lower intake seemed indicated, still stay at ${floorKcal}+ and flag the coach. ` +
         'Never program a crash diet, and keep any deficit within 400 kcal of maintenance.',
+    }
+  }
+
+  const preferredMin = opts.preferredMinKcal
+  if (typeof preferredMin === 'number' && preferredMin > floorKcal && cals < preferredMin - 40) {
+    return {
+      ok: false,
+      error: `Diet daily calories ${cals} are below the high-flux preferred target (~${preferredMin} kcal).`,
+      hint:
+        `The daily average came out to about ${cals} kcal, which is too low for high flux. ` +
+        `Target the UPPER HALF of the calorie band — at least ~${preferredMin} kcal/day — and pair with higher steps/training/cardio. ` +
+        `Add carbs/fats the client will eat; do not sit at the band minimum.`,
     }
   }
 
@@ -259,14 +309,14 @@ export function enforceDietSafety(
     }
     if (delta < -MAX_WEEKLY_KCAL_DECREASE) {
       const drop = Math.abs(delta)
-      const safeFloor = Math.max(prev - MAX_WEEKLY_KCAL_DECREASE, DIET_FLOOR_TARGET_KCAL)
+      const safeFloor = Math.max(prev - MAX_WEEKLY_KCAL_DECREASE, floorKcal)
       return {
         ok: false,
         error: `Weekly calorie decrease of ${drop} kcal (${prev} → ${cals}) exceeds the ${MAX_WEEKLY_KCAL_DECREASE} kcal limit.`,
         hint:
           `Last week averaged about ${prev} kcal/day and this draft is about ${cals} kcal/day — a ${drop} kcal cut. ` +
           `That is too sharp (example: do not jump from ~2100 down to ~1780). Trim at most ${MAX_WEEKLY_KCAL_DECREASE} kcal ` +
-          `(stay at about ${safeFloor}+ kcal) and only after raising steps/training. Never drop to the ${DIET_FLOOR_TARGET_KCAL} floor just because protein was hard to hit.`,
+          `(stay at about ${safeFloor}+ kcal) and only after raising steps/training. Never drop to the ${floorKcal} floor just because protein was hard to hit.`,
       }
     }
   }
@@ -315,6 +365,17 @@ export type StabilizeDietCaloriesOptions = {
   previousCalories?: number | null
   /** When true, hold the prior daily average unless the client asked to change calories. */
   preserveCalories?: boolean
+  floorKcal?: number
+  /** Coach/client asked for this intake (e.g. maintenance) — enforce when food math supports it. */
+  explicitTargetKcal?: number
+}
+
+/**
+ * Sync header macros and conversational calorie claims to food-derived totals in stored plan text.
+ * Always run after AI diet edits and when mapping generated JSON into editor fields.
+ */
+export function syncStoredDietText(text: string, opts: StabilizeDietCaloriesOptions = {}): string {
+  return stabilizeDietCaloriesAfterEdit(text, opts)
 }
 
 /**
@@ -327,6 +388,7 @@ export function stabilizeDietCaloriesAfterEdit(
   const trimmed = text.trim()
   if (!trimmed) return trimmed
 
+  const floorKcal = opts.floorKcal ?? DIET_FLOOR_TARGET_KCAL
   const previous =
     (typeof opts.previousCalories === 'number' && opts.previousCalories > 0
       ? opts.previousCalories
@@ -336,15 +398,55 @@ export function stabilizeDietCaloriesAfterEdit(
   const headerCarbs = parseInt(trimmed.match(HEADER_CARBS)?.[1] ?? '0', 10)
   const headerFat = parseInt(trimmed.match(HEADER_FAT)?.[1] ?? '0', 10)
 
-  let targetCalories = inferred?.calories ?? previous ?? DIET_FLOOR_TARGET_KCAL
+  let targetCalories: number
 
-  if (opts.preserveCalories && typeof previous === 'number' && previous > 0) {
+  if (hasReliableFoodTotals(trimmed) && inferred && inferred.calories > 0) {
+    // Meal / daily-total lines are the source of truth — never keep a stale header when food changed.
+    targetCalories = inferred.calories
+    if (
+      opts.preserveCalories &&
+      typeof previous === 'number' &&
+      previous > 0 &&
+      Math.abs(inferred.calories - previous) <= EDIT_CALORIE_PRESERVE_TOLERANCE
+    ) {
+      targetCalories = previous
+    } else if (typeof previous === 'number' && previous > 0) {
+      targetCalories = clampCaloriesToWeeklyBand(
+        inferred.calories,
+        previous,
+        floorKcal,
+        opts.explicitTargetKcal
+      )
+    }
+  } else if (opts.preserveCalories && typeof previous === 'number' && previous > 0) {
     targetCalories = previous
-  } else if (typeof previous === 'number' && previous > 0) {
-    targetCalories = clampCaloriesToWeeklyBand(targetCalories, previous)
+  } else {
+    targetCalories = inferred?.calories ?? previous ?? floorKcal
+    if (typeof previous === 'number' && previous > 0) {
+      targetCalories = clampCaloriesToWeeklyBand(
+        targetCalories,
+        previous,
+        floorKcal,
+        opts.explicitTargetKcal
+      )
+    }
   }
 
-  targetCalories = Math.max(targetCalories, DIET_FLOOR_TARGET_KCAL)
+  if (typeof opts.explicitTargetKcal === 'number' && opts.explicitTargetKcal > floorKcal) {
+    if (!opts.preserveCalories) {
+      targetCalories = Math.max(targetCalories, opts.explicitTargetKcal)
+      if (typeof previous === 'number' && previous > 0) {
+        targetCalories = clampCaloriesToWeeklyBand(
+          targetCalories,
+          previous,
+          floorKcal,
+          opts.explicitTargetKcal
+        )
+      }
+    }
+  }
+
+  targetCalories = Math.max(targetCalories, floorKcal)
 
   const macros: MacroTotals = {
     calories: targetCalories,
@@ -364,15 +466,24 @@ export function stabilizeDietCaloriesAfterEdit(
 /** Clamp generated JSON macros when safety retry is exhausted. */
 export function clampGeneratedNutritionCalories(
   plan: GeneratedNutritionPlan,
-  opts: { previousCalories?: number | null } = {}
+  opts: {
+    previousCalories?: number | null
+    floorKcal?: number
+    preferredMinKcal?: number
+  } = {}
 ): GeneratedNutritionPlan {
   let cals = plan.calories
   if (typeof cals !== 'number' || !Number.isFinite(cals) || cals <= 0) return plan
 
-  cals = Math.max(cals, DIET_FLOOR_TARGET_KCAL)
+  const floorKcal = opts.floorKcal ?? DIET_FLOOR_TARGET_KCAL
+  const preferredMin = opts.preferredMinKcal
+  cals = Math.max(cals, floorKcal)
+  if (typeof preferredMin === 'number' && preferredMin > floorKcal) {
+    cals = Math.max(cals, preferredMin)
+  }
   const prev = opts.previousCalories
   if (typeof prev === 'number' && prev > 0) {
-    cals = clampCaloriesToWeeklyBand(cals, prev)
+    cals = clampCaloriesToWeeklyBand(cals, prev, floorKcal)
   }
 
   if (cals === plan.calories) return plan

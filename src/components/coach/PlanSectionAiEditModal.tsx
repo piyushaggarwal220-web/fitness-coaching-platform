@@ -24,8 +24,7 @@ export function PlanSectionAiEditModal({
   onClose,
   onApply,
 }: Props) {
-  const [clientRequest, setClientRequest] = useState('')
-  const [coachNote, setCoachNote] = useState('')
+  const [coachInstruction, setCoachInstruction] = useState('')
   const [revisedText, setRevisedText] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [statusVariant, setStatusVariant] = useState<'loading' | 'success' | 'error'>('loading')
@@ -36,8 +35,7 @@ export function PlanSectionAiEditModal({
   const label = section === 'nutrition' ? 'diet' : 'workout'
 
   const resetAndClose = () => {
-    setClientRequest('')
-    setCoachNote('')
+    setCoachInstruction('')
     setRevisedText(null)
     setStatus(null)
     setGenerating(false)
@@ -45,15 +43,15 @@ export function PlanSectionAiEditModal({
   }
 
   const generate = async () => {
-    if (!clientRequest.trim()) {
+    if (!coachInstruction.trim()) {
       setStatusVariant('error')
-      setStatus("Enter the client's request first.")
+      setStatus('Enter your coaching instruction first.')
       return
     }
 
     setGenerating(true)
     setStatusVariant('loading')
-    setStatus(`Updating ${label} with AI…`)
+    setStatus(`Regenerating ${label} with AI…`)
     setRevisedText(null)
 
     try {
@@ -64,8 +62,7 @@ export function PlanSectionAiEditModal({
           clientId,
           section,
           currentText,
-          clientRequest: clientRequest.trim(),
-          coachNote: coachNote.trim() || undefined,
+          coachInstruction: coachInstruction.trim(),
         }),
       })
       const data = (await res.json()) as {
@@ -74,14 +71,14 @@ export function PlanSectionAiEditModal({
         error?: string
       }
       if (!res.ok || !data.revisedText) {
-        throw new Error(data.error ?? 'AI edit failed')
+        throw new Error(data.error ?? 'AI rewrite failed')
       }
       setRevisedText(data.revisedText)
       setStatusVariant('success')
-      setStatus(data.summary ?? 'Revision ready — review and apply.')
+      setStatus(data.summary ?? 'Draft ready — review and apply.')
     } catch (err) {
       setStatusVariant('error')
-      setStatus(err instanceof Error ? err.message : 'AI edit failed')
+      setStatus(err instanceof Error ? err.message : 'AI rewrite failed')
     } finally {
       setGenerating(false)
     }
@@ -97,40 +94,29 @@ export function PlanSectionAiEditModal({
     >
       <div style={s.drawer} onClick={(e) => e.stopPropagation()}>
         <h2 id="ai-edit-section-title" style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 800 }}>
-          Edit {label} with AI
+          Regenerate {label} with AI
         </h2>
         <p style={{ margin: '0 0 20px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-          Paste the client&apos;s request (from chat or check-in). AI will revise only this section. Review the
-          draft, apply it to the editor, then save / deliver so the tracker updates.
+          Tell the AI what you want in this section. It will write a fresh plan — not patch the old
+          one — and won&apos;t mention edits or changes in the client-facing text. Review the draft,
+          apply it to the editor, then save or deliver.
         </p>
 
         <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
-          Client request *
+          Coach instruction *
         </label>
         <textarea
-          value={clientRequest}
-          onChange={(e) => setClientRequest(e.target.value)}
-          rows={4}
-          placeholder="e.g. Swap evening carbs for more protein, keep Monday meals the same…"
+          value={coachInstruction}
+          onChange={(e) => setCoachInstruction(e.target.value)}
+          rows={5}
+          placeholder="e.g. Raise daily average to maintenance (~2200 kcal). Keep Indian meals, same training days…"
           disabled={generating}
           style={{
             ...s.noteInput,
-            minHeight: 96,
+            minHeight: 120,
             resize: 'vertical',
             fontFamily: 'inherit',
           }}
-        />
-
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
-          Extra coach guidance (optional)
-        </label>
-        <input
-          type="text"
-          value={coachNote}
-          onChange={(e) => setCoachNote(e.target.value)}
-          placeholder="e.g. Keep weekly calories near current target"
-          disabled={generating}
-          style={s.noteInput}
         />
 
         <GenerationStatus message={status} variant={statusVariant} />
@@ -151,7 +137,7 @@ export function PlanSectionAiEditModal({
             onClick={() => void generate()}
             style={{ flex: '1 1 160px' }}
           >
-            {generating ? 'Generating…' : revisedText ? 'Regenerate' : 'Generate revision'}
+            {generating ? 'Generating…' : revisedText ? 'Regenerate' : 'Generate plan'}
           </Button>
           {revisedText != null && (
             <Button
@@ -182,7 +168,7 @@ export function PlanSectionAiEditModal({
 }
 
 export function AiEditSectionButton({
-  label = 'Edit with AI',
+  label = 'Regenerate with AI',
   onClick,
   disabled,
 }: {

@@ -1,10 +1,20 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'protein-cal-1800-sets-names-sections-high-flux-v5'
+export const PLAN_QUALITY_RULES_VERSION = 'high-flux-upper-band-pairing-v6'
 
-/** Minimum daily calories for generated diets. Do not cut below this to chase protein. */
-export const DIET_FLOOR_TARGET_KCAL = 1800
+/** Platform minimum daily calories before weight-based floor applies. */
+export const DIET_FLOOR_BASE_KCAL = 1900
 /** Reject (and retry) only when clearly under the floor; ~1% rounding is tolerated. */
-export const DIET_FLOOR_HARD_KCAL = 1780
+export const DIET_FLOOR_HARD_KCAL = 1880
+
+/** @deprecated Use resolveDietFloorKcal(weight) — kept for static fallbacks. */
+export const DIET_FLOOR_TARGET_KCAL = DIET_FLOOR_BASE_KCAL
+
+/** Higher of base floor (~1900) or ~25 kcal/kg — keeps food on the higher side for active clients. */
+export function resolveDietFloorKcal(weightKg?: number | string | null): number {
+  const weight = Number(weightKg)
+  const byWeight = Number.isFinite(weight) && weight > 0 ? Math.round(weight * 25) : 0
+  return Math.max(DIET_FLOOR_BASE_KCAL, byWeight)
+}
 
 export const DAY_HEADER_PROMPT_RULES = [
   'DAY HEADERS (non-negotiable, diet and workout):',
@@ -34,10 +44,18 @@ export const EDIT_CALORIE_PRESERVATION_RULES = [
 
 export const HIGH_FLUX_PHILOSOPHY_RULES = [
   'HIGH FLUX PHILOSOPHY (non-negotiable):',
-  '- Push higher caloric intake paired with higher output (steps, training, cardio).',
-  '- Increase expenditure before reducing calories — especially for fat loss and plateaus.',
-  '- Fat loss: mild deficit (about 150 to 250 kcal below maintenance at high flux) while steps/training carry most of the gap.',
+  '- Push HIGHER caloric intake paired with HIGHER output (steps, training, cardio). Both sides up — never low food + hope they walk, and never high food + sedentary days.',
+  '- Default daily calories to the UPPER HALF of the CALORIE TARGET band (closer to maintenance), not the minimum.',
+  '- Fat loss: mild deficit (about 100 to 150 kcal below maintenance at high flux). Create most of the gap via steps/training/cardio.',
   '- Never respond to "not losing" or a plateau by slashing food; raise steps/training first.',
+].join('\n')
+
+export const HIGH_FLUX_OUTPUT_PAIRING_RULES = [
+  'HIGH FLUX OUTPUT PAIRING (non-negotiable when calories are on the higher side):',
+  '- When daily calories are in the upper half of the target band, you MUST also raise output in the same plan.',
+  '- Include a daily step target at least ~2,500–4,000 above the client\'s current habit (from onboarding daily steps; if unknown, use 8,000–10,000+ when schedule allows).',
+  '- cardio_plan must list concrete walking/LISS sessions — not empty, not "optional walk sometimes".',
+  '- If mesocycle volume drops (new month week 1), HOLD food and raise steps/cardio instead of cutting calories.',
 ].join('\n')
 
 export const EDIT_EXPENDITURE_FIRST_RULES = [

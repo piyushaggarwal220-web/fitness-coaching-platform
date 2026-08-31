@@ -5,14 +5,22 @@
 
 /** Hard rules appended when revising from a client plan-change request. */
 export const CLIENT_PLAN_EDIT_WEEK_RULES = [
-  'FRAMING: This is an in-place CLIENT EDIT of the CURRENT active plan.',
+  'FRAMING: Rewrite the client\'s CURRENT plan applying their request — not a new coaching week.',
   'It is NOT a weekly check-in update, NOT a new coaching week, and NOT a "next week" program redesign.',
-  'Keep the same overall plan phase. Apply ONLY the requested changes (foods, portions, exercises, volume, schedule).',
-  'Preserve days, structure, and everything the client did not ask to change.',
+  'Keep the same overall plan phase unless the request requires otherwise.',
   'NEVER write week-handoff or next-week language: "Welcome to week 2", "Week 2 update", "for next week", "this coming week we will", "now that week 1 is done", "moving into week 2", etc.',
   'NEVER invent a progressive weekly arc ("this week we focus on X, next we will…") unless the client explicitly asked for that.',
-  'Open with a short note of what you changed for their request — then the revised plan. No new-week greeting.',
 ].join(' ')
+
+/** Coach or AI rewrite: output a clean plan with zero edit meta. */
+export const FRESH_PLAN_OUTPUT_RULES = [
+  'FRESH PLAN OUTPUT (non-negotiable):',
+  'Rewrite the COMPLETE section from scratch. The current plan is background context only (foods, exercises, schedule they already use) — do NOT patch the old text in place.',
+  'The output must read like a brand-new plan the client is receiving for the first time.',
+  'NEVER mention: edits, updates, changes, revisions, increases, decreases, raised, lowered, swapped, adjusted, bumped, "I updated", "I increased", "I raised", "as you asked", "as requested", "per your request", "what changed", "from last week", "keeping the same as before", "instead of the old plan".',
+  'Do NOT write a meta opener explaining what you changed. Start directly with plan content: diet → optional brief goal-led intro with NO change language, then Day 1 (Monday) through Day 7; workout → Day 1 (Monday) training structure.',
+  'Goal-focused encouragement is fine only when it contains zero reference to updating/changing the plan.',
+].join('\n')
 
 /** Shared rule for all diet/workout generation that may land in the client plan. */
 export const NEVER_MENTION_COACHING_WEEK_RULE =
@@ -71,6 +79,43 @@ export function stripClientWeekHandoffLanguage(text: string): string {
   out = out.replace(
     /^\s*this (?:coming )?week we (?:will|are going to|focus)[^\n]*$/gim,
     ''
+  )
+
+  return out.replace(/\n{3,}/g, '\n\n').trim()
+}
+
+const PLAN_EDIT_META =
+  /\b(raised|increased|decreased|lowered|updated|changed|adjusted|bumped|revised|modified|swap(?:ped|ping)?|as (?:you )?asked|as requested|per your request|what changed|from last week|keeping (?:the )?same|instead of (?:the )?old|i'?ve (?:raised|increased|decreased|updated|changed|adjusted)|i (?:raised|increased|decreased|updated|changed|adjusted)|this week i'?m giving you|giving you about \d+ calories|moved (?:you )?to|taken you to)\b/i
+
+const PLAN_BODY_ANCHOR =
+  /^(?:calories:\s*\d|day\s+1\s*\(|weekly diet plan|warm-up:|main workout:)/i
+
+/**
+ * Strip coach/AI meta commentary about edits ("I've raised your calories…") from plan prose.
+ * Keeps the structural plan body intact.
+ */
+export function stripPlanEditMetaLanguage(text: string): string {
+  if (!text?.trim()) return text ?? ''
+
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  let start = 0
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!.trim()
+    if (!line) continue
+    if (PLAN_BODY_ANCHOR.test(line)) break
+    if (PLAN_EDIT_META.test(line)) {
+      start = i + 1
+      continue
+    }
+    break
+  }
+
+  let out = lines.slice(start).join('\n')
+
+  // Trim edit-meta clauses from "Weekly Diet Plan:" opener sentences
+  out = out.replace(
+    /(Weekly Diet Plan:\s*)([^.\n]{0,240}?(?:raised|increased|updated|changed|adjusted|giving you about \d+ calories|moved you to)[^.?\n]*[.?!]?\s*)/gi,
+    '$1'
   )
 
   return out.replace(/\n{3,}/g, '\n\n').trim()

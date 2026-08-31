@@ -6,6 +6,7 @@ import {
   EDIT_CALORIE_PRESERVATION_RULES,
   EDIT_EXPENDITURE_FIRST_RULES,
   EXERCISE_NAME_PROMPT_RULES,
+  HIGH_FLUX_OUTPUT_PAIRING_RULES,
   HIGH_FLUX_PHILOSOPHY_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   WORKOUT_SECTION_PROMPT_RULES,
@@ -14,29 +15,46 @@ import {
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
 import {
   clientRequestNeedsExpenditureFocus,
-  clientRequestTouchesCalories,
+  estimateMaintenanceCalories,
+  formatCalorieTargetPrompt,
+  requestTargetsMaintenance,
+  requestTouchesCalories,
 } from '@/lib/ai/calorie-targets'
+import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
 import {
   parseHeaderCalories,
-  stabilizeDietCaloriesAfterEdit,
+  syncStoredDietText,
 } from '@/lib/ai/nutrition-macro-sync'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
+  FRESH_PLAN_OUTPUT_RULES,
   stripClientWeekHandoffLanguage,
+  stripPlanEditMetaLanguage,
 } from '@/lib/ai/plan-prose-guards'
 import { logAiGeneration } from '@/lib/ai/trace-log'
+import type { OnboardingProfile } from '@/types/database'
 
 export type PlanSectionKind = 'nutrition' | 'workout'
+
+export type PlanEditSource = 'coach' | 'client'
 
 export type EditPlanSectionInput = {
   section: PlanSectionKind
   currentText: string
-  clientRequest: string
+  /** Coach-facing instruction (plan editor AI). */
+  coachInstruction?: string | null
+  /** Client change-request text (automated client edit flow). */
+  clientRequest?: string | null
   coachNote?: string | null
+  editSource?: PlanEditSource
   clientName?: string | null
   clientId?: string
   previousCalories?: number | null
+  profile?: Pick<
+    OnboardingProfile,
+    'weight' | 'height' | 'age' | 'gender' | 'activity_level' | 'fitness_goal' | 'onboarding_data' | 'sleep_duration' | 'training_experience' | 'injuries'
+  > | null
 }
 
 export type EditPlanSectionResult = {
@@ -51,19 +69,35 @@ function sectionLabel(section: PlanSectionKind): string {
   return section === 'nutrition' ? 'nutrition / diet plan' : 'workout plan'
 }
 
+function resolveEditInstruction(input: EditPlanSectionInput): {
+  instruction: string
+  source: PlanEditSource
+} {
+  const coach = input.coachInstruction?.trim()
+  const client = input.clientRequest?.trim()
+  if (coach) {
+    return { instruction: coach, source: input.editSource ?? 'coach' }
+  }
+  if (client) {
+    return { instruction: client, source: input.editSource ?? 'client' }
+  }
+  throw new Error('Coach instruction or client request is required.')
+}
+
 function buildMockRevision(input: EditPlanSectionInput): string {
+  const { instruction } = resolveEditInstruction(input)
   const note = input.coachNote?.trim()
   const header = [
-    `Updated ${sectionLabel(input.section)} (mock)`,
-    `Client request: ${input.clientRequest.trim()}`,
-    note ? `Coach note: ${note}` : null,
+    `Rewrote ${sectionLabel(input.section)} (mock)`,
+    `Instruction: ${instruction}`,
+    note ? `Note: ${note}` : null,
     '',
   ]
     .filter(Boolean)
     .join('\n')
 
   const body = input.currentText.trim() || `(No prior ${sectionLabel(input.section)} — add structure here.)`
-  return `${header}\n${body}\n\n[Apply coach edits: honor the request while keeping day structure and clear exercise/meal lines.]`
+  return `${header}\n${body}\n\n[Apply instruction as a fresh rewrite — no edit meta in client-facing text.]`
 }
 
 function extractRevisedText(raw: string): string {
@@ -107,38 +141,52 @@ function planTextSimilarityLocal(a: string, b: string): number {
 
 export async function editPlanSection(input: EditPlanSectionInput): Promise<EditPlanSectionResult> {
   const currentText = input.currentText.trim()
-  const clientRequest = input.clientRequest.trim()
-  if (!clientRequest) {
-    throw new Error('Client request is required.')
-  }
+  const { instruction, source } = resolveEditInstruction(input)
 
   const section = sectionLabel(input.section)
-  const needsExpenditure = clientRequestNeedsExpenditureFocus(clientRequest)
+  const combinedCalorieRequest = [instruction, input.coachNote].filter(Boolean).join('\n')
+  const needsExpenditure = clientRequestNeedsExpenditureFocus(combinedCalorieRequest)
   const touchesCalories =
-    input.section === 'nutrition' &&
-    clientRequestTouchesCalories(clientRequest) &&
-    !needsExpenditure
+    input.section === 'nutrition' && requestTouchesCalories(instruction, input.coachNote) && !needsExpenditure
+  const targetsMaintenance = requestTargetsMaintenance(instruction, input.coachNote)
   const preserveCalories = !touchesCalories || needsExpenditure
+  const maintenanceKcal =
+    input.profile && targetsMaintenance
+      ? estimateMaintenanceCalories({
+          weightKg: input.profile.weight,
+          heightCm: input.profile.height,
+          age: input.profile.age,
+          gender: input.profile.gender,
+          activityLevel: input.profile.activity_level,
+        })
+      : null
+  const calorieTargetPrompt =
+    input.section === 'nutrition' && touchesCalories && input.profile
+      ? formatCalorieTargetPrompt(input.profile)
+      : null
   const calorieRules = needsExpenditure
     ? EDIT_EXPENDITURE_FIRST_RULES
     : touchesCalories
       ? SAFE_RATE_OF_CHANGE_RULE
       : EDIT_CALORIE_PRESERVATION_RULES
   const systemPrompt = [
-    'You are an expert fitness coach editor doing an IN-PLACE edit of the client\'s current plan.',
-    `Revise the client's ${section} based on the client's request.`,
+    source === 'coach'
+      ? 'You are an expert fitness coach rewriting a client plan section from the coach\'s direction.'
+      : 'You are an expert fitness coach rewriting a client plan section based on the client\'s request.',
+    `Produce a fresh, complete ${section} — not an in-place patch of the old text.`,
     'Rules:',
-    '- This is NOT a weekly plan update. Do not design "next week". Edit the CURRENT plan text.',
-    '- Preserve useful structure: day headers should stay as Day N (Weekday) with Day 1 = Monday (e.g. Day 1 (Monday)), meal names, exercise lines with sets x reps (plain letter x).',
+    FRESH_PLAN_OUTPUT_RULES,
+    '- Use the current plan below only as background (foods they eat, exercises they use, schedule). Rewrite the full section applying the instruction.',
+    '- Preserve useful structure: day headers as Day N (Weekday) with Day 1 = Monday, meal names, exercise lines with sets x reps (plain letter x).',
     DAY_HEADER_PROMPT_RULES,
-    touchesCalories
-      ? '- Apply the client request with clear, targeted edits in the affected meals/exercises only.'
-      : '- Apply the client request with minimal edits — change only what they asked for. A near-copy of unchanged days is correct.',
-    '- Make only the changes needed to satisfy the request — keep calories/macros/split/days the same unless the request requires changing them.',
     calorieRules,
+    calorieTargetPrompt,
+    targetsMaintenance && maintenanceKcal
+      ? `MAINTENANCE TARGET: Rebuild portions so the daily average lands at ~${maintenanceKcal} kcal/day (maintenance). Header, daily totals, and meal lines must all match.`
+      : null,
     HIGH_FLUX_PHILOSOPHY_RULES,
-    '- Do not rewrite unrelated days, invent a new program phase, or add weekly progression narrative.',
-    '- If the request names specific foods, exercises, days, or constraints, those must appear differently in the revised text.',
+    HIGH_FLUX_OUTPUT_PAIRING_RULES,
+    '- If the instruction names specific foods, exercises, days, or constraints, the rewritten plan must reflect them.',
     '- Keep language natural, human, and coach-ready in plain text, not JSON.',
     '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
     '- Use plain section titles and put list items on separate lines without symbol prefixes.',
@@ -146,27 +194,28 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     EXERCISE_NAME_PROMPT_RULES,
     WORKOUT_SECTION_PROMPT_RULES,
     WORKOUT_VOLUME_PROMPT_RULES,
-    '- For nutrition sections: if protein is hard to hit with allowed foods, lower protein and keep calories high. Never inflate protein numbers. Daily totals count only the primary meal option. Minimum 1800 kcal unless the coach already set otherwise.',
+    '- For nutrition sections: if protein is hard to hit with allowed foods, lower protein and keep calories high. Never inflate protein numbers. Daily totals count only the primary meal option. Minimum platform kcal floor unless the coach already set otherwise.',
     PROTEIN_CALORIE_PROMPT_RULES,
     '- Do not invent unsafe extreme restrictions or medical claims.',
     '- Never introduce cross-day references ("same as Day 1", "repeat Day 2", "follow Day 3\'s plan", "as above"). Every day must keep its full meal or exercise list written out so the daily tracker can parse it.',
     '- Never put the next day\'s exercises under Post-Workout / Recovery / Stretching of the previous day.',
-    '- If the request asks one day to mirror another, copy the full content under both day headers instead of pointing between days.',
+    '- If the instruction asks one day to mirror another, copy the full content under both day headers instead of pointing between days.',
     `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
-    '- Optional short opener (1 to 2 sentences) may name what changed. Then output the full revised section. No week greeting, no "next week" coaching speech.',
-  ].join('\n')
+  ]
+    .filter((line): line is string => line != null)
+    .join('\n')
 
   const userPrompt = [
     input.clientName ? `Client: ${input.clientName}` : null,
     `Section: ${section}`,
-    'Task: in-place edit of the CURRENT plan (not a new week).',
+    source === 'coach' ? 'Task: coach-directed fresh rewrite.' : 'Task: client-requested fresh rewrite.',
     '',
-    '## Client request (apply these changes only)',
-    clientRequest,
-    input.coachNote?.trim() ? `\n## Extra coach guidance\n${input.coachNote.trim()}` : null,
+    source === 'coach' ? '## Coach instruction' : '## Client request',
+    instruction,
+    input.coachNote?.trim() ? `\n## Additional context\n${input.coachNote.trim()}` : null,
     '',
-    '## Current plan text (edit this; keep unrequested parts)',
-    currentText || '(empty — create a solid starter section that matches the request)',
+    '## Current plan (background context only — rewrite from scratch, do not patch in place)',
+    currentText || '(empty — write a complete starter section that matches the instruction)',
   ]
     .filter((line) => line != null)
     .join('\n')
@@ -185,7 +234,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const retryHint =
         attempt > 0
-          ? '\n\n## Retry instruction\nPrevious output was too similar to the current plan or truncated. Rewrite the COMPLETE section with clear, visible changes that satisfy the client request. No cross-day references and no preamble.'
+          ? '\n\n## Retry instruction\nPrevious output was too similar to the background plan, contained edit meta, or truncated. Rewrite the COMPLETE section from scratch. No mention of edits/changes. No cross-day references. Start with plan content only.'
           : ''
 
       let response
@@ -220,8 +269,8 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         )
       }
 
-      const revisedRaw = stripClientWeekHandoffLanguage(
-        normalizeAiPlanProse(extractRevisedText(response.text))
+      const revisedRaw = stripPlanEditMetaLanguage(
+        stripClientWeekHandoffLanguage(normalizeAiPlanProse(extractRevisedText(response.text)))
       )
       if (!revisedRaw) {
         if (attempt < maxAttempts - 1) continue
@@ -230,10 +279,13 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
 
       const revisedText =
         input.section === 'nutrition'
-          ? stabilizeDietCaloriesAfterEdit(revisedRaw, {
+          ? syncStoredDietText(revisedRaw, {
               previousCalories:
                 input.previousCalories ?? parseHeaderCalories(currentText),
               preserveCalories,
+              floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
+              explicitTargetKcal:
+                targetsMaintenance && maintenanceKcal ? maintenanceKcal : undefined,
             })
           : revisedRaw
 
@@ -245,7 +297,10 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         }
       }
 
-      const summary = `Updated ${section} from client request (${revisedText.length} chars).`
+      const summary =
+        source === 'coach'
+          ? `Rewrote ${section} from coach instruction (${revisedText.length} chars).`
+          : `Rewrote ${section} from client request (${revisedText.length} chars).`
 
       await logAiGeneration({
         clientId: input.clientId ?? null,
@@ -301,6 +356,7 @@ export type EditPlanForClientChangeInput = {
   coachNote?: string | null
   clientName?: string | null
   clientId?: string
+  profile?: EditPlanSectionInput['profile']
 }
 
 export type EditPlanForClientChangeResult = {
@@ -342,9 +398,11 @@ export async function editPlanForClientChange(
       currentText: input.nutritionText,
       clientRequest: input.clientRequest,
       coachNote: input.coachNote,
+      editSource: 'client',
       clientName: input.clientName,
       clientId: input.clientId,
       previousCalories: parseHeaderCalories(input.nutritionText),
+      profile: input.profile,
     })
     return {
       nutritionPlan: diet.revisedText,
@@ -362,6 +420,7 @@ export async function editPlanForClientChange(
       currentText: input.workoutText,
       clientRequest: input.clientRequest,
       coachNote: input.coachNote,
+      editSource: 'client',
       clientName: input.clientName,
       clientId: input.clientId,
     })
@@ -378,23 +437,34 @@ export async function editPlanForClientChange(
   const clientRequest = input.clientRequest.trim()
   if (!clientRequest) throw new Error('Client request is required.')
 
-  const needsExpenditure = clientRequestNeedsExpenditureFocus(clientRequest)
-  const touchesCalories = clientRequestTouchesCalories(clientRequest) && !needsExpenditure
+  const combinedCalorieRequest = [clientRequest, input.coachNote].filter(Boolean).join('\n')
+  const needsExpenditure = clientRequestNeedsExpenditureFocus(combinedCalorieRequest)
+  const touchesCalories = requestTouchesCalories(clientRequest, input.coachNote) && !needsExpenditure
+  const targetsMaintenance = requestTargetsMaintenance(clientRequest, input.coachNote)
   const preserveCalories = !touchesCalories || needsExpenditure
+  const maintenanceKcal =
+    input.profile && targetsMaintenance
+      ? estimateMaintenanceCalories({
+          weightKg: input.profile.weight,
+          heightCm: input.profile.height,
+          age: input.profile.age,
+          gender: input.profile.gender,
+          activityLevel: input.profile.activity_level,
+        })
+      : null
+  const calorieTargetPrompt =
+    touchesCalories && input.profile ? formatCalorieTargetPrompt(input.profile) : null
   const calorieRules = needsExpenditure
     ? EDIT_EXPENDITURE_FIRST_RULES
     : touchesCalories
       ? SAFE_RATE_OF_CHANGE_RULE
       : EDIT_CALORIE_PRESERVATION_RULES
   const systemPrompt = [
-    'You are an expert fitness coach editor doing an IN-PLACE edit of the client\'s current plan.',
-    'Revise diet and workout sections based on the client request in ONE response.',
+    'You are an expert fitness coach rewriting a client\'s diet and workout from their request.',
     'Output ONLY valid JSON with keys "nutritionPlan" and "workoutPlan" (plain text values, no markdown fences).',
     'Rules:',
-    '- This is NOT a weekly plan update. Edit the CURRENT plan text only.',
-    touchesCalories
-      ? '- Apply clear edits for the request; keep unrequested days/meals/exercises unchanged.'
-      : '- Apply minimal edits for the request; unchanged days may stay identical.',
+    FRESH_PLAN_OUTPUT_RULES,
+    '- Rewrite BOTH sections from scratch using the current plans as background only.',
     '- Preserve day headers as Day N (Weekday). Workout lines: "Exercise: N sets x M reps".',
     DAY_HEADER_PROMPT_RULES,
     EXERCISE_NAME_PROMPT_RULES,
@@ -402,21 +472,28 @@ export async function editPlanForClientChange(
     WORKOUT_VOLUME_PROMPT_RULES,
     PROTEIN_CALORIE_PROMPT_RULES,
     HIGH_FLUX_PHILOSOPHY_RULES,
+    HIGH_FLUX_OUTPUT_PAIRING_RULES,
     calorieRules,
+    calorieTargetPrompt,
+    targetsMaintenance && maintenanceKcal
+      ? `MAINTENANCE TARGET: Rebuild portions so the daily average lands at ~${maintenanceKcal} kcal/day (maintenance). Header, daily totals, and meal lines must all match.`
+      : null,
     `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
     '- No cross-day references. No weekly progression narrative.',
-  ].join('\n')
+  ]
+    .filter((line): line is string => line != null)
+    .join('\n')
 
   const userPrompt = [
     input.clientName ? `Client: ${input.clientName}` : null,
     '## Client request',
     clientRequest,
-    input.coachNote?.trim() ? `\n## Extra coach guidance\n${input.coachNote.trim()}` : null,
+    input.coachNote?.trim() ? `\n## Additional context\n${input.coachNote.trim()}` : null,
     '',
-    '## Current nutrition plan',
+    '## Current nutrition plan (background only)',
     input.nutritionText.trim() || '(empty)',
     '',
-    '## Current workout plan',
+    '## Current workout plan (background only)',
     input.workoutText.trim() || '(empty)',
   ]
     .filter((line) => line != null)
@@ -456,19 +533,25 @@ export async function editPlanForClientChange(
     throw new ClaudeResponseError('AI returned an invalid combined plan edit.')
   }
 
-  const nutritionPlan = stabilizeDietCaloriesAfterEdit(
-    stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.nutritionPlan)),
+  const nutritionPlan = syncStoredDietText(
+    stripPlanEditMetaLanguage(
+      stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.nutritionPlan))
+    ),
     {
       previousCalories: parseHeaderCalories(input.nutritionText),
       preserveCalories,
+      floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
+      explicitTargetKcal: targetsMaintenance && maintenanceKcal ? maintenanceKcal : undefined,
     }
   )
-  const workoutPlan = stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.workoutPlan))
+  const workoutPlan = stripPlanEditMetaLanguage(
+    stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.workoutPlan))
+  )
   if (!nutritionPlan || !workoutPlan) {
     throw new ClaudeResponseError('AI returned empty section text.')
   }
 
-  const summary = `Updated diet and workout from client request.`
+  const summary = `Rewrote diet and workout from client request.`
 
   await logAiGeneration({
     clientId: input.clientId ?? null,
