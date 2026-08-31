@@ -1,5 +1,6 @@
 import 'server-only'
 import { editPlanForClientChange } from '@/lib/ai/edit-plan-section'
+import { formatCalorieGuidanceBlock } from '@/lib/ai/calorie-targets'
 import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
@@ -405,10 +406,14 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
         ? `Client coaching day on file: ${checkin.coaching_day}. Still editing the CURRENT plan — do not advance the week.`
         : 'Client may still be on early coaching days. Edit the CURRENT plan only.'
 
+    const profileTyped = profile as OnboardingProfile
+    const calorieFormula = formatCalorieGuidanceBlock(profileTyped)
+
     const coachNote = [
       FRESH_PLAN_OUTPUT_RULES,
       CLIENT_PLAN_EDIT_WEEK_RULES,
       dayHint,
+      calorieFormula,
       'Apply the client request when rewriting — do not mention the request or edits in client-facing plan text.',
       'If they did not mention calories, macros, deficit, or surplus, keep a similar daily calorie average unless the request requires otherwise.',
       'If they mention a plateau or not losing weight, raise steps/training — do NOT cut calories.',
@@ -418,7 +423,6 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
       .filter(Boolean)
       .join('\n')
 
-    const profileTyped = profile as OnboardingProfile
     const metaNotes = encodePlanMeta(
       {
         generatedBy: 'ai',
@@ -445,6 +449,7 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
       coachNote,
       clientName: profileTyped.name,
       clientId: request.client_id,
+      profile: profileTyped,
     })
 
     if (request.scope === 'diet' || request.scope === 'both') {

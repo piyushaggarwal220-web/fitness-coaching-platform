@@ -2,6 +2,7 @@ import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { LIMITS, MODELS, PLAN_GENERATION_TEMPERATURE } from '@/lib/ai/config'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import {
+  CALORIE_FORMULA_PROMPT_RULES,
   DAY_HEADER_PROMPT_RULES,
   EDIT_CALORIE_PRESERVATION_RULES,
   EDIT_EXPENDITURE_FIRST_RULES,
@@ -183,6 +184,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
       : '- Use the current plan below only as background (foods they eat, exercises they use, schedule). Rewrite the full section applying the instruction.',
     '- Preserve useful structure: day headers as Day N (Weekday) with Day 1 = Monday, meal names, exercise lines with sets x reps (plain letter x).',
     DAY_HEADER_PROMPT_RULES,
+    input.section === 'nutrition' ? CALORIE_FORMULA_PROMPT_RULES : null,
     calorieRules,
     mandatoryCalorieTarget,
     targetsMaintenance
@@ -465,6 +467,7 @@ export async function editPlanForClientChange(
     WORKOUT_SECTION_PROMPT_RULES,
     WORKOUT_VOLUME_PROMPT_RULES,
     PROTEIN_CALORIE_PROMPT_RULES,
+    CALORIE_FORMULA_PROMPT_RULES,
     HIGH_FLUX_PHILOSOPHY_RULES,
     HIGH_FLUX_OUTPUT_PAIRING_RULES,
     calorieRules,

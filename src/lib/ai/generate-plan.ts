@@ -32,6 +32,7 @@ import {
   EXERCISE_NAME_PROMPT_RULES,
   HIGH_FLUX_OUTPUT_PAIRING_RULES,
   HIGH_FLUX_PHILOSOPHY_RULES,
+  CALORIE_FORMULA_PROMPT_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   resolveDietFloorKcal,
   WORKOUT_SECTION_PROMPT_RULES,
@@ -224,6 +225,7 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   SAFE_RATE_OF_CHANGE_RULE,
   HIGH_FLUX_PHILOSOPHY_RULES,
   HIGH_FLUX_OUTPUT_PAIRING_RULES,
+  CALORIE_FORMULA_PROMPT_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   '- Write a complete 7-day diet. Use the full output budget. Do not skip days or thin out meals to save tokens.',
   '- Never write "Welcome to week N" as a greeting in diet prose. You MAY label the plan header with Week N so the client can see which coaching week this is.',
@@ -554,12 +556,12 @@ async function buildPlanPrompts(
     validationMode: options.validationMode,
   })
 
-  const includesDietOutput =
-    options.validationMode === 'nutrition_focus' ||
-    options.validationMode === 'full' ||
-    options.actionId === 'initial_diet' ||
-    options.actionId === 'review_update_diet'
-  const mandatoryCalorieTarget = includesDietOutput
+  const skipsDietFormula =
+    options.validationMode === 'workout_focus' ||
+    options.validationMode === 'cardio_focus' ||
+    options.validationMode === 'supplements_focus' ||
+    options.validationMode === 'minimal'
+  const mandatoryCalorieTarget = !skipsDietFormula
     ? formatCalorieGuidanceBlock(profile)
     : null
 

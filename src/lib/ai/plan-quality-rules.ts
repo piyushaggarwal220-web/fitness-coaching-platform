@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'mifflin-guidance-v13'
+export const PLAN_QUALITY_RULES_VERSION = 'mifflin-every-path-v14'
 
 /** Platform minimum daily calories before weight-based floor applies. */
 export const DIET_FLOOR_BASE_KCAL = 1900
@@ -22,9 +22,16 @@ export const DAY_HEADER_PROMPT_RULES = [
   '- Example: "Day 1 (Monday)", "Day 2 (Tuesday)". Never a bare weekday ("Monday") and never a bare "Day 1" without the weekday in parentheses.',
 ].join('\n')
 
+export const CALORIE_FORMULA_PROMPT_RULES = [
+  'CALORIE FORMULA (non-negotiable for every new or rewritten diet):',
+  '- Always derive the daily calorie target with Mifflin-St Jeor: BMR from weight/height/age/gender, then maintenance = BMR × activity factor.',
+  '- Use the CALORIE METHOD block in the client profile — it lists this client\'s inputs and reference maintenance. Build meal portions to that reference (±100 kcal), never a round guess like 1800.',
+  '- When editing and the client did NOT ask to change calories, keep the current daily average; when rebuilding from profile, always run the formula fresh.',
+].join('\n')
+
 export const PROTEIN_CALORIE_PROMPT_RULES = [
   'PROTEIN vs CALORIES (non-negotiable):',
-  `- Calories come first so the client can function. Daily average must be at least ${DIET_FLOOR_TARGET_KCAL} kcal.`,
+  `- Derive the daily calorie target from Mifflin-St Jeor (see CALORIE METHOD). Calories come first so the client can function. Daily average must be at least ${DIET_FLOOR_TARGET_KCAL} kcal.`,
   `- If allowed foods cannot hit a high protein number (veg, few animal-protein days, no whey), LOWER the protein target. Do not cut calories, rice, roti, oil, or snacks to chase grams.`,
   '- Fill remaining calories with carbs and fats the client actually eats so energy stays high.',
   '- Never tell a protein number higher than the food on the plate. Header protein, daily averages, and each (P: Xg) meal line must match the actual portions. Do not inflate protein.',

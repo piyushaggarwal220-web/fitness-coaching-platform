@@ -169,7 +169,7 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Generate a personalized diet plan for this client.',
-          'Prioritize nutrition_plan only (calories, macros, meals).',
+          'Derive daily calories with Mifflin-St Jeor from the CALORIE METHOD in the profile (BMR × activity, then goal adjustment).',
           'Follow Metabolic Flux Bias: pair higher absolute food intake with higher output — avoid deep deficits with low movement.',
           'Always specify exact ghee/oil/butter amounts for cooked meals and a daily cooking-fat total.',
           'Obey the client meal-variety preference (same daily / 50-50 / different daily).',

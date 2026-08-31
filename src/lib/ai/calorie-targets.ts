@@ -3,6 +3,9 @@ import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
 import { DIET_FLOOR_BASE_KCAL, resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
 import type { OnboardingProfile } from '@/types/database'
 
+/** Platform-standard maintenance formula — always use for diet calorie targets when profile inputs exist. */
+export const CALORIE_FORMULA_STANDARD = 'Mifflin-St Jeor'
+
 const ACTIVITY_MULTIPLIER: Record<string, number> = {
   sedentary: 1.2,
   lightly_active: 1.375,
