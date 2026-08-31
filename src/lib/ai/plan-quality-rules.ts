@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'calorie-guidance-v11'
+export const PLAN_QUALITY_RULES_VERSION = 'calorie-guidance-v12'
 
 /** Platform minimum daily calories before weight-based floor applies. */
 export const DIET_FLOOR_BASE_KCAL = 1900
@@ -52,7 +52,7 @@ export const HIGH_FLUX_PHILOSOPHY_RULES = [
 
 export const HIGH_FLUX_OUTPUT_PAIRING_RULES = [
   'HIGH FLUX OUTPUT PAIRING (non-negotiable when calories are on the higher side):',
-  '- When daily calories are in the upper half of the target band, you MUST also raise output in the same plan.',
+  '- When daily calories are on the higher side for this client, you MUST also raise output in the same plan.',
   '- Include a daily step target at least ~2,500–4,000 above the client\'s current habit (from onboarding daily steps; if unknown, use 8,000–10,000+ when schedule allows).',
   '- cardio_plan must list concrete walking/LISS sessions — not empty, not "optional walk sometimes".',
   '- If mesocycle volume drops (new month week 1), HOLD food and raise steps/cardio instead of cutting calories.',

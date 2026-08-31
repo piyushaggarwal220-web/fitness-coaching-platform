@@ -63,23 +63,20 @@ export function evaluateHighFluxPlanReview(input: {
   ) {
     flags.push({
       level: 'warning',
-      message: `Header says ~${headerCalories} kcal/day but meal lines average ~${foodMacros.calories} kcal. Regenerate — portions must match the target.`,
+      message:
+        'Header calories do not match what the meal portions sum to. Regenerate — honest food math only; header and daily totals must agree.',
     })
   }
 
   if (calories != null) {
-    if (calories <= floor + 80) {
-      flags.push({
-        level: 'warning',
-        message: `Daily calories (~${calories} kcal) are at or near the floor (${floor} kcal). High flux needs higher food — add carbs/fats or raise the target before delivering.`,
-      })
-    }
+    const looksLight =
+      calories <= floor + 80 || (targets != null && calories < targets.min)
 
-    if (targets && calories < targets.min) {
+    if (looksLight) {
       flags.push({
         level: 'warning',
         message:
-          'Daily calories look low for this client\'s size, training load, and goal. Consider regenerating with more generous portions — active lifters need maintenance-level food, not crash-diet templates.',
+          'Portions look light for this client\'s size, training load, and goal. Regenerate with more generous maintenance-level food before delivering — active lifters should not get crash-diet templates.',
       })
     }
   }
