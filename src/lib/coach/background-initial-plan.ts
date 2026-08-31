@@ -6,6 +6,7 @@ import {
   generatedWorkoutFormData,
 } from '@/lib/ai/plan-format'
 import { generatePlan, type PlanValidationMode } from '@/lib/ai/generate-plan'
+import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 import { buildActionCoachInstructions, mergePlanForms, type CoachAiActionId } from '@/lib/coach/ai-actions'
 import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
@@ -92,7 +93,8 @@ async function generateSectionForm(
   profile: OnboardingProfile,
   actionId: CoachAiActionId,
   coachNote: string | null,
-  activePlan: Plan | null
+  activePlan: Plan | null,
+  clientJourney: string | null
 ): Promise<PlanFormData> {
   const result = await generatePlan({
     profile,
@@ -105,6 +107,7 @@ async function generateSectionForm(
     validationMode: validationMode(actionId),
     actionId,
     activePlan,
+    clientJourney,
   })
 
   if (actionId === 'initial_diet') return generatedDietFormData(result.generatedPlan, profile.id)
@@ -132,13 +135,20 @@ export async function runManualPlanJob(input: {
       .eq('active', true)
       .maybeSingle()
     const activePlan = (activePlanData as Plan | null) ?? null
+    const profileTyped = profile as OnboardingProfile
+    const clientJourney = await loadClientJourneySnapshot(admin, {
+      clientId: input.clientId,
+      profile: profileTyped,
+      currentCheckin: null,
+    })
 
     if (input.mode !== 'complete') {
       const form = await generateSectionForm(
-        profile as OnboardingProfile,
+        profileTyped,
         input.mode,
         input.coachNote,
-        activePlan
+        activePlan,
+        clientJourney
       )
       form.title = sectionTitle(input.mode)
       const saved = await persistAiPlanDraft(admin, {
@@ -157,7 +167,7 @@ export async function runManualPlanJob(input: {
       return
     }
 
-    const diet = await generateSectionForm(profile as OnboardingProfile, 'initial_diet', input.coachNote, activePlan)
+    const diet = await generateSectionForm(profileTyped, 'initial_diet', input.coachNote, activePlan, clientJourney)
     let merged: PlanFormData = { ...diet, title: 'Complete Coaching Plan (Draft)' }
     const first = await persistAiPlanDraft(admin, {
       clientId: input.clientId,
@@ -169,10 +179,11 @@ export async function runManualPlanJob(input: {
     let draftId = first.data.id
 
     const workout = await generateSectionForm(
-      profile as OnboardingProfile,
+      profileTyped,
       'initial_workout',
       input.coachNote,
-      activePlan
+      activePlan,
+      clientJourney
     )
     merged = mergePlanForms(merged, {
       workout_plan: workout.workout_plan,
@@ -182,10 +193,11 @@ export async function runManualPlanJob(input: {
 
     try {
       const cardio = await generateSectionForm(
-        profile as OnboardingProfile,
+        profileTyped,
         'initial_cardio',
         input.coachNote,
-        activePlan
+        activePlan,
+        clientJourney
       )
       if (cardio.cardio_plan?.trim()) {
         merged = mergePlanForms(merged, { cardio_plan: cardio.cardio_plan })
@@ -197,10 +209,11 @@ export async function runManualPlanJob(input: {
 
     try {
       const supplements = await generateSectionForm(
-        profile as OnboardingProfile,
+        profileTyped,
         'initial_supplements',
         input.coachNote,
-        activePlan
+        activePlan,
+        clientJourney
       )
       if (supplements.supplement_plan?.trim()) {
         merged = mergePlanForms(merged, { supplement_plan: supplements.supplement_plan })

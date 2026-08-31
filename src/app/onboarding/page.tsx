@@ -453,7 +453,6 @@ export default function OnboardingPage() {
     requireFluxCapacity: requireBodyMeasurements,
     requireDietVariety: requireBodyMeasurements,
     requireMovementAssessment: requireBodyMeasurements,
-    confirmedScrollers,
     planSlug,
     requireMultiGoals: true,
   }
@@ -787,9 +786,6 @@ function renderStep(
             value={form.age}
             onChange={(age) => update({ age })}
             required
-            requireConfirm
-            confirmed={confirmedScrollers.includes('age')}
-            onConfirm={() => confirmScroller('age')}
           />
         </div>
       )
@@ -828,9 +824,6 @@ function renderStep(
               required
               fieldStyle={s.field}
               inputStyle={s.input}
-              requireConfirm
-              confirmed={confirmedScrollers.includes('height')}
-              onConfirm={() => confirmScroller('height')}
             />
             <NumberScroller
               label="Weight"
@@ -838,15 +831,12 @@ function renderStep(
               value={form.weight}
               onChange={(weight) => update({ weight })}
               required
-              requireConfirm
-              confirmed={confirmedScrollers.includes('weight')}
-              onConfirm={() => confirmScroller('weight')}
             />
             {requireBodyMeasurements ? (
               <Field
                 label="Body measurements"
                 required
-                hint="Scroll each wheel to your soft-tape reading (whole cm). Belly = waist at navel. Left and right biceps are flexed. No tape yet? Buy one from a hardware store and come back later."
+                hint="Type each soft-tape reading in cm (whole numbers). Belly = waist at navel. Left and right biceps are flexed."
               >
                 <div style={{ display: 'grid', gap: 16 }}>
                   <MeasurementScroller
@@ -855,9 +845,6 @@ function renderStep(
                     value={form.chest}
                     onChange={(chest) => update({ chest })}
                     required
-                    requireConfirm
-                    confirmed={confirmedScrollers.includes('chest')}
-                    onConfirm={() => confirmScroller('chest')}
                   />
                   <MeasurementScroller
                     label="Thigh"
@@ -865,9 +852,6 @@ function renderStep(
                     value={form.thigh}
                     onChange={(thigh) => update({ thigh })}
                     required
-                    requireConfirm
-                    confirmed={confirmedScrollers.includes('thigh')}
-                    onConfirm={() => confirmScroller('thigh')}
                   />
                   <MeasurementScroller
                     label="Belly at navel"
@@ -875,9 +859,6 @@ function renderStep(
                     value={form.navel}
                     onChange={(navel) => update({ navel })}
                     required
-                    requireConfirm
-                    confirmed={confirmedScrollers.includes('navel')}
-                    onConfirm={() => confirmScroller('navel')}
                   />
                   <MeasurementScroller
                     label="Left bicep (flexed)"
@@ -885,9 +866,6 @@ function renderStep(
                     value={form.left_bicep}
                     onChange={(left_bicep) => update({ left_bicep })}
                     required
-                    requireConfirm
-                    confirmed={confirmedScrollers.includes('left_bicep')}
-                    onConfirm={() => confirmScroller('left_bicep')}
                   />
                   <MeasurementScroller
                     label="Right bicep (flexed)"
@@ -895,9 +873,6 @@ function renderStep(
                     value={form.right_bicep}
                     onChange={(right_bicep) => update({ right_bicep })}
                     required
-                    requireConfirm
-                    confirmed={confirmedScrollers.includes('right_bicep')}
-                    onConfirm={() => confirmScroller('right_bicep')}
                   />
                 </div>
               </Field>
@@ -927,6 +902,18 @@ function renderStep(
                   fitness_goal: selected_goals[0] ?? '',
                 })
               }
+            />
+          </Field>
+          <Field
+            label="Describe your goals in detail"
+            hint="Optional but helps your coach and AI plan the right journey — timeline, events, fat loss vs muscle, reverse diet, etc."
+          >
+            <textarea
+              value={form.goal_details}
+              onChange={(e) => update({ goal_details: e.target.value })}
+              placeholder="e.g. I want to cut aggressively for a wedding in 10 weeks, then slowly reverse so I don't regain. I've dieted before and rebound — need a structured plan."
+              style={s.textarea}
+              rows={5}
             />
           </Field>
         </div>
@@ -1393,10 +1380,7 @@ function renderStep(
             value={form.monthly_food_budget}
             onChange={(monthly_food_budget) => update({ monthly_food_budget })}
             required
-            requireConfirm
-            confirmed={confirmedScrollers.includes('monthly_food_budget')}
-            onConfirm={() => confirmScroller('monthly_food_budget')}
-            hint="Scroll to your monthly food budget in rupees, then confirm."
+            hint="Type your monthly food budget in rupees."
           />
           <Field label="Cooking ability" required>
             <ChipGroup options={COOKING_OPTIONS} value={form.cooking_ability} onChange={(v) => update({ cooking_ability: v })} />

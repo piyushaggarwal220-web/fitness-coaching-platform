@@ -338,6 +338,9 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
         ? `Goals: ${bodyType}${selected}, deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
         : `Goals: ${bodyType}deadline ${data.goals.deadline ?? '—'}, struggle ${data.goals.biggestStruggle ?? '—'}`
     lines.push(goalLine)
+    if (data.goals.goalDetails?.trim()) {
+      lines.push(`Client goal description (use to infer journey type and phase): ${data.goals.goalDetails.trim()}`)
+    }
   }
   if (data.lifestyle) {
     lines.push(

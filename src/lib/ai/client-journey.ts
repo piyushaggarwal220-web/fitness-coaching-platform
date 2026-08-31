@@ -11,7 +11,14 @@ import {
 } from '@/lib/checkin-schedule'
 
 export type ClientJourneyInput = {
-  profile: Pick<OnboardingProfile, 'checkin_schedule_started_at' | 'name'>
+  profile: Pick<
+    OnboardingProfile,
+    | 'checkin_schedule_started_at'
+    | 'name'
+    | 'journey_goal'
+    | 'journey_summary'
+    | 'client_goal_details'
+  >
   /** All check-ins for the client (any order). */
   checkins: Checkin[]
   /** Recent plan-change requests (any order). */
@@ -116,6 +123,30 @@ export function buildClientJourneySnapshot(input: ClientJourneyInput): string {
   const requests = input.planChangeRequests ?? []
 
   const lines: string[] = ['## Client Journey Snapshot (authoritative — read before writing the plan)']
+
+  const journeyGoal = input.profile.journey_goal?.trim()
+  const journeySummary = input.profile.journey_summary?.trim()
+  const clientGoalDetails = input.profile.client_goal_details?.trim()
+  if (clientGoalDetails) {
+    lines.push(
+      `- **Client goal description (their words — infer journey type from this):** ${truncate(clientGoalDetails, 900)}`
+    )
+  }
+  if (journeyGoal) {
+    lines.push(
+      `- **Journey goal (coach-defined roadmap — honor across diet/workout updates):** ${truncate(journeyGoal, 900)}`
+    )
+  }
+  if (journeySummary) {
+    lines.push(
+      `- **Current journey status (where they are right now in that roadmap):** ${truncate(journeySummary, 900)}`
+    )
+  }
+  if (journeyGoal || journeySummary) {
+    lines.push(
+      '- When calories or macros change, align with the journey goal and current status above. Do not contradict an active reverse-diet or fat-loss phase unless the summary says the phase changed.'
+    )
+  }
 
   // Where they are in the program.
   const currentWeek =
@@ -223,7 +254,14 @@ export async function loadClientJourneySnapshot(
   admin: SupabaseClient,
   params: {
     clientId: string
-    profile: Pick<OnboardingProfile, 'checkin_schedule_started_at' | 'name'>
+    profile: Pick<
+      OnboardingProfile,
+      | 'checkin_schedule_started_at'
+      | 'name'
+      | 'journey_goal'
+      | 'journey_summary'
+      | 'client_goal_details'
+    >
     currentCheckin?: Checkin | null
     referenceDate?: Date
   }

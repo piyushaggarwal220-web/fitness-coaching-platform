@@ -47,6 +47,10 @@ export type CoachClientDetail = ClientProfile & {
   payment_confirmed?: boolean | null
   access_source?: 'purchase' | 'admin_trial' | 'enrollment_code' | null
   subscription_expires_at?: string | null
+  journey_goal?: string | null
+  journey_summary?: string | null
+  client_goal_details?: string | null
+  profile_gallery_paths?: string[] | null
 }
 
 /** Structured coaching intake stored in profiles.onboarding_data */
@@ -62,6 +66,8 @@ export type OnboardingData = {
     startingBodyType?: string | null
     /** Client-selected plan goals (2–4). */
     selectedGoals?: string[] | null
+    /** Free-text: what the client wants in their own words (journey / timeline / phases). */
+    goalDetails?: string | null
     goalSelectionMethod?: 'user' | 'ai'
     aiSelectedGoal?: boolean
     userIndicatedUnsure?: boolean
@@ -215,6 +221,14 @@ export type Profile = {
   league_division?: string | null
   avatar_path?: string | null
   profile_settings_edited_at?: string | null
+  /** Long-term roadmap set by coach (e.g. fat loss then reverse). */
+  journey_goal?: string | null
+  /** Current phase summary — updated after coach calls. */
+  journey_summary?: string | null
+  /** Client-written goal description — onboarding + profile. */
+  client_goal_details?: string | null
+  /** Gallery paths in avatars bucket ({user_id}/gallery/*). */
+  profile_gallery_paths?: string[] | null
 }
 
 export type OnboardingProfile = Profile
@@ -238,6 +252,8 @@ export type OnboardingFormData = {
   target_weight: string
   goal_deadline: string
   biggest_struggle: string
+  /** Client describes goals, timeline, and ideal journey in their own words. */
+  goal_details: string
   occupation: string
   work_school_schedule: string
   activity_level: string
@@ -380,6 +396,7 @@ export type ProfileForm = {
   weight: string
   height: string
   phone: string
+  goal_details: string
 }
 
 export type NewWorkoutForm = {

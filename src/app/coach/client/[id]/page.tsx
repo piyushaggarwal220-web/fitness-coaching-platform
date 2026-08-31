@@ -19,6 +19,7 @@ import { ComplexityHistoryTimeline } from '@/components/complexity/ComplexityHis
 import { ComplexityScoreCard } from '@/components/complexity/ComplexityScoreCard';
 import { CoachClientProfileEdit } from '@/components/coach/CoachClientProfileEdit';
 import { CoachClientJourneyPanel } from '@/components/coach/CoachClientJourneyPanel';
+import { CoachClientJourneyPlanEdit } from '@/components/coach/CoachClientJourneyPlanEdit';
 import { openCoachChatWithClient } from '@/lib/coach-open-chat';
 import { formatHeight } from '@/lib/height';
 import type { Coach, CoachClientDetail, Workout } from '@/types/database';
@@ -224,6 +225,8 @@ export default function CoachClientDetailPage() {
           </div>
           <CoachClientProfileEdit client={client} onSaved={setClient} />
         </div>
+
+        <CoachClientJourneyPlanEdit client={client} onSaved={setClient} />
 
         <CoachClientJourneyPanel clientId={client.id} />
 

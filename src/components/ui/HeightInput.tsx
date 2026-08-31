@@ -131,9 +131,7 @@ export function HeightInput({
         </div>
       )}
       <p id={`${id}-hint`} style={{ ...styles.hint, ...(validationError ? styles.error : {}) }} aria-live="polite">
-        {validationError ?? (requireConfirm
-          ? 'Scroll to your height, then tap Confirm.'
-          : 'Scroll the wheel — no typing needed.')}
+        {validationError ?? (unit === 'cm' ? `Type height in cm (${MIN_HEIGHT_CM}–${MAX_HEIGHT_CM}).` : 'Type feet and inches.')}
       </p>
     </fieldset>
   )

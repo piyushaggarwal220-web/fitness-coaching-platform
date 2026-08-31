@@ -25,6 +25,8 @@ import {
   queueManualPlanJob,
 } from '@/lib/coach/background-initial-plan'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
 import { planToForm } from '@/lib/plans'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 
@@ -251,6 +253,13 @@ export async function POST(request: Request) {
 
   const checkinForPrompt = checkin ?? (latestCheckin as Checkin | null)
 
+  const admin = createAdminClient()
+  const clientJourney = await loadClientJourneySnapshot(admin, {
+    clientId,
+    profile: profile as OnboardingProfile,
+    currentCheckin: checkinForPrompt,
+  })
+
   const startedAt = Date.now()
   const actionLabel = isLegacyFullPlan ? 'legacy_full_plan' : actionId
   const knowledgeCategories = selectKnowledgeCategories(profile as OnboardingProfile)
@@ -302,6 +311,7 @@ export async function POST(request: Request) {
       actionId: isLegacyFullPlan ? undefined : actionId,
       activePlan,
       updatedDietPlan: updatedDietPlanForPrompt,
+      clientJourney,
     })
 
     const knowledgeCategoriesForReasoning = knowledgeCategories

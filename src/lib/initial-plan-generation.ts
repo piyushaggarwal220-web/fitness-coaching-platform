@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { generatedCardioFormData, generatedDietFormData, generatedSupplementFormData, generatedWorkoutFormData } from '@/lib/ai/plan-format'
 import { generatePlan } from '@/lib/ai/generate-plan'
+import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
 import { selectKnowledgeCategories } from '@/lib/ai/prompt-builder'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-actions'
@@ -213,6 +214,11 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
 
     const images = await loadProgressImages(admin, profile)
     const knowledgeRefs = selectKnowledgeCategories(profile)
+    const clientJourney = await loadClientJourneySnapshot(admin, {
+      clientId: profile.id,
+      profile,
+      currentCheckin: null,
+    })
     const runSection = async (
       actionId: 'initial_diet' | 'initial_workout' | 'initial_cardio' | 'initial_supplements'
     ) => {
@@ -234,6 +240,7 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
           // Workout still gets measurements + onboarding text.
           progressImages: actionId === 'initial_diet' ? images : undefined,
           coachInstructions: buildActionCoachInstructions(actionId, {}),
+          clientJourney,
         })
         await logAiGeneration({
           clientId: profile.id,

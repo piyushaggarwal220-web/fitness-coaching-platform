@@ -1,11 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useRef, type CSSProperties } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import { colors, radius, spacing } from '@/lib/design-tokens'
 import { MAX_HEIGHT_CM, MIN_HEIGHT_CM } from '@/lib/height'
-
-const ITEM_HEIGHT = 44
-const VISIBLE_ROWS = 5
 
 export const NUMBER_SCROLLER_PRESETS = {
   age: { min: 13, max: 100, step: 1, unit: 'years' },
@@ -36,7 +33,7 @@ type NumberScrollerBaseProps = {
   min?: number
   max?: number
   step?: number
-  /** When true, user must tap Confirm after scrolling before the value counts. */
+  /** Legacy — scroll confirm no longer used; kept for API compatibility. */
   requireConfirm?: boolean
   confirmed?: boolean
   onConfirm?: () => void
@@ -46,32 +43,6 @@ type NumberScrollerProps =
   | (NumberScrollerBaseProps & { preset: NumberScrollerPreset; kind?: never })
   | (NumberScrollerBaseProps & { kind: NumberScrollerPreset; preset?: never })
   | (NumberScrollerBaseProps & { preset?: undefined; kind?: undefined; min: number; max: number })
-
-function buildOptions(min: number, max: number, step: number): number[] {
-  const values: number[] = []
-  const safeStep = step > 0 ? step : 1
-  for (let n = min; n <= max; n += safeStep) values.push(n)
-  if (values[values.length - 1] !== max) values.push(max)
-  return values
-}
-
-function parseSelected(value: string, options: number[]): number | null {
-  if (!value.trim()) return null
-  const n = Number(value)
-  if (!Number.isFinite(n)) return null
-  // Prefer exact match; otherwise nearest option within half-step tolerance.
-  if (options.includes(n)) return n
-  let best: number | null = null
-  let bestDist = Infinity
-  for (const option of options) {
-    const dist = Math.abs(option - n)
-    if (dist < bestDist) {
-      best = option
-      bestDist = dist
-    }
-  }
-  return best
-}
 
 function resolveRange(props: NumberScrollerProps): {
   min: number
@@ -97,180 +68,69 @@ function resolveRange(props: NumberScrollerProps): {
   }
 }
 
-function formatDisplay(value: number, unit: string): string {
-  if (unit === '₹') return `₹${value.toLocaleString('en-IN')}`
-  if (!unit) return String(value)
-  return `${value} ${unit}`
+function formatPlaceholder(unit: string, min: number, max: number): string {
+  if (unit === '₹') return `e.g. ${min.toLocaleString('en-IN')} – ${max.toLocaleString('en-IN')}`
+  if (!unit) return `Enter ${min}–${max}`
+  return `Enter ${min}–${max} ${unit}`
 }
 
-/** Wheel-style picker — scroll to choose a number (no typing). */
+function rangeHint(unit: string, min: number, max: number): string {
+  if (unit === '₹') return `${min.toLocaleString('en-IN')} – ${max.toLocaleString('en-IN')} per month`
+  if (!unit) return `Allowed: ${min}–${max}`
+  return `Allowed: ${min}–${max} ${unit}`
+}
+
+function parseNumericInput(raw: string): number | null {
+  const cleaned = raw.replace(/,/g, '').trim()
+  if (!cleaned) return null
+  const n = Number(cleaned)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Typed number field — no scroll wheel (avoids accidental changes while scrolling the page). */
 export function NumberScroller(props: NumberScrollerProps) {
-  const {
-    label,
-    value,
-    onChange,
-    required = false,
-    hint,
-    requireConfirm = false,
-    confirmed = false,
-    onConfirm,
-  } = props
+  const { label, value, onChange, required = false, hint } = props
   const range = resolveRange(props)
-  const options = useMemo(
-    () => buildOptions(range.min, range.max, range.step),
-    [range.min, range.max, range.step]
-  )
-  const listRef = useRef<HTMLDivElement>(null)
-  const settlingRef = useRef(false)
-  const skipScrollSyncRef = useRef(false)
-  const userInteractedRef = useRef(false)
-  const selected = parseSelected(value, options)
-
-  const markInteracted = () => {
-    userInteractedRef.current = true
-  }
-
-  const scrollToValue = (next: number, behavior: ScrollBehavior = 'auto') => {
-    const el = listRef.current
-    if (!el) return
-    const index = options.indexOf(next)
-    if (index < 0) return
-    settlingRef.current = true
-    el.scrollTo({ top: index * ITEM_HEIGHT, behavior })
-    window.setTimeout(() => {
-      settlingRef.current = false
-    }, behavior === 'smooth' ? 280 : 40)
-  }
-
-  useEffect(() => {
-    if (selected == null) return
-    if (skipScrollSyncRef.current) {
-      skipScrollSyncRef.current = false
-      return
-    }
-    scrollToValue(selected, 'auto')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected])
-
-  const commitValue = (next: number) => {
-    // Ignore ambient scroll events until the user actually touches the wheel.
-    if (!userInteractedRef.current && !value.trim()) return
-    if (String(next) === value) return
-    skipScrollSyncRef.current = true
-    onChange(String(next))
-  }
-
-  const commitFromScroll = () => {
-    const el = listRef.current
-    if (!el || settlingRef.current) return
-    if (!userInteractedRef.current && !value.trim()) return
-    const index = Math.round(el.scrollTop / ITEM_HEIGHT)
-    const clamped = Math.max(0, Math.min(options.length - 1, index))
-    const next = options[clamped]
-    if (next == null) return
-    const top = clamped * ITEM_HEIGHT
-    if (Math.abs(el.scrollTop - top) > 1) {
-      settlingRef.current = true
-      el.scrollTo({ top, behavior: 'smooth' })
-      window.setTimeout(() => {
-        settlingRef.current = false
-      }, 220)
-    }
-    commitValue(next)
-  }
-
-  const needsConfirm = requireConfirm && Boolean(value.trim()) && !confirmed
+  const parsed = useMemo(() => parseNumericInput(value), [value])
+  const outOfRange =
+    parsed != null && (parsed < range.min || parsed > range.max)
 
   return (
     <div style={styles.wrap}>
-      <style>{`
-        [data-number-scroller]::-webkit-scrollbar { display: none; }
-      `}</style>
-      <div style={styles.header}>
+      <label style={styles.labelBlock}>
         <span style={styles.label}>
           {label}
           {required ? ' *' : ''}
         </span>
-        <span style={styles.value}>
-          {selected != null
-            ? `${formatDisplay(selected, range.unit)}${requireConfirm && !confirmed ? ' · confirm below' : ''}`
-            : 'Scroll to select'}
-        </span>
-      </div>
-      {hint ? <p style={styles.hint}>{hint}</p> : null}
-      <div style={styles.frame}>
-        <div style={styles.fadeTop} aria-hidden />
-        <div style={styles.centerBand} aria-hidden />
-        <div style={styles.fadeBottom} aria-hidden />
-        <div
-          ref={listRef}
-          data-number-scroller
-          role="listbox"
-          aria-label={label}
-          tabIndex={0}
-          style={styles.list}
-          onPointerDown={markInteracted}
-          onTouchStart={markInteracted}
-          onWheel={markInteracted}
-          onScroll={() => {
-            if (settlingRef.current) return
-            const el = listRef.current
-            if (!el) return
-            const index = Math.round(el.scrollTop / ITEM_HEIGHT)
-            const clamped = Math.max(0, Math.min(options.length - 1, index))
-            const next = options[clamped]
-            if (next != null) commitValue(next)
-          }}
-          onTouchEnd={commitFromScroll}
-          onMouseUp={commitFromScroll}
-          onBlur={commitFromScroll}
-        >
-          <div style={{ height: ITEM_HEIGHT * 2 }} aria-hidden />
-          {options.map((n) => {
-            const isSelected = selected === n
-            return (
-              <button
-                key={n}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => {
-                  markInteracted()
-                  commitValue(n)
-                  scrollToValue(n, 'smooth')
-                }}
-                style={{
-                  ...styles.item,
-                  ...(isSelected ? styles.itemSelected : {}),
-                }}
-              >
-                {range.unit === '₹' ? n.toLocaleString('en-IN') : n}
-              </button>
-            )
-          })}
-          <div style={{ height: ITEM_HEIGHT * 2 }} aria-hidden />
+        <div style={styles.inputRow}>
+          <input
+            type="text"
+            inputMode="decimal"
+            enterKeyHint="done"
+            autoComplete="off"
+            value={value}
+            onChange={(e) => onChange(e.target.value.replace(/[^\d.,]/g, ''))}
+            placeholder={formatPlaceholder(range.unit, range.min, range.max)}
+            aria-invalid={outOfRange || undefined}
+            style={{
+              ...styles.input,
+              ...(outOfRange ? styles.inputError : {}),
+            }}
+          />
+          {range.unit ? <span style={styles.unitSuffix}>{range.unit}</span> : null}
         </div>
-      </div>
-      {needsConfirm ? (
-        <button
-          type="button"
-          onClick={() => onConfirm?.()}
-          style={styles.confirmBtn}
-        >
-          Confirm {selected != null ? formatDisplay(selected, range.unit) : label}
-        </button>
-      ) : null}
-      {requireConfirm && confirmed && selected != null ? (
-        <p style={styles.confirmed}>Confirmed · {formatDisplay(selected, range.unit)}</p>
-      ) : null}
-      {!selected && required ? (
-        <p style={styles.prompt}>Scroll the wheel and stop on your number, then confirm.</p>
-      ) : null}
+      </label>
+      {hint ? <p style={styles.hint}>{hint}</p> : null}
+      <p style={{ ...styles.rangeHint, ...(outOfRange ? styles.errorText : {}) }}>
+        {outOfRange
+          ? `Enter a value between ${range.min} and ${range.max}${range.unit ? ` ${range.unit}` : ''}.`
+          : rangeHint(range.unit, range.min, range.max)}
+      </p>
     </div>
   )
 }
 
-/** Alias for body-tape fields — same scroll wheel. */
+/** Alias for body-tape fields. */
 export function MeasurementScroller(
   props: Omit<NumberScrollerBaseProps, 'min' | 'max' | 'step'> & {
     kind: Extract<NumberScrollerPreset, 'chest' | 'thigh' | 'navel' | 'bicep' | 'weight'>
@@ -283,24 +143,42 @@ export function MeasurementScroller(
 const styles: Record<string, CSSProperties> = {
   wrap: {
     display: 'grid',
-    gap: 8,
+    gap: 6,
   },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    gap: 12,
+  labelBlock: {
+    display: 'grid',
+    gap: 8,
   },
   label: {
     fontSize: 14,
     fontWeight: 500,
     color: colors.textSecondary,
   },
-  value: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: colors.accent,
+  inputRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  input: {
+    flex: 1,
+    minHeight: 48,
+    padding: `0 ${spacing[3]}px`,
+    borderRadius: radius.md,
+    border: `1px solid ${colors.borderSubtle}`,
+    backgroundColor: colors.bgElevated,
+    color: colors.textPrimary,
+    fontSize: 16,
     fontVariantNumeric: 'tabular-nums',
+    boxSizing: 'border-box',
+  },
+  inputError: {
+    borderColor: colors.danger,
+  },
+  unitSuffix: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: colors.textMuted,
+    flexShrink: 0,
   },
   hint: {
     margin: 0,
@@ -308,96 +186,12 @@ const styles: Record<string, CSSProperties> = {
     color: colors.textMuted,
     lineHeight: 1.4,
   },
-  frame: {
-    position: 'relative',
-    height: ITEM_HEIGHT * VISIBLE_ROWS,
-    borderRadius: radius.md,
-    border: `1px solid ${colors.borderSubtle}`,
-    backgroundColor: colors.bgElevated,
-    overflow: 'hidden',
-  },
-  list: {
-    height: '100%',
-    overflowY: 'auto',
-    scrollSnapType: 'y mandatory',
-    WebkitOverflowScrolling: 'touch',
-    overscrollBehavior: 'contain',
-    scrollbarWidth: 'none',
-    msOverflowStyle: 'none',
-  },
-  item: {
-    height: ITEM_HEIGHT,
-    width: '100%',
-    border: 0,
-    background: 'transparent',
-    color: colors.textMuted,
-    fontSize: 18,
-    fontVariantNumeric: 'tabular-nums',
-    cursor: 'pointer',
-    scrollSnapAlign: 'center',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-  },
-  itemSelected: {
-    color: colors.textPrimary,
-    fontWeight: 700,
-    fontSize: 22,
-  },
-  centerBand: {
-    position: 'absolute',
-    left: spacing[2],
-    right: spacing[2],
-    top: '50%',
-    height: ITEM_HEIGHT,
-    marginTop: -(ITEM_HEIGHT / 2),
-    borderRadius: radius.sm,
-    border: `1px solid ${colors.accent}`,
-    backgroundColor: colors.accentMuted,
-    pointerEvents: 'none',
-    zIndex: 1,
-  },
-  fadeTop: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: ITEM_HEIGHT * 2,
-    background: `linear-gradient(to bottom, ${colors.bgElevated}, transparent)`,
-    pointerEvents: 'none',
-    zIndex: 2,
-  },
-  fadeBottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: ITEM_HEIGHT * 2,
-    background: `linear-gradient(to top, ${colors.bgElevated}, transparent)`,
-    pointerEvents: 'none',
-    zIndex: 2,
-  },
-  prompt: {
+  rangeHint: {
     margin: 0,
     fontSize: 12,
     color: colors.textMuted,
   },
-  confirmBtn: {
-    marginTop: 4,
-    padding: '10px 14px',
-    borderRadius: radius.md,
-    border: `1px solid ${colors.accent}`,
-    backgroundColor: colors.accentMuted,
-    color: colors.accent,
-    fontWeight: 700,
-    fontSize: 14,
-    cursor: 'pointer',
-  },
-  confirmed: {
-    margin: 0,
-    fontSize: 12,
-    fontWeight: 600,
-    color: colors.success,
+  errorText: {
+    color: colors.danger,
   },
 }

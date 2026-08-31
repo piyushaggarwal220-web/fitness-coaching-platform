@@ -514,6 +514,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   target_weight: '',
   goal_deadline: '',
   biggest_struggle: '',
+  goal_details: '',
   occupation: '',
   work_school_schedule: '',
   activity_level: '',
@@ -613,6 +614,9 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     target_weight: data.goals?.targetWeight != null ? String(data.goals.targetWeight) : '',
     goal_deadline: data.goals?.deadline ?? '',
     biggest_struggle: data.goals?.biggestStruggle ?? '',
+    goal_details:
+      profile.client_goal_details?.trim() ||
+      (typeof data.goals?.goalDetails === 'string' ? data.goals.goalDetails : ''),
     occupation: data.lifestyle?.occupation ?? '',
     work_school_schedule: data.lifestyle?.workSchoolSchedule ?? '',
     daily_steps: data.lifestyle?.dailySteps ?? '',
@@ -766,6 +770,7 @@ export function buildOnboardingData(
       targetWeight: form.target_weight.trim() || null,
       deadline: form.goal_deadline || null,
       biggestStruggle: form.biggest_struggle.trim() || null,
+      goalDetails: form.goal_details.trim() || null,
       startingBodyType: form.starting_body_type.trim() || null,
       selectedGoals: form.selected_goals.length > 0 ? form.selected_goals : null,
       goalSelectionMethod: userUnsure || options?.aiSelectedGoal ? 'ai' : 'user',
@@ -911,6 +916,7 @@ export function buildProfilePayload(
     medical_notes: buildMedicalNotesForProfile(form),
     sleep_duration: form.sleep_duration || null,
     onboarding_data: buildOnboardingData(form, options.resumeStep, onboardingDataOptions),
+    client_goal_details: form.goal_details.trim() || null,
     updated_at: now,
   }
 
@@ -1066,6 +1072,10 @@ export function validateOnboardingStep(
       }
       if (needsTargetWeight(data.fitness_goal)) {
         if (!data.target_weight || Number(data.target_weight) <= 0) return 'Enter a valid target weight.'
+      }
+      const details = data.goal_details.trim()
+      if (details.length > 0 && details.length < 15) {
+        return 'Goal description is too short — add a bit more detail (at least 15 characters) or leave blank for now.'
       }
       return null
     }
