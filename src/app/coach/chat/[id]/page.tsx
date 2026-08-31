@@ -200,7 +200,7 @@ function CoachChatDetailInner() {
   const editPlanBtn = (
     <button type="button" onClick={openEditPlanWithAi} style={phoneStyles.editAiBtn}>
       <Sparkles size={14} />
-      Edit plan with AI
+      Regenerate plan with AI
     </button>
   )
 

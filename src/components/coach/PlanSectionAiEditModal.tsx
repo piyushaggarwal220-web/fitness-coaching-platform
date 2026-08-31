@@ -143,7 +143,7 @@ export function PlanSectionAiEditModal({
             onClick={() => void generate()}
             style={{ flex: '1 1 160px' }}
           >
-            {generating ? 'Generating…' : revisedText ? 'Regenerate' : 'Generate plan'}
+            {generating ? 'Generating…' : revisedText ? 'Regenerate' : 'Regenerate with coach instruction'}
           </Button>
           <Button
             variant="secondary"
