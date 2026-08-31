@@ -176,6 +176,7 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     target_weight: targetWeight,
     goal_deadline: pick(['8_weeks', '12_weeks', '16_weeks', '24_weeks']),
     biggest_struggle: struggle.value,
+    goal_details: '',
     occupation: pick(OCCUPATION_OPTIONS).value,
     work_school_schedule: pick([
       'Office 10am–7pm Mon–Fri, commute ~45 min each way. Free evenings after 8pm. Sundays off.',
