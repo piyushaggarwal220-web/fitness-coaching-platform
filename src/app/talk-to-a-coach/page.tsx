@@ -9,14 +9,6 @@ import { PLAN_PAGE_COPY, type LongCoachingPlanSlug } from '@/lib/payments/plan-p
 
 const API_URL = '/api/public/talk-to-a-coach'
 
-const PREFERRED_TIME_OPTIONS = [
-  'Morning (9am–12pm)',
-  'Afternoon (12pm–5pm)',
-  'Evening (5pm–9pm)',
-  'Anytime today',
-  'Tomorrow',
-] as const
-
 const GOAL_OPTIONS = (['3_months', '6_months', '12_months'] as const).map((slug) => ({
   slug: slug as LongCoachingPlanSlug,
   goal: PLAN_PAGE_COPY[slug].goalName,
@@ -30,7 +22,6 @@ export default function TalkToCoachPage() {
   const [phone, setPhone] = useState('')
   const [goalSlug, setGoalSlug] = useState<LongCoachingPlanSlug | ''>('')
   const [notes, setNotes] = useState('')
-  const [preferredTime, setPreferredTime] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -51,10 +42,6 @@ export default function TalkToCoachPage() {
       setError('Please pick your goal.')
       return
     }
-    if (!preferredTime) {
-      setError('Please pick a preferred call time.')
-      return
-    }
 
     setLoading(true)
     setError('')
@@ -72,7 +59,7 @@ export default function TalkToCoachPage() {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, message, preferredTime }),
+        body: JSON.stringify({ name, phone, message }),
       })
       const payload = (await res.json().catch(() => null)) as {
         ok?: boolean
@@ -87,7 +74,7 @@ export default function TalkToCoachPage() {
         return
       }
 
-      setSuccess('Call booked. A coach will call you at your preferred time.')
+      setSuccess('Call booked. A coach will call you back soon.')
       if (typeof payload.remaining === 'number') setRemaining(payload.remaining)
       setBooked(true)
       try {
@@ -99,7 +86,6 @@ export default function TalkToCoachPage() {
       setPhone('')
       setGoalSlug('')
       setNotes('')
-      setPreferredTime('')
     } catch {
       setError('Network error. Please check your connection and try again.')
     }
@@ -114,7 +100,7 @@ export default function TalkToCoachPage() {
         <h1 style={authStyles.title}>{booked ? 'Call booked' : 'Talk to a coach'}</h1>
         <p style={{ margin: '0 0 24px', textAlign: 'center', color: colors.textSecondary, lineHeight: 1.5 }}>
           {booked
-            ? 'We have your request. A coach will call you at the time you picked. No need to submit again.'
+            ? 'We have your request. A coach will call you back soon. No need to submit again.'
             : <>Free consultation — pick your goal and we&apos;ll help you decide if LURVOX is the right fit.</>}
         </p>
 
@@ -209,36 +195,7 @@ export default function TalkToCoachPage() {
               placeholder="Injuries, schedule, questions…"
             />
           </div>
-          <div style={authStyles.inputGroup}>
-            <span style={authStyles.label}>When should we call?</span>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {PREFERRED_TIME_OPTIONS.map((option) => {
-                const selected = preferredTime === option
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setPreferredTime(option)}
-                    style={{
-                      minHeight: 48,
-                      padding: '10px 12px',
-                      borderRadius: 10,
-                      border: selected ? `1px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
-                      background: selected ? colors.accentMuted : colors.bgElevated,
-                      color: colors.textPrimary,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {option}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-          <button type="submit" disabled={loading || !preferredTime || !goalSlug} style={authStyles.button}>
+          <button type="submit" disabled={loading || !goalSlug} style={authStyles.button}>
             {loading ? 'Sending…' : 'Send message'}
           </button>
         </form>

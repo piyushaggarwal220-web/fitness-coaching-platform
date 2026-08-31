@@ -16,7 +16,7 @@ type TalkToCoachBody = {
   preferredTime?: string
 }
 
-const PREFERRED_TIME_OPTIONS = new Set([
+const LEGACY_PREFERRED_TIME_OPTIONS = new Set([
   'Morning (9am–12pm)',
   'Afternoon (12pm–5pm)',
   'Evening (5pm–9pm)',
@@ -52,21 +52,20 @@ function buildNotifyEmail(input: {
   name: string
   phone: string
   message: string
-  preferredTime: string
+  preferredTime: string | null
 }) {
   const subject = `New consultation request — ${input.name}`
-  const text = [
+  const textLines = [
     'New free consultation request from lurvox.in',
     '',
     `Name: ${input.name}`,
     `Phone / WhatsApp: ${input.phone}`,
-    `Preferred call time: ${input.preferredTime}`,
-    '',
-    'Goal / message:',
-    input.message,
-    '',
-    'Call or WhatsApp this person to schedule the consultation.',
-  ].join('\n')
+  ]
+  if (input.preferredTime) {
+    textLines.push(`Preferred call time: ${input.preferredTime}`)
+  }
+  textLines.push('', 'Goal / message:', input.message, '', 'Call or WhatsApp this person to schedule the consultation.')
+  const text = textLines.join('\n')
 
   const html = `
     <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#111">
@@ -75,7 +74,7 @@ function buildNotifyEmail(input: {
       <table style="border-collapse:collapse;width:100%;max-width:560px">
         <tr><td style="padding:8px 0;font-weight:600;width:140px">Name</td><td style="padding:8px 0">${escapeHtml(input.name)}</td></tr>
         <tr><td style="padding:8px 0;font-weight:600">Phone / WhatsApp</td><td style="padding:8px 0">${escapeHtml(input.phone)}</td></tr>
-        <tr><td style="padding:8px 0;font-weight:600">Preferred call time</td><td style="padding:8px 0">${escapeHtml(input.preferredTime)}</td></tr>
+        ${input.preferredTime ? `<tr><td style="padding:8px 0;font-weight:600">Preferred call time</td><td style="padding:8px 0">${escapeHtml(input.preferredTime)}</td></tr>` : ''}
       </table>
       <div style="margin-top:16px;padding:14px 16px;background:#f6f6f6;border-radius:10px;white-space:pre-wrap">${escapeHtml(input.message)}</div>
       <p style="margin:16px 0 0;color:#555;font-size:13px">Call or WhatsApp this person to schedule the consultation.</p>
@@ -106,7 +105,10 @@ export async function POST(request: Request) {
   const name = body.name?.trim() ?? ''
   const phone = body.phone?.trim() ?? ''
   const message = body.message?.trim() ?? ''
-  const preferredTime = body.preferredTime?.trim() ?? ''
+  const explicitPreferredTime =
+    body.preferredTime?.trim() && LEGACY_PREFERRED_TIME_OPTIONS.has(body.preferredTime.trim())
+      ? body.preferredTime.trim()
+      : null
 
   if (!name || name.length < 2) {
     return NextResponse.json({ ok: false, error: 'Please enter your name.' }, { status: 400, headers })
@@ -120,9 +122,12 @@ export async function POST(request: Request) {
       { status: 400, headers }
     )
   }
-  if (!preferredTime || !PREFERRED_TIME_OPTIONS.has(preferredTime)) {
+  if (
+    body.preferredTime?.trim() &&
+    !LEGACY_PREFERRED_TIME_OPTIONS.has(body.preferredTime.trim())
+  ) {
     return NextResponse.json(
-      { ok: false, error: 'Please pick a preferred call time.' },
+      { ok: false, error: 'Invalid preferred call time.' },
       { status: 400, headers }
     )
   }
@@ -156,7 +161,9 @@ export async function POST(request: Request) {
     )
   }
 
-  const storedMessage = `Preferred call time: ${preferredTime}\n\n${message}`
+  const storedMessage = explicitPreferredTime
+    ? `Preferred call time: ${explicitPreferredTime}\n\n${message}`
+    : message
   const { error: insertError } = await admin.from('talk_to_coach_submissions').insert({
     name,
     email: null,
@@ -177,7 +184,7 @@ export async function POST(request: Request) {
     name,
     phone,
     message,
-    preferredTime,
+    preferredTime: explicitPreferredTime,
   })
   const emailed = await sendDirectEmail({
     to: NOTIFY_TO,

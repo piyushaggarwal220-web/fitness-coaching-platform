@@ -30,7 +30,7 @@
       <div class="lx-consult__booked" id="lx-consult-booked-{{ section.id }}" hidden>
         <p class="lx-consult__booked-kicker">Confirmed</p>
         <h2 class="lx-consult__booked-title">Call booked</h2>
-        <p class="lx-consult__booked-copy">We have your request. A coach will call you at the time you picked. No need to submit again.</p>
+        <p class="lx-consult__booked-copy">We have your request. A coach will call you back soon. No need to submit again.</p>
       </div>
       <form class="lx-consult__form" id="lx-consult-form-{{ section.id }}" novalidate>
         <h2 class="lx-consult__form-title">{{ section.settings.form_heading | default: 'Your details' }}</h2>
@@ -90,33 +90,6 @@
             placeholder="Injuries, schedule, questions…"
           ></textarea>
         </div>
-
-        <fieldset class="lx-consult__timing">
-          <legend>When should we call?</legend>
-          <p class="lx-consult__timing-hint">India time. Pick what usually works.</p>
-          <div class="lx-consult__timing-options" role="radiogroup" aria-label="Preferred call time">
-            <label class="lx-consult__timing-opt">
-              <input type="radio" name="preferred_time" value="Morning (9am–12pm)" required>
-              <span>Morning<br><small>9am–12pm</small></span>
-            </label>
-            <label class="lx-consult__timing-opt">
-              <input type="radio" name="preferred_time" value="Afternoon (12pm–5pm)">
-              <span>Afternoon<br><small>12pm–5pm</small></span>
-            </label>
-            <label class="lx-consult__timing-opt">
-              <input type="radio" name="preferred_time" value="Evening (5pm–9pm)">
-              <span>Evening<br><small>5pm–9pm</small></span>
-            </label>
-            <label class="lx-consult__timing-opt">
-              <input type="radio" name="preferred_time" value="Anytime today">
-              <span>Anytime<br><small>Today</small></span>
-            </label>
-            <label class="lx-consult__timing-opt">
-              <input type="radio" name="preferred_time" value="Tomorrow">
-              <span>Tomorrow<br><small>Any time</small></span>
-            </label>
-          </div>
-        </fieldset>
 
         <p class="lx-consult__status" id="lx-consult-status-{{ section.id }}" role="status" aria-live="polite"></p>
 
@@ -499,19 +472,9 @@
       setStatus('', '');
       if (submitBtn) submitBtn.disabled = true;
 
-      var preferred = '';
-      var preferredInput = form.querySelector('input[name="preferred_time"]:checked');
-      if (preferredInput) preferred = preferredInput.value;
-
       var goalInput = form.querySelector('input[name="goal"]:checked');
       if (!goalInput) {
         setStatus('Please pick your goal.', 'error');
-        if (submitBtn) submitBtn.disabled = false;
-        return;
-      }
-
-      if (!preferred) {
-        setStatus('Please pick a preferred call time.', 'error');
         if (submitBtn) submitBtn.disabled = false;
         return;
       }
@@ -525,8 +488,7 @@
       var payload = {
         name: form.name.value.trim(),
         phone: form.phone.value.trim(),
-        message: message,
-        preferredTime: preferred
+        message: message
       };
 
       fetch(apiUrl, {
