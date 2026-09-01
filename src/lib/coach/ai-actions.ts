@@ -169,6 +169,7 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Generate a personalized diet plan for this client.',
+          'CRITICAL: Obey diet preference from Hard Constraints on every meal — vegetarian means zero eggs/meat/fish/whey ever; non-veg only on allowed weekdays.',
           'Derive daily calories with Mifflin-St Jeor from the CALORIE METHOD in the profile (BMR × activity, then goal adjustment).',
           'Follow Metabolic Flux Bias: pair higher absolute food intake with higher output — avoid deep deficits with low movement.',
           'Always specify exact ghee/oil/butter amounts for cooked meals and a daily cooking-fat total.',
@@ -223,6 +224,7 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Update the diet plan based on the latest check-in.',
+          'CRITICAL: Obey diet preference from Hard Constraints on every meal — never add eggs/meat/fish on veg days or for vegetarian clients.',
           checkin ? checkinContext(checkin) : '',
           checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
           planContext(activePlan ?? null, ['nutrition']),

@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   const { data: client } = await supabase
     .from('profiles')
     .select(
-      'id, name, payment_confirmed, access_source, subscription_expires_at, weight, height, age, gender, activity_level, fitness_goal, onboarding_data, sleep_duration, training_experience, injuries'
+      'id, name, payment_confirmed, access_source, subscription_expires_at, weight, height, age, gender, activity_level, fitness_goal, onboarding_data, sleep_duration, training_experience, injuries, diet_preference, medical_notes'
     )
     .eq('id', clientId)
     .eq('coach_id', coach.id)

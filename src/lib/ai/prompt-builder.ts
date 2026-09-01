@@ -12,6 +12,7 @@ import { getOnboardingLabel } from '@/lib/onboarding'
 import { clientCoachNotes } from '@/lib/plan-metadata'
 import {
   DAY_HEADER_PROMPT_RULES,
+  DIET_PREFERENCE_ENFORCEMENT_RULES,
   EXERCISE_NAME_PROMPT_RULES,
   HIGH_FLUX_OUTPUT_PAIRING_RULES,
   HIGH_FLUX_PHILOSOPHY_RULES,
@@ -399,17 +400,14 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
   return lines.join('\n')
 }
 
-function buildHardConstraintsSection(profile: OnboardingProfile): string {
+export function buildDietHardConstraintsSection(profile: OnboardingProfile): string {
   const data = profile.onboarding_data
-  const training = data?.training
   const diet = data?.diet
-  const environment = resolveWorkoutEnvironment(profile)
-  const equipment = (training?.equipmentAvailable ?? []).filter(Boolean)
-  const location = training?.location ?? 'gym'
 
   const lines = [
-    '## Hard Constraints (MUST obey — never violate)',
-    `- Diet preference: ${getOnboardingLabel('diet_preference', profile.diet_preference)} — this is non-negotiable for all meal options.`,
+    '## Diet Hard Constraints (MUST obey — never violate)',
+    DIET_PREFERENCE_ENFORCEMENT_RULES,
+    `- Diet preference: ${getOnboardingLabel('diet_preference', profile.diet_preference)} — non-negotiable for ALL meals including swaps.`,
   ]
 
   if (profile.diet_preference === 'vegetarian') {
@@ -463,6 +461,21 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
       `- Diet day exceptions (MUST respect): ${diet.customNotes.trim()} — adjust meals on those days/situations; do not ignore.`
     )
   }
+
+  return lines.join('\n')
+}
+
+function buildHardConstraintsSection(profile: OnboardingProfile): string {
+  const data = profile.onboarding_data
+  const training = data?.training
+  const environment = resolveWorkoutEnvironment(profile)
+  const equipment = (training?.equipmentAvailable ?? []).filter(Boolean)
+  const location = training?.location ?? 'gym'
+
+  const lines = [
+    '## Hard Constraints (MUST obey — never violate)',
+    buildDietHardConstraintsSection(profile).replace('## Diet Hard Constraints (MUST obey — never violate)\n', ''),
+  ]
 
   if (environment === 'home') {
     lines.push(

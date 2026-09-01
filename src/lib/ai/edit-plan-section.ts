@@ -4,6 +4,8 @@ import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import {
   CALORIE_FORMULA_PROMPT_RULES,
   DAY_HEADER_PROMPT_RULES,
+  DIET_COACH_WRITING_RULES,
+  DIET_PREFERENCE_ENFORCEMENT_RULES,
   EDIT_CALORIE_PRESERVATION_RULES,
   EDIT_EXPENDITURE_FIRST_RULES,
   EXERCISE_NAME_PROMPT_RULES,
@@ -13,6 +15,7 @@ import {
   WORKOUT_SECTION_PROMPT_RULES,
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
+import { buildDietHardConstraintsSection } from '@/lib/ai/prompt-builder'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
 import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction } from '@/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
@@ -51,7 +54,18 @@ export type EditPlanSectionInput = {
   previousCalories?: number | null
   profile?: Pick<
     OnboardingProfile,
-    'weight' | 'height' | 'age' | 'gender' | 'activity_level' | 'fitness_goal' | 'onboarding_data' | 'sleep_duration' | 'training_experience' | 'injuries'
+    | 'weight'
+    | 'height'
+    | 'age'
+    | 'gender'
+    | 'activity_level'
+    | 'fitness_goal'
+    | 'onboarding_data'
+    | 'sleep_duration'
+    | 'training_experience'
+    | 'injuries'
+    | 'diet_preference'
+    | 'medical_notes'
   > | null
 }
 
@@ -185,6 +199,8 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     '- Preserve useful structure: day headers as Day N (Weekday) with Day 1 = Monday, meal names, exercise lines with sets x reps (plain letter x).',
     DAY_HEADER_PROMPT_RULES,
     input.section === 'nutrition' ? CALORIE_FORMULA_PROMPT_RULES : null,
+    input.section === 'nutrition' ? DIET_PREFERENCE_ENFORCEMENT_RULES : null,
+    input.section === 'nutrition' ? DIET_COACH_WRITING_RULES : null,
     calorieRules,
     mandatoryCalorieTarget,
     targetsMaintenance
@@ -216,6 +232,9 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     `Section: ${section}`,
     source === 'coach' ? 'Task: coach-directed fresh rewrite.' : 'Task: client-requested fresh rewrite.',
     input.remakeFromScratch ? 'Mode: REMAKE FROM SCRATCH — ignore current draft body.' : null,
+    input.section === 'nutrition' && input.profile
+      ? buildDietHardConstraintsSection(input.profile as OnboardingProfile)
+      : null,
     '',
     source === 'coach' ? '## Coach instruction' : '## Client request',
     instruction,

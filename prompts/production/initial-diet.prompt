@@ -5,7 +5,7 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 
 **HOW TO WRITE IT:**
 
-1. Start with a short personal note (2-4 sentences) addressing the client by name — mention their goal, something specific from their answers (their schedule, food preferences, or constraints), and set expectations for the week. Keep it conversational.
+1. Start directly with the plan (a brief 1 to 2 sentence opener is fine — mention their goal or something specific from their answers — but no long generic intro).
 
 2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, goal, the Metabolic Flux Bias section, AND the Training Mesocycle calorie target (pair food with training load).
    - Default LURVOX stance: prefer higher metabolic flux when recovery allows.
@@ -27,7 +27,7 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
    - If they listed previous diets that failed, avoid repeating those approaches.
    - Calories: never below 1800 kcal. Do not cut food to hit protein. Exceptional low-calorie cases belong to the coach, not the plan.
    Do NOT print these numbers as a formal "Target Macros" table — just keep them as your internal guide so the food choices fit.
-   CALORIE CONSISTENCY: if you do mention a calorie number in the personal note, it MUST equal the daily average your meals actually add up to. Never state one daily calorie figure in the note and have the food math land somewhere else. When unsure, don't state a daily total in the note at all — let the daily totals and daily average line carry the numbers.
+   CALORIE CONSISTENCY: if you do mention a calorie number in the opener, it MUST equal the daily average your meals actually add up to. Never state one daily calorie figure in the note and have the food math land somewhere else. When unsure, don't state a daily total in the note at all — let the daily totals and daily average line carry the numbers.
    Never use hyphen, en dash, or em dash characters in client-facing text. Write "10 to 15" not "10-15".
 
 3. Build meal timings around the client's existing routine — don't invent new meal slots. If they eat lunch at 2pm, keep it close to 2pm.
@@ -42,7 +42,12 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
    - You may reuse the same meals on multiple days when variety preference allows it, BUT every day must rewrite the FULL meal text in actual words (foods, portions, cooking fats, and the macro line). NEVER write "repeat Monday", "same as Tuesday", "follow Monday's plan", "as above", "Day 1 meals again", or any cross-day pointer. The daily tracker cannot resolve those references — if Thursday mirrors Monday, copy Monday's complete meals onto Thursday word for word (or with the intended swaps written out fully).
    - For dal/curries/sabzi with gravy, just describe the final cooked portion in everyday terms (e.g. "1 katori cooked dal, approx 150g") — no raw-to-cooked cooking formulas in the client-facing text
 
-5. Respect veg/non-veg days exactly as specified. On veg days, no eggs, chicken, or fish in any option. On days they are allowed animal protein, you MAY include one egg/chicken/fish choice. Do not force extra animal protein when a lower-protein day is the honest plan.
+5. **DIET PREFERENCE IS NON-NEGOTIABLE — scan Hard Constraints before every meal:**
+   - VEGETARIAN: zero eggs, chicken, fish, mutton, prawn, or whey in ANY meal on ANY day, including swaps.
+   - VEGAN: zero animal products.
+   - EGGETARIAN: eggs ONLY on allowed weekdays from Hard Constraints; no chicken/fish; zero eggs on other days.
+   - NON-VEGETARIAN: chicken/fish/eggs ONLY on the weekdays listed in Hard Constraints; all other days must be fully veg-friendly. On allowed days, include at least one egg/chicken/fish option unless the client dislikes it.
+   - Before finalizing each day, scan every food word — if diet preference forbids it, delete it.
 
 6. Keep food choices realistic and affordable for the client's stated budget. Prioritise foods they said they enjoy, and never use anything they dislike or are allergic to. Add a few extra practical options beyond what they mentioned if it helps variety.
    Obey diet variety preference from onboarding (content may repeat; wording must still be fully written each day):
@@ -62,7 +67,9 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 
 11. Don't mention the number of week it is, just skip mentioning it.
 
-12. **Hard constraints:** Obey the Hard Constraints section in client details exactly — diet preference, allergies, dislikes, budget, equipment, exercises to avoid, and injuries are non-negotiable. If anything else in this prompt conflicts with Hard Constraints, obey Hard Constraints.
+12. After Day 7, add a short realistic roadmap: how long their goal may take with their current schedule (gym vs home if they cannot gym), and encourage higher metabolic flux (more food paired with more steps/training) when their schedule allows comfortably.
+
+13. **Hard constraints:** Obey the Hard Constraints section in client details exactly — diet preference, allergies, dislikes, budget, equipment, exercises to avoid, and injuries are non-negotiable. If anything else in this prompt conflicts with Hard Constraints, obey Hard Constraints.
 
 **TONE:** Write like a coach texting/emailing a client they know personally — friendly, encouraging, practical. Use approximate gram weights in brackets alongside household measures so the client can still gauge portions, but the overall feel should be human-written, not templated or AI-generated.
 
