@@ -12,6 +12,7 @@ import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
 import { queueMetaPurchase } from '@/lib/analytics/meta-pixel';
+import { readMetaBrowserIds } from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
 import {
   formatInrFromPaise,
@@ -467,6 +468,7 @@ function CheckoutForm() {
     razorpay_payment_id: string;
     razorpay_signature: string;
   }) => {
+    const metaIds = readMetaBrowserIds();
     const verifyRes = await fetch('/api/payment/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -475,6 +477,8 @@ function CheckoutForm() {
         email,
         name,
         phone,
+        meta_fbp: metaIds.fbp,
+        meta_fbc: metaIds.fbc,
         ...payload,
       }),
     });

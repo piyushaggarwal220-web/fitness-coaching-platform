@@ -10,6 +10,7 @@ import {
 import { shouldBypassPayment } from '@/lib/config'
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
+import { metaAttributionFromRequest } from '@/lib/analytics/meta-attribution'
 import { getOrderPolicyAcknowledgement } from '@/lib/payments/policy-acknowledgement'
 import {
   isCurrentPolicyAcknowledgement,
@@ -32,6 +33,8 @@ type VerifyPaymentBody = {
   email?: string
   name?: string
   phone?: string
+  meta_fbp?: string
+  meta_fbc?: string
   razorpay_order_id?: string
   razorpay_payment_id?: string
   razorpay_signature?: string
@@ -232,6 +235,8 @@ export async function POST(request: Request) {
       }
     }
 
+    const metaAttribution = metaAttributionFromRequest(request, body)
+
     await Promise.allSettled([
       sendMetaPurchase({
         purchaseId: result.purchaseId,
@@ -241,6 +246,7 @@ export async function POST(request: Request) {
         amountPaise: chargedAmountPaise,
         currency: 'INR',
         planSlug: plan.slug,
+        ...metaAttribution,
       }),
       result.claimToken
         ? sendAccountSetupRecovery({

@@ -18,6 +18,7 @@ import {
 } from '@/lib/payments/razorpay'
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
+import { metaAttributionFromRequest } from '@/lib/analytics/meta-attribution'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   fulfillExerciseLibraryAddon,
@@ -244,6 +245,16 @@ export async function POST(request: Request) {
         razorpayOrderId: payment.order_id,
         amountPaise: payment.amount,
       })
+      await sendMetaPurchase({
+        purchaseId: result.purchaseId,
+        paymentId: payment.id,
+        email,
+        phone: notes.customer_phone || payment.contact || null,
+        amountPaise: payment.amount,
+        currency: payment.currency || 'INR',
+        planSlug: 'exercise_library',
+        ...metaAttributionFromRequest(request),
+      }).catch(() => undefined)
       return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: 'exercise_library' })
     }
 
@@ -335,6 +346,7 @@ export async function POST(request: Request) {
         amountPaise: payment.amount,
         currency: payment.currency || 'INR',
         planSlug: plan.slug,
+        ...metaAttributionFromRequest(request),
       }),
       result.claimToken
         ? sendAccountSetupRecovery({

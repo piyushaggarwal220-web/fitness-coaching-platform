@@ -8,8 +8,11 @@ import {
 } from '@/lib/payments/checkout-discounts'
 import {
   EXERCISE_LIBRARY_ADDON_KIND,
+  EXERCISE_LIBRARY_PLAN_SLUG,
   fulfillExerciseLibraryAddon,
 } from '@/lib/payments/exercise-library-addon'
+import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
+import { metaAttributionFromRequest } from '@/lib/analytics/meta-attribution'
 import {
   createRazorpayOrder,
   fetchRazorpayOrder,
@@ -167,5 +170,15 @@ export async function PUT(request: Request) {
     razorpayOrderId: order.id,
     amountPaise: payment.amount,
   })
+  await sendMetaPurchase({
+    purchaseId: result.purchaseId,
+    paymentId: payment.id,
+    email,
+    phone,
+    amountPaise: payment.amount,
+    currency: payment.currency || 'INR',
+    planSlug: EXERCISE_LIBRARY_PLAN_SLUG,
+    ...metaAttributionFromRequest(request),
+  }).catch(() => undefined)
   return NextResponse.json({ success: true, entitled: true, purchaseId: result.purchaseId })
 }

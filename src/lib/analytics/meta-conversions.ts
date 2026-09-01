@@ -12,6 +12,17 @@ export type MetaPurchaseInput = {
   currency: string
   planSlug: string
   eventTime?: number
+  /** Meta browser cookies — improves CAPI match rate when browser pixel is blocked. */
+  fbp?: string | null
+  fbc?: string | null
+  clientIpAddress?: string | null
+  clientUserAgent?: string | null
+}
+
+type MetaCapiResponse = {
+  events_received?: number
+  messages?: Array<{ error_type?: string; message?: string }>
+  error?: { message?: string; type?: string; code?: number }
 }
 
 function sha256(value: string): string {
@@ -58,11 +69,19 @@ export async function sendMetaPurchase(
     return { ok: true, skipped: true, eventId }
   }
 
-  const userData: Record<string, string[]> = {
+  const userData: Record<string, string | string[]> = {
     em: [sha256(normalizedEmail(input.email))],
   }
   const phone = normalizePhoneForWhatsApp(input.phone)
   if (phone) userData.ph = [sha256(phone.replace(/\D/g, ''))]
+  const fbp = input.fbp?.trim()
+  const fbc = input.fbc?.trim()
+  if (fbp) userData.fbp = fbp
+  if (fbc) userData.fbc = fbc
+  const clientIp = input.clientIpAddress?.trim()
+  const clientUa = input.clientUserAgent?.trim()
+  if (clientIp) userData.client_ip_address = clientIp
+  if (clientUa) userData.client_user_agent = clientUa
 
   try {
     const response = await fetch(`https://graph.facebook.com/${apiVersion}/${pixelId}/events`, {
@@ -91,8 +110,19 @@ export async function sendMetaPurchase(
       }),
     })
 
+    let payload: MetaCapiResponse | null = null
+    try {
+      payload = (await response.json()) as MetaCapiResponse
+    } catch {
+      payload = null
+    }
+
     if (!response.ok) {
-      const error = `Meta CAPI HTTP ${response.status}`
+      const apiMessage = payload?.error?.message?.slice(0, 240)
+      const error = apiMessage
+        ? `Meta CAPI HTTP ${response.status}: ${apiMessage}`
+        : `Meta CAPI HTTP ${response.status}`
+      console.error('[meta-capi] Purchase failed', { purchaseId: input.purchaseId, error })
       await admin
         .from('purchases')
         .update({ meta_purchase_status: 'failed', meta_purchase_error: error })
@@ -100,6 +130,33 @@ export async function sendMetaPurchase(
       return { ok: false, eventId, error }
     }
 
+    const eventsReceived = payload?.events_received ?? 0
+    const messageErrors = (payload?.messages ?? [])
+      .map((m) => m.message?.trim())
+      .filter((m): m is string => Boolean(m))
+    if (eventsReceived < 1 || messageErrors.length > 0) {
+      const error = (
+        messageErrors[0] ||
+        payload?.error?.message ||
+        `Meta CAPI accepted 0 events (received=${eventsReceived})`
+      ).slice(0, 300)
+      console.error('[meta-capi] Purchase rejected by Meta', {
+        purchaseId: input.purchaseId,
+        eventsReceived,
+        error,
+      })
+      await admin
+        .from('purchases')
+        .update({ meta_purchase_status: 'failed', meta_purchase_error: error })
+        .eq('id', input.purchaseId)
+      return { ok: false, eventId, error }
+    }
+
+    console.info('[meta-capi] Purchase sent', {
+      purchaseId: input.purchaseId,
+      eventId,
+      eventsReceived,
+    })
     await admin
       .from('purchases')
       .update({
