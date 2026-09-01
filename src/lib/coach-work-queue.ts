@@ -378,7 +378,9 @@ export async function getCoachWorkQueue(
           : `${weeklyLabel} requested by ${name}`,
       subtitle: request.scheduled_for
         ? new Date(request.scheduled_for).toLocaleString('en-IN')
-        : 'Open chat to schedule or resolve',
+        : isWeekly
+          ? 'Call anytime this week'
+          : 'Open chat to schedule or resolve',
       href: `/coach/chat/${request.conversation_id}`,
       clientId: request.client_id,
       clientName: name,

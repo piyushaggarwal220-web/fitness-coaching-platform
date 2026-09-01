@@ -420,6 +420,20 @@ export function syncStoredDietText(text: string, opts: StabilizeDietCaloriesOpti
   return stabilizeDietCaloriesAfterEdit(text, opts)
 }
 
+/** Run before persisting a coach-edited nutrition plan so header macros match meal math. */
+export function prepareNutritionPlanForSave(
+  text: string | null | undefined,
+  opts: { previousCalories?: number | null; floorKcal?: number } = {}
+): string | null {
+  const trimmed = text?.trim()
+  if (!trimmed) return null
+  return syncStoredDietText(trimmed, {
+    previousCalories: opts.previousCalories ?? parseHeaderCalories(trimmed),
+    preserveCalories: false,
+    floorKcal: opts.floorKcal,
+  })
+}
+
 /**
  * After an in-place diet edit, keep calories stable for food swaps and enforce floor / weekly caps.
  */
@@ -446,13 +460,6 @@ export function stabilizeDietCaloriesAfterEdit(
     // Meal / daily-total lines are the source of truth — never keep a stale header when food changed.
     targetCalories = inferred.calories
     if (
-      opts.preserveCalories &&
-      typeof previous === 'number' &&
-      previous > 0 &&
-      Math.abs(inferred.calories - previous) <= EDIT_CALORIE_PRESERVE_TOLERANCE
-    ) {
-      targetCalories = previous
-    } else if (
       typeof previous === 'number' &&
       previous > 0 &&
       Math.abs(inferred.calories - previous) <= KCAL_MISMATCH_TOLERANCE
@@ -497,14 +504,17 @@ export function stabilizeDietCaloriesAfterEdit(
     targetCalories = Math.max(targetCalories, floorKcal)
   }
 
+  const trustFoodTotals = hasReliableFoodTotals(trimmed) && inferred && inferred.calories > 0
+
   const macros: MacroTotals = {
     calories: targetCalories,
-    protein:
-      opts.preserveCalories && headerProtein > 0
+    protein: trustFoodTotals
+      ? inferred!.protein
+      : opts.preserveCalories && headerProtein > 0
         ? headerProtein
         : inferred?.protein ?? headerProtein,
-    carbs: inferred?.carbs ?? headerCarbs,
-    fat: inferred?.fat ?? headerFat,
+    carbs: trustFoodTotals ? inferred!.carbs : inferred?.carbs ?? headerCarbs,
+    fat: trustFoodTotals ? inferred!.fat : inferred?.fat ?? headerFat,
   }
 
   let out = rewriteNutritionHeader(trimmed, macros)

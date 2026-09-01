@@ -124,7 +124,10 @@ async function closeStaleWeeklyCallIfNeeded(
   clientId: string
 ): Promise<void> {
   const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-  const { data: stale } = await admin
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const now = new Date().toISOString()
+
+  const { data: staleScheduled } = await admin
     .from('call_requests')
     .select('id, scheduled_for, status, source')
     .eq('client_id', clientId)
@@ -135,19 +138,44 @@ async function closeStaleWeeklyCallIfNeeded(
     .limit(1)
     .maybeSingle()
 
-  if (!stale?.id) return
+  if (staleScheduled?.id) {
+    await admin
+      .from('call_requests')
+      .update({
+        status: 'cancelled',
+        resolved_at: now,
+        coach_note: 'Auto-closed — weekly slot passed without completion',
+        updated_at: now,
+      })
+      .eq('id', staleScheduled.id)
+      .in('status', ['requested', 'scheduled'])
+    return
+  }
 
-  const now = new Date().toISOString()
+  const { data: staleOpen } = await admin
+    .from('call_requests')
+    .select('id, requested_at, status, source')
+    .eq('client_id', clientId)
+    .eq('source', 'weekly_entitlement')
+    .eq('status', 'requested')
+    .is('scheduled_for', null)
+    .lt('requested_at', weekAgo)
+    .order('requested_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!staleOpen?.id) return
+
   await admin
     .from('call_requests')
     .update({
       status: 'cancelled',
       resolved_at: now,
-      coach_note: 'Auto-closed — weekly slot passed without completion',
+      coach_note: 'Auto-closed — weekly call was not completed within 7 days',
       updated_at: now,
     })
-    .eq('id', stale.id)
-    .in('status', ['requested', 'scheduled'])
+    .eq('id', staleOpen.id)
+    .eq('status', 'requested')
 }
 
 export async function ensureWeeklyCallForClient(
@@ -200,15 +228,6 @@ export async function ensureWeeklyCallForClient(
     .maybeSingle()
   const actorUserId = options?.actorUserId ?? coach?.user_id ?? clientId
 
-  const weekday = profile.preferred_call_weekday ?? DEFAULT_WEEKDAY
-  const hourIst = profile.preferred_call_hour_ist ?? DEFAULT_HOUR_IST
-  // First (and subsequent) slots must land on/after the 2-week mark.
-  const afterCandidate = options?.after ?? new Date()
-  const after =
-    afterCandidate.getTime() > window.earliestAfter.getTime()
-      ? afterCandidate
-      : window.earliestAfter
-  const scheduledFor = computeNextCallSlotUtc(weekday, hourIst, after)
   const now = new Date().toISOString()
 
   const { data: created, error } = await admin
@@ -217,11 +236,11 @@ export async function ensureWeeklyCallForClient(
       conversation_id: conversation.id,
       client_id: clientId,
       coach_id: profile.coach_id,
-      status: 'scheduled',
+      status: 'requested',
       source: 'weekly_entitlement',
       requested_at: now,
-      scheduled_for: scheduledFor.toISOString(),
-      coach_note: 'Weekly 12-month coaching call (auto-scheduled)',
+      scheduled_for: null,
+      coach_note: 'Weekly 12-month coaching call — coach calls when ready',
       updated_by: actorUserId,
       created_at: now,
       updated_at: now,
@@ -240,10 +259,10 @@ export async function ensureWeeklyCallForClient(
   await admin.from('call_request_events').insert({
     call_request_id: created.id,
     from_status: null,
-    to_status: 'scheduled',
+    to_status: 'requested',
     actor_user_id: actorUserId,
-    scheduled_for: scheduledFor.toISOString(),
-    note: 'Auto-scheduled weekly 12-month call',
+    scheduled_for: null,
+    note: 'Weekly 12-month call opened — coach calls anytime',
   })
 
   if (coach?.user_id) {
@@ -257,8 +276,8 @@ export async function ensureWeeklyCallForClient(
     await sendNotification({
       userId: coach.user_id,
       type: 'call_requested',
-      title: 'Weekly call scheduled',
-      body: `${name} — weekly 12-month call on ${scheduledFor.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}.`,
+      title: 'Weekly call due',
+      body: `${name} is due for their weekly 12-month call — call anytime this week.`,
       actionUrl: `/coach/chat/${conversation.id}`,
       metadata: { callRequestId: created.id, conversationId: conversation.id, source: 'weekly_entitlement' },
     })
@@ -268,10 +287,10 @@ export async function ensureWeeklyCallForClient(
   await sendNotification({
     userId: clientId,
     type: 'call_request_updated',
-    title: 'Weekly coach call booked',
-    body: `Your weekly phone call is scheduled for ${scheduledFor.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}.`,
+    title: 'Weekly coach call',
+    body: 'Your coach will call you this week when ready — no fixed time slot.',
     actionUrl: '/client/chat',
-    metadata: { callRequestId: created.id, status: 'scheduled' },
+    metadata: { callRequestId: created.id, status: 'requested' },
   })
 
   return { created: true, callId: created.id }

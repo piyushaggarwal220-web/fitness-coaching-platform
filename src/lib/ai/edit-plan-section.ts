@@ -297,7 +297,13 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
           : revisedRaw
 
       // Reject near-copies when the coach asked for a targeted rewrite (not a scratch remake).
-      if (currentText && attempt === 0 && touchesCalories && !input.remakeFromScratch) {
+      if (
+        currentText &&
+        attempt < maxAttempts - 1 &&
+        source === 'coach' &&
+        instruction.trim() &&
+        !input.remakeFromScratch
+      ) {
         const similarity = planTextSimilarityLocal(currentText, revisedText)
         if (similarity >= 0.93) {
           continue

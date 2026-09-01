@@ -616,6 +616,48 @@ Post-Workout:
   )
 }
 
+{
+  const walkingPlan: Plan = {
+    ...planV1,
+    workout_plan: `Day 1 (Monday) — Lower
+Warm-up
+Walking: 3 sets x 15 min
+
+Main Workout
+Barbell Back Squat: 4 sets x 6 reps`,
+  }
+  const walkingSnap = buildTrackerSnapshot(walkingPlan)
+  const walkingWorkout = walkingSnap.items.find((i) => i.type === 'workout')
+  const walkingEx =
+    walkingWorkout?.type === 'workout'
+      ? walkingWorkout.exercises.find((ex) => /walk/i.test(ex.name))
+      : undefined
+  assert('walking is a single timed session not multi-set strength', walkingEx?.targetSets === 1)
+  assert('walking duration preserved', walkingEx?.targetReps === '15 min')
+}
+
+{
+  const macroPlan: Plan = {
+    ...planV1,
+    nutrition_plan: `Day 1 (Monday)
+Breakfast
+Oats and eggs (P: 28g | C: 45g | F: 12g | ~420 kcal)
+
+Lunch
+Chicken rice (P: 40g | C: 55g | F: 10g | ~520 kcal)`,
+  }
+  const macroSnap = buildTrackerSnapshot(macroPlan)
+  const breakfast = macroSnap.items.find(
+    (i) => i.type === 'meal' && i.title === 'Breakfast'
+  )
+  assert(
+    'parses parenthetical meal macro line',
+    breakfast?.type === 'meal' &&
+      breakfast.macros?.calories === 420 &&
+      breakfast.macros?.protein === 28
+  )
+}
+
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)
   process.exit(1)

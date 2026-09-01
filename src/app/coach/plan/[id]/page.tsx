@@ -20,6 +20,8 @@ import {
   validatePlanForm,
 } from '@/lib/plans'
 import { prepareCoachNotesForSave } from '@/lib/plan-metadata';
+import { prepareNutritionPlanForSave, parseHeaderCalories } from '@/lib/ai/nutrition-macro-sync';
+import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules';
 import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-sync';
 import { requireCoach } from '@/lib/coach-session';
 import { PlanVersionHistory } from '@/components/coach/PlanVersionHistory';
@@ -164,13 +166,22 @@ export default function CoachPlanDetailPage() {
     setError('');
     setSuccess('');
 
+    const syncedNutrition = form.nutrition_plan.trim()
+      ? prepareNutritionPlanForSave(form.nutrition_plan, {
+          previousCalories: parseHeaderCalories(plan.nutrition_plan),
+          floorKcal: clientProfile?.weight
+            ? resolveDietFloorKcal(clientProfile.weight)
+            : undefined,
+        })
+      : null;
+
     const { error: updateError } = await supabase
       .from('plans')
       .update({
         title: form.title.trim(),
         phase: form.phase.trim() || null,
         workout_plan: form.workout_plan.trim() || null,
-        nutrition_plan: form.nutrition_plan.trim() || null,
+        nutrition_plan: syncedNutrition,
         cardio_plan: form.cardio_plan.trim() || null,
         supplement_plan: form.supplement_plan.trim() || null,
         coach_notes: prepareCoachNotesForSave(form.coach_notes, plan),
@@ -182,7 +193,11 @@ export default function CoachPlanDetailPage() {
       setError(updateError.message);
     } else {
       const savedAt = new Date().toISOString();
-      setPlan({ ...plan, ...form, updated_at: savedAt });
+      const savedForm = syncedNutrition
+        ? { ...form, nutrition_plan: syncedNutrition }
+        : form;
+      setForm(savedForm);
+      setPlan({ ...plan, ...savedForm, updated_at: savedAt });
       invalidatePlanEdit(plan.client_id);
       if (plan.active) {
         const sync = await syncTrackerAfterPlanPublishAsync(plan.client_id, plan.id);

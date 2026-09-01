@@ -23,7 +23,14 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 7
+export const TRACKER_PARSER_VERSION = 8
+
+const CARDIO_MOVEMENT =
+  /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
+
+function isCardioExerciseName(name: string): boolean {
+  return CARDIO_MOVEMENT.test(name)
+}
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
@@ -49,17 +56,27 @@ function parseMealMacros(text: string): { macros: MealMacros; cleaned: string } 
   const macros: MealMacros = {}
   let cleaned = text
 
-  const kcalMatch = text.match(/(?:~|≈|about\s*)?(\d{2,4})\s*(?:kcal|calories?)/i)
-  if (kcalMatch) macros.calories = Number(kcalMatch[1])
+  const parenMatch = text.match(
+    /\(P:\s*(\d+)\s*g\s*\|\s*C:\s*(\d+)\s*g\s*\|\s*F:\s*(\d+)\s*g\s*\|\s*~?\s*(\d+)\s*kcal\)/i
+  )
+  if (parenMatch) {
+    macros.protein = Number(parenMatch[1])
+    macros.carbs = Number(parenMatch[2])
+    macros.fat = Number(parenMatch[3])
+    macros.calories = Number(parenMatch[4])
+  } else {
+    const kcalMatch = text.match(/(?:~|≈|about\s*)?(\d{2,4})\s*(?:kcal|calories?)/i)
+    if (kcalMatch) macros.calories = Number(kcalMatch[1])
 
-  const proteinMatch = text.match(/(?:P|Protein)[:\s]+(\d+)\s*g/i)
-  if (proteinMatch) macros.protein = Number(proteinMatch[1])
+    const proteinMatch = text.match(/(?:P|Protein)[:\s]+(\d+)\s*g/i)
+    if (proteinMatch) macros.protein = Number(proteinMatch[1])
 
-  const carbsMatch = text.match(/(?:C|Carbs?)[:\s]+(\d+)\s*g/i)
-  if (carbsMatch) macros.carbs = Number(carbsMatch[1])
+    const carbsMatch = text.match(/(?:C|Carbs?)[:\s]+(\d+)\s*g/i)
+    if (carbsMatch) macros.carbs = Number(carbsMatch[1])
 
-  const fatMatch = text.match(/(?:F|Fat)[:\s]+(\d+)\s*g/i)
-  if (fatMatch) macros.fat = Number(fatMatch[1])
+    const fatMatch = text.match(/(?:F|Fat)[:\s]+(\d+)\s*g/i)
+    if (fatMatch) macros.fat = Number(fatMatch[1])
+  }
 
   cleaned = cleaned
     .replace(/\(P:\s*\d+g\s*\|\s*C:\s*\d+g\s*\|\s*F:\s*\d+g\s*\|\s*~?\d+\s*kcal\)/gi, '')
@@ -441,6 +458,27 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     /^(.{2,60}?)\s*:?\s*(\d+)\s*(?:x\s*)?(s|sec|secs|seconds|min|mins|minutes)\b(?:\s*(?:each(?:\s+side)?|hold|\/side)?)?\s*$/i
   )
 
+  const durationUnit = String.raw`(min|mins|minutes|sec|secs|seconds|s)\b`
+  const setsDuration = new RegExp(
+    String.raw`^(.+?)\s*[:–—]?\s*(\d+)\s*sets?\s*[x×]\s*(\d+)\s*${durationUnit}`,
+    'i'
+  )
+  const cardioSetsDuration = trimmed.match(setsDuration)
+  if (cardioSetsDuration && isCardioExerciseName(cardioSetsDuration[1]!)) {
+    const cardioName = cardioSetsDuration[1]!.trim().replace(/:$/, '')
+    const amount = cardioSetsDuration[3]!
+    const unit = cardioSetsDuration[4]!.toLowerCase()
+    const reps = /m/.test(unit) ? `${amount} min` : `${amount}s`
+    return withTrackingMeta({
+      id: `ex-${phase}-${slug(cardioName)}-${index}`,
+      name: cardioName,
+      targetSets: 1,
+      targetReps: reps,
+      phase,
+      restSeconds: 20,
+    })
+  }
+
   const match = trimmed.match(setsReps) ?? trimmed.match(setsOf) ?? trimmed.match(setsComma) ?? trimmed.match(compact)
   if (!match && timedHold && timedHold[1]!.trim().length >= 2) {
     const holdName = timedHold[1]!.trim().replace(/:$/, '')
@@ -534,6 +572,31 @@ function parseLooseExerciseLine(
   if (/\b(should|ensure|remember|make sure|client|coach)\b/i.test(trimmed)) return null
   const words = trimmed.split(/\s+/).filter(Boolean)
   if (trimmed.length < 3 || trimmed.length > 70 || words.length > 10) return null
+
+  const cardioTimed = trimmed.match(/^(.+?)\s*:?\s*(\d+)\s*(min|mins|minutes)\b/i)
+  if (cardioTimed && isCardioExerciseName(cardioTimed[1]!)) {
+    const cardioName = cardioTimed[1]!.trim().replace(/:$/, '')
+    return withTrackingMeta({
+      id: `ex-${phase}-${slug(cardioName)}-${index}`,
+      name: cardioName,
+      targetSets: 1,
+      targetReps: `${cardioTimed[2]} min`,
+      phase,
+      restSeconds: 20,
+    })
+  }
+  if (isCardioExerciseName(trimmed.replace(/[.:]+$/, '').trim())) {
+    const cardioName = trimmed.replace(/[.:]+$/, '').trim()
+    return withTrackingMeta({
+      id: `ex-${phase}-${slug(cardioName)}-${index}`,
+      name: cardioName,
+      targetSets: 1,
+      targetReps: 'as needed',
+      phase,
+      restSeconds: 20,
+    })
+  }
+
   const allowLoose =
     phase !== 'main' || LOOSE_MOVEMENT.test(trimmed) || /^(?:[A-Za-z]\d+[.)]|\d+[.)])/.test(line.trim())
   if (!allowLoose) return null

@@ -625,7 +625,9 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                   <CalendarClock size={15} />
                   {activeCallRequest.status === 'scheduled' && activeCallRequest.scheduled_for
                     ? `Call booked · ${new Date(activeCallRequest.scheduled_for).toLocaleString('en-IN')}`
-                    : 'Call booked — waiting for a time'}
+                    : activeCallRequest.source === 'weekly_entitlement'
+                      ? 'Weekly call — coach will call when ready'
+                      : 'Call booked — waiting for a time'}
                 </span>
                 <button
                   type="button"
@@ -703,14 +705,18 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
             <p style={{ margin: '8px 0 0', fontSize: 13, color: wa.textMuted }}>
               Scheduled: {new Date(activeCallRequest.scheduled_for).toLocaleString('en-IN')}
             </p>
-          ) : activeCallRequest.source !== 'weekly_entitlement' ? (
+          ) : activeCallRequest.source === 'weekly_entitlement' ? (
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: wa.textMuted }}>
+              Call anytime this week — mark complete when done.
+            </p>
+          ) : (
             <input
               type="datetime-local"
               value={scheduledFor}
               onChange={(event) => setScheduledFor(event.target.value)}
               style={styles.scheduleInput}
             />
-          ) : null}
+          )}
           {activeCallRequest.source !== 'weekly_entitlement' && activeCallRequest.status === 'requested' ? (
             <button type="button" onClick={() => void updateCallRequest('scheduled')} disabled={callRequestBusy} style={styles.callAction}>Schedule</button>
           ) : null}

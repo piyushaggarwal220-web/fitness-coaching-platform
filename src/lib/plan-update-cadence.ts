@@ -41,9 +41,9 @@ export async function fetchCapturedPlanSlug(userId: string): Promise<string | nu
   const admin = createAdminClient()
   const { data } = await admin
     .from('purchases')
-    .select('plan_slug')
+    .select('plan_slug, status, created_at')
     .eq('user_id', userId)
-    .eq('status', 'captured')
+    .in('status', ['captured', 'redeemed'])
     .neq('plan_slug', 'exercise_library')
     .order('created_at', { ascending: false })
     .limit(1)

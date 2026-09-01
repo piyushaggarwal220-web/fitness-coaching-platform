@@ -59,6 +59,13 @@ function formatBulletLines(items: unknown[], indent = '  • '): string {
     .join('\n')
 }
 
+const CARDIO_MOVEMENT =
+  /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
+
+function isCardioExerciseName(name: string): boolean {
+  return CARDIO_MOVEMENT.test(name)
+}
+
 function formatExerciseLine(item: unknown): string {
   if (typeof item === 'string') return item.trim()
   if (!isRecord(item)) return formatScalar(item)
@@ -75,6 +82,9 @@ function formatExerciseLine(item: unknown): string {
 
   if (name && sets != null && reps != null) {
     return `${name}: ${sets} sets x ${formatScalar(reps)} reps`
+  }
+  if (name && duration != null && (sets == null || isCardioExerciseName(name))) {
+    return `${name}: ${formatScalar(duration)}`
   }
   if (name && sets != null && duration != null) {
     return `${name}: ${sets} sets x ${formatScalar(duration)}`
