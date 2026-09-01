@@ -22,7 +22,7 @@ function authorizeCron(request: Request): boolean {
   return secrets.some((secret) => header === `Bearer ${secret}` || query === secret)
 }
 
-export async function GET(request: Request) {
+async function runBackfill(request: Request) {
   if (!authorizeCron(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -38,4 +38,12 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ ok: true, ...summary })
+}
+
+export async function GET(request: Request) {
+  return runBackfill(request)
+}
+
+export async function POST(request: Request) {
+  return runBackfill(request)
 }
