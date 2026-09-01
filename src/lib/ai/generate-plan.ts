@@ -24,6 +24,7 @@ import {
   loadPublishedPromptsForAction,
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
+import { enforceDietPreference } from '@/lib/ai/diet-preference-guard'
 import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
 import { formatCalorieGuidanceBlock } from '@/lib/ai/calorie-targets'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
@@ -791,6 +792,18 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         }
         throw new GeneratePlanError(
           `Diet plan failed calorie safety after ${maxAttempts} attempts: ${safety.error}`
+        )
+      }
+
+      const preferenceSafety = enforceDietPreference(plan.nutrition_plan, input.profile.diet_preference)
+      if (!preferenceSafety.ok) {
+        lastValidationError = preferenceSafety.error
+        if (attempt < maxAttempts - 1) {
+          completenessHint = preferenceSafety.hint
+          continue
+        }
+        throw new GeneratePlanError(
+          `Diet plan failed preference safety after ${maxAttempts} attempts: ${preferenceSafety.error}`
         )
       }
     }

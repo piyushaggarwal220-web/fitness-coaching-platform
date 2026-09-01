@@ -32,6 +32,8 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
    - At the end of each day, add a **Daily Total** line summing that day's PRIMARY meal macros only.
 
 5. Respect veg/non-veg days exactly as specified in Hard Constraints. On veg days, no eggs, chicken, or fish in any option. On non-veg days where animal protein is allowed, include at least one egg/chicken/fish-based choice unless the client dislikes it.
+   - VEGAN clients: never ghee, butter, milk, curd, yogurt, paneer, cheese, whey, or honey. Cooking fat = oil only. Protein = dal/soya/chana/peanuts.
+   - Never use disliked foods. Never use allergy foods.
 
 6. Keep food choices realistic and affordable for the client's stated budget. Prioritise foods they said they enjoy, and never use anything they dislike or are allergic to. Add a few extra practical options beyond what they mentioned if it helps variety.
    Obey diet variety preference from onboarding (same daily / 50-50 / different daily) — content may repeat but each day still needs full meal text written out.
@@ -40,7 +42,7 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 
 8. Add small practical touches throughout — a spice suggestion, a quick chutney, a cooking tip — written casually, like a coach giving a tip in passing, not as a separate "tips" section.
 
-8b. **Cooking fats:** For every cooked meal, specify exact ghee/oil/butter amounts (e.g. "1 tsp ghee"). Include a daily cooking-fat total once per day or in the daily total.
+8b. **Cooking fats:** For every cooked meal, specify exact fat amounts. Non-vegan: ghee/oil/butter OK. Vegan: oil only (never ghee/butter). Include a daily cooking-fat total once per day or in the daily total.
 
 9. Cover all 7 days with headers "Day 1 (Monday)" through "Day 7 (Sunday)". Never skip a day. Do not add guidance about what happens after this week.
 

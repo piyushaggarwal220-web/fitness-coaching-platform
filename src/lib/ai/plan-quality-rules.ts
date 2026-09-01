@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'lifestyle-respect-v17'
+export const PLAN_QUALITY_RULES_VERSION = 'vegan-dairy-guard-v18'
 
 /** Platform minimum daily calories before weight-based floor applies. */
 export const DIET_FLOOR_BASE_KCAL = 1900
@@ -32,13 +32,16 @@ export const CALORIE_FORMULA_PROMPT_RULES = [
 export const DIET_PREFERENCE_ENFORCEMENT_RULES = [
   'DIET PREFERENCE ENFORCEMENT (violations are the #1 failure mode — read before writing ANY meal):',
   '- Scan Hard Constraints first. Every meal and every swap on every day must obey diet preference, allergies, dislikes, and custom diet-day exceptions.',
-  '- VEGETARIAN: Never write eggs, chicken, fish, mutton, prawn, whey, or any meat/poultry/seafood in ANY meal on ANY day — including swaps and optional lines. Plant proteins only (dal, paneer, soya, chana, dairy, nuts).',
-  '- VEGAN: No animal products at all — no dairy, eggs, whey, honey.',
+  '- VEGETARIAN: Never write eggs, chicken, fish, mutton, prawn, or any meat/poultry/seafood in ANY meal on ANY day — including swaps. Dairy is OK unless allergy forbids it. Use dal, paneer, soya, chana, curd, nuts.',
+  '- VEGAN (strict — most common failure): ZERO animal products. Never write: ghee, butter, milk, curd, dahi, yogurt, yoghurt, paneer, cheese, cream, malai, lassi, whey, honey, egg, eggs, chicken, fish, mutton, prawn, meat.',
+  '- VEGAN cooking fat: oil ONLY (mustard oil, groundnut oil, coconut oil, olive oil). Never "tsp ghee" or "tsp butter".',
+  '- VEGAN protein: dal, soya chunks, tofu, chana, rajma, peanuts, peanut butter, sprouts. Never dairy protein.',
   '- EGGETARIAN: Eggs ONLY on allowed weekdays from Hard Constraints. No chicken, fish, or mutton ever. On veg-only weekdays, zero eggs in any option.',
   '- NON-VEGETARIAN: Schedule chicken, fish, or eggs ONLY on the weekdays listed in Hard Constraints. On all other weekdays every meal must be veg-friendly with no meat, fish, or eggs.',
   '- On weekdays where animal protein IS allowed, include at least one egg, chicken, or fish option in a meal (unless the client dislikes it or budget forbids).',
-  '- Before finalizing each day, scan every food word: if diet preference forbids it, delete it.',
+  '- Before finalizing each day, scan every food word: if diet preference forbids it, delete it. Self-check vegan days for ghee/curd/paneer/butter especially.',
   '- If customNotes mention diet-day exceptions (e.g. Sunday family lunch is non-veg), obey ONLY on those days or situations.',
+  '- Never use a disliked food in any meal or swap. Never use allergy foods.',
 ].join('\n')
 
 export const DIET_LIFESTYLE_RESPECT_RULES = [
@@ -66,7 +69,7 @@ export const DIET_COACH_WRITING_RULES = [
   '- Sprinkle casual cooking tips inline (spice, chutney, quick prep) — not a separate tips section.',
   '- Prioritize foods they enjoy; never use allergies or dislikes; keep budget realistic with affordable staples.',
   '- Whey only on training days when the client uses whey — include the scoop in that meal\'s macro line; otherwise food-based protein only.',
-  '- Specify ghee/oil/butter teaspoons on cooked meals plus a daily cooking-fat total.',
+  '- Specify cooking fat teaspoons on cooked meals plus a daily cooking-fat total. Default ghee/oil/butter is fine for non-vegan clients; for VEGAN clients use oil only — never ghee or butter.',
   '- Close with a casual well-wishing line for the week.',
   '- Do NOT mention coaching week numbers in diet prose.',
   '- After Day 7, add a short realistic roadmap paragraph: how long their goal may take with their current gym or home schedule, encouraging higher metabolic flux (more food paired with more steps/training) when their schedule allows comfortably. If they cannot gym, give a separate honest timeline for home training.',

@@ -65,34 +65,127 @@ const EQUIPMENT = [
   'treadmill',
 ]
 
-const MEALS = {
+const MEALS_VEG = {
   breakfast: [
-    'Oats with whey and banana',
-    'Eggs, toast, and black coffee',
     'Poha with peanuts',
-    'Greek yogurt with berries',
     'Idli with sambar',
+    'Oats with banana and curd',
+    'Paratha with curd',
+    'Besan chilla with mint chutney',
+  ],
+  lunch: [
+    'Dal, roti, and salad',
+    'Paneer wrap with side salad',
+    'Brown rice, rajma, and curd',
+    'Khichdi with kadhi',
+    'Veg pulao with raita',
+  ],
+  dinner: [
+    'Paneer bhurji with roti',
+    'Dal tadka with rice and sabzi',
+    'Soya chunks curry with roti',
+    'Palak paneer with 2 rotis',
+    'Mixed veg with dal and rice',
+  ],
+  snacks: [
+    'Roasted chana',
+    'Apple with peanut butter',
+    'Curd with fruit',
+    'Peanuts and banana',
+    'Sprouts chaat',
+  ],
+}
+
+const MEALS_VEGAN = {
+  breakfast: [
+    'Poha with peanuts',
+    'Idli with sambar',
+    'Oats with banana and peanut butter',
+    'Fruit and roasted chana',
+    'Besan chilla with green chutney',
+  ],
+  lunch: [
+    'Dal, roti, and salad',
+    'Brown rice with rajma',
+    'Khichdi with salad',
+    'Veg pulao with chutney',
+    'Soya curry with rice',
+  ],
+  dinner: [
+    'Dal tadka with rice and sabzi',
+    'Soya chunks curry with roti',
+    'Mixed veg with dal and rice',
+    'Chole with roti',
+    'Vegetable stir-fry with rice',
+  ],
+  snacks: [
+    'Roasted chana',
+    'Apple with peanut butter',
+    'Peanuts and banana',
+    'Sprouts chaat',
+    'Trail mix',
+  ],
+}
+
+const MEALS_EGG = {
+  breakfast: [
+    'Eggs, toast, and black coffee',
+    'Egg bhurji with 2 rotis',
+    'Oats with boiled eggs',
+    'Idli with sambar',
+    'Poha with peanuts',
+  ],
+  lunch: [
+    'Dal, roti, and salad',
+    'Paneer wrap with side salad',
+    'Brown rice, rajma, and curd',
+    'Egg curry with rice',
+    'Veg pulao with raita',
+  ],
+  dinner: [
+    'Paneer bhurji with roti',
+    'Dal tadka with rice and sabzi',
+    'Egg curry with 2 rotis',
+    'Soya chunks curry with roti',
+    'Palak paneer with roti',
+  ],
+  snacks: [
+    'Boiled eggs',
+    'Roasted chana',
+    'Curd with fruit',
+    'Peanuts and banana',
+    'Protein shake',
+  ],
+}
+
+const MEALS_NONVEG = {
+  breakfast: [
+    'Eggs, toast, and black coffee',
+    'Oats with whey and banana',
+    'Poha with peanuts',
+    'Idli with sambar',
+    'Egg bhurji with toast',
   ],
   lunch: [
     'Chicken rice bowl with vegetables',
     'Dal, roti, and salad',
-    'Grilled fish with quinoa',
+    'Grilled fish with rice',
     'Paneer wrap with side salad',
     'Brown rice, rajma, and curd',
   ],
   dinner: [
     'Grilled chicken with sweet potato',
-    'Tofu stir-fry with rice',
     'Fish curry with steamed rice',
     'Paneer bhurji with roti',
-    'Lean mince with vegetables',
+    'Chicken curry with 2 rotis',
+    'Dal tadka with rice and sabzi',
   ],
   snacks: [
     'Protein shake',
     'Roasted chana',
     'Apple with peanut butter',
-    'Trail mix',
-    'Cottage cheese with fruit',
+    'Boiled eggs',
+    'Curd with fruit',
   ],
 }
 
@@ -159,7 +252,7 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
 
   const struggle = pick(STRUGGLE_OPTIONS)
 
-  return {
+  const form: OnboardingFormData = {
     name: fullName,
     age: String(randomInt(22, 48)),
     gender,
@@ -215,25 +308,25 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     acne_status: pick(['never', 'previously', 'currently']),
     hair_loss_status: pick(['never', 'previously', 'currently']),
     sexual_health_status: pick(['no_issues', 'prefer_not_to_say']),
-    diet_preference: pick(DIET_OPTIONS).value,
-    egg_days: String(randomInt(0, 7)),
-    chicken_days: String(randomInt(0, 5)),
-    fish_days: String(randomInt(0, 4)),
-    egg_allowed_days: ['monday', 'wednesday', 'friday'],
-    chicken_allowed_days: ['tuesday', 'thursday', 'saturday'],
-    fish_allowed_days: ['wednesday', 'sunday'],
+    diet_preference: '',
+    egg_days: '0',
+    chicken_days: '0',
+    fish_days: '0',
+    egg_allowed_days: [],
+    chicken_allowed_days: [],
+    fish_allowed_days: [],
     whey_protein: pick(['yes', 'no']),
     food_allergies: pick(ALLERGIES),
     foods_disliked: pick(['Bitter gourd', 'Mushrooms', 'Olives', 'None']),
     previous_diets_failed: pick(['', 'Keto for 2 months — too restrictive', 'Very low calorie — lost energy']),
-    favorite_foods: pick(['Chicken, rice, dal', 'Paneer, roti, salad', 'Fish, vegetables, oats']),
+    favorite_foods: '',
     diet_custom_notes: '',
     monthly_food_budget: String(pick([6000, 8000, 10000, 12000, 15000])),
     cooking_ability: pick(['basic', 'intermediate', 'advanced']),
-    breakfast: pick(MEALS.breakfast),
-    lunch: pick(MEALS.lunch),
-    dinner: pick(MEALS.dinner),
-    snacks: pick(MEALS.snacks),
+    breakfast: '',
+    lunch: '',
+    dinner: '',
+    snacks: '',
     timing_breakfast: pick(['07:30', '08:00', '08:30']),
     timing_lunch: pick(['13:00', '13:30', '14:00']),
     timing_dinner: pick(['20:00', '20:30', '21:00']),
@@ -241,6 +334,88 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     current_supplements: pick(['Creatine, whey protein', 'Multivitamin, fish oil', 'None currently']),
     terms_accepted: true,
   }
+
+  // Keep diet preference, usual meals, and favorites consistent (no random chicken for veg clients).
+  const dietPreference = pick(DIET_OPTIONS).value
+  form.diet_preference = dietPreference
+  if (dietPreference === 'vegan') {
+    const meals = MEALS_VEGAN
+    form.breakfast = pick(meals.breakfast)
+    form.lunch = pick(meals.lunch)
+    form.dinner = pick(meals.dinner)
+    form.snacks = pick(meals.snacks)
+    form.favorite_foods = pick(['Dal, roti, rice', 'Soya, chana, vegetables', 'Poha, khichdi, sprouts'])
+    form.whey_protein = 'no'
+    form.egg_days = '0'
+    form.chicken_days = '0'
+    form.fish_days = '0'
+    form.current_supplements = pick(['Vitamin B12, vitamin D', 'Multivitamin', 'None currently'])
+  } else if (dietPreference === 'vegetarian') {
+    const meals = MEALS_VEG
+    form.breakfast = pick(meals.breakfast)
+    form.lunch = pick(meals.lunch)
+    form.dinner = pick(meals.dinner)
+    form.snacks = pick(meals.snacks)
+    form.favorite_foods = pick(['Paneer, roti, salad', 'Dal, rice, curd', 'Rajma, roti, sabzi'])
+    form.egg_days = '0'
+    form.chicken_days = '0'
+    form.fish_days = '0'
+  } else if (dietPreference === 'eggetarian') {
+    const meals = MEALS_EGG
+    form.breakfast = pick(meals.breakfast)
+    form.lunch = pick(meals.lunch)
+    form.dinner = pick(meals.dinner)
+    form.snacks = pick(meals.snacks)
+    form.favorite_foods = pick(['Eggs, roti, dal', 'Paneer, eggs, salad', 'Idli, eggs, curd'])
+    form.egg_days = String(randomInt(2, 5))
+    form.egg_allowed_days = ['monday', 'wednesday', 'friday', 'saturday'].slice(0, Number(form.egg_days))
+    form.chicken_days = '0'
+    form.fish_days = '0'
+  } else {
+    const meals = MEALS_NONVEG
+    form.breakfast = pick(meals.breakfast)
+    form.lunch = pick(meals.lunch)
+    form.dinner = pick(meals.dinner)
+    form.snacks = pick(meals.snacks)
+    form.favorite_foods = pick(['Chicken, rice, dal', 'Fish, vegetables, oats', 'Eggs, chicken, roti'])
+    form.egg_days = String(randomInt(2, 5))
+    form.chicken_days = String(randomInt(1, 3))
+    form.fish_days = String(randomInt(0, 2))
+    form.egg_allowed_days = ['monday', 'wednesday', 'friday']
+    form.chicken_allowed_days = ['tuesday', 'thursday', 'saturday']
+    form.fish_allowed_days = Number(form.fish_days) > 0 ? ['wednesday', 'sunday'] : []
+  }
+
+  // Allergies must not contradict favorites / usual meals.
+  if (/lactose/i.test(form.food_allergies)) {
+    form.favorite_foods = pick(['Dal, roti, rice', 'Soya, chana, vegetables', 'Rajma, roti, sabzi'])
+    if (/curd|paneer|milk|yogurt|whey|cheese/i.test(form.breakfast)) {
+      form.breakfast = dietPreference === 'vegan' ? 'Poha with peanuts' : 'Poha with peanuts'
+    }
+    if (/curd|paneer|milk|yogurt|whey|cheese/i.test(form.lunch)) {
+      form.lunch = 'Dal, roti, and salad'
+    }
+    if (/curd|paneer|milk|yogurt|whey|cheese/i.test(form.dinner)) {
+      form.dinner = 'Dal tadka with rice and sabzi'
+    }
+    if (/curd|paneer|milk|yogurt|whey|cheese/i.test(form.snacks)) {
+      form.snacks = 'Roasted chana'
+    }
+    form.whey_protein = 'no'
+    form.current_supplements = pick(['Vitamin D', 'Multivitamin', 'None currently'])
+  }
+  if (/nut allergy/i.test(form.food_allergies)) {
+    form.snacks = pick(['Roasted chana', 'Fruit bowl', 'Sprouts chaat'])
+    if (/peanut|almond|cashew|walnut|trail mix/i.test(form.breakfast)) {
+      form.breakfast = 'Idli with sambar'
+    }
+  }
+  if (/mushroom/i.test(form.foods_disliked)) {
+    // meals pool already has no mushrooms; keep favorites clean
+    form.favorite_foods = form.favorite_foods.replace(/mushrooms?/gi, 'vegetables')
+  }
+
+  return form
 }
 
 /** Apply completed onboarding to an existing trial client profile. */

@@ -1,3 +1,4 @@
+import { dietPreferenceBannedListForPrompt } from '@/lib/ai/diet-preference-guard'
 import { formatCalorieTargetPrompt } from '@/lib/ai/calorie-targets'
 import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
 import {
@@ -431,7 +432,9 @@ export function buildDietHardConstraintsSection(profile: OnboardingProfile): str
     )
   } else if (profile.diet_preference === 'vegan') {
     lines.push(
-      '- VEGAN: No animal products — no chicken, fish, eggs, dairy, whey, honey. Use plant proteins only.'
+      '- VEGAN: No animal products — no chicken, fish, eggs, dairy, whey, honey. Use plant proteins only.',
+      '- VEGAN cooking fat: oil only (mustard/groundnut/coconut/olive). Never ghee or butter.',
+      '- VEGAN banned words: ghee, butter, milk, curd, dahi, yogurt, paneer, cheese, cream, whey, honey, egg, eggs.'
     )
   } else if (profile.diet_preference === 'eggetarian') {
     const eggDays = diet?.eggDaysPerWeek ?? '0'
@@ -441,7 +444,7 @@ export function buildDietHardConstraintsSection(profile: OnboardingProfile): str
         eggWeekdays.length > 0 ? ` on: ${eggWeekdays.join(', ')}` : ''
       } — schedule egg meals only on those weekdays.`
     )
-  } else if (profile.diet_preference === 'non_vegetarian') {
+  } else   if (profile.diet_preference === 'non_vegetarian') {
     const eggDays = diet?.eggDaysPerWeek ?? '0'
     const chickenDays = diet?.chickenDaysPerWeek ?? '0'
     const fishDays = diet?.fishDaysPerWeek ?? '0'
@@ -460,6 +463,11 @@ export function buildDietHardConstraintsSection(profile: OnboardingProfile): str
     if (fishWeekdays.length > 0) {
       lines.push(`- Fish allowed only on: ${fishWeekdays.join(', ')}. Do not schedule fish on other weekdays.`)
     }
+  }
+
+  const bannedList = dietPreferenceBannedListForPrompt(profile.diet_preference)
+  if (bannedList) {
+    lines.push(bannedList)
   }
 
   if (diet?.allergies?.trim() && diet.allergies.toLowerCase() !== 'none') {
