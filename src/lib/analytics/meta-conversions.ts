@@ -37,6 +37,19 @@ export function metaPurchaseEventId(paymentId: string): string {
   return `razorpay_${paymentId}`
 }
 
+/** Meta rejects CAPI events older than ~7 days — clamp stale purchase times to now. */
+const META_MAX_EVENT_AGE_SEC = 7 * 24 * 60 * 60 - 60
+
+export function resolveMetaPurchaseEventTime(
+  preferred?: number,
+  nowSec = Math.floor(Date.now() / 1000)
+): number {
+  if (!preferred || !Number.isFinite(preferred) || preferred <= 0) return nowSec
+  const age = nowSec - preferred
+  if (age > META_MAX_EVENT_AGE_SEC || age < -300) return nowSec
+  return preferred
+}
+
 export async function sendMetaPurchase(
   input: MetaPurchaseInput
 ): Promise<{ ok: boolean; skipped?: boolean; eventId: string; error?: string }> {
@@ -94,7 +107,7 @@ export async function sendMetaPurchase(
         data: [
           {
             event_name: 'Purchase',
-            event_time: input.eventTime ?? Math.floor(Date.now() / 1000),
+            event_time: resolveMetaPurchaseEventTime(input.eventTime),
             event_id: eventId,
             action_source: 'website',
             event_source_url: `${(process.env.NEXT_PUBLIC_APP_URL || 'https://app.lurvox.in').replace(/\/+$/, '')}/checkout`,
