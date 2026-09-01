@@ -36,7 +36,7 @@ import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
 import { shouldSkipExerciseForm } from '@/lib/exercise-form/normalize'
 import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
-import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem, WorkoutExercisePhase } from '@/lib/daily-tracker/types'
+import type { ExerciseSetLog, TrackerCompletion, TrackerExerciseItem, TrackerWorkoutItem, WorkoutExercisePhase, WorkoutPhaseBlock } from '@/lib/daily-tracker/types'
 
 type WorkoutDayOption = { key: string; label: string }
 
@@ -207,7 +207,7 @@ export function WorkoutModule({
   const currentExId = currentEx?.id ?? null
 
   const phaseDefaultOpen = useCallback(
-    (block: (typeof workout)['phases'][number]) => {
+    (block: WorkoutPhaseBlock) => {
       if (currentExId && block.exercises.some((ex) => ex.id === currentExId)) return true
       return block.phase === 'warmup' || block.phase === 'main'
     },

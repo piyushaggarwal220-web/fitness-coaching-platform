@@ -42,7 +42,7 @@ function LoginForm() {
       const { profile, error: profileError } = await fetchClientProfile(supabase, loginResult.user.id);
       if (profile && isOnboardingComplete(profile)) {
         seedAuthenticatedClientSession(
-          { id: data.user.id, email: data.user.email },
+          { id: loginResult.user.id, email: loginResult.user.email ?? undefined },
           profile
         )
       }
