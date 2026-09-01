@@ -12,6 +12,7 @@ import { getOnboardingLabel } from '@/lib/onboarding'
 import { clientCoachNotes } from '@/lib/plan-metadata'
 import {
   DAY_HEADER_PROMPT_RULES,
+  DIET_LIFESTYLE_RESPECT_RULES,
   DIET_PREFERENCE_ENFORCEMENT_RULES,
   EXERCISE_NAME_PROMPT_RULES,
   HIGH_FLUX_OUTPUT_PAIRING_RULES,
@@ -389,9 +390,23 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
     )
   }
   if (data.eatingPattern) {
+    const ep = data.eatingPattern
+    const timings = ep.timings
+    const timingParts = [
+      timings?.breakfast?.trim() ? `breakfast ${timings.breakfast}` : null,
+      timings?.lunch?.trim() ? `lunch ${timings.lunch}` : null,
+      timings?.dinner?.trim() ? `dinner ${timings.dinner}` : null,
+      timings?.snacks?.trim() ? `snacks ${timings.snacks}` : null,
+    ].filter(Boolean)
     lines.push(
-      `Eating pattern: breakfast ${data.eatingPattern.breakfast ?? '—'}, lunch ${data.eatingPattern.lunch ?? '—'}, dinner ${data.eatingPattern.dinner ?? '—'}, snacks ${data.eatingPattern.snacks ?? '—'}`
+      `Eating pattern — usual choices: breakfast ${ep.breakfast ?? '—'}, lunch ${ep.lunch ?? '—'}, dinner ${ep.dinner ?? '—'}, snacks ${ep.snacks ?? '—'}`
     )
+    if (timingParts.length > 0) {
+      lines.push(`Meal timings (MUST match in the plan): ${timingParts.join('; ')}`)
+    }
+    if (ep.mealsForTiming?.length) {
+      lines.push(`Meal slots they set times for: ${ep.mealsForTiming.join(', ')}`)
+    }
   }
   if (data.supplements?.current) {
     lines.push(`Current supplements: ${data.supplements.current}`)
@@ -460,6 +475,26 @@ export function buildDietHardConstraintsSection(profile: OnboardingProfile): str
     lines.push(
       `- Diet day exceptions (MUST respect): ${diet.customNotes.trim()} — adjust meals on those days/situations; do not ignore.`
     )
+  }
+
+  const lifestyle = data?.lifestyle
+  if (lifestyle) {
+    lines.push(
+      `- Lifestyle (MUST respect): occupation ${lifestyle.occupation ?? '—'}, work/school schedule ${lifestyle.workSchoolSchedule ?? '—'}, daily steps habit ${lifestyle.dailySteps ?? '—'}, stress ${lifestyle.stressLevel ?? '—'}, water intake ${lifestyle.waterIntake ?? '—'}, diet variety ${lifestyle.dietVariety ?? '—'}`
+    )
+  }
+  if (diet?.favoriteFoods?.trim()) {
+    lines.push(`- Favorite foods (prioritize): ${diet.favoriteFoods.trim()}`)
+  }
+  if (diet?.cookingAbility?.trim()) {
+    lines.push(`- Cooking ability: ${diet.cookingAbility.trim()} — match meal complexity.`)
+  }
+  if (diet?.previousDietsFailed?.trim()) {
+    lines.push(`- Previous diets that failed (never repeat): ${diet.previousDietsFailed.trim()}`)
+  }
+  const training = data?.training
+  if (training?.preferredTime?.trim()) {
+    lines.push(`- Preferred workout time: ${training.preferredTime.trim()} — align post-workout / whey meals.`)
   }
 
   return lines.join('\n')

@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-pref-enforce-v15'
+export const PLAN_QUALITY_RULES_VERSION = 'lifestyle-respect-v17'
 
 /** Platform minimum daily calories before weight-based floor applies. */
 export const DIET_FLOOR_BASE_KCAL = 1900
@@ -41,6 +41,19 @@ export const DIET_PREFERENCE_ENFORCEMENT_RULES = [
   '- If customNotes mention diet-day exceptions (e.g. Sunday family lunch is non-veg), obey ONLY on those days or situations.',
 ].join('\n')
 
+export const DIET_LIFESTYLE_RESPECT_RULES = [
+  'CLIENT LIFESTYLE (non-negotiable — never a random generic chart):',
+  '- Build the diet FROM the client\'s onboarding answers — not a stock template, not "ideal" foods they never eat, not a random variety plan.',
+  '- Use their actual meal slots and times from Eating pattern / meal timings. Do not invent new meal times or extra meals they did not report.',
+  '- Use their favorite foods, usual breakfast/lunch/dinner/snack choices, and cooking ability. Prioritize what they already eat — adjust portions and swaps, not a full cuisine swap.',
+  '- Match work/school schedule and occupation: desk job → practical office-friendly meals; early shift → earlier breakfast; late dinner only if they already eat late.',
+  '- Respect monthly food budget with affordable staples they can actually buy. Respect cooking ability — simple meals if they cannot cook elaborate dishes.',
+  '- Obey diet variety preference (same daily / 50-50 / different daily). Do not force exotic variety when they want repeat meals.',
+  '- Never repeat approaches from previous diets that failed for them.',
+  '- Align post-workout / whey timing with their real training days and preferred workout time from onboarding.',
+  '- If lifestyle data is thin, stay conservative: simple Indian home meals, their stated favorites, their stated meal count — never fill gaps with random foods.',
+].join('\n')
+
 export const DIET_COACH_WRITING_RULES = [
   'COACH-STYLE DIET WRITING (how client-facing prose should read):',
   '- Write like a coach texting a client they know — warm, practical, slightly informal. Not a generated table.',
@@ -58,6 +71,16 @@ export const DIET_COACH_WRITING_RULES = [
   '- Do NOT mention coaching week numbers in diet prose.',
   '- After Day 7, add a short realistic roadmap paragraph: how long their goal may take with their current gym or home schedule, encouraging higher metabolic flux (more food paired with more steps/training) when their schedule allows comfortably. If they cannot gym, give a separate honest timeline for home training.',
   '- TRACKER RULE: every day must repeat the FULL meal text under its Day N header. Never write "same as Monday", "repeat Tuesday", or "as above" — if two days match, copy the meals in full under both headers.',
+].join('\n')
+
+/** Diet section edits: same formatting rules as full plans, but no roadmap and preserve current structure. */
+export const DIET_MODIFY_COACH_WRITING_RULES = [
+  'DIET FORMAT (modify edits):',
+  '- Keep macro lines after each meal: (P: Xg | C: Yg | F: Zg | ~K kcal).',
+  '- End each day with Daily Total for PRIMARY options only.',
+  '- Household portions plus approx grams. Cooking fat teaspoons on cooked meals.',
+  '- Full Day 1 (Monday) through Day 7 (Sunday) headers with complete meal text each day.',
+  '- No coaching week numbers. No goal roadmap paragraph on modify edits.',
 ].join('\n')
 
 export const PROTEIN_CALORIE_PROMPT_RULES = [

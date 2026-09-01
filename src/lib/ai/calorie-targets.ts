@@ -332,6 +332,18 @@ export function autoDietCoachInstruction(profile: CalorieProfile): string {
   ].join(' ')
 }
 
+/** Default when coach opens diet AI edit with no notes — preserve current plan. */
+export function autoDietModifyInstruction(profile: CalorieProfile): string {
+  return [
+    'Modify the current diet plan below — do not replace it with a completely different week of meals.',
+    'Keep the same foods, timings, and structure for every meal not affected by Hard Constraints.',
+    'Fix any diet preference, allergy, or dislike violations from Hard Constraints.',
+    'Keep the same daily calorie average unless it is clearly wrong for this client.',
+    formatCalorieGuidanceBlock(profile),
+    'No edit meta.',
+  ].join(' ')
+}
+
 export function formatCalorieTargetPrompt(profile: CalorieProfile): string | null {
   return formatCalorieGuidanceBlock(profile)
 }

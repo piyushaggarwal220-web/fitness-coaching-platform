@@ -76,7 +76,7 @@ export function PlanEditor({
               Remake entire plan with AI
             </button>
             <span style={localStyles.aiHint}>
-              Plan not working? Remake everything from scratch, or regenerate one section below.
+              Plan not working? Remake everything from scratch, or modify one section below.
             </span>
           </>
         ) : null}
@@ -95,7 +95,7 @@ export function PlanEditor({
         label="Workout plan"
         action={
           canAiEdit ? (
-            <AiEditSectionButton onClick={() => setAiSection('workout')} />
+            <AiEditSectionButton label="Regenerate with AI" onClick={() => setAiSection('workout')} />
           ) : undefined
         }
       >
@@ -105,7 +105,7 @@ export function PlanEditor({
         label="Nutrition plan"
         action={
           canAiEdit ? (
-            <AiEditSectionButton onClick={() => setAiSection('nutrition')} />
+            <AiEditSectionButton label="Modify with AI" onClick={() => setAiSection('nutrition')} />
           ) : undefined
         }
       >

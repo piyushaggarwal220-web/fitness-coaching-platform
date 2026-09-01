@@ -22,6 +22,20 @@ export const FRESH_PLAN_OUTPUT_RULES = [
   'Goal-focused encouragement is fine only when it contains zero reference to updating/changing the plan.',
 ].join('\n')
 
+/** Coach diet edit: modify the existing plan — do not redesign unrelated meals. */
+export const DIET_MODIFY_PLAN_RULES = [
+  'DIET MODIFY (non-negotiable — default for coach diet edits):',
+  'The CURRENT PLAN below is the client\'s active diet. MODIFY it — do not invent a completely different week of meals.',
+  'Keep the same foods, meal names, timings, portions, and structure for every day and meal the coach did NOT ask to change.',
+  'When the coach names specific swaps, days, or portions, change ONLY those items and rebalance macros on affected meals/days as needed.',
+  'Unchanged days should read almost the same as the current plan (same dishes and wording). Still output all 7 days in full for the tracker — copy unchanged days verbatim where possible.',
+  'Keep the same daily calorie average (within about 75 kcal) unless the coach explicitly asks to raise, lower, or recalculate calories.',
+  'Always fix diet preference, allergy, and dislike violations from Hard Constraints everywhere — even if the coach did not mention them.',
+  'Respect the client\'s lifestyle from onboarding and the current plan — meal times, favorite foods, cooking ability, work schedule, budget — never swap in a random generic chart.',
+  'Do NOT add a goal roadmap paragraph on modify edits.',
+  'NEVER mention edits, updates, or what changed in client-facing text. Output reads like the normal plan the client already follows.',
+].join('\n')
+
 /** Shared rule for all diet/workout generation that may land in the client plan. */
 export const NEVER_MENTION_COACHING_WEEK_RULE =
   'Never mention coaching week numbers, "Welcome to week N", or "next week\'s plan" in client-facing diet/workout prose. Mesocycle week labels are internal coaching context only.'

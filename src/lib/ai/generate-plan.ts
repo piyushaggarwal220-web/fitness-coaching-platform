@@ -33,7 +33,7 @@ import {
   HIGH_FLUX_OUTPUT_PAIRING_RULES,
   HIGH_FLUX_PHILOSOPHY_RULES,
   CALORIE_FORMULA_PROMPT_RULES,
-  DIET_COACH_WRITING_RULES,
+  DIET_LIFESTYLE_RESPECT_RULES,
   DIET_PREFERENCE_ENFORCEMENT_RULES,
   PROTEIN_CALORIE_PROMPT_RULES,
   resolveDietFloorKcal,
@@ -214,7 +214,8 @@ const CLIENT_FACING_PLAN_STYLE_INSTRUCTIONS = [
 const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   '# Plan Output Format',
   DIET_PREFERENCE_ENFORCEMENT_RULES,
-  DIET_COACH_WRITING_RULES,
+  DIET_LIFESTYLE_RESPECT_RULES,
+  'Follow the HOW TO WRITE IT section in the diet action template above for coach tone, meals, macros, roadmap, and daily totals.',
   'You MUST respond with ONLY valid JSON — no markdown fences, no commentary, no preamble.',
   'The JSON must match this exact top-level structure:',
   PLAN_JSON_SCHEMA,

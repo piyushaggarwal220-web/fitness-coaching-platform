@@ -5,6 +5,8 @@ import {
   CALORIE_FORMULA_PROMPT_RULES,
   DAY_HEADER_PROMPT_RULES,
   DIET_COACH_WRITING_RULES,
+  DIET_LIFESTYLE_RESPECT_RULES,
+  DIET_MODIFY_COACH_WRITING_RULES,
   DIET_PREFERENCE_ENFORCEMENT_RULES,
   EDIT_CALORIE_PRESERVATION_RULES,
   EDIT_EXPENDITURE_FIRST_RULES,
@@ -17,7 +19,7 @@ import {
 } from '@/lib/ai/plan-quality-rules'
 import { buildDietHardConstraintsSection } from '@/lib/ai/prompt-builder'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
-import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction } from '@/lib/ai/calorie-targets'
+import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction, autoDietModifyInstruction } from '@/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
 import {
   parseHeaderCalories,
@@ -27,6 +29,7 @@ import { REMAKE_PLAN_PREFIX } from '@/lib/coach/remake-plan'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   CLIENT_PLAN_EDIT_WEEK_RULES,
+  DIET_MODIFY_PLAN_RULES,
   FRESH_PLAN_OUTPUT_RULES,
   stripClientWeekHandoffLanguage,
   stripPlanEditMetaLanguage,
@@ -87,6 +90,7 @@ function resolveEditInstruction(input: EditPlanSectionInput): {
 } {
   const coach = input.coachInstruction?.trim()
   const client = input.clientRequest?.trim()
+  const hasCurrentDiet = input.section === 'nutrition' && input.currentText.trim().length > 0
   if (coach) {
     return { instruction: coach, source: input.editSource ?? 'coach' }
   }
@@ -94,7 +98,10 @@ function resolveEditInstruction(input: EditPlanSectionInput): {
     return { instruction: client, source: input.editSource ?? 'client' }
   }
   if (input.section === 'nutrition' && input.profile) {
-    return { instruction: autoDietCoachInstruction(input.profile), source: 'coach' }
+    if (input.remakeFromScratch || !hasCurrentDiet) {
+      return { instruction: autoDietCoachInstruction(input.profile), source: 'coach' }
+    }
+    return { instruction: autoDietModifyInstruction(input.profile), source: 'coach' }
   }
   if (input.remakeFromScratch) {
     return {
@@ -173,12 +180,11 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
   const touchesCalories =
     input.section === 'nutrition' && requestTouchesCalories(instruction, input.coachNote) && !needsExpenditure
   const targetsMaintenance = requestTargetsMaintenance(instruction, input.coachNote)
-  const preserveCalories =
-    input.section !== 'nutrition' || input.remakeFromScratch
-      ? !touchesCalories || needsExpenditure
-      : false
+  const isDietModify =
+    input.section === 'nutrition' && !input.remakeFromScratch && currentText.length > 0
+  const preserveCalories = !touchesCalories || needsExpenditure
   const mandatoryCalorieTarget =
-    input.section === 'nutrition' && input.profile
+    input.section === 'nutrition' && input.profile && (!isDietModify || touchesCalories || needsExpenditure)
       ? formatCalorieGuidanceBlock(input.profile)
       : null
   const calorieRules = needsExpenditure
@@ -192,15 +198,26 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
       : 'You are an expert fitness coach rewriting a client plan section based on the client\'s request.',
     `Produce a fresh, complete ${section} — not an in-place patch of the old text.`,
     'Rules:',
-    input.remakeFromScratch ? REMAKE_PLAN_PREFIX : FRESH_PLAN_OUTPUT_RULES,
+    input.remakeFromScratch
+      ? REMAKE_PLAN_PREFIX
+      : isDietModify
+        ? DIET_MODIFY_PLAN_RULES
+        : FRESH_PLAN_OUTPUT_RULES,
     input.remakeFromScratch
       ? '- Discard the current draft entirely. Use client profile/context only.'
-      : '- Use the current plan below only as background (foods they eat, exercises they use, schedule). Rewrite the full section applying the instruction.',
+      : isDietModify
+        ? '- The CURRENT PLAN below is the base template. Change only what the instruction or Hard Constraints require; keep everything else the same.'
+        : '- Use the current plan below only as background (foods they eat, exercises they use, schedule). Rewrite the full section applying the instruction.',
     '- Preserve useful structure: day headers as Day N (Weekday) with Day 1 = Monday, meal names, exercise lines with sets x reps (plain letter x).',
     DAY_HEADER_PROMPT_RULES,
     input.section === 'nutrition' ? CALORIE_FORMULA_PROMPT_RULES : null,
     input.section === 'nutrition' ? DIET_PREFERENCE_ENFORCEMENT_RULES : null,
-    input.section === 'nutrition' ? DIET_COACH_WRITING_RULES : null,
+    input.section === 'nutrition' ? DIET_LIFESTYLE_RESPECT_RULES : null,
+    input.section === 'nutrition'
+      ? isDietModify
+        ? DIET_MODIFY_COACH_WRITING_RULES
+        : DIET_COACH_WRITING_RULES
+      : null,
     calorieRules,
     mandatoryCalorieTarget,
     targetsMaintenance
@@ -315,13 +332,14 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
             })
           : revisedRaw
 
-      // Reject near-copies when the coach asked for a targeted rewrite (not a scratch remake).
+      // Reject near-copies when the coach asked for a targeted rewrite (not diet modify / scratch remake).
       if (
         currentText &&
         attempt < maxAttempts - 1 &&
         source === 'coach' &&
         instruction.trim() &&
-        !input.remakeFromScratch
+        !input.remakeFromScratch &&
+        !isDietModify
       ) {
         const similarity = planTextSimilarityLocal(currentText, revisedText)
         if (similarity >= 0.93) {
