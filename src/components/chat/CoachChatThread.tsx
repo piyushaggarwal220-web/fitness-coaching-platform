@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type WheelEvent } from 'react'
 import type { CallRequest, CallRequestStatus, ConversationMessage } from '@/types/database'
 import { readApiJson } from '@/lib/api-response'
 import { formatMessageTime } from '@/lib/coach-chat-ui'
@@ -392,7 +392,12 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     if (!vv) return
 
     const updateViewport = () => {
-      document.documentElement.style.setProperty('--chat-vv-offset', `${Math.max(0, window.innerHeight - vv.height - vv.offsetTop)}px`)
+      const raw = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+      const narrowViewport = window.innerWidth < 900
+      // Desktop browsers can report spurious visualViewport offsets; only lift chat when a keyboard is likely open.
+      const offset = coarsePointer || narrowViewport ? raw : raw > 120 ? raw : 0
+      document.documentElement.style.setProperty('--chat-vv-offset', `${offset}px`)
     }
 
     vv.addEventListener('resize', updateViewport)
@@ -405,15 +410,25 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     }
   }, [])
 
+  const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const el = threadRef.current
+    if (!el) return
+    if (behavior === 'smooth') {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+      return
+    }
+    el.scrollTop = el.scrollHeight
+  }, [])
+
   useEffect(() => {
     if (!stickToBottomRef.current) return
     const behavior = scrollBehaviorRef.current
     scrollBehaviorRef.current = 'smooth'
     const frame = window.requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({ behavior, block: 'end' })
+      scrollThreadToBottom(behavior)
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [messages, imagePreview, peerTyping])
+  }, [messages, imagePreview, peerTyping, scrollThreadToBottom])
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -427,6 +442,15 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     if (!el) return
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
     stickToBottomRef.current = distanceFromBottom < 100
+  }
+
+  const forwardWheelToThread = (event: WheelEvent) => {
+    const el = threadRef.current
+    if (!el) return
+    const target = event.target
+    if (target instanceof Node && (target === el || el.contains(target))) return
+    el.scrollTop += event.deltaY
+    event.preventDefault()
   }
 
   const sendMessage = async (opts?: { messageType?: string; mediaUrl?: string; mediaDurationSeconds?: number; content?: string }) => {
@@ -603,7 +627,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       : `${peerLabel} is offline`
 
   return (
-    <div className="coach-chat-thread wa-chat" style={styles.wrapper}>
+    <div className="coach-chat-thread wa-chat" style={styles.wrapper} onWheel={forwardWheelToThread}>
       {viewer === 'coach' ? (
         <style dangerouslySetInnerHTML={{ __html: COACH_INCOMING_BUBBLE_CSS }} />
       ) : null}

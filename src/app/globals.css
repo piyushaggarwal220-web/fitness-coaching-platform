@@ -638,6 +638,50 @@ button, a[role="button"], input[type="submit"] {
 }
 
 /* Chat — mobile-safe flex scroll + keyboard lift via --chat-vv-offset */
+html.client-chat-page,
+html.client-chat-page body {
+  overflow: hidden;
+  height: 100%;
+}
+
+.client-chat-viewport {
+  position: fixed;
+  top: calc(var(--top-bar-height) + env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
+  bottom: var(--chat-vv-offset, 0px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-primary);
+  z-index: 50;
+  min-height: 0;
+  width: 100%;
+}
+
+.client-chat-viewport--no-topbar {
+  top: env(safe-area-inset-top, 0px);
+}
+
+@media (min-width: 900px) {
+  html:not(.lx-phone-viewport) .client-chat-viewport {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    z-index: 1;
+    height: calc(100dvh - var(--top-bar-height) - env(safe-area-inset-top, 0px));
+    margin: calc(var(--top-bar-height) + env(safe-area-inset-top, 0px)) auto 0;
+    max-width: var(--max-width-wide);
+  }
+
+  html:not(.lx-phone-viewport) .client-chat-viewport--no-topbar {
+    margin-top: env(safe-area-inset-top, 0px);
+    height: calc(100dvh - env(safe-area-inset-top, 0px));
+  }
+}
+
 .chat-main {
   min-height: 0;
   width: 100%;
@@ -659,6 +703,7 @@ button, a[role="button"], input[type="submit"] {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scroll-padding-bottom: 20px;
+  touch-action: pan-y;
 }
 
 .coach-chat-input-bar {

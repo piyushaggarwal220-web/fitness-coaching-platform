@@ -18,7 +18,6 @@ import { TopBar } from './TopBar'
 import { clientDrawerItems, DrawerMenuButton, DrawerNav } from './DrawerNav'
 import { BRAND_NAME } from '@/lib/brand'
 import { PageTransition } from '@/components/motion/PageTransition'
-import { layout } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
 
@@ -59,21 +58,16 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
     item.href === '/client/chat' ? { ...item, badge: unreadChats } : item
   ))
 
+  useEffect(() => {
+    if (!fullHeight) return
+    document.documentElement.classList.add('client-chat-page')
+    return () => document.documentElement.classList.remove('client-chat-page')
+  }, [fullHeight])
+
   const mainStyle = fullHeight
     ? {
-        position: 'fixed' as const,
-        top: hideTopBar
-          ? 'env(safe-area-inset-top, 0px)'
-          : `calc(${layout.topBarHeight}px + env(safe-area-inset-top, 0px))`,
-        left: 0,
-        right: 0,
-        bottom: 'var(--chat-vv-offset, 0px)',
         display: 'flex',
         flexDirection: 'column' as const,
-        overflow: 'hidden',
-        backgroundColor: 'var(--bg-primary)',
-        zIndex: 50,
-        margin: '0 auto',
         minHeight: 0,
         width: '100%',
       }
@@ -106,7 +100,14 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
   return (
     <>
       {!hideTopBar && <TopBar title={title} onMenuClick={() => setDrawerOpen(true)} />}
-      <main style={mainStyle} className={fullHeight ? 'chat-main client-chrome' : undefined}>
+      <main
+        style={mainStyle}
+        className={
+          fullHeight
+            ? `chat-main client-chrome client-chat-viewport${hideTopBar ? ' client-chat-viewport--no-topbar' : ''}`
+            : undefined
+        }
+      >
         {fullHeight ? children : (
           <PageTransition>
             <div style={mobileStyles.container} className="client-container">
