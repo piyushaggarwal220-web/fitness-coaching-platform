@@ -206,6 +206,32 @@ export function WorkoutModule({
     : null
   const currentExId = currentEx?.id ?? null
 
+  const phaseDefaultOpen = useCallback(
+    (block: (typeof workout)['phases'][number]) => {
+      if (currentExId && block.exercises.some((ex) => ex.id === currentExId)) return true
+      return block.phase === 'warmup' || block.phase === 'main'
+    },
+    [currentExId]
+  )
+
+  const collapsedExerciseCount = useMemo(() => {
+    if (!workout) return 0
+    return workout.phases.reduce((sum, block) => {
+      if (block.exercises.length === 0) return sum
+      const isOpen = openPhases[block.id] ?? phaseDefaultOpen(block)
+      return isOpen ? sum : sum + block.exercises.length
+    }, 0)
+  }, [workout, openPhases, phaseDefaultOpen])
+
+  const expandAllPhases = useCallback(() => {
+    if (!workout) return
+    const next: Record<string, boolean> = {}
+    for (const block of workout.phases) {
+      next[block.id] = true
+    }
+    setOpenPhases(next)
+  }, [workout])
+
   useEffect(() => {
     if (!workout || !currentExId) return
     const currentBlock = workout.phases.find((block) =>
@@ -678,6 +704,43 @@ export function WorkoutModule({
         <StatTile label="Volume" value={volume > 0 ? `${volume.toLocaleString()} kg` : '—'} />
       </div>
 
+      {collapsedExerciseCount > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: spacing[3],
+            padding: '10px 12px',
+            borderRadius: radius.md,
+            background: 'rgba(249,115,22,0.1)',
+            border: '1px solid rgba(249,115,22,0.22)',
+          }}
+        >
+          <span style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
+            {collapsedExerciseCount} exercise{collapsedExerciseCount === 1 ? '' : 's'} in collapsed sections
+          </span>
+          <button
+            type="button"
+            onClick={expandAllPhases}
+            style={{
+              flexShrink: 0,
+              border: 'none',
+              borderRadius: radius.sm,
+              background: colors.accent,
+              color: colors.textInverse,
+              fontSize: 12,
+              fontWeight: 700,
+              padding: '8px 12px',
+              cursor: 'pointer',
+            }}
+          >
+            Expand all
+          </button>
+        </div>
+      )}
+
       {workout.phases.map((block) => {
         const chrome = phaseChrome(block.phase)
         const phaseProgress = getPhaseProgress(block, completion)
@@ -690,12 +753,7 @@ export function WorkoutModule({
           progress={phaseProgress.percent}
           accent={chrome.accent}
           icon={chrome.icon}
-          open={
-            openPhases[block.id] ??
-            (currentEx
-              ? block.exercises.some((ex) => ex.id === currentEx.id)
-              : block.phase === 'warmup')
-          }
+          open={openPhases[block.id] ?? phaseDefaultOpen(block)}
           onOpenChange={(next) => setOpenPhases((prev) => ({ ...prev, [block.id]: next }))}
         >
           {block.exercises.map((ex) => {

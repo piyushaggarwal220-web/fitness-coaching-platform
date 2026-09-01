@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 8
+export const TRACKER_PARSER_VERSION = 9
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -479,7 +479,21 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     })
   }
 
-  const match = trimmed.match(setsReps) ?? trimmed.match(setsOf) ?? trimmed.match(setsComma) ?? trimmed.match(compact)
+  const match =
+    trimmed.match(setsReps) ??
+    trimmed.match(setsOf) ??
+    trimmed.match(setsComma) ??
+    trimmed.match(compact) ??
+    (() => {
+      const reversed = trimmed.match(
+        new RegExp(
+          String.raw`^(\d+)\s*[x×]\s*${repsToken}(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?\s+(.+?)(?:\s*[\-(].*)?$`,
+          'i'
+        )
+      )
+      if (!reversed) return null
+      return [reversed[0], reversed[4], reversed[1], reversed[2], reversed[3], undefined] as RegExpMatchArray
+    })()
   if (!match && timedHold && timedHold[1]!.trim().length >= 2) {
     const holdName = timedHold[1]!.trim().replace(/:$/, '')
     if (
@@ -549,7 +563,7 @@ function expandCompositeExerciseLines(line: string): string[] {
 }
 
 const LOOSE_MOVEMENT =
-  /\b(press|squat|deadlift|hinge|row|curl|raise|flye?|lunge|plank|hold|carry|pull|push(?:-?up)?|extension|crunch|twist|stretch|walk|swing|thrust|dip|chin|hang|pulldown|pullover|face\s*pull|kickback|abduction|adduction|calf|glute|hip|core|dead\s*bug|bird\s*dog|pallof)\b/i
+  /\b(press|squat|deadlift|hinge|row|curl|raise|flye?|lunge|plank|hold|carry|pull|push(?:-?up)?|extension|crunch|twist|stretch|walk|swing|thrust|dip|chin|hang|pulldown|pullover|face\s*pull|kickback|abduction|adduction|calf|glute|hip|core|dead\s*bug|bird\s*dog|pallof|barbell|dumbbell|cable|machine|incline|decline|lat|trap|hamstring|shrug|step|split|box|jump|rope|sled|leg\s*press|leg\s*curl)\b/i
 
 /** Names without "sets x reps" still belong on the tracker (core finishers, holds, A1/A2). */
 function parseLooseExerciseLine(
@@ -598,7 +612,11 @@ function parseLooseExerciseLine(
   }
 
   const allowLoose =
-    phase !== 'main' || LOOSE_MOVEMENT.test(trimmed) || /^(?:[A-Za-z]\d+[.)]|\d+[.)])/.test(line.trim())
+    phase !== 'main' ||
+    LOOSE_MOVEMENT.test(trimmed) ||
+    /^(?:[A-Za-z]\d+[.)]|\d+[.)])/.test(line.trim()) ||
+    /\d+\s*[x×]\s*\d+/.test(trimmed) ||
+    /\d+\s*sets?\s*[x×of]/i.test(trimmed)
   if (!allowLoose) return null
 
   return withTrackingMeta({
