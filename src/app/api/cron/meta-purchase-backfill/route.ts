@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 function authorizeCron(request: Request): boolean {
-  const secrets = [process.env.CRON_SECRET]
+  const secrets = [process.env.AUTO_REPLY_CRON_SECRET, process.env.CRON_SECRET]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value))
 
