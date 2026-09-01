@@ -10,7 +10,7 @@ import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
 import { colors } from '@/lib/design-tokens';
 import { safeInternalPath } from '@/lib/safe-navigation';
-import { sanitizeAuthPasswordError } from '@/lib/auth-password-errors';
+import { signInViaApi } from '@/lib/auth-login-api';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 
 const supabase = createClient();
@@ -31,19 +31,15 @@ function LoginForm() {
     setLoading(true);
     setError('');
 
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password: password,
-    });
+    const loginResult = await signInViaApi(email, password);
 
-    // Session can succeed even when Auth attaches a weak/leaked-password warning.
-    if (data.user) {
+    if (loginResult.user) {
       const { invalidateSessionCache, seedAuthenticatedClientSession } = await import(
         '@/lib/session-restore'
       )
       invalidateSessionCache()
       await supabase.auth.getSession();
-      const { profile, error: profileError } = await fetchClientProfile(supabase, data.user.id);
+      const { profile, error: profileError } = await fetchClientProfile(supabase, loginResult.user.id);
       if (profile && isOnboardingComplete(profile)) {
         seedAuthenticatedClientSession(
           { id: data.user.id, email: data.user.email },
@@ -81,17 +77,8 @@ function LoginForm() {
       return;
     }
 
-    if (loginError) {
-      const raw = loginError.message || ''
-      const looksInvalid = /invalid login credentials|invalid_credentials|email not confirmed/i.test(raw)
-      if (looksInvalid) {
-        setError(
-          'Email or password is incorrect. If you just paid, use the password you set on Create account — or reset it below.'
-        )
-      } else {
-        const safe = sanitizeAuthPasswordError(raw)
-        setError(safe ?? 'Unable to sign in. Check your email and password.')
-      }
+    if (loginResult.error) {
+      setError(loginResult.error)
       setLoading(false)
       return
     }

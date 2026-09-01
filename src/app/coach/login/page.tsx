@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { signInViaApi } from '@/lib/auth-login-api';
 import { createClient } from '@/lib/supabase/client';
 import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
@@ -22,30 +23,29 @@ export default function CoachLogin() {
     setLoading(true);
     setError('');
 
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
+    const loginResult = await signInViaApi(email, password);
 
     const { invalidateSessionCache } = await import('@/lib/session-restore')
     invalidateSessionCache()
 
-    if (loginError) {
-      setError(loginError.message);
+    if (loginResult.error) {
+      setError(loginResult.error);
       setLoading(false);
       return;
     }
 
-    if (!data.user) {
+    if (!loginResult.user) {
       setError('Login failed. Please try again.');
       setLoading(false);
       return;
     }
 
+    await supabase.auth.getSession();
+
     const { data: coachData, error: coachError } = await supabase
       .from('coaches')
       .select('*')
-      .eq('user_id', data.user.id)
+      .eq('user_id', loginResult.user.id)
       .maybeSingle();
 
     if (coachError) {

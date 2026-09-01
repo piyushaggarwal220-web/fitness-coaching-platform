@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import { signInViaApi } from '@/lib/auth-login-api'
 import { createClient } from '@/lib/supabase/client'
 import { isAdminRole } from '@/lib/roles'
 import { BRAND_ADMIN_LABEL, BRAND_NAME, brandTitle } from '@/lib/brand'
@@ -22,30 +23,29 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError('')
 
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    })
+    const loginResult = await signInViaApi(email, password)
 
     const { invalidateSessionCache } = await import('@/lib/session-restore')
     invalidateSessionCache()
 
-    if (loginError) {
-      setError(loginError.message)
+    if (loginResult.error) {
+      setError(loginResult.error)
       setLoading(false)
       return
     }
 
-    if (!data.user) {
+    if (!loginResult.user) {
       setError('Login failed. Please try again.')
       setLoading(false)
       return
     }
 
+    await supabase.auth.getSession()
+
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', data.user.id)
+      .eq('id', loginResult.user.id)
       .maybeSingle()
 
     if (profileError) {
