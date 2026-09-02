@@ -254,7 +254,7 @@ function formatGoalAdjustmentLine(
   return `Default: plan near maintenance (~${preferred} kcal/day) unless goal clearly needs deficit or surplus.`
 }
 
-/** Rule-based calorie guidance — teach Mifflin-St Jeor + profile inputs; reference kcal, not a hard chase number. */
+/** Server-computed Mifflin-St Jeor target — Claude must write this number, not invent 1500. */
 export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | null {
   const targets = resolveClientCalorieTargets(profile)
   const flux = resolveMetabolicFluxPlan(profile as OnboardingProfile)
@@ -282,28 +282,27 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
         ? `Training ${days} days/week — factor gym load into portion sizes.`
         : null
 
+  const target = targets?.preferred
   const formulaSection = hasFormulaInputs
     ? [
-        'CALORIE METHOD — use Mifflin-St Jeor (platform standard; do not guess round numbers like 1800):',
-        `1. BMR = ${formatBmrFormula(profile.gender)}`,
-        `   Inputs: ${Math.round(weight)} kg, ${Math.round(height)} cm, ${Math.round(age)} y, ${profile.gender ?? 'unspecified'}.`,
-        `2. Maintenance = BMR × ${activityFactor}`,
+        'MANDATORY DAILY CALORIES (already computed on the server — do NOT invent a lower number):',
+        `Formula: Mifflin-St Jeor. BMR = ${formatBmrFormula(profile.gender)}`,
+        `Inputs: ${Math.round(weight)} kg, ${Math.round(height)} cm, ${Math.round(age)} y, ${profile.gender ?? 'unspecified'}. Activity factor ${activityFactor}.`,
         targets
-          ? `   Reference maintenance: ~${targets.maintenance} kcal/day.`
-          : null,
-        targets
-          ? `3. Goal adjustment: ${formatGoalAdjustmentLine(goal, targets.maintenance, targets.preferred)}`
-          : '3. Adjust maintenance for goal (mild deficit for fat loss, surplus for bulk, at maintenance for recomp).',
-        targets
-          ? `4. Build all 7 days so honest meal math averages ~${targets.preferred} kcal/day (±100). Calories header must match meal totals.`
-          : '4. Build all 7 days with honest meal math; header must match meal totals.',
+          ? `BMR × activity = maintenance ~${targets.maintenance} kcal/day. ${formatGoalAdjustmentLine(goal, targets.maintenance, targets.preferred)}`
+          : `Compute maintenance = BMR × ${activityFactor}, then a mild goal adjustment.`,
+        target
+          ? `WRITE THIS NUMBER: every Daily Total and the Calories header must average ${target} kcal/day (±100). Floor is ${targets?.floorKcal ?? DIET_FLOOR_BASE_KCAL}.`
+          : `Build all 7 days at or above ${DIET_FLOOR_BASE_KCAL} kcal with honest meal math.`,
+        'FORBIDDEN: 1400, 1500, 1600, 1700, 1800 crash-diet templates. Almost nobody on this platform needs that. If your first instinct is 1500, you are wrong — use the number above.',
+        'If one weekday is a religious fast, keep the OTHER 6 days at the full daily target. Do not crash the whole week.',
       ]
     : [
-        'CALORIE METHOD — use Mifflin-St Jeor when weight, height, and age are available:',
-        `BMR = ${formatBmrFormula(profile.gender)}; Maintenance = BMR × activity factor (${activityFactor}).`,
+        'MANDATORY DAILY CALORIES — Mifflin-St Jeor when weight, height, and age exist.',
+        `BMR = ${formatBmrFormula(profile.gender)}; Maintenance = BMR × ${activityFactor}.`,
         weight > 0
-          ? `Client ~${Math.round(weight)} kg — if height/age missing, estimate maintenance generously from size and training load (not a 1500–1800 template).`
-          : 'Estimate maintenance from profile size and activity — no one-size-fits-all crash diet.',
+          ? `Client ~${Math.round(weight)} kg — plan at or above ${Math.max(DIET_FLOOR_BASE_KCAL, Math.round(weight * 25))} kcal. Never a 1500–1800 template.`
+          : `Plan at or above ${DIET_FLOOR_BASE_KCAL} kcal. No crash diet.`,
       ]
 
   return [

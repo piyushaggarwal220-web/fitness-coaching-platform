@@ -24,9 +24,10 @@ import {
   loadPublishedPromptsForAction,
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
-import { enforceDietPreference } from '@/lib/ai/diet-preference-guard'
+import { enforceDietPreference, calorieBumpFoodsForProfile, dietScanOptionsFromProfile } from '@/lib/ai/diet-preference-guard'
+import { applyDietPlanRepair } from '@/lib/ai/diet-plan-repair'
 import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
-import { formatCalorieGuidanceBlock } from '@/lib/ai/calorie-targets'
+import { formatCalorieGuidanceBlock, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   DAY_HEADER_PROMPT_RULES,
@@ -640,14 +641,28 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
 
   const dietPreferenceBoost = (() => {
     const pref = input.profile.diet_preference
+    const diet = input.profile.onboarding_data?.diet
+    const extra: string[] = []
+    const eggDays = (diet?.eggAllowedDays ?? []).filter(Boolean)
+    const chickenDays = (diet?.chickenAllowedDays ?? []).filter(Boolean)
+    const fishDays = (diet?.fishAllowedDays ?? []).filter(Boolean)
+    if (eggDays.length) extra.push(`Eggs ONLY on ${eggDays.join(', ')} — zero eggs on every other weekday, including Sunday unless listed.`)
+    if (chickenDays.length) extra.push(`Chicken ONLY on ${chickenDays.join(', ')} — never on other weekdays.`)
+    if (fishDays.length) extra.push(`Fish ONLY on ${fishDays.join(', ')} — never on other weekdays.`)
+    if (diet?.wheyProtein === 'no') extra.push('This client does NOT use whey. Never write whey, a scoop, or a whey shake.')
+    if (/lactose intolerant|lactose intolerance|dairy allergy/i.test(diet?.allergies ?? '')) {
+      extra.push('Lactose intolerant: no paneer, curd, dahi, yogurt, cheese, whey, lassi, or buttermilk.')
+    }
+
     if (pref === 'vegan') {
       return [
         'CRITICAL VEGAN CONSTRAINTS (override any conflicting habit):',
         'Cooking fat = oil only (mustard/groundnut/coconut/olive). Never ghee or dairy butter.',
-        'Peanut butter / almond butter are OK. Coconut milk / soy milk / oat milk are OK.',
+        'Peanut butter / almond butter are OK unless a nut allergy is listed. Coconut milk / soy milk / oat milk are OK.',
         'Never: ghee, butter, milk, curd, dahi, yogurt, paneer, cheese, cream, whey, honey, eggs, meat, fish.',
         'Protein: dal, soya chunks, tofu, chana, rajma, peanuts, peanut butter, sprouts.',
-        'Hit the calorie floor with rice, roti, oil, soya, and peanut butter — do not under-eat.',
+        'Hit the calorie floor with rice, roti, oil, soya, and peanut butter — do not under-eat. Never raise calories with ghee, butter, or paneer.',
+        ...extra,
       ].join(' ')
     }
     if (pref === 'vegetarian') {
@@ -655,14 +670,17 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         'CRITICAL VEGETARIAN CONSTRAINTS:',
         'Never eggs, chicken, fish, mutton, prawn, or any meat/seafood in any meal or swap.',
         'Dairy OK unless allergy forbids. Use dal, paneer, soya, chana, curd, nuts.',
+        ...extra,
       ].join(' ')
     }
     if (pref === 'eggetarian') {
       return [
         'CRITICAL EGGETARIAN CONSTRAINTS:',
         'Never chicken, fish, mutton, or prawn. Eggs only on allowed weekdays from Hard Constraints.',
+        ...extra,
       ].join(' ')
     }
+    if (extra.length) return extra.join(' ')
     return null
   })()
 
@@ -810,11 +828,25 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     // (these flows land as coach-review drafts, not auto-published).
     const enforcesDiet = validationMode === 'nutrition_focus' || validationMode === 'full'
     if (enforcesDiet && !supportSection && providerMode !== 'mock') {
-      const floorKcal = resolveDietFloorKcal(input.profile.weight)
+      const repaired = applyDietPlanRepair(plan.nutrition_plan, input.profile)
+      plan = { ...plan, nutrition_plan: repaired.plan }
+      if (repaired.fixes.length > 0) {
+        const note = `Auto-repaired: ${repaired.fixes.join('; ')}.`
+        plan = {
+          ...plan,
+          coach_notes: plan.coach_notes?.trim() ? `${plan.coach_notes.trim()}\n${note}` : note,
+        }
+      }
+
+      const calorieTargets = resolveClientCalorieTargets(input.profile)
+      const floorKcal = calorieTargets?.floorKcal ?? resolveDietFloorKcal(input.profile.weight)
       const previousCalories = parseHeaderCalories(input.activePlan?.nutrition_plan)
       const safety = enforceDietSafety(plan.nutrition_plan, {
         previousCalories,
         floorKcal,
+        preferredMinKcal: calorieTargets?.preferred,
+        maintenanceKcal: calorieTargets?.maintenance,
+        calorieBumpFoods: calorieBumpFoodsForProfile(input.profile),
       })
       if (!safety.ok) {
         lastValidationError = safety.error
@@ -827,7 +859,11 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         )
       }
 
-      const preferenceSafety = enforceDietPreference(plan.nutrition_plan, input.profile.diet_preference)
+      const preferenceSafety = enforceDietPreference(
+        plan.nutrition_plan,
+        input.profile.diet_preference,
+        dietScanOptionsFromProfile(input.profile)
+      )
       if (!preferenceSafety.ok) {
         lastValidationError = preferenceSafety.error
         if (attempt < maxAttempts - 1) {

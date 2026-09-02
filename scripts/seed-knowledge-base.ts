@@ -11,7 +11,7 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Fat loss fundamentals',
     category: 'fat_loss',
     content:
-      'Target a sustainable 250–400 kcal daily deficit (never more than 400 from maintenance). Protein around 1.6–2.0 g/kg is optional when it fits naturally — not a target to push toward. If allowed foods cannot hit that protein, lower protein and keep calories high (minimum 1800 kcal) so the client can function. Never cut calories to chase protein grams, and never write protein higher than the meals actually contain. Daily totals count only the primary meal option, never primary plus swap. Weigh 3–4 mornings per week; trend matters more than single readings. If a lower intake than 1800 kcal seems indicated, still write 1800+ and flag the coach.',
+      'Target a sustainable 250–400 kcal daily deficit (never more than 400 from maintenance). Protein around 1.6–2.0 g/kg is optional when it fits naturally — not a target to push toward. If allowed foods cannot hit that protein, lower protein and keep calories high (minimum 2000 kcal, or the client\'s Mifflin-St Jeor target if higher) so the client can function. Never cut calories to chase protein grams, and never write protein higher than the meals actually contain. Daily totals count only the primary meal option, never primary plus swap. Weigh 3–4 mornings per week; trend matters more than single readings. Almost nobody needs 1400–1800 kcal; if a textbook cut would go that low, still write 2000+ and flag the coach.',
   },
   {
     title: 'Muscle gain fundamentals',
@@ -35,7 +35,7 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Nutrition principles',
     category: 'nutrition',
     content:
-      'Build meals around foods the client will actually eat. If protein is hard to hit, reduce protein and keep calories at or above 1800 kcal using carbs and fats they already eat. Never inflate meal or header protein numbers. Hydration ~2–3 L/day unless medically restricted.',
+      'Build meals around foods the client will actually eat. If protein is hard to hit, reduce protein and keep calories at or above 2000 kcal using carbs and fats they already eat. Never inflate meal or header protein numbers. Hydration ~2–3 L/day unless medically restricted.',
   },
   {
     title: 'Cardio guidelines',
@@ -71,7 +71,7 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Female-specific considerations',
     category: 'female',
     content:
-      'Account for menstrual cycle energy fluctuations. Keep calories at or above 1800 kcal for daily functioning. Protein can be moderate if high protein is not possible; never inflate numbers. Prefer iron-rich foods. Avoid extreme deficits.',
+      'Account for menstrual cycle energy fluctuations. Keep calories at or above 2000 kcal for daily functioning. Protein can be moderate if high protein is not possible; never inflate numbers. Prefer iron-rich foods. Avoid extreme deficits.',
   },
   {
     title: 'Beginner training',

@@ -1,6 +1,7 @@
 import {
   estimateMaintenanceCalories,
   calorieTargetBand,
+  formatCalorieGuidanceBlock,
   resolveClientCalorieTargets,
   resolveEffectiveActivityLevel,
   clientRequestTouchesCalories,
@@ -55,7 +56,7 @@ assert('maintenance estimate is realistic', Boolean(maintenance && maintenance >
 
 const highFluxBand = calorieTargetBand(maintenance ?? 2200, 'fat_loss', 'high_flux', resolveDietFloorKcal(70))
 const legacyBand = calorieTargetBand(maintenance ?? 2200, 'fat_loss', 'steady', resolveDietFloorKcal(70))
-assert('high flux fat loss band stays above floor', highFluxBand.min >= 1900)
+assert('high flux fat loss band stays above floor', highFluxBand.min >= 2000)
 assert('high flux fat loss target is maintenance minus shallow deficit', highFluxBand.preferred === (maintenance ?? 2200) - 125)
 assert('high flux target sits inside band', highFluxBand.preferred >= highFluxBand.min && highFluxBand.preferred <= highFluxBand.max)
 assert('high flux band is shallower than steady', highFluxBand.min > legacyBand.min)
@@ -101,7 +102,7 @@ Daily averages: ~1780 kcal | P: 110g | C: 160g | F: 55g
 )
 assert(
   'blocks 2100→1780 crash cut (max 200 kcal drop)',
-  parseHeaderCalories(crashCut) === 1900
+  parseHeaderCalories(crashCut) === 2000
 )
 
 const headerMealMismatch = `Calories: 1806
@@ -181,7 +182,7 @@ assert(
   ).ok === false
 )
 assert(
-  'enforce allows above-floor plans without exact preferred target',
+  'enforce rejects plans far below the Mifflin preferred target',
   enforceDietSafety(
     {
       calories: 2118,
@@ -190,9 +191,41 @@ assert(
       fat: 65,
       meals: [],
     },
-    { floorKcal: 1900, preferredMinKcal: 3331 }
+    { floorKcal: 2000, preferredMinKcal: 3331 }
+  ).ok === false
+)
+assert(
+  'enforce allows a plan within 100 kcal of the Mifflin target',
+  enforceDietSafety(
+    {
+      calories: 2320,
+      protein: 120,
+      carbs: 220,
+      fat: 65,
+      meals: [],
+    },
+    { floorKcal: 2000, preferredMinKcal: 2375 }
   ).ok === true
 )
+
+const veganFloorHint = enforceDietSafety(
+  {
+    calories: 1800,
+    protein: 55,
+    carbs: 235,
+    fat: 42,
+    meals: [{ example: lowFoodHighHeader.split('\n').slice(4).join('\n') }],
+  },
+  {
+    floorKcal: 1900,
+    calorieBumpFoods: 'roti, rice, dal, soya, peanuts, snacks, and cooking oil (never ghee, butter, paneer, curd, dairy, or whey)',
+  }
+)
+assert('vegan calorie retry hint is a failure', veganFloorHint.ok === false)
+if (!veganFloorHint.ok) {
+  assert('vegan calorie retry does not tell the model to add oil/ghee', !/oil\/ghee/i.test(veganFloorHint.hint))
+  assert('vegan calorie retry names soya and oil', /soya/i.test(veganFloorHint.hint) && /cooking oil/i.test(veganFloorHint.hint))
+}
 
 const sixDayProfile = {
   weight: 72,
@@ -216,6 +249,58 @@ assert(
   '6-day recomp target equals maintenance (real number)',
   Boolean(sixDayTargets && sixDayTargets.preferred === sixDayTargets.maintenance)
 )
+
+const officeMale = resolveClientCalorieTargets({
+  weight: 78,
+  height: 175,
+  age: 32,
+  gender: 'male',
+  activity_level: 'sedentary',
+  fitness_goal: 'fat_loss',
+  onboarding_data: { training: { daysPerWeek: 3 } },
+})
+assert(
+  'desk-job male fat loss is still ~2000+ (not 1500)',
+  Boolean(officeMale && officeMale.preferred >= 2000)
+)
+
+const smallFemale = resolveClientCalorieTargets({
+  weight: 58,
+  height: 158,
+  age: 26,
+  gender: 'female',
+  activity_level: 'sedentary',
+  fitness_goal: 'fat_loss',
+})
+assert(
+  'smaller sedentary female is floored to 2000, not 1400',
+  Boolean(smallFemale && smallFemale.preferred >= 2000 && smallFemale.floorKcal >= 2000)
+)
+
+const heavyMale = resolveClientCalorieTargets({
+  weight: 86,
+  height: 176,
+  age: 34,
+  gender: 'male',
+  activity_level: 'sedentary',
+  fitness_goal: 'fat_loss',
+})
+assert(
+  '86kg client uses weight floor (~2150) not a 1800 template',
+  Boolean(heavyMale && heavyMale.preferred >= 2150)
+)
+
+const guidance = formatCalorieGuidanceBlock({
+  weight: 78,
+  height: 175,
+  age: 32,
+  gender: 'male',
+  activity_level: 'moderately_active',
+  fitness_goal: 'fat_loss',
+})
+assert('guidance names the hard target', Boolean(guidance && /WRITE THIS NUMBER/i.test(guidance)))
+assert('guidance forbids crash-diet templates', Boolean(guidance && /FORBIDDEN: 1400/i.test(guidance)))
+assert('guidance includes a 4-digit kcal target', Boolean(guidance && /\b2\d{3} kcal/.test(guidance)))
 
 if (failed > 0) {
   console.error(`\n${failed} calorie target checks failed`)

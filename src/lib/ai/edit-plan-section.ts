@@ -18,6 +18,8 @@ import {
   WORKOUT_VOLUME_PROMPT_RULES,
 } from '@/lib/ai/plan-quality-rules'
 import { buildDietHardConstraintsSection } from '@/lib/ai/prompt-builder'
+import { enforceDietPreference, dietScanOptionsFromProfile } from '@/lib/ai/diet-preference-guard'
+import { applyDietPlanRepair } from '@/lib/ai/diet-plan-repair'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
 import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction, autoDietModifyInstruction } from '@/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
@@ -274,12 +276,15 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
   let totalInputTokens = 0
   let totalOutputTokens = 0
   let lastRaw = ''
+  let dietRetryHint = ''
 
   try {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const retryHint =
         attempt > 0
-          ? '\n\n## Retry instruction\nPrevious output was too similar to the background plan, contained edit meta, or truncated. Rewrite the COMPLETE section from scratch. No mention of edits/changes. No cross-day references. Start with plan content only.'
+          ? dietRetryHint
+            ? `\n\n## Retry instruction\n${dietRetryHint}`
+            : '\n\n## Retry instruction\nPrevious output was too similar to the background plan, contained edit meta, or truncated. Rewrite the COMPLETE section from scratch. No mention of edits/changes. No cross-day references. Start with plan content only.'
           : ''
 
       let response
@@ -322,7 +327,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         throw new ClaudeResponseError('AI returned an empty revision.')
       }
 
-      const revisedText =
+      let revisedText =
         input.section === 'nutrition'
           ? syncStoredDietText(revisedRaw, {
               previousCalories:
@@ -331,6 +336,42 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
               floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
             })
           : revisedRaw
+
+      if (input.section === 'nutrition' && input.profile) {
+        const repaired = applyDietPlanRepair(
+          {
+            calories: parseHeaderCalories(revisedText) ?? 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            meals: [{ example: revisedText }],
+          },
+          input.profile
+        )
+        const meal0 = repaired.plan.meals[0]
+        if (typeof meal0 === 'string') {
+          revisedText = meal0
+        } else if (meal0 && typeof meal0 === 'object' && typeof (meal0 as { example?: unknown }).example === 'string') {
+          revisedText = (meal0 as { example: string }).example
+        }
+      }
+
+      if (input.section === 'nutrition' && input.profile) {
+        const preferenceSafety = enforceDietPreference(
+          { meals: [{ example: revisedText }] },
+          input.profile.diet_preference,
+          dietScanOptionsFromProfile(input.profile)
+        )
+        if (!preferenceSafety.ok) {
+          if (attempt < maxAttempts - 1) {
+            dietRetryHint = preferenceSafety.hint
+            continue
+          }
+          throw new ClaudeResponseError(
+            `Diet revision failed preference safety: ${preferenceSafety.error}`
+          )
+        }
+      }
 
       // Reject near-copies when the coach asked for a targeted rewrite (not diet modify / scratch remake).
       if (
@@ -588,6 +629,17 @@ export async function editPlanForClientChange(
   )
   if (!nutritionPlan || !workoutPlan) {
     throw new ClaudeResponseError('AI returned empty section text.')
+  }
+
+  if (input.profile) {
+    const preferenceSafety = enforceDietPreference(
+      { meals: [{ example: nutritionPlan }] },
+      input.profile.diet_preference,
+      dietScanOptionsFromProfile(input.profile)
+    )
+    if (!preferenceSafety.ok) {
+      throw new ClaudeResponseError(`Diet revision failed preference safety: ${preferenceSafety.error}`)
+    }
   }
 
   const summary = `Rewrote diet and workout from client request.`

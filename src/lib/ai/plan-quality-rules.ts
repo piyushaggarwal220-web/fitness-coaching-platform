@@ -1,15 +1,15 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'vegan-dairy-guard-v18'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v22'
 
-/** Platform minimum daily calories before weight-based floor applies. */
-export const DIET_FLOOR_BASE_KCAL = 1900
+/** Platform minimum daily calories before weight-based floor applies. Almost nobody needs a crash diet. */
+export const DIET_FLOOR_BASE_KCAL = 2000
 /** Reject (and retry) only when clearly under the floor; ~1% rounding is tolerated. */
-export const DIET_FLOOR_HARD_KCAL = 1880
+export const DIET_FLOOR_HARD_KCAL = 1980
 
 /** @deprecated Use resolveDietFloorKcal(weight) — kept for static fallbacks. */
 export const DIET_FLOOR_TARGET_KCAL = DIET_FLOOR_BASE_KCAL
 
-/** Higher of base floor (~1900) or ~25 kcal/kg — keeps food on the higher side for active clients. */
+/** Higher of base floor (~2000) or ~25 kcal/kg — keeps food on the higher side for active clients. */
 export function resolveDietFloorKcal(weightKg?: number | string | null): number {
   const weight = Number(weightKg)
   const byWeight = Number.isFinite(weight) && weight > 0 ? Math.round(weight * 25) : 0
@@ -25,7 +25,7 @@ export const DAY_HEADER_PROMPT_RULES = [
 export const CALORIE_FORMULA_PROMPT_RULES = [
   'CALORIE FORMULA (non-negotiable for every new or rewritten diet):',
   '- Always derive the daily calorie target with Mifflin-St Jeor: BMR from weight/height/age/gender, then maintenance = BMR × activity factor.',
-  '- Use the CALORIE METHOD block in the client profile — it lists this client\'s inputs and reference maintenance. Build meal portions to that reference (±100 kcal), never a round guess like 1800.',
+  '- Use the CALORIE METHOD block in the client profile — it lists this client\'s already-computed daily target. Write that number (±100 kcal). Never invent a 1400–1800 crash diet.',
   '- When editing and the client did NOT ask to change calories, keep the current daily average; when rebuilding from profile, always run the formula fresh.',
 ].join('\n')
 
@@ -39,6 +39,8 @@ export const DIET_PREFERENCE_ENFORCEMENT_RULES = [
   '- EGGETARIAN: Eggs ONLY on allowed weekdays from Hard Constraints. No chicken, fish, or mutton ever. On veg-only weekdays, zero eggs in any option.',
   '- NON-VEGETARIAN: Schedule chicken, fish, or eggs ONLY on the weekdays listed in Hard Constraints. On all other weekdays every meal must be veg-friendly with no meat, fish, or eggs.',
   '- On weekdays where animal protein IS allowed, include at least one egg, chicken, or fish option in a meal (unless the client dislikes it or budget forbids).',
+  '- Sunday is not a free animal-protein day unless Hard Constraints list Sunday.',
+  '- If the client does not use whey, never write whey, a scoop, or a whey shake.',
   '- Before finalizing each day, scan every food word: if diet preference forbids it, delete it. Self-check vegan days for ghee/curd/paneer/butter especially.',
   '- If customNotes mention diet-day exceptions (e.g. Sunday family lunch is non-veg), obey ONLY on those days or situations.',
   '- Never use a disliked food in any meal or swap. Never use allergy foods.',

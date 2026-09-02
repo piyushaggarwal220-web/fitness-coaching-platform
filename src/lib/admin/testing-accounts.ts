@@ -11,6 +11,7 @@ import { repairClientWorkflowConsistency } from '@/lib/admin/workflow-consistenc
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AccessSource } from '@/lib/entitlements'
+import type { OnboardingFormData } from '@/types/database'
 
 export { listTrialClients } from '@/lib/admin/trial-client-guard'
 export { resetTrialClient } from '@/lib/admin/trial-client-reset'
@@ -493,9 +494,11 @@ export async function listCoachesForAssignment(): Promise<
 
 /** Create a fake trial client with realistic onboarding data already completed. */
 export async function createFakeTrialClient(
-  coachId?: string | null
+  coachId?: string | null,
+  formOverride?: Partial<OnboardingFormData>
 ): Promise<CreatedAccountCredentials> {
-  const form = generateFakeOnboardingForm()
+  const form = generateFakeOnboardingForm(formOverride?.name)
+  if (formOverride) Object.assign(form, formOverride)
   const email = generateFakeClientEmail()
   const password = generateSecurePassword()
 

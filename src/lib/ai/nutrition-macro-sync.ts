@@ -256,6 +256,8 @@ export type DietSafetyOptions = {
   floorKcal?: number
   preferredMinKcal?: number
   maintenanceKcal?: number | null
+  /** Portion foods to enlarge on a low-calorie retry. */
+  calorieBumpFoods?: string | null
 }
 
 /** Daily average from meal / daily-total lines when present; otherwise JSON header field. */
@@ -291,9 +293,11 @@ function buildLowCalorieHint(
     typeof opts.maintenanceKcal === 'number' && opts.maintenanceKcal > 0
       ? ` Maintenance is ~${opts.maintenanceKcal} kcal — do not write 1800 (or any round guess) unless meal lines sum there.`
       : ''
+  const bumpFoods =
+    opts.calorieBumpFoods?.trim() || 'roti, rice, dal, paneer, snacks, oil/ghee'
   return (
-    `Meal math averages ~${cals} kcal/day but the target is at least ~${target} kcal/day.${maintenance} ` +
-    `Rebuild all 7 days: increase portions (roti, rice, dal, paneer, snacks, oil/ghee) so each Daily Total lands near ~${target} kcal. ` +
+    `Meal math averages ~${cals} kcal/day but this client's Mifflin-St Jeor target is ~${target} kcal/day.${maintenance} ` +
+    `Do not write a 1400–1800 crash diet. Rebuild all 7 days: increase portions (${bumpFoods}) so each Daily Total lands near ~${target} kcal. ` +
     'The Calories header and weekly average must match those Daily Total lines — never a higher header with lower meals.'
   )
 }
@@ -334,6 +338,18 @@ export function enforceDietSafety(
       ok: false,
       error: `Diet daily calories ${cals} are below the ${floorKcal} kcal floor.`,
       hint: buildLowCalorieHint(cals, opts, floorKcal, 'floor'),
+    }
+  }
+
+  const preferredMin = opts.preferredMinKcal
+  if (typeof preferredMin === 'number' && preferredMin > 0) {
+    const hardPreferred = Math.max(floorHardKcal, preferredMin - 100)
+    if (cals < hardPreferred) {
+      return {
+        ok: false,
+        error: `Diet daily calories ${cals} are below this client's Mifflin-St Jeor target (~${preferredMin} kcal).`,
+        hint: buildLowCalorieHint(cals, opts, preferredMin, 'preferred'),
+      }
     }
   }
 

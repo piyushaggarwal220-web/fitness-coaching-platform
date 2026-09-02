@@ -3,6 +3,7 @@
  * Run: npx tsx scripts/verify-diet-preference-guard.ts
  */
 import {
+  calorieBumpFoodsForProfile,
   enforceDietPreference,
   findDietPreferenceViolations,
 } from '../src/lib/ai/diet-preference-guard'
@@ -59,6 +60,79 @@ const enforcedOk = enforceDietPreference(
   'vegan'
 )
 assert('enforceDietPreference accepts vegan oil plan', enforcedOk.ok)
+
+const sundayEggs = `Day 1 (Monday)
+Breakfast: egg bhurji with roti
+Day 2 (Tuesday)
+Breakfast: poha with peanuts
+Day 7 (Sunday)
+Breakfast: 3 eggs omelette`
+
+const weekdayFail = enforceDietPreference(
+  { meals: [{ example: sundayEggs }] },
+  'eggetarian',
+  { eggAllowedDays: ['monday', 'wednesday', 'friday'] }
+)
+assert('eggs on Sunday fail when only M/W/F allowed', !weekdayFail.ok)
+if (!weekdayFail.ok) {
+  assert('weekday hint names Sunday constraint', /weekday/i.test(weekdayFail.hint))
+}
+
+const weekdayOk = enforceDietPreference(
+  { meals: [{ example: sundayEggs.replace('3 eggs omelette', 'poha with peanuts') }] },
+  'eggetarian',
+  { eggAllowedDays: ['monday', 'wednesday', 'friday'] }
+)
+assert('eggs only on Monday pass M/W/F rule', weekdayOk.ok)
+
+const chickenSunday = `Day 4 (Thursday)
+Lunch: chicken curry with rice
+Day 7 (Sunday)
+Lunch: chicken biryani`
+const chickenFail = enforceDietPreference(
+  { meals: [{ example: chickenSunday }] },
+  'non_vegetarian',
+  { chickenAllowedDays: ['tuesday', 'thursday'] }
+)
+assert('chicken on Sunday fails Tue/Thu-only', !chickenFail.ok)
+
+const wheyFail = enforceDietPreference(
+  { meals: [{ example: 'Post workout: 1 scoop whey with water' }] },
+  'vegetarian',
+  { wheyProtein: 'no' }
+)
+assert('whey flagged when client does not use it', !wheyFail.ok)
+
+const wheyRestated = enforceDietPreference(
+  { meals: [{ example: 'No whey. Dal, soya, and paneer for protein.' }] },
+  'vegetarian',
+  { wheyProtein: 'no' }
+)
+assert('restated "no whey" is not a serving', wheyRestated.ok)
+
+const lactoseFail = enforceDietPreference(
+  { meals: [{ example: 'Lunch: paneer bhurji with curd' }] },
+  'vegetarian',
+  { allergies: 'Lactose intolerant' }
+)
+assert('lactose flags paneer and curd', !lactoseFail.ok)
+
+const nutFail = enforceDietPreference(
+  { meals: [{ example: 'Snack: apple with peanut butter' }] },
+  'vegan',
+  { allergies: 'Nut allergy' }
+)
+assert('nut allergy flags peanut butter', !nutFail.ok)
+
+const veganBump = calorieBumpFoodsForProfile({ diet_preference: 'vegan' })
+assert('vegan calorie bump never suggests ghee/paneer', !/ghee|paneer/i.test(veganBump) || /never ghee/i.test(veganBump))
+assert('vegan calorie bump uses oil and soya', /oil/i.test(veganBump) && /soya/i.test(veganBump))
+
+const lactoseBump = calorieBumpFoodsForProfile({
+  diet_preference: 'vegetarian',
+  onboarding_data: { diet: { allergies: 'Lactose intolerant' } },
+})
+assert('lactose calorie bump forbids dairy', /never ghee|never .*paneer/i.test(lactoseBump))
 
 if (failed > 0) {
   console.error(`\n${failed} assertion(s) failed`)
