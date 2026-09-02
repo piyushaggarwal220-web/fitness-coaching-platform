@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 9
+export const TRACKER_PARSER_VERSION = 10
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -191,7 +191,7 @@ function parseMealsInDay(
   const lines = dietBody.replace(/\r\n/g, '\n').split('\n')
   const meals: TrackerMealItem[] = []
   const headers = new RegExp(
-    `^(?:\\*{0,2}|#{1,3}\\s*)?(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\))?\\s*:?\\s*\\*{0,2}\\s*$`,
+    `^(?:\\*{0,2}|#{1,3}\\s*)?(?:[A-Za-z][A-Za-z-]*\\s+){0,4}(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\))?\\s*:?\\s*\\*{0,2}\\s*$`,
     'i'
   )
   const periodMap: Record<string, TrackerPeriod> = {
@@ -246,7 +246,7 @@ function parseMealsInDay(
     }
     const inline = trimmed.match(
       new RegExp(
-        `^(?:\\*{0,2}|#{1,3}\\s*)?(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\))?\\s*:\\s*(.+)`,
+        `^(?:\\*{0,2}|#{1,3}\\s*)?(?:[A-Za-z][A-Za-z-]*\\s+){0,4}(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\))?\\s*:\\s*(.+)`,
         'i'
       )
     )

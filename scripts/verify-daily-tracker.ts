@@ -658,6 +658,41 @@ Chicken rice (P: 40g | C: 55g | F: 10g | ~520 kcal)`,
   )
 }
 
+{
+  const nightShiftPlan: Plan = {
+    ...planV1,
+    nutrition_plan: `Day 1 (Monday)
+
+Post shift breakfast (around 7am, after you finish work):
+2 parathas with curd and chai.
+
+Pre shift dinner (around 8pm, before you head to the hospital):
+Rice, dal tadka, and sabzi.
+
+Mid shift snack (around 2am at the canteen):
+2 bananas and biscuits.
+
+Evening snack (calorie fill): 2 rotis, dal, banana.
+Daily Total: P: 66g | C: 288g | F: 66g | ~2390 kcal`,
+  }
+  const nightSnap = buildTrackerSnapshot(nightShiftPlan)
+  const nightMeals = nightSnap.items.filter((i) => i.type === 'meal')
+  const titles = nightMeals.map((i) => (i.type === 'meal' ? i.title : '')).join(', ')
+  assert(
+    'parses Post shift breakfast',
+    nightMeals.some((i) => i.type === 'meal' && /breakfast/i.test(i.title) && /paratha/i.test(i.foods))
+  )
+  assert(
+    'parses Pre shift dinner',
+    nightMeals.some((i) => i.type === 'meal' && /dinner/i.test(i.title) && /dal/i.test(i.foods))
+  )
+  assert(
+    'parses Mid shift snack',
+    nightMeals.some((i) => i.type === 'meal' && /snack/i.test(i.title) && /banana/i.test(i.foods))
+  )
+  assert(`night-shift day has 3+ tracker meals (${titles})`, nightMeals.length >= 3)
+}
+
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)
   process.exit(1)
