@@ -30,6 +30,14 @@ assert(
   findDietPreferenceViolations(veganBad, 'vegan').length >= 3
 )
 assert('vegan clean plan passes', findDietPreferenceViolations(veganOk, 'vegan').length === 0)
+assert(
+  'peanut butter does not false-positive butter',
+  findDietPreferenceViolations('1 tbsp peanut butter with apple', 'vegan').length === 0
+)
+assert(
+  'dairy butter still flagged',
+  findDietPreferenceViolations('1 tsp butter on roti', 'vegan').some((v) => v.term === 'butter')
+)
 assert('vegetarian detects eggs/chicken', findDietPreferenceViolations(vegBad, 'vegetarian').length >= 2)
 assert('vegetarian dairy plan passes', findDietPreferenceViolations(vegOk, 'vegetarian').length === 0)
 assert(

@@ -66,13 +66,13 @@ function normalize(text: string): string {
 
 function containsAny(haystack: string, needles: string[]): string[] {
   const h = normalize(haystack)
+    .replace(/\b(coconut|soy|soya|oat|almond|rice|cashew|pea)\s+milk\b/gi, 'plantmilk')
+    .replace(/\b(peanut|almond|cashew|seed)\s+butter\b/gi, 'nutbutter')
   return needles.filter((n) => {
     const needle = normalize(n)
     if (!needle) return false
-    if (needle.length <= 4) {
-      return new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(h)
-    }
-    return h.includes(needle)
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`\\b${escaped}\\b`, 'i').test(h)
   })
 }
 

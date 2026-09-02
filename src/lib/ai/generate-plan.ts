@@ -635,8 +635,40 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       : supportSection
         ? 1
         : validationMode === 'nutrition_focus' || validationMode === 'full'
-          ? 4
+          ? 5
           : 3
+
+  const dietPreferenceBoost = (() => {
+    const pref = input.profile.diet_preference
+    if (pref === 'vegan') {
+      return [
+        'CRITICAL VEGAN CONSTRAINTS (override any conflicting habit):',
+        'Cooking fat = oil only (mustard/groundnut/coconut/olive). Never ghee or dairy butter.',
+        'Peanut butter / almond butter are OK. Coconut milk / soy milk / oat milk are OK.',
+        'Never: ghee, butter, milk, curd, dahi, yogurt, paneer, cheese, cream, whey, honey, eggs, meat, fish.',
+        'Protein: dal, soya chunks, tofu, chana, rajma, peanuts, peanut butter, sprouts.',
+        'Hit the calorie floor with rice, roti, oil, soya, and peanut butter — do not under-eat.',
+      ].join(' ')
+    }
+    if (pref === 'vegetarian') {
+      return [
+        'CRITICAL VEGETARIAN CONSTRAINTS:',
+        'Never eggs, chicken, fish, mutton, prawn, or any meat/seafood in any meal or swap.',
+        'Dairy OK unless allergy forbids. Use dal, paneer, soya, chana, curd, nuts.',
+      ].join(' ')
+    }
+    if (pref === 'eggetarian') {
+      return [
+        'CRITICAL EGGETARIAN CONSTRAINTS:',
+        'Never chicken, fish, mutton, or prawn. Eggs only on allowed weekdays from Hard Constraints.',
+      ].join(' ')
+    }
+    return null
+  })()
+
+  const coachInstructionsWithPreference = [input.coachInstructions, dietPreferenceBoost]
+    .filter(Boolean)
+    .join('\n\n')
 
   let libraryPrompts: { actionTemplate: string; systemTemplate: string | null } | undefined
   let promptVersion = process.env.AI_PROMPT_VERSION?.trim() || 'v1'
@@ -678,7 +710,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       input.latestCheckin,
       complexityScore,
       knowledgeEntries,
-      input.coachInstructions,
+      coachInstructionsWithPreference,
       {
         retry: attempt > 0,
         completenessHint: attempt > 0 ? completenessHint : null,
@@ -698,7 +730,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
             buildMockGeneratedPlan(
               input.profile,
               input.latestCheckin,
-              input.coachInstructions
+              coachInstructionsWithPreference
             )
           )
         : undefined

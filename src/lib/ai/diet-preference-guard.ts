@@ -23,19 +23,18 @@ export type DietPreferenceSafetyResult =
 
 /** Word-boundary scan; short tokens use \b to avoid false positives (e.g. eggplant). */
 function findTerms(text: string, terms: string[]): string[] {
-  // Plant milks are vegan — neutralize before scanning bare "milk".
+  // Neutralize vegan-safe phrases that contain banned substrings.
   let lower = text
     .toLowerCase()
     .replace(/\b(coconut|soy|soya|oat|almond|rice|cashew|pea)\s+milk\b/gi, 'plantmilk')
+    .replace(/\b(peanut|almond|cashew|seed)\s+butter\b/gi, 'nutbutter')
   const hits: string[] = []
   for (const term of terms) {
     const t = term.toLowerCase().trim()
     if (!t) continue
     const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const re =
-      t.length <= 4
-        ? new RegExp(`\\b${escaped}\\b`, 'i')
-        : new RegExp(escaped, 'i')
+    // Always use word boundaries so "butter" does not match "nutbutter" / "peanut butter".
+    const re = new RegExp(`\\b${escaped}\\b`, 'i')
     if (re.test(lower)) hits.push(t)
   }
   return [...new Set(hits)]
