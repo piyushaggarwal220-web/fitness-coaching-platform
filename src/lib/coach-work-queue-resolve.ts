@@ -3,6 +3,7 @@ import { serializeCoachResponse } from '@/lib/checkin'
 import { assertCheckinReplyWaitElapsed } from '@/lib/checkin-reply-timing'
 import { markConversationRead } from '@/lib/coach-chat'
 import type { WorkQueueTask } from '@/lib/coach-work-queue'
+import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
 import { activatePlan, syncPlanDeliveredFlag } from '@/lib/plans'
 
 export type ResolveWorkQueueResult = {
@@ -21,6 +22,17 @@ export async function resolveWorkQueueTask(
   task: WorkQueueTask,
   coachId: string
 ): Promise<ResolveWorkQueueResult> {
+  if (task.clientId) {
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('email, access_source')
+      .eq('id', task.clientId)
+      .maybeSingle()
+    if (isTrialClientHiddenFromCoaches(profile ?? {})) {
+      return { ok: false, resolved: false, error: 'Client is not on your roster.' }
+    }
+  }
+
   switch (task.type) {
     case 'call_request': {
       const requestId = task.id.replace(/^call-/, '')

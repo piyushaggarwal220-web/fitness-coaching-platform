@@ -12,6 +12,7 @@ import {
   createFakeTrialClient,
   listCoachesForAssignment,
 } from '../src/lib/admin/testing-accounts'
+import { coachAcceptsAutoAssignment } from '../src/lib/coach-delivery-policy'
 import { generatePlan } from '../src/lib/ai/generate-plan'
 import { generatedDietFormData, generatedWorkoutFormData } from '../src/lib/ai/plan-format'
 import {
@@ -243,7 +244,8 @@ async function main(): Promise<void> {
   console.log(`=== Tracker smoke: ${scenarios.length} clients, concurrency=${concurrency} ===\n`)
 
   const coaches = await listCoachesForAssignment()
-  const coachId = coaches[0]?.id ?? null
+  const planCoachId = coaches.find((c) => coachAcceptsAutoAssignment(c.id))?.id ?? null
+  const coachId = null
   const admin = createAdminClient()
   const created: Array<{ clientId: string; email: string; scenario: LifestyleScenario }> = []
 
@@ -300,18 +302,20 @@ async function main(): Promise<void> {
       const nutrition = dietForm.nutrition_plan ?? ''
       const workout = workoutForm.workout_plan ?? ''
 
-      await admin.from('plans').insert({
-        client_id: c.clientId,
-        coach_id: coachId,
-        title: `Tracker smoke ${index + 1} — ${c.scenario.id}`,
-        nutrition_plan: nutrition,
-        workout_plan: workout,
-        cardio_plan: workoutForm.cardio_plan || dietForm.cardio_plan || '',
-        supplement_plan: dietForm.supplement_plan || '',
-        coach_notes: [dietForm.coach_notes, workoutForm.coach_notes].filter(Boolean).join('\n'),
-        version: 1,
-        active: true,
-      })
+      if (planCoachId) {
+        await admin.from('plans').insert({
+          client_id: c.clientId,
+          coach_id: planCoachId,
+          title: `Tracker smoke ${index + 1} — ${c.scenario.id}`,
+          nutrition_plan: nutrition,
+          workout_plan: workout,
+          cardio_plan: workoutForm.cardio_plan || dietForm.cardio_plan || '',
+          supplement_plan: dietForm.supplement_plan || '',
+          coach_notes: [dietForm.coach_notes, workoutForm.coach_notes].filter(Boolean).join('\n'),
+          version: 1,
+          active: true,
+        })
+      }
 
       const plan = asPlan(c.clientId, coachId, nutrition, workout)
       const snap = buildTrackerSnapshot(plan, onboarding)

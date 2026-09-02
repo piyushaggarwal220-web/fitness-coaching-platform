@@ -30,21 +30,27 @@ export default function CoachAnalyticsPage() {
 
       const { data: clients } = await supabase
         .from('profiles')
-        .select('complexity_tier')
+        .select('id, complexity_tier')
         .eq('coach_id', coach.id)
 
-      const { count: pending } = await supabase
-        .from('checkins')
-        .select('*', { count: 'exact', head: true })
-        .eq('coach_id', coach.id)
-        .eq('reviewed', false)
-        .is('auto_reply_at', null)
-
-      const { count: plans } = await supabase
-        .from('plans')
-        .select('*', { count: 'exact', head: true })
-        .eq('coach_id', coach.id)
-        .eq('active', true)
+      const rosterIds = (clients ?? []).map((c) => c.id as string)
+      const [{ count: pending }, { count: plans }] = rosterIds.length
+        ? await Promise.all([
+            supabase
+              .from('checkins')
+              .select('*', { count: 'exact', head: true })
+              .eq('coach_id', coach.id)
+              .eq('reviewed', false)
+              .is('auto_reply_at', null)
+              .in('client_id', rosterIds),
+            supabase
+              .from('plans')
+              .select('*', { count: 'exact', head: true })
+              .eq('coach_id', coach.id)
+              .eq('active', true)
+              .in('client_id', rosterIds),
+          ])
+        : [{ count: 0 }, { count: 0 }]
 
       const tiers = (clients ?? []) as Array<{ complexity_tier: string | null }>
       setStats({

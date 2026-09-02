@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
 import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
+import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
 import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
 import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
@@ -176,11 +177,12 @@ export async function getCoachWorkQueue(
       .eq('coach_id', coachId),
   ])
 
+  const visibleClients = (clients ?? []).filter((c) => !isTrialClientHiddenFromCoaches(c))
   const clientNameById = new Map(
-    (clients ?? []).map((c) => [c.id, c.name || c.email || 'Client'])
+    visibleClients.map((c) => [c.id, c.name || c.email || 'Client'])
   )
   const pendingClientIds = new Set(
-    (clients ?? [])
+    visibleClients
       .filter((c) => !c.plan_delivered && c.onboarding_complete)
       .map((c) => c.id)
   )
@@ -247,7 +249,7 @@ export async function getCoachWorkQueue(
 
   const manualPlanDelivery = coachRequiresManualPlanDelivery(coachId)
 
-  for (const client of clients ?? []) {
+  for (const client of visibleClients) {
     // Only surface plan work after onboarding completion is persisted.
     // Incomplete clients never reach the dashboard, so they are not queue work.
     if (client.plan_delivered || !client.onboarding_complete) continue
@@ -328,6 +330,7 @@ export async function getCoachWorkQueue(
 
   for (const change of planChangeRequests ?? []) {
     if (change.status === 'generating') continue
+    if (!clientNameById.has(change.client_id)) continue
     const name = clientNameById.get(change.client_id) ?? 'Client'
     const ready = change.status === 'draft_ready' || change.status === 'in_review'
     tasks.push({
@@ -351,6 +354,7 @@ export async function getCoachWorkQueue(
 
   for (const checkin of pendingCheckins ?? []) {
     if (isCheckinPendingAutoReply(checkin)) continue
+    if (!clientNameById.has(checkin.client_id)) continue
     const name = clientNameById.get(checkin.client_id) ?? 'Client'
     tasks.push({
       id: `checkin-${checkin.id}`,
@@ -366,6 +370,7 @@ export async function getCoachWorkQueue(
   }
 
   for (const request of callRequests ?? []) {
+    if (!clientNameById.has(request.client_id)) continue
     const name = clientNameById.get(request.client_id) ?? 'Client'
     const isWeekly = (request as { source?: string }).source === 'weekly_entitlement'
     const weeklyLabel = isWeekly ? 'Weekly 12-mo call' : 'Call'
@@ -390,6 +395,7 @@ export async function getCoachWorkQueue(
   }
 
   for (const conv of unreadChats ?? []) {
+    if (!clientNameById.has(conv.client_id)) continue
     const name = clientNameById.get(conv.client_id) ?? 'Client'
     tasks.push({
       id: `chat-${conv.id}`,
@@ -422,6 +428,7 @@ export async function getCoachWorkQueue(
   try {
     const certificateWinners = await listPendingLeagueCertificateWinners(supabase, coachId)
     for (const winner of certificateWinners) {
+      if (!clientNameById.has(winner.clientId)) continue
       const name = clientNameById.get(winner.clientId) ?? winner.displayName
       const monthLabel = new Date(`${winner.endsOn}T00:00:00.000Z`).toLocaleString('en-IN', {
         month: 'long',
@@ -463,10 +470,10 @@ export async function getCoachWorkQueue(
   )
 
   const endedClientIds = new Set(
-    (clients ?? []).filter((client) => !hasClientEntitlement(client)).map((client) => client.id)
+    visibleClients.filter((client) => !hasClientEntitlement(client)).map((client) => client.id)
   )
   const accessSourceByClient = new Map(
-    (clients ?? []).map((client) => [client.id, (client.access_source ?? null) as AccessSource | null])
+    visibleClients.map((client) => [client.id, (client.access_source ?? null) as AccessSource | null])
   )
 
   const visibleTasks = tasks.filter((task) => {

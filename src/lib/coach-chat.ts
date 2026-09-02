@@ -3,6 +3,7 @@ import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { isCheckinSystemMessage } from '@/lib/checkin-chat'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
 import type { AccessSource } from '@/lib/entitlements'
+import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
 import {
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
@@ -146,14 +147,24 @@ export async function listCoachConversations(
   const planSlugByClient = buildPlanSlugByClient(purchasesResult.data)
 
   return {
-    data: rows.map((row) => {
+    data: rows.flatMap((row) => {
       const profile = profileById.get(row.client_id) ?? null
-      return {
-        ...row,
-        profiles: profile ? { name: profile.name, email: profile.email } : null,
-        plan_slug: planSlugByClient.get(row.client_id) ?? null,
-        access_source: profile?.accessSource ?? null,
+      if (
+        isTrialClientHiddenFromCoaches({
+          email: profile?.email,
+          access_source: profile?.accessSource,
+        })
+      ) {
+        return []
       }
+      return [
+        {
+          ...row,
+          profiles: profile ? { name: profile.name, email: profile.email } : null,
+          plan_slug: planSlugByClient.get(row.client_id) ?? null,
+          access_source: profile?.accessSource ?? null,
+        },
+      ]
     }),
     error: null,
   }

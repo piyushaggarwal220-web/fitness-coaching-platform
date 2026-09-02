@@ -9,6 +9,11 @@ export function coachRequiresManualPlanDelivery(coachId: string | null | undefin
   return Boolean(coachId && MANUAL_PLAN_DELIVERY_COACH_IDS.has(coachId))
 }
 
+/** Manual-delivery coaches only receive clients via explicit admin assignment. */
+export function coachAcceptsAutoAssignment(coachId: string | null | undefined): boolean {
+  return Boolean(coachId) && !coachRequiresManualPlanDelivery(coachId)
+}
+
 export function clientRequiresManualPlanDelivery(
   profile: Pick<OnboardingProfile, 'coach_id'> | null | undefined
 ): boolean {

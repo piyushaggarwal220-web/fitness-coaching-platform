@@ -108,23 +108,10 @@ export default function CoachDashboard() {
       setLoading(false);
 
       // Lightweight first paint — do not wait on full check-in history before showing the queue.
-      const [clientsResult, pendingCheckinsResult, activePlansResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('id, name, email, plan_delivered, checkin_awaiting, checkin_overdue, checkin_schedule_started_at, complexity_score, complexity_tier')
-          .eq('coach_id', coachData.id),
-        supabase
-          .from('checkins')
-          .select('*', { count: 'exact', head: true })
-          .eq('coach_id', coachData.id)
-          .eq('reviewed', false)
-          .is('auto_reply_at', null),
-        supabase
-          .from('plans')
-          .select('*', { count: 'exact', head: true })
-          .eq('coach_id', coachData.id)
-          .eq('active', true),
-      ]);
+      const clientsResult = await supabase
+        .from('profiles')
+        .select('id, name, email, plan_delivered, checkin_awaiting, checkin_overdue, checkin_schedule_started_at, complexity_score, complexity_tier')
+        .eq('coach_id', coachData.id)
 
       if (cancelled) return
 
@@ -140,6 +127,25 @@ export default function CoachDashboard() {
       const overdue = clientsData.filter(c => c.checkin_overdue === true).length;
       const newClients = clientsData.filter(c => c.plan_delivered === false).length;
       setStats({ total, awaiting, overdue, new: newClients });
+
+      const rosterIds = clientsData.map((c) => c.id)
+      const [pendingCheckinsResult, activePlansResult] = rosterIds.length
+        ? await Promise.all([
+            supabase
+              .from('checkins')
+              .select('*', { count: 'exact', head: true })
+              .eq('coach_id', coachData.id)
+              .eq('reviewed', false)
+              .is('auto_reply_at', null)
+              .in('client_id', rosterIds),
+            supabase
+              .from('plans')
+              .select('*', { count: 'exact', head: true })
+              .eq('coach_id', coachData.id)
+              .eq('active', true)
+              .in('client_id', rosterIds),
+          ])
+        : [{ count: 0, error: null }, { count: 0, error: null }]
 
       if (pendingCheckinsResult.error) {
         setError('Failed to load check-in counts.');

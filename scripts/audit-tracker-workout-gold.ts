@@ -220,7 +220,7 @@ function asPlan(row: { id: string; client_id: string; workout_plan: string; nutr
   }
 }
 
-function auditWorkout(workout: string, snapWorkouts: TrackerWorkoutItem[], pickerDays: number): Omit<PlanAudit, 'planId' | 'clientId' | 'email' | 'name' | 'trial'> {
+export function auditWorkout(workout: string, snapWorkouts: TrackerWorkoutItem[], pickerDays: number): Omit<PlanAudit, 'planId' | 'clientId' | 'email' | 'name' | 'trial'> {
   const written = splitWrittenDays(workout)
   const keyCounts = new Map<string, number>()
   for (const d of written) keyCounts.set(d.key, (keyCounts.get(d.key) ?? 0) + 1)
@@ -395,7 +395,12 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+const isDirectRun = /audit-tracker-workout-gold/.test(
+  String(process.argv[1] ?? '').replace(/\\/g, '/')
+)
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+}

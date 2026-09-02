@@ -39,6 +39,7 @@
     "verify:password-reset-reauth": "tsx scripts/verify-password-reset-reauth.ts",
     "verify:session-cache": "tsx scripts/verify-session-cache.ts",
     "verify:work-queue-load": "tsx scripts/verify-work-queue-load.ts && tsx scripts/verify-work-queue-parallelism.ts",
+    "verify:coach-roster": "tsx scripts/verify-coach-roster-visibility.ts",
     "verify:photo-upload-reliability": "tsx scripts/verify-photo-upload-reliability.ts",
     "verify:onboarding-photo-upload": "tsx scripts/verify-onboarding-photo-upload.ts",
     "verify:chunk-recovery": "tsx scripts/verify-chunk-load-recovery.ts",
@@ -47,7 +48,7 @@
     "verify:membership-renewal": "tsx scripts/verify-membership-renewal.ts",
     "verify:membership-paywall": "tsx scripts/verify-membership-paywall.ts",
     "verify:pwa": "tsx scripts/verify-pwa.ts",
-    "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:payment-operations && npm run verify:refund-eligibility && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:plan-metadata && npm run verify:plan-goals && npm run verify:daily-tracker && npm run verify:prompt-cache && npm run verify:chat-policy && npm run verify:chat-access && npm run verify:work-queue-load && npm run verify:initial-plan-generation && npm run verify:generate-plan-retries && npm run verify:password-reset-reauth && npm run verify:photo-upload-reliability && npm run verify:onboarding-photo-upload && npm run verify:chunk-recovery && npm run verify:promo-codes",
+    "verify:all": "npm run verify:prompts && npm run verify:context && npm run verify:home-workout && npm run verify:knowledge && npm run verify:complexity && npm run verify:testing-accounts && npm run verify:purchase-flow && npm run verify:payment-operations && npm run verify:refund-eligibility && npm run verify:state-consistency && npm run verify:launch && npm run verify:checkins && npm run verify:plan-sections && npm run verify:plan-metadata && npm run verify:plan-goals && npm run verify:daily-tracker && npm run verify:prompt-cache && npm run verify:chat-policy && npm run verify:chat-access && npm run verify:work-queue-load && npm run verify:coach-roster && npm run verify:initial-plan-generation && npm run verify:generate-plan-retries && npm run verify:password-reset-reauth && npm run verify:photo-upload-reliability && npm run verify:onboarding-photo-upload && npm run verify:chunk-recovery && npm run verify:promo-codes",
     "db:apply-pending": "node scripts/apply-pending-migrations.mjs",
     "prompts:import": "tsx --env-file=.env.local scripts/import-production-prompts.ts"
   },

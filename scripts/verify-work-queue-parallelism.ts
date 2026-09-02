@@ -85,7 +85,9 @@ function createFakeSupabase(opts: {
     api.not = chain(() => {})
     api.neq = chain(() => {})
     api.gt = chain(() => {})
+    api.lt = chain(() => {})
     api.order = chain(() => {})
+    api.limit = chain(() => {})
 
     const run = async () => {
       const startedAt = Date.now() - t0
@@ -128,6 +130,8 @@ async function main() {
         email: 'a@example.com',
         plan_delivered: false,
         onboarding_complete: true,
+        payment_confirmed: true,
+        access_source: 'purchase',
         created_at: '2026-01-01T00:00:00.000Z',
       },
       {
@@ -136,6 +140,8 @@ async function main() {
         email: 's@example.com',
         plan_delivered: true,
         onboarding_complete: true,
+        payment_confirmed: true,
+        access_source: 'purchase',
         created_at: '2026-01-02T00:00:00.000Z',
       },
     ],

@@ -19,6 +19,7 @@ import {
   createFakeTrialClient,
   listCoachesForAssignment,
 } from '../src/lib/admin/testing-accounts'
+import { coachAcceptsAutoAssignment } from '../src/lib/coach-delivery-policy'
 import { generatePlan } from '../src/lib/ai/generate-plan'
 import { generatedDietFormData, generatedWorkoutFormData } from '../src/lib/ai/plan-format'
 import { resolveClientCalorieTargets } from '../src/lib/ai/calorie-targets'
@@ -28,8 +29,10 @@ import {
   buildTrackerSnapshot,
   isCoachingExerciseName,
 } from '../src/lib/daily-tracker/parser'
+import type { TrackerMealItem, TrackerWorkoutItem } from '../src/lib/daily-tracker/types'
 import { createAdminClient } from '../src/lib/supabase/admin'
 import type { OnboardingProfile, Plan } from '../src/types/database'
+import { auditWorkout } from './audit-tracker-workout-gold'
 import { LIFESTYLE_SCENARIOS, finalSmokeScenarios, type LifestyleScenario } from './lifestyle-smoke-scenarios'
 
 process.env.AI_PLAN_PROVIDER = process.env.AI_PLAN_PROVIDER || 'claude'
@@ -501,6 +504,12 @@ function scoreCalories(
   ]
 }
 
+function countWrittenMealHeaders(diet: string): number {
+  const re =
+    /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:[A-Za-z][A-Za-z-]*\s+){0,4}(?:breakfast|lunch|dinner|snack|late snack|evening snack|mid[- ]?morning|morning meal|evening meal|pre[- ]?workout|post[- ]?workout)\b/gi
+  return [...diet.matchAll(re)].length
+}
+
 function scoreTracker(
   profile: OnboardingProfile,
   scenario: LifestyleScenario | undefined,
@@ -605,6 +614,79 @@ function scoreTracker(
     ok: snap.items.some((i) => i.type === 'sleep'),
     detail: snap.items.some((i) => i.type === 'sleep') ? 'ok' : 'missing',
   })
+
+  const writtenMealHeaders = countWrittenMealHeaders(nutrition)
+  checks.push({
+    name: 'Tracker meal count matches written diet headers',
+    ok: writtenMealHeaders === 0 || (meals.length >= 10 && Math.abs(meals.length - writtenMealHeaders) <= 4),
+    detail: `written headers ${writtenMealHeaders} vs tracker meals ${meals.length}`,
+  })
+
+  if (scenario?.mustInclude.length) {
+    const trackerFoods = meals
+      .filter((m): m is TrackerMealItem => m.type === 'meal')
+      .map((m) => m.foods)
+      .join('\n')
+    const hits = scenario.mustInclude.filter((n) => normalize(trackerFoods).includes(normalize(n)))
+    const need = Math.min(2, scenario.mustInclude.length)
+    checks.push({
+      name: 'Tracker meal foods include lifestyle staples',
+      ok: hits.length >= need,
+      detail:
+        hits.length >= need
+          ? `hit ${hits.join(', ')}`
+          : `need ${need} of [${scenario.mustInclude.join(', ')}], got ${hits.join(', ') || 'none'}`,
+    })
+  }
+
+  const workoutItems = workouts.filter((w): w is TrackerWorkoutItem => w.type === 'workout')
+  if (workout.trim() && workout.trim() !== 'N/A') {
+    const gold = auditWorkout(workout, workoutItems, snap.workoutDays?.length ?? 0)
+    const missing = gold.issues.reduce((n, i) => n + i.missing.length, 0)
+    const extra = gold.issues.reduce((n, i) => n + i.extra.length, 0)
+    const coaching = gold.issues.reduce((n, i) => n + i.coaching.length, 0)
+    checks.push({
+      name: 'Workout tracker gold-diff vs written lifts',
+      ok: missing === 0 && extra === 0 && coaching === 0,
+      detail:
+        missing === 0 && extra === 0 && coaching === 0
+          ? `${gold.writtenDays} written days / ${gold.trackerDays} tracker days`
+          : gold.issues
+              .slice(0, 5)
+              .map((i) => {
+                const bits = [
+                  i.missing.length ? `miss ${i.missing.slice(0, 3).join(', ')}` : '',
+                  i.extra.length ? `extra ${i.extra.slice(0, 3).join(', ')}` : '',
+                  i.coaching.length ? `coaching ${i.coaching.slice(0, 2).join(', ')}` : '',
+                ].filter(Boolean)
+                return `${i.day}: ${bits.join('; ')}`
+              })
+              .join(' | '),
+    })
+
+    const trainingMains = workoutItems.filter(
+      (w) =>
+        !/\brest\b/i.test(`${w.focus ?? ''} ${w.title}`) &&
+        (w.phases?.some((p) => p.phase === 'main' && p.exercises.length > 0) ||
+          w.exercises.filter((e) => e.phase === 'main').length > 0)
+    )
+    const warmupLeaks = trainingMains.filter((w) => {
+      const mains = (w.phases?.find((p) => p.phase === 'main')?.exercises ?? w.exercises.filter((e) => e.phase === 'main'))
+        .map((e) => e.name)
+      return mains.some((n) => /\b(stretch|arm circles|leg swings|wrist circles)\b/i.test(n))
+    })
+    checks.push({
+      name: 'Workout tracker keeps stretches out of Main',
+      ok: warmupLeaks.length === 0,
+      detail:
+        warmupLeaks.length === 0
+          ? `${trainingMains.length} training days with a Main list`
+          : warmupLeaks
+              .slice(0, 3)
+              .map((w) => w.workoutDay ?? w.dayLabel ?? w.title)
+              .join(', '),
+    })
+  }
 
   return checks
 }
@@ -715,9 +797,10 @@ async function main(): Promise<void> {
   )
 
   const coaches = await listCoachesForAssignment()
-  const coachId = coaches[0]?.id ?? null
-  if (coachId) console.log(`Assigning clients to coach: ${coaches[0]?.name ?? coachId}`)
-  else console.log('No coach found — clients will be unassigned')
+  const planCoachId = coaches.find((c) => coachAcceptsAutoAssignment(c.id))?.id ?? null
+  const coachId = null
+  console.log('Trial smoke clients stay unassigned so they never appear on a coach roster')
+  if (planCoachId) console.log(`Persisting generated plans under coach FK ${planCoachId}`)
 
   const admin = createAdminClient()
   const created: Array<{
@@ -783,18 +866,20 @@ async function main(): Promise<void> {
         workout = generatedWorkoutFormData(workoutResult.generatedPlan, c.clientId).workout_plan ?? workout
       }
 
-      await admin.from('plans').insert({
-        client_id: c.clientId,
-        coach_id: coachId,
-        title: `Lifestyle smoke ${index + 1}${c.scenario ? ` — ${c.scenario.id}` : ''}`,
-        nutrition_plan: nutrition,
-        workout_plan: workout || 'N/A',
-        cardio_plan: form.cardio_plan || '',
-        supplement_plan: form.supplement_plan || '',
-        coach_notes: `Lifestyle smoke test batch ${new Date().toISOString()} ${c.scenario?.id ?? ''}`,
-        version: 1,
-        active: true,
-      })
+      if (planCoachId) {
+        await admin.from('plans').insert({
+          client_id: c.clientId,
+          coach_id: planCoachId,
+          title: `Lifestyle smoke ${index + 1}${c.scenario ? ` — ${c.scenario.id}` : ''}`,
+          nutrition_plan: nutrition,
+          workout_plan: workout || 'N/A',
+          cardio_plan: form.cardio_plan || '',
+          supplement_plan: form.supplement_plan || '',
+          coach_notes: `Lifestyle smoke test batch ${new Date().toISOString()} ${c.scenario?.id ?? ''}`,
+          version: 1,
+          active: true,
+        })
+      }
 
       const targets = resolveClientCalorieTargets(onboarding)
       const kcal = getAuthoritativeNutritionCalories(

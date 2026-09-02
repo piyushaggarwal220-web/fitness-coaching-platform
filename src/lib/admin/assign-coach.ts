@@ -28,22 +28,21 @@ export async function assignCoachToClient(
   if (error) return { error: error.message }
 
   if (coachId) {
-    const { data: openConvo } = await supabase
-      .from('coach_conversations')
-      .select('id, coach_id')
-      .eq('client_id', clientId)
-      .neq('status', 'closed')
-      .maybeSingle()
-
-    if (openConvo && openConvo.coach_id !== coachId) {
-      await supabase
+    const now = new Date().toISOString()
+    await Promise.all([
+      supabase.from('plans').update({ coach_id: coachId }).eq('client_id', clientId),
+      supabase.from('checkins').update({ coach_id: coachId }).eq('client_id', clientId),
+      supabase
         .from('coach_conversations')
-        .update({
-          coach_id: coachId,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', openConvo.id)
-    }
+        .update({ coach_id: coachId, updated_at: now })
+        .eq('client_id', clientId),
+      supabase.from('call_requests').update({ coach_id: coachId }).eq('client_id', clientId),
+      supabase.from('plan_change_requests').update({ coach_id: coachId }).eq('client_id', clientId),
+      supabase
+        .from('initial_plan_generation_jobs')
+        .update({ coach_id: coachId })
+        .eq('client_id', clientId),
+    ])
   }
 
   return { error: null }
