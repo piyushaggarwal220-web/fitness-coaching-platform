@@ -578,6 +578,23 @@ function repairProse(text: string, profile: DietRepairProfile, scan: DietScanOpt
   return { text: out, fixes }
 }
 
+function toCalorieProfile(profile: DietRepairProfile): Parameters<typeof resolveClientCalorieTargets>[0] {
+  return {
+    weight: profile.weight ?? null,
+    height: profile.height ?? null,
+    age: profile.age ?? null,
+    gender: profile.gender ?? null,
+    activity_level: profile.activity_level ?? null,
+    fitness_goal: profile.fitness_goal ?? null,
+    onboarding_data: (profile.onboarding_data ?? null) as Parameters<
+      typeof resolveClientCalorieTargets
+    >[0]['onboarding_data'],
+    sleep_duration: null,
+    training_experience: null,
+    injuries: null,
+  }
+}
+
 /**
  * Fix lifestyle / preference / calorie leaks in a generated nutrition plan.
  * Safe to run on every successful draft before safety checks.
@@ -602,7 +619,7 @@ export function applyDietPlanRepair(
   next = mapMealProse(next, (text) => ensureFastingLanguage(text, fastingWeekdays))
   if (fastingWeekdays.length > 0) fixes.push('fasting weekday marked light')
 
-  const targets = resolveClientCalorieTargets(profile)
+  const targets = resolveClientCalorieTargets(toCalorieProfile(profile))
   const targetKcal = targets?.preferred ?? resolveDietFloorKcal(profile.weight)
   const allergies = scan.allergies ?? ''
   const fillOpts = {
@@ -649,7 +666,7 @@ export function dietPlanMeetsContract(
   const scan = dietScanOptionsFromProfile(profile)
   const preference = enforceDietPreference(plan, profile.diet_preference, scan)
   if (!preference.ok) return false
-  const targets = resolveClientCalorieTargets(profile)
+  const targets = resolveClientCalorieTargets(toCalorieProfile(profile))
   const target = targets?.preferred ?? resolveDietFloorKcal(profile.weight)
   const cals = getAuthoritativeNutritionCalories(plan)
   if (!Number.isFinite(cals) || cals <= 0) return inferMacrosFromDietText(collectProse(plan)) == null
