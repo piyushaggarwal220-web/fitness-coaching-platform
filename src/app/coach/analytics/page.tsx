@@ -33,7 +33,8 @@ export default function CoachAnalyticsPage() {
         .select('id, complexity_tier')
         .eq('coach_id', coach.id)
 
-      const rosterIds = (clients ?? []).map((c) => c.id as string)
+      const roster = (clients ?? []) as Array<{ id: string; complexity_tier: string | null }>
+      const rosterIds = roster.map((c) => c.id)
       const [{ count: pending }, { count: plans }] = rosterIds.length
         ? await Promise.all([
             supabase
@@ -52,7 +53,7 @@ export default function CoachAnalyticsPage() {
           ])
         : [{ count: 0 }, { count: 0 }]
 
-      const tiers = (clients ?? []) as Array<{ complexity_tier: string | null }>
+      const tiers = roster
       setStats({
         total: tiers.length,
         activePlans: plans ?? 0,
