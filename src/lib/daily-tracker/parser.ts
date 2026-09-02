@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 10
+export const TRACKER_PARSER_VERSION = 14
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -149,7 +149,23 @@ function stripMarkdownDecorators(value: string): string {
 }
 
 const MEAL_NAME_PATTERN =
-  'breakfast|lunch|dinner|snack|late snack|evening snack|mid[- ]?morning|morning meal|evening meal|pre[- ]?workout|post[- ]?workout'
+  'breakfast|lunch|dinner|snack|late snack|evening snack|mid[- ]?morning|morning meal|evening meal|pre[- ]?workout|post[- ]?workout|meal'
+
+const DAY_BLOCK_SPLIT =
+  /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:meal:\s*)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b)/i
+
+const DAY_HEADER_LINE =
+  /^(?:meal:\s*)?(?:(day\s*\d+)|(monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b(?:\s*[(\[–—:-]+\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday))?/i
+
+const MEAL_HEADER_LINE = new RegExp(
+  `^(?:\\*{0,2}|#{1,3}\\s*)?(?:[A-Za-z][A-Za-z-]*\\s+){0,4}(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\)|\\s+((?:around|at|@)\\s+[^:]+))?\\s*:?\\s*\\*{0,2}\\s*$`,
+  'i'
+)
+
+const MEAL_INLINE_LINE = new RegExp(
+  `^(?:\\*{0,2}|#{1,3}\\s*)?(?:[A-Za-z][A-Za-z-]*\\s+){0,4}(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\)|\\s+((?:around|at|@)\\s+[^:]+))?\\s*:\\s*(.+)`,
+  'i'
+)
 
 function capitalizeLabel(value: string): string {
   return value.replace(/\b\w/g, (c) => c.toUpperCase())
@@ -157,18 +173,14 @@ function capitalizeLabel(value: string): string {
 
 function parseDietDayBlocks(diet: string): (TrackerPlanDayOption & { body: string })[] {
   const normalized = diet.replace(/\r\n/g, '\n')
-  const blocks = normalized.split(
-    /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b)/i
-  )
+  const blocks = normalized.split(DAY_BLOCK_SPLIT)
 
   const days: (TrackerPlanDayOption & { body: string })[] = []
 
   for (const block of blocks) {
     const lines = block.split('\n')
     const first = stripMarkdownDecorators(lines[0]?.trim() ?? '')
-    const dayMatch = first.match(
-      /^(?:(day\s*\d+)|(monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b(?:\s*[(\[–—:-]+\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday))?/i
-    )
+    const dayMatch = first.match(DAY_HEADER_LINE)
     if (!dayMatch) continue
     const dayToken = (dayMatch[1] || dayMatch[2] || '').toLowerCase().replace(/\s+/g, ' ')
     const weekdayHint = dayMatch[3]?.toLowerCase()
@@ -190,10 +202,6 @@ function parseMealsInDay(
   if (!dietBody.trim()) return []
   const lines = dietBody.replace(/\r\n/g, '\n').split('\n')
   const meals: TrackerMealItem[] = []
-  const headers = new RegExp(
-    `^(?:\\*{0,2}|#{1,3}\\s*)?(?:[A-Za-z][A-Za-z-]*\\s+){0,4}(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\))?\\s*:?\\s*\\*{0,2}\\s*$`,
-    'i'
-  )
   const periodMap: Record<string, TrackerPeriod> = {
     breakfast: 'morning',
     'morning meal': 'morning',
@@ -203,6 +211,7 @@ function parseMealsInDay(
     'pre workout': 'morning',
     lunch: 'lunch',
     snack: 'afternoon',
+    meal: 'lunch',
     'evening snack': 'evening',
     'late snack': 'night',
     dinner: 'evening',
@@ -234,26 +243,21 @@ function parseMealsInDay(
 
   for (const line of lines) {
     const trimmed = stripMarkdownDecorators(line.trim())
-    const match = trimmed.match(headers) ?? line.trim().match(headers)
+    const match = trimmed.match(MEAL_HEADER_LINE) ?? line.trim().match(MEAL_HEADER_LINE)
     if (match) {
       flush()
       current = {
         name: match[1]!,
-        mealTime: match[2]?.trim(),
+        mealTime: (match[2] ?? match[3])?.trim(),
         lines: [],
       }
       continue
     }
-    const inline = trimmed.match(
-      new RegExp(
-        `^(?:\\*{0,2}|#{1,3}\\s*)?(?:[A-Za-z][A-Za-z-]*\\s+){0,4}(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\))?\\s*:\\s*(.+)`,
-        'i'
-      )
-    )
+    const inline = trimmed.match(MEAL_INLINE_LINE)
     if (inline) {
       flush()
       const mealKey = inline[1]!.toLowerCase()
-      const foods = inline[3]!.trim()
+      const foods = (inline[4] ?? '').trim()
       meals.push(
         enrichMeal(
           {
@@ -263,7 +267,7 @@ function parseMealsInDay(
             icon: '🥗',
             title: capitalizeLabel(inline[1]!),
             foods,
-            mealTime: inline[2]?.trim(),
+            mealTime: (inline[2] ?? inline[3])?.trim(),
             dietDay: dayKey === 'default' ? undefined : dayKey,
             dietDayLabel: dayKey === 'default' ? undefined : dayLabel,
             sortOrder: meals.length,
@@ -294,6 +298,7 @@ function parseMeals(diet: string): {
   for (const day of dayBlocks) {
     const dayMeals = parseMealsInDay(day.body, day.key, day.label)
     if (dayMeals.length === 0) continue
+    if (day.key !== 'default' && dietDays.some((d) => d.key === day.key)) continue
     meals.push(...dayMeals)
     if (day.key !== 'default') {
       dietDays.push({ key: day.key, label: day.label, calendarAligned: day.calendarAligned })
@@ -320,24 +325,41 @@ const SESSION_LABEL_ONLY =
 const PURPOSE_AS_NAME =
   /\b(endurance|race effort|for the full|transformation|aesthetic|build the|develop your|improve your)\b/i
 
+const COACHING_LINE_PREFIX =
+  /^(focus on|keep the|remember|make sure|these are|this is|today we|you(?:'ll| will)|i want you|aim to|try to|be sure|let's|lets)\b/i
+
+const LIFT_PRESCRIPTION =
+  /\d+\s*sets?\s*(?:[x×]|of|,)\s*(?:\d+|AMRAP)|\d+\s*[x×]\s*(?:\d+|AMRAP)/i
+
 /** True when a tracker "exercise name" is actually coach chatter or a tempo cue. */
 export function isCoachingExerciseName(text: string): boolean {
   const t = String(text ?? '').replace(/\s+/g, ' ').trim()
   if (!t) return true
   if (PURPOSE_AS_NAME.test(t)) return true
-  if (t.length > 64) return true
-  const words = t.split(' ').filter(Boolean)
+  if (COACHING_LINE_PREFIX.test(t)) return true
+  // Judge the movement name, not parenthetical cues like "(controlled, no jumping)".
+  const core = t.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim()
+  if (core.length > 64) return true
+  const words = core.split(' ').filter(Boolean)
   if (words.length > 10) return true
-  if (
-    /^(focus on|keep the|remember|make sure|these are|this is|today we|you(?:'ll| will)|i want you|aim to|try to|be sure|let's|lets)\b/i.test(
-      t
-    )
-  ) {
-    return true
-  }
-  if (/[—.!?]/.test(t) && words.length >= 6) return true
-  if (/\b(anchors?|tempo|controlled|on the way down|strength anchors)\b/i.test(t)) return true
+  if (/[—.!?]/.test(core) && words.length >= 6) return true
+  if (/\b(anchors?|tempo|controlled|on the way down|strength anchors)\b/i.test(core)) return true
   return false
+}
+
+/**
+ * Skip coach-prose lines before trying lift regexes.
+ * Do not run the name word-count heuristic on a full `sets x reps` line —
+ * parenthetical alternatives ("or Barbell Deadlift") push those over 10 words
+ * and were dropping real Saturday compounds from the tracker.
+ */
+function lineIsCoachingProse(text: string): boolean {
+  const t = String(text ?? '').replace(/\s+/g, ' ').trim()
+  if (!t) return true
+  if (LIFT_PRESCRIPTION.test(t)) {
+    return COACHING_LINE_PREFIX.test(t)
+  }
+  return isCoachingExerciseName(t)
 }
 
 const DAY_SESSION_HEADER =
@@ -365,9 +387,21 @@ const PHASE_MAP: Record<string, WorkoutExercisePhase> = {
   'cool-down': 'cooldown',
   'post-workout': 'cooldown',
   'post-workout stretching': 'cooldown',
+  'post workout': 'cooldown',
+  'post workout stretching': 'cooldown',
   stretching: 'cooldown',
   recovery: 'cooldown',
   finisher: 'finisher',
+  'warm up': 'warmup',
+}
+
+/** "Warm up" / "Post Workout" / "warm-up" all map to a phase. */
+function resolvePhaseLabel(raw: string): WorkoutExercisePhase | undefined {
+  const spaced = raw.toLowerCase().replace(/:$/g, '').replace(/\s+/g, ' ').trim()
+  if (!spaced) return undefined
+  const hyphen = spaced.replace(/\s+/g, '-')
+  const compact = spaced.replace(/[-\s]+/g, '')
+  return PHASE_MAP[spaced] ?? PHASE_MAP[hyphen] ?? PHASE_MAP[compact]
 }
 
 /** Day-header boundary used when slicing shared warm-up / post-workout blocks. */
@@ -425,37 +459,47 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     return null
   }
   if (PHASE_HEADERS.test(trimmed) || SESSION_LABEL_ONLY.test(trimmed)) return null
-  if (isCoachingExerciseName(trimmed)) return null
+  if (lineIsCoachingProse(trimmed)) return null
   // Skip multi-exercise core dump lines; handled by expandCompositeExerciseLines
   if (/^core\s*:/i.test(trimmed) && /,/.test(trimmed)) return null
 
   // Rep token: fixed, hyphen range, or AI "N to M" prose range (plan style forbids hyphens).
   const repsToken = String.raw`(\d+(?:\s*(?:-|–|to)\s*\d+)?|AMRAP|\d+\s*s)`
+  const eachSide = String.raw`(?:\s*(?:each(?:\s+(?:side|leg|arm))?|\/side|per\s+(?:side|leg|arm)))?`
+  const afterReps = String.raw`(?:\s*(?:reps?|seconds?|secs?|s|taps?))?`
+  const total = String.raw`(?:\s*total)?`
+  const weight = String.raw`(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?`
+  // Same-line coaching: "3 sets x 10 reps. Keep your chest up..."
+  const tail = String.raw`${weight}(?:\s*(?:[.,;:!()]|[-–—]).*|\s+[A-Za-z].*)?$`
   // AI coach format: "Barbell Bench Press: 5 sets x 6 to 8 reps (...)"
   const setsReps = new RegExp(
-    String.raw`^(.+?)\s*[:–—]?\s*(\d+)\s*sets?\s*[x×]\s*${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
+    String.raw`^(.+?)\s*[:–—]?\s*(\d+)\s*sets?\s*[x×]\s*${repsToken}${afterReps}${eachSide}${total}${tail}`,
     'i'
   )
   // Alternate AI phrasing: "Bench Press: 4 sets of 8 to 10 reps"
   const setsOf = new RegExp(
-    String.raw`^(.+?)\s*[:–—]?\s*(\d+)\s*sets?\s+of\s+${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
+    String.raw`^(.+?)\s*[:–—]?\s*(\d+)\s*sets?\s+of\s*${repsToken}${afterReps}${eachSide}${total}${tail}`,
     'i'
   )
   // Compact format: "Bench Press 4x8 @ 60 kg" / "Squat 4x6-8"
   const compact = new RegExp(
-    String.raw`^(.+?)\s+(\d+)\s*[x×]\s*${repsToken}(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[-–—]\s*(.+))?`,
+    String.raw`^(.+?)\s+(\d+)\s*[x×]\s*${repsToken}${afterReps}${eachSide}${total}${tail}`,
     'i'
   )
 
   // "Bench Press: 4 sets, 8 to 10 reps" (comma instead of x/of)
   const setsComma = new RegExp(
-    String.raw`^(.+?)\s*:?\s*(\d+)\s*sets?\s*,\s*${repsToken}(?:\s*reps?)?(?:\s*(?:each(?:\s+side)?|\/side))?(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?(?:\s*[\-(].*)?$`,
+    String.raw`^(.+?)\s*:?\s*(\d+)\s*sets?\s*,\s*${repsToken}${afterReps}${eachSide}${total}${tail}`,
     'i'
   )
-  // Timed holds: "Plank 45 seconds" / "Side plank: 30s" — must be the whole line,
-  // not a tempo cue buried in coaching prose like "(2-3s)".
+  // Circuit / finisher lines that omit sets: "Goblet Squat (light dumbbell): 12 reps"
+  const repsOnly = new RegExp(
+    String.raw`^(.+?)\s*[:–—]\s*(\d+)\s*reps?\b${eachSide}${total}${tail}`,
+    'i'
+  )
+  // Timed holds: "Plank 45 seconds" / "Chest opener: 30 to 45 seconds"
   const timedHold = trimmed.match(
-    /^(.{2,60}?)\s*:?\s*(\d+)\s*(?:x\s*)?(s|sec|secs|seconds|min|mins|minutes)\b(?:\s*(?:each(?:\s+side)?|hold|\/side)?)?\s*$/i
+    /^(.{2,60}?)\s*:?\s*(\d+)(?:\s*(?:to|-|–)\s*(\d+))?\s*(s|sec|secs|seconds|min|mins|minutes)\b(?:\s*(?:each(?:\s+(?:side|leg|arm))?|hold|\/side|per\s+(?:side|leg|arm))?)?(?:\s*(?:[.,;:!()]|[-–—]).*)?$/i
   )
 
   const durationUnit = String.raw`(min|mins|minutes|sec|secs|seconds|s)\b`
@@ -485,6 +529,11 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     trimmed.match(setsComma) ??
     trimmed.match(compact) ??
     (() => {
+      const only = trimmed.match(repsOnly)
+      if (!only) return null
+      return [only[0], only[1], '1', only[2], only[3], undefined] as unknown as RegExpMatchArray
+    })() ??
+    (() => {
       const reversed = trimmed.match(
         new RegExp(
           String.raw`^(\d+)\s*[x×]\s*${repsToken}(?:\s*(?:@|at)\s*([\d.]+)\s*(?:kg|lbs?))?\s+(.+?)(?:\s*[\-(].*)?$`,
@@ -503,8 +552,10 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     ) {
       return null
     }
-    const amount = timedHold[2]!
-    const unit = timedHold[3]!.toLowerCase()
+    const low = timedHold[2]!
+    const high = timedHold[3]
+    const amount = high ? `${low}-${high}` : low
+    const unit = timedHold[4]!.toLowerCase()
     const reps = /m/.test(unit) ? `${amount} min` : `${amount}s`
     return withTrackingMeta({
       id: `ex-${phase}-${slug(holdName)}-${index}`,
@@ -517,7 +568,7 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   }
   if (!match) return null
 
-  let name = match[1]!.trim().replace(/:$/, '').trim()
+  let name = match[1]!.trim().replace(/[:.,]+$/, '').trim()
   // Drop leading labels like "Core: "
   name = name.replace(/^(?:core|finisher|accessory)\s*:\s*/i, '').trim()
   if (!name || name.length < 2 || isCoachingExerciseName(name)) return null
@@ -563,7 +614,7 @@ function expandCompositeExerciseLines(line: string): string[] {
 }
 
 const LOOSE_MOVEMENT =
-  /\b(press|squat|deadlift|hinge|row|curl|raise|flye?|lunge|plank|hold|carry|pull|push(?:-?up)?|extension|crunch|twist|stretch|walk|swing|thrust|dip|chin|hang|pulldown|pullover|face\s*pull|kickback|abduction|adduction|calf|glute|hip|core|dead\s*bug|bird\s*dog|pallof|barbell|dumbbell|cable|machine|incline|decline|lat|trap|hamstring|shrug|step|split|box|jump|rope|sled|leg\s*press|leg\s*curl)\b/i
+  /\b(press|squat|deadlift|hinge|row|curl|raise|flye?|lunge|plank|hold|carry|pull|push(?:-?up)?|extension|crunch|twist|stretch|walk|swing|thrust|dip|chin|hang|pulldown|pullover|face\s*pull|kickback|abduction|adduction|calf|glute|hip|core|dead\s*bug|bird\s*dog|pallof|barbell|dumbbell|cable|machine|incline|decline|lat|trap|hamstring|shrug|step[- ]?ups?|split|box|jump|rope|sled|leg\s*press|leg\s*curl)\b/i
 
 /** Names without "sets x reps" still belong on the tracker (core finishers, holds, A1/A2). */
 function parseLooseExerciseLine(
@@ -579,10 +630,12 @@ function parseLooseExerciseLine(
     return null
   }
   if (PHASE_HEADERS.test(trimmed) || SESSION_LABEL_ONLY.test(trimmed)) return null
-  if (isCoachingExerciseName(trimmed)) return null
-  if (/^(note|notes|rest|optional|superset|circuit|round|then|also|hint)\b/i.test(trimmed)) {
+  if (lineIsCoachingProse(trimmed)) return null
+  if (/^(note|notes|rest|optional|superset|circuit|round|then|also|hint|aim for|not applicable|drink plenty)\b/i.test(trimmed)) {
     return null
   }
+  if (/^(to\s+\d+|steps?)\b/i.test(trimmed)) return null
+  if (/\bsteps?\b/i.test(trimmed) && !/step[- ]?up/i.test(trimmed)) return null
   if (/\b(should|ensure|remember|make sure|client|coach)\b/i.test(trimmed)) return null
   const words = trimmed.split(/\s+/).filter(Boolean)
   if (trimmed.length < 3 || trimmed.length > 70 || words.length > 10) return null
@@ -696,9 +749,9 @@ function parseWorkoutPhases(section: string): {
     }
 
     if (PHASE_HEADERS.test(trimmed) || SESSION_LABEL_ONLY.test(trimmed)) {
-      const key = trimmed.toLowerCase().replace(/\s+/g, ' ').replace(/:$/, '')
       if (PHASE_HEADERS.test(trimmed)) {
-        currentPhase = PHASE_MAP[key] ?? 'main'
+        const key = trimmed.toLowerCase().replace(/\s+/g, ' ').replace(/:$/, '')
+        currentPhase = resolvePhaseLabel(key) ?? 'main'
       }
       continue
     }
@@ -708,8 +761,7 @@ function parseWorkoutPhases(section: string): {
       /^(?:#{1,3}\s*)?(warm[- ]?up|pre[- ]?workout|activation|mobility|prep|main(?:\s+workout)?|cool[- ]?down|post[- ]?workout(?:\s+stretching)?|stretching|recovery|finisher)\s*[:\-–—]\s+(.+)$/i
     )
     if (inlinePhase) {
-      const key = inlinePhase[1]!.toLowerCase().replace(/\s+/g, ' ')
-      currentPhase = PHASE_MAP[key] ?? currentPhase
+      currentPhase = resolvePhaseLabel(inlinePhase[1]!) ?? currentPhase
       const rest = inlinePhase[2]!.trim()
       let matchedInline = false
       for (const candidate of expandCompositeExerciseLines(rest)) {
@@ -915,38 +967,55 @@ function parseWorkouts(workoutText: string): {
   const sharedWarmup = extractSharedPhaseExercises(workoutText, 'warmup')
   const sharedCooldown = extractSharedPhaseExercises(workoutText, 'cooldown')
   const blocks = splitWorkoutDayBlocks(workoutText)
-  const workouts: TrackerWorkoutItem[] = []
-  const workoutDays: TrackerPlanDayOption[] = []
+  const byKey = new Map<
+    string,
+    { workout: TrackerWorkoutItem; option?: TrackerPlanDayOption; quality: number }
+  >()
+
+  const consider = (
+    key: string,
+    workout: TrackerWorkoutItem,
+    option: TrackerPlanDayOption | undefined,
+    quality: number
+  ) => {
+    const existing = byKey.get(key)
+    if (existing && existing.quality >= quality) return
+    byKey.set(key, { workout, option, quality })
+  }
 
   for (const day of blocks) {
     const parsed = parseWorkoutPhases(day.body)
     const dayLabel = parsed.dayLabel ?? day.label
-    // Detect rest/empty before default warm-ups are injected — otherwise Rest days
-    // look like normal sessions and disappear from the picker inconsistently.
-    // Only treat as Rest when the day is empty AND looks like a rest day (or has no
-    // training-like title). Failed exercise parses on "Lower Power" etc. must not
-    // all collapse into Rest day.
     const looksLikeRestDay = isExplicitRestDayText(`${day.label}\n${day.body}`)
     const isRestDay =
       parsed.exercises.length === 0 && day.key !== 'default' && looksLikeRestDay
+    const option: TrackerPlanDayOption | undefined =
+      day.key === 'default'
+        ? undefined
+        : { key: day.key, label: day.label, calendarAligned: day.calendarAligned }
+    const structured = /(?:main(?:\s+workout)?|working\s+sets?)\s*:/i.test(day.body)
 
     if (isRestDay) {
-      workouts.push({
-        id: `workout-${day.key}`,
-        type: 'workout',
-        period: 'workout',
-        icon: '🛌',
-        title: `${dayLabel} — Rest`,
-        dayLabel,
-        focus: 'Rest day',
-        workoutNotes: parsed.workoutNotes,
-        workoutDay: day.key,
-        workoutDayLabel: day.label,
-        phases: [],
-        exercises: [],
-        sortOrder: 50,
-      })
-      workoutDays.push({ key: day.key, label: day.label, calendarAligned: day.calendarAligned })
+      consider(
+        day.key,
+        {
+          id: `workout-${day.key}`,
+          type: 'workout',
+          period: 'workout',
+          icon: '🛌',
+          title: `${dayLabel} — Rest`,
+          dayLabel,
+          focus: 'Rest day',
+          workoutNotes: parsed.workoutNotes,
+          workoutDay: day.key,
+          workoutDayLabel: day.label,
+          phases: [],
+          exercises: [],
+          sortOrder: 50,
+        },
+        option,
+        structured ? 500 : 0
+      )
       continue
     }
 
@@ -967,27 +1036,32 @@ function parseWorkouts(workoutText: string): {
     const exercises = prefixIdsForWorkoutDay(merged.exercises, day.key)
     const focus = parsed.focus ?? parseWorkoutFocus(day.body)
 
-    workouts.push({
-      id: day.key === 'default' ? 'workout-today' : `workout-${day.key}`,
-      type: 'workout',
-      period: 'workout',
-      icon: '🏋',
-      title: day.key === 'default' ? "Today's Workout" : `${dayLabel} Workout`,
-      dayLabel,
-      focus,
-      workoutNotes: parsed.workoutNotes,
-      workoutDay: day.key === 'default' ? undefined : day.key,
-      workoutDayLabel: day.key === 'default' ? undefined : day.label,
-      phases,
-      exercises,
-      sortOrder: 50,
-    })
-
-    if (day.key !== 'default') {
-      workoutDays.push({ key: day.key, label: day.label, calendarAligned: day.calendarAligned })
-    }
+    consider(
+      day.key,
+      {
+        id: day.key === 'default' ? 'workout-today' : `workout-${day.key}`,
+        type: 'workout',
+        period: 'workout',
+        icon: '🏋',
+        title: day.key === 'default' ? "Today's Workout" : `${dayLabel} Workout`,
+        dayLabel,
+        focus,
+        workoutNotes: parsed.workoutNotes,
+        workoutDay: day.key === 'default' ? undefined : day.key,
+        workoutDayLabel: day.key === 'default' ? undefined : day.label,
+        phases,
+        exercises,
+        sortOrder: 50,
+      },
+      option,
+      (structured ? 1000 : 0) + exercises.length
+    )
   }
 
+  const workouts = [...byKey.values()].map((row) => row.workout)
+  const workoutDays = [...byKey.values()]
+    .map((row) => row.option)
+    .filter((d): d is TrackerPlanDayOption => Boolean(d))
   return { workouts, workoutDays }
 }
 
@@ -1128,7 +1202,7 @@ function looksLikeWorkingLiftInWarmup(ex: TrackerExerciseItem): boolean {
   if (!looksLikeStrengthMovement(ex.name)) return false
   const sets = ex.targetSets ?? 0
   const lightActivation =
-    /\b(bodyweight|air squat|glute bridge|band pull|pull.?apart)\b/i.test(ex.name) && sets <= 2
+    /\b(light|bodyweight|air squat|glute bridge|band pull|pull.?apart)\b/i.test(ex.name) && sets <= 2
   if (lightActivation) return false
   if (sets >= 3) return true
   return (

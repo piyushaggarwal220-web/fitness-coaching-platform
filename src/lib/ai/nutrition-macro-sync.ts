@@ -258,10 +258,72 @@ export type DietSafetyOptions = {
   maintenanceKcal?: number | null
   /** Portion foods to enlarge on a low-calorie retry. */
   calorieBumpFoods?: string | null
+  /** Fasting / vrat weekdays — score Mifflin on the other days, not the weekly average. */
+  skipWeekdays?: string[]
+}
+
+/** How far above the Mifflin preferred target is still accepted before retry. */
+const PREFERRED_MAX_SLACK_KCAL = 150
+
+function splitDietDayBlocks(text: string): Array<{ weekday: string; body: string }> {
+  const re = /Day\s*\d\s*\(([^)]+)\)/gi
+  const matches = [...text.matchAll(re)]
+  if (matches.length === 0) return []
+  const days: Array<{ weekday: string; body: string }> = []
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i]!
+    const start = (match.index ?? 0) + match[0].length
+    const end = i + 1 < matches.length ? (matches[i + 1]!.index ?? text.length) : text.length
+    days.push({
+      weekday: (match[1] ?? '').trim().toLowerCase(),
+      body: text.slice(start, end),
+    })
+  }
+  return days
+}
+
+function parseDailyTotalKcal(body: string): number | null {
+  for (const line of body.split(/\r?\n/)) {
+    if (!isDailyTotalOrAverageLine(line)) continue
+    if (/daily\s+averages?\s+across/i.test(line)) continue
+    const match = line.match(/(\d{3,4})\s*kcal/i)
+    if (!match) continue
+    const n = parseInt(match[1]!, 10)
+    if (n >= 400 && n <= 5000) return n
+  }
+  return null
+}
+
+export type NutritionCalorieOpts = {
+  skipWeekdays?: string[]
+}
+
+/** Average Daily Total kcal, optionally skipping fasting weekdays. */
+export function averageDayCaloriesFromPlan(
+  plan: GeneratedNutritionPlan,
+  skipWeekdays: string[] = []
+): number | null {
+  const prose = collectDietProse(plan.meals)
+  const skip = new Set(skipWeekdays.map((d) => d.trim().toLowerCase()).filter(Boolean))
+  const kcals = splitDietDayBlocks(prose)
+    .filter((d) => !skip.has(d.weekday) && ![...skip].some((s) => d.weekday.includes(s)))
+    .map((d) => parseDailyTotalKcal(d.body))
+    .filter((n): n is number => n != null)
+  if (kcals.length === 0) return null
+  return Math.round(kcals.reduce((a, b) => a + b, 0) / kcals.length)
 }
 
 /** Daily average from meal / daily-total lines when present; otherwise JSON header field. */
-export function getAuthoritativeNutritionCalories(plan: GeneratedNutritionPlan): number {
+export function getAuthoritativeNutritionCalories(
+  plan: GeneratedNutritionPlan,
+  opts?: NutritionCalorieOpts
+): number {
+  const skip = (opts?.skipWeekdays ?? []).map((d) => d.trim().toLowerCase()).filter(Boolean)
+  if (skip.length > 0) {
+    const dayAvg = averageDayCaloriesFromPlan(plan, skip)
+    if (dayAvg != null) return dayAvg
+  }
+
   const prose = collectDietProse(plan.meals)
   const inferred = inferMacrosFromDietText(prose)
   const mealLines = parseMealMacroLines(prose)
@@ -302,6 +364,13 @@ function buildLowCalorieHint(
   )
 }
 
+function buildHighCalorieHint(cals: number, target: number): string {
+  return (
+    `Meal math averages ~${cals} kcal/day but this client's Mifflin-St Jeor target is ~${target} kcal/day. ` +
+    `That is too high — do not pad extra snacks or oversized portions. Rebuild all 7 days so each Daily Total lands near ~${target} kcal (±100).`
+  )
+}
+
 /**
  * Enforce the non-negotiable diet numbers AFTER generation: at least the floor, and no large
  * week-to-week calorie swing. Uses meal-line math when available (not the JSON header alone).
@@ -310,7 +379,8 @@ export function enforceDietSafety(
   plan: GeneratedNutritionPlan,
   opts: DietSafetyOptions = {}
 ): DietSafetyResult {
-  const cals = getAuthoritativeNutritionCalories(plan)
+  const skipWeekdays = opts.skipWeekdays ?? []
+  const cals = getAuthoritativeNutritionCalories(plan, { skipWeekdays })
   if (!Number.isFinite(cals) || cals <= 0) {
     return { ok: true }
   }
@@ -323,6 +393,7 @@ export function enforceDietSafety(
       ? plan.calories
       : null
   if (
+    skipWeekdays.length === 0 &&
     headerCals != null &&
     Math.abs(headerCals - cals) > KCAL_MISMATCH_TOLERANCE
   ) {
@@ -349,6 +420,13 @@ export function enforceDietSafety(
         ok: false,
         error: `Diet daily calories ${cals} are below this client's Mifflin-St Jeor target (~${preferredMin} kcal).`,
         hint: buildLowCalorieHint(cals, opts, preferredMin, 'preferred'),
+      }
+    }
+    if (cals > preferredMin + PREFERRED_MAX_SLACK_KCAL) {
+      return {
+        ok: false,
+        error: `Diet daily calories ${cals} are above this client's Mifflin-St Jeor target (~${preferredMin} kcal).`,
+        hint: buildHighCalorieHint(cals, preferredMin),
       }
     }
   }

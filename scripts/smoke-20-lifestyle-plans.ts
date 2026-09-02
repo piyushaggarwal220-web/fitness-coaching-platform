@@ -20,9 +20,16 @@ import {
   listCoachesForAssignment,
 } from '../src/lib/admin/testing-accounts'
 import { generatePlan } from '../src/lib/ai/generate-plan'
-import { generatedDietFormData } from '../src/lib/ai/plan-format'
+import { generatedDietFormData, generatedWorkoutFormData } from '../src/lib/ai/plan-format'
+import { resolveClientCalorieTargets } from '../src/lib/ai/calorie-targets'
+import { getAuthoritativeNutritionCalories } from '../src/lib/ai/nutrition-macro-sync'
+import { resolveDietFloorKcal } from '../src/lib/ai/plan-quality-rules'
+import {
+  buildTrackerSnapshot,
+  isCoachingExerciseName,
+} from '../src/lib/daily-tracker/parser'
 import { createAdminClient } from '../src/lib/supabase/admin'
-import type { OnboardingProfile } from '../src/types/database'
+import type { OnboardingProfile, Plan } from '../src/types/database'
 import { LIFESTYLE_SCENARIOS, finalSmokeScenarios, type LifestyleScenario } from './lifestyle-smoke-scenarios'
 
 process.env.AI_PLAN_PROVIDER = process.env.AI_PLAN_PROVIDER || 'claude'
@@ -47,6 +54,9 @@ type ClientResult = {
   allergies: string | null
   whey: string | null
   cookingAbility: string | null
+  kcal: number | null
+  preferredKcal: number | null
+  floorKcal: number | null
   planChars: number
   checks: Check[]
   passed: number
@@ -455,6 +465,150 @@ function scoreLifestyle(
   return checks
 }
 
+function scoreCalories(
+  profile: OnboardingProfile,
+  nutrition: string,
+  scenario?: LifestyleScenario
+): Check[] {
+  const targets = resolveClientCalorieTargets(profile)
+  const preferred = targets?.preferred ?? resolveDietFloorKcal(profile.weight)
+  const floor = targets?.floorKcal ?? resolveDietFloorKcal(profile.weight)
+  const skipWeekdays = scenario?.fastingWeekday ? [scenario.fastingWeekday] : []
+  const cals = getAuthoritativeNutritionCalories(
+    {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      meals: [{ example: nutrition }],
+    },
+    { skipWeekdays }
+  )
+  const delta = cals - preferred
+  const onFloorWhileTargetHigher =
+    Math.abs(cals - floor) <= 40 && preferred > floor + 120
+  const ok =
+    Number.isFinite(cals) &&
+    cals > 0 &&
+    Math.abs(delta) <= 120 &&
+    !onFloorWhileTargetHigher
+  return [
+    {
+      name: 'Calories match Mifflin target',
+      ok,
+      detail: `plan ${cals} vs Mifflin ${preferred} (maintenance ${targets?.maintenance ?? '—'}, floor ${floor}, delta ${delta}${skipWeekdays.length ? `, skip ${skipWeekdays.join(',')}` : ''}${onFloorWhileTargetHigher ? ', landed on floor' : ''})`,
+    },
+  ]
+}
+
+function scoreTracker(
+  profile: OnboardingProfile,
+  scenario: LifestyleScenario | undefined,
+  nutrition: string,
+  workout: string
+): Check[] {
+  const now = new Date().toISOString()
+  const plan: Plan = {
+    id: 'smoke-tracker',
+    client_id: profile.id,
+    coach_id: profile.coach_id ?? '',
+    title: 'Tracker smoke',
+    phase: 'Phase 1',
+    nutrition_plan: nutrition,
+    workout_plan: workout,
+    cardio_plan: '',
+    supplement_plan: '',
+    coach_notes: 'Drink 3L water. Bed by 10:30 PM.',
+    version: 1,
+    active: true,
+    delivered_at: now,
+    updated_at: now,
+    created_at: now,
+  }
+  const snap = buildTrackerSnapshot(plan, profile)
+  const meals = snap.items.filter((i) => i.type === 'meal')
+  const workouts = snap.items.filter((i) => i.type === 'workout')
+  const training = workouts.filter((w) => w.type === 'workout' && w.exercises.length > 0)
+  const exercises = training.flatMap((w) => (w.type === 'workout' ? w.exercises : []))
+  const dietDays = new Set((snap.dietDays ?? []).map((d) => d.key)).size
+  const workoutDays = new Set((snap.workoutDays ?? []).map((d) => d.key)).size
+  const checks: Check[] = []
+
+  checks.push({
+    name: 'Tracker diet days (unique)',
+    ok: dietDays >= 7,
+    detail: `${dietDays} unique diet days, ${meals.length} meals`,
+  })
+
+  const mealsPerDay = new Map<string, number>()
+  for (const m of meals) {
+    if (m.type !== 'meal') continue
+    const key = m.dietDay ?? 'default'
+    mealsPerDay.set(key, (mealsPerDay.get(key) ?? 0) + 1)
+  }
+  const minMeals = scenario?.skipLunch || scenario?.skipBreakfast ? 1 : 2
+  const thinDays = [...mealsPerDay.entries()].filter(([key, n]) => {
+    const need = scenario?.fastingWeekday && key === scenario.fastingWeekday ? 1 : minMeals
+    return n < need
+  })
+  checks.push({
+    name: 'Tracker meals match the written diet',
+    ok: meals.length >= 10 && thinDays.length === 0,
+    detail:
+      thinDays.length > 0
+        ? `thin days: ${thinDays.map(([k, n]) => `${k}=${n}`).join(', ')}`
+        : `${meals.length} meals across ${mealsPerDay.size} days`,
+  })
+
+  const emptyFoods = meals.filter((m) => m.type === 'meal' && !m.foods.trim())
+  checks.push({
+    name: 'Tracker meal foods are not empty',
+    ok: emptyFoods.length === 0,
+    detail: emptyFoods.length ? `${emptyFoods.length} empty` : 'ok',
+  })
+
+  checks.push({
+    name: 'Tracker workout days (unique, not duplicated)',
+    ok: workoutDays >= 4 && workoutDays <= 8,
+    detail: `${workoutDays} unique workout days, ${training.length} training sessions`,
+  })
+
+  const skinny = training.filter((w) => w.type === 'workout' && w.exercises.length < 4)
+  checks.push({
+    name: 'Tracker training days have real exercises',
+    ok: training.length >= 3 && skinny.length === 0,
+    detail:
+      skinny.length > 0
+        ? skinny
+            .map((w) =>
+              w.type === 'workout' ? `${w.dayLabel ?? w.title}:${w.exercises.length}` : ''
+            )
+            .join('; ')
+        : `${training.length} sessions / ${exercises.length} exercises`,
+  })
+
+  const coachingNames = exercises.filter((e) => isCoachingExerciseName(e.name))
+  checks.push({
+    name: 'Tracker exercise names are lifts not coaching prose',
+    ok: coachingNames.length === 0,
+    detail: coachingNames.length ? coachingNames.map((e) => e.name).slice(0, 5).join(', ') : 'ok',
+  })
+
+  const water = snap.items.find((i) => i.type === 'water')
+  checks.push({
+    name: 'Water tracker present',
+    ok: Boolean(water && water.type === 'water' && water.targetMl > 0),
+    detail: water && water.type === 'water' ? `${water.targetMl} ml` : 'missing',
+  })
+  checks.push({
+    name: 'Sleep tracker present',
+    ok: snap.items.some((i) => i.type === 'sleep'),
+    detail: snap.items.some((i) => i.type === 'sleep') ? 'ok' : 'missing',
+  })
+
+  return checks
+}
+
 async function mapPool<T, R>(
   items: T[],
   concurrency: number,
@@ -485,6 +639,7 @@ async function cleanupFromReport(): Promise<void> {
   let deleted = 0
   for (const c of report.clients ?? []) {
     try {
+      await admin.from('daily_tracker_days').delete().eq('client_id', c.clientId)
       await admin.from('plans').delete().eq('client_id', c.clientId)
       await admin.from('profiles').delete().eq('id', c.clientId)
       await admin.auth.admin.deleteUser(c.clientId)
@@ -521,6 +676,9 @@ function emptyResult(
     allergies: null,
     whey: null,
     cookingAbility: null,
+    kcal: null,
+    preferredKcal: null,
+    floorKcal: null,
     planChars: 0,
     checks: [],
     passed: 0,
@@ -537,19 +695,23 @@ async function main(): Promise<void> {
 
   const useFinal = hasFlag('final')
   const useScenarios = hasFlag('scenarios') || useFinal
-  const onlyId = argValue('only', '').trim()
+  const onlyIds = argValue('only', '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
   const scenarioPool = (useFinal ? finalSmokeScenarios() : LIFESTYLE_SCENARIOS).filter(
-    (s) => !onlyId || s.id === onlyId
+    (s) => onlyIds.length === 0 || onlyIds.includes(s.id)
   )
   const defaultCount = useScenarios ? String(scenarioPool.length) : '20'
   const requested = Math.max(1, Number(argValue('count', defaultCount)) || Number(defaultCount))
   const count = useScenarios ? Math.min(requested, scenarioPool.length) : requested
   const concurrency = Math.max(1, Number(argValue('concurrency', '2')) || 2)
+  const complete = hasFlag('complete') || hasFlag('scenarios')
   const skipAi = hasFlag('skip-ai')
   const reportPath = resolveReportPath()
 
   console.log(
-    `=== Lifestyle plan smoke: ${count} clients, concurrency=${concurrency}, skipAi=${skipAi}, scenarios=${useScenarios}, final=${useFinal} ===\n`
+    `=== Lifestyle plan smoke: ${count} clients, concurrency=${concurrency}, skipAi=${skipAi}, scenarios=${useScenarios}, final=${useFinal}, complete=${complete} ===\n`
   )
 
   const coaches = await listCoachesForAssignment()
@@ -587,7 +749,7 @@ async function main(): Promise<void> {
 
   const results = await mapPool(created, concurrency, async (c, index) => {
     const label = `#${index + 1} ${c.scenario?.id ?? c.email}`
-    console.log(`\nGenerating diet for ${label}…`)
+    console.log(`\nGenerating ${complete ? 'diet+workout' : 'diet'} for ${label}…`)
     const { data: profile, error } = await admin.from('profiles').select('*').eq('id', c.clientId).single()
     if (error || !profile) {
       return emptyResult(index + 1, c, error?.message ?? 'profile missing')
@@ -608,13 +770,25 @@ async function main(): Promise<void> {
 
       const form = generatedDietFormData(planResult.generatedPlan, c.clientId)
       const nutrition = form.nutrition_plan ?? ''
+      let workout = form.workout_plan || ''
+
+      if (complete) {
+        const workoutResult = await generatePlan({
+          profile: onboarding,
+          actionId: 'initial_workout',
+          validationMode: 'workout_focus',
+          coachInstructions:
+            'Generate a personalized workout plan. Label each training day as Day N (Weekday). Real exercise names with sets and reps. Do not repeat the same day header twice.',
+        })
+        workout = generatedWorkoutFormData(workoutResult.generatedPlan, c.clientId).workout_plan ?? workout
+      }
 
       await admin.from('plans').insert({
         client_id: c.clientId,
         coach_id: coachId,
-        title: `Lifestyle smoke diet ${index + 1}${c.scenario ? ` — ${c.scenario.id}` : ''}`,
+        title: `Lifestyle smoke ${index + 1}${c.scenario ? ` — ${c.scenario.id}` : ''}`,
         nutrition_plan: nutrition,
-        workout_plan: form.workout_plan || 'N/A',
+        workout_plan: workout || 'N/A',
         cardio_plan: form.cardio_plan || '',
         supplement_plan: form.supplement_plan || '',
         coach_notes: `Lifestyle smoke test batch ${new Date().toISOString()} ${c.scenario?.id ?? ''}`,
@@ -622,10 +796,27 @@ async function main(): Promise<void> {
         active: true,
       })
 
-      const checks = scoreLifestyle(onboarding, nutrition, c.scenario)
+      const targets = resolveClientCalorieTargets(onboarding)
+      const kcal = getAuthoritativeNutritionCalories(
+        {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          meals: [{ example: nutrition }],
+        },
+        { skipWeekdays: c.scenario?.fastingWeekday ? [c.scenario.fastingWeekday] : [] }
+      )
+      const checks = [
+        ...scoreLifestyle(onboarding, nutrition, c.scenario),
+        ...scoreCalories(onboarding, nutrition, c.scenario),
+        ...(complete ? scoreTracker(onboarding, c.scenario, nutrition, workout) : []),
+      ]
       const passed = checks.filter((x) => x.ok).length
       const failed = checks.filter((x) => !x.ok).length
-      console.log(`  ${label}: ${passed}/${checks.length} lifestyle checks passed`)
+      console.log(
+        `  ${label}: ${passed}/${checks.length} checks passed · kcal ${kcal} vs Mifflin ${targets?.preferred ?? '—'}`
+      )
 
       return {
         index: index + 1,
@@ -646,6 +837,9 @@ async function main(): Promise<void> {
         allergies: diet?.allergies ?? null,
         whey: diet?.wheyProtein ?? null,
         cookingAbility: diet?.cookingAbility ?? null,
+        kcal,
+        preferredKcal: targets?.preferred ?? null,
+        floorKcal: targets?.floorKcal ?? null,
         planChars: nutrition.length,
         checks,
         passed,

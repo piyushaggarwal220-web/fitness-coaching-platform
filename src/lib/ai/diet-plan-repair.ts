@@ -294,7 +294,7 @@ function swapJainRoots(text: string): string {
 
 const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
 
-function fastingWeekdaysFromNotes(notes: string | null | undefined): string[] {
+export function fastingWeekdaysFromNotes(notes: string | null | undefined): string[] {
   if (!notes?.trim()) return []
   const lower = notes.toLowerCase()
   return WEEKDAYS.filter(
@@ -314,8 +314,11 @@ function isFastingDay(weekday: string, body: string, fastingWeekdays: string[]):
 function fastingDayBlock(weekday: string): string {
   const label = weekday === '*' ? 'Fasting day' : `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}`
   return [
-    `${label} fast (as requested): fruit and milk till sunset, then a light sabzi-roti dinner.`,
-    '(P: 12g | C: 80g | F: 8g | ~450 kcal)',
+    `${label} fast (as requested).`,
+    'Breakfast: fruit and milk till sunset.',
+    '(P: 8g | C: 50g | F: 6g | ~280 kcal)',
+    'Dinner: light sabzi and roti after sunset.',
+    '(P: 12g | C: 60g | F: 6g | ~320 kcal)',
     'Daily Total: ~600 kcal | P: 20g | C: 110g | F: 12g',
   ].join('\n')
 }
@@ -391,6 +394,20 @@ function bumpDailyTotalKcal(body: string, add: number): string {
       return line.replace(/(\d{3,4})(\s*kcal)/gi, (_, n: string, unit: string) => `${Number(n) + add}${unit}`)
     })
     .join('\n')
+}
+
+function stripOneCalorieFill(text: string, fastingWeekdays: string[]): string {
+  return mapDayBlocks(text, (weekday, body) => {
+    if (isFastingDay(weekday, body, fastingWeekdays)) return body
+    const re = /(?:^|\n)[^\n]*\(calorie fill\):[^\n]*(?:\n\([^\n]*kcal\))?/gi
+    const matches = [...body.matchAll(re)]
+    const last = matches[matches.length - 1]
+    if (!last || last.index == null) return body
+    const kcalMatch = last[0].match(/(\d{3,4})\s*kcal/i)
+    const removed = kcalMatch ? Number(kcalMatch[1]) : 0
+    const next = `${body.slice(0, last.index)}${body.slice(last.index + last[0].length)}`
+    return removed > 0 ? bumpDailyTotalKcal(next, -removed) : next
+  })
 }
 
 function injectCalorieFill(
@@ -516,6 +533,11 @@ function repairProse(text: string, profile: DietRepairProfile, scan: DietScanOpt
     out = swapDairy(out)
     if (out !== before) fixes.push(vegan ? 'dairy → plant foods' : 'lactose dairy removed')
   }
+  if (pref === 'vegetarian' && !lactose) {
+    const before = out
+    out = replaceWord(out, 'tofu', 'paneer')
+    if (out !== before) fixes.push('tofu → paneer')
+  }
   if (pref === 'vegetarian' || pref === 'vegan') {
     const before = out
     out = swapEggs(out)
@@ -628,14 +650,15 @@ export function applyDietPlanRepair(
     gluten: /gluten allergy|celiac/i.test(allergies),
     nutAllergy: /nut allergy/i.test(allergies),
   }
+  const calorieOpts = { skipWeekdays: fastingWeekdays }
   const fillSlots = ['Evening snack', 'Late snack', 'Snack', 'Mid-morning']
 
   for (let i = 0; i < 4; i++) {
     next = syncNutritionPlanMacros(next)
-    const current = getAuthoritativeNutritionCalories(next)
+    const current = getAuthoritativeNutritionCalories(next, calorieOpts)
     const gap = targetKcal - current
     if (!(Number.isFinite(current) && current > 0 && gap > 80)) break
-    const fillKcal = Math.min(450, Math.max(280, Math.round(gap)))
+    const fillKcal = Math.min(450, Math.round(gap))
     const fill = calorieFillBlock({
       ...fillOpts,
       kcal: fillKcal,
@@ -643,6 +666,20 @@ export function applyDietPlanRepair(
     })
     next = mapMealProse(next, (text) => injectCalorieFill(text, fillKcal, fill, fastingWeekdays))
     fixes.push(`calorie fill +~${fillKcal} kcal/day to reach ${targetKcal}`)
+  }
+
+  for (let i = 0; i < 4; i++) {
+    next = syncNutritionPlanMacros(next)
+    const current = getAuthoritativeNutritionCalories(next, calorieOpts)
+    if (!(Number.isFinite(current) && current > targetKcal + 120)) break
+    let stripped = false
+    next = mapMealProse(next, (text) => {
+      const out = stripOneCalorieFill(text, fastingWeekdays)
+      if (out !== text) stripped = true
+      return out
+    })
+    if (!stripped) break
+    fixes.push('calorie trim back to Mifflin target')
   }
 
   next = mapMealProse(next, (text) => {
@@ -668,7 +705,8 @@ export function dietPlanMeetsContract(
   if (!preference.ok) return false
   const targets = resolveClientCalorieTargets(toCalorieProfile(profile))
   const target = targets?.preferred ?? resolveDietFloorKcal(profile.weight)
-  const cals = getAuthoritativeNutritionCalories(plan)
+  const skipWeekdays = fastingWeekdaysFromNotes(profile.onboarding_data?.diet?.customNotes)
+  const cals = getAuthoritativeNutritionCalories(plan, { skipWeekdays })
   if (!Number.isFinite(cals) || cals <= 0) return inferMacrosFromDietText(collectProse(plan)) == null
-  return cals >= target - 100
+  return cals >= target - 100 && cals <= target + 150
 }

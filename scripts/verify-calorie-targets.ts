@@ -207,6 +207,19 @@ assert(
     { floorKcal: 2000, preferredMinKcal: 2375 }
   ).ok === true
 )
+assert(
+  'enforce rejects plans far above the Mifflin preferred target',
+  enforceDietSafety(
+    {
+      calories: 2800,
+      protein: 120,
+      carbs: 220,
+      fat: 65,
+      meals: [],
+    },
+    { floorKcal: 2000, preferredMinKcal: 2375 }
+  ).ok === false
+)
 
 const veganFloorHint = enforceDietSafety(
   {

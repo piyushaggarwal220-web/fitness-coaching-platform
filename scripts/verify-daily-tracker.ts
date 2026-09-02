@@ -637,6 +637,186 @@ Barbell Back Squat: 4 sets x 6 reps`,
 }
 
 {
+  const spacedPhasePlan: Plan = {
+    ...planV1,
+    workout_plan: `Day 1 (Monday): Lower Body Power
+
+Warm up:
+5 minutes easy walk or cycle
+Bodyweight squats: 2 sets x 10 reps
+
+Main Workout:
+Barbell Back Squat: 3 sets x 10 reps
+Dumbbell Romanian Deadlift: 3 sets x 12 reps
+Leg Press: 2 sets x 15 reps
+Walking Lunges: 2 sets x 10 reps each leg
+Plank: 2 sets x 30 to 45 seconds
+
+Post Workout:
+Quad stretch: 30 seconds each leg
+Hamstring stretch: 30 seconds each leg
+`,
+  }
+  const spacedSnap = buildTrackerSnapshot(spacedPhasePlan)
+  const spacedWorkout = spacedSnap.items.find((i) => i.type === 'workout')
+  const phases =
+    spacedWorkout?.type === 'workout' ? spacedWorkout.phases : []
+  const warmupNames = (phases.find((p) => p.phase === 'warmup')?.exercises ?? []).map((e) => e.name)
+  const mainNames = (phases.find((p) => p.phase === 'main')?.exercises ?? []).map((e) => e.name)
+  const coolNames = (phases.find((p) => p.phase === 'cooldown')?.exercises ?? []).map((e) => e.name)
+  assert(
+    'Warm up: header is warmup not default cardio dump',
+    warmupNames.some((n) => /walk|cycle/i.test(n)) &&
+      warmupNames.some((n) => /squat/i.test(n)) &&
+      !warmupNames.some((n) => /arm circles/i.test(n))
+  )
+  assert(
+    'Main Workout keeps compounds only',
+    mainNames.some((n) => /back squat/i.test(n)) &&
+      mainNames.some((n) => /leg press/i.test(n)) &&
+      !mainNames.some((n) => /stretch/i.test(n)) &&
+      !mainNames.some((n) => /easy walk/i.test(n))
+  )
+  assert(
+    'Post Workout stretches are cooldown',
+    coolNames.some((n) => /quad stretch/i.test(n)) && coolNames.some((n) => /hamstring/i.test(n))
+  )
+  const lunge = spacedWorkout?.type === 'workout'
+    ? spacedWorkout.exercises.find((e) => /lunge/i.test(e.name))
+    : undefined
+  assert('each-leg sets x reps still parse as a lift', (lunge?.targetSets ?? 0) >= 2)
+}
+
+{
+  const altNamePlan: Plan = {
+    ...planV1,
+    workout_plan: `Day 1 (Monday): Full Body Strength and Skill
+
+Warm up:
+5 minutes easy walk or cycle
+
+Main Workout:
+Trap Bar Deadlift (or Barbell Deadlift): 3 sets x 8 reps
+Lat Pulldown (Close Grip or Neutral Grip): 2 sets x 10 reps
+Cable Tricep Pushdown (Rope or Straight Bar): 2 sets x 12 reps
+Bulgarian Split Squat (bodyweight or light dumbbell): 3 sets x 10 reps
+Walking Lunge: 2 sets x 20 reps total
+
+Post Workout:
+Quad stretch: 30 seconds each leg
+`,
+  }
+  const altSnap = buildTrackerSnapshot(altNamePlan)
+  const altWorkout = altSnap.items.find((i) => i.type === 'workout')
+  const altMain =
+    altWorkout?.type === 'workout'
+      ? (altWorkout.phases.find((p) => p.phase === 'main')?.exercises ?? []).map((e) => e.name)
+      : []
+  assert(
+    'parenthetical or-alternative compounds stay in Main',
+    altMain.some((n) => /trap bar deadlift/i.test(n)) &&
+      altMain.some((n) => /lat pulldown/i.test(n)) &&
+      altMain.some((n) => /tricep pushdown/i.test(n)) &&
+      altMain.some((n) => /bulgarian split squat/i.test(n))
+  )
+  const totalLunge =
+    altWorkout?.type === 'workout'
+      ? altWorkout.exercises.find((e) => /walking lunge/i.test(e.name))
+      : undefined
+  assert('reps total still parses as a lift', (totalLunge?.targetSets ?? 0) === 2)
+}
+
+{
+  const sameLinePlan: Plan = {
+    ...planV1,
+    workout_plan: `Day 1 (Monday): Lower Power
+
+Warm up:
+5 minutes easy walk or cycle
+
+Main Workout:
+Barbell Back Squat: 3 sets x 10 reps. Keep your chest up, knees tracking over your toes.
+Walking Dumbbell Lunges: 2 sets x 10 reps per leg. Step forward and stay upright.
+Plank with Shoulder Tap: 3 sets x 20 taps (10 each side)
+Mountain Climbers (controlled, no jumping): 3 sets x 30 seconds
+Goblet Squat (light dumbbell): 12 reps
+Chest opener: 30 to 45 seconds
+
+Post Workout:
+Quad stretch: 30 seconds each leg
+`,
+  }
+  const sameSnap = buildTrackerSnapshot(sameLinePlan)
+  const sameWorkout = sameSnap.items.find((i) => i.type === 'workout')
+  const sameMain =
+    sameWorkout?.type === 'workout'
+      ? (sameWorkout.phases.find((p) => p.phase === 'main')?.exercises ?? []).map((e) => e.name)
+      : []
+  assert(
+    'same-line coaching after sets x reps still keeps the squat',
+    sameMain.some((n) => /barbell back squat/i.test(n))
+  )
+  assert(
+    'same-line coaching keeps walking lunges',
+    sameMain.some((n) => /walking dumbbell lunges/i.test(n))
+  )
+  assert(
+    'plank with taps is a main lift',
+    sameMain.some((n) => /plank with shoulder tap/i.test(n))
+  )
+  assert(
+    'parenthetical controlled cue does not drop mountain climbers',
+    sameMain.some((n) => /mountain climbers/i.test(n))
+  )
+  assert(
+    'reps-only circuit line is a lift not the whole sentence',
+    sameMain.some((n) => /^goblet squat$/i.test(n))
+  )
+  const opener =
+    sameWorkout?.type === 'workout'
+      ? sameWorkout.exercises.find((e) => /chest opener/i.test(e.name))
+      : undefined
+  assert('timed stretch range 30 to 45 seconds parses', Boolean(opener) && /30-45/.test(String(opener?.targetReps)))
+}
+
+{
+  const enduranceCuePlan: Plan = {
+    ...planV1,
+    workout_plan: `Day 1 (Monday): Lower Hypertrophy
+
+Warm up:
+Light dumbbell bench press, 2 sets x 8 reps with just the movement
+
+Main Workout:
+Goblet Squat: 3 sets x 15 reps. Hold a dumbbell at your chest. Higher reps today to build muscle endurance and really feel the burn.
+Barbell Romanian Deadlift: 3 sets x 10 reps.
+
+Post Workout:
+Quad stretch: 30 seconds each leg
+`,
+  }
+  const enduranceSnap = buildTrackerSnapshot(enduranceCuePlan)
+  const enduranceWorkout = enduranceSnap.items.find((i) => i.type === 'workout')
+  const enduranceMain =
+    enduranceWorkout?.type === 'workout'
+      ? (enduranceWorkout.phases.find((p) => p.phase === 'main')?.exercises ?? []).map((e) => e.name)
+      : []
+  const enduranceWarm =
+    enduranceWorkout?.type === 'workout'
+      ? (enduranceWorkout.phases.find((p) => p.phase === 'warmup')?.exercises ?? []).map((e) => e.name)
+      : []
+  assert(
+    'same-line endurance cue does not drop goblet squat',
+    enduranceMain.some((n) => /goblet squat/i.test(n))
+  )
+  assert(
+    'light warmup press stays out of Main',
+    !enduranceMain.some((n) => /light dumbbell/i.test(n)) &&
+      enduranceWarm.some((n) => /light dumbbell/i.test(n))
+  )
+}
+
+{
   const macroPlan: Plan = {
     ...planV1,
     nutrition_plan: `Day 1 (Monday)
@@ -656,6 +836,32 @@ Chicken rice (P: 40g | C: 55g | F: 10g | ~520 kcal)`,
       breakfast.macros?.calories === 420 &&
       breakfast.macros?.protein === 28
   )
+}
+
+{
+  const dupPlan: Plan = {
+    ...planV1,
+    workout_plan: `Day 1 (Monday) — Upper
+Bench press 4x8
+Row 4x8
+Incline press 3x10
+Pulldown 3x12
+
+Monday — Upper
+Bench press 4x8
+Row 4x8
+
+Day 2 (Tuesday) — Lower
+Squat 5x5
+RDL 4x8
+Lunge 3x10
+Calf raise 3x15
+`,
+  }
+  const dupSnap = buildTrackerSnapshot(dupPlan)
+  const keys = (dupSnap.workoutDays ?? []).map((d) => d.key)
+  assert('duplicate Day 1 / Monday headers collapse to one picker day', keys.length === 2)
+  assert('duplicate headers keep monday key once', keys.filter((k) => k === 'monday').length === 1)
 }
 
 {
@@ -691,6 +897,70 @@ Daily Total: P: 66g | C: 288g | F: 66g | ~2390 kcal`,
     nightMeals.some((i) => i.type === 'meal' && /snack/i.test(i.title) && /banana/i.test(i.foods))
   )
   assert(`night-shift day has 3+ tracker meals (${titles})`, nightMeals.length >= 3)
+}
+
+{
+  const aroundPlan: Plan = {
+    ...planV1,
+    nutrition_plan: `Day 1 (Monday)
+
+Post shift breakfast around 7am:
+2 parathas with curd and chai.
+
+Afternoon snack around 2pm (after waking):
+1 banana.
+
+Pre shift dinner around 8pm:
+Rice, dal tadka, and sabzi.
+
+Mid shift snack around 2am:
+2 bananas and biscuits.
+
+Late shift meal around 5am:
+1 bowl of poha.`,
+  }
+  const aroundSnap = buildTrackerSnapshot(aroundPlan)
+  const aroundMeals = aroundSnap.items.filter((i) => i.type === 'meal')
+  const aroundTitles = aroundMeals.map((i) => (i.type === 'meal' ? i.title : '')).join(', ')
+  assert(
+    `parses "around 7am" night-shift headers (${aroundTitles})`,
+    aroundMeals.length >= 4 &&
+      aroundMeals.some((i) => i.type === 'meal' && /breakfast/i.test(i.title) && /paratha/i.test(i.foods)) &&
+      aroundMeals.some((i) => i.type === 'meal' && /dinner/i.test(i.title) && /dal/i.test(i.foods)) &&
+      aroundMeals.some((i) => i.type === 'meal' && /meal/i.test(i.title) && /poha/i.test(i.foods))
+  )
+}
+
+{
+  const mealPrefixPlan: Plan = {
+    ...planV1,
+    nutrition_plan: `Calories: 3091
+Protein: 90g
+
+Meal: Day 1 (Monday)
+
+Breakfast (8:00 AM)
+Poha from the mess.
+Lunch (1:00 PM)
+Rice and dal.
+Dinner (8:00 PM)
+Roti and sabzi.
+
+Day 2 (Tuesday)
+
+Breakfast (8:00 AM)
+Bread with peanut butter.
+Lunch (1:00 PM)
+Rice and dal.
+Dinner (8:00 PM)
+Roti and soya.`,
+  }
+  const mealPrefixSnap = buildTrackerSnapshot(mealPrefixPlan)
+  const keys = (mealPrefixSnap.dietDays ?? []).map((d) => d.key)
+  assert(
+    'Meal: Day 1 header still yields 2 unique diet days',
+    keys.length === 2 && keys.includes('monday') && keys.includes('tuesday')
+  )
 }
 
 if (failed > 0) {

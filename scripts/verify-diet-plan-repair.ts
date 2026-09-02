@@ -142,6 +142,19 @@ assert(
   got >= (targets?.preferred ?? 2000) - 100,
   `got ${got}`
 )
+assert(
+  '1600 plan is not stuffed far above Mifflin',
+  got <= (targets?.preferred ?? 2000) + 150,
+  `got ${got} vs ${targets?.preferred}`
+)
+const nearTarget = weekPlan(targets?.preferred ?? 2400, () => 'dal, roti, sabzi')
+const nearRepaired = applyDietPlanRepair(nearTarget, adultMale)
+const nearGot = getAuthoritativeNutritionCalories(nearRepaired.plan)
+assert(
+  'already-on-target plan stays near Mifflin',
+  Math.abs(nearGot - (targets?.preferred ?? 2400)) <= 120,
+  `got ${nearGot} vs ${targets?.preferred}`
+)
 const safety = enforceDietSafety(calRepaired.plan, {
   floorKcal: targets?.floorKcal,
   preferredMinKcal: targets?.preferred,
@@ -257,10 +270,19 @@ const tue = fastText.slice(
 )
 assert('Tuesday marked as fast', /\b(?:fast(?:s|ing)?|vrat)\b|sunset|fruit and milk/i.test(tue))
 assert('Tuesday is not a calorie-fill dump', !/calorie fill/i.test(tue))
+assert('Tuesday fasting breakfast is tracker-parseable', /Breakfast:/i.test(tue))
+assert('Tuesday fasting dinner is tracker-parseable', /Dinner:/i.test(tue))
 assert(
   'fasting-week calories still meet contract',
   dietPlanMeetsContract(fastRepaired.plan, fastProfile),
-  `kcal=${getAuthoritativeNutritionCalories(fastRepaired.plan)}`
+  `kcal=${getAuthoritativeNutritionCalories(fastRepaired.plan, { skipWeekdays: ['tuesday'] })}`
+)
+const fastTargets = resolveClientCalorieTargets(fastProfile)
+const fastNonFasting = getAuthoritativeNutritionCalories(fastRepaired.plan, { skipWeekdays: ['tuesday'] })
+assert(
+  'non-fasting days match Mifflin, not the weekly average including Tuesday',
+  Math.abs(fastNonFasting - (fastTargets?.preferred ?? 2000)) <= 150,
+  `got ${fastNonFasting} vs ${fastTargets?.preferred}`
 )
 
 const nutDirty = weekPlan(1700, () => 'apple with peanut butter and almonds')
@@ -272,6 +294,13 @@ const nutRepaired = applyDietPlanRepair(nutDirty, nutProfile)
 assert('nut allergy peanut gone', !/\bpeanut/i.test(prose(nutRepaired.plan)))
 assert('nut allergy almond gone', !/\balmond/i.test(prose(nutRepaired.plan)))
 assert('nut contract met', dietPlanMeetsContract(nutRepaired.plan, nutProfile))
+
+const tofuDirty = weekPlan(2200, () => 'roti with tofu curry and salad')
+const tofuRepaired = applyDietPlanRepair(tofuDirty, adultMale)
+assert('vegetarian tofu swapped to paneer', !/\btofu\b/i.test(prose(tofuRepaired.plan)))
+assert('vegetarian tofu became paneer', /\bpaneer\b/i.test(prose(tofuRepaired.plan)))
+const veganTofu = applyDietPlanRepair(tofuDirty, veganSouth)
+assert('vegan tofu kept', /\btofu\b/i.test(prose(veganTofu.plan)))
 
 const snackMissing = weekPlan(2100, () => 'rice, dal, and sabzi')
 const snackProfile = {

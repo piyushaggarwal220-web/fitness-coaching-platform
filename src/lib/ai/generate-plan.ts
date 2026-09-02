@@ -25,7 +25,7 @@ import {
 } from '@/lib/ai/prompt-library-loader'
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
 import { enforceDietPreference, calorieBumpFoodsForProfile, dietScanOptionsFromProfile } from '@/lib/ai/diet-preference-guard'
-import { applyDietPlanRepair } from '@/lib/ai/diet-plan-repair'
+import { applyDietPlanRepair, fastingWeekdaysFromNotes } from '@/lib/ai/diet-plan-repair'
 import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
 import { formatCalorieGuidanceBlock, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
@@ -841,12 +841,14 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       const calorieTargets = resolveClientCalorieTargets(input.profile)
       const floorKcal = calorieTargets?.floorKcal ?? resolveDietFloorKcal(input.profile.weight)
       const previousCalories = parseHeaderCalories(input.activePlan?.nutrition_plan)
+      const skipWeekdays = fastingWeekdaysFromNotes(input.profile.onboarding_data?.diet?.customNotes)
       const safety = enforceDietSafety(plan.nutrition_plan, {
         previousCalories,
         floorKcal,
         preferredMinKcal: calorieTargets?.preferred,
         maintenanceKcal: calorieTargets?.maintenance,
         calorieBumpFoods: calorieBumpFoodsForProfile(input.profile),
+        skipWeekdays,
       })
       if (!safety.ok) {
         lastValidationError = safety.error
