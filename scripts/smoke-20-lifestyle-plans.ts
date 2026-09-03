@@ -686,6 +686,31 @@ function scoreTracker(
               .map((w) => w.workoutDay ?? w.dayLabel ?? w.title)
               .join(', '),
     })
+
+    const allowedDays = (profile.onboarding_data?.training?.availableDays ?? [])
+      .map((d) => String(d).toLowerCase())
+      .filter(Boolean)
+    if (allowedDays.length > 0) {
+      const allowed = new Set(allowedDays)
+      const trainingDayKeys = trainingMains
+        .map((w) => (w.workoutDay ?? '').toLowerCase())
+        .filter(Boolean)
+      const offDays = [...new Set(trainingDayKeys.filter((d) => !allowed.has(d)))]
+      const missingDays = allowedDays.filter((d) => !trainingDayKeys.includes(d))
+      checks.push({
+        name: 'Workouts only on selected weekdays',
+        ok: offDays.length === 0 && missingDays.length === 0,
+        detail:
+          offDays.length === 0 && missingDays.length === 0
+            ? `training on ${allowedDays.join(', ')}`
+            : [
+                offDays.length ? `trained off-day ${offDays.join(', ')}` : '',
+                missingDays.length ? `missing ${missingDays.join(', ')}` : '',
+              ]
+                .filter(Boolean)
+                .join('; '),
+      })
+    }
   }
 
   return checks

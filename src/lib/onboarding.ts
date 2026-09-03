@@ -403,16 +403,31 @@ export function proteinDaysNeedWeekdays(daysPerWeek: string): boolean {
   return Boolean(daysPerWeek && daysPerWeek !== '0' && daysPerWeek !== 'na')
 }
 
+/** True when the client should pick which weekdays they can train. */
+export function trainingDaysNeedWeekdays(daysPerWeek: string): boolean {
+  return Boolean(daysPerWeek && DAYS_PER_WEEK_OPTIONS.some((o) => o.value === daysPerWeek))
+}
+
+export function parseTrainingDaysPerWeek(daysPerWeek: string): number | null {
+  const n = Number.parseInt(daysPerWeek, 10)
+  if (!Number.isFinite(n) || n < 2 || n > 7) return null
+  return n
+}
+
 export function allWeekdayValues(): string[] {
   return WEEKDAY_OPTIONS.map((o) => o.value)
 }
 
-export function formatProteinWeekdays(days: string[] | null | undefined): string {
+export function formatWeekdays(days: string[] | null | undefined): string {
   if (!days || days.length === 0) return 'Not set'
   return [...days]
     .sort((a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b))
     .map((d) => WEEKDAY_LABELS[d] ?? d)
     .join(', ')
+}
+
+export function formatProteinWeekdays(days: string[] | null | undefined): string {
+  return formatWeekdays(days)
 }
 
 function normalizeWeekdayList(raw: unknown): string[] {
@@ -528,6 +543,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   training_experience: '',
   training_duration: '',
   training_days_per_week: '',
+  training_available_days: [],
   workout_duration: '',
   preferred_workout_time: '',
   equipment_available: [],
@@ -632,6 +648,7 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     training_location: data.training?.location ?? '',
     training_duration: data.training?.trainingDuration ?? '',
     training_days_per_week: data.training?.daysPerWeek != null ? String(data.training.daysPerWeek) : '',
+    training_available_days: normalizeWeekdayList(data.training?.availableDays),
     workout_duration: data.training?.durationMinutes ?? '',
     preferred_workout_time: data.training?.preferredTime ?? '',
     equipment_available: data.training?.equipmentAvailable ?? [],
@@ -798,6 +815,10 @@ export function buildOnboardingData(
       location: form.training_location || null,
       trainingDuration: form.training_duration || null,
       daysPerWeek: form.training_days_per_week || null,
+      availableDays:
+        form.training_available_days.length > 0
+          ? normalizeWeekdayList(form.training_available_days)
+          : null,
       durationMinutes: form.workout_duration || null,
       preferredTime: form.preferred_workout_time || null,
       equipmentAvailable: form.equipment_available.length > 0 ? form.equipment_available : null,
@@ -1118,6 +1139,16 @@ export function validateOnboardingStep(
     }
     case 8: {
       if (!data.training_days_per_week) return 'Please select training days per week.'
+      if (trainingDaysNeedWeekdays(data.training_days_per_week)) {
+        const expected = parseTrainingDaysPerWeek(data.training_days_per_week)
+        const selected = data.training_available_days ?? []
+        if (!expected || selected.length === 0) {
+          return 'Select which days of the week you can train.'
+        }
+        if (selected.length !== expected) {
+          return `Select exactly ${expected} day${expected === 1 ? '' : 's'} you can train.`
+        }
+      }
       if (!data.workout_duration) return 'Please select workout duration.'
       if (!data.preferred_workout_time) return 'Please select preferred workout time.'
       return null
@@ -1308,6 +1339,7 @@ export function buildReviewSections(
           value: getOnboardingLabel('training_duration', form.training_duration),
         },
         { label: 'Days per week', value: form.training_days_per_week || 'Not set' },
+        { label: 'Training days', value: formatWeekdays(form.training_available_days) },
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
         { label: 'Equipment', value: equipment },

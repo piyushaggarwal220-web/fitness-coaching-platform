@@ -251,6 +251,13 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
       : pickSome(['dumbbells', 'resistance bands', 'pull-up bar', 'yoga mat'], 2, 4)
 
   const struggle = pick(STRUGGLE_OPTIONS)
+  const trainingDays = randomInt(3, 6)
+  const trainingWeekdaysByCount: Record<number, string[]> = {
+    3: ['monday', 'wednesday', 'friday'],
+    4: ['monday', 'tuesday', 'thursday', 'saturday'],
+    5: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+    6: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+  }
 
   const form: OnboardingFormData = {
     name: fullName,
@@ -286,7 +293,8 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     training_location: trainingLocation,
     training_experience: pick(TRAINING_OPTIONS).value,
     training_duration: pick(TRAINING_DURATION_OPTIONS).value,
-    training_days_per_week: String(randomInt(3, 6)),
+    training_days_per_week: String(trainingDays),
+    training_available_days: trainingWeekdaysByCount[trainingDays] ?? trainingWeekdaysByCount[4],
     workout_duration: String(pick([45, 50, 60, 75])),
     preferred_workout_time: pick(WORKOUT_TIME_OPTIONS).value,
     equipment_available: equipment,

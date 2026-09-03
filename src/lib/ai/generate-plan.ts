@@ -684,7 +684,18 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     return null
   })()
 
-  const coachInstructionsWithPreference = [input.coachInstructions, dietPreferenceBoost]
+  const trainingDaysBoost = (() => {
+    const days = (input.profile.onboarding_data?.training?.availableDays ?? []).filter(Boolean)
+    if (!days.length) return null
+    return [
+      'CRITICAL TRAINING WEEKDAYS:',
+      `Put working workouts ONLY on ${days.join(', ')}.`,
+      'Every other weekday must be labeled Rest (still use Day N (Weekday) headers).',
+      'Do not move a session to a day they did not select, even if it would make a nicer split.',
+    ].join(' ')
+  })()
+
+  const coachInstructionsWithPreference = [input.coachInstructions, dietPreferenceBoost, trainingDaysBoost]
     .filter(Boolean)
     .join('\n\n')
 

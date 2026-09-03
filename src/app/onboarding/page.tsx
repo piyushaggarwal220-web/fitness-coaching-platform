@@ -46,6 +46,8 @@ import {
   PAIN_OPTIONS,
   PROTEIN_DAYS_OPTIONS,
   proteinDaysNeedWeekdays,
+  trainingDaysNeedWeekdays,
+  parseTrainingDaysPerWeek,
   allWeekdayValues,
   saveOnboardingProgress,
   saveOnboardingWizardDraft,
@@ -1047,8 +1049,34 @@ function renderStep(
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Training schedule</h2>
           <Field label="Days available per week" required>
-            <ChipGroup options={DAYS_PER_WEEK_OPTIONS} value={form.training_days_per_week} onChange={(v) => update({ training_days_per_week: v })} />
+            <ChipGroup
+              options={DAYS_PER_WEEK_OPTIONS}
+              value={form.training_days_per_week}
+              onChange={(v) => {
+                const expected = parseTrainingDaysPerWeek(v)
+                let nextDays = v === '7' ? allWeekdayValues() : form.training_available_days ?? []
+                if (expected && nextDays.length > expected) nextDays = nextDays.slice(0, expected)
+                update({
+                  training_days_per_week: v,
+                  training_available_days: nextDays,
+                })
+              }}
+            />
           </Field>
+          {trainingDaysNeedWeekdays(form.training_days_per_week) && (
+            <Field
+              label="Which days can you train?"
+              required
+              hint={`Select exactly ${form.training_days_per_week} day${form.training_days_per_week === '1' ? '' : 's'}`}
+            >
+              <MultiChipGroup
+                options={WEEKDAY_OPTIONS}
+                values={form.training_available_days ?? []}
+                max={parseTrainingDaysPerWeek(form.training_days_per_week) ?? undefined}
+                onChange={(training_available_days) => update({ training_available_days })}
+              />
+            </Field>
+          )}
           <Field label="Workout duration" required>
             <ChipGroup options={WORKOUT_DURATION_OPTIONS} value={form.workout_duration} onChange={(v) => update({ workout_duration: v })} />
           </Field>

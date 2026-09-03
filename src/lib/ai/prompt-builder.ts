@@ -373,7 +373,7 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
       ? getOnboardingLabel('can_pullup', data.training.canPullup)
       : '—'
     lines.push(
-      `Training: location ${data.training.location ?? '—'}, training history ${durationLabel}, days/week ${data.training.daysPerWeek ?? '—'}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}, squat comfort ${squat}, push-up comfort ${pushup}, pull-up comfort ${pullup}${recentProgram ? `, recent program ${recentProgram}` : ''}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
+      `Training: location ${data.training.location ?? '—'}, training history ${durationLabel}, days/week ${data.training.daysPerWeek ?? '—'}${(data.training.availableDays ?? []).filter(Boolean).length ? ` on ${(data.training.availableDays ?? []).filter(Boolean).join(', ')}` : ''}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}, squat comfort ${squat}, push-up comfort ${pushup}, pull-up comfort ${pullup}${recentProgram ? `, recent program ${recentProgram}` : ''}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
     )
   }
   if (data.medical) {
@@ -531,6 +531,12 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
   if (training?.daysPerWeek) {
     lines.push(`- Training days per week: ${training.daysPerWeek} — program must match this exactly, not more.`)
   }
+  const availableDays = (training?.availableDays ?? []).filter(Boolean)
+  if (availableDays.length > 0) {
+    lines.push(
+      `- Training weekdays (HARD): ${availableDays.join(', ')}. Put working sessions on these days only. Every other weekday must be Rest / recovery — never move a workout to an unlisted day.`
+    )
+  }
   if (training?.canSquat) {
     lines.push(`- Squats: ${getOnboardingLabel('can_squat', training.canSquat)}`)
   }
@@ -583,6 +589,7 @@ function buildTrainingPreferencesSection(profile: OnboardingProfile): string {
     `- Training location: ${location ? getOnboardingLabel('training_location', location) : 'Not provided'}`,
     `- How long training: ${training?.trainingDuration ? getOnboardingLabel('training_duration', training.trainingDuration) : 'Not provided'}`,
     `- Days per week: ${training?.daysPerWeek ?? 'Not provided'}`,
+    `- Available training days: ${(training?.availableDays ?? []).filter(Boolean).length > 0 ? (training?.availableDays ?? []).filter(Boolean).join(', ') : 'Not provided'}`,
     `- Session duration: ${training?.durationMinutes ? `${training.durationMinutes} min` : 'Not provided'}`,
     `- Preferred workout time: ${training?.preferredTime ? getOnboardingLabel('preferred_workout_time', training.preferredTime) : 'Not provided'}`,
     `- Available equipment: ${equipment.length > 0 ? equipment.join(', ') : location === 'gym' ? 'Full commercial gym' : 'None / bodyweight only'}`,

@@ -59,6 +59,7 @@ function buildClientFacts(profile: OnboardingProfile): string {
     `Training location: ${value(training.location)}`,
     `Training experience: ${value(profile.training_experience)}`,
     `Days per week: ${value(training.daysPerWeek)}`,
+    `Available training days: ${(training.availableDays ?? []).filter(Boolean).join(', ') || 'Not provided'}`,
     `Session length (min): ${value(training.durationMinutes)}`,
     `Preferred training time: ${value(training.preferredTime)}`,
     `Activity level: ${value(profile.activity_level)}`,

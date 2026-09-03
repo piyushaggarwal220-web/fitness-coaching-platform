@@ -51,12 +51,16 @@ type MultiChipGroupProps = {
   options: readonly { value: string; label: string }[]
   values: string[]
   onChange: (values: string[]) => void
+  /** When set, extra days cannot be added until one is deselected. */
+  max?: number
 }
 
-export function MultiChipGroup({ options, values, onChange }: MultiChipGroupProps) {
+export function MultiChipGroup({ options, values, onChange, max }: MultiChipGroupProps) {
   const toggle = (val: string) => {
     if (values.includes(val)) {
       onChange(values.filter((v) => v !== val))
+    } else if (max != null && values.length >= max) {
+      return
     } else {
       onChange([...values, val])
     }

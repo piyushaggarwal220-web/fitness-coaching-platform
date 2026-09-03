@@ -9,6 +9,7 @@ import {
   buildProfilePayload,
   INITIAL_ONBOARDING_FORM,
   ONBOARDING_SCREEN_COUNT,
+  validateOnboardingStep,
 } from '../src/lib/onboarding'
 import {
   AI_DRAFT_DELIVERY_STATE,
@@ -46,6 +47,7 @@ const form: OnboardingFormData = {
   training_experience: 'beginner',
   training_duration: 'under_6_months',
   training_days_per_week: '4',
+  training_available_days: ['monday', 'tuesday', 'thursday', 'saturday'],
   workout_duration: '45_60',
   preferred_workout_time: 'morning',
   can_squat: 'yes',
@@ -72,12 +74,29 @@ const form: OnboardingFormData = {
   terms_accepted: true,
 }
 
+assert.match(
+  String(validateOnboardingStep(8, { ...form, training_available_days: [] })),
+  /which days of the week you can train/i
+)
+assert.match(
+  String(validateOnboardingStep(8, { ...form, training_available_days: ['monday'] })),
+  /exactly 4 days/i
+)
+assert.equal(validateOnboardingStep(8, form), null)
+
 const complete = buildProfilePayload(form, '00000000-0000-4000-8000-000000000001', {
   resumeStep: ONBOARDING_SCREEN_COUNT - 1,
   complete: true,
   photoUrls: { front: 'front.jpg', side: 'side.jpg', back: 'back.jpg' },
 }) as OnboardingProfile
 complete.coach_id = '00000000-0000-4000-8000-000000000002'
+
+assert.deepEqual(complete.onboarding_data?.training?.availableDays, [
+  'monday',
+  'tuesday',
+  'thursday',
+  'saturday',
+])
 
 assert.equal(validateAuthoritativeOnboarding(complete), null)
 assert.match(

@@ -74,6 +74,7 @@ const SAMPLE_FORM = {
   training_location: 'gym',
   training_experience: 'intermediate',
   training_days_per_week: '4',
+  training_available_days: ['monday', 'tuesday', 'thursday', 'saturday'],
   workout_duration: '60',
   preferred_workout_time: 'evening',
   equipment_available: ['full_gym', 'dumbbells'],

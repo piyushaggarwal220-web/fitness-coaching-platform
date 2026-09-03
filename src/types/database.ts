@@ -104,6 +104,8 @@ export type OnboardingData = {
     /** How long the client has been training consistently. */
     trainingDuration?: string | null
     daysPerWeek?: string | number | null
+    /** Weekdays the client can train (e.g. monday). */
+    availableDays?: string[] | null
     durationMinutes?: string | null
     preferredTime?: string | null
     equipmentAvailable?: string[] | null
@@ -269,6 +271,8 @@ export type OnboardingFormData = {
   training_experience: string
   training_duration: string
   training_days_per_week: string
+  /** Weekdays the client can train (monday–sunday). */
+  training_available_days: string[]
   workout_duration: string
   preferred_workout_time: string
   equipment_available: string[]
