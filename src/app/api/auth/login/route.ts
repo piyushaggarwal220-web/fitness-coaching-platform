@@ -54,14 +54,20 @@ export async function POST(request: Request) {
         return cookieStore.getAll()
       },
       setAll(cookiesToSet) {
-        pendingCookies.push(...cookiesToSet)
+        for (const cookie of cookiesToSet) {
+          pendingCookies.push({
+            name: cookie.name,
+            value: cookie.value,
+            options: { ...(cookie.options as Record<string, unknown> | undefined) },
+          })
+        }
       },
     },
   })
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-  if (error || !data.user) {
+  if (error || !data.user || !data.session) {
     const raw = error?.message ?? ''
     const looksInvalid = /invalid login credentials|invalid_credentials|email not confirmed/i.test(raw)
     if (looksInvalid) {
@@ -84,11 +90,40 @@ export async function POST(request: Request) {
     )
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
   const response = NextResponse.json({
     user: { id: data.user.id, email: data.user.email },
+    session: {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    },
+    profile: profile ?? null,
   })
   for (const { name, value, options } of pendingCookies) {
-    response.cookies.set(name, value, options)
+    applyAuthCookie(response, name, value, options)
   }
   return response
+}
+
+function applyAuthCookie(
+  response: NextResponse,
+  name: string,
+  value: string,
+  options: Record<string, unknown>
+): void {
+  const sameSite = options.sameSite
+  response.cookies.set(name, value, {
+    path: typeof options.path === 'string' ? options.path : '/',
+    maxAge: typeof options.maxAge === 'number' ? options.maxAge : undefined,
+    domain: typeof options.domain === 'string' ? options.domain : undefined,
+    secure: options.secure === true,
+    httpOnly: options.httpOnly === true,
+    sameSite:
+      sameSite === 'lax' || sameSite === 'strict' || sameSite === 'none' ? sameSite : 'lax',
+  })
 }

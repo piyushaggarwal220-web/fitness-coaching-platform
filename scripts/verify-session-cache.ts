@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict'
 import {
   invalidateSessionCache,
+  isAuthNetworkError,
   seedAuthenticatedClientSession,
   isOnboardingComplete,
 } from '../src/lib/session-restore'
@@ -35,6 +36,11 @@ pass('seeded profile reports onboarding complete')
 
 invalidateSessionCache()
 pass('invalidateSessionCache clears without throwing')
+
+assert.equal(isAuthNetworkError('Failed to fetch'), true)
+assert.equal(isAuthNetworkError({ name: 'AuthRetryableFetchError', message: 'Load failed' }), true)
+assert.equal(isAuthNetworkError('Invalid login credentials'), false)
+pass('network auth errors are distinguished from credential errors')
 
 // Calling again after clear must stay safe for logout / login handoff.
 invalidateSessionCache()

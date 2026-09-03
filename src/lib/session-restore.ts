@@ -5,6 +5,14 @@ import type { Coach, OnboardingProfile } from '@/types/database'
 
 export const SESSION_RESTORE_MESSAGE = 'Restoring your session...'
 
+export function isAuthNetworkError(error: { message?: string; name?: string } | string | null | undefined): boolean {
+  const message =
+    typeof error === 'string' ? error : `${error?.name ?? ''} ${error?.message ?? ''}`
+  return /failed to fetch|networkerror|network request failed|load failed|timeout|timed out|authretryablefetch/i.test(
+    message
+  )
+}
+
 export type ResolvedRole = 'client' | 'coach' | 'admin'
 
 export type SessionUser = { id: string; email?: string }
@@ -119,6 +127,7 @@ export async function ensureAuthSession(
   supabase: SupabaseClient
 ): Promise<{ user: SessionUser | null; refreshed: boolean }> {
   let sawRefresh = false
+  let triedSameOrigin = false
 
   for (let attempt = 0; attempt < SESSION_RETRY_DELAYS_MS.length; attempt++) {
     if (SESSION_RETRY_DELAYS_MS[attempt] > 0) {
@@ -135,6 +144,31 @@ export async function ensureAuthSession(
       return {
         user: { id: user.id, email: user.email },
         refreshed: sawRefresh,
+      }
+    }
+
+    if (isAuthNetworkError(error)) {
+      const localUser = await userFromLocalSession(supabase)
+      if (localUser) {
+        logSessionRestore('session_found', {
+          userId: localUser.id,
+          attempt,
+          fromLocalSession: true,
+        })
+        return { user: localUser, refreshed: sawRefresh }
+      }
+    }
+
+    if (!triedSameOrigin) {
+      triedSameOrigin = true
+      const viaApi = await userFromSameOriginSession()
+      if (viaApi) {
+        logSessionRestore('session_found', {
+          userId: viaApi.id,
+          attempt,
+          fromSameOrigin: true,
+        })
+        return { user: viaApi, refreshed: sawRefresh }
       }
     }
 
@@ -162,6 +196,42 @@ export async function ensureAuthSession(
 
   logSessionRestore('session_missing', {})
   return { user: null, refreshed: false }
+}
+
+async function userFromLocalSession(supabase: SupabaseClient): Promise<SessionUser | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
+  if (!user?.id) return null
+  return { id: user.id, email: user.email }
+}
+
+async function userFromSameOriginSession(): Promise<SessionUser | null> {
+  const payload = await fetchSameOriginAuthSession()
+  return payload?.user ?? null
+}
+
+async function fetchSameOriginAuthSession(): Promise<{
+  user: SessionUser
+  profile: OnboardingProfile | null
+} | null> {
+  if (typeof window === 'undefined') return null
+  try {
+    const res = await fetch('/api/auth/session', { credentials: 'include' })
+    if (!res.ok) return null
+    const data = (await res.json().catch(() => null)) as {
+      user?: { id?: string; email?: string | null }
+      profile?: OnboardingProfile | null
+    } | null
+    if (!data?.user?.id) return null
+    return {
+      user: { id: data.user.id, email: data.user.email ?? undefined },
+      profile: data.profile ?? null,
+    }
+  } catch {
+    return null
+  }
 }
 
 async function fetchWithRetry<T>(
@@ -211,6 +281,17 @@ export async function fetchClientProfile(
     })
   } else if (error) {
     logSessionRestore('profile_missing', { userId, error })
+    if (isAuthNetworkError(error)) {
+      const viaApi = await fetchSameOriginAuthSession()
+      if (viaApi?.profile && viaApi.user.id === userId) {
+        logSessionRestore('profile_found', {
+          userId,
+          fromSameOrigin: true,
+          onboardingComplete: isOnboardingComplete(viaApi.profile),
+        })
+        return { profile: viaApi.profile, error: null }
+      }
+    }
   }
 
   return { profile: data, error }

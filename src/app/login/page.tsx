@@ -10,7 +10,7 @@ import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
 import { colors } from '@/lib/design-tokens';
 import { safeInternalPath } from '@/lib/safe-navigation';
-import { signInViaApi } from '@/lib/auth-login-api';
+import { hydrateBrowserAuthSession, signInViaApi } from '@/lib/auth-login-api';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 
 const supabase = createClient();
@@ -38,8 +38,14 @@ function LoginForm() {
         '@/lib/session-restore'
       )
       invalidateSessionCache()
-      await supabase.auth.getSession();
-      const { profile, error: profileError } = await fetchClientProfile(supabase, loginResult.user.id);
+      await hydrateBrowserAuthSession(supabase, loginResult.session)
+      let profile = loginResult.profile ?? null
+      let profileError: string | null = null
+      if (!profile) {
+        const fetched = await fetchClientProfile(supabase, loginResult.user.id)
+        profile = fetched.profile
+        profileError = fetched.error
+      }
       if (profile && isOnboardingComplete(profile)) {
         seedAuthenticatedClientSession(
           { id: loginResult.user.id, email: loginResult.user.email ?? undefined },

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signInViaApi } from '@/lib/auth-login-api';
+import { hydrateBrowserAuthSession, signInViaApi } from '@/lib/auth-login-api';
 import { createClient } from '@/lib/supabase/client';
 import { BRAND_NAME, brandTitle } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
@@ -40,7 +40,7 @@ export default function CoachLogin() {
       return;
     }
 
-    await supabase.auth.getSession();
+    await hydrateBrowserAuthSession(supabase, loginResult.session);
 
     const { data: coachData, error: coachError } = await supabase
       .from('coaches')

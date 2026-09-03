@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInViaApi } from '@/lib/auth-login-api'
+import { hydrateBrowserAuthSession, signInViaApi } from '@/lib/auth-login-api'
 import { createClient } from '@/lib/supabase/client'
 import { isAdminRole } from '@/lib/roles'
 import { BRAND_ADMIN_LABEL, BRAND_NAME, brandTitle } from '@/lib/brand'
@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
       return
     }
 
-    await supabase.auth.getSession()
+    await hydrateBrowserAuthSession(supabase, loginResult.session)
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
