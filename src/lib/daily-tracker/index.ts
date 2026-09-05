@@ -6,6 +6,8 @@ export * from './parser'
 export * from './scores'
 export * from './sleep-duration'
 export * from './tracker-draft'
+export * from './set-input'
+export * from './week-progress'
 export {
   getActivePlan,
   getOrCreateTodayTracker,

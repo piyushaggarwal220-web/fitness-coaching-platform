@@ -5,6 +5,7 @@ import { Check, Dumbbell, Flame, Pause, Play, Save, Square, Wind } from 'lucide-
 import { Button } from '@/components/ui/Button'
 import { RestTimer } from '@/components/tracker/RestTimer'
 import { ExerciseFormSheet } from '@/components/tracker/ExerciseFormSheet'
+import { SetLogField } from '@/components/tracker/SetLogField'
 import {
   ProgressBar,
   StatTile,
@@ -325,10 +326,11 @@ export function WorkoutModule({
     didAutoSelectWorkoutDay.current = false
   }, [workoutContentKey, coachingDayKey])
   useEffect(() => {
-    if (!multiDay || selectedKey || !suggestion || saving || didAutoSelectWorkoutDay.current) return
+    const fallback = suggestion ?? days[0]?.key ?? null
+    if (!multiDay || selectedKey || !fallback || didAutoSelectWorkoutDay.current) return
     didAutoSelectWorkoutDay.current = true
-    selectWorkoutDay(suggestion)
-  }, [multiDay, selectedKey, suggestion, saving, selectWorkoutDay])
+    selectWorkoutDay(fallback)
+  }, [multiDay, selectedKey, suggestion, saving, selectWorkoutDay, days])
 
   useEffect(() => {
     if (!sessionRunning || sessionStartedAt == null) return
@@ -423,7 +425,6 @@ export function WorkoutModule({
               <button
                 key={day.key}
                 type="button"
-                disabled={saving}
                 onClick={() => selectWorkoutDay(day.key)}
                 style={{
                   display: 'flex',
@@ -435,7 +436,7 @@ export function WorkoutModule({
                   border: `1px solid ${isSuggested ? colors.accentMuted : colors.borderSubtle}`,
                   background: isSuggested ? colors.accentMuted : colors.bgGlass,
                   color: colors.textPrimary,
-                  cursor: saving ? 'wait' : 'pointer',
+                  cursor: 'pointer',
                   textAlign: 'left',
                   font: 'inherit',
                 }}
@@ -971,21 +972,15 @@ export function WorkoutModule({
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'end' }}>
                             <div>
                               <label style={{ fontSize: 10, color: colors.textMuted }}>Meters</label>
-                              <input
-                                type="number"
-                                min={0}
+                              <SetLogField
+                                aria-label={`${ex.name} meters`}
                                 placeholder={
                                   ex.targetDistanceMeters != null ? String(ex.targetDistanceMeters) : '—'
                                 }
-                                value={set.distanceMeters ?? ''}
+                                value={set.distanceMeters}
                                 disabled={isDone}
-                                onChange={(e) => {
-                                  const raw = e.target.value
-                                  updateSet(ex.id, ex, idx, {
-                                    distanceMeters: raw === '' ? null : Number(raw),
-                                  })
-                                }}
-                                style={trackerInputStyle}
+                                inputMode="numeric"
+                                onCommit={(distanceMeters) => updateSet(ex.id, ex, idx, { distanceMeters })}
                               />
                             </div>
                             {doneBtn(Boolean(set.completed), () => completeSet(ex.id, ex, idx))}
@@ -996,18 +991,13 @@ export function WorkoutModule({
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'end' }}>
                             <div>
                               <label style={{ fontSize: 10, color: colors.textMuted }}>Reps</label>
-                              <input
-                                type="number"
+                              <SetLogField
+                                aria-label={`${ex.name} reps`}
                                 placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
-                                value={set.reps ?? ''}
+                                value={set.reps}
                                 disabled={isDone}
-                                onChange={(e) => {
-                                  const raw = e.target.value
-                                  updateSet(ex.id, ex, idx, {
-                                    reps: raw === '' ? null : Number(raw),
-                                  })
-                                }}
-                                style={trackerInputStyle}
+                                inputMode="numeric"
+                                onCommit={(reps) => updateSet(ex.id, ex, idx, { reps })}
                               />
                             </div>
                             {doneBtn(Boolean(set.completed), () => completeSet(ex.id, ex, idx))}
@@ -1018,34 +1008,24 @@ export function WorkoutModule({
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
                             <div>
                               <label style={{ fontSize: 10, color: colors.textMuted }}>Weight (kg)</label>
-                              <input
-                                type="number"
+                              <SetLogField
+                                aria-label={`${ex.name} weight`}
                                 placeholder={defaultWeight || 'kg'}
-                                value={set.weight ?? ''}
+                                value={set.weight}
                                 disabled={isDone}
-                                onChange={(e) => {
-                                  const raw = e.target.value
-                                  updateSet(ex.id, ex, idx, {
-                                    weight: raw === '' ? null : Number(raw),
-                                  })
-                                }}
-                                style={trackerInputStyle}
+                                inputMode="decimal"
+                                onCommit={(weight) => updateSet(ex.id, ex, idx, { weight })}
                               />
                             </div>
                             <div>
                               <label style={{ fontSize: 10, color: colors.textMuted }}>Reps</label>
-                              <input
-                                type="number"
+                              <SetLogField
+                                aria-label={`${ex.name} reps`}
                                 placeholder={ex.targetReps.replace(/[^\d-].*$/, '') || ex.targetReps}
-                                value={set.reps ?? ''}
+                                value={set.reps}
                                 disabled={isDone}
-                                onChange={(e) => {
-                                  const raw = e.target.value
-                                  updateSet(ex.id, ex, idx, {
-                                    reps: raw === '' ? null : Number(raw),
-                                  })
-                                }}
-                                style={trackerInputStyle}
+                                inputMode="numeric"
+                                onCommit={(reps) => updateSet(ex.id, ex, idx, { reps })}
                               />
                             </div>
                             {doneBtn(Boolean(set.completed), () => completeSet(ex.id, ex, idx))}

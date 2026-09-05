@@ -1,12 +1,18 @@
 import 'server-only'
 import { Resend } from 'resend'
 
+export type DirectEmailAttachment = {
+  filename: string
+  content: Buffer
+}
+
 export type DirectEmail = {
   to: string
   subject: string
   text: string
   html?: string
   replyTo?: string
+  attachments?: DirectEmailAttachment[]
 }
 
 export function isEmailConfigured(): boolean {
@@ -42,6 +48,14 @@ export async function sendDirectEmail(
       text: message.text,
       html: message.html,
       ...(message.replyTo ? { replyTo: message.replyTo } : {}),
+      ...(message.attachments?.length
+        ? {
+            attachments: message.attachments.map((file) => ({
+              filename: file.filename,
+              content: file.content,
+            })),
+          }
+        : {}),
     })
     if (error) {
       return { ok: false, error: humanizeResendError(error.message, from) }

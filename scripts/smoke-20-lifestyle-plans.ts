@@ -448,6 +448,22 @@ function scoreLifestyle(
         detail: pricey.length ? `expensive foods: ${pricey.join(', ')}` : 'ok',
       })
     }
+    const variety = profile.onboarding_data?.lifestyle?.dietVariety
+    if ((scenario.varietyDaily || variety === 'different_daily' || variety === 'fifty_fifty') && days.length >= 5) {
+      const unique = new Set(days.map((d) => normalize(d.body).replace(/daily totals?:.*/gi, ''))).size
+      checks.push({
+        name: 'Variety preference (days must not all match)',
+        ok: unique >= (variety === 'fifty_fifty' ? 3 : 4),
+        detail: `${unique}/${days.length} distinct day bodies`,
+      })
+    } else if (!scenario.sameDaily && variety !== 'same_daily' && days.length >= 5) {
+      const unique = new Set(days.map((d) => normalize(d.body).replace(/daily totals?:.*/gi, ''))).size
+      checks.push({
+        name: 'Did not clone one day across the week',
+        ok: unique > 1,
+        detail: unique <= 1 ? 'all days identical' : `${unique} distinct days`,
+      })
+    }
     if (scenario.sameDaily && days.length >= 5) {
       const staple = scenario.mustInclude[0]
       const daysWithStaple = days.filter((d) => normalize(d.body).includes(normalize(staple))).length

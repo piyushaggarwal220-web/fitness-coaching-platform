@@ -15,6 +15,7 @@ export type LifestyleScenario = {
   requireSnack?: boolean
   lowBudget?: boolean
   sameDaily?: boolean
+  varietyDaily?: boolean
   fastingWeekday?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
 }
 
@@ -1084,5 +1085,37 @@ export const LIFESTYLE_SCENARIOS: LifestyleScenario[] = [
     },
     mustInclude: ['idli', 'dal', 'paneer'],
     mustExclude: ['mushroom', 'karela', 'bitter gourd', 'peanut', 'almond', 'cashew', 'whey'],
+  },
+  {
+    id: 'variety-different-daily',
+    label: 'Wants a different plate most days',
+    intent: 'Must not copy Monday meals onto the whole week',
+    form: {
+      name: 'Meera Variety',
+      gender: 'female',
+      age: '29',
+      weight: '62',
+      height: '162',
+      fitness_goal: 'fat_loss',
+      occupation: 'desk_job',
+      diet_preference: 'vegetarian',
+      diet_variety: 'different_daily',
+      whey_protein: 'no',
+      cooking_ability: 'basic',
+      favorite_foods: 'Idli, poha, dal, roti, khichdi, thepla, curd rice',
+      breakfast: 'Rotate idli, poha, and upma across the week',
+      lunch: 'Dal roti some days, rice sambar other days, khichdi once',
+      dinner: 'Rotate paneer, thepla, and curd rice',
+      snacks: 'Fruit or roasted chana',
+      timing_breakfast: '08:00',
+      timing_lunch: '13:00',
+      timing_dinner: '20:00',
+      timing_snacks: '16:30',
+      food_allergies: 'none',
+      foods_disliked: 'None',
+    },
+    mustInclude: ['dal', 'roti'],
+    mustExclude: ['quinoa', 'avocado toast'],
+    varietyDaily: true,
   },
 ]

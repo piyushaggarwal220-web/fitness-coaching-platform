@@ -8,7 +8,7 @@ import { TrackerRefreshControls } from '@/components/tracker/TrackerRefreshContr
 import { useTracker } from '@/components/tracker/context/TrackerContext'
 import { colors, radius, spacing } from '@/lib/design-tokens'
 import { buildModuleSummaries } from '@/lib/daily-tracker/module-summaries'
-import type { TodayTrackerView } from '@/lib/daily-tracker/types'
+import type { TodayTrackerView, TrackerWeekProgress } from '@/lib/daily-tracker/types'
 
 function HeroStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
@@ -42,6 +42,61 @@ function HeroStat({ label, value, highlight }: { label: string; value: string; h
         }}
       >
         {label}
+      </div>
+    </div>
+  )
+}
+
+function WeekProgressCard({ title, week }: { title: string; week: TrackerWeekProgress }) {
+  return (
+    <div
+      style={{
+        marginTop: spacing[3],
+        padding: spacing[4],
+        borderRadius: radius.lg,
+        background: 'rgba(255,255,255,0.04)',
+        border: `1px solid ${colors.borderSubtle}`,
+        width: '100%',
+        position: 'relative',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 800 }}>{title}</div>
+        <div style={{ fontSize: 13, color: colors.accent, fontWeight: 800 }}>
+          {week.average != null ? `${week.average}% avg` : 'No logs yet'}
+        </div>
+      </div>
+      <div
+        style={{
+          marginTop: 12,
+          display: 'grid',
+          gridTemplateColumns: `repeat(${Math.max(week.days.length, 1)}, minmax(0, 1fr))`,
+          gap: 6,
+        }}
+      >
+        {week.days.map((day) => (
+          <div key={day.logDate} style={{ textAlign: 'center' }}>
+            <div
+              style={{
+                height: 36,
+                borderRadius: 8,
+                background:
+                  (day.overallPercent ?? 0) >= 60 ? 'rgba(34,197,94,0.22)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${colors.borderSubtle}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 800,
+              }}
+            >
+              {day.overallPercent != null ? `${day.overallPercent}` : '—'}
+            </div>
+            <div style={{ marginTop: 4, fontSize: 9, color: colors.textMuted }}>
+              {day.logDate.slice(5)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -141,6 +196,12 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           <HeroStat label="Week" value={String(view.schedule.coachingWeek)} />
           <HeroStat label="Streak" value={view.streak > 0 ? `${view.streak}d` : '—'} highlight={view.streak > 0} />
         </div>
+        {view.previousWeek && view.previousWeek.days.length > 0 && (
+          <WeekProgressCard
+            title={view.previousWeek.week > 0 ? `Last week (Week ${view.previousWeek.week})` : 'Last 7 logged days'}
+            week={view.previousWeek}
+          />
+        )}
       </div>
 
       <div style={{ display: 'grid', gap: spacing[2] }}>

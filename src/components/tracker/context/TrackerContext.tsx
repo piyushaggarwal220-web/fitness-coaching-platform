@@ -328,8 +328,9 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       void (async () => {
         await ensureAuthSession(supabase)
         await flushQueueRef.current()
-        // Unsynced edits live in the local draft (and flush before reload).
-        await load()
+        // Don't reload today's snapshot while the client is mid-log — that remounts
+        // inputs and drops in-progress reps/weight. Only fetch if we have no day yet.
+        if (!dayIdRef.current) await load()
       })()
     }
     document.addEventListener('visibilitychange', onResume)

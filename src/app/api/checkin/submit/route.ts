@@ -433,6 +433,14 @@ export async function POST(request: Request) {
           }).catch((err) => console.error('[checkin-submit] auto draft failed:', err))
         )
       }
+
+      after(() =>
+        import('@/lib/client-reports/deliver-weekly-workbook')
+          .then(({ deliverWeeklyCheckinWorkbook }) =>
+            deliverWeeklyCheckinWorkbook({ clientId: user.id, checkinId: inserted.id })
+          )
+          .catch((err) => console.error('[checkin-submit] weekly workbook failed:', err))
+      )
     }
 
     logApiDev('checkin_submit_success', {

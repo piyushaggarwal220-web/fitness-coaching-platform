@@ -222,6 +222,11 @@ export default function CoachCheckinDetailPage() {
           <Link href={`/coach/chat?clientId=${checkin.client_id}`} style={styles.chatLink}>
             Reply in chat →
           </Link>
+          {isWeekly && (
+            <a href={`/api/checkin/weekly-report?checkinId=${checkin.id}`} style={styles.chatLink}>
+              Download week Excel →
+            </a>
+          )}
         </div>
 
         {error && <div style={styles.error}>{error}</div>}

@@ -57,6 +57,7 @@ export default function CheckinPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [reportCheckinId, setReportCheckinId] = useState<string | null>(null);
   const [available, setAvailable] = useState(false);
   const [unavailableReason, setUnavailableReason] = useState<string>('');
   const [currentSection, setCurrentSection] = useState<Section>('measurements');
@@ -74,7 +75,7 @@ export default function CheckinPage() {
         supabase.from('plans').select('*').eq('client_id', userId).eq('active', true).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
         supabase
           .from('checkins')
-          .select('progress_photo_front, progress_photo_side, progress_photo_back, coaching_week, submitted_at')
+          .select('id, progress_photo_front, progress_photo_side, progress_photo_back, coaching_week, submitted_at')
           .eq('client_id', userId)
           .eq('checkin_type', 'weekly')
           .order('submitted_at', { ascending: false })
@@ -123,6 +124,9 @@ export default function CheckinPage() {
                 ? 'You already submitted this weekly check-in.'
                 : 'Your weekly check-in is not available yet. Check your dashboard for the next scheduled check-in.'
         );
+        if (reason === 'already_submitted' && lastWeekly?.id) {
+          setReportCheckinId(lastWeekly.id)
+        }
       }
       setLoading(false);
     };
@@ -266,10 +270,11 @@ export default function CheckinPage() {
 
       await requestComplexityRecalculation({ trigger: 'weekly_checkin', checkinId: data.checkinId })
 
+      setReportCheckinId(data.checkinId)
       setSuccess(
         photosOptional && !frontUrl && !sideUrl && !backUrl
-          ? 'Weekly check-in submitted! Measurements earn league points. Your coach typically replies in 3–6 hours (including overnight).'
-          : 'Weekly check-in submitted! Photos + measurements earn league points. Your coach typically replies in 3–6 hours (including overnight).'
+          ? 'Weekly check-in submitted! We emailed your week report as an Excel file. Your coach typically replies in 3–6 hours (including overnight).'
+          : 'Weekly check-in submitted! We emailed your week report as an Excel file. Your coach typically replies in 3–6 hours (including overnight).'
       );
       setForm(INITIAL_WEEKLY_FORM);
       setPhotos({ front: null, side: null, back: null });
@@ -306,6 +311,14 @@ export default function CheckinPage() {
           {unavailableReason ||
             'Your weekly check-in is not available. Check your dashboard for the next scheduled check-in.'}
         </div>
+        {reportCheckinId && (
+          <a
+            href={`/api/checkin/weekly-report?checkinId=${reportCheckinId}`}
+            style={{ display: 'block', marginBottom: 16, color: colors.accent, fontWeight: 700 }}
+          >
+            Download this week’s Excel report
+          </a>
+        )}
         <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
       </ClientShell>
     );
@@ -340,6 +353,20 @@ export default function CheckinPage() {
 
       {error && <div className="motion-shake" style={mobileStyles.error}>{error}</div>}
       {success && <SuccessState message={success} />}
+      {reportCheckinId && (
+        <a
+          href={`/api/checkin/weekly-report?checkinId=${reportCheckinId}`}
+          style={{
+            display: 'block',
+            marginBottom: spacing[4],
+            color: colors.accent,
+            fontWeight: 700,
+            fontSize: 15,
+          }}
+        >
+          Download this week’s Excel report
+        </a>
+      )}
 
       <form onSubmit={handleSubmit}>
         <SlideTransition sectionKey={currentSection} direction={slideDirection}>

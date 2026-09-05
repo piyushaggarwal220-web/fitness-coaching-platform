@@ -26,6 +26,10 @@ import {
 import { extractJsonCandidates, parseJsonFromModelResponse } from '@/lib/ai/json-extract'
 import { enforceDietPreference, calorieBumpFoodsForProfile, dietScanOptionsFromProfile } from '@/lib/ai/diet-preference-guard'
 import { applyDietPlanRepair, fastingWeekdaysFromNotes } from '@/lib/ai/diet-plan-repair'
+import {
+  collectDietProse,
+  dietFailsRequestedVariety,
+} from '@/lib/ai/diet-day-variety'
 import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
 import { formatCalorieGuidanceBlock, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
@@ -870,6 +874,18 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         throw new GeneratePlanError(
           `Diet plan failed calorie safety after ${maxAttempts} attempts: ${safety.error}`
         )
+      }
+
+      const variety = input.profile.onboarding_data?.lifestyle?.dietVariety
+      const dietProse = collectDietProse(plan.nutrition_plan.meals)
+      if (dietFailsRequestedVariety(dietProse, variety)) {
+        lastValidationError =
+          'Diet copied the same meals onto every day even though the client asked for variety.'
+        if (attempt < maxAttempts - 1) {
+          completenessHint =
+            'Client asked for meal variety. Write DIFFERENT breakfast/lunch/dinner on most days. Do not copy Day 1 onto Day 2–7. Repeat staples if needed, but rotate the actual plates.'
+          continue
+        }
       }
 
       const preferenceSafety = enforceDietPreference(

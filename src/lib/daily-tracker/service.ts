@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
+  coachingDateKeyDaysAgo,
   getClientCheckinSchedule,
   getCoachingDateKey,
   getCoachingDay,
@@ -16,6 +17,7 @@ import {
   remapWorkoutDayKey,
 } from './parser'
 import { averageRpe, calculateTrackerScores } from './scores'
+import { buildWeekProgress } from './week-progress'
 import type {
   DailyTrackerDay,
   TodayTrackerView,
@@ -88,13 +90,11 @@ async function computeStreak(supabase: SupabaseClient, clientId: string): Promis
 }
 
 async function weeklyAverage(supabase: SupabaseClient, clientId: string): Promise<number | null> {
-  const weekAgo = new Date()
-  weekAgo.setDate(weekAgo.getDate() - 7)
   const { data } = await supabase
     .from('daily_tracker_days')
     .select('overall_percent')
     .eq('client_id', clientId)
-    .gte('log_date', weekAgo.toISOString().slice(0, 10))
+    .gte('log_date', coachingDateKeyDaysAgo(7))
 
   const values = (data ?? [])
     .map((r) => r.overall_percent as number | null)
@@ -544,6 +544,25 @@ export async function loadTodayTrackerView(
   )
   const streak = await computeStreak(supabase, clientId)
   const weeklyAvg = await weeklyAverage(supabase, clientId)
+  const { data: recentRows } = await supabase
+    .from('daily_tracker_days')
+    .select('log_date, coaching_day, coaching_week, overall_percent, scores')
+    .eq('client_id', clientId)
+    .gte('log_date', coachingDateKeyDaysAgo(14))
+    .lte('log_date', todayDateString())
+    .order('log_date', { ascending: true })
+
+  const { previousWeek, recentDays } = buildWeekProgress(
+    (recentRows ?? []).map((row) => ({
+      log_date: row.log_date as string,
+      coaching_day: (row.coaching_day as number | null) ?? null,
+      coaching_week: (row.coaching_week as number | null) ?? null,
+      overall_percent: (row.overall_percent as number | null) ?? null,
+      scores: (row.scores as TrackerCategoryScores | null) ?? null,
+    })),
+    todayDateString(),
+    schedule.activeCoachingWeek
+  )
 
   return {
     view: {
@@ -558,6 +577,8 @@ export async function loadTodayTrackerView(
       greeting: greetingForHour(new Date().getHours()),
       streak,
       weeklyAverage: weeklyAvg,
+      previousWeek,
+      recentDays,
     },
     error: null,
   }
@@ -583,14 +604,11 @@ export async function loadClientAdherenceSummary(
   clientId: string,
   periodDays = 7
 ): Promise<TrackerAdherenceSummary> {
-  const since = new Date()
-  since.setDate(since.getDate() - periodDays)
-
   const { data } = await supabase
     .from('daily_tracker_days')
     .select('id, client_id, log_date, plan_id, plan_version, coaching_day, coaching_week, snapshot, completion, scores, overall_percent, created_at, updated_at')
     .eq('client_id', clientId)
-    .gte('log_date', since.toISOString().slice(0, 10))
+    .gte('log_date', coachingDateKeyDaysAgo(periodDays))
     .order('log_date', { ascending: false })
 
   return summarizeAdherenceDays(
@@ -608,9 +626,7 @@ export async function loadCoachAdherenceSummaries(
 ): Promise<Array<TrackerAdherenceSummary & { clientName: string | null }>> {
   if (clients.length === 0) return []
 
-  const since = new Date()
-  since.setDate(since.getDate() - periodDays)
-  const sinceKey = since.toISOString().slice(0, 10)
+  const sinceKey = coachingDateKeyDaysAgo(periodDays)
   const clientIds = clients.map((c) => c.id)
 
   // Panel only needs scores + overall — skip huge snapshot/completion payloads.

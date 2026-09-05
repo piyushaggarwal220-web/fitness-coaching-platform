@@ -59,10 +59,11 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
     didAutoSelectDietDay.current = false
   }, [dietContentKey])
   useEffect(() => {
-    if (!multiDay || selectedKey || !suggestion || saving || didAutoSelectDietDay.current) return
+    const fallback = suggestion ?? days[0]?.key ?? null
+    if (!multiDay || selectedKey || !fallback || didAutoSelectDietDay.current) return
     didAutoSelectDietDay.current = true
-    selectDietDay(suggestion)
-  }, [multiDay, selectedKey, suggestion, saving, selectDietDay, dietContentKey])
+    selectDietDay(fallback)
+  }, [multiDay, selectedKey, suggestion, saving, selectDietDay, dietContentKey, days])
 
   const visibleMeals = useMemo(() => {
     if (!multiDay) return meals
@@ -113,7 +114,6 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
               <button
                 key={day.key}
                 type="button"
-                disabled={saving}
                 onClick={() => selectDietDay(day.key)}
                 style={{
                   display: 'flex',
@@ -163,7 +163,6 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
           </div>
           <Button
             variant="secondary"
-            disabled={saving}
             onClick={() => selectDietDay(null)}
           >
             Change day
@@ -203,7 +202,6 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
             right={
               <CompletionToggle
                 completed={mealDone}
-                disabled={saving}
                 label={`Complete ${meal.title}`}
                 onToggle={() =>
                   void onPatch({
@@ -260,7 +258,6 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
                 fullWidth
                 variant={mealDone ? 'secondary' : 'primary'}
                 success={mealDone}
-                disabled={saving}
                 onClick={() =>
                   void onPatch({
                     meals: {

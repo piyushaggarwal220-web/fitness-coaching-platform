@@ -45,6 +45,11 @@ export function getCoachingDateKey(referenceDate: Date = new Date()): string {
   return `${values.year}-${values.month}-${values.day}`
 }
 
+/** IST calendar date `days` before `referenceDate` — use this, not UTC `toISOString().slice(0, 10)`. */
+export function coachingDateKeyDaysAgo(days: number, referenceDate: Date = new Date()): string {
+  return getCoachingDateKey(new Date(referenceDate.getTime() - days * DAY_MS))
+}
+
 /** Midnight-to-midnight bounds for a coaching calendar day in Asia/Kolkata. */
 export function getCoachingDayBoundsUtc(referenceDate: Date = new Date()): {
   dateKey: string
@@ -224,6 +229,16 @@ export function getDueDate(
   const weekOneStart = getScheduleWeekOneStart(scheduleStartedAt)
   const weekStart = weekOneStart.getTime() + (coachingWeek - 1) * 7 * DAY_MS
   return new Date(weekStart + (dayInWeek - 1) * DAY_MS)
+}
+
+/** IST calendar dates Monday–Sunday for a coaching week. */
+export function coachingWeekLogDates(
+  scheduleStartedAt: string | Date,
+  coachingWeek: number
+): string[] {
+  return [1, 2, 3, 4, 5, 6, 7].map((dayInWeek) =>
+    getCoachingDateKey(getDueDate(scheduleStartedAt, coachingWeek, dayInWeek))
+  )
 }
 
 /**

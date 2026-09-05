@@ -305,8 +305,11 @@ function parseMeals(diet: string): {
     }
   }
 
-  // Fallback: whole diet has meal headers but no day headers matched usefully
-  if (meals.length === 0) {
+  // Fallback only when the plan has no Day N / weekday blocks. If labeled days
+  // exist but meals were empty, do not re-parse the whole week as one day —
+  // that turns the next day's header into "food" and makes logging look broken.
+  const hasLabeledDays = dayBlocks.some((d) => d.key !== 'default')
+  if (meals.length === 0 && !hasLabeledDays) {
     const fallback = parseMealsInDay(diet, 'default', 'Today')
     return { meals: fallback, dietDays: [] }
   }

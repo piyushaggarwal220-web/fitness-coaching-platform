@@ -271,6 +271,21 @@ export type DailyTrackerDay = {
   updated_at: string
 }
 
+export type TrackerWeekDaySummary = {
+  logDate: string
+  coachingDay: number | null
+  coachingWeek: number | null
+  overallPercent: number | null
+  diet: number | null
+  workout: number | null
+}
+
+export type TrackerWeekProgress = {
+  week: number
+  average: number | null
+  days: TrackerWeekDaySummary[]
+}
+
 export type TodayTrackerView = {
   day: DailyTrackerDay
   schedule: {
@@ -282,6 +297,8 @@ export type TodayTrackerView = {
   greeting: string
   streak: number
   weeklyAverage: number | null
+  previousWeek: TrackerWeekProgress | null
+  recentDays: TrackerWeekDaySummary[]
 }
 
 export type TrackerAdherenceSummary = {
