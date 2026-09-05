@@ -14,6 +14,7 @@ import {
   getAuthoritativeNutritionCalories,
   inferMacrosFromDietText,
   syncNutritionPlanMacros,
+  syncStoredDietText,
 } from '@/lib/ai/nutrition-macro-sync'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
 
@@ -381,9 +382,16 @@ function calorieFillBlock(opts: {
   const snack = '1 banana'
   const slot = opts.slot ?? 'Evening snack'
   return [
-    `${slot} (calorie fill): ${carb}, ${protein}, ${oil}, ${snack}.`,
+    `${slot}: ${carb}, ${protein}, ${oil}, ${snack}.`,
     `(P: 20g | C: 60g | F: 12g | ~${opts.kcal} kcal)`,
   ].join('\n')
+}
+
+const CALORIE_TOPUP_RE =
+  /(?:^|\n)[^\n]*(?:\(calorie fill\):|(?:Evening snack|Late snack|Mid-morning snack|Mid-morning|Snack): (?:2 rotis|1 katori cooked rice)[^\n]*1 banana\.)[^\n]*(?:\n\([^\n]*kcal\))?/gi
+
+function countCalorieTopups(body: string): number {
+  return [...body.matchAll(new RegExp(CALORIE_TOPUP_RE.source, 'gi'))].length
 }
 
 function bumpDailyTotalKcal(body: string, add: number): string {
@@ -399,7 +407,7 @@ function bumpDailyTotalKcal(body: string, add: number): string {
 function stripOneCalorieFill(text: string, fastingWeekdays: string[]): string {
   return mapDayBlocks(text, (weekday, body) => {
     if (isFastingDay(weekday, body, fastingWeekdays)) return body
-    const re = /(?:^|\n)[^\n]*\(calorie fill\):[^\n]*(?:\n\([^\n]*kcal\))?/gi
+    const re = new RegExp(CALORIE_TOPUP_RE.source, 'gi')
     const matches = [...body.matchAll(re)]
     const last = matches[matches.length - 1]
     if (!last || last.index == null) return body
@@ -422,8 +430,7 @@ function injectCalorieFill(
   }
   return mapDayBlocks(text, (weekday, body) => {
     if (isFastingDay(weekday, body, fastingWeekdays)) return body
-    const existing = (body.match(/calorie fill/gi) ?? []).length
-    if (existing >= 4) return body
+    if (countCalorieTopups(body) >= 2) return body
     const daily = body.search(/daily\s+(?:total|totals|average)/i)
     const next =
       daily >= 0
@@ -623,7 +630,8 @@ function toCalorieProfile(profile: DietRepairProfile): Parameters<typeof resolve
  */
 export function applyDietPlanRepair(
   plan: GeneratedNutritionPlan,
-  profile: DietRepairProfile
+  profile: DietRepairProfile,
+  options?: { skipCalorieFill?: boolean }
 ): DietRepairResult {
   const scan = dietScanOptionsFromProfile(profile)
   const fixes: string[] = []
@@ -651,35 +659,37 @@ export function applyDietPlanRepair(
     nutAllergy: /nut allergy/i.test(allergies),
   }
   const calorieOpts = { skipWeekdays: fastingWeekdays }
-  const fillSlots = ['Evening snack', 'Late snack', 'Snack', 'Mid-morning']
+  const fillSlots = ['Evening snack', 'Mid-morning snack']
 
-  for (let i = 0; i < 4; i++) {
-    next = syncNutritionPlanMacros(next)
-    const current = getAuthoritativeNutritionCalories(next, calorieOpts)
-    const gap = targetKcal - current
-    if (!(Number.isFinite(current) && current > 0 && gap > 80)) break
-    const fillKcal = Math.min(450, Math.round(gap))
-    const fill = calorieFillBlock({
-      ...fillOpts,
-      kcal: fillKcal,
-      slot: fillSlots[i] ?? 'Snack',
-    })
-    next = mapMealProse(next, (text) => injectCalorieFill(text, fillKcal, fill, fastingWeekdays))
-    fixes.push(`calorie fill +~${fillKcal} kcal/day to reach ${targetKcal}`)
-  }
+  if (!options?.skipCalorieFill) {
+    for (let i = 0; i < fillSlots.length; i++) {
+      next = syncNutritionPlanMacros(next)
+      const current = getAuthoritativeNutritionCalories(next, calorieOpts)
+      const gap = targetKcal - current
+      if (!(Number.isFinite(current) && current > 0 && gap > 80)) break
+      const fillKcal = Math.min(450, Math.round(gap))
+      const fill = calorieFillBlock({
+        ...fillOpts,
+        kcal: fillKcal,
+        slot: fillSlots[i] ?? 'Evening snack',
+      })
+      next = mapMealProse(next, (text) => injectCalorieFill(text, fillKcal, fill, fastingWeekdays))
+      fixes.push(`calorie top-up +~${fillKcal} kcal/day to reach ${targetKcal}`)
+    }
 
-  for (let i = 0; i < 4; i++) {
-    next = syncNutritionPlanMacros(next)
-    const current = getAuthoritativeNutritionCalories(next, calorieOpts)
-    if (!(Number.isFinite(current) && current > targetKcal + 120)) break
-    let stripped = false
-    next = mapMealProse(next, (text) => {
-      const out = stripOneCalorieFill(text, fastingWeekdays)
-      if (out !== text) stripped = true
-      return out
-    })
-    if (!stripped) break
-    fixes.push('calorie trim back to Mifflin target')
+    for (let i = 0; i < 2; i++) {
+      next = syncNutritionPlanMacros(next)
+      const current = getAuthoritativeNutritionCalories(next, calorieOpts)
+      if (!(Number.isFinite(current) && current > targetKcal + 120)) break
+      let stripped = false
+      next = mapMealProse(next, (text) => {
+        const out = stripOneCalorieFill(text, fastingWeekdays)
+        if (out !== text) stripped = true
+        return out
+      })
+      if (!stripped) break
+      fixes.push('calorie trim back to Mifflin target')
+    }
   }
 
   next = mapMealProse(next, (text) => {
@@ -690,6 +700,11 @@ export function applyDietPlanRepair(
     return lifestyle.text
   })
 
+  next = mapMealProse(next, (text) =>
+    syncStoredDietText(text, {
+      floorKcal: resolveDietFloorKcal(profile.weight),
+    })
+  )
   next = syncNutritionPlanMacros(next)
 
   return { plan: next, fixes }

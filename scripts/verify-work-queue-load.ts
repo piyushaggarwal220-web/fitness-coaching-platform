@@ -20,6 +20,8 @@ assert.match(queueSrc, /Wave 2/)
 assert.doesNotMatch(queueSrc, /nutrition_plan, workout_plan/)
 assert.doesNotMatch(queueSrc, /\.neq\('nutrition_plan'/)
 assert.match(queueSrc, /has_core_content/)
+assert.match(queueSrc, /taskTypeRank/)
+assert.match(queueSrc, /initial_plan' \|\| type === 'journey_setup'/)
 
 // Prefer coach_id filters over giant client_id IN lists.
 assert.match(queueSrc, /\.eq\('coach_id', coachId\)/)

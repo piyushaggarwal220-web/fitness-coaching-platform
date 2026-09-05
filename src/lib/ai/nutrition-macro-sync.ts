@@ -659,7 +659,7 @@ function isSourceOfTruthLine(line: string): boolean {
 export function reconcileDietProseCalories(text: string, targetCalories: number): string {
   if (!Number.isFinite(targetCalories) || targetCalories <= 0) return text
 
-  const calorieClaim = /(\d[\d,]{2,4})(\s*(?:k?cal\b|calories?\b))/gi
+  const calorieClaim = /(\d[\d,]{2,4})(?:\*{1,2}|_){0,2}(\s*(?:k?cal\b|calories?\b|-calorie\b))/gi
 
   return text
     .split('\n')
@@ -703,7 +703,7 @@ export function dietTextHasCalorieConflict(text: string | null | undefined): boo
     }
   }
 
-  const calorieClaim = /(\d[\d,]{2,4})(\s*(?:k?cal\b|calories?\b))/gi
+  const calorieClaim = /(\d[\d,]{2,4})(?:\*{1,2}|_){0,2}(\s*(?:k?cal\b|calories?\b|-calorie\b))/gi
   for (const line of text.split('\n')) {
     if (isSourceOfTruthLine(line)) continue
     if (/^\s*calories:\s*\d+/i.test(line)) continue

@@ -270,7 +270,7 @@ export default function CoachDashboard() {
       <section style={coachPageStyles.section}>
         <CoachSectionHeader
           title="Work queue"
-          subtitle="Start with the highest-priority task, then move down the list"
+          subtitle="New client first plans at the top, then other work"
         />
         <CoachWorkSummaryCards
           counts={queueCounts}

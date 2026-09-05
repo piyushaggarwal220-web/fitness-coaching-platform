@@ -11,6 +11,8 @@ import { resolveClientCalorieTargets } from '../src/lib/ai/calorie-targets'
 import {
   enforceDietSafety,
   getAuthoritativeNutritionCalories,
+  parseHeaderCalories,
+  reconcileDietProseCalories,
 } from '../src/lib/ai/nutrition-macro-sync'
 import type { GeneratedNutritionPlan } from '../src/lib/ai/generate-plan'
 
@@ -161,6 +163,31 @@ const safety = enforceDietSafety(calRepaired.plan, {
   maintenanceKcal: targets?.maintenance,
 })
 assert('repaired low-cal plan passes calorie safety', safety.ok, safety.ok ? undefined : safety.error)
+const calText = prose(calRepaired.plan)
+assert('repaired plan never shows (calorie fill)', !/\(calorie fill\)/i.test(calText))
+assert(
+  'repaired plan does not dump three identical top-up snacks',
+  (calText.match(/\(calorie fill\)/gi) ?? []).length === 0 &&
+    (calText.match(/Late snack:/gi) ?? []).length === 0
+)
+const calHeader = parseHeaderCalories(calText)
+if (calHeader != null) {
+  assert(
+    'header calories match food totals after repair',
+    Math.abs(calHeader - got) <= 40,
+    `header ${calHeader} vs food ${got}`
+  )
+}
+
+const mismatchedIntro = reconcileDietProseCalories(
+  'Calories: 2350\nWeekly Diet Plan: Hey Rishabh, we are working with about **3310** calories daily to support fat loss.',
+  2350
+)
+assert(
+  'intro calorie claim is rewritten to match the header',
+  /2350/.test(mismatchedIntro) && !/3310/.test(mismatchedIntro),
+  mismatchedIntro.slice(0, 160)
+)
 
 const chickenWeek = weekPlan(1800, (day) =>
   day === 'Thursday' || day === 'Tuesday'

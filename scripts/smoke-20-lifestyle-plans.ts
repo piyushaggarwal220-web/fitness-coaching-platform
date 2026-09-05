@@ -10,6 +10,9 @@
  *   --scenarios         30 curated lifestyle scenarios (not random meals)
  *   --concurrency=2     parallel AI generations (default 2)
  *   --skip-ai           create clients only (no plan generation)
+ *   --diet-only         generate diet only (skip workout)
+ *   --edit-smoke        after diet, rewrite with a coach food-swap instruction
+ *   --only=id,id        run named lifestyle scenarios
  *   --cleanup           delete the trial clients created in this run's report
  *   --report=file.json  report path (default tmp-lifestyle-20-report.json)
  */
@@ -21,6 +24,12 @@ import {
 } from '../src/lib/admin/testing-accounts'
 import { coachAcceptsAutoAssignment } from '../src/lib/coach-delivery-policy'
 import { generatePlan } from '../src/lib/ai/generate-plan'
+import { editPlanSection } from '../src/lib/ai/edit-plan-section'
+import {
+  dietTextHasCalorieConflict,
+  inferMacrosFromDietText,
+  parseHeaderCalories,
+} from '../src/lib/ai/nutrition-macro-sync'
 import { generatedDietFormData, generatedWorkoutFormData } from '../src/lib/ai/plan-format'
 import { resolveClientCalorieTargets } from '../src/lib/ai/calorie-targets'
 import { getAuthoritativeNutritionCalories } from '../src/lib/ai/nutrition-macro-sync'
@@ -465,7 +474,48 @@ function scoreLifestyle(
     }
   }
 
+  checks.push(...scoreCalorieConsistency(dietText))
   return checks
+}
+
+function scoreCalorieConsistency(dietText: string): Check[] {
+  const header = parseHeaderCalories(dietText)
+  const inferred = inferMacrosFromDietText(dietText)
+  const fillHits = dietText.match(/\(calorie fill\)/gi) ?? []
+  const lateSnackDumps = dietText.match(/Late snack:/gi) ?? []
+  return [
+    {
+      name: 'No calorie-fill labels',
+      ok: fillHits.length === 0,
+      detail: fillHits.length ? `${fillHits.length} "(calorie fill)" labels` : 'ok',
+    },
+    {
+      name: 'Header matches plan calories',
+      ok: !dietTextHasCalorieConflict(dietText),
+      detail: `header ${header ?? '—'} vs food ${inferred?.calories ?? '—'}`,
+    },
+    {
+      name: 'Did not dump identical late-snack calorie pads',
+      ok: lateSnackDumps.length === 0,
+      detail: lateSnackDumps.length ? `${lateSnackDumps.length} Late snack lines` : 'ok',
+    },
+  ]
+}
+
+function scoreEditRemoval(dietText: string): Check[] {
+  const days = splitDays(dietText)
+  const targets = ['tuesday', 'thursday'] as const
+  return targets.map((weekday) => {
+    const day = days.find((d) => d.weekday === weekday)
+    const chicken = day ? proteinHits(day.body, 'chicken') : ['day missing']
+    const eggs = day ? proteinHits(day.body, 'egg') : ['day missing']
+    const leftover = [...chicken, ...eggs]
+    return {
+      name: `Edit removed chicken/eggs on ${weekday}`,
+      ok: Boolean(day) && leftover.length === 0,
+      detail: leftover.length ? leftover.join(', ') : 'ok',
+    }
+  })
 }
 
 function scoreCalories(
@@ -813,12 +863,13 @@ async function main(): Promise<void> {
   const requested = Math.max(1, Number(argValue('count', defaultCount)) || Number(defaultCount))
   const count = useScenarios ? Math.min(requested, scenarioPool.length) : requested
   const concurrency = Math.max(1, Number(argValue('concurrency', '2')) || 2)
-  const complete = hasFlag('complete') || hasFlag('scenarios')
+  const complete = !hasFlag('diet-only') && (hasFlag('complete') || hasFlag('scenarios'))
   const skipAi = hasFlag('skip-ai')
+  const editSmoke = hasFlag('edit-smoke')
   const reportPath = resolveReportPath()
 
   console.log(
-    `=== Lifestyle plan smoke: ${count} clients, concurrency=${concurrency}, skipAi=${skipAi}, scenarios=${useScenarios}, final=${useFinal}, complete=${complete} ===\n`
+    `=== Lifestyle plan smoke: ${count} clients, concurrency=${concurrency}, skipAi=${skipAi}, scenarios=${useScenarios}, final=${useFinal}, complete=${complete}, editSmoke=${editSmoke} ===\n`
   )
 
   const coaches = await listCoachesForAssignment()
@@ -877,8 +928,22 @@ async function main(): Promise<void> {
       })
 
       const form = generatedDietFormData(planResult.generatedPlan, c.clientId)
-      const nutrition = form.nutrition_plan ?? ''
+      let nutrition = form.nutrition_plan ?? ''
       let workout = form.workout_plan || ''
+
+      if (editSmoke && nutrition.trim()) {
+        console.log(`  Editing diet for ${label} (remove chicken/eggs Tue+Thu)…`)
+        const edited = await editPlanSection({
+          section: 'nutrition',
+          currentText: nutrition,
+          coachInstruction: 'please remove chicken and eggs from thursday diet tuesday also',
+          editSource: 'coach',
+          clientName: onboarding.name,
+          clientId: c.clientId,
+          profile: onboarding,
+        })
+        nutrition = edited.revisedText
+      }
 
       if (complete) {
         const workoutResult = await generatePlan({
@@ -920,6 +985,7 @@ async function main(): Promise<void> {
       const checks = [
         ...scoreLifestyle(onboarding, nutrition, c.scenario),
         ...scoreCalories(onboarding, nutrition, c.scenario),
+        ...(editSmoke ? scoreEditRemoval(nutrition) : []),
         ...(complete ? scoreTracker(onboarding, c.scenario, nutrition, workout) : []),
       ]
       const passed = checks.filter((x) => x.ok).length

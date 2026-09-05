@@ -41,8 +41,15 @@ export type WorkQueueTask = {
   accessSource?: AccessSource | null
 }
 
-/** Equal priority for all types — display order is strictly by received time. */
+/** Equal numeric priority for API compatibility — display order uses type, then plan tier, then time. */
 const QUEUE_PRIORITY = 1
+
+/** New-client first plans before check-ins, chat, and certificates. */
+function taskTypeRank(type: WorkQueueTaskType): number {
+  if (type === 'initial_plan' || type === 'journey_setup') return 0
+  if (type === 'plan_change_request') return 1
+  return 2
+}
 
 type GenerationJobRow = {
   id: string
@@ -62,9 +69,11 @@ function planTierRank(planSlug: string | null | undefined): number {
   return 3
 }
 
-/** Oldest received first within a plan tier. */
+/** New-client plans first, then 12-month clients, then oldest received. */
 function sortTasks(tasks: WorkQueueTask[]): WorkQueueTask[] {
   return [...tasks].sort((a, b) => {
+    const typeDiff = taskTypeRank(a.type) - taskTypeRank(b.type)
+    if (typeDiff !== 0) return typeDiff
     const tierDiff = planTierRank(a.planSlug) - planTierRank(b.planSlug)
     if (tierDiff !== 0) return tierDiff
     const aTime = Date.parse(a.createdAt)

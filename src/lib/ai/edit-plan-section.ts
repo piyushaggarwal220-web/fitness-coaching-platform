@@ -346,7 +346,8 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
             fat: 0,
             meals: [{ example: revisedText }],
           },
-          input.profile
+          input.profile,
+          { skipCalorieFill: preserveCalories }
         )
         const meal0 = repaired.plan.meals[0]
         if (typeof meal0 === 'string') {
@@ -354,6 +355,11 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         } else if (meal0 && typeof meal0 === 'object' && typeof (meal0 as { example?: unknown }).example === 'string') {
           revisedText = (meal0 as { example: string }).example
         }
+        revisedText = syncStoredDietText(revisedText, {
+          previousCalories: input.previousCalories ?? parseHeaderCalories(currentText),
+          preserveCalories,
+          floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
+        })
       }
 
       if (input.section === 'nutrition' && input.profile) {

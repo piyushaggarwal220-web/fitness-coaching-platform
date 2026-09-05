@@ -84,7 +84,16 @@ export function PlanSectionAiEditModal({
       setStatus(data.summary ?? 'Draft ready — review and apply.')
     } catch (err) {
       setStatusVariant('error')
-      setStatus(err instanceof Error ? err.message : 'AI rewrite failed')
+      const raw = err instanceof Error ? err.message : 'AI rewrite failed'
+      const dropped =
+        /load failed|failed to fetch|networkerror|network request failed|the operation was aborted/i.test(
+          raw
+        )
+      setStatus(
+        dropped
+          ? 'The phone browser dropped the connection before the rewrite finished. This edit rewrites the full week and can take a few minutes. Wait, then tap Regenerate again — or try from a computer.'
+          : raw
+      )
     } finally {
       setGenerating(false)
     }
