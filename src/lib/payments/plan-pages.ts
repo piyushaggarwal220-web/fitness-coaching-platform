@@ -159,7 +159,7 @@ export const PLAN_COMPARE_ROWS: {
   {
     group: 'Value',
     label: 'Per month',
-    cells: { '3_months': '₹600', '6_months': '₹467', '12_months': '₹375' },
+    cells: { '3_months': '₹666', '6_months': '₹583', '12_months': '₹500' },
   },
 ]
 
