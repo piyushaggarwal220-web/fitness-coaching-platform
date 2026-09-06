@@ -149,7 +149,7 @@ export default function CoachClientDetailPage() {
           {activePlanId ? (
             <button
               style={styles.actionBtn}
-              onClick={() => router.push(`/coach/plan/${activePlanId}?ai=1`)}
+              onClick={() => router.push(`/coach/plan/${activePlanId}`)}
             >
               Edit delivered plan
             </button>

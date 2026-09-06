@@ -4,6 +4,7 @@ import {
   mergeCompletion,
   planContentSignature,
   remapWorkoutDayKey,
+  resolveSuggestedDayKey,
   suggestedWorkoutDayKey,
 } from '../src/lib/daily-tracker/parser'
 import { getCurrentExercise } from '../src/lib/daily-tracker/exercise-utils'
@@ -960,6 +961,37 @@ Roti and soya.`,
   assert(
     'Meal: Day 1 header still yields 2 unique diet days',
     keys.length === 2 && keys.includes('monday') && keys.includes('tuesday')
+  )
+}
+
+{
+  const coachTypedPlan: Plan = {
+    ...planV1,
+    nutrition_plan: `Day 7 (Sunday)
+4 eggs, oats, and fruit
+Rice, dal, and curd for lunch
+Roti and paneer at night
+
+Day 2 (Tuesday)
+Poha in the morning
+Chicken rice bowl
+Fish curry and sabzi`,
+  }
+  const coachSnap = buildTrackerSnapshot(coachTypedPlan)
+  const sundayMeals = coachSnap.items.filter((i) => i.type === 'meal' && i.dietDay === 'sunday')
+  const tuesdayMeals = coachSnap.items.filter((i) => i.type === 'meal' && i.dietDay === 'tuesday')
+  assert(
+    'keeps coach-typed diet days without Breakfast/Lunch headers',
+    (coachSnap.dietDays?.length ?? 0) === 2 && sundayMeals.length === 1 && tuesdayMeals.length === 1
+  )
+  assert(
+    'coach-typed day body becomes a loggable meal',
+    sundayMeals.some((m) => m.type === 'meal' && /oats/i.test(m.foods))
+  )
+  const sunday = new Date('2026-09-06T08:00:00+05:30')
+  assert(
+    'suggests Sunday diet day from Day 7 (Sunday) label',
+    resolveSuggestedDayKey(coachSnap.dietDays ?? [], sunday) === 'sunday'
   )
 }
 

@@ -33,7 +33,7 @@ import {
   getPhaseProgress,
   getWorkoutProgress,
 } from '@/lib/daily-tracker/display'
-import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
+import { resolveSuggestedDayKey } from '@/lib/daily-tracker/parser'
 import { shouldSkipExerciseForm } from '@/lib/exercise-form/normalize'
 import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
@@ -167,7 +167,7 @@ export function WorkoutModule({
   const coachingDayInWeek = view?.schedule.coachingDay
     ? getCoachingDayInWeek(view.schedule.coachingDay)
     : undefined
-  const suggestion = suggestedWorkoutDayKey(days, new Date(), {
+  const suggestion = resolveSuggestedDayKey(days, new Date(), {
     coachingDayInWeek,
   })
 
@@ -302,8 +302,10 @@ export function WorkoutModule({
     persistSession({ running: false, startedAt: null, elapsedMs: 0, clear: true })
   }, [persistSession])
 
+  const userClearedDay = useRef(false)
   const selectWorkoutDay = useCallback(
     (key: string | null) => {
+      userClearedDay.current = key == null
       setSessionRunning(false)
       setSessionStartedAt(null)
       setElapsedMs(0)
@@ -319,18 +321,15 @@ export function WorkoutModule({
     [onPatch]
   )
 
-  // One-shot: if nothing is picked yet, follow today's suggested day so the hub isn't stuck at 0%.
-  // After the client taps "Change day", we leave the picker alone until coaching day or plan changes.
-  const didAutoSelectWorkoutDay = useRef(false)
+  // If nothing is picked yet, follow today's day so Refresh / a coach plan edit
+  // does not leave the client on the picker. "Change day" still opens the list.
   useEffect(() => {
-    didAutoSelectWorkoutDay.current = false
+    userClearedDay.current = false
   }, [workoutContentKey, coachingDayKey])
   useEffect(() => {
-    const fallback = suggestion ?? days[0]?.key ?? null
-    if (!multiDay || selectedKey || !fallback || didAutoSelectWorkoutDay.current) return
-    didAutoSelectWorkoutDay.current = true
-    selectWorkoutDay(fallback)
-  }, [multiDay, selectedKey, suggestion, saving, selectWorkoutDay, days])
+    if (!multiDay || selectedKey || !suggestion || userClearedDay.current) return
+    selectWorkoutDay(suggestion)
+  }, [multiDay, selectedKey, suggestion, selectWorkoutDay])
 
   useEffect(() => {
     if (!sessionRunning || sessionStartedAt == null) return

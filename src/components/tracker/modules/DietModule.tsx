@@ -10,7 +10,7 @@ import {
   trackerSurfaceInset,
 } from '@/components/tracker/TrackerPrimitives'
 import { colors, radius, spacing } from '@/lib/design-tokens'
-import { suggestedWorkoutDayKey } from '@/lib/daily-tracker/parser'
+import { resolveSuggestedDayKey } from '@/lib/daily-tracker/parser'
 import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
 import type { TrackerCompletion, TrackerMealItem } from '@/lib/daily-tracker/types'
@@ -44,26 +44,26 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
   const coachingDayInWeek = view?.schedule.coachingDay
     ? getCoachingDayInWeek(view.schedule.coachingDay)
     : undefined
-  const suggestion = suggestedWorkoutDayKey(days, new Date(), { coachingDayInWeek })
+  const suggestion = resolveSuggestedDayKey(days, new Date(), { coachingDayInWeek })
+  const coachingDayKey = view?.schedule.coachingDay ?? ''
+  const userClearedDay = useRef(false)
 
   const selectDietDay = useCallback(
     (key: string | null) => {
+      userClearedDay.current = key == null
       void onPatch({ selectedDietDay: key })
     },
     [onPatch]
   )
 
   const dietContentKey = meals.map((m) => `${m.id}:${m.foods}`).join('|')
-  const didAutoSelectDietDay = useRef(false)
   useEffect(() => {
-    didAutoSelectDietDay.current = false
-  }, [dietContentKey])
+    userClearedDay.current = false
+  }, [dietContentKey, coachingDayKey])
   useEffect(() => {
-    const fallback = suggestion ?? days[0]?.key ?? null
-    if (!multiDay || selectedKey || !fallback || didAutoSelectDietDay.current) return
-    didAutoSelectDietDay.current = true
-    selectDietDay(fallback)
-  }, [multiDay, selectedKey, suggestion, saving, selectDietDay, dietContentKey, days])
+    if (!multiDay || selectedKey || !suggestion || userClearedDay.current) return
+    selectDietDay(suggestion)
+  }, [multiDay, selectedKey, suggestion, selectDietDay])
 
   const visibleMeals = useMemo(() => {
     if (!multiDay) return meals

@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 14
+export const TRACKER_PARSER_VERSION = 15
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -281,6 +281,29 @@ function parseMealsInDay(
     if (current) current.lines.push(line)
   }
   flush()
+
+  // Coach-typed days often list foods without Breakfast/Lunch headers.
+  // Keep the day loggable instead of dropping it from the tracker.
+  if (meals.length === 0) {
+    const foods = dietBody.trim()
+    if (!foods) return []
+    return [
+      enrichMeal(
+        {
+          id: `meal-${dayKey}-meals`,
+          type: 'meal',
+          period: 'lunch',
+          icon: '🥗',
+          title: 'Meals',
+          foods,
+          dietDay: dayKey === 'default' ? undefined : dayKey,
+          dietDayLabel: dayKey === 'default' ? undefined : dayLabel,
+          sortOrder: 0,
+        },
+        foods
+      ),
+    ]
+  }
 
   return meals.map((m) => enrichMeal(m, m.foods))
 }
@@ -951,6 +974,20 @@ export function remapWorkoutDayKey(
     )
   )
   return bySharedWeekday?.key
+}
+
+/** Suggested day that is guaranteed to exist on this plan, or the first day. */
+export function resolveSuggestedDayKey(
+  days: TrackerPlanDayOption[],
+  referenceDate = new Date(),
+  options?: { coachingDayInWeek?: number }
+): string | null {
+  if (days.length === 0) return null
+  const suggestion = suggestedWorkoutDayKey(days, referenceDate, options)
+  if (suggestion && days.some((d) => d.key === suggestion)) return suggestion
+  const remapped = remapWorkoutDayKey(suggestion, days)
+  if (remapped) return remapped
+  return days[0]?.key ?? null
 }
 
 function prefixIdsForWorkoutDay<T extends { id: string }>(items: T[], dayKey: string): T[] {

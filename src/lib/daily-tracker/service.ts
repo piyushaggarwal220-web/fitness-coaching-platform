@@ -4,6 +4,7 @@ import {
   getClientCheckinSchedule,
   getCoachingDateKey,
   getCoachingDay,
+  getCoachingDayInWeek,
   getCoachingWeek,
   hasCoachingDayStarted,
 } from '@/lib/checkin-schedule'
@@ -15,6 +16,7 @@ import {
   mergeCompletion,
   planContentSignature,
   remapWorkoutDayKey,
+  resolveSuggestedDayKey,
 } from './parser'
 import { averageRpe, calculateTrackerScores } from './scores'
 import { buildWeekProgress } from './week-progress'
@@ -238,6 +240,26 @@ function sanitizeCompletionForSnapshot(
   return next
 }
 
+/** After a plan edit / refresh, pick today's diet and workout day so the client isn't stuck on the picker. */
+function applySuggestedDaySelections(
+  completion: TrackerCompletion,
+  snapshot: DailyTrackerDay['snapshot'],
+  coachingDay: number | null | undefined
+): TrackerCompletion {
+  const coachingDayInWeek =
+    coachingDay && coachingDay > 0 ? getCoachingDayInWeek(coachingDay) : undefined
+  const next = { ...completion }
+  if (!next.selectedDietDay && (snapshot.dietDays?.length ?? 0) > 1) {
+    next.selectedDietDay =
+      resolveSuggestedDayKey(snapshot.dietDays ?? [], new Date(), { coachingDayInWeek }) ?? undefined
+  }
+  if (!next.selectedWorkoutDay && (snapshot.workoutDays?.length ?? 0) > 1) {
+    next.selectedWorkoutDay =
+      resolveSuggestedDayKey(snapshot.workoutDays ?? [], new Date(), { coachingDayInWeek }) ?? undefined
+  }
+  return next
+}
+
 /** Refresh reboots the workout tracker: drop logged sets/session, keep other modules. */
 function rebootWorkoutCompletion(completion: TrackerCompletion): TrackerCompletion {
   const next: TrackerCompletion = { ...completion }
@@ -350,7 +372,11 @@ export async function getOrCreateTodayTracker(
     const sanitized = planSourceChanged
       ? dropSelectedDaysForPlanChange(sanitizeCompletionForSnapshot(existingDay.completion, snapshot))
       : sanitizeCompletionForSnapshot(existingDay.completion, snapshot)
-    const completion = force ? rebootWorkoutCompletion(sanitized) : sanitized
+    const completion = applySuggestedDaySelections(
+      force ? rebootWorkoutCompletion(sanitized) : sanitized,
+      snapshot,
+      coachingDay
+    )
     const { scores, overall } = calculateTrackerScores(snapshot, completion)
     const { data: updated, error } = await supabase
       .from('daily_tracker_days')
@@ -373,7 +399,7 @@ export async function getOrCreateTodayTracker(
     return { day: rowToDay(updated as Record<string, unknown>), error: null }
   }
 
-  const completion: TrackerCompletion = {}
+  const completion = applySuggestedDaySelections({}, snapshot, coachingDay)
   const { scores, overall } = calculateTrackerScores(snapshot, completion)
 
   const { data: inserted, error } = await supabase
@@ -489,9 +515,16 @@ export async function refreshTodayTrackerAfterPlanPublish(
       current.plan_id !== plan.id ||
       current.snapshot.planId !== plan.id ||
       current.snapshot.planContentSignature !== planContentSignature(plan)
-    const completion = planSourceChanged
-      ? dropSelectedDaysForPlanChange(sanitizeCompletionForSnapshot(current.completion, snapshot))
-      : sanitizeCompletionForSnapshot(current.completion, snapshot)
+    const coachingDay = profile?.checkin_schedule_started_at
+      ? getCoachingDay(profile.checkin_schedule_started_at)
+      : null
+    const completion = applySuggestedDaySelections(
+      planSourceChanged
+        ? dropSelectedDaysForPlanChange(sanitizeCompletionForSnapshot(current.completion, snapshot))
+        : sanitizeCompletionForSnapshot(current.completion, snapshot),
+      snapshot,
+      coachingDay
+    )
     const { scores, overall } = calculateTrackerScores(snapshot, completion)
     await supabase
       .from('daily_tracker_days')
@@ -510,7 +543,7 @@ export async function refreshTodayTrackerAfterPlanPublish(
 
   const coachingDay = getCoachingDay(scheduleStartedAt)
   const coachingWeek = getCoachingWeek(coachingDay)
-  const completion: TrackerCompletion = {}
+  const completion = applySuggestedDaySelections({}, snapshot, coachingDay)
   const { scores, overall } = calculateTrackerScores(snapshot, completion)
 
   await supabase.from('daily_tracker_days').insert({
