@@ -21,6 +21,9 @@ import {
   getFirstTimerDiscountCode,
   isFirstTimerDiscountCode,
   isRetiredPublicDiscountCode,
+  isPublicSaleCode,
+  publicSaleDiscountPaise,
+  PUBLIC_SALE_CODE,
 } from '@/lib/payments/checkout-discounts';
 import {
   affiliateDiscountPaise,
@@ -155,6 +158,21 @@ function CheckoutForm() {
       };
     }
 
+    if (isPublicSaleCode(code)) {
+      const discountPaise = publicSaleDiscountPaise(plan.amountPaise);
+      if (discountPaise == null) return null;
+      return {
+        code: PUBLIC_SALE_CODE,
+        discountPaise,
+        amountPaise: plan.amountPaise - discountPaise,
+        listAmountPaise: plan.amountPaise,
+        displayListPrice: plan.displayPrice,
+        displaySalePrice: formatInrFromPaise(plan.amountPaise - discountPaise),
+        displayDiscount: formatInrFromPaise(discountPaise),
+        message: `Discount applied — save ${formatInrFromPaise(discountPaise)} on ${plan.name}.`,
+      };
+    }
+
     if (isRetiredPublicDiscountCode(code) || !isFirstTimerDiscountCode(code)) return null;
     const discountPaise = discountPaiseForPlan(plan.slug, plan.amountPaise);
     const amountPaise = firstTimerSalePaise(plan.slug, plan.amountPaise);
@@ -180,7 +198,7 @@ function CheckoutForm() {
       return;
     }
 
-    // Instant local apply for WELCOME60 / LUKE — no email required.
+    // Instant local apply for SUMMER60 / LUKE — no email required.
     const local = buildLocalWelcomeDiscount(code);
     if (local) setAppliedDiscount(local);
 

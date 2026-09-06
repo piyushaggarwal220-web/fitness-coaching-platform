@@ -25,6 +25,23 @@ export function isRetiredPublicDiscountCode(raw: string | null | undefined): boo
   return RETIRED_PUBLIC_DISCOUNT_CODES.has(normalizeDiscountCode(raw))
 }
 
+/** Only public sale code. Affiliate codes like LUKE stay separate. */
+export const PUBLIC_SALE_CODE = 'SUMMER60'
+export const PUBLIC_SALE_PERCENT = 60
+
+export function isPublicSaleCode(raw: string | null | undefined): boolean {
+  return normalizeDiscountCode(raw) === PUBLIC_SALE_CODE
+}
+
+export function publicSaleDiscountPaise(listAmountPaise: number): number | null {
+  if (!Number.isFinite(listAmountPaise) || listAmountPaise <= 0) return null
+  const salePaise =
+    Math.round((listAmountPaise * (100 - PUBLIC_SALE_PERCENT)) / 100 / 100) * 100
+  const discount = listAmountPaise - salePaise
+  if (discount <= 0 || discount >= listAmountPaise) return null
+  return discount
+}
+
 type FirstTimerPlanSlug = CoachingPlanSlug
 
 /** Public sale percent off list price. Trial is not eligible. Available to all customers. */
@@ -319,7 +336,7 @@ function buildAppliedDiscount(input: {
  * customer types an email. Create-order must pass a real email with enforcement on
  * so promo validity is checked before charging.
  *
- * Public WELCOME60 (and matching env code) is available to everyone — not first-timer only.
+ * Public SUMMER60 is available to everyone — not first-timer only. WELCOME60 is retired.
  */
 export async function resolveCheckoutPricing(input: {
   admin: SupabaseClient
@@ -374,7 +391,13 @@ export async function resolveCheckoutPricing(input: {
 
   async function assertFirstTimerIfNeeded(required: boolean): Promise<ResolveDiscountResult | null> {
     // Public sale / affiliate codes are open to renewals and returning customers too.
-    if (isFirstTimerDiscountCode(code) || isAffiliateDiscountCode(code)) return null
+    if (
+      isFirstTimerDiscountCode(code) ||
+      isAffiliateDiscountCode(code) ||
+      isPublicSaleCode(code)
+    ) {
+      return null
+    }
     if (!required || !enforceEligibility || !hasEmail) return null
     let firstTimer = false
     try {
@@ -395,6 +418,41 @@ export async function resolveCheckoutPricing(input: {
       }
     }
     return null
+  }
+
+  // Public sale (SUMMER60): 60% off list. Hard-coded so checkout stays correct
+  // even if the admin promo row is missing or drifts.
+  if (isPublicSaleCode(code)) {
+    const { promo, error: promoLookupError } = await getActivePromoCode(input.admin, code)
+    if (promoLookupError) {
+      return { ok: false, error: promoLookupError, status: 500 }
+    }
+    if (promo) {
+      const validityError = isPromoCodeCurrentlyValid(promo)
+      if (validityError) return { ok: false, error: validityError, status: 400 }
+    }
+
+    const discountPaise = publicSaleDiscountPaise(listAmountPaise)
+    if (discountPaise == null) {
+      return { ok: false, error: 'This code is not available for this plan.', status: 400 }
+    }
+
+    const discount = buildAppliedDiscount({
+      kind: 'discount',
+      code: PUBLIC_SALE_CODE,
+      discountPaise,
+      listAmountPaise,
+    })
+
+    return {
+      ok: true,
+      pricing: {
+        plan,
+        listAmountPaise,
+        amountPaise: discount.amountPaise,
+        discount,
+      },
+    }
   }
 
   // Affiliate codes (e.g. LUKE): sale price + extra % off. Prefer hard-coded math so
@@ -544,6 +602,13 @@ function expectedPlanAmountPaiseFromOrderNotes(
       charged === listAmount - discountPaise
     ) {
       return charged
+    }
+
+    if (code && isPublicSaleCode(code)) {
+      const expectedDiscount = publicSaleDiscountPaise(plan.amountPaise) ?? 0
+      if (discountPaise === expectedDiscount && charged === plan.amountPaise - expectedDiscount) {
+        return charged
+      }
     }
 
     if (code && isAffiliateDiscountCode(code)) {

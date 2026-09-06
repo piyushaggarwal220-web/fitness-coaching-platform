@@ -19,6 +19,8 @@ import {
 import {
   expectedAmountPaiseFromOrderNotes,
   isRetiredPublicDiscountCode,
+  isPublicSaleCode,
+  publicSaleDiscountPaise,
 } from '../src/lib/payments/checkout-discounts'
 import { COACHING_PLANS } from '../src/lib/payments/plans'
 
@@ -117,8 +119,22 @@ assert.match(migration, /kind text NOT NULL CHECK \(kind IN \('discount', 'refer
 pass('migration creates promo_codes with discount/referral kinds')
 
 assert.equal(isRetiredPublicDiscountCode('welcome60'), true)
+assert.equal(isRetiredPublicDiscountCode('SUMMER60'), false)
 assert.equal(isRetiredPublicDiscountCode('LUKE'), false)
-pass('WELCOME60 is retired and other codes stay valid')
+assert.equal(isPublicSaleCode('summer60'), true)
+assert.equal(publicSaleDiscountPaise(199900), 119900)
+assert.equal(publicSaleDiscountPaise(349900), 209900)
+assert.equal(publicSaleDiscountPaise(599900), 359900)
+pass('WELCOME60 is retired; SUMMER60 is the public 60% sale')
+
+const summerExpected = expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'], {
+  amount_paise: '80000',
+  list_amount_paise: '199900',
+  discount_paise: '119900',
+  discount_code: 'SUMMER60',
+})
+assert.equal(summerExpected, 80000)
+pass('order notes accept SUMMER60 public sale amounts')
 
 assert.equal(isAffiliateDiscountCode('luke'), true)
 assert.equal(getAffiliateCode('LUKE')?.extraPercentOffSale, 5)
