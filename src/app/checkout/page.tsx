@@ -20,6 +20,7 @@ import {
   discountPaiseForPlan,
   getFirstTimerDiscountCode,
   isFirstTimerDiscountCode,
+  isRetiredPublicDiscountCode,
 } from '@/lib/payments/checkout-discounts';
 import {
   affiliateDiscountPaise,
@@ -66,7 +67,8 @@ function CheckoutForm() {
   const searchParams = useSearchParams();
   const rawPlan = searchParams.get('plan') ?? '3_months';
   const initialPlan = rawPlan === '1_week_trial' ? '3_months' : rawPlan;
-  const codeFromUrl = (searchParams.get('code') ?? '').trim().toUpperCase();
+  const codeFromUrlRaw = (searchParams.get('code') ?? '').trim().toUpperCase();
+  const codeFromUrl = isRetiredPublicDiscountCode(codeFromUrlRaw) ? '' : codeFromUrlRaw;
   const plan = getPurchasablePlan(initialPlan) ?? getPurchasablePlan('3_months')!;
 
   const [name, setName] = useState('');
@@ -153,7 +155,7 @@ function CheckoutForm() {
       };
     }
 
-    if (!isFirstTimerDiscountCode(code)) return null;
+    if (isRetiredPublicDiscountCode(code) || !isFirstTimerDiscountCode(code)) return null;
     const discountPaise = discountPaiseForPlan(plan.slug, plan.amountPaise);
     const amountPaise = firstTimerSalePaise(plan.slug, plan.amountPaise);
     if (discountPaise == null || amountPaise == null || discountPaise <= 0) return null;

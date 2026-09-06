@@ -16,7 +16,10 @@ import {
   isPromoCodeCurrentlyValid,
   normalizePromoCode,
 } from '../src/lib/payments/promo-codes'
-import { expectedAmountPaiseFromOrderNotes } from '../src/lib/payments/checkout-discounts'
+import {
+  expectedAmountPaiseFromOrderNotes,
+  isRetiredPublicDiscountCode,
+} from '../src/lib/payments/checkout-discounts'
 import { COACHING_PLANS } from '../src/lib/payments/plans'
 
 function pass(label: string) {
@@ -112,6 +115,10 @@ const migration = readFileSync(
 assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.promo_codes/)
 assert.match(migration, /kind text NOT NULL CHECK \(kind IN \('discount', 'referral'\)\)/)
 pass('migration creates promo_codes with discount/referral kinds')
+
+assert.equal(isRetiredPublicDiscountCode('welcome60'), true)
+assert.equal(isRetiredPublicDiscountCode('LUKE'), false)
+pass('WELCOME60 is retired and other codes stay valid')
 
 assert.equal(isAffiliateDiscountCode('luke'), true)
 assert.equal(getAffiliateCode('LUKE')?.extraPercentOffSale, 5)

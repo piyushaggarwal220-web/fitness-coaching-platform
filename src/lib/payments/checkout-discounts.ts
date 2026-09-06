@@ -16,8 +16,14 @@ import {
 } from '@/lib/payments/promo-codes'
 import type { PromoCodeKind } from '@/types/database'
 
-/** Default public promo code (override with FIRST_TIMER_DISCOUNT_CODE). Open to all customers. */
+/** Retired public promo — kept only so old links can be rejected cleanly. */
 export const DEFAULT_FIRST_TIMER_DISCOUNT_CODE = 'WELCOME60'
+
+const RETIRED_PUBLIC_DISCOUNT_CODES = new Set(['WELCOME60'])
+
+export function isRetiredPublicDiscountCode(raw: string | null | undefined): boolean {
+  return RETIRED_PUBLIC_DISCOUNT_CODES.has(normalizeDiscountCode(raw))
+}
 
 type FirstTimerPlanSlug = CoachingPlanSlug
 
@@ -329,6 +335,10 @@ export async function resolveCheckoutPricing(input: {
 
   const listAmountPaise = plan.amountPaise
   const code = normalizeDiscountCode(input.discountCode)
+
+  if (isRetiredPublicDiscountCode(code)) {
+    return { ok: false, error: 'This code is no longer valid.', status: 400 }
+  }
 
   if (!code) {
     return {
