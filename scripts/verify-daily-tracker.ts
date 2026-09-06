@@ -995,6 +995,125 @@ Fish curry and sabzi`,
   )
 }
 
+{
+  const timeFirstPlan: Plan = {
+    ...planV1,
+    nutrition_plan: `DAY 1 — MONDAY
+
+9:00 AM – BREAKFAST
+4 whole eggs scrambled
+2 slices bread
+
+11:00 AM – MID-MORNING
+250ml milk
+
+1:00 PM – LUNCH
+3 rotis and chicken
+
+4:00 PM – EVENING SNACK
+2 boiled eggs
+
+6:00 PM – POST-WORKOUT
+2 bananas
+
+8:00 PM – DINNER
+Rice, dal, and chicken
+
+10:00 PM – BEFORE BED
+250ml milk
+
+5:30–7:00 AM – Workout
+Do not log this as a meal
+
+DAY 2 — TUESDAY
+
+9:00 AM — BREAKFAST
+Poha and curd
+
+1:30 PM — LUNCH
+Rice and dal`,
+  }
+  const timeSnap = buildTrackerSnapshot(timeFirstPlan)
+  const monday = timeSnap.items.filter((i) => i.type === 'meal' && i.dietDay === 'monday')
+  const tuesday = timeSnap.items.filter((i) => i.type === 'meal' && i.dietDay === 'tuesday')
+  const mondayTitles = monday.map((i) => (i.type === 'meal' ? i.title : '')).join(', ')
+  assert(
+    `time-first headers split Monday into meals (${mondayTitles})`,
+    monday.length >= 6 &&
+      monday.some((i) => i.type === 'meal' && /breakfast/i.test(i.title) && /eggs/i.test(i.foods)) &&
+      monday.some((i) => i.type === 'meal' && /lunch/i.test(i.title) && /roti/i.test(i.foods)) &&
+      monday.some((i) => i.type === 'meal' && /dinner/i.test(i.title) && /dal/i.test(i.foods)) &&
+      monday.some((i) => i.type === 'meal' && /before bed/i.test(i.title) && /milk/i.test(i.foods))
+  )
+  assert('time-first Tuesday has breakfast + lunch', tuesday.length >= 2)
+  assert(
+    'workout time block is not a meal',
+    !monday.some((i) => i.type === 'meal' && /workout/i.test(i.title) && !/pre|post/i.test(i.title))
+  )
+}
+
+{
+  const numberedPlan: Plan = {
+    ...planV1,
+    nutrition_plan: `DAY 1 — MONDAY
+
+MEAL 1 — BREAKFAST
+Oats with whey
+
+MEAL 2 — LUNCH
+Dal + roti + sabzi
+
+MEAL 3 — EVENING / PRE-WORKOUT
+Moong dal chilla
+
+MEAL 4 — DINNER
+Soya and salad`,
+  }
+  const numberedSnap = buildTrackerSnapshot(numberedPlan)
+  const numbered = numberedSnap.items.filter((i) => i.type === 'meal')
+  const titles = numbered.map((i) => (i.type === 'meal' ? i.title : '')).join(', ')
+  assert(
+    `MEAL N headers split one day (${titles})`,
+    numbered.length >= 4 &&
+      numbered.some((i) => i.type === 'meal' && /breakfast/i.test(i.title) && /oats/i.test(i.foods)) &&
+      numbered.some((i) => i.type === 'meal' && /lunch/i.test(i.title) && /dal/i.test(i.foods)) &&
+      numbered.some((i) => i.type === 'meal' && /dinner/i.test(i.title) && /soya/i.test(i.foods))
+  )
+}
+
+{
+  const dashTimePlan: Plan = {
+    ...planV1,
+    nutrition_plan: `DAY 1
+
+Breakfast — Around 8:00 AM
+3 whole eggs scrambled
+2 medium rotis
+
+Lunch — Around 1:00 PM
+2 rotis and dal
+
+Evening Snack — Around 5:00 PM / Post Workout
+1 protein bar
+
+Dinner — Around 8:30 PM
+150g grilled chicken
+
+Before Sleep
+200ml milk and dry fruits`,
+  }
+  const dashSnap = buildTrackerSnapshot(dashTimePlan)
+  const dashMeals = dashSnap.items.filter((i) => i.type === 'meal')
+  const dashTitles = dashMeals.map((i) => (i.type === 'meal' ? i.title : '')).join(', ')
+  assert(
+    `dash times and Before Sleep split the day (${dashTitles})`,
+    dashMeals.length >= 5 &&
+      dashMeals.some((i) => i.type === 'meal' && /breakfast/i.test(i.title) && /eggs/i.test(i.foods)) &&
+      dashMeals.some((i) => i.type === 'meal' && /dinner/i.test(i.title) && /chicken/i.test(i.foods)) &&
+      dashMeals.some((i) => i.type === 'meal' && /before sleep/i.test(i.title) && /milk/i.test(i.foods))
+  )
+}
+
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)
   process.exit(1)

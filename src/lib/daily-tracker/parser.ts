@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 15
+export const TRACKER_PARSER_VERSION = 16
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -149,7 +149,10 @@ function stripMarkdownDecorators(value: string): string {
 }
 
 const MEAL_NAME_PATTERN =
-  'breakfast|lunch|dinner|snack|late snack|evening snack|mid[- ]?morning|morning meal|evening meal|pre[- ]?workout|post[- ]?workout|meal'
+  'late snack|evening snack|morning meal|evening meal|pre[- ]?workout(?:\\s+meal)?|post[- ]?workout(?:\\s+meal)?|before(?:\\s+bed|\\s+sleep)|mid[- ]?morning|bedtime|breakfast|lunch|dinner|snack|evening|meal'
+
+const CLOCK_TIME = String.raw`\d{1,2}(?::\d{2})?\s*(?:am|pm)?`
+const CLOCK_RANGE = String.raw`${CLOCK_TIME}(?:\s*[–—-]\s*${CLOCK_TIME})?`
 
 const DAY_BLOCK_SPLIT =
   /\n(?=(?:\*{0,2}|#{1,3}\s*)?(?:meal:\s*)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\b)/i
@@ -158,7 +161,7 @@ const DAY_HEADER_LINE =
   /^(?:meal:\s*)?(?:(day\s*\d+)|(monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b(?:\s*[(\[–—:-]+\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday))?/i
 
 const MEAL_HEADER_LINE = new RegExp(
-  `^(?:\\*{0,2}|#{1,3}\\s*)?(?:[A-Za-z][A-Za-z-]*\\s+){0,4}(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\)|\\s+((?:around|at|@)\\s+[^:]+))?\\s*:?\\s*\\*{0,2}\\s*$`,
+  `^(?:\\*{0,2}|#{1,3}\\s*)?(?:[A-Za-z][A-Za-z-]*\\s+){0,4}(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\)|\\s*[–—-]\\s+(.+)|\\s+((?:around|at|@)\\s+[^:]+))?\\s*:?\\s*\\*{0,2}\\s*$`,
   'i'
 )
 
@@ -166,6 +169,107 @@ const MEAL_INLINE_LINE = new RegExp(
   `^(?:\\*{0,2}|#{1,3}\\s*)?(?:[A-Za-z][A-Za-z-]*\\s+){0,4}(${MEAL_NAME_PATTERN})(?:\\s*\\(([^)]*)\\)|\\s+((?:around|at|@)\\s+[^:]+))?\\s*:\\s*(.+)`,
   'i'
 )
+
+const MEAL_NUMBERED_LINE = new RegExp(
+  `^meal\\s*\\d+\\s*[–—:\\-]\\s*(.+?)\\s*$`,
+  'i'
+)
+
+const MEAL_TIME_FIRST_LINE = new RegExp(
+  `^(${CLOCK_RANGE})\\s*[–—:\\-]\\s+(.+?)\\s*$`,
+  'i'
+)
+
+const MEAL_NAME_MATCH = new RegExp(MEAL_NAME_PATTERN, 'i')
+
+const NON_MEAL_HEADER =
+  /^(option|choose|daily\s+total|daily\s+target|macros?|calories|protein|carbs|fat|note|how to|diet tips|calorie-fill)\b/i
+
+function extractNamedMeal(text: string): string | null {
+  const match = text.match(MEAL_NAME_MATCH)
+  return match?.[0]?.trim() ?? null
+}
+
+function isWorkoutOnlyLabel(text: string): boolean {
+  return /\bworkout\b/i.test(text) && !/\b(?:pre|post)[- ]?workout\b/i.test(text)
+}
+
+function looksLikeMealTime(value: string | undefined): boolean {
+  if (!value) return false
+  const text = value.replace(/\s+/g, ' ').trim()
+  if (/^(?:around|at|@)\b/i.test(text)) return true
+  return new RegExp(`^${CLOCK_RANGE}\\b`, 'i').test(text)
+}
+
+/** Breakfast / Meal 1 / 9:00 AM – Lunch headers used in coach-typed plans. */
+function matchMealHeader(raw: string): { name: string; mealTime?: string } | null {
+  const trimmed = stripMarkdownDecorators(raw.trim())
+  if (!trimmed || DAY_HEADER_LINE.test(trimmed) || NON_MEAL_HEADER.test(trimmed)) return null
+
+  const numbered = trimmed.match(MEAL_NUMBERED_LINE)
+  if (numbered) {
+    const rest = numbered[1]!.trim()
+    if (isWorkoutOnlyLabel(rest)) return null
+    return {
+      name: extractNamedMeal(rest) ?? (rest.replace(/\s*[–—/:].*$/, '').trim() || rest),
+      mealTime: rest.match(new RegExp(CLOCK_RANGE, 'i'))?.[0]?.trim(),
+    }
+  }
+
+  const timeFirst = trimmed.match(MEAL_TIME_FIRST_LINE)
+  if (timeFirst) {
+    const rest = timeFirst[2]!.trim()
+    if (isWorkoutOnlyLabel(rest) || (!extractNamedMeal(rest) && !/^meal\b/i.test(rest))) return null
+    return {
+      name: extractNamedMeal(rest) ?? rest,
+      mealTime: timeFirst[1]!.replace(/\s+/g, ' ').trim(),
+    }
+  }
+
+  const match = trimmed.match(MEAL_HEADER_LINE)
+  if (!match) return null
+  if (isWorkoutOnlyLabel(trimmed)) return null
+  const dashTime = match[3]?.trim()
+  if (dashTime && !looksLikeMealTime(dashTime)) return null
+  const mealTime = (match[2] ?? dashTime ?? match[4])?.trim()
+  return { name: match[1]!, mealTime }
+}
+
+function resolveMealPeriod(name: string): TrackerPeriod {
+  const key = name.toLowerCase().replace(/\s+/g, ' ').trim()
+  const mapped: Record<string, TrackerPeriod> = {
+    breakfast: 'morning',
+    'morning meal': 'morning',
+    'mid-morning': 'morning',
+    'mid morning': 'morning',
+    'pre-workout': 'morning',
+    'pre workout': 'morning',
+    'pre-workout meal': 'morning',
+    'pre workout meal': 'morning',
+    lunch: 'lunch',
+    snack: 'afternoon',
+    meal: 'lunch',
+    evening: 'evening',
+    'evening snack': 'evening',
+    'late snack': 'night',
+    dinner: 'evening',
+    'evening meal': 'evening',
+    'post-workout': 'evening',
+    'post workout': 'evening',
+    'post-workout meal': 'evening',
+    'post workout meal': 'evening',
+    'before bed': 'night',
+    'before sleep': 'night',
+    bedtime: 'night',
+  }
+  if (mapped[key]) return mapped[key]
+  if (/breakfast|morning|pre[- ]?workout/.test(key)) return 'morning'
+  if (/lunch/.test(key)) return 'lunch'
+  if (/dinner|evening|post[- ]?workout/.test(key)) return 'evening'
+  if (/bed|sleep|late|night/.test(key)) return 'night'
+  if (/snack/.test(key)) return 'afternoon'
+  return 'lunch'
+}
 
 function capitalizeLabel(value: string): string {
   return value.replace(/\b\w/g, (c) => c.toUpperCase())
@@ -202,22 +306,19 @@ function parseMealsInDay(
   if (!dietBody.trim()) return []
   const lines = dietBody.replace(/\r\n/g, '\n').split('\n')
   const meals: TrackerMealItem[] = []
-  const periodMap: Record<string, TrackerPeriod> = {
-    breakfast: 'morning',
-    'morning meal': 'morning',
-    'mid-morning': 'morning',
-    'mid morning': 'morning',
-    'pre-workout': 'morning',
-    'pre workout': 'morning',
-    lunch: 'lunch',
-    snack: 'afternoon',
-    meal: 'lunch',
-    'evening snack': 'evening',
-    'late snack': 'night',
-    dinner: 'evening',
-    'evening meal': 'evening',
-    'post-workout': 'evening',
-    'post workout': 'evening',
+  const usedIds = new Set<string>()
+
+  const mealId = (name: string) => {
+    const base = `meal-${dayKey}-${slug(name) || 'meal'}`
+    if (!usedIds.has(base)) {
+      usedIds.add(base)
+      return base
+    }
+    let n = 2
+    while (usedIds.has(`${base}-${n}`)) n++
+    const id = `${base}-${n}`
+    usedIds.add(id)
+    return id
   }
 
   let current: { name: string; mealTime?: string; lines: string[] } | null = null
@@ -225,11 +326,10 @@ function parseMealsInDay(
     if (!current) return
     const foods = current.lines.join('\n').trim()
     if (!foods) return
-    const key = current.name.toLowerCase()
     meals.push({
-      id: `meal-${dayKey}-${slug(current.name)}`,
+      id: mealId(current.name),
       type: 'meal',
-      period: periodMap[key] ?? 'lunch',
+      period: resolveMealPeriod(current.name),
       icon: '🥗',
       title: capitalizeLabel(current.name),
       foods,
@@ -243,12 +343,12 @@ function parseMealsInDay(
 
   for (const line of lines) {
     const trimmed = stripMarkdownDecorators(line.trim())
-    const match = trimmed.match(MEAL_HEADER_LINE) ?? line.trim().match(MEAL_HEADER_LINE)
-    if (match) {
+    const header = matchMealHeader(trimmed) ?? matchMealHeader(line.trim())
+    if (header) {
       flush()
       current = {
-        name: match[1]!,
-        mealTime: (match[2] ?? match[3])?.trim(),
+        name: header.name,
+        mealTime: header.mealTime,
         lines: [],
       }
       continue
@@ -256,14 +356,13 @@ function parseMealsInDay(
     const inline = trimmed.match(MEAL_INLINE_LINE)
     if (inline) {
       flush()
-      const mealKey = inline[1]!.toLowerCase()
       const foods = (inline[4] ?? '').trim()
       meals.push(
         enrichMeal(
           {
-            id: `meal-${dayKey}-${slug(inline[1]!)}`,
+            id: mealId(inline[1]!),
             type: 'meal',
-            period: periodMap[mealKey] ?? 'lunch',
+            period: resolveMealPeriod(inline[1]!),
             icon: '🥗',
             title: capitalizeLabel(inline[1]!),
             foods,
