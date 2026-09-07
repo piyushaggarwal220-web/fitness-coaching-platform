@@ -15,7 +15,7 @@ import {
 import { formatMidWeekCheckinChatMessage } from '@/lib/checkin-chat'
 import { postCheckinToCoachChat } from '@/lib/coach-chat'
 import { computeAutoReplyAt } from '@/lib/checkin-auto-reply-schedule'
-import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
+import { coachRequiresManualPlanDelivery, shouldScheduleCheckinAutoReply } from '@/lib/coach-delivery-policy'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -231,7 +231,6 @@ export async function POST(request: Request) {
     }
 
     const dueDateStr = scheduled.dueDate.toISOString().slice(0, 10)
-    const manualPlanDelivery = coachRequiresManualPlanDelivery(profile.coach_id)
     const baseRow = {
       client_id: user.id,
       coach_id: profile.coach_id,
@@ -255,10 +254,10 @@ export async function POST(request: Request) {
       training_performance: body.workout_adherence,
       pain_injuries: body.pain_injuries ?? null,
       reviewed: false,
-      // Manual-delivery coaches review every check-in themselves — no auto-reply timer.
-      auto_reply_at: manualPlanDelivery
-        ? null
-        : computeAutoReplyAt(new Date()).toISOString(),
+      // Mid-week always auto-replies. Weekly stays on the coach for manual-delivery coaches.
+      auto_reply_at: shouldScheduleCheckinAutoReply(body.checkinType, profile.coach_id)
+        ? computeAutoReplyAt(new Date()).toISOString()
+        : null,
     }
 
     let insertRow: Record<string, unknown>
@@ -412,7 +411,8 @@ export async function POST(request: Request) {
     if (body.checkinType === 'weekly') {
       const planSlug = await fetchCapturedPlanSlug(user.id)
       const autoUpdate =
-        shouldAutoGenerateWeeklyPlanDraft(planSlug, scheduled.coachingWeek) && !manualPlanDelivery
+        shouldAutoGenerateWeeklyPlanDraft(planSlug, scheduled.coachingWeek) &&
+        !coachRequiresManualPlanDelivery(profile.coach_id)
 
       if (autoUpdate) {
         // Mark in-flight before the response returns so coaches see Generating immediately.

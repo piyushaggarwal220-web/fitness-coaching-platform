@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {
   coachAcceptsAutoAssignment,
   coachRequiresManualPlanDelivery,
+  shouldScheduleCheckinAutoReply,
 } from '../src/lib/coach-delivery-policy'
 import { isTrialClientHiddenFromCoaches } from '../src/lib/coach-roster-visibility'
 
@@ -42,5 +43,9 @@ assert.equal(coachAcceptsAutoAssignment(RAKSHIT_COACH_ID), true)
 assert.equal(coachAcceptsAutoAssignment(null), false)
 assert.equal(coachRequiresManualPlanDelivery(PIYUSH_COACH_ID), true)
 assert.equal(coachRequiresManualPlanDelivery(RAKSHIT_COACH_ID), true)
+assert.equal(shouldScheduleCheckinAutoReply('mid_week', PIYUSH_COACH_ID), true)
+assert.equal(shouldScheduleCheckinAutoReply('mid_week', RAKSHIT_COACH_ID), true)
+assert.equal(shouldScheduleCheckinAutoReply('weekly', PIYUSH_COACH_ID), false)
+assert.equal(shouldScheduleCheckinAutoReply('weekly', RAKSHIT_COACH_ID), false)
 
-console.log('✓ trial clients stay hidden from coaches; both coaches send plans by hand; Rakshit still takes auto-assign')
+console.log('✓ trial clients stay hidden; weekly plans are manual; mid-week auto-replies for both coaches')

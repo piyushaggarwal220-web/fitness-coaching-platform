@@ -3,7 +3,7 @@ import type { OnboardingProfile } from '@/types/database'
 const PIYUSH_COACH_ID = 'fde68466-fb3e-4a24-a5f2-97a60a363690'
 const RAKSHIT_COACH_ID = 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a'
 
-/** Coaches whose clients never receive auto-generated, auto-replied, or auto-published plans. */
+/** Coaches who send weekly plans themselves. Mid-week check-ins still auto-reply. */
 const MANUAL_PLAN_DELIVERY_COACH_IDS = new Set([PIYUSH_COACH_ID, RAKSHIT_COACH_ID])
 
 /**
@@ -32,4 +32,13 @@ export function shouldAutoEnqueueInitialPlan(
   profile: Pick<OnboardingProfile, 'coach_id'> | null | undefined
 ): boolean {
   return !clientRequiresManualPlanDelivery(profile)
+}
+
+/** Mid-week replies stay automatic for every coach. Weekly replies stay manual. */
+export function shouldScheduleCheckinAutoReply(
+  checkinType: 'mid_week' | 'weekly',
+  coachId: string | null | undefined
+): boolean {
+  if (checkinType === 'mid_week') return true
+  return !coachRequiresManualPlanDelivery(coachId)
 }
