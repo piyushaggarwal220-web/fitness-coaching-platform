@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+/** Matches route maxDuration (300s) plus a short buffer for the completion log. */
+const GENERATING_STALE_MS = 6 * 60 * 1000
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   const {
@@ -50,14 +53,27 @@ export async function GET(request: NextRequest) {
   }
 
   if (row.action === 'coach_section_edit_started' || row.validation_result === 'started') {
+    const startedAt = Date.parse(row.created_at)
+    if (Number.isFinite(startedAt) && Date.now() - startedAt > GENERATING_STALE_MS) {
+      return NextResponse.json({
+        status: 'failed',
+        error: 'The rewrite timed out in the background. Try again.',
+        completedAt: row.created_at,
+      })
+    }
     return NextResponse.json({ status: 'generating', startedAt: row.created_at })
   }
   if (!row.success) {
-    return NextResponse.json({ status: 'failed', error: output.error ?? 'AI rewrite failed' })
+    return NextResponse.json({
+      status: 'failed',
+      error: output.error ?? 'AI rewrite failed',
+      completedAt: row.created_at,
+    })
   }
   return NextResponse.json({
     status: 'ready',
     revisedText: output.revisedText ?? '',
     summary: output.summary ?? null,
+    completedAt: row.created_at,
   })
 }

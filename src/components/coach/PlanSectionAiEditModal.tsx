@@ -1,11 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GenerationStatus } from '@/components/coach/ai-actions/shared'
 import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
 import { Button } from '@/components/ui/Button'
 import { colors, radius, spacing } from '@/lib/coach-theme'
 import type { PlanSectionKind } from '@/lib/ai/edit-plan-section'
+
+const POLL_INTERVAL_MS = 4000
+const POLL_BUDGET_MS = 4 * 60 * 1000
+
+type SectionEditStatus = {
+  status?: string
+  revisedText?: string
+  summary?: string
+  error?: string
+  startedAt?: string
+  completedAt?: string
+}
 
 type Props = {
   section: PlanSectionKind
@@ -14,6 +26,23 @@ type Props = {
   open: boolean
   onClose: () => void
   onApply: (revisedText: string) => void
+}
+
+async function fetchSectionEditStatus(
+  clientId: string,
+  section: PlanSectionKind
+): Promise<SectionEditStatus> {
+  const poll = await fetch(
+    `/api/coach/edit-plan-section/status?clientId=${encodeURIComponent(clientId)}&section=${section}`
+  )
+  return (await poll.json()) as SectionEditStatus
+}
+
+function isFreshResult(iso: string | undefined, queuedAt: number | null): boolean {
+  if (!queuedAt) return true
+  if (!iso) return false
+  const at = Date.parse(iso)
+  return Number.isFinite(at) && at >= queuedAt - 2000
 }
 
 export function PlanSectionAiEditModal({
@@ -29,34 +58,92 @@ export function PlanSectionAiEditModal({
   const [status, setStatus] = useState<string | null>(null)
   const [statusVariant, setStatusVariant] = useState<'loading' | 'success' | 'error'>('loading')
   const [generating, setGenerating] = useState(false)
+  const [queueNonce, setQueueNonce] = useState(0)
+  const queuedAtRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    const load = async () => {
-      const poll = await fetch(
-        `/api/coach/edit-plan-section/status?clientId=${encodeURIComponent(clientId)}&section=${section}`
-      )
-      const data = (await poll.json()) as {
-        status?: string
-        revisedText?: string
-        summary?: string
+
+    const applyReady = (data: SectionEditStatus) => {
+      setRevisedText(data.revisedText ?? null)
+      setStatusVariant('success')
+      setStatus(data.summary ?? 'Background draft ready — review and apply.')
+      setGenerating(false)
+      queuedAtRef.current = null
+    }
+
+    const applyFailed = (message: string) => {
+      setStatusVariant('error')
+      setStatus(message)
+      setGenerating(false)
+      queuedAtRef.current = null
+    }
+
+    const pollUntilSettled = async () => {
+      const started = Date.now()
+      while (!cancelled && Date.now() - started < POLL_BUDGET_MS) {
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
+        if (cancelled) return
+        let data: SectionEditStatus
+        try {
+          data = await fetchSectionEditStatus(clientId, section)
+        } catch {
+          continue
+        }
+        if (cancelled) return
+        const queuedAt = queuedAtRef.current
+        if (data.status === 'ready' && data.revisedText && isFreshResult(data.completedAt, queuedAt)) {
+          applyReady(data)
+          return
+        }
+        if (data.status === 'failed' && isFreshResult(data.completedAt, queuedAt)) {
+          applyFailed(data.error ?? 'AI rewrite failed')
+          return
+        }
       }
-      if (cancelled) return
-      if (data.status === 'ready' && data.revisedText) {
-        setRevisedText(data.revisedText)
+      if (!cancelled) {
+        setGenerating(false)
         setStatusVariant('success')
-        setStatus(data.summary ?? 'Background draft ready — review and apply.')
-      } else if (data.status === 'generating') {
-        setStatusVariant('loading')
-        setStatus('A rewrite is still running in the background…')
+        setStatus(
+          'Still generating in the background. Reopen this editor in a few minutes and the draft will be here.'
+        )
       }
     }
-    void load()
+
+    const boot = async () => {
+      try {
+        const data = await fetchSectionEditStatus(clientId, section)
+        if (cancelled) return
+        const queuedAt = queuedAtRef.current
+        if (data.status === 'ready' && data.revisedText && isFreshResult(data.completedAt, queuedAt)) {
+          applyReady(data)
+          return
+        }
+        if (data.status === 'failed' && isFreshResult(data.completedAt, queuedAt)) {
+          applyFailed(data.error ?? 'Previous AI rewrite failed')
+          return
+        }
+        if (data.status === 'generating' || queuedAt) {
+          setGenerating(true)
+          setStatusVariant('loading')
+          setStatus(
+            data.status === 'generating'
+              ? 'A rewrite is still running in the background. You can leave this page.'
+              : `Regenerating ${section === 'nutrition' ? 'diet' : 'workout'} with AI in the background. You can leave this page.`
+          )
+          await pollUntilSettled()
+        }
+      } catch {
+        // Reopen should still be usable if status cannot be loaded.
+      }
+    }
+
+    void boot()
     return () => {
       cancelled = true
     }
-  }, [open, clientId, section])
+  }, [open, clientId, section, queueNonce])
 
   if (!open) return null
 
@@ -86,6 +173,7 @@ export function PlanSectionAiEditModal({
     setStatusVariant('loading')
     setStatus(`Regenerating ${label} with AI in the background. You can leave this page.`)
     setRevisedText(null)
+    queuedAtRef.current = Date.now()
 
     try {
       const res = await fetch('/api/coach/edit-plan-section', {
@@ -105,31 +193,10 @@ export function PlanSectionAiEditModal({
         throw new Error(queued.error ?? 'AI rewrite failed')
       }
 
-      const started = Date.now()
-      while (Date.now() - started < 4 * 60 * 1000) {
-        await new Promise((resolve) => setTimeout(resolve, 4000))
-        const poll = await fetch(
-          `/api/coach/edit-plan-section/status?clientId=${encodeURIComponent(clientId)}&section=${section}`
-        )
-        const data = (await poll.json()) as {
-          status?: string
-          revisedText?: string
-          summary?: string
-          error?: string
-        }
-        if (data.status === 'ready' && data.revisedText) {
-          setRevisedText(data.revisedText)
-          setStatusVariant('success')
-          setStatus(data.summary ?? 'Draft ready — review and apply.')
-          return
-        }
-        if (data.status === 'failed') {
-          throw new Error(data.error ?? 'AI rewrite failed')
-        }
-      }
-      setStatusVariant('success')
-      setStatus('Still generating in the background. Reopen this editor in a few minutes and the draft will be here.')
+      setQueueNonce((n) => n + 1)
     } catch (err) {
+      setGenerating(false)
+      queuedAtRef.current = null
       setStatusVariant('error')
       const raw = err instanceof Error ? err.message : 'AI rewrite failed'
       const dropped =
@@ -138,11 +205,9 @@ export function PlanSectionAiEditModal({
         )
       setStatus(
         dropped
-          ? 'The phone browser dropped the connection before the rewrite finished. This edit rewrites the full week and can take a few minutes. Wait, then tap Regenerate again — or try from a computer.'
+          ? 'The phone browser dropped the connection before the rewrite could start. Wait a moment and tap Regenerate again — generation only continues in the background after it has been queued.'
           : raw
       )
-    } finally {
-      setGenerating(false)
     }
   }
 
@@ -227,8 +292,8 @@ export function PlanSectionAiEditModal({
               Apply to editor
             </Button>
           )}
-          <Button variant="ghost" disabled={generating} onClick={resetAndClose}>
-            Cancel
+          <Button variant="ghost" onClick={resetAndClose}>
+            {generating ? 'Leave — keep generating' : 'Cancel'}
           </Button>
         </div>
 
