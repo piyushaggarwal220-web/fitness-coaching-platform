@@ -80,7 +80,8 @@ assert(
 assert(
   'edit-plan-section uses full plan token ceiling',
   editSrc.includes('LIMITS.MAX_SECTION_EDIT_TOKENS') &&
-    editSrc.includes('MODELS.CLAUDE_SONNET') &&
+    editSrc.includes('MODELS.GPT_TERRA') &&
+    editSrc.includes('MODELS.GPT_LUNA') &&
     editSrc.includes("stopReason === 'max_tokens'")
 )
 

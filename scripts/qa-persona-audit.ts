@@ -396,7 +396,7 @@ function buildComparisonReport(
 async function main(): Promise<void> {
   const force = process.env.QA_FORCE === '1'
   const filter = process.env.QA_FILTER?.trim()
-  const provider = process.env.AI_PLAN_PROVIDER ?? 'claude'
+  const provider = process.env.AI_PLAN_PROVIDER ?? 'openai'
 
   await mkdir(OUT_DIR, { recursive: true })
 
@@ -418,8 +418,8 @@ async function main(): Promise<void> {
   console.log(`Personas: ${personas.length} | Cases: ${cases.length}`)
   console.log(`Output: ${OUT_DIR}\n`)
 
-  if (provider !== 'mock' && !process.env.ANTHROPIC_API_KEY?.trim()) {
-    console.error('ANTHROPIC_API_KEY required for live QA audit.')
+  if (provider !== 'mock' && !process.env.OPENAI_API_KEY?.trim() && !process.env.ANTHROPIC_API_KEY?.trim()) {
+    console.error('OPENAI_API_KEY (or ANTHROPIC_API_KEY for rollback) required for live QA audit.')
     process.exit(1)
   }
 

@@ -391,7 +391,7 @@ assert(bmi > 0, 'complexity inputs invalid')
 results.complexityEngine = true
 
 // generate-plan API (mock if no anthropic key to avoid cost - still tests pipeline)
-const provider = process.env.AI_PLAN_PROVIDER ?? 'claude'
+const provider = process.env.AI_PLAN_PROVIDER ?? 'openai'
 const genRes = await fetch(`${BASE}/api/coach/generate-plan`, {
   method: 'POST',
   headers: {

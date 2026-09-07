@@ -1,27 +1,35 @@
 /**
- * Central AI configuration — single source of truth for models, defaults, and token limits.
- * To add GPT or Gemini later, extend MODELS and DEFAULTS here; provider modules read from this file.
+ * Central AI configuration — models, defaults, and token limits.
+ * Production provider is OpenAI. Override IDs via OPENAI_MODEL_* env vars.
  */
 
-/** Pinned snapshot defaults — see https://platform.claude.com/docs/en/about-claude/models/overview */
-const DEFAULT_CLAUDE_HAIKU = 'claude-haiku-4-5-20251001'
-const DEFAULT_CLAUDE_SONNET = 'claude-sonnet-4-5-20250929'
+const DEFAULT_GPT_TERRA = 'gpt-5.6-terra'
+const DEFAULT_GPT_LUNA = 'gpt-5.6-luna'
+const DEFAULT_GPT_ASTRA = 'gpt-6-astra'
 
 function readModelEnv(name: string, fallback: string): string {
   const value = process.env[name]?.trim()
   return value || fallback
 }
 
-/** Anthropic Claude model identifiers. Override via ANTHROPIC_MODEL_HAIKU / ANTHROPIC_MODEL_SONNET. */
+const INITIAL_PLAN_ACTIONS = new Set([
+  'initial_diet',
+  'initial_workout',
+  'initial_cardio',
+  'initial_supplements',
+])
+
+/** OpenAI model identifiers for Lurvox coaching roles. */
 export const MODELS = {
-  CLAUDE_HAIKU: readModelEnv('ANTHROPIC_MODEL_HAIKU', DEFAULT_CLAUDE_HAIKU),
-  CLAUDE_SONNET: readModelEnv('ANTHROPIC_MODEL_SONNET', DEFAULT_CLAUDE_SONNET),
+  GPT_TERRA: readModelEnv('OPENAI_MODEL_TERRA', DEFAULT_GPT_TERRA),
+  GPT_LUNA: readModelEnv('OPENAI_MODEL_LUNA', DEFAULT_GPT_LUNA),
+  GPT_ASTRA: readModelEnv('OPENAI_MODEL_ASTRA', DEFAULT_GPT_ASTRA),
 }
 
 /** Default generation settings applied when callers omit optional params. */
 export const DEFAULTS = {
-  DEFAULT_MODEL: readModelEnv('ANTHROPIC_DEFAULT_MODEL', MODELS.CLAUDE_SONNET),
-  FALLBACK_MODEL: readModelEnv('ANTHROPIC_FALLBACK_MODEL', MODELS.CLAUDE_HAIKU),
+  DEFAULT_MODEL: readModelEnv('OPENAI_DEFAULT_MODEL', MODELS.GPT_TERRA),
+  FALLBACK_MODEL: readModelEnv('OPENAI_FALLBACK_MODEL', MODELS.GPT_LUNA),
   DEFAULT_MAX_TOKENS: 1024,
   DEFAULT_TEMPERATURE: 0.7,
 } as const
@@ -31,8 +39,6 @@ export const LIMITS = {
   /**
    * Full diet/workout weeks (every day written out, no cross-day shortcuts) need
    * the model’s full output ceiling — lower values produced truncated / half plans.
-   * Claude Sonnet max output is 64k. Use the full ceiling so diet/workout weeks
-   * are complete and higher quality, not truncated half-plans.
    */
   MAX_PLAN_TOKENS: 64000,
   /** Cardio / supplements / coach notes — shorter outputs, still roomy enough to finish. */
@@ -48,8 +54,8 @@ export const LIMITS = {
 /** Slightly lower temperature for diet/workout — fewer invented mistakes. */
 export const PLAN_GENERATION_TEMPERATURE = 0.4
 
-/** Actions that are safe on Haiku (lower stakes than diet/workout). */
-const HAIKU_PLAN_ACTIONS = new Set([
+/** Actions that are support sections (cardio / supplements). */
+const SUPPORT_PLAN_ACTIONS = new Set([
   'initial_cardio',
   'initial_supplements',
   'review_update_cardio',
@@ -57,19 +63,37 @@ const HAIKU_PLAN_ACTIONS = new Set([
 ])
 
 export function isSupportPlanAction(actionId: string | null | undefined): boolean {
-  return Boolean(actionId && HAIKU_PLAN_ACTIONS.has(actionId))
+  return Boolean(actionId && SUPPORT_PLAN_ACTIONS.has(actionId))
+}
+
+export function isInitialPlanAction(actionId: string | null | undefined): boolean {
+  return Boolean(actionId && INITIAL_PLAN_ACTIONS.has(actionId))
+}
+
+function hasHighRiskMedical(medicalNotes: string | null | undefined): boolean {
+  const text = medicalNotes?.trim()
+  if (!text) return false
+  return !/^(none|n\/a|na|no|nil|-)$/i.test(text)
 }
 
 /**
- * Prefer Haiku for cardio/supplements; keep complexity routing for diet/workout.
- * Diet + workout quality stays on Sonnet when complexity is MEDIUM/HIGH.
+ * Terra = create (initial plans + remakes).
+ * Luna = maintain (weekly updates, minor edits, mid-week).
+ * Astra = hard cases (stuck / very complex), never medical/high-risk.
  */
 export function resolvePlanGenerationModel(input: {
   actionId?: string | null
   recommendedModel: string
+  medicalNotes?: string | null
 }): string {
+  if (isInitialPlanAction(input.actionId) || !input.actionId) {
+    return MODELS.GPT_TERRA
+  }
+  if (hasHighRiskMedical(input.medicalNotes)) {
+    return MODELS.GPT_LUNA
+  }
   if (isSupportPlanAction(input.actionId)) {
-    return MODELS.CLAUDE_HAIKU
+    return MODELS.GPT_LUNA
   }
   return input.recommendedModel
 }

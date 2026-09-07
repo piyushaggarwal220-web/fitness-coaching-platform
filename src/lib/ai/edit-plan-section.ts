@@ -269,9 +269,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
 
   const providerMode = getPlanProviderMode()
   const started = Date.now()
-  // Full-week section rewrites need the same model/token headroom as generation —
-  // Haiku + 2k ceilings truncated mid-week ("half plans").
-  const model = MODELS.CLAUDE_SONNET
+  const model = input.remakeFromScratch ? MODELS.GPT_TERRA : MODELS.GPT_LUNA
   const maxAttempts = providerMode === 'mock' ? 1 : 2
   let totalInputTokens = 0
   let totalOutputTokens = 0
@@ -588,7 +586,7 @@ export async function editPlanForClientChange(
 
   const providerMode = getPlanProviderMode()
   const started = Date.now()
-  const model = MODELS.CLAUDE_SONNET
+  const model = MODELS.GPT_LUNA
   const response = await callPlanProvider(providerMode, {
     systemPrompt,
     userPrompt,

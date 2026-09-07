@@ -19,15 +19,17 @@ export type PlatformHealth = {
 
 /** Read-only platform health from env/config plus AI trace metrics when available. */
 export async function getPlatformHealth(): Promise<PlatformHealth> {
-  const anthropicConfigured = Boolean(process.env.ANTHROPIC_API_KEY?.trim())
+  const openaiConfigured = Boolean(process.env.OPENAI_API_KEY?.trim())
   const providerMode = getPlanProviderMode()
   const metrics = await computeAiMetricsFromLogs()
+  const providerLabel =
+    providerMode === 'mock' ? 'mock' : providerMode === 'claude' ? 'anthropic' : 'openai'
 
   return {
-    anthropicConfigured,
-    anthropicStatus: anthropicConfigured ? 'configured' : 'not_configured',
-    aiProvider: providerMode === 'mock' ? 'mock' : 'anthropic',
-    currentModel: DEFAULTS.DEFAULT_MODEL || MODELS.CLAUDE_SONNET,
+    anthropicConfigured: openaiConfigured,
+    anthropicStatus: openaiConfigured ? 'configured' : 'not_configured',
+    aiProvider: providerLabel,
+    currentModel: DEFAULTS.DEFAULT_MODEL || MODELS.GPT_TERRA,
     lastSuccessfulGeneration: metrics.lastSuccessfulGeneration,
     averageLatencyMs: metrics.averageLatencyMs,
     aiSuccessRate: metrics.aiSuccessRate,
@@ -54,8 +56,9 @@ export function getSystemSettings(): SystemSettings {
 
   return {
     environment: process.env.NODE_ENV ?? 'development',
-    aiProvider: providerMode === 'mock' ? 'mock' : 'anthropic (claude)',
-    currentModel: DEFAULTS.DEFAULT_MODEL || MODELS.CLAUDE_SONNET,
+    aiProvider:
+      providerMode === 'mock' ? 'mock' : providerMode === 'claude' ? 'anthropic (claude)' : 'openai',
+    currentModel: DEFAULTS.DEFAULT_MODEL || MODELS.GPT_TERRA,
     featureFlags: {
       devToolkit: process.env.NODE_ENV === 'development',
       aiPlanProviderMock: providerMode === 'mock',

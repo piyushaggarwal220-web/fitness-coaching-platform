@@ -27,6 +27,13 @@ async function assertTestPlanAccess() {
     )
   }
 
+  if (getPlanProviderMode() === 'openai' && !process.env.OPENAI_API_KEY?.trim()) {
+    return NextResponse.json(
+      { success: false, error: 'OPENAI_API_KEY is not configured' },
+      { status: 500 }
+    )
+  }
+
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json(
       { success: false, error: 'SUPABASE_SERVICE_ROLE_KEY is required for AI test operations' },

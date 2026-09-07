@@ -161,7 +161,7 @@ async function main(): Promise<void> {
     if (process.env[key]?.trim()) pass(`env:${key}`)
     else fail(`env:${key}`, 'missing (required)')
   }
-  for (const key of ['NEXT_PUBLIC_APP_URL', 'ANTHROPIC_API_KEY', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET']) {
+  for (const key of ['NEXT_PUBLIC_APP_URL', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET']) {
     if (process.env[key]?.trim()) pass(`env:${key}`)
     else skip(`env:${key}`, 'not set (recommended)')
   }

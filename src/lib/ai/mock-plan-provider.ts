@@ -31,7 +31,7 @@ export function buildMockGeneratedPlan(
 
   const coachNote = coachInstructions?.trim()
     ? `Coach notes: ${coachInstructions.trim()}`
-    : 'Mock draft — replace AI_PLAN_PROVIDER=claude when ready for live generation.'
+    : 'Mock draft — set AI_PLAN_PROVIDER=openai when ready for live generation.'
 
   const days = ['Day 1 (Monday)', 'Day 2 (Tuesday)', 'Day 3 (Wednesday)', 'Day 4 (Thursday)', 'Day 5 (Friday)', 'Day 6 (Saturday)', 'Day 7 (Sunday)']
   const weeklyDiet = days

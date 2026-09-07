@@ -202,7 +202,7 @@ export default function AdminDashboardPage() {
               {health ? (
                 <div style={s.infoGrid}>
                   <HealthRow
-                    label="Anthropic Status"
+                    label="AI API"
                     value={health.anthropicStatus === 'configured' ? 'Configured' : 'Not configured'}
                   />
                   <HealthRow label="AI Provider" value={health.aiProvider} />

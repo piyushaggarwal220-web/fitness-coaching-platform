@@ -5,8 +5,11 @@
 
 import { MODELS } from '@/lib/ai/config'
 
-/** USD per 1M tokens — Anthropic list pricing (approximate; update here when rates change). */
+/** USD per 1M tokens — update here when OpenAI list rates change. */
 export const AI_PRICING_USD_PER_MILLION = {
+  luna: { input: 0.5, output: 3.0, label: 'GPT-5.6 Luna' },
+  terra: { input: 2.0, output: 12.0, label: 'GPT-5.6 Terra' },
+  astra: { input: 10.0, output: 40.0, label: 'GPT-6 Astra' },
   haiku: { input: 1.0, output: 5.0, label: 'Claude Haiku' },
   sonnet: { input: 3.0, output: 15.0, label: 'Claude Sonnet' },
   opus: { input: 15.0, output: 75.0, label: 'Claude Opus' },
@@ -22,22 +25,29 @@ export const RAZORPAY_FEE_PERCENT = 2.0
 export const USD_TO_INR = 83.5
 
 const MODEL_ALIASES: Record<string, AiPricingTier> = {
-  [MODELS.CLAUDE_HAIKU.toLowerCase()]: 'haiku',
-  [MODELS.CLAUDE_SONNET.toLowerCase()]: 'sonnet',
+  [MODELS.GPT_LUNA.toLowerCase()]: 'luna',
+  [MODELS.GPT_TERRA.toLowerCase()]: 'terra',
+  [MODELS.GPT_ASTRA.toLowerCase()]: 'astra',
+  'gpt-5.6-luna': 'luna',
+  'gpt-5.6-terra': 'terra',
+  'gpt-6-astra': 'astra',
   'claude-opus-4-6': 'opus',
   'claude-opus-4-20250514': 'opus',
   'mock-plan-v1': 'mock',
 }
 
 export function resolveModelPricingTier(model: string | null | undefined): AiPricingTier {
-  if (!model) return 'sonnet'
+  if (!model) return 'terra'
   const normalized = model.trim().toLowerCase()
   if (MODEL_ALIASES[normalized]) return MODEL_ALIASES[normalized]
+  if (normalized.includes('astra')) return 'astra'
+  if (normalized.includes('terra')) return 'terra'
+  if (normalized.includes('luna')) return 'luna'
   if (normalized.includes('opus')) return 'opus'
   if (normalized.includes('haiku')) return 'haiku'
   if (normalized.includes('mock')) return 'mock'
   if (normalized.includes('sonnet')) return 'sonnet'
-  return 'sonnet'
+  return 'terra'
 }
 
 function roundUsd(value: number): number {

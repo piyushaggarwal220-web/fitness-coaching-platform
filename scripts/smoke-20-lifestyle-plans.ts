@@ -44,7 +44,7 @@ import type { OnboardingProfile, Plan } from '../src/types/database'
 import { auditWorkout } from './audit-tracker-workout-gold'
 import { LIFESTYLE_SCENARIOS, finalSmokeScenarios, type LifestyleScenario } from './lifestyle-smoke-scenarios'
 
-process.env.AI_PLAN_PROVIDER = process.env.AI_PLAN_PROVIDER || 'claude'
+process.env.AI_PLAN_PROVIDER = process.env.AI_PLAN_PROVIDER || 'openai'
 
 type Check = { name: string; ok: boolean; detail: string }
 type ClientResult = {

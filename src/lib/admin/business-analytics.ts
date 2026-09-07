@@ -562,8 +562,8 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
       : null
 
   const platform: PlatformStatusMetrics = {
-    anthropicStatus: process.env.ANTHROPIC_API_KEY?.trim() ? 'configured' : 'not_configured',
-    currentModel: DEFAULTS.DEFAULT_MODEL || MODELS.CLAUDE_SONNET,
+    anthropicStatus: process.env.OPENAI_API_KEY?.trim() ? 'configured' : 'not_configured',
+    currentModel: DEFAULTS.DEFAULT_MODEL || MODELS.GPT_TERRA,
     lastSuccessfulGeneration: aiLogsLifetime.find((l) => l.success)?.created_at ?? null,
     generationSuccessRate: aiCosts.successRate,
     databaseStatus: purchasesRes.error || aiLogsRes.error ? 'degraded' : 'healthy',

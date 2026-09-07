@@ -5,7 +5,7 @@
  * Costs logged to ai_generation_logs (AI credits).
  */
 import { MODELS } from '@/lib/ai/config'
-import { generateClaudeResponse } from '@/lib/ai/anthropic'
+import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Checkin, OnboardingProfile } from '@/types/database'
@@ -291,12 +291,13 @@ export async function generateMidWeekAnalysis(input: {
 
   const started = Date.now()
   try {
-    const result = await generateClaudeResponse({
+    const result = await callPlanProvider(getPlanProviderMode(), {
       systemPrompt,
       userPrompt,
-      model: MODELS.CLAUDE_HAIKU,
+      model: MODELS.GPT_LUNA,
       maxTokens: 500,
       temperature: 0.55,
+      mockText: 'SUMMARY: Mock mid-week pack.\nCLIENT_REPLY: Keep training and meals consistent this week.',
     })
     const parsed = parsePackOutput(result.text)
     if (!parsed.summary && !parsed.clientReply) throw new Error('Empty mid-week analysis')
@@ -309,7 +310,7 @@ export async function generateMidWeekAnalysis(input: {
     let outputTokens = result.outputTokens
 
     if (!clientReply.trim()) {
-      const replyOnly = await generateClaudeResponse({
+      const replyOnly = await callPlanProvider(getPlanProviderMode(), {
         systemPrompt: [
           'You are a real LURVOX coach texting a client on WhatsApp.',
           'Output ONLY the client message. No headings. No markdown.',
@@ -325,9 +326,10 @@ export async function generateMidWeekAnalysis(input: {
           `HARD LIMIT: at most ${MIDWEEK_CLIENT_REPLY_MAX_WORDS} words. Aim for 30 to 40 words.`,
           'CRITICAL: zero hyphen or dash characters in the entire message.',
         ].join('\n'),
-        model: MODELS.CLAUDE_HAIKU,
+        model: MODELS.GPT_LUNA,
         maxTokens: 220,
         temperature: 0.5,
+        mockText: 'Keep meals and training consistent. Message me if anything hurts.',
       })
       clientReply = finalizeClientReply(replyOnly.text)
       retryCount += 1 + replyOnly.retryCount
@@ -367,7 +369,7 @@ export async function generateMidWeekAnalysis(input: {
       clientId: input.checkin.client_id,
       coachId: input.coachId ?? null,
       action: 'mid_week_analysis',
-      model: MODELS.CLAUDE_HAIKU,
+      model: MODELS.GPT_LUNA,
       latencyMs: Date.now() - started,
       promptTokens: null,
       completionTokens: null,

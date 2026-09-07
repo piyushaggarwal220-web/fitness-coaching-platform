@@ -89,8 +89,7 @@ export async function generateClientCoachMessage(input: {
   const response = await callPlanProvider(providerMode, {
     systemPrompt: system,
     userPrompt,
-    // Coach notes are short and template-backed — Haiku is enough.
-    model: MODELS.CLAUDE_HAIKU,
+    model: MODELS.GPT_LUNA,
     maxTokens: 1024,
     temperature: 0.4,
     mockText,

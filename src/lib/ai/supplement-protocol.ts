@@ -9,7 +9,7 @@
  * promises a specific hormone level or increase.
  */
 import { MODELS } from '@/lib/ai/config'
-import { generateClaudeResponse } from '@/lib/ai/anthropic'
+import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import { logAiGeneration } from '@/lib/ai/trace-log'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile, SupplementProtocol } from '@/types/database'
@@ -283,12 +283,13 @@ export async function generateSupplementProtocol(input: {
   const started = Date.now()
 
   try {
-    const result = await generateClaudeResponse({
+    const result = await callPlanProvider(getPlanProviderMode(), {
       systemPrompt: prompt.system,
       userPrompt: buildUserPrompt(profile, addonId),
-      model: MODELS.CLAUDE_SONNET,
+      model: MODELS.GPT_TERRA,
       maxTokens: 2000,
       temperature: 0.4,
+      mockText: 'Mock testosterone-support protocol for local testing. Follow sleep, food, and training basics. See a doctor for medical questions.',
     })
 
     const content = result.text.trim()
@@ -347,7 +348,7 @@ export async function generateSupplementProtocol(input: {
       clientId: input.clientId,
       coachId: profile.coach_id ?? null,
       action: 'supplement_protocol',
-      model: MODELS.CLAUDE_SONNET,
+      model: MODELS.GPT_TERRA,
       promptVersion: prompt.version,
       latencyMs: Date.now() - started,
       promptTokens: null,

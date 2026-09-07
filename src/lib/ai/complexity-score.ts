@@ -342,14 +342,14 @@ export function formatDisplayScore(rawScore: number): string {
   return `${toDisplayScore(rawScore)} / 100`
 }
 
-/** Route tier to the configured Claude model ID. */
+/** Route tier to the OpenAI coaching model. Astra is for hard cases only. */
 export function getRecommendedModelForTier(tier: ComplexityTier): string {
   switch (tier) {
     case 'LOW':
-      return MODELS.CLAUDE_HAIKU
     case 'MEDIUM':
+      return MODELS.GPT_LUNA
     case 'HIGH':
-      return MODELS.CLAUDE_SONNET
+      return MODELS.GPT_ASTRA
   }
 }
 

@@ -101,8 +101,10 @@ function buildStableWeekCoachNotes(profile: OnboardingProfile, checkin: Checkin)
 
 function pickPrimaryModel(sections: DraftSectionUsage[]): string | null {
   if (sections.length === 0) return null
-  const sonnet = sections.find((s) => s.model.includes('sonnet') || s.model === MODELS.CLAUDE_SONNET)
-  return sonnet?.model ?? sections[0]?.model ?? null
+  const astra = sections.find((s) => s.model.includes('astra') || s.model === MODELS.GPT_ASTRA)
+  if (astra) return astra.model
+  const terra = sections.find((s) => s.model.includes('terra') || s.model === MODELS.GPT_TERRA)
+  return terra?.model ?? sections[0]?.model ?? null
 }
 
 function dietFormFromActive(clientId: string, active: Plan): PlanFormData {

@@ -608,7 +608,7 @@ async function buildPlanPrompts(
 /**
  * Full AI plan generation pipeline.
  * Does not persist results — returns validated plan JSON only.
- * Provider selection (mock vs Claude) is isolated in plan-provider.ts.
+ * Provider selection (mock vs OpenAI) is isolated in plan-provider.ts.
  */
 export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePlanResult> {
   const providerMode = getPlanProviderMode()
@@ -624,6 +624,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
   const model = resolvePlanGenerationModel({
     actionId: input.actionId,
     recommendedModel: complexityScore.recommendedModel,
+    medicalNotes: input.profile.medical_notes,
   })
   const supportSection = isSupportPlanAction(input.actionId)
   let totalInputTokens = 0
@@ -782,7 +783,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     } catch (err) {
       if (err instanceof ClaudeResponseError) {
         const detail = err.status ? ` (HTTP ${err.status})` : ''
-        lastValidationError = `Anthropic plan generation failed${detail}: ${err.message}`
+        lastValidationError = `${providerMode === 'claude' ? 'Anthropic' : 'OpenAI'} plan generation failed${detail}: ${err.message}`
         // Transient/quota blips used to abort the whole generatePlan call even when
         // validation retries remained — retry those in this outer loop.
         if (shouldRetryProviderError(err, attempt, maxAttempts)) {
@@ -919,7 +920,8 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     }
   }
 
-  const providerLabel = providerMode === 'mock' ? 'Mock provider' : 'Anthropic'
+  const providerLabel =
+    providerMode === 'mock' ? 'Mock provider' : providerMode === 'claude' ? 'Anthropic' : 'OpenAI'
   throw new GeneratePlanError(
     formatGeneratePlanFailure(providerLabel, lastValidationError, lastRawResponse)
   )

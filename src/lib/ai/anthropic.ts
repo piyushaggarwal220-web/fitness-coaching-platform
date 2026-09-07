@@ -1,6 +1,10 @@
 import Anthropic, { APIError } from '@anthropic-ai/sdk'
 import { DEFAULTS } from '@/lib/ai/config'
 
+/** Claude IDs used only when AI_PLAN_PROVIDER=claude (rollback). */
+const CLAUDE_DEFAULT_MODEL = 'claude-sonnet-4-20250514'
+const CLAUDE_FALLBACK_MODEL = 'claude-haiku-4-5-20251001'
+
 export type GenerateClaudeResponseParams = {
   systemPrompt: string
   userPrompt: string
@@ -130,9 +134,9 @@ export async function generateClaudeResponse(
     maxRetries: 0,
   })
   const useCache = params.enablePromptCaching !== false
-  const primaryModel = params.model ?? DEFAULTS.DEFAULT_MODEL
+  const primaryModel = params.model ?? CLAUDE_DEFAULT_MODEL
   const configuredFallback = process.env.ANTHROPIC_FALLBACK_MODEL?.trim()
-  const fallbackModel = configuredFallback || DEFAULTS.FALLBACK_MODEL
+  const fallbackModel = configuredFallback || CLAUDE_FALLBACK_MODEL
   const models = fallbackModel !== primaryModel ? [primaryModel, fallbackModel] : [primaryModel]
   let retryCount = 0
   let lastError: ClaudeResponseError | null = null

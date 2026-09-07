@@ -318,17 +318,19 @@ function evaluateOutput(persona: PersonaCase, text: string): QualityCheck[] {
 }
 
 async function main(): Promise<void> {
-  const provider = process.env.AI_PLAN_PROVIDER ?? 'claude'
-  const hasKey = Boolean(process.env.ANTHROPIC_API_KEY?.trim())
+  const provider = process.env.AI_PLAN_PROVIDER ?? 'openai'
+  const hasKey = Boolean(
+    process.env.OPENAI_API_KEY?.trim() || process.env.ANTHROPIC_API_KEY?.trim()
+  )
   const outDir = path.join(process.cwd(), 'prompts', 'production', 'persona-runs')
   await mkdir(outDir, { recursive: true })
 
   console.log('=== Persona AI Output Tests ===')
   console.log(`Provider: ${provider}`)
-  console.log(`Anthropic key: ${hasKey ? 'yes' : 'no'}\n`)
+  console.log(`API key: ${hasKey ? 'yes' : 'no'}\n`)
 
   if (provider !== 'mock' && !hasKey) {
-    console.error('ANTHROPIC_API_KEY is required for live persona tests.')
+    console.error('OPENAI_API_KEY (or ANTHROPIC_API_KEY for rollback) is required for live persona tests.')
     process.exit(1)
   }
 
