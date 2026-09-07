@@ -166,6 +166,11 @@ export async function generateOpenAIResponse(
       : 2
 
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      if (/astra/i.test(model)) {
+        throw new ClaudeResponseError('gpt-6-astra is disabled for live coaching', {
+          category: 'configuration',
+        })
+      }
       try {
         const response = await client.responses.create({
           model,

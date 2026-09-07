@@ -8,7 +8,10 @@ const DEFAULT_GPT_LUNA = 'gpt-5.6-luna'
 
 function readModelEnv(name: string, fallback: string): string {
   const value = process.env[name]?.trim()
-  return value || fallback
+  if (!value) return fallback
+  // Never honor Astra or the gpt-5.6 alias (that alias is Sol, not Terra).
+  if (/astra/i.test(value) || value === 'gpt-5.6') return fallback
+  return value
 }
 
 const INITIAL_PLAN_ACTIONS = new Set([
@@ -71,7 +74,7 @@ export function isInitialPlanAction(actionId: string | null | undefined): boolea
 /**
  * Terra = create (initial plans + remakes).
  * Luna = maintain (weekly updates, minor edits, mid-week) and every other live call.
- * gpt-6-astra is not used — too expensive for diet/workout charts.
+ * gpt-6-astra is never used.
  */
 export function resolvePlanGenerationModel(input: {
   actionId?: string | null
