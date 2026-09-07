@@ -3,6 +3,7 @@ import { AUTO_REPLY_MIN_DELAY_MS } from '@/lib/checkin-auto-reply-schedule'
 import { serializeCoachResponse } from '@/lib/checkin'
 import { getCheckinTypeDisplayName } from '@/lib/checkin-schedule'
 import { postCoachCheckinFeedbackToChat } from '@/lib/coach-chat'
+import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { generateMidWeekAnalysis, loadCachedMidWeekPack } from '@/lib/ai/midweek-analysis'
@@ -106,6 +107,11 @@ export async function sendCheckinAutoReply(
   checkin: Checkin
 ): Promise<AutoReplyOutcome> {
   if (checkin.reviewed) return { status: 'skipped', reason: 'already_reviewed' }
+
+  if (coachRequiresManualPlanDelivery(checkin.coach_id)) {
+    await supabase.from('checkins').update({ auto_reply_at: null }).eq('id', checkin.id)
+    return { status: 'skipped', reason: 'manual_plan_delivery' }
+  }
 
   const submittedMs = new Date(checkin.submitted_at).getTime()
   if (

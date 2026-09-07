@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 /**
  * Auto-assign the least-loaded active coach to a client.
  * Used in development mode and after redemption/entitlement grant.
- * Manual-delivery coaches (e.g. Piyush) are never chosen here.
+ * Manual-assignment coaches (e.g. Piyush) are never chosen here.
  */
 export async function autoAssignCoachToClient(
   clientId: string,

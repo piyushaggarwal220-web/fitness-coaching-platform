@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
-import { coachAcceptsAutoAssignment } from '../src/lib/coach-delivery-policy'
+import {
+  coachAcceptsAutoAssignment,
+  coachRequiresManualPlanDelivery,
+} from '../src/lib/coach-delivery-policy'
 import { isTrialClientHiddenFromCoaches } from '../src/lib/coach-roster-visibility'
 
 const PIYUSH_COACH_ID = 'fde68466-fb3e-4a24-a5f2-97a60a363690'
@@ -37,5 +40,7 @@ assert.equal(
 assert.equal(coachAcceptsAutoAssignment(PIYUSH_COACH_ID), false)
 assert.equal(coachAcceptsAutoAssignment(RAKSHIT_COACH_ID), true)
 assert.equal(coachAcceptsAutoAssignment(null), false)
+assert.equal(coachRequiresManualPlanDelivery(PIYUSH_COACH_ID), true)
+assert.equal(coachRequiresManualPlanDelivery(RAKSHIT_COACH_ID), true)
 
-console.log('✓ trial clients stay hidden from coaches; Piyush is opt-out of auto-assign')
+console.log('✓ trial clients stay hidden from coaches; both coaches send plans by hand; Rakshit still takes auto-assign')

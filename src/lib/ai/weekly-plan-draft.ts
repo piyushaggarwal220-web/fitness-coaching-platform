@@ -1,7 +1,7 @@
 /**
  * Server-side weekly plan draft generation.
- * Triggered automatically after every weekly check-in submission.
- * Always regenerates diet + workout via AI, then stores an inactive draft.
+ * Coach Generate/Retry (and ops backfill) call this with trigger retry/manual.
+ * Auto trigger is a no-op for manual-delivery coaches.
  * Never auto-publishes and never posts the check-in into client chat.
  */
 import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
@@ -20,6 +20,7 @@ import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-act
 import { encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
 import { getNextPlanVersion } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -285,6 +286,9 @@ export async function generateWeeklyPlanDraft(input: {
   const admin = createAdminClient()
 
   if (trigger === 'auto') {
+    if (coachRequiresManualPlanDelivery(input.coachId)) {
+      return { planId: null, error: null, generationTimeMs: Date.now() - started }
+    }
     const planSlug = await fetchCapturedPlanSlug(input.clientId)
     if (!shouldAutoGenerateWeeklyPlanDraft(planSlug, input.coachingWeek)) {
       logDraftWorkflow({
