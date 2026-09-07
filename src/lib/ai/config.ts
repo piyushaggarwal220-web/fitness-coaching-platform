@@ -5,7 +5,6 @@
 
 const DEFAULT_GPT_TERRA = 'gpt-5.6-terra'
 const DEFAULT_GPT_LUNA = 'gpt-5.6-luna'
-const DEFAULT_GPT_ASTRA = 'gpt-6-astra'
 
 function readModelEnv(name: string, fallback: string): string {
   const value = process.env[name]?.trim()
@@ -23,7 +22,6 @@ const INITIAL_PLAN_ACTIONS = new Set([
 export const MODELS = {
   GPT_TERRA: readModelEnv('OPENAI_MODEL_TERRA', DEFAULT_GPT_TERRA),
   GPT_LUNA: readModelEnv('OPENAI_MODEL_LUNA', DEFAULT_GPT_LUNA),
-  GPT_ASTRA: readModelEnv('OPENAI_MODEL_ASTRA', DEFAULT_GPT_ASTRA),
 }
 
 /** Default generation settings applied when callers omit optional params. */
@@ -70,18 +68,10 @@ export function isInitialPlanAction(actionId: string | null | undefined): boolea
   return Boolean(actionId && INITIAL_PLAN_ACTIONS.has(actionId))
 }
 
-function hasHighRiskMedical(medicalNotes: string | null | undefined): boolean {
-  const text = medicalNotes?.trim()
-  if (!text) return false
-  return !/^(none|n\/a|na|no|nil|-)$/i.test(text)
-}
-
 /**
  * Terra = create (initial plans + remakes).
- * Luna = maintain (weekly updates, minor edits, mid-week) and all auto HIGH-complexity work.
- * Astra is never auto-selected: it is billed at ~$10 / $40 per 1M tokens with high
- * reasoning, and a single timed-out weekly diet+workout pass can cost several dollars.
- * Set OPENAI_ALLOW_ASTRA=1 only for an explicit stuck/complex coach job.
+ * Luna = maintain (weekly updates, minor edits, mid-week) and every other live call.
+ * gpt-6-astra is not used — too expensive for diet/workout charts.
  */
 export function resolvePlanGenerationModel(input: {
   actionId?: string | null
@@ -91,14 +81,5 @@ export function resolvePlanGenerationModel(input: {
   if (isInitialPlanAction(input.actionId) || !input.actionId) {
     return MODELS.GPT_TERRA
   }
-  if (hasHighRiskMedical(input.medicalNotes)) {
-    return MODELS.GPT_LUNA
-  }
-  if (isSupportPlanAction(input.actionId) || input.actionId.startsWith('review_update_')) {
-    return MODELS.GPT_LUNA
-  }
-  if (input.recommendedModel.includes('astra') && process.env.OPENAI_ALLOW_ASTRA?.trim() !== '1') {
-    return MODELS.GPT_LUNA
-  }
-  return input.recommendedModel
+  return MODELS.GPT_LUNA
 }

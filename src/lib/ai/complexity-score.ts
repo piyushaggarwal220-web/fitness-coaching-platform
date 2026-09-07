@@ -342,14 +342,9 @@ export function formatDisplayScore(rawScore: number): string {
   return `${toDisplayScore(rawScore)} / 100`
 }
 
-/** Route tier to the OpenAI coaching model. Astra is opt-in only — HIGH still uses Luna. */
-export function getRecommendedModelForTier(tier: ComplexityTier): string {
-  switch (tier) {
-    case 'LOW':
-    case 'MEDIUM':
-    case 'HIGH':
-      return MODELS.GPT_LUNA
-  }
+/** Complexity still scores LOW/MEDIUM/HIGH; live charts always use Luna. */
+export function getRecommendedModelForTier(_tier: ComplexityTier): string {
+  return MODELS.GPT_LUNA
 }
 
 /**

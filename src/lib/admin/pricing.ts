@@ -27,7 +27,6 @@ export const USD_TO_INR = 83.5
 const MODEL_ALIASES: Record<string, AiPricingTier> = {
   [MODELS.GPT_LUNA.toLowerCase()]: 'luna',
   [MODELS.GPT_TERRA.toLowerCase()]: 'terra',
-  [MODELS.GPT_ASTRA.toLowerCase()]: 'astra',
   'gpt-5.6-luna': 'luna',
   'gpt-5.6-terra': 'terra',
   'gpt-6-astra': 'astra',

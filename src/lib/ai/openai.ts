@@ -85,13 +85,13 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function reasoningEffort(model: string): 'medium' | 'high' {
-  return model.includes('astra') ? 'high' : 'medium'
+function reasoningEffort(_model: string): 'medium' | 'high' {
+  return 'medium'
 }
 
-/** Astra is opt-in. Auto weekly/high-complexity traffic stays on Luna. */
+/** gpt-6-astra is never called for live coaching. */
 function resolveLiveModel(model: string): string {
-  if (model.includes('astra') && process.env.OPENAI_ALLOW_ASTRA?.trim() !== '1') {
+  if (model.includes('astra')) {
     console.warn('[openai-provider] blocked gpt-6-astra; using gpt-5.6-luna')
     return MODELS.GPT_LUNA
   }
