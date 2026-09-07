@@ -5,7 +5,7 @@
  */
 import { hasClientEntitlement } from '../src/lib/entitlements'
 import { generateWeeklyPlanDraft } from '../src/lib/ai/weekly-plan-draft'
-import { sendNotification } from '../src/lib/notifications/dispatcher'
+import { sendNotification } from '../src/lib/notifications/service'
 import { activatePlan } from '../src/lib/plans'
 import { createAdminClient } from '../src/lib/supabase/admin'
 
