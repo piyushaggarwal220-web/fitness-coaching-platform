@@ -49,7 +49,9 @@ async function resolveReply(
 
   if (!draft && checkin.checkin_type === 'weekly') {
     const planSlug = await fetchCapturedPlanSlug(checkin.client_id)
-    const draftExpected = shouldAutoGenerateWeeklyPlanDraft(planSlug, checkin.coaching_week)
+    const week = checkin.coaching_week
+    const draftExpected =
+      typeof week === 'number' && shouldAutoGenerateWeeklyPlanDraft(planSlug, week)
     const submittedMs = new Date(checkin.submitted_at).getTime()
     const tooOld = Number.isFinite(submittedMs) && Date.now() - submittedMs > 48 * 60 * 60 * 1000
     if (draftExpected && !tooOld) {
