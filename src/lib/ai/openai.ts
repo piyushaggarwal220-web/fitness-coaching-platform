@@ -4,7 +4,7 @@ import type {
   ResponseInputContent,
 } from 'openai/resources/responses/responses'
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
-import { DEFAULTS } from '@/lib/ai/config'
+import { DEFAULTS, MODELS } from '@/lib/ai/config'
 
 export type GenerateOpenAIResponseParams = {
   systemPrompt: string
@@ -89,6 +89,15 @@ function reasoningEffort(model: string): 'medium' | 'high' {
   return model.includes('astra') ? 'high' : 'medium'
 }
 
+/** Astra is opt-in. Auto weekly/high-complexity traffic stays on Luna. */
+function resolveLiveModel(model: string): string {
+  if (model.includes('astra') && process.env.OPENAI_ALLOW_ASTRA?.trim() !== '1') {
+    console.warn('[openai-provider] blocked gpt-6-astra; using gpt-5.6-luna')
+    return MODELS.GPT_LUNA
+  }
+  return model
+}
+
 function extractText(response: OpenAIResponse): string {
   if (typeof response.output_text === 'string' && response.output_text.trim()) {
     return response.output_text
@@ -130,9 +139,9 @@ export async function generateOpenAIResponse(
     timeout: 600_000,
     maxRetries: 0,
   })
-  const primaryModel = params.model ?? DEFAULTS.DEFAULT_MODEL
+  const primaryModel = resolveLiveModel(params.model ?? DEFAULTS.DEFAULT_MODEL)
   const configuredFallback = process.env.OPENAI_FALLBACK_MODEL?.trim()
-  const fallbackModel = configuredFallback || DEFAULTS.FALLBACK_MODEL
+  const fallbackModel = resolveLiveModel(configuredFallback || DEFAULTS.FALLBACK_MODEL)
   const models = fallbackModel !== primaryModel ? [primaryModel, fallbackModel] : [primaryModel]
   let retryCount = 0
   let lastError: ClaudeResponseError | null = null

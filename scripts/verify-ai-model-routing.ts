@@ -41,7 +41,7 @@ assert.equal(
     actionId: 'review_update_workout',
     recommendedModel: MODELS.GPT_ASTRA,
   }),
-  MODELS.GPT_ASTRA
+  MODELS.GPT_LUNA
 )
 assert.equal(
   resolvePlanGenerationModel({
@@ -64,10 +64,10 @@ assert.equal(
     recommendedModel: MODELS.GPT_ASTRA,
     medicalNotes: 'none',
   }),
-  MODELS.GPT_ASTRA
+  MODELS.GPT_LUNA
 )
 assert.equal(getRecommendedModelForTier('LOW'), MODELS.GPT_LUNA)
 assert.equal(getRecommendedModelForTier('MEDIUM'), MODELS.GPT_LUNA)
-assert.equal(getRecommendedModelForTier('HIGH'), MODELS.GPT_ASTRA)
+assert.equal(getRecommendedModelForTier('HIGH'), MODELS.GPT_LUNA)
 
 console.log('✓ OpenAI Terra/Luna/Astra routing matches coaching roles')

@@ -78,8 +78,10 @@ function hasHighRiskMedical(medicalNotes: string | null | undefined): boolean {
 
 /**
  * Terra = create (initial plans + remakes).
- * Luna = maintain (weekly updates, minor edits, mid-week).
- * Astra = hard cases (stuck / very complex), never medical/high-risk.
+ * Luna = maintain (weekly updates, minor edits, mid-week) and all auto HIGH-complexity work.
+ * Astra is never auto-selected: it is billed at ~$10 / $40 per 1M tokens with high
+ * reasoning, and a single timed-out weekly diet+workout pass can cost several dollars.
+ * Set OPENAI_ALLOW_ASTRA=1 only for an explicit stuck/complex coach job.
  */
 export function resolvePlanGenerationModel(input: {
   actionId?: string | null
@@ -92,7 +94,10 @@ export function resolvePlanGenerationModel(input: {
   if (hasHighRiskMedical(input.medicalNotes)) {
     return MODELS.GPT_LUNA
   }
-  if (isSupportPlanAction(input.actionId)) {
+  if (isSupportPlanAction(input.actionId) || input.actionId.startsWith('review_update_')) {
+    return MODELS.GPT_LUNA
+  }
+  if (input.recommendedModel.includes('astra') && process.env.OPENAI_ALLOW_ASTRA?.trim() !== '1') {
     return MODELS.GPT_LUNA
   }
   return input.recommendedModel
