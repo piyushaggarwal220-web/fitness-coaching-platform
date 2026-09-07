@@ -116,7 +116,8 @@ export async function syncPlanDeliveredFlag(
 
 export async function activatePlan(
   supabase: SupabaseClient,
-  plan: Pick<Plan, 'id' | 'client_id' | 'coach_id'>
+  plan: Pick<Plan, 'id' | 'client_id' | 'coach_id'>,
+  options?: { skipReplyWait?: boolean }
 ): Promise<{ error: string | null }> {
   const { data: client, error: clientError } = await supabase
     .from('profiles')
@@ -146,7 +147,7 @@ export async function activatePlan(
 
   // Check-in-linked weekly drafts: same human-touch wait as check-in feedback.
   const meta = parsePlanMeta(fullPlan)
-  if (meta.checkinId && !shouldBypassCheckinScheduleServer()) {
+  if (meta.checkinId && !options?.skipReplyWait && !shouldBypassCheckinScheduleServer()) {
     const { data: sourceCheckin } = await supabase
       .from('checkins')
       .select('submitted_at')

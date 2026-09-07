@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { GenerationStatus } from '@/components/coach/ai-actions/shared'
 import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
 import { Button } from '@/components/ui/Button'
@@ -30,6 +30,34 @@ export function PlanSectionAiEditModal({
   const [statusVariant, setStatusVariant] = useState<'loading' | 'success' | 'error'>('loading')
   const [generating, setGenerating] = useState(false)
 
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    const load = async () => {
+      const poll = await fetch(
+        `/api/coach/edit-plan-section/status?clientId=${encodeURIComponent(clientId)}&section=${section}`
+      )
+      const data = (await poll.json()) as {
+        status?: string
+        revisedText?: string
+        summary?: string
+      }
+      if (cancelled) return
+      if (data.status === 'ready' && data.revisedText) {
+        setRevisedText(data.revisedText)
+        setStatusVariant('success')
+        setStatus(data.summary ?? 'Background draft ready — review and apply.')
+      } else if (data.status === 'generating') {
+        setStatusVariant('loading')
+        setStatus('A rewrite is still running in the background…')
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [open, clientId, section])
+
   if (!open) return null
 
   const label = section === 'nutrition' ? 'diet' : 'workout'
@@ -56,7 +84,7 @@ export function PlanSectionAiEditModal({
 
     setGenerating(true)
     setStatusVariant('loading')
-    setStatus(`Regenerating ${label} with AI…`)
+    setStatus(`Regenerating ${label} with AI in the background. You can leave this page.`)
     setRevisedText(null)
 
     try {
@@ -69,19 +97,38 @@ export function PlanSectionAiEditModal({
           currentText,
           coachInstruction: instruction || undefined,
           remakeFromScratch: Boolean(instructionOverride),
+          async: true,
         }),
       })
-      const data = (await res.json()) as {
-        revisedText?: string
-        summary?: string
-        error?: string
+      const queued = (await res.json()) as { queued?: boolean; error?: string }
+      if (!res.ok && res.status !== 202) {
+        throw new Error(queued.error ?? 'AI rewrite failed')
       }
-      if (!res.ok || !data.revisedText) {
-        throw new Error(data.error ?? 'AI rewrite failed')
+
+      const started = Date.now()
+      while (Date.now() - started < 4 * 60 * 1000) {
+        await new Promise((resolve) => setTimeout(resolve, 4000))
+        const poll = await fetch(
+          `/api/coach/edit-plan-section/status?clientId=${encodeURIComponent(clientId)}&section=${section}`
+        )
+        const data = (await poll.json()) as {
+          status?: string
+          revisedText?: string
+          summary?: string
+          error?: string
+        }
+        if (data.status === 'ready' && data.revisedText) {
+          setRevisedText(data.revisedText)
+          setStatusVariant('success')
+          setStatus(data.summary ?? 'Draft ready — review and apply.')
+          return
+        }
+        if (data.status === 'failed') {
+          throw new Error(data.error ?? 'AI rewrite failed')
+        }
       }
-      setRevisedText(data.revisedText)
       setStatusVariant('success')
-      setStatus(data.summary ?? 'Draft ready — review and apply.')
+      setStatus('Still generating in the background. Reopen this editor in a few minutes and the draft will be here.')
     } catch (err) {
       setStatusVariant('error')
       const raw = err instanceof Error ? err.message : 'AI rewrite failed'

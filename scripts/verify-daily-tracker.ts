@@ -996,6 +996,35 @@ Fish curry and sabzi`,
 }
 
 {
+  const spacedTimePlan: Plan = {
+    ...planV1,
+    nutrition_plan: `Day 1 (Monday)
+
+9:00 AM Breakfast
+Poha and curd
+
+1:30 PM Lunch
+Rice and dal
+
+5:00 PM Snack + Whey
+Apple and whey
+
+8:00 PM Dinner
+Roti and paneer`,
+  }
+  const spacedSnap = buildTrackerSnapshot(spacedTimePlan)
+  const spaced = spacedSnap.items.filter((i) => i.type === 'meal')
+  const spacedTitles = spaced.map((i) => (i.type === 'meal' ? i.title : '')).join(', ')
+  assert(
+    `space-separated time headers split the day (${spacedTitles})`,
+    spaced.length >= 4 &&
+      spaced.some((i) => i.type === 'meal' && /breakfast/i.test(i.title) && /poha/i.test(i.foods)) &&
+      spaced.some((i) => i.type === 'meal' && /dinner/i.test(i.title) && /paneer/i.test(i.foods)) &&
+      !spaced.some((i) => i.type === 'meal' && i.title === 'Meals')
+  )
+}
+
+{
   const timeFirstPlan: Plan = {
     ...planV1,
     nutrition_plan: `DAY 1 — MONDAY

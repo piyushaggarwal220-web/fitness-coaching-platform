@@ -11,6 +11,9 @@ const CLIENTS = [
   { id: '218f9a7d-de26-4987-9c3c-bed709714ac0', expect: 'time-first meals, not empty' },
   { id: '113560a8-435e-4853-b1cd-bb9a0acb8a31', expect: 'MEAL N split, not one Meals blob' },
   { id: '11d6e415-16e6-4738-97b6-11a97b4c9407', expect: 'Breakfast — time + Before Sleep' },
+  { id: 'dbc0803b-64d6-4602-8933-cbb9aaaadfa1', expect: '9:00 AM BREAKFAST space headers' },
+  { id: '7d7bbad7-abc4-4220-8d0a-a3c2234add43', expect: '9:00 AM Breakfast space headers' },
+  { id: 'd1dd1f73-56f5-4a7c-94ff-d2d00b622ff6', expect: '8:00 AM Breakfast space headers' },
 ] as const
 
 let failed = 0

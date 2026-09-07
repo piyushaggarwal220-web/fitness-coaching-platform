@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 16
+export const TRACKER_PARSER_VERSION = 17
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -176,7 +176,7 @@ const MEAL_NUMBERED_LINE = new RegExp(
 )
 
 const MEAL_TIME_FIRST_LINE = new RegExp(
-  `^(${CLOCK_RANGE})\\s*[–—:\\-]\\s+(.+?)\\s*$`,
+  `^(${CLOCK_RANGE})(?:\\s*[–—:\\-]\\s+|\\s+)(.+?)\\s*$`,
   'i'
 )
 

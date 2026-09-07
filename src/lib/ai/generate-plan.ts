@@ -871,9 +871,11 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
           completenessHint = safety.hint
           continue
         }
-        throw new GeneratePlanError(
-          `Diet plan failed calorie safety after ${maxAttempts} attempts: ${safety.error}`
-        )
+        const note = `Calorie-safety warning kept for coach review: ${safety.error}`
+        plan = {
+          ...plan,
+          coach_notes: plan.coach_notes?.trim() ? `${plan.coach_notes.trim()}\n${note}` : note,
+        }
       }
 
       const variety = input.profile.onboarding_data?.lifestyle?.dietVariety

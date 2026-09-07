@@ -8,6 +8,7 @@ import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { generateMidWeekAnalysis, loadCachedMidWeekPack } from '@/lib/ai/midweek-analysis'
 import { findAiDraftForCheckin } from '@/lib/ai/weekly-plan-draft'
 import { sendNotification } from '@/lib/notifications/dispatcher'
+import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import { activatePlan } from '@/lib/plans'
 import { clientCoachNotes, fallbackPublishCoachNotes } from '@/lib/plan-metadata'
 import type { Checkin, CoachCheckinResponse, OnboardingProfile, Plan } from '@/types/database'
@@ -45,6 +46,16 @@ async function resolveReply(
   }
 
   const draft = await findAiDraftForCheckin(supabase, checkin.client_id, checkin.id)
+
+  if (!draft && checkin.checkin_type === 'weekly') {
+    const planSlug = await fetchCapturedPlanSlug(checkin.client_id)
+    const draftExpected = shouldAutoGenerateWeeklyPlanDraft(planSlug, checkin.coaching_week)
+    const submittedMs = new Date(checkin.submitted_at).getTime()
+    const tooOld = Number.isFinite(submittedMs) && Date.now() - submittedMs > 48 * 60 * 60 * 1000
+    if (draftExpected && !tooOld) {
+      return { error: 'draft_not_ready' }
+    }
+  }
 
   if (draft) {
     const { error: activateError } = await activatePlan(supabase, {
@@ -129,7 +140,14 @@ export async function sendCheckinAutoReply(
     return { status: 'failed', reason: err instanceof Error ? err.message : 'reply_generation_failed' }
   }
 
-  if ('error' in resolved) return { status: 'failed', reason: resolved.error }
+  if ('error' in resolved) {
+    if (resolved.error === 'draft_not_ready') {
+      const nextAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+      await supabase.from('checkins').update({ auto_reply_at: nextAt }).eq('id', checkin.id)
+      return { status: 'skipped', reason: 'draft_not_ready' }
+    }
+    return { status: 'failed', reason: resolved.error }
+  }
 
   const response: CoachCheckinResponse = { feedback: resolved.feedback, action_items: '' }
   const now = new Date().toISOString()

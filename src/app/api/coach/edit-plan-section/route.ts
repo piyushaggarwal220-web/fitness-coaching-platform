@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { editPlanSection, type PlanSectionKind } from '@/lib/ai/edit-plan-section'
+import { logAiGeneration } from '@/lib/ai/trace-log'
 import { createClient } from '@/lib/supabase/server'
 
 /** Section rewrites run a long Claude call. */
@@ -16,6 +17,8 @@ type Body = {
   clientRequest?: string
   coachNote?: string
   remakeFromScratch?: boolean
+  /** Queue with after() so leaving the page does not cancel the rewrite. */
+  async?: boolean
 }
 
 function isSection(value: string | undefined): value is PlanSectionKind {
@@ -73,20 +76,96 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 })
   }
 
-  try {
-    const result = await editPlanSection({
-      section: body.section,
-      currentText: body.currentText ?? '',
-      coachInstruction: coachInstruction || undefined,
-      clientRequest: clientRequest || undefined,
-      coachNote: body.coachNote,
-      editSource: coachInstruction ? 'coach' : 'client',
-      remakeFromScratch: body.remakeFromScratch === true,
-      clientName: client.name,
+  const job = {
+    section: body.section,
+    currentText: body.currentText ?? '',
+    coachInstruction: coachInstruction || undefined,
+    clientRequest: clientRequest || undefined,
+    coachNote: body.coachNote,
+    editSource: (coachInstruction ? 'coach' : 'client') as 'coach' | 'client',
+    remakeFromScratch: body.remakeFromScratch === true,
+    clientName: client.name,
+    clientId,
+    profile: client,
+  }
+
+  const runEdit = async () => {
+    const started = Date.now()
+    try {
+      const result = await editPlanSection(job)
+      await logAiGeneration({
+        clientId,
+        coachId: coach.id,
+        action: 'coach_section_edit',
+        model: result.model,
+        latencyMs: Date.now() - started,
+        promptTokens: null,
+        completionTokens: null,
+        retryCount: 0,
+        validationResult: 'pass',
+        success: true,
+        knowledgeRefs: null,
+        renderedOutput: {
+          section: body.section,
+          revisedText: result.revisedText,
+          summary: result.summary,
+        },
+      })
+      return result
+    } catch (err) {
+      const message =
+        err instanceof ClaudeResponseError || err instanceof Error
+          ? err.message
+          : 'Failed to revise plan section'
+      await logAiGeneration({
+        clientId,
+        coachId: coach.id,
+        action: 'coach_section_edit',
+        model: null,
+        latencyMs: Date.now() - started,
+        promptTokens: null,
+        completionTokens: null,
+        retryCount: 0,
+        validationResult: 'fail',
+        success: false,
+        knowledgeRefs: null,
+        renderedOutput: { section: body.section, error: message },
+      })
+      throw err
+    }
+  }
+
+  const runAsync = body.async !== false
+  if (runAsync) {
+    await logAiGeneration({
       clientId,
-      profile: client,
+      coachId: coach.id,
+      action: 'coach_section_edit_started',
+      model: null,
+      latencyMs: 0,
+      promptTokens: null,
+      completionTokens: null,
+      retryCount: 0,
+      validationResult: 'started',
+      success: true,
+      knowledgeRefs: null,
+      renderedOutput: { section: body.section, phase: 'started' },
     })
 
+    after(() =>
+      runEdit().catch((err) => {
+        console.error(
+          '[coach/edit-plan-section] background edit failed:',
+          err instanceof Error ? err.message : err
+        )
+      })
+    )
+
+    return NextResponse.json({ success: true, queued: true }, { status: 202 })
+  }
+
+  try {
+    const result = await runEdit()
     return NextResponse.json({
       success: true,
       revisedText: result.revisedText,

@@ -22,7 +22,6 @@ export const trackerInputStyle: CSSProperties = {
  */
 export const trackerSurface: CSSProperties = {
   background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(24,24,27,0.92) 60%)',
-  backdropFilter: 'blur(16px)',
   border: `1px solid ${colors.borderSubtle}`,
   boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
 }
@@ -527,7 +526,7 @@ export function TrackerPhaseFolder({
         ...trackerSurface,
         borderRadius: radius.md,
         marginBottom: 12,
-        overflow: 'hidden',
+        overflow: 'visible',
         borderLeft: `3px solid ${accent}`,
       }}
     >
