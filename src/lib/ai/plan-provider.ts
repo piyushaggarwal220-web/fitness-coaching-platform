@@ -1,5 +1,4 @@
-import { ClaudeResponseError, generateClaudeResponse } from '@/lib/ai/anthropic'
-import { DEFAULTS } from '@/lib/ai/config'
+import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 
 export type PlanProviderMode = 'mock' | 'openai' | 'claude'
@@ -27,30 +26,14 @@ export type PlanProviderCallResult = {
   stopReason: string | null
 }
 
-/** Mock only when explicitly requested. Production default is OpenAI. */
+/**
+ * Live generation is OpenAI-only. Mock remains for tests.
+ * AI_PLAN_PROVIDER=claude is ignored so production/scripts cannot roll back.
+ */
 export function getPlanProviderMode(): PlanProviderMode {
   const explicit = process.env.AI_PLAN_PROVIDER?.trim().toLowerCase()
   if (explicit === 'mock') return 'mock'
-  if (explicit === 'claude') return 'claude'
   return 'openai'
-}
-
-function toClaudeRollbackModel(model: string): string {
-  const normalized = model.trim().toLowerCase()
-  if (normalized.startsWith('claude-')) return model
-  if (normalized.includes('luna') || normalized.includes('haiku')) {
-    return 'claude-haiku-4-5-20251001'
-  }
-  return 'claude-sonnet-4-20250514'
-}
-
-function assertAnthropicConfigured(): void {
-  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
-    throw new ClaudeResponseError(
-      'ANTHROPIC_API_KEY is not configured. Add it to .env.local to generate plans.',
-      { category: 'configuration' }
-    )
-  }
 }
 
 function assertOpenAIConfigured(): void {
@@ -78,27 +61,6 @@ export async function callPlanProvider(
       retryCount: 0,
       fallbackUsed: false,
       stopReason: 'end_turn',
-    }
-  }
-
-  if (mode === 'claude') {
-    assertAnthropicConfigured()
-    const response = await generateClaudeResponse({
-      systemPrompt: params.systemPrompt,
-      userPrompt: params.userPrompt,
-      model: toClaudeRollbackModel(params.model),
-      maxTokens: params.maxTokens,
-      temperature: params.temperature ?? DEFAULTS.DEFAULT_TEMPERATURE,
-      images: params.images,
-    })
-    return {
-      text: response.text,
-      model: response.model,
-      inputTokens: response.inputTokens,
-      outputTokens: response.outputTokens,
-      retryCount: response.retryCount,
-      fallbackUsed: response.fallbackUsed,
-      stopReason: response.stopReason,
     }
   }
 

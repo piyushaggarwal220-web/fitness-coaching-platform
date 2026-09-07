@@ -355,6 +355,115 @@ assert('missing snack food injected', /\bfruit\b/i.test(snackText))
 assert('missing snack time injected', /17:00/.test(snackText))
 assert('gluten snack repair did not add roti', !/\broti\b/i.test(snackText))
 
+const weekendSafeMeals = weekPlan(2300, (day) =>
+  ['Saturday', 'Sunday'].includes(day) ? 'dal roti sabzi paneer' : 'chicken curry with roti'
+)
+const chickenLifestyleProfile = {
+  diet_preference: 'non_vegetarian',
+  weight: '78',
+  height: '175',
+  age: '24',
+  gender: 'male',
+  activity_level: 'moderately_active',
+  fitness_goal: 'muscle_gain',
+  onboarding_data: {
+    diet: {
+      chickenAllowedDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+      chickenDaysPerWeek: '5',
+      eggAllowedDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+      eggDaysPerWeek: '5',
+      fishDaysPerWeek: '0',
+      wheyProtein: 'no',
+    },
+    eatingPattern: {
+      lunch: 'Rice 250gm Chicken-30gm Curd-30gm',
+      timings: { lunch: '12:30' },
+    },
+  },
+}
+const chickenLifestyle = applyDietPlanRepair(weekendSafeMeals, chickenLifestyleProfile)
+const chickenLifestyleText = prose(chickenLifestyle.plan)
+const satChicken = chickenLifestyleText.slice(chickenLifestyleText.toLowerCase().indexOf('day 6 (saturday)'))
+const satEnd = satChicken.toLowerCase().indexOf('day 7 (sunday)')
+const satBlock = satEnd >= 0 ? satChicken.slice(0, satEnd) : satChicken
+const sunBlock = chickenLifestyleText.slice(chickenLifestyleText.toLowerCase().indexOf('day 7 (sunday)'))
+assert('lifestyle chicken not left on Saturday', !/\bchicken\b/i.test(satBlock))
+assert('lifestyle chicken not left on Sunday', !/\bchicken\b/i.test(sunBlock))
+const chickenPref = enforceDietPreference(
+  chickenLifestyle.plan,
+  'non_vegetarian',
+  dietScanOptionsFromProfile(chickenLifestyleProfile)
+)
+assert('lifestyle chicken weekday contract met', chickenPref.ok, chickenPref.ok ? undefined : chickenPref.error)
+
+const eggTueOnly = weekPlan(2100, (day) => (day === 'Tuesday' ? '3 boiled eggs with roti' : 'poha with peanuts'))
+const eggLifestyleProfile = {
+  diet_preference: 'eggetarian',
+  weight: '72',
+  height: '178',
+  age: '26',
+  gender: 'male',
+  activity_level: 'moderately_active',
+  fitness_goal: 'muscle_gain',
+  onboarding_data: {
+    diet: {
+      eggAllowedDays: ['tuesday'],
+      eggDaysPerWeek: '5',
+      chickenDaysPerWeek: '0',
+      fishDaysPerWeek: '0',
+      wheyProtein: 'yes',
+    },
+    eatingPattern: {
+      breakfast: 'boiled eggs + 2 eggs bhurji',
+      timings: { breakfast: '10:30' },
+    },
+  },
+}
+const eggLifestyle = applyDietPlanRepair(eggTueOnly, eggLifestyleProfile)
+const eggLifestyleText = prose(eggLifestyle.plan)
+const monEgg = eggLifestyleText.slice(
+  eggLifestyleText.toLowerCase().indexOf('day 1 (monday)'),
+  eggLifestyleText.toLowerCase().indexOf('day 2 (tuesday)')
+)
+assert('lifestyle eggs not left on Monday', !/\begg/i.test(monEgg))
+const eggLifestylePref = enforceDietPreference(
+  eggLifestyle.plan,
+  'eggetarian',
+  dietScanOptionsFromProfile(eggLifestyleProfile)
+)
+assert(
+  'lifestyle egg weekday contract met',
+  eggLifestylePref.ok,
+  eggLifestylePref.ok ? undefined : eggLifestylePref.error
+)
+
+const pastePlan = weekPlan(2000, () => 'besan chilla, dal, roti, paneer')
+const pasteProfile = {
+  diet_preference: 'eggetarian',
+  weight: '70',
+  height: '170',
+  age: '30',
+  gender: 'male',
+  activity_level: 'lightly_active',
+  fitness_goal: 'fat_loss',
+  onboarding_data: {
+    diet: { eggAllowedDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], eggDaysPerWeek: '7' },
+    eatingPattern: {
+      breakfast:
+        'Hi client, you don\'t use whey or chicken. DAY 1 – MONDAY Breakfast: eggs. WEEKLY SHOPPING LIST eggs oats soya.',
+      timings: { breakfast: '09:30' },
+    },
+  },
+}
+const pasteRepaired = applyDietPlanRepair(pastePlan, pasteProfile)
+const pastePref = enforceDietPreference(
+  pasteRepaired.plan,
+  'eggetarian',
+  dietScanOptionsFromProfile(pasteProfile)
+)
+assert('pasted lifestyle plan with chicken word does not fail eggetarian', pastePref.ok, pastePref.ok ? undefined : pastePref.error)
+assert('pasted lifestyle plan was not dumped into meals', !/weekly shopping/i.test(prose(pasteRepaired.plan)))
+
 if (failed > 0) {
   console.error(`\n${failed} assertion(s) failed`)
   process.exit(1)

@@ -902,9 +902,20 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
           completenessHint = preferenceSafety.hint
           continue
         }
-        throw new GeneratePlanError(
-          `Diet plan failed preference safety after ${maxAttempts} attempts: ${preferenceSafety.error}`
+        const weekdayOnly = preferenceSafety.violations.every((v) =>
+          v.category.endsWith('-weekday')
         )
+        if (weekdayOnly) {
+          const note = `Weekday-protein warning kept for coach review: ${preferenceSafety.error}`
+          plan = {
+            ...plan,
+            coach_notes: plan.coach_notes?.trim() ? `${plan.coach_notes.trim()}\n${note}` : note,
+          }
+        } else {
+          throw new GeneratePlanError(
+            `Diet plan failed preference safety after ${maxAttempts} attempts: ${preferenceSafety.error}`
+          )
+        }
       }
     }
 

@@ -11,6 +11,12 @@ import { createAdminClient } from '../src/lib/supabase/admin'
 
 const START = '2026-09-05T18:30:00.000Z'
 const CONCURRENCY = 2
+const ONLY_CHECKIN_IDS = new Set(
+  (process.env.CHECKIN_IDS ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean)
+)
 
 type CheckinRow = {
   id: string
@@ -20,10 +26,20 @@ type CheckinRow = {
   submitted_at: string
 }
 
-async function mapPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>) {
+function isCreditError(message: string | null | undefined): boolean {
+  return /credit balance is too low/i.test(message ?? '')
+}
+
+async function mapPool<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>,
+  shouldStop?: () => boolean
+) {
   let index = 0
   const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
     while (index < items.length) {
+      if (shouldStop?.()) return
       const current = items[index]
       index += 1
       await worker(current)
@@ -33,6 +49,14 @@ async function mapPool<T>(items: T[], concurrency: number, worker: (item: T) => 
 }
 
 async function main() {
+  if (process.env.AI_PLAN_PROVIDER?.trim().toLowerCase() === 'claude') {
+    throw new Error('AI_PLAN_PROVIDER=claude is disabled. Live generation is OpenAI-only.')
+  }
+  process.env.AI_PLAN_PROVIDER = 'openai'
+  if (!process.env.OPENAI_API_KEY?.trim()) {
+    throw new Error('OPENAI_API_KEY is empty. Pull it from Vercel production before sending plans.')
+  }
+  console.log(`provider=openai key_len=${process.env.OPENAI_API_KEY.trim().length}`)
   const admin = createAdminClient()
   const { data: checkins, error } = await admin
     .from('checkins')
@@ -48,8 +72,13 @@ async function main() {
 
   const queued: CheckinRow[] = []
   let skipped = 0
+  if (ONLY_CHECKIN_IDS.size > 0) {
+    console.log(`allowlist=${ONLY_CHECKIN_IDS.size} check-ins`)
+  }
 
   for (const checkin of rows) {
+    if (ONLY_CHECKIN_IDS.size > 0 && !ONLY_CHECKIN_IDS.has(checkin.id)) continue
+
     const { data: profile } = await admin
       .from('profiles')
       .select('id, name, email, payment_confirmed, access_source, subscription_expires_at')
@@ -93,8 +122,12 @@ async function main() {
 
   let sent = 0
   let failed = 0
+  let creditBlocked = false
 
-  await mapPool(queued, CONCURRENCY, async (checkin) => {
+  await mapPool(
+    queued,
+    CONCURRENCY,
+    async (checkin) => {
     const { data: profile } = await admin
       .from('profiles')
       .select('name')
@@ -129,6 +162,10 @@ async function main() {
     if (result.error || !result.planId) {
       failed += 1
       console.error(`FAIL generate ${name}: ${result.error ?? 'no planId'}`)
+      if (isCreditError(result.error)) {
+        creditBlocked = true
+        console.error('STOP OpenAI credits empty — remaining clients left queued')
+      }
       return
     }
 
@@ -158,9 +195,12 @@ async function main() {
     })
     sent += 1
     console.log(`SENT ${name} plan ${result.planId} in ${result.generationTimeMs}ms`)
-  })
+    },
+    () => creditBlocked
+  )
 
   console.log(`DONE sent=${sent} failed=${failed} skipped=${skipped} queued=${queued.length}`)
+  if (creditBlocked) process.exitCode = 2
 }
 
 void main().catch((err) => {

@@ -20,13 +20,6 @@ async function assertTestPlanAccess() {
     )
   }
 
-  if (getPlanProviderMode() === 'claude' && !process.env.ANTHROPIC_API_KEY?.trim()) {
-    return NextResponse.json(
-      { success: false, error: 'ANTHROPIC_API_KEY is not configured' },
-      { status: 500 }
-    )
-  }
-
   if (getPlanProviderMode() === 'openai' && !process.env.OPENAI_API_KEY?.trim()) {
     return NextResponse.json(
       { success: false, error: 'OPENAI_API_KEY is not configured' },

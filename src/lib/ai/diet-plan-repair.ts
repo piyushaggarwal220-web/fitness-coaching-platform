@@ -478,6 +478,11 @@ function injectSlotLine(text: string, line: string, fastingWeekdays: string[]): 
   })
 }
 
+/** Pasted coach notes / full week plans are not a single meal to inject. */
+function isLifestyleMealPaste(food: string): boolean {
+  return food.length > 400 || /DAY\s*1|weekly shopping|━━━━━━━━/i.test(food)
+}
+
 /** Put the client's usual snack/meal + clock time into the plan when Claude omitted them. */
 function ensureLifestyleSlots(
   text: string,
@@ -498,7 +503,7 @@ function ensureLifestyleSlots(
   let out = text
   for (const slot of slots) {
     const food = slot.food?.trim()
-    if (!food || /skip/i.test(food)) continue
+    if (!food || /skip/i.test(food) || isLifestyleMealPaste(food)) continue
     const keys = lifestyleKeywords(food)
     const foodMissing = keys.length > 0 && !keys.some((k) => new RegExp(`\\b${k}\\b`, 'i').test(out))
     const timeMissing = Boolean(slot.time?.trim()) && !planHasTime(out, slot.time!)
@@ -697,7 +702,13 @@ export function applyDietPlanRepair(
     for (const f of lifestyle.fixes) {
       if (!fixes.includes(f)) fixes.push(f)
     }
-    return lifestyle.text
+    // Lifestyle injects the same meal onto every weekday when a clock time is
+    // missing. Re-run preference swaps so chicken/eggs do not leak onto veg days.
+    const repaired = repairProse(lifestyle.text, profile, scan)
+    for (const f of repaired.fixes) {
+      if (!fixes.includes(f)) fixes.push(f)
+    }
+    return repaired.text
   })
 
   next = mapMealProse(next, (text) =>
