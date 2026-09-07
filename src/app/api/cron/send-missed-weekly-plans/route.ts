@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
+import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
@@ -131,6 +132,38 @@ async function sendOneCheckin(checkinId: string) {
   }
 }
 
+async function statusOneCheckin(checkinId: string) {
+  const admin = createAdminClient()
+  const { data: checkin, error } = await admin
+    .from('checkins')
+    .select('id, client_id, submitted_at')
+    .eq('id', checkinId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!checkin) return { checkinId, status: 'FAIL' as const, error: 'checkin not found' }
+
+  const { data: profile } = await admin.from('profiles').select('name').eq('id', checkin.client_id).maybeSingle()
+  const { data: active } = await admin
+    .from('plans')
+    .select('id, delivered_at')
+    .eq('client_id', checkin.client_id)
+    .eq('active', true)
+    .maybeSingle()
+
+  if (
+    active?.delivered_at &&
+    new Date(active.delivered_at).getTime() >= new Date(checkin.submitted_at).getTime()
+  ) {
+    return {
+      checkinId,
+      name: profile?.name ?? checkin.client_id,
+      status: 'SENT' as const,
+      planId: active.id,
+    }
+  }
+  return { checkinId, name: profile?.name ?? checkin.client_id, status: 'PENDING' as const }
+}
+
 export async function GET(request: Request) {
   if (!authorize(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -145,6 +178,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ provider: 'openai', ok: false, error: message }, { status: 502 })
     }
   }
+
+  const checkinId = new URL(request.url).searchParams.get('checkinId')?.trim()
+  if (checkinId) {
+    const result = await statusOneCheckin(checkinId)
+    return NextResponse.json(result)
+  }
+
   return NextResponse.json({ error: 'POST checkinId or GET ?ping=1' }, { status: 400 })
 }
 
@@ -178,9 +218,39 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await sendOneCheckin(checkinId)
-    const ok = result.status !== 'FAIL'
-    return NextResponse.json(result, { status: ok ? 200 : 502 })
+    const preview = await statusOneCheckin(checkinId)
+    if (preview.status === 'SENT') {
+      return NextResponse.json({ ...preview, error: 'already updated' })
+    }
+
+    const admin = createAdminClient()
+    const { data: checkin } = await admin
+      .from('checkins')
+      .select('client_id, coach_id, coaching_week')
+      .eq('id', checkinId)
+      .maybeSingle()
+    if (checkin) {
+      await persistDraftGenerationStarted({
+        clientId: checkin.client_id,
+        coachId: checkin.coach_id,
+        checkinId,
+        trigger: 'retry',
+      })
+    }
+
+    after(() =>
+      sendOneCheckin(checkinId).catch((err) => {
+        console.error(
+          '[cron/send-missed-weekly-plans] background send failed:',
+          err instanceof Error ? err.message : err
+        )
+      })
+    )
+
+    return NextResponse.json(
+      { checkinId, status: 'QUEUED', error: null },
+      { status: 202 }
+    )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'send failed'
     return NextResponse.json({ checkinId, status: 'FAIL', error: message }, { status: 500 })

@@ -54,7 +54,24 @@ async function main() {
       body: JSON.stringify({ checkinId }),
     })
     const body = await res.json()
-    console.log(`${body.status ?? 'FAIL'} ${name} ${body.planId ?? ''} ${body.error ?? ''}`.trim())
+    if (body.status === 'SKIP' || body.status === 'SENT' || body.status === 'FAIL') {
+      console.log(`${body.status} ${name} ${body.planId ?? ''} ${body.error ?? ''}`.trim())
+      continue
+    }
+    console.log(`QUEUED ${name}`)
+    const deadline = Date.now() + 12 * 60 * 1000
+    let last = body
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20000))
+      const poll = await fetch(
+        `${BASE}/api/cron/send-missed-weekly-plans?checkinId=${encodeURIComponent(checkinId)}`,
+        { headers }
+      )
+      last = await poll.json()
+      if (last.status === 'SENT' || last.status === 'FAIL') break
+      console.log(`PENDING ${name}`)
+    }
+    console.log(`${last.status ?? 'FAIL'} ${name} ${last.planId ?? ''} ${last.error ?? 'timed out waiting'}`.trim())
   }
 }
 

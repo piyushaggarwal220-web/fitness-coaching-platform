@@ -115,6 +115,32 @@ function mapStopReason(response: OpenAIResponse): string | null {
 export async function generateOpenAIResponse(
   params: GenerateOpenAIResponseParams
 ): Promise<GenerateOpenAIResponseResult> {
+  if (!process.env.OPENAI_API_KEY?.trim() && process.env.ANTHROPIC_API_KEY?.trim()) {
+    const { generateClaudeResponse } = await import('@/lib/ai/anthropic')
+    const requested = (params.model ?? '').toLowerCase()
+    const model =
+      requested.includes('luna') || requested.includes('haiku')
+        ? 'claude-haiku-4-5-20251001'
+        : 'claude-sonnet-4-5-20250929'
+    const response = await generateClaudeResponse({
+      systemPrompt: params.systemPrompt,
+      userPrompt: params.userPrompt,
+      model,
+      maxTokens: params.maxTokens ?? DEFAULTS.DEFAULT_MAX_TOKENS,
+      temperature: params.temperature ?? DEFAULTS.DEFAULT_TEMPERATURE,
+      images: params.images,
+    })
+    return {
+      text: response.text,
+      inputTokens: response.inputTokens,
+      outputTokens: response.outputTokens,
+      model: response.model,
+      retryCount: response.retryCount,
+      fallbackUsed: true,
+      stopReason: response.stopReason,
+    }
+  }
+
   let apiKey: string
   try {
     apiKey = getApiKey()
@@ -125,7 +151,7 @@ export async function generateOpenAIResponse(
 
   const client = new OpenAI({
     apiKey,
-    timeout: 180_000,
+    timeout: 270_000,
     maxRetries: 0,
   })
   const primaryModel = params.model ?? DEFAULTS.DEFAULT_MODEL
