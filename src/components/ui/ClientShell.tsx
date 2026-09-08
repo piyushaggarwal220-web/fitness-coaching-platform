@@ -20,6 +20,7 @@ import { BRAND_NAME } from '@/lib/brand'
 import { PageTransition } from '@/components/motion/PageTransition'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
+import { PublicDemoBanner } from '@/components/ui/PublicDemoBanner'
 
 type ClientShellProps = {
   children?: ReactNode
@@ -108,9 +109,17 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
             : undefined
         }
       >
-        {fullHeight ? children : (
+        {fullHeight ? (
+          <>
+            <div style={{ padding: '8px 16px 0', flexShrink: 0 }}>
+              <PublicDemoBanner />
+            </div>
+            {children}
+          </>
+        ) : (
           <PageTransition>
             <div style={mobileStyles.container} className="client-container">
+              <PublicDemoBanner />
               {children}
             </div>
           </PageTransition>
