@@ -25,7 +25,7 @@ export function PublicDemoBanner() {
         role="status"
         style={{
           margin: '0 0 16px',
-          padding: '12px 14px',
+          padding: '14px 14px 16px',
           borderRadius: 12,
           background: 'rgba(255, 98, 0, 0.12)',
           border: '1px solid rgba(255, 98, 0, 0.35)',
@@ -33,6 +33,9 @@ export function PublicDemoBanner() {
           fontSize: 13,
           fontWeight: 600,
           lineHeight: 1.45,
+          overflow: 'visible',
+          position: 'relative',
+          zIndex: 2,
         }}
       >
         <p style={{ margin: 0 }}>{PUBLIC_DEMO_READ_ONLY_MESSAGE}</p>
@@ -43,16 +46,23 @@ export function PublicDemoBanner() {
           type="button"
           onClick={() => setTourOpen(true)}
           style={{
-            marginTop: 10,
-            minHeight: 36,
-            padding: '0 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            boxSizing: 'border-box',
+            marginTop: 12,
+            minHeight: 48,
+            padding: '12px 16px',
             borderRadius: 10,
             border: '1px solid rgba(255, 255, 255, 0.22)',
             background: showHint ? '#ff6200' : 'transparent',
             color: showHint ? '#09090b' : '#fff',
             fontWeight: 800,
-            fontSize: 13,
+            fontSize: 15,
+            lineHeight: 1.2,
             cursor: 'pointer',
+            whiteSpace: 'nowrap',
           }}
         >
           Take a short tour

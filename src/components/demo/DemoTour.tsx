@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { DEMO_TOUR_STEPS, markDemoTourDone } from '@/lib/demo-tour'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { colors, layout, radius, spacing } from '@/lib/design-tokens'
 
 type Hole = { top: number; left: number; width: number; height: number }
 
@@ -22,6 +23,7 @@ function measure(selector: string): Hole | null {
 export function DemoTour({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [index, setIndex] = useState(0)
   const [hole, setHole] = useState<Hole | null>(null)
+  const [mounted, setMounted] = useState(false)
 
   const step = DEMO_TOUR_STEPS[index]
   const last = index >= DEMO_TOUR_STEPS.length - 1
@@ -30,6 +32,10 @@ export function DemoTour({ open, onClose }: { open: boolean; onClose: () => void
     if (!step) return
     setHole(measure(step.selector))
   }, [step])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!open) {
@@ -46,16 +52,14 @@ export function DemoTour({ open, onClose }: { open: boolean; onClose: () => void
     }
   }, [open, refresh])
 
-  if (!open || !step) return null
+  if (!mounted || !open || !step) return null
 
   const finish = () => {
     markDemoTourDone()
     onClose()
   }
 
-  const tooltipTop = hole ? Math.max(16, hole.top - 148) : 96
-
-  return (
+  const overlay = (
     <div
       role="dialog"
       aria-modal="true"
@@ -63,7 +67,7 @@ export function DemoTour({ open, onClose }: { open: boolean; onClose: () => void
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 240,
+        zIndex: 400,
         pointerEvents: 'auto',
       }}
     >
@@ -92,16 +96,21 @@ export function DemoTour({ open, onClose }: { open: boolean; onClose: () => void
       <div
         style={{
           position: 'absolute',
-          top: tooltipTop,
           left: 16,
           right: 16,
+          bottom: `calc(${layout.bottomNavHeight}px + env(safe-area-inset-bottom, 0px) + 16px)`,
+          top: 'auto',
           maxWidth: 420,
+          maxHeight: `calc(100dvh - ${layout.topBarHeight + layout.bottomNavHeight + 48}px)`,
           margin: '0 auto',
           padding: 16,
+          paddingBottom: 18,
+          overflow: 'auto',
           borderRadius: radius.lg,
           background: colors.bgCard,
           border: `1px solid ${colors.borderSubtle}`,
           color: colors.textPrimary,
+          boxSizing: 'border-box',
         }}
       >
         <p style={{ margin: 0, color: colors.accent, fontSize: 11, fontWeight: 800, letterSpacing: '0.12em' }}>
@@ -111,13 +120,21 @@ export function DemoTour({ open, onClose }: { open: boolean; onClose: () => void
           {step.title}
         </h2>
         <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>{step.body}</p>
-        <div style={{ display: 'flex', gap: 8, marginTop: spacing[4], justifyContent: 'flex-end' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            marginTop: spacing[4],
+            justifyContent: 'flex-end',
+            flexWrap: 'wrap',
+          }}
+        >
           <button
             type="button"
             onClick={finish}
             style={{
-              minHeight: 40,
-              padding: '0 12px',
+              minHeight: 48,
+              padding: '12px 16px',
               border: 'none',
               background: 'transparent',
               color: colors.textMuted,
@@ -134,8 +151,8 @@ export function DemoTour({ open, onClose }: { open: boolean; onClose: () => void
               else setIndex((n) => n + 1)
             }}
             style={{
-              minHeight: 40,
-              padding: '0 16px',
+              minHeight: 48,
+              padding: '12px 20px',
               border: 'none',
               borderRadius: 10,
               background: colors.accent,
@@ -150,4 +167,6 @@ export function DemoTour({ open, onClose }: { open: boolean; onClose: () => void
       </div>
     </div>
   )
+
+  return createPortal(overlay, document.body)
 }

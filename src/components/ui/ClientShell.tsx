@@ -117,12 +117,12 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
             {children}
           </>
         ) : (
-          <PageTransition>
-            <div style={mobileStyles.container} className="client-container">
-              <PublicDemoBanner />
+          <div style={{ ...mobileStyles.container, overflowX: 'visible' }} className="client-container">
+            <PublicDemoBanner />
+            <PageTransition>
               {children}
-            </div>
-          </PageTransition>
+            </PageTransition>
+          </div>
         )}
       </main>
       {!hideBottomNav && !fullHeight && <BottomNav unreadChats={unreadChats} />}
