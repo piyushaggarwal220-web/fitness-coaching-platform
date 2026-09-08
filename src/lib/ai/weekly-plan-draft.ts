@@ -523,7 +523,11 @@ export async function generateWeeklyPlanDraft(input: {
           inputTokens: cardioResult.inputTokens,
           outputTokens: cardioResult.outputTokens,
         })
-        cardioForm = generatedCardioFormData(cardioResult.generatedPlan, input.clientId)
+        cardioForm = generatedCardioFormData(
+          cardioResult.generatedPlan,
+          input.clientId,
+          active?.cardio_plan
+        )
       } catch {
         // Keep existing cardio if the dedicated step fails.
       }

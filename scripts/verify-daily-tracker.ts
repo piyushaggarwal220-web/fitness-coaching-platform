@@ -75,6 +75,15 @@ assert(
     workoutItem.focus === 'Chest + Triceps'
 )
 assert('parses cardio steps', snapV1.items.some((i) => i.type === 'cardio'))
+const stepsItem = snapV1.items.find((i) => i.type === 'cardio' && 'unit' in i && i.unit === 'steps')
+assert('cardio target is 8000 steps', stepsItem?.type === 'cardio' && stepsItem.target === '8000')
+
+const snapBare = buildTrackerSnapshot({ ...planV1, id: 'plan-bare-steps', cardio_plan: '10000' })
+const bareItem = snapBare.items.find((i) => i.type === 'cardio')
+assert(
+  'bare step number parses as daily steps',
+  bareItem?.type === 'cardio' && bareItem.unit === 'steps' && bareItem.target === '10000'
+)
 assert('parses supplements', snapV1.items.some((i) => i.type === 'supplement'))
 assert('includes water target', snapV1.items.some((i) => i.type === 'water'))
 assert('includes sleep', snapV1.items.some((i) => i.type === 'sleep'))
@@ -1140,6 +1149,47 @@ Before Sleep
       dashMeals.some((i) => i.type === 'meal' && /breakfast/i.test(i.title) && /eggs/i.test(i.foods)) &&
       dashMeals.some((i) => i.type === 'meal' && /dinner/i.test(i.title) && /chicken/i.test(i.foods)) &&
       dashMeals.some((i) => i.type === 'meal' && /before sleep/i.test(i.title) && /milk/i.test(i.foods))
+  )
+}
+
+{
+  const demoDietWithBullets = `DEMO DIET — ~2200 kcal (view only)
+
+Daily targets: 2200 kcal · 160g protein · 220g carbs · 65g fat
+
+Monday–Friday
+- Breakfast: Poha with peanuts + 2 eggs
+- Lunch: 150g chicken, 2 roti, dal, salad
+- Snack: Greek yogurt + fruit
+- Dinner: Rice, dal tadka, sabzi, paneer 80g
+
+Saturday–Sunday
+- Breakfast: Besan chilla + curd
+- Lunch: Rajma rice + salad
+- Dinner: Same as weekday dinner, skip paneer if full
+
+Water: 3–4 litres. No whey. This plan is a sample so visitors can smoke the app.`
+  const demoSnap = buildTrackerSnapshot({
+    ...planV1,
+    nutrition_plan: demoDietWithBullets,
+  })
+  const weekdayMeals = demoSnap.items.filter((i) => i.type === 'meal' && i.dietDay === 'monday')
+  const weekendMeals = demoSnap.items.filter((i) => i.type === 'meal' && i.dietDay === 'saturday')
+  const weekdayTitles = weekdayMeals.map((i) => (i.type === 'meal' ? i.title : '')).join(', ')
+  assert(
+    `demo diet bullets split weekday meals (${weekdayTitles})`,
+    weekdayMeals.length >= 4 &&
+      weekdayMeals.some((i) => i.type === 'meal' && /breakfast/i.test(i.title) && /poha/i.test(i.foods)) &&
+      weekdayMeals.some((i) => i.type === 'meal' && /lunch/i.test(i.title) && /chicken/i.test(i.foods)) &&
+      weekdayMeals.some((i) => i.type === 'meal' && /snack/i.test(i.title) && /yogurt/i.test(i.foods)) &&
+      weekdayMeals.some((i) => i.type === 'meal' && /dinner/i.test(i.title) && /paneer/i.test(i.foods)) &&
+      !weekdayMeals.some((i) => i.type === 'meal' && i.title === 'Meals')
+  )
+  assert(
+    'demo diet bullets split weekend meals',
+    weekendMeals.length >= 3 &&
+      weekendMeals.some((i) => i.type === 'meal' && /breakfast/i.test(i.title) && /chilla/i.test(i.foods)) &&
+      !weekendMeals.some((i) => i.type === 'meal' && i.title === 'Meals')
   )
 }
 

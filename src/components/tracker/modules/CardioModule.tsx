@@ -51,7 +51,10 @@ export function CardioModule({ items, completion, saving, onPatch }: Props) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: spacing[4] }}>
-              <StatTile label={unit === 'min' ? 'Time' : 'Distance'} value={`${actual} ${unit}`} />
+              <StatTile
+                label={unit === 'min' ? 'Time' : unit === 'steps' ? 'Steps' : 'Distance'}
+                value={`${actual} ${unit}`}
+              />
               <StatTile label="Target" value={`${item.target} ${unit}`} />
               <StatTile label="Calories" value={unit === 'min' ? `~${Math.round(actual * 8)}` : '—'} />
             </div>

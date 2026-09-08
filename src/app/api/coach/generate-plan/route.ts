@@ -379,7 +379,7 @@ export async function POST(request: Request) {
         formData = workout
       }
     } else if (actionId === 'initial_cardio' || actionId === 'review_update_cardio') {
-      const cardio = generatedCardioFormData(result.generatedPlan, clientId)
+      const cardio = generatedCardioFormData(result.generatedPlan, clientId, activePlan?.cardio_plan)
       if (activePlan && actionId === 'review_update_cardio') {
         const active = planToForm(activePlan)
         formData = mergePlanForms(active, {
@@ -413,7 +413,11 @@ export async function POST(request: Request) {
       validationResult: 'pass',
       promptVersion: result.promptVersion,
       rawOutput: result.generatedPlan,
-      renderedOutput: formData,
+      renderedOutput: {
+        ...formData,
+        standingInstruction: coachNote?.trim() || undefined,
+        instructionSection: actionLabel,
+      },
     })
 
     return NextResponse.json({

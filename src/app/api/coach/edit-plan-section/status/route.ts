@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   const clientId = request.nextUrl.searchParams.get('clientId')?.trim()
   const section = request.nextUrl.searchParams.get('section')?.trim()
-  if (!clientId || (section !== 'nutrition' && section !== 'workout')) {
+  if (!clientId || (section !== 'nutrition' && section !== 'workout' && section !== 'cardio')) {
     return NextResponse.json({ error: 'clientId and section are required' }, { status: 400 })
   }
 

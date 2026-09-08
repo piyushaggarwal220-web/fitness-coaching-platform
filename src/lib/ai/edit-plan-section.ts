@@ -1,4 +1,12 @@
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
+import {
+    CARDIO_STEPS_ONLY_RULES,
+    defaultDailyStepTarget,
+    extractStepCount,
+    formatStepsOnlyCardio,
+    stepCountFromInstruction,
+} from '@/lib/ai/cardio-steps'
+import { applyCoachDietEditsToText, coachEditFollowthroughHint } from '@/lib/ai/coach-edit-followthrough'
 import { LIMITS, MODELS, PLAN_GENERATION_TEMPERATURE } from '@/lib/ai/config'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import {
@@ -30,16 +38,24 @@ import {
 import { REMAKE_PLAN_PREFIX } from '@/lib/coach/remake-plan'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
+  CARDIO_MODIFY_PLAN_RULES,
   CLIENT_PLAN_EDIT_WEEK_RULES,
   DIET_MODIFY_PLAN_RULES,
   FRESH_PLAN_OUTPUT_RULES,
+  WORKOUT_MODIFY_PLAN_RULES,
   stripClientWeekHandoffLanguage,
   stripPlanEditMetaLanguage,
 } from '@/lib/ai/plan-prose-guards'
+import {
+  formatStandingCoachInstructionsBlock,
+  loadStandingCoachInstructions,
+  type StandingCoachInstruction,
+} from '@/lib/ai/standing-coach-instructions'
 import { logAiGeneration } from '@/lib/ai/trace-log'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
 
-export type PlanSectionKind = 'nutrition' | 'workout'
+export type PlanSectionKind = 'nutrition' | 'workout' | 'cardio'
 
 export type PlanEditSource = 'coach' | 'client'
 
@@ -56,6 +72,8 @@ export type EditPlanSectionInput = {
   remakeFromScratch?: boolean
   clientName?: string | null
   clientId?: string
+  /** Prior coach instructions that this edit must still honor. Loaded from logs when omitted. */
+  standingPriorInstructions?: StandingCoachInstruction[] | null
   previousCalories?: number | null
   profile?: Pick<
     OnboardingProfile,
@@ -83,7 +101,9 @@ export type EditPlanSectionResult = {
 }
 
 function sectionLabel(section: PlanSectionKind): string {
-  return section === 'nutrition' ? 'nutrition / diet plan' : 'workout plan'
+  if (section === 'nutrition') return 'nutrition / diet plan'
+  if (section === 'cardio') return 'cardio / steps plan'
+  return 'workout plan'
 }
 
 function resolveEditInstruction(input: EditPlanSectionInput): {
@@ -110,7 +130,15 @@ function resolveEditInstruction(input: EditPlanSectionInput): {
       instruction:
         input.section === 'workout'
           ? 'Remake the workout plan completely from the client profile. Ignore the current draft text. Full week with Day 1 (Monday) through Day 7. No edit meta.'
-          : 'Remake the diet plan completely from the client profile. Ignore the current draft text. Full 7-day plan with matching header and daily totals. No edit meta.',
+          : input.section === 'cardio'
+            ? 'Set the cardio plan to a single daily step count only. One line like 8000 steps. No LISS, HIIT, or extra notes.'
+            : 'Remake the diet plan completely from the client profile. Ignore the current draft text. Full 7-day plan with matching header and daily totals. No edit meta.',
+      source: 'coach',
+    }
+  }
+  if (input.section === 'cardio') {
+    return {
+      instruction: 'Write only the daily step count for this client. One line, e.g. 8000 steps.',
       source: 'coach',
     }
   }
@@ -119,7 +147,18 @@ function resolveEditInstruction(input: EditPlanSectionInput): {
 
 function buildMockRevision(input: EditPlanSectionInput): string {
   const { instruction } = resolveEditInstruction(input)
+  if (input.section === 'cardio') {
+    const fromAsk = stepCountFromInstruction([instruction, input.coachNote].filter(Boolean).join('\n'))
+    const fromCurrent = extractStepCount(input.currentText)
+    const habit = input.profile?.onboarding_data?.lifestyle?.dailySteps
+    return formatStepsOnlyCardio(fromAsk ?? fromCurrent ?? defaultDailyStepTarget(habit))
+  }
   const note = input.coachNote?.trim()
+  const body = input.currentText.trim() || `(No prior ${sectionLabel(input.section)} — add structure here.)`
+  if (input.section === 'nutrition') {
+    const standingText = (input.standingPriorInstructions ?? []).map((item) => item.text).join('\n')
+    return applyCoachDietEditsToText(body, [standingText, instruction, note ?? ''].filter(Boolean).join('\n'))
+  }
   const header = [
     `Rewrote ${sectionLabel(input.section)} (mock)`,
     `Instruction: ${instruction}`,
@@ -129,7 +168,6 @@ function buildMockRevision(input: EditPlanSectionInput): string {
     .filter(Boolean)
     .join('\n')
 
-  const body = input.currentText.trim() || `(No prior ${sectionLabel(input.section)} — add structure here.)`
   return `${header}\n${body}\n\n[Apply instruction as a fresh rewrite — no edit meta in client-facing text.]`
 }
 
@@ -176,14 +214,28 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
   const currentText = input.currentText.trim()
   const { instruction, source } = resolveEditInstruction(input)
 
+  let standing = input.standingPriorInstructions ?? null
+  if (standing == null && input.clientId && !input.remakeFromScratch) {
+    try {
+      standing = await loadStandingCoachInstructions(createAdminClient(), input.clientId)
+    } catch {
+      standing = []
+    }
+  }
+  const standingBlock = formatStandingCoachInstructionsBlock(standing ?? [], instruction)
+
   const section = sectionLabel(input.section)
-  const combinedCalorieRequest = [instruction, input.coachNote].filter(Boolean).join('\n')
+  const combinedCalorieRequest = [instruction, input.coachNote, standingBlock].filter(Boolean).join('\n')
   const needsExpenditure = clientRequestNeedsExpenditureFocus(combinedCalorieRequest)
   const touchesCalories =
     input.section === 'nutrition' && requestTouchesCalories(instruction, input.coachNote) && !needsExpenditure
   const targetsMaintenance = requestTargetsMaintenance(instruction, input.coachNote)
   const isDietModify =
     input.section === 'nutrition' && !input.remakeFromScratch && currentText.length > 0
+  const isWorkoutModify =
+    input.section === 'workout' && !input.remakeFromScratch && currentText.length > 0
+  const isCardioModify = input.section === 'cardio' && !input.remakeFromScratch
+  const isModify = isDietModify || isWorkoutModify || isCardioModify
   const preserveCalories = !touchesCalories || needsExpenditure
   const mandatoryCalorieTarget =
     input.section === 'nutrition' && input.profile && (!isDietModify || touchesCalories || needsExpenditure)
@@ -194,24 +246,35 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     : touchesCalories
       ? SAFE_RATE_OF_CHANGE_RULE
       : EDIT_CALORIE_PRESERVATION_RULES
+  const modifyRules = isDietModify
+    ? DIET_MODIFY_PLAN_RULES
+    : isWorkoutModify
+      ? WORKOUT_MODIFY_PLAN_RULES
+      : isCardioModify
+        ? CARDIO_MODIFY_PLAN_RULES
+        : FRESH_PLAN_OUTPUT_RULES
   const systemPrompt = [
     source === 'coach'
       ? 'You are an expert fitness coach rewriting a client plan section from the coach\'s direction.'
       : 'You are an expert fitness coach rewriting a client plan section based on the client\'s request.',
-    `Produce a fresh, complete ${section} — not an in-place patch of the old text.`,
+    isModify
+      ? `Modify the current ${section} so the coach instruction is visible and exact. Keep everything they did not ask to change.`
+      : `Produce a fresh, complete ${section} — not an in-place patch of the old text.`,
     'Rules:',
-    input.remakeFromScratch
-      ? REMAKE_PLAN_PREFIX
-      : isDietModify
-        ? DIET_MODIFY_PLAN_RULES
-        : FRESH_PLAN_OUTPUT_RULES,
+    input.remakeFromScratch ? REMAKE_PLAN_PREFIX : modifyRules,
     input.remakeFromScratch
       ? '- Discard the current draft entirely. Use client profile/context only.'
-      : isDietModify
-        ? '- The CURRENT PLAN below is the base template. Change only what the instruction or Hard Constraints require; keep everything else the same.'
+      : isModify
+        ? '- The CURRENT PLAN below is the base template. Change only what the instruction, standing coach requests, or Hard Constraints require; keep everything else the same.'
         : '- Use the current plan below only as background (foods they eat, exercises they use, schedule). Rewrite the full section applying the instruction.',
-    '- Preserve useful structure: day headers as Day N (Weekday) with Day 1 = Monday, meal names, exercise lines with sets x reps (plain letter x).',
-    DAY_HEADER_PROMPT_RULES,
+    '- APPLY THE INSTRUCTION EXACTLY. If the coach names foods, exercises, days, or a step count, those must appear in the output as asked.',
+    '- Honor every standing coach request below unless this new instruction explicitly overrides that point.',
+    '- Client-told preferences the coach already applied (foods to drop, skip breakfast/lunch, vegetarian/vegan, allergies, dislikes) stay in force on later edits.',
+    input.section === 'cardio' ? CARDIO_STEPS_ONLY_RULES : null,
+    input.section === 'cardio'
+      ? null
+      : '- Preserve useful structure: day headers as Day N (Weekday) with Day 1 = Monday, meal names, exercise lines with sets x reps (plain letter x).',
+    input.section === 'cardio' ? null : DAY_HEADER_PROMPT_RULES,
     input.section === 'nutrition' ? CALORIE_FORMULA_PROMPT_RULES : null,
     input.section === 'nutrition' ? DIET_PREFERENCE_ENFORCEMENT_RULES : null,
     input.section === 'nutrition' ? DIET_LIFESTYLE_RESPECT_RULES : null,
@@ -220,27 +283,38 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         ? DIET_MODIFY_COACH_WRITING_RULES
         : DIET_COACH_WRITING_RULES
       : null,
-    calorieRules,
-    mandatoryCalorieTarget,
+    input.section === 'nutrition' ? calorieRules : null,
+    input.section === 'nutrition' ? mandatoryCalorieTarget : null,
     targetsMaintenance
       ? 'MAINTENANCE FOCUS: Rebuild portions to maintenance-level food — generous enough to train and recover. Header, daily totals, and meal lines must all match.'
       : null,
-    HIGH_FLUX_PHILOSOPHY_RULES,
-    HIGH_FLUX_OUTPUT_PAIRING_RULES,
-    '- If the instruction names specific foods, exercises, days, or constraints, the rewritten plan must reflect them.',
+    input.section === 'cardio' ? null : HIGH_FLUX_PHILOSOPHY_RULES,
+    input.section === 'cardio' ? null : HIGH_FLUX_OUTPUT_PAIRING_RULES,
     '- Keep language natural, human, and coach-ready in plain text, not JSON.',
     '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
-    '- Use plain section titles and put list items on separate lines without symbol prefixes.',
-    '- For workout sections: one exercise per line under each day header as "Exercise: N sets x M reps" (or timed duration). The name before the colon must be a real lift or movement, not a coaching sentence or a muscle-group-only label. The daily tracker parses these lines.',
-    EXERCISE_NAME_PROMPT_RULES,
-    WORKOUT_SECTION_PROMPT_RULES,
-    WORKOUT_VOLUME_PROMPT_RULES,
-    '- For nutrition sections: if protein is hard to hit with allowed foods, lower protein and keep calories high. Never inflate protein numbers. Daily totals count only the primary meal option. Minimum platform kcal floor unless the coach already set otherwise.',
-    PROTEIN_CALORIE_PROMPT_RULES,
+    input.section === 'cardio'
+      ? null
+      : '- Use plain section titles and put list items on separate lines without symbol prefixes.',
+    input.section === 'workout'
+      ? '- For workout sections: one exercise per line under each day header as "Exercise: N sets x M reps" (or timed duration). The name before the colon must be a real lift or movement, not a coaching sentence or a muscle-group-only label. The daily tracker parses these lines.'
+      : null,
+    input.section === 'workout' ? EXERCISE_NAME_PROMPT_RULES : null,
+    input.section === 'workout' ? WORKOUT_SECTION_PROMPT_RULES : null,
+    input.section === 'workout' ? WORKOUT_VOLUME_PROMPT_RULES : null,
+    input.section === 'nutrition'
+      ? '- For nutrition sections: if protein is hard to hit with allowed foods, lower protein and keep calories high. Never inflate protein numbers. Daily totals count only the primary meal option. Minimum platform kcal floor unless the coach already set otherwise.'
+      : null,
+    input.section === 'nutrition' ? PROTEIN_CALORIE_PROMPT_RULES : null,
     '- Do not invent unsafe extreme restrictions or medical claims.',
-    '- Never introduce cross-day references ("same as Day 1", "repeat Day 2", "follow Day 3\'s plan", "as above"). Every day must keep its full meal or exercise list written out so the daily tracker can parse it.',
-    '- Never put the next day\'s exercises under Post-Workout / Recovery / Stretching of the previous day.',
-    '- If the instruction asks one day to mirror another, copy the full content under both day headers instead of pointing between days.',
+    input.section === 'cardio'
+      ? null
+      : '- Never introduce cross-day references ("same as Day 1", "repeat Day 2", "follow Day 3\'s plan", "as above"). Every day must keep its full meal or exercise list written out so the daily tracker can parse it.',
+    input.section === 'workout'
+      ? '- Never put the next day\'s exercises under Post-Workout / Recovery / Stretching of the previous day.'
+      : null,
+    input.section === 'cardio'
+      ? null
+      : '- If the instruction asks one day to mirror another, copy the full content under both day headers instead of pointing between days.',
     `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
   ]
     .filter((line): line is string => line != null)
@@ -249,19 +323,26 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
   const userPrompt = [
     input.clientName ? `Client: ${input.clientName}` : null,
     `Section: ${section}`,
-    source === 'coach' ? 'Task: coach-directed fresh rewrite.' : 'Task: client-requested fresh rewrite.',
+    source === 'coach'
+      ? isModify
+        ? 'Task: apply the coach instruction exactly on the current plan. Keep unmentioned parts the same.'
+        : 'Task: coach-directed fresh rewrite.'
+      : 'Task: client-requested rewrite that still respects standing coach requests.',
     input.remakeFromScratch ? 'Mode: REMAKE FROM SCRATCH — ignore current draft body.' : null,
     input.section === 'nutrition' && input.profile
       ? buildDietHardConstraintsSection(input.profile as OnboardingProfile)
       : null,
+    standingBlock || null,
     '',
-    source === 'coach' ? '## Coach instruction' : '## Client request',
+    source === 'coach' ? '## Coach instruction (apply this now)' : '## Client request',
     instruction,
     input.coachNote?.trim() ? `\n## Additional context\n${input.coachNote.trim()}` : null,
     '',
     input.remakeFromScratch
       ? '## Current plan (ignore — profile-driven remake only)'
-      : '## Current plan (background context only — rewrite from scratch, do not patch in place)',
+      : isModify
+        ? '## Current plan (base template — change only what the instruction requires)'
+        : '## Current plan (background context only — rewrite from scratch, do not patch in place)',
     currentText || '(empty — write a complete starter section that matches the instruction)',
   ]
     .filter((line) => line != null)
@@ -270,7 +351,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
   const providerMode = getPlanProviderMode()
   const started = Date.now()
   const model = input.remakeFromScratch ? MODELS.GPT_TERRA : MODELS.GPT_LUNA
-  const maxAttempts = providerMode === 'mock' ? 1 : 2
+  const maxAttempts = providerMode === 'mock' ? 1 : 3
   let totalInputTokens = 0
   let totalOutputTokens = 0
   let lastRaw = ''
@@ -293,7 +374,10 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
           model,
           maxTokens: LIMITS.MAX_SECTION_EDIT_TOKENS,
           temperature: PLAN_GENERATION_TEMPERATURE,
-          mockText: buildMockRevision(input),
+          mockText: buildMockRevision({
+            ...input,
+            standingPriorInstructions: standing ?? input.standingPriorInstructions,
+          }),
         })
       } catch (err) {
         if (
@@ -335,6 +419,20 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
             })
           : revisedRaw
 
+      if (input.section === 'cardio') {
+        const fromAsk = stepCountFromInstruction(instruction)
+        const fromModel = extractStepCount(revisedRaw)
+        const fromCurrent = extractStepCount(currentText)
+        const fromStanding = [...(standing ?? [])]
+          .reverse()
+          .map((item) => extractStepCount(item.text))
+          .find((n) => n != null)
+        const habit = input.profile?.onboarding_data?.lifestyle?.dailySteps
+        revisedText = formatStepsOnlyCardio(
+          fromAsk ?? fromModel ?? fromCurrent ?? fromStanding ?? defaultDailyStepTarget(habit)
+        )
+      }
+
       if (input.section === 'nutrition' && input.profile) {
         const repaired = applyDietPlanRepair(
           {
@@ -360,6 +458,17 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         })
       }
 
+      if (input.section === 'nutrition') {
+        const coachDietAsk = [
+          ...(standing ?? []).map((item) => item.text),
+          instruction,
+          input.coachNote ?? '',
+        ]
+          .filter(Boolean)
+          .join('\n')
+        revisedText = applyCoachDietEditsToText(revisedText, coachDietAsk)
+      }
+
       if (input.section === 'nutrition' && input.profile) {
         const preferenceSafety = enforceDietPreference(
           { meals: [{ example: revisedText }] },
@@ -377,14 +486,26 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         }
       }
 
-      // Reject near-copies when the coach asked for a targeted rewrite (not diet modify / scratch remake).
+      const followthrough = coachEditFollowthroughHint(
+        input.section,
+        [standingBlock, instruction].filter(Boolean).join('\n'),
+        revisedText
+      )
+      if (followthrough && attempt < maxAttempts - 1) {
+        dietRetryHint = followthrough
+        continue
+      }
+
+      // Reject near-copies when the coach asked for a rewrite that is supposed to change the text.
       if (
         currentText &&
         attempt < maxAttempts - 1 &&
         source === 'coach' &&
         instruction.trim() &&
         !input.remakeFromScratch &&
-        !isDietModify
+        !isDietModify &&
+        !isWorkoutModify &&
+        input.section !== 'cardio'
       ) {
         const similarity = planTextSimilarityLocal(currentText, revisedText)
         if (similarity >= 0.93) {
@@ -409,7 +530,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         validationResult: 'ok',
         success: true,
         knowledgeRefs: null,
-        renderedOutput: { summary },
+        renderedOutput: { summary, section: input.section, instruction },
       }).catch(() => undefined)
 
       return {

@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 17
+export const TRACKER_PARSER_VERSION = 18
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -148,6 +148,14 @@ function stripMarkdownDecorators(value: string): string {
   return value.replace(/^\*{1,2}|\*{1,2}$/g, '').replace(/^#{1,3}\s*/, '').trim()
 }
 
+function stripListPrefix(value: string): string {
+  return value.replace(/^[-*•]\s+/, '').trim()
+}
+
+function normalizeMealLine(value: string): string {
+  return stripListPrefix(stripMarkdownDecorators(value.trim()))
+}
+
 const MEAL_NAME_PATTERN =
   'late snack|evening snack|morning meal|evening meal|pre[- ]?workout(?:\\s+meal)?|post[- ]?workout(?:\\s+meal)?|before(?:\\s+bed|\\s+sleep)|mid[- ]?morning|bedtime|breakfast|lunch|dinner|snack|evening|meal'
 
@@ -203,7 +211,7 @@ function looksLikeMealTime(value: string | undefined): boolean {
 
 /** Breakfast / Meal 1 / 9:00 AM – Lunch headers used in coach-typed plans. */
 function matchMealHeader(raw: string): { name: string; mealTime?: string } | null {
-  const trimmed = stripMarkdownDecorators(raw.trim())
+  const trimmed = normalizeMealLine(raw)
   if (!trimmed || DAY_HEADER_LINE.test(trimmed) || NON_MEAL_HEADER.test(trimmed)) return null
 
   const numbered = trimmed.match(MEAL_NUMBERED_LINE)
@@ -342,8 +350,8 @@ function parseMealsInDay(
   }
 
   for (const line of lines) {
-    const trimmed = stripMarkdownDecorators(line.trim())
-    const header = matchMealHeader(trimmed) ?? matchMealHeader(line.trim())
+    const trimmed = normalizeMealLine(line)
+    const header = matchMealHeader(trimmed) ?? matchMealHeader(line)
     if (header) {
       flush()
       current = {
@@ -1515,7 +1523,7 @@ function parseCardio(cardio: string): TrackerCardioItem[] {
   const lines = cardio.replace(/\r\n/g, '\n').split('\n').map((l) => l.trim()).filter(Boolean)
 
   for (const line of lines) {
-    const stepsMatch = line.match(/(\d[\d,]*)\s*steps/i)
+    const stepsMatch = line.match(/(\d[\d,]*)\s*steps/i) ?? line.match(/^(\d[\d,]{3,})$/)
     if (stepsMatch) {
       items.push({
         id: 'cardio-steps',

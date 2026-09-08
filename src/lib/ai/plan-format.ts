@@ -1,4 +1,5 @@
 import type { GeneratedPlan } from '@/lib/ai/generate-plan'
+import { normalizeCardioPlanToSteps } from '@/lib/ai/cardio-steps'
 import { syncStoredDietText } from '@/lib/ai/nutrition-macro-sync'
 import { stripClientWeekHandoffLanguage } from '@/lib/ai/plan-prose-guards'
 import { applyParsedSectionsToFormData } from '@/lib/plan-section-parser'
@@ -195,29 +196,8 @@ function formatMeals(meals: unknown[]): string {
     .join('\n')
 }
 
-function formatCardioSessions(sessions: unknown[]): string {
-  if (sessions.length === 0) return ''
-
-  return sessions
-    .map((session) => {
-      if (!isRecord(session)) return formatScalar(session)
-
-      const type =
-        (typeof session.type === 'string' && session.type) ||
-        (typeof session.name === 'string' && session.name) ||
-        'Session'
-
-      const parts = [
-        typeof session.duration === 'string' ? session.duration : null,
-        typeof session.frequency === 'string' ? session.frequency : null,
-        typeof session.intensity === 'string' ? session.intensity : null,
-        typeof session.notes === 'string' ? session.notes : null,
-      ].filter(Boolean)
-
-      return parts.length > 0 ? `${type} — ${parts.join(' · ')}` : type
-    })
-    .filter(Boolean)
-    .join('\n')
+function formatCardioSessions(sessions: unknown[], fallbackText?: string | null): string {
+  return normalizeCardioPlanToSteps(sessions, null, fallbackText)
 }
 
 function formatSupplementItems(items: unknown[]): string {
@@ -251,7 +231,7 @@ function formatSupplementItems(items: unknown[]): string {
 export function generatedPlanToFormData(
   generated: GeneratedPlan,
   clientId: string,
-  options?: { title?: string; phase?: string }
+  options?: { title?: string; phase?: string; fallbackCardio?: string | null }
 ): PlanFormData {
   const workoutDays = formatWorkoutDays(generated.workout_plan.days)
   const workoutText = [generated.workout_plan.overview, workoutDays ? `\n${workoutDays}` : '']
@@ -280,7 +260,9 @@ export function generatedPlanToFormData(
     phase: options?.phase ?? 'Phase 1',
     workout_plan: normalizeAiPlanProse(workoutText),
     nutrition_plan: nutritionText,
-    cardio_plan: normalizeAiPlanProse(formatCardioSessions(generated.cardio_plan.sessions)),
+    cardio_plan: normalizeAiPlanProse(
+      formatCardioSessions(generated.cardio_plan.sessions, options?.fallbackCardio)
+    ),
     supplement_plan: normalizeAiPlanProse(formatSupplementItems(generated.supplement_plan.items)),
     coach_notes: normalizeAiPlanProse(generated.coach_notes),
   })
@@ -306,8 +288,15 @@ export function generatedWorkoutFormData(generated: GeneratedPlan, clientId: str
   }
 }
 
-export function generatedCardioFormData(generated: GeneratedPlan, clientId: string): PlanFormData {
-  const full = generatedPlanToFormData(generated, clientId, { title: 'Cardio Plan (Draft)' })
+export function generatedCardioFormData(
+  generated: GeneratedPlan,
+  clientId: string,
+  fallbackCardio?: string | null
+): PlanFormData {
+  const full = generatedPlanToFormData(generated, clientId, {
+    title: 'Cardio Plan (Draft)',
+    fallbackCardio,
+  })
   return {
     ...full,
     workout_plan: '',

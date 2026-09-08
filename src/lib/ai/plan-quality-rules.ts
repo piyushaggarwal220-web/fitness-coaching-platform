@@ -120,7 +120,7 @@ export const HIGH_FLUX_OUTPUT_PAIRING_RULES = [
   'HIGH FLUX OUTPUT PAIRING (non-negotiable when calories are on the higher side):',
   '- When daily calories are on the higher side for this client, you MUST also raise output in the same plan.',
   '- Include a daily step target at least ~2,500–4,000 above the client\'s current habit (from onboarding daily steps; if unknown, use 8,000–10,000+ when schedule allows).',
-  '- cardio_plan must list concrete walking/LISS sessions — not empty, not "optional walk sometimes".',
+  '- cardio_plan must be a single daily step count (e.g. "10000 steps") — not empty, not a LISS/HIIT program.',
   '- If mesocycle volume drops (new month week 1), HOLD food and raise steps/cardio instead of cutting calories.',
 ].join('\n')
 
@@ -129,7 +129,7 @@ export const EDIT_EXPENDITURE_FIRST_RULES = [
   '- Do NOT reduce daily calories, portions, or carbs/fats to force fat loss.',
   '- HOLD the current calorie average (within ~75 kcal). You may improve food quality or timing only.',
   '- Tell the client the next lever is steps/training/cardio — not eating less.',
-  '- For workout edits: raise daily step targets and/or add sustainable walking/LISS within their schedule and volume caps.',
+  '- For workout edits: keep training changes in the workout; step-count changes belong in cardio as a single number of steps.',
 ].join('\n')
 
 export const WORKOUT_VOLUME_PROMPT_RULES = [

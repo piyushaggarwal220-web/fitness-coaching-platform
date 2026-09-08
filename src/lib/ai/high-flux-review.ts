@@ -1,3 +1,4 @@
+import { extractStepCount } from '@/lib/ai/cardio-steps'
 import { resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import {
   inferMacrosFromDietText,
@@ -32,6 +33,7 @@ function parseStepTarget(text: string | null | undefined): number | null {
 function cardioLooksMinimal(text: string | null | undefined): boolean {
   const t = text?.trim() ?? ''
   if (!t) return true
+  if (extractStepCount(t) != null) return false
   if (t.length < 80) return true
   return !/(walk|steps|liss|cardio|zone|min|minute|km)/i.test(t)
 }
@@ -92,7 +94,7 @@ export function evaluateHighFluxPlanReview(input: {
     flags.push({
       level: 'warning',
       message:
-        'Cardio / steps section looks empty or thin. High flux requires a clear daily step target and walking/LISS — raise output, not just food cuts.',
+        'Cardio / steps section looks empty or thin. High flux requires a clear daily step target (e.g. 10000 steps).',
     })
   } else if (stepTarget != null && stepTarget < minSteps) {
     flags.push({

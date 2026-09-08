@@ -36,6 +36,25 @@ export const DIET_MODIFY_PLAN_RULES = [
   'NEVER mention edits, updates, or what changed in client-facing text. Output reads like the normal plan the client already follows.',
 ].join('\n')
 
+/** Coach workout edit: modify the existing plan — do not invent a new split unless asked. */
+export const WORKOUT_MODIFY_PLAN_RULES = [
+  'WORKOUT MODIFY (non-negotiable — default for coach workout edits):',
+  'The CURRENT PLAN below is the client\'s active workout. MODIFY it — do not invent a completely different week unless the coach asked for a remake.',
+  'Keep the same days, lifts, sets x reps, and structure for every exercise the coach did NOT ask to change.',
+  'When the coach names specific exercises, days, volume, or constraints, change ONLY those items.',
+  'Unchanged days should read almost the same as the current plan (same exercise lines). Still output all 7 days in full for the tracker — copy unchanged days verbatim where possible.',
+  'NEVER mention edits, updates, or what changed in client-facing text. Output reads like the normal plan the client already follows.',
+].join('\n')
+
+/** Coach cardio edit: one step number only. */
+export const CARDIO_MODIFY_PLAN_RULES = [
+  'CARDIO MODIFY (non-negotiable):',
+  'Output ONLY the daily step count as one line, e.g. "10000 steps".',
+  'Honor the current request and every standing coach request that still applies.',
+  'If the coach names a step number, use that number. If they only tweak something else, keep the current step count.',
+  'Do not write LISS, HIIT, duration, water, sleep, or extra sentences.',
+].join('\n')
+
 /** Shared rule for all diet/workout generation that may land in the client plan. */
 export const NEVER_MENTION_COACHING_WEEK_RULE =
   'Never mention coaching week numbers, "Welcome to week N", or "next week\'s plan" in client-facing diet/workout prose. Mesocycle week labels are internal coaching context only.'

@@ -354,6 +354,44 @@ const snackText = prose(snackRepaired.plan)
 assert('missing snack food injected', /\bfruit\b/i.test(snackText))
 assert('missing snack time injected', /17:00/.test(snackText))
 assert('gluten snack repair did not add roti', !/\broti\b/i.test(snackText))
+assert(
+  'existing breakfast is not duplicated by lifestyle inject',
+  (snackText.match(/^Breakfast\b/gim) ?? []).length === 7
+)
+assert('existing breakfast got lifestyle clock time', /Breakfast \(08:30\)/i.test(snackText))
+
+const officeDupPlan = weekPlan(2150, () => 'oats with fruit and chai')
+const officeDupProfile = {
+  ...adultMale,
+  weight: '86',
+  height: '176',
+  age: '34',
+  gender: 'male',
+  activity_level: 'sedentary',
+  fitness_goal: 'fat_loss',
+  onboarding_data: {
+    eatingPattern: {
+      breakfast: 'Office canteen sandwich and chai',
+      lunch: 'Office thali — dal, roti, sabzi, curd',
+      dinner: 'Leftover roti with dal or late delivery',
+      snacks: 'Chai and roasted chana at desk',
+      timings: {
+        breakfast: '09:30',
+        lunch: '14:00',
+        dinner: '22:30',
+        snacks: '17:00',
+      },
+    },
+  },
+}
+const officeDupRepaired = applyDietPlanRepair(officeDupPlan, officeDupProfile)
+const officeDupText = prose(officeDupRepaired.plan)
+assert(
+  'office eating-pattern foods are not pasted as a second meal set',
+  (officeDupText.match(/^Breakfast\b/gim) ?? []).length === 7
+)
+assert('office plan still has one lunch slot per day', (officeDupText.match(/^Lunch\b/gim) ?? []).length === 7)
+assert('office breakfast kept a clock time', /Breakfast \(09:30\)/i.test(officeDupText))
 
 const weekendSafeMeals = weekPlan(2300, (day) =>
   ['Saturday', 'Sunday'].includes(day) ? 'dal roti sabzi paneer' : 'chicken curry with roti'

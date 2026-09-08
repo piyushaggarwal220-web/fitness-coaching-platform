@@ -463,18 +463,47 @@ function planHasTime(text: string, time: string): boolean {
   return timeVariants(time).some((v) => lower.includes(v.toLowerCase()))
 }
 
+function parseInjectedSlotLine(line: string): { label: string; time: string | null } | null {
+  const match = line.match(/^(Breakfast|Lunch|Dinner|Snack)(?:\s*\((\d{1,2}:\d{2})\))?\s*:/i)
+  if (!match) return null
+  return { label: match[1]!, time: match[2] ?? null }
+}
+
+function dayHasMealSlot(body: string, label: string): boolean {
+  const re = new RegExp(`(?:^|\\n)[ \\t]*(?:\\*{1,2}|#{1,3}\\s*)?${label}\\b`, 'i')
+  return re.test(`\n${body}`)
+}
+
+/** Put the lifestyle clock on an existing slot instead of adding a second Breakfast/Lunch/Dinner. */
+function stampTimeOnExistingSlot(body: string, label: string, time: string): string {
+  if (planHasTime(body, time)) return body
+  const re = new RegExp(
+    `((?:^|\\n)[ \\t]*(?:\\*{1,2}|#{1,3}\\s*)?)(${label})(\\s*\\([^)]*\\))?(\\s*:)`,
+    'i'
+  )
+  return body.replace(re, `$1$2 (${time})$4`)
+}
+
 function injectSlotLine(text: string, line: string, fastingWeekdays: string[]): string {
-  if (!/Day\s*\d\s*\(/i.test(text)) {
-    return `${text.trim()}\n\n${line}\n`
-  }
-  return mapDayBlocks(text, (weekday, body) => {
-    if (isFastingDay(weekday, body, fastingWeekdays)) return body
+  const parsed = parseInjectedSlotLine(line)
+  const applyToBody = (body: string): string => {
     if (body.includes(line)) return body
+    if (parsed && dayHasMealSlot(body, parsed.label)) {
+      return parsed.time ? stampTimeOnExistingSlot(body, parsed.label, parsed.time) : body
+    }
     const daily = body.search(/daily\s+(?:total|totals|average)/i)
     if (daily >= 0) {
       return `${body.slice(0, daily).trimEnd()}\n${line}\n${body.slice(daily)}`
     }
     return `${body.trimEnd()}\n${line}\n`
+  }
+
+  if (!/Day\s*\d\s*\(/i.test(text)) {
+    return applyToBody(text)
+  }
+  return mapDayBlocks(text, (weekday, body) => {
+    if (isFastingDay(weekday, body, fastingWeekdays)) return body
+    return applyToBody(body)
   })
 }
 

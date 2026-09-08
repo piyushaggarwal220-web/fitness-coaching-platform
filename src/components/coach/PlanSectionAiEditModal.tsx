@@ -147,11 +147,13 @@ export function PlanSectionAiEditModal({
 
   if (!open) return null
 
-  const label = section === 'nutrition' ? 'diet' : 'workout'
+  const label = section === 'nutrition' ? 'diet' : section === 'cardio' ? 'cardio' : 'workout'
   const scratchInstruction =
     section === 'nutrition'
       ? 'Remake the diet plan completely from the client profile. Ignore the current draft text. Full 7-day plan with matching header and daily totals. No edit meta.'
-      : 'Remake the workout plan completely from the client profile. Ignore the current draft text. Full week with Day 1 (Monday) through Day 7. No edit meta.'
+      : section === 'cardio'
+        ? 'Set the cardio plan to a single daily step count only. One line like 8000 steps. No LISS, HIIT, or extra notes.'
+        : 'Remake the workout plan completely from the client profile. Ignore the current draft text. Full week with Day 1 (Monday) through Day 7. No edit meta.'
 
   const resetAndClose = () => {
     setCoachInstruction('')
@@ -163,7 +165,7 @@ export function PlanSectionAiEditModal({
 
   const generate = async (instructionOverride?: string) => {
     const instruction = (instructionOverride ?? coachInstruction).trim()
-    if (!instruction && section !== 'nutrition' && !instructionOverride) {
+    if (!instruction && section !== 'nutrition' && section !== 'cardio' && !instructionOverride) {
       setStatusVariant('error')
       setStatus('Enter your coaching instruction first.')
       return
@@ -221,17 +223,23 @@ export function PlanSectionAiEditModal({
     >
       <div style={s.drawer} onClick={(e) => e.stopPropagation()}>
         <h2 id="ai-edit-section-title" style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 800 }}>
-          {section === 'nutrition' ? 'Modify diet with AI' : `Regenerate ${label} with AI`}
+          {section === 'nutrition'
+            ? 'Modify diet with AI'
+            : section === 'cardio'
+              ? 'Modify cardio with AI'
+              : `Regenerate ${label} with AI`}
         </h2>
         <p style={{ margin: '0 0 20px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
           {section === 'nutrition'
             ? 'Updates the current diet — same meals and structure unless your notes or profile constraints require a change. Use Remake from scratch only if you want a brand-new week of meals.'
-            : 'Tell the AI what you want in this section. It will write a fresh plan — not patch the old one — and won\'t mention edits in the client-facing text.'}{' '}
+            : section === 'cardio'
+              ? 'Cardio is only a daily step count (e.g. 8000 steps). Earlier coach requests stay in force unless you override them here.'
+              : 'Updates the current workout — same days and lifts unless your notes require a change. Earlier coach requests stay in force unless you override them. Use Remake from scratch only for a brand-new week.'}{' '}
           Review the draft, apply it to the editor, then save or deliver.
         </p>
 
         <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
-          {section === 'nutrition' ? 'What to change (optional)' : 'Coach instruction *'}
+          {section === 'nutrition' || section === 'cardio' ? 'What to change (optional)' : 'Coach instruction *'}
         </label>
         <textarea
           value={coachInstruction}
@@ -240,7 +248,9 @@ export function PlanSectionAiEditModal({
           placeholder={
             section === 'nutrition'
               ? 'e.g. Swap dinner chicken for paneer on Wed/Fri, or leave blank to fix preference/allergy issues only…'
-              : 'e.g. Add a fourth day for shoulders, keep compound focus…'
+              : section === 'cardio'
+                ? 'e.g. Set daily steps to 10000…'
+                : 'e.g. Swap Friday bench for dumbbell press, keep the rest of the week…'
           }
           disabled={generating}
           style={{
@@ -269,7 +279,13 @@ export function PlanSectionAiEditModal({
             onClick={() => void generate()}
             style={{ flex: '1 1 160px' }}
           >
-            {generating ? 'Generating…' : revisedText ? 'Regenerate' : section === 'nutrition' ? 'Apply to current diet' : 'Regenerate with coach instruction'}
+            {generating
+              ? 'Generating…'
+              : revisedText
+                ? 'Regenerate'
+                : section === 'nutrition' || section === 'cardio'
+                  ? 'Apply to current plan'
+                  : 'Regenerate with coach instruction'}
           </Button>
           <Button
             variant="secondary"
@@ -299,7 +315,7 @@ export function PlanSectionAiEditModal({
 
         <p style={{ margin: `${spacing[3]}px 0 0`, fontSize: 12, color: colors.textMuted, lineHeight: 1.45 }}>
           Tip: after applying, click <strong>Save changes</strong>
-          {section === 'nutrition' || section === 'workout' ? ' (or Deliver)' : ''} so the client’s daily
+          {section === 'nutrition' || section === 'workout' || section === 'cardio' ? ' (or Deliver)' : ''} so the client’s daily
           tracker rebuilds from the new plan.
         </p>
       </div>

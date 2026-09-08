@@ -287,10 +287,9 @@ const LIBRARY_CARDIO_OUTPUT_INSTRUCTIONS = [
   'You MUST respond with ONLY valid JSON — no markdown fences, no commentary, no preamble.',
   'The JSON must match this exact top-level structure:',
   PLAN_JSON_SCHEMA,
-  '- Put the full client-facing cardio plan in cardio_plan.sessions (non-empty).',
-  '- Each session object should include type/name, duration, frequency, and optional intensity/notes.',
-  '- Cover walking/steps, LISS, and any HIIT or conditioning appropriate for the client.',
-  '- Include a daily steps target and a short water/sleep reminder in the cardio notes, matched to how many days they actually hit steps.',
+  '- cardio_plan.sessions must contain EXACTLY one item: the daily step count only.',
+  '- Correct: { "type": "8000 steps" } or { "steps": 8000 }. Nothing else in that object.',
+  '- Do not add LISS, HIIT, walking duration, water, sleep, frequency, or extra notes.',
   '- Set workout_plan.overview to "N/A" and workout_plan.days to [].',
   '- Set nutrition_plan calories/protein/carbs/fat to 0 and nutrition_plan.meals to [].',
   '- supplement_plan.items MUST be [].',
@@ -313,8 +312,9 @@ const LIBRARY_SUPPLEMENT_OUTPUT_INSTRUCTIONS = [
 function dedicatedSupportPlanTemplate(actionId?: CoachAiActionId): string | null {
   if (actionId === 'initial_cardio' || actionId === 'review_update_cardio') {
     return [
-      'Create a standalone cardio / steps / conditioning plan for this client.',
-      'Fill cardio_plan.sessions with concrete sessions (type, duration, frequency, intensity).',
+      'Create a standalone daily step target for this client.',
+      'Fill cardio_plan.sessions with exactly one item: the number of steps (e.g. { "type": "8000 steps" }).',
+      'Do not write LISS, HIIT, duration, water, sleep, or extra sessions.',
       'Do not write a strength workout or diet.',
       'Leave workout_plan overview as N/A, nutrition meals empty, and supplement_plan.items empty.',
     ].join(' ')
@@ -727,7 +727,7 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
       promptVersion = `${promptVersion}+${formatLibraryPromptVersion(loaded.system)}`
     }
     if (dedicatedActionTemplate) {
-      promptVersion = `${promptVersion}+support-plan-v1`
+      promptVersion = `${promptVersion}+support-plan-v2`
     }
   }
 

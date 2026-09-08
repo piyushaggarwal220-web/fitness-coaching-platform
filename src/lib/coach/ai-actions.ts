@@ -39,7 +39,7 @@ export const INITIAL_PLAN_ACTIONS: CoachAiActionDefinition[] = [
   {
     id: 'initial_cardio',
     label: 'Generate cardio plan',
-    description: 'Standalone cardio and step targets — not part of the workout plan',
+    description: 'Daily step count only — not LISS/HIIT, not part of the workout plan',
     scope: 'initial',
     requiresCheckin: false,
   },
@@ -70,7 +70,7 @@ export const WEEKLY_COACHING_ACTIONS: CoachAiActionDefinition[] = [
   {
     id: 'review_update_cardio',
     label: 'Update cardio',
-    description: 'Adjust cardio and steps based on the latest check-in',
+    description: 'Adjust the daily step count based on the latest check-in',
     scope: 'weekly',
     requiresCheckin: true,
   },
@@ -202,11 +202,11 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Generate a standalone cardio plan for this client.',
-          'Put all cardio, steps, walking, LISS, HIIT, and conditioning in cardio_plan.sessions only.',
-          'Follow Metabolic Flux Bias: raise sustainable steps/NEAT with higher food intake; prefer walks/LISS over punishing HIIT when pushing flux.',
+          'Write ONLY the daily step count in cardio_plan.sessions (one item, e.g. 8000 steps).',
+          'Do not add LISS, HIIT, walk duration, water, or sleep notes.',
+          'Follow Metabolic Flux Bias by choosing a sustainable step target paired with their food intake.',
           'Do NOT put cardio inside workout_plan or nutrition_plan.',
           'Set workout_plan.overview to "N/A", nutrition meals to [], and supplement_plan.items to [].',
-          'Match frequency and intensity to their goal, schedule, and recovery.',
         ].join(' '),
         coachNote
       )
@@ -273,9 +273,8 @@ export function buildActionCoachInstructions(
           checkin ? checkinContext(checkin) : '',
           checkin ? formatAdherenceDaysForPrompt(checkin, checkin.checkin_type === 'mid_week' ? 3 : 7) : '',
           planContext(activePlan ?? null, ['cardio', 'workout']),
-          'Put updates only in cardio_plan.sessions.',
-          'Always refresh daily steps AND walking/cardio. If steps days are low, give a realistic step floor and how to hit it. If high, progress slightly.',
-          'Include a short sleep and water reminder in session notes.',
+          'Write ONLY the daily step count in cardio_plan.sessions (one item). No LISS, HIIT, water, or sleep notes.',
+          'If steps days are low, pick a realistic step floor. If high, progress slightly. Output is still just the number of steps.',
           'Do not modify diet or workout content.',
         ]
           .filter(Boolean)

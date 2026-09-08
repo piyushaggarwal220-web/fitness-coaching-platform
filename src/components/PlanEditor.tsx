@@ -17,7 +17,7 @@ type PlanEditorProps = {
   onFormPatch?: (patch: Partial<PlanFormData>) => void;
   clients?: Pick<ClientProfile, 'id' | 'name' | 'email'>[];
   clientLocked?: boolean;
-  /** When set, shows Edit with AI on workout + nutrition */
+  /** When set, shows Edit with AI on workout, nutrition, and cardio */
   enableAiEdit?: boolean;
   /** Open a section AI modal once on mount (e.g. from ?ai=1). */
   initialAiSection?: PlanSectionKind | null;
@@ -111,8 +111,15 @@ export function PlanEditor({
       >
         <textarea name="nutrition_plan" value={form.nutrition_plan} onChange={onChange} rows={8} style={styles.textarea} placeholder="Meals, macros, timing..." />
       </Field>
-      <Field label="Cardio plan">
-        <textarea name="cardio_plan" value={form.cardio_plan} onChange={onChange} rows={5} style={styles.textarea} placeholder="Cardio type, duration, frequency..." />
+      <Field
+        label="Cardio plan"
+        action={
+          canAiEdit ? (
+            <AiEditSectionButton label="Modify with AI" onClick={() => setAiSection('cardio')} />
+          ) : undefined
+        }
+      >
+        <textarea name="cardio_plan" value={form.cardio_plan} onChange={onChange} rows={3} style={styles.textarea} placeholder="8000 steps" />
       </Field>
       <Field label="Supplement plan">
         <textarea name="supplement_plan" value={form.supplement_plan} onChange={onChange} rows={4} style={styles.textarea} placeholder="Supplements, dosage, timing..." />
@@ -137,14 +144,22 @@ export function PlanEditor({
         <PlanSectionAiEditModal
           section={aiSection}
           clientId={clientId}
-          currentText={aiSection === 'nutrition' ? form.nutrition_plan : form.workout_plan}
+          currentText={
+            aiSection === 'nutrition'
+              ? form.nutrition_plan
+              : aiSection === 'cardio'
+                ? form.cardio_plan
+                : form.workout_plan
+          }
           open
           onClose={() => setAiSection(null)}
           onApply={(revisedText) => {
             onFormPatch?.(
               aiSection === 'nutrition'
                 ? { nutrition_plan: revisedText }
-                : { workout_plan: revisedText }
+                : aiSection === 'cardio'
+                  ? { cardio_plan: revisedText }
+                  : { workout_plan: revisedText }
             );
           }}
         />

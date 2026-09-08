@@ -22,7 +22,7 @@ type Body = {
 }
 
 function isSection(value: string | undefined): value is PlanSectionKind {
-  return value === 'nutrition' || value === 'workout'
+  return value === 'nutrition' || value === 'workout' || value === 'cardio'
 }
 
 export async function POST(request: Request) {
@@ -54,9 +54,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'clientId is required' }, { status: 400 })
   }
   if (!isSection(body.section)) {
-    return NextResponse.json({ error: 'section must be nutrition or workout' }, { status: 400 })
+    return NextResponse.json({ error: 'section must be nutrition, workout, or cardio' }, { status: 400 })
   }
-  if (!coachInstruction && !clientRequest && body.section !== 'nutrition' && body.remakeFromScratch !== true) {
+  if (!coachInstruction && !clientRequest && body.section !== 'nutrition' && body.section !== 'cardio' && body.remakeFromScratch !== true) {
     return NextResponse.json(
       { error: 'coachInstruction or clientRequest is required' },
       { status: 400 }
@@ -109,6 +109,7 @@ export async function POST(request: Request) {
           section: body.section,
           revisedText: result.revisedText,
           summary: result.summary,
+          instruction: coachInstruction || clientRequest || undefined,
         },
       })
       return result
@@ -149,7 +150,11 @@ export async function POST(request: Request) {
       validationResult: 'started',
       success: true,
       knowledgeRefs: null,
-      renderedOutput: { section: body.section, phase: 'started' },
+      renderedOutput: {
+        section: body.section,
+        phase: 'started',
+        instruction: coachInstruction || clientRequest || undefined,
+      },
     })
 
     after(() =>

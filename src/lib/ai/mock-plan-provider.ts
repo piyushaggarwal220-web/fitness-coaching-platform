@@ -33,11 +33,53 @@ export function buildMockGeneratedPlan(
     ? `Coach notes: ${coachInstructions.trim()}`
     : 'Mock draft — set AI_PLAN_PROVIDER=openai when ready for live generation.'
 
+  const dietKey = (profile.diet_preference ?? '').toLowerCase()
+  const eating = profile.onboarding_data?.eatingPattern
+  const dietNotes = [
+    profile.onboarding_data?.diet?.customNotes,
+    profile.onboarding_data?.diet?.foodsDisliked,
+    eating?.breakfast,
+    eating?.lunch,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  const skipBreakfast = /skip breakfast|no calories before|16\s*:\s*8|first meal is lunch|no breakfast/i.test(
+    dietNotes
+  )
+  const skipLunch = /skip lunch|sleeps through lunch|sleep through lunch/i.test(dietNotes)
+  const jain = /jain|no onion|root vegetable/i.test(dietNotes)
+  const breakfast = skipBreakfast
+    ? 'Breakfast: skipped (fasting window)'
+    : dietKey === 'vegan'
+      ? 'Breakfast: poha with banana'
+      : jain
+        ? 'Breakfast: thepla with chutney'
+        : 'Breakfast: oats with fruit and chai'
+  const lunch = skipLunch
+    ? 'Lunch: skipped (sleep / shift)'
+    : dietKey === 'vegan'
+      ? 'Lunch: mess dal, rice, roti, and tofu sabzi'
+      : jain
+        ? 'Lunch: dal, rice, and doodhi sabzi'
+        : 'Lunch: dal, roti, rice, and paneer sabzi'
+  const dinner =
+    dietKey === 'vegan'
+      ? 'Dinner: chana masala with rice'
+      : jain
+        ? 'Dinner: roti with cabbage sabzi'
+        : 'Dinner: paneer curry with roti'
+  const snack =
+    dietKey === 'vegan'
+      ? 'Snack: banana and roasted chana'
+      : skipBreakfast
+        ? 'Snack: roasted chana, curd, and olives'
+        : 'Snack: roasted chana and curd'
+
   const days = ['Day 1 (Monday)', 'Day 2 (Tuesday)', 'Day 3 (Wednesday)', 'Day 4 (Thursday)', 'Day 5 (Friday)', 'Day 6 (Saturday)', 'Day 7 (Sunday)']
   const weeklyDiet = days
     .map(
       (day) =>
-        `${day}\nBreakfast: ${diet} oats with eggs and fruit\nLunch: lean protein, rice, vegetables\nDinner: protein, complex carbs, salad\nSnack: Greek yogurt or nuts\n(P: ${protein}g | C: 180g | F: 55g | ~${calories} kcal)`
+        `${day}\n${breakfast}\n${lunch}\n${dinner}\n${snack}\n(P: ${protein}g | C: 180g | F: 55g | ~${calories} kcal)`
     )
     .join('\n\n')
 
@@ -64,10 +106,7 @@ export function buildMockGeneratedPlan(
       ],
     },
     cardio_plan: {
-      sessions: [
-        { type: 'LISS walk', duration: '30 min', frequency: '3x/week' },
-        { type: 'Optional intervals', duration: '15 min', frequency: '1x/week' },
-      ],
+      sessions: [{ type: '8000 steps', steps: 8000 }],
     },
     supplement_plan: {
       items: [

@@ -1,3 +1,7 @@
+import {
+  formatStandingCoachInstructionsBlock,
+  loadStandingCoachInstructions,
+} from '@/lib/ai/standing-coach-instructions'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Checkin, CheckinType, OnboardingProfile } from '@/types/database'
 import type { PlanChangeRequestRow } from '@/lib/plan-change-requests'
@@ -23,6 +27,8 @@ export type ClientJourneyInput = {
   checkins: Checkin[]
   /** Recent plan-change requests (any order). */
   planChangeRequests?: PlanChangeRequestRow[]
+  /** Prior coach AI instructions that later edits must still honor. */
+  standingCoachInstructions?: string
   /** The check-in this plan is being generated for, if any. */
   currentCheckin?: Checkin | null
   referenceDate?: Date
@@ -225,6 +231,10 @@ export function buildClientJourneySnapshot(input: ClientJourneyInput): string {
     }
   }
 
+  if (input.standingCoachInstructions?.trim()) {
+    lines.push(input.standingCoachInstructions.trim())
+  }
+
   // Recent free-text asks from the latest few check-ins.
   const recentAsks = checkins
     .slice()
@@ -267,7 +277,7 @@ export async function loadClientJourneySnapshot(
   }
 ): Promise<string> {
   try {
-    const [checkinsResult, requestsResult, trackerResult] = await Promise.all([
+    const [checkinsResult, requestsResult, trackerResult, standing] = await Promise.all([
       admin
         .from('checkins')
         .select('*')
@@ -283,6 +293,7 @@ export async function loadClientJourneySnapshot(
         .from('daily_tracker_days')
         .select('overall_percent, scores')
         .eq('client_id', params.clientId),
+      loadStandingCoachInstructions(admin, params.clientId),
     ])
 
     const trackerRows = trackerResult.data ?? []
@@ -298,6 +309,7 @@ export async function loadClientJourneySnapshot(
       profile: params.profile,
       checkins: (checkinsResult.data as Checkin[] | null) ?? [],
       planChangeRequests: (requestsResult.data as PlanChangeRequestRow[] | null) ?? [],
+      standingCoachInstructions: formatStandingCoachInstructionsBlock(standing),
       currentCheckin: params.currentCheckin ?? null,
       referenceDate: params.referenceDate,
       tracker: {
