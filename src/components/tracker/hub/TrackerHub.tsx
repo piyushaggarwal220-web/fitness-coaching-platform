@@ -186,7 +186,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             gap: spacing[1],
             width: '100%',
             position: 'relative',

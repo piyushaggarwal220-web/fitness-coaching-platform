@@ -548,7 +548,7 @@ export function WorkoutModule({
   const elapsedSeconds = Math.floor(elapsedMs / 1000)
 
   return (
-    <div>
+    <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden' }}>
       {error && (
         <div
           role="alert"
@@ -698,7 +698,7 @@ export function WorkoutModule({
         <ProgressBar percent={workoutScore} height={10} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: spacing[4] }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginBottom: spacing[4], minWidth: 0 }}>
         <StatTile label="Exercises" value={`${progress.completed}/${progress.total}`} />
         <StatTile label="Est. left" value={remainingMin > 0 ? `${remainingMin} min` : 'Done'} />
         <StatTile label="Volume" value={volume > 0 ? `${volume.toLocaleString()} kg` : '—'} />
@@ -772,6 +772,9 @@ export function WorkoutModule({
                   borderRadius: 14,
                   padding: spacing[3],
                   marginBottom: 12,
+                  width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
                   // Done and in-progress exercises get tinted glass instead of a flat fill.
                   ...(isDone
                     ? {
@@ -919,7 +922,7 @@ export function WorkoutModule({
                         </div>
 
                         {mode === 'timed' && (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
                             <div>
                               <label style={{ fontSize: 10, color: colors.textMuted }}>Minutes</label>
                               <input
@@ -968,7 +971,7 @@ export function WorkoutModule({
                         )}
 
                         {mode === 'distance' && (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'end' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
                             <div>
                               <label style={{ fontSize: 10, color: colors.textMuted }}>Meters</label>
                               <SetLogField
@@ -987,7 +990,7 @@ export function WorkoutModule({
                         )}
 
                         {mode === 'reps_only' && (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'end' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
                             <div>
                               <label style={{ fontSize: 10, color: colors.textMuted }}>Reps</label>
                               <SetLogField
@@ -1004,7 +1007,7 @@ export function WorkoutModule({
                         )}
 
                         {mode === 'strength' && (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
                             <div>
                               <label style={{ fontSize: 10, color: colors.textMuted }}>Weight (kg)</label>
                               <SetLogField
@@ -1091,6 +1094,7 @@ export function WorkoutModule({
           disabled={saving}
           style={{
             flex: 1,
+            minWidth: 0,
             height: 52,
             borderRadius: 14,
             border: 'none',

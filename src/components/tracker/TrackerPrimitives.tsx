@@ -345,9 +345,11 @@ export function StatTile({ label, value }: { label: string; value: string }) {
         background: colors.bgCard,
         border: `1px solid ${colors.borderSubtle}`,
         textAlign: 'center',
+        minWidth: 0,
+        overflow: 'hidden',
       }}
     >
-      <div style={{ fontSize: 18, fontWeight: 800, color: colors.accent }}>{value}</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: colors.accent, overflowWrap: 'anywhere' }}>{value}</div>
       <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>{label}</div>
     </div>
   )
@@ -526,7 +528,10 @@ export function TrackerPhaseFolder({
         ...trackerSurface,
         borderRadius: radius.md,
         marginBottom: 12,
-        overflow: 'visible',
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
         borderLeft: `3px solid ${accent}`,
       }}
     >
@@ -564,9 +569,9 @@ export function TrackerPhaseFolder({
           </div>
         ) : null}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em' }}>{title}</div>
+          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em', overflowWrap: 'anywhere' }}>{title}</div>
           {hint && (
-            <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2, lineHeight: 1.35 }}>{hint}</div>
+            <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2, lineHeight: 1.35, overflowWrap: 'anywhere' }}>{hint}</div>
           )}
           {subtitle && (
             <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: hint ? 4 : 2 }}>{subtitle}</div>
@@ -584,7 +589,9 @@ export function TrackerPhaseFolder({
           }}
         />
       </button>
-      {open && <div style={{ padding: '0 12px 12px' }}>{children}</div>}
+      {open && (
+        <div style={{ padding: '0 12px 12px', minWidth: 0, maxWidth: '100%' }}>{children}</div>
+      )}
     </div>
   )
 }

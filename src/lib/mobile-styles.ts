@@ -27,6 +27,8 @@ export const mobileStyles = {
     maxWidth: layout.maxWidthWide,
     margin: '0 auto',
     width: '100%',
+    minWidth: 0,
+    overflowX: 'hidden',
   } satisfies CSSProperties,
 
   card: {
@@ -109,11 +111,14 @@ export const mobileStyles = {
     left: 0,
     right: 0,
     padding: `${spacing[3]}px`,
-    backgroundColor: colors.bgGlass,
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
+    // Solid paint: glass + blur on a fixed bar is a common Android compositor
+    // bug (opaque overlay covering the list, cards clipped to a strip).
+    backgroundColor: colors.bgCard,
     borderTop: `1px solid ${colors.divider}`,
     zIndex: 90,
+    isolation: 'isolate',
+    contain: 'layout paint',
+    overflow: 'hidden',
   } satisfies CSSProperties,
 
   empty: {

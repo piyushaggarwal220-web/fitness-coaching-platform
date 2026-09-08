@@ -95,7 +95,9 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
-  overflow-x: clip;
+  /* `clip` makes html a containing block for position:fixed and, with
+     backdrop-filter bars, paints black holes / clipped cards on Android. */
+  overflow-x: hidden;
 }
 
 body {
@@ -107,7 +109,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
-  overflow-x: clip;
+  overflow-x: hidden;
   max-width: 100%;
 }
 
