@@ -8,6 +8,7 @@ import { BRAND_NAME, brandTitle } from '@/lib/brand'
 import { authStyles } from '@/lib/auth-styles'
 import { hydrateBrowserAuthSession } from '@/lib/auth-login-api'
 import { fetchClientProfile, getClientPostAuthPath, isOnboardingComplete } from '@/lib/onboarding'
+import { markDemoTourOffer } from '@/lib/demo-tour'
 import { PUBLIC_DEMO_READ_ONLY_MESSAGE } from '@/lib/public-demo'
 import type { AuthLoginResult } from '@/lib/auth-login-api'
 
@@ -50,6 +51,7 @@ export default function PublicDemoTryPage() {
     let cancelled = false
 
     const run = async () => {
+      markDemoTourOffer()
       const loginResult = await signInPublicDemo()
       if (cancelled) return
 

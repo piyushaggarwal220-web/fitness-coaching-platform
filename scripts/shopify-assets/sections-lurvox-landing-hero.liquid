@@ -1,0 +1,135 @@
+<section class="lx-welcome" id="lx-welcome" style="--lx-accent: {{ section.settings.accent_color }};">
+  <style>
+    /* Must be a raw <style> so it is not scoped to this section. */
+    [class*="ai-fitness-gallery__reviews-"],
+    [class*="ai-fitness-gallery__headline-"],
+    [class*="ai-fitness-gallery__cta-"] {
+      display: none !important;
+    }
+  </style>
+  <div class="lx-welcome__inner">
+    {%- if section.settings.eyebrow != blank -%}
+      <p class="lx-welcome__eyebrow">{{ section.settings.eyebrow }}</p>
+    {%- endif -%}
+    <h1 class="lx-welcome__headline">{{ section.settings.headline }}</h1>
+    {%- if section.settings.lede != blank -%}
+      <p class="lx-welcome__lede">{{ section.settings.lede }}</p>
+    {%- endif -%}
+    <div class="lx-welcome__actions">
+      {%- if section.settings.demo_enabled -%}
+        <a class="lx-welcome__btn lx-welcome__btn--primary" href="{{ section.settings.demo_url }}">
+          {{ section.settings.demo_label }}
+        </a>
+      {%- endif -%}
+      {%- if section.settings.call_enabled -%}
+        <a class="lx-welcome__btn lx-welcome__btn--ghost" href="{{ section.settings.call_url }}">
+          {{ section.settings.call_label }}
+        </a>
+      {%- endif -%}
+    </div>
+    {%- if section.settings.demo_note != blank -%}
+      <p class="lx-welcome__fine">{{ section.settings.demo_note }}</p>
+    {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+.lx-welcome {
+  --lx-accent: #ff6200;
+  background: #070707;
+  color: #fff;
+  padding: 16px 16px 24px;
+}
+
+.lx-welcome__inner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.lx-welcome__eyebrow {
+  margin: 0 0 8px;
+  color: var(--lx-accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.lx-welcome__headline {
+  margin: 0 0 10px;
+  font-size: clamp(24px, 6.4vw, 36px);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+
+.lx-welcome__lede {
+  margin: 0 0 16px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.lx-welcome__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.lx-welcome__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none !important;
+  text-align: center;
+}
+
+.lx-welcome__btn--primary {
+  background: var(--lx-accent);
+  border: 1px solid var(--lx-accent);
+  color: #09090b !important;
+}
+
+.lx-welcome__btn--ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff !important;
+}
+
+.lx-welcome__fine {
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+}
+
+@media screen and (min-width: 750px) {
+  .lx-welcome {
+    padding: 20px 24px 28px;
+  }
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Landing welcome",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "TRY THE APP" },
+    { "type": "textarea", "id": "headline", "label": "Headline", "default": "Tap below to open the demo account" },
+    { "type": "textarea", "id": "lede", "label": "Support line", "default": "Look around a real client app. Nothing you tap is saved." },
+    { "type": "checkbox", "id": "demo_enabled", "label": "Show demo login", "default": true },
+    { "type": "text", "id": "demo_label", "label": "Demo button", "default": "Open demo account" },
+    { "type": "text", "id": "demo_url", "label": "Demo URL", "default": "https://app.lurvox.in/try" },
+    { "type": "text", "id": "demo_note", "label": "Demo note", "default": "View only. You can take a short tour inside." },
+    { "type": "checkbox", "id": "call_enabled", "label": "Show book-a-call", "default": true },
+    { "type": "text", "id": "call_label", "label": "Call button", "default": "Book a free call" },
+    { "type": "text", "id": "call_url", "label": "Call URL", "default": "/pages/talk-to-a-coach" },
+    { "type": "color", "id": "accent_color", "label": "Accent", "default": "#FF6200" }
+  ],
+  "presets": [{ "name": "Landing welcome" }]
+}
+{% endschema %}

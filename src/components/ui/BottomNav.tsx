@@ -6,12 +6,12 @@ import { Home, Map, ClipboardList, MessageCircle, ListChecks, Trophy } from 'luc
 import { colors, layout, spacing } from '@/lib/design-tokens'
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/tracker', label: 'Tracker', icon: ListChecks },
-  { href: '/plan', label: 'Plan', icon: ClipboardList },
-  { href: '/league', label: 'League', icon: Trophy },
-  { href: '/client/chat', label: 'Chat', icon: MessageCircle },
-  { href: '/journey', label: 'Journey', icon: Map },
+  { href: '/dashboard', label: 'Home', icon: Home, tour: 'nav-home' },
+  { href: '/tracker', label: 'Tracker', icon: ListChecks, tour: 'nav-tracker' },
+  { href: '/plan', label: 'Plan', icon: ClipboardList, tour: 'nav-plan' },
+  { href: '/league', label: 'League', icon: Trophy, tour: 'nav-league' },
+  { href: '/client/chat', label: 'Chat', icon: MessageCircle, tour: 'nav-chat' },
+  { href: '/journey', label: 'Journey', icon: Map, tour: 'nav-journey' },
 ] as const
 
 export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
@@ -38,7 +38,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
       }}
       aria-label="Main navigation"
     >
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+      {NAV_ITEMS.map(({ href, label, icon: Icon, tour }) => {
         const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
         return (
           <Link
@@ -58,6 +58,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
               transition: 'color 150ms ease',
             }}
             aria-current={active ? 'page' : undefined}
+            data-tour={tour}
           >
             <span style={{ position: 'relative', display: 'flex' }}>
               <Icon size={22} strokeWidth={active ? 2.5 : 2} />
