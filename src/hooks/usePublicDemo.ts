@@ -12,8 +12,8 @@ export function usePublicDemo(): boolean {
 
   useEffect(() => {
     let active = true
-    void supabase.auth.getUser().then(({ data }) => {
-      if (active) setIsDemo(isPublicDemoEmail(data.user?.email))
+    void supabase.auth.getUser().then((result) => {
+      if (active) setIsDemo(isPublicDemoEmail(result.data.user?.email))
     })
     return () => {
       active = false
