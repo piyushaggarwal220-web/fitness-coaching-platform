@@ -154,7 +154,8 @@ async function sendTrackerPatch(
 
       const message = data?.error ?? 'Failed to save progress'
       const retryable =
-        (res.status === 401 || res.status >= 500) && attempt < PATCH_RETRY_DELAYS_MS.length - 1
+        (res.status === 401 || res.status === 409 || res.status >= 500) &&
+        attempt < PATCH_RETRY_DELAYS_MS.length - 1
       if (retryable) continue
 
       return { day: null, error: message, status: res.status }

@@ -19,7 +19,7 @@ type Props = {
   onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
-export function SupplementsModule({ supplements, completion, saving, onPatch }: Props) {
+export function SupplementsModule({ supplements, completion, onPatch }: Props) {
   const grouped = supplements.reduce<Record<string, TrackerSupplementItem[]>>((acc, s) => {
     if (!acc[s.period]) acc[s.period] = []
     acc[s.period]!.push(s)
@@ -70,7 +70,6 @@ export function SupplementsModule({ supplements, completion, saving, onPatch }: 
                 </div>
                 <CompletionToggle
                   completed={taken}
-                  disabled={saving}
                   onToggle={() =>
                     void onPatch({ supplements: { [supp.id]: { completed: !taken } } })
                   }

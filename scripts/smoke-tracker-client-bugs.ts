@@ -11,7 +11,7 @@ import {
   dietFailsRequestedVariety,
   scoreDietDayVariety,
 } from '../src/lib/ai/diet-day-variety'
-import { parseOptionalNumber } from '../src/lib/daily-tracker/set-input'
+import { finishNumberDraft, isUnfinishedNumberDraft, parseOptionalNumber } from '../src/lib/daily-tracker/set-input'
 import { buildTrackerSnapshot, mergeCompletion } from '../src/lib/daily-tracker/parser'
 import { buildWeekProgress } from '../src/lib/daily-tracker/week-progress'
 import type { Plan } from '../src/types/database'
@@ -104,6 +104,12 @@ assert('parseOptionalNumber keeps 82. as unfinished', parseOptionalNumber('82.')
 assert('parseOptionalNumber accepts 82.5', parseOptionalNumber('82.5') === 82.5)
 assert('parseOptionalNumber accepts empty as null', parseOptionalNumber('') === null)
 assert('parseOptionalNumber accepts 12 reps', parseOptionalNumber('12') === 12)
+assert('unfinished 82. must not save as empty', isUnfinishedNumberDraft('82.') === true)
+assert('unfinished lone decimal must not save', isUnfinishedNumberDraft('.') === true)
+assert('complete 82.5 is ready to save', isUnfinishedNumberDraft('82.5') === false)
+assert('empty is a real clear, not unfinished', isUnfinishedNumberDraft('') === false)
+assert('blur keeps 82. as 82 instead of wiping', finishNumberDraft('82.') === 82)
+assert('blur of 7.5 stays 7.5', finishNumberDraft('7.5') === 7.5)
 
 // --- 4. Diet meal logging ---
 const multiDayPlan = {

@@ -5,12 +5,11 @@ import { Check, Dumbbell, Flame, Pause, Play, Save, Square, Wind } from 'lucide-
 import { Button } from '@/components/ui/Button'
 import { RestTimer } from '@/components/tracker/RestTimer'
 import { ExerciseFormSheet } from '@/components/tracker/ExerciseFormSheet'
-import { SetLogField } from '@/components/tracker/SetLogField'
+import { DurationLogFields, SetLogField } from '@/components/tracker/SetLogField'
 import {
   ProgressBar,
   StatTile,
   TrackerPhaseFolder,
-  trackerInputStyle,
   trackerSurface,
   trackerSurfaceInset,
 } from '@/components/tracker/TrackerPrimitives'
@@ -18,8 +17,6 @@ import { colors, radius, spacing, layout } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
 import {
   buildExercisePatch,
-  durationFromParts,
-  formatDurationInput,
   formatExerciseTarget,
   formatRestClock,
   getCurrentExercise,
@@ -591,7 +588,7 @@ export function WorkoutModule({
               {workout.focus ? ` · ${workout.focus}` : ' workout'}
             </div>
           </div>
-          <Button variant="secondary" disabled={saving} onClick={() => selectWorkoutDay(null)}>
+          <Button variant="secondary" onClick={() => selectWorkoutDay(null)}>
             Change day
           </Button>
         </div>
@@ -870,7 +867,7 @@ export function WorkoutModule({
                     return (
                       <button
                         type="button"
-                        disabled={saving || isDone}
+                        disabled={isDone}
                         onClick={() => {
                           const next = getExerciseSets(ex, exData).map((s, i) =>
                             i === 0 ? { ...s, completed: true } : s
@@ -899,7 +896,6 @@ export function WorkoutModule({
                   }
 
                   return sets.map((set, idx) => {
-                    const durParts = formatDurationInput(set.durationSeconds)
                     return (
                       <div
                         key={idx}
@@ -923,49 +919,23 @@ export function WorkoutModule({
 
                         {mode === 'timed' && (
                           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
-                            <div>
-                              <label style={{ fontSize: 10, color: colors.textMuted }}>Minutes</label>
-                              <input
-                                type="number"
-                                min={0}
-                                placeholder={
-                                  ex.targetDurationSeconds != null
-                                    ? String(Math.floor(ex.targetDurationSeconds / 60) || '')
-                                    : '0'
-                                }
-                                value={durParts.minutes}
-                                disabled={isDone}
-                                onChange={(e) =>
-                                  updateSet(ex.id, ex, idx, {
-                                    durationSeconds:
-                                      durationFromParts(e.target.value, durParts.seconds) ?? null,
-                                  })
-                                }
-                                style={trackerInputStyle}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: 10, color: colors.textMuted }}>Seconds</label>
-                              <input
-                                type="number"
-                                min={0}
-                                max={59}
-                                placeholder={
-                                  ex.targetDurationSeconds != null
-                                    ? String(ex.targetDurationSeconds % 60 || '')
-                                    : '0'
-                                }
-                                value={durParts.seconds}
-                                disabled={isDone}
-                                onChange={(e) =>
-                                  updateSet(ex.id, ex, idx, {
-                                    durationSeconds:
-                                      durationFromParts(durParts.minutes, e.target.value) ?? null,
-                                  })
-                                }
-                                style={trackerInputStyle}
-                              />
-                            </div>
+                            <DurationLogFields
+                              durationSeconds={set.durationSeconds}
+                              disabled={isDone}
+                              minutePlaceholder={
+                                ex.targetDurationSeconds != null
+                                  ? String(Math.floor(ex.targetDurationSeconds / 60) || '')
+                                  : '0'
+                              }
+                              secondPlaceholder={
+                                ex.targetDurationSeconds != null
+                                  ? String(ex.targetDurationSeconds % 60 || '')
+                                  : '0'
+                              }
+                              onCommit={(durationSeconds) =>
+                                updateSet(ex.id, ex, idx, { durationSeconds })
+                              }
+                            />
                             {doneBtn(Boolean(set.completed), () => completeSet(ex.id, ex, idx))}
                           </div>
                         )}

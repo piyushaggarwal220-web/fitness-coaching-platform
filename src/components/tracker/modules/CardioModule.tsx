@@ -1,10 +1,10 @@
 'use client'
 
+import { SetLogField } from '@/components/tracker/SetLogField'
 import { Button } from '@/components/ui/Button'
 import {
   ProgressBar,
   StatTile,
-  trackerInputStyle,
   trackerSurface,
 } from '@/components/tracker/TrackerPrimitives'
 import { colors, radius, spacing } from '@/lib/design-tokens'
@@ -17,7 +17,7 @@ type Props = {
   onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
-export function CardioModule({ items, completion, saving, onPatch }: Props) {
+export function CardioModule({ items, completion, onPatch }: Props) {
   return (
     <div>
       {items.map((item) => {
@@ -59,24 +59,24 @@ export function CardioModule({ items, completion, saving, onPatch }: Props) {
               <StatTile label="Calories" value={unit === 'min' ? `~${Math.round(actual * 8)}` : '—'} />
             </div>
 
-            <input
-              type="number"
+            <div style={{ marginBottom: spacing[3] }}>
+            <SetLogField
+              aria-label={`Log ${unit}`}
               placeholder={`Log ${unit}`}
-              value={actual || ''}
-              onChange={(e) => {
-                const raw = e.target.value
-                const val = raw === '' ? 0 : Number(raw)
-                if (!Number.isFinite(val)) return
-                void onPatch({ cardio: { [item.id]: { actual: val, completed: val >= target } } })
+              value={actual || null}
+              inputMode="decimal"
+              onCommit={(val) => {
+                const next = val ?? 0
+                void onPatch({ cardio: { [item.id]: { actual: next, completed: next >= target } } })
               }}
-              style={{ ...trackerInputStyle, marginBottom: spacing[3] }}
             />
+            </div>
 
             <Button
               fullWidth
               variant={isDone ? 'secondary' : 'primary'}
               success={isDone}
-              disabled={saving || actual <= 0}
+              disabled={actual <= 0}
               onClick={() =>
                 void onPatch({
                   cardio: { [item.id]: { actual: actual || target, completed: !isDone } },

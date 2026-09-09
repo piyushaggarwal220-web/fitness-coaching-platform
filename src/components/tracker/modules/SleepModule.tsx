@@ -1,10 +1,10 @@
 'use client'
 
+import { SetLogField, TrackerTextField } from '@/components/tracker/SetLogField'
 import { WearableConnect } from '@/components/tracker/WearableConnect'
 import {
   ChipSelector,
   ProgressBar,
-  trackerInputStyle,
   trackerSurfaceInset,
 } from '@/components/tracker/TrackerPrimitives'
 import { colors, spacing } from '@/lib/design-tokens'
@@ -70,22 +70,15 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
         </div>
         <div style={{ ...trackerSurfaceInset, padding: spacing[3], borderRadius: 14 }}>
           <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase' }}>Actual Sleep</div>
-          <input
-            type="number"
-            step={0.5}
-            placeholder="Hours"
-            value={data.hours ?? ''}
-            onChange={(e) => {
-              const raw = e.target.value
-              if (raw === '') {
-                patch({ hours: null })
-                return
-              }
-              const parsed = Number(raw)
-              if (Number.isFinite(parsed)) patch({ hours: parsed })
-            }}
-            style={{ ...trackerInputStyle, marginTop: 8, fontSize: 24, fontWeight: 800 }}
-          />
+          <div style={{ marginTop: 8 }}>
+            <SetLogField
+              aria-label="Actual sleep hours"
+              placeholder="Hours"
+              value={data.hours}
+              inputMode="decimal"
+              onCommit={(hours) => void onPatch({ sleep: { hours } })}
+            />
+          </div>
         </div>
       </div>
 
@@ -97,22 +90,26 @@ export function SleepModule({ sleep, completion, sleepScore, saving, onPatch }: 
 
       <label style={{ display: 'block', marginBottom: spacing[3] }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: colors.textSecondary }}>Bed Time</span>
-        <input
-          placeholder={sleep.targetBedtime ?? '10:30 PM'}
-          value={data.bedtime ?? ''}
-          onChange={(e) => patch({ bedtime: e.target.value })}
-          style={{ ...trackerInputStyle, marginTop: 8 }}
-        />
+        <div style={{ marginTop: 8 }}>
+          <TrackerTextField
+            aria-label="Bed time"
+            placeholder={sleep.targetBedtime ?? '10:30 PM'}
+            value={data.bedtime ?? ''}
+            onCommit={(bedtime) => patch({ bedtime })}
+          />
+        </div>
       </label>
 
       <label style={{ display: 'block', marginBottom: spacing[4] }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: colors.textSecondary }}>Wake Time</span>
-        <input
-          placeholder="7:00 AM"
-          value={data.wakeTime ?? ''}
-          onChange={(e) => patch({ wakeTime: e.target.value })}
-          style={{ ...trackerInputStyle, marginTop: 8 }}
-        />
+        <div style={{ marginTop: 8 }}>
+          <TrackerTextField
+            aria-label="Wake time"
+            placeholder="7:00 AM"
+            value={data.wakeTime ?? ''}
+            onCommit={(wakeTime) => patch({ wakeTime })}
+          />
+        </div>
       </label>
 
       <div style={{ marginBottom: spacing[4] }}>

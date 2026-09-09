@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { SetLogField } from '@/components/tracker/SetLogField'
 import { WearableConnect } from '@/components/tracker/WearableConnect'
 import { Button } from '@/components/ui/Button'
-import { ProgressBar, trackerInputStyle } from '@/components/tracker/TrackerPrimitives'
+import { ProgressBar } from '@/components/tracker/TrackerPrimitives'
 import { colors, spacing } from '@/lib/design-tokens'
 import { getStepsScore } from '@/lib/daily-tracker/display'
 import type { TrackerCardioItem, TrackerCompletion } from '@/lib/daily-tracker/types'
@@ -41,28 +42,28 @@ export function StepsModule({ steps, completion, saving, onPatch }: Props) {
 
       <div style={{ display: 'flex', gap: 10, marginTop: spacing[5] }}>
         {[500, 1000].map((n) => (
-          <Button key={n} variant="secondary" fullWidth disabled={saving} onClick={() => add(n)}>
+          <Button key={n} variant="secondary" fullWidth onClick={() => add(n)}>
             +{n.toLocaleString()}
           </Button>
         ))}
       </div>
 
-      <Button variant="ghost" fullWidth disabled={saving} onClick={() => setEditing((v) => !v)} style={{ marginTop: 10 }}>
+      <Button variant="ghost" fullWidth onClick={() => setEditing((v) => !v)} style={{ marginTop: 10 }}>
         {editing ? 'Done' : 'Custom'}
       </Button>
 
       {editing && (
-        <input
-          type="number"
-          value={actual || ''}
-          onChange={(e) => {
-            const raw = e.target.value
-            const val = raw === '' ? 0 : Number(raw)
-            if (!Number.isFinite(val)) return
-            void onPatch({ cardio: { [steps.id]: { actual: val, completed: val >= target } } })
-          }}
-          style={{ ...trackerInputStyle, marginTop: spacing[3] }}
-        />
+        <div style={{ marginTop: spacing[3] }}>
+          <SetLogField
+            aria-label="Custom step count"
+            value={actual || null}
+            inputMode="numeric"
+            onCommit={(val) => {
+              const next = val ?? 0
+              void onPatch({ cardio: { [steps.id]: { actual: next, completed: next >= target } } })
+            }}
+          />
+        </div>
       )}
 
       <WearableConnect

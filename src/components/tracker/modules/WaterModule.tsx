@@ -17,7 +17,7 @@ type Props = {
   onPatch: (patch: TrackerCompletion) => Promise<boolean>
 }
 
-export function WaterModule({ water, completion, waterScore, saving, onPatch }: Props) {
+export function WaterModule({ water, completion, waterScore, onPatch }: Props) {
   const [customOpen, setCustomOpen] = useState(false)
   const [customMl, setCustomMl] = useState('')
   const currentMl = completion.water?.ml ?? 0
@@ -37,7 +37,7 @@ export function WaterModule({ water, completion, waterScore, saving, onPatch }: 
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, width: '100%' }}>
         {QUICK.map((ml) => (
-          <Button key={ml} variant="secondary" disabled={saving} onClick={() => add(ml)}>
+          <Button key={ml} variant="secondary" onClick={() => add(ml)}>
             +{ml >= 1000 ? '1 L' : `${ml} ml`}
           </Button>
         ))}
@@ -53,7 +53,7 @@ export function WaterModule({ water, completion, waterScore, saving, onPatch }: 
             style={{ ...trackerInputStyle, flex: 1 }}
           />
           <Button
-            disabled={!customMl || saving}
+            disabled={!customMl}
             onClick={() => {
               add(Number(customMl) || 0)
               setCustomMl('')
@@ -64,7 +64,7 @@ export function WaterModule({ water, completion, waterScore, saving, onPatch }: 
           </Button>
         </div>
       ) : (
-        <Button variant="ghost" fullWidth disabled={saving} onClick={() => setCustomOpen(true)}>
+        <Button variant="ghost" fullWidth onClick={() => setCustomOpen(true)}>
           Custom amount
         </Button>
       )}
