@@ -1,5 +1,7 @@
 import 'server-only'
 import { hasClientEntitlement, MEMBERSHIP_GRACE_DAYS } from '@/lib/entitlements'
+import { isPublicDemoEmail } from '@/lib/public-demo'
+import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import type { ApiAuthResult } from '@/lib/api-auth'
@@ -54,9 +56,14 @@ export async function revokeExpiredClientSubscriptions(limit = 50): Promise<numb
  * Authenticate and require an active client entitlement.
  * Returns 403 when the subscription has ended or payment is not confirmed.
  */
-export async function requireEntitledClientApiUser(): Promise<ApiAuthResult> {
+export async function requireEntitledClientApiUser(options?: {
+  mutation?: boolean
+}): Promise<ApiAuthResult> {
   const auth = await requireApiUser()
   if (!auth.ok) return auth
+  if (options?.mutation && isPublicDemoEmail(auth.user.email)) {
+    return { ok: false, response: publicDemoReadOnlyJson() }
+  }
 
   const { data: profile } = await auth.supabase
     .from('profiles')
