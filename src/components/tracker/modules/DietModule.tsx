@@ -45,8 +45,9 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
     ? getCoachingDayInWeek(view.schedule.coachingDay)
     : undefined
   const suggestion = resolveSuggestedDayKey(days, new Date(), { coachingDayInWeek })
-  const coachingDayKey = view?.schedule.coachingDay ?? ''
+  const coachingDayKey = view?.schedule.coachingDay ?? 0
   const userClearedDay = useRef(false)
+  const prevCoachingDay = useRef(coachingDayKey)
 
   const selectDietDay = useCallback(
     (key: string | null) => {
@@ -59,11 +60,16 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
   const dietContentKey = meals.map((m) => `${m.id}:${m.foods}`).join('|')
   useEffect(() => {
     userClearedDay.current = false
-  }, [dietContentKey, coachingDayKey])
+  }, [dietContentKey])
   useEffect(() => {
-    if (!multiDay || selectedKey || !suggestion || userClearedDay.current) return
-    selectDietDay(suggestion)
-  }, [multiDay, selectedKey, suggestion, selectDietDay])
+    if (!multiDay || !suggestion || userClearedDay.current) return
+    const coachingAdvanced =
+      prevCoachingDay.current > 0 && prevCoachingDay.current !== coachingDayKey
+    prevCoachingDay.current = coachingDayKey
+    if (!selectedKey || (coachingAdvanced && selectedKey !== suggestion)) {
+      selectDietDay(suggestion)
+    }
+  }, [multiDay, selectedKey, suggestion, coachingDayKey, selectDietDay])
 
   const visibleMeals = useMemo(() => {
     if (!multiDay) return meals

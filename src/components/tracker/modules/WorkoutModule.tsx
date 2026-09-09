@@ -300,6 +300,7 @@ export function WorkoutModule({
   }, [persistSession])
 
   const userClearedDay = useRef(false)
+  const prevCoachingDay = useRef(coachingDayKey)
   const selectWorkoutDay = useCallback(
     (key: string | null) => {
       userClearedDay.current = key == null
@@ -318,15 +319,20 @@ export function WorkoutModule({
     [onPatch]
   )
 
-  // If nothing is picked yet, follow today's day so Refresh / a coach plan edit
-  // does not leave the client on the picker. "Change day" still opens the list.
+  // Follow today's coaching day on each login. "Change day" still opens the list;
+  // a manual pick sticks until the coaching day advances.
   useEffect(() => {
     userClearedDay.current = false
-  }, [workoutContentKey, coachingDayKey])
+  }, [workoutContentKey])
   useEffect(() => {
-    if (!multiDay || selectedKey || !suggestion || userClearedDay.current) return
-    selectWorkoutDay(suggestion)
-  }, [multiDay, selectedKey, suggestion, selectWorkoutDay])
+    if (!multiDay || !suggestion || userClearedDay.current) return
+    const coachingAdvanced =
+      prevCoachingDay.current > 0 && prevCoachingDay.current !== coachingDayKey
+    prevCoachingDay.current = coachingDayKey
+    if (!selectedKey || (coachingAdvanced && selectedKey !== suggestion)) {
+      selectWorkoutDay(suggestion)
+    }
+  }, [multiDay, selectedKey, suggestion, coachingDayKey, selectWorkoutDay])
 
   useEffect(() => {
     if (!sessionRunning || sessionStartedAt == null) return

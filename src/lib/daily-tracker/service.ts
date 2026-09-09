@@ -240,22 +240,45 @@ function sanitizeCompletionForSnapshot(
   return next
 }
 
-/** After a plan edit / refresh, pick today's diet and workout day so the client isn't stuck on the picker. */
+/** True when the client has not started logging today's workout yet. */
+function workoutDayStillOpen(completion: TrackerCompletion): boolean {
+  const hasSets = Object.keys(completion.exercises ?? {}).length > 0
+  const status = completion.workoutSession?.status
+  return !hasSets && status !== 'in_progress' && status !== 'saved'
+}
+
+/** True when the client has not logged any meals for the selected diet day yet. */
+function dietDayStillOpen(completion: TrackerCompletion): boolean {
+  return !Object.values(completion.meals ?? {}).some((meal) => meal?.completed)
+}
+
+/**
+ * Pick today's diet / workout sheet from the coaching day (and IST weekday).
+ * `refresh*` re-applies the suggestion when the client has not started logging yet,
+ * so each daily login opens the correct Day N sheet instead of a sticky Day 1.
+ */
 function applySuggestedDaySelections(
   completion: TrackerCompletion,
   snapshot: DailyTrackerDay['snapshot'],
-  coachingDay: number | null | undefined
+  coachingDay: number | null | undefined,
+  options?: { refreshWorkoutDay?: boolean; refreshDietDay?: boolean }
 ): TrackerCompletion {
   const coachingDayInWeek =
     coachingDay && coachingDay > 0 ? getCoachingDayInWeek(coachingDay) : undefined
   const next = { ...completion }
-  if (!next.selectedDietDay && (snapshot.dietDays?.length ?? 0) > 1) {
-    next.selectedDietDay =
-      resolveSuggestedDayKey(snapshot.dietDays ?? [], new Date(), { coachingDayInWeek }) ?? undefined
+  if ((snapshot.dietDays?.length ?? 0) > 1) {
+    if (!next.selectedDietDay || options?.refreshDietDay) {
+      next.selectedDietDay =
+        resolveSuggestedDayKey(snapshot.dietDays ?? [], new Date(), { coachingDayInWeek }) ??
+        undefined
+    }
   }
-  if (!next.selectedWorkoutDay && (snapshot.workoutDays?.length ?? 0) > 1) {
-    next.selectedWorkoutDay =
-      resolveSuggestedDayKey(snapshot.workoutDays ?? [], new Date(), { coachingDayInWeek }) ?? undefined
+  if ((snapshot.workoutDays?.length ?? 0) > 1) {
+    if (!next.selectedWorkoutDay || options?.refreshWorkoutDay) {
+      next.selectedWorkoutDay =
+        resolveSuggestedDayKey(snapshot.workoutDays ?? [], new Date(), { coachingDayInWeek }) ??
+        undefined
+    }
   }
   return next
 }
@@ -347,18 +370,73 @@ export async function getOrCreateTodayTracker(
     // `force` (Refresh) rebuilds today's snapshot from the active plan and reboots
     // workout sets/timer so the workout tracker starts from the latest plan.
     if (!needsRebuild && !force && !coachingFieldsStale) {
+      // Daily login: if they have not started today's workout/diet yet, move the
+      // sheet to the coaching-day suggestion (Day 2, Day 3, …) instead of a sticky Day 1.
+      const refreshWorkout = workoutDayStillOpen(existingDay.completion)
+      const refreshDiet = dietDayStillOpen(existingDay.completion)
+      if (refreshWorkout || refreshDiet) {
+        const synced = applySuggestedDaySelections(
+          existingDay.completion,
+          existingDay.snapshot,
+          coachingDay,
+          { refreshWorkoutDay: refreshWorkout, refreshDietDay: refreshDiet }
+        )
+        const changed =
+          synced.selectedWorkoutDay !== existingDay.completion.selectedWorkoutDay ||
+          synced.selectedDietDay !== existingDay.completion.selectedDietDay
+        if (changed) {
+          const { scores, overall } = calculateTrackerScores(existingDay.snapshot, synced)
+          const { data: syncedRow, error: syncError } = await supabase
+            .from('daily_tracker_days')
+            .update({
+              completion: synced,
+              scores,
+              overall_percent: overall,
+              updated_at: now,
+            })
+            .eq('id', existingDay.id)
+            .select()
+            .single()
+          if (!syncError && syncedRow) {
+            return { day: rowToDay(syncedRow as Record<string, unknown>), error: null }
+          }
+        }
+      }
       return { day: existingDay, error: null }
     }
 
     if (!needsRebuild && !force && coachingFieldsStale) {
-      // Do not bump updated_at — that column is the optimistic-concurrency token
-      // for tracker PATCH and must not race with in-flight set / Change day saves.
+      // Coaching day advanced — point diet/workout sheets at today's day when still open.
+      const synced = applySuggestedDaySelections(
+        existingDay.completion,
+        existingDay.snapshot,
+        coachingDay,
+        {
+          refreshWorkoutDay: workoutDayStillOpen(existingDay.completion),
+          refreshDietDay: dietDayStillOpen(existingDay.completion),
+        }
+      )
+      const daySelectionChanged =
+        synced.selectedWorkoutDay !== existingDay.completion.selectedWorkoutDay ||
+        synced.selectedDietDay !== existingDay.completion.selectedDietDay
+
+      // Do not bump updated_at unless completion changes — that column is the
+      // optimistic-concurrency token for tracker PATCH.
+      const updatePayload: Record<string, unknown> = {
+        coaching_day: coachingDay,
+        coaching_week: coachingWeek,
+      }
+      if (daySelectionChanged) {
+        const { scores, overall } = calculateTrackerScores(existingDay.snapshot, synced)
+        updatePayload.completion = synced
+        updatePayload.scores = scores
+        updatePayload.overall_percent = overall
+        updatePayload.updated_at = now
+      }
+
       const { data: touched, error: touchError } = await supabase
         .from('daily_tracker_days')
-        .update({
-          coaching_day: coachingDay,
-          coaching_week: coachingWeek,
-        })
+        .update(updatePayload)
         .eq('id', existingDay.id)
         .select()
         .single()
