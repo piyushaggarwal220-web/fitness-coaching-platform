@@ -8,7 +8,7 @@ type Body = {
 }
 
 export async function PATCH(request: Request) {
-  const auth = await requireEntitledClientApiUser()
+  const auth = await requireEntitledClientApiUser({ mutation: true })
   if (!auth.ok) {
     // Normalize auth/entitlement payloads so the client always reads `error`.
     const payload = (await auth.response
