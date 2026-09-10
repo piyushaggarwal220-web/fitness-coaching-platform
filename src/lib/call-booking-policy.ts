@@ -19,7 +19,7 @@ function daysUntil(from: Date, to: Date): number {
 
 /**
  * Whether a client may use "Book a call" in chat.
- * 12-month members get auto weekly calls only — no manual booking.
+ * 12-month members get auto-booked weekly calls only — no manual booking or cancel.
  * Everyone else: no phone calls (chat + check-ins only).
  */
 export function evaluateCallBookingPolicy(input: {
@@ -49,7 +49,7 @@ export function evaluateCallBookingPolicy(input: {
       isTwelveMonth: true,
       withinInitialTwoWeeks: false,
       planDelivered,
-      message: 'Your weekly coach call will be booked automatically once your plan is delivered.',
+      message: 'Your weekly coach call is booked automatically once your plan is delivered.',
       daysUntilEligible: null,
     }
   }
@@ -62,7 +62,10 @@ export function evaluateCallBookingPolicy(input: {
       isTwelveMonth: true,
       withinInitialTwoWeeks: true,
       planDelivered: true,
-      message: `Weekly calls start after your first 2 coaching weeks (${daysUntilEligible} day${daysUntilEligible === 1 ? '' : 's'} left). Use chat until then.`,
+      message:
+        daysUntilEligible > 0
+          ? `Weekly calls open when your plan is ready (${daysUntilEligible} day${daysUntilEligible === 1 ? '' : 's'} left). Use chat until then.`
+          : 'Your weekly call opens as soon as your plan is delivered. Use chat until then.',
       daysUntilEligible,
     }
   }
@@ -72,7 +75,7 @@ export function evaluateCallBookingPolicy(input: {
     isTwelveMonth: true,
     withinInitialTwoWeeks: false,
     planDelivered: true,
-    message: 'Your weekly call is scheduled automatically — check below or your notifications.',
+    message: 'Your weekly call is opened automatically. Your coach will call you this week — see your place in their work queue.',
     daysUntilEligible: null,
   }
 }

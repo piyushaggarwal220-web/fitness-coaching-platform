@@ -13,77 +13,6 @@ export {
   getInitialWeeklyCallWindow,
 } from '@/lib/weekly-call-timing'
 
-const DEFAULT_WEEKDAY = 6
-const DEFAULT_HOUR_IST = 11
-
-const IST_WEEKDAY: Record<string, number> = {
-  Sun: 0,
-  Mon: 1,
-  Tue: 2,
-  Wed: 3,
-  Thu: 4,
-  Fri: 5,
-  Sat: 6,
-}
-
-function getIstWeekday(date: Date): number {
-  const label = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Kolkata',
-    weekday: 'short',
-  }).format(date)
-  return IST_WEEKDAY[label] ?? 0
-}
-
-function getIstYmd(date: Date): { y: number; mo: number; d: number } {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date)
-  return {
-    y: Number(parts.find((p) => p.type === 'year')?.value),
-    mo: Number(parts.find((p) => p.type === 'month')?.value),
-    d: Number(parts.find((p) => p.type === 'day')?.value),
-  }
-}
-
-/** Midnight-local IST expressed as UTC. */
-function utcFromIstLocal(y: number, mo: number, d: number, h: number, mi: number): Date {
-  return new Date(Date.UTC(y, mo - 1, d, h, mi, 0, 0) - (5 * 60 + 30) * 60 * 1000)
-}
-
-/** Next preferred weekday + hour (IST) at least 1 hour from `after`. */
-export function computeNextCallSlotUtc(
-  preferredWeekday = DEFAULT_WEEKDAY,
-  preferredHourIst = DEFAULT_HOUR_IST,
-  after = new Date()
-): Date {
-  const minMs = after.getTime() + 60 * 60 * 1000
-  const start = new Date(after)
-  for (let i = 0; i < 21; i++) {
-    const probe = new Date(start.getTime() + i * 86_400_000)
-    if (getIstWeekday(probe) !== preferredWeekday) continue
-    const { y, mo, d } = getIstYmd(probe)
-    const slot = utcFromIstLocal(y, mo, d, preferredHourIst, 0)
-    if (slot.getTime() >= minMs) return slot
-  }
-  return new Date(minMs + 7 * 86_400_000)
-}
-
-export function computeFollowingWeeklySlot(
-  previousScheduledFor: string,
-  preferredWeekday = DEFAULT_WEEKDAY,
-  preferredHourIst = DEFAULT_HOUR_IST
-): Date {
-  const prev = new Date(previousScheduledFor)
-  if (!Number.isNaN(prev.getTime())) {
-    const next = new Date(prev.getTime() + 7 * 86_400_000)
-    if (next.getTime() > Date.now() + 60 * 60 * 1000) return next
-  }
-  return computeNextCallSlotUtc(preferredWeekday, preferredHourIst)
-}
-
 export async function getClientPlanSlug(
   admin: SupabaseClient,
   clientId: string
@@ -116,6 +45,46 @@ type EnsureWeeklyCallResult = {
   created: boolean
   callId?: string
   reason?: string
+}
+
+async function notifyWeeklyCallOpened(
+  admin: SupabaseClient,
+  input: {
+    clientId: string
+    coachUserId: string | null | undefined
+    conversationId: string
+    callId: string
+  }
+) {
+  const { sendNotification } = await import('@/lib/notifications/dispatcher')
+  if (input.coachUserId) {
+    const { data: clientProfile } = await admin
+      .from('profiles')
+      .select('name')
+      .eq('id', input.clientId)
+      .maybeSingle()
+    const name = clientProfile?.name?.trim() || 'Client'
+    await sendNotification({
+      userId: input.coachUserId,
+      type: 'call_requested',
+      title: 'Weekly call due',
+      body: `${name} is on your work queue — call them this week when you are ready.`,
+      actionUrl: `/coach/chat/${input.conversationId}`,
+      metadata: {
+        callRequestId: input.callId,
+        conversationId: input.conversationId,
+        source: 'weekly_entitlement',
+      },
+    })
+  }
+  await sendNotification({
+    userId: input.clientId,
+    type: 'call_request_updated',
+    title: 'Weekly coach call',
+    body: 'Your coach will call you this week. You can see where you sit in their work queue.',
+    actionUrl: '/dashboard',
+    metadata: { callRequestId: input.callId, status: 'requested' },
+  })
 }
 
 /** Past weekly slots that were never marked complete block new auto-schedules. */
@@ -189,7 +158,7 @@ export async function ensureWeeklyCallForClient(
   const { data: profile } = await admin
     .from('profiles')
     .select(
-      'coach_id, preferred_call_weekday, preferred_call_hour_ist, plan_delivered, checkin_schedule_started_at'
+      'coach_id, plan_delivered, checkin_schedule_started_at'
     )
     .eq('id', clientId)
     .maybeSingle()
@@ -208,25 +177,43 @@ export async function ensureWeeklyCallForClient(
 
   await closeStaleWeeklyCallIfNeeded(admin, clientId)
 
-  const { data: active } = await admin
-    .from('call_requests')
-    .select('id')
-    .eq('client_id', clientId)
-    .in('status', ['requested', 'scheduled'])
-    .maybeSingle()
-  if (active) return { created: false, reason: 'active_call_exists', callId: active.id }
-
-  const { data: conversation, error: convError } = await getOrCreateConversation(admin, clientId)
-  if (convError || !conversation) {
-    return { created: false, reason: convError ?? 'no_conversation' }
-  }
-
   const { data: coach } = await admin
     .from('coaches')
     .select('user_id')
     .eq('id', profile.coach_id)
     .maybeSingle()
   const actorUserId = options?.actorUserId ?? coach?.user_id ?? clientId
+
+  const { data: active } = await admin
+    .from('call_requests')
+    .select('id, status, source, scheduled_for, conversation_id')
+    .eq('client_id', clientId)
+    .in('status', ['requested', 'scheduled'])
+    .maybeSingle()
+
+  if (active?.id) {
+    const hasVisibleTime = Boolean(active.scheduled_for) || active.status === 'scheduled'
+    if (active.source === 'weekly_entitlement' && hasVisibleTime) {
+      const now = new Date().toISOString()
+      await admin
+        .from('call_requests')
+        .update({
+          status: 'requested',
+          scheduled_for: null,
+          coach_note: 'Weekly 12-month coaching call — coach calls when ready',
+          updated_by: actorUserId,
+          updated_at: now,
+        })
+        .eq('id', active.id)
+        .in('status', ['requested', 'scheduled'])
+    }
+    return { created: false, reason: 'active_call_exists', callId: active.id }
+  }
+
+  const { data: conversation, error: convError } = await getOrCreateConversation(admin, clientId)
+  if (convError || !conversation) {
+    return { created: false, reason: convError ?? 'no_conversation' }
+  }
 
   const now = new Date().toISOString()
 
@@ -262,35 +249,14 @@ export async function ensureWeeklyCallForClient(
     to_status: 'requested',
     actor_user_id: actorUserId,
     scheduled_for: null,
-    note: 'Weekly 12-month call opened — coach calls anytime',
+    note: 'Weekly 12-month call opened — coach calls when ready',
   })
 
-  if (coach?.user_id) {
-    const { sendNotification } = await import('@/lib/notifications/dispatcher')
-    const { data: clientProfile } = await admin
-      .from('profiles')
-      .select('name')
-      .eq('id', clientId)
-      .maybeSingle()
-    const name = clientProfile?.name?.trim() || 'Client'
-    await sendNotification({
-      userId: coach.user_id,
-      type: 'call_requested',
-      title: 'Weekly call due',
-      body: `${name} is due for their weekly 12-month call — call anytime this week.`,
-      actionUrl: `/coach/chat/${conversation.id}`,
-      metadata: { callRequestId: created.id, conversationId: conversation.id, source: 'weekly_entitlement' },
-    })
-  }
-
-  const { sendNotification } = await import('@/lib/notifications/dispatcher')
-  await sendNotification({
-    userId: clientId,
-    type: 'call_request_updated',
-    title: 'Weekly coach call',
-    body: 'Your coach will call you this week when ready — no fixed time slot.',
-    actionUrl: '/client/chat',
-    metadata: { callRequestId: created.id, status: 'requested' },
+  await notifyWeeklyCallOpened(admin, {
+    clientId,
+    coachUserId: coach?.user_id,
+    conversationId: conversation.id,
+    callId: created.id,
   })
 
   return { created: true, callId: created.id }
@@ -309,9 +275,7 @@ export async function scheduleNextWeeklyCallAfterCompletion(
   if (callRequest.source !== 'weekly_entitlement') {
     return { created: false, reason: 'not_weekly_entitlement' }
   }
-  const after = callRequest.scheduled_for
-    ? computeFollowingWeeklySlot(callRequest.scheduled_for)
-    : new Date()
+  const after = new Date()
   return ensureWeeklyCallForClient(admin, callRequest.client_id, { after })
 }
 
