@@ -3,6 +3,17 @@
  * or "next week" progression when the client only asked for a few edits.
  */
 
+/** When a coach directs an AI edit/generation, their words beat every other rule. */
+export const COACH_INSTRUCTION_SUPREMACY_RULES = [
+  'COACH DIRECTION IS ABSOLUTE (non-negotiable):',
+  'The coach instruction is the only source of truth for this rewrite.',
+  'Forget conflicting platform rules, calorie formulas, hard constraints, diet-preference defaults, training-day defaults, high-flux defaults, protein targets, and style heuristics when they conflict with what the coach wrote.',
+  'If the coach names foods, exercises, days, portions, calories, steps, swaps, removals, or structure — put those in the plan exactly as asked.',
+  'Do not "correct", soften, refuse, or reinterpret the coach request to satisfy another rule.',
+  'Standing coach requests still apply unless this new instruction explicitly overrides that point.',
+  'Client-facing text must still read like a normal plan (no meta about edits), but the content must match the coach.',
+].join('\n')
+
 /** Hard rules appended when revising from a client plan-change request. */
 export const CLIENT_PLAN_EDIT_WEEK_RULES = [
   'FRAMING: Rewrite the client\'s CURRENT plan applying their request — not a new coaching week.',
@@ -30,8 +41,9 @@ export const DIET_MODIFY_PLAN_RULES = [
   'When the coach names specific swaps, days, or portions, change ONLY those items and rebalance macros on affected meals/days as needed.',
   'Unchanged days should read almost the same as the current plan (same dishes and wording). Still output all 7 days in full for the tracker — copy unchanged days verbatim where possible.',
   'Keep the same daily calorie average (within about 75 kcal) unless the coach explicitly asks to raise, lower, or recalculate calories.',
-  'Always fix diet preference, allergy, and dislike violations from Hard Constraints everywhere — even if the coach did not mention them.',
-  'Respect the client\'s lifestyle from onboarding and the current plan — meal times, favorite foods, cooking ability, work schedule, budget — never swap in a random generic chart.',
+  'If the coach instruction conflicts with diet preference, allergies, dislikes, or other Hard Constraints, follow the coach instruction.',
+  'Only apply Hard Constraints where the coach did not give a conflicting direction.',
+  'Respect the client\'s lifestyle from onboarding and the current plan — meal times, favorite foods, cooking ability, work schedule, budget — never swap in a random generic chart, unless the coach asked for a different approach.',
   'Do NOT add a goal roadmap paragraph on modify edits.',
   'NEVER mention edits, updates, or what changed in client-facing text. Output reads like the normal plan the client already follows.',
 ].join('\n')

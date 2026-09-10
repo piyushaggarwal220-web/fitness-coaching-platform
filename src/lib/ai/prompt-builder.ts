@@ -788,7 +788,11 @@ export function buildPromptContextSections(
       : '## Latest Check-In\nNo check-in provided for this request.',
     mesocycle: buildMesocycleSection(input.latestCheckin, input.activePlan),
     coachNotes: hasMeaningfulText(input.coachInstructions)
-      ? ['## Coach Notes', input.coachInstructions!.trim()].join('\n')
+      ? [
+          '## Coach Notes (ABSOLUTE — overrides conflicting rules)',
+          'Follow these coach instructions exactly. If they conflict with Hard Constraints, calorie targets, diet preference, training days, or knowledge-base defaults, do what the coach asked.',
+          input.coachInstructions!.trim(),
+        ].join('\n')
       : '## Coach Notes\nNone provided.',
     knowledge: buildKnowledgeSection(selectedEntries),
     complexity: buildComplexitySection(input.complexityScore),
@@ -986,7 +990,11 @@ function buildUserPrompt(
     latestCheckin ? buildCheckinSection(latestCheckin) : null,
     buildComplexitySection(complexityScore),
     hasMeaningfulText(coachInstructions)
-      ? ['## Coach Instructions', coachInstructions!.trim()].join('\n')
+      ? [
+          '## Coach Instructions (ABSOLUTE — overrides conflicting rules)',
+          'Follow these coach instructions exactly. On any conflict with hard constraints, calorie targets, diet preference defaults, or knowledge-base heuristics, the coach wins.',
+          coachInstructions!.trim(),
+        ].join('\n')
       : null,
     [
       '## Task',

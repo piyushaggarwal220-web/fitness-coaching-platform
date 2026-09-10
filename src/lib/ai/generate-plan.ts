@@ -700,7 +700,18 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     ].join(' ')
   })()
 
-  const coachInstructionsWithPreference = [input.coachInstructions, dietPreferenceBoost, trainingDaysBoost]
+  const coachInstructionsWithPreference = [
+    dietPreferenceBoost,
+    trainingDaysBoost,
+    input.coachInstructions?.trim()
+      ? [
+          '## COACH DIRECTION (ABSOLUTE — overrides everything else)',
+          'Follow the coach text below exactly. If it conflicts with diet preference, training days, calorie targets, hard constraints, high-flux defaults, or any other rule above or in the system prompt, do what the coach asked.',
+          'Do not correct, soften, or reinterpret the coach request.',
+          input.coachInstructions.trim(),
+        ].join('\n')
+      : null,
+  ]
     .filter(Boolean)
     .join('\n\n')
 
@@ -840,10 +851,12 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     }
 
     // Force the non-negotiable diet numbers (floor + no large weekly swing) on diet generations.
+    // When the coach gave explicit instructions, keep the model output as-is for coach review.
     // Retry on violation; on the final attempt keep the best draft so the client still gets a plan
     // (these flows land as coach-review drafts, not auto-published).
     const enforcesDiet = validationMode === 'nutrition_focus' || validationMode === 'full'
-    if (enforcesDiet && !supportSection && providerMode !== 'mock') {
+    const coachDirected = Boolean(input.coachInstructions?.trim())
+    if (enforcesDiet && !supportSection && providerMode !== 'mock' && !coachDirected) {
       const repaired = applyDietPlanRepair(plan.nutrition_plan, input.profile)
       plan = { ...plan, nutrition_plan: repaired.plan }
       if (repaired.fixes.length > 0) {

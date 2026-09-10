@@ -16,10 +16,6 @@ import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
-import {
-  formatClientWorkoutPlanForDisplay,
-  formatPlanDayHeadersForClient,
-} from '@/lib/plan-day-labels';
 import { clientFacingPlanTitle, parsePlanMeta, extractWeekFromTitle } from '@/lib/plan-metadata';
 import { planGoalName, planDurationLabel } from '@/lib/payments/plan-pages';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
@@ -180,7 +176,7 @@ export default function ClientPlanPage() {
       key: 'diet' as const,
       title: 'Diet',
       icon: <Apple size={20} />,
-      content: formatPlanDayHeadersForClient(sections.diet),
+      content: sections.diet,
       emptyHint: 'Your coach hasn’t added a diet section yet.',
       alwaysShow: true,
     },
@@ -188,7 +184,8 @@ export default function ClientPlanPage() {
       key: 'workout' as const,
       title: 'Workout',
       icon: <Dumbbell size={20} />,
-      content: formatClientWorkoutPlanForDisplay(workoutSource),
+      // Show stored workout text as written (no reorder / rewrite).
+      content: workoutSource,
       emptyHint: 'Your coach hasn’t added a workout section yet.',
       alwaysShow: true,
     },
@@ -204,7 +201,7 @@ export default function ClientPlanPage() {
       key: 'cardio' as const,
       title: 'Cardio',
       icon: <Footprints size={20} />,
-      content: formatPlanDayHeadersForClient(sections.cardio),
+      content: sections.cardio,
       emptyHint: '',
       alwaysShow: false,
     },

@@ -40,6 +40,7 @@ import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
   CARDIO_MODIFY_PLAN_RULES,
   CLIENT_PLAN_EDIT_WEEK_RULES,
+  COACH_INSTRUCTION_SUPREMACY_RULES,
   DIET_MODIFY_PLAN_RULES,
   FRESH_PLAN_OUTPUT_RULES,
   WORKOUT_MODIFY_PLAN_RULES,
@@ -257,6 +258,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     source === 'coach'
       ? 'You are an expert fitness coach rewriting a client plan section from the coach\'s direction.'
       : 'You are an expert fitness coach rewriting a client plan section based on the client\'s request.',
+    source === 'coach' ? COACH_INSTRUCTION_SUPREMACY_RULES : null,
     isModify
       ? `Modify the current ${section} so the coach instruction is visible and exact. Keep everything they did not ask to change.`
       : `Produce a fresh, complete ${section} — not an in-place patch of the old text.`,
@@ -265,31 +267,35 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     input.remakeFromScratch
       ? '- Discard the current draft entirely. Use client profile/context only.'
       : isModify
-        ? '- The CURRENT PLAN below is the base template. Change only what the instruction, standing coach requests, or Hard Constraints require; keep everything else the same.'
+        ? source === 'coach'
+          ? '- The CURRENT PLAN below is the base template. Change whatever the coach instruction (and standing coach requests) require — exactly. Keep everything else the same.'
+          : '- The CURRENT PLAN below is the base template. Change only what the instruction, standing coach requests, or Hard Constraints require; keep everything else the same.'
         : '- Use the current plan below only as background (foods they eat, exercises they use, schedule). Rewrite the full section applying the instruction.',
     '- APPLY THE INSTRUCTION EXACTLY. If the coach names foods, exercises, days, or a step count, those must appear in the output as asked.',
     '- Honor every standing coach request below unless this new instruction explicitly overrides that point.',
-    '- Client-told preferences the coach already applied (foods to drop, skip breakfast/lunch, vegetarian/vegan, allergies, dislikes) stay in force on later edits.',
+    source === 'coach'
+      ? '- Profile preferences and Hard Constraints are background only. On any conflict, the coach instruction wins.'
+      : '- Client-told preferences the coach already applied (foods to drop, skip breakfast/lunch, vegetarian/vegan, allergies, dislikes) stay in force on later edits.',
     input.section === 'cardio' ? CARDIO_STEPS_ONLY_RULES : null,
     input.section === 'cardio'
       ? null
       : '- Preserve useful structure: day headers as Day N (Weekday) with Day 1 = Monday, meal names, exercise lines with sets x reps (plain letter x).',
     input.section === 'cardio' ? null : DAY_HEADER_PROMPT_RULES,
-    input.section === 'nutrition' ? CALORIE_FORMULA_PROMPT_RULES : null,
-    input.section === 'nutrition' ? DIET_PREFERENCE_ENFORCEMENT_RULES : null,
-    input.section === 'nutrition' ? DIET_LIFESTYLE_RESPECT_RULES : null,
+    input.section === 'nutrition' && source !== 'coach' ? CALORIE_FORMULA_PROMPT_RULES : null,
+    input.section === 'nutrition' && source !== 'coach' ? DIET_PREFERENCE_ENFORCEMENT_RULES : null,
+    input.section === 'nutrition' && source !== 'coach' ? DIET_LIFESTYLE_RESPECT_RULES : null,
     input.section === 'nutrition'
       ? isDietModify
         ? DIET_MODIFY_COACH_WRITING_RULES
         : DIET_COACH_WRITING_RULES
       : null,
-    input.section === 'nutrition' ? calorieRules : null,
-    input.section === 'nutrition' ? mandatoryCalorieTarget : null,
-    targetsMaintenance
+    input.section === 'nutrition' && source !== 'coach' ? calorieRules : null,
+    input.section === 'nutrition' && source !== 'coach' ? mandatoryCalorieTarget : null,
+    targetsMaintenance && source !== 'coach'
       ? 'MAINTENANCE FOCUS: Rebuild portions to maintenance-level food — generous enough to train and recover. Header, daily totals, and meal lines must all match.'
       : null,
-    input.section === 'cardio' ? null : HIGH_FLUX_PHILOSOPHY_RULES,
-    input.section === 'cardio' ? null : HIGH_FLUX_OUTPUT_PAIRING_RULES,
+    input.section === 'cardio' || source === 'coach' ? null : HIGH_FLUX_PHILOSOPHY_RULES,
+    input.section === 'cardio' || source === 'coach' ? null : HIGH_FLUX_OUTPUT_PAIRING_RULES,
     '- Keep language natural, human, and coach-ready in plain text, not JSON.',
     '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
     input.section === 'cardio'
@@ -300,11 +306,11 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
       : null,
     input.section === 'workout' ? EXERCISE_NAME_PROMPT_RULES : null,
     input.section === 'workout' ? WORKOUT_SECTION_PROMPT_RULES : null,
-    input.section === 'workout' ? WORKOUT_VOLUME_PROMPT_RULES : null,
-    input.section === 'nutrition'
+    input.section === 'workout' && source !== 'coach' ? WORKOUT_VOLUME_PROMPT_RULES : null,
+    input.section === 'nutrition' && source !== 'coach'
       ? '- For nutrition sections: if protein is hard to hit with allowed foods, lower protein and keep calories high. Never inflate protein numbers. Daily totals count only the primary meal option. Minimum platform kcal floor unless the coach already set otherwise.'
       : null,
-    input.section === 'nutrition' ? PROTEIN_CALORIE_PROMPT_RULES : null,
+    input.section === 'nutrition' && source !== 'coach' ? PROTEIN_CALORIE_PROMPT_RULES : null,
     '- Do not invent unsafe extreme restrictions or medical claims.',
     input.section === 'cardio'
       ? null
@@ -315,7 +321,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     input.section === 'cardio'
       ? null
       : '- If the instruction asks one day to mirror another, copy the full content under both day headers instead of pointing between days.',
-    `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
+    source === 'coach' ? null : `- ${CLIENT_PLAN_EDIT_WEEK_RULES}`,
   ]
     .filter((line): line is string => line != null)
     .join('\n')
@@ -325,16 +331,23 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     `Section: ${section}`,
     source === 'coach'
       ? isModify
-        ? 'Task: apply the coach instruction exactly on the current plan. Keep unmentioned parts the same.'
-        : 'Task: coach-directed fresh rewrite.'
+        ? 'Task: apply the coach instruction exactly on the current plan. Coach wording beats every other rule. Keep unmentioned parts the same.'
+        : 'Task: coach-directed fresh rewrite. Coach wording beats every other rule.'
       : 'Task: client-requested rewrite that still respects standing coach requests.',
     input.remakeFromScratch ? 'Mode: REMAKE FROM SCRATCH — ignore current draft body.' : null,
     input.section === 'nutrition' && input.profile
-      ? buildDietHardConstraintsSection(input.profile as OnboardingProfile)
+      ? source === 'coach'
+        ? buildDietHardConstraintsSection(input.profile as OnboardingProfile).replace(
+            '## Diet Hard Constraints (MUST obey — never violate)',
+            '## Profile diet background (yields to coach instruction on any conflict)'
+          )
+        : buildDietHardConstraintsSection(input.profile as OnboardingProfile)
       : null,
     standingBlock || null,
     '',
-    source === 'coach' ? '## Coach instruction (apply this now)' : '## Client request',
+    source === 'coach'
+      ? '## Coach instruction (ABSOLUTE — apply exactly; overrides profile/rules above)'
+      : '## Client request',
     instruction,
     input.coachNote?.trim() ? `\n## Additional context\n${input.coachNote.trim()}` : null,
     '',
@@ -401,88 +414,119 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
         )
       }
 
-      const revisedRaw = stripPlanEditMetaLanguage(
-        stripClientWeekHandoffLanguage(normalizeAiPlanProse(extractRevisedText(response.text)))
-      )
-      if (!revisedRaw) {
-        if (attempt < maxAttempts - 1) continue
-        throw new ClaudeResponseError('AI returned an empty revision.')
-      }
-
-      let revisedText =
-        input.section === 'nutrition'
-          ? syncStoredDietText(revisedRaw, {
-              previousCalories:
-                input.previousCalories ?? parseHeaderCalories(currentText),
-              preserveCalories,
-              floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
-            })
-          : revisedRaw
-
-      if (input.section === 'cardio') {
-        const fromAsk = stepCountFromInstruction(instruction)
-        const fromModel = extractStepCount(revisedRaw)
-        const fromCurrent = extractStepCount(currentText)
-        const fromStanding = [...(standing ?? [])]
-          .reverse()
-          .map((item) => extractStepCount(item.text))
-          .find((n) => n != null)
-        const habit = input.profile?.onboarding_data?.lifestyle?.dailySteps
-        revisedText = formatStepsOnlyCardio(
-          fromAsk ?? fromModel ?? fromCurrent ?? fromStanding ?? defaultDailyStepTarget(habit)
-        )
-      }
-
-      if (input.section === 'nutrition' && input.profile) {
-        const repaired = applyDietPlanRepair(
-          {
-            calories: parseHeaderCalories(revisedText) ?? 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-            meals: [{ example: revisedText }],
-          },
-          input.profile,
-          { skipCalorieFill: preserveCalories }
-        )
-        const meal0 = repaired.plan.meals[0]
-        if (typeof meal0 === 'string') {
-          revisedText = meal0
-        } else if (meal0 && typeof meal0 === 'object' && typeof (meal0 as { example?: unknown }).example === 'string') {
-          revisedText = (meal0 as { example: string }).example
+      // Coach-directed edits: show the model text as written (no preference repair,
+      // calorie sync, prose normalize, or deterministic food swaps).
+      let revisedText: string
+      if (source === 'coach') {
+        const raw = extractRevisedText(response.text).trim()
+        const cleaned = stripPlanEditMetaLanguage(raw).trim() || raw
+        if (!cleaned) {
+          if (attempt < maxAttempts - 1) continue
+          throw new ClaudeResponseError('AI returned an empty revision.')
         }
-        revisedText = syncStoredDietText(revisedText, {
-          previousCalories: input.previousCalories ?? parseHeaderCalories(currentText),
-          preserveCalories,
-          floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
-        })
-      }
-
-      if (input.section === 'nutrition') {
-        const coachDietAsk = [
-          ...(standing ?? []).map((item) => item.text),
-          instruction,
-          input.coachNote ?? '',
-        ]
-          .filter(Boolean)
-          .join('\n')
-        revisedText = applyCoachDietEditsToText(revisedText, coachDietAsk)
-      }
-
-      if (input.section === 'nutrition' && input.profile) {
-        const preferenceSafety = enforceDietPreference(
-          { meals: [{ example: revisedText }] },
-          input.profile.diet_preference,
-          dietScanOptionsFromProfile(input.profile)
-        )
-        if (!preferenceSafety.ok) {
-          if (attempt < maxAttempts - 1) {
-            dietRetryHint = preferenceSafety.hint
-            continue
-          }
-          throw new ClaudeResponseError(
-            `Diet revision failed preference safety: ${preferenceSafety.error}`
+        if (input.section === 'cardio') {
+          const fromAsk = stepCountFromInstruction(instruction)
+          const fromModel = extractStepCount(cleaned)
+          const fromCurrent = extractStepCount(currentText)
+          const fromStanding = [...(standing ?? [])]
+            .reverse()
+            .map((item) => extractStepCount(item.text))
+            .find((n) => n != null)
+          const habit = input.profile?.onboarding_data?.lifestyle?.dailySteps
+          revisedText = formatStepsOnlyCardio(
+            fromAsk ?? fromModel ?? fromCurrent ?? fromStanding ?? defaultDailyStepTarget(habit)
           )
+        } else {
+          revisedText = cleaned
+        }
+      } else {
+        const revisedRaw = stripPlanEditMetaLanguage(
+          stripClientWeekHandoffLanguage(normalizeAiPlanProse(extractRevisedText(response.text)))
+        )
+        if (!revisedRaw) {
+          if (attempt < maxAttempts - 1) continue
+          throw new ClaudeResponseError('AI returned an empty revision.')
+        }
+
+        revisedText =
+          input.section === 'nutrition'
+            ? syncStoredDietText(revisedRaw, {
+                previousCalories:
+                  input.previousCalories ?? parseHeaderCalories(currentText),
+                preserveCalories,
+                floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
+              })
+            : revisedRaw
+
+        if (input.section === 'cardio') {
+          const fromAsk = stepCountFromInstruction(instruction)
+          const fromModel = extractStepCount(revisedRaw)
+          const fromCurrent = extractStepCount(currentText)
+          const fromStanding = [...(standing ?? [])]
+            .reverse()
+            .map((item) => extractStepCount(item.text))
+            .find((n) => n != null)
+          const habit = input.profile?.onboarding_data?.lifestyle?.dailySteps
+          revisedText = formatStepsOnlyCardio(
+            fromAsk ?? fromModel ?? fromCurrent ?? fromStanding ?? defaultDailyStepTarget(habit)
+          )
+        }
+
+        if (input.section === 'nutrition' && input.profile) {
+          const repaired = applyDietPlanRepair(
+            {
+              calories: parseHeaderCalories(revisedText) ?? 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0,
+              meals: [{ example: revisedText }],
+            },
+            input.profile,
+            { skipCalorieFill: preserveCalories }
+          )
+          const meal0 = repaired.plan.meals[0]
+          if (typeof meal0 === 'string') {
+            revisedText = meal0
+          } else if (
+            meal0 &&
+            typeof meal0 === 'object' &&
+            typeof (meal0 as { example?: unknown }).example === 'string'
+          ) {
+            revisedText = (meal0 as { example: string }).example
+          }
+          revisedText = syncStoredDietText(revisedText, {
+            previousCalories: input.previousCalories ?? parseHeaderCalories(currentText),
+            preserveCalories,
+            floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
+          })
+        }
+
+        if (input.section === 'nutrition') {
+          const coachDietAsk = [
+            ...(standing ?? []).map((item) => item.text),
+            instruction,
+            input.coachNote ?? '',
+          ]
+            .filter(Boolean)
+            .join('\n')
+          revisedText = applyCoachDietEditsToText(revisedText, coachDietAsk)
+        }
+
+        if (input.section === 'nutrition' && input.profile) {
+          const preferenceSafety = enforceDietPreference(
+            { meals: [{ example: revisedText }] },
+            input.profile.diet_preference,
+            dietScanOptionsFromProfile(input.profile)
+          )
+          if (!preferenceSafety.ok) {
+            if (attempt < maxAttempts - 1) {
+              dietRetryHint = preferenceSafety.hint
+              continue
+            }
+            throw new ClaudeResponseError(
+              `Diet revision failed preference safety: ${preferenceSafety.error}`
+            )
+          }
         }
       }
 

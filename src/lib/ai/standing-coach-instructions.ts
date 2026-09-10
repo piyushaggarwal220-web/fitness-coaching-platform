@@ -40,7 +40,7 @@ export function formatStandingCoachInstructionsBlock(
     '## Standing coach requests (still in force)',
     'These are earlier coach instructions for this client. Apply ALL of them unless the current request explicitly overrides a point.',
     'Do not undo an older request just because a newer one is about something else.',
-    'Diet preference, allergies, dislikes, and foods the client asked the coach to drop stay in force.',
+    'On any conflict with platform defaults, hard constraints, or calorie formulas, standing coach requests win — and the current coach instruction wins over standing ones when they conflict.',
   ]
   for (const item of kept) {
     const when = item.at.slice(0, 10)
