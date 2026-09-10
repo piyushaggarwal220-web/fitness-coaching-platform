@@ -93,6 +93,51 @@ const metaOnly = resolvePlanSections({
 
 assert('meta-only coach notes become empty', metaOnly.coachNotes === '')
 
+const embeddedWorkoutOnly = resolvePlanSections({
+  nutrition_plan: `DIET
+Breakfast oats
+
+WORKOUT
+Day 1: Squats 3x8
+Bench 3x10
+
+SUPPLEMENTS
+Creatine 5g`,
+  workout_plan: '',
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+
+assert('promotes workout embedded in nutrition', embeddedWorkoutOnly.workout.includes('Squats'))
+assert('diet excludes embedded workout', !embeddedWorkoutOnly.diet.includes('Squats'))
+assert('still extracts supplements from nutrition', embeddedWorkoutOnly.supplements.includes('Creatine'))
+
+const naWorkoutWithEmbed = resolvePlanSections({
+  nutrition_plan: `Meal 1: rice
+
+WORKOUT
+Day 2: Deadlift 3x5`,
+  workout_plan: 'N/A',
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+
+assert('treats N/A workout as empty and uses nutrition embed', naWorkoutWithEmbed.workout.includes('Deadlift'))
+
+const workoutOnlyNutrition = resolvePlanSections({
+  nutrition_plan: `WORKOUT
+Day 1: Squats 3x8`,
+  workout_plan: '',
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+
+assert('workout-only nutrition promotes to workout', workoutOnlyNutrition.workout.includes('Squats'))
+assert('workout-only nutrition does not leave workout in diet', !workoutOnlyNutrition.diet.includes('Squats'))
+
 const humanized = normalizeAiPlanProse(
   '## Monday\n**Warm up**\n- Squats: 4 sets x 8 reps\n* Walk for 20 minutes\nUse a well-balanced meal.'
 )

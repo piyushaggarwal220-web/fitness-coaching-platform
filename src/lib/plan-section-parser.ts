@@ -35,6 +35,8 @@ function isMeaningful(value: string): boolean {
     'unchanged this week',
     'workout plan pending',
     'no active',
+    'n/a',
+    'na',
   ]
   return !placeholders.some((p) => trimmed.toLowerCase() === p)
 }
@@ -154,14 +156,19 @@ function pickSection(
 
 function stripEmbeddedSections(text: string, keysToRemove: SectionKey[]): string {
   const parsed = splitPlanTextByHeaders(text)
-  if (Object.keys(parsed).length <= 1) return text.trim()
+  if (Object.keys(parsed).length === 0) return text.trim()
 
   const remaining = SECTION_ORDER.filter((key) => !keysToRemove.includes(key))
     .map((key) => parsed[key])
     .filter((v) => isMeaningful(v ?? ''))
     .join('\n\n')
 
-  return remaining.trim() || text.trim()
+  if (remaining.trim()) return remaining.trim()
+
+  // If we removed the only real section(s), return empty — do not fall back to the
+  // original blob (that would put WORKOUT content back under Diet).
+  const removedSomething = keysToRemove.some((key) => isMeaningful(parsed[key] ?? ''))
+  return removedSomething ? '' : text.trim()
 }
 
 /**
@@ -194,14 +201,28 @@ export function resolvePlanSections(input: {
     nutrition,
     fromNutrition.diet ?? ''
   )
-  if (fromNutrition.supplements || fromNutrition.cardio || fromNutrition.coachNotes) {
-    diet = stripEmbeddedSections(nutrition, ['supplements', 'cardio', 'coachNotes'])
+  // Prefer the diet slice when nutrition embeds other sections (including workout).
+  // Without this, a WORKOUT block under nutrition_plan stays in Diet and never
+  // appears in the Plan "Workout" accordion (while Tracker only reads sections.workout).
+  if (
+    fromNutrition.supplements ||
+    fromNutrition.cardio ||
+    fromNutrition.coachNotes ||
+    fromNutrition.workout
+  ) {
+    diet = stripEmbeddedSections(nutrition, [
+      'supplements',
+      'cardio',
+      'coachNotes',
+      'workout',
+    ])
   }
   diet = stripInlineSectionBlocks(diet, ['supplements', 'cardio', 'coachNotes'])
 
   let workoutText = pickSection(
     workout,
-    fromWorkout.workout ?? ''
+    fromWorkout.workout ?? '',
+    fromNutrition.workout ?? ''
   )
   if (fromWorkout.cardio || fromWorkout.coachNotes || fromWorkout.supplements) {
     workoutText = stripEmbeddedSections(workout, ['cardio', 'coachNotes', 'supplements'])
@@ -223,7 +244,13 @@ export function resolvePlanSections(input: {
     extractInlineSection(workout, 'supplements')
   )
 
-  if (!isMeaningful(diet) && isMeaningful(nutrition) && !fromNutrition.supplements && !fromNutrition.cardio) {
+  if (
+    !isMeaningful(diet) &&
+    isMeaningful(nutrition) &&
+    !fromNutrition.supplements &&
+    !fromNutrition.cardio &&
+    !fromNutrition.workout
+  ) {
     diet = stripInlineSectionBlocks(nutrition, ['supplements', 'cardio', 'coachNotes'])
   }
   if (!isMeaningful(workoutText) && isMeaningful(workout) && !fromWorkout.cardio && !fromWorkout.coachNotes) {

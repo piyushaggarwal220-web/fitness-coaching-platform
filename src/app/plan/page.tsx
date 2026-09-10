@@ -16,7 +16,10 @@ import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
-import { formatPlanDayHeadersForClient } from '@/lib/plan-day-labels';
+import {
+  formatClientWorkoutPlanForDisplay,
+  formatPlanDayHeadersForClient,
+} from '@/lib/plan-day-labels';
 import { clientFacingPlanTitle, parsePlanMeta, extractWeekFromTitle } from '@/lib/plan-metadata';
 import { planGoalName, planDurationLabel } from '@/lib/payments/plan-pages';
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
@@ -164,23 +167,56 @@ export default function ClientPlanPage() {
   const planMeta = parsePlanMeta(plan)
   const weekNumber = planMeta.week ?? extractWeekFromTitle(plan.title)
 
+  // Prefer resolved workout; if parsing wiped a real field, fall back to raw DB text.
+  const rawWorkout = (plan.workout_plan ?? '').trim()
+  const workoutSource =
+    sections.workout.trim() ||
+    (rawWorkout && !/^(n\/?a|pending|workout plan pending|unchanged this week|not provided|none specified)$/i.test(rawWorkout)
+      ? rawWorkout
+      : '')
+
   const accordionItems = [
     {
       key: 'diet' as const,
       title: 'Diet',
       icon: <Apple size={20} />,
       content: formatPlanDayHeadersForClient(sections.diet),
+      emptyHint: 'Your coach hasn’t added a diet section yet.',
+      alwaysShow: true,
     },
     {
       key: 'workout' as const,
       title: 'Workout',
       icon: <Dumbbell size={20} />,
-      content: formatPlanDayHeadersForClient(sections.workout),
+      content: formatClientWorkoutPlanForDisplay(workoutSource),
+      emptyHint: 'Your coach hasn’t added a workout section yet.',
+      alwaysShow: true,
     },
-    { key: 'supplements' as const, title: 'Supplements', icon: <Pill size={20} color={colors.accent} />, content: sections.supplements },
-    { key: 'cardio' as const, title: 'Cardio', icon: <Footprints size={20} />, content: formatPlanDayHeadersForClient(sections.cardio) },
-    { key: 'notes' as const, title: 'Lifestyle & tips', icon: <ClipboardList size={20} />, content: sections.coachNotes },
-  ].filter((item) => item.content.trim().length > 0)
+    {
+      key: 'supplements' as const,
+      title: 'Supplements',
+      icon: <Pill size={20} color={colors.accent} />,
+      content: sections.supplements,
+      emptyHint: '',
+      alwaysShow: false,
+    },
+    {
+      key: 'cardio' as const,
+      title: 'Cardio',
+      icon: <Footprints size={20} />,
+      content: formatPlanDayHeadersForClient(sections.cardio),
+      emptyHint: '',
+      alwaysShow: false,
+    },
+    {
+      key: 'notes' as const,
+      title: 'Lifestyle & tips',
+      icon: <ClipboardList size={20} />,
+      content: sections.coachNotes,
+      emptyHint: '',
+      alwaysShow: false,
+    },
+  ].filter((item) => item.alwaysShow || item.content.trim().length > 0)
 
   return (
     <ClientShell title="Plan">
@@ -225,7 +261,7 @@ export default function ClientPlanPage() {
 
       {/* Accordions */}
       <div>
-        {accordionItems.map(({ key, title, icon, content }) => (
+        {accordionItems.map(({ key, title, icon, content, emptyHint }) => (
           <AccordionItem
             key={key}
             title={title}
@@ -234,7 +270,7 @@ export default function ClientPlanPage() {
             onToggle={() => toggle(key)}
           >
             <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: colors.textSecondary, fontSize: 15, paddingBottom: spacing[2] }}>
-              {content}
+              {content.trim() ? content : emptyHint}
             </div>
           </AccordionItem>
         ))}

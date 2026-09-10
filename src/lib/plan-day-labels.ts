@@ -135,3 +135,27 @@ export function formatPlanDayHeadersForClient(text: string): string {
 
   return out
 }
+
+/**
+ * Client Plan display: long weekly updates often put a multi-paragraph coach note
+ * before Day 1. Tracker jumps straight to sessions; Plan should too, with the note
+ * after the program so the workout is findable in the Workout accordion.
+ */
+export function formatClientWorkoutPlanForDisplay(text: string): string {
+  const formatted = formatPlanDayHeadersForClient(text).trim()
+  if (!formatted) return formatted
+
+  const dayStart = formatted.search(
+    new RegExp(
+      `(?:^|\\n)[\\t ]*(?:#{1,3}[\\t ]*)?(?:\\*{0,2})?(?:Day\\s*\\d+|${WEEKDAY_ALT})\\b`,
+      'i'
+    )
+  )
+  if (dayStart <= 0) return formatted
+
+  const intro = formatted.slice(0, dayStart).trim()
+  const program = formatted.slice(dayStart).trim()
+  // Keep short titles like "Workout Plan" attached above Day 1.
+  if (!intro || intro.length < 240) return formatted
+  return `${program}\n\n——\n\nFrom your coach\n${intro}`
+}
