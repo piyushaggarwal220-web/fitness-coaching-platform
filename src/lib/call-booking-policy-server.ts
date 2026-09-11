@@ -26,7 +26,7 @@ export async function loadClientCallBookingPolicy(
   })
 }
 
-/** Cancel active call requests that violate plan / 2-week rules. */
+/** Cancel active call requests that violate plan / first-week rules. */
 export async function enforceClientCallPolicy(
   admin: SupabaseClient,
   clientId: string
@@ -83,8 +83,8 @@ export async function enforceClientCallPolicy(
       await cancel(
         row.id,
         row.source === 'weekly_entitlement'
-          ? 'Auto-closed — weekly call opens once the coaching schedule has started'
-          : 'Auto-closed — calls unlock once the coaching schedule has started'
+          ? 'Auto-closed — weekly call opens after the first week of coaching'
+          : 'Auto-closed — calls unlock after the first week of coaching'
       )
     }
     return

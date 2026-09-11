@@ -12,16 +12,19 @@ function assert(label: string, ok: boolean) {
   console.log(`PASS ${label}`)
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
 const started = new Date('2026-01-01T00:00:00.000Z')
 const day0 = new Date(started.getTime())
-const day1 = new Date(started.getTime() + 24 * 60 * 60 * 1000)
+const day6 = new Date(started.getTime() + 6 * DAY_MS)
+const day7 = new Date(started.getTime() + 7 * DAY_MS)
 
-assert('delay is 0 (book on delivery)', INITIAL_WEEKLY_CALL_DELAY_MS === 0)
-assert('eligible immediately at schedule start', getInitialWeeklyCallWindow(started, day0).eligible === true)
-assert('still eligible the next day', getInitialWeeklyCallWindow(started, day1).eligible === true)
+assert('delay is 7 days', INITIAL_WEEKLY_CALL_DELAY_MS === 7 * DAY_MS)
+assert('not eligible on day 0', getInitialWeeklyCallWindow(started, day0).eligible === false)
+assert('not eligible on day 6', getInitialWeeklyCallWindow(started, day6).eligible === false)
+assert('eligible on day 7', getInitialWeeklyCallWindow(started, day7).eligible === true)
 assert(
-  'earliestAfter equals schedule start when delay is 0',
-  getInitialWeeklyCallWindow(started, day0).earliestAfter.getTime() === started.getTime()
+  'earliestAfter is schedule start + 7 days',
+  getInitialWeeklyCallWindow(started, day0).earliestAfter.getTime() === started.getTime() + 7 * DAY_MS
 )
 assert('invalid date is not eligible', getInitialWeeklyCallWindow('not-a-date', new Date()).eligible === false)
 

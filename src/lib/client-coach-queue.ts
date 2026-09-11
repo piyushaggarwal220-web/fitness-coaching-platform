@@ -103,8 +103,8 @@ export function buildClientCoachQueueView(input: {
       yourCall: null,
       message:
         days > 0
-          ? `Weekly calls open when your plan is ready (${days} day${days === 1 ? '' : 's'} left).`
-          : 'Your weekly call opens as soon as your plan is delivered.',
+          ? `Weekly calls open after your first week (${days} day${days === 1 ? '' : 's'} left).`
+          : 'Your weekly call opens after your first week of coaching.',
     }
   }
 

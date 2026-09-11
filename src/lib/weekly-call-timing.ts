@@ -3,8 +3,8 @@
 const DAY_MS = 24 * 60 * 60 * 1000
 const INDIA_TIME_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
 
-/** No delay — weekly calls open as soon as the plan is delivered / schedule starts. */
-export const INITIAL_WEEKLY_CALL_DELAY_MS = 0
+/** Wait through the first coaching week before the first weekly call opens. */
+export const INITIAL_WEEKLY_CALL_DELAY_MS = 7 * DAY_MS
 
 /** Saturday 11:00 IST — default auto-booked weekly call slot. */
 export const DEFAULT_CALL_WEEKDAY = 6
@@ -48,8 +48,8 @@ function utcFromIstLocal(y: number, mo: number, d: number, h: number, mi: number
 }
 
 /**
- * Auto weekly call opens as soon as coaching schedule has started (plan delivered).
- * Daily cron + ensure callers create the call once plan_delivered / schedule anchor exists.
+ * Auto weekly call opens after the first coaching week (7 days from schedule start).
+ * Daily cron + ensure callers create the call once that window has passed.
  */
 export function getInitialWeeklyCallWindow(
   scheduleStartedAt: string | Date,

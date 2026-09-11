@@ -64,8 +64,8 @@ export function evaluateCallBookingPolicy(input: {
       planDelivered: true,
       message:
         daysUntilEligible > 0
-          ? `Weekly calls open when your plan is ready (${daysUntilEligible} day${daysUntilEligible === 1 ? '' : 's'} left). Use chat until then.`
-          : 'Your weekly call opens as soon as your plan is delivered. Use chat until then.',
+          ? `Weekly calls open after your first week (${daysUntilEligible} day${daysUntilEligible === 1 ? '' : 's'} left). Use chat until then.`
+          : 'Your weekly call opens after your first week of coaching. Use chat until then.',
       daysUntilEligible,
     }
   }

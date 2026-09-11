@@ -86,7 +86,7 @@ const waiting = buildClientCoachQueueView({
   daysUntilEligible: 4,
   planDelivered: true,
 })
-assert('hides queue during first 2 weeks', waiting.items.length === 0 && waiting.yourCall === null)
+assert('hides queue during first week', waiting.items.length === 0 && waiting.yourCall === null)
 
 if (failed > 0) {
   console.error(`\n${failed} client coach queue checks failed`)

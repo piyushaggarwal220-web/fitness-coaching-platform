@@ -172,7 +172,7 @@ export async function ensureWeeklyCallForClient(
 
   const window = getInitialWeeklyCallWindow(profile.checkin_schedule_started_at)
   if (!window.eligible) {
-    return { created: false, reason: 'within_initial_2_weeks' }
+    return { created: false, reason: 'within_initial_week' }
   }
 
   await closeStaleWeeklyCallIfNeeded(admin, clientId)
