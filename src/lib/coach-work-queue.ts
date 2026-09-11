@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
-import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
+import { coachRequiresManualPlanDelivery, coachUsesFifoWorkQueue } from '@/lib/coach-delivery-policy'
 import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
 import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
@@ -41,7 +41,7 @@ export type WorkQueueTask = {
   accessSource?: AccessSource | null
 }
 
-/** Equal numeric priority for API compatibility — display order uses type, then plan tier, then time. */
+/** Equal numeric priority for API compatibility — display order is FIFO or type/tier. */
 const QUEUE_PRIORITY = 1
 
 /** New-client first plans before check-ins, chat, and certificates. */
@@ -69,13 +69,15 @@ function planTierRank(planSlug: string | null | undefined): number {
   return 3
 }
 
-/** New-client plans first, then 12-month clients, then oldest received. */
-function sortTasks(tasks: WorkQueueTask[]): WorkQueueTask[] {
+/** Oldest queued first. Optional importance ranks stay off for FIFO coaches. */
+function sortTasks(tasks: WorkQueueTask[], fifo: boolean): WorkQueueTask[] {
   return [...tasks].sort((a, b) => {
-    const typeDiff = taskTypeRank(a.type) - taskTypeRank(b.type)
-    if (typeDiff !== 0) return typeDiff
-    const tierDiff = planTierRank(a.planSlug) - planTierRank(b.planSlug)
-    if (tierDiff !== 0) return tierDiff
+    if (!fifo) {
+      const typeDiff = taskTypeRank(a.type) - taskTypeRank(b.type)
+      if (typeDiff !== 0) return typeDiff
+      const tierDiff = planTierRank(a.planSlug) - planTierRank(b.planSlug)
+      if (tierDiff !== 0) return tierDiff
+    }
     const aTime = Date.parse(a.createdAt)
     const bTime = Date.parse(b.createdAt)
     const safeA = Number.isFinite(aTime) ? aTime : 0
@@ -386,15 +388,10 @@ export async function getCoachWorkQueue(
     tasks.push({
       id: `call-${request.id}`,
       type: 'call_request',
-      title:
-        request.status === 'scheduled'
-          ? `${weeklyLabel} with ${name}`
-          : `${weeklyLabel} requested by ${name}`,
-      subtitle: request.scheduled_for
-        ? new Date(request.scheduled_for).toLocaleString('en-IN')
-        : isWeekly
-          ? 'Call anytime this week'
-          : 'Open chat to schedule or resolve',
+      title: `${weeklyLabel} with ${name}`,
+      subtitle: isWeekly
+        ? 'Call this client this week when you are ready'
+        : 'Open chat — call when ready',
       href: `/coach/chat/${request.conversation_id}`,
       clientId: request.client_id,
       clientName: name,
@@ -500,7 +497,8 @@ export async function getCoachWorkQueue(
       ...task,
       planSlug: task.clientId ? planSlugByClient.get(task.clientId) ?? null : null,
       accessSource: task.clientId ? accessSourceByClient.get(task.clientId) ?? null : null,
-    }))
+    })),
+    coachUsesFifoWorkQueue(coachId)
   )
 }
 

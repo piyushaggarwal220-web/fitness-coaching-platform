@@ -16,6 +16,11 @@ export function coachRequiresManualPlanDelivery(coachId: string | null | undefin
   return Boolean(coachId && MANUAL_PLAN_DELIVERY_COACH_IDS.has(coachId))
 }
 
+/** Piyush works first-come, first-served — not by plan tier or task type. */
+export function coachUsesFifoWorkQueue(coachId: string | null | undefined): boolean {
+  return coachId === PIYUSH_COACH_ID
+}
+
 /** Only these coaches receive clients via automatic assignment. */
 export function coachAcceptsAutoAssignment(coachId: string | null | undefined): boolean {
   return Boolean(coachId && AUTO_ASSIGN_COACH_IDS.has(coachId))
