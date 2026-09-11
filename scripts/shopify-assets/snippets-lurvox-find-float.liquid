@@ -1,7 +1,7 @@
 {% comment %}
-  LURVOX — one floating dock, two equal actions.
-  Never promote one CTA over another. Swap the pair so
-  the current page is not repeated in the dock.
+  LURVOX — one floating dock, two orange-and-black actions.
+  Talk is first and slightly larger. Plan buttons show prices.
+  Swap the pair so the current page is not repeated.
   Demo lives on the welcome card, not here.
 {% endcomment %}
 
@@ -29,45 +29,51 @@
 -%}
 
 <div class="lx-find-float" data-lx-find-float aria-label="Quick actions">
-  <div class="lx-find-float__row">
-    {%- if on_finder -%}
-      <a class="lx-find-float__btn" href="{{ talk_url }}">
+  {%- if on_finder -%}
+    <div class="lx-find-float__row lx-find-float__row--talk-first">
+      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
         <span class="lx-find-float__main">Talk to a coach</span>
         <span class="lx-find-float__sub">Free consult</span>
       </a>
       <a class="lx-find-float__btn" href="{{ plans_url }}">
         <span class="lx-find-float__main">See plans</span>
-        <span class="lx-find-float__sub">Prices side by side</span>
+        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
       </a>
-    {%- elsif on_talk -%}
+    </div>
+  {%- elsif on_talk -%}
+    <div class="lx-find-float__row">
       <a class="lx-find-float__btn" href="{{ find_url }}">
         <span class="lx-find-float__main">Find your plan</span>
-        <span class="lx-find-float__sub">Quick quiz</span>
+        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
       </a>
       <a class="lx-find-float__btn" href="{{ plans_url }}">
         <span class="lx-find-float__main">See plans</span>
-        <span class="lx-find-float__sub">Prices side by side</span>
+        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
       </a>
-    {%- elsif on_compare -%}
+    </div>
+  {%- elsif on_compare -%}
+    <div class="lx-find-float__row lx-find-float__row--talk-second">
       <a class="lx-find-float__btn" href="{{ find_url }}">
         <span class="lx-find-float__main">Find your plan</span>
-        <span class="lx-find-float__sub">Quick quiz</span>
+        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
       </a>
-      <a class="lx-find-float__btn" href="{{ talk_url }}">
+      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
         <span class="lx-find-float__main">Talk to a coach</span>
         <span class="lx-find-float__sub">Free consult</span>
       </a>
-    {%- else -%}
-      <a class="lx-find-float__btn" href="{{ find_url }}">
-        <span class="lx-find-float__main">Find your plan</span>
-        <span class="lx-find-float__sub">Quick quiz</span>
-      </a>
-      <a class="lx-find-float__btn" href="{{ talk_url }}">
+    </div>
+  {%- else -%}
+    <div class="lx-find-float__row lx-find-float__row--talk-first">
+      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
         <span class="lx-find-float__main">Talk to a coach</span>
         <span class="lx-find-float__sub">Free consult</span>
       </a>
-    {%- endif -%}
-  </div>
+      <a class="lx-find-float__btn" href="{{ find_url }}">
+        <span class="lx-find-float__main">Find your plan</span>
+        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
+      </a>
+    </div>
+  {%- endif -%}
 </div>
 
 <style id="lx-find-float-css">
@@ -109,6 +115,14 @@
     box-shadow: none;
   }
 
+  .lx-find-float__row--talk-first {
+    grid-template-columns: 1.18fr 1fr;
+  }
+
+  .lx-find-float__row--talk-second {
+    grid-template-columns: 1fr 1.18fr;
+  }
+
   .lx-find-float__btn {
     pointer-events: auto;
     display: flex;
@@ -136,6 +150,15 @@
     color: #140900 !important;
   }
 
+  .lx-find-float__btn--talk {
+    min-height: 62px;
+    box-shadow: 0 12px 28px rgba(255, 98, 0, 0.58);
+  }
+
+  .lx-find-float__btn--talk .lx-find-float__main {
+    font-size: 1rem;
+  }
+
   .lx-find-float__main {
     font-size: 0.92rem;
     font-weight: 850;
@@ -148,7 +171,8 @@
     font-size: 0.68rem;
     font-weight: 650;
     color: rgba(20, 9, 0, 0.78) !important;
-    white-space: nowrap;
+    white-space: normal;
+    line-height: 1.2;
   }
 
   body.lx-has-find-float {
@@ -176,7 +200,8 @@
     }
 
     .lx-find-float__main { font-size: 0.84rem; }
-    .lx-find-float__sub { font-size: 0.64rem; }
+    .lx-find-float__btn--talk .lx-find-float__main { font-size: 0.92rem; }
+    .lx-find-float__sub { font-size: 0.62rem; }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -70,11 +70,11 @@
     </div>
 
     <div class="lx-conv__actions">
+      <a class="lx-conv__link lx-conv__link--talk" href="{{ consult_url }}">Talk to a coach</a>
+      <span class="lx-conv__sep" aria-hidden="true">·</span>
       <a class="lx-conv__link" href="{{ start_url }}">Find your plan</a>
       <span class="lx-conv__sep" aria-hidden="true">·</span>
-      <a class="lx-conv__link" href="{{ consult_url }}">Talk to a coach</a>
-      <span class="lx-conv__sep" aria-hidden="true">·</span>
-      <a class="lx-conv__link" href="#plans">See plans</a>
+      <a class="lx-conv__link" href="#plans">See plans · ₹1,999 · ₹3,499 · ₹5,999</a>
     </div>
   </div>
 </section>
@@ -267,6 +267,11 @@
     font-weight: 750;
     text-decoration: underline !important;
     text-underline-offset: 3px;
+  }
+
+  .lx-conv__link--talk {
+    font-size: 1.02rem;
+    font-weight: 850;
   }
 
   .lx-conv__sep {

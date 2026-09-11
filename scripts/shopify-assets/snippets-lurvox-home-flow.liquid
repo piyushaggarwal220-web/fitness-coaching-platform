@@ -6,6 +6,7 @@
 {%- liquid
   assign mode = mode | default: 'find'
   assign find_url = '/pages/choose-your-plan'
+  assign talk_url = '/pages/talk-to-a-coach'
   assign how_url = '/pages/how-lurvox-works'
   assign compare_url = '/pages/compare-fit?view=compare-short'
 -%}
@@ -22,11 +23,11 @@
 {%- else -%}
   <section class="lx-flow lx-flow--after" aria-label="Next steps">
     <div class="lx-flow__inner lx-flow__inner--links">
-      <p class="lx-flow__hint">Want more detail first?</p>
+      <p class="lx-flow__hint">Fat loss ₹1,999 · Fat loss + muscle ₹3,499 · Athletic body ₹5,999</p>
       <div class="lx-flow__links">
-        <a class="lx-flow__link" href="{{ find_url }}">Find your plan</a>
+        <a class="lx-flow__link lx-flow__link--talk" href="{{ talk_url }}">Talk to a coach</a>
         <span class="lx-flow__sep" aria-hidden="true">·</span>
-        <a class="lx-flow__link" href="{{ how_url }}">How LURVOX works</a>
+        <a class="lx-flow__link" href="{{ find_url }}">Find your plan</a>
         <span class="lx-flow__sep" aria-hidden="true">·</span>
         <a class="lx-flow__link" href="{{ compare_url }}">Compare plans</a>
       </div>
@@ -75,6 +76,10 @@
     font-weight: 750;
     text-decoration: underline !important;
     text-underline-offset: 3px;
+  }
+  .lx-flow__link--talk {
+    font-size: 1.02rem;
+    font-weight: 850;
   }
   .lx-flow__sep {
     color: rgba(255, 255, 255, 0.35);

@@ -1,7 +1,7 @@
 {% comment %}
   LURVOX — Find your plan (tap quiz)
   Full intake quiz → recommend a goal-based plan page (not checkout)
-  cache-bust 1787768000004
+  cache-bust 1787768000005
 {% endcomment %}
 
 {%- liquid
@@ -27,7 +27,7 @@
       <p class="lx-pf__eyebrow">{{ section.settings.eyebrow | default: 'CHOOSE YOUR GOAL' }}</p>
       <h1 class="lx-pf__title">{{ section.settings.heading | default: 'Pick your goal. We handle the rest.' }}</h1>
       <p class="lx-pf__subtitle">
-        {{ section.settings.subheading | default: 'Fat loss, Fat loss + muscle gain, or Athletic body. Answer honestly — we send you to that plan page. No payment here.' }}
+        {{ section.settings.subheading | default: 'Fat loss ₹1,999 · Fat loss + muscle ₹3,499 · Athletic body ₹5,999. Answer honestly — we send you to that plan page. No payment here.' }}
       </p>
     </header>
 
@@ -61,7 +61,7 @@
           <span data-pf-checkout-label>Start this plan</span>
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden></a>
-        <a class="lx-pf__btn lx-pf__btn--ghost" href="{{ talk_url }}">Talk to a coach</a>
+        <a class="lx-pf__btn lx-pf__btn--talk" href="{{ talk_url }}">Talk to a coach</a>
       </div>
       <button type="button" class="lx-pf__restart" data-pf-restart>Retake quiz</button>
     </div>
@@ -403,6 +403,13 @@
     border: 1px solid var(--lx-line);
   }
 
+  #lx-pf-{{ section.id }} .lx-pf__btn--talk {
+    background: transparent;
+    color: #ff6200;
+    border: 2px solid #ff6200;
+    font-weight: 800;
+  }
+
   #lx-pf-{{ section.id }} .lx-pf__link {
     margin-top: 4px;
     color: var(--lx-muted);
@@ -439,9 +446,9 @@
         key: 'goal',
         q: 'What is your main goal right now?',
         options: [
-          { id: 'event', label: 'Fat loss — get visibly leaner in 90 days', score: -4, goal: 'Fat loss' },
-          { id: 'refine', label: 'Fat loss + muscle gain — lose fat while building muscle over 6 months', score: 1, goal: 'Fat loss + muscle gain' },
-          { id: 'transform', label: 'Athletic body — fat loss, muscle gain, and stamina over 12 months', score: 5, goal: 'Athletic body' }
+          { id: 'event', label: 'Fat loss — 90 days · ₹1,999', score: -4, goal: 'Fat loss' },
+          { id: 'refine', label: 'Fat loss + muscle gain — 6 months · ₹3,499', score: 1, goal: 'Fat loss + muscle gain' },
+          { id: 'transform', label: 'Athletic body — 12 months · ₹5,999', score: 5, goal: 'Athletic body' }
         ]
       },
       {
@@ -736,7 +743,7 @@
       });
       if (compareEl) compareEl.hidden = true;
       checkoutEl.href = url;
-      checkoutLabelEl.textContent = 'Start this plan';
+      checkoutLabelEl.textContent = 'Start this plan · ' + plan.price;
       if (upgradeEl) upgradeEl.hidden = true;
       try {
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -824,7 +831,7 @@
       "type": "textarea",
       "id": "subheading",
       "label": "Subheading",
-      "default": "Fat loss, Fat loss + muscle gain, or Athletic body. Answer honestly — we send you to that plan page. No payment here."
+      "default": "Fat loss ₹1,999 · Fat loss + muscle ₹3,499 · Athletic body ₹5,999. Answer honestly — we send you to that plan page. No payment here."
     },
     {
       "type": "text",

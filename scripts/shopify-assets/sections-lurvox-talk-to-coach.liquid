@@ -61,22 +61,22 @@
 
         <fieldset class="lx-consult__goals">
           <legend>Your goal</legend>
-          <p class="lx-consult__timing-hint">Pick the outcome. Duration is secondary.</p>
+          <p class="lx-consult__timing-hint">Pick the plan. Fat loss ₹1,999 · Fat loss + muscle ₹3,499 · Athletic body ₹5,999.</p>
           <div class="lx-consult__goal-options" role="radiogroup" aria-label="Your goal">
             <label class="lx-consult__goal-opt">
               <input type="radio" name="goal" value="Fat loss" data-duration="90 days" required>
               <span class="lx-consult__goal-primary">Fat loss</span>
-              <span class="lx-consult__goal-secondary">90 days</span>
+              <span class="lx-consult__goal-secondary">90 days · ₹1,999</span>
             </label>
             <label class="lx-consult__goal-opt">
               <input type="radio" name="goal" value="Fat loss + muscle gain" data-duration="6 months">
               <span class="lx-consult__goal-primary">Fat loss + muscle gain</span>
-              <span class="lx-consult__goal-secondary">6 months</span>
+              <span class="lx-consult__goal-secondary">6 months · ₹3,499</span>
             </label>
             <label class="lx-consult__goal-opt">
               <input type="radio" name="goal" value="Athletic body" data-duration="12 months">
               <span class="lx-consult__goal-primary">Athletic body</span>
-              <span class="lx-consult__goal-secondary">12 months</span>
+              <span class="lx-consult__goal-secondary">12 months · ₹5,999</span>
             </label>
           </div>
         </fieldset>
@@ -290,11 +290,10 @@
   }
 
   #lx-consult-{{ section.id }} .lx-consult__goal-secondary {
-    font-size: 0.75rem;
-    font-weight: 650;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: rgba(245, 245, 245, 0.55);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #ffb07a;
   }
 
   #lx-consult-{{ section.id }} .lx-consult__timing-options {
