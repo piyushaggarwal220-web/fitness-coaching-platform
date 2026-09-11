@@ -523,7 +523,7 @@ export async function claimPurchaseWithPassword(
   const { data: existingProfile } = userId
     ? await admin
         .from('profiles')
-        .select('role, onboarding_complete, subscription_expires_at, name')
+        .select('role, onboarding_complete, subscription_expires_at, name, phone')
         .eq('id', userId)
         .maybeSingle()
     : { data: null }
@@ -587,6 +587,9 @@ export async function claimPurchaseWithPassword(
     ? planExpiry.toISOString()
     : new Date(Math.max(planExpiry.getTime(), existingExpiry, Date.now())).toISOString()
 
+  const purchasePhone = (purchase.customer_phone || '').trim()
+  const existingPhone = (existingProfile?.phone || '').trim()
+
   const profilePayload: Record<string, unknown> = {
     id: userId,
     email,
@@ -594,6 +597,12 @@ export async function claimPurchaseWithPassword(
     payment_confirmed: true,
     subscription_expires_at: nextExpiry,
     updated_at: now,
+  }
+
+  // Checkout collects WhatsApp on the purchase row; coaches read profiles.phone.
+  // Copy it on claim when the profile does not already have a number.
+  if (!existingPhone && purchasePhone) {
+    profilePayload.phone = purchasePhone
   }
 
   if (!preservePrivilegedRole) {

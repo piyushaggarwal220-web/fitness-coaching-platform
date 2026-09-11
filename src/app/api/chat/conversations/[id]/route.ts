@@ -34,7 +34,7 @@ export async function GET(
         .maybeSingle(),
       admin
         .from('purchases')
-        .select('user_id, plan_slug, status, created_at')
+        .select('user_id, plan_slug, status, created_at, customer_phone')
         .eq('user_id', clientId)
         .in('status', ['captured', 'redeemed']),
     ])
@@ -52,13 +52,20 @@ export async function GET(
   }
 
   const planSlug = buildPlanSlugByClient(purchases).get(clientId) ?? null
+  const profilePhone = profile?.phone?.trim() || null
+  const purchasePhone =
+    (purchases ?? [])
+      .slice()
+      .sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))
+      .map((row) => row.customer_phone?.trim())
+      .find((value) => Boolean(value)) || null
 
   return NextResponse.json({
     conversation: participant.conversation,
     viewer: participant.viewer,
     client: {
       name: profile?.name ?? 'Client',
-      phone: profile?.phone ?? null,
+      phone: profilePhone || purchasePhone,
     },
     activePlanId: activePlan?.id ?? null,
     plan_slug: planSlug,
