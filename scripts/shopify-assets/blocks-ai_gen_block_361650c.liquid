@@ -453,13 +453,13 @@
 
 .ai-transformation-plan-badge-{{ ai_gen_id }} {
     font-size: 10px;
-    padding: 8px 16px;
-    background: #FFFFFF;
-    color: #111111;
+    padding: 4px 10px;
+    background: #ff6200;
+    color: #1a0900;
     border-radius: 999px;
     font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -532,13 +532,12 @@
   }
 
   .ai-transformation-plan-card-savings-{{ ai_gen_id }} {
-    font-size: 10px;
-    padding: 4px 8px;
-    background: {{ block.settings.accent_color }};
-    color: {{ block.settings.background_color }};
-    border-radius: 8px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+    font-size: 11px;
+    color: {{ block.settings.secondary_text_color }};
+    padding: 0;
+    background: none;
+    font-weight: 400;
+    letter-spacing: normal;
   }
 
   .ai-transformation-plan-radio-{{ ai_gen_id }} {
@@ -628,6 +627,35 @@
   .ai-transformation-plan-cta-{{ ai_gen_id }}:hover {
     background: {{ block.settings.button_hover_color }};
     transform: translateY(-2px);
+  }
+
+  .ai-transformation-plan-card-start-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    margin-top: 14px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 12px;
+    background: #ff6200;
+    color: #140900 !important;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none !important;
+    box-sizing: border-box;
+  }
+
+  .ai-transformation-plan-card-start-{{ ai_gen_id }}:hover {
+    filter: brightness(1.06);
+  }
+
+  .ai-transformation-plan-radio-{{ ai_gen_id }} {
+    display: none;
   }
 
   .ai-transformation-plan-trust-{{ ai_gen_id }} {
@@ -741,8 +769,9 @@
     }
 
     .ai-transformation-plan-card-savings-{{ ai_gen_id }} {
-      font-size: 9px !important;
-      padding: 3px 7px !important;
+      font-size: 10px !important;
+      padding: 0 !important;
+      background: none !important;
     }
 
     .ai-transformation-plan-card-footer-{{ ai_gen_id }} {
@@ -858,11 +887,12 @@
     font-size: 9px !important;
     padding: 3px 8px !important;
     border-radius: 999px !important;
-    letter-spacing: 0.06em !important;
-    background: rgba(255, 98, 0, 0.16) !important;
-    color: #ff8a3d !important;
-    border: 1px solid rgba(255, 98, 0, 0.35) !important;
+    letter-spacing: 0.04em !important;
+    background: #ff6200 !important;
+    color: #1a0900 !important;
+    border: 0 !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   .ai-transformation-plan-card-duration-{{ ai_gen_id }} {
@@ -874,6 +904,10 @@
     text-transform: uppercase !important;
     opacity: 0.75 !important;
     margin-top: 4px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    width: auto !important;
+    display: block !important;
   }
 
   /* Keep short benefit copy on phone; hide redundant description (duplicates plan name) */
@@ -909,10 +943,8 @@
     gap: 2px !important;
   }
 
-  /* lurvox-price-once-v1 — show sale price only */
-  .ai-transformation-plan-card-original-price-{{ ai_gen_id }},
-  .ai-transformation-plan-card-monthly-{{ ai_gen_id }},
-  .ai-transformation-plan-card-savings-{{ ai_gen_id }} {
+  /* lurvox-price-once-v1 — hide struck original only; keep monthly + savings visible */
+  .ai-transformation-plan-card-original-price-{{ ai_gen_id }} {
     display: none !important;
   }
 
@@ -984,14 +1016,13 @@
       letter-spacing: 0.06em !important;
       text-transform: uppercase !important;
       opacity: 0.75 !important;
+      background: transparent !important;
+      color: {{ block.settings.secondary_text_color }} !important;
+      padding: 0 !important;
     }
 
     .ai-transformation-plan-card-description-{{ ai_gen_id }} {
-      display: block !important;
-      font-size: 13.5px !important;
-      line-height: 1.45 !important;
-      color: rgba(255, 255, 255, 0.58) !important;
-      margin-top: 4px !important;
+      display: none !important;
     }
 
     .ai-transformation-plan-card-footer-{{ ai_gen_id }} {
@@ -1106,11 +1137,14 @@
     }
 
     .ai-transformation-plan-card-duration-{{ ai_gen_id }} {
-      font-size: 11px !important;
+      font-size: 12px !important;
       font-weight: 650 !important;
       letter-spacing: 0.06em !important;
       text-transform: uppercase !important;
       opacity: 0.75 !important;
+      background: transparent !important;
+      color: {{ block.settings.secondary_text_color }} !important;
+      padding: 0 !important;
     }
 
     .ai-transformation-plan-card-footer-{{ ai_gen_id }} {
@@ -1177,6 +1211,15 @@
           assign plan_description = block.settings[plan_description_key]
           assign plan_footer = block.settings[plan_footer_key]
           assign plan_link = block.settings[plan_link_key]
+          if plan_link == blank
+            if i == 2
+              assign plan_link = 'https://app.lurvox.in/plans/3-months'
+            elsif i == 3
+              assign plan_link = 'https://app.lurvox.in/plans/6-months'
+            elsif i == 4
+              assign plan_link = 'https://app.lurvox.in/plans/12-months'
+            endif
+          endif
         %}
 
         {% if plan_enabled %}
@@ -1217,6 +1260,13 @@
                 <div class="ai-transformation-plan-radio-{{ ai_gen_id }}"></div>
               </div>
             </div>
+            {% if plan_link != blank %}
+              <a
+                class="ai-transformation-plan-card-start-{{ ai_gen_id }}"
+                href="{{ plan_link }}"
+                data-cta-button
+              >Start</a>
+            {% endif %}
           </div>
         {% endif %}
       {% endfor %}
@@ -1230,11 +1280,7 @@
       </div>
     {% endif %}
 
-    <div class="ai-transformation-plan-cta-wrapper-{{ ai_gen_id }}">
-      <a href="{{ block.settings.plan_1_link | default: 'https://app.lurvox.in/plans/12-months' }}" class="ai-transformation-plan-cta-{{ ai_gen_id }}" data-cta-button>
-        {{ block.settings.cta_text }} — Rs <span data-cta-price>500</span>
-      </a>
-    </div>
+    {% comment %} Shared START — Rs 500 CTA stays removed. Each card has its own Start link. {% endcomment %}
   </div>
 </transformation-plan-selector-{{ ai_gen_id }}>
 
@@ -1505,7 +1551,7 @@
       "type": "text",
       "id": "plan_2_footer",
       "label": "Footer text",
-      "default": "Best for: looking sharp on a special event, not long term results"
+      "default": "Best for: a focused 90-day fat-loss plan with a real coach"
     },
     {
       "type": "url",

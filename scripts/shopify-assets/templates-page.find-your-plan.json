@@ -3,9 +3,9 @@
     "main": {
       "type": "lurvox-plan-finder-v3",
       "settings": {
-        "eyebrow": "CHOOSE YOUR GOAL",
+        "eyebrow": "Find your plan",
         "heading": "Pick your goal. We handle the rest.",
-        "subheading": "Fat loss, Fat loss + muscle gain, or Athletic body. Answer honestly — we send you to that plan page. No payment here.",
+        "subheading": "A short quiz. Then one plan — 3, 6, or 12 months.",
         "plan_base": "https://app.lurvox.in/plans",
         "talk_url": "/pages/talk-to-a-coach",
         "plans_url": "/pages/compare-fit?view=compare-short",

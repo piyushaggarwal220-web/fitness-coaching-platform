@@ -1,146 +1,34 @@
-/*
- * ------------------------------------------------------------
- * IMPORTANT: The contents of this file are auto-generated.
- *
- * This file may be updated by the Shopify admin theme editor
- * or related systems. Please exercise caution as any changes
- * made to this file may be overwritten.
- * ------------------------------------------------------------
- */
 {
   "sections": {
     "main": {
       "type": "lurvox-plan-compare",
-      "blocks": {
-        "g_open": {
-          "type": "heading",
-          "settings": {
-            "heading": "Opens with 3 months"
-          }
-        },
-        "r_best": {
-          "type": "row",
-          "settings": {
-            "feature": "Best for",
-            "plan_3": true,
-            "plan_6": true,
-            "plan_12": true,
-            "plan_3_text": "Looking sharp on a special event, not long term results",
-            "plan_6_text": "Losing fat while building muscle",
-            "plan_12_text": "Building an athletic body — fat loss, muscle gain, and stamina"
-          }
-        },
-        "r_core": {
-          "type": "row",
-          "settings": {
-            "feature": "Core coaching (workout, diet, coach, 2 check ins, trackers, photos)",
-            "plan_3": true,
-            "plan_6": true,
-            "plan_12": true
-          }
-        },
-        "r_updates": {
-          "type": "row",
-          "settings": {
-            "feature": "Plan updates",
-            "plan_3": true,
-            "plan_6": true,
-            "plan_12": true,
-            "plan_3_text": "Every 14 days",
-            "plan_6_text": "Every week",
-            "plan_12_text": "Every week"
-          }
-        },
-        "g_more": {
-          "type": "heading",
-          "settings": {
-            "heading": "More with 6 months"
-          }
-        },
-        "r_stack": {
-          "type": "row",
-          "settings": {
-            "feature": "Fuller stack (weekly updates, cardio, supplements, journey, plateau coaching)",
-            "plan_3": false,
-            "plan_6": true,
-            "plan_12": true
-          }
-        },
-        "g_all": {
-          "type": "heading",
-          "settings": {
-            "heading": "Everything with 12 months"
-          }
-        },
-        "r_call": {
-          "type": "row",
-          "settings": {
-            "feature": "Weekly coach phone call",
-            "plan_3": false,
-            "plan_6": false,
-            "plan_12": true
-          }
-        },
-        "r_lowest": {
-          "type": "row",
-          "settings": {
-            "feature": "Lowest monthly rate",
-            "plan_3": false,
-            "plan_6": false,
-            "plan_12": true
-          }
-        },
-        "g_value": {
-          "type": "heading",
-          "settings": {
-            "heading": "Value"
-          }
-        },
-        "r_month": {
-          "type": "row",
-          "settings": {
-            "feature": "Per month",
-            "plan_3": true,
-            "plan_6": true,
-            "plan_12": true,
-            "plan_3_text": "₹666",
-            "plan_6_text": "₹583",
-            "plan_12_text": "₹500"
-          }
-        }
-      },
-      "block_order": [
-        "g_open",
-        "r_best",
-        "r_core",
-        "r_updates",
-        "g_more",
-        "r_stack",
-        "g_all",
-        "r_call",
-        "r_lowest",
-        "g_value",
-        "r_month"
-      ],
+      "blocks": {},
+      "block_order": [],
       "settings": {
-        "eyebrow": "Compare plans",
-        "headline": "Pick your goal. We handle the rest.",
-        "subheadline": "Every longer plan includes everything below it. Athletic body is the recommended plan — fat loss, muscle gain, and stamina, with a weekly coach phone call.",
+        "eyebrow": "Plans",
+        "headline": "3, 6, or 12 months",
+        "subheadline": "Workout, diet, and a human coach on every plan. Weekly phone call on 12 months only.",
+        "callout": "",
         "col_1_label": "Fat loss",
-        "col_1_price": "₹1,999 · ₹666\/mo",
-        "col_1_link": "https:\/\/app.lurvox.in\/plans\/3-months",
+        "col_1_duration": "3 months",
+        "col_1_price": "₹1,999",
+        "col_1_note": "",
+        "col_1_link": "https://app.lurvox.in/plans/3-months",
         "col_2_label": "Fat loss + muscle gain",
-        "col_2_price": "₹3,499 · ₹583\/mo",
-        "col_2_link": "https:\/\/app.lurvox.in\/plans\/6-months",
+        "col_2_duration": "6 months",
+        "col_2_price": "₹3,499",
+        "col_2_note": "",
+        "col_2_link": "https://app.lurvox.in/plans/6-months",
         "col_3_label": "Athletic body",
-        "col_3_price": "₹5,999 · ₹500\/mo",
-        "col_3_link": "https:\/\/app.lurvox.in\/plans\/12-months",
-        "find_url": "\/pages\/choose-your-plan",
-        "home_url": "\/#plans"
+        "col_3_duration": "12 months",
+        "col_3_price": "₹5,999",
+        "col_3_note": "Includes a weekly coach phone call",
+        "col_3_link": "https://app.lurvox.in/plans/12-months",
+        "find_url": "/pages/choose-your-plan",
+        "consult_url": "/pages/talk-to-a-coach",
+        "home_url": "/#plans"
       }
     }
   },
-  "order": [
-    "main"
-  ]
+  "order": ["main"]
 }

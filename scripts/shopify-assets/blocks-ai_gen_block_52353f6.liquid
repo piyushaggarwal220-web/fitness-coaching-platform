@@ -317,6 +317,52 @@
     margin: 0 16px 20px;
   }
 
+  .ai-fitness-gallery__stage-{{ ai_gen_id }} {
+    position: relative;
+  }
+
+  .lx-hero-first-cta {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 4;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .lx-hero-first-cta a {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 140px;
+    min-height: 46px;
+    padding: 0 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none !important;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .lx-hero-first-cta__primary {
+    background: linear-gradient(180deg, #ff8a3d 0%, #ff6200 100%);
+    border: 1px solid #ff6200;
+    color: #140900 !important;
+    box-shadow: 0 10px 26px rgba(255, 98, 0, 0.32);
+  }
+
+  .lx-hero-first-cta__ghost {
+    background: rgba(5, 5, 5, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    color: #fff !important;
+    backdrop-filter: blur(8px);
+  }
+
   .ai-fitness-gallery__main-{{ ai_gen_id }} {
     width: 100%;
     overflow-x: auto;
@@ -346,8 +392,17 @@
     scroll-snap-align: center;
   }
 
+  .ai-fitness-gallery__image-wrap-{{ ai_gen_id }} {
+    position: relative;
+    display: inline-block;
+    width: auto;
+    max-width: 100%;
+    line-height: 0;
+  }
+
   .ai-fitness-gallery__image-{{ ai_gen_id }} {
-    width: 100%;
+    width: auto;
+    max-width: 100%;
     height: auto;
     max-height: 75vh;
     object-fit: contain;
@@ -683,12 +738,13 @@
       flex-basis: auto;
     }
   }
-  /* /lurvox-mobile-fitness-gallery-v3 */
+  /* /lurvox-mobile-fitness-gallery-v2 */
 {% endstyle %}
 
 <!-- AUTO_SCROLL_MARKER_1784966547853 -->
 <fitness-gallery-{{ ai_gen_id }} class="ai-fitness-gallery-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
   <div class="ai-fitness-gallery__container-{{ ai_gen_id }}">
+    <div class="ai-fitness-gallery__stage-{{ ai_gen_id }}">
     <div class="ai-fitness-gallery__main-{{ ai_gen_id }}" data-gallery-main>
       <div class="ai-fitness-gallery__track-{{ ai_gen_id }}">
         {% assign fitness_slide_index = 0 %}
@@ -698,14 +754,16 @@
           {% if image != blank %}
             {% assign fitness_slide_index = fitness_slide_index | plus: 1 %}
             <div class="ai-fitness-gallery__slide-{{ ai_gen_id }}" data-slide="{{ fitness_slide_index }}">
-              <img
-                src="{{ image | image_url: width: 800 }}"
-                alt="{{ image.alt | escape }}"
-                loading="lazy"
-                width="{{ image.width }}"
-                height="{{ image.height }}"
-                class="ai-fitness-gallery__image-{{ ai_gen_id }}"
-              >
+              <div class="ai-fitness-gallery__image-wrap-{{ ai_gen_id }}">
+                <img
+                  src="{{ image | image_url: width: 800 }}"
+                  alt="{{ image.alt | escape }}"
+                  loading="lazy"
+                  width="{{ image.width }}"
+                  height="{{ image.height }}"
+                  class="ai-fitness-gallery__image-{{ ai_gen_id }}"
+                >
+              </div>
             </div>
           {% endif %}
         {% endfor %}
@@ -716,6 +774,11 @@
             </div>
           </div>
         {% endif %}
+      </div>
+    </div>
+      <div class="lx-hero-first-cta">
+        <a class="lx-hero-first-cta__primary" href="https://app.lurvox.in/try">Try the platform free</a>
+        <a class="lx-hero-first-cta__ghost" href="/pages/compare-fit?view=compare-short">Compare plans</a>
       </div>
     </div>
   </div>
@@ -765,16 +828,16 @@
   </div>
 
   <div class="ai-fitness-gallery__headline-{{ ai_gen_id }}">
-    <h2>{{ block.settings.headline_line_1 }}<br>{{ block.settings.headline_line_2 }} <span style="color: {{ block.settings.accent_color }};">{{ block.settings.headline_highlight }}</span></h2>
+    <h2>{{ block.settings.headline_line_1 }} {{ block.settings.headline_line_2 }} <span style="color: {{ block.settings.accent_color }};">{{ block.settings.headline_highlight }}</span></h2>
   </div>
 
   {%- comment -%} lurvox-hero-cta-v6-one-primary {%- endcomment -%}
   <div class="ai-fitness-gallery__cta-{{ ai_gen_id }}" data-lx-hero-cta data-lx-hero-cta-single>
-    <a class="ai-fitness-gallery__cta-primary-{{ ai_gen_id }}" href="/pages/choose-your-plan">
-      Find My Plan — Free Quiz
-      <small>2 minutes · no payment · instant recommendation</small>
+    <a class="ai-fitness-gallery__cta-primary-{{ ai_gen_id }}" href="https://app.lurvox.in/try">
+      Try the platform free
+      <small>No signup. Look around first.</small>
     </a>
-    <a class="ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} lx-hero-cta-text" href="#plans">See Plans &amp; Prices →</a>
+    <a class="ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} lx-hero-cta-text" href="/pages/compare-fit?view=compare-short">Compare plans →</a>
   </div>
 </fitness-gallery-{{ ai_gen_id }}>
 

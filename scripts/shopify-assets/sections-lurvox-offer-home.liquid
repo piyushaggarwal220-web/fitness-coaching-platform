@@ -1,0 +1,273 @@
+{%- comment -%} Homepage top bar — brand line, not a discount. {%- endcomment -%}
+{%- if section.settings.enabled -%}
+  {%- assign bar_text = section.settings.headline | default: 'Best human coaching platform in India' -%}
+  <aside
+    id="lurvox-offer-strip-home"
+    class="lurvox-offer-strip lurvox-offer-strip--home lurvox-offer-strip--brand"
+    aria-label="{{ bar_text | escape }}"
+    hidden
+  >
+    <div class="lurvox-offer-strip__inner">
+      <span class="lurvox-offer-strip__copy">{{ bar_text | escape }}</span>
+      <a class="lurvox-offer-login" href="https://app.lurvox.in/login" aria-label="Existing client log in">
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="7" r="3.1" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M4.4 16.2c.7-2.8 2.8-4.2 5.6-4.2s4.9 1.4 5.6 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+        <span>Log in</span>
+      </a>
+    </div>
+  </aside>
+
+  <style id="lurvox-offer-home-css">
+    .lurvox-client-login,
+    aside.lurvox-client-login,
+    .shopify-section-group-header-group .lurvox-client-login {
+      display: none !important;
+    }
+
+    .lurvox-offer-strip,
+    #lurvox-offer-strip-live {
+      position: relative;
+      z-index: 40;
+      width: 100%;
+      overflow: hidden;
+      color: #ffffff !important;
+      background:
+        radial-gradient(circle at 18% -80%, rgba(255, 98, 0, 0.42), transparent 52%),
+        linear-gradient(105deg, #100b08 0%, #17100c 48%, #090909 100%) !important;
+      border-bottom: 1px solid rgba(255, 98, 0, 0.38) !important;
+    }
+
+    .lurvox-offer-strip[hidden] {
+      display: none !important;
+    }
+
+    .lurvox-offer-strip__inner,
+    #lurvox-offer-strip-live .lurvox-offer-strip__inner {
+      position: relative;
+      z-index: 1;
+      display: flex !important;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: nowrap;
+      gap: 10px !important;
+      min-height: 44px !important;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 6px 16px !important;
+      color: #ffffff !important;
+      text-decoration: none;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+    }
+
+    .lurvox-offer-strip__copy {
+      color: rgba(255, 255, 255, 0.94);
+      text-align: left;
+      text-transform: uppercase;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .lurvox-offer-login {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 0 0 auto;
+      min-height: 30px;
+      padding: 0 12px 0 10px;
+      color: #140900 !important;
+      background: linear-gradient(180deg, #ff7a1a 0%, #ff6200 100%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      box-shadow: 0 6px 14px rgba(255, 98, 0, 0.28);
+      font-size: 12.5px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      line-height: 1;
+      text-decoration: none !important;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .lurvox-offer-login svg {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 14px;
+    }
+
+    .lurvox-offer-login:hover {
+      filter: brightness(1.08);
+      color: #140900 !important;
+    }
+
+    .lurvox-offer-login:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 3px;
+    }
+
+    .lurvox-drawer-login-wrap {
+      margin: 16px 0 8px;
+      padding: 0 4px;
+    }
+
+    .lurvox-drawer-login {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      text-decoration: none;
+      color: #fff;
+      background: linear-gradient(105deg, #17100c 0%, #100b08 100%);
+      border: 1px solid color-mix(in srgb, #ff6200 45%, transparent);
+    }
+
+    .lurvox-drawer-login strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .lurvox-drawer-login small {
+      display: block;
+      margin-top: 2px;
+      color: rgba(255, 255, 255, 0.58);
+      font-size: 11px;
+    }
+
+    @media screen and (max-width: 749px) {
+      .lurvox-offer-strip__inner,
+      #lurvox-offer-strip-live .lurvox-offer-strip__inner {
+        min-height: 42px !important;
+        padding: 6px 10px !important;
+        justify-content: space-between !important;
+      }
+      .lurvox-offer-strip__copy {
+        font-size: 11px;
+        letter-spacing: 0.04em;
+      }
+      .lurvox-offer-login {
+        min-height: 28px;
+        padding: 0 10px 0 8px;
+        font-size: 12px;
+      }
+    }
+  </style>
+
+  <script>
+    (function () {
+      var strip = document.getElementById('lurvox-offer-strip-home');
+      if (!strip) return;
+
+      function placeStrip() {
+        if (document.getElementById('lurvox-offer-strip-live')) return;
+        document.querySelectorAll('.shopify-section-group-header-group .lurvox-offer-strip').forEach(function (el) {
+          if (el.id !== 'lurvox-offer-strip-live') el.style.display = 'none';
+        });
+        var node = strip.cloneNode(true);
+        node.id = 'lurvox-offer-strip-live';
+        node.hidden = false;
+        node.removeAttribute('hidden');
+        var old = document.querySelector('.lurvox-client-login');
+        if (old && old.parentNode) {
+          old.parentNode.insertBefore(node, old);
+        } else {
+          var headerGroup = document.querySelector('.shopify-section-group-header-group');
+          if (headerGroup) headerGroup.insertBefore(node, headerGroup.firstChild);
+          else document.body.insertBefore(node, document.body.firstChild);
+        }
+      }
+
+      function injectDrawerLogin() {
+        if (document.querySelector('.lurvox-drawer-login')) return;
+        var targets = document.querySelectorAll(
+          'header-drawer .menu-drawer__navigation, .menu-drawer__navigation, #menu-drawer nav, .menu-drawer__menu'
+        );
+        if (!targets.length) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'lurvox-drawer-login-wrap';
+        wrap.innerHTML =
+          '<a class="lurvox-drawer-login" href="https://app.lurvox.in/login">' +
+          '<span><strong>Existing client login</strong>' +
+          '<small>Already paid or returning client</small></span>' +
+          '<span aria-hidden="true">→</span></a>';
+        targets.forEach(function (nav) {
+          if (nav.querySelector('.lurvox-drawer-login')) return;
+          nav.insertBefore(wrap.cloneNode(true), nav.firstChild);
+        });
+      }
+
+      placeStrip();
+      injectDrawerLogin();
+      document.addEventListener('DOMContentLoaded', function () {
+        placeStrip();
+        injectDrawerLogin();
+      });
+      setTimeout(injectDrawerLogin, 800);
+      setTimeout(injectDrawerLogin, 2000);
+    })();
+  </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "LURVOX offer home",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Show top bar",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "headline",
+      "label": "Top bar text",
+      "default": "Best human coaching platform in India"
+    },
+    {
+      "type": "text",
+      "id": "code",
+      "label": "Coupon code (unused)",
+      "default": "SUMMER60"
+    },
+    {
+      "type": "range",
+      "id": "countdown_hours",
+      "label": "Countdown start hours",
+      "min": 1,
+      "max": 24,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "countdown_floor_hours",
+      "label": "Reset when hours left reach",
+      "min": 0,
+      "max": 12,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "text",
+      "id": "cta_url",
+      "label": "CTA link",
+      "default": "/#plans"
+    }
+  ],
+  "presets": [{ "name": "LURVOX offer home" }]
+}
+{% endschema %}

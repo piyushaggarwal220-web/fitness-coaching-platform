@@ -1,0 +1,185 @@
+{% comment %}
+  LURVOX homepage FAQ — sentence-case accordion.
+  Design reference: .lx-home__faq in sections-lurvox-home-redesign.liquid
+{% endcomment %}
+<section class="lx-faq" id="faq" aria-labelledby="lx-faq-title">
+  <div class="lx-faq__inner">
+    <p class="lx-faq__eyebrow">FAQ</p>
+    <h2 class="lx-faq__title" id="lx-faq-title">Questions before you start</h2>
+    <p class="lx-faq__lede">Straight answers on coaching, what is included, and how the system works — before you pick a plan.</p>
+
+    <div class="lx-faq__list">
+      <details class="lx-faq__item">
+        <summary>What happens after I pay?</summary>
+        <p>You create your account, finish a short assessment with progress photos, and get a personal workout + diet within 24 to 48 hours. Pay securely with UPI / cards on Razorpay. Then use daily trackers, message your coach, submit weekly check ins, and get plan updates from real progress.</p>
+      </details>
+      <details class="lx-faq__item">
+        <summary>What exactly is included?</summary>
+        <p>Personal workout, personal diet, weekly coach check ins, daily trackers, coach chat, progress photos/journey, and weekly plan updates. One price. No separate upsell for core coaching.</p>
+      </details>
+      <details class="lx-faq__item">
+        <summary>Will I get a real coach?</summary>
+        <p>Yes. A human coach reviews your assessment, check ins, and progress. Tools help them work faster. They do not replace the coach. You also get direct coach chat inside the app.</p>
+      </details>
+      <details class="lx-faq__item">
+        <summary>Gym or home? Beginners? Vegetarians?</summary>
+        <p>All welcome. Plans are built for gym, home, or mixed setups, matched to your experience level, and diet is customized for vegetarian, vegan, and allergy needs.</p>
+      </details>
+      <details class="lx-faq__item">
+        <summary>Does my coach call me?</summary>
+        <p>On the 12 month plan, your coach calls you every week. Chat and check ins are on every plan; the weekly phone call is not included on 3 or 6 months.</p>
+      </details>
+      <details class="lx-faq__item">
+        <summary>What if I want a refund?</summary>
+        <p>Cancellation anytime on WhatsApp. No pressure games. Full refund if onboarding is complete and we don’t deliver your first plan within 48 hours (request within 7 days of purchase). After plan delivery / coaching use, purchases are generally non refundable. Separately, our results guarantee applies if you submit at least 90% of due check ins on time and still report no result (admin reviewed). Details: <a href="/pages/refund-policy">refund policy</a> and <a href="https://app.lurvox.in/refund-policy">app.lurvox.in/refund-policy</a>.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<style>
+  .lx-faq {
+    --lx-faq-ember: #ff6200;
+    --lx-faq-muted: rgba(255, 255, 255, 0.68);
+    --lx-faq-line: rgba(255, 255, 255, 0.1);
+    background: #070707;
+    color: #fff;
+    padding: 28px 16px 36px;
+  }
+
+  .lx-faq__inner {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .lx-faq__eyebrow {
+    margin: 0 0 10px;
+    color: var(--lx-faq-ember);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .lx-faq__title {
+    margin: 0 0 10px;
+    max-width: none;
+    font-size: clamp(26px, 6.4vw, 36px);
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+  }
+
+  .lx-faq__lede {
+    margin: 0 0 22px;
+    max-width: 38rem;
+    color: var(--lx-faq-muted);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .lx-faq__list {
+    overflow: hidden;
+    border: 1px solid rgba(255, 98, 0, 0.28);
+    border-radius: 20px;
+    background:
+      radial-gradient(ellipse 80% 60% at 0% 0%, rgba(255, 98, 0, 0.1), transparent 55%),
+      #0c0c0c;
+    box-shadow: 0 0 28px rgba(255, 98, 0, 0.08);
+  }
+
+  .lx-faq__item {
+    border-bottom: 1px solid var(--lx-faq-line);
+  }
+
+  .lx-faq__item:last-child {
+    border-bottom: 0;
+  }
+
+  .lx-faq__item summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 16px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+    text-transform: none;
+    color: #fff;
+    -webkit-text-fill-color: #fff;
+  }
+
+  .lx-faq details[open] summary,
+  .lx-faq details[open] summary *,
+  .lx-faq__item[open] summary,
+  .lx-faq__item[open] summary *,
+  .lx-faq summary:active,
+  .lx-faq summary:hover,
+  .lx-faq summary:focus,
+  .lx-faq summary:focus-visible,
+  .lx-faq summary:focus-within {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+  }
+
+  .lx-faq__item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .lx-faq__item summary::after {
+    content: '+';
+    flex: 0 0 auto;
+    color: var(--lx-faq-ember);
+    -webkit-text-fill-color: var(--lx-faq-ember);
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .lx-faq__item[open] summary::after,
+  .lx-faq details[open] summary::after,
+  .lx-faq summary:hover::after,
+  .lx-faq summary:active::after,
+  .lx-faq summary:focus::after,
+  .lx-faq summary:focus-visible::after {
+    color: var(--lx-faq-ember) !important;
+    -webkit-text-fill-color: var(--lx-faq-ember) !important;
+  }
+
+  .lx-faq__item[open] summary::after {
+    content: '–';
+  }
+
+  .lx-faq__item p {
+    margin: 0;
+    padding: 0 16px 18px;
+    max-width: 48rem;
+    color: var(--lx-faq-muted);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .lx-faq__item a {
+    color: #ff8a3d;
+    text-underline-offset: 2px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .lx-faq {
+      padding: 36px 24px 48px;
+    }
+
+    .lx-faq__item summary {
+      padding: 18px 20px;
+      font-size: 17px;
+    }
+
+    .lx-faq__item p {
+      padding: 0 20px 20px;
+    }
+  }
+</style>

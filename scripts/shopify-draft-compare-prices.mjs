@@ -1,9 +1,6 @@
 /**
- * Draft-only: restyle homepage "What you get on the platform" cards.
- * NEVER publishes. NEVER writes to MAIN (Live quiz-v3).
- *
- * Auth: node scripts/shopify-pkce-auth.mjs
- * Run:  node scripts/shopify-draft-what-you-get.mjs
+ * Draft only: compare-plans headers show package prices only.
+ * NEVER publishes. NEVER writes to MAIN.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -13,20 +10,11 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const STORE = '9uwyq1-0j.myshopify.com'
 const REST = `https://${STORE}/admin/api/2025-01`
 const GQL = `${REST}/graphql.json`
-const SITE = 'https://www.lurvox.in'
 const TARGET_NAME = 'Copy of Live quiz-v3 2026-08-26 18:09'
-const MAIN_NAME = 'Live quiz-v3 2026-08-26 18:09'
-const PREFERRED_ID = 162252554491
-const BLOCK_ID = 'lurvox_what_you_get'
 const tokenPath = path.join(process.env.TEMP, 'shopify-auth-token.json')
-const snippetPath = path.join(ROOT, 'scripts/shopify-assets/snippets-lurvox-what-you-get.liquid')
 
 if (!fs.existsSync(tokenPath)) {
   console.error('Missing Shopify token. Run: node scripts/shopify-pkce-auth.mjs')
-  process.exit(1)
-}
-if (!fs.existsSync(snippetPath)) {
-  console.error(`Missing snippet: ${snippetPath}`)
   process.exit(1)
 }
 
@@ -38,7 +26,7 @@ const headers = {
 
 async function restGet(url) {
   const res = await fetch(url, { headers: { 'X-Shopify-Access-Token': token } })
-  if (!res.ok) throw new Error(`GET ${url} ${res.status} ${await res.text()}`)
+  if (!res.ok) throw new Error(`GET ${url} ${res.status}`)
   return res.json()
 }
 
@@ -55,61 +43,90 @@ async function gql(query, variables) {
   return json.data
 }
 
-const themesJson = await restGet(`${REST}/themes.json`)
-const themes = themesJson.themes ?? []
-console.log('Themes:')
-for (const theme of themes) {
-  console.log(`  ${theme.id}  ${theme.role.padEnd(12)}  ${theme.name}`)
+function patchCompareJson(raw) {
+  const json = JSON.parse(raw)
+  for (const section of Object.values(json.sections || {})) {
+    const settings = section.settings || {}
+    if ('col_1_price' in settings) settings.col_1_price = '₹1,999'
+    if ('col_2_price' in settings) settings.col_2_price = '₹3,499'
+    if ('col_3_price' in settings) settings.col_3_price = '₹5,999'
+    if (section.blocks?.r_month) delete section.blocks.r_month
+    if (section.blocks?.g_value) delete section.blocks.g_value
+    if (Array.isArray(section.block_order)) {
+      section.block_order = section.block_order.filter(
+        (id) => id !== 'r_month' && id !== 'g_value'
+      )
+    }
+    for (const block of Object.values(section.blocks || {})) {
+      const s = block.settings || {}
+      if (s.plan_3_text === '₹666') s.plan_3_text = ''
+      if (s.plan_6_text === '₹583') s.plan_6_text = ''
+      if (s.plan_12_text === '₹500') s.plan_12_text = ''
+    }
+  }
+  return `${JSON.stringify(json, null, 2)}\n`
 }
 
-const main = themes.find((theme) => theme.role === 'main')
-if (main) {
-  console.log(`Live MAIN is ${main.id} (${main.name}) — will not write to it.`)
-}
-
+const themes = (await restGet(`${REST}/themes.json`)).themes ?? []
 const matches = themes
   .filter((theme) => theme.name.trim() === TARGET_NAME && theme.role !== 'main')
   .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-let draft = matches.find((theme) => theme.id === PREFERRED_ID) || matches[0]
+const draft = matches[0]
 if (!draft) {
   console.error(`TARGET_NOT_FOUND: ${TARGET_NAME}`)
   process.exit(1)
 }
-if (draft.role === 'main' || draft.name.trim() === MAIN_NAME) {
+if (draft.role === 'main') {
   console.error('REFUSING: target theme is MAIN / live. Will not write.')
   process.exit(1)
 }
-if (draft.id !== PREFERRED_ID) {
-  console.log(`Preferred id ${PREFERRED_ID} not used; newest unpublished copy is ${draft.id}`)
-}
+console.log(`Using unpublished draft ${draft.id} (${draft.role})`)
 
-console.log(`Using unpublished draft ${draft.id} (${draft.role}) ${draft.name}`)
-
-const indexRes = await restGet(
-  `${REST}/themes/${draft.id}/assets.json?asset[key]=${encodeURIComponent('templates/index.json')}`
-)
-const index = JSON.parse(indexRes.asset.value)
-const home = index.sections?.home_blocks_v2
-if (!home?.blocks) throw new Error('home_blocks_v2 missing on this draft')
-
-home.blocks[BLOCK_ID] = {
-  type: 'custom-liquid',
-  settings: {
-    custom_liquid: "{% render 'lurvox-what-you-get' %}",
+const files = [
+  {
+    filename: 'templates/page.compare-plans.json',
+    body: {
+      type: 'TEXT',
+      value: fs.readFileSync(
+        path.join(ROOT, 'scripts/shopify-assets/templates-page.compare-plans.json'),
+        'utf8'
+      ),
+    },
   },
-  blocks: home.blocks[BLOCK_ID]?.blocks || {},
-}
+  {
+    filename: 'templates/page.compare-short.json',
+    body: {
+      type: 'TEXT',
+      value: fs.readFileSync(
+        path.join(ROOT, 'scripts/shopify-assets/templates-page.compare-short.json'),
+        'utf8'
+      ),
+    },
+  },
+  {
+    filename: 'snippets/lurvox-plan-compare-inline.liquid',
+    body: {
+      type: 'TEXT',
+      value: fs.readFileSync(
+        path.join(ROOT, 'scripts/shopify-assets/snippets-lurvox-plan-compare-inline.liquid'),
+        'utf8'
+      ),
+    },
+  },
+]
 
-const order = Array.isArray(home.block_order) ? [...home.block_order] : Object.keys(home.blocks)
-if (!order.includes(BLOCK_ID)) {
-  const afterCandidates = ['lurvox_conversion_boost', 'lurvox_home_find_cta', 'lurvox_plans_anchor']
-  let insertAt = 1
-  for (const id of afterCandidates) {
-    const idx = order.indexOf(id)
-    if (idx >= 0) insertAt = idx + 1
+const detailRes = await fetch(
+  `${REST}/themes/${draft.id}/assets.json?asset[key]=${encodeURIComponent('templates/page.compare-detail.json')}`,
+  { headers: { 'X-Shopify-Access-Token': token } }
+)
+if (detailRes.ok) {
+  const value = (await detailRes.json()).asset?.value
+  if (value) {
+    files.push({
+      filename: 'templates/page.compare-detail.json',
+      body: { type: 'TEXT', value: patchCompareJson(value) },
+    })
   }
-  order.splice(insertAt, 0, BLOCK_ID)
-  home.block_order = order
 }
 
 let layoutRes
@@ -128,19 +145,6 @@ if (layout) {
   } else {
     layout = layout.replace('</head>', `<!-- lurvox-cache-bust ${stamp} -->\n</head>`)
   }
-}
-
-const files = [
-  {
-    filename: 'snippets/lurvox-what-you-get.liquid',
-    body: { type: 'TEXT', value: fs.readFileSync(snippetPath, 'utf8') },
-  },
-  {
-    filename: 'templates/index.json',
-    body: { type: 'TEXT', value: `${JSON.stringify(index, null, 2)}\n` },
-  },
-]
-if (layout) {
   files.push({ filename: 'layout/theme.liquid', body: { type: 'TEXT', value: layout } })
 }
 
@@ -161,7 +165,5 @@ if (upsert.themeFilesUpsert.userErrors?.length) {
   throw new Error(JSON.stringify(upsert.themeFilesUpsert.userErrors, null, 2))
 }
 
-const previewUrl = `${SITE}/?preview_theme_id=${draft.id}`
 console.log('Uploaded', upsert.themeFilesUpsert.upsertedThemeFiles.map((f) => f.filename).join(', '))
-console.log('WYG block in order:', home.block_order.includes(BLOCK_ID))
-console.log('NOT published. Preview:', previewUrl)
+console.log('NOT published. Preview: https://www.lurvox.in/pages/compare-plans?preview_theme_id=' + draft.id)

@@ -1,5 +1,5 @@
 {% comment %}
-  LURVOX — Existing client login rail (sits under the discount / offer strip).
+  LURVOX — Compact existing-client login rail at the top of the header.
 {% endcomment %}
 {%- if section.settings.enabled -%}
   {%- assign show_login = true -%}
@@ -15,101 +15,79 @@
       aria-label="Existing client login"
     >
       <div class="lurvox-client-login__inner">
-        <p class="lurvox-client-login__copy">
-          {%- if section.settings.prompt != blank -%}
-            <span class="lurvox-client-login__prompt">{{ section.settings.prompt }}</span>
-          {%- endif -%}
-          <a class="lurvox-client-login__link" href="{{ section.settings.login_url }}">
-            {{ section.settings.label }}
-            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-              <path d="M4 10h11M11 6l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </a>
-        </p>
+        {%- if section.settings.prompt != blank -%}
+          <span class="lurvox-client-login__prompt">{{ section.settings.prompt }}</span>
+        {%- endif -%}
+        <a class="lurvox-client-login__link" href="{{ section.settings.login_url }}">
+          {{ section.settings.label }}
+        </a>
       </div>
     </aside>
   {%- endif -%}
 {%- endif -%}
 
 <style id="lurvox-client-login-css">
-  .lurvox-client-login {
-    --lurvox-login-accent: #ff6200;
-    width: 100%;
-    color: #ffffff;
-    background: #070707;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  /* Header pill in lurvox-header-match is the visible login; this rail stays off. */
+  .lurvox-client-login,
+  aside.lurvox-client-login,
+  .shopify-section-group-header-group .lurvox-client-login {
+    display: none !important;
   }
 
   .lurvox-client-login__inner {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    min-height: 40px;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 16px;
+    padding: 6px 16px;
     box-sizing: border-box;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .lurvox-client-login__copy {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-    text-align: center;
-    overflow: hidden;
-    max-width: 100%;
   }
 
   .lurvox-client-login__prompt {
-    color: rgba(255, 255, 255, 0.62);
-    font-size: 12.5px;
+    display: inline !important;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
     font-weight: 500;
     letter-spacing: 0.01em;
-    line-height: 1;
+    line-height: 1.2;
     white-space: nowrap;
   }
 
   .lurvox-client-login__link {
-    display: inline-flex;
+    display: inline-flex !important;
     align-items: center;
-    gap: 6px;
-    color: #ff8a3d !important;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    min-height: 0;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0 13px;
+    color: #140900 !important;
+    background: var(--lurvox-login-accent);
+    border: 1px solid #ff7a1a;
+    border-radius: 999px;
     font-size: 12.5px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.01em;
     text-decoration: none !important;
-    -webkit-tap-highlight-color: transparent;
     white-space: nowrap;
-  }
-
-  .lurvox-client-login__link svg {
-    width: 15px;
-    height: 15px;
-    flex: 0 0 15px;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .lurvox-client-login__link:hover {
-    color: #ffb07a !important;
+    filter: brightness(1.08);
   }
 
   .lurvox-client-login__link:focus-visible {
     outline: 2px solid #ffffff;
     outline-offset: 3px;
-    border-radius: 4px;
   }
 
   @media screen and (max-width: 749px) {
     .lurvox-client-login__inner {
-      height: 34px;
-      padding: 0 12px;
+      justify-content: space-between;
+      min-height: 38px;
+      padding: 5px 12px;
     }
 
     .lurvox-client-login__prompt {
@@ -117,11 +95,9 @@
     }
 
     .lurvox-client-login__link {
+      min-height: 28px;
+      padding: 0 12px;
       font-size: 12px;
-    }
-
-    .lurvox-client-login__link svg {
-      display: none;
     }
   }
 </style>

@@ -152,13 +152,12 @@ home.block_order = [
 index.sections.lurvox_landing_hero = {
   type: 'lurvox-landing-hero',
   settings: {
-    eyebrow: 'TRY THE APP',
-    headline: 'Tap below to open the demo account',
-    lede: 'Look around a real client app. Nothing you tap is saved.',
+    headline: 'Try the app',
+    lede: 'See a live coaching plan before you pay.',
     demo_enabled: true,
-    demo_label: 'Open demo account',
+    demo_ask: 'No signup. Look around first.',
+    demo_label: 'Try the platform free',
     demo_url: 'https://app.lurvox.in/try',
-    demo_note: 'View only. You can take a short tour inside.',
     call_enabled: true,
     call_label: 'Book a free call',
     call_url: '/pages/talk-to-a-coach',

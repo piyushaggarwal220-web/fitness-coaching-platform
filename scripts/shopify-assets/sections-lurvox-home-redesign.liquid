@@ -800,6 +800,20 @@
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.02em;
+    color: #fff;
+    -webkit-text-fill-color: #fff;
+  }
+
+  .lx-home__faq details[open] summary,
+  .lx-home__faq details[open] summary *,
+  .lx-home__faq-item[open] summary,
+  .lx-home__faq-item[open] summary *,
+  .lx-home__faq summary:active,
+  .lx-home__faq summary:hover,
+  .lx-home__faq summary:focus,
+  .lx-home__faq summary:focus-visible {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
   }
 
   .lx-home__faq-item summary::-webkit-details-marker {
@@ -810,7 +824,16 @@
     content: '+';
     float: right;
     color: var(--lx-ember);
+    -webkit-text-fill-color: var(--lx-ember);
     font-weight: 600;
+  }
+
+  .lx-home__faq-item[open] summary::after,
+  .lx-home__faq details[open] summary::after,
+  .lx-home__faq summary:hover::after,
+  .lx-home__faq summary:active::after {
+    color: var(--lx-ember) !important;
+    -webkit-text-fill-color: var(--lx-ember) !important;
   }
 
   .lx-home__faq-item[open] summary::after {

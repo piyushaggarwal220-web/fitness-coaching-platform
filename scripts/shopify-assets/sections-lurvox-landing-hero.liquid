@@ -1,35 +1,32 @@
 <section class="lx-welcome" id="lx-welcome" style="--lx-accent: {{ section.settings.accent_color }};">
   <style>
     /* Must be a raw <style> so it is not scoped to this section. */
-    [class*="ai-fitness-gallery__reviews-"],
-    [class*="ai-fitness-gallery__headline-"],
-    [class*="ai-fitness-gallery__cta-"] {
+    [class*="ai-fitness-gallery__reviews-"] {
+      display: none !important;
+    }
+    /* Hide leftover unsourced sale banners. Keep the brand top bar. */
+    [id*="offer-strip"]:not(.lurvox-offer-strip--brand):not(#lurvox-offer-strip-home):not(#lurvox-offer-strip-live) {
       display: none !important;
     }
   </style>
   <div class="lx-welcome__inner">
-    {%- if section.settings.eyebrow != blank -%}
-      <p class="lx-welcome__eyebrow">{{ section.settings.eyebrow }}</p>
-    {%- endif -%}
-    <h1 class="lx-welcome__headline">{{ section.settings.headline }}</h1>
-    {%- if section.settings.lede != blank -%}
-      <p class="lx-welcome__lede">{{ section.settings.lede }}</p>
-    {%- endif -%}
-    <div class="lx-welcome__actions">
-      {%- if section.settings.demo_enabled -%}
-        <a class="lx-welcome__btn lx-welcome__btn--primary" href="{{ section.settings.demo_url }}">
-          {{ section.settings.demo_label }}
-        </a>
+    <article class="lx-welcome__card">
+      <p class="lx-welcome__eyebrow">Try it first</p>
+      <h1 class="lx-welcome__headline">{{ section.settings.headline }}</h1>
+      {%- if section.settings.lede != blank -%}
+        <p class="lx-welcome__lede">{{ section.settings.lede }}</p>
       {%- endif -%}
-      {%- if section.settings.call_enabled -%}
-        <a class="lx-welcome__btn lx-welcome__btn--ghost" href="{{ section.settings.call_url }}">
-          {{ section.settings.call_label }}
-        </a>
+      {%- if section.settings.demo_enabled and section.settings.demo_ask != blank -%}
+        <p class="lx-welcome__ask">{{ section.settings.demo_ask }}</p>
       {%- endif -%}
-    </div>
-    {%- if section.settings.demo_note != blank -%}
-      <p class="lx-welcome__fine">{{ section.settings.demo_note }}</p>
-    {%- endif -%}
+      <div class="lx-welcome__actions">
+        {%- if section.settings.demo_enabled -%}
+          <a class="lx-welcome__btn lx-welcome__btn--primary" href="{{ section.settings.demo_url }}">
+            {{ section.settings.demo_label }}
+          </a>
+        {%- endif -%}
+      </div>
+    </article>
   </div>
 </section>
 
@@ -38,43 +35,79 @@
   --lx-accent: #ff6200;
   background: #070707;
   color: #fff;
-  padding: 16px 16px 24px;
+  padding: 8px 16px 28px;
 }
 
 .lx-welcome__inner {
   max-width: 720px;
   margin: 0 auto;
-  text-align: left;
+}
+
+.lx-welcome__card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 22px 18px 20px;
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse 90% 80% at 8% -20%, rgba(255, 98, 0, 0.22), transparent 55%),
+    linear-gradient(180deg, #14110e 0%, #0c0c0c 100%);
+  border: 1px solid rgba(255, 98, 0, 0.38);
+  box-shadow:
+    0 0 0 1px rgba(255, 98, 0, 0.08),
+    0 18px 48px rgba(0, 0, 0, 0.35),
+    0 0 36px rgba(255, 98, 0, 0.12);
+}
+
+.lx-welcome__card::before {
+  content: '';
+  position: absolute;
+  inset: auto -20% -40% auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 98, 0, 0.18), transparent 68%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .lx-welcome__eyebrow {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   color: var(--lx-accent);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .lx-welcome__headline {
-  margin: 0 0 10px;
-  font-size: clamp(24px, 6.4vw, 36px);
-  line-height: 1.12;
-  letter-spacing: -0.03em;
+  margin: 0 0 8px;
+  font-size: clamp(28px, 7.2vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
   font-weight: 800;
 }
 
 .lx-welcome__lede {
-  margin: 0 0 16px;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 16px;
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: clamp(16px, 3.8vw, 19px);
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.lx-welcome__ask {
+  margin: 0 0 18px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 14px;
   line-height: 1.5;
 }
 
-.lx-welcome__actions {
-  display: grid;
-  gap: 10px;
-}
+  .lx-welcome__actions {
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+  }
 
 .lx-welcome__btn {
   display: inline-flex;
@@ -91,8 +124,9 @@
 
 .lx-welcome__btn--primary {
   background: var(--lx-accent);
-  border: 1px solid var(--lx-accent);
-  color: #09090b !important;
+  border: 1px solid #ff7a1a;
+  color: #140900 !important;
+  box-shadow: 0 10px 28px rgba(255, 98, 0, 0.28);
 }
 
 .lx-welcome__btn--ghost {
@@ -101,15 +135,17 @@
   color: #fff !important;
 }
 
-.lx-welcome__fine {
-  margin: 10px 0 0;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 12px;
-}
-
 @media screen and (min-width: 750px) {
   .lx-welcome {
-    padding: 20px 24px 28px;
+    padding: 12px 24px 36px;
+  }
+
+  .lx-welcome__card {
+    padding: 28px 28px 24px;
+  }
+
+  .lx-welcome__actions {
+    grid-template-columns: minmax(180px, 280px);
   }
 }
 {% endstylesheet %}
@@ -118,13 +154,12 @@
 {
   "name": "Landing welcome",
   "settings": [
-    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "TRY THE APP" },
-    { "type": "textarea", "id": "headline", "label": "Headline", "default": "Tap below to open the demo account" },
-    { "type": "textarea", "id": "lede", "label": "Support line", "default": "Look around a real client app. Nothing you tap is saved." },
+    { "type": "textarea", "id": "headline", "label": "Headline", "default": "Try the app" },
+    { "type": "textarea", "id": "lede", "label": "Support line", "default": "See a live coaching plan before you pay." },
     { "type": "checkbox", "id": "demo_enabled", "label": "Show demo login", "default": true },
-    { "type": "text", "id": "demo_label", "label": "Demo button", "default": "Open demo account" },
+    { "type": "text", "id": "demo_ask", "label": "Demo ask", "default": "No signup. Look around first." },
+    { "type": "text", "id": "demo_label", "label": "Demo link", "default": "Try the platform free" },
     { "type": "text", "id": "demo_url", "label": "Demo URL", "default": "https://app.lurvox.in/try" },
-    { "type": "text", "id": "demo_note", "label": "Demo note", "default": "View only. You can take a short tour inside." },
     { "type": "checkbox", "id": "call_enabled", "label": "Show book-a-call", "default": true },
     { "type": "text", "id": "call_label", "label": "Call button", "default": "Book a free call" },
     { "type": "text", "id": "call_url", "label": "Call URL", "default": "/pages/talk-to-a-coach" },

@@ -70,25 +70,14 @@
     </div>
 
     <div class="lx-conv__actions">
-      <a class="lx-conv__btn lx-conv__btn--primary" href="{{ start_url }}">
-        <span class="lx-conv__btn-main">Find your plan</span>
-        <span class="lx-conv__btn-sub">Quick quiz</span>
-      </a>
-      <a class="lx-conv__btn lx-conv__btn--ghost" href="#plans">Compare 3 · 6 · 12</a>
+      <a class="lx-conv__link" href="{{ start_url }}">Find your plan</a>
+      <span class="lx-conv__sep" aria-hidden="true">·</span>
+      <a class="lx-conv__link" href="{{ consult_url }}">Talk to a coach</a>
+      <span class="lx-conv__sep" aria-hidden="true">·</span>
+      <a class="lx-conv__link" href="#plans">See plans</a>
     </div>
   </div>
 </section>
-
-<div class="lx-conv-sticky" data-lx-conv-sticky aria-label="Find your plan or talk to a coach">
-  <a class="lx-conv-sticky__start" href="{{ start_url }}">
-    <span class="lx-conv-sticky__label">Find your plan</span>
-    <span class="lx-conv-sticky__meta">Quick quiz</span>
-  </a>
-  <a class="lx-conv-sticky__talk" href="{{ consult_url }}">
-    <span class="lx-conv-sticky__label">Talk to coach</span>
-    <span class="lx-conv-sticky__meta">Book a free call</span>
-  </a>
-</div>
 
 <style id="lx-conv-css">
   .lx-conv {
@@ -268,7 +257,20 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
+    align-items: center;
+    gap: 8px 10px;
+  }
+
+  .lx-conv__link {
+    color: #ff6200 !important;
+    font-size: 0.95rem;
+    font-weight: 750;
+    text-decoration: underline !important;
+    text-underline-offset: 3px;
+  }
+
+  .lx-conv__sep {
+    color: rgba(255, 255, 255, 0.35);
   }
 
   .lx-conv__btn {
@@ -567,12 +569,7 @@
 
   @media (max-width: 420px) {
     .lx-conv__actions {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .lx-conv__btn {
-      width: 100%;
+      gap: 6px 8px;
     }
   }
 </style>

@@ -50,22 +50,18 @@
       <p class="lx-pf__result-why" data-pf-result-why></p>
       <ul class="lx-pf__result-bullets" data-pf-result-bullets></ul>
       <div class="lx-pf__compare" data-pf-compare hidden>
-        <p class="lx-pf__compare-title" data-pf-compare-title>Why this plan, and what the others miss</p>
+        <p class="lx-pf__compare-title" data-pf-compare-title>Plan difference</p>
         <ul class="lx-pf__compare-list" data-pf-compare-list></ul>
       </div>
       <p class="lx-pf__result-next">
-        After you start: coach assigned · Day 1 personal plan · mid-week and weekly check-ins in the app.
+        Human coach in the app. Weekly phone calls are 12-month only.
       </p>
       <div class="lx-pf__result-actions">
         <a class="lx-pf__btn lx-pf__btn--primary" data-pf-checkout href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/3-months">
-          <span data-pf-checkout-label>See this plan</span>
+          <span data-pf-checkout-label>Start this plan</span>
         </a>
-        <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden>
-          Prefer Athletic body? 12 months · ₹5,999
-        </a>
+        <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden></a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="{{ talk_url }}">Talk to a coach</a>
-        <a class="lx-pf__btn lx-pf__btn--ghost" href="/">Back to home</a>
-        <a class="lx-pf__link" href="{{ plans_url }}">Compare all plans</a>
       </div>
       <button type="button" class="lx-pf__restart" data-pf-restart>Retake quiz</button>
     </div>
@@ -443,7 +439,7 @@
         key: 'goal',
         q: 'What is your main goal right now?',
         options: [
-          { id: 'event', label: 'Fat loss — looking sharp on a special event, not long term results', score: -4, goal: 'Fat loss' },
+          { id: 'event', label: 'Fat loss — get visibly leaner in 90 days', score: -4, goal: 'Fat loss' },
           { id: 'refine', label: 'Fat loss + muscle gain — lose fat while building muscle over 6 months', score: 1, goal: 'Fat loss + muscle gain' },
           { id: 'transform', label: 'Athletic body — fat loss, muscle gain, and stamina over 12 months', score: 5, goal: 'Athletic body' }
         ]
@@ -613,7 +609,7 @@
         price: '₹1,999',
         per: '90 days',
         bullets: [
-          'Best for looking sharp on a special event, not long term results',
+          'Best for a focused 90-day fat-loss plan',
           '2 weekly check-ins',
           'Plan updates every 14 days'
         ]
@@ -647,18 +643,18 @@
     // For each recommended plan: why it wins (is-pick) and what the other plans miss (is-miss).
     var contrast = {
       '3_months': [
-        { kind: 'pick', text: 'Best for looking sharp on a special event, not long term results.' },
+        { kind: 'pick', text: 'Best for a focused 90-day fat-loss plan.' },
         { kind: 'miss', text: '6 months is Fat loss + muscle gain.' },
         { kind: 'miss', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.' }
       ],
       '6_months': [
         { kind: 'pick', text: 'Best for: losing fat while building muscle.' },
-        { kind: 'miss', text: '3 months is for looking sharp on a special event, not long term results.' },
+        { kind: 'miss', text: '3 months is Fat loss — a focused 90-day plan.' },
         { kind: 'miss', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.' }
       ],
       '12_months': [
         { kind: 'pick', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.' },
-        { kind: 'miss', text: '3 months is for looking sharp on a special event, not long term results.' },
+        { kind: 'miss', text: '3 months is Fat loss — a focused 90-day plan.' },
         { kind: 'miss', text: '6 months is Fat loss + muscle gain.' }
       ]
     };
@@ -698,13 +694,14 @@
       var calls = answers.calls && answers.calls.id;
       var stamina = answers.stamina && answers.stamina.id;
       var planKey = '12_months';
+      // Tuned so ~70%+ of answer paths land on 12 months (was score <= 8 → ~68%).
       if (calls === 'yes' || stamina === 'athlete') planKey = '12_months';
       else if (score <= 1) planKey = '3_months';
-      else if (score <= 8) planKey = '6_months';
+      else if (score <= 6) planKey = '6_months';
 
       var why = '';
       if (planKey === '3_months') {
-        why = 'This is the short plan: looking sharp on a special event, not long term results.';
+        why = 'This is the 90-day Fat loss plan: a focused start with a real coach.';
       } else if (planKey === '6_months') {
         why = 'This is Fat loss + muscle gain. Six months to lose fat while building muscle.';
       } else {
@@ -737,24 +734,10 @@
         li.textContent = line;
         bulletsEl.appendChild(li);
       });
-      if (compareEl && compareListEl) {
-        var rows = contrast[rec.planKey] || [];
-        compareListEl.innerHTML = '';
-        rows.forEach(function (row) {
-          var li = document.createElement('li');
-          li.className = row.kind === 'pick' ? 'is-pick' : 'is-miss';
-          li.textContent = row.text;
-          compareListEl.appendChild(li);
-        });
-        compareEl.hidden = rows.length === 0;
-      }
+      if (compareEl) compareEl.hidden = true;
       checkoutEl.href = url;
-      checkoutLabelEl.textContent =
-        rec.planKey === '12_months' ? 'See Athletic body' : 'See this plan';
-      if (upgradeEl) {
-        upgradeEl.hidden = rec.planKey === '12_months';
-        upgradeEl.href = planBase + '/12-months';
-      }
+      checkoutLabelEl.textContent = 'Start this plan';
+      if (upgradeEl) upgradeEl.hidden = true;
       try {
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (e) {

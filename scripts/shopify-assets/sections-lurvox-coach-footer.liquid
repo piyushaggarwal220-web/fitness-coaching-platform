@@ -1,0 +1,11 @@
+{% comment %} Coach sign-in is staff-only — keep it off the customer footer. {% endcomment %}
+<style>
+  .lx-coach-footer { display: none !important; }
+</style>
+{% schema %}
+{
+  "name": "Coach footer link",
+  "settings": [],
+  "presets": [{ "name": "Coach footer link" }]
+}
+{% endschema %}
