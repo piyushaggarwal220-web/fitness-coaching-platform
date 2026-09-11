@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
+import { rejectIfPublicDemoMutation } from '@/lib/public-demo-guard'
 import {
   createLockedPlanChangeRequest,
   getPlanChangeQuota,
@@ -34,7 +35,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireApiUser()
+  const auth = rejectIfPublicDemoMutation(await requireApiUser())
   if (!auth.ok) return auth.response
 
   const body = (await request.json().catch(() => null)) as {

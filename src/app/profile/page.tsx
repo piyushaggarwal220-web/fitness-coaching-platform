@@ -21,6 +21,7 @@ import {
   parseReviewReasons,
 } from '@/lib/complexity/input-guards'
 import { createClient } from '@/lib/supabase/client'
+import { PUBLIC_DEMO_READ_ONLY_MESSAGE, isPublicDemoEmail } from '@/lib/public-demo'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { colors, spacing } from '@/lib/design-tokens'
 import {
@@ -114,6 +115,7 @@ export default function Profile() {
   const [previousDisplayScore, setPreviousDisplayScore] = useState<number | null>(null)
   const [savingGoals, setSavingGoals] = useState(false)
   const [goalMessage, setGoalMessage] = useState('')
+  const [demoReadOnly, setDemoReadOnly] = useState(false)
 
   const lockDays = daysUntilUnlock(settingsEditedAt)
   const settingsLocked = lockDays > 0
@@ -131,6 +133,7 @@ export default function Profile() {
       }
 
       setUser(result.user as User)
+      setDemoReadOnly(isPublicDemoEmail(result.user.email ?? result.profile?.email))
       if (result.profile) {
         setProfile({
           name: result.profile.name || '',
@@ -172,6 +175,10 @@ export default function Profile() {
 
   const handleAvatar = async (file: File | null) => {
     if (!user || !file) return
+    if (demoReadOnly) {
+      setMessage(PUBLIC_DEMO_READ_ONLY_MESSAGE)
+      return
+    }
     setUploadingAvatar(true)
     setMessage('')
     try {
@@ -197,6 +204,10 @@ export default function Profile() {
 
   const handleSaveGoalDetails = async () => {
     if (!user) return
+    if (demoReadOnly) {
+      setGoalMessage(PUBLIC_DEMO_READ_ONLY_MESSAGE)
+      return
+    }
     setSavingGoals(true)
     setGoalMessage('')
     const details = profile.goal_details.trim()
@@ -238,6 +249,10 @@ export default function Profile() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!user) return
+    if (demoReadOnly) {
+      setMessage(PUBLIC_DEMO_READ_ONLY_MESSAGE)
+      return
+    }
 
     if (settingsLocked) {
       setMessage(

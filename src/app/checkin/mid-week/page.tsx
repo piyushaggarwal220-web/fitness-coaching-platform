@@ -14,6 +14,7 @@ import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { readApiJson } from '@/lib/api-response';
 import { authenticateClient } from '@/lib/onboarding';
+import { PUBLIC_DEMO_READ_ONLY_MESSAGE, isPublicDemoEmail } from '@/lib/public-demo';
 import { mobileStyles } from '@/lib/mobile-styles';
 import { colors, spacing } from '@/lib/design-tokens';
 import { SuccessState } from '@/components/motion';
@@ -41,6 +42,12 @@ export default function MidWeekCheckinPage() {
         return;
       }
       setProfile(result.profile);
+      if (isPublicDemoEmail(result.user.email ?? result.profile?.email)) {
+        setAvailable(false);
+        setUnavailableReason(PUBLIC_DEMO_READ_ONLY_MESSAGE);
+        setLoading(false);
+        return;
+      }
 
       const { data } = await supabase
         .from('checkins')

@@ -10,6 +10,7 @@ export type ApiConversationAccess =
   | {
       ok: true
       userId: string
+      userEmail: string | null
       admin: ReturnType<typeof createAdminClient>
       participant: ConversationParticipant
     }
@@ -21,12 +22,17 @@ export async function requireConversationParticipant(
   const auth = await requireApiUser()
   if (!auth.ok) return auth
 
-  return requireConversationParticipantForUser(conversationId, auth.user.id)
+  return requireConversationParticipantForUser(
+    conversationId,
+    auth.user.id,
+    auth.user.email ?? null
+  )
 }
 
 export async function requireConversationParticipantForUser(
   conversationId: string,
-  userId: string
+  userId: string,
+  userEmail: string | null = null
 ): Promise<ApiConversationAccess> {
   const admin = createAdminClient()
   const access = await authorizeConversationParticipant(admin, conversationId, userId)
@@ -34,6 +40,7 @@ export async function requireConversationParticipantForUser(
     return {
       ok: true,
       userId,
+      userEmail,
       admin,
       participant: access.participant,
     }

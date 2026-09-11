@@ -12,7 +12,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
-  const auth = await requireEntitledClientApiUser()
+  const auth = await requireEntitledClientApiUser({ mutation: true })
   const origin = new URL(request.url).origin
   const fail = (reason: string) =>
     NextResponse.redirect(new URL(`/tracker?fitbit=${encodeURIComponent(reason)}`, origin))

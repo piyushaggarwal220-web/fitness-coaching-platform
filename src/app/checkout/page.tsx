@@ -35,6 +35,8 @@ import {
   getSaleCountdownRemainingMs,
 } from '@/lib/sale-countdown';
 import { CheckoutTransformationCarousel } from '@/components/checkout/TransformationCarousel';
+import { isPublicDemoEmail } from '@/lib/public-demo';
+import { leavePublicDemoSession } from '@/lib/public-demo-session';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
@@ -98,6 +100,7 @@ function CheckoutForm() {
   const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
   const [attemptedPay, setAttemptedPay] = useState(false);
   const [checkoutScreen, setCheckoutScreen] = useState<1 | 2>(1);
+  const [demoHandoff, setDemoHandoff] = useState(false);
   const paymentSucceededRef = useRef(false);
   const autoApplyKeyRef = useRef('');
   const nameRef = useRef<HTMLInputElement>(null);
@@ -115,6 +118,20 @@ function CheckoutForm() {
     firstTimerPreviewPaise != null ? formatInrFromPaise(firstTimerPreviewPaise) : plan.displayPrice;
   const firstTimerSavingsPaise =
     firstTimerPreviewPaise != null ? plan.amountPaise - firstTimerPreviewPaise : null;
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const { data } = await supabase.auth.getUser()
+      if (!isPublicDemoEmail(data.user?.email)) return
+      setDemoHandoff(true)
+      await leavePublicDemoSession()
+      if (!cancelled) setDemoHandoff(false)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     setEnrollmentHref(null);
@@ -629,6 +646,18 @@ function CheckoutForm() {
         </div>
       </div>
     );
+  }
+
+  if (demoHandoff) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.card}>
+          <p style={styles.brandMark}>{BRAND_NAME}</p>
+          <h1 style={styles.title}>Opening checkout</h1>
+          <p style={styles.subtitle}>Leaving the demo so you can pay with your own details.</p>
+        </div>
+      </div>
+    )
   }
 
   const pricePrimary = appliedDiscount?.displaySalePrice ?? plan.displayPrice;

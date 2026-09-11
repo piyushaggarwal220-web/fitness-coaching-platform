@@ -83,8 +83,8 @@ export async function enforceClientCallPolicy(
       await cancel(
         row.id,
         row.source === 'weekly_entitlement'
-          ? 'Auto-closed — weekly calls start after the first 2 coaching weeks'
-          : 'Auto-closed — calls unlock after the first 2 coaching weeks'
+          ? 'Auto-closed — weekly call opens once the coaching schedule has started'
+          : 'Auto-closed — calls unlock once the coaching schedule has started'
       )
     }
     return

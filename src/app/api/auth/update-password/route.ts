@@ -6,6 +6,11 @@ import {
 import { isLeakedPasswordAuthError } from '@/lib/auth-password-errors'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import {
+  PUBLIC_DEMO_READ_ONLY_CODE,
+  PUBLIC_DEMO_READ_ONLY_MESSAGE,
+  isPublicDemoEmail,
+} from '@/lib/public-demo'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -45,6 +50,13 @@ export async function POST(request: Request) {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser()
+
+  if (isPublicDemoEmail(user?.email)) {
+    return NextResponse.json(
+      { error: PUBLIC_DEMO_READ_ONLY_MESSAGE, code: PUBLIC_DEMO_READ_ONLY_CODE },
+      { status: 403 }
+    )
+  }
 
   if (userError || !user) {
     return NextResponse.json(

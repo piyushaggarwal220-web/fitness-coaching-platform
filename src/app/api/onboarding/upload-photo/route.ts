@@ -7,6 +7,8 @@ import {
 import { isVisionSafeMediaType, validatePhotoFile } from '@/lib/photo'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { isPublicDemoEmail } from '@/lib/public-demo'
+import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -28,6 +30,9 @@ export async function POST(request: Request) {
 
   if (userError || !user) {
     return NextResponse.json({ error: 'Please sign in again, then retry the photo upload.' }, { status: 401 })
+  }
+  if (isPublicDemoEmail(user.email)) {
+    return publicDemoReadOnlyJson()
   }
 
   let form: FormData

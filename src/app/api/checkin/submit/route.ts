@@ -128,7 +128,7 @@ export async function POST(request: Request) {
       hasCookie: Boolean(request.headers.get('cookie')),
     })
 
-    const auth = await requireEntitledClientApiUser()
+    const auth = await requireEntitledClientApiUser({ mutation: true })
     if (!auth.ok) {
       logApiDev('checkin_submit_auth_failed', { sessionFound: false })
       return auth.response

@@ -130,6 +130,23 @@ html.lx-phone-viewport .client-container {
   max-width: 100%;
 }
 
+.client-container {
+  overflow-x: visible;
+}
+
+html.has-checkin-due-banner .lx-checkin-banner-gap {
+  min-height: var(--lx-checkin-banner-h, 110px);
+  margin-bottom: var(--lx-checkin-banner-gap, 16px);
+}
+
+html.has-demo-tour-bar #lx-checkin-due-banner {
+  display: none !important;
+}
+
+html.has-demo-tour-bar .lx-checkin-banner-gap {
+  min-height: var(--lx-demo-tour-bar-h, 64px);
+}
+
 a {
   text-decoration: none;
   color: inherit;

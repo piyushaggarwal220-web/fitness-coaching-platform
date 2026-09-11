@@ -5,6 +5,8 @@ import { requireConversationParticipant } from '@/lib/chat-api-access'
 import { getCoachResponseTargetFromAnchor } from '@/lib/chat-response-target'
 import { enforceClientCallPolicy, loadClientCallBookingPolicy } from '@/lib/call-booking-policy-server'
 import { hasClientEntitlement } from '@/lib/entitlements'
+import { isPublicDemoEmail } from '@/lib/public-demo'
+import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
 
 export async function GET(request: Request) {
   try {
@@ -179,7 +181,11 @@ export async function POST(request: Request) {
       logApiDev('chat_messages_post_auth_failed', { sessionFound: false })
       return access.response
     }
-    const { admin, participant, userId } = access
+    const { admin, participant, userId, userEmail } = access
+
+    if (isPublicDemoEmail(userEmail)) {
+      return publicDemoReadOnlyJson()
+    }
 
     if (participant.viewer === 'client') {
       const { data: profile } = await admin

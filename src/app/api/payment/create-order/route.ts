@@ -17,6 +17,8 @@ import {
   resolveCheckoutPricing,
 } from '@/lib/payments/checkout-discounts'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isPublicDemoEmail } from '@/lib/public-demo'
+import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
 
 type CreateOrderBody = {
   planSlug?: string
@@ -43,6 +45,9 @@ export async function POST(request: Request) {
   const plan = getPurchasablePlan(body.planSlug)
   if (!plan) {
     return NextResponse.json({ error: 'Invalid plan selected', missing: ['A valid plan'] }, { status: 400 })
+  }
+  if (isPublicDemoEmail(body.email)) {
+    return publicDemoReadOnlyJson()
   }
 
   const missing: string[] = []

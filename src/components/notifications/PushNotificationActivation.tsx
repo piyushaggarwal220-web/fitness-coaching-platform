@@ -11,6 +11,7 @@ import {
   WEB_PUSH_STATUS_CHANGED_EVENT,
   type WebPushStatus,
 } from '@/lib/notifications/web-push-client'
+import { isPublicDemoEmail } from '@/lib/public-demo'
 import { createClient } from '@/lib/supabase/client'
 
 type NotificationAudience = 'client' | 'coach'
@@ -97,6 +98,7 @@ function getStatusContent(status: WebPushStatus, audience: NotificationAudience)
  * Optional push prompt for home dashboards only.
  * - Never shows a “Checking…” screen
  * - Marks once-per-day as soon as it opens, so other sections never re-trigger it
+ * - Never opens for the public demo client (isPublicDemoEmail)
  */
 export function NotificationActivationGate({
   audience = 'client',
@@ -105,6 +107,7 @@ export function NotificationActivationGate({
 }) {
   const { status, refresh } = useWebPushStatus()
   const [userId, setUserId] = useState<string | null>(null)
+  const [isPublicDemo, setIsPublicDemo] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const [enabling, setEnabling] = useState(false)
   const [open, setOpen] = useState(false)
@@ -118,16 +121,19 @@ export function NotificationActivationGate({
 
   useEffect(() => {
     let active = true
-    void createClient().auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
+    void createClient().auth.getUser().then(({ data }: { data: { user: { id: string; email?: string } | null } }) => {
       if (!active) return
-      if (data.user) setUserId(data.user.id)
+      if (data.user) {
+        setUserId(data.user.id)
+        setIsPublicDemo(isPublicDemoEmail(data.user.email))
+      }
       setAuthChecked(true)
     })
     return () => { active = false }
   }, [])
 
   useEffect(() => {
-    if (!authChecked || !userId) return
+    if (!authChecked || !userId || isPublicDemo) return
     if (status === 'checking' || status === 'enabled') return
     if (wasDismissedToday()) {
       setOpen(false)
@@ -136,7 +142,7 @@ export function NotificationActivationGate({
     // Claim today's slot immediately — prevents re-shows on remount / other pages.
     markDismissedToday()
     setOpen(true)
-  }, [authChecked, userId, status])
+  }, [authChecked, userId, isPublicDemo, status])
 
   const enable = async () => {
     setEnabling(true)

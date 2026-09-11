@@ -1,3 +1,5 @@
+import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability'
+
 export const DEMO_TOUR_STORAGE_KEY = 'lurvox-demo-tour'
 export const DEMO_TOUR_OFFER_KEY = 'lurvox-demo-offer-tour'
 
@@ -31,7 +33,7 @@ export const DEMO_TOUR_STEPS: DemoTourStep[] = [
     id: 'chat',
     selector: '[data-tour="nav-chat"]',
     title: 'Chat',
-    body: 'Message your coach from here. In this demo you can look, but nothing sends.',
+    body: CHAT_AFTER_ENROLLMENT_MESSAGE,
   },
   {
     id: 'journey',

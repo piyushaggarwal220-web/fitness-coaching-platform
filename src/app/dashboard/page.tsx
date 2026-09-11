@@ -41,7 +41,10 @@ import { CheckinDueBanner } from '@/components/dashboard/CheckinDueBanner';
 import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner';
 import { GoalUpgradeCard } from '@/components/dashboard/GoalUpgradeCard';
 import { LeagueHomeCard } from '@/components/league/LeagueHomeCard';
+import { CoachQueueCard } from '@/components/dashboard/CoachQueueCard';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
+import { isPublicDemoEmail, PUBLIC_DEMO_CLIENT_NAME } from '@/lib/public-demo';
+import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability';
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { clientRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy';
@@ -314,6 +317,7 @@ export default function Dashboard() {
    */
   const stickyCheckin = dueCheckin ?? checkinSchedule?.nextCheckin ?? null;
   const stickyCheckinMode = dueCheckin ? 'due' : 'countdown';
+  const chatReady = Boolean(coach) && !isPublicDemoEmail(user?.email);
 
   const latestWeekly = allCheckins.find((c) => c.checkin_type === 'weekly') ?? null
   const planMeta = activePlan ? parsePlanMeta(activePlan) : null
@@ -403,16 +407,16 @@ export default function Dashboard() {
     {
       key: 'chat',
       title: 'Coach chat',
-      subtitle: unreadMessages > 0
+      subtitle: chatReady && unreadMessages > 0
         ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
-        : coach
-          ? `Message ${coach.name}`
-          : 'Message your coach',
+        : chatReady
+          ? `Message ${coach?.name}`
+          : CHAT_AFTER_ENROLLMENT_MESSAGE,
       href: '/client/chat',
       icon: MessageCircle,
-      badge: unreadMessages > 0 ? (unreadMessages > 9 ? '9+' : String(unreadMessages)) : null,
+      badge: chatReady && unreadMessages > 0 ? (unreadMessages > 9 ? '9+' : String(unreadMessages)) : null,
       accent: '#22c55e',
-      visible: Boolean(coach),
+      visible: true,
     },
   ]
     .filter((item) => item.visible)
@@ -525,9 +529,11 @@ export default function Dashboard() {
     </Card>
   ) : null;
 
-  const firstName = (profile?.name || user?.email?.split('@')[0] || 'there')
-    .trim()
-    .split(/\s+/)[0]
+  const rawName = (profile?.name || user?.email?.split('@')[0] || 'there').trim()
+  // Public demo is "Demo Client" — keep the full label (do not split to "Demo").
+  const firstName = isPublicDemoEmail(user?.email)
+    ? PUBLIC_DEMO_CLIENT_NAME
+    : rawName.split(/\s+/)[0]
 
   return (
     <ClientShell
@@ -540,7 +546,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {stickyCheckin && (
+      {stickyCheckin && !isPublicDemoEmail(user?.email) && (
         <CheckinDueBanner
           checkin={stickyCheckin}
           mode={stickyCheckinMode}
@@ -549,7 +555,9 @@ export default function Dashboard() {
           }
         />
       )}
-      {renewalPrompt && <MembershipRenewalBanner prompt={renewalPrompt} />}
+      {renewalPrompt && !isPublicDemoEmail(user?.email) && (
+        <MembershipRenewalBanner prompt={renewalPrompt} />
+      )}
 
       {(generationJob || clientRequiresManualPlanDelivery(profile)) &&
         !activePlan &&
@@ -650,6 +658,8 @@ export default function Dashboard() {
         bodyType={profile?.onboarding_data?.goals?.startingBodyType}
       />
 
+      {!isPublicDemoEmail(user?.email) && <CoachQueueCard />}
+
       <section style={{ marginBottom: spacing[7] }}>
         <SectionHeader
           title="Quick access"
@@ -688,7 +698,7 @@ export default function Dashboard() {
             coachPhotoPath={coach?.display_photo_path}
           />
         )}
-        <NotificationActivationGate />
+        {!isPublicDemoEmail(user?.email) && <NotificationActivationGate />}
         <PwaInstallPrompt />
       </section>
 

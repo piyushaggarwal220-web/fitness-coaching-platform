@@ -111,13 +111,30 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
       >
         {fullHeight ? (
           <>
+            <div
+              aria-hidden
+              style={{
+                height: 'calc(var(--lx-checkin-banner-h, 0px) + var(--lx-demo-tour-bar-h, 0px))',
+                flexShrink: 0,
+              }}
+            />
             <div style={{ padding: '8px 16px 0', flexShrink: 0 }}>
-              <PublicDemoBanner />
+              <PublicDemoBanner compact />
             </div>
             {children}
           </>
         ) : (
           <div style={{ ...mobileStyles.container, overflowX: 'visible' }} className="client-container">
+            <div
+              aria-hidden
+              className="lx-checkin-banner-gap"
+              style={{
+                height: 'calc(var(--lx-checkin-banner-h, 0px) + var(--lx-demo-tour-bar-h, 0px))',
+                minHeight: 'calc(var(--lx-checkin-banner-h, 0px) + var(--lx-demo-tour-bar-h, 0px))',
+                marginBottom: 'var(--lx-checkin-banner-gap, 0px)',
+                flexShrink: 0,
+              }}
+            />
             <PublicDemoBanner />
             <PageTransition>
               {children}

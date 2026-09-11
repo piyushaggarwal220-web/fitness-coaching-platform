@@ -3,6 +3,7 @@ import { resolveAuthEmailRedirectOrigin } from '@/lib/admin/portal-urls'
 import { sendDirectEmail, isEmailConfigured } from '@/lib/notifications/email-provider'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createBrowserStyleClient } from '@supabase/supabase-js'
+import { isPublicDemoEmail } from '@/lib/public-demo'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,14 @@ export async function POST(request: Request) {
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
   if (!email || !email.includes('@')) {
     return NextResponse.json({ error: 'Enter the email you use to sign in.' }, { status: 400 })
+  }
+
+  if (isPublicDemoEmail(email)) {
+    return NextResponse.json({
+      success: true,
+      message:
+        'If an account exists for that email, a reset link is on its way. Check inbox and spam.',
+    })
   }
 
   const origin = resolveAuthEmailRedirectOrigin(new URL(request.url).origin)

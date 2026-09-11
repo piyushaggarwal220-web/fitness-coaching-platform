@@ -1,11 +1,12 @@
 'use client'
 
 import { Calendar, ChevronRight, Timer } from 'lucide-react'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { getCheckinTypeDisplayName, describeCheckinWindow, type ScheduledCheckin } from '@/lib/checkin-schedule'
 import { colors, layout, spacing } from '@/lib/design-tokens'
+import { usePublicDemo } from '@/hooks/usePublicDemo'
 
 type Props = {
   checkin: ScheduledCheckin
@@ -14,8 +15,8 @@ type Props = {
   countdownLabel?: string | null
 }
 
-/** Keeps page content clear of the fixed banner (icon row + padding). */
-export const CHECKIN_DUE_BANNER_HEIGHT = 72
+/** Keeps page content clear of the fixed banner (icon row + 3 text lines + padding). */
+export const CHECKIN_DUE_BANNER_HEIGHT = 110
 
 /**
  * Fixed top-of-homescreen check-in status.
@@ -27,6 +28,7 @@ export function CheckinDueBanner({
   countdownLabel = null,
 }: Props) {
   const router = useRouter()
+  const isDemo = usePublicDemo()
   const typeLabel = getCheckinTypeDisplayName(checkin.type)
   const [mounted, setMounted] = useState(false)
   const isDue = mode === 'due'
@@ -34,6 +36,42 @@ export function CheckinDueBanner({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useLayoutEffect(() => {
+    if (!mounted || isDemo) {
+      const root = document.documentElement
+      root.classList.remove('has-checkin-due-banner')
+      root.style.removeProperty('--lx-checkin-banner-h')
+      root.style.removeProperty('--lx-checkin-banner-gap')
+      return
+    }
+    const root = document.documentElement
+    const applyHeight = (height: number) => {
+      const next = Math.max(CHECKIN_DUE_BANNER_HEIGHT, Math.ceil(height))
+      root.classList.add('has-checkin-due-banner')
+      root.style.setProperty('--lx-checkin-banner-h', `${next}px`)
+      root.style.setProperty('--lx-checkin-banner-gap', '16px')
+    }
+    applyHeight(CHECKIN_DUE_BANNER_HEIGHT)
+    const node = document.getElementById('lx-checkin-due-banner')
+    if (!node) {
+      return () => {
+        root.classList.remove('has-checkin-due-banner')
+        root.style.removeProperty('--lx-checkin-banner-h')
+        root.style.removeProperty('--lx-checkin-banner-gap')
+      }
+    }
+    const sync = () => applyHeight(node.getBoundingClientRect().height)
+    sync()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(sync)
+    observer?.observe(node)
+    return () => {
+      observer?.disconnect()
+      root.classList.remove('has-checkin-due-banner')
+      root.style.removeProperty('--lx-checkin-banner-h')
+      root.style.removeProperty('--lx-checkin-banner-gap')
+    }
+  }, [mounted, isDemo, isDue, countdownLabel, checkin.href, checkin.coachingWeek])
 
   const sharedShell: CSSProperties = {
     position: 'fixed',
@@ -131,6 +169,7 @@ export function CheckinDueBanner({
 
   const banner = isDue ? (
     <button
+      id="lx-checkin-due-banner"
       type="button"
       onClick={() => router.push(checkin.href)}
       aria-label={`${typeLabel} check-in is due. Start now.`}
@@ -140,6 +179,7 @@ export function CheckinDueBanner({
     </button>
   ) : (
     <div
+      id="lx-checkin-due-banner"
       role="status"
       aria-label={`${typeLabel} check-in available in ${countdownLabel?.trim() || 'some time'}`}
       style={{ ...sharedShell, cursor: 'default' }}
@@ -148,17 +188,6 @@ export function CheckinDueBanner({
     </div>
   )
 
-  return (
-    <>
-      <div
-        aria-hidden
-        style={{
-          height: CHECKIN_DUE_BANNER_HEIGHT,
-          marginTop: -spacing[3],
-          marginBottom: spacing[4],
-        }}
-      />
-      {mounted ? createPortal(banner, document.body) : null}
-    </>
-  )
+  if (!mounted || isDemo) return null
+  return createPortal(banner, document.body)
 }

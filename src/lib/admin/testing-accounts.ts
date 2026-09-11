@@ -9,6 +9,10 @@ import { getPortalLoginUrl } from '@/lib/admin/portal-urls'
 import { assertTrialClient } from '@/lib/admin/trial-client-guard'
 import { repairClientWorkflowConsistency } from '@/lib/admin/workflow-consistency'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
+import {
+  PUBLIC_DEMO_CLIENT_EMAIL,
+  PUBLIC_DEMO_CLIENT_NAME,
+} from '@/lib/public-demo'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AccessSource } from '@/lib/entitlements'
 import type { OnboardingFormData } from '@/types/database'
@@ -469,6 +473,246 @@ export async function ensureDemoClientAccount(
     ...result,
     created: true,
     message: 'Demo client account created.',
+  }
+}
+
+const PUBLIC_DEMO_WORKOUT = `WEEK 1 — GYM (view-only demo)
+
+Day 1 — Push
+- Barbell bench press 4x8
+- Incline dumbbell press 3x10
+- Overhead press 3x8
+- Cable fly 3x12
+- Tricep pushdown 3x12
+
+Day 2 — Pull
+- Lat pulldown 4x10
+- Seated row 3x10
+- Face pull 3x15
+- EZ bar curl 3x10
+
+Day 3 — Legs
+- Back squat 4x8
+- Romanian deadlift 3x10
+- Walking lunge 3x10/side
+- Calf raise 3x15
+
+Rest 90 seconds between sets. Log what you complete in the tracker.`
+
+/** Weekday meals (Mon, Wed, Fri): poha + eggs, chicken lunch. Primary options only in Daily Total. */
+const PUBLIC_DEMO_DIET_WEEKDAY_A = `Breakfast (8:30 am)
+Have 2 cups cooked poha (approx 200g) with 1 tbsp roasted peanuts (approx 15g), 1 small onion, a pinch of turmeric, and 1 tsp oil. Side: 3 whole eggs (approx 150g), boiled or scrambled with a pinch of salt.
+(P: 30g | C: 52g | F: 21g | ~520 kcal)
+Or swap the poha for 3 idlis (approx 180g) with 1 katori sambar (approx 150g cooked) and keep the eggs.
+(P: 28g | C: 55g | F: 16g | ~480 kcal)
+
+Lunch (1:30 pm)
+Have 180g cooked chicken (approx 180g), 2 rotis (approx 80g), 1 katori cooked dal (approx 150g), and 1 small bowl salad (approx 100g cucumber and tomato). Mix 1 tsp ghee into the dal. Squeeze lemon on the salad.
+(P: 65g | C: 58g | F: 17g | ~650 kcal)
+Or swap the rotis for 1 katori cooked rice (approx 180g) if you want rice at lunch.
+(P: 64g | C: 62g | F: 16g | ~650 kcal)
+
+Evening snack (6:00 pm)
+Have 200g Greek yogurt with 1 medium banana (approx 100g) and 10g almonds. A pinch of cinnamon is nice if you have it.
+(P: 22g | C: 30g | F: 10g | ~300 kcal)
+
+Dinner (8:30 pm)
+Have 1.5 katori cooked rice (approx 225g), 1 katori dal tadka (approx 150g cooked), 1 katori mixed sabzi (approx 150g), and 100g paneer. Use 1 tsp oil for the sabzi. Keep spices simple: jeera, haldi, salt.
+(P: 43g | C: 85g | F: 24g | ~730 kcal)
+
+Cooking fat today: 2 tsp oil and 1 tsp ghee.
+Daily Total: ~2200 kcal | P: 160g | C: 225g | F: 72g`
+
+/** Tue / Thu: idli breakfast, same chicken lunch pattern, different fruit at snack. */
+const PUBLIC_DEMO_DIET_WEEKDAY_B = `Breakfast (8:30 am)
+Have 3 idlis (approx 180g) with 1 katori coconut chutney (approx 80g) and 1 katori sambar (approx 150g cooked). Side: 2 whole eggs (approx 100g) and 1 glass milk (200ml).
+(P: 30g | C: 54g | F: 20g | ~520 kcal)
+Or swap the idlis for 2 cups cooked poha (approx 200g) with 1 tbsp roasted peanuts (approx 15g) and 1 tsp oil, and keep the eggs.
+(P: 30g | C: 52g | F: 21g | ~520 kcal)
+
+Lunch (1:30 pm)
+Have 180g cooked chicken (approx 180g), 2 rotis (approx 80g), 1 katori cooked dal (approx 150g), and 1 small bowl salad (approx 100g). Mix 1 tsp ghee into the dal.
+(P: 65g | C: 58g | F: 17g | ~650 kcal)
+Or swap chicken for 150g paneer bhurji cooked in 1 tsp oil, with the same rotis, dal, and salad.
+(P: 48g | C: 58g | F: 24g | ~640 kcal)
+
+Evening snack (6:00 pm)
+Have 200g Greek yogurt with 1 medium apple (approx 150g) and 10g roasted peanuts.
+(P: 22g | C: 32g | F: 10g | ~310 kcal)
+
+Dinner (8:30 pm)
+Have 2 rotis (approx 80g), 1 katori cooked rice (approx 180g), 1 katori dal tadka (approx 150g cooked), 1 katori sabzi (approx 150g), and 80g paneer. Use 1 tsp oil for cooking.
+(P: 43g | C: 80g | F: 24g | ~710 kcal)
+
+Cooking fat today: 2 tsp oil and 1 tsp ghee.
+Daily Total: ~2190 kcal | P: 160g | C: 224g | F: 71g`
+
+/** Weekend: besan chilla + rajma rice, paneer at dinner. Written in full for the tracker. */
+const PUBLIC_DEMO_DIET_WEEKEND = `Breakfast (9:00 am)
+Have 2 besan chillas (approx 160g cooked) with 1 tsp oil, 2 whole eggs (approx 100g), and 150g curd on the side. Green chutney is fine if it is not oily.
+(P: 36g | C: 28g | F: 22g | ~450 kcal)
+Or swap the chillas for 2 cups cooked poha (approx 200g) with 1 tbsp peanuts (approx 15g) and keep the eggs and curd.
+(P: 32g | C: 50g | F: 20g | ~510 kcal)
+
+Lunch (1:30 pm)
+Have 1.5 katori cooked rice (approx 225g), 1.5 katori cooked rajma (approx 250g), 80g paneer, and 1 small bowl salad (approx 100g). Use 1 tsp oil in the rajma. A squeeze of lemon on top helps.
+(P: 42g | C: 90g | F: 20g | ~710 kcal)
+Or swap rice for 3 rotis (approx 120g) with the same rajma, paneer, and salad.
+(P: 44g | C: 70g | F: 20g | ~640 kcal)
+
+Evening snack (6:00 pm)
+Have 200g Greek yogurt with 1 medium banana (approx 100g) and 15g roasted peanuts.
+(P: 24g | C: 32g | F: 14g | ~350 kcal)
+
+Dinner (8:30 pm)
+Have 2 rotis (approx 80g), 1 katori dal tadka (approx 150g cooked), 1 katori mixed sabzi (approx 150g), and 120g paneer. Mix 1 tsp ghee into the dal. If you are very full, keep paneer at 80g (approx 80g) and skip the second roti.
+(P: 48g | C: 55g | F: 26g | ~650 kcal)
+
+Cooking fat today: 2 tsp oil and 1 tsp ghee.
+Daily Total: ~2160 kcal | P: 150g | C: 205g | F: 82g`
+
+export const PUBLIC_DEMO_NUTRITION = `Calories: 2190
+Protein: 157g
+Carbs: 220g
+Fat: 74g
+
+Daily averages: ~2190 kcal | P: 157g | C: 220g | F: 74g
+
+Here is this week's diet. Simple home meals with household portions and approx grams so you can cook without guessing. No whey this week. Protein comes from eggs, chicken, dal, curd, and paneer.
+
+Day 1 (Monday)
+${PUBLIC_DEMO_DIET_WEEKDAY_A}
+
+Day 2 (Tuesday)
+${PUBLIC_DEMO_DIET_WEEKDAY_B}
+
+Day 3 (Wednesday)
+${PUBLIC_DEMO_DIET_WEEKDAY_A}
+
+Day 4 (Thursday)
+${PUBLIC_DEMO_DIET_WEEKDAY_B}
+
+Day 5 (Friday)
+${PUBLIC_DEMO_DIET_WEEKDAY_A}
+
+Day 6 (Saturday)
+${PUBLIC_DEMO_DIET_WEEKEND}
+
+Day 7 (Sunday)
+${PUBLIC_DEMO_DIET_WEEKEND}
+
+Aim for 3 to 4 litres of water daily. Cook dal and sabzi as the final cooked katori on the plate, not raw weights.
+
+With gym days and 8 to 10k steps, a steady fat loss pace is about 0.3 to 0.5 kg per week when most meals are hit. If training is lighter, keep food as written and push walking first rather than cutting the plate. You've got this. Have a strong week.`
+
+/** Public homepage demo client — view-only, hidden from coach rosters. */
+export async function ensurePublicDemoClient(password?: string): Promise<CreatedAccountCredentials> {
+  const email = PUBLIC_DEMO_CLIENT_EMAIL
+  const resolvedPassword = password?.trim() || generateSecurePassword()
+  const existingId = await findUserIdByEmail(email)
+
+  let userId = existingId
+  let created = false
+
+  if (!existingId) {
+    const createdAccount = await createTrialClient({
+      name: PUBLIC_DEMO_CLIENT_NAME,
+      email,
+      password: resolvedPassword,
+      fitnessGoal: 'fat_loss',
+      coachId: null,
+    })
+    userId = createdAccount.userId
+    created = true
+  } else {
+    const admin = createAdminClient()
+    await admin.auth.admin.updateUserById(existingId, {
+      password: resolvedPassword,
+      email_confirm: true,
+    })
+    const includeAccessSource = await hasAccessSourceColumn()
+    const fixPayload: Record<string, unknown> = {
+      payment_confirmed: true,
+      role: 'client',
+      name: PUBLIC_DEMO_CLIENT_NAME,
+      coach_id: null,
+      updated_at: new Date().toISOString(),
+    }
+    if (includeAccessSource) fixPayload.access_source = 'admin_trial'
+    await admin.from('profiles').update(fixPayload).eq('id', existingId)
+  }
+
+  if (!userId) throw new Error('Public demo client could not be created.')
+
+  await applyCompletedOnboarding(userId, email, generateFakeOnboardingForm(PUBLIC_DEMO_CLIENT_NAME))
+
+  const admin = createAdminClient()
+  const { count: activePlanCount } = await admin
+    .from('plans')
+    .select('id', { count: 'exact', head: true })
+    .eq('client_id', userId)
+    .eq('active', true)
+
+  const now = new Date().toISOString()
+  const demoPlanFields = {
+    title: 'Week 1 fat loss',
+    phase: 'Foundation',
+    workout_plan: PUBLIC_DEMO_WORKOUT,
+    nutrition_plan: PUBLIC_DEMO_NUTRITION,
+    cardio_plan: 'Walk 8–10k steps daily. Optional 20 min incline walk after lifting.',
+    supplement_plan: 'Vitamin D if deficient. Food first for protein, no whey this week.',
+    coach_notes: 'Keep meals simple this week. Hit protein at lunch and dinner, and walk 8 to 10k steps most days.',
+  }
+
+  if ((activePlanCount ?? 0) === 0) {
+    const { data: anyCoach } = await admin.from('coaches').select('id').limit(1).maybeSingle()
+    if (!anyCoach?.id) {
+      throw new Error('Need a coach row to attach the view-only demo plan.')
+    }
+    await admin
+      .from('profiles')
+      .update({ coach_id: anyCoach.id, updated_at: now })
+      .eq('id', userId)
+    const { error: planError } = await admin.from('plans').insert({
+      client_id: userId,
+      coach_id: anyCoach.id,
+      ...demoPlanFields,
+      version: 1,
+      active: true,
+      delivered_at: now,
+    })
+    if (planError) throw new Error(`Failed to seed demo plan: ${planError.message}`)
+    await admin
+      .from('profiles')
+      .update({
+        plan_delivered: true,
+        checkin_schedule_started_at: now,
+        updated_at: now,
+      })
+      .eq('id', userId)
+  } else {
+    const { error: planUpdateError } = await admin
+      .from('plans')
+      .update({
+        ...demoPlanFields,
+        updated_at: now,
+      })
+      .eq('client_id', userId)
+      .eq('active', true)
+    if (planUpdateError) throw new Error(`Failed to refresh demo plan: ${planUpdateError.message}`)
+  }
+
+  return {
+    userId,
+    clientId: userId,
+    email,
+    password: resolvedPassword,
+    role: 'client',
+    loginUrl: '/try',
+    created,
+    message: created
+      ? 'Public demo client created with a sample plan.'
+      : 'Public demo client updated. Password refreshed.',
   }
 }
 

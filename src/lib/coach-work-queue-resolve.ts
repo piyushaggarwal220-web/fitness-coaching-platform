@@ -39,7 +39,7 @@ export async function resolveWorkQueueTask(
       const now = new Date().toISOString()
       const { data: existing, error: loadError } = await admin
         .from('call_requests')
-        .select('id, coach_id, status')
+        .select('id, coach_id, status, client_id, scheduled_for, source')
         .eq('id', requestId)
         .maybeSingle()
 
@@ -58,6 +58,20 @@ export async function resolveWorkQueueTask(
         .eq('coach_id', coachId)
 
       if (error) return { ok: false, resolved: false, error: error.message }
+      if (existing.source === 'weekly_entitlement') {
+        try {
+          const { scheduleNextWeeklyCallAfterCompletion } = await import('@/lib/weekly-call-schedule')
+          await scheduleNextWeeklyCallAfterCompletion(admin, {
+            id: existing.id,
+            client_id: existing.client_id,
+            coach_id: existing.coach_id,
+            scheduled_for: existing.scheduled_for,
+            source: existing.source,
+          })
+        } catch (err) {
+          console.error('[work-queue-resolve] next weekly call schedule failed', err)
+        }
+      }
       return { ok: true, resolved: true }
     }
 

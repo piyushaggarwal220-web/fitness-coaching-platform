@@ -1,5 +1,6 @@
 import { after, NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
+import { rejectIfPublicDemoMutation } from '@/lib/public-demo-guard'
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { generateSupplementProtocol } from '@/lib/ai/supplement-protocol'
 import { entitledAddonIds } from '@/lib/addon-protocols'
@@ -35,7 +36,7 @@ async function clientHasDeliveredPlan(
 }
 
 export async function POST(request: Request) {
-  const auth = await requireApiUser()
+  const auth = rejectIfPublicDemoMutation(await requireApiUser())
   if (!auth.ok) return auth.response
   const body = await request.json().catch(() => null) as { termsAccepted?: boolean } | null
 

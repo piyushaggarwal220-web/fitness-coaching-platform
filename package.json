@@ -41,6 +41,7 @@
     "verify:session-cache": "tsx scripts/verify-session-cache.ts",
     "verify:work-queue-load": "tsx scripts/verify-work-queue-load.ts && tsx scripts/verify-work-queue-parallelism.ts",
     "verify:coach-roster": "tsx scripts/verify-coach-roster-visibility.ts",
+    "verify:public-demo": "tsx scripts/verify-public-demo.ts",
     "verify:photo-upload-reliability": "tsx scripts/verify-photo-upload-reliability.ts",
     "verify:onboarding-photo-upload": "tsx scripts/verify-onboarding-photo-upload.ts",
     "verify:chunk-recovery": "tsx scripts/verify-chunk-load-recovery.ts",

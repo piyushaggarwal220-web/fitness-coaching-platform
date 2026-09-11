@@ -5,10 +5,10 @@ import {
   requireConversationParticipantForUser,
 } from '@/lib/chat-api-access'
 import { loadClientCallBookingPolicy, enforceClientCallPolicy } from '@/lib/call-booking-policy-server'
-import { earliestAllowedCallTime } from '@/lib/call-booking-policy'
-import { getClientPlanSlug } from '@/lib/weekly-call-schedule'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isPublicDemoEmail } from '@/lib/public-demo'
+import { publicDemoReadOnlyJson, rejectIfPublicDemoMutation } from '@/lib/public-demo-guard'
 import type { CallRequest, CallRequestStatus } from '@/types/database'
 
 const FINAL_STATUSES = new Set<CallRequestStatus>(['completed', 'declined', 'cancelled'])
@@ -68,6 +68,9 @@ export async function POST(request: Request) {
 
   const access = await requireConversationParticipant(conversationId)
   if (!access.ok) return access.response
+  if (isPublicDemoEmail(access.userEmail)) {
+    return publicDemoReadOnlyJson()
+  }
   if (access.participant.viewer !== 'client') {
     return NextResponse.json({ error: 'Only the client can request a call' }, { status: 403 })
   }
@@ -147,7 +150,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const auth = await requireApiUser()
+  const auth = rejectIfPublicDemoMutation(await requireApiUser())
   if (!auth.ok) return auth.response
   const body = await request.json().catch(() => null) as {
     requestId?: string
@@ -176,10 +179,17 @@ export async function PATCH(request: Request) {
   const isCoach =
     access.participant.viewer === 'coach' &&
     access.participant.coachId === current.coach_id
+  const isWeeklyEntitlement = (current as CallRequest).source === 'weekly_entitlement'
   const isClientCancelling =
     access.userId === current.client_id &&
     body.status === 'cancelled' &&
     (current.status === 'requested' || current.status === 'scheduled')
+  if (isClientCancelling && isWeeklyEntitlement) {
+    return NextResponse.json(
+      { error: 'Weekly calls are opened automatically and cannot be cancelled from the app.' },
+      { status: 403 }
+    )
+  }
   if (!isCoach && !isClientCancelling) {
     return NextResponse.json({ error: 'Not allowed to update this request' }, { status: 403 })
   }
@@ -189,59 +199,20 @@ export async function PATCH(request: Request) {
       { status: 409 }
     )
   }
-  if (body.status === 'scheduled' && !body.scheduledFor) {
-    return NextResponse.json({ error: 'scheduledFor is required when scheduling' }, { status: 400 })
+  if (body.status === 'scheduled') {
+    return NextResponse.json(
+      { error: 'Do not set a call time. Call the client when ready and mark complete.' },
+      { status: 403 }
+    )
   }
 
-  const scheduledDate = body.status === 'scheduled' ? new Date(body.scheduledFor!) : null
-  if (scheduledDate && Number.isNaN(scheduledDate.getTime())) {
-    return NextResponse.json({ error: 'scheduledFor must be a valid date and time' }, { status: 400 })
-  }
-  if (scheduledDate && scheduledDate.getTime() <= Date.now()) {
-    return NextResponse.json({ error: 'Scheduled call time must be in the future' }, { status: 400 })
-  }
-
-  if (body.status === 'scheduled' && scheduledDate && isCoach) {
-    const [{ data: profile }, planSlug] = await Promise.all([
-      admin
-        .from('profiles')
-        .select('checkin_schedule_started_at')
-        .eq('id', current.client_id)
-        .maybeSingle(),
-      getClientPlanSlug(admin, current.client_id),
-    ])
-    const earliest = earliestAllowedCallTime({
-      planSlug,
-      checkinScheduleStartedAt: profile?.checkin_schedule_started_at ?? null,
-    })
-    if (earliest && scheduledDate.getTime() < earliest.getTime()) {
-      return NextResponse.json(
-        {
-          error:
-            'Weekly calls cannot be scheduled during the first 2 coaching weeks. Pick a time after that window.',
-        },
-        { status: 400 }
-      )
-    }
-    if ((current as CallRequest).source === 'client_requested' && planSlug === '12_months') {
-      return NextResponse.json(
-        {
-          error:
-            '12-month weekly calls are auto-scheduled. Mark complete or cancel — do not manually set a time on client requests.',
-        },
-        { status: 403 }
-      )
-    }
-  }
-
-  const scheduledFor = scheduledDate?.toISOString() ?? current.scheduled_for
   const now = new Date().toISOString()
   const resolvedAt = FINAL_STATUSES.has(body.status) ? now : null
   const { data: updated, error } = await admin
     .from('call_requests')
     .update({
       status: body.status,
-      scheduled_for: scheduledFor,
+      scheduled_for: null,
       coach_note: body.note?.trim().slice(0, 500) || current.coach_note,
       updated_by: access.userId,
       resolved_at: resolvedAt,
@@ -262,19 +233,19 @@ export async function PATCH(request: Request) {
     from_status: current.status,
     to_status: body.status,
     actor_user_id: access.userId,
-    scheduled_for: scheduledFor,
+    scheduled_for: null,
     note: body.note?.trim().slice(0, 500) || null,
   })
 
   if (isCoach) {
-    const scheduleText = body.status === 'scheduled'
-      ? ` for ${new Date(scheduledFor).toLocaleString('en-IN')}`
-      : ''
     await sendNotification({
       userId: current.client_id,
       type: 'call_request_updated',
       title: 'Call request updated',
-      body: `Your call request is now ${body.status}${scheduleText}.`,
+      body:
+        body.status === 'completed'
+          ? 'Your coach completed this week’s call.'
+          : `Your call request is now ${body.status}.`,
       actionUrl: '/client/chat',
       metadata: { callRequestId: current.id, status: body.status },
     })

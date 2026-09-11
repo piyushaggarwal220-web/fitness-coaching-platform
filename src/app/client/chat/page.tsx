@@ -7,6 +7,8 @@ import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { authenticateClient } from '@/lib/onboarding'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { createClient } from '@/lib/supabase/client'
+import { isPublicDemoEmail } from '@/lib/public-demo'
+import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability'
 import type { CoachConversation } from '@/types/database'
 
 const supabase = createClient()
@@ -18,12 +20,15 @@ export default function ClientChatPage() {
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [readOnly, setReadOnly] = useState(false)
+  const [chatLocked, setChatLocked] = useState(false)
 
   useEffect(() => {
     let active = true
     const init = async () => {
       setError('')
       setConversation(null)
+      setChatLocked(false)
       setConnecting(true)
       setAuthReady(false)
 
@@ -41,8 +46,15 @@ export default function ClientChatPage() {
         setConnecting(false)
         return
       }
-
+      const demo = isPublicDemoEmail(auth.user.email ?? auth.profile.email)
+      setReadOnly(demo)
       setAuthReady(true)
+
+      if (demo || !auth.profile.coach_id) {
+        setChatLocked(true)
+        setConnecting(false)
+        return
+      }
 
       // Session cookies can still be refreshing right after navigation, so retry transient failures.
       const delays = [0, 400, 1000]
@@ -97,6 +109,32 @@ export default function ClientChatPage() {
     )
   }
 
+  if (chatLocked) {
+    return (
+      <ClientShell title="Chat">
+        <div
+          role="status"
+          style={{
+            margin: '8px 0 16px',
+            padding: '18px 16px',
+            borderRadius: 12,
+            background: 'rgba(255, 98, 0, 0.12)',
+            border: '1px solid rgba(255, 98, 0, 0.35)',
+            color: '#ffb07a',
+            fontSize: 15,
+            fontWeight: 700,
+            lineHeight: 1.45,
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Coach chat
+          </p>
+          <p style={{ margin: '8px 0 0', color: '#fff' }}>{CHAT_AFTER_ENROLLMENT_MESSAGE}</p>
+        </div>
+      </ClientShell>
+    )
+  }
+
   return (
     <ClientShell title="Chat" hideBottomNav fullHeight>
       {connecting && !conversation && (
@@ -145,6 +183,7 @@ export default function ClientChatPage() {
             conversationId={conversation.id}
             coachId={conversation.coach_id}
             viewer="client"
+            readOnly={readOnly}
           />
         </div>
       )}

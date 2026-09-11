@@ -51,41 +51,26 @@ export const PLAN_PAGE_COPY: Record<
   '3_months': {
     eyebrow: 'Fat loss',
     goalName: PLAN_PRODUCT_NAME['3_months'],
-    durationLabel: '90 days',
-    promise:
-      'This is the Fat loss plan. Ninety days for looking sharp on a special event, not long term results. Fat loss + muscle gain is 6 months. Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.',
-    bestFor: 'looking sharp on a special event, not long term results',
-    goals: [
-      'Fat loss in 90 days',
-      'A clear diet and workout plan',
-      'Coach check-ins twice a week',
-    ],
+    durationLabel: '3 months',
+    promise: 'Personal workout, diet, and a human coach for a 90-day fat-loss push.',
+    bestFor: '90-day fat loss',
+    goals: [],
   },
   '6_months': {
     eyebrow: 'Fat loss + muscle gain',
     goalName: PLAN_PRODUCT_NAME['6_months'],
     durationLabel: '6 months',
-    promise:
-      'Fat loss + muscle gain. Six months to lose fat while building muscle. Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.',
-    bestFor: 'losing fat while building muscle',
-    goals: [
-      'Fat loss + muscle gain',
-      'Clothes fit smaller and tighter',
-      'Weekly plan updates',
-    ],
+    promise: 'Lose fat and build muscle with a coach in the app.',
+    bestFor: 'fat loss + muscle',
+    goals: [],
   },
   '12_months': {
     eyebrow: 'Athletic body',
     goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
-    promise:
-      'Athletic body is 12 months of fat loss, muscle gain, and stamina, with a weekly coach phone call included. A full year so the look and the engine both show. Lowest monthly rate.',
-    bestFor: 'building an athletic body — fat loss, muscle gain, and stamina',
-    goals: [
-      'Athletic body',
-      'Fat loss, muscle gain, and stamina',
-      'Weekly coach phone call included',
-    ],
+    promise: 'Fat loss, muscle, and stamina — with a weekly coach phone call.',
+    bestFor: 'athletic body',
+    goals: [],
   },
 }
 

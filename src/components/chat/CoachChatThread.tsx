@@ -23,6 +23,8 @@ import {
   getCoachWorkingHoursStatus,
 } from '@/lib/coach-working-hours'
 import type { CallBookingPolicy } from '@/lib/call-booking-policy'
+import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability'
+import { CoachQueueCard } from '@/components/dashboard/CoachQueueCard'
 import { CalendarClock, Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
 
 /** WhatsApp-like dark palette (client portal) */
@@ -82,6 +84,7 @@ type CoachChatThreadProps = {
   coachId: string
   viewer: 'client' | 'coach'
   initialMessages?: ConversationMessage[]
+  readOnly?: boolean
 }
 
 function formatDuration(milliseconds: number): string {
@@ -135,7 +138,7 @@ function dayLabelOf(iso: string): string {
   })
 }
 
-export function CoachChatThread({ conversationId, coachId, viewer, initialMessages = [] }: CoachChatThreadProps) {
+export function CoachChatThread({ conversationId, coachId, viewer, initialMessages = [], readOnly = false }: CoachChatThreadProps) {
   const palette = viewer === 'coach' ? waCoach : waDark
   const incomingText = viewer === 'coach' ? waCoach.incomingText : waDark.text
   const incomingMeta = viewer === 'coach' ? waCoach.metaIncoming : waDark.meta
@@ -150,7 +153,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [callRequests, setCallRequests] = useState<CallRequest[]>([])
   const [callBookingPolicy, setCallBookingPolicy] = useState<CallBookingPolicy | null>(null)
   const [callRequestBusy, setCallRequestBusy] = useState(false)
-  const [scheduledFor, setScheduledFor] = useState('')
   const [now, setNow] = useState(0)
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
@@ -360,10 +362,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
   const updateCallRequest = async (status: CallRequestStatus) => {
     if (!activeCallRequest || callRequestBusy) return
-    if (status === 'scheduled' && !scheduledFor) {
-      setError('Choose a call date and time first')
-      return
-    }
     setCallRequestBusy(true)
     setError('')
     try {
@@ -374,7 +372,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         body: JSON.stringify({
           requestId: activeCallRequest.id,
           status,
-          scheduledFor: status === 'scheduled' ? new Date(scheduledFor).toISOString() : undefined,
         }),
       })
       const parsed = await readApiJson<{ request?: CallRequest }>(res)
@@ -647,24 +644,24 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
                   }}
                 >
                   <CalendarClock size={15} />
-                  {activeCallRequest.status === 'scheduled' && activeCallRequest.scheduled_for
-                    ? `Call booked · ${new Date(activeCallRequest.scheduled_for).toLocaleString('en-IN')}`
-                    : activeCallRequest.source === 'weekly_entitlement'
-                      ? 'Weekly call — coach will call when ready'
-                      : 'Call booked — waiting for a time'}
+                  {activeCallRequest.source === 'weekly_entitlement'
+                    ? 'Your coach will call you this week'
+                    : 'Call requested — your coach will call you'}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => void updateCallRequest('cancelled')}
-                  disabled={callRequestBusy}
-                  style={{
-                    ...styles.bookCallBtn,
-                    padding: '7px 10px',
-                    color: wa.textMuted,
-                  }}
-                >
-                  Cancel
-                </button>
+                {activeCallRequest.source !== 'weekly_entitlement' ? (
+                  <button
+                    type="button"
+                    onClick={() => void updateCallRequest('cancelled')}
+                    disabled={callRequestBusy}
+                    style={{
+                      ...styles.bookCallBtn,
+                      padding: '7px 10px',
+                      color: wa.textMuted,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                ) : null}
               </>
             ) : callBookingPolicy?.canRequestManualCall ? (
               <button
@@ -698,6 +695,8 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         )}
       </div>
 
+      {viewer === 'client' && callBookingPolicy?.isTwelveMonth ? <CoachQueueCard compact /> : null}
+
       {viewer === 'client' && remainingMs !== null && workingHours?.isOpen && (
         <div style={{
           ...styles.responseTarget,
@@ -725,25 +724,15 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
             Call request: {activeCallRequest.status}
             {activeCallRequest.source === 'weekly_entitlement' ? ' · Weekly (auto)' : ''}
           </strong>
-          {activeCallRequest.status === 'scheduled' && activeCallRequest.scheduled_for ? (
+          {activeCallRequest.source === 'weekly_entitlement' ? (
             <p style={{ margin: '8px 0 0', fontSize: 13, color: wa.textMuted }}>
-              Scheduled: {new Date(activeCallRequest.scheduled_for).toLocaleString('en-IN')}
-            </p>
-          ) : activeCallRequest.source === 'weekly_entitlement' ? (
-            <p style={{ margin: '8px 0 0', fontSize: 13, color: wa.textMuted }}>
-              Call anytime this week — mark complete when done.
+              Call this client this week when you are ready — mark complete after you call.
             </p>
           ) : (
-            <input
-              type="datetime-local"
-              value={scheduledFor}
-              onChange={(event) => setScheduledFor(event.target.value)}
-              style={styles.scheduleInput}
-            />
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: wa.textMuted }}>
+              Call when ready — do not set a time.
+            </p>
           )}
-          {activeCallRequest.source !== 'weekly_entitlement' && activeCallRequest.status === 'requested' ? (
-            <button type="button" onClick={() => void updateCallRequest('scheduled')} disabled={callRequestBusy} style={styles.callAction}>Schedule</button>
-          ) : null}
           <button type="button" onClick={() => void updateCallRequest('completed')} disabled={callRequestBusy} style={styles.callAction}>Complete</button>
           <button type="button" onClick={() => void updateCallRequest('declined')} disabled={callRequestBusy} style={styles.callAction}>Decline</button>
           <button type="button" onClick={() => void updateCallRequest('cancelled')} disabled={callRequestBusy} style={styles.callAction}>Cancel</button>
@@ -980,6 +969,12 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
       {error && <div className={motionClass.shake} style={styles.error}>{error}</div>}
 
+      {readOnly && (
+        <div style={{ ...styles.error, background: 'rgba(255, 98, 0, 0.12)', color: '#ffb07a', border: 'none' }}>
+          {CHAT_AFTER_ENROLLMENT_MESSAGE}
+        </div>
+      )}
+
       {imagePreview && (
         <div style={styles.imagePreviewBar}>
           <img src={imagePreview.url} alt="Preview" style={styles.previewThumb} />
@@ -1009,22 +1004,27 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
+                if (readOnly) return
                 if (imagePreview) void uploadAndSendImage()
                 else void sendMessage()
               }
             }}
-            placeholder="Message"
+            placeholder={readOnly ? 'View only — sending is off' : 'Message'}
             className="coach-chat-input"
             style={styles.input}
-            disabled={sending}
+            disabled={sending || readOnly}
           />
-          <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} id={`chat-image-${conversationId}`} />
-          <label htmlFor={`chat-image-${conversationId}`} style={styles.attachBtn} aria-label="Attach image">
-            <ImageIcon size={22} color={wa.textMuted} />
-          </label>
+          {!readOnly && (
+            <>
+              <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} id={`chat-image-${conversationId}`} />
+              <label htmlFor={`chat-image-${conversationId}`} style={styles.attachBtn} aria-label="Attach image">
+                <ImageIcon size={22} color={wa.textMuted} />
+              </label>
+            </>
+          )}
         </div>
 
-        {showSend ? (
+        {readOnly ? null : showSend ? (
           <button
             type="button"
             onClick={() => void sendMessage()}

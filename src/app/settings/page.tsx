@@ -15,6 +15,7 @@ import {
 } from '@/lib/payments/checkout-discounts'
 import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription'
 import { createClient } from '@/lib/supabase/client'
+import { PUBLIC_DEMO_READ_ONLY_MESSAGE, isPublicDemoEmail } from '@/lib/public-demo'
 import { colors, spacing } from '@/lib/design-tokens'
 import type { OnboardingProfile, Purchase } from '@/types/database'
 
@@ -29,6 +30,7 @@ export default function ClientSettingsPage() {
   const [quoteConsent, setQuoteConsent] = useState(false)
   const [consentBusy, setConsentBusy] = useState(false)
   const [consentMsg, setConsentMsg] = useState('')
+  const [demoReadOnly, setDemoReadOnly] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -38,6 +40,7 @@ export default function ClientSettingsPage() {
         return
       }
       setProfile(result.profile)
+      setDemoReadOnly(isPublicDemoEmail(result.user.email ?? result.profile.email))
       setPhotoConsent(Boolean(result.profile.marketing_photo_consent_at))
       setQuoteConsent(Boolean(result.profile.marketing_quote_consent_at))
 
@@ -57,6 +60,10 @@ export default function ClientSettingsPage() {
   }, [router])
 
   const saveConsent = async (next: { photoConsent?: boolean; quoteConsent?: boolean }) => {
+    if (demoReadOnly) {
+      setConsentMsg(PUBLIC_DEMO_READ_ONLY_MESSAGE)
+      return
+    }
     setConsentBusy(true)
     setConsentMsg('')
     const res = await fetch('/api/client/marketing-consent', {
@@ -107,7 +114,7 @@ export default function ClientSettingsPage() {
           <input
             type="checkbox"
             checked={photoConsent}
-            disabled={consentBusy}
+            disabled={consentBusy || demoReadOnly}
             onChange={(e) => void saveConsent({ photoConsent: e.target.checked })}
           />
           <span>I agree Lurvox may use my progress photos (without my full name) in marketing.</span>
@@ -116,7 +123,7 @@ export default function ClientSettingsPage() {
           <input
             type="checkbox"
             checked={quoteConsent}
-            disabled={consentBusy}
+            disabled={consentBusy || demoReadOnly}
             onChange={(e) => void saveConsent({ quoteConsent: e.target.checked })}
           />
           <span>I agree Lurvox may use a short quote from my check-ins or feedback in marketing.</span>
