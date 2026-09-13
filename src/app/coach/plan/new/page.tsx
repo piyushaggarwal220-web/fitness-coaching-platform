@@ -20,7 +20,8 @@ import {
 import { mergePlanForms } from '@/lib/coach/ai-actions';
 import { runCoachAiAction } from '@/lib/coach/ai-action-client';
 import type { AiReasoningDisplay } from '@/lib/coach/ai-actions';
-import { activatePlan, getNextPlanVersion, INITIAL_PLAN_FORM, validatePlanForm } from '@/lib/plans';
+import { getNextPlanVersion, INITIAL_PLAN_FORM, validatePlanForm } from '@/lib/plans';
+import { publishPlanViaApi } from '@/lib/coach/publish-plan-client';
 import { clientCoachNotes } from '@/lib/plan-metadata';
 import { syncTrackerAfterPlanPublishAsync } from '@/lib/daily-tracker/client-sync';
 import { createClient } from '@/lib/supabase/client';
@@ -181,18 +182,16 @@ function CoachNewPlanForm() {
     }
 
     if (deliver) {
-      const { error: activateError } = await activatePlan(supabase, created);
-      if (activateError) {
-        setError('Plan saved as draft but delivery failed: ' + activateError);
+      const published = await publishPlanViaApi({
+        clientId: created.client_id,
+        planId: created.id,
+      });
+      if (!published.ok) {
+        setError('Plan saved as draft but delivery failed: ' + published.error);
         setSubmitting(false);
         return;
       }
-      await syncTrackerAfterPlanPublishAsync(created.client_id, created.id);
-      void fetch('/api/coach/weekly-call/ensure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: created.client_id }),
-      });
+      await syncTrackerAfterPlanPublishAsync(created.client_id, published.planId);
     }
 
     if (fromAi && form.client_id) {

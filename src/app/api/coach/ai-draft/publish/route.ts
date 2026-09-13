@@ -78,11 +78,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, alreadyActive: true, planId: plan.id })
   }
 
-  const { error: activateError } = await activatePlan(admin, {
-    id: plan.id,
-    client_id: plan.client_id,
-    coach_id: plan.coach_id,
-  })
+  const { error: activateError } = await activatePlan(
+    admin,
+    {
+      id: plan.id,
+      client_id: plan.client_id,
+      coach_id: plan.coach_id,
+    },
+    // Explicit coach Deliver/Publish — do not block on the check-in human-touch wait.
+    { skipReplyWait: true }
+  )
 
   if (activateError) {
     return NextResponse.json({ success: false, error: activateError }, { status: 422 })

@@ -3,7 +3,11 @@ import type { OnboardingProfile } from '@/types/database'
 const PIYUSH_COACH_ID = 'fde68466-fb3e-4a24-a5f2-97a60a363690'
 const RAKSHIT_COACH_ID = 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a'
 
-/** Coaches who send weekly plans themselves. Mid-week check-ins still auto-reply. */
+/**
+ * Coaches who send plans themselves.
+ * Auto draft / weekly auto-reply / work-queue Complete publish stay OFF.
+ * Mid-week check-in replies still auto-reply. Deliver/Publish is the only send path.
+ */
 const MANUAL_PLAN_DELIVERY_COACH_IDS = new Set([PIYUSH_COACH_ID, RAKSHIT_COACH_ID])
 
 /**
@@ -11,6 +15,9 @@ const MANUAL_PLAN_DELIVERY_COACH_IDS = new Set([PIYUSH_COACH_ID, RAKSHIT_COACH_I
  * Independent of plan delivery — Rakshit still takes new clients, then coaches them by hand.
  */
 const AUTO_ASSIGN_COACH_IDS = new Set([RAKSHIT_COACH_ID])
+
+export const MANUAL_DELIVER_FROM_PLAN_PAGE =
+  'Open the plan, add a coach note if needed, then use Deliver to client. Mark complete only clears the queue after the plan is already delivered.'
 
 export function coachRequiresManualPlanDelivery(coachId: string | null | undefined): boolean {
   return Boolean(coachId && MANUAL_PLAN_DELIVERY_COACH_IDS.has(coachId))

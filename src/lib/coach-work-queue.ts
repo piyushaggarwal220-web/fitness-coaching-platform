@@ -333,9 +333,15 @@ export async function getCoachWorkQueue(
         (manualPlanDelivery && !readyDraftId && !generation
           ? [
               'Journey plan is saved. Generate an AI draft from the client profile.',
-              'Review the draft, add a coach note, then deliver to the client.',
+              'Review the draft, add a coach note, then Deliver to client from the plan page.',
+              'Mark complete only after the plan is already delivered — it does not send the plan.',
             ]
-          : undefined),
+          : manualPlanDelivery && readyDraftId
+            ? [
+                'Open Start, review the draft, and add a coach note for the client.',
+                'Use Deliver to client on the plan page — Mark complete will not publish.',
+              ]
+            : undefined),
     })
   }
 
@@ -360,6 +366,12 @@ export async function getCoachWorkQueue(
       clientName: name,
       priority: QUEUE_PRIORITY,
       createdAt: change.locked_at ?? change.draft_ready_at ?? new Date().toISOString(),
+      coachNextSteps: manualPlanDelivery
+        ? [
+            'Open the draft, review changes, and add a coach note.',
+            'Deliver from the plan page. Mark complete only clears the queue after delivery.',
+          ]
+        : undefined,
     })
   }
 
