@@ -74,6 +74,10 @@ const missedCronSrc = fs.readFileSync(
 assert.match(missedCronSrc, /manual_plan_delivery/)
 assert.match(missedCronSrc, /coachRequiresManualPlanDelivery/)
 
+const autoReplySrc = fs.readFileSync(path.join(root, 'src/lib/checkin-auto-reply.ts'), 'utf8')
+assert.match(autoReplySrc, /coachRequiresManualPlanDelivery\(checkin\.coach_id\)/)
+assert.match(autoReplySrc, /Manual-delivery coaches never auto-publish/)
+
 console.log(
   '✓ trial clients stay hidden; weekly plans are manual; mid-week auto-replies for both coaches; Complete does not auto-publish for manual coaches'
 )
