@@ -28,6 +28,8 @@ assert.match(queueSrc, /clientsWithPriorDelivery/)
 assert.match(queueSrc, /canShowColdPlanWork/)
 assert.match(queueSrc, /checkin_type', 'weekly'/)
 assert.match(queueSrc, /isColdStart && !canShowColdPlanWork/)
+assert.match(queueSrc, /isUnfinishedQueueDraftTitle/)
+assert.match(queueSrc, /Ready for coach note\\\/review/)
 
 // Prefer coach_id filters over giant client_id IN lists.
 assert.match(queueSrc, /\.eq\('coach_id', coachId\)/)

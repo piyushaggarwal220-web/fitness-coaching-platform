@@ -8,6 +8,13 @@ import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
 import { listPendingLeagueCertificateWinners } from '@/lib/league/service'
 import { buildLeagueCertificateChatGptPrompt } from '@/lib/league/certificate-prompt'
 import { LEAGUE_TIER_LABELS } from '@/lib/league/scoring'
+import { isAiDraftTitle } from '@/lib/plan-metadata'
+
+/** Unfinished auto drafts that should not count as a real prior delivery or ready review item. */
+function isUnfinishedQueueDraftTitle(title: string | null | undefined): boolean {
+  const t = (title ?? '').trim()
+  return isAiDraftTitle(t) || /^Ready for coach note\/review$/i.test(t)
+}
 
 export type WorkQueueTaskType =
   | 'initial_plan'
@@ -221,11 +228,11 @@ export async function getCoachWorkQueue(
     pendingClientIds.size > 0
       ? supabase
           .from('plans')
-          .select('id, client_id, created_at')
+          .select('id, client_id, created_at, title')
           .eq('coach_id', coachId)
           .is('delivered_at', null)
           .order('created_at', { ascending: false })
-      : Promise.resolve({ data: [] as { id: string; client_id: string; created_at: string }[] }),
+      : Promise.resolve({ data: [] as { id: string; client_id: string; created_at: string; title: string | null }[] }),
     fetchReadyActivePlanClientIds(supabase, coachId, pendingClientIds),
     // Join profiles so we never ship a huge client_id=in.(...) query string.
     supabase
@@ -250,10 +257,10 @@ export async function getCoachWorkQueue(
     pendingClientIds.size > 0
       ? supabase
           .from('plans')
-          .select('client_id')
+          .select('client_id, title')
           .eq('coach_id', coachId)
           .not('delivered_at', 'is', null)
-      : Promise.resolve({ data: [] as { client_id: string }[] }),
+      : Promise.resolve({ data: [] as { client_id: string; title: string | null }[] }),
   ])
 
   const clientsWithWeeklyCheckin = new Set<string>()
@@ -263,25 +270,60 @@ export async function getCoachWorkQueue(
 
   const clientsWithPriorDelivery = new Set<string>()
   for (const row of priorDeliveredRows ?? []) {
-    if (pendingClientIds.has(row.client_id)) clientsWithPriorDelivery.add(row.client_id)
+    if (!pendingClientIds.has(row.client_id)) continue
+    // Auto-published unfinished AI drafts do not count as a real prior delivery.
+    if (isUnfinishedQueueDraftTitle(row.title)) continue
+    clientsWithPriorDelivery.add(row.client_id)
   }
 
   const planSlugByClient = buildPlanSlugByClient(purchases ?? [])
 
-  const generationByClient = new Map<string, GenerationJobRow>()
-  for (const job of (generationJobs ?? []) as GenerationJobRow[]) {
-    if (!pendingClientIds.has(job.client_id)) continue
-    // Newest first from query order — keep the latest job per pending client.
-    if (!generationByClient.has(job.client_id)) {
-      generationByClient.set(job.client_id, job)
-    }
-  }
-
+  const unfinishedDraftIds = new Set<string>()
   const latestDraftByClient = new Map<string, { id: string; created_at: string }>()
   for (const draft of undeliveredDrafts ?? []) {
     if (!pendingClientIds.has(draft.client_id)) continue
+    if (isUnfinishedQueueDraftTitle(draft.title)) {
+      unfinishedDraftIds.add(draft.id)
+      continue
+    }
     if (!latestDraftByClient.has(draft.client_id)) {
       latestDraftByClient.set(draft.client_id, { id: draft.id, created_at: draft.created_at })
+    }
+  }
+
+  // Ready jobs may still point at previously auto-delivered unfinished AI drafts
+  // (delivered_at set, active false). Resolve those titles so they are not queued again.
+  const readyDraftIds = [
+    ...new Set(
+      ((generationJobs ?? []) as GenerationJobRow[])
+        .filter((job) => job.status === 'ready' && job.draft_plan_id)
+        .map((job) => job.draft_plan_id as string)
+    ),
+  ]
+  if (readyDraftIds.length > 0) {
+    const { data: readyDraftPlans } = await supabase
+      .from('plans')
+      .select('id, title')
+      .in('id', readyDraftIds)
+    for (const plan of readyDraftPlans ?? []) {
+      if (isUnfinishedQueueDraftTitle(plan.title)) unfinishedDraftIds.add(plan.id)
+    }
+  }
+
+  const generationByClient = new Map<string, GenerationJobRow>()
+  for (const job of (generationJobs ?? []) as GenerationJobRow[]) {
+    if (!pendingClientIds.has(job.client_id)) continue
+    // Ignore ready jobs that only point at unfinished AI auto-drafts.
+    if (
+      job.status === 'ready' &&
+      job.draft_plan_id &&
+      unfinishedDraftIds.has(job.draft_plan_id)
+    ) {
+      continue
+    }
+    // Newest first from query order — keep the latest job per pending client.
+    if (!generationByClient.has(job.client_id)) {
+      generationByClient.set(job.client_id, job)
     }
   }
 
