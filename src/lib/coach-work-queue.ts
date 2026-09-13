@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
-import { coachRequiresManualPlanDelivery, coachUsesFifoWorkQueue } from '@/lib/coach-delivery-policy'
+import { coachRequiresManualPlanDelivery, coachUsesFifoWorkQueue, clientRequiresJourneySetup } from '@/lib/coach-delivery-policy'
 import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
 import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
@@ -349,9 +349,12 @@ export async function getCoachWorkQueue(
     const canShowColdPlanWork =
       hasWeeklyCheckin || !clientsWithPriorDelivery.has(client.id)
 
-    // Journey setup only when there is not already a draft/job waiting for review.
+    // Journey setup only for new clients (joined on/after cutoff). Old roster
+    // without a journey goal must not flood the queue.
+    const needsJourneySetup = clientRequiresJourneySetup(client.created_at)
     if (
       manualPlanDelivery &&
+      needsJourneySetup &&
       !client.journey_goal?.trim() &&
       !readyDraftId &&
       generation?.status !== 'failed'
@@ -377,6 +380,19 @@ export async function getCoachWorkQueue(
       continue
     }
 
+    // Old clients missing a journey plan are not cold-queued either — journey is
+    // only a gate for new joiners. Ready drafts / failures / weekly re-entry still show.
+    if (
+      manualPlanDelivery &&
+      !needsJourneySetup &&
+      !client.journey_goal?.trim() &&
+      !readyDraftId &&
+      generation?.status !== 'failed' &&
+      !generation
+    ) {
+      continue
+    }
+
     const title =
       generation?.status === 'ready' || readyDraftId
         ? 'Ready for coach note/review'
@@ -398,9 +414,11 @@ export async function getCoachWorkQueue(
       ? `/coach/plan/${readyDraftId}`
       : generation?.status === 'failed'
         ? `/coach/client/${client.id}/generate-plan`
-        : manualPlanDelivery && !readyDraftId && !generation
+        : manualPlanDelivery && needsJourneySetup && !readyDraftId && !generation
           ? `/coach/client/${client.id}#journey-plan`
-          : `/coach/client/${client.id}`
+          : manualPlanDelivery && !readyDraftId && !generation
+            ? `/coach/client/${client.id}/generate-plan`
+            : `/coach/client/${client.id}`
     const failedGuidance =
       generation?.status === 'failed'
         ? getGenerationFailureGuidance(generation.error_code, generation.error_message)
@@ -420,11 +438,17 @@ export async function getCoachWorkQueue(
       coachNextSteps:
         failedGuidance?.nextSteps ??
         (manualPlanDelivery && !readyDraftId && !generation
-          ? [
-              'Journey plan is saved. Generate an AI draft from the client profile.',
-              'Review the draft, add a coach note, then Deliver to client from the plan page.',
-              'Mark complete only after the plan is already delivered — it does not send the plan.',
-            ]
+          ? needsJourneySetup
+            ? [
+                'Journey plan is saved. Generate an AI draft from the client profile.',
+                'Review the draft, add a coach note, then Deliver to client from the plan page.',
+                'Mark complete only after the plan is already delivered — it does not send the plan.',
+              ]
+            : [
+                'Generate an AI draft from the client profile (journey plan is optional for this client).',
+                'Review the draft, add a coach note, then Deliver to client from the plan page.',
+                'Mark complete only after the plan is already delivered — it does not send the plan.',
+              ]
           : manualPlanDelivery && readyDraftId
             ? [
                 'Open Start, review the draft, and add a coach note for the client.',

@@ -39,6 +39,21 @@ export function clientRequiresManualPlanDelivery(
   return coachRequiresManualPlanDelivery(profile?.coach_id)
 }
 
+/**
+ * Journey-plan setup is required in the work queue (and before initial generate)
+ * only for clients who joined on/after this instant — not for the historical roster.
+ * 2026-09-13 00:00 IST
+ */
+export const JOURNEY_SETUP_REQUIRED_FROM_ISO = '2026-09-12T18:30:00.000Z'
+
+/** True when this client should get a journey_setup queue item / generate gate. */
+export function clientRequiresJourneySetup(createdAt: string | null | undefined): boolean {
+  if (!createdAt) return false
+  const joined = Date.parse(createdAt)
+  if (!Number.isFinite(joined)) return false
+  return joined >= Date.parse(JOURNEY_SETUP_REQUIRED_FROM_ISO)
+}
+
 /** Initial plan jobs are only queued automatically for auto-delivery coaches. */
 export function shouldAutoEnqueueInitialPlan(
   profile: Pick<OnboardingProfile, 'coach_id'> | null | undefined

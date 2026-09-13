@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
-import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
+import { coachRequiresManualPlanDelivery, clientRequiresJourneySetup } from '@/lib/coach-delivery-policy'
 import {
   canRetryInitialGeneration,
   enqueueInitialPlanGeneration,
@@ -63,7 +63,7 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Client has not finished onboarding yet.' }, { status: 409 })
   }
 
-  if (!profile.journey_goal?.trim()) {
+  if (clientRequiresJourneySetup(profile.created_at) && !profile.journey_goal?.trim()) {
     return NextResponse.json(
       { error: 'Set the client journey plan before generating a draft.' },
       { status: 422 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { GeneratePlanError } from '@/lib/ai/generate-plan'
 import { generateRemadeCompletePlan } from '@/lib/coach/remake-plan'
-import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
+import { coachRequiresManualPlanDelivery, clientRequiresJourneySetup } from '@/lib/coach-delivery-policy'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
@@ -56,7 +56,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 })
   }
 
-  if (coachRequiresManualPlanDelivery(coach.id) && !profile.journey_goal?.trim()) {
+  if (
+    coachRequiresManualPlanDelivery(coach.id) &&
+    clientRequiresJourneySetup(profile.created_at) &&
+    !profile.journey_goal?.trim()
+  ) {
     return NextResponse.json(
       { error: 'Set the client journey plan on their profile before remaking a plan.' },
       { status: 422 }
