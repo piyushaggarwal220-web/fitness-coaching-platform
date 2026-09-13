@@ -105,6 +105,7 @@ async function fetchReadyActivePlanClientIds(
     .eq('coach_id', coachId)
     .eq('active', true)
     .eq('has_core_content', true)
+    .not('delivered_at', 'is', null)
 
   if (!primary.error) {
     return new Set(
@@ -120,6 +121,7 @@ async function fetchReadyActivePlanClientIds(
     .select('client_id')
     .eq('coach_id', coachId)
     .eq('active', true)
+    .not('delivered_at', 'is', null)
     .not('nutrition_plan', 'is', null)
     .not('workout_plan', 'is', null)
 
@@ -206,6 +208,7 @@ export async function getCoachWorkQueue(
     { data: issueRows },
     { data: purchases },
     { data: weeklyCheckinRows },
+    { data: priorDeliveredRows },
   ] = await Promise.all([
     pendingClientIds.size > 0
       ? supabase
@@ -236,7 +239,7 @@ export async function getCoachWorkQueue(
       .select('user_id, plan_slug, status, created_at, profiles!inner(coach_id)')
       .eq('profiles.coach_id', coachId)
       .in('status', ['captured', 'redeemed']),
-    // Journey / cold initial-plan queue items only for clients who submitted a weekly check-in.
+    // Used with first-plan exception below for journey / cold initial-plan gating.
     pendingClientIds.size > 0
       ? supabase
           .from('checkins')
@@ -244,11 +247,23 @@ export async function getCoachWorkQueue(
           .eq('coach_id', coachId)
           .eq('checkin_type', 'weekly')
       : Promise.resolve({ data: [] as { client_id: string }[] }),
+    pendingClientIds.size > 0
+      ? supabase
+          .from('plans')
+          .select('client_id')
+          .eq('coach_id', coachId)
+          .not('delivered_at', 'is', null)
+      : Promise.resolve({ data: [] as { client_id: string }[] }),
   ])
 
   const clientsWithWeeklyCheckin = new Set<string>()
   for (const row of weeklyCheckinRows ?? []) {
     if (pendingClientIds.has(row.client_id)) clientsWithWeeklyCheckin.add(row.client_id)
+  }
+
+  const clientsWithPriorDelivery = new Set<string>()
+  for (const row of priorDeliveredRows ?? []) {
+    if (pendingClientIds.has(row.client_id)) clientsWithPriorDelivery.add(row.client_id)
   }
 
   const planSlugByClient = buildPlanSlugByClient(purchases ?? [])
@@ -287,16 +302,26 @@ export async function getCoachWorkQueue(
     const readyDraftId =
       (generation?.status === 'ready' && generation.draft_plan_id) || draft?.id || null
     const hasWeeklyCheckin = clientsWithWeeklyCheckin.has(client.id)
+    // New clients (never received a plan) must still appear for first journey/plan work.
+    // Re-queued / prior-delivery clients only return after a weekly check-in.
+    const canShowColdPlanWork =
+      hasWeeklyCheckin || !clientsWithPriorDelivery.has(client.id)
 
-    // Journey + cold "generate first plan" stay out of the queue until the client
-    // has submitted a weekly check-in (all coaches). Drafts already in progress still show.
-    if (manualPlanDelivery && !client.journey_goal?.trim()) {
-      if (!hasWeeklyCheckin) continue
+    // Journey setup only when there is not already a draft/job waiting for review.
+    if (
+      manualPlanDelivery &&
+      !client.journey_goal?.trim() &&
+      !readyDraftId &&
+      generation?.status !== 'failed'
+    ) {
+      if (!canShowColdPlanWork) continue
       tasks.push({
         id: `journey-${client.id}`,
         type: 'journey_setup',
         title: 'Set client journey plan',
-        subtitle: `${clientName} · weekly check-in in — define the coaching roadmap before generating a draft`,
+        subtitle: hasWeeklyCheckin
+          ? `${clientName} · weekly check-in in — define the coaching roadmap before generating a draft`
+          : `${clientName} · define the coaching roadmap before generating a draft`,
         href: `/coach/client/${client.id}#journey-plan`,
         clientId: client.id,
         clientName,
@@ -326,7 +351,7 @@ export async function getCoachWorkQueue(
 
     const isColdStart =
       !readyDraftId && generation?.status !== 'failed' && !generation
-    if (isColdStart && !hasWeeklyCheckin) continue
+    if (isColdStart && !canShowColdPlanWork) continue
     const href = readyDraftId
       ? `/coach/plan/${readyDraftId}`
       : generation?.status === 'failed'
