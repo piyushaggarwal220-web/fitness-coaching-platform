@@ -23,6 +23,10 @@ assert.match(queueSrc, /has_core_content/)
 assert.match(queueSrc, /taskTypeRank/)
 assert.match(queueSrc, /coachUsesFifoWorkQueue/)
 assert.match(queueSrc, /initial_plan' \|\| type === 'journey_setup'/)
+assert.match(queueSrc, /clientsWithWeeklyCheckin/)
+assert.match(queueSrc, /checkin_type', 'weekly'/)
+assert.match(queueSrc, /hasWeeklyCheckin/)
+assert.match(queueSrc, /isColdStart && !hasWeeklyCheckin/)
 
 // Prefer coach_id filters over giant client_id IN lists.
 assert.match(queueSrc, /\.eq\('coach_id', coachId\)/)

@@ -205,6 +205,7 @@ export async function getCoachWorkQueue(
     activePlanReadyByClient,
     { data: issueRows },
     { data: purchases },
+    { data: weeklyCheckinRows },
   ] = await Promise.all([
     pendingClientIds.size > 0
       ? supabase
@@ -235,7 +236,20 @@ export async function getCoachWorkQueue(
       .select('user_id, plan_slug, status, created_at, profiles!inner(coach_id)')
       .eq('profiles.coach_id', coachId)
       .in('status', ['captured', 'redeemed']),
+    // Journey / cold initial-plan queue items only for clients who submitted a weekly check-in.
+    pendingClientIds.size > 0
+      ? supabase
+          .from('checkins')
+          .select('client_id')
+          .eq('coach_id', coachId)
+          .eq('checkin_type', 'weekly')
+      : Promise.resolve({ data: [] as { client_id: string }[] }),
   ])
+
+  const clientsWithWeeklyCheckin = new Set<string>()
+  for (const row of weeklyCheckinRows ?? []) {
+    if (pendingClientIds.has(row.client_id)) clientsWithWeeklyCheckin.add(row.client_id)
+  }
 
   const planSlugByClient = buildPlanSlugByClient(purchases ?? [])
 
@@ -272,13 +286,17 @@ export async function getCoachWorkQueue(
     const clientName = clientNameById.get(client.id) ?? 'Client'
     const readyDraftId =
       (generation?.status === 'ready' && generation.draft_plan_id) || draft?.id || null
+    const hasWeeklyCheckin = clientsWithWeeklyCheckin.has(client.id)
 
+    // Journey + cold "generate first plan" stay out of the queue until the client
+    // has submitted a weekly check-in (all coaches). Drafts already in progress still show.
     if (manualPlanDelivery && !client.journey_goal?.trim()) {
+      if (!hasWeeklyCheckin) continue
       tasks.push({
         id: `journey-${client.id}`,
         type: 'journey_setup',
         title: 'Set client journey plan',
-        subtitle: `${clientName} · define the coaching roadmap before generating a draft`,
+        subtitle: `${clientName} · weekly check-in in — define the coaching roadmap before generating a draft`,
         href: `/coach/client/${client.id}#journey-plan`,
         clientId: client.id,
         clientName,
@@ -305,6 +323,10 @@ export async function getCoachWorkQueue(
       generation?.status !== 'failed' &&
       (generation?.status === 'queued' || generation?.status === 'generating')
     if (isGenerating) continue
+
+    const isColdStart =
+      !readyDraftId && generation?.status !== 'failed' && !generation
+    if (isColdStart && !hasWeeklyCheckin) continue
     const href = readyDraftId
       ? `/coach/plan/${readyDraftId}`
       : generation?.status === 'failed'

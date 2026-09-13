@@ -97,7 +97,16 @@ export function isCoachAiActionId(id: string): id is CoachAiActionId {
 
 function appendNote(base: string, coachNote?: string | null): string {
   const parts = [base]
-  if (coachNote?.trim()) parts.push(`Coach note: ${coachNote.trim()}`)
+  if (coachNote?.trim()) {
+    parts.push(
+      [
+        'CLIENT DISCUSSION / COACH DECISIONS (ABSOLUTE — must respect):',
+        'These points were agreed with the client (call, chat, or check-in review). Apply every point in the generated plan.',
+        'Do not ignore, weaken, or override them with generic defaults. If anything conflicts with a platform heuristic, follow the coach discussion.',
+        coachNote.trim(),
+      ].join('\n')
+    )
+  }
   return parts.join('\n\n')
 }
 

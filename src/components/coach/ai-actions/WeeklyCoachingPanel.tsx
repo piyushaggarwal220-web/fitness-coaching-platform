@@ -330,11 +330,13 @@ export function WeeklyCoachingPanel({
           : cadenceSkip
             ? `This client gets a plan update ${planUpdateCadence?.toLowerCase() ?? 'every 14 days'}. ${weekLabel} is check in only. Next auto draft is week ${nextAutoUpdateWeek ?? '—'}. Generate now only if the plan needs a change.`
             : showFailure
-              ? 'Automatic draft generation did not complete. Retry uses your active plan, latest check-in, and cached context.'
+              ? 'Automatic draft generation did not complete. Add what you discussed with the client, then retry.'
               : isGenerating
-                ? 'AI is building a draft from this check-in. This usually takes a few minutes for a full week.'
-                : 'No AI draft yet. Generate one when you are ready to update the plan.'}
+                ? 'AI is building a draft from this check-in and your discussion notes. This usually takes a few minutes for a full week.'
+                : 'Add what you discussed with the client below, then generate a draft for review.'}
       </p>
+
+      {!hasDraft ? <OptionalCoachNote mode="discussion" value={coachNote} onChange={setCoachNote} /> : null}
 
       {hasDraft ? (
         <button
@@ -408,7 +410,15 @@ export function WeeklyCoachingPanel({
         </div>
       )}
 
-      <OptionalCoachNote value={coachNote} onChange={setCoachNote} />
+      {hasDraft ? (
+        <div style={{ marginTop: 12 }}>
+          <OptionalCoachNote mode="discussion" value={coachNote} onChange={setCoachNote} />
+          <p style={{ margin: '0 0 8px', fontSize: 12, color: colors.textMuted, lineHeight: 1.4 }}>
+            Update discussion notes above, then Regenerate so the new draft follows them.
+          </p>
+        </div>
+      ) : null}
+
       <GenerationStatus message={status} variant={statusVariant} />
       {error && <div style={s.error}>{error}</div>}
       {publishSuccess && !error && (

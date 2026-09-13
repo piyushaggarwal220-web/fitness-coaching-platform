@@ -413,6 +413,7 @@ export default function CoachGeneratePlanPage() {
           </div>
 
           <p style={s.sectionLabel}>Initial planning</p>
+          <OptionalCoachNote mode="discussion" value={coachNote} onChange={setCoachNote} />
           {INITIAL_PLAN_ACTIONS.map((action) => (
             <ActionCard
               key={action.id}
@@ -430,7 +431,6 @@ export default function CoachGeneratePlanPage() {
             onClick={() => void runCompletePlan()}
           />
 
-          <OptionalCoachNote value={coachNote} onChange={setCoachNote} />
           <GenerationStatus
             message={status}
             stepLabel={stepLabel}
