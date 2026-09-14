@@ -9,6 +9,7 @@ import {
   fallbackPublishCoachNotes,
   formatPublishedPlanTitle,
   isAiDraftTitle,
+  isUnfinishedCoachReviewDraftTitle,
   parsePlanMeta,
   prepareCoachNotesForPublish,
 } from '@/lib/plan-metadata'
@@ -163,9 +164,10 @@ export async function activatePlan(
   }
 
   const publishPrep = prepareCoachNotesForPublish(fullPlan.coach_notes, {
-    fallbackMessage: isAiDraftTitle(fullPlan.title)
-      ? fallbackPublishCoachNotes(fullPlan)
-      : null,
+    fallbackMessage:
+      isAiDraftTitle(fullPlan.title) || isUnfinishedCoachReviewDraftTitle(fullPlan.title)
+        ? fallbackPublishCoachNotes(fullPlan)
+        : null,
   })
   if (publishPrep.error || !publishPrep.notes) {
     return { error: publishPrep.error ?? 'Cannot publish: Coach Notes must include a client-facing message.' }
@@ -182,9 +184,9 @@ export async function activatePlan(
   if (activeCountError) return { error: activeCountError.message }
 
   const isUpdate = (activeCount ?? 0) > 0
-  const publishedTitle = isAiDraftTitle(fullPlan.title)
-    ? formatPublishedPlanTitle(fullPlan, isUpdate)
-    : fullPlan.title.trim()
+  // Always normalize draft-looking titles on deliver so bulk cleanups cannot
+  // mistake a coach-published plan for an unfinished AI draft again.
+  const publishedTitle = formatPublishedPlanTitle(fullPlan, isUpdate)
 
   const { error: deactivateError } = await supabase
     .from('plans')

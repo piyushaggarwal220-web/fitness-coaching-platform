@@ -8,12 +8,11 @@ import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
 import { listPendingLeagueCertificateWinners } from '@/lib/league/service'
 import { buildLeagueCertificateChatGptPrompt } from '@/lib/league/certificate-prompt'
 import { LEAGUE_TIER_LABELS } from '@/lib/league/scoring'
-import { isAiDraftTitle } from '@/lib/plan-metadata'
+import { isUnfinishedCoachReviewDraftTitle } from '@/lib/plan-metadata'
 
 /** Unfinished auto drafts that should not count as a real prior delivery or ready review item. */
 function isUnfinishedQueueDraftTitle(title: string | null | undefined): boolean {
-  const t = (title ?? '').trim()
-  return isAiDraftTitle(t) || /^Ready for coach note\/review$/i.test(t)
+  return isUnfinishedCoachReviewDraftTitle(title)
 }
 
 export type WorkQueueTaskType =

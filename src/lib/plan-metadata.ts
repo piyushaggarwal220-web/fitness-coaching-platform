@@ -49,6 +49,31 @@ export function isAiDraftTitle(title: string | null | undefined): boolean {
   return /^AI\b/i.test(raw)
 }
 
+/**
+ * Titles that still look like unfinished coach-review drafts.
+ * Includes both "AI Draft · Ready…" and the stripped "Ready for coach note/review"
+ * form left after an older publish path.
+ */
+export function isUnfinishedCoachReviewDraftTitle(title: string | null | undefined): boolean {
+  const t = (title ?? '').trim()
+  if (!t) return false
+  if (isAiDraftTitle(t)) return true
+  const withoutRestored = t.replace(/\s*\(restored v\d+\)\s*$/i, '').trim()
+  return /^Ready for coach note\/review$/i.test(withoutRestored)
+}
+
+/**
+ * Cleanup / bulk-unsend gate. Never pull a plan that was delivered to the client,
+ * even if the title still looks like a draft.
+ */
+export function isSafeToUnsendUnfinishedAiDraft(
+  plan: Pick<{ title: string | null; delivered_at: string | null; active: boolean | null }, 'title' | 'delivered_at' | 'active'>
+): boolean {
+  if (plan.delivered_at) return false
+  if (!plan.active) return false
+  return isUnfinishedCoachReviewDraftTitle(plan.title)
+}
+
 export function extractWeekFromTitle(title: string | null | undefined): number | undefined {
   const match = (title ?? '').match(/Week\s+(\d+)/i)
   return match ? Number(match[1]) : undefined
@@ -130,18 +155,31 @@ export function formatPublishedPlanTitle(
   plan: Pick<Plan, 'title' | 'coach_notes' | 'phase'>,
   isUpdate: boolean
 ): string {
-  if (!isAiDraftTitle(plan.title)) return clientFacingPlanTitle(plan.title)
-
   const meta = parsePlanMeta(plan)
-  if (meta.source === 'client_plan_change' || /client request/i.test(plan.title ?? '')) {
+  const draftLooking = isUnfinishedCoachReviewDraftTitle(plan.title) || isAiDraftTitle(plan.title)
+
+  if (draftLooking) {
+    if (meta.source === 'client_plan_change' || /client request/i.test(plan.title ?? '')) {
+      return isUpdate ? 'Updated Plan' : 'Coaching Plan'
+    }
+    const week = meta.week ?? extractWeekFromTitle(plan.title)
+    if (week) {
+      return isUpdate ? `Week ${week} Updated Plan` : `Week ${week} Plan`
+    }
+    // Never leave "Ready for coach note/review" on a delivered plan — that title
+    // caused coach-published plans to be mistaken for unfinished AI drafts.
     return isUpdate ? 'Updated Plan' : 'Coaching Plan'
   }
-  const week = meta.week ?? extractWeekFromTitle(plan.title)
-  if (week) {
-    return isUpdate ? `Week ${week} Updated Plan` : `Week ${week} Plan`
-  }
 
-  return clientFacingPlanTitle(plan.title)
+  return finalizePublishedTitle(clientFacingPlanTitle(plan.title), isUpdate)
+}
+
+function finalizePublishedTitle(title: string, isUpdate: boolean): string {
+  const cleaned = title.replace(/\s*\(restored v\d+\)\s*$/i, '').trim()
+  if (!cleaned || isUnfinishedCoachReviewDraftTitle(cleaned)) {
+    return isUpdate ? 'Updated Plan' : 'Coaching Plan'
+  }
+  return cleaned
 }
 
 /** Never show internal AI draft wording on client surfaces. */
@@ -157,6 +195,11 @@ export function clientFacingPlanTitle(title: string | null | undefined): string 
     .trim()
 
   cleaned = cleaned.replace(/\(\s*Draft\s*\)\s*$/i, '').trim()
+  cleaned = cleaned.replace(/\s*\(restored v\d+\)\s*$/i, '').trim()
+
+  if (/^Ready for coach note\/review$/i.test(cleaned)) {
+    return 'Coaching Plan'
+  }
 
   cleaned = cleaned
     .replace(/\bBuild Your Dream Physique\b/gi, 'Athletic body')
