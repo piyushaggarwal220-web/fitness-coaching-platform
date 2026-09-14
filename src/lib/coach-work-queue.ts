@@ -373,11 +373,11 @@ export async function getCoachWorkQueue(
     const href = readyDraftId
       ? `/coach/plan/${readyDraftId}`
       : generation?.status === 'failed'
-        ? `/coach/client/${client.id}/generate-plan`
+        ? `/coach/client/${client.id}/generate-plan?intent=initial`
         : manualPlanDelivery && needsJourneySetup && !readyDraftId && !generation
           ? `/coach/client/${client.id}#journey-plan`
           : manualPlanDelivery && !readyDraftId && !generation
-            ? `/coach/client/${client.id}/generate-plan`
+            ? `/coach/client/${client.id}/generate-plan?intent=initial`
             : `/coach/client/${client.id}`
     const failedGuidance =
       generation?.status === 'failed'

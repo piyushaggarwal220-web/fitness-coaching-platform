@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { brandTitle } from '@/lib/brand'
 import { CoachShell } from '@/components/ui/CoachShell'
 import { createClient } from '@/lib/supabase/client'
@@ -26,7 +26,9 @@ const supabase = createClient()
 export default function CoachGeneratePlanPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const clientId = typeof params.id === 'string' ? params.id : ''
+  const intentInitial = searchParams.get('intent') === 'initial'
 
   const [coach, setCoach] = useState<Coach | null>(null)
   const [client, setClient] = useState<OnboardingProfile | null>(null)
@@ -289,13 +291,19 @@ export default function CoachGeneratePlanPage() {
     (Array.isArray(client.complexity_input_review_reasons) &&
       client.complexity_input_review_reasons.length > 0)
 
+  const isInitialPlanFlow = intentInitial || !activePlan
+
   return (
     <CoachShell narrow>
           <Link href={`/coach/client/${client.id}`} style={s.backLink}>← Back to client</Link>
 
-          <h1 style={s.title}>{brandTitle('AI coaching actions')}</h1>
+          <h1 style={s.title}>
+            {brandTitle(isInitialPlanFlow ? 'Initial plan generation' : 'AI coaching actions')}
+          </h1>
           <p style={s.subtitle}>
-            Generate a complete plan or a single section. Work continues in the background if you leave this page.
+            {isInitialPlanFlow
+              ? 'Build this client’s first diet and workout draft from their intake. Work continues in the background if you leave this page.'
+              : 'Generate a complete plan or a single section. Work continues in the background if you leave this page.'}
           </p>
 
           {metricsBlocked && (
