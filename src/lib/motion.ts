@@ -103,5 +103,5 @@ export const AI_GENERATION_STEPS = [
   'Reviewing check-ins',
   'Comparing previous plans',
   'Preparing updated recommendations',
-  'Draft ready',
+  'Writing diet and workout…',
 ] as const
