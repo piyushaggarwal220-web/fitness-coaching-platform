@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import {
   INITIAL_WEEKLY_CALL_DELAY_MS,
   getInitialWeeklyCallWindow,
@@ -27,6 +29,11 @@ assert(
   getInitialWeeklyCallWindow(started, day0).earliestAfter.getTime() === started.getTime() + 7 * DAY_MS
 )
 assert('invalid date is not eligible', getInitialWeeklyCallWindow('not-a-date', new Date()).eligible === false)
+
+const scheduleSrc = readFileSync(resolve('src/lib/weekly-call-schedule.ts'), 'utf8')
+assert('completion schedules next call after 7 days', /Date\.now\(\) \+ 7 \* 24 \* 60 \* 60 \* 1000/.test(scheduleSrc))
+assert('ensureWeeklyCall honors after gate', /before_after_gate/.test(scheduleSrc))
+assert('ensureWeeklyCall skips recently completed', /recently_completed/.test(scheduleSrc))
 
 if (process.exitCode) {
   console.error('\nweekly-call-timing checks failed')

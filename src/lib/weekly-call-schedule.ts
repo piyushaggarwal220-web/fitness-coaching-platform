@@ -175,6 +175,11 @@ export async function ensureWeeklyCallForClient(
     return { created: false, reason: 'within_initial_week' }
   }
 
+  // Completing a weekly call must not immediately reopen another queue item.
+  if (options?.after && Date.now() < options.after.getTime()) {
+    return { created: false, reason: 'before_after_gate' }
+  }
+
   await closeStaleWeeklyCallIfNeeded(admin, clientId)
 
   const { data: coach } = await admin
@@ -208,6 +213,21 @@ export async function ensureWeeklyCallForClient(
         .in('status', ['requested', 'scheduled'])
     }
     return { created: false, reason: 'active_call_exists', callId: active.id }
+  }
+
+  // Cron / client ensure paths: skip if a weekly call was completed in the last 7 days.
+  const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: recentCompleted } = await admin
+    .from('call_requests')
+    .select('id')
+    .eq('client_id', clientId)
+    .eq('source', 'weekly_entitlement')
+    .eq('status', 'completed')
+    .gte('resolved_at', weekAgoIso)
+    .limit(1)
+    .maybeSingle()
+  if (recentCompleted?.id) {
+    return { created: false, reason: 'recently_completed', callId: recentCompleted.id }
   }
 
   const { data: conversation, error: convError } = await getOrCreateConversation(admin, clientId)
@@ -275,7 +295,8 @@ export async function scheduleNextWeeklyCallAfterCompletion(
   if (callRequest.source !== 'weekly_entitlement') {
     return { created: false, reason: 'not_weekly_entitlement' }
   }
-  const after = new Date()
+  // Next weekly entitlement opens after ~7 days — do not rebirth the queue item now.
+  const after = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   return ensureWeeklyCallForClient(admin, callRequest.client_id, { after })
 }
 

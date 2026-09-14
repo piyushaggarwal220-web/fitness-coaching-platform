@@ -379,18 +379,9 @@ export async function getCoachWorkQueue(
       continue
     }
 
-    // Old clients missing a journey plan are not cold-queued either — journey is
-    // only a gate for new joiners. Ready drafts / failures / weekly re-entry still show.
-    if (
-      manualPlanDelivery &&
-      !needsJourneySetup &&
-      !client.journey_goal?.trim() &&
-      !readyDraftId &&
-      generation?.status !== 'failed' &&
-      !generation
-    ) {
-      continue
-    }
+    // Old clients (pre-journey cutoff) do not need a journey plan. Still queue
+    // them for initial generate / ready draft / failure recovery when they have
+    // never received a plan — otherwise never-delivered clients disappear.
 
     const title =
       generation?.status === 'ready' || readyDraftId
