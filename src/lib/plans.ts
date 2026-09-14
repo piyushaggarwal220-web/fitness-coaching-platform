@@ -244,6 +244,29 @@ export async function activatePlan(
     .eq('draft_plan_id', plan.id)
     .in('status', ['generating', 'draft_ready', 'in_review'])
 
+  // Delivering a check-in-linked weekly draft clears the check-in from the work queue.
+  // Without this, coaches keep seeing "Review Weekly Check-in" after Publish.
+  if (meta.checkinId) {
+    const { error: checkinError } = await supabase
+      .from('checkins')
+      .update({
+        reviewed: true,
+        reviewed_at: deliveredAt,
+      })
+      .eq('id', meta.checkinId)
+      .eq('client_id', plan.client_id)
+      .eq('reviewed', false)
+
+    if (checkinError) {
+      console.error('[activatePlan] failed to mark source check-in reviewed:', checkinError.message)
+    } else {
+      await supabase
+        .from('profiles')
+        .update({ checkin_awaiting: false })
+        .eq('id', plan.client_id)
+    }
+  }
+
   void invalidateForEvent('plan_activated', plan.client_id)
 
   // DB trigger sync_profile_plan_delivered already updates plan_delivered.

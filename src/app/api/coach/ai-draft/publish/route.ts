@@ -93,6 +93,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: activateError }, { status: 422 })
   }
 
+  // Belt-and-suspenders: body checkinId covers drafts whose META was already stripped.
+  const checkinId = body.checkinId?.trim() || null
+  if (checkinId) {
+    const now = new Date().toISOString()
+    const { error: checkinError } = await admin
+      .from('checkins')
+      .update({ reviewed: true, reviewed_at: now })
+      .eq('id', checkinId)
+      .eq('client_id', clientId)
+      .eq('reviewed', false)
+    if (checkinError) {
+      console.error('[ai-draft/publish] mark check-in reviewed failed:', checkinError.message)
+    } else {
+      await admin.from('profiles').update({ checkin_awaiting: false }).eq('id', clientId)
+    }
+  }
+
   try {
     const { ensureWeeklyCallForClient } = await import('@/lib/weekly-call-schedule')
     await ensureWeeklyCallForClient(admin, plan.client_id, { actorUserId: user.id })
@@ -104,7 +121,7 @@ export async function POST(request: Request) {
     event: 'publish_completed',
     clientId,
     coachId: coach.id,
-    checkinId: body.checkinId ?? null,
+    checkinId,
     checkinWeek: body.checkinWeek ?? null,
     planId: plan.id,
     planVersion: plan.version,
