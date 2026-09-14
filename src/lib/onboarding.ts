@@ -1308,8 +1308,8 @@ export function buildReviewSections(
         { label: 'Name', value: form.name },
         { label: 'Age', value: form.age },
         { label: 'Gender', value: getOnboardingLabel('gender', form.gender) },
-        { label: 'Height', value: `${form.height} cm` },
-        { label: 'Weight', value: `${form.weight} kg` },
+        { label: 'Height', value: form.height ? `${form.height} cm` : 'Not set' },
+        { label: 'Weight', value: form.weight ? `${form.weight} kg` : 'Not set' },
         { label: 'Chest', value: form.chest ? `${form.chest} cm` : 'Not set' },
         { label: 'Thigh', value: form.thigh ? `${form.thigh} cm` : 'Not set' },
         { label: 'Belly (navel)', value: form.navel ? `${form.navel} cm` : 'Not set' },
@@ -1327,6 +1327,36 @@ export function buildReviewSections(
               ? formatSelectedGoals(form.selected_goals)
               : getOnboardingLabel('fitness_goal', form.fitness_goal),
         },
+        {
+          label: 'Starting body type',
+          value: getOnboardingLabel('starting_body_type', form.starting_body_type) || 'Not set',
+        },
+        { label: 'Target weight', value: form.target_weight ? `${form.target_weight} kg` : 'Not set' },
+        { label: 'Deadline', value: form.goal_deadline.trim() || 'Not set' },
+        { label: 'Biggest struggle', value: form.biggest_struggle.trim() || 'Not set' },
+        { label: 'Goal details', value: form.goal_details.trim() || 'Not set' },
+      ],
+    },
+    {
+      title: 'Lifestyle',
+      items: [
+        { label: 'Occupation', value: getOnboardingLabel('occupation', form.occupation) || 'Not set' },
+        { label: 'Work / school schedule', value: form.work_school_schedule.trim() || 'Not set' },
+        {
+          label: 'Activity level',
+          value: getOnboardingLabel('activity_level', form.activity_level) || 'Not set',
+        },
+        { label: 'Daily steps', value: getOnboardingLabel('daily_steps', form.daily_steps) || 'Not set' },
+        {
+          label: 'Sleep',
+          value: getOnboardingLabel('sleep_duration', form.sleep_duration) || 'Not set',
+        },
+        { label: 'Stress', value: getOnboardingLabel('stress_level', form.stress_level) || 'Not set' },
+        { label: 'Water intake', value: getOnboardingLabel('water_intake', form.water_intake) || 'Not set' },
+        {
+          label: 'Training + diet push',
+          value: getOnboardingLabel('flux_capacity', form.flux_capacity) || 'Not set',
+        },
       ],
     },
     {
@@ -1343,6 +1373,8 @@ export function buildReviewSections(
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
         { label: 'Equipment', value: equipment },
+        { label: 'Favorite exercises', value: form.favorite_exercises.trim() || 'Not set' },
+        { label: 'Exercises disliked', value: form.exercises_disliked.trim() || 'Not set' },
         { label: 'Squats', value: getOnboardingLabel('can_squat', form.can_squat) },
         { label: 'Push-ups', value: getOnboardingLabel('can_pushup', form.can_pushup) },
         { label: 'Pull-ups', value: getOnboardingLabel('can_pullup', form.can_pullup) },
@@ -1354,6 +1386,8 @@ export function buildReviewSections(
       items: [
         { label: 'Injuries', value: form.injuries || 'None' },
         { label: 'Medical conditions', value: form.medical_notes || 'None' },
+        { label: 'Pain during exercise', value: form.pain_during_exercise.trim() || 'None' },
+        { label: 'Medications', value: form.medications.trim() || 'None' },
         { label: 'Acne', value: ACNE_OPTIONS.find((o) => o.value === form.acne_status)?.label ?? 'Not set' },
         { label: 'Hair loss', value: HAIR_LOSS_OPTIONS.find((o) => o.value === form.hair_loss_status)?.label ?? 'Not set' },
         { label: 'Sexual health', value: SEXUAL_HEALTH_OPTIONS.find((o) => o.value === form.sexual_health_status)?.label ?? 'Not set' },
@@ -1371,6 +1405,25 @@ export function buildReviewSections(
         { label: 'Fish days/week', value: form.fish_days || 'N/A' },
         { label: 'Fish days', value: formatProteinWeekdays(form.fish_allowed_days) },
         { label: 'Whey protein', value: getOnboardingLabel('whey_protein', form.whey_protein) },
+        { label: 'Food allergies', value: form.food_allergies.trim() || 'None' },
+        { label: 'Foods disliked', value: form.foods_disliked.trim() || 'None' },
+        { label: 'Favorite foods', value: form.favorite_foods.trim() || 'Not set' },
+        { label: 'Previous diets that failed', value: form.previous_diets_failed.trim() || 'Not set' },
+        { label: 'Monthly food budget', value: getOnboardingLabel('monthly_food_budget', form.monthly_food_budget) },
+        {
+          label: 'Cooking ability',
+          value: getOnboardingLabel('cooking_ability', form.cooking_ability) || 'Not set',
+        },
+        { label: 'Diet notes / exceptions', value: form.diet_custom_notes.trim() || 'None' },
+      ],
+    },
+    {
+      title: 'Eating pattern',
+      items: [
+        { label: 'Breakfast', value: form.breakfast.trim() || 'Not set' },
+        { label: 'Lunch', value: form.lunch.trim() || 'Not set' },
+        { label: 'Dinner', value: form.dinner.trim() || 'Not set' },
+        { label: 'Snacks', value: form.snacks.trim() || 'Not set' },
       ],
     },
     {
@@ -1380,6 +1433,12 @@ export function buildReviewSections(
         { label: 'Lunch time', value: formatMealTime24(form.timing_lunch) },
         { label: 'Dinner time', value: formatMealTime24(form.timing_dinner) },
         { label: 'Snack time', value: formatMealTime24(form.timing_snacks) },
+      ],
+    },
+    {
+      title: 'Supplements',
+      items: [
+        { label: 'Current supplements', value: form.current_supplements.trim() || 'None' },
       ],
     },
     {

@@ -15,10 +15,13 @@ const SECTION_EDIT_STEPS: Record<string, number> = {
   // Name/age are on 0; gender, height, weight, and tape (incl. biceps) are on 1.
   'Basic Information': 1,
   Goals: 2,
+  Lifestyle: 4,
   Training: 7,
   Medical: 11,
   Diet: 13,
+  'Eating pattern': 17,
   'Meal timings': 19,
+  Supplements: 20,
   'Progress Photos': 21,
 }
 

@@ -5,15 +5,13 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { brandTitle } from '@/lib/brand'
 import { CoachShell } from '@/components/ui/CoachShell'
-import { colors } from '@/lib/coach-theme'
 import { createClient } from '@/lib/supabase/client'
 import { requireCoach } from '@/lib/coach-session'
 import { INITIAL_PLAN_ACTIONS, type AiReasoningDisplay } from '@/lib/coach/ai-actions'
 import { savePlanDraftToSession } from '@/lib/ai/plan-format'
-import { getOnboardingLabel } from '@/lib/onboarding'
-import { formatFitnessGoal } from '@/lib/coach-utils'
 import { planToForm, restorePlanAsDraft } from '@/lib/plans'
 import { ClientContextCard } from '@/components/coach/ai-actions/ClientContextCard'
+import { ClientOnboardingBrief } from '@/components/coach/ClientOnboardingBrief'
 import { PlanCompareDrawer } from '@/components/coach/ai-actions/PlanCompareDrawer'
 import { PlanVersionList } from '@/components/coach/ai-actions/PlanVersionList'
 import { ActionCard, AiReasoningPanel, GenerationStatus, MessageClientButton, OptionalCoachNote } from '@/components/coach/ai-actions/shared'
@@ -397,20 +395,7 @@ export default function CoachGeneratePlanPage() {
             latestDraft={latestDraft}
           />
 
-          <div style={s.card}>
-            <h2 style={{ margin: '0 0 12px 0', fontSize: 15, fontWeight: 600 }}>Client summary</h2>
-            <div style={{ display: 'grid', gap: 8, fontSize: 14, color: colors.textSecondary }}>
-              <span>Goal: {formatFitnessGoal(client.fitness_goal)}</span>
-              <span>Training: {getOnboardingLabel('training_experience', client.training_experience)}</span>
-              <span>Diet: {getOnboardingLabel('diet_preference', client.diet_preference)}</span>
-              {client.onboarding_data?.diet?.customNotes?.trim() ? (
-                <span>Diet exceptions: {client.onboarding_data.diet.customNotes.trim()}</span>
-              ) : null}
-              <span>
-                Age / weight: {client.age ?? '—'} yrs · {client.weight ?? '—'} kg
-              </span>
-            </div>
-          </div>
+          <ClientOnboardingBrief client={client} />
 
           <p style={s.sectionLabel}>Initial planning</p>
           <OptionalCoachNote mode="discussion" value={coachNote} onChange={setCoachNote} />
