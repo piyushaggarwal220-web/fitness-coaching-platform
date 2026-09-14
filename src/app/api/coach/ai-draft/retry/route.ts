@@ -105,6 +105,8 @@ export async function POST(request: Request) {
         success: true,
         queued: true,
         trigger,
+        message:
+          'Draft generation continues in the background. You can leave this page and return from the work queue when ready.',
       },
       { status: 202 }
     )
