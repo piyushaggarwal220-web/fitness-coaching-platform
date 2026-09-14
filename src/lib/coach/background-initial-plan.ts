@@ -44,21 +44,28 @@ export async function markManualPlanStarted(input: {
   coachId: string
   mode: 'complete' | CoachAiActionId
 }): Promise<void> {
-  await logAiGeneration({
-    clientId: input.clientId,
-    coachId: input.coachId,
-    action: MANUAL_PLAN_STARTED_ACTION,
-    model: null,
-    promptVersion: 'manual_plan',
-    latencyMs: 0,
-    promptTokens: null,
-    completionTokens: null,
-    retryCount: 0,
-    validationResult: 'started',
-    success: true,
-    knowledgeRefs: null,
-    renderedOutput: { mode: input.mode, phase: 'started' },
-  })
+  await Promise.all([
+    logAiGeneration({
+      clientId: input.clientId,
+      coachId: input.coachId,
+      action: MANUAL_PLAN_STARTED_ACTION,
+      model: null,
+      promptVersion: 'manual_plan',
+      latencyMs: 0,
+      promptTokens: null,
+      completionTokens: null,
+      retryCount: 0,
+      validationResult: 'started',
+      success: true,
+      knowledgeRefs: null,
+      renderedOutput: { mode: input.mode, phase: 'started' },
+    }),
+    syncInitialPlanGenerationJob({
+      clientId: input.clientId,
+      coachId: input.coachId,
+      status: 'generating',
+    }),
+  ])
 }
 
 async function markManualPlanFinished(input: {
@@ -68,25 +75,99 @@ async function markManualPlanFinished(input: {
   error?: string | null
   draftPlanId?: string | null
 }): Promise<void> {
-  await logAiGeneration({
-    clientId: input.clientId,
-    coachId: input.coachId,
-    action: MANUAL_PLAN_FINISHED_ACTION,
-    model: null,
-    promptVersion: 'manual_plan',
-    latencyMs: 0,
-    promptTokens: null,
-    completionTokens: null,
-    retryCount: 0,
-    validationResult: input.success ? 'pass' : (input.error ?? 'failed'),
-    success: input.success,
-    knowledgeRefs: null,
-    renderedOutput: {
-      phase: input.success ? 'finished' : 'failed',
-      error: input.error ?? null,
+  await Promise.all([
+    logAiGeneration({
+      clientId: input.clientId,
+      coachId: input.coachId,
+      action: MANUAL_PLAN_FINISHED_ACTION,
+      model: null,
+      promptVersion: 'manual_plan',
+      latencyMs: 0,
+      promptTokens: null,
+      completionTokens: null,
+      retryCount: 0,
+      validationResult: input.success ? 'pass' : (input.error ?? 'failed'),
+      success: input.success,
+      knowledgeRefs: null,
+      renderedOutput: {
+        phase: input.success ? 'finished' : 'failed',
+        error: input.error ?? null,
+        draftPlanId: input.draftPlanId ?? null,
+      },
+    }),
+    syncInitialPlanGenerationJob({
+      clientId: input.clientId,
+      coachId: input.coachId,
+      status: input.success ? 'ready' : 'failed',
       draftPlanId: input.draftPlanId ?? null,
-    },
+      error: input.error ?? null,
+    }),
+  ])
+}
+
+/** Keep work-queue state in sync with coach-triggered (manual) generation. */
+async function syncInitialPlanGenerationJob(input: {
+  clientId: string
+  coachId: string
+  status: 'generating' | 'ready' | 'failed'
+  draftPlanId?: string | null
+  error?: string | null
+}): Promise<void> {
+  const admin = createAdminClient()
+  const now = new Date().toISOString()
+  const { data: existing } = await admin
+    .from('initial_plan_generation_jobs')
+    .select('id, attempt_count, queued_at')
+    .eq('client_id', input.clientId)
+    .maybeSingle()
+
+  const base = {
+    coach_id: input.coachId,
+    status: input.status,
+    updated_at: now,
+  }
+
+  const patch =
+    input.status === 'generating'
+      ? {
+          ...base,
+          started_at: now,
+          completed_at: null,
+          failed_at: null,
+          error_code: null,
+          error_message: null,
+          draft_plan_id: null,
+          attempt_count: (existing?.attempt_count ?? 0) + 1,
+        }
+      : input.status === 'ready'
+        ? {
+            ...base,
+            draft_plan_id: input.draftPlanId ?? null,
+            completed_at: now,
+            failed_at: null,
+            error_code: null,
+            error_message: null,
+          }
+        : {
+            ...base,
+            failed_at: now,
+            completed_at: null,
+            error_code: 'generation_failed',
+            error_message: (input.error ?? 'Plan generation failed').slice(0, 500),
+          }
+
+  if (existing?.id) {
+    const { error } = await admin.from('initial_plan_generation_jobs').update(patch).eq('id', existing.id)
+    if (error) console.error('[manual-plan] job update failed', error.message)
+    return
+  }
+
+  const { error } = await admin.from('initial_plan_generation_jobs').insert({
+    client_id: input.clientId,
+    queued_at: now,
+    ...patch,
   })
+  if (error) console.error('[manual-plan] job insert failed', error.message)
 }
 
 async function generateSectionForm(

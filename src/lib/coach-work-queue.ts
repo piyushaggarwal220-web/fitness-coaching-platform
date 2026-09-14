@@ -65,6 +65,19 @@ type GenerationJobRow = {
   error_code: string | null
   error_message: string | null
   queued_at: string | null
+  started_at: string | null
+}
+
+/** Match manual-plan stale window — hide queue items only while generation is still live. */
+const ACTIVE_GENERATION_STALE_MS = 20 * 60 * 1000
+
+function isActivelyGenerating(job: GenerationJobRow | undefined): boolean {
+  if (!job) return false
+  if (job.status !== 'queued' && job.status !== 'generating') return false
+  const anchor = job.started_at ?? job.queued_at
+  if (!anchor) return true
+  const age = Date.now() - new Date(anchor).getTime()
+  return Number.isFinite(age) ? age < ACTIVE_GENERATION_STALE_MS : true
 }
 
 /** 12-month clients first, then FIFO within each tier. */
@@ -219,7 +232,7 @@ export async function getCoachWorkQueue(
     pendingClientIds.size > 0
       ? supabase
           .from('initial_plan_generation_jobs')
-          .select('id, client_id, status, draft_plan_id, error_code, error_message, queued_at')
+          .select('id, client_id, status, draft_plan_id, error_code, error_message, queued_at, started_at')
           .eq('coach_id', coachId)
           .in('status', ['queued', 'generating', 'ready', 'failed'])
           .order('queued_at', { ascending: false })
@@ -310,8 +323,20 @@ export async function getCoachWorkQueue(
     const generation = generationByClient.get(client.id)
     const draft = latestDraftByClient.get(client.id)
     const clientName = clientNameById.get(client.id) ?? 'Client'
+    // While AI is writing, keep this client off the queue — even if a partial diet draft already exists.
+    if (isActivelyGenerating(generation)) continue
+
+    const generationFailed =
+      generation?.status === 'failed' ||
+      ((generation?.status === 'queued' || generation?.status === 'generating') &&
+        !isActivelyGenerating(generation))
+
     const readyDraftId =
-      (generation?.status === 'ready' && generation.draft_plan_id) || draft?.id || null
+      generation?.status === 'ready'
+        ? generation.draft_plan_id || draft?.id || null
+        : generationFailed
+          ? null
+          : draft?.id || null
     const hasWeeklyCheckin = clientsWithWeeklyCheckin.has(client.id)
     // New clients (never received a plan) must still appear for first journey/plan work.
     // Re-queued / prior-delivery clients only return after a weekly check-in.
@@ -326,7 +351,7 @@ export async function getCoachWorkQueue(
       needsJourneySetup &&
       !client.journey_goal?.trim() &&
       !readyDraftId &&
-      generation?.status !== 'failed'
+      !generationFailed
     ) {
       if (!canShowColdPlanWork) continue
       tasks.push({
@@ -355,24 +380,18 @@ export async function getCoachWorkQueue(
 
     const title =
       generation?.status === 'ready' || readyDraftId
-        ? 'Ready for coach note/review'
-        : generation?.status === 'failed'
+        ? 'Initial plan generated — ready for review'
+        : generationFailed
           ? 'AI plan generation failed'
           : manualPlanDelivery && !readyDraftId && !generation
             ? 'Generate initial plan draft'
             : 'AI plan is generating'
-    const isGenerating =
-      !readyDraftId &&
-      generation?.status !== 'failed' &&
-      (generation?.status === 'queued' || generation?.status === 'generating')
-    if (isGenerating) continue
-
     const isColdStart =
-      !readyDraftId && generation?.status !== 'failed' && !generation
+      !readyDraftId && !generationFailed && !generation
     if (isColdStart && !canShowColdPlanWork) continue
     const href = readyDraftId
       ? `/coach/plan/${readyDraftId}`
-      : generation?.status === 'failed'
+      : generationFailed
         ? `/coach/client/${client.id}/generate-plan?intent=initial`
         : manualPlanDelivery && needsJourneySetup && !readyDraftId && !generation
           ? `/coach/client/${client.id}#journey-plan`
@@ -380,8 +399,8 @@ export async function getCoachWorkQueue(
             ? `/coach/client/${client.id}/generate-plan?intent=initial`
             : `/coach/client/${client.id}`
     const failedGuidance =
-      generation?.status === 'failed'
-        ? getGenerationFailureGuidance(generation.error_code, generation.error_message)
+      generationFailed
+        ? getGenerationFailureGuidance(generation?.error_code, generation?.error_message)
         : null
     tasks.push({
       id: `plan-${client.id}`,
