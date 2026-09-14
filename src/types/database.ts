@@ -351,6 +351,8 @@ export type Purchase = {
   claim_token_hash?: string | null
   claim_token_expires_at?: string | null
   claimed_at?: string | null
+  /** When set, claim assigns this coach instead of auto-assign. */
+  preferred_coach_id?: string | null
   /** Client added the paid supplement protocol at checkout. */
   supplement_addon?: boolean
   /** Portion of amount_paise attributable to the supplement protocol add-on. */

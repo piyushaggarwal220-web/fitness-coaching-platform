@@ -1,4 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from 'crypto'
+import { assignCoachToClient } from '@/lib/admin/assign-coach'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
@@ -669,7 +670,13 @@ export async function claimPurchaseWithPassword(
     }
   }
 
-  const assignResult = await autoAssignCoachToClient(userId, admin)
+  const assignResult = purchase.preferred_coach_id
+    ? await (async () => {
+        const { error } = await assignCoachToClient(admin, userId, purchase.preferred_coach_id!)
+        if (error) return { coachId: null as string | null, error }
+        return { coachId: purchase.preferred_coach_id as string, error: null as string | null }
+      })()
+    : await autoAssignCoachToClient(userId, admin)
   if (assignResult.coachId) {
     const { data: coach } = await admin
       .from('coaches')
