@@ -18,7 +18,9 @@ export function encodePlanMeta(meta: PlanMeta, coachNotes?: string | null): stri
   return `${META_PREFIX}${payload}${META_SUFFIX}\n${notes}`
 }
 
-export function parsePlanMeta(plan: Pick<Plan, 'title' | 'coach_notes' | 'phase'>): PlanMeta {
+export function parsePlanMeta(
+  plan: Pick<Plan, 'title' | 'coach_notes'> & Partial<Pick<Plan, 'phase'>>
+): PlanMeta {
   const notes = plan.coach_notes ?? ''
   const match = notes.match(/@@META(\{.*?\})@@/)
   if (match?.[1]) {

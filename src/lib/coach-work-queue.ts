@@ -564,7 +564,9 @@ export async function getCoachWorkQueue(
         : checkin.checkin_type === 'mid_week'
           ? 'Review Mid-Week Check-in'
           : 'Review Weekly Check-in',
-      subtitle: name,
+      subtitle: readyDraft
+        ? `${name} · open the draft, then deliver when ready`
+        : name,
       href: readyDraft ? `/coach/plan/${readyDraft.id}` : `/coach/checkin/${checkin.id}`,
       clientId: checkin.client_id,
       clientName: name,
