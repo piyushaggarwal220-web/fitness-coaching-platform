@@ -18,6 +18,7 @@ import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
 import { clientFacingPlanTitle, parsePlanMeta, extractWeekFromTitle } from '@/lib/plan-metadata';
 import { planGoalName, planDurationLabel } from '@/lib/payments/plan-pages';
+import { clientFacingDietPlanText } from '@/lib/ai/nutrition-macro-sync'
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
@@ -176,7 +177,7 @@ export default function ClientPlanPage() {
       key: 'diet' as const,
       title: 'Diet',
       icon: <Apple size={20} />,
-      content: sections.diet,
+      content: clientFacingDietPlanText(sections.diet),
       emptyHint: 'Your coach hasn’t added a diet section yet.',
       alwaysShow: true,
     },

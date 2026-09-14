@@ -30,6 +30,7 @@ assert.match(queueSrc, /checkin_type', 'weekly'/)
 assert.match(queueSrc, /isColdStart && !canShowColdPlanWork/)
 assert.match(queueSrc, /isUnfinishedQueueDraftTitle/)
 assert.match(queueSrc, /isUnfinishedCoachReviewDraftTitle/)
+assert.match(queueSrc, /Undelivered AI drafts/)
 assert.match(queueSrc, /clientRequiresJourneySetup/)
 assert.match(queueSrc, /needsJourneySetup/)
 

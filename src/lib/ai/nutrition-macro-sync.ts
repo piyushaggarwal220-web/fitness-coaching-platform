@@ -240,6 +240,40 @@ function clampCaloriesToWeeklyBand(
   return Math.min(Math.max(target, min), max)
 }
 
+/** Leading Calories/Protein/Carbs/Fat lines at the top of a diet plan. */
+const LEADING_MACRO_HEADER_LINE = /^\s*(calories|protein|carbs|fat)\s*:\s*.+$/i
+
+/**
+ * Remove the top-of-plan macro header block from diet text.
+ * Meal-line kcal stay intact — those are the reliable numbers clients should follow.
+ */
+export function stripLeadingDietMacroHeader(text: string | null | undefined): string {
+  const raw = (text ?? '').replace(/^\uFEFF/, '')
+  if (!raw.trim()) return ''
+
+  const lines = raw.split('\n')
+  let i = 0
+  while (i < lines.length && lines[i]!.trim() === '') i += 1
+
+  let removed = 0
+  while (i < lines.length && LEADING_MACRO_HEADER_LINE.test(lines[i]!)) {
+    i += 1
+    removed += 1
+  }
+  if (removed === 0) return raw.trimEnd()
+
+  while (i < lines.length && lines[i]!.trim() === '') i += 1
+  return lines.slice(i).join('\n').trim()
+}
+
+/**
+ * Client-facing diet copy: never show the inaccurate top Calories/macros header.
+ * Clients still see per-meal and daily-total lines in the plan body.
+ */
+export function clientFacingDietPlanText(text: string | null | undefined): string {
+  return stripLeadingDietMacroHeader(text)
+}
+
 /** Read the "Calories: NNNN" header from a stored plan's nutrition string. */
 export function parseHeaderCalories(text: string | null | undefined): number | null {
   if (!text) return null

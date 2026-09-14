@@ -277,49 +277,19 @@ export async function getCoachWorkQueue(
 
   const planSlugByClient = buildPlanSlugByClient(purchases ?? [])
 
-  const unfinishedDraftIds = new Set<string>()
   const latestDraftByClient = new Map<string, { id: string; created_at: string }>()
   for (const draft of undeliveredDrafts ?? []) {
     if (!pendingClientIds.has(draft.client_id)) continue
-    if (isUnfinishedQueueDraftTitle(draft.title)) {
-      unfinishedDraftIds.add(draft.id)
-      continue
-    }
+    // Undelivered AI drafts (including "AI Draft · Ready for coach note/review")
+    // are the review queue — do not filter them out by title.
     if (!latestDraftByClient.has(draft.client_id)) {
       latestDraftByClient.set(draft.client_id, { id: draft.id, created_at: draft.created_at })
-    }
-  }
-
-  // Ready jobs may still point at previously auto-delivered unfinished AI drafts
-  // (delivered_at set, active false). Resolve those titles so they are not queued again.
-  const readyDraftIds = [
-    ...new Set(
-      ((generationJobs ?? []) as GenerationJobRow[])
-        .filter((job) => job.status === 'ready' && job.draft_plan_id)
-        .map((job) => job.draft_plan_id as string)
-    ),
-  ]
-  if (readyDraftIds.length > 0) {
-    const { data: readyDraftPlans } = await supabase
-      .from('plans')
-      .select('id, title')
-      .in('id', readyDraftIds)
-    for (const plan of readyDraftPlans ?? []) {
-      if (isUnfinishedQueueDraftTitle(plan.title)) unfinishedDraftIds.add(plan.id)
     }
   }
 
   const generationByClient = new Map<string, GenerationJobRow>()
   for (const job of (generationJobs ?? []) as GenerationJobRow[]) {
     if (!pendingClientIds.has(job.client_id)) continue
-    // Ignore ready jobs that only point at unfinished AI auto-drafts.
-    if (
-      job.status === 'ready' &&
-      job.draft_plan_id &&
-      unfinishedDraftIds.has(job.draft_plan_id)
-    ) {
-      continue
-    }
     // Newest first from query order — keep the latest job per pending client.
     if (!generationByClient.has(job.client_id)) {
       generationByClient.set(job.client_id, job)
