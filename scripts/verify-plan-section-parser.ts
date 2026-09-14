@@ -138,6 +138,43 @@ Day 1: Squats 3x8`,
 assert('workout-only nutrition promotes to workout', workoutOnlyNutrition.workout.includes('Squats'))
 assert('workout-only nutrition does not leave workout in diet', !workoutOnlyNutrition.diet.includes('Squats'))
 
+const nutritionInsideWorkout = resolvePlanSections({
+  nutrition_plan: `Calories: 1790
+Protein: 100g
+
+Weekly Diet Plan: South Indian meals
+Breakfast: idli`,
+  workout_plan: `David, nutrition switched to South Indian. Workout stays the same.
+
+NUTRITION PLAN
+
+Daily Meal Plan
+Breakfast: idli and sambar
+Lunch: rice and rasam
+
+WORKOUT PLAN
+Day 1: Bench Press 4 sets x 8 reps
+Squats 3 sets x 10 reps`,
+  supplement_plan: '',
+  cardio_plan: '',
+  coach_notes: '',
+})
+
+assert(
+  'strips NUTRITION PLAN block out of workout field',
+  !nutritionInsideWorkout.workout.includes('idli and sambar')
+)
+assert(
+  'keeps real exercises after embedded nutrition',
+  nutritionInsideWorkout.workout.includes('Bench Press') &&
+    nutritionInsideWorkout.workout.includes('Squats')
+)
+assert(
+  'diet still comes from nutrition_plan field',
+  nutritionInsideWorkout.diet.includes('Calories: 1790')
+)
+assert('recognizes NUTRITION PLAN header', !nutritionInsideWorkout.workout.includes('NUTRITION PLAN'))
+
 const humanized = normalizeAiPlanProse(
   '## Monday\n**Warm up**\n- Squats: 4 sets x 8 reps\n* Walk for 20 minutes\nUse a well-balanced meal.'
 )

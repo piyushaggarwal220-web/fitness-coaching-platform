@@ -29,6 +29,7 @@ import { buildDietHardConstraintsSection } from '@/lib/ai/prompt-builder'
 import { enforceDietPreference, dietScanOptionsFromProfile } from '@/lib/ai/diet-preference-guard'
 import { applyDietPlanRepair } from '@/lib/ai/diet-plan-repair'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
+import { applyParsedSectionsToFormData } from '@/lib/plan-section-parser'
 import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction, autoDietModifyInstruction } from '@/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
 import {
@@ -783,7 +784,7 @@ export async function editPlanForClientChange(
     throw new ClaudeResponseError('AI returned an invalid combined plan edit.')
   }
 
-  const nutritionPlan = syncStoredDietText(
+  let nutritionPlan = syncStoredDietText(
     stripPlanEditMetaLanguage(
       stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.nutritionPlan))
     ),
@@ -793,11 +794,29 @@ export async function editPlanForClientChange(
       floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
     }
   )
-  const workoutPlan = stripPlanEditMetaLanguage(
+  let workoutPlan = stripPlanEditMetaLanguage(
     stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.workoutPlan))
   )
   if (!nutritionPlan || !workoutPlan) {
     throw new ClaudeResponseError('AI returned empty section text.')
+  }
+
+  // Client-change edits sometimes paste a full NUTRITION PLAN into workout_plan.
+  // Normalize section boundaries before we persist so clients never see 2 diets / 0 workouts.
+  const separated = applyParsedSectionsToFormData({
+    client_id: input.clientId ?? '',
+    title: 'Client change edit',
+    phase: 'Phase 1',
+    nutrition_plan: nutritionPlan,
+    workout_plan: workoutPlan,
+    cardio_plan: '',
+    supplement_plan: '',
+    coach_notes: '',
+  })
+  nutritionPlan = separated.nutrition_plan.trim() || nutritionPlan
+  workoutPlan = separated.workout_plan.trim() || workoutPlan
+  if (!nutritionPlan || !workoutPlan) {
+    throw new ClaudeResponseError('AI returned empty section text after section split.')
   }
 
   if (input.profile) {
