@@ -21,6 +21,7 @@ import { resolveVisionMediaType, type VisionSafeMediaType } from '@/lib/photo'
 import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
 import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveProgressPhotoRefs } from '@/lib/onboarding'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
 
 export {
@@ -105,23 +106,22 @@ async function loadProgressImages(
   admin: SupabaseClient,
   profile: OnboardingProfile
 ): Promise<{ mediaType: VisionSafeMediaType; data: string }[]> {
-  const paths = [
-    profile.progress_photo_front,
-    profile.progress_photo_side,
-    profile.progress_photo_back,
-  ].filter((path): path is string => Boolean(path))
+  const refs = resolveProgressPhotoRefs(profile)
+  const ordered = [refs.front, refs.side, refs.back].filter(
+    (ref): ref is NonNullable<typeof ref> => Boolean(ref)
+  )
   const images: { mediaType: VisionSafeMediaType; data: string }[] = []
 
-  for (const path of paths) {
-    const { data, error } = await admin.storage.from('onboarding-photos').download(path)
+  for (const ref of ordered) {
+    const { data, error } = await admin.storage.from(ref.bucket).download(ref.path)
     if (error || !data) {
       throw new Error(
-        `An uploaded onboarding photo could not be loaded (${path.split('/').pop() || 'photo'}). Ask the client to re-upload it in the app, then retry.`
+        `An uploaded onboarding photo could not be loaded (${ref.path.split('/').pop() || 'photo'}). Ask the client to re-upload it in the app, then retry.`
       )
     }
     const buffer = await data.arrayBuffer()
     // Supabase often returns an empty Blob.type — sniff bytes / extension instead.
-    const mediaType = resolveVisionMediaType(data.type, buffer, path)
+    const mediaType = resolveVisionMediaType(data.type, buffer, ref.path)
     images.push({
       mediaType,
       data: Buffer.from(buffer).toString('base64'),

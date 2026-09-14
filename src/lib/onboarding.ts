@@ -593,6 +593,76 @@ export type SavedPhotoUrls = {
   back: string | null
 }
 
+export type ProgressPhotoBucket = typeof ONBOARDING_PHOTO_BUCKET | 'avatars'
+
+export type ProgressPhotoRef = {
+  path: string
+  bucket: ProgressPhotoBucket
+  label: 'front' | 'side' | 'back'
+}
+
+function galleryPathsFromProfile(
+  profile: Pick<OnboardingProfile, 'profile_gallery_paths'>
+): string[] {
+  const raw = profile.profile_gallery_paths
+  if (!Array.isArray(raw)) return []
+  return raw.filter((p): p is string => typeof p === 'string' && p.trim().length > 0).map((p) => p.trim())
+}
+
+/**
+ * Prefer dedicated onboarding progress columns; if missing, use profile gallery
+ * uploads (avatars bucket) in order as front / side / back.
+ * Some clients finish onboarding via gallery photos instead of the photo step.
+ */
+export function resolveProgressPhotoRefs(
+  profile: Pick<
+    OnboardingProfile,
+    'progress_photo_front' | 'progress_photo_side' | 'progress_photo_back' | 'profile_gallery_paths'
+  >
+): { front: ProgressPhotoRef | null; side: ProgressPhotoRef | null; back: ProgressPhotoRef | null } {
+  const fromColumn = (
+    path: string | null | undefined,
+    label: 'front' | 'side' | 'back'
+  ): ProgressPhotoRef | null => {
+    const trimmed = path?.trim()
+    if (!trimmed) return null
+    return { path: trimmed, bucket: ONBOARDING_PHOTO_BUCKET, label }
+  }
+
+  let front = fromColumn(profile.progress_photo_front, 'front')
+  let side = fromColumn(profile.progress_photo_side, 'side')
+  let back = fromColumn(profile.progress_photo_back, 'back')
+
+  const unused = galleryPathsFromProfile(profile).filter(
+    (path) => path !== front?.path && path !== side?.path && path !== back?.path
+  )
+  if (!front && unused.length > 0) {
+    front = { path: unused.shift()!, bucket: 'avatars', label: 'front' }
+  }
+  if (!side && unused.length > 0) {
+    side = { path: unused.shift()!, bucket: 'avatars', label: 'side' }
+  }
+  if (!back && unused.length > 0) {
+    back = { path: unused.shift()!, bucket: 'avatars', label: 'back' }
+  }
+
+  return { front, side, back }
+}
+
+export function savedPhotoUrlsFromProfile(
+  profile: Pick<
+    OnboardingProfile,
+    'progress_photo_front' | 'progress_photo_side' | 'progress_photo_back' | 'profile_gallery_paths'
+  >
+): SavedPhotoUrls {
+  const refs = resolveProgressPhotoRefs(profile)
+  return {
+    front: refs.front?.path ?? null,
+    side: refs.side?.path ?? null,
+    back: refs.back?.path ?? null,
+  }
+}
+
 export type OnboardingPhotoFiles = {
   front: File | null
   side: File | null
@@ -735,11 +805,7 @@ export function getResumeStep(
 
   // Flag alone is not enough — resume at the first missing required answer.
   const form = formFromProfile(profile)
-  const photoUrls = {
-    front: profile.progress_photo_front ?? null,
-    side: profile.progress_photo_side ?? null,
-    back: profile.progress_photo_back ?? null,
-  }
+  const photoUrls = savedPhotoUrlsFromProfile(profile)
   const mealTimingContext = mealTimingContextFromForm(
     form,
     parseOnboardingData(profile.onboarding_data)?.eatingPattern?.mealsForTiming
@@ -1628,11 +1694,7 @@ export function validateOnboardingAnswersForProfile(
 ): string | null {
   const form = formFromProfile(profile)
   if (options?.termsAccepted || profile.terms_accepted_at) form.terms_accepted = true
-  const photoUrls = {
-    front: profile.progress_photo_front ?? null,
-    side: profile.progress_photo_side ?? null,
-    back: profile.progress_photo_back ?? null,
-  }
+  const photoUrls = savedPhotoUrlsFromProfile(profile)
   const meals = mealTimingContextFromForm(
     form,
     parseOnboardingData(profile.onboarding_data)?.eatingPattern?.mealsForTiming

@@ -38,6 +38,8 @@ export function validateAuthoritativeOnboarding(profile: OnboardingProfile): str
     return 'Onboarding is not complete.'
   }
   return validatePersistedOnboardingAnswers(profile, {
-    termsAccepted: Boolean(profile.terms_accepted_at),
+    // Older completions sometimes lack terms_accepted_at even though onboarding_complete is true.
+    termsAccepted:
+      Boolean(profile.terms_accepted_at) || Boolean(profile.onboarding_complete),
   })
 }

@@ -4,7 +4,7 @@ import { useMemo, useState, type CSSProperties } from 'react'
 import { PhotoGalleryViewer, type GalleryPhoto } from '@/components/journey/PhotoGalleryViewer'
 import { StorageImage } from '@/components/ui/StorageImage'
 import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
-import { buildReviewSections, formFromProfile } from '@/lib/onboarding'
+import { buildReviewSections, formFromProfile, resolveProgressPhotoRefs } from '@/lib/onboarding'
 import { colors, spacing, radius } from '@/lib/coach-theme'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -29,13 +29,14 @@ function galleryPaths(client: OnboardingProfile): string[] {
 /** Full onboarding answers + every client-owned photo for initial plan generation. */
 export function ClientOnboardingBrief({ client }: ClientOnboardingBriefProps) {
   const form = useMemo(() => formFromProfile(client), [client])
+  const progressRefs = useMemo(() => resolveProgressPhotoRefs(client), [client])
   const photoUrls = useMemo(
     () => ({
-      front: client.progress_photo_front ?? null,
-      side: client.progress_photo_side ?? null,
-      back: client.progress_photo_back ?? null,
+      front: progressRefs.front?.path ?? null,
+      side: progressRefs.side?.path ?? null,
+      back: progressRefs.back?.path ?? null,
     }),
-    [client.progress_photo_front, client.progress_photo_side, client.progress_photo_back]
+    [progressRefs]
   )
   const sections = useMemo(() => {
     const base = buildReviewSections(form, photoUrls).filter((section) => section.title !== 'Progress Photos')
@@ -66,16 +67,21 @@ export function ClientOnboardingBrief({ client }: ClientOnboardingBriefProps) {
         bucket: 'avatars',
       })
     }
-    if (photoUrls.front) {
-      list.push({ key: 'front', label: 'Front', src: photoUrls.front, progress: true })
+    for (const ref of [progressRefs.front, progressRefs.side, progressRefs.back]) {
+      if (!ref) continue
+      list.push({
+        key: ref.label,
+        label: ref.label === 'front' ? 'Front' : ref.label === 'side' ? 'Side' : 'Back',
+        src: ref.path,
+        progress: ref.bucket === 'onboarding-photos',
+        bucket: ref.bucket === 'avatars' ? 'avatars' : undefined,
+      })
     }
-    if (photoUrls.side) {
-      list.push({ key: 'side', label: 'Side', src: photoUrls.side, progress: true })
-    }
-    if (photoUrls.back) {
-      list.push({ key: 'back', label: 'Back', src: photoUrls.back, progress: true })
-    }
+    const used = new Set(
+      [progressRefs.front?.path, progressRefs.side?.path, progressRefs.back?.path].filter(Boolean)
+    )
     galleryPaths(client).forEach((path, index) => {
+      if (used.has(path)) return
       list.push({
         key: `gallery-${index}`,
         label: `Gallery ${index + 1}`,
@@ -84,7 +90,7 @@ export function ClientOnboardingBrief({ client }: ClientOnboardingBriefProps) {
       })
     })
     return list
-  }, [client, photoUrls])
+  }, [client, progressRefs])
 
   const [gallery, setGallery] = useState<{ photos: GalleryPhoto[]; index: number } | null>(null)
 
