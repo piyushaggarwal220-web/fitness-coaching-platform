@@ -8,7 +8,8 @@ import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
 import { listPendingLeagueCertificateWinners } from '@/lib/league/service'
 import { buildLeagueCertificateChatGptPrompt } from '@/lib/league/certificate-prompt'
 import { LEAGUE_TIER_LABELS } from '@/lib/league/scoring'
-import { isUnfinishedCoachReviewDraftTitle } from '@/lib/plan-metadata'
+import { isUnfinishedCoachReviewDraftTitle, parsePlanMeta } from '@/lib/plan-metadata'
+import { DRAFT_GENERATING_WINDOW_MS } from '@/lib/ai/draft-status'
 
 /** Unfinished auto drafts that should not count as a real prior delivery or ready review item. */
 function isUnfinishedQueueDraftTitle(title: string | null | undefined): boolean {
@@ -467,20 +468,115 @@ export async function getCoachWorkQueue(
     })
   }
 
+  // Weekly draft in-flight / ready state (same pattern as initial plan generation).
+  const weeklyCheckinIds = new Set(
+    (pendingCheckins ?? [])
+      .filter((c) => c.checkin_type === 'weekly' && clientNameById.has(c.client_id))
+      .map((c) => c.id as string)
+  )
+  const weeklyDraftByCheckinId = new Map<string, { id: string; updated_at: string }>()
+  const weeklyDraftGenerating = new Set<string>()
+
+  if (weeklyCheckinIds.size > 0) {
+    const sinceIso = new Date(Date.now() - DRAFT_GENERATING_WINDOW_MS).toISOString()
+    const [{ data: weeklyDraftRows }, { data: weeklyDraftLogs }] = await Promise.all([
+      supabase
+        .from('plans')
+        .select('id, client_id, title, coach_notes, updated_at')
+        .eq('coach_id', coachId)
+        .eq('active', false)
+        .is('delivered_at', null)
+        .ilike('title', 'AI Draft%')
+        .order('updated_at', { ascending: false })
+        .limit(120),
+      supabase
+        .from('ai_generation_logs')
+        .select('action, success, created_at, rendered_output, validation_result')
+        .eq('coach_id', coachId)
+        .in('action', [
+          'weekly_draft_started',
+          'weekly_draft_manual',
+          'weekly_draft_retry',
+          'weekly_draft_auto',
+        ])
+        .gte('created_at', sinceIso)
+        .order('created_at', { ascending: false })
+        .limit(120),
+    ])
+
+    for (const plan of weeklyDraftRows ?? []) {
+      const checkinId = parsePlanMeta(plan).checkinId
+      if (!checkinId || !weeklyCheckinIds.has(checkinId)) continue
+      if (weeklyDraftByCheckinId.has(checkinId)) continue
+      weeklyDraftByCheckinId.set(checkinId, {
+        id: plan.id as string,
+        updated_at: (plan.updated_at as string) ?? new Date().toISOString(),
+      })
+    }
+
+    const latestLogByCheckin = new Map<
+      string,
+      { phase: 'started' | 'finished' | 'failed'; createdAt: string }
+    >()
+    for (const row of weeklyDraftLogs ?? []) {
+      const output = row.rendered_output as { checkinId?: string; phase?: string } | null
+      const checkinId = output?.checkinId
+      if (!checkinId || !weeklyCheckinIds.has(checkinId)) continue
+      if (latestLogByCheckin.has(checkinId)) continue
+      const isStarted =
+        row.action === 'weekly_draft_started' ||
+        output?.phase === 'started' ||
+        row.validation_result === 'started'
+      let phase: 'started' | 'finished' | 'failed' = 'finished'
+      if (isStarted) phase = 'started'
+      else if (!row.success) phase = 'failed'
+      latestLogByCheckin.set(checkinId, {
+        phase,
+        createdAt: row.created_at as string,
+      })
+    }
+
+    for (const [checkinId, log] of latestLogByCheckin) {
+      if (log.phase !== 'started') continue
+      if (weeklyDraftByCheckinId.has(checkinId)) continue
+      const age = Date.now() - new Date(log.createdAt).getTime()
+      if (Number.isFinite(age) && age < DRAFT_GENERATING_WINDOW_MS) {
+        weeklyDraftGenerating.add(checkinId)
+      }
+    }
+  }
+
   for (const checkin of pendingCheckins ?? []) {
     if (isCheckinPendingAutoReply(checkin)) continue
     if (!clientNameById.has(checkin.client_id)) continue
     const name = clientNameById.get(checkin.client_id) ?? 'Client'
+    const isWeekly = checkin.checkin_type === 'weekly'
+
+    // Hide weekly check-in while AI draft is generating (mirrors initial plan).
+    if (isWeekly && weeklyDraftGenerating.has(checkin.id)) continue
+
+    const readyDraft = isWeekly ? weeklyDraftByCheckinId.get(checkin.id) : null
     tasks.push({
       id: `checkin-${checkin.id}`,
       type: 'checkin_review',
-      title: checkin.checkin_type === 'mid_week' ? 'Review Mid-Week Check-in' : 'Review Weekly Check-in',
+      title: readyDraft
+        ? 'Weekly AI draft ready for review'
+        : checkin.checkin_type === 'mid_week'
+          ? 'Review Mid-Week Check-in'
+          : 'Review Weekly Check-in',
       subtitle: name,
-      href: `/coach/checkin/${checkin.id}`,
+      href: readyDraft ? `/coach/plan/${readyDraft.id}` : `/coach/checkin/${checkin.id}`,
       clientId: checkin.client_id,
       clientName: name,
       priority: QUEUE_PRIORITY,
-      createdAt: checkin.submitted_at,
+      createdAt: readyDraft?.updated_at ?? checkin.submitted_at,
+      coachNextSteps: readyDraft
+        ? [
+            'Open Start to review the AI draft.',
+            'Add a coach note if needed, then Publish / Deliver to the client.',
+            'Mark complete only after the plan is delivered — it does not send the plan.',
+          ]
+        : undefined,
     })
   }
 

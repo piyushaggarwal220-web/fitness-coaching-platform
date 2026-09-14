@@ -1016,6 +1016,7 @@ export type NotificationType =
   | 'call_request_updated'
   | 'initial_plan_draft_ready'
   | 'initial_plan_generation_failed'
+  | 'weekly_plan_draft_ready'
 
 export type UserNotification = {
   id: string
