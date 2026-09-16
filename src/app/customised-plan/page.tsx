@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Check, Dumbbell, Smartphone, UserRound } from 'lucide-react'
+import { Check, Dumbbell, MessageCircle, Smartphone, UserRound, X } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
 import styles from './customised-plan.module.css'
@@ -33,6 +33,24 @@ const PLAN_BULLETS: Record<string, string[]> = {
     'Supplement guidance (optional)',
   ],
 }
+
+const FAIL_POINTS = [
+  'Generic AI plans copy the same template for everyone',
+  'Old beliefs like “more sweat means more fat loss”',
+  'Random YouTube workouts with no weekly structure',
+  'Crash diets that crash your energy and adherence',
+  'Ignoring sleep, water, and recovery',
+  'Changing plans every week before results can show',
+]
+
+const WIN_POINTS = [
+  'Customised plans built from your answers and coach principles',
+  'Science first: calories, protein, progressive overload, recovery',
+  'Clear weekly workout structure with sets and reps',
+  'Diet chart matched to your goal and food reality',
+  'Sleep, cardio, and water guidance included in Complete',
+  'Simple rules you can follow for weeks, not one hard day',
+]
 
 const FAQS = [
   {
@@ -63,25 +81,93 @@ const FAQS = [
     q: 'Who makes the plan?',
     a: 'Your plan is made by the coach. For live checkins and chat, choose a coaching membership on lurvox.in.',
   },
+  {
+    q: 'What if I see no results?',
+    a: 'We stand behind guaranteed results with moneyback if you see none, when you follow the plan as written.',
+  },
 ]
+
+const BOT_KB = [
+  ...FAQS,
+  {
+    q: 'price cost 99 49 89 complete',
+    a: 'Workout is ₹49. Diet is ₹89. Complete Guidance is ₹99 for both, plus sleep, cardio, water, and optional supplements.',
+  },
+  {
+    q: 'ai generic template',
+    a: 'Generic AI plans often reuse one template. Ours follow coach principles and your questionnaire answers.',
+  },
+  {
+    q: 'sweat sweating fat loss myth',
+    a: 'Sweating does not equal fat loss. Fat loss needs a sustainable calorie setup, protein, training, sleep, and consistency.',
+  },
+]
+
+type ChatMsg = { role: 'bot' | 'user'; text: string }
+
+function answerQuestion(input: string): string {
+  const q = input.toLowerCase()
+  let best = BOT_KB[0]!
+  let score = 0
+  for (const item of BOT_KB) {
+    const keys = `${item.q} ${item.a}`.toLowerCase().split(/[^a-z0-9]+/)
+    let s = 0
+    for (const key of keys) {
+      if (key.length < 3) continue
+      if (q.includes(key)) s += 1
+    }
+    if (s > score) {
+      score = s
+      best = item
+    }
+  }
+  if (score < 1) {
+    return 'Ask about price, delivery time, personalisation, moneyback, or how Complete differs from generic plans. Or scroll to FAQ below.'
+  }
+  return best.a
+}
 
 export default function CustomisedPlanLandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const [showSticky, setShowSticky] = useState(false)
+  const [botOpen, setBotOpen] = useState(false)
+  const [botInput, setBotInput] = useState('')
+  const [messages, setMessages] = useState<ChatMsg[]>([
+    {
+      role: 'bot',
+      text: 'Hi. Ask me about plans, delivery, moneyback, or why customised beats generic templates.',
+    },
+  ])
 
   useEffect(() => {
-    const onScroll = () => setShowSticky(window.scrollY > 420)
+    const onScroll = () => setShowSticky(window.scrollY > 320)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  const suggestions = useMemo(
+    () => ['How fast do I get the plan?', 'Why ₹99 Complete?', 'Moneyback?', 'AI vs your plan?'],
+    []
+  )
+
+  function sendBot(text: string) {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', text: trimmed },
+      { role: 'bot', text: answerQuestion(trimmed) },
+    ])
+    setBotInput('')
+  }
 
   return (
     <main className={styles.page}>
       <div className={styles.ticker} aria-hidden>
         <div className={styles.tickerTrack}>
           {Array.from({ length: 8 }).map((_, i) => (
-            <span key={i}>One time payment · No subscriptions · Digital delivery · </span>
+            <span key={i}>One time payment · Guaranteed results · Coach made plans · </span>
           ))}
         </div>
       </div>
@@ -109,11 +195,7 @@ export default function CustomisedPlanLandingPage() {
             Coach made plans around your goals, from ₹49. Delivered to email and the app.
             Written guidance, not live coaching.
           </p>
-          <div className={styles.ctaRow}>
-            <Link href={COMPLETE_HREF} className={styles.primaryCta}>
-              <span className={styles.ctaFull}>Get Complete Plan · ₹99</span>
-              <span className={styles.ctaShort}>Get Complete · ₹99</span>
-            </Link>
+          <div className={styles.stampRow}>
             <div className={styles.guaranteeStamp} aria-label="Guaranteed results, moneyback if none">
               <span className={styles.stampRing}>
                 <span className={styles.stampTop}>Guaranteed</span>
@@ -149,7 +231,7 @@ export default function CustomisedPlanLandingPage() {
                   alt="Piyush, Lurvox coach"
                   fill
                   priority
-                  sizes="(max-width: 900px) 45vw, 280px"
+                  sizes="(max-width: 900px) 48vw, 360px"
                   className={styles.heroImage}
                 />
                 <figcaption className={styles.heroCaption}>Piyush</figcaption>
@@ -160,7 +242,7 @@ export default function CustomisedPlanLandingPage() {
                   alt="Rakshit, Lurvox coach"
                   fill
                   priority
-                  sizes="(max-width: 900px) 45vw, 280px"
+                  sizes="(max-width: 900px) 48vw, 360px"
                   className={styles.heroImage}
                 />
                 <figcaption className={styles.heroCaption}>Rakshit</figcaption>
@@ -173,6 +255,36 @@ export default function CustomisedPlanLandingPage() {
           </div>
           <p className={styles.coachLine}>Piyush and Rakshit · Lurvox coaches</p>
         </motion.div>
+      </section>
+
+      <section className={styles.truthSection} aria-labelledby="truth-title">
+        <p className={styles.sectionEyebrow}>Truth check</p>
+        <h2 id="truth-title" className={styles.sectionTitle}>
+          Why we give results, but you fail
+        </h2>
+        <p className={styles.sectionLede}>
+          Most people fail on generic templates and gym myths. We build customised plans on science
+          and coach principles.
+        </p>
+
+        <div className={styles.truthGrid}>
+          <article className={styles.failCard}>
+            <p className={styles.truthCardLabel}>Why people fail</p>
+            <ul>
+              {FAIL_POINTS.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+          <article className={styles.winCard}>
+            <p className={styles.truthCardLabel}>Why our plans work</p>
+            <ul>
+              {WIN_POINTS.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+        </div>
       </section>
 
       <section id="plans" className={styles.section}>
@@ -300,6 +412,58 @@ export default function CustomisedPlanLandingPage() {
           </Link>
         </div>
       </div>
+
+      <button
+        type="button"
+        className={styles.botFab}
+        aria-expanded={botOpen}
+        aria-controls="instant-help-bot"
+        onClick={() => setBotOpen((v) => !v)}
+      >
+        {botOpen ? <X size={22} aria-hidden /> : <MessageCircle size={22} aria-hidden />}
+        <span>{botOpen ? 'Close' : 'Ask'}</span>
+      </button>
+
+      {botOpen ? (
+        <div id="instant-help-bot" className={styles.botPanel} role="dialog" aria-label="Plan help bot">
+          <div className={styles.botHeader}>
+            <strong>Plan help</strong>
+            <span>Quick answers</span>
+          </div>
+          <div className={styles.botMessages}>
+            {messages.map((msg, i) => (
+              <p
+                key={`${msg.role}-${i}`}
+                className={msg.role === 'bot' ? styles.botBubble : styles.userBubble}
+              >
+                {msg.text}
+              </p>
+            ))}
+          </div>
+          <div className={styles.botSuggestions}>
+            {suggestions.map((item) => (
+              <button key={item} type="button" onClick={() => sendBot(item)}>
+                {item}
+              </button>
+            ))}
+          </div>
+          <form
+            className={styles.botForm}
+            onSubmit={(e) => {
+              e.preventDefault()
+              sendBot(botInput)
+            }}
+          >
+            <input
+              value={botInput}
+              onChange={(e) => setBotInput(e.target.value)}
+              placeholder="Type your question"
+              aria-label="Your question"
+            />
+            <button type="submit">Send</button>
+          </form>
+        </div>
+      ) : null}
     </main>
   )
 }
