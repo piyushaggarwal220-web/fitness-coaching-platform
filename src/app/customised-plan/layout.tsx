@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Outfit, Plus_Jakarta_Sans, Syne } from 'next/font/google'
+import { Manrope, Outfit, Plus_Jakarta_Sans } from 'next/font/google'
 import { BRAND_NAME } from '@/lib/brand'
 
 /** Wordmark / LURVOX lockups only */
@@ -10,8 +10,8 @@ const outfit = Outfit({
   weight: ['700', '800'],
 })
 
-/** Section titles + hero headline */
-const syne = Syne({
+/** Section titles + hero headline — clean geometric, less quirky than Syne */
+const manrope = Manrope({
   subsets: ['latin'],
   variable: '--font-instant-display',
   display: 'swap',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function CustomisedPlanLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`${outfit.variable} ${syne.variable} ${jakarta.variable} ${jakarta.className}`}>
+    <div className={`${outfit.variable} ${manrope.variable} ${jakarta.variable} ${jakarta.className}`}>
       {children}
     </div>
   )
