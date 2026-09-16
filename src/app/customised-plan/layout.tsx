@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Manrope, Outfit, Plus_Jakarta_Sans } from 'next/font/google'
 import { BRAND_NAME } from '@/lib/brand'
 
+/** Wordmark / LURVOX lockups only */
 const outfit = Outfit({
   subsets: ['latin'],
   variable: '--font-instant-brand',
@@ -9,6 +10,7 @@ const outfit = Outfit({
   weight: ['700', '800'],
 })
 
+/** Section titles + hero headline — clean geometric, less quirky than Syne */
 const manrope = Manrope({
   subsets: ['latin'],
   variable: '--font-instant-display',
@@ -16,6 +18,7 @@ const manrope = Manrope({
   weight: ['700', '800'],
 })
 
+/** Body copy, FAQ, bullets, buttons */
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-instant-body',
@@ -24,15 +27,9 @@ const jakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata: Metadata = {
-  title: `Personalized Workout & Diet Plan — ₹99 | ${BRAND_NAME}`,
+  title: `${BRAND_NAME} · Customised fitness plan`,
   description:
-    'Get a personalized workout and diet plan built around your goals, lifestyle and preferences. Choose your plan from ₹49. One-time payment.',
-  openGraph: {
-    title: `Personalized Workout & Diet Plan — ₹99 | ${BRAND_NAME}`,
-    description:
-      'Get a personalized workout and diet plan built around your goals, lifestyle and preferences. Choose your plan from ₹49. One-time payment.',
-    type: 'website',
-  },
+    'Personalised workout and diet plans from ₹49. One time payment. Delivered to email and app within a few hours. Made by the coach. Not live coaching.',
 }
 
 export default function CustomisedPlanLayout({ children }: { children: React.ReactNode }) {
