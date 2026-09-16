@@ -114,7 +114,8 @@ export default function CustomisedPlanLandingPage() {
           </p>
           <div className={styles.ctaRow}>
             <Link href={COMPLETE_HREF} className={styles.primaryCta}>
-              Get Complete Plan — ₹99
+              <span className={styles.ctaFull}>Get Complete Plan — ₹99</span>
+              <span className={styles.ctaShort}>Get Complete — ₹99</span>
             </Link>
             <a href="#plans" className={styles.secondaryCta}>
               See all plans
@@ -266,10 +267,11 @@ export default function CustomisedPlanLandingPage() {
         <div className={styles.stickyInner}>
           <div>
             <strong>Complete Plan</strong>
-            <span>₹99 · one-time</span>
+            <span className={styles.stickyMeta}>₹99 · one-time</span>
           </div>
           <Link href={COMPLETE_HREF} className={styles.stickyCta}>
-            Get Complete Plan — ₹99
+            <span className={styles.ctaFull}>Get Complete Plan — ₹99</span>
+            <span className={styles.ctaShort}>Get Complete — ₹99</span>
           </Link>
         </div>
       </div>

@@ -17,7 +17,8 @@
   color: var(--ink);
   font-family: var(--font-body);
   font-optical-sizing: auto;
-  padding-bottom: 96px;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -162,6 +163,8 @@
   letter-spacing: -0.015em;
   border-radius: 14px;
   padding: 14px 18px;
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
 .secondaryCta {
@@ -175,8 +178,14 @@
   letter-spacing: -0.01em;
   border-radius: 14px;
   padding: 14px 18px;
+  min-height: 48px;
+  box-sizing: border-box;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.7);
+}
+
+.ctaShort {
+  display: none;
 }
 
 .trustRow {
@@ -423,12 +432,14 @@
   background: transparent;
   border: 0;
   padding: 16px 18px;
+  min-height: 52px;
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.015em;
   color: var(--ink);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .faqAnswer {
@@ -490,7 +501,7 @@
   letter-spacing: -0.02em;
 }
 
-.stickyInner span {
+.stickyMeta {
   color: var(--muted);
   font-family: var(--font-body);
   font-size: 12px;
@@ -506,31 +517,141 @@
 @media (max-width: 900px) {
   .hero {
     grid-template-columns: 1fr;
-    padding-top: 18px;
+    gap: 22px;
+    padding: 14px 16px 36px;
   }
 
   .brandHero {
-    font-size: clamp(2.2rem, 11vw, 3rem);
+    font-size: clamp(2.1rem, 10vw, 2.75rem);
   }
 
+  .headline {
+    font-size: clamp(1.7rem, 7.2vw, 2.35rem);
+  }
+
+  .lede {
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  /* Copy first so brand + CTA land in the first fold on phones */
   .heroVisual {
-    order: -1;
+    order: 0;
     min-height: 0;
   }
 
   .heroImageWrap {
-    height: 320px;
+    height: min(42vw, 260px);
+    border-radius: 22px;
+  }
+
+  .ctaRow {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 18px;
+  }
+
+  .primaryCta,
+  .secondaryCta {
+    width: 100%;
+  }
+
+  .trustRow {
+    gap: 10px 14px;
+    font-size: 13px;
+  }
+
+  .includesList {
+    gap: 8px 12px;
+  }
+
+  .includesList li {
+    font-size: 12px;
+  }
+
+  .section,
+  .sectionAlt {
+    padding-block: 40px;
+  }
+
+  .sectionAlt {
+    padding-inline: max(16px, calc((100% - 1120px) / 2 + 16px));
+  }
+
+  .section {
+    padding-inline: 16px;
   }
 
   .planStack {
     grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 22px;
+  }
+
+  .planCard {
+    padding: 18px 16px;
   }
 
   .planCardPopular {
     order: -1;
   }
 
+  .planPrice {
+    font-size: 32px;
+  }
+
+  .topBar {
+    padding: 12px 16px 0;
+  }
+
   .topCta {
     display: none;
+  }
+
+  .stickyInner {
+    gap: 10px;
+  }
+
+  .stickyCta {
+    flex: 0 0 auto;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .ctaFull {
+    display: none;
+  }
+
+  .ctaShort {
+    display: inline;
+  }
+
+  .footer {
+    padding: 24px 16px 36px;
+  }
+}
+
+@media (max-width: 400px) {
+  .heroImageWrap {
+    height: 200px;
+  }
+
+  .stickyInner {
+    flex-wrap: wrap;
+  }
+
+  .stickyInner > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .stickyCta {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .faqButton {
+    font-size: 14px;
+    padding: 14px 14px;
   }
 }
