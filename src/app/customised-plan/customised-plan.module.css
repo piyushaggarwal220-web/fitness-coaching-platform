@@ -37,7 +37,7 @@
 
 .tickerTrack {
   display: inline-block;
-  animation: marquee 28s linear infinite;
+  animation: marquee 44s linear infinite;
 }
 
 @keyframes marquee {
@@ -222,7 +222,7 @@
   position: relative;
   margin: 0;
   aspect-ratio: 3 / 4;
-  max-height: 420px;
+  max-height: 520px;
   border-radius: 20px;
   overflow: hidden;
   background: linear-gradient(160deg, #bfdbfe, #eff6ff 55%, #fff);
@@ -606,7 +606,7 @@
   }
 
   .heroPortrait {
-    max-height: 240px;
+    max-height: 300px;
     border-radius: 16px;
   }
 
@@ -708,7 +708,7 @@
 
 @media (max-width: 400px) {
   .heroPortrait {
-    max-height: 200px;
+    max-height: 250px;
   }
 
   .heroImageWrap {

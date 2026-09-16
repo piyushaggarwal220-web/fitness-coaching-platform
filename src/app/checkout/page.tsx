@@ -678,6 +678,9 @@ function CheckoutForm() {
       ? formatInrFromPaise(firstTimerSavingsPaise)
       : null);
 
+  const dig = (base: CSSProperties, key?: keyof typeof digitalTheme): CSSProperties =>
+    isDigitalCheckout && key ? { ...base, ...digitalTheme[key] } : base
+
   return (
     <div
       style={{
@@ -687,13 +690,18 @@ function CheckoutForm() {
       }}
     >
       <div style={{ ...styles.card, ...(isDigitalCheckout ? digitalTheme.card : null) }}>
-        <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
+        <Link
+          href={isDigitalCheckout ? '/customised-plan' : marketingBaseUrl}
+          style={dig(styles.backLink, 'backLink')}
+        >
+          ← {isDigitalCheckout ? 'Back to plans' : 'Back to home'}
+        </Link>
 
         <p style={{ ...styles.brandMark, ...(isDigitalCheckout ? digitalTheme.brandMark : null) }}>
           {BRAND_NAME}
         </p>
         {isDigitalCheckout ? (
-          <p style={digitalTheme.eyebrow}>PERSONALIZED FITNESS PLANS</p>
+          <p style={digitalTheme.eyebrow}>PERSONALISED FITNESS PLANS</p>
         ) : null}
         <h1 style={{ ...styles.title, ...(isDigitalCheckout ? digitalTheme.title : null) }}>
           {isTrialCheckout
@@ -702,7 +710,7 @@ function CheckoutForm() {
               ? 'Get your customised plan'
               : 'Checkout'}
         </h1>
-        <p style={styles.subtitle}>
+        <p style={dig(styles.subtitle, 'subtitle')}>
           {checkoutScreen === 1
             ? (isTrialCheckout
               ? 'Full coaching access for 7 days. Upgrade anytime.'
@@ -720,16 +728,16 @@ function CheckoutForm() {
         {checkoutScreen === 1 && (
           <>
             {!isTrialCheckout && (
-              <div style={styles.trustStrip} aria-label="Checkout trust">
+              <div style={dig(styles.trustStrip, 'trustStrip')} aria-label="Checkout trust">
                 <div style={styles.trustBadges}>
-                  <span style={styles.trustBadge}>UPI</span>
-                  <span style={styles.trustBadge}>Cards</span>
-                  <span style={styles.trustBadge}>Netbanking</span>
-                  <span style={styles.trustBadge}>Razorpay Secure</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>UPI</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>Cards</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>Netbanking</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>Razorpay Secure</span>
                 </div>
-                <p style={styles.trustLine}>
+                <p style={dig(styles.trustLine, 'trustLine')}>
                   Secure checkout via Razorpay. By paying, you agree to our{' '}
-                  <Link href="/terms" target="_blank" style={styles.inlineLink}>
+                  <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
                     Terms &amp; Conditions
                   </Link>
                   .
@@ -761,14 +769,18 @@ function CheckoutForm() {
                         ...(isDigitalCheckout && selected ? digitalTheme.planChipSelected : null),
                       }}
                     >
-                      <span style={styles.planChipName}>
+                      <span style={dig(styles.planChipName, 'planChipName')}>
                         {isDigitalCheckout ? item.name.replace('Complete Guidance', 'Complete') : planGoalName(item.slug)}
                       </span>
-                      <span style={styles.planChipDuration}>
+                      <span style={dig(styles.planChipDuration, 'planChipDuration')}>
                         {isDigitalCheckout ? item.saveLabel : planDurationLabel(item.slug)}
                       </span>
-                      <span style={styles.planChipPrice}>{item.displayPrice}</span>
-                      {item.popular ? <span style={styles.planChipMrp}>Most popular</span> : null}
+                      <span style={dig(styles.planChipPrice, 'planChipPrice')}>{item.displayPrice}</span>
+                      {item.popular ? (
+                        <span style={isDigitalCheckout ? digitalTheme.planChipPopular : styles.planChipMrp}>
+                          Most popular
+                        </span>
+                      ) : null}
                       {item.best ? <span style={styles.planChipMrp}>Best value</span> : null}
                     </Link>
                   );
@@ -782,17 +794,17 @@ function CheckoutForm() {
               </div>
             )}
 
-            <section style={styles.orderSummary}>
+            <section style={dig(styles.orderSummary, 'orderSummary')}>
               <div style={styles.orderRow}>
                 <div>
-                  <div style={styles.orderPlanName}>
+                  <div style={dig(styles.orderPlanName, 'orderPlanName')}>
                     {isTrialCheckout
                       ? `${plan.name} coaching`
                       : isDigitalCheckout
                         ? plan.name
                         : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
                   </div>
-                  <div style={styles.orderPlanMeta}>
+                  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>
                     {isDigitalCheckout
                       ? plan.sections === 'workout'
                         ? 'Workout guidance · digital delivery'
@@ -804,7 +816,7 @@ function CheckoutForm() {
                 </div>
                 <div style={styles.orderPriceCol}>
                   {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
-                  <span style={styles.orderSummaryPrice}>
+                  <span style={dig(styles.orderSummaryPrice, 'orderSummaryPrice')}>
                     {isTrialCheckout || isDigitalCheckout
                       ? plan.displayPrice
                       : formatInrFromPaise(planPayablePaise)}
@@ -891,19 +903,19 @@ function CheckoutForm() {
             {error && <div style={styles.error}>{error}</div>}
 
             <div style={styles.form}>
-              <h2 style={styles.sectionLabel}>Your details</h2>
+              <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>Your details</h2>
 
-              <label style={styles.label} htmlFor="checkout-name">Full name</label>
+              <label style={dig(styles.label, 'label')} htmlFor="checkout-name">Full name</label>
               <input
                 id="checkout-name"
                 ref={nameRef}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
-                style={styles.input}
+                style={dig(styles.input, 'input')}
               />
 
-              <label style={styles.label} htmlFor="checkout-email">Email</label>
+              <label style={dig(styles.label, 'label')} htmlFor="checkout-email">Email</label>
               <input
                 id="checkout-email"
                 ref={emailRef}
@@ -914,10 +926,10 @@ function CheckoutForm() {
                   resetVerification();
                 }}
                 autoComplete="email"
-                style={styles.input}
+                style={dig(styles.input, 'input')}
               />
 
-              <label style={styles.label} htmlFor="checkout-phone">WhatsApp number</label>
+              <label style={dig(styles.label, 'label')} htmlFor="checkout-phone">WhatsApp number</label>
               <input
                 id="checkout-phone"
                 ref={phoneRef}
@@ -929,12 +941,12 @@ function CheckoutForm() {
                 }}
                 placeholder="+91 98765 43210"
                 autoComplete="tel"
-                style={styles.input}
+                style={dig(styles.input, 'input')}
               />
 
               <button
                 type="button"
-                style={styles.payBtn}
+                style={dig(styles.payBtn, 'payBtn')}
                 onClick={() => {
                   const missing: string[] = [];
                   if (!name.trim()) missing.push('Full name');
@@ -968,26 +980,26 @@ function CheckoutForm() {
             <button
               type="button"
               onClick={() => { setCheckoutScreen(1); setError(''); }}
-              style={styles.backToDetails}
+              style={dig(styles.backToDetails, 'backLink')}
             >
               ← Edit plan & details
             </button>
 
-            <section style={{ ...styles.orderSummary, marginBottom: 16 }}>
+            <section style={{ ...dig(styles.orderSummary, 'orderSummary'), marginBottom: 16 }}>
               <div style={styles.orderRow}>
                 <div>
-                  <div style={styles.orderPlanName}>
+                  <div style={dig(styles.orderPlanName, 'orderPlanName')}>
                     {isTrialCheckout
                       ? plan.name
                       : isDigitalCheckout
                         ? plan.name
                         : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
                   </div>
-                  <div style={styles.orderPlanMeta}>{email.trim() || '—'}</div>
+                  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || '—'}</div>
                 </div>
                 <div style={styles.orderPriceCol}>
                   {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
-                  <span style={styles.orderSummaryPrice}>
+                  <span style={dig(styles.orderSummaryPrice, 'orderSummaryPrice')}>
                     {isTrialCheckout || isDigitalCheckout
                       ? plan.displayPrice
                       : formatInrFromPaise(planPayablePaise)}
@@ -1035,9 +1047,9 @@ function CheckoutForm() {
 
             <form id="checkout-pay-form" onSubmit={handleSubmit} style={styles.form} noValidate>
               {!testMode && (
-                <div ref={verifyRef} style={styles.otpBox}>
+                <div ref={verifyRef} style={dig(styles.otpBox, 'otpBox')}>
                   <div style={styles.otpHead}>
-                    <span style={styles.otpTitle}>Email verification</span>
+                    <span style={dig(styles.otpTitle, 'otpTitle')}>Email verification</span>
                     <span
                       style={{
                         ...styles.otpStatusPill,
@@ -1047,15 +1059,15 @@ function CheckoutForm() {
                       {emailVerified ? 'Verified' : emailLinkSent ? 'Link sent' : 'Required'}
                     </span>
                   </div>
-                  <p style={styles.otpHint}>
-                    We email a secure link — open it on this device, then continue.
+                  <p style={dig(styles.otpHint, 'otpHint')}>
+                    We email a secure link. Open it on this device, then continue.
                   </p>
                   <div style={styles.otpBtnRow}>
                     <button
                       type="button"
                       onClick={() => void sendEmailOtp()}
                       disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
-                      style={styles.otpBtn}
+                      style={dig(styles.otpBtn, 'otpBtn')}
                     >
                       {sendingEmailOtp
                         ? 'Sending…'
@@ -1077,7 +1089,7 @@ function CheckoutForm() {
                           if (data.emailVerified) setEmailVerified(true);
                           else setError('Not verified yet. Open the newest link in your email, then tap this again.');
                         }}
-                        style={styles.otpBtnSecondary}
+                        style={dig(styles.otpBtnSecondary, 'otpBtnSecondary')}
                       >
                         I’ve opened the link
                       </button>
@@ -1090,13 +1102,13 @@ function CheckoutForm() {
                         onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                         placeholder="Code from email"
                         inputMode="numeric"
-                        style={styles.otpInput}
+                        style={dig(styles.otpInput, 'otpInput')}
                       />
                       <button
                         type="button"
                         onClick={() => void verifyEmailOtp()}
                         disabled={verifyingEmailOtp || emailCode.length < 6 || !verificationId}
-                        style={styles.otpBtn}
+                        style={dig(styles.otpBtn, 'otpBtn')}
                       >
                         {verifyingEmailOtp ? 'Checking…' : 'Verify code'}
                       </button>
@@ -1116,9 +1128,9 @@ function CheckoutForm() {
                   aria-describedby="checkout-policy-agreement"
                   style={styles.policyCheck}
                 />
-                <span id="checkout-policy-agreement" style={styles.policyText}>
+                <span id="checkout-policy-agreement" style={dig(styles.policyText, 'policyText')}>
                   I agree to the{' '}
-                  <Link href="/terms" target="_blank" style={styles.inlineLink}>
+                  <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
                     Terms &amp; Conditions
                   </Link>
                   . All guarantees, refunds, upgrades, and service rules are only as stated there.
@@ -1128,34 +1140,34 @@ function CheckoutForm() {
               <div style={{ height: 88 }} aria-hidden />
             </form>
 
-            <p style={styles.secure}>
+            <p style={dig(styles.secure, 'secure')}>
               After payment you&apos;ll create your login password.
               {' '}
-              <Link href="/create-account" style={styles.inlineLink}>Already paid?</Link>
+              <Link href="/create-account" style={dig(styles.inlineLink, 'inlineLink')}>Already paid?</Link>
               {' · '}
-              <Link href="/enroll" style={styles.inlineLink}>Enrollment code</Link>
+              <Link href="/enroll" style={dig(styles.inlineLink, 'inlineLink')}>Enrollment code</Link>
             </p>
           </>
         )}
       </div>
 
       {checkoutScreen === 2 && (
-        <div style={styles.stickyPayBar}>
+        <div style={dig(styles.stickyPayBar, 'stickyPayBar')}>
           <div style={styles.stickyPayInner}>
             <div style={styles.stickyPayMeta}>
-              <span style={styles.stickyPayLabel}>Total due</span>
-              <strong style={styles.stickyPayAmount}>{payableDisplay}</strong>
+              <span style={dig(styles.stickyPayLabel, 'stickyPayLabel')}>Total due</span>
+              <strong style={dig(styles.stickyPayAmount, 'stickyPayAmount')}>{payableDisplay}</strong>
             </div>
             <button
               type="submit"
               form="checkout-pay-form"
               disabled={loading}
-              style={styles.stickyPayBtn}
+              style={dig(styles.stickyPayBtn, 'stickyPayBtn')}
             >
               {loading ? 'Processing…' : `Pay ${payableDisplay}`}
             </button>
           </div>
-          <p style={styles.stickyPayNote}>Secure checkout via Razorpay · SSL encrypted</p>
+          <p style={dig(styles.stickyPayNote, 'stickyPayNote')}>Secure checkout via Razorpay · SSL encrypted</p>
         </div>
       )}
 
@@ -1185,8 +1197,11 @@ const digitalTheme: Record<string, CSSProperties> = {
   },
   card: {
     backgroundColor: '#FFFFFF',
-    border: '1px solid rgba(37,99,235,0.12)',
+    border: '1px solid rgba(37,99,235,0.14)',
     boxShadow: '0 18px 48px rgba(15,23,42,0.08)',
+  },
+  backLink: {
+    color: '#64748B',
   },
   brandMark: {
     color: '#1D4ED8',
@@ -1206,8 +1221,23 @@ const digitalTheme: Record<string, CSSProperties> = {
   title: {
     color: '#0F172A',
   },
+  subtitle: {
+    color: '#475569',
+  },
   dotActive: {
     backgroundColor: '#2563EB',
+  },
+  trustStrip: {
+    backgroundColor: '#F8FBFF',
+    border: '1px solid rgba(37,99,235,0.14)',
+  },
+  trustBadge: {
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(37,99,235,0.18)',
+    color: '#334155',
+  },
+  trustLine: {
+    color: '#475569',
   },
   planChip: {
     backgroundColor: '#F8FBFF',
@@ -1217,6 +1247,103 @@ const digitalTheme: Record<string, CSSProperties> = {
   planChipSelected: {
     backgroundColor: '#EFF6FF',
     border: '2px solid #2563EB',
+    boxShadow: 'none',
+  },
+  planChipName: {
+    color: '#0F172A',
+  },
+  planChipDuration: {
+    color: '#64748B',
+  },
+  planChipPrice: {
+    color: '#0F172A',
+  },
+  planChipPopular: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#2563EB',
+    textDecoration: 'none',
+  },
+  orderSummary: {
+    backgroundColor: '#F8FBFF',
+    border: '1px solid rgba(37,99,235,0.14)',
+  },
+  orderPlanName: {
+    color: '#0F172A',
+  },
+  orderPlanMeta: {
+    color: '#64748B',
+  },
+  orderSummaryPrice: {
+    color: '#0F172A',
+  },
+  sectionLabel: {
+    color: '#64748B',
+  },
+  label: {
+    color: '#334155',
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(37,99,235,0.22)',
+    color: '#0F172A',
+  },
+  payBtn: {
+    backgroundColor: '#2563EB',
+    color: '#FFFFFF',
+  },
+  paySecureNote: {
+    color: '#64748B',
+  },
+  stickyPayBar: {
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderTop: '1px solid rgba(37,99,235,0.16)',
+  },
+  stickyPayLabel: {
+    color: '#64748B',
+  },
+  stickyPayAmount: {
+    color: '#0F172A',
+  },
+  stickyPayBtn: {
+    backgroundColor: '#2563EB',
+    color: '#FFFFFF',
+  },
+  stickyPayNote: {
+    color: '#64748B',
+  },
+  secure: {
+    color: '#64748B',
+  },
+  inlineLink: {
+    color: '#2563EB',
+  },
+  otpBox: {
+    backgroundColor: '#F8FBFF',
+    border: '1px solid rgba(37,99,235,0.14)',
+  },
+  otpTitle: {
+    color: '#0F172A',
+  },
+  otpHint: {
+    color: '#64748B',
+  },
+  otpInput: {
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(37,99,235,0.22)',
+    color: '#0F172A',
+  },
+  otpBtn: {
+    backgroundColor: '#2563EB',
+    color: '#FFFFFF',
+  },
+  otpBtnSecondary: {
+    border: '1px solid rgba(37,99,235,0.22)',
+    color: '#1D4ED8',
+    backgroundColor: '#FFFFFF',
+  },
+  policyText: {
+    color: '#475569',
   },
   honestNote: {
     margin: '12px 0 0',

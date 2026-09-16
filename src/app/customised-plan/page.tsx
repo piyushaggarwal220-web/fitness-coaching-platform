@@ -102,12 +102,12 @@ export default function CustomisedPlanLandingPage() {
         >
           <p className={styles.eyebrow}>Personalised fitness plans</p>
           <h1 className={styles.headline}>
-            Your fitness plan.
-            <span> Made for you.</span>
+            Personal diet and workout,
+            <span> within a few hours.</span>
           </h1>
           <p className={styles.lede}>
-            Coach made workout and diet plans around your goals, from ₹49. Delivered to email and
-            the app within a few hours. Written guidance, not live coaching.
+            Coach made plans around your goals, from ₹49. Delivered to email and the app.
+            Written guidance, not live coaching.
           </p>
           <div className={styles.ctaRow}>
             <Link href={COMPLETE_HREF} className={styles.primaryCta}>
