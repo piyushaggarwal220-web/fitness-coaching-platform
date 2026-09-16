@@ -193,12 +193,20 @@ export default function CustomisedPlanLandingPage() {
             >
               {plan.popular ? <p className={styles.popularTag}>Most popular</p> : null}
               <h3>{plan.name}</h3>
-              <p className={styles.planPrice}>{plan.displayPrice}</p>
-              <p className={styles.planMeta}>{plan.saveLabel}</p>
+              <p className={styles.planPrice}>
+                {plan.displayPrice}
+                {plan.slug === 'digital_complete' ? (
+                  <span className={styles.planWas}>₹138</span>
+                ) : null}
+              </p>
+              <p className={styles.planMeta}>
+                {plan.slug === 'digital_complete'
+                  ? 'Workout ₹49 · Diet ₹89 · both only ₹99'
+                  : plan.saveLabel}
+              </p>
               {plan.slug === 'digital_complete' ? (
                 <p className={styles.planValueNote}>
-                  ₹49 and ₹89 separately is ₹138. Complete Guidance is ₹99, with sleep, cardio,
-                  water, and optional supplement guidance included.
+                  Plus sleep, cardio, water, and optional supplement guidance.
                 </p>
               ) : null}
               <ul className={styles.bulletList}>

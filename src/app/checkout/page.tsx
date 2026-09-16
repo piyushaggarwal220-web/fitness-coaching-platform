@@ -810,7 +810,7 @@ function CheckoutForm() {
                         ? 'Workout guidance · digital delivery'
                         : plan.sections === 'diet'
                           ? 'Diet chart · digital delivery'
-                          : 'Complete guidance · digital delivery'
+                          : 'Workout ₹49 · Diet ₹89 · both ₹99'
                       : 'Workout · diet · checkins · coach chat'}
                   </div>
                 </div>

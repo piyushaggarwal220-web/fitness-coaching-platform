@@ -95,7 +95,7 @@ export const DIGITAL_PLANS: Record<DigitalPlanSlug, CoachingPlan> = {
     amountPaise: 9900,
     durationMonths: 0,
     durationDays: 365,
-    saveLabel: 'Best value',
+    saveLabel: 'Both only ₹99',
     popular: true,
     isDigital: true,
     sections: 'both',
