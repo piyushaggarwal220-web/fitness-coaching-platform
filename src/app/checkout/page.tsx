@@ -707,7 +707,7 @@ function CheckoutForm() {
             ? (isTrialCheckout
               ? 'Full coaching access for 7 days. Upgrade anytime.'
               : isDigitalCheckout
-                ? 'One-time payment · no subscription · AI-built plan delivered to email + app within a few hours.'
+                ? 'One time payment · no subscription · plan made by the coach, delivered to email and app within a few hours.'
                 : 'Choose your plan and enter your details.')
             : 'Verify your email and pay securely.'}
         </p>
@@ -762,7 +762,7 @@ function CheckoutForm() {
                       }}
                     >
                       <span style={styles.planChipName}>
-                        {isDigitalCheckout ? item.name.replace('Personalized ', '').replace('Complete Guidance (Workout + Diet)', 'Complete') : planGoalName(item.slug)}
+                        {isDigitalCheckout ? item.name.replace('Personalized ', '').replace('Complete Guidance', 'Complete') : planGoalName(item.slug)}
                       </span>
                       <span style={styles.planChipDuration}>
                         {isDigitalCheckout ? item.saveLabel : planDurationLabel(item.slug)}
@@ -795,11 +795,11 @@ function CheckoutForm() {
                   <div style={styles.orderPlanMeta}>
                     {isDigitalCheckout
                       ? plan.sections === 'workout'
-                        ? 'Personalized workout · digital delivery'
+                        ? 'Workout guidance · digital delivery'
                         : plan.sections === 'diet'
-                          ? 'Personalized diet · digital delivery'
-                          : 'Workout + diet · digital delivery'
-                      : 'Workout · diet · check-ins · coach chat'}
+                          ? 'Diet chart · digital delivery'
+                          : 'Complete guidance · digital delivery'
+                      : 'Workout · diet · checkins · coach chat'}
                   </div>
                 </div>
                 <div style={styles.orderPriceCol}>
@@ -873,7 +873,7 @@ function CheckoutForm() {
                 </div>
                 ) : (
                   <p style={digitalTheme.honestNote}>
-                    Honest pricing · AI-built customised plan · not live coaching
+                    Honest pricing · Made by the coach · Written plan, not live coaching
                   </p>
                 )}
             </section>

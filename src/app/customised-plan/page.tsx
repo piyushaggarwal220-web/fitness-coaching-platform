@@ -13,53 +13,55 @@ const COMPLETE_HREF = '/checkout?plan=digital_complete'
 
 const PLAN_BULLETS: Record<string, string[]> = {
   digital_workout: [
-    'Goal-based workout',
-    'Sets & reps',
+    'Workout guidance made by the coach',
+    'Sets and reps',
     'Weekly structure',
-    'Personalized for you',
+    'Personalised for you',
   ],
   digital_diet: [
-    'Goal-based diet',
-    'Meal plan with quantities',
-    'Calorie-focused',
-    'Personalized food options',
+    'Diet chart made by the coach',
+    'Meals with quantities',
+    'Calorie focused',
+    'Personalised food options',
   ],
   digital_complete: [
-    'Personalized workout plan',
-    'Personalized diet plan',
-    'Complete fitness guidance',
-    'Best value for real results',
+    'Workout guidance',
+    'Diet chart',
+    'Sleep guidance',
+    'Cardio guidance',
+    'Water intake guidance',
+    'Supplement guidance (optional)',
   ],
 }
 
 const FAQS = [
   {
-    q: 'Is this plan really personalized?',
-    a: 'Yes. After payment you complete a short in-app questionnaire. Your plan is built around your goals, lifestyle, preferences, experience, and requirements.',
+    q: 'Is this plan really personalised?',
+    a: 'Yes. After payment you complete a short in app questionnaire. Your plan is built around your goals, lifestyle, preferences, experience, and requirements using coach principles.',
   },
   {
     q: 'What happens after I pay?',
-    a: 'Verify your email, create your login, then open plan setup in the app. Complete the short questionnaire so we can build your plan.',
+    a: 'Verify your email, create your login, then open plan setup in the app. Complete the short questionnaire so we can prepare your plan.',
   },
   {
     q: 'How will I receive my plan?',
-    a: 'Within a few hours of finishing onboarding, your AI customised plan appears in the app (My Plan) and we email you a link. This is not live human coaching.',
+    a: 'Within a few hours of finishing onboarding, your plan appears in the app (My Plan) and we email you a link. This is a written plan, not live chat coaching.',
   },
   {
     q: 'Can I choose my fitness goal?',
-    a: 'Yes. Tell us your goal during onboarding — fat loss, muscle gain, strength, or general fitness.',
+    a: 'Yes. Tell us your goal during onboarding: fat loss, muscle gain, strength, or general fitness.',
   },
   {
     q: 'Do I need gym experience?',
-    a: 'No. Beginner to advanced — your experience level is considered when preparing the plan.',
+    a: 'No. Beginner to advanced. Your experience level is considered when preparing the plan.',
   },
   {
     q: 'Is this a subscription?',
-    a: 'No. One-time payment. No recurring subscription or membership fee.',
+    a: 'No. One time payment. No recurring subscription or membership fee.',
   },
   {
-    q: 'Is a human coach involved?',
-    a: 'No. This product is an AI-built customised plan. If you want live coaching with check-ins and chat, choose a coaching membership on lurvox.in instead.',
+    q: 'Who makes the plan?',
+    a: 'Your workout plan and guidance follow coach principles. For live checkins and chat with a coach, choose a coaching membership on lurvox.in.',
   },
 ]
 
@@ -79,7 +81,7 @@ export default function CustomisedPlanLandingPage() {
       <div className={styles.ticker} aria-hidden>
         <div className={styles.tickerTrack}>
           {Array.from({ length: 8 }).map((_, i) => (
-            <span key={i}>One-time payment · No subscriptions · Digital delivery · </span>
+            <span key={i}>One time payment · No subscriptions · Digital delivery · </span>
           ))}
         </div>
       </div>
@@ -87,11 +89,10 @@ export default function CustomisedPlanLandingPage() {
       <header className={styles.topBar}>
         <p className={styles.wordmark}>{BRAND_NAME}</p>
         <Link href={COMPLETE_HREF} className={styles.topCta}>
-          Get Complete — ₹99
+          Get Complete · ₹99
         </Link>
       </header>
 
-      {/* Hero: brand + headline + one CTA + dominant image */}
       <section className={styles.hero}>
         <motion.div
           className={styles.heroCopy}
@@ -102,20 +103,20 @@ export default function CustomisedPlanLandingPage() {
           <p className={styles.brandHero}>{BRAND_NAME}</p>
           <p className={styles.eyebrow}>
             <Sparkles size={14} aria-hidden />
-            Personalized fitness plans
+            Personalised fitness plans
           </p>
           <h1 className={styles.headline}>
             Your fitness plan.
             <span> Made for you.</span>
           </h1>
           <p className={styles.lede}>
-            AI-built workout and diet plans around your goals — from ₹49. Delivered to email and
-            the app within a few hours. Not live coaching.
+            Workout plans made by the coach around your goals, from ₹49. Delivered to email and
+            the app within a few hours. Written guidance, not live coaching.
           </p>
           <div className={styles.ctaRow}>
             <Link href={COMPLETE_HREF} className={styles.primaryCta}>
-              <span className={styles.ctaFull}>Get Complete Plan — ₹99</span>
-              <span className={styles.ctaShort}>Get Complete — ₹99</span>
+              <span className={styles.ctaFull}>Get Complete Plan · ₹99</span>
+              <span className={styles.ctaShort}>Get Complete · ₹99</span>
             </Link>
             <a href="#plans" className={styles.secondaryCta}>
               See all plans
@@ -123,7 +124,7 @@ export default function CustomisedPlanLandingPage() {
           </div>
           <ul className={styles.trustRow}>
             <li>
-              <UserRound size={16} aria-hidden /> Personalized
+              <UserRound size={16} aria-hidden /> Made by the coach
             </li>
             <li>
               <Smartphone size={16} aria-hidden /> Digital delivery
@@ -140,22 +141,36 @@ export default function CustomisedPlanLandingPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className={styles.heroImageWrap}>
-            <Image
-              src="/landing/instant-plan-hero.png"
-              alt="Athletes ready to train with a personalised Lurvox plan"
-              fill
-              priority
-              sizes="(max-width: 900px) 100vw, 52vw"
-              className={styles.heroImage}
-            />
+          <div className={styles.heroPortraits}>
+            <figure className={styles.heroPortrait}>
+              <Image
+                src="/landing/instant-coach-fuchs.png"
+                alt="Fuchs, Lurvox coach"
+                fill
+                priority
+                sizes="(max-width: 900px) 45vw, 240px"
+                className={styles.heroImage}
+              />
+              <figcaption className={styles.heroCaption}>Fuchs</figcaption>
+            </figure>
+            <figure className={styles.heroPortrait}>
+              <Image
+                src="/landing/instant-coach-rakshit.png"
+                alt="Rakshit, Lurvox coach"
+                fill
+                priority
+                sizes="(max-width: 900px) 45vw, 240px"
+                className={styles.heroImage}
+              />
+              <figcaption className={styles.heroCaption}>Rakshit</figcaption>
+            </figure>
           </div>
           <ul className={styles.includesList}>
             <li>
-              <Dumbbell size={16} aria-hidden /> Personalized workout
+              <Dumbbell size={16} aria-hidden /> Workout guidance
             </li>
             <li>
-              <Apple size={16} aria-hidden /> Personalized diet
+              <Apple size={16} aria-hidden /> Diet chart
             </li>
             <li>
               <Check size={16} aria-hidden /> Built from your answers
@@ -168,7 +183,7 @@ export default function CustomisedPlanLandingPage() {
         <p className={styles.sectionEyebrow}>Choose your plan</p>
         <h2 className={styles.sectionTitle}>Simple plans. Real structure.</h2>
         <p className={styles.sectionLede}>
-          One-time payment. Honest prices. No fake discounts.
+          One time payment. Honest prices. No fake discounts.
         </p>
 
         <div className={styles.planStack}>
@@ -185,6 +200,12 @@ export default function CustomisedPlanLandingPage() {
               <h3>{plan.name}</h3>
               <p className={styles.planPrice}>{plan.displayPrice}</p>
               <p className={styles.planMeta}>{plan.saveLabel}</p>
+              {plan.slug === 'digital_complete' ? (
+                <p className={styles.planValueNote}>
+                  ₹49 workout and ₹89 diet is ₹138. Complete Guidance is ₹99, and you also get
+                  sleep, cardio, water, and optional supplement guidance.
+                </p>
+              ) : null}
               <ul className={styles.bulletList}>
                 {(PLAN_BULLETS[plan.slug] ?? []).map((item) => (
                   <li key={item}>
@@ -193,7 +214,7 @@ export default function CustomisedPlanLandingPage() {
                 ))}
               </ul>
               <Link href={`/checkout?plan=${plan.slug}`} className={styles.planCta}>
-                {plan.slug === 'digital_complete' ? 'Get Complete Plan →' : 'Get plan →'}
+                {plan.slug === 'digital_complete' ? 'Get Complete Plan' : 'Get plan'}
               </Link>
             </motion.article>
           ))}
@@ -208,21 +229,21 @@ export default function CustomisedPlanLandingPage() {
             <span>01</span>
             <div>
               <strong>Pay once</strong>
-              <p>Checkout with Razorpay — UPI, cards, or netbanking.</p>
+              <p>Checkout with Razorpay. UPI, cards, or netbanking.</p>
             </div>
           </li>
           <li>
             <span>02</span>
             <div>
               <strong>Open your plan setup</strong>
-              <p>Verify email, then complete a short in-app questionnaire (not a long quiz before buying).</p>
+              <p>Verify email, then complete a short in app questionnaire (not a long quiz before buying).</p>
             </div>
           </li>
           <li>
             <span>03</span>
             <div>
               <strong>Receive your plan</strong>
-              <p>AI builds it and delivers to the app plus email — usually within a few hours.</p>
+              <p>Your coach based plan is prepared and delivered to the app plus email, usually within a few hours.</p>
             </div>
           </li>
         </ol>
@@ -254,9 +275,9 @@ export default function CustomisedPlanLandingPage() {
 
       <footer className={styles.footer}>
         <p className={styles.wordmark}>{BRAND_NAME}</p>
-        <p>Customised digital plans · AI-built · Not live coaching</p>
+        <p>Customised digital plans · Made by the coach · Not live coaching</p>
         <p>
-          Want a human coach?{' '}
+          Want a human coach for live checkins?{' '}
           <a href="https://www.lurvox.in/" rel="noreferrer">
             Visit lurvox.in coaching
           </a>
@@ -267,11 +288,11 @@ export default function CustomisedPlanLandingPage() {
         <div className={styles.stickyInner}>
           <div>
             <strong>Complete Plan</strong>
-            <span className={styles.stickyMeta}>₹99 · one-time</span>
+            <span className={styles.stickyMeta}>₹99 · one time</span>
           </div>
           <Link href={COMPLETE_HREF} className={styles.stickyCta}>
-            <span className={styles.ctaFull}>Get Complete Plan — ₹99</span>
-            <span className={styles.ctaShort}>Get Complete — ₹99</span>
+            <span className={styles.ctaFull}>Get Complete Plan · ₹99</span>
+            <span className={styles.ctaShort}>Get Complete · ₹99</span>
           </Link>
         </div>
       </div>

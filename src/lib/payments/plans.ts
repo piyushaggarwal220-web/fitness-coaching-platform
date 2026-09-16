@@ -25,9 +25,9 @@ export type CoachingPlan = {
   best?: boolean
   /** Retired paid trial — not purchasable. */
   isTrial?: boolean
-  /** One-time AI customised plan — no human coach path. */
+  /** One time customised digital plan (coach principles, auto delivery). */
   isDigital?: boolean
-  /** Which AI sections to generate/deliver for digital SKUs. */
+  /** Which sections to generate/deliver for digital SKUs. */
   sections?: DigitalPlanSections
 }
 
@@ -62,9 +62,8 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
 }
 
 /**
- * Customised digital plans — matches Instant Plan preview offer
- * (workout ₹49 / diet ₹89 / complete ₹99). Honest list prices only.
- * Access window: 365 days to reopen the plan in-app.
+ * Customised digital plans (workout ₹49 / diet ₹89 / complete ₹99).
+ * Honest list prices only. Access window: 365 days to reopen the plan in app.
  */
 export const DIGITAL_PLANS: Record<DigitalPlanSlug, CoachingPlan> = {
   digital_workout: {
@@ -91,12 +90,12 @@ export const DIGITAL_PLANS: Record<DigitalPlanSlug, CoachingPlan> = {
   },
   digital_complete: {
     slug: 'digital_complete',
-    name: 'Complete Guidance (Workout + Diet)',
+    name: 'Complete Guidance',
     displayPrice: '₹99',
     amountPaise: 9900,
     durationMonths: 0,
     durationDays: 365,
-    saveLabel: 'Best value',
+    saveLabel: '₹49 + ₹89 is ₹138. Yours for ₹99 with extras',
     popular: true,
     isDigital: true,
     sections: 'both',

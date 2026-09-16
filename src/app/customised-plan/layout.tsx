@@ -29,7 +29,7 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: `${BRAND_NAME} · Customised fitness plan`,
   description:
-    'AI-built personalized workout and diet plans from ₹49. One-time payment. Delivered to email and app within a few hours. Not live coaching.',
+    'Personalised workout and diet plans from ₹49. One time payment. Delivered to email and app within a few hours. Made by the coach. Not live coaching.',
 }
 
 export default function CustomisedPlanLayout({ children }: { children: React.ReactNode }) {

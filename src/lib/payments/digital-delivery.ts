@@ -6,7 +6,7 @@ import { NotificationTemplates, sendNotification } from '@/lib/notifications/dis
 import { digitalProductDisplayName } from '@/lib/payments/digital-purchase'
 import { activatePlan } from '@/lib/plans'
 
-/** Auto-publish a digital customised plan and notify the buyer by email + in-app. */
+/** Auto publish a digital customised plan and notify the buyer by email + in app. */
 export async function autoDeliverDigitalPlan(
   admin: SupabaseClient,
   input: {
@@ -28,7 +28,7 @@ export async function autoDeliverDigitalPlan(
   await sendNotification({
     userId: input.clientId,
     ...delivered,
-    body: `Your ${productName} is ready. Open it in the app — AI-built, not live coaching.`,
+    body: `Your ${productName} is ready. Open it in the app. Made by the coach. Written plan, not live coaching.`,
     metadata: {
       ...delivered.metadata,
       planId: input.planId,
@@ -56,21 +56,21 @@ export async function autoDeliverDigitalPlan(
         `Hi ${firstName},`,
         '',
         `Your customised Lurvox plan (${productName}) is ready.`,
-        'This is an AI-built personalized plan — not live human coaching.',
+        'Made by the coach. Written guidance, not live coaching.',
         '',
         `Open your plan: ${planUrl}`,
         '',
         'You can also find it anytime in the Lurvox app under My Plan.',
         '',
-        '— Lurvox',
+        'Lurvox',
       ].join('\n'),
       html: `
         <p>Hi ${escapeHtml(firstName)},</p>
         <p>Your customised Lurvox plan (<strong>${escapeHtml(productName)}</strong>) is ready.</p>
-        <p>This is an <strong>AI-built</strong> personalized plan — not live human coaching.</p>
+        <p><strong>Made by the coach.</strong> Written guidance, not live coaching.</p>
         <p><a href="${planUrl}">Open your plan</a></p>
         <p>You can also find it anytime in the Lurvox app under My Plan.</p>
-        <p>— Lurvox</p>
+        <p>Lurvox</p>
       `,
     })
   }

@@ -91,7 +91,7 @@ export function planDurationLabel(slug: AnyCoachingPlanSlug | string): string {
     slug === 'digital_diet' ||
     slug === 'digital_complete'
   ) {
-    return 'One-time · digital'
+    return 'One time · digital'
   }
   return PLAN_PAGE_COPY[slug as LongCoachingPlanSlug]?.durationLabel ?? ''
 }

@@ -185,44 +185,44 @@ export default function ClientPlanPage() {
   const accordionItems = [
     {
       key: 'diet' as const,
-      title: 'Diet',
+      title: 'Diet chart',
       icon: <Apple size={20} />,
       content: clientFacingDietPlanText(sections.diet),
       emptyHint: isDigitalPlan
-        ? 'Diet is not included in this plan.'
+        ? 'Diet chart is not included in this plan.'
         : 'Your coach hasn’t added a diet section yet.',
       alwaysShow: !isDigitalPlan || digitalSections === 'diet' || digitalSections === 'both',
     },
     {
       key: 'workout' as const,
-      title: 'Workout',
+      title: 'Workout guidance',
       icon: <Dumbbell size={20} />,
       // Show stored workout text as written (no reorder / rewrite).
       content: workoutSource,
       emptyHint: isDigitalPlan
-        ? 'Workout is not included in this plan.'
+        ? 'Workout guidance is not included in this plan.'
         : 'Your coach hasn’t added a workout section yet.',
       alwaysShow: !isDigitalPlan || digitalSections === 'workout' || digitalSections === 'both',
     },
     {
       key: 'supplements' as const,
-      title: 'Supplements',
+      title: 'Supplement guidance (optional)',
       icon: <Pill size={20} color={colors.accent} />,
       content: sections.supplements,
       emptyHint: '',
-      alwaysShow: false,
+      alwaysShow: Boolean(isDigitalPlan && digitalSections === 'both'),
     },
     {
       key: 'cardio' as const,
-      title: 'Cardio',
+      title: 'Cardio guidance',
       icon: <Footprints size={20} />,
       content: sections.cardio,
       emptyHint: '',
-      alwaysShow: false,
+      alwaysShow: Boolean(isDigitalPlan && digitalSections === 'both'),
     },
     {
       key: 'notes' as const,
-      title: 'Lifestyle & tips',
+      title: 'Sleep and water guidance',
       icon: <ClipboardList size={20} />,
       content: sections.coachNotes,
       emptyHint: '',

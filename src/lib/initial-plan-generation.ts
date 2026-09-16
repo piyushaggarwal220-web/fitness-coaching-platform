@@ -359,17 +359,32 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       ? generatedWorkoutFormData(workoutResult.generatedPlan, profile.id)
       : { workout_plan: '' }
 
+    const digitalCoachNotes =
+      digitalSections === 'both'
+        ? [
+            'Your plan follows coach principles built around your goals, lifestyle, and answers.',
+            '',
+            'Sleep guidance: Aim for 7 to 8 hours each night. Keep a steady bedtime and wake time. Dim bright screens in the last hour before bed.',
+            '',
+            'Water intake guidance: Target about 3 to 4 litres across the day unless your notes say otherwise. Sip steadily from morning onward.',
+            '',
+            'Open Workout guidance, Diet chart, Cardio guidance, and Supplement guidance in My Plan. Supplements are optional.',
+          ].join('\n')
+        : digitalSections === 'workout'
+          ? 'Your workout plan follows coach principles built around your goals and experience. Open My Plan to start.'
+          : digitalSections === 'diet'
+            ? 'Your diet chart follows coach principles built around your goals and food preferences. Open My Plan to start.'
+            : ''
+
     // Persist a publishable core draft before optional cardio/supplement calls.
     // If the serverless isolate is killed mid-pipeline, coaches still get diet+workout.
     const coreForm: PlanFormData = mergePlanForms(diet, {
       workout_plan: workout.workout_plan,
       cardio_plan: '',
       supplement_plan: '',
-      // Digital auto-publish needs a client-facing note; coaching drafts stay empty
+      // Digital auto publish needs a client facing note. Coaching drafts stay empty
       // until a human coach reviews.
-      coach_notes: isDigital
-        ? 'Your customised plan is ready. This is an AI-built personalized plan — not live coaching.'
-        : '',
+      coach_notes: isDigital ? digitalCoachNotes : '',
       title: isDigital ? 'Customised Plan' : 'Complete Coaching Plan (Draft)',
     })
 
@@ -404,7 +419,10 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       .eq('id', job.id)
       .eq('status', 'generating')
 
-    if (!isDigital) {
+    // Coaching drafts always get support sections for coach review.
+    // Digital Complete (₹99) also gets cardio + optional supplements before auto publish.
+    const needSupportSections = !isDigital || digitalSections === 'both'
+    if (needSupportSections) {
       const cardioResult = await runOptionalSection('initial_cardio')
       const supplementResult = await runOptionalSection('initial_supplements')
       const cardio = cardioResult
