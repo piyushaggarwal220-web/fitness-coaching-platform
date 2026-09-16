@@ -17,7 +17,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
 import { clientFacingPlanTitle, parsePlanMeta, extractWeekFromTitle } from '@/lib/plan-metadata';
-import { planGoalName, planDurationLabel } from '@/lib/payments/plan-pages';
+import { planGoalName, planDurationLabel } from '@/lib/payments/plan-pages'
+import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { clientFacingDietPlanText } from '@/lib/ai/nutrition-macro-sync'
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
@@ -40,6 +41,8 @@ export default function ClientPlanPage() {
   const [entitledAddons, setEntitledAddons] = useState<AddonProtocolId[]>([])
   const [membershipName, setMembershipName] = useState('')
   const [membershipDuration, setMembershipDuration] = useState('')
+  const [isDigitalPlan, setIsDigitalPlan] = useState(false)
+  const [digitalSections, setDigitalSections] = useState<'workout' | 'diet' | 'both' | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -62,6 +65,9 @@ export default function ClientPlanPage() {
       if (purchase?.plan_slug) {
         setMembershipName(planGoalName(purchase.plan_slug) || purchase.plan_name || '')
         setMembershipDuration(planDurationLabel(purchase.plan_slug))
+        const digital = isDigitalPlanSlug(purchase.plan_slug)
+        setIsDigitalPlan(digital)
+        setDigitalSections(digital ? digitalPlanSections(purchase.plan_slug) : null)
       }
 
       const { data, error: planError } = await supabase
@@ -150,8 +156,12 @@ export default function ClientPlanPage() {
           title="No active plan yet"
           description={
             planDelivered
-              ? 'Your plan was delivered. If sections look empty, refresh or message your coach.'
-              : 'Your coach is preparing your personalised plan. Check back soon.'
+              ? isDigitalPlan
+                ? 'Your plan was delivered. If sections look empty, refresh or check your email link.'
+                : 'Your plan was delivered. If sections look empty, refresh or message your coach.'
+              : isDigitalPlan
+                ? 'Your customised plan is being prepared. You’ll get an email when it’s ready — usually within a few hours.'
+                : 'Your coach is preparing your personalised plan. Check back soon.'
           }
           actionLabel="Back to dashboard"
           onAction={() => router.push('/dashboard')}
@@ -178,8 +188,10 @@ export default function ClientPlanPage() {
       title: 'Diet',
       icon: <Apple size={20} />,
       content: clientFacingDietPlanText(sections.diet),
-      emptyHint: 'Your coach hasn’t added a diet section yet.',
-      alwaysShow: true,
+      emptyHint: isDigitalPlan
+        ? 'Diet is not included in this plan.'
+        : 'Your coach hasn’t added a diet section yet.',
+      alwaysShow: !isDigitalPlan || digitalSections === 'diet' || digitalSections === 'both',
     },
     {
       key: 'workout' as const,
@@ -187,8 +199,10 @@ export default function ClientPlanPage() {
       icon: <Dumbbell size={20} />,
       // Show stored workout text as written (no reorder / rewrite).
       content: workoutSource,
-      emptyHint: 'Your coach hasn’t added a workout section yet.',
-      alwaysShow: true,
+      emptyHint: isDigitalPlan
+        ? 'Workout is not included in this plan.'
+        : 'Your coach hasn’t added a workout section yet.',
+      alwaysShow: !isDigitalPlan || digitalSections === 'workout' || digitalSections === 'both',
     },
     {
       key: 'supplements' as const,
@@ -212,7 +226,7 @@ export default function ClientPlanPage() {
       icon: <ClipboardList size={20} />,
       content: sections.coachNotes,
       emptyHint: '',
-      alwaysShow: false,
+      alwaysShow: Boolean(isDigitalPlan && sections.coachNotes.trim()),
     },
   ].filter((item) => item.alwaysShow || item.content.trim().length > 0)
 
@@ -306,7 +320,7 @@ export default function ClientPlanPage() {
         </Link>
       ))}
 
-      <PlanChangeRequestPanel />
+      {!isDigitalPlan && <PlanChangeRequestPanel />}
     </ClientShell>
   );
 }

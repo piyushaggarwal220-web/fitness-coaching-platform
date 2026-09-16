@@ -1,12 +1,15 @@
+import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import type { OnboardingProfile } from '@/types/database'
 
-const PIYUSH_COACH_ID = 'fde68466-fb3e-4a24-a5f2-97a60a363690'
+/** Piyush Aggarwal — FIFO work queue; initial plans can auto journey + deliver. */
+export const PIYUSH_COACH_ID = 'fde68466-fb3e-4a24-a5f2-97a60a363690'
 const RAKSHIT_COACH_ID = 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a'
 
 /**
  * Coaches who send plans themselves.
- * Auto draft / weekly auto-reply / work-queue Complete publish stay OFF.
- * Mid-week check-in replies still auto-reply. Deliver/Publish is the only send path.
+ * Auto draft / weekly auto-reply / work-queue Complete publish stay OFF
+ * (except Piyush initial-plan auto journey + deliver — see shouldAutoJourneyAndDeliverInitialPlan).
+ * Mid-week check-in replies still auto-reply. Deliver/Publish is the only send path otherwise.
  */
 const MANUAL_PLAN_DELIVERY_COACH_IDS = new Set([PIYUSH_COACH_ID, RAKSHIT_COACH_ID])
 
@@ -54,11 +57,28 @@ export function clientRequiresJourneySetup(createdAt: string | null | undefined)
   return joined >= Date.parse(JOURNEY_SETUP_REQUIRED_FROM_ISO)
 }
 
-/** Initial plan jobs are only queued automatically for auto-delivery coaches. */
+/**
+ * Initial plan jobs are queued automatically for auto-delivery coaches,
+ * or for one-time digital customised-plan buyers (AI auto-publish path).
+ * Piyush is handled separately via shouldAutoJourneyAndDeliverInitialPlan
+ * (AI writes journey first, then generates + delivers).
+ */
 export function shouldAutoEnqueueInitialPlan(
-  profile: Pick<OnboardingProfile, 'coach_id'> | null | undefined
+  profile: Pick<OnboardingProfile, 'coach_id'> | null | undefined,
+  options?: { digitalPurchase?: boolean; planSlug?: string | null }
 ): boolean {
+  if (options?.digitalPurchase || isDigitalPlanSlug(options?.planSlug)) return true
   return !clientRequiresManualPlanDelivery(profile)
+}
+
+/**
+ * Piyush only: AI creates the client journey plan when missing, generates the
+ * initial diet/workout draft, and delivers it to the client (no coach review gate).
+ */
+export function shouldAutoJourneyAndDeliverInitialPlan(
+  coachId: string | null | undefined
+): boolean {
+  return coachId === PIYUSH_COACH_ID
 }
 
 /** Mid-week replies stay automatic for every coach. Weekly replies stay manual. */

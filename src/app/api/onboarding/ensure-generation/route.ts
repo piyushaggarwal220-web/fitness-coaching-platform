@@ -8,7 +8,8 @@ import {
   shouldStartInitialGeneration,
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
-import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
+import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import { clientHasDigitalPurchase } from '@/lib/payments/digital-purchase'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -52,7 +53,28 @@ export async function POST() {
     return NextResponse.json({ success: true, status: 'skipped', reason: 'plan_already_delivered' })
   }
 
-  if (!shouldAutoEnqueueInitialPlan(completed)) {
+  const digitalPurchase = await clientHasDigitalPurchase(admin, auth.user.id)
+  if (shouldAutoJourneyAndDeliverInitialPlan(completed.coach_id)) {
+    after(() =>
+      import('@/lib/piyush-initial-plan-auto')
+        .then(({ runPiyushInitialPlanForClient }) =>
+          runPiyushInitialPlanForClient(admin, auth.user.id)
+        )
+        .catch((err) => {
+          console.error(
+            '[onboarding/ensure-generation] Piyush auto initial plan failed:',
+            err instanceof Error ? err.message : err
+          )
+        })
+    )
+    return NextResponse.json({
+      success: true,
+      status: 'generating',
+      reason: 'piyush_auto_journey_deliver',
+    }, { status: 202 })
+  }
+
+  if (!shouldAutoEnqueueInitialPlan(completed, { digitalPurchase })) {
     return NextResponse.json({
       success: true,
       status: 'awaiting_coach_journey',

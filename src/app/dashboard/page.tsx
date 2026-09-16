@@ -33,6 +33,7 @@ import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { formatPlanDate } from '@/lib/plans';
 import { clientFacingPlanTitle, parsePlanMeta } from '@/lib/plan-metadata';
 import { planGoalName } from '@/lib/payments/plan-pages';
+import { isDigitalPlanSlug } from '@/lib/payments/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
@@ -559,7 +560,8 @@ export default function Dashboard() {
         <MembershipRenewalBanner prompt={renewalPrompt} />
       )}
 
-      {(generationJob || clientRequiresManualPlanDelivery(profile)) &&
+      {(generationJob ||
+        (clientRequiresManualPlanDelivery(profile) && !isDigitalPlanSlug(purchase?.plan_slug))) &&
         !activePlan &&
         profile?.plan_delivered !== true &&
         profile?.onboarding_complete && (
@@ -573,7 +575,13 @@ export default function Dashboard() {
           lineHeight: 1.5,
         }}>
           <strong>
-            {!generationJob && clientRequiresManualPlanDelivery(profile)
+            {isDigitalPlanSlug(purchase?.plan_slug)
+              ? generationJob?.status === 'ready'
+                ? 'Your customised plan is almost ready.'
+                : generationJob?.status === 'failed'
+                  ? 'We hit a snag building your plan — retry from onboarding or contact support.'
+                  : 'Building your customised plan…'
+              : !generationJob && clientRequiresManualPlanDelivery(profile)
               ? 'Your coach is preparing your personalized plan.'
               : generationJob?.status === 'queued' || generationJob?.status === 'generating'
               ? 'Your coach is preparing your personalized plan.'
@@ -582,7 +590,9 @@ export default function Dashboard() {
                 : 'Your coach is working on your plan. Please check back shortly.'}
           </strong>
           <div>
-            Your plan appears here only after your coach reviews and sends it.
+            {isDigitalPlanSlug(purchase?.plan_slug)
+              ? 'You’ll get an email when it’s ready, and it will also appear in My Plan (usually within a few hours).'
+              : 'Your plan appears here only after your coach reviews and sends it.'}
           </div>
         </div>
       )}
@@ -696,6 +706,7 @@ export default function Dashboard() {
             coachName={status.coachName ?? coach?.name}
             coachBio={coach?.bio}
             coachPhotoPath={coach?.display_photo_path}
+            planSlug={purchase?.plan_slug}
           />
         )}
         {!isPublicDemoEmail(user?.email) && <NotificationActivationGate />}

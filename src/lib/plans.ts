@@ -118,7 +118,7 @@ export async function syncPlanDeliveredFlag(
 export async function activatePlan(
   supabase: SupabaseClient,
   plan: Pick<Plan, 'id' | 'client_id' | 'coach_id'>,
-  options?: { skipReplyWait?: boolean }
+  options?: { skipReplyWait?: boolean; digitalAutoPublish?: boolean }
 ): Promise<{ error: string | null }> {
   const { data: client, error: clientError } = await supabase
     .from('profiles')
@@ -130,10 +130,14 @@ export async function activatePlan(
   if (!client) {
     return { error: 'Cannot deliver plan: client profile could not be verified.' }
   }
-  if (!client.coach_id) {
-    return { error: 'Cannot deliver plan: client has no assigned coach.' }
-  }
-  if (client.coach_id !== plan.coach_id) {
+  if (!options?.digitalAutoPublish) {
+    if (!client.coach_id) {
+      return { error: 'Cannot deliver plan: client has no assigned coach.' }
+    }
+    if (client.coach_id !== plan.coach_id) {
+      return { error: 'Cannot deliver plan: plan coach does not match assigned coach.' }
+    }
+  } else if (client.coach_id && client.coach_id !== plan.coach_id) {
     return { error: 'Cannot deliver plan: plan coach does not match assigned coach.' }
   }
 
@@ -165,8 +169,12 @@ export async function activatePlan(
 
   const publishPrep = prepareCoachNotesForPublish(fullPlan.coach_notes, {
     fallbackMessage:
-      isAiDraftTitle(fullPlan.title) || isUnfinishedCoachReviewDraftTitle(fullPlan.title)
-        ? fallbackPublishCoachNotes(fullPlan)
+      options?.digitalAutoPublish ||
+      isAiDraftTitle(fullPlan.title) ||
+      isUnfinishedCoachReviewDraftTitle(fullPlan.title)
+        ? options?.digitalAutoPublish
+          ? 'Your customised plan is ready. Open it in the app anytime — this is an AI-built plan, not live coaching.'
+          : fallbackPublishCoachNotes(fullPlan)
         : null,
   })
   if (publishPrep.error || !publishPrep.notes) {

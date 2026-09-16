@@ -13,7 +13,8 @@ import {
   type InitialPlanGenerationJob,
   validatePersistedOnboardingAnswers,
 } from '@/lib/initial-plan-generation'
-import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
+import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import { clientHasDigitalPurchase } from '@/lib/payments/digital-purchase'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -122,7 +123,29 @@ export async function POST(request: Request) {
     })
   }
 
-  if (!shouldAutoEnqueueInitialPlan(completedProfile)) {
+  const digitalPurchase = await clientHasDigitalPurchase(admin, auth.user.id)
+  if (shouldAutoJourneyAndDeliverInitialPlan(completedProfile.coach_id)) {
+    after(() =>
+      import('@/lib/piyush-initial-plan-auto')
+        .then(({ runPiyushInitialPlanForClient }) =>
+          runPiyushInitialPlanForClient(admin, auth.user.id)
+        )
+        .catch((err) => {
+          console.error(
+            '[onboarding/complete-generation] Piyush auto initial plan failed:',
+            err instanceof Error ? err.message : err
+          )
+        })
+    )
+    return NextResponse.json({
+      success: true,
+      status: 'generating',
+      deduplicated: false,
+      message: 'Your personalized plan is being prepared. You will be notified when it is ready.',
+    }, { status: 202 })
+  }
+
+  if (!shouldAutoEnqueueInitialPlan(completedProfile, { digitalPurchase })) {
     return NextResponse.json({
       success: true,
       status: 'awaiting_coach_journey',

@@ -5,7 +5,12 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { BRAND_NAME } from '@/lib/brand';
-import { COACHING_PLAN_LIST, getPurchasablePlan } from '@/lib/payments/plans';
+import {
+  COACHING_PLAN_LIST,
+  DIGITAL_PLAN_LIST,
+  getPurchasablePlan,
+  isDigitalPlanSlug,
+} from '@/lib/payments/plans';
 import { planDurationLabel, planGoalName } from '@/lib/payments/plan-pages';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
@@ -110,6 +115,8 @@ function CheckoutForm() {
   const verifyRef = useRef<HTMLDivElement>(null);
   const testMode = isPaymentBypassClient();
   const isTrialCheckout = plan.isTrial === true;
+  const isDigitalCheckout = plan.isDigital === true || isDigitalPlanSlug(plan.slug);
+  const planPickerList = isDigitalCheckout ? DIGITAL_PLAN_LIST : COACHING_PLAN_LIST;
   const planPayablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
   const payablePaise = planPayablePaise;
   const payableDisplay = formatInrFromPaise(payablePaise);
@@ -136,7 +143,7 @@ function CheckoutForm() {
   useEffect(() => {
     setEnrollmentHref(null);
     autoApplyKeyRef.current = '';
-    if (isTrialCheckout) {
+    if (isTrialCheckout || isDigitalCheckout) {
       setReferralCode('');
       setAppliedDiscount(null);
     } else if (codeFromUrl) {
@@ -144,7 +151,7 @@ function CheckoutForm() {
     } else {
       setReferralCode((prev) => prev);
     }
-  }, [plan.slug, isTrialCheckout, codeFromUrl, welcomeCode]);
+  }, [plan.slug, isTrialCheckout, isDigitalCheckout, codeFromUrl, welcomeCode]);
 
   useEffect(() => {
     const tick = () => {
@@ -265,7 +272,7 @@ function CheckoutForm() {
 
   // Auto-apply as soon as a code is present (no email required).
   useEffect(() => {
-    if (isTrialCheckout || applyingCode) return;
+    if (isTrialCheckout || isDigitalCheckout || applyingCode) return;
     if (!referralCode.trim()) {
       setAppliedDiscount(null);
       return;
@@ -278,7 +285,7 @@ function CheckoutForm() {
     }, 150);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [email, referralCode, plan.slug, isTrialCheckout]);
+  }, [email, referralCode, plan.slug, isTrialCheckout, isDigitalCheckout]);
 
   const clearReferralCode = () => {
     setReferralCode('');
@@ -672,25 +679,42 @@ function CheckoutForm() {
       : null);
 
   return (
-    <div style={{ ...styles.page, ...(checkoutScreen === 2 ? styles.pageWithSticky : null) }}>
-      <div style={styles.card}>
+    <div
+      style={{
+        ...styles.page,
+        ...(checkoutScreen === 2 ? styles.pageWithSticky : null),
+        ...(isDigitalCheckout ? digitalTheme.page : null),
+      }}
+    >
+      <div style={{ ...styles.card, ...(isDigitalCheckout ? digitalTheme.card : null) }}>
         <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
 
-        <p style={styles.brandMark}>{BRAND_NAME}</p>
-        <h1 style={styles.title}>
-          {isTrialCheckout ? 'Start your 7-day trial' : 'Checkout'}
+        <p style={{ ...styles.brandMark, ...(isDigitalCheckout ? digitalTheme.brandMark : null) }}>
+          {BRAND_NAME}
+        </p>
+        {isDigitalCheckout ? (
+          <p style={digitalTheme.eyebrow}>PERSONALIZED FITNESS PLANS</p>
+        ) : null}
+        <h1 style={{ ...styles.title, ...(isDigitalCheckout ? digitalTheme.title : null) }}>
+          {isTrialCheckout
+            ? 'Start your 7-day trial'
+            : isDigitalCheckout
+              ? 'Get your customised plan'
+              : 'Checkout'}
         </h1>
         <p style={styles.subtitle}>
           {checkoutScreen === 1
             ? (isTrialCheckout
               ? 'Full coaching access for 7 days. Upgrade anytime.'
-              : 'Choose your plan and enter your details.')
+              : isDigitalCheckout
+                ? 'One-time payment · no subscription · AI-built plan delivered to email + app within a few hours.'
+                : 'Choose your plan and enter your details.')
             : 'Verify your email and pay securely.'}
         </p>
 
         <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 2`}>
-          <span style={{ ...styles.screenDot, ...(checkoutScreen === 1 ? styles.screenDotActive : null) }} />
-          <span style={{ ...styles.screenDot, ...(checkoutScreen === 2 ? styles.screenDotActive : null) }} />
+          <span style={{ ...styles.screenDot, ...(checkoutScreen === 1 ? styles.screenDotActive : null), ...(isDigitalCheckout && checkoutScreen === 1 ? digitalTheme.dotActive : null) }} />
+          <span style={{ ...styles.screenDot, ...(checkoutScreen === 2 ? styles.screenDotActive : null), ...(isDigitalCheckout && checkoutScreen === 2 ? digitalTheme.dotActive : null) }} />
         </div>
 
         {checkoutScreen === 1 && (
@@ -715,12 +739,12 @@ function CheckoutForm() {
 
             {!isTrialCheckout && (
               <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
-                {COACHING_PLAN_LIST.map((item) => {
+                {planPickerList.map((item) => {
                   const selected = item.slug === plan.slug;
                   return (
                     <Link
                       key={item.slug}
-                      href={`/checkout?plan=${item.slug}${referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}`}
+                      href={`/checkout?plan=${item.slug}${!isDigitalCheckout && referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}`}
                       role="tab"
                       aria-selected={selected}
                       onClick={() =>
@@ -733,10 +757,16 @@ function CheckoutForm() {
                       style={{
                         ...styles.planChip,
                         ...(selected ? styles.planChipSelected : null),
+                        ...(isDigitalCheckout ? digitalTheme.planChip : null),
+                        ...(isDigitalCheckout && selected ? digitalTheme.planChipSelected : null),
                       }}
                     >
-                      <span style={styles.planChipName}>{planGoalName(item.slug)}</span>
-                      <span style={styles.planChipDuration}>{planDurationLabel(item.slug)}</span>
+                      <span style={styles.planChipName}>
+                        {isDigitalCheckout ? item.name.replace('Personalized ', '').replace('Complete Guidance (Workout + Diet)', 'Complete') : planGoalName(item.slug)}
+                      </span>
+                      <span style={styles.planChipDuration}>
+                        {isDigitalCheckout ? item.saveLabel : planDurationLabel(item.slug)}
+                      </span>
                       <span style={styles.planChipPrice}>{item.displayPrice}</span>
                       {item.popular ? <span style={styles.planChipMrp}>Most popular</span> : null}
                       {item.best ? <span style={styles.planChipMrp}>Best value</span> : null}
@@ -758,19 +788,30 @@ function CheckoutForm() {
                   <div style={styles.orderPlanName}>
                     {isTrialCheckout
                       ? `${plan.name} coaching`
-                      : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+                      : isDigitalCheckout
+                        ? plan.name
+                        : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
                   </div>
                   <div style={styles.orderPlanMeta}>
-                    Workout · diet · check-ins · coach chat
+                    {isDigitalCheckout
+                      ? plan.sections === 'workout'
+                        ? 'Personalized workout · digital delivery'
+                        : plan.sections === 'diet'
+                          ? 'Personalized diet · digital delivery'
+                          : 'Workout + diet · digital delivery'
+                      : 'Workout · diet · check-ins · coach chat'}
                   </div>
                 </div>
                 <div style={styles.orderPriceCol}>
                   {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
                   <span style={styles.orderSummaryPrice}>
-                    {isTrialCheckout ? plan.displayPrice : formatInrFromPaise(planPayablePaise)}
+                    {isTrialCheckout || isDigitalCheckout
+                      ? plan.displayPrice
+                      : formatInrFromPaise(planPayablePaise)}
                   </span>
                 </div>
               </div>
+                {!isDigitalCheckout ? (
                 <div style={styles.offerBanner}>
                   <div style={styles.offerBannerTop}>
                     <strong>{discountLockedIn ? 'Discount applied' : 'Have a promo code?'}</strong>
@@ -830,12 +871,19 @@ function CheckoutForm() {
                     </div>
                   )}
                 </div>
+                ) : (
+                  <p style={digitalTheme.honestNote}>
+                    Honest pricing · AI-built customised plan · not live coaching
+                  </p>
+                )}
             </section>
 
             <p style={styles.leagueNote}>
               {isTrialCheckout
                 ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
-                : plan.slug === '12_months'
+                : isDigitalCheckout
+                  ? 'After payment, verify email, complete a short onboarding, and receive your plan by email and in the app within a few hours.'
+                  : plan.slug === '12_months'
                   ? 'Weekly coach phone call included. 12 month exclusive.'
                   : 'Personal workout, diet, coach chat, and weekly check-ins are included.'}
             </p>
@@ -907,7 +955,7 @@ function CheckoutForm() {
               </button>
             </div>
 
-            {!isTrialCheckout && (
+            {!isTrialCheckout && !isDigitalCheckout && (
               <div style={{ marginTop: 28 }}>
                 <CheckoutTransformationCarousel />
               </div>
@@ -931,14 +979,18 @@ function CheckoutForm() {
                   <div style={styles.orderPlanName}>
                     {isTrialCheckout
                       ? plan.name
-                      : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+                      : isDigitalCheckout
+                        ? plan.name
+                        : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
                   </div>
                   <div style={styles.orderPlanMeta}>{email.trim() || '—'}</div>
                 </div>
                 <div style={styles.orderPriceCol}>
                   {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
                   <span style={styles.orderSummaryPrice}>
-                    {isTrialCheckout ? plan.displayPrice : formatInrFromPaise(planPayablePaise)}
+                    {isTrialCheckout || isDigitalCheckout
+                      ? plan.displayPrice
+                      : formatInrFromPaise(planPayablePaise)}
                   </span>
                 </div>
               </div>
@@ -1123,6 +1175,55 @@ export default function CheckoutPage() {
       <CheckoutForm />
     </Suspense>
   );
+}
+
+const digitalTheme: Record<string, CSSProperties> = {
+  page: {
+    backgroundColor: '#F4F8FF',
+    backgroundImage:
+      'radial-gradient(ellipse 90% 55% at 50% -15%, rgba(37,99,235,0.18), transparent 55%)',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(37,99,235,0.12)',
+    boxShadow: '0 18px 48px rgba(15,23,42,0.08)',
+  },
+  brandMark: {
+    color: '#1D4ED8',
+  },
+  eyebrow: {
+    margin: '0 0 8px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '6px 10px',
+    borderRadius: 999,
+    backgroundColor: 'rgba(37,99,235,0.12)',
+    color: '#0F172A',
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+  },
+  title: {
+    color: '#0F172A',
+  },
+  dotActive: {
+    backgroundColor: '#2563EB',
+  },
+  planChip: {
+    backgroundColor: '#F8FBFF',
+    border: '1px solid rgba(37,99,235,0.18)',
+    color: '#0F172A',
+  },
+  planChipSelected: {
+    backgroundColor: '#EFF6FF',
+    border: '2px solid #2563EB',
+  },
+  honestNote: {
+    margin: '12px 0 0',
+    fontSize: 13,
+    lineHeight: 1.45,
+    color: '#475569',
+  },
 }
 
 const styles: Record<string, CSSProperties> = {

@@ -377,6 +377,14 @@ export async function resolveCheckoutPricing(input: {
     }
   }
 
+  if (plan.isDigital) {
+    return {
+      ok: false,
+      error: 'Discount / referral codes cannot be applied to customised digital plans.',
+      status: 400,
+    }
+  }
+
   const email = (input.email ?? '').trim().toLowerCase()
   const hasEmail = Boolean(email && email.includes('@'))
   const enforceEligibility = input.enforceEligibility ?? true

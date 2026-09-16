@@ -59,7 +59,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: 'This plan is no longer available. Choose a 3, 6, or 12 month plan at checkout.',
+        error:
+          'This plan is no longer available. Choose a coaching plan or a customised digital plan at checkout.',
       },
       { status: 400 }
     )

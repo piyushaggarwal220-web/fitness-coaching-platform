@@ -1,9 +1,13 @@
 import { getClientPaymentGatePath, hasClientEntitlement } from '@/lib/entitlements'
 import { clientFacingPlanTitle } from '@/lib/plan-metadata'
+import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import type { Coach, OnboardingProfile, Plan, Purchase } from '@/types/database'
 
-/** Plan delivery SLA after onboarding completes (hours). */
+/** Coaching plan delivery SLA after onboarding completes (hours). */
 export const PLAN_DELIVERY_HOURS = 24
+
+/** Customised digital plan SLA — auto-deliver within 3 hours of intake. */
+export const DIGITAL_PLAN_DELIVERY_HOURS = 3
 
 export type ClientDashboardStatus = {
   paymentConfirmed: boolean
@@ -28,13 +32,15 @@ export function hasOpenedDietAndWorkout(
 }
 
 export function getExpectedPlanDeliveryDate(
-  profile: Pick<OnboardingProfile, 'onboarding_complete' | 'onboarding_completed_at' | 'plan_delivered'>
+  profile: Pick<OnboardingProfile, 'onboarding_complete' | 'onboarding_completed_at' | 'plan_delivered'>,
+  options?: { digital?: boolean }
 ): Date | null {
   if (!profile.onboarding_complete || profile.plan_delivered) return null
   if (!profile.onboarding_completed_at) return null
 
+  const hours = options?.digital ? DIGITAL_PLAN_DELIVERY_HOURS : PLAN_DELIVERY_HOURS
   const completedAt = new Date(profile.onboarding_completed_at)
-  return new Date(completedAt.getTime() + PLAN_DELIVERY_HOURS * 60 * 60 * 1000)
+  return new Date(completedAt.getTime() + hours * 60 * 60 * 1000)
 }
 
 export function formatExpectedDelivery(date: Date | null): string | null {
@@ -49,9 +55,10 @@ export function formatExpectedDelivery(date: Date | null): string | null {
 }
 
 export function formatPlanCountdown(
-  profile: Pick<OnboardingProfile, 'onboarding_complete' | 'onboarding_completed_at' | 'plan_delivered'>
+  profile: Pick<OnboardingProfile, 'onboarding_complete' | 'onboarding_completed_at' | 'plan_delivered'>,
+  options?: { digital?: boolean }
 ): string | null {
-  const deadline = getExpectedPlanDeliveryDate(profile)
+  const deadline = getExpectedPlanDeliveryDate(profile, options)
   if (!deadline) return null
 
   const ms = deadline.getTime() - Date.now()
@@ -65,11 +72,15 @@ export function formatPlanCountdown(
 
 export function isPlanFullyReady(
   activePlan: Plan | null,
-  profile: Pick<OnboardingProfile, 'plan_delivered'>
+  profile: Pick<OnboardingProfile, 'plan_delivered'>,
+  options?: { sections?: 'workout' | 'diet' | 'both' | null }
 ): boolean {
   if (!activePlan) return false
   const hasDiet = Boolean(activePlan.nutrition_plan?.trim())
   const hasWorkout = Boolean(activePlan.workout_plan?.trim())
+  const sections = options?.sections
+  if (sections === 'workout') return hasWorkout || profile.plan_delivered === true
+  if (sections === 'diet') return hasDiet || profile.plan_delivered === true
   // Content is authoritative: once diet + workout exist on the active plan, stop showing "preparing".
   if (hasDiet && hasWorkout) return true
   // Fallback for edge cases where delivery flag flipped but sections are still hydrating.
@@ -83,12 +94,26 @@ export function getClientDashboardStatus(params: {
   activePlan: Plan | null
 }): ClientDashboardStatus {
   const { profile, purchase, coach, activePlan } = params
+  const isDigital = isDigitalPlanSlug(purchase?.plan_slug)
+  const digitalSections = isDigital
+    ? purchase?.plan_slug === 'digital_workout'
+      ? 'workout'
+      : purchase?.plan_slug === 'digital_diet'
+        ? 'diet'
+        : 'both'
+    : null
   const paymentConfirmed = hasClientEntitlement(profile) || Boolean(purchase)
   const onboardingComplete = profile.onboarding_complete === true
   const coachAssigned = Boolean(profile.coach_id)
-  const expectedDeliveryDate = getExpectedPlanDeliveryDate(profile)
-  const planReady = isPlanFullyReady(activePlan, profile)
-  const openedCore = hasOpenedDietAndWorkout(activePlan)
+  const expectedDeliveryDate = getExpectedPlanDeliveryDate(profile, { digital: isDigital })
+  const planReady = isPlanFullyReady(activePlan, profile, { sections: digitalSections })
+  const openedCore = isDigital
+    ? digitalSections === 'workout'
+      ? Boolean(activePlan?.workout_opened_at)
+      : digitalSections === 'diet'
+        ? Boolean(activePlan?.diet_opened_at)
+        : hasOpenedDietAndWorkout(activePlan)
+    : hasOpenedDietAndWorkout(activePlan)
   const preferTrackerUpTop = planReady && openedCore
   const showOpenPlanPrompt = planReady && !openedCore
 
@@ -102,7 +127,9 @@ export function getClientDashboardStatus(params: {
   } else if (profile.plan_delivered) {
     planStatus = 'Delivered — awaiting activation'
   } else if (onboardingComplete) {
-    planStatus = 'Coach is building your plan'
+    planStatus = isDigital
+      ? 'Building your customised plan'
+      : 'Coach is building your plan'
   } else if (paymentConfirmed) {
     planStatus = 'Complete onboarding to start plan delivery'
   }
@@ -119,10 +146,14 @@ export function getClientDashboardStatus(params: {
       profile.gender !== 'female' &&
       (!profile.progress_photo_front || !profile.progress_photo_side || !profile.progress_photo_back)
     nextAction = needsPhotos
-      ? 'Upload front, side, and back photos to finish onboarding — your personalized diet and workout plan will start being prepared after that.'
-      : 'Finish onboarding (review & submit) so your coach can start preparing your personalized diet and workout plan.'
+      ? isDigital
+        ? 'Upload front, side, and back photos to finish onboarding — your customised plan starts after that.'
+        : 'Upload front, side, and back photos to finish onboarding — your personalized diet and workout plan will start being prepared after that.'
+      : isDigital
+        ? 'Finish onboarding so we can build your customised plan (usually within a few hours).'
+        : 'Finish onboarding (review & submit) so your coach can start preparing your personalized diet and workout plan.'
     nextActionHref = '/onboarding'
-  } else if (!coachAssigned) {
+  } else if (!coachAssigned && !isDigital) {
     nextAction = 'Your coach is being assigned — usually within a few minutes'
     nextActionHref = null
   } else if (!planReady && !profile.plan_delivered) {
@@ -138,7 +169,7 @@ export function getClientDashboardStatus(params: {
     nextAction = null
     nextActionHref = null
   } else if (activePlan) {
-    nextAction = 'Open your coaching plan'
+    nextAction = isDigital ? 'Open your customised plan' : 'Open your coaching plan'
     nextActionHref = '/plan'
   } else {
     nextAction = 'Submit your first weekly check-in'

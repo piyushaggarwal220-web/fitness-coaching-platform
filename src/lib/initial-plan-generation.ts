@@ -19,7 +19,14 @@ import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { resolveVisionMediaType, type VisionSafeMediaType } from '@/lib/photo'
 import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
-import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
+import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import {
+  clientHasDigitalPurchase,
+  clientLatestDigitalSections,
+  latestPurchasePlanSlug,
+} from '@/lib/payments/digital-purchase'
+import { autoDeliverDigitalPlan } from '@/lib/payments/digital-delivery'
+import { deliverPiyushInitialPlan } from '@/lib/piyush-initial-plan-delivery'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveProgressPhotoRefs } from '@/lib/onboarding'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
@@ -220,6 +227,13 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       profile,
       currentCheckin: null,
     })
+    const digitalSections = await clientLatestDigitalSections(admin, profile.id)
+    const planSlug = await latestPurchasePlanSlug(admin, profile.id)
+    const isDigital = digitalSections != null
+    const needDiet = !digitalSections || digitalSections === 'diet' || digitalSections === 'both'
+    const needWorkout =
+      !digitalSections || digitalSections === 'workout' || digitalSections === 'both'
+
     const runSection = async (
       actionId: 'initial_diet' | 'initial_workout' | 'initial_cardio' | 'initial_supplements'
     ) => {
@@ -288,40 +302,62 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       }
     }
 
-    const dietResult = await runSection('initial_diet')
-    let workoutResult: Awaited<ReturnType<typeof runSection>>
-    try {
-      workoutResult = await runSection('initial_workout')
-    } catch (workoutError) {
-      // Keep the successful diet so a mid-pipeline failure does not discard LLM work.
-      const dietOnly = generatedDietFormData(dietResult.generatedPlan, profile.id)
-      const partial = await persistAiPlanDraft(admin, {
-        clientId: profile.id,
-        coachId: job.coach_id,
-        form: {
-          ...dietOnly,
+    let dietResult: Awaited<ReturnType<typeof runSection>> | null = null
+    let workoutResult: Awaited<ReturnType<typeof runSection>> | null = null
+
+    if (needDiet) {
+      dietResult = await runSection('initial_diet')
+    }
+    if (needWorkout) {
+      try {
+        workoutResult = await runSection('initial_workout')
+      } catch (workoutError) {
+        if (dietResult) {
+          // Keep the successful diet so a mid-pipeline failure does not discard LLM work.
+          const dietOnly = generatedDietFormData(dietResult.generatedPlan, profile.id)
+          const partial = await persistAiPlanDraft(admin, {
+            clientId: profile.id,
+            coachId: job.coach_id,
+            form: {
+              ...dietOnly,
+              workout_plan: '',
+              cardio_plan: '',
+              supplement_plan: '',
+              coach_notes: '',
+              title: 'Complete Coaching Plan (Draft)',
+            },
+            title: 'AI Draft · Partial (diet only — retry workout)',
+          })
+          if (partial.data) {
+            await admin
+              .from('initial_plan_generation_jobs')
+              .update({
+                draft_plan_id: partial.data.id,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', job.id)
+              .eq('status', 'generating')
+          }
+        }
+        throw workoutError
+      }
+    }
+
+    const diet = dietResult
+      ? generatedDietFormData(dietResult.generatedPlan, profile.id)
+      : {
+          client_id: profile.id,
+          title: '',
+          phase: '',
           workout_plan: '',
+          nutrition_plan: '',
           cardio_plan: '',
           supplement_plan: '',
           coach_notes: '',
-          title: 'Complete Coaching Plan (Draft)',
-        },
-        title: 'AI Draft · Partial (diet only — retry workout)',
-      })
-      if (partial.data) {
-        await admin
-          .from('initial_plan_generation_jobs')
-          .update({
-            draft_plan_id: partial.data.id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', job.id)
-          .eq('status', 'generating')
-      }
-      throw workoutError
-    }
-    const diet = generatedDietFormData(dietResult.generatedPlan, profile.id)
-    const workout = generatedWorkoutFormData(workoutResult.generatedPlan, profile.id)
+        }
+    const workout = workoutResult
+      ? generatedWorkoutFormData(workoutResult.generatedPlan, profile.id)
+      : { workout_plan: '' }
 
     // Persist a publishable core draft before optional cardio/supplement calls.
     // If the serverless isolate is killed mid-pipeline, coaches still get diet+workout.
@@ -329,10 +365,12 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       workout_plan: workout.workout_plan,
       cardio_plan: '',
       supplement_plan: '',
-      // Keep the client-facing coach note empty: delivery is blocked until a
-      // coach reviews the draft and adds their own note.
-      coach_notes: '',
-      title: 'Complete Coaching Plan (Draft)',
+      // Digital auto-publish needs a client-facing note; coaching drafts stay empty
+      // until a human coach reviews.
+      coach_notes: isDigital
+        ? 'Your customised plan is ready. This is an AI-built personalized plan — not live coaching.'
+        : '',
+      title: isDigital ? 'Customised Plan' : 'Complete Coaching Plan (Draft)',
     })
 
     const { count: deliveredCount } = await admin
@@ -348,7 +386,9 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       clientId: profile.id,
       coachId: job.coach_id,
       form: coreForm,
-      title: 'AI Draft · Ready for coach note/review',
+      title: isDigital
+        ? 'Customised Plan · Ready'
+        : 'AI Draft · Ready for coach note/review',
     })
     if (persisted.error || !persisted.data) {
       throw new Error(persisted.error ?? 'Draft persistence failed.')
@@ -364,26 +404,28 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       .eq('id', job.id)
       .eq('status', 'generating')
 
-    const cardioResult = await runOptionalSection('initial_cardio')
-    const supplementResult = await runOptionalSection('initial_supplements')
-    const cardio = cardioResult
-      ? generatedCardioFormData(cardioResult.generatedPlan, profile.id)
-      : null
-    const supplements = supplementResult
-      ? generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
-      : null
+    if (!isDigital) {
+      const cardioResult = await runOptionalSection('initial_cardio')
+      const supplementResult = await runOptionalSection('initial_supplements')
+      const cardio = cardioResult
+        ? generatedCardioFormData(cardioResult.generatedPlan, profile.id)
+        : null
+      const supplements = supplementResult
+        ? generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
+        : null
 
-    if (cardio || supplements) {
-      const updated = await updateAiPlanDraft(admin, persisted.data.id, {
-        cardio_plan: cardio?.cardio_plan ?? '',
-        supplement_plan: supplements?.supplement_plan ?? '',
-      })
-      if (updated.error) {
-        // Core draft is already usable — do not fail the whole job for support sections.
-        console.warn(
-          '[initial-plan-generation] support section draft update failed:',
-          updated.error
-        )
+      if (cardio || supplements) {
+        const updated = await updateAiPlanDraft(admin, persisted.data.id, {
+          cardio_plan: cardio?.cardio_plan ?? '',
+          supplement_plan: supplements?.supplement_plan ?? '',
+        })
+        if (updated.error) {
+          // Core draft is already usable — do not fail the whole job for support sections.
+          console.warn(
+            '[initial-plan-generation] support section draft update failed:',
+            updated.error
+          )
+        }
       }
     }
 
@@ -402,16 +444,37 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       .eq('id', job.id)
       .eq('status', 'generating')
 
-    const { data: coach } = await admin.from('coaches').select('user_id').eq('id', job.coach_id).single()
-    if (coach?.user_id) {
-      await sendNotification({
-        userId: coach.user_id,
-        type: 'initial_plan_draft_ready',
-        title: 'AI plan draft ready for review',
-        body: 'Diet, workout, cardio, and supplement drafts are ready. Add your coach note, review, and explicitly deliver.',
-        actionUrl: `/coach/plan/${persisted.data.id}`,
-        metadata: { jobId: job.id, planId: persisted.data.id, clientId: profile.id },
+    if (isDigital) {
+      const delivered = await autoDeliverDigitalPlan(admin, {
+        clientId: profile.id,
+        coachId: job.coach_id,
+        planId: persisted.data.id,
+        planSlug,
       })
+      if (delivered.error) {
+        throw new Error(`Digital auto-delivery failed: ${delivered.error}`)
+      }
+    } else if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id)) {
+      const delivered = await deliverPiyushInitialPlan(admin, {
+        clientId: profile.id,
+        coachId: job.coach_id,
+        planId: persisted.data.id,
+      })
+      if (delivered.error) {
+        throw new Error(`Piyush auto-delivery failed: ${delivered.error}`)
+      }
+    } else {
+      const { data: coach } = await admin.from('coaches').select('user_id').eq('id', job.coach_id).single()
+      if (coach?.user_id) {
+        await sendNotification({
+          userId: coach.user_id,
+          type: 'initial_plan_draft_ready',
+          title: 'AI plan draft ready for review',
+          body: 'Diet, workout, cardio, and supplement drafts are ready. Add your coach note, review, and explicitly deliver.',
+          actionUrl: `/coach/plan/${persisted.data.id}`,
+          metadata: { jobId: job.id, planId: persisted.data.id, clientId: profile.id },
+        })
+      }
     }
   } catch (error) {
     const safe = safeFailure(error)
@@ -432,7 +495,7 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
         .eq('id', draftPlanId)
         .maybeSingle()
       const hasCore =
-        Boolean(draft?.nutrition_plan?.trim()) && Boolean(draft?.workout_plan?.trim())
+        Boolean(draft?.nutrition_plan?.trim()) || Boolean(draft?.workout_plan?.trim())
       if (hasCore) {
         await admin
           .from('initial_plan_generation_jobs')
@@ -447,6 +510,27 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
           })
           .eq('id', job.id)
           .eq('status', 'generating')
+
+        const digitalSections = await clientLatestDigitalSections(admin, job.client_id)
+        if (digitalSections) {
+          const planSlug = await latestPurchasePlanSlug(admin, job.client_id)
+          const delivered = await autoDeliverDigitalPlan(admin, {
+            clientId: job.client_id,
+            coachId: job.coach_id,
+            planId: draftPlanId,
+            planSlug,
+          })
+          if (!delivered.error) return
+        }
+
+        if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id)) {
+          const delivered = await deliverPiyushInitialPlan(admin, {
+            clientId: job.client_id,
+            coachId: job.coach_id,
+            planId: draftPlanId,
+          })
+          if (!delivered.error) return
+        }
 
         const { data: coach } = await admin
           .from('coaches')
@@ -568,7 +652,8 @@ export async function backfillMissingInitialPlanJobs(
   for (const row of clients) {
     if (started.length >= limit) break
     if (hasJob.has(row.id) || hasDelivered.has(row.id)) continue
-    if (!shouldAutoEnqueueInitialPlan(row as OnboardingProfile)) continue
+    const digitalPurchase = await clientHasDigitalPurchase(admin, row.id)
+    if (!shouldAutoEnqueueInitialPlan(row as OnboardingProfile, { digitalPurchase })) continue
     const profile = row as OnboardingProfile
     const result = await enqueueInitialPlanGeneration(admin, profile)
     if (!result.job || result.error) continue

@@ -77,12 +77,22 @@ export const PLAN_PAGE_COPY: Record<
 export function planGoalName(slug: AnyCoachingPlanSlug | string): string {
   if (slug === '1_week_trial') return 'Trial'
   if (slug === '1_month') return '1 month'
+  if (slug === 'digital_workout') return 'Personalized Workout Plan'
+  if (slug === 'digital_diet') return 'Personalized Diet Plan'
+  if (slug === 'digital_complete') return 'Complete Guidance'
   return PLAN_PRODUCT_NAME[slug as LongCoachingPlanSlug] ?? 'Coaching'
 }
 
 export function planDurationLabel(slug: AnyCoachingPlanSlug | string): string {
   if (slug === '1_week_trial') return '7 days'
   if (slug === '1_month') return '1 month'
+  if (
+    slug === 'digital_workout' ||
+    slug === 'digital_diet' ||
+    slug === 'digital_complete'
+  ) {
+    return 'One-time · digital'
+  }
   return PLAN_PAGE_COPY[slug as LongCoachingPlanSlug]?.durationLabel ?? ''
 }
 

@@ -583,10 +583,12 @@ export async function claimPurchaseWithPassword(
   const existingExpiry = existingProfile?.subscription_expires_at
     ? new Date(existingProfile.subscription_expires_at).getTime()
     : 0
-  // Trials start from now (don't stack on leftover access). Long plans still extend from max(now, existing).
-  const nextExpiry = plan.isTrial
-    ? planExpiry.toISOString()
-    : new Date(Math.max(planExpiry.getTime(), existingExpiry, Date.now())).toISOString()
+  // Trials + digital one-time plans start from now (don't stack on leftover access).
+  // Long coaching plans still extend from max(now, existing).
+  const nextExpiry =
+    plan.isTrial || plan.isDigital
+      ? planExpiry.toISOString()
+      : new Date(Math.max(planExpiry.getTime(), existingExpiry, Date.now())).toISOString()
 
   const purchasePhone = (purchase.customer_phone || '').trim()
   const existingPhone = (existingProfile?.phone || '').trim()
@@ -678,20 +680,40 @@ export async function claimPurchaseWithPassword(
       })()
     : await autoAssignCoachToClient(userId, admin)
   if (assignResult.coachId) {
-    const { data: coach } = await admin
-      .from('coaches')
-      .select('name')
-      .eq('id', assignResult.coachId)
-      .maybeSingle()
     const welcome = NotificationTemplates.welcome()
-    await sendNotification({ userId, ...welcome })
-    if (coach?.name) {
-      const assigned = NotificationTemplates.coachAssigned(coach.name)
-      await sendNotification({ userId, ...assigned })
+    await sendNotification({
+      userId,
+      ...welcome,
+      ...(plan.isDigital
+        ? {
+            body: 'Complete your onboarding to get your customised plan by email and in the app.',
+            actionUrl: '/onboarding',
+          }
+        : null),
+    })
+    if (!plan.isDigital) {
+      const { data: coach } = await admin
+        .from('coaches')
+        .select('name')
+        .eq('id', assignResult.coachId)
+        .maybeSingle()
+      if (coach?.name) {
+        const assigned = NotificationTemplates.coachAssigned(coach.name)
+        await sendNotification({ userId, ...assigned })
+      }
     }
   } else {
     const welcome = NotificationTemplates.welcome()
-    await sendNotification({ userId, ...welcome })
+    await sendNotification({
+      userId,
+      ...welcome,
+      ...(plan.isDigital
+        ? {
+            body: 'Complete your onboarding to get your customised plan by email and in the app.',
+            actionUrl: '/onboarding',
+          }
+        : null),
+    })
   }
 
   logPurchaseStep('claim_complete', { userId, purchaseId: purchase.id, isNewUser, needsLogin })
