@@ -68,7 +68,7 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
 export const DIGITAL_PLANS: Record<DigitalPlanSlug, CoachingPlan> = {
   digital_workout: {
     slug: 'digital_workout',
-    name: 'Personalized Workout Plan',
+    name: 'Workout Plan',
     displayPrice: '₹49',
     amountPaise: 4900,
     durationMonths: 0,
@@ -79,7 +79,7 @@ export const DIGITAL_PLANS: Record<DigitalPlanSlug, CoachingPlan> = {
   },
   digital_diet: {
     slug: 'digital_diet',
-    name: 'Personalized Diet Plan',
+    name: 'Diet Plan',
     displayPrice: '₹89',
     amountPaise: 8900,
     durationMonths: 0,
@@ -95,7 +95,7 @@ export const DIGITAL_PLANS: Record<DigitalPlanSlug, CoachingPlan> = {
     amountPaise: 9900,
     durationMonths: 0,
     durationDays: 365,
-    saveLabel: '₹49 + ₹89 is ₹138. Yours for ₹99 with extras',
+    saveLabel: 'Best value',
     popular: true,
     isDigital: true,
     sections: 'both',
@@ -125,7 +125,12 @@ export const LEGACY_COACHING_PLANS: Record<LegacyCoachingPlanSlug, CoachingPlan>
 }
 
 export const COACHING_PLAN_LIST = Object.values(COACHING_PLANS)
-export const DIGITAL_PLAN_LIST = Object.values(DIGITAL_PLANS)
+/** Display order: singles on the sides, Complete featured in the centre. */
+export const DIGITAL_PLAN_LIST = [
+  DIGITAL_PLANS.digital_workout,
+  DIGITAL_PLANS.digital_complete,
+  DIGITAL_PLANS.digital_diet,
+]
 
 export function isDigitalPlanSlug(slug: string | null | undefined): slug is DigitalPlanSlug {
   return Boolean(slug && slug in DIGITAL_PLANS)

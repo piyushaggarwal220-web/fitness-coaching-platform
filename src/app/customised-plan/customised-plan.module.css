@@ -103,7 +103,7 @@
 }
 
 .eyebrow {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -231,7 +231,7 @@
 
 .heroImage {
   object-fit: cover;
-  object-position: center top;
+  object-position: center 12%;
 }
 
 .heroCaption {
@@ -248,6 +248,16 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.coachLine {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: center;
 }
 
 .heroImageWrap {
@@ -325,9 +335,12 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-top: 28px;
+  align-items: stretch;
 }
 
 .planCard {
+  display: flex;
+  flex-direction: column;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -338,6 +351,7 @@
 .planCardPopular {
   border: 2px solid var(--blue);
   box-shadow: 0 16px 40px rgba(37, 99, 235, 0.12);
+  transform: translateY(-4px);
 }
 
 .popularTag {
@@ -394,6 +408,7 @@
   padding: 0;
   display: grid;
   gap: 8px;
+  flex: 1;
 }
 
 .bulletList li {
@@ -416,6 +431,7 @@
   margin: 28px 0 0;
   padding: 0;
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -648,10 +664,15 @@
 
   .planCardPopular {
     order: -1;
+    transform: none;
   }
 
   .planPrice {
     font-size: 32px;
+  }
+
+  .steps {
+    grid-template-columns: 1fr;
   }
 
   .topBar {

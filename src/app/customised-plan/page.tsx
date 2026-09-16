@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Apple, Check, Dumbbell, Smartphone, Sparkles, UserRound } from 'lucide-react'
+import { Check, Dumbbell, Smartphone, UserRound } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
 import styles from './customised-plan.module.css'
@@ -16,13 +16,13 @@ const PLAN_BULLETS: Record<string, string[]> = {
     'Workout guidance made by the coach',
     'Sets and reps',
     'Weekly structure',
-    'Personalised for you',
+    'Built from your answers',
   ],
   digital_diet: [
     'Diet chart made by the coach',
     'Meals with quantities',
     'Calorie focused',
-    'Personalised food options',
+    'Built from your answers',
   ],
   digital_complete: [
     'Workout guidance',
@@ -37,7 +37,7 @@ const PLAN_BULLETS: Record<string, string[]> = {
 const FAQS = [
   {
     q: 'Is this plan really personalised?',
-    a: 'Yes. After payment you complete a short in app questionnaire. Your plan is built around your goals, lifestyle, preferences, experience, and requirements using coach principles.',
+    a: 'Yes. After payment you complete a short in app questionnaire. Your plan is built around your goals, lifestyle, preferences, experience, and requirements.',
   },
   {
     q: 'What happens after I pay?',
@@ -45,7 +45,7 @@ const FAQS = [
   },
   {
     q: 'How will I receive my plan?',
-    a: 'Within a few hours of finishing onboarding, your plan appears in the app (My Plan) and we email you a link. This is a written plan, not live chat coaching.',
+    a: 'Within a few hours of finishing onboarding, your plan appears in the app under My Plan and we email you a link. This is a written plan, not live chat coaching.',
   },
   {
     q: 'Can I choose my fitness goal?',
@@ -61,7 +61,7 @@ const FAQS = [
   },
   {
     q: 'Who makes the plan?',
-    a: 'Your workout plan and guidance follow coach principles. For live checkins and chat with a coach, choose a coaching membership on lurvox.in.',
+    a: 'Your plan is made by the coach. For live checkins and chat, choose a coaching membership on lurvox.in.',
   },
 ]
 
@@ -100,17 +100,13 @@ export default function CustomisedPlanLandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
-          <p className={styles.brandHero}>{BRAND_NAME}</p>
-          <p className={styles.eyebrow}>
-            <Sparkles size={14} aria-hidden />
-            Personalised fitness plans
-          </p>
+          <p className={styles.eyebrow}>Personalised fitness plans</p>
           <h1 className={styles.headline}>
             Your fitness plan.
             <span> Made for you.</span>
           </h1>
           <p className={styles.lede}>
-            Workout plans made by the coach around your goals, from ₹49. Delivered to email and
+            Coach made workout and diet plans around your goals, from ₹49. Delivered to email and
             the app within a few hours. Written guidance, not live coaching.
           </p>
           <div className={styles.ctaRow}>
@@ -144,14 +140,14 @@ export default function CustomisedPlanLandingPage() {
           <div className={styles.heroPortraits}>
             <figure className={styles.heroPortrait}>
               <Image
-                src="/landing/instant-coach-fuchs.png"
-                alt="Fuchs, Lurvox coach"
+                src="/landing/instant-coach-piyush.png"
+                alt="Piyush, Lurvox coach"
                 fill
                 priority
                 sizes="(max-width: 900px) 45vw, 240px"
                 className={styles.heroImage}
               />
-              <figcaption className={styles.heroCaption}>Fuchs</figcaption>
+              <figcaption className={styles.heroCaption}>Piyush</figcaption>
             </figure>
             <figure className={styles.heroPortrait}>
               <Image
@@ -165,17 +161,7 @@ export default function CustomisedPlanLandingPage() {
               <figcaption className={styles.heroCaption}>Rakshit</figcaption>
             </figure>
           </div>
-          <ul className={styles.includesList}>
-            <li>
-              <Dumbbell size={16} aria-hidden /> Workout guidance
-            </li>
-            <li>
-              <Apple size={16} aria-hidden /> Diet chart
-            </li>
-            <li>
-              <Check size={16} aria-hidden /> Built from your answers
-            </li>
-          </ul>
+          <p className={styles.coachLine}>Piyush and Rakshit · Lurvox coaches</p>
         </motion.div>
       </section>
 
@@ -202,8 +188,8 @@ export default function CustomisedPlanLandingPage() {
               <p className={styles.planMeta}>{plan.saveLabel}</p>
               {plan.slug === 'digital_complete' ? (
                 <p className={styles.planValueNote}>
-                  ₹49 workout and ₹89 diet is ₹138. Complete Guidance is ₹99, and you also get
-                  sleep, cardio, water, and optional supplement guidance.
+                  ₹49 and ₹89 separately is ₹138. Complete Guidance is ₹99, with sleep, cardio,
+                  water, and optional supplement guidance included.
                 </p>
               ) : null}
               <ul className={styles.bulletList}>
@@ -236,14 +222,14 @@ export default function CustomisedPlanLandingPage() {
             <span>02</span>
             <div>
               <strong>Open your plan setup</strong>
-              <p>Verify email, then complete a short in app questionnaire (not a long quiz before buying).</p>
+              <p>Verify email, then complete a short in app questionnaire.</p>
             </div>
           </li>
           <li>
             <span>03</span>
             <div>
               <strong>Receive your plan</strong>
-              <p>Your coach based plan is prepared and delivered to the app plus email, usually within a few hours.</p>
+              <p>Your coach made plan is delivered to the app and email, usually within a few hours.</p>
             </div>
           </li>
         </ol>
@@ -277,7 +263,7 @@ export default function CustomisedPlanLandingPage() {
         <p className={styles.wordmark}>{BRAND_NAME}</p>
         <p>Customised digital plans · Made by the coach · Not live coaching</p>
         <p>
-          Want a human coach for live checkins?{' '}
+          Want live checkins with a coach?{' '}
           <a href="https://www.lurvox.in/" rel="noreferrer">
             Visit lurvox.in coaching
           </a>

@@ -762,7 +762,7 @@ function CheckoutForm() {
                       }}
                     >
                       <span style={styles.planChipName}>
-                        {isDigitalCheckout ? item.name.replace('Personalized ', '').replace('Complete Guidance', 'Complete') : planGoalName(item.slug)}
+                        {isDigitalCheckout ? item.name.replace('Complete Guidance', 'Complete') : planGoalName(item.slug)}
                       </span>
                       <span style={styles.planChipDuration}>
                         {isDigitalCheckout ? item.saveLabel : planDurationLabel(item.slug)}
