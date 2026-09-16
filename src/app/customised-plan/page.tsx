@@ -27,6 +27,17 @@ const WORKOUT_HREF = '/checkout?plan=digital_workout'
 const DIET_HREF = '/checkout?plan=digital_diet'
 const COACHING_HREF = `${resolveMarketingBaseUrl().replace(/\/$/, '')}/`
 
+const BUILDER_STORAGE_KEY = 'lurvox_instant_plan_builder_v1'
+
+type GoalId = 'lose_fat' | 'build_muscle' | 'recomp' | 'fitness'
+
+const GOALS: { id: GoalId; label: string }[] = [
+  { id: 'lose_fat', label: 'Fat Loss' },
+  { id: 'build_muscle', label: 'Muscle Gain' },
+  { id: 'recomp', label: 'Recomposition' },
+  { id: 'fitness', label: 'Fitness' },
+]
+
 const COMPLETE_FEATURES = [
   'Personalized workout plan',
   'Personalized diet plan',
@@ -133,11 +144,131 @@ const fadeUp = {
   transition: { duration: 0.35 },
 }
 
+function PreviewWorkout() {
+  return (
+    <article className={styles.previewCard}>
+      <header className={styles.previewHead}>
+        <span>Workout</span>
+        <strong>Sample week structure</strong>
+      </header>
+      <p className={styles.previewMeta}>Goal: Fat loss · 5 days · Full gym</p>
+      <div className={styles.previewBody}>
+        <h4>Monday · Push</h4>
+        <ul>
+          <li>
+            <span>Bench Press</span>
+            <span>4 × 6–8</span>
+          </li>
+          <li>
+            <span>Incline DB Press</span>
+            <span>3 × 8–10</span>
+          </li>
+          <li>
+            <span>Cable Fly</span>
+            <span>3 × 10–12</span>
+          </li>
+          <li>
+            <span>Tricep Pushdown</span>
+            <span>3 × 10–12</span>
+          </li>
+        </ul>
+      </div>
+    </article>
+  )
+}
+
+function PreviewDiet() {
+  return (
+    <article className={styles.previewCard}>
+      <header className={styles.previewHead}>
+        <span>Nutrition</span>
+        <strong>Sample macros & meals</strong>
+      </header>
+      <p className={styles.previewMeta}>Calories: 2,350 · Protein: 160g</p>
+      <div className={styles.previewBody}>
+        <h4>Day structure</h4>
+        <ul>
+          <li>
+            <span>Breakfast</span>
+            <span>Protein + carbs</span>
+          </li>
+          <li>
+            <span>Lunch</span>
+            <span>Balanced plate</span>
+          </li>
+          <li>
+            <span>Snack</span>
+            <span>Optional</span>
+          </li>
+          <li>
+            <span>Dinner</span>
+            <span>Protein focused</span>
+          </li>
+        </ul>
+      </div>
+    </article>
+  )
+}
+
+function PreviewLifestyle() {
+  return (
+    <article className={`${styles.previewCard} ${styles.previewCardWide}`}>
+      <header className={styles.previewHead}>
+        <span>Lifestyle</span>
+        <strong>Sample guidance block</strong>
+      </header>
+      <div className={styles.lifestyleGrid}>
+        <div>
+          <strong>Cardio</strong>
+          <p>2–3 sessions · low intensity</p>
+        </div>
+        <div>
+          <strong>Steps</strong>
+          <p>8,000–10,000 / day</p>
+        </div>
+        <div>
+          <strong>Water</strong>
+          <p>3–3.5 L / day</p>
+        </div>
+        <div>
+          <strong>Sleep</strong>
+          <p>7–8 hours target</p>
+        </div>
+      </div>
+    </article>
+  )
+}
+
 export default function CustomisedPlanLandingPage() {
   const reduceMotion = useReducedMotion()
+  const [goal, setGoal] = useState<GoalId | null>(null)
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const [showSticky, setShowSticky] = useState(false)
   const motionProps = reduceMotion ? {} : fadeUp
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(BUILDER_STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as { goal?: GoalId }
+      startTransition(() => {
+        if (parsed.goal) setGoal(parsed.goal)
+      })
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        BUILDER_STORAGE_KEY,
+        JSON.stringify({ goal, updatedAt: Date.now() })
+      )
+    } catch {
+      /* ignore */
+    }
+  }, [goal])
 
   useEffect(() => {
     const onScroll = () => {
@@ -158,15 +289,16 @@ export default function CustomisedPlanLandingPage() {
         </a>
       </header>
 
+      {/* 1. HERO */}
       <section className={styles.hero}>
         <motion.div
-          className={styles.heroInner}
+          className={styles.heroCopy}
           initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
         >
-          <h1 className={styles.heroTitle}>Your personalized fitness plan</h1>
           <p className={styles.eyebrow}>Coach-designed · Personalized for you</p>
+          <h1 className={styles.heroTitle}>Your personalized fitness plan</h1>
           <p className={styles.heroPrice}>
             Workout + Diet — <span>{DIGITAL_PLANS.digital_complete.displayPrice}</span>
           </p>
@@ -218,8 +350,104 @@ export default function CustomisedPlanLandingPage() {
           </div>
           <p className={styles.coachLine}>Piyush and Rakshit · Lurvox coaches</p>
         </motion.div>
+
+        <motion.div
+          className={styles.heroVisual}
+          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: reduceMotion ? 0 : 0.08 }}
+        >
+          <p className={styles.sampleBadge}>Sample personalized plan</p>
+          <PreviewWorkout />
+          <div className={styles.heroVisualStack}>
+            <PreviewDiet />
+          </div>
+        </motion.div>
       </section>
 
+      {/* 2. PRODUCT PREVIEW */}
+      <section id="preview" className={styles.sectionAlt}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Product</p>
+          <h2 className={styles.sectionTitle}>See what your plan looks like</h2>
+          <p className={styles.sectionLede}>
+            Sample personalized plan. Your actual recommendations are personalized after you
+            complete setup.
+          </p>
+        </motion.div>
+        <div className={styles.previewGrid}>
+          <PreviewWorkout />
+          <PreviewDiet />
+          <PreviewLifestyle />
+        </div>
+        <Link href={COMPLETE_HREF} className={styles.primaryCta}>
+          Get my personalized plan <ChevronRight size={18} aria-hidden />
+        </Link>
+      </section>
+
+      {/* 3. PERSONALIZATION */}
+      <section className={styles.section}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Personalization</p>
+          <h2 className={styles.sectionTitle}>Your plan starts with you</h2>
+          <p className={styles.sectionLede}>
+            After you choose a plan, a short setup collects what we need. Nothing here replaces that
+            questionnaire — it shows what shapes your plan.
+          </p>
+        </motion.div>
+
+        <div className={styles.personaGrid}>
+          <article className={styles.personaCard}>
+            <h3>Your goal</h3>
+            <div className={styles.chipRow}>
+              {GOALS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`${styles.chip} ${goal === item.id ? styles.chipActive : ''}`}
+                  onClick={() => setGoal(item.id)}
+                  aria-pressed={goal === item.id}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </article>
+          <article className={styles.personaCard}>
+            <h3>Your body</h3>
+            <ul>
+              <li>Height</li>
+              <li>Weight</li>
+              <li>Experience</li>
+              <li>Current level</li>
+            </ul>
+          </article>
+          <article className={styles.personaCard}>
+            <h3>Your lifestyle</h3>
+            <ul>
+              <li>Schedule</li>
+              <li>Activity</li>
+              <li>Sleep</li>
+              <li>Available training days</li>
+            </ul>
+          </article>
+          <article className={styles.personaCard}>
+            <h3>Your preferences</h3>
+            <ul>
+              <li>Food preferences</li>
+              <li>Training preferences</li>
+              <li>Equipment</li>
+              <li>Lifestyle requirements</li>
+            </ul>
+          </article>
+        </div>
+        <p className={styles.fitLine}>Your answers shape your plan.</p>
+        <Link href={COMPLETE_HREF} className={styles.primaryCta}>
+          Build my plan <ChevronRight size={18} aria-hidden />
+        </Link>
+      </section>
+
+      {/* 4. WHY PLANS FAIL */}
       <section className={styles.sectionAlt}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>Clarity</p>
@@ -240,6 +468,7 @@ export default function CustomisedPlanLandingPage() {
         </div>
       </section>
 
+      {/* 5. WHAT YOU GET */}
       <section className={styles.section}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>Complete plan</p>
@@ -258,6 +487,7 @@ export default function CustomisedPlanLandingPage() {
         </ul>
       </section>
 
+      {/* 6. PRICING */}
       <section id="pricing" className={styles.sectionAlt}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>Pricing</p>
@@ -309,6 +539,7 @@ export default function CustomisedPlanLandingPage() {
         </div>
       </section>
 
+      {/* 7. SOCIAL PROOF */}
       <section className={styles.section}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>Credibility</p>
@@ -341,6 +572,7 @@ export default function CustomisedPlanLandingPage() {
         </Link>
       </section>
 
+      {/* 8. WHO THIS IS FOR */}
       <section className={styles.sectionAlt}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>Fit check</p>
@@ -357,6 +589,7 @@ export default function CustomisedPlanLandingPage() {
         </ul>
       </section>
 
+      {/* 9. METHODOLOGY */}
       <section className={styles.section}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>Methodology</p>
@@ -385,6 +618,7 @@ export default function CustomisedPlanLandingPage() {
         </div>
       </section>
 
+      {/* 10. HOW IT WORKS */}
       <section className={styles.sectionAlt}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>Process</p>
@@ -415,6 +649,7 @@ export default function CustomisedPlanLandingPage() {
         </ol>
       </section>
 
+      {/* 11. DELIVERY */}
       <section className={styles.section}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>Delivery</p>
@@ -445,6 +680,7 @@ export default function CustomisedPlanLandingPage() {
         </ol>
       </section>
 
+      {/* 12. NOT LIVE COACHING */}
       <section className={styles.sectionAlt}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>Expectations</p>
@@ -466,6 +702,7 @@ export default function CustomisedPlanLandingPage() {
         </a>
       </section>
 
+      {/* 13. GUARANTEE + TRUST */}
       <section className={styles.section}>
         <motion.div className={styles.guaranteeBox} {...motionProps}>
           <ShieldCheck size={28} className={styles.guaranteeIcon} aria-hidden />
@@ -491,6 +728,7 @@ export default function CustomisedPlanLandingPage() {
         </motion.div>
       </section>
 
+      {/* 14. FAQ */}
       <section className={styles.sectionAlt}>
         <motion.div {...motionProps}>
           <p className={styles.sectionEyebrow}>FAQ</p>
@@ -517,6 +755,7 @@ export default function CustomisedPlanLandingPage() {
         </div>
       </section>
 
+      {/* 15. FINAL CTA */}
       <section className={styles.finalCta}>
         <h2>Stop guessing. Start following a plan.</h2>
         <p className={styles.finalLines}>
