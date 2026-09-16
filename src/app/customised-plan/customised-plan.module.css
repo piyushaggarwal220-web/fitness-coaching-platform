@@ -6,8 +6,9 @@
   --line: rgba(37, 99, 235, 0.16);
   --bg: #f4f8ff;
   --card: #ffffff;
-  --font-display: var(--font-instant-display), 'DM Sans', system-ui, sans-serif;
-  --font-body: var(--font-instant-body), 'DM Sans', system-ui, sans-serif;
+  --font-brand: var(--font-instant-brand), var(--font-instant-display), system-ui, sans-serif;
+  --font-display: var(--font-instant-display), var(--font-instant-brand), system-ui, sans-serif;
+  --font-body: var(--font-instant-body), system-ui, sans-serif;
   min-height: 100vh;
   background:
     radial-gradient(ellipse 80% 50% at 80% 0%, rgba(37, 99, 235, 0.18), transparent 55%),
@@ -15,16 +16,19 @@
     var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
+  font-optical-sizing: auto;
   padding-bottom: 96px;
+  -webkit-font-smoothing: antialiased;
 }
 
 .ticker {
   overflow: hidden;
   background: var(--ink);
   color: #fff;
+  font-family: var(--font-brand);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 10px 0;
   white-space: nowrap;
@@ -56,10 +60,10 @@
 
 .wordmark {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-brand);
   font-weight: 800;
-  letter-spacing: 0.12em;
-  font-size: 15px;
+  letter-spacing: 0.16em;
+  font-size: 14px;
   text-transform: uppercase;
 }
 
@@ -69,8 +73,10 @@
   text-decoration: none;
   background: var(--blue);
   color: #fff;
-  font-weight: 800;
+  font-family: var(--font-body);
+  font-weight: 700;
   font-size: 13px;
+  letter-spacing: -0.01em;
   border-radius: 999px;
   padding: 10px 14px;
 }
@@ -87,11 +93,12 @@
 
 .brandHero {
   margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-size: clamp(2.4rem, 6vw, 3.8rem);
+  font-family: var(--font-brand);
+  font-size: clamp(2.6rem, 7vw, 4.2rem);
   font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 0.95;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+  text-transform: none;
 }
 
 .eyebrow {
@@ -103,19 +110,20 @@
   border-radius: 999px;
   background: var(--blue-soft);
   color: var(--ink);
+  font-family: var(--font-brand);
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .headline {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-size: clamp(2.05rem, 5.2vw, 3.35rem);
   line-height: 1.02;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
 }
 
 .headline span {
@@ -126,8 +134,11 @@
   margin: 14px 0 0;
   max-width: 34rem;
   color: var(--muted);
+  font-family: var(--font-body);
   font-size: 17px;
-  line-height: 1.55;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
 }
 
 .ctaRow {
@@ -146,7 +157,9 @@
   text-decoration: none;
   background: var(--blue);
   color: #fff;
-  font-weight: 800;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: -0.015em;
   border-radius: 14px;
   padding: 14px 18px;
 }
@@ -157,7 +170,9 @@
   justify-content: center;
   text-decoration: none;
   color: var(--ink);
+  font-family: var(--font-body);
   font-weight: 700;
+  letter-spacing: -0.01em;
   border-radius: 14px;
   padding: 14px 18px;
   border: 1px solid var(--line);
@@ -237,23 +252,29 @@
 .sectionEyebrow {
   margin: 0;
   color: var(--blue);
+  font-family: var(--font-brand);
   font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .sectionTitle {
   margin: 8px 0 0;
   font-family: var(--font-display);
-  font-size: clamp(1.7rem, 3.5vw, 2.4rem);
-  letter-spacing: -0.03em;
+  font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
 }
 
 .sectionLede {
   margin: 10px 0 0;
   color: var(--muted);
+  font-family: var(--font-body);
   font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 .planStack {
@@ -279,28 +300,37 @@
 .popularTag {
   margin: 0 0 8px;
   color: var(--blue);
-  font-size: 12px;
-  font-weight: 800;
+  font-family: var(--font-brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .planCard h3 {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 18px;
   font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.25;
 }
 
 .planPrice {
   margin: 12px 0 0;
-  font-size: 34px;
+  font-family: var(--font-brand);
+  font-size: 36px;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 .planMeta {
   margin: 4px 0 0;
   color: var(--muted);
+  font-family: var(--font-body);
   font-size: 14px;
+  font-weight: 500;
 }
 
 .bulletList {
@@ -346,21 +376,27 @@
 }
 
 .steps span {
-  font-family: var(--font-display);
+  font-family: var(--font-brand);
   font-weight: 800;
   color: var(--blue);
   font-size: 18px;
+  letter-spacing: -0.02em;
 }
 
 .steps strong {
   display: block;
+  font-family: var(--font-display);
   font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .steps p {
   margin: 4px 0 0;
   color: var(--muted);
+  font-family: var(--font-body);
   font-size: 14px;
+  font-weight: 500;
   line-height: 1.5;
 }
 
@@ -387,8 +423,10 @@
   background: transparent;
   border: 0;
   padding: 16px 18px;
-  font: inherit;
+  font-family: var(--font-display);
+  font-size: 15px;
   font-weight: 700;
+  letter-spacing: -0.015em;
   color: var(--ink);
   cursor: pointer;
 }
@@ -397,7 +435,9 @@
   margin: 0;
   padding: 0 18px 16px;
   color: var(--muted);
+  font-family: var(--font-body);
   font-size: 14px;
+  font-weight: 500;
   line-height: 1.55;
 }
 
@@ -444,12 +484,17 @@
 
 .stickyInner strong {
   display: block;
+  font-family: var(--font-display);
   font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .stickyInner span {
   color: var(--muted);
+  font-family: var(--font-body);
   font-size: 12px;
+  font-weight: 500;
 }
 
 .stickyCta {
@@ -465,7 +510,7 @@
   }
 
   .brandHero {
-    font-size: clamp(2rem, 10vw, 2.8rem);
+    font-size: clamp(2.2rem, 11vw, 3rem);
   }
 
   .heroVisual {
