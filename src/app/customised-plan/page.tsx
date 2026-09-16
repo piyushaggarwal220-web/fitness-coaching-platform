@@ -114,13 +114,14 @@ export default function CustomisedPlanLandingPage() {
               <span className={styles.ctaFull}>Get Complete Plan · ₹99</span>
               <span className={styles.ctaShort}>Get Complete · ₹99</span>
             </Link>
-            <a href="#plans" className={styles.secondaryCta}>
-              See all plans
-            </a>
+            <div className={styles.guaranteeStamp} aria-label="Guaranteed results, moneyback if none">
+              <span className={styles.stampRing}>
+                <span className={styles.stampTop}>Guaranteed</span>
+                <span className={styles.stampMid}>Results</span>
+                <span className={styles.stampBottom}>Moneyback</span>
+              </span>
+            </div>
           </div>
-          <p className={styles.guaranteeBanner}>
-            Guaranteed results. <span>Moneyback if you see none.</span>
-          </p>
           <ul className={styles.trustRow}>
             <li>
               <UserRound size={16} aria-hidden /> Made by the coach
