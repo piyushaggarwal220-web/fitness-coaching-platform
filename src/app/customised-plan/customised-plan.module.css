@@ -211,10 +211,17 @@
   min-height: 0;
 }
 
+.heroPortraitsWrap {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+}
+
 .heroPortraits {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
   align-items: stretch;
 }
 
@@ -223,10 +230,10 @@
   margin: 0;
   aspect-ratio: 3 / 4;
   max-height: 520px;
-  border-radius: 20px;
+  border-radius: 0;
   overflow: hidden;
   background: linear-gradient(160deg, #bfdbfe, #eff6ff 55%, #fff);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+  box-shadow: none;
 }
 
 .heroImage {
@@ -237,7 +244,8 @@
 .heroCaption {
   position: absolute;
   left: 10px;
-  bottom: 10px;
+  top: 10px;
+  bottom: auto;
   margin: 0;
   padding: 5px 10px;
   border-radius: 999px;
@@ -248,6 +256,39 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  z-index: 2;
+}
+
+.photoHeadline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 48px 16px 18px;
+  background: linear-gradient(to top, rgba(11, 18, 32, 0.92) 0%, rgba(11, 18, 32, 0.55) 55%, transparent 100%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.photoHeadlineMain {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 3.4vw, 2.55rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #fff;
+}
+
+.photoHeadlineSub {
+  margin: 8px 0 0;
+  font-family: var(--font-brand);
+  font-size: clamp(0.95rem, 2vw, 1.25rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  color: #93c5fd;
 }
 
 .coachLine {
@@ -602,12 +643,28 @@
   }
 
   .heroPortraits {
-    gap: 8px;
+    gap: 6px;
   }
 
   .heroPortrait {
     max-height: 300px;
-    border-radius: 16px;
+    border-radius: 0;
+  }
+
+  .heroPortraitsWrap {
+    border-radius: 18px;
+  }
+
+  .photoHeadline {
+    padding: 40px 12px 14px;
+  }
+
+  .photoHeadlineMain {
+    font-size: clamp(1.35rem, 6.2vw, 1.85rem);
+  }
+
+  .photoHeadlineSub {
+    font-size: clamp(0.88rem, 3.6vw, 1.05rem);
   }
 
   .heroImageWrap {

@@ -137,29 +137,35 @@ export default function CustomisedPlanLandingPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className={styles.heroPortraits}>
-            <figure className={styles.heroPortrait}>
-              <Image
-                src="/landing/instant-coach-piyush.png"
-                alt="Piyush, Lurvox coach"
-                fill
-                priority
-                sizes="(max-width: 900px) 45vw, 240px"
-                className={styles.heroImage}
-              />
-              <figcaption className={styles.heroCaption}>Piyush</figcaption>
-            </figure>
-            <figure className={styles.heroPortrait}>
-              <Image
-                src="/landing/instant-coach-rakshit.png"
-                alt="Rakshit, Lurvox coach"
-                fill
-                priority
-                sizes="(max-width: 900px) 45vw, 240px"
-                className={styles.heroImage}
-              />
-              <figcaption className={styles.heroCaption}>Rakshit</figcaption>
-            </figure>
+          <div className={styles.heroPortraitsWrap}>
+            <div className={styles.heroPortraits}>
+              <figure className={styles.heroPortrait}>
+                <Image
+                  src="/landing/instant-coach-piyush.png"
+                  alt="Piyush, Lurvox coach"
+                  fill
+                  priority
+                  sizes="(max-width: 900px) 45vw, 280px"
+                  className={styles.heroImage}
+                />
+                <figcaption className={styles.heroCaption}>Piyush</figcaption>
+              </figure>
+              <figure className={styles.heroPortrait}>
+                <Image
+                  src="/landing/instant-coach-rakshit.png"
+                  alt="Rakshit, Lurvox coach"
+                  fill
+                  priority
+                  sizes="(max-width: 900px) 45vw, 280px"
+                  className={styles.heroImage}
+                />
+                <figcaption className={styles.heroCaption}>Rakshit</figcaption>
+              </figure>
+            </div>
+            <div className={styles.photoHeadline}>
+              <p className={styles.photoHeadlineMain}>Transformed over 7000 people</p>
+              <p className={styles.photoHeadlineSub}>Moneyback guarantee if no results</p>
+            </div>
           </div>
           <p className={styles.coachLine}>Piyush and Rakshit · Lurvox coaches</p>
         </motion.div>
