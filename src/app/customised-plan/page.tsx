@@ -118,6 +118,9 @@ export default function CustomisedPlanLandingPage() {
               See all plans
             </a>
           </div>
+          <p className={styles.guaranteeBanner}>
+            Guaranteed results. <span>Moneyback if you see none.</span>
+          </p>
           <ul className={styles.trustRow}>
             <li>
               <UserRound size={16} aria-hidden /> Made by the coach
@@ -164,7 +167,7 @@ export default function CustomisedPlanLandingPage() {
             </div>
             <div className={styles.photoHeadline}>
               <p className={styles.photoHeadlineMain}>Transformed over 7000 people</p>
-              <p className={styles.photoHeadlineSub}>Moneyback guarantee if no results</p>
+              <p className={styles.photoHeadlineSub}>Guaranteed results · moneyback if none</p>
             </div>
           </div>
           <p className={styles.coachLine}>Piyush and Rakshit · Lurvox coaches</p>
@@ -280,7 +283,7 @@ export default function CustomisedPlanLandingPage() {
         <div className={styles.stickyInner}>
           <div>
             <strong>Complete Plan</strong>
-            <span className={styles.stickyMeta}>₹99 · one time</span>
+            <span className={styles.stickyMeta}>₹99 · moneyback if no results</span>
           </div>
           <Link href={COMPLETE_HREF} className={styles.stickyCta}>
             <span className={styles.ctaFull}>Get Complete Plan · ₹99</span>
