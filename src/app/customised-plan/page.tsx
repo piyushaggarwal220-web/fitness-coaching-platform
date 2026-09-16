@@ -1,373 +1,739 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { Check, Dumbbell, MessageCircle, Smartphone, UserRound, X } from 'lucide-react'
+import { motion, useReducedMotion } from 'framer-motion'
+import {
+  Apple,
+  Check,
+  ChevronRight,
+  Clock,
+  Dumbbell,
+  Lock,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+  X,
+} from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
-import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
+import { CHECKOUT_TRANSFORMATIONS } from '@/lib/checkout-transformations'
+import { DIGITAL_PLANS } from '@/lib/payments/plans'
+import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
 import styles from './customised-plan.module.css'
 
 const COMPLETE_HREF = '/checkout?plan=digital_complete'
+const WORKOUT_HREF = '/checkout?plan=digital_workout'
+const DIET_HREF = '/checkout?plan=digital_diet'
+const COACHING_HREF = `${resolveMarketingBaseUrl().replace(/\/$/, '')}/`
 
-const PLAN_BULLETS: Record<string, string[]> = {
-  digital_workout: [
-    'Workout guidance made by the coach',
-    'Sets and reps',
-    'Weekly structure',
-    'Built from your answers',
-  ],
-  digital_diet: [
-    'Diet chart made by the coach',
-    'Meals with quantities',
-    'Calorie focused',
-    'Built from your answers',
-  ],
-  digital_complete: [
-    'Workout guidance',
-    'Diet chart',
-    'Sleep guidance',
-    'Cardio guidance',
-    'Water intake guidance',
-    'Supplement guidance (optional)',
-  ],
-}
+const BUILDER_STORAGE_KEY = 'lurvox_instant_plan_builder_v1'
 
-const FAIL_POINTS = [
-  'Generic AI plans copy the same template for everyone',
-  'Old beliefs like “more sweat means more fat loss”',
-  'Random YouTube workouts with no weekly structure',
-  'Crash diets that crash your energy and adherence',
-  'Ignoring sleep, water, and recovery',
-  'Changing plans every week before results can show',
+type GoalId = 'lose_fat' | 'build_muscle' | 'recomp' | 'fitness'
+
+const GOALS: { id: GoalId; label: string }[] = [
+  { id: 'lose_fat', label: 'Fat Loss' },
+  { id: 'build_muscle', label: 'Muscle Gain' },
+  { id: 'recomp', label: 'Recomposition' },
+  { id: 'fitness', label: 'Fitness' },
 ]
 
-const WIN_POINTS = [
-  'Customised plans built from your answers and coach principles',
-  'Science first: calories, protein, progressive overload, recovery',
-  'Clear weekly workout structure with sets and reps',
-  'Diet chart matched to your goal and food reality',
-  'Sleep, cardio, and water guidance included in Complete',
-  'Simple rules you can follow for weeks, not one hard day',
+const COMPLETE_FEATURES = [
+  'Personalized workout plan',
+  'Personalized diet plan',
+  'Calorie guidance',
+  'Protein guidance',
+  'Exercise structure',
+  'Sets and reps',
+  'Training schedule',
+  'Food structure',
+  'Lifestyle guidance',
+  'Sleep guidance',
+  'Water guidance',
+  'Cardio guidance',
+]
+
+const FAIL_CARDS = [
+  {
+    title: 'Generic workouts',
+    copy: 'Same routine for everyone.',
+  },
+  {
+    title: 'Random diets',
+    copy: 'No clear calorie or nutrition structure.',
+  },
+  {
+    title: 'No personalization',
+    copy: 'Ignores lifestyle and preferences.',
+  },
+  {
+    title: 'No progression',
+    copy: 'No clear path to improve week to week.',
+  },
+  {
+    title: 'Low adherence',
+    copy: 'A plan that does not fit your life is hard to follow.',
+  },
+]
+
+const WHO_FOR = [
+  'You want a structured fitness plan',
+  'You are tired of random workouts',
+  'You do not know how much you should eat',
+  'You want a plan around your schedule',
+  'You want personalized guidance without expensive 1-to-1 coaching',
+  'You are a beginner or intermediate trainee',
+  'You want a clear system to follow',
 ]
 
 const FAQS = [
   {
-    q: 'Is this plan really personalised?',
-    a: 'Yes. After payment you complete a short in app questionnaire. Your plan is built around your goals, lifestyle, preferences, experience, and requirements.',
+    q: 'Is the plan personalized?',
+    a: 'Yes. After payment you complete a short setup questionnaire. Your plan is built around your body, goals, lifestyle, preferences, experience, and requirements.',
   },
   {
-    q: 'What happens after I pay?',
-    a: 'Verify your email, create your login, then open plan setup in the app. Complete the short questionnaire so we can prepare your plan.',
+    q: 'How does personalization work?',
+    a: 'Your answers feed LURVOX coaching methodology. Training, nutrition targets, and lifestyle guidance are shaped from what you tell us — not a one-size template.',
   },
   {
-    q: 'How will I receive my plan?',
-    a: 'Within a few hours of finishing onboarding, your plan appears in the app under My Plan and we email you a link. This is a written plan, not live chat coaching.',
-  },
-  {
-    q: 'Can I choose my fitness goal?',
-    a: 'Yes. Tell us your goal during onboarding: fat loss, muscle gain, strength, or general fitness.',
-  },
-  {
-    q: 'Do I need gym experience?',
-    a: 'No. Beginner to advanced. Your experience level is considered when preparing the plan.',
+    q: 'How long does delivery take?',
+    a: 'Usually within a few hours after you finish setup. Your plan appears in the app under My Plan, and we email you a link.',
   },
   {
     q: 'Is this a subscription?',
-    a: 'No. One time payment. No recurring subscription or membership fee.',
+    a: 'No. One-time payment. No recurring subscription.',
   },
   {
-    q: 'Who makes the plan?',
-    a: 'Your plan is made by the coach. For live checkins and chat, choose a coaching membership on lurvox.in.',
+    q: 'Do I need a gym?',
+    a: 'No. During setup you tell us where you train — gym, home, or both — and your plan follows that.',
   },
   {
-    q: 'What if I see no results?',
-    a: 'We stand behind guaranteed results with moneyback if you see none, when you follow the plan as written.',
+    q: 'Can beginners use it?',
+    a: 'Yes. Experience level is part of setup, so structure and intensity can match beginners and intermediates.',
+  },
+  {
+    q: 'Can I choose my food preferences?',
+    a: 'Yes. Food preferences and lifestyle constraints are collected during setup and used in your nutrition plan.',
+  },
+  {
+    q: 'Can I use this for fat loss?',
+    a: 'Yes. Fat loss is a supported goal. Your training and calorie targets follow the goal you select.',
+  },
+  {
+    q: 'Can I use this for muscle gain?',
+    a: 'Yes. Muscle gain and recomposition are supported goals in setup.',
+  },
+  {
+    q: 'Is this live coaching?',
+    a: 'No. This is personalized digital planning — not daily WhatsApp coaching, live calls, or weekly human check-ins.',
+  },
+  {
+    q: 'What happens after I pay?',
+    a: 'You complete plan setup, we prepare your personalized plan using LURVOX methodology, then you receive it in the app and by email within a few hours.',
+  },
+  {
+    q: 'What does the money-back guarantee cover?',
+    a: 'If you are not satisfied with the plan you receive, contact us within 7 days. This is a plan satisfaction guarantee, not a promise of a specific body result.',
   },
 ]
 
-const BOT_KB = [
-  ...FAQS,
-  {
-    q: 'price cost 99 49 89 complete',
-    a: 'Workout is ₹49. Diet is ₹89. Complete Guidance is ₹99 for both, plus sleep, cardio, water, and optional supplements.',
-  },
-  {
-    q: 'ai generic template',
-    a: 'Generic AI plans often reuse one template. Ours follow coach principles and your questionnaire answers.',
-  },
-  {
-    q: 'sweat sweating fat loss myth',
-    a: 'Sweating does not equal fat loss. Fat loss needs a sustainable calorie setup, protein, training, sleep, and consistency.',
-  },
-]
+const fadeUp = {
+  initial: { opacity: 0, y: 14 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-36px' },
+  transition: { duration: 0.35 },
+}
 
-type ChatMsg = { role: 'bot' | 'user'; text: string }
+function PreviewWorkout() {
+  return (
+    <article className={styles.previewCard}>
+      <header className={styles.previewHead}>
+        <span>Workout</span>
+        <strong>Sample week structure</strong>
+      </header>
+      <p className={styles.previewMeta}>Goal: Fat loss · 5 days · Full gym</p>
+      <div className={styles.previewBody}>
+        <h4>Monday · Push</h4>
+        <ul>
+          <li>
+            <span>Bench Press</span>
+            <span>4 × 6–8</span>
+          </li>
+          <li>
+            <span>Incline DB Press</span>
+            <span>3 × 8–10</span>
+          </li>
+          <li>
+            <span>Cable Fly</span>
+            <span>3 × 10–12</span>
+          </li>
+          <li>
+            <span>Tricep Pushdown</span>
+            <span>3 × 10–12</span>
+          </li>
+        </ul>
+      </div>
+    </article>
+  )
+}
 
-function answerQuestion(input: string): string {
-  const q = input.toLowerCase()
-  let best = BOT_KB[0]!
-  let score = 0
-  for (const item of BOT_KB) {
-    const keys = `${item.q} ${item.a}`.toLowerCase().split(/[^a-z0-9]+/)
-    let s = 0
-    for (const key of keys) {
-      if (key.length < 3) continue
-      if (q.includes(key)) s += 1
-    }
-    if (s > score) {
-      score = s
-      best = item
-    }
-  }
-  if (score < 1) {
-    return 'Ask about price, delivery time, personalisation, moneyback, or how Complete differs from generic plans. Or scroll to FAQ below.'
-  }
-  return best.a
+function PreviewDiet() {
+  return (
+    <article className={styles.previewCard}>
+      <header className={styles.previewHead}>
+        <span>Nutrition</span>
+        <strong>Sample macros & meals</strong>
+      </header>
+      <p className={styles.previewMeta}>Calories: 2,350 · Protein: 160g</p>
+      <div className={styles.previewBody}>
+        <h4>Day structure</h4>
+        <ul>
+          <li>
+            <span>Breakfast</span>
+            <span>Protein + carbs</span>
+          </li>
+          <li>
+            <span>Lunch</span>
+            <span>Balanced plate</span>
+          </li>
+          <li>
+            <span>Snack</span>
+            <span>Optional</span>
+          </li>
+          <li>
+            <span>Dinner</span>
+            <span>Protein focused</span>
+          </li>
+        </ul>
+      </div>
+    </article>
+  )
+}
+
+function PreviewLifestyle() {
+  return (
+    <article className={`${styles.previewCard} ${styles.previewCardWide}`}>
+      <header className={styles.previewHead}>
+        <span>Lifestyle</span>
+        <strong>Sample guidance block</strong>
+      </header>
+      <div className={styles.lifestyleGrid}>
+        <div>
+          <strong>Cardio</strong>
+          <p>2–3 sessions · low intensity</p>
+        </div>
+        <div>
+          <strong>Steps</strong>
+          <p>8,000–10,000 / day</p>
+        </div>
+        <div>
+          <strong>Water</strong>
+          <p>3–3.5 L / day</p>
+        </div>
+        <div>
+          <strong>Sleep</strong>
+          <p>7–8 hours target</p>
+        </div>
+      </div>
+    </article>
+  )
 }
 
 export default function CustomisedPlanLandingPage() {
+  const reduceMotion = useReducedMotion()
+  const [goal, setGoal] = useState<GoalId | null>(null)
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const [showSticky, setShowSticky] = useState(false)
-  const [botOpen, setBotOpen] = useState(false)
-  const [botInput, setBotInput] = useState('')
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    {
-      role: 'bot',
-      text: 'Hi. Ask me about plans, delivery, moneyback, or why customised beats generic templates.',
-    },
-  ])
+  const motionProps = reduceMotion ? {} : fadeUp
 
   useEffect(() => {
-    const onScroll = () => setShowSticky(window.scrollY > 320)
+    try {
+      const raw = sessionStorage.getItem(BUILDER_STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as { goal?: GoalId }
+      startTransition(() => {
+        if (parsed.goal) setGoal(parsed.goal)
+      })
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        BUILDER_STORAGE_KEY,
+        JSON.stringify({ goal, updatedAt: Date.now() })
+      )
+    } catch {
+      /* ignore */
+    }
+  }, [goal])
+
+  useEffect(() => {
+    const onScroll = () => {
+      const next = window.scrollY > 520
+      startTransition(() => setShowSticky(next))
+    }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const suggestions = useMemo(
-    () => ['How fast do I get the plan?', 'Why ₹99 Complete?', 'Moneyback?', 'AI vs your plan?'],
-    []
-  )
-
-  function sendBot(text: string) {
-    const trimmed = text.trim()
-    if (!trimmed) return
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', text: trimmed },
-      { role: 'bot', text: answerQuestion(trimmed) },
-    ])
-    setBotInput('')
-  }
-
   return (
     <main className={styles.page}>
-      <div className={styles.ticker} aria-hidden>
-        <div className={styles.tickerTrack}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span key={i}>One time payment · Guaranteed results · Coach made plans · </span>
-          ))}
-        </div>
-      </div>
-
       <header className={styles.topBar}>
         <p className={styles.wordmark}>{BRAND_NAME}</p>
-        <Link href={COMPLETE_HREF} className={styles.topCta}>
-          Get Complete · ₹99
-        </Link>
+        <a href="#pricing" className={styles.topLink}>
+          See pricing
+        </a>
       </header>
 
+      {/* 1. HERO */}
       <section className={styles.hero}>
         <motion.div
           className={styles.heroCopy}
-          initial={{ opacity: 0, y: 18 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.45 }}
         >
-          <p className={styles.eyebrow}>Personalised fitness plans</p>
-          <h1 className={styles.headline}>
-            Personal diet and workout,
-            <span> within a few hours.</span>
-          </h1>
-          <p className={styles.lede}>
-            Coach made plans around your goals, from ₹49. Delivered to email and the app.
-            Written guidance, not live coaching.
+          <p className={styles.eyebrow}>Coach-designed · Personalized for you</p>
+          <h1 className={styles.heroTitle}>Your personalized fitness plan</h1>
+          <p className={styles.heroPrice}>
+            Workout + Diet — <span>{DIGITAL_PLANS.digital_complete.displayPrice}</span>
           </p>
-          <div className={styles.stampRow}>
-            <div className={styles.guaranteeStamp} aria-label="Guaranteed results, moneyback if none">
-              <span className={styles.stampRing}>
-                <span className={styles.stampTop}>Guaranteed</span>
-                <span className={styles.stampMid}>Results</span>
-                <span className={styles.stampBottom}>Moneyback</span>
-              </span>
-            </div>
-          </div>
-          <ul className={styles.trustRow}>
+          <p className={styles.heroSupport}>
+            Built around your goal, body, lifestyle, training experience and preferences.
+          </p>
+          <ul className={styles.heroBenefits}>
             <li>
-              <UserRound size={16} aria-hidden /> Made by the coach
+              <Check size={15} aria-hidden /> Personalized workout
             </li>
             <li>
-              <Smartphone size={16} aria-hidden /> Digital delivery
+              <Check size={15} aria-hidden /> Personalized diet
             </li>
             <li>
-              <Dumbbell size={16} aria-hidden /> Beginner friendly
+              <Check size={15} aria-hidden /> Built around your lifestyle
+            </li>
+            <li>
+              <Check size={15} aria-hidden /> Delivered within a few hours
             </li>
           </ul>
+          <p className={styles.heroTrust}>One-time payment · No subscription</p>
+          <div className={styles.heroActions}>
+            <Link href={COMPLETE_HREF} className={styles.primaryCta}>
+              Build my plan <ChevronRight size={18} aria-hidden />
+            </Link>
+            <p className={styles.heroAlt}>Starting from {DIGITAL_PLANS.digital_workout.displayPrice}</p>
+          </div>
+          <div className={styles.heroPortraits}>
+            <figure className={styles.heroPortrait}>
+              <Image
+                src="/landing/instant-coach-piyush.png"
+                alt="Piyush, Lurvox coach"
+                fill
+                priority
+                sizes="(max-width: 900px) 42vw, 200px"
+                className={styles.heroImage}
+              />
+            </figure>
+            <figure className={styles.heroPortrait}>
+              <Image
+                src="/landing/instant-coach-rakshit.png"
+                alt="Rakshit, Lurvox coach"
+                fill
+                priority
+                sizes="(max-width: 900px) 42vw, 200px"
+                className={styles.heroImage}
+              />
+            </figure>
+          </div>
+          <p className={styles.coachLine}>Piyush and Rakshit · Lurvox coaches</p>
         </motion.div>
 
         <motion.div
           className={styles.heroVisual}
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: reduceMotion ? 0 : 0.08 }}
         >
-          <div className={styles.heroPortraitsWrap}>
-            <div className={styles.heroPortraits}>
-              <figure className={styles.heroPortrait}>
-                <Image
-                  src="/landing/instant-coach-piyush.png"
-                  alt="Piyush, Lurvox coach"
-                  fill
-                  priority
-                  sizes="(max-width: 900px) 48vw, 360px"
-                  className={styles.heroImage}
-                />
-                <figcaption className={styles.heroCaption}>Piyush</figcaption>
-              </figure>
-              <figure className={styles.heroPortrait}>
-                <Image
-                  src="/landing/instant-coach-rakshit.png"
-                  alt="Rakshit, Lurvox coach"
-                  fill
-                  priority
-                  sizes="(max-width: 900px) 48vw, 360px"
-                  className={styles.heroImage}
-                />
-                <figcaption className={styles.heroCaption}>Rakshit</figcaption>
-              </figure>
-            </div>
-            <div className={styles.photoHeadline}>
-              <p className={styles.photoHeadlineMain}>Transformed over 7000 people</p>
-              <p className={styles.photoHeadlineSub}>Guaranteed results · moneyback if none</p>
-            </div>
+          <p className={styles.sampleBadge}>Sample personalized plan</p>
+          <PreviewWorkout />
+          <div className={styles.heroVisualStack}>
+            <PreviewDiet />
           </div>
-          <p className={styles.coachLine}>Piyush and Rakshit · Lurvox coaches</p>
         </motion.div>
       </section>
 
-      <section className={styles.truthSection} aria-labelledby="truth-title">
-        <p className={styles.sectionEyebrow}>Truth check</p>
-        <h2 id="truth-title" className={styles.sectionTitle}>
-          Why we give results, but you fail
-        </h2>
-        <p className={styles.sectionLede}>
-          Most people fail on generic templates and gym myths. We build customised plans on science
-          and coach principles.
-        </p>
+      {/* 2. PRODUCT PREVIEW */}
+      <section id="preview" className={styles.sectionAlt}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Product</p>
+          <h2 className={styles.sectionTitle}>See what your plan looks like</h2>
+          <p className={styles.sectionLede}>
+            Sample personalized plan. Your actual recommendations are personalized after you
+            complete setup.
+          </p>
+        </motion.div>
+        <div className={styles.previewGrid}>
+          <PreviewWorkout />
+          <PreviewDiet />
+          <PreviewLifestyle />
+        </div>
+        <Link href={COMPLETE_HREF} className={styles.primaryCta}>
+          Get my personalized plan <ChevronRight size={18} aria-hidden />
+        </Link>
+      </section>
 
-        <div className={styles.truthGrid}>
-          <article className={styles.failCard}>
-            <p className={styles.truthCardLabel}>Why people fail</p>
-            <ul>
-              {FAIL_POINTS.map((item) => (
-                <li key={item}>{item}</li>
+      {/* 3. PERSONALIZATION */}
+      <section className={styles.section}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Personalization</p>
+          <h2 className={styles.sectionTitle}>Your plan starts with you</h2>
+          <p className={styles.sectionLede}>
+            After you choose a plan, a short setup collects what we need. Nothing here replaces that
+            questionnaire — it shows what shapes your plan.
+          </p>
+        </motion.div>
+
+        <div className={styles.personaGrid}>
+          <article className={styles.personaCard}>
+            <h3>Your goal</h3>
+            <div className={styles.chipRow}>
+              {GOALS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`${styles.chip} ${goal === item.id ? styles.chipActive : ''}`}
+                  onClick={() => setGoal(item.id)}
+                  aria-pressed={goal === item.id}
+                >
+                  {item.label}
+                </button>
               ))}
+            </div>
+          </article>
+          <article className={styles.personaCard}>
+            <h3>Your body</h3>
+            <ul>
+              <li>Height</li>
+              <li>Weight</li>
+              <li>Experience</li>
+              <li>Current level</li>
             </ul>
           </article>
-          <article className={styles.winCard}>
-            <p className={styles.truthCardLabel}>Why our plans work</p>
+          <article className={styles.personaCard}>
+            <h3>Your lifestyle</h3>
             <ul>
-              {WIN_POINTS.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
+              <li>Schedule</li>
+              <li>Activity</li>
+              <li>Sleep</li>
+              <li>Available training days</li>
+            </ul>
+          </article>
+          <article className={styles.personaCard}>
+            <h3>Your preferences</h3>
+            <ul>
+              <li>Food preferences</li>
+              <li>Training preferences</li>
+              <li>Equipment</li>
+              <li>Lifestyle requirements</li>
             </ul>
           </article>
         </div>
+        <p className={styles.fitLine}>Your answers shape your plan.</p>
+        <Link href={COMPLETE_HREF} className={styles.primaryCta}>
+          Build my plan <ChevronRight size={18} aria-hidden />
+        </Link>
       </section>
 
-      <section id="plans" className={styles.section}>
-        <p className={styles.sectionEyebrow}>Choose your plan</p>
-        <h2 className={styles.sectionTitle}>Simple plans. Real structure.</h2>
-        <p className={styles.sectionLede}>
-          One time payment. Honest prices. No fake discounts.
-        </p>
-
-        <div className={styles.planStack}>
-          {DIGITAL_PLAN_LIST.map((plan, index) => (
-            <motion.article
-              key={plan.slug}
-              className={`${styles.planCard} ${plan.popular ? styles.planCardPopular : ''}`}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ delay: index * 0.06, duration: 0.4 }}
-            >
-              {plan.popular ? <p className={styles.popularTag}>Most popular</p> : null}
-              <h3>{plan.name}</h3>
-              <p className={styles.planPrice}>
-                {plan.displayPrice}
-                {plan.slug === 'digital_complete' ? (
-                  <span className={styles.planWas}>₹138</span>
-                ) : null}
-              </p>
-              <p className={styles.planMeta}>
-                {plan.slug === 'digital_complete'
-                  ? 'Workout ₹49 · Diet ₹89 · both only ₹99'
-                  : plan.saveLabel}
-              </p>
-              {plan.slug === 'digital_complete' ? (
-                <p className={styles.planValueNote}>
-                  Plus sleep, cardio, water, and optional supplement guidance.
-                </p>
-              ) : null}
-              <ul className={styles.bulletList}>
-                {(PLAN_BULLETS[plan.slug] ?? []).map((item) => (
-                  <li key={item}>
-                    <Check size={15} aria-hidden /> {item}
-                  </li>
-                ))}
-              </ul>
-              <Link href={`/checkout?plan=${plan.slug}`} className={styles.planCta}>
-                {plan.slug === 'digital_complete' ? 'Get Complete Plan' : 'Get plan'}
-              </Link>
-            </motion.article>
+      {/* 4. WHY PLANS FAIL */}
+      <section className={styles.sectionAlt}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Clarity</p>
+          <h2 className={styles.sectionTitle}>Why most fitness plans don&apos;t work</h2>
+          <p className={styles.sectionLede}>
+            The problem isn&apos;t always effort. Sometimes the plan simply doesn&apos;t fit the
+            person following it.
+          </p>
+        </motion.div>
+        <div className={styles.failGrid}>
+          {FAIL_CARDS.map((item) => (
+            <article key={item.title} className={styles.failCard}>
+              <X size={16} className={styles.failIcon} aria-hidden />
+              <h3>{item.title}</h3>
+              <p>{item.copy}</p>
+            </article>
           ))}
         </div>
       </section>
 
+      {/* 5. WHAT YOU GET */}
+      <section className={styles.section}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Complete plan</p>
+          <h2 className={styles.sectionTitle}>What you get</h2>
+          <p className={styles.sectionLede}>
+            Included in the {DIGITAL_PLANS.digital_complete.displayPrice} Workout + Diet plan.
+          </p>
+        </motion.div>
+        <ul className={styles.featureGrid}>
+          {COMPLETE_FEATURES.map((item) => (
+            <li key={item}>
+              <Check size={16} aria-hidden />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* 6. PRICING */}
+      <section id="pricing" className={styles.sectionAlt}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Pricing</p>
+          <h2 className={styles.sectionTitle}>Choose your plan</h2>
+          <p className={styles.sectionLede}>One-time payment. No subscription. No fake scarcity.</p>
+        </motion.div>
+
+        <div className={styles.priceGrid}>
+          <article className={styles.priceCard}>
+            <Dumbbell size={22} className={styles.priceIcon} aria-hidden />
+            <h3>Personalized Workout</h3>
+            <p className={styles.priceAmount}>{DIGITAL_PLANS.digital_workout.displayPrice}</p>
+            <p className={styles.priceCopy}>Personalized workout plan</p>
+            <Link href={WORKOUT_HREF} className={styles.secondaryCta}>
+              Get workout <ChevronRight size={16} aria-hidden />
+            </Link>
+          </article>
+
+          <article className={`${styles.priceCard} ${styles.priceCardHero}`}>
+            <p className={styles.bestBadge}>Best value</p>
+            <Sparkles size={22} className={styles.priceIcon} aria-hidden />
+            <h3>Complete Plan</h3>
+            <p className={styles.priceAmount}>{DIGITAL_PLANS.digital_complete.displayPrice}</p>
+            <p className={styles.priceBundle}>Workout + Diet</p>
+            <div className={styles.priceMath}>
+              <p>
+                {DIGITAL_PLANS.digital_workout.displayPrice} +{' '}
+                {DIGITAL_PLANS.digital_diet.displayPrice} = <s>₹138</s>
+              </p>
+              <p className={styles.priceSave}>
+                Get both for {DIGITAL_PLANS.digital_complete.displayPrice}
+              </p>
+              <p className={styles.savePill}>Save ₹39</p>
+            </div>
+            <Link href={COMPLETE_HREF} className={styles.primaryCta}>
+              Get complete plan <ChevronRight size={16} aria-hidden />
+            </Link>
+          </article>
+
+          <article className={styles.priceCard}>
+            <Apple size={22} className={styles.priceIcon} aria-hidden />
+            <h3>Personalized Diet</h3>
+            <p className={styles.priceAmount}>{DIGITAL_PLANS.digital_diet.displayPrice}</p>
+            <p className={styles.priceCopy}>Personalized diet plan</p>
+            <Link href={DIET_HREF} className={styles.secondaryCta}>
+              Get diet <ChevronRight size={16} aria-hidden />
+            </Link>
+          </article>
+        </div>
+      </section>
+
+      {/* 7. SOCIAL PROOF */}
+      <section className={styles.section}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Credibility</p>
+          <h2 className={styles.sectionTitle}>7,000+ people trained &amp; inspired</h2>
+          <p className={styles.sectionLede}>Real LURVOX client stories from our community.</p>
+        </motion.div>
+        <div className={styles.proofGrid}>
+          {CHECKOUT_TRANSFORMATIONS.slice(0, 6).map((item) => (
+            <article key={item.id} className={styles.proofCard}>
+              <div className={styles.proofImageWrap}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- Shopify CDN; matches checkout */}
+                <img
+                  src={item.image}
+                  alt={`${item.name} result`}
+                  className={styles.proofImage}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <h3>{item.title}</h3>
+              <p>&ldquo;{item.quote}&rdquo;</p>
+              <span>
+                {item.name} · {item.city}
+              </span>
+            </article>
+          ))}
+        </div>
+        <Link href={COMPLETE_HREF} className={styles.primaryCta}>
+          Build my plan <ChevronRight size={18} aria-hidden />
+        </Link>
+      </section>
+
+      {/* 8. WHO THIS IS FOR */}
       <section className={styles.sectionAlt}>
-        <p className={styles.sectionEyebrow}>How it works</p>
-        <h2 className={styles.sectionTitle}>Your plan in 3 steps</h2>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Fit check</p>
+          <h2 className={styles.sectionTitle}>Who is this for?</h2>
+          <p className={styles.sectionLede}>This plan is ideal if:</p>
+        </motion.div>
+        <ul className={styles.whoList}>
+          {WHO_FOR.map((item) => (
+            <li key={item}>
+              <Check size={16} aria-hidden />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* 9. METHODOLOGY */}
+      <section className={styles.section}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Methodology</p>
+          <h2 className={styles.sectionTitle}>Coach-designed. Personalized for you.</h2>
+          <p className={styles.sectionLede}>
+            LURVOX uses its coaching methodology to build a personalized plan around your individual
+            information, goals and preferences.
+          </p>
+        </motion.div>
+        <div className={styles.methodRow}>
+          <div className={styles.methodChip}>
+            <UserRound size={16} aria-hidden /> Methodology
+          </div>
+          <span aria-hidden>+</span>
+          <div className={styles.methodChip}>
+            <Sparkles size={16} aria-hidden /> Personalization
+          </div>
+          <span aria-hidden>+</span>
+          <div className={styles.methodChip}>
+            <Dumbbell size={16} aria-hidden /> Technology
+          </div>
+          <span aria-hidden>=</span>
+          <div className={`${styles.methodChip} ${styles.methodChipAccent}`}>
+            Affordable personalized planning
+          </div>
+        </div>
+      </section>
+
+      {/* 10. HOW IT WORKS */}
+      <section className={styles.sectionAlt}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Process</p>
+          <h2 className={styles.sectionTitle}>How it works</h2>
+          <p className={styles.sectionLede}>Choose → Personalize → Build → Receive</p>
+        </motion.div>
         <ol className={styles.steps}>
           <li>
             <span>01</span>
-            <div>
-              <strong>Pay once</strong>
-              <p>Checkout with Razorpay. UPI, cards, or netbanking.</p>
-            </div>
+            <strong>Choose your plan</strong>
+            <p>Select Workout, Diet, or Complete.</p>
           </li>
           <li>
             <span>02</span>
-            <div>
-              <strong>Open your plan setup</strong>
-              <p>Verify email, then complete a short in app questionnaire.</p>
-            </div>
+            <strong>Tell us about you</strong>
+            <p>Complete your personalized plan setup.</p>
           </li>
           <li>
             <span>03</span>
-            <div>
-              <strong>Receive your plan</strong>
-              <p>Your coach made plan is delivered to the app and email, usually within a few hours.</p>
-            </div>
+            <strong>We build your plan</strong>
+            <p>Your information is processed according to the LURVOX methodology.</p>
+          </li>
+          <li>
+            <span>04</span>
+            <strong>Receive your plan</strong>
+            <p>Delivered within a few hours.</p>
           </li>
         </ol>
       </section>
 
+      {/* 11. DELIVERY */}
       <section className={styles.section}>
-        <p className={styles.sectionEyebrow}>FAQ</p>
-        <h2 className={styles.sectionTitle}>Got questions?</h2>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Delivery</p>
+          <h2 className={styles.sectionTitle}>Your plan will be delivered within a few hours</h2>
+        </motion.div>
+        <ol className={styles.deliveryFlow}>
+          <li>
+            <Check size={16} aria-hidden /> Payment complete
+          </li>
+          <li aria-hidden className={styles.deliveryArrow}>
+            ↓
+          </li>
+          <li>
+            <Check size={16} aria-hidden /> Plan setup received
+          </li>
+          <li aria-hidden className={styles.deliveryArrow}>
+            ↓
+          </li>
+          <li>
+            <Clock size={16} aria-hidden /> Your plan is being prepared
+          </li>
+          <li aria-hidden className={styles.deliveryArrow}>
+            ↓
+          </li>
+          <li>
+            <Check size={16} aria-hidden /> Plan delivered
+          </li>
+        </ol>
+      </section>
+
+      {/* 12. NOT LIVE COACHING */}
+      <section className={styles.sectionAlt}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>Expectations</p>
+          <h2 className={styles.sectionTitle}>Personalized planning. Not live coaching.</h2>
+          <p className={styles.sectionLede}>
+            This product provides personalized written fitness guidance.
+          </p>
+        </motion.div>
+        <p className={styles.upsellCopy}>It does not include:</p>
+        <ul className={styles.clearList}>
+          <li>Daily WhatsApp coaching</li>
+          <li>Live calls</li>
+          <li>Ongoing human check-ins</li>
+          <li>1-to-1 coaching</li>
+        </ul>
+        <p className={styles.upsellCopy}>Need personal coaching?</p>
+        <a href={COACHING_HREF} className={styles.secondaryCta} rel="noreferrer">
+          Explore LURVOX 1-to-1 coaching <ChevronRight size={16} aria-hidden />
+        </a>
+      </section>
+
+      {/* 13. GUARANTEE + TRUST */}
+      <section className={styles.section}>
+        <motion.div className={styles.guaranteeBox} {...motionProps}>
+          <ShieldCheck size={28} className={styles.guaranteeIcon} aria-hidden />
+          <h2 className={styles.sectionTitle}>7-day money-back guarantee</h2>
+          <p className={styles.sectionLede}>
+            Try your personalized plan with confidence. If you are not satisfied with the plan you
+            receive, contact us within 7 days.
+          </p>
+          <ul className={styles.trustRow}>
+            <li>
+              <ShieldCheck size={14} aria-hidden /> Money-back guarantee
+            </li>
+            <li>
+              <Lock size={14} aria-hidden /> Secure payment
+            </li>
+            <li>
+              <Check size={14} aria-hidden /> One-time payment
+            </li>
+            <li>
+              <Check size={14} aria-hidden /> No subscription
+            </li>
+          </ul>
+        </motion.div>
+      </section>
+
+      {/* 14. FAQ */}
+      <section className={styles.sectionAlt}>
+        <motion.div {...motionProps}>
+          <p className={styles.sectionEyebrow}>FAQ</p>
+          <h2 className={styles.sectionTitle}>Questions, answered</h2>
+        </motion.div>
         <div className={styles.faqList}>
           {FAQS.map((item, index) => {
             const open = openFaq === index
@@ -389,81 +755,46 @@ export default function CustomisedPlanLandingPage() {
         </div>
       </section>
 
+      {/* 15. FINAL CTA */}
+      <section className={styles.finalCta}>
+        <h2>Stop guessing. Start following a plan.</h2>
+        <p className={styles.finalLines}>
+          Your goal.
+          <br />
+          Your lifestyle.
+          <br />
+          Your preferences.
+          <br />
+          Your personalized plan.
+        </p>
+        <p className={styles.heroPrice}>
+          Workout + Diet — <span>{DIGITAL_PLANS.digital_complete.displayPrice}</span>
+        </p>
+        <p className={styles.heroTrust}>One-time payment · No subscription</p>
+        <Link href={COMPLETE_HREF} className={styles.primaryCta}>
+          Get my personalized plan <ChevronRight size={18} aria-hidden />
+        </Link>
+      </section>
+
       <footer className={styles.footer}>
         <p className={styles.wordmark}>{BRAND_NAME}</p>
-        <p>Customised digital plans · Made by the coach · Not live coaching</p>
-        <p>
-          Want live checkins with a coach?{' '}
-          <a href="https://www.lurvox.in/" rel="noreferrer">
-            Visit lurvox.in coaching
-          </a>
-        </p>
+        <p>Personalized digital plans · Coach-designed methodology · Not live coaching</p>
       </footer>
 
-      <div className={`${styles.stickyBar} ${showSticky ? styles.stickyBarVisible : ''}`}>
+      <div
+        className={`${styles.stickyBar} ${showSticky ? styles.stickyBarVisible : ''}`}
+        aria-hidden={!showSticky}
+      >
         <div className={styles.stickyInner}>
           <div>
-            <strong>Complete Plan</strong>
-            <span className={styles.stickyMeta}>₹99 · moneyback if no results</span>
+            <strong>Personalized plan · ₹99</strong>
+            <span>One-time · few hours delivery</span>
           </div>
           <Link href={COMPLETE_HREF} className={styles.stickyCta}>
-            <span className={styles.ctaFull}>Get Complete Plan · ₹99</span>
-            <span className={styles.ctaShort}>Get Complete · ₹99</span>
+            Get my plan
           </Link>
         </div>
       </div>
-
-      <button
-        type="button"
-        className={styles.botFab}
-        aria-expanded={botOpen}
-        aria-controls="instant-help-bot"
-        onClick={() => setBotOpen((v) => !v)}
-      >
-        {botOpen ? <X size={22} aria-hidden /> : <MessageCircle size={22} aria-hidden />}
-        <span>{botOpen ? 'Close' : 'Ask'}</span>
-      </button>
-
-      {botOpen ? (
-        <div id="instant-help-bot" className={styles.botPanel} role="dialog" aria-label="Plan help bot">
-          <div className={styles.botHeader}>
-            <strong>Plan help</strong>
-            <span>Quick answers</span>
-          </div>
-          <div className={styles.botMessages}>
-            {messages.map((msg, i) => (
-              <p
-                key={`${msg.role}-${i}`}
-                className={msg.role === 'bot' ? styles.botBubble : styles.userBubble}
-              >
-                {msg.text}
-              </p>
-            ))}
-          </div>
-          <div className={styles.botSuggestions}>
-            {suggestions.map((item) => (
-              <button key={item} type="button" onClick={() => sendBot(item)}>
-                {item}
-              </button>
-            ))}
-          </div>
-          <form
-            className={styles.botForm}
-            onSubmit={(e) => {
-              e.preventDefault()
-              sendBot(botInput)
-            }}
-          >
-            <input
-              value={botInput}
-              onChange={(e) => setBotInput(e.target.value)}
-              placeholder="Type your question"
-              aria-label="Your question"
-            />
-            <button type="submit">Send</button>
-          </form>
-        </div>
-      ) : null}
     </main>
   )
 }
