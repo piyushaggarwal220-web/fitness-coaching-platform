@@ -141,7 +141,7 @@ export default function CustomisedPlanLandingPage() {
         >
           <div className={styles.heroImageWrap}>
             <Image
-              src="/landing/instant-plan-hero.jpg"
+              src="/landing/instant-plan-hero.png"
               alt="Athletes ready to train with a personalised Lurvox plan"
               fill
               priority
