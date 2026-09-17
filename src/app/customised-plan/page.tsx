@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Check, Dumbbell, MessageCircle, Smartphone, UserRound, X } from 'lucide-react'
+import { Check, Dumbbell, MessageCircle, Send, Smartphone, UserRound, X } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
 import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
@@ -103,6 +103,8 @@ export default function CustomisedPlanLandingPage() {
       text: 'Hi. Ask me about Instant Plans, delivery, moneyback, or Complete vs Workout/Diet.',
     },
   ])
+  const messagesRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const onScroll = () => setShowSticky(window.scrollY > 320)
@@ -110,6 +112,27 @@ export default function CustomisedPlanLandingPage() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    const el = messagesRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+  }, [messages, botBusy, botOpen])
+
+  useEffect(() => {
+    if (!botOpen) return
+    const id = window.setTimeout(() => inputRef.current?.focus(), 80)
+    return () => window.clearTimeout(id)
+  }, [botOpen])
+
+  const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && botOpen) setBotOpen(false)
+  })
+
+  useEffect(() => {
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onKeyDown])
 
   const suggestions = useMemo(
     () => ['How fast do I get the plan?', 'Why ₹99 Complete?', 'Moneyback?', 'Workout or Complete?'],
@@ -419,22 +442,49 @@ export default function CustomisedPlanLandingPage() {
 
       <button
         type="button"
-        className={styles.botFab}
+        className={`${styles.botFab} ${botOpen ? styles.botFabOpen : ''}`}
         aria-expanded={botOpen}
         aria-controls="instant-help-bot"
         onClick={() => setBotOpen((v) => !v)}
       >
-        {botOpen ? <X size={22} aria-hidden /> : <MessageCircle size={22} aria-hidden />}
+        {botOpen ? <X size={20} aria-hidden /> : <MessageCircle size={20} aria-hidden />}
         <span>{botOpen ? 'Close' : 'Ask'}</span>
       </button>
 
       {botOpen ? (
-        <div id="instant-help-bot" className={styles.botPanel} role="dialog" aria-label="Plan help bot">
+        <motion.div
+          id="instant-help-bot"
+          className={styles.botPanel}
+          role="dialog"
+          aria-label="Instant Plan help"
+          aria-modal="false"
+          initial={{ opacity: 0, y: 12, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className={styles.botHeader}>
-            <strong>Plan help</strong>
-            <span>{botBusy ? 'Thinking…' : 'Instant answers'}</span>
+            <div className={styles.botIdentity}>
+              <span className={styles.botAvatar} aria-hidden>
+                L
+              </span>
+              <div>
+                <strong>Instant help</strong>
+                <span className={styles.botStatus}>
+                  <span className={styles.botStatusDot} aria-hidden />
+                  {botBusy ? 'Typing…' : 'Usually replies in seconds'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className={styles.botClose}
+              aria-label="Close chat"
+              onClick={() => setBotOpen(false)}
+            >
+              <X size={18} aria-hidden />
+            </button>
           </div>
-          <div className={styles.botMessages}>
+          <div className={styles.botMessages} ref={messagesRef}>
             {messages.map((msg, i) => (
               <p
                 key={`${msg.role}-${i}`}
@@ -443,6 +493,13 @@ export default function CustomisedPlanLandingPage() {
                 {msg.text}
               </p>
             ))}
+            {botBusy ? (
+              <p className={`${styles.botBubble} ${styles.botTyping}`} aria-live="polite">
+                <span />
+                <span />
+                <span />
+              </p>
+            ) : null}
           </div>
           <div className={styles.botSuggestions}>
             {suggestions.map((item) => (
@@ -459,17 +516,19 @@ export default function CustomisedPlanLandingPage() {
             }}
           >
             <input
+              ref={inputRef}
               value={botInput}
               onChange={(e) => setBotInput(e.target.value)}
-              placeholder="Type your question"
+              placeholder="Ask about plans, delivery, moneyback…"
               aria-label="Your question"
               disabled={botBusy}
+              maxLength={500}
             />
-            <button type="submit" disabled={botBusy}>
-              Send
+            <button type="submit" disabled={botBusy || !botInput.trim()} aria-label="Send">
+              <Send size={16} aria-hidden />
             </button>
           </form>
-        </div>
+        </motion.div>
       ) : null}
     </main>
   )
