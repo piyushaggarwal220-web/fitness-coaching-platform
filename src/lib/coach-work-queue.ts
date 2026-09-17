@@ -177,7 +177,7 @@ export async function getCoachWorkQueue(
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, name, email, plan_delivered, onboarding_complete, created_at, payment_confirmed, access_source, subscription_expires_at, journey_goal')
+      .select('id, name, email, plan_delivered, onboarding_complete, created_at, payment_confirmed, access_source, subscription_expires_at, journey_goal, coach_service')
       .eq('coach_id', coachId),
     supabase
       .from('plan_change_requests')
@@ -210,7 +210,9 @@ export async function getCoachWorkQueue(
       .eq('coach_id', coachId),
   ])
 
-  const visibleClients = (clients ?? []).filter((c) => !isTrialClientHiddenFromCoaches(c))
+  const visibleClients = (clients ?? []).filter(
+    (c) => !isTrialClientHiddenFromCoaches(c) && (c as { coach_service?: string | null }).coach_service !== 'ai'
+  )
   const clientNameById = new Map(
     visibleClients.map((c) => [c.id, c.name || c.email || 'Client'])
   )

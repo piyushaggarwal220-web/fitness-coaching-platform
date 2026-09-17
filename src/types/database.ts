@@ -69,6 +69,8 @@ export type OnboardingData = {
     selectedGoals?: string[] | null
     /** Free-text: what the client wants in their own words (journey / timeline / phases). */
     goalDetails?: string | null
+    /** Multi-select coaching tone for AI coach (1–3). */
+    coachPersonalities?: string[] | null
     goalSelectionMethod?: 'user' | 'ai'
     aiSelectedGoal?: boolean
     userIndicatedUnsure?: boolean
@@ -208,6 +210,13 @@ export type Profile = {
   anxiety_protocol_entitled?: boolean | null
   face_maxxing_entitled?: boolean | null
   exercise_library_entitled?: boolean | null
+  /** human = legacy coach chat; ai = in-app AI coach for new clients. */
+  coach_service?: 'human' | 'ai' | null
+  /** New Instant buyers must unlock tracker / journey / AI chat. */
+  instant_gates_enabled?: boolean | null
+  addon_tracker_entitled?: boolean | null
+  addon_journey_entitled?: boolean | null
+  addon_ai_chat_entitled?: boolean | null
   preferred_call_weekday?: number | null
   preferred_call_hour_ist?: number | null
   marketing_photo_consent_at?: string | null
@@ -253,6 +262,8 @@ export type OnboardingFormData = {
   starting_body_type: string
   /** Multi-select plan goals (2–4). Primary coaching focus is derived for fitness_goal. */
   selected_goals: string[]
+  /** Coaching styles for AI coach (1–3). */
+  coach_personalities: string[]
   target_weight: string
   goal_deadline: string
   biggest_struggle: string

@@ -129,7 +129,7 @@ export function getClientDashboardStatus(params: {
   } else if (onboardingComplete) {
     planStatus = isDigital
       ? 'Building your customised plan'
-      : 'Coach is building your plan'
+      : 'Your AI coach is building your plan'
   } else if (paymentConfirmed) {
     planStatus = 'Complete onboarding to start plan delivery'
   }
@@ -150,11 +150,11 @@ export function getClientDashboardStatus(params: {
         ? 'Upload front, side, and back photos to finish onboarding — your customised plan starts after that.'
         : 'Upload front, side, and back photos to finish onboarding — your personalized diet and workout plan will start being prepared after that.'
       : isDigital
-        ? 'Finish onboarding so we can build your customised plan (usually within a few hours).'
-        : 'Finish onboarding (review & submit) so your coach can start preparing your personalized diet and workout plan.'
+        ? 'Finish onboarding so we can build your customised plan (usually within a few hours). Tracker, Journey, and AI chat unlock separately if you want them.'
+        : 'Finish onboarding (review & submit) so your AI coach can prepare your personalized diet and workout plan.'
     nextActionHref = '/onboarding'
   } else if (!coachAssigned && !isDigital) {
-    nextAction = 'Your coach is being assigned — usually within a few minutes'
+    nextAction = 'Setting up your AI coach — usually within a few minutes'
     nextActionHref = null
   } else if (!planReady && !profile.plan_delivered) {
     // Coach + countdown card handles this — avoid duplicate next-step CTA

@@ -637,6 +637,31 @@ export async function claimPurchaseWithPassword(
     profilePayload.exercise_library_entitled = true
   }
 
+  // New clients get AI coach service. Keep human for existing assignments / preferred coach.
+  const existingCoachService = (existingProfile as { coach_service?: string | null } | null)
+    ?.coach_service
+  const existingCoachId = (existingProfile as { coach_id?: string | null } | null)?.coach_id
+  if (
+    existingCoachService === 'human' ||
+    (existingCoachId && existingCoachService !== 'ai') ||
+    Boolean(purchase.preferred_coach_id)
+  ) {
+    profilePayload.coach_service = 'human'
+  } else {
+    profilePayload.coach_service = 'ai'
+  }
+
+  // Instant feature gates: only new digital claims. Coaching purchase clears the gate.
+  if (plan.isDigital) {
+    profilePayload.instant_gates_enabled = true
+  } else if (!plan.isTrial) {
+    // Coaching membership includes tracker / journey / AI chat.
+    profilePayload.instant_gates_enabled = false
+    profilePayload.addon_tracker_entitled = true
+    profilePayload.addon_journey_entitled = true
+    profilePayload.addon_ai_chat_entitled = true
+  }
+
   const { error: profileError } = await admin.from('profiles').upsert(profilePayload)
   if (profileError) {
     logPurchaseStep('profile_create_failed', { userId, error: profileError.message })
@@ -692,14 +717,18 @@ export async function claimPurchaseWithPassword(
         : null),
     })
     if (!plan.isDigital) {
-      const { data: coach } = await admin
-        .from('coaches')
-        .select('name')
-        .eq('id', assignResult.coachId)
-        .maybeSingle()
-      if (coach?.name) {
-        const assigned = NotificationTemplates.coachAssigned(coach.name)
-        await sendNotification({ userId, ...assigned })
+      // AI coach for new clients — skip "coach assigned" human notification.
+      const service = profilePayload.coach_service
+      if (service !== 'ai') {
+        const { data: coach } = await admin
+          .from('coaches')
+          .select('name')
+          .eq('id', assignResult.coachId)
+          .maybeSingle()
+        if (coach?.name) {
+          const assigned = NotificationTemplates.coachAssigned(coach.name)
+          await sendNotification({ userId, ...assigned })
+        }
       }
     }
   } else {

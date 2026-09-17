@@ -273,6 +273,7 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
     fitness_goal: fitnessGoal,
     starting_body_type: path.bodyType,
     selected_goals: [fitnessGoal, companionGoal],
+    coach_personalities: ['supportive', 'direct'],
     target_weight: targetWeight,
     goal_deadline: pick(['8_weeks', '12_weeks', '16_weeks', '24_weeks']),
     biggest_struggle: struggle.value,

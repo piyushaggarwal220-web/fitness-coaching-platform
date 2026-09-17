@@ -150,13 +150,19 @@ export async function POST(request: Request) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, name, email, gender, coach_id, onboarding_complete, checkin_schedule_started_at')
+      .select(
+        'id, name, email, gender, coach_id, onboarding_complete, checkin_schedule_started_at, instant_gates_enabled, addon_tracker_entitled, addon_journey_entitled, addon_ai_chat_entitled, access_source'
+      )
       .eq('id', user.id)
       .single()
 
     if (profileError || !profile) {
       return NextResponse.json({ success: false, error: 'Profile not found.' }, { status: 404 })
     }
+
+    const { assertInstantFeatureAccess } = await import('@/lib/instant-feature-guard')
+    const denied = await assertInstantFeatureAccess(user.id, profile, 'tracker')
+    if (denied) return denied
 
     const validationError = validateBody(body, { gender: profile.gender })
     if (validationError) {

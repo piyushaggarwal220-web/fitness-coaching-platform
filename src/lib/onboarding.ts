@@ -22,6 +22,7 @@ import {
   formatSelectedGoals,
   validateSelectedPlanGoals,
 } from '@/lib/plan-goals'
+import { validateCoachPersonalities } from '@/lib/coach-personality'
 import type {
   OnboardingData,
   OnboardingFormData,
@@ -526,6 +527,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   fitness_goal: '',
   starting_body_type: '',
   selected_goals: [],
+  coach_personalities: [],
   target_weight: '',
   goal_deadline: '',
   biggest_struggle: '',
@@ -689,6 +691,9 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
       typeof data.goals?.startingBodyType === 'string' ? data.goals.startingBodyType : '',
     selected_goals: Array.isArray(data.goals?.selectedGoals)
       ? data.goals.selectedGoals.filter((value): value is string => typeof value === 'string')
+      : [],
+    coach_personalities: Array.isArray(data.goals?.coachPersonalities)
+      ? data.goals.coachPersonalities.filter((value): value is string => typeof value === 'string')
       : [],
     training_experience: profile.training_experience ?? '',
     activity_level: profile.activity_level ?? '',
@@ -856,6 +861,8 @@ export function buildOnboardingData(
       goalDetails: form.goal_details.trim() || null,
       startingBodyType: form.starting_body_type.trim() || null,
       selectedGoals: form.selected_goals.length > 0 ? form.selected_goals : null,
+      coachPersonalities:
+        form.coach_personalities.length > 0 ? form.coach_personalities : null,
       goalSelectionMethod: userUnsure || options?.aiSelectedGoal ? 'ai' : 'user',
       aiSelectedGoal: userUnsure || options?.aiSelectedGoal ? true : undefined,
       userIndicatedUnsure: userUnsure ? true : undefined,
@@ -1157,6 +1164,8 @@ export function validateOnboardingStep(
       } else if (!data.fitness_goal || data.fitness_goal === 'ai_decide') {
         return 'Please select your goals.'
       }
+      const personalityError = validateCoachPersonalities(data.coach_personalities)
+      if (personalityError) return personalityError
       if (needsTargetWeight(data.fitness_goal)) {
         if (!data.target_weight || Number(data.target_weight) <= 0) return 'Enter a valid target weight.'
       }

@@ -25,6 +25,17 @@ export async function PATCH(request: Request) {
     )
   }
 
+  const { data: gateProfile } = await auth.supabase
+    .from('profiles')
+    .select(
+      'instant_gates_enabled, addon_tracker_entitled, addon_journey_entitled, addon_ai_chat_entitled, access_source'
+    )
+    .eq('id', auth.user.id)
+    .maybeSingle()
+  const { assertInstantFeatureAccess } = await import('@/lib/instant-feature-guard')
+  const denied = await assertInstantFeatureAccess(auth.user.id, gateProfile ?? {}, 'tracker')
+  if (denied) return denied
+
   let body: Body
   try {
     body = (await request.json()) as Body

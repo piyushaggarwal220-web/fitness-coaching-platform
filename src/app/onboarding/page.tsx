@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { OnboardingReview } from '@/components/onboarding/OnboardingReview'
 import { ChipGroup, Field, MultiChipGroup, RadioCards } from '@/components/onboarding/inputs'
 import { PlanGoalSelector } from '@/components/onboarding/PlanGoalSelector'
+import { CoachPersonalitySelector } from '@/components/onboarding/CoachPersonalitySelector'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
 import { HeightInput } from '@/components/ui/HeightInput'
 import { PhotoSourceControl } from '@/components/ui/PhotoSourceControl'
@@ -909,6 +910,10 @@ function renderStep(
                   fitness_goal: selected_goals[0] ?? '',
                 })
               }
+            />
+            <CoachPersonalitySelector
+              values={form.coach_personalities}
+              onChange={(coach_personalities) => update({ coach_personalities })}
             />
           </Field>
           <Field

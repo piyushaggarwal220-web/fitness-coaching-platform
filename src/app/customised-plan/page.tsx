@@ -212,8 +212,9 @@ export default function CustomisedPlanLandingPage() {
             <span> within a few hours.</span>
           </h1>
           <p className={styles.lede}>
-            Coach made plans around your goals, from ₹49. Delivered to email and the app.
-            Written guidance, not live coaching.
+            Coach-made plans around your goals, from ₹49. Delivered to email and the app within a few
+            hours. Written guidance — not live coaching. Tracker, Journey, and AI chat are optional
+            add-ons if you want them later.
           </p>
           <div className={styles.stampRow}>
             <div className={styles.guaranteeStamp} aria-label="Guaranteed results, moneyback if none">

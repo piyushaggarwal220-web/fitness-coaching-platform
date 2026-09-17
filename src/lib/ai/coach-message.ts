@@ -18,6 +18,7 @@ import {
 } from '@/lib/ai/generate-plan'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import { profileToComplexityInput } from '@/lib/complexity/profile-input'
+import { formatCoachPersonalityDirective } from '@/lib/coach-personality'
 import { stripPlanMeta } from '@/lib/plan-metadata'
 import type { Checkin, OnboardingProfile, Plan } from '@/types/database'
 
@@ -74,7 +75,10 @@ export async function generateClientCoachMessage(input: {
     promptVersion: formatLibraryPromptVersion(coachMessagePrompt),
   })
 
-  const system = `${compiled.systemPrompt}\n\n${COACH_MESSAGE_OUTPUT_INSTRUCTIONS}`
+  const personalities =
+    (input.profile.onboarding_data as { goals?: { coachPersonalities?: string[] } } | null)?.goals
+      ?.coachPersonalities ?? null
+  const system = `${compiled.systemPrompt}\n\n${formatCoachPersonalityDirective(personalities)}\n\n${COACH_MESSAGE_OUTPUT_INSTRUCTIONS}`
   const userPrompt = compiled.userPrompt
   const providerMode = getPlanProviderMode()
   const mockPlan = buildMockGeneratedPlan(input.profile, input.checkin, input.coachInstructions)
