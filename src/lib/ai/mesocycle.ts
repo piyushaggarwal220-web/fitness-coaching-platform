@@ -21,12 +21,12 @@ const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
   4: 'PEAK volume: hardest productive week via load, reps, or RIR, still capped at 3 working sets (4 on one compound). Never 5+ sets.',
 }
 
-/** Calorie guidance paired with mesocycle intensity (food rises with training load). */
+/** Calorie guidance: hold food flat across weeks unless the coach asks to change it. */
 const CALORIE_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
-  1: `BASE calories: after a new split / lower volume reset, HOLD calories at last month's level (within ~100 kcal). Do NOT trim food to match lighter training — reduce volume only. If fat loss is the goal, raise step targets instead. Never go below ${DIET_FLOOR_BASE_KCAL} kcal.`,
-  2: 'BUILD calories: raise intake slightly with the volume bump (about 50 to 150 kcal or more carbs around training) so recovery keeps up.',
-  3: 'PUSH calories: raise again with intensity (another about 50 to 150 kcal vs week 2) favoring carbs/protein around workouts.',
-  4: 'PEAK calories: highest food of the month to support peak volume. Next mesocycle week 1 drops volume but keeps calories flat — adjust output (steps/cardio) if needed, not food down.',
+  1: `BASE calories: HOLD the established daily average (within ~100 kcal). Do NOT trim food to match lighter training — reduce volume only. Do NOT raise calories because a new mesocycle started. Change calories only if the coach specifically asks. If fat loss is the goal, raise step targets instead. Never go below ${DIET_FLOOR_BASE_KCAL} kcal.`,
+  2: 'BUILD calories: HOLD the same daily average as last week (within ~100 kcal). Progress training via load/reps/RIR only — do NOT bump food with volume unless the coach specifically asks to raise calories.',
+  3: 'PUSH calories: HOLD the same daily average as last week (within ~100 kcal). Intensity up via load/reps/RIR only — do NOT raise calories unless the coach specifically asks.',
+  4: 'PEAK calories: HOLD the same daily average as last week (within ~100 kcal). Peak via training intensity only — do NOT raise food for peak week unless the coach specifically asks. Next mesocycle week 1 also keeps calories flat.',
 }
 
 /**
@@ -66,11 +66,11 @@ export function formatMesocyclePromptSection(
     `- Mesocycle (month index): ${meso.mesocycleIndex}`,
     `- Week within mesocycle: ${meso.weekInMesocycle} of 4`,
     `- Volume target: ${meso.volumeGuidance}`,
-    `- Calorie target (pair with volume): ${meso.calorieGuidance}`,
+    `- Calorie target (hold flat unless coach asks): ${meso.calorieGuidance}`,
     meso.requiresNewSplit
-      ? `- Split rule: NEW split vs last month. Proven templates (full body, upper/lower, PPL) are valid if they fit this client. Do not recycle last month's day structure. Drop working sets to BASE (2 to 3) and HOLD calories — raise steps/cardio if fat loss is the goal, never below ${DIET_FLOOR_BASE_KCAL} kcal.`
-      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Progress load/reps/RIR AND calories together. Do not add extra working sets or invent a new split.',
-    '- Cycle rule: intensity up each week inside the month → calories up with it. New month (new split, lower volume) → HOLD calories and raise output if needed, then climb food again with volume. Never add working sets past the 2 to 3 cap (4 on one compound) just to hit a percent increase.',
+      ? `- Split rule: NEW split vs last month. Proven templates (full body, upper/lower, PPL) are valid if they fit this client. Do not recycle last month's day structure. Drop working sets to BASE (2 to 3) and HOLD calories — raise steps/cardio if fat loss is the goal, never below ${DIET_FLOOR_BASE_KCAL} kcal. Change calories only if the coach specifically asks.`
+      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Progress load/reps/RIR only — HOLD calories flat. Do not add extra working sets or invent a new split.',
+    '- Cycle rule: intensity up each week inside the month via load/reps/RIR — calories stay flat. Do NOT auto-increase calories week to week. Raise or lower food ONLY when the coach specifically asks. New month (new split, lower volume) → still HOLD calories and raise output if needed. Never add working sets past the 2 to 3 cap (4 on one compound) just to hit a percent increase.',
     '',
     '### Prior workout / split hint (rotate away when a new split is required)',
     priorSplitSummary,

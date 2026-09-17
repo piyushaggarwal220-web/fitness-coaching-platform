@@ -19,17 +19,14 @@
       {%- if section.settings.demo_enabled and section.settings.demo_ask != blank -%}
         <p class="lx-welcome__ask">{{ section.settings.demo_ask }}</p>
       {%- endif -%}
-      <div class="lx-welcome__actions">
-        {%- if section.settings.demo_enabled -%}
+      {%- if section.settings.demo_enabled -%}
+        <div class="lx-welcome__actions">
           <a class="lx-welcome__btn lx-welcome__btn--primary" href="{{ section.settings.demo_url }}">
-            {{ section.settings.demo_label }}
+            <span class="lx-welcome__btn-main">{{ section.settings.demo_label | default: 'Try the platform free' }}</span>
+            <span class="lx-welcome__btn-sub">No signup. Look around first.</span>
           </a>
-        {%- endif -%}
-        <a class="lx-welcome__btn lx-welcome__btn--quiz" href="/pages/choose-your-plan">
-          <span class="lx-welcome__btn-main">Free Find Your Plan Quiz</span>
-          <span class="lx-welcome__btn-sub">No cost · No commitment</span>
-        </a>
-      </div>
+        </div>
+      {%- endif -%}
     </article>
   </div>
 </section>
@@ -51,7 +48,7 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  padding: 22px 18px 20px;
+  padding: 20px 18px 18px;
   border-radius: 20px;
   background:
     radial-gradient(ellipse 90% 80% at 8% -20%, rgba(255, 98, 0, 0.22), transparent 55%),
@@ -76,7 +73,7 @@
 }
 
 .lx-welcome__eyebrow {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   color: var(--lx-accent);
   font-size: 11px;
   font-weight: 800;
@@ -85,86 +82,68 @@
 }
 
 .lx-welcome__headline {
-  margin: 0 0 8px;
-  font-size: clamp(28px, 7.2vw, 42px);
+  margin: 0 0 6px;
+  font-size: clamp(26px, 6.8vw, 38px);
   line-height: 1.08;
   letter-spacing: -0.04em;
   font-weight: 800;
 }
 
 .lx-welcome__lede {
-  margin: 0 0 10px;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: clamp(16px, 3.8vw, 19px);
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: clamp(15px, 3.6vw, 18px);
   line-height: 1.4;
   font-weight: 600;
 }
 
 .lx-welcome__ask {
-  margin: 0 0 18px;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 14px;
-  line-height: 1.5;
+  margin: 0 0 14px;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 13.5px;
+  line-height: 1.45;
 }
 
-  .lx-welcome__actions {
-    display: grid;
-    gap: 10px;
-    justify-items: stretch;
-  }
+.lx-welcome__actions {
+  display: grid;
+  gap: 10px;
+  justify-items: stretch;
+}
 
 .lx-welcome__btn {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
   width: 100%;
-  min-height: 52px;
-  padding: 12px 16px;
+  min-height: 54px;
+  padding: 13px 18px;
   border-radius: 14px;
-  font-size: 15px;
-  font-weight: 800;
   text-decoration: none !important;
   text-align: center;
   box-sizing: border-box;
+  line-height: 1.2;
 }
 
 .lx-welcome__btn--primary {
-  background: linear-gradient(165deg, #ffc078 0%, #ff9a45 32%, var(--lx-accent) 78%, #f25500 100%);
+  background: linear-gradient(165deg, #ff9a45 0%, var(--lx-accent) 70%, #e85700 100%);
   border: 0 !important;
-  color: #1a0c00 !important;
+  color: #140900 !important;
   box-shadow:
-    0 14px 32px rgba(255, 98, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
-
-.lx-welcome__btn--quiz {
-  background: linear-gradient(180deg, #ffffff 0%, #fff4e8 50%, #ffe8d2 100%);
-  border: 0 !important;
-  color: #c44a00 !important;
-  box-shadow:
-    0 12px 28px rgba(255, 120, 40, 0.28),
-    inset 0 1px 0 #ffffff;
+    0 12px 28px rgba(255, 98, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 .lx-welcome__btn-main {
-  font-size: 15px;
+  font-size: 15.5px;
   font-weight: 850;
-  line-height: 1.2;
 }
 
 .lx-welcome__btn-sub {
   font-size: 12px;
   font-weight: 650;
-  color: rgba(140, 55, 0, 0.78);
-  opacity: 1;
-}
-
-.lx-welcome__btn--ghost {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: #fff !important;
+  color: rgba(20, 9, 0, 0.72);
 }
 
 @media screen and (min-width: 750px) {
@@ -173,11 +152,11 @@
   }
 
   .lx-welcome__card {
-    padding: 28px 28px 24px;
+    padding: 24px 26px 22px;
   }
 
   .lx-welcome__actions {
-    grid-template-columns: minmax(180px, 280px);
+    max-width: 320px;
   }
 }
 {% endstylesheet %}

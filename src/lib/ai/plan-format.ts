@@ -111,22 +111,25 @@ function formatWorkoutDays(days: unknown[]): string {
         .join(' — ')
 
       const exercises = day.exercises ?? day.movements ?? day.lifts
-      const exerciseBlock = Array.isArray(exercises)
-        ? exercises.map((ex) => `  • ${formatExerciseLine(ex)}`).filter(Boolean).join('\n')
-        : ''
+      const exerciseLines = Array.isArray(exercises)
+        ? exercises.map((ex) => `  • ${formatExerciseLine(ex)}`).filter(Boolean)
+        : []
+      // Always label main lifts so the tracker does not keep them under Warm-up.
+      const exerciseBlock =
+        exerciseLines.length > 0 ? ['Main Workout:', ...exerciseLines].join('\n') : ''
 
       const warmup = day.warmup ?? day.warm_up
       const warmupBlock = Array.isArray(warmup)
-        ? ['Warm-up', ...warmup.map((ex) => `  • ${formatExerciseLine(ex)}`)].join('\n')
+        ? ['Warm-up:', ...warmup.map((ex) => `  • ${formatExerciseLine(ex)}`)].join('\n')
         : typeof warmup === 'string' && warmup.trim()
-          ? `Warm-up\n${warmup.trim()}`
+          ? `Warm-up:\n${warmup.trim()}`
           : ''
 
       const cooldown = day.cooldown ?? day.post_workout ?? day.postWorkout
       const cooldownBlock = Array.isArray(cooldown)
-        ? ['Post-Workout', ...cooldown.map((ex) => `  • ${formatExerciseLine(ex)}`)].join('\n')
+        ? ['Post-Workout:', ...cooldown.map((ex) => `  • ${formatExerciseLine(ex)}`)].join('\n')
         : typeof cooldown === 'string' && cooldown.trim()
-          ? `Post-Workout\n${cooldown.trim()}`
+          ? `Post-Workout:\n${cooldown.trim()}`
           : ''
 
       const notes = typeof day.notes === 'string' ? day.notes.trim() : ''

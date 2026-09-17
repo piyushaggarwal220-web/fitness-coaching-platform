@@ -1,17 +1,20 @@
 {% comment %}
-  LURVOX — one floating dock, two orange-and-black actions.
-  Talk is first and slightly larger. Quiz CTAs lead with free value, not prices.
-  Swap the pair so the current page is not repeated.
-  Demo lives on the welcome card / hero, not here.
+  LURVOX — floating dock.
+  Homepage: Talk only (Try + Quiz live in the hero — no duplicates).
+  Other pages swap actions so the current page is not repeated.
 {% endcomment %}
 
 {%- liquid
   assign find_url = '/pages/choose-your-plan'
   assign talk_url = '/pages/talk-to-a-coach'
   assign plans_url = '/pages/compare-fit?view=compare-short'
+  assign on_home = false
   assign on_finder = false
   assign on_talk = false
   assign on_compare = false
+  if request.page_type == 'index'
+    assign on_home = true
+  endif
   if request.page_type == 'page' and page.handle == 'choose-your-plan'
     assign on_finder = true
   endif
@@ -29,32 +32,39 @@
 -%}
 
 <div class="lx-find-float" data-lx-find-float aria-label="Quick actions">
-  {%- if on_finder -%}
+  {%- if on_home -%}
+    <div class="lx-find-float__row lx-find-float__row--single">
+      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
+        <span class="lx-find-float__main">Talk to a coach</span>
+        <span class="lx-find-float__sub">Free consult · ask anything</span>
+      </a>
+    </div>
+  {%- elsif on_finder -%}
     <div class="lx-find-float__row lx-find-float__row--talk-first">
       <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
         <span class="lx-find-float__main">Talk to a coach</span>
         <span class="lx-find-float__sub">Free consult</span>
       </a>
-      <a class="lx-find-float__btn" href="{{ plans_url }}">
+      <a class="lx-find-float__btn lx-find-float__btn--ghost" href="{{ plans_url }}">
         <span class="lx-find-float__main">See plans</span>
         <span class="lx-find-float__sub">Compare options</span>
       </a>
     </div>
   {%- elsif on_talk -%}
     <div class="lx-find-float__row">
-      <a class="lx-find-float__btn" href="{{ find_url }}">
-        <span class="lx-find-float__main">Free Find Your Plan Quiz</span>
+      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
+        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
         <span class="lx-find-float__sub">No cost · No commitment</span>
       </a>
-      <a class="lx-find-float__btn" href="{{ plans_url }}">
+      <a class="lx-find-float__btn lx-find-float__btn--ghost" href="{{ plans_url }}">
         <span class="lx-find-float__main">See plans</span>
         <span class="lx-find-float__sub">Compare options</span>
       </a>
     </div>
   {%- elsif on_compare -%}
     <div class="lx-find-float__row lx-find-float__row--talk-second">
-      <a class="lx-find-float__btn" href="{{ find_url }}">
-        <span class="lx-find-float__main">Free Find Your Plan Quiz</span>
+      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
+        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
         <span class="lx-find-float__sub">No cost · No commitment</span>
       </a>
       <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
@@ -68,8 +78,8 @@
         <span class="lx-find-float__main">Talk to a coach</span>
         <span class="lx-find-float__sub">Free consult</span>
       </a>
-      <a class="lx-find-float__btn" href="{{ find_url }}">
-        <span class="lx-find-float__main">Free Find Your Plan Quiz</span>
+      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
+        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
         <span class="lx-find-float__sub">No cost · No commitment</span>
       </a>
     </div>
@@ -105,7 +115,7 @@
     pointer-events: none;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
     align-items: stretch;
     padding: 0;
@@ -115,12 +125,16 @@
     box-shadow: none;
   }
 
+  .lx-find-float__row--single {
+    grid-template-columns: 1fr;
+  }
+
   .lx-find-float__row--talk-first {
-    grid-template-columns: 1.18fr 1fr;
+    grid-template-columns: 1.12fr 1fr;
   }
 
   .lx-find-float__row--talk-second {
-    grid-template-columns: 1fr 1.18fr;
+    grid-template-columns: 1fr 1.12fr;
   }
 
   .lx-find-float__btn {
@@ -129,60 +143,89 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     width: 100%;
-    min-height: 56px;
-    padding: 10px 10px;
+    min-height: 54px;
+    padding: 11px 12px;
     box-sizing: border-box;
     text-align: center;
     text-decoration: none !important;
-    border-radius: 16px;
-    color: #1a0c00 !important;
-    background: linear-gradient(165deg, #ffc078 0%, #ff9a45 35%, #ff6200 100%) !important;
+    border-radius: 14px;
+    color: #140900 !important;
+    background: linear-gradient(165deg, #ff9a45 0%, #ff6200 70%, #e85700 100%) !important;
     border: 0 !important;
     outline: none !important;
     box-shadow:
-      0 14px 30px rgba(255, 98, 0, 0.45),
-      inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+      0 10px 24px rgba(255, 98, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
     -webkit-tap-highlight-color: transparent;
   }
 
   .lx-find-float__btn:hover,
   .lx-find-float__btn:focus-visible {
-    background: linear-gradient(165deg, #ffd08e 0%, #ffaa55 35%, #ff7418 100%) !important;
-    color: #1a0c00 !important;
-    filter: brightness(1.03);
+    filter: brightness(1.04);
   }
 
   .lx-find-float__btn--talk {
-    min-height: 62px;
-    box-shadow:
-      0 16px 34px rgba(255, 98, 0, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+    min-height: 56px;
+  }
+
+  .lx-find-float__row--single .lx-find-float__btn--talk {
+    min-height: 54px;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .lx-find-float__btn--quiz,
+  .lx-find-float__btn--ghost {
+    color: #fff !important;
+    background:
+      radial-gradient(ellipse 80% 90% at 50% 0%, rgba(255, 98, 0, 0.16), transparent 55%),
+      linear-gradient(180deg, #1a1511 0%, #101010 100%) !important;
+    border: 1.5px solid rgba(255, 138, 61, 0.7) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .lx-find-float__btn--quiz .lx-find-float__main,
+  .lx-find-float__btn--ghost .lx-find-float__main {
+    color: #fff !important;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .lx-find-float__btn--quiz .lx-find-float__main em {
+    color: #ff8a3d;
+    font-style: normal;
+    font-weight: 800;
+  }
+
+  .lx-find-float__btn--quiz .lx-find-float__sub,
+  .lx-find-float__btn--ghost .lx-find-float__sub {
+    color: rgba(255, 210, 170, 0.72) !important;
   }
 
   .lx-find-float__btn--talk .lx-find-float__main {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   .lx-find-float__main {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     font-weight: 850;
     letter-spacing: -0.02em;
-    line-height: 1.15;
+    line-height: 1.2;
     color: #140900 !important;
   }
 
   .lx-find-float__sub {
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 650;
-    color: rgba(20, 9, 0, 0.78) !important;
+    color: rgba(20, 9, 0, 0.72) !important;
     white-space: normal;
-    line-height: 1.2;
+    line-height: 1.25;
   }
 
   body.lx-has-find-float {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .lx-flow:not(.lx-flow--after),
@@ -199,8 +242,8 @@
     }
 
     .lx-find-float__btn {
-      min-height: 54px;
-      padding: 9px 8px;
+      min-height: 52px;
+      padding: 10px 12px;
     }
 
     .lx-find-float__main { font-size: 0.84rem; }

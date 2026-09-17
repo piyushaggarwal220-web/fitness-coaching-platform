@@ -6,7 +6,7 @@ import {
   resolveMesocycle,
   summarizePriorSplit,
 } from '@/lib/ai/mesocycle'
-import { buildMetabolicFluxSection } from '@/lib/ai/metabolic-flux'
+import { buildMetabolicFluxSection, shouldApplyHighFluxRules } from '@/lib/ai/metabolic-flux'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
 import { getOnboardingLabel } from '@/lib/onboarding'
@@ -563,8 +563,10 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
   }
 
   lines.push(DAY_HEADER_PROMPT_RULES)
-  lines.push(HIGH_FLUX_PHILOSOPHY_RULES)
-  lines.push(HIGH_FLUX_OUTPUT_PAIRING_RULES)
+  if (shouldApplyHighFluxRules(profile)) {
+    lines.push(HIGH_FLUX_PHILOSOPHY_RULES)
+    lines.push(HIGH_FLUX_OUTPUT_PAIRING_RULES)
+  }
   lines.push(PROTEIN_CALORIE_PROMPT_RULES)
   lines.push(WORKOUT_VOLUME_PROMPT_RULES)
   lines.push(EXERCISE_NAME_PROMPT_RULES)

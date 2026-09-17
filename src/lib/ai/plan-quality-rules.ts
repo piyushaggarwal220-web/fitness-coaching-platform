@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v22'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v23'
 
 /** Platform minimum daily calories before weight-based floor applies. Almost nobody needs a crash diet. */
 export const DIET_FLOOR_BASE_KCAL = 2000
@@ -27,6 +27,7 @@ export const CALORIE_FORMULA_PROMPT_RULES = [
   '- Always derive the daily calorie target with Mifflin-St Jeor: BMR from weight/height/age/gender, then maintenance = BMR × activity factor.',
   '- Use the CALORIE METHOD block in the client profile — it lists this client\'s already-computed daily target. Write that number (±100 kcal). Never invent a 1400–1800 crash diet.',
   '- When editing and the client did NOT ask to change calories, keep the current daily average; when rebuilding from profile, always run the formula fresh.',
+  '- WEEK-TO-WEEK: do NOT raise (or cut) calories each week with mesocycle intensity. Hold the established daily average until the coach specifically asks to change calories.',
 ].join('\n')
 
 export const DIET_PREFERENCE_ENFORCEMENT_RULES = [
@@ -108,20 +109,22 @@ export const EDIT_CALORIE_PRESERVATION_RULES = [
   '- Header Calories/Protein/Carbs/Fat must still match the meal math.',
 ].join('\n')
 
+/** Only inject when shouldApplyHighFluxRules(profile) — not for steady/build_up clients. */
 export const HIGH_FLUX_PHILOSOPHY_RULES = [
-  'HIGH FLUX PHILOSOPHY (non-negotiable):',
-  '- Push HIGHER caloric intake paired with HIGHER output (steps, training, cardio). Both sides up — never low food + hope they walk, and never high food + sedentary days.',
+  'HIGH FLUX PHILOSOPHY (only for clients who chose high flux):',
+  '- This client opted into high flux — push HIGHER caloric intake paired with HIGHER output (steps, training, cardio). Both sides up — never low food + hope they walk, and never high food + sedentary days.',
   '- Follow CALORIE GUIDANCE rules from the profile — maintenance-level food for active clients, shallow deficit only for fat loss, honest header/meal math.',
   '- Fat loss: mild deficit only; create most of the gap via steps/training/cardio.',
-  '- Never respond to "not losing" or a plateau by slashing food; raise steps/training first.',
+  '- Never respond to "not losing" or a plateau by slashing food; raise steps/training first within their schedule.',
 ].join('\n')
 
+/** Only inject when shouldApplyHighFluxRules(profile) — not for steady/build_up clients. */
 export const HIGH_FLUX_OUTPUT_PAIRING_RULES = [
-  'HIGH FLUX OUTPUT PAIRING (non-negotiable when calories are on the higher side):',
-  '- When daily calories are on the higher side for this client, you MUST also raise output in the same plan.',
-  '- Include a daily step target at least ~2,500–4,000 above the client\'s current habit (from onboarding daily steps; if unknown, use 8,000–10,000+ when schedule allows).',
+  'HIGH FLUX OUTPUT PAIRING (only when this client is high flux AND calories are on the higher side):',
+  '- When daily calories are on the higher side for this high-flux client, also raise output in the same plan.',
+  '- Include a daily step target at least ~2,500–4,000 above the client\'s current habit when their schedule allows (from onboarding daily steps; if unknown, prefer a sustainable 7,000–10,000 — never invent unreachable targets).',
   '- cardio_plan must be a single daily step count (e.g. "10000 steps") — not empty, not a LISS/HIIT program.',
-  '- If mesocycle volume drops (new month week 1), HOLD food and raise steps/cardio instead of cutting calories.',
+  '- If mesocycle volume drops (new month week 1), HOLD food and raise steps/cardio instead of cutting calories — still within what they can actually walk.',
 ].join('\n')
 
 export const EDIT_EXPENDITURE_FIRST_RULES = [
