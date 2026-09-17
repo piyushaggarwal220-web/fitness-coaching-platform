@@ -479,7 +479,14 @@ export default function CustomisedPlanLandingPage() {
               type="button"
               className={styles.botClose}
               aria-label="Close chat"
-              onClick={() => setBotOpen(false)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setBotOpen(false)
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation()
+              }}
             >
               <X size={18} aria-hidden />
             </button>

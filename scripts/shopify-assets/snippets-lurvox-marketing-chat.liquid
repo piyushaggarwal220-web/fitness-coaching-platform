@@ -79,7 +79,7 @@
     bottom: 58px;
     width: min(380px, calc(100vw - 24px));
     max-height: min(520px, calc(100vh - 160px));
-    display: flex;
+    display: none;
     flex-direction: column;
     background:
       radial-gradient(ellipse 80% 50% at 100% 0%, rgba(255, 98, 0, 0.2), transparent 55%),
@@ -89,6 +89,12 @@
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 24px 56px rgba(0, 0, 0, 0.5);
+  }
+  .lx-mchat__panel.is-open {
+    display: flex;
+  }
+  .lx-mchat__panel[hidden] {
+    display: none !important;
   }
   .lx-mchat__head {
     display: flex;
@@ -150,6 +156,12 @@
     line-height: 1;
     cursor: pointer;
     flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+  }
+  .lx-mchat__close:hover {
+    background: rgba(255, 255, 255, 0.14);
   }
   .lx-mchat__msgs {
     flex: 1;
@@ -292,13 +304,17 @@
 
   function setOpen(open) {
     if (open) {
+      panel.hidden = false
       panel.removeAttribute('hidden')
+      panel.classList.add('is-open')
       toggle.setAttribute('aria-expanded', 'true')
       toggle.classList.add('is-open')
       if (fabLabel) fabLabel.textContent = 'Close'
       setTimeout(function () { input && input.focus() }, 60)
     } else {
+      panel.hidden = true
       panel.setAttribute('hidden', '')
+      panel.classList.remove('is-open')
       toggle.setAttribute('aria-expanded', 'false')
       toggle.classList.remove('is-open')
       if (fabLabel) fabLabel.textContent = 'Ask'
@@ -360,12 +376,20 @@
     }
   }
 
-  toggle.addEventListener('click', function () {
-    setOpen(panel.hasAttribute('hidden'))
+  toggle.addEventListener('click', function (e) {
+    e.preventDefault()
+    e.stopPropagation()
+    setOpen(panel.hidden || panel.hasAttribute('hidden') || !panel.classList.contains('is-open'))
   })
-  if (closeBtn) closeBtn.addEventListener('click', function () { setOpen(false) })
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function (e) {
+      e.preventDefault()
+      e.stopPropagation()
+      setOpen(false)
+    })
+  }
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !panel.hasAttribute('hidden')) setOpen(false)
+    if (e.key === 'Escape' && panel.classList.contains('is-open')) setOpen(false)
   })
   chips.forEach(function (chip) {
     chip.addEventListener('click', function () { ask(chip.textContent || '') })
