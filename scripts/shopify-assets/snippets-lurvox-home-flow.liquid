@@ -6,7 +6,6 @@
 {%- liquid
   assign mode = mode | default: 'find'
   assign find_url = '/pages/choose-your-plan'
-  assign talk_url = '/pages/talk-to-a-coach'
   assign how_url = '/pages/how-lurvox-works'
   assign compare_url = '/pages/compare-fit?view=compare-short'
 -%}
@@ -27,11 +26,11 @@
     <div class="lx-flow__inner lx-flow__inner--links">
       <p class="lx-flow__hint">Fat loss ₹599 · Fat loss + muscle ₹999 · Athletic body ₹1,699</p>
       <div class="lx-flow__links">
-        <a class="lx-flow__link lx-flow__link--talk" href="{{ talk_url }}">Talk to a coach</a>
-        <span class="lx-flow__sep" aria-hidden="true">·</span>
         <a class="lx-flow__link" href="{{ find_url }}">Find your plan</a>
         <span class="lx-flow__sep" aria-hidden="true">·</span>
         <a class="lx-flow__link" href="{{ compare_url }}">Compare plans</a>
+        <span class="lx-flow__sep" aria-hidden="true">·</span>
+        <a class="lx-flow__link" href="{{ how_url }}">How it works</a>
       </div>
     </div>
   </section>

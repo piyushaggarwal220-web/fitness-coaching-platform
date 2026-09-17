@@ -20,7 +20,7 @@
         <h3>Skinny → Bulky</h3>
         <p>Expected change within 30 days</p>
       </article>
-      <article class="lx-anim-tf__card" data-delay="200">
+      <article class="lx-anim-tf__card" data-delay="90">
         <div class="lx-anim-tf__frame">
           <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-man-fat-before.png" alt="Before: higher body fat" loading="lazy" decoding="async" width="480" height="600">
           <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-man-shredded-after.png" alt="After: shredded lean physique" loading="lazy" decoding="async" width="480" height="600">
@@ -32,7 +32,7 @@
         <h3>Fat → Shredded</h3>
         <p>Expected change within 30 days</p>
       </article>
-      <article class="lx-anim-tf__card" data-delay="400">
+      <article class="lx-anim-tf__card" data-delay="180">
         <div class="lx-anim-tf__frame">
           <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-woman-soft-before.png" alt="Before: softer midsection" loading="lazy" decoding="async" width="480" height="600">
           <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-woman-lean-after.png" alt="After: lean hourglass physique" loading="lazy" decoding="async" width="480" height="600">
@@ -121,7 +121,7 @@
     height: 100%;
     object-fit: cover;
     opacity: 0;
-    transition: opacity 0.45s ease;
+    transition: opacity 0.55s ease;
   }
   .lx-anim-tf__img.is-visible { opacity: 1; }
   .lx-anim-tf__badges {
@@ -188,8 +188,8 @@
     }
     window.setTimeout(function () {
       tick();
-      window.setInterval(tick, 2200);
-    }, delay + 600);
+      window.setInterval(tick, 1000);
+    }, delay);
   });
 })();
 </script>

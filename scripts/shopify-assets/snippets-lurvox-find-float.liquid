@@ -1,28 +1,19 @@
 {% comment %}
   LURVOX — floating dock.
-  Homepage: Talk only (Try + Quiz live in the hero — no duplicates).
-  Other pages swap actions so the current page is not repeated.
+  Quiz / plans only — no Talk to a coach CTAs.
 {% endcomment %}
 
 {%- liquid
   assign find_url = '/pages/choose-your-plan'
-  assign talk_url = '/pages/talk-to-a-coach'
   assign plans_url = '/pages/compare-fit?view=compare-short'
   assign on_home = false
   assign on_finder = false
-  assign on_talk = false
   assign on_compare = false
   if request.page_type == 'index'
     assign on_home = true
   endif
   if request.page_type == 'page' and page.handle == 'choose-your-plan'
     assign on_finder = true
-  endif
-  if request.page_type == 'page' and page.handle == 'talk-to-a-coach'
-    assign on_talk = true
-  endif
-  if request.page_type == 'page' and page.handle == 'book-a-free-call'
-    assign on_talk = true
   endif
   if request.page_type == 'page'
     if page.handle == 'compare-fit' or page.handle == 'compare-plans' or page.handle contains 'compare'
@@ -34,23 +25,26 @@
 <div class="lx-find-float" data-lx-find-float aria-label="Quick actions">
   {%- if on_home -%}
     <div class="lx-find-float__row lx-find-float__row--single">
-      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
-        <span class="lx-find-float__main">Talk to a coach</span>
-        <span class="lx-find-float__sub">Free consult · ask anything</span>
+      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
+        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
+        <span class="lx-find-float__sub">No cost · No commitment</span>
       </a>
     </div>
   {%- elsif on_finder -%}
-    <div class="lx-find-float__row lx-find-float__row--talk-first">
-      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
-        <span class="lx-find-float__main">Talk to a coach</span>
-        <span class="lx-find-float__sub">Free consult</span>
-      </a>
+    <div class="lx-find-float__row lx-find-float__row--single">
       <a class="lx-find-float__btn lx-find-float__btn--ghost" href="{{ plans_url }}">
         <span class="lx-find-float__main">See plans</span>
-        <span class="lx-find-float__sub">Compare options</span>
+        <span class="lx-find-float__sub">₹599 · ₹999 · ₹1,699</span>
       </a>
     </div>
-  {%- elsif on_talk -%}
+  {%- elsif on_compare -%}
+    <div class="lx-find-float__row lx-find-float__row--single">
+      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
+        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
+        <span class="lx-find-float__sub">No cost · No commitment</span>
+      </a>
+    </div>
+  {%- else -%}
     <div class="lx-find-float__row">
       <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
         <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
@@ -59,28 +53,6 @@
       <a class="lx-find-float__btn lx-find-float__btn--ghost" href="{{ plans_url }}">
         <span class="lx-find-float__main">See plans</span>
         <span class="lx-find-float__sub">Compare options</span>
-      </a>
-    </div>
-  {%- elsif on_compare -%}
-    <div class="lx-find-float__row lx-find-float__row--talk-second">
-      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
-        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
-        <span class="lx-find-float__sub">No cost · No commitment</span>
-      </a>
-      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
-        <span class="lx-find-float__main">Talk to a coach</span>
-        <span class="lx-find-float__sub">Free consult</span>
-      </a>
-    </div>
-  {%- else -%}
-    <div class="lx-find-float__row lx-find-float__row--talk-first">
-      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
-        <span class="lx-find-float__main">Talk to a coach</span>
-        <span class="lx-find-float__sub">Free consult</span>
-      </a>
-      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
-        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
-        <span class="lx-find-float__sub">No cost · No commitment</span>
       </a>
     </div>
   {%- endif -%}
@@ -263,10 +235,6 @@
       document.body.classList.add('lx-has-find-float');
       el.classList.remove('is-hidden');
       el.setAttribute('aria-hidden', 'false');
-
-      document.querySelectorAll('a[href*="/pages/book-a-free-call"]').forEach(function (a) {
-        a.setAttribute('href', '/pages/talk-to-a-coach');
-      });
 
       var bar =
         document.getElementById('PBarNextFrameWrapper') ||

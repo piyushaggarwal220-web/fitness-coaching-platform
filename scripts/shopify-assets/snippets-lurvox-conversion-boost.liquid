@@ -2,9 +2,9 @@
   LURVOX conversion boost — trust + how it works (draft).
 {% endcomment %}
 
-{%- assign consult_url = '/pages/talk-to-a-coach' -%}
-{%- assign start_url = '/pages/choose-your-plan' -%}
 {%- assign terms_url = 'https://app.lurvox.in/terms' -%}
+{%- assign find_url = '/pages/choose-your-plan' -%}
+{%- assign start_url = '/pages/choose-your-plan' -%}
 
 <section class="lx-conv" id="lx-conv" data-lx-conv aria-label="Why LURVOX">
   <div class="lx-conv__trust" aria-label="Trust signals">
@@ -75,9 +75,7 @@
     </div>
 
     <div class="lx-conv__actions">
-      <a class="lx-conv__link lx-conv__link--talk" href="{{ consult_url }}">Talk to a coach</a>
-      <span class="lx-conv__sep" aria-hidden="true">·</span>
-      <a class="lx-conv__link" href="{{ start_url }}">Find your plan</a>
+      <a class="lx-conv__link" href="{{ find_url | default: start_url }}">Find your plan</a>
       <span class="lx-conv__sep" aria-hidden="true">·</span>
       <a class="lx-conv__link" href="#plans">See plans · ₹599 · ₹999 · ₹1,699</a>
     </div>
@@ -579,20 +577,16 @@
   }
 
   [data-lx-hero-cta] > a.lx-hero-cta-text,
-  [data-lx-hero-cta] > a[href="/pages/talk-to-a-coach"] {
-    flex: 0 0 auto !important;
-    width: auto !important;
-    align-self: center !important;
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    margin-top: 2px !important;
-    padding: 8px 10px !important;
-    font-size: 0.88rem !important;
-    font-weight: 650 !important;
-    text-decoration: underline !important;
-    text-underline-offset: 4px !important;
-    opacity: 0.9;
+  [data-lx-hero-cta] > a[href="/pages/talk-to-a-coach"],
+  a[href*="/pages/talk-to-a-coach"],
+  a[href*="/pages/book-a-free-call"],
+  .lx-find-float__btn--talk,
+  .lx-pf__btn--talk,
+  .lx-conv__link--talk,
+  .lx-flow__link--talk,
+  [data-lurvox-fab],
+  .lurvox-fab {
+    display: none !important;
   }
 
   .lx-conv__actions {
@@ -677,14 +671,29 @@
     setTimeout(ensurePlansAnchor, 0);
     setTimeout(ensurePlansAnchor, 250);
 
-    // Keep Talk CTAs on the working consult form page.
-    function normalizeTalkLinks() {
-      document.querySelectorAll('a[href*="/pages/book-a-free-call"]').forEach(function (a) {
-        a.setAttribute('href', '/pages/talk-to-a-coach');
+    // Remove Talk-to-a-coach entry points from marketing surfaces.
+    function hideTalkLinks() {
+      document.querySelectorAll(
+        'a[href*="/pages/talk-to-a-coach"], a[href*="/pages/book-a-free-call"], a[href*="wa.me"][href*="consult"], a[href*="wa.me"][href*="consultation"]'
+      ).forEach(function (a) {
+        var label = ((a.textContent || '') + ' ' + (a.getAttribute('aria-label') || '')).toLowerCase();
+        if (
+          /talk to a coach|book a free|free consult|consultation call|whatsapp a coach/.test(label) ||
+          /talk-to-a-coach|book-a-free-call/.test(a.getAttribute('href') || '')
+        ) {
+          a.style.setProperty('display', 'none', 'important');
+          a.setAttribute('aria-hidden', 'true');
+          a.setAttribute('tabindex', '-1');
+        }
+      });
+      document.querySelectorAll('[data-lurvox-fab], .lurvox-fab').forEach(function (el) {
+        el.style.setProperty('display', 'none', 'important');
       });
     }
-    normalizeTalkLinks();
-    document.addEventListener('DOMContentLoaded', normalizeTalkLinks);
+    hideTalkLinks();
+    document.addEventListener('DOMContentLoaded', hideTalkLinks);
+    window.addEventListener('load', hideTalkLinks);
+    setTimeout(hideTalkLinks, 400);
 
     // lurvox-matrix-choose-rewrite-v1
     function rewriteMatrixChoose() {
