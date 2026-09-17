@@ -23,10 +23,14 @@ import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } 
 import {
   clientHasDigitalPurchase,
   clientLatestDigitalSections,
+  latestCoachingPurchase,
+  latestDigitalPurchase,
   latestPurchasePlanSlug,
 } from '@/lib/payments/digital-purchase'
 import { autoDeliverDigitalPlan } from '@/lib/payments/digital-delivery'
 import { deliverPiyushInitialPlan } from '@/lib/piyush-initial-plan-delivery'
+import { clientHasDeliveredPlanStrict } from '@/lib/plans-delivery-guard'
+import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveProgressPhotoRefs } from '@/lib/onboarding'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
@@ -55,6 +59,9 @@ export type InitialPlanGenerationJob = {
   completed_at: string | null
   failed_at: string | null
   updated_at: string
+  purchase_id?: string | null
+  plan_slug?: string | null
+  product_kind?: 'coaching' | 'digital' | null
 }
 
 export async function enqueueInitialPlanGeneration(
@@ -64,18 +71,33 @@ export async function enqueueInitialPlanGeneration(
   const gateError = validateAuthoritativeOnboarding(profile)
   if (gateError) return { job: null, error: gateError, deduplicated: false }
 
-  const { count: deliveredCount } = await admin
-    .from('plans')
-    .select('id', { count: 'exact', head: true })
-    .eq('client_id', profile.id)
-    .not('delivered_at', 'is', null)
-  if ((deliveredCount ?? 0) > 0) {
+  const delivered = await clientHasDeliveredPlanStrict(admin, profile.id)
+  if (delivered.error) {
+    return {
+      job: null,
+      error: `Could not verify delivery history: ${delivered.error}`,
+      deduplicated: false,
+    }
+  }
+  if (delivered.delivered) {
     return {
       job: null,
       error: 'A delivered plan already exists. Use the explicit coach regeneration workflow.',
       deduplicated: false,
     }
   }
+
+  const digital = await latestDigitalPurchase(admin, profile.id)
+  const coaching = await latestCoachingPurchase(admin, profile.id)
+  // Prefer Instant when that is the only paid product; otherwise stamp coaching.
+  const bind =
+    digital && !coaching
+      ? { purchase_id: digital.id, plan_slug: digital.planSlug, product_kind: 'digital' as const }
+      : coaching
+        ? { purchase_id: coaching.id, plan_slug: coaching.planSlug, product_kind: 'coaching' as const }
+        : digital
+          ? { purchase_id: digital.id, plan_slug: digital.planSlug, product_kind: 'digital' as const }
+          : { purchase_id: null, plan_slug: null, product_kind: null }
 
   const now = new Date().toISOString()
   const { data, error } = await admin
@@ -86,6 +108,9 @@ export async function enqueueInitialPlanGeneration(
       status: 'queued',
       queued_at: now,
       updated_at: now,
+      purchase_id: bind.purchase_id,
+      plan_slug: bind.plan_slug,
+      product_kind: bind.product_kind,
     })
     .select()
     .single()
@@ -196,10 +221,12 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
   if (!claimed) return
 
   const job = claimed as InitialPlanGenerationJob
+  let profileCreatedAt: string | null = null
   try {
     const { data: profileData } = await admin.from('profiles').select('*').eq('id', job.client_id).single()
     if (!profileData) throw new Error('Authoritative onboarding profile is unavailable.')
     const profile = profileData as OnboardingProfile
+    profileCreatedAt = profile.created_at ?? null
     const gateError = validateAuthoritativeOnboarding(profile)
     if (gateError) throw new Error(`Onboarding validation failed: ${gateError}`)
     const metricsGate = profileBlocksAiPlanWork(profile)
@@ -227,8 +254,15 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       profile,
       currentCheckin: null,
     })
-    const digitalSections = await clientLatestDigitalSections(admin, profile.id)
-    const planSlug = await latestPurchasePlanSlug(admin, profile.id)
+    const stampedSlug = job.plan_slug ?? null
+    const stampedKind = job.product_kind ?? null
+    const digitalSections =
+      stampedKind === 'digital' && isDigitalPlanSlug(stampedSlug)
+        ? digitalPlanSections(stampedSlug)
+        : stampedKind === 'coaching'
+          ? null
+          : await clientLatestDigitalSections(admin, profile.id)
+    const planSlug = stampedSlug ?? (await latestPurchasePlanSlug(admin, profile.id))
     const isDigital = digitalSections != null
     const needDiet = !digitalSections || digitalSections === 'diet' || digitalSections === 'both'
     const needWorkout =
@@ -388,12 +422,11 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       title: isDigital ? 'Customised Plan' : 'Complete Coaching Plan (Draft)',
     })
 
-    const { count: deliveredCount } = await admin
-      .from('plans')
-      .select('id', { count: 'exact', head: true })
-      .eq('client_id', profile.id)
-      .not('delivered_at', 'is', null)
-    if ((deliveredCount ?? 0) > 0) {
+    const deliveredGuard = await clientHasDeliveredPlanStrict(admin, profile.id)
+    if (deliveredGuard.error) {
+      throw new Error(`Could not verify delivery history: ${deliveredGuard.error}`)
+    }
+    if (deliveredGuard.delivered) {
       throw new Error('A plan was delivered while generation was running.')
     }
 
@@ -542,12 +575,12 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
           if (!delivered.error) return
         }
 
-        if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id, profile.created_at)) {
+        if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id, profileCreatedAt)) {
           const delivered = await deliverPiyushInitialPlan(admin, {
             clientId: job.client_id,
             coachId: job.coach_id,
             planId: draftPlanId,
-            createdAt: profile.created_at,
+            createdAt: profileCreatedAt,
           })
           if (!delivered.error) return
         }

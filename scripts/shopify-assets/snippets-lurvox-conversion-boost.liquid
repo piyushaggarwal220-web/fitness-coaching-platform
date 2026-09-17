@@ -8,11 +8,14 @@
 
 <section class="lx-conv" id="lx-conv" data-lx-conv aria-label="Why LURVOX">
   <div class="lx-conv__trust" aria-label="Trust signals">
+    <div class="lx-conv__stamp">
+      {% render 'lurvox-guarantee-stamp' %}
+    </div>
     <p class="lx-conv__trust-item"><strong>Personal plan</strong> in 24–48 hrs</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
     <p class="lx-conv__trust-item"><strong>1-to-1 coaching</strong> — not a PDF</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
-    <p class="lx-conv__trust-item"><strong>Guaranteed results</strong> · moneyback rules apply</p>
+    <p class="lx-conv__trust-item"><strong>Guaranteed results</strong> · moneyback if none</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
     <p class="lx-conv__trust-item"><strong>UPI / Razorpay</strong> checkout</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
@@ -107,6 +110,22 @@
     background:
       radial-gradient(circle at 12% -40%, rgba(255, 98, 0, 0.22), transparent 55%),
       #0b0b0b;
+  }
+
+  .lx-conv__stamp {
+    flex: 0 0 auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  @media (min-width: 720px) {
+    .lx-conv__stamp {
+      width: auto;
+      margin-bottom: 0;
+      margin-right: 6px;
+    }
   }
 
   .lx-conv__trust-item {

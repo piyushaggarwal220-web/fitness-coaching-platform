@@ -21,6 +21,7 @@ export type ClientProfile = {
   checkin_overdue: boolean | null
   plan_delivered: boolean | null
   checkin_schedule_started_at?: string | null
+  created_at?: string | null
   updated_at?: string | null
   last_seen_at?: string | null
   complexity_score?: number | null
@@ -195,6 +196,7 @@ export type Profile = {
   progress_photo_side?: string | null
   progress_photo_back?: string | null
   terms_accepted_at?: string | null
+  created_at?: string | null
   updated_at?: string | null
   coach_id?: string | null
   checkin_awaiting?: boolean | null

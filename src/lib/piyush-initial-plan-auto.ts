@@ -15,6 +15,9 @@ import {
   shouldStartInitialGeneration,
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
+import { latestCoachingPurchase, latestDigitalPurchase } from '@/lib/payments/digital-purchase'
+import { isDigitalPlanSlug } from '@/lib/payments/plans'
+import { clientHasDeliveredPlanStrict } from '@/lib/plans-delivery-guard'
 import { deliverPiyushInitialPlan } from '@/lib/piyush-initial-plan-delivery'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -40,7 +43,8 @@ async function ensureAiJourneyPlan(
   try {
     const journey = await generateJourneyPlan(profile)
     const now = new Date().toISOString()
-    const { error } = await admin
+    // CAS: only the first writer fills an empty journey. Concurrent callers lose and reload.
+    const { data: updated, error } = await admin
       .from('profiles')
       .update({
         journey_goal: journey.journey_goal,
@@ -49,8 +53,30 @@ async function ensureAiJourneyPlan(
       })
       .eq('id', profile.id)
       .eq('coach_id', profile.coach_id)
+      .is('journey_goal', null)
+      .select('id')
+      .maybeSingle()
 
     if (error) return { created: false, error: error.message }
+
+    if (!updated) {
+      const { data: fresh, error: reloadError } = await admin
+        .from('profiles')
+        .select('journey_goal, journey_summary, coach_id')
+        .eq('id', profile.id)
+        .maybeSingle()
+      if (reloadError) return { created: false, error: reloadError.message }
+      if (fresh?.coach_id !== profile.coach_id) {
+        return { created: false, error: 'Coach assignment changed during journey generation.' }
+      }
+      if (fresh?.journey_goal?.trim()) {
+        profile.journey_goal = fresh.journey_goal
+        profile.journey_summary = fresh.journey_summary
+        return { created: false, error: null }
+      }
+      return { created: false, error: 'Could not claim journey write.' }
+    }
+
     profile.journey_goal = journey.journey_goal
     profile.journey_summary = journey.journey_summary
     return { created: true, error: null }
@@ -113,20 +139,32 @@ export async function runPiyushInitialPlanForClient(
     return { clientId, name, status: 'skipped', detail: 'already delivered' }
   }
 
-  const { count: deliveredCount } = await admin
-    .from('plans')
-    .select('id', { count: 'exact', head: true })
-    .eq('client_id', clientId)
-    .not('delivered_at', 'is', null)
-  if ((deliveredCount ?? 0) > 0) {
+  // Instant-only buyers must use digital fulfillment, not coaching auto-journey.
+  const digitalPurchase = await latestDigitalPurchase(admin, clientId)
+  const coachingPurchase = await latestCoachingPurchase(admin, clientId)
+  if (digitalPurchase && !coachingPurchase) {
+    return {
+      clientId,
+      name,
+      status: 'skipped',
+      detail: 'digital Instant purchase — use Instant fulfillment',
+    }
+  }
+
+  const deliveredGuard = await clientHasDeliveredPlanStrict(admin, clientId)
+  if (deliveredGuard.error) {
+    return {
+      clientId,
+      name,
+      status: 'failed',
+      detail: `delivery history lookup failed: ${deliveredGuard.error}`,
+    }
+  }
+  if (deliveredGuard.delivered) {
     return { clientId, name, status: 'skipped', detail: 'delivered plan exists' }
   }
 
-  const journey = await ensureAiJourneyPlan(admin, typed)
-  if (journey.error) {
-    return { clientId, name, status: 'failed', detail: `journey: ${journey.error}` }
-  }
-
+  // Claim/create the generation job before paying for journey AI.
   const { data: existingJob } = await admin
     .from('initial_plan_generation_jobs')
     .select('*')
@@ -134,6 +172,7 @@ export async function runPiyushInitialPlanForClient(
     .maybeSingle()
 
   let job = (existingJob as InitialPlanGenerationJob | null) ?? null
+  let journeyCreated = false
 
   if (job?.status === 'ready' && job.draft_plan_id) {
     const delivered = await deliverPiyushInitialPlan(admin, {
@@ -149,7 +188,6 @@ export async function runPiyushInitialPlanForClient(
         status: 'failed',
         detail: `deliver: ${delivered.error}`,
         planId: job.draft_plan_id,
-        journeyCreated: journey.created,
       }
     }
     if (delivered.heldForReview) {
@@ -159,7 +197,6 @@ export async function runPiyushInitialPlanForClient(
         status: 'skipped',
         detail: 'held for coach review (calorie floor flag)',
         planId: job.draft_plan_id,
-        journeyCreated: journey.created,
       }
     }
     return {
@@ -168,7 +205,6 @@ export async function runPiyushInitialPlanForClient(
       status: 'sent',
       detail: 'delivered ready draft',
       planId: job.draft_plan_id,
-      journeyCreated: journey.created,
     }
   }
 
@@ -180,7 +216,6 @@ export async function runPiyushInitialPlanForClient(
         name,
         status: 'failed',
         detail: enqueued.error ?? 'Could not queue generation.',
-        journeyCreated: journey.created,
       }
     }
     job = enqueued.job
@@ -188,6 +223,22 @@ export async function runPiyushInitialPlanForClient(
     const retried = await retryInitialPlanGeneration(admin, job)
     if (retried) job = retried
   }
+
+  // Skip Instant-stamped jobs on the coaching auto path.
+  if (job.product_kind === 'digital') {
+    return {
+      clientId,
+      name,
+      status: 'skipped',
+      detail: 'job is stamped Instant digital — coaching auto path skipped',
+    }
+  }
+
+  const journey = await ensureAiJourneyPlan(admin, typed)
+  if (journey.error) {
+    return { clientId, name, status: 'failed', detail: `journey: ${journey.error}` }
+  }
+  journeyCreated = journey.created
 
   if (job.status === 'ready' && job.draft_plan_id) {
     const delivered = await deliverPiyushInitialPlan(admin, {
@@ -203,7 +254,7 @@ export async function runPiyushInitialPlanForClient(
         status: 'failed',
         detail: `deliver: ${delivered.error}`,
         planId: job.draft_plan_id,
-        journeyCreated: journey.created,
+        journeyCreated,
       }
     }
     if (delivered.heldForReview) {
@@ -213,7 +264,7 @@ export async function runPiyushInitialPlanForClient(
         status: 'skipped',
         detail: 'held for coach review (calorie floor flag)',
         planId: job.draft_plan_id,
-        journeyCreated: journey.created,
+        journeyCreated,
       }
     }
     return {
@@ -222,7 +273,7 @@ export async function runPiyushInitialPlanForClient(
       status: 'sent',
       detail: 'delivered after enqueue',
       planId: job.draft_plan_id,
-      journeyCreated: journey.created,
+      journeyCreated,
     }
   }
 
@@ -237,7 +288,7 @@ export async function runPiyushInitialPlanForClient(
         name,
         status: 'generating',
         detail: `job ${job.id} queued for background generation`,
-        journeyCreated: journey.created,
+        journeyCreated,
       }
     }
     if (job.status === 'generating') {
@@ -246,7 +297,7 @@ export async function runPiyushInitialPlanForClient(
         name,
         status: 'generating',
         detail: `job ${job.id} already generating`,
-        journeyCreated: journey.created,
+        journeyCreated,
       }
     }
     return {
@@ -254,7 +305,7 @@ export async function runPiyushInitialPlanForClient(
       name,
       status: 'failed',
       detail: `cannot queue background generation from status ${job.status}`,
-      journeyCreated: journey.created,
+      journeyCreated,
     }
   }
 
@@ -269,7 +320,7 @@ export async function runPiyushInitialPlanForClient(
       name,
       status: 'failed',
       detail: `cannot start generation from status ${job.status}`,
-      journeyCreated: journey.created,
+      journeyCreated,
     }
   }
 
@@ -283,7 +334,6 @@ export async function runPiyushInitialPlanForClient(
   const latest = (refreshed as InitialPlanGenerationJob | null) ?? job
 
   if (latest.status === 'ready' && latest.draft_plan_id) {
-    // processInitialPlanGeneration auto-delivers for auto-initial coaches; verify + re-deliver if needed.
     const { data: plan } = await admin
       .from('plans')
       .select('id, delivered_at, active')
@@ -297,7 +347,7 @@ export async function runPiyushInitialPlanForClient(
         status: 'sent',
         detail: 'generated and delivered',
         planId: latest.draft_plan_id,
-        journeyCreated: journey.created,
+        journeyCreated,
       }
     }
 
@@ -314,7 +364,7 @@ export async function runPiyushInitialPlanForClient(
         status: 'failed',
         detail: `deliver: ${delivered.error}`,
         planId: latest.draft_plan_id,
-        journeyCreated: journey.created,
+        journeyCreated,
       }
     }
     if (delivered.heldForReview) {
@@ -324,7 +374,7 @@ export async function runPiyushInitialPlanForClient(
         status: 'skipped',
         detail: 'held for coach review (calorie floor flag)',
         planId: latest.draft_plan_id,
-        journeyCreated: journey.created,
+        journeyCreated,
       }
     }
     return {
@@ -333,7 +383,7 @@ export async function runPiyushInitialPlanForClient(
       status: 'sent',
       detail: 'generated and delivered',
       planId: latest.draft_plan_id,
-      journeyCreated: journey.created,
+      journeyCreated,
     }
   }
 
@@ -344,7 +394,7 @@ export async function runPiyushInitialPlanForClient(
     detail:
       latest.error_message ??
       `generation ended as ${latest.status}${latest.error_code ? ` (${latest.error_code})` : ''}`,
-    journeyCreated: journey.created,
+    journeyCreated,
   }
 }
 
@@ -354,6 +404,8 @@ export async function listPiyushPendingInitialPlanClients(
   limit = 20
 ): Promise<OnboardingProfile[]> {
   const coachIds = [PIYUSH_COACH_ID, RAKSHIT_COACH_ID]
+  // Over-fetch so we can filter Instant-only + already-delivered clients before applying limit.
+  const fetchLimit = Math.max(limit * 5, 50)
   const { data, error } = await admin
     .from('profiles')
     .select('*')
@@ -361,23 +413,46 @@ export async function listPiyushPendingInitialPlanClients(
     .eq('onboarding_complete', true)
     .eq('plan_delivered', false)
     .order('created_at', { ascending: true })
-    .limit(limit)
+    .limit(fetchLimit)
 
   if (error || !data?.length) return []
 
   const clientIds = data.map((row) => row.id)
-  const { data: deliveredPlans } = await admin
+  const { data: deliveredPlans, error: deliveredError } = await admin
     .from('plans')
     .select('client_id')
     .in('client_id', clientIds)
     .not('delivered_at', 'is', null)
 
+  // Fail closed: if we cannot verify delivery history, return empty rather than over-queue.
+  if (deliveredError) return []
+
   const hasDelivered = new Set((deliveredPlans ?? []).map((p) => p.client_id))
-  return (data as OnboardingProfile[]).filter(
-    (row) =>
-      !hasDelivered.has(row.id) &&
-      shouldAutoJourneyAndDeliverInitialPlan(row.coach_id, row.created_at)
-  )
+
+  const { data: purchaseRows } = await admin
+    .from('purchases')
+    .select('user_id, plan_slug, status')
+    .in('user_id', clientIds)
+
+  const hasDigital = new Set<string>()
+  const hasCoaching = new Set<string>()
+  for (const row of purchaseRows ?? []) {
+    const status = (row.status || '').toLowerCase()
+    const paid = status === 'paid' || status === 'captured' || status === 'completed' || !status
+    if (!paid || !row.plan_slug) continue
+    if (isDigitalPlanSlug(row.plan_slug)) hasDigital.add(row.user_id)
+    else hasCoaching.add(row.user_id)
+  }
+
+  return (data as OnboardingProfile[])
+    .filter(
+      (row) =>
+        !hasDelivered.has(row.id) &&
+        shouldAutoJourneyAndDeliverInitialPlan(row.coach_id, row.created_at) &&
+        // Instant-only buyers belong on digital fulfillment, not coaching auto-deliver.
+        !(hasDigital.has(row.id) && !hasCoaching.has(row.id))
+    )
+    .slice(0, limit)
 }
 
 /**

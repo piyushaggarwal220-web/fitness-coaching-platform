@@ -35,14 +35,19 @@
     </div>
   </header>
 
-  {%- comment -%} 2. Trust {%- endcomment -%}
+  {%- comment -%} 2. Trust + guarantee stamp {%- endcomment -%}
   <div class="lx-home__trust lx-home__reveal" aria-label="Social proof">
+    <div class="lx-home__trust-stamp">
+      {% render 'lurvox-guarantee-stamp' %}
+    </div>
     <p class="lx-home__trust-line">
       <span>{{ section.settings.trust_reviews }}</span>
       <span class="lx-home__trust-dot" aria-hidden="true"></span>
       <span>{{ section.settings.trust_outcomes }}</span>
       <span class="lx-home__trust-dot" aria-hidden="true"></span>
       <span>{{ section.settings.trust_coach }}</span>
+      <span class="lx-home__trust-dot" aria-hidden="true"></span>
+      <span>Guaranteed results · moneyback if none</span>
     </p>
   </div>
 
@@ -112,7 +117,8 @@
     </div>
   </section>
 
-  {%- comment -%} 5. Transformations {%- endcomment -%}
+  {%- comment -%} 5. Transformations (animated Instant-style + static gallery) {%- endcomment -%}
+  {% render 'lurvox-animated-transforms' %}
   <section class="lx-home__block lx-home__block--gallery" id="transformations">
     <div class="lx-home__block-inner lx-home__reveal">
       <p class="lx-home__label">{{ section.settings.gallery_label }}</p>
@@ -437,6 +443,14 @@
     margin: 0 auto;
     padding: 8px 0 40px;
     border-bottom: 1px solid var(--lx-line);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px 24px;
+  }
+
+  .lx-home__trust-stamp {
+    flex-shrink: 0;
   }
 
   .lx-home__trust-line {
@@ -450,6 +464,7 @@
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    flex: 1 1 220px;
   }
 
   .lx-home__trust-dot {

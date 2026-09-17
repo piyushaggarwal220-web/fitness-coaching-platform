@@ -302,7 +302,9 @@ export default function CustomisedPlanLandingPage() {
               <p className={styles.planPrice}>
                 {plan.displayPrice}
                 {plan.slug === 'digital_complete' ? (
-                  <span className={styles.planWas}>₹138</span>
+                  <span className={styles.planWas} title="Workout ₹49 + Diet ₹89 if bought separately">
+                    ₹138
+                  </span>
                 ) : null}
               </p>
               <p className={styles.planMeta}>
@@ -312,7 +314,8 @@ export default function CustomisedPlanLandingPage() {
               </p>
               {plan.slug === 'digital_complete' ? (
                 <p className={styles.planValueNote}>
-                  Plus sleep, cardio, water, and optional supplement guidance.
+                  ₹138 if bought separately. Complete is ₹99 with sleep, cardio, water, and optional
+                  supplement guidance.
                 </p>
               ) : null}
               <ul className={styles.bulletList}>

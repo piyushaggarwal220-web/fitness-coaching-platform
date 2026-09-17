@@ -9,6 +9,7 @@ import {
   shouldStartInitialGeneration,
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
+import { clientHasDeliveredPlanStrict } from '@/lib/plans-delivery-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -74,13 +75,14 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Client already has a delivered plan.' }, { status: 409 })
   }
 
-  const { count: deliveredCount } = await admin
-    .from('plans')
-    .select('id', { count: 'exact', head: true })
-    .eq('client_id', clientId)
-    .not('delivered_at', 'is', null)
-
-  if ((deliveredCount ?? 0) > 0) {
+  const deliveredGuard = await clientHasDeliveredPlanStrict(admin, clientId)
+  if (deliveredGuard.error) {
+    return NextResponse.json(
+      { error: `Could not verify delivery history: ${deliveredGuard.error}` },
+      { status: 503 }
+    )
+  }
+  if (deliveredGuard.delivered) {
     return NextResponse.json({ error: 'Client already has a delivered plan.' }, { status: 409 })
   }
 

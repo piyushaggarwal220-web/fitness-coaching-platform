@@ -13,14 +13,16 @@
 
 {%- if mode == 'find' -%}
   <section class="lx-flow" aria-label="Find your plan">
-    <div class="lx-flow__inner">
+    <div class="lx-flow__inner lx-flow__inner--stamp">
+      {% render 'lurvox-guarantee-stamp' %}
       <a class="lx-flow__btn lx-flow__btn--primary" href="{{ find_url }}">
         <span class="lx-flow__main">Find your plan quiz <em>(free)</em></span>
-        <span class="lx-flow__sub">No cost · No commitment</span>
+        <span class="lx-flow__sub">No cost · No commitment · Guaranteed results</span>
       </a>
     </div>
   </section>
 {%- else -%}
+  {% render 'lurvox-animated-transforms' %}
   <section class="lx-flow lx-flow--after" aria-label="Next steps">
     <div class="lx-flow__inner lx-flow__inner--links">
       <p class="lx-flow__hint">Fat loss ₹599 · Fat loss + muscle ₹999 · Athletic body ₹1,699</p>
@@ -51,6 +53,14 @@
     gap: 12px;
     width: 100%;
     box-sizing: border-box;
+  }
+
+  .lx-flow__inner--stamp {
+    align-items: center;
+  }
+
+  .lx-flow__inner--stamp {
+    align-items: center;
   }
   .lx-flow__inner--links {
     align-items: center;

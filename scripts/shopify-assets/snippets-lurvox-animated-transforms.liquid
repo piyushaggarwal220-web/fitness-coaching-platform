@@ -1,0 +1,195 @@
+{% comment %}
+  Instant-style animated before→after cards for Orange homepage.
+  Images served from app.lurvox.in (same assets as /customised-plan).
+{% endcomment %}
+<section class="lx-anim-tf" id="lx-anim-tf" aria-label="Expected body changes">
+  <div class="lx-anim-tf__inner">
+    <p class="lx-anim-tf__label">Expected changes</p>
+    <h2 class="lx-anim-tf__title">Within 30 days of consistent work</h2>
+    <p class="lx-anim-tf__lede">Skinny to bulky. Fat to shredded. Soft to toned. Men and women.</p>
+    <div class="lx-anim-tf__grid" data-lx-anim-tf>
+      <article class="lx-anim-tf__card" data-delay="0">
+        <div class="lx-anim-tf__frame">
+          <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-man-skinny-before.png" alt="Before: skinny build" loading="lazy" decoding="async" width="480" height="600">
+          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-man-bulky-after.png" alt="After: bulky muscular build" loading="lazy" decoding="async" width="480" height="600">
+          <div class="lx-anim-tf__badges" aria-hidden="true">
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--before">Before</span>
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--after">After</span>
+          </div>
+        </div>
+        <h3>Skinny → Bulky</h3>
+        <p>Expected change within 30 days</p>
+      </article>
+      <article class="lx-anim-tf__card" data-delay="200">
+        <div class="lx-anim-tf__frame">
+          <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-man-fat-before.png" alt="Before: higher body fat" loading="lazy" decoding="async" width="480" height="600">
+          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-man-shredded-after.png" alt="After: shredded lean physique" loading="lazy" decoding="async" width="480" height="600">
+          <div class="lx-anim-tf__badges" aria-hidden="true">
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--before">Before</span>
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--after">After</span>
+          </div>
+        </div>
+        <h3>Fat → Shredded</h3>
+        <p>Expected change within 30 days</p>
+      </article>
+      <article class="lx-anim-tf__card" data-delay="400">
+        <div class="lx-anim-tf__frame">
+          <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-woman-soft-before.png" alt="Before: softer midsection" loading="lazy" decoding="async" width="480" height="600">
+          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-woman-lean-after.png" alt="After: lean hourglass physique" loading="lazy" decoding="async" width="480" height="600">
+          <div class="lx-anim-tf__badges" aria-hidden="true">
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--before">Before</span>
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--after">After</span>
+          </div>
+        </div>
+        <h3>Soft → Hourglass</h3>
+        <p>Expected change within 30 days</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .lx-anim-tf {
+    --lx-orange: #ff6200;
+    background: #050505;
+    color: #fff;
+    padding: 36px 16px 48px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  .lx-anim-tf__inner { max-width: 1080px; margin: 0 auto; }
+  .lx-anim-tf__label {
+    margin: 0 0 8px;
+    color: var(--lx-orange);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .lx-anim-tf__title {
+    margin: 0 0 8px;
+    text-align: center;
+    font-size: clamp(22px, 5vw, 32px);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+  }
+  .lx-anim-tf__lede {
+    margin: 0 auto 24px;
+    max-width: 420px;
+    text-align: center;
+    color: rgba(255,255,255,0.72);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .lx-anim-tf__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 720px) {
+    .lx-anim-tf__grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  }
+  .lx-anim-tf__card {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+  }
+  .lx-anim-tf__card h3 {
+    margin: 12px 0 4px;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .lx-anim-tf__card > p {
+    margin: 0;
+    color: rgba(255,255,255,0.62);
+    font-size: 13px;
+  }
+  .lx-anim-tf__frame {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 98, 0, 0.28);
+    background: #111;
+  }
+  .lx-anim-tf__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+  }
+  .lx-anim-tf__img.is-visible { opacity: 1; }
+  .lx-anim-tf__badges {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .lx-anim-tf__badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(0,0,0,0.55);
+    color: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .lx-anim-tf__card.is-after .lx-anim-tf__badge--after,
+  .lx-anim-tf__card:not(.is-after) .lx-anim-tf__badge--before {
+    color: #fff;
+    border-color: rgba(255, 98, 0, 0.55);
+    background: rgba(255, 98, 0, 0.28);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lx-anim-tf__img { transition: none; }
+  }
+</style>
+
+<script>
+(function () {
+  var root = document.querySelector('[data-lx-anim-tf]');
+  if (!root || root.getAttribute('data-bound') === '1') return;
+  root.setAttribute('data-bound', '1');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  root.querySelectorAll('.lx-anim-tf__card').forEach(function (card) {
+    var before = card.querySelector('.lx-anim-tf__img--before');
+    var after = card.querySelector('.lx-anim-tf__img--after');
+    if (!before || !after) return;
+    if (reduce) {
+      before.classList.remove('is-visible');
+      after.classList.add('is-visible');
+      card.classList.add('is-after');
+      return;
+    }
+    var delay = parseInt(card.getAttribute('data-delay') || '0', 10) || 0;
+    var showAfter = false;
+    function tick() {
+      showAfter = !showAfter;
+      if (showAfter) {
+        before.classList.remove('is-visible');
+        after.classList.add('is-visible');
+        card.classList.add('is-after');
+      } else {
+        after.classList.remove('is-visible');
+        before.classList.add('is-visible');
+        card.classList.remove('is-after');
+      }
+    }
+    window.setTimeout(function () {
+      tick();
+      window.setInterval(tick, 2200);
+    }, delay + 600);
+  });
+})();
+</script>
