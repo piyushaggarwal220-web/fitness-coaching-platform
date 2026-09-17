@@ -5,7 +5,7 @@ import {
   canAccessInstantFeature,
   type InstantFeature,
 } from '@/lib/instant-feature-access'
-import { latestCoachingPurchase } from '@/lib/payments/digital-purchase'
+import { latestCoachingPurchase, latestDigitalPurchase } from '@/lib/payments/digital-purchase'
 import {
   fulfillPlatformUnlockAddon,
   PLATFORM_UNLOCK_KIND,
@@ -37,7 +37,11 @@ function alreadyHasSku(
     access_source?: string | null
   },
   sku: PlatformUnlockSku,
-  options: { planSlug?: string | null; hasCoachingPurchase?: boolean }
+  options: {
+    planSlug?: string | null
+    hasCoachingPurchase?: boolean
+    isInstantOnly?: boolean
+  }
 ): boolean {
   return PLATFORM_UNLOCK_META[sku].features.every((feature: InstantFeature) =>
     canAccessInstantFeature(profile, feature, options)
@@ -76,17 +80,22 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient()
-  const coaching = await latestCoachingPurchase(admin, auth.user.id)
+  const [coaching, digital] = await Promise.all([
+    latestCoachingPurchase(admin, auth.user.id),
+    latestDigitalPurchase(admin, auth.user.id),
+  ])
+  const isInstantOnly = Boolean(digital) && !coaching
   if (
     alreadyHasSku(profile, sku, {
       hasCoachingPurchase: Boolean(coaching),
-      planSlug: coaching?.planSlug,
+      planSlug: digital?.planSlug ?? coaching?.planSlug,
+      isInstantOnly,
     })
   ) {
     return NextResponse.json({ entitled: true, alreadyUnlocked: true })
   }
 
-  if (!profile.instant_gates_enabled && !coaching) {
+  if (!isInstantOnly && !profile.instant_gates_enabled) {
     return NextResponse.json(
       { error: 'Your plan already includes these features.' },
       { status: 400 }

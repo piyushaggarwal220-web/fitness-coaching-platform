@@ -7,7 +7,13 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle2, Lock } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
 import { authStyles } from '@/lib/auth-styles'
-import { canAccessInstantFeature, type InstantFeature } from '@/lib/instant-feature-access'
+import {
+  canAccessInstantFeature,
+  latestDigitalPlanSlug,
+  purchaseRowsIndicateCoaching,
+  purchaseRowsIndicateDigital,
+  type InstantFeature,
+} from '@/lib/instant-feature-access'
 import { formatInrFromPaise } from '@/lib/payments/checkout-discounts'
 import {
   PLATFORM_UNLOCK_META,
@@ -41,6 +47,8 @@ function PlatformUnlockInner() {
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<OnboardingProfile | null>(null)
   const [hasCoaching, setHasCoaching] = useState(false)
+  const [isInstantOnly, setIsInstantOnly] = useState(false)
+  const [digitalSlug, setDigitalSlug] = useState<string | null>(null)
   const [paying, setPaying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [justUnlocked, setJustUnlocked] = useState(false)
@@ -80,16 +88,13 @@ function PlatformUnlockInner() {
         .eq('user_id', user.id)
         .eq('status', 'captured')
         .order('created_at', { ascending: false })
-        .limit(5)
+        .limit(12)
 
-      const coaching = (purchases ?? []).some(
-        (p: { plan_slug?: string | null }) =>
-          p.plan_slug &&
-          !String(p.plan_slug).startsWith('digital_') &&
-          !String(p.plan_slug).startsWith('unlock_') &&
-          p.plan_slug !== 'exercise_library'
-      )
+      const coaching = purchaseRowsIndicateCoaching(purchases)
+      const digital = purchaseRowsIndicateDigital(purchases)
       setHasCoaching(coaching)
+      setIsInstantOnly(digital && !coaching)
+      setDigitalSlug(latestDigitalPlanSlug(purchases))
       setProfile(row)
       setLoading(false)
     }
@@ -99,7 +104,11 @@ function PlatformUnlockInner() {
   const entitled =
     justUnlocked ||
     meta.features.every((feature: InstantFeature) =>
-      canAccessInstantFeature(profile, feature, { hasCoachingPurchase: hasCoaching })
+      canAccessInstantFeature(profile, feature, {
+        hasCoachingPurchase: hasCoaching,
+        planSlug: digitalSlug,
+        isInstantOnly,
+      })
     )
 
   const handlePay = async () => {

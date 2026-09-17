@@ -7,7 +7,7 @@ import { CoachChatThread } from '@/components/chat/CoachChatThread'
 import { AiCoachChatThread } from '@/components/chat/AiCoachChatThread'
 import { InstantFeatureLockedPanel } from '@/components/instant/InstantFeatureLockedPanel'
 import { authenticateClient } from '@/lib/onboarding'
-import { canAccessInstantFeature } from '@/lib/instant-feature-access'
+import { canAccessInstantFeature, latestDigitalPlanSlug, purchaseRowsIndicateCoaching, purchaseRowsIndicateDigital } from '@/lib/instant-feature-access'
 import { usesAiCoach } from '@/lib/coach-service'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { createClient } from '@/lib/supabase/client'
@@ -70,18 +70,14 @@ export default function ClientChatPage() {
         .order('created_at', { ascending: false })
         .limit(8)
 
-      const coaching = (purchases ?? []).some(
-        (p: { plan_slug?: string | null }) =>
-          p.plan_slug &&
-          !String(p.plan_slug).startsWith('digital_') &&
-          !String(p.plan_slug).startsWith('unlock_') &&
-          p.plan_slug !== 'exercise_library'
-      )
-      const planSlug =
-        (purchases ?? []).find((p: { plan_slug?: string | null }) => p.plan_slug)?.plan_slug ?? null
+      const coaching = purchaseRowsIndicateCoaching(purchases)
+      const isInstantOnly =
+        purchaseRowsIndicateDigital(purchases) && !coaching
+      const digitalSlug = latestDigitalPlanSlug(purchases)
       const chatAllowed = canAccessInstantFeature(profile, 'ai_chat', {
         hasCoachingPurchase: coaching,
-        planSlug,
+        planSlug: digitalSlug,
+        isInstantOnly,
       })
       if (!chatAllowed) {
         setFeatureLocked(true)

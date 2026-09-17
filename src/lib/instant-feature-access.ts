@@ -22,14 +22,47 @@ export const INSTANT_FEATURE_LABEL: Record<InstantFeature, string> = {
   ai_chat: 'AI coach chat',
 }
 
+/** Non-membership purchase rows (unlocks / library) — not coaching. */
+export function isPlatformAddonPlanSlug(slug: string | null | undefined): boolean {
+  if (!slug) return false
+  return slug.startsWith('unlock_') || slug === 'exercise_library'
+}
+
+export function isCoachingPlanSlug(slug: string | null | undefined): boolean {
+  if (!slug) return false
+  if (isDigitalPlanSlug(slug) || isPlatformAddonPlanSlug(slug)) return false
+  return true
+}
+
+export function purchaseRowsIndicateCoaching(
+  purchases: Array<{ plan_slug?: string | null }> | null | undefined
+): boolean {
+  return (purchases ?? []).some((p) => isCoachingPlanSlug(p.plan_slug))
+}
+
+export function purchaseRowsIndicateDigital(
+  purchases: Array<{ plan_slug?: string | null }> | null | undefined
+): boolean {
+  return (purchases ?? []).some((p) => isDigitalPlanSlug(p.plan_slug))
+}
+
+/** Prefer a digital SKU when classifying Instant-only access. */
+export function latestDigitalPlanSlug(
+  purchases: Array<{ plan_slug?: string | null }> | null | undefined
+): string | null {
+  for (const p of purchases ?? []) {
+    if (isDigitalPlanSlug(p.plan_slug)) return p.plan_slug as string
+  }
+  return null
+}
+
 /** Orange / trial / enrollment always include platform features. */
 export function coachingIncludesInstantFeatures(
   planSlug: string | null | undefined,
   accessSource?: string | null
 ): boolean {
   if (accessSource === 'admin_trial' || accessSource === 'enrollment_code') return true
-  if (!planSlug) return false
-  return !isDigitalPlanSlug(planSlug)
+  return isCoachingPlanSlug(planSlug)
 }
 
 export function isInstantFeatureEntitled(
@@ -43,19 +76,42 @@ export function isInstantFeatureEntitled(
 }
 
 /**
- * Instant gates only apply when enabled on the profile (new digital claims).
- * Coaching / trial / enrollment / grandfathered Instant → open.
+ * Instant-only buyers must unlock tracker / journey / AI chat (lifetime ₹99 / ₹199).
+ * Coaching membership, trial, and enrollment include everything.
  */
 export function canAccessInstantFeature(
   profile: InstantFeatureProfile | null | undefined,
   feature: InstantFeature,
-  options?: { planSlug?: string | null; hasCoachingPurchase?: boolean }
+  options?: {
+    planSlug?: string | null
+    hasCoachingPurchase?: boolean
+    /** When true, treat as Instant-only even if planSlug is an unlock_* row. */
+    isInstantOnly?: boolean
+  }
 ): boolean {
   if (!profile) return false
   if (options?.hasCoachingPurchase) return true
-  if (coachingIncludesInstantFeatures(options?.planSlug, profile.access_source)) return true
-  if (!profile.instant_gates_enabled) return true
-  return isInstantFeatureEntitled(profile, feature)
+  if (
+    profile.access_source === 'admin_trial' ||
+    profile.access_source === 'enrollment_code'
+  ) {
+    return true
+  }
+
+  const instantOnly =
+    options?.isInstantOnly === true ||
+    isDigitalPlanSlug(options?.planSlug) ||
+    profile.instant_gates_enabled === true
+
+  if (instantOnly) {
+    return isInstantFeatureEntitled(profile, feature)
+  }
+
+  if (coachingIncludesInstantFeatures(options?.planSlug, profile.access_source)) {
+    return true
+  }
+
+  return true
 }
 
 export function unlockHrefForFeature(feature: InstantFeature): string {

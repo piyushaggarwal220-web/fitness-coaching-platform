@@ -6,7 +6,10 @@ import {
   type InstantFeature,
   type InstantFeatureProfile,
 } from '@/lib/instant-feature-access'
-import { latestCoachingPurchase, latestPurchasePlanSlug } from '@/lib/payments/digital-purchase'
+import {
+  latestDigitalPurchase,
+  latestCoachingPurchase,
+} from '@/lib/payments/digital-purchase'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function assertInstantFeatureAccess(
@@ -15,14 +18,16 @@ export async function assertInstantFeatureAccess(
   feature: InstantFeature
 ): Promise<NextResponse | null> {
   const admin = createAdminClient()
-  const [coaching, planSlug] = await Promise.all([
+  const [coaching, digital] = await Promise.all([
     latestCoachingPurchase(admin, userId),
-    latestPurchasePlanSlug(admin, userId),
+    latestDigitalPurchase(admin, userId),
   ])
+  const isInstantOnly = Boolean(digital) && !coaching
   if (
     canAccessInstantFeature(profile, feature, {
       hasCoachingPurchase: Boolean(coaching),
-      planSlug: coaching?.planSlug ?? planSlug,
+      planSlug: digital?.planSlug ?? coaching?.planSlug ?? null,
+      isInstantOnly,
     })
   ) {
     return null

@@ -35,6 +35,8 @@ import { clientFacingPlanTitle, parsePlanMeta } from '@/lib/plan-metadata';
 import { planGoalName } from '@/lib/payments/plan-pages';
 import { isDigitalPlanSlug } from '@/lib/payments/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
+import { useInstantLockState } from '@/hooks/useInstantLockState';
+import { unlockHrefForFeature } from '@/lib/instant-feature-access';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
@@ -94,6 +96,7 @@ export default function Dashboard() {
   const [loadError, setLoadError] = useState('');
   const [scheduleNow, setScheduleNow] = useState(() => new Date());
   const [generationJob, setGenerationJob] = useState<InitialPlanGenerationJob | null>(null);
+  const { locked: instantLocked } = useInstantLockState();
 
   useEffect(() => {
     if (!profile?.checkin_schedule_started_at) return;
@@ -340,12 +343,16 @@ export default function Dashboard() {
     {
       key: 'tracker',
       title: 'Tracker',
-      subtitle: trackerSubtitle,
-      href: '/tracker',
+      subtitle: instantLocked.tracker ? 'Unlock for lifetime access' : trackerSubtitle,
+      href: instantLocked.tracker ? unlockHrefForFeature('tracker') : '/tracker',
       icon: ListChecks,
-      badge: todayTrackerPercent != null ? `${todayTrackerPercent}%` : null,
+      badge: instantLocked.tracker
+        ? 'Locked'
+        : todayTrackerPercent != null
+          ? `${todayTrackerPercent}%`
+          : null,
       accent: colors.accent,
-      visible: Boolean(activePlan),
+      visible: Boolean(activePlan) || instantLocked.tracker,
     },
     {
       key: 'plan',
@@ -364,24 +371,32 @@ export default function Dashboard() {
     {
       key: 'checkin',
       title: 'Check-in',
-      subtitle: dueCheckin
-        ? `${getCheckinTypeDisplayName(dueCheckin.type)} available now`
-        : checkinSchedule?.nextCheckin
-          ? `${getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)} · Day ${checkinSchedule.nextCheckin.coachingDay}`
-          : 'Weekly accountability and coach review',
-      href: dueCheckin ? dueCheckin.href : '/checkin',
+      subtitle: instantLocked.tracker
+        ? 'Unlock tracker to use check-ins'
+        : dueCheckin
+          ? `${getCheckinTypeDisplayName(dueCheckin.type)} available now`
+          : checkinSchedule?.nextCheckin
+            ? `${getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)} · Day ${checkinSchedule.nextCheckin.coachingDay}`
+            : 'Weekly accountability and coach review',
+      href: instantLocked.tracker
+        ? unlockHrefForFeature('tracker')
+        : dueCheckin
+          ? dueCheckin.href
+          : '/checkin',
       icon: Calendar,
-      badge: dueCheckin ? 'Due' : null,
+      badge: instantLocked.tracker ? 'Locked' : dueCheckin ? 'Due' : null,
       accent: '#f59e0b',
       visible: true,
     },
     {
       key: 'journey',
       title: 'Journey',
-      subtitle: 'Photos, check-ins, and progress history',
-      href: '/journey',
+      subtitle: instantLocked.journey
+        ? 'Unlock for lifetime access'
+        : 'Photos, check-ins, and progress history',
+      href: instantLocked.journey ? unlockHrefForFeature('journey') : '/journey',
       icon: Flame,
-      badge: null,
+      badge: instantLocked.journey ? 'Locked' : null,
       accent: '#a78bfa',
       visible: true,
     },
@@ -407,15 +422,23 @@ export default function Dashboard() {
     },
     {
       key: 'chat',
-      title: 'Coach chat',
-      subtitle: chatReady && unreadMessages > 0
-        ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
-        : chatReady
-          ? `Message ${coach?.name}`
-          : CHAT_AFTER_ENROLLMENT_MESSAGE,
-      href: '/client/chat',
+      title: instantLocked.ai_chat ? 'AI coach chat' : 'Coach chat',
+      subtitle: instantLocked.ai_chat
+        ? 'Unlock for lifetime access'
+        : chatReady && unreadMessages > 0
+          ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
+          : chatReady
+            ? `Message ${coach?.name}`
+            : CHAT_AFTER_ENROLLMENT_MESSAGE,
+      href: instantLocked.ai_chat ? unlockHrefForFeature('ai_chat') : '/client/chat',
       icon: MessageCircle,
-      badge: chatReady && unreadMessages > 0 ? (unreadMessages > 9 ? '9+' : String(unreadMessages)) : null,
+      badge: instantLocked.ai_chat
+        ? 'Locked'
+        : chatReady && unreadMessages > 0
+          ? unreadMessages > 9
+            ? '9+'
+            : String(unreadMessages)
+          : null,
       accent: '#22c55e',
       visible: true,
     },
@@ -429,16 +452,22 @@ export default function Dashboard() {
       return 0;
     });
 
-  const heroActionLabel = dueCheckin
+  const heroActionLabel = dueCheckin && !instantLocked.tracker
     ? `Start ${getCheckinTypeDisplayName(dueCheckin.type)}`
     : status?.nextActionHref
       ? status.nextAction ?? 'Continue'
-      : activePlan
+      : activePlan && !instantLocked.tracker
         ? "Open today's tracker"
         : 'View your coaching dashboard';
-  const heroActionHref = dueCheckin?.href
-    ?? status?.nextActionHref
-    ?? (activePlan ? '/tracker' : '/plan');
+  const heroActionHref =
+    dueCheckin && !instantLocked.tracker
+      ? dueCheckin.href
+      : status?.nextActionHref
+        ?? (activePlan && !instantLocked.tracker
+          ? '/tracker'
+          : instantLocked.tracker
+            ? unlockHrefForFeature('tracker')
+            : '/plan');
   const planCard = profile ? (
     <Card
       variant="glass"

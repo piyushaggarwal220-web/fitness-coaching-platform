@@ -63,7 +63,7 @@ export function InstantFeatureLockedPanel({ feature, title, description }: Props
         }}
       >
         {description ??
-          `Your Instant plan includes your customised plan. Unlock ${label.toLowerCase()} for ${single} lifetime, or get Tracker + Journey + AI chat for ${bundle}.`}
+          `Your Instant plan includes your customised plan. Unlock ${label.toLowerCase()} for ${single} one-time (lifetime), or get Tracker + Journey + AI chat for ${bundle} lifetime — not a monthly fee.`}
       </p>
       <div
         style={{
