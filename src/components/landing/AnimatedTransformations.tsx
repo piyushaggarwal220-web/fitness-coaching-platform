@@ -32,7 +32,7 @@ function TransformationCard({
       startTransition(() => setShowAfter(true))
       intervalId = window.setInterval(() => {
         startTransition(() => setShowAfter((v) => !v))
-      }, 800)
+      }, 700)
     }, delayMs)
     return () => {
       window.clearTimeout(startId)
