@@ -89,12 +89,12 @@ export async function runPiyushInitialPlanForClient(
 
   const typed = profile as OnboardingProfile
   const coachId = typed.coach_id
-  if (!shouldAutoJourneyAndDeliverInitialPlan(coachId)) {
+  if (!shouldAutoJourneyAndDeliverInitialPlan(coachId, typed.created_at)) {
     return {
       clientId,
       name: typed.name?.trim() || clientId,
       status: 'failed',
-      detail: 'Coach is not on auto initial-plan delivery.',
+      detail: 'Coach/client is not on auto initial-plan delivery.',
     }
   }
 
@@ -140,6 +140,7 @@ export async function runPiyushInitialPlanForClient(
       clientId,
       coachId: coachId!,
       planId: job.draft_plan_id,
+      createdAt: typed.created_at,
     })
     if (delivered.error) {
       return {
@@ -147,6 +148,16 @@ export async function runPiyushInitialPlanForClient(
         name,
         status: 'failed',
         detail: `deliver: ${delivered.error}`,
+        planId: job.draft_plan_id,
+        journeyCreated: journey.created,
+      }
+    }
+    if (delivered.heldForReview) {
+      return {
+        clientId,
+        name,
+        status: 'skipped',
+        detail: 'held for coach review (calorie floor flag)',
         planId: job.draft_plan_id,
         journeyCreated: journey.created,
       }
@@ -183,6 +194,7 @@ export async function runPiyushInitialPlanForClient(
       clientId,
       coachId: coachId!,
       planId: job.draft_plan_id,
+      createdAt: typed.created_at,
     })
     if (delivered.error) {
       return {
@@ -190,6 +202,16 @@ export async function runPiyushInitialPlanForClient(
         name,
         status: 'failed',
         detail: `deliver: ${delivered.error}`,
+        planId: job.draft_plan_id,
+        journeyCreated: journey.created,
+      }
+    }
+    if (delivered.heldForReview) {
+      return {
+        clientId,
+        name,
+        status: 'skipped',
+        detail: 'held for coach review (calorie floor flag)',
         planId: job.draft_plan_id,
         journeyCreated: journey.created,
       }
@@ -283,6 +305,7 @@ export async function runPiyushInitialPlanForClient(
       clientId,
       coachId: coachId!,
       planId: latest.draft_plan_id,
+      createdAt: typed.created_at,
     })
     if (delivered.error) {
       return {
@@ -290,6 +313,16 @@ export async function runPiyushInitialPlanForClient(
         name,
         status: 'failed',
         detail: `deliver: ${delivered.error}`,
+        planId: latest.draft_plan_id,
+        journeyCreated: journey.created,
+      }
+    }
+    if (delivered.heldForReview) {
+      return {
+        clientId,
+        name,
+        status: 'skipped',
+        detail: 'held for coach review (calorie floor flag)',
         planId: latest.draft_plan_id,
         journeyCreated: journey.created,
       }
@@ -340,7 +373,11 @@ export async function listPiyushPendingInitialPlanClients(
     .not('delivered_at', 'is', null)
 
   const hasDelivered = new Set((deliveredPlans ?? []).map((p) => p.client_id))
-  return (data as OnboardingProfile[]).filter((row) => !hasDelivered.has(row.id))
+  return (data as OnboardingProfile[]).filter(
+    (row) =>
+      !hasDelivered.has(row.id) &&
+      shouldAutoJourneyAndDeliverInitialPlan(row.coach_id, row.created_at)
+  )
 }
 
 /**

@@ -23,7 +23,7 @@ export function CoachClientJourneyPlanEdit({ client, coachId, onSaved }: CoachCl
   const [message, setMessage] = useState('')
 
   const manualDelivery = coachRequiresManualPlanDelivery(coachId)
-  const piyushAutoInitial = shouldAutoJourneyAndDeliverInitialPlan(coachId)
+  const piyushAutoInitial = shouldAutoJourneyAndDeliverInitialPlan(coachId, client.created_at)
   const journeySaved = Boolean(client.journey_goal?.trim())
   const canGenerateDraft =
     manualDelivery &&

@@ -8,18 +8,18 @@ export const RAKSHIT_COACH_ID = 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a'
 
 /**
  * Coaches who own ongoing delivery manually (weekly replies, publish from queue).
- * Initial plans for these coaches still auto journey + deliver — see
- * shouldAutoJourneyAndDeliverInitialPlan. Mid-week check-in replies still auto-reply.
+ * Initial plans for these coaches still auto journey + deliver for eligible clients —
+ * see shouldAutoJourneyAndDeliverInitialPlan. Mid-week check-in replies still auto-reply.
  */
 const MANUAL_PLAN_DELIVERY_COACH_IDS = new Set([PIYUSH_COACH_ID, RAKSHIT_COACH_ID])
 
 /**
  * New paying clients are assigned here after checkout.
- * Initial diet/workout still auto-generates and delivers (same path as Piyush).
+ * Initial diet/workout still auto-generates and delivers for the new cohort.
  */
 const AUTO_ASSIGN_COACH_IDS = new Set([RAKSHIT_COACH_ID])
 
-/** Coaches whose new clients get AI journey + initial plan auto-delivered. */
+/** Coaches whose eligible clients get AI journey + initial plan auto-delivered. */
 const AUTO_INITIAL_PLAN_COACH_IDS = new Set([PIYUSH_COACH_ID, RAKSHIT_COACH_ID])
 
 export const MANUAL_DELIVER_FROM_PLAN_PAGE =
@@ -75,14 +75,18 @@ export function shouldAutoEnqueueInitialPlan(
 }
 
 /**
- * Live coaching coaches: AI creates the client journey when missing, generates the
- * initial diet/workout draft, and delivers it (no coach review gate).
- * Weekly replies / queue publish stay manual via MANUAL_PLAN_DELIVERY_COACH_IDS.
+ * Auto journey + initial deliver:
+ * - Piyush: unchanged — all his clients stay on the existing auto path.
+ * - Rakshit (new default assign): only the new cohort (joined on/after journey cutoff).
+ * Historical Rakshit clients stay manual for initial delivery.
  */
 export function shouldAutoJourneyAndDeliverInitialPlan(
-  coachId: string | null | undefined
+  coachId: string | null | undefined,
+  createdAt?: string | null
 ): boolean {
-  return Boolean(coachId && AUTO_INITIAL_PLAN_COACH_IDS.has(coachId))
+  if (!coachId || !AUTO_INITIAL_PLAN_COACH_IDS.has(coachId)) return false
+  if (coachId === PIYUSH_COACH_ID) return true
+  return clientRequiresJourneySetup(createdAt)
 }
 
 /** Mid-week replies stay automatic for every coach. Weekly replies stay manual. */
@@ -92,4 +96,12 @@ export function shouldScheduleCheckinAutoReply(
 ): boolean {
   if (checkinType === 'mid_week') return true
   return !coachRequiresManualPlanDelivery(coachId)
+}
+
+/** Coach notes that mean auto-deliver must hold for human review. */
+export function planRequiresCoachReviewBeforeAutoDeliver(
+  coachNotes: string | null | undefined
+): boolean {
+  if (!coachNotes?.trim()) return false
+  return /held at\s+\d+\s*kcal floor|please review|requires?\s+review/i.test(coachNotes)
 }

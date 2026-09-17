@@ -1,19 +1,26 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v23'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v24'
 
-/** Platform minimum daily calories before weight-based floor applies. Almost nobody needs a crash diet. */
-export const DIET_FLOOR_BASE_KCAL = 2000
+/** Platform soft floor before weight-based floor. Prefer formula target when higher. */
+export const DIET_FLOOR_BASE_KCAL = 1800
 /** Reject (and retry) only when clearly under the floor; ~1% rounding is tolerated. */
-export const DIET_FLOOR_HARD_KCAL = 1980
+export const DIET_FLOOR_HARD_KCAL = 1780
 
 /** @deprecated Use resolveDietFloorKcal(weight) — kept for static fallbacks. */
 export const DIET_FLOOR_TARGET_KCAL = DIET_FLOOR_BASE_KCAL
 
-/** Higher of base floor (~2000) or ~25 kcal/kg — keeps food on the higher side for active clients. */
+/**
+ * Soft floor: max(base, ~22 kcal/kg), capped so heavy clients are not forced to
+ * extreme intakes when Mifflin preferred is lower. Preferred calorie targets still
+ * come from calorie-targets.ts; this only blocks crash diets.
+ */
 export function resolveDietFloorKcal(weightKg?: number | string | null): number {
   const weight = Number(weightKg)
-  const byWeight = Number.isFinite(weight) && weight > 0 ? Math.round(weight * 25) : 0
-  return Math.max(DIET_FLOOR_BASE_KCAL, byWeight)
+  const byWeight =
+    Number.isFinite(weight) && weight > 0 ? Math.round(weight * 22) : 0
+  const uncapped = Math.max(DIET_FLOOR_BASE_KCAL, byWeight)
+  // Cap weight-driven floor so auto-delivered plans stay reviewable for very heavy clients.
+  return Math.min(uncapped, 2400)
 }
 
 export const DAY_HEADER_PROMPT_RULES = [
@@ -98,7 +105,7 @@ export const PROTEIN_CALORIE_PROMPT_RULES = [
   '- Each meal has ONE primary option. Daily Total, weekly averages, and header macros count only that primary option (the first option written). If you offer a swap, give the swap its own macro line so the client can compare, but NEVER add primary + swap together.',
   '- Tight budget means cheaper protein foods (dal, eggs if allowed, soya, chana), not a default of 0.5 g/kg.',
   '- If whey is mentioned, that scoop must be inside that meal\'s (P: Xg | C: Yg | F: Zg | ~K kcal) line. If it is not in the macros, do not mention whey.',
-  `- If a textbook cut would go below ${DIET_FLOOR_TARGET_KCAL} kcal, still write ${DIET_FLOOR_TARGET_KCAL} or more and put one line in coach_notes: "Held at ${DIET_FLOOR_TARGET_KCAL} kcal floor — please review." That is the exceptional case for the coach.`,
+  `- If a textbook cut would go below ${DIET_FLOOR_TARGET_KCAL} kcal, still write ${DIET_FLOOR_TARGET_KCAL} or more and put one line in coach_notes: "Held at ${DIET_FLOOR_TARGET_KCAL} kcal floor — please review." Auto-delivery will hold that plan for coach review.`,
 ].join('\n')
 
 export const EDIT_CALORIE_PRESERVATION_RULES = [

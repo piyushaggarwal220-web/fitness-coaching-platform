@@ -54,7 +54,7 @@ export async function POST() {
   }
 
   const digitalPurchase = await clientHasDigitalPurchase(admin, auth.user.id)
-  if (shouldAutoJourneyAndDeliverInitialPlan(completed.coach_id)) {
+  if (shouldAutoJourneyAndDeliverInitialPlan(completed.coach_id, completed.created_at)) {
     after(() =>
       import('@/lib/piyush-initial-plan-auto')
         .then(({ runPiyushInitialPlanForClient }) =>

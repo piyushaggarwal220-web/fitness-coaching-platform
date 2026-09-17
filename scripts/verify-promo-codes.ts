@@ -119,22 +119,13 @@ assert.match(migration, /kind text NOT NULL CHECK \(kind IN \('discount', 'refer
 pass('migration creates promo_codes with discount/referral kinds')
 
 assert.equal(isRetiredPublicDiscountCode('welcome60'), true)
-assert.equal(isRetiredPublicDiscountCode('SUMMER60'), false)
+assert.equal(isRetiredPublicDiscountCode('SUMMER60'), true)
 assert.equal(isRetiredPublicDiscountCode('LUKE'), false)
 assert.equal(isPublicSaleCode('summer60'), true)
-assert.equal(publicSaleDiscountPaise(59900), 35900)
-assert.equal(publicSaleDiscountPaise(99900), 59900)
-assert.equal(publicSaleDiscountPaise(169900), 101900)
-pass('WELCOME60 is retired; SUMMER60 is the public 60% sale')
-
-const summerExpected = expectedAmountPaiseFromOrderNotes(COACHING_PLANS['3_months'], {
-  amount_paise: '24000',
-  list_amount_paise: '59900',
-  discount_paise: '35900',
-  discount_code: 'SUMMER60',
-})
-assert.equal(summerExpected, 24000)
-pass('order notes accept SUMMER60 public sale amounts')
+assert.equal(publicSaleDiscountPaise(59900), null)
+assert.equal(publicSaleDiscountPaise(99900), null)
+assert.equal(publicSaleDiscountPaise(169900), null)
+pass('WELCOME60 and SUMMER60 are retired; catalog prices are the public offer')
 
 assert.equal(isAffiliateDiscountCode('luke'), true)
 assert.equal(getAffiliateCode('LUKE')?.extraPercentOffSale, 5)

@@ -1,20 +1,54 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import {
+  planRequiresCoachReviewBeforeAutoDeliver,
+  shouldAutoJourneyAndDeliverInitialPlan,
+} from '@/lib/coach-delivery-policy'
 import { NotificationTemplates, sendNotification } from '@/lib/notifications/dispatcher'
 import { activatePlan } from '@/lib/plans'
 
-/** Deliver a ready initial draft to a Piyush client and notify them. */
+/** Deliver a ready initial draft to an auto-initial client and notify them. */
 export async function deliverPiyushInitialPlan(
   admin: SupabaseClient,
   input: {
     clientId: string
     coachId: string
     planId: string
+    createdAt?: string | null
   }
-): Promise<{ error: string | null }> {
-  if (!shouldAutoJourneyAndDeliverInitialPlan(input.coachId)) {
-    return { error: 'Auto-deliver is only enabled for auto-initial coaching coaches.' }
+): Promise<{ error: string | null; heldForReview?: boolean }> {
+  if (!shouldAutoJourneyAndDeliverInitialPlan(input.coachId, input.createdAt)) {
+    return { error: 'Auto-deliver is only enabled for eligible auto-initial coaching clients.' }
+  }
+
+  const { data: planRow } = await admin
+    .from('plans')
+    .select('id, coach_notes')
+    .eq('id', input.planId)
+    .maybeSingle()
+
+  if (planRequiresCoachReviewBeforeAutoDeliver(planRow?.coach_notes)) {
+    const { data: coach } = await admin
+      .from('coaches')
+      .select('user_id')
+      .eq('id', input.coachId)
+      .maybeSingle()
+    if (coach?.user_id) {
+      await sendNotification({
+        userId: coach.user_id,
+        type: 'initial_plan_draft_ready',
+        title: 'Initial plan held for review',
+        body: 'Calorie floor / review flag detected. Open the draft, adjust if needed, then Deliver to client.',
+        actionUrl: `/coach/plan/${input.planId}`,
+        metadata: {
+          planId: input.planId,
+          clientId: input.clientId,
+          heldForReview: true,
+        },
+        idempotencyKey: `auto-initial-held-review:${input.planId}`,
+      })
+    }
+    return { error: null, heldForReview: true }
   }
 
   const activated = await activatePlan(

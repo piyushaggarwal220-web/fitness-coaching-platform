@@ -472,11 +472,12 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       if (delivered.error) {
         throw new Error(`Digital auto-delivery failed: ${delivered.error}`)
       }
-    } else if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id)) {
+    } else if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id, profile.created_at)) {
       const delivered = await deliverPiyushInitialPlan(admin, {
         clientId: profile.id,
         coachId: job.coach_id,
         planId: persisted.data.id,
+        createdAt: profile.created_at,
       })
       if (delivered.error) {
         throw new Error(`Piyush auto-delivery failed: ${delivered.error}`)
@@ -541,11 +542,12 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
           if (!delivered.error) return
         }
 
-        if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id)) {
+        if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id, profile.created_at)) {
           const delivered = await deliverPiyushInitialPlan(admin, {
             clientId: job.client_id,
             coachId: job.coach_id,
             planId: draftPlanId,
+            createdAt: profile.created_at,
           })
           if (!delivered.error) return
         }
