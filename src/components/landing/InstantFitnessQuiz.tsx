@@ -2,214 +2,239 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Check } from 'lucide-react'
+import { Check, Flame, Sparkles } from 'lucide-react'
 import styles from './InstantFitnessQuiz.module.css'
 
-type Option = { id: string; label: string; score: { workout: number; diet: number; complete: number } }
+type Option = { id: string; label: string; correct?: boolean }
 
 type Question = {
   id: string
   prompt: string
+  hint?: string
   options: Option[]
 }
 
+/** Tough fitness knowledge quiz — not a plan-finder. */
 const QUESTIONS: Question[] = [
   {
-    id: 'goal',
-    prompt: 'What is your main goal right now?',
+    id: 'deficit',
+    prompt: 'What actually drives fat loss over weeks?',
+    hint: 'Think physics, not trends.',
     options: [
-      { id: 'fat', label: 'Lose fat', score: { workout: 1, diet: 2, complete: 3 } },
-      { id: 'muscle', label: 'Build muscle', score: { workout: 2, diet: 1, complete: 3 } },
-      { id: 'both', label: 'Lose fat and build muscle', score: { workout: 2, diet: 2, complete: 3 } },
-      { id: 'fit', label: 'Get fitter / healthier', score: { workout: 1, diet: 1, complete: 3 } },
+      { id: 'sweat', label: 'Sweating more in the gym' },
+      { id: 'deficit', label: 'Eating fewer calories than you burn', correct: true },
+      { id: 'detox', label: 'Detox teas and cutting carbs only at night' },
+      { id: 'spot', label: 'Only doing ab exercises' },
     ],
   },
   {
-    id: 'sex',
-    prompt: 'Which best describes you?',
+    id: 'protein',
+    prompt: 'Roughly how much protein do most active adults need daily?',
+    hint: 'Per kg of body weight.',
     options: [
-      { id: 'm', label: 'Male', score: { workout: 1, diet: 1, complete: 1 } },
-      { id: 'f', label: 'Female', score: { workout: 1, diet: 1, complete: 1 } },
-      { id: 'o', label: 'Prefer not to say', score: { workout: 1, diet: 1, complete: 1 } },
+      { id: 'low', label: '0.3–0.5 g per kg' },
+      { id: 'mid', label: '1.6–2.2 g per kg when training', correct: true },
+      { id: 'huge', label: '5 g per kg no matter what' },
+      { id: 'zero', label: 'Protein only matters for bodybuilders' },
     ],
   },
   {
-    id: 'age',
-    prompt: 'Your age range?',
+    id: 'weights',
+    prompt: 'For building muscle, what matters most?',
     options: [
-      { id: 'u25', label: 'Under 25', score: { workout: 1, diet: 1, complete: 1 } },
-      { id: '25_35', label: '25–35', score: { workout: 1, diet: 1, complete: 1 } },
-      { id: '36_45', label: '36–45', score: { workout: 1, diet: 1, complete: 2 } },
-      { id: '45p', label: '45+', score: { workout: 1, diet: 1, complete: 2 } },
+      { id: 'light', label: 'Only light weights and endless reps' },
+      { id: 'progressive', label: 'Progressive overload with enough protein and recovery', correct: true },
+      { id: 'daily', label: 'Training the same muscle hard every single day' },
+      { id: 'cardio', label: 'Cardio alone is enough for muscle' },
     ],
   },
   {
-    id: 'experience',
-    prompt: 'Training experience?',
+    id: 'rest',
+    prompt: 'Between hard sets for muscle growth, rest is usually…',
     options: [
-      { id: 'beginner', label: 'Beginner — just starting', score: { workout: 2, diet: 1, complete: 3 } },
-      { id: 'some', label: 'Some experience — on and off', score: { workout: 2, diet: 1, complete: 2 } },
-      { id: 'regular', label: 'Train regularly already', score: { workout: 2, diet: 1, complete: 2 } },
+      { id: 'none', label: 'No rest — keep the heart rate maxed' },
+      { id: 'short', label: 'About 1.5–3 minutes for most compound lifts', correct: true },
+      { id: 'hour', label: 'At least 15 minutes every set' },
+      { id: 'walk', label: 'Only walking between sets works' },
     ],
   },
   {
-    id: 'place',
-    prompt: 'Where will you train?',
+    id: 'cardio',
+    prompt: 'Does cardio “kill gains”?',
     options: [
-      { id: 'gym', label: 'Gym', score: { workout: 3, diet: 0, complete: 2 } },
-      { id: 'home', label: 'Home', score: { workout: 3, diet: 0, complete: 2 } },
-      { id: 'both', label: 'Mix of gym and home', score: { workout: 3, diet: 0, complete: 2 } },
-    ],
-  },
-  {
-    id: 'days',
-    prompt: 'How many days can you train per week?',
-    options: [
-      { id: '2_3', label: '2–3 days', score: { workout: 2, diet: 0, complete: 2 } },
-      { id: '4_5', label: '4–5 days', score: { workout: 3, diet: 0, complete: 2 } },
-      { id: '6p', label: '6+ days', score: { workout: 3, diet: 0, complete: 2 } },
-    ],
-  },
-  {
-    id: 'diet',
-    prompt: 'How important is a diet chart for you?',
-    options: [
-      { id: 'critical', label: 'Critical — food is my biggest gap', score: { workout: 0, diet: 3, complete: 3 } },
-      { id: 'helpful', label: 'Helpful — I want clear meals', score: { workout: 0, diet: 2, complete: 3 } },
-      { id: 'light', label: 'Light — I mostly need workouts', score: { workout: 2, diet: 0, complete: 1 } },
-    ],
-  },
-  {
-    id: 'food',
-    prompt: 'Your usual food style?',
-    options: [
-      { id: 'veg', label: 'Vegetarian', score: { workout: 0, diet: 2, complete: 2 } },
-      { id: 'egget', label: 'Eggetarian', score: { workout: 0, diet: 2, complete: 2 } },
-      { id: 'nonveg', label: 'Non-vegetarian', score: { workout: 0, diet: 2, complete: 2 } },
-      { id: 'vegan', label: 'Vegan', score: { workout: 0, diet: 2, complete: 2 } },
+      { id: 'always', label: 'Yes — never do cardio if you lift' },
+      { id: 'myth', label: 'No — smart cardio supports fat loss and heart health', correct: true },
+      { id: 'onlyfasted', label: 'Only fasted cardio burns fat' },
+      { id: 'hour', label: 'You need 2 hours of cardio daily' },
     ],
   },
   {
     id: 'sleep',
-    prompt: 'Do you also want sleep, water, and cardio guidance?',
+    prompt: 'How does sleep affect fat loss and muscle?',
     options: [
-      { id: 'yes', label: 'Yes — I want the full setup', score: { workout: 0, diet: 0, complete: 4 } },
-      { id: 'maybe', label: 'Maybe — if it is included', score: { workout: 1, diet: 1, complete: 2 } },
-      { id: 'no', label: 'No — just training or diet is enough', score: { workout: 1, diet: 1, complete: 0 } },
+      { id: 'none', label: 'Sleep does not matter if diet is perfect' },
+      { id: 'huge', label: 'Poor sleep raises hunger hormones and slows recovery', correct: true },
+      { id: 'nap', label: 'Only naps matter, night sleep is optional' },
+      { id: 'four', label: '4 hours is the optimal fat-loss sleep' },
     ],
   },
   {
-    id: 'speed',
-    prompt: 'When do you want to start?',
+    id: 'scale',
+    prompt: 'The scale went up after a salty restaurant meal. What is most likely?',
     options: [
-      { id: 'now', label: 'Today — I am ready', score: { workout: 1, diet: 1, complete: 2 } },
-      { id: 'week', label: 'This week', score: { workout: 1, diet: 1, complete: 1 } },
-      { id: 'soon', label: 'Soon — just exploring', score: { workout: 1, diet: 1, complete: 1 } },
+      { id: 'fat', label: 'You gained 1–2 kg of pure fat overnight' },
+      { id: 'water', label: 'Water retention and food weight — not overnight fat', correct: true },
+      { id: 'muscle', label: 'You built muscle in one dinner' },
+      { id: 'fail', label: 'The whole plan failed permanently' },
+    ],
+  },
+  {
+    id: 'steps',
+    prompt: 'Daily steps / NEAT mainly helps because…',
+    options: [
+      { id: 'magic', label: 'Steps burn “special” fat only from the belly' },
+      { id: 'burn', label: 'They raise total daily calorie burn without crushing recovery', correct: true },
+      { id: 'useless', label: 'Steps do nothing if you lift weights' },
+      { id: 'replace', label: '10k steps replace the need for strength training' },
+    ],
+  },
+  {
+    id: 'meal',
+    prompt: 'Is meal timing more important than total calories and protein?',
+    options: [
+      { id: 'timing', label: 'Yes — you must eat every 2 hours or fat loss stops' },
+      { id: 'totals', label: 'No — daily totals matter far more than perfect timing', correct: true },
+      { id: 'night', label: 'Never eat after 7 pm or you store fat' },
+      { id: 'fast', label: 'Intermittent fasting is the only way that works' },
+    ],
+  },
+  {
+    id: 'plateau',
+    prompt: 'Progress stalls for 3 weeks. Best first move?',
+    options: [
+      { id: 'crash', label: 'Cut calories in half overnight' },
+      { id: 'check', label: 'Check adherence, steps, sleep, then adjust calories or training', correct: true },
+      { id: 'quit', label: 'Quit and start a random new program tomorrow' },
+      { id: 'supps', label: 'Buy more fat burners first' },
     ],
   },
 ]
 
-type ResultSlug = 'digital_workout' | 'digital_diet' | 'digital_complete'
-
-const RESULT_COPY: Record<
-  ResultSlug,
-  { title: string; price: string; blurb: string; href: string }
-> = {
-  digital_complete: {
-    title: 'Complete Guidance',
-    price: '₹99',
-    blurb: 'Workout + diet + sleep, cardio, water, and optional supplements — best match for your answers.',
-    href: '/checkout?plan=digital_complete',
-  },
-  digital_diet: {
-    title: 'Diet Plan',
-    price: '₹89',
-    blurb: 'A customised diet chart is the highest-leverage next step from your answers.',
-    href: '/checkout?plan=digital_diet',
-  },
-  digital_workout: {
-    title: 'Workout Plan',
-    price: '₹49',
-    blurb: 'A structured workout plan matches what you need most right now.',
-    href: '/checkout?plan=digital_workout',
-  },
-}
-
-function pickResult(answers: Record<string, string>): ResultSlug {
-  const totals = { workout: 0, diet: 0, complete: 0 }
-  for (const q of QUESTIONS) {
-    const optId = answers[q.id]
-    const opt = q.options.find((o) => o.id === optId)
-    if (!opt) continue
-    totals.workout += opt.score.workout
-    totals.diet += opt.score.diet
-    totals.complete += opt.score.complete
-  }
-  if (totals.complete >= totals.workout && totals.complete >= totals.diet) return 'digital_complete'
-  if (totals.diet > totals.workout) return 'digital_diet'
-  return 'digital_workout'
-}
+const ACCENTS = [
+  styles.accentRed,
+  styles.accentOrange,
+  styles.accentYellow,
+  styles.accentGreen,
+  styles.accentTeal,
+  styles.accentBlue,
+  styles.accentPurple,
+  styles.accentPink,
+  styles.accentLime,
+  styles.accentGold,
+]
 
 export function InstantFitnessQuiz() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [done, setDone] = useState(false)
+  const [flash, setFlash] = useState<'correct' | 'wrong' | null>(null)
 
   const question = QUESTIONS[step]
-  const progress = useMemo(() => Math.round(((done ? QUESTIONS.length : step) / QUESTIONS.length) * 100), [done, step])
-  const result = done ? RESULT_COPY[pickResult(answers)] : null
+  const progress = useMemo(
+    () => Math.round(((done ? QUESTIONS.length : step) / QUESTIONS.length) * 100),
+    [done, step]
+  )
+
+  const score = useMemo(() => {
+    let correct = 0
+    for (const q of QUESTIONS) {
+      const opt = q.options.find((o) => o.id === answers[q.id])
+      if (opt?.correct) correct += 1
+    }
+    return correct
+  }, [answers])
+
+  const accent = ACCENTS[step % ACCENTS.length]
 
   function selectOption(optionId: string) {
-    if (!question) return
+    if (!question || flash) return
+    const opt = question.options.find((o) => o.id === optionId)
+    setFlash(opt?.correct ? 'correct' : 'wrong')
     const next = { ...answers, [question.id]: optionId }
     setAnswers(next)
-    if (step >= QUESTIONS.length - 1) {
-      setDone(true)
-      return
-    }
-    setStep((s) => s + 1)
+    window.setTimeout(() => {
+      setFlash(null)
+      if (step >= QUESTIONS.length - 1) {
+        setDone(true)
+        return
+      }
+      setStep((s) => s + 1)
+    }, 420)
   }
 
   function restart() {
     setStep(0)
     setAnswers({})
     setDone(false)
+    setFlash(null)
   }
 
+  const strong = score >= 7
+  const mid = score >= 4 && score < 7
+
   return (
-    <section className={styles.wrap} aria-labelledby="instant-quiz-title">
-      <p className={styles.eyebrow}>Quick fitness check</p>
-      <h2 id="instant-quiz-title" className={styles.title}>
-        Find your Instant Plan
-      </h2>
-      <p className={styles.lede}>
-        10 short questions. Stay on this page — we recommend the Instant Plan that fits you. No coaching
-        membership upsell.
-      </p>
+    <section className={styles.wrap} aria-labelledby="fitness-quiz-title">
+      <div className={styles.heroBanner}>
+        <p className={styles.eyebrow}>
+          <Flame size={14} aria-hidden /> Fitness knowledge check
+        </p>
+        <h2 id="fitness-quiz-title" className={styles.title}>
+          Think you know fitness?
+        </h2>
+        <p className={styles.lede}>
+          10 real questions. No fluff. See where you stand — then get a plan built around you so you
+          do not have to memorise all of this.
+        </p>
+      </div>
 
       <div className={styles.progressTrack} aria-hidden>
-        <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+        <div className={`${styles.progressFill} ${accent}`} style={{ width: `${progress}%` }} />
       </div>
       <p className={styles.progressLabel}>
-        {done ? 'Done' : `Question ${step + 1} of ${QUESTIONS.length}`}
+        {done ? `Score ${score} / ${QUESTIONS.length}` : `Question ${step + 1} of ${QUESTIONS.length}`}
       </p>
 
       {!done && question ? (
-        <div className={styles.card}>
+        <div
+          className={`${styles.card} ${accent} ${flash === 'correct' ? styles.cardCorrect : ''} ${flash === 'wrong' ? styles.cardWrong : ''}`}
+        >
+          <div className={styles.cardGlow} aria-hidden />
+          <p className={styles.qBadge}>Q{step + 1}</p>
           <h3 className={styles.prompt}>{question.prompt}</h3>
+          {question.hint ? <p className={styles.hint}>{question.hint}</p> : null}
           <div className={styles.options}>
-            {question.options.map((opt) => (
+            {question.options.map((opt, i) => (
               <button
                 key={opt.id}
                 type="button"
-                className={styles.option}
+                className={`${styles.option} ${
+                  i % 4 === 0
+                    ? styles.optTone1
+                    : i % 4 === 1
+                      ? styles.optTone2
+                      : i % 4 === 2
+                        ? styles.optTone3
+                        : styles.optTone4
+                }`}
+                disabled={Boolean(flash)}
                 onClick={() => selectOption(opt.id)}
               >
-                {opt.label}
+                <span className={styles.optIndex}>{String.fromCharCode(65 + i)}</span>
+                <span>{opt.label}</span>
               </button>
             ))}
           </div>
-          {step > 0 ? (
+          {step > 0 && !flash ? (
             <button type="button" className={styles.back} onClick={() => setStep((s) => s - 1)}>
               Back
             </button>
@@ -217,29 +242,44 @@ export function InstantFitnessQuiz() {
         </div>
       ) : null}
 
-      {done && result ? (
+      {done ? (
         <div className={styles.result}>
-          <p className={styles.resultEyebrow}>Your Instant Plan match</p>
-          <h3 className={styles.resultTitle}>{result.title}</h3>
-          <p className={styles.resultPrice}>{result.price}</p>
-          <p className={styles.resultBlurb}>{result.blurb}</p>
+          <div className={styles.resultGlow} aria-hidden />
+          <p className={styles.resultEyebrow}>
+            <Sparkles size={14} aria-hidden /> Your score · {score}/{QUESTIONS.length}
+          </p>
+          <h3 className={styles.resultTitle}>
+            {strong
+              ? 'Strong knowledge. Still skip the guesswork.'
+              : mid
+                ? 'Decent base. A written plan beats random tips.'
+                : 'You do not need to learn all this alone.'}
+          </h3>
+          <p className={styles.resultBlurb}>
+            {strong
+              ? 'You already know a lot. We still build workout + diet around your body, schedule, and food — so you execute instead of researching.'
+              : 'Most people fail on generic tips and gym myths. We take care of the science: personal diet, workout, sleep, and cardio guidance after a short questionnaire.'}
+          </p>
           <ul className={styles.resultPoints}>
             <li>
-              <Check size={15} aria-hidden /> Built from your answers after checkout
+              <Check size={15} aria-hidden /> You do not need to memorise every rule
+            </li>
+            <li>
+              <Check size={15} aria-hidden /> Coach-made plan from your answers
             </li>
             <li>
               <Check size={15} aria-hidden /> Delivered to app + email in a few hours
             </li>
             <li>
-              <Check size={15} aria-hidden /> One-time payment · moneyback if no results
+              <Check size={15} aria-hidden /> Complete Guidance ₹99 · moneyback if no results
             </li>
           </ul>
           <div className={styles.resultActions}>
-            <Link href={result.href} className={styles.primaryCta}>
-              Get {result.title} · {result.price}
+            <Link href="/checkout?plan=digital_complete" className={styles.primaryCta}>
+              Get Complete Guidance · ₹99
             </Link>
             <a href="#plans" className={styles.secondaryCta}>
-              See all Instant Plans
+              See all plans
             </a>
             <button type="button" className={styles.restart} onClick={restart}>
               Retake quiz

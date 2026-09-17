@@ -150,23 +150,42 @@
 
 .guaranteeStamp {
   flex: 0 0 auto;
-  width: 168px;
-  height: 168px;
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
-  background: var(--yellow);
-  border: 5px solid #111;
+  background:
+    radial-gradient(circle at 32% 28%, #fff7c2 0%, #fbbf24 42%, #f59e0b 78%, #d97706 100%);
+  border: 6px solid #111;
   box-shadow:
-    0 0 0 4px #fff,
-    0 0 0 8px var(--red),
-    0 14px 32px rgba(0, 0, 0, 0.35);
-  transform: rotate(-9deg);
+    0 0 0 5px #fff,
+    0 0 0 11px var(--red),
+    0 0 28px rgba(225, 29, 72, 0.35),
+    0 18px 40px rgba(0, 0, 0, 0.4);
+  transform: rotate(-10deg);
   display: grid;
   place-items: center;
+  animation: stampPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes stampPulse {
+  0%,
+  100% {
+    transform: rotate(-10deg) scale(1);
+  }
+  50% {
+    transform: rotate(-8deg) scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guaranteeStamp {
+    animation: none;
+  }
 }
 
 .stampRing {
-  width: 136px;
-  height: 136px;
+  width: 176px;
+  height: 176px;
   border-radius: 50%;
   border: 3px dashed var(--red);
   background: #fff;
@@ -174,10 +193,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   text-align: center;
-  padding: 10px;
+  padding: 12px;
   box-sizing: border-box;
+  box-shadow: inset 0 0 0 2px rgba(225, 29, 72, 0.12);
 }
 
 .stampTop,
@@ -191,21 +211,21 @@
 }
 
 .stampTop {
-  font-size: 14px;
-  letter-spacing: 0.08em;
+  font-size: 16px;
+  letter-spacing: 0.1em;
   color: var(--red);
 }
 
 .stampMid {
-  font-size: 22px;
+  font-size: 28px;
   letter-spacing: 0.04em;
   color: #111;
 }
 
 .stampBottom {
-  margin-top: 4px;
-  font-size: 12px;
-  letter-spacing: 0.12em;
+  margin-top: 6px;
+  font-size: 14px;
+  letter-spacing: 0.14em;
   color: var(--red);
 }
 
@@ -1069,25 +1089,25 @@
   }
 
   .guaranteeStamp {
-    width: 148px;
-    height: 148px;
+    width: 188px;
+    height: 188px;
   }
 
   .stampRing {
-    width: 120px;
-    height: 120px;
+    width: 152px;
+    height: 152px;
   }
 
   .stampTop {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .stampMid {
-    font-size: 18px;
+    font-size: 22px;
   }
 
   .stampBottom {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .heroPortrait {
@@ -1178,13 +1198,13 @@
   }
 
   .guaranteeStamp {
-    width: 132px;
-    height: 132px;
+    width: 168px;
+    height: 168px;
   }
 
   .stampRing {
-    width: 108px;
-    height: 108px;
+    width: 136px;
+    height: 136px;
   }
 
   .stickyInner {

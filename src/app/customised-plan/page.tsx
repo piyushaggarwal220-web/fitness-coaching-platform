@@ -100,7 +100,7 @@ export default function CustomisedPlanLandingPage() {
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
       role: 'bot',
-      text: 'Hi. Ask me about Instant Plans, delivery, moneyback, or Complete vs Workout/Diet.',
+      text: 'Hi. Ask me about plans, delivery, moneyback, or Complete vs Workout/Diet.',
     },
   ])
   const messagesRef = useRef<HTMLDivElement>(null)
@@ -444,7 +444,7 @@ export default function CustomisedPlanLandingPage() {
         type="button"
         className={`${styles.botFab} ${botOpen ? styles.botFabOpen : ''}`}
         aria-expanded={botOpen}
-        aria-controls="instant-help-bot"
+        aria-controls="plan-help-bot"
         onClick={() => setBotOpen((v) => !v)}
       >
         {botOpen ? <X size={20} aria-hidden /> : <MessageCircle size={20} aria-hidden />}
@@ -453,10 +453,10 @@ export default function CustomisedPlanLandingPage() {
 
       {botOpen ? (
         <motion.div
-          id="instant-help-bot"
+          id="plan-help-bot"
           className={styles.botPanel}
           role="dialog"
-          aria-label="Instant Plan help"
+          aria-label="Plan help"
           aria-modal="false"
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -468,7 +468,7 @@ export default function CustomisedPlanLandingPage() {
                 L
               </span>
               <div>
-                <strong>Instant help</strong>
+                <strong>Plan help</strong>
                 <span className={styles.botStatus}>
                   <span className={styles.botStatusDot} aria-hidden />
                   {botBusy ? 'Typing…' : 'Usually replies in seconds'}
