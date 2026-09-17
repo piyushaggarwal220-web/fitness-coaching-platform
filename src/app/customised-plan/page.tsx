@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { Check, Dumbbell, MessageCircle, Smartphone, UserRound, X } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
+import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
 import styles from './customised-plan.module.css'
 
 const COMPLETE_HREF = '/checkout?plan=digital_complete'
@@ -338,6 +339,10 @@ export default function CustomisedPlanLandingPage() {
       </section>
 
       <section className={styles.sectionAlt}>
+        <AnimatedTransformations variant="instant" />
+      </section>
+
+      <section className={styles.section}>
         <p className={styles.sectionEyebrow}>How it works</p>
         <h2 className={styles.sectionTitle}>Your plan in 3 steps</h2>
         <ol className={styles.steps}>

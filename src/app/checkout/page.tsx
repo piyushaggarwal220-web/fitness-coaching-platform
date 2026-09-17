@@ -39,7 +39,7 @@ import {
   formatCountdownHms,
   getSaleCountdownRemainingMs,
 } from '@/lib/sale-countdown';
-import { CheckoutTransformationCarousel } from '@/components/checkout/TransformationCarousel';
+import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations';
 import { isPublicDemoEmail } from '@/lib/public-demo';
 import { leavePublicDemoSession } from '@/lib/public-demo-session';
 
@@ -967,9 +967,9 @@ function CheckoutForm() {
               </button>
             </div>
 
-            {!isTrialCheckout && !isDigitalCheckout && (
+            {!isTrialCheckout && (
               <div style={{ marginTop: 28 }}>
-                <CheckoutTransformationCarousel />
+                <AnimatedTransformations variant="checkout" />
               </div>
             )}
           </>
