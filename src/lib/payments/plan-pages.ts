@@ -154,14 +154,14 @@ export const PLAN_COMPARE_ROWS: {
   {
     group: 'Value',
     label: 'Per month',
-    cells: { '3_months': '₹666', '6_months': '₹583', '12_months': '₹500' },
+    cells: { '3_months': '₹200', '6_months': '₹167', '12_months': '₹142' },
   },
 ]
 
 export const PLAN_INCLUSIONS = [
   'Personal workout plan (gym, home, or both)',
   'Personal diet plan around your food and schedule',
-  'Human coach in the app. A real person owns your case',
+  '1-to-1 coaching in the app — your case, your plan',
   'Mid week + weekly check ins',
   'Daily trackers: workout, meals, water, sleep, steps, habits',
   'Journey + progress photos',

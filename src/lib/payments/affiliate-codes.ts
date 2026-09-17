@@ -4,15 +4,15 @@ type PaidPlanSlug = CoachingPlanSlug
 
 /** Public storefront sale prices that affiliate extras stack on (must match checkout-discounts). */
 const PUBLIC_SALE_PAISE: Record<PaidPlanSlug, number> = {
-  '3_months': 199900,
-  '6_months': 349900,
-  '12_months': 599900,
+  '3_months': 59900,
+  '6_months': 99900,
+  '12_months': 169900,
 }
 
 export type AffiliateCodeConfig = {
   code: string
   referrerLabel: string
-  /** Extra percent off the public catalog prices (1999 / 3499 / 5999). */
+  /** Extra percent off the public catalog prices (599 / 999 / 1699). */
   extraPercentOffSale: number
   notes: string
 }
@@ -24,7 +24,7 @@ export const AFFILIATE_CODES: Record<string, AffiliateCodeConfig> = {
     referrerLabel: 'Luke',
     extraPercentOffSale: 5,
     notes:
-      'Affiliate code for Luke — catalog price (₹1,999 / ₹3,499 / ₹5,999) plus an extra 5% off. Team is emailed on each successful use.',
+      'Affiliate code for Luke — catalog price (₹599 / ₹999 / ₹1,699) plus an extra 5% off. Team is emailed on each successful use.',
   },
 }
 

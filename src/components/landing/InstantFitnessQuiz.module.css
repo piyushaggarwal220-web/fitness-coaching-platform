@@ -1,0 +1,213 @@
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 8px 4px 4px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-family: var(--font-brand, system-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.title {
+  margin: 0 0 10px;
+  font-family: var(--font-display, system-ui);
+  font-size: clamp(1.55rem, 3.5vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.lede {
+  margin: 0 0 20px;
+  color: #cbd5e1;
+  line-height: 1.55;
+  font-size: 0.98rem;
+}
+
+.progressTrack {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.15);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #fbbf24);
+  transition: width 0.25s ease;
+}
+
+.progressLabel {
+  margin: 8px 0 16px;
+  font-size: 12px;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+}
+
+.card {
+  border: 1px solid rgba(251, 191, 36, 0.22);
+  background: rgba(28, 25, 23, 0.92);
+  border-radius: 18px;
+  padding: 22px 18px;
+}
+
+.prompt {
+  margin: 0 0 16px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.options {
+  display: grid;
+  gap: 10px;
+}
+
+.option {
+  appearance: none;
+  border: 1px solid rgba(248, 250, 252, 0.12);
+  background: #241f1c;
+  color: #f8fafc;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+}
+
+.option:hover {
+  border-color: rgba(251, 191, 36, 0.55);
+  background: #2c2622;
+  transform: translateY(-1px);
+}
+
+.back {
+  margin-top: 14px;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.back:hover {
+  color: #fbbf24;
+}
+
+.result {
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  background:
+    radial-gradient(ellipse 70% 60% at 100% 0%, rgba(34, 197, 94, 0.18), transparent 55%),
+    rgba(28, 25, 23, 0.95);
+  border-radius: 18px;
+  padding: 24px 18px;
+}
+
+.resultEyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #22c55e;
+}
+
+.resultTitle {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.resultPrice {
+  margin: 6px 0 10px;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.resultBlurb {
+  margin: 0 0 14px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.resultPoints {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  color: #e2e8f0;
+  font-size: 0.92rem;
+}
+
+.resultPoints li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.resultActions {
+  display: grid;
+  gap: 10px;
+}
+
+.primaryCta {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #22c55e;
+  color: #052e16;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.primaryCta:hover {
+  filter: brightness(1.05);
+}
+
+.secondaryCta {
+  display: inline-flex;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  color: #fbbf24;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.restart {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  font: inherit;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.restart:hover {
+  color: #e2e8f0;
+}
+
+@media (min-width: 720px) {
+  .card,
+  .result {
+    padding: 28px 24px;
+  }
+}

@@ -1,0 +1,172 @@
+{% comment %}
+  LURVOX marketing chat (Luna via app.lurvox.in).
+  Render once in theme.liquid or a home section: {% render 'lurvox-marketing-chat' %}
+{% endcomment %}
+
+<div id="lx-mchat" class="lx-mchat" data-lx-mchat hidden>
+  <button type="button" class="lx-mchat__fab" data-lx-mchat-toggle aria-expanded="false" aria-controls="lx-mchat-panel">
+    Ask
+  </button>
+  <div id="lx-mchat-panel" class="lx-mchat__panel" role="dialog" aria-label="Lurvox help" hidden>
+    <div class="lx-mchat__head">
+      <strong>Lurvox help</strong>
+      <span data-lx-mchat-status>Ask about plans</span>
+    </div>
+    <div class="lx-mchat__msgs" data-lx-mchat-msgs>
+      <p class="lx-mchat__bot">Hi. Ask about Fat loss ₹599, 6 months ₹999, or Athletic body ₹1,699.</p>
+    </div>
+    <form class="lx-mchat__form" data-lx-mchat-form>
+      <input type="text" name="q" maxlength="500" placeholder="Type your question" aria-label="Your question" required />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .lx-mchat {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 9998;
+    font-family: system-ui, sans-serif;
+  }
+  .lx-mchat__fab {
+    border: 0;
+    border-radius: 999px;
+    padding: 14px 18px;
+    background: #ff6200;
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  }
+  .lx-mchat__panel {
+    position: absolute;
+    right: 0;
+    bottom: 58px;
+    width: min(360px, calc(100vw - 28px));
+    background: #121212;
+    color: #f7f7f7;
+    border: 1px solid rgba(255, 98, 0, 0.35);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  }
+  .lx-mchat__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 14px;
+    background: #1a1a1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 13px;
+  }
+  .lx-mchat__head span { color: rgba(247, 247, 247, 0.55); }
+  .lx-mchat__msgs {
+    max-height: 280px;
+    overflow: auto;
+    padding: 12px 14px;
+    display: grid;
+    gap: 8px;
+  }
+  .lx-mchat__bot, .lx-mchat__user {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .lx-mchat__bot { background: #1f1f1f; }
+  .lx-mchat__user { background: rgba(255, 98, 0, 0.2); justify-self: end; }
+  .lx-mchat__form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .lx-mchat__form input {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #0c0c0c;
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .lx-mchat__form button {
+    border: 0;
+    border-radius: 10px;
+    background: #ff6200;
+    color: #fff;
+    font-weight: 700;
+    padding: 0 14px;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+(function () {
+  var root = document.getElementById('lx-mchat')
+  if (!root || root.dataset.wired === '1') return
+  root.dataset.wired = '1'
+  root.hidden = false
+
+  var API = 'https://app.lurvox.in/api/marketing/chat'
+  var toggle = root.querySelector('[data-lx-mchat-toggle]')
+  var panel = root.querySelector('#lx-mchat-panel')
+  var msgs = root.querySelector('[data-lx-mchat-msgs]')
+  var form = root.querySelector('[data-lx-mchat-form]')
+  var status = root.querySelector('[data-lx-mchat-status]')
+  var history = []
+  var busy = false
+
+  function add(role, text) {
+    var p = document.createElement('p')
+    p.className = role === 'user' ? 'lx-mchat__user' : 'lx-mchat__bot'
+    p.textContent = text
+    msgs.appendChild(p)
+    msgs.scrollTop = msgs.scrollHeight
+  }
+
+  toggle.addEventListener('click', function () {
+    var open = panel.hasAttribute('hidden')
+    if (open) {
+      panel.removeAttribute('hidden')
+      toggle.setAttribute('aria-expanded', 'true')
+      toggle.textContent = 'Close'
+    } else {
+      panel.setAttribute('hidden', '')
+      toggle.setAttribute('aria-expanded', 'false')
+      toggle.textContent = 'Ask'
+    }
+  })
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault()
+    if (busy) return
+    var input = form.querySelector('input')
+    var text = (input.value || '').trim()
+    if (!text) return
+    input.value = ''
+    add('user', text)
+    history.push({ role: 'user', content: text })
+    busy = true
+    status.textContent = 'Thinking…'
+    try {
+      var res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(-6), surface: 'coaching' }),
+      })
+      var data = await res.json().catch(function () { return {} })
+      var reply = (data && data.reply) || 'Plans: Fat loss ₹599 · 6 months ₹999 · Athletic body ₹1,699.'
+      add('bot', reply)
+      history.push({ role: 'assistant', content: reply })
+    } catch (err) {
+      add('bot', 'Could not reach help right now. Plans start at ₹599 for 3 months.')
+    } finally {
+      busy = false
+      status.textContent = 'Ask about plans'
+    }
+  })
+})()
+</script>

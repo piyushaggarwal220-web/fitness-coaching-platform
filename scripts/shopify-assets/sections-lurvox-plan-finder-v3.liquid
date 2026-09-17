@@ -1,7 +1,7 @@
 {% comment %}
   LURVOX — Find your plan (tap quiz)
   Full intake quiz → recommend a goal-based plan page (not checkout)
-  cache-bust 1787768000005
+  cache-bust 1787768000006
 {% endcomment %}
 
 {%- liquid
@@ -27,7 +27,7 @@
       <p class="lx-pf__eyebrow">{{ section.settings.eyebrow | default: 'CHOOSE YOUR GOAL' }}</p>
       <h1 class="lx-pf__title">{{ section.settings.heading | default: 'Pick your goal. We handle the rest.' }}</h1>
       <p class="lx-pf__subtitle">
-        {{ section.settings.subheading | default: 'Fat loss ₹1,999 · Fat loss + muscle ₹3,499 · Athletic body ₹5,999. Answer honestly — we send you to that plan page. No payment here.' }}
+        {{ section.settings.subheading | default: 'Answer each question honestly. We match a goal, then send you to that plan page. No payment here.' }}
       </p>
     </header>
 
@@ -54,7 +54,7 @@
         <ul class="lx-pf__compare-list" data-pf-compare-list></ul>
       </div>
       <p class="lx-pf__result-next">
-        Human coach in the app. Weekly phone calls are 12-month only.
+        1-to-1 coaching in the app. Weekly phone calls are 12-month only.
       </p>
       <div class="lx-pf__result-actions">
         <a class="lx-pf__btn lx-pf__btn--primary" data-pf-checkout href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/3-months">
@@ -446,9 +446,10 @@
         key: 'goal',
         q: 'What is your main goal right now?',
         options: [
-          { id: 'event', label: 'Fat loss — 90 days · ₹1,999', score: -4, goal: 'Fat loss' },
-          { id: 'refine', label: 'Fat loss + muscle gain — 6 months · ₹3,499', score: 1, goal: 'Fat loss + muscle gain' },
-          { id: 'transform', label: 'Athletic body — 12 months · ₹5,999', score: 5, goal: 'Athletic body' }
+          { id: 'fat', label: 'Lose fat / tone up', score: -1, goal: 'lose fat and tone up' },
+          { id: 'muscle', label: 'Build strength / add shape', score: 0, goal: 'build strength and shape' },
+          { id: 'recomp', label: 'Fat down and muscle up', score: 1, goal: 'recompose. Fat down, muscle up' },
+          { id: 'transform', label: 'A complete transformation', score: 2, goal: 'a complete transformation' }
         ]
       },
       {
@@ -613,7 +614,7 @@
         slug: '3_months',
         path: '3-months',
         label: 'Fat loss',
-        price: '₹1,999',
+        price: '₹599',
         per: '90 days',
         bullets: [
           'Best for a focused 90-day fat-loss plan',
@@ -625,7 +626,7 @@
         slug: '6_months',
         path: '6-months',
         label: 'Fat loss + muscle gain',
-        price: '₹3,499',
+        price: '₹999',
         per: '6 months',
         bullets: [
           'Best for: losing fat while building muscle',
@@ -637,7 +638,7 @@
         slug: '12_months',
         path: '12-months',
         label: 'Athletic body',
-        price: '₹5,999',
+        price: '₹1,699',
         per: '12 months',
         bullets: [
           'Best for: fat loss, muscle gain, and stamina',
@@ -708,7 +709,7 @@
 
       var why = '';
       if (planKey === '3_months') {
-        why = 'This is the 90-day Fat loss plan: a focused start with a real coach.';
+        why = 'This is the 90-day Fat loss plan: a focused start with 1-to-1 coaching.';
       } else if (planKey === '6_months') {
         why = 'This is Fat loss + muscle gain. Six months to lose fat while building muscle.';
       } else {
@@ -831,7 +832,7 @@
       "type": "textarea",
       "id": "subheading",
       "label": "Subheading",
-      "default": "Fat loss ₹1,999 · Fat loss + muscle ₹3,499 · Athletic body ₹5,999. Answer honestly — we send you to that plan page. No payment here."
+      "default": "Answer each question honestly. We match a goal, then send you to that plan page. No payment here."
     },
     {
       "type": "text",

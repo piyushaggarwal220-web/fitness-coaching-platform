@@ -103,7 +103,7 @@ export const transformations = [
     time: '20 weeks',
     weightLost: '16 kg',
     bodyFatLost: '10%',
-    quote: 'Cheapest coaching I have tried that still feels like a real coach.',
+    quote: 'Cheapest coaching I have tried that still feels truly 1-to-1.',
     before: '',
     after: '',
   },
@@ -167,7 +167,7 @@ export const howItWorks = {
   steps: [
     { title: 'Assessment', body: 'We learn your goals, schedule, diet, and starting point.' },
     { title: 'Personal Plan', body: 'Custom workout + diet built for your life — not a template.' },
-    { title: 'Weekly Coaching', body: 'Real coach reviews. Real adjustments. No chatbot.' },
+    { title: 'Weekly Coaching', body: '1-to-1 reviews and plan adjustments in the app.' },
     { title: 'Daily Tracking', body: 'Log workouts, food, water, sleep, steps, and more.' },
     { title: 'Weekly Updates', body: 'Your plan changes based on what is actually happening.' },
     { title: 'Transformation', body: 'Measurable progress you can see and feel.' },
@@ -261,8 +261,8 @@ export const pricing = {
     {
       slug: '3_months',
       name: 'Fat loss',
-      price: '₹1,999',
-      perMonth: '≈ ₹666/month',
+      price: '₹599',
+      perMonth: '≈ ₹200/month',
       blurb: 'Fat loss',
       save: 'BEST STARTER',
       popular: false,
@@ -270,8 +270,8 @@ export const pricing = {
     {
       slug: '6_months',
       name: 'Fat loss + muscle gain',
-      price: '₹3,499',
-      perMonth: '≈ ₹583/month',
+      price: '₹999',
+      perMonth: '≈ ₹167/month',
       blurb: 'Fat loss + muscle gain',
       save: 'MOST POPULAR',
       popular: true,
@@ -279,8 +279,8 @@ export const pricing = {
     {
       slug: '12_months',
       name: 'Athletic body',
-      price: '₹5,999',
-      perMonth: '≈ ₹500/month',
+      price: '₹1,699',
+      perMonth: '≈ ₹142/month',
       blurb: 'Athletic body · 12 months · fat loss, muscle, stamina · weekly coach phone call',
       save: 'BEST VALUE',
       popular: false,
@@ -292,18 +292,18 @@ export const pricing = {
 export const affordability = {
   headline: 'Why Are We So Affordable?',
   body: [
-    'Our coaches use advanced tools behind the scenes to automate repetitive work such as plan preparation and progress analysis.',
-    'That means coaches spend more time helping clients instead of doing paperwork.',
-    'The result is premium coaching at a fraction of the traditional cost.',
+    'Online coaching lets us skip studio rent and fill dead time with smart systems — so more people get 1-to-1 plans without luxury pricing.',
+    'You still get personalised workout and diet, check-ins, and direct support in the app.',
+    'Premium guidance. Honest India pricing.',
   ],
   reassurance:
-    'You still receive personalized coaching, weekly reviews, customized plans, and direct support.',
+    'You still receive personalised 1-to-1 coaching, weekly reviews, customised plans, and direct support.',
 } as const
 
 export const guarantee = {
   headline: 'Visible Results Within 2 Months.',
   subheadline:
-    'If you consistently follow your personalized plan and weekly coaching, we are confident you will see measurable progress within the first two months — better energy, better adherence, and clear physical change.',
+    'If you consistently follow your personalised plan and weekly coaching, we are confident you will see measurable progress within the first two months — better energy, better adherence, and clear physical change.',
   note: 'Results depend on consistency. We do not promise overnight miracles. We promise a coaching system that works when you work it.',
   cta: 'Start With Confidence',
 } as const
@@ -313,12 +313,12 @@ export const faq = {
   headline: 'FAQ',
   items: [
     {
-      q: 'Why so cheap?',
-      a: 'Traditional coaching prices include hours of admin work. Our coaches use advanced tools and automation to cut repetitive work — so they can coach more people without charging luxury-studio rates. You still get a real coach, personalized plans, and weekly reviews.',
+      q: 'Why so affordable?',
+      a: 'We run online coaching at scale — no studio overhead, clear systems, honest pricing. You still get a personalised plan, check-ins, and 1-to-1 support in the app.',
     },
     {
-      q: 'Will I get a real coach?',
-      a: 'Yes. A human coach reviews your plan, check-ins, and progress. Technology helps them work faster — it does not replace them.',
+      q: 'Is this real 1-to-1 coaching?',
+      a: 'Yes. Your plan, check-ins, and progress are handled as your case — not a one-size PDF. You get chat support and structured reviews inside the app.',
     },
     {
       q: 'Do I need a gym?',
@@ -334,7 +334,7 @@ export const faq = {
     },
     {
       q: 'What if I miss workouts?',
-      a: 'Tell your coach on the next check-in. Plans get adjusted for real life — travel, busy weeks, and missed sessions happen. Consistency over perfection.',
+      a: 'Tell us on the next check-in. Plans get adjusted for real life — travel, busy weeks, and missed sessions happen. Consistency over perfection.',
     },
     {
       q: 'Can I cancel?',
@@ -351,17 +351,17 @@ export const faq = {
 export const finalCta = {
   headline: 'Your Transformation Starts With One Decision.',
   subheadline:
-    'Personal coaching. Unreal pricing. Real accountability. Get in now — and stop doing this alone.',
+    '1-to-1 online coaching. Unreal pricing. Real accountability. Get in now — and stop doing this alone.',
   cta: 'Get My Transformation Started',
 } as const
 
 export const stickyCta = {
-  label: 'Start Today — From ₹1,999',
+  label: 'Start Today — From ₹599',
   mobileLabel: 'Start Today',
 } as const
 
 export const footer = {
-  tagline: 'Personal coaching that actually transforms.',
+  tagline: '1-to-1 online coaching that actually transforms.',
   legal: 'Results vary by individual, consistency, and starting point.',
   payments: 'Secure payments via Razorpay · Cancel anytime',
   copyright: `© ${new Date().getFullYear()} LURVOX. All rights reserved.`,

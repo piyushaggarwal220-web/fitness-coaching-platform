@@ -52,9 +52,9 @@ export const FIRST_TIMER_DISCOUNT_PERCENT = 60
  * Promo codes can still reduce below these amounts at checkout.
  */
 export const FIRST_TIMER_SALE_PAISE: Record<FirstTimerPlanSlug, number> = {
-  '3_months': 199900,
-  '6_months': 349900,
-  '12_months': 599900,
+  '3_months': 59900,
+  '6_months': 99900,
+  '12_months': 169900,
 }
 
 const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_months'])

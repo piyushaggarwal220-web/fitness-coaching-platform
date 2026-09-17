@@ -10,7 +10,9 @@
   <div class="lx-conv__trust" aria-label="Trust signals">
     <p class="lx-conv__trust-item"><strong>Personal plan</strong> in 24–48 hrs</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
-    <p class="lx-conv__trust-item"><strong>Human coach</strong> — not a PDF</p>
+    <p class="lx-conv__trust-item"><strong>1-to-1 coaching</strong> — not a PDF</p>
+    <span class="lx-conv__dot" aria-hidden="true"></span>
+    <p class="lx-conv__trust-item"><strong>Guaranteed results</strong> · moneyback rules apply</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
     <p class="lx-conv__trust-item"><strong>UPI / Razorpay</strong> checkout</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
@@ -29,7 +31,7 @@
     <p class="lx-conv__eyebrow">How LURVOX works</p>
     <h2 class="lx-conv__title">Assessment → personal plan → weekly coaching</h2>
     <p class="lx-conv__lede">
-      Built for India: vegetarian and home cooked diets, gym or home workouts, and a real coach in the app.
+      Built for India: vegetarian and home cooked diets, gym or home workouts, and 1-to-1 coaching in the app.
     </p>
     <ol class="lx-conv__steps">
       <li>
@@ -74,7 +76,7 @@
       <span class="lx-conv__sep" aria-hidden="true">·</span>
       <a class="lx-conv__link" href="{{ start_url }}">Find your plan</a>
       <span class="lx-conv__sep" aria-hidden="true">·</span>
-      <a class="lx-conv__link" href="#plans">See plans · ₹1,999 · ₹3,499 · ₹5,999</a>
+      <a class="lx-conv__link" href="#plans">See plans · ₹599 · ₹999 · ₹1,699</a>
     </div>
   </div>
 </section>
@@ -530,9 +532,11 @@
     align-items: stretch !important;
     gap: 10px !important;
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: 420px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     box-sizing: border-box !important;
-    padding: 12px 12px 10px !important;
+    padding: 18px 18px 16px !important;
   }
 
   [data-lx-hero-cta] > a {
@@ -541,8 +545,18 @@
     min-width: 0 !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
-    padding: 12px 14px !important;
-    font-size: 15px !important;
+    padding: 11px 16px !important;
+    font-size: 16px !important;
+    gap: 3px !important;
+  }
+
+  [data-lx-hero-cta] > a[class*="cta-primary"] {
+    min-height: 52px !important;
+    font-size: 16.5px !important;
+  }
+
+  [data-lx-hero-cta] > a small {
+    font-size: 11.5px !important;
   }
 
   [data-lx-hero-cta] > a.lx-hero-cta-text,
@@ -553,12 +567,13 @@
     background: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
-    padding: 4px 8px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
+    margin-top: 2px !important;
+    padding: 8px 10px !important;
+    font-size: 0.88rem !important;
+    font-weight: 650 !important;
     text-decoration: underline !important;
-    text-underline-offset: 3px !important;
-    opacity: 0.85;
+    text-underline-offset: 4px !important;
+    opacity: 0.9;
   }
 
   .lx-conv__actions {
@@ -608,9 +623,9 @@
       if (matrix) {
         var strongs = matrix.querySelectorAll('thead strong');
         if (strongs.length >= 3) {
-          strongs[0].textContent = '₹1,999';
-          strongs[1].textContent = '₹3,499';
-          strongs[2].textContent = '₹5,999';
+          strongs[0].textContent = '₹599';
+          strongs[1].textContent = '₹999';
+          strongs[2].textContent = '₹1,699';
         }
       }
       document.querySelectorAll('.lx-conv__btn-sub, .lx-conv-sticky__meta').forEach(function (el) {

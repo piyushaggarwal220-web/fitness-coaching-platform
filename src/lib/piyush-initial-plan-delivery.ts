@@ -14,7 +14,7 @@ export async function deliverPiyushInitialPlan(
   }
 ): Promise<{ error: string | null }> {
   if (!shouldAutoJourneyAndDeliverInitialPlan(input.coachId)) {
-    return { error: 'Auto-deliver is only enabled for Piyush.' }
+    return { error: 'Auto-deliver is only enabled for auto-initial coaching coaches.' }
   }
 
   const activated = await activatePlan(

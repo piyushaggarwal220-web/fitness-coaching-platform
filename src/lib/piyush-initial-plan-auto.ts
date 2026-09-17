@@ -1,7 +1,11 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { generateJourneyPlan } from '@/lib/ai/generate-journey-plan'
-import { PIYUSH_COACH_ID } from '@/lib/coach-delivery-policy'
+import {
+  PIYUSH_COACH_ID,
+  RAKSHIT_COACH_ID,
+  shouldAutoJourneyAndDeliverInitialPlan,
+} from '@/lib/coach-delivery-policy'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import {
   canRetryInitialGeneration,
@@ -44,7 +48,7 @@ async function ensureAiJourneyPlan(
         updated_at: now,
       })
       .eq('id', profile.id)
-      .eq('coach_id', PIYUSH_COACH_ID)
+      .eq('coach_id', profile.coach_id)
 
     if (error) return { created: false, error: error.message }
     profile.journey_goal = journey.journey_goal
@@ -59,7 +63,8 @@ async function ensureAiJourneyPlan(
 }
 
 /**
- * For one Piyush client: AI journey (if missing) → generate initial plan → deliver.
+ * For one coaching client on an auto-initial coach (Piyush / Rakshit):
+ * AI journey (if missing) → generate initial plan → deliver.
  * When processInBackground is true, generation is kicked off and the caller returns early.
  */
 export async function runPiyushInitialPlanForClient(
@@ -71,7 +76,6 @@ export async function runPiyushInitialPlanForClient(
     .from('profiles')
     .select('*')
     .eq('id', clientId)
-    .eq('coach_id', PIYUSH_COACH_ID)
     .maybeSingle()
 
   if (profileError || !profile) {
@@ -79,12 +83,22 @@ export async function runPiyushInitialPlanForClient(
       clientId,
       name: clientId,
       status: 'failed',
-      detail: profileError?.message ?? 'Client not found for Piyush.',
+      detail: profileError?.message ?? 'Client not found.',
     }
   }
 
-  const name = profile.name?.trim() || clientId
   const typed = profile as OnboardingProfile
+  const coachId = typed.coach_id
+  if (!shouldAutoJourneyAndDeliverInitialPlan(coachId)) {
+    return {
+      clientId,
+      name: typed.name?.trim() || clientId,
+      status: 'failed',
+      detail: 'Coach is not on auto initial-plan delivery.',
+    }
+  }
+
+  const name = typed.name?.trim() || clientId
 
   if (!typed.onboarding_complete) {
     return { clientId, name, status: 'skipped', detail: 'onboarding incomplete' }
@@ -124,7 +138,7 @@ export async function runPiyushInitialPlanForClient(
   if (job?.status === 'ready' && job.draft_plan_id) {
     const delivered = await deliverPiyushInitialPlan(admin, {
       clientId,
-      coachId: PIYUSH_COACH_ID,
+      coachId: coachId!,
       planId: job.draft_plan_id,
     })
     if (delivered.error) {
@@ -167,7 +181,7 @@ export async function runPiyushInitialPlanForClient(
   if (job.status === 'ready' && job.draft_plan_id) {
     const delivered = await deliverPiyushInitialPlan(admin, {
       clientId,
-      coachId: PIYUSH_COACH_ID,
+      coachId: coachId!,
       planId: job.draft_plan_id,
     })
     if (delivered.error) {
@@ -247,7 +261,7 @@ export async function runPiyushInitialPlanForClient(
   const latest = (refreshed as InitialPlanGenerationJob | null) ?? job
 
   if (latest.status === 'ready' && latest.draft_plan_id) {
-    // processInitialPlanGeneration auto-delivers for Piyush; verify + re-deliver if needed.
+    // processInitialPlanGeneration auto-delivers for auto-initial coaches; verify + re-deliver if needed.
     const { data: plan } = await admin
       .from('plans')
       .select('id, delivered_at, active')
@@ -267,7 +281,7 @@ export async function runPiyushInitialPlanForClient(
 
     const delivered = await deliverPiyushInitialPlan(admin, {
       clientId,
-      coachId: PIYUSH_COACH_ID,
+      coachId: coachId!,
       planId: latest.draft_plan_id,
     })
     if (delivered.error) {
@@ -301,15 +315,16 @@ export async function runPiyushInitialPlanForClient(
   }
 }
 
-/** List Piyush clients still waiting on an initial plan (no delivery yet). */
+/** List auto-initial coaches' clients still waiting on an initial plan (no delivery yet). */
 export async function listPiyushPendingInitialPlanClients(
   admin: SupabaseClient,
   limit = 20
 ): Promise<OnboardingProfile[]> {
+  const coachIds = [PIYUSH_COACH_ID, RAKSHIT_COACH_ID]
   const { data, error } = await admin
     .from('profiles')
     .select('*')
-    .eq('coach_id', PIYUSH_COACH_ID)
+    .in('coach_id', coachIds)
     .eq('onboarding_complete', true)
     .eq('plan_delivered', false)
     .order('created_at', { ascending: true })
@@ -329,7 +344,7 @@ export async function listPiyushPendingInitialPlanClients(
 }
 
 /**
- * Process up to `limit` Piyush clients stuck without a delivered initial plan.
+ * Process up to `limit` clients stuck without a delivered initial plan.
  * Sequential — each full generate can take minutes.
  */
 export async function processPiyushPendingInitialPlans(

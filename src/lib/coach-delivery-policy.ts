@@ -1,23 +1,26 @@
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import type { OnboardingProfile } from '@/types/database'
 
-/** Piyush Aggarwal — FIFO work queue; initial plans can auto journey + deliver. */
+/** Piyush Aggarwal — FIFO work queue; initial plans auto journey + deliver. */
 export const PIYUSH_COACH_ID = 'fde68466-fb3e-4a24-a5f2-97a60a363690'
-const RAKSHIT_COACH_ID = 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a'
+/** Default auto-assign coach for new paying clients. */
+export const RAKSHIT_COACH_ID = 'c0e44f5c-28c6-4a93-8a2f-d7ed69172b2a'
 
 /**
- * Coaches who send plans themselves.
- * Auto draft / weekly auto-reply / work-queue Complete publish stay OFF
- * (except Piyush initial-plan auto journey + deliver — see shouldAutoJourneyAndDeliverInitialPlan).
- * Mid-week check-in replies still auto-reply. Deliver/Publish is the only send path otherwise.
+ * Coaches who own ongoing delivery manually (weekly replies, publish from queue).
+ * Initial plans for these coaches still auto journey + deliver — see
+ * shouldAutoJourneyAndDeliverInitialPlan. Mid-week check-in replies still auto-reply.
  */
 const MANUAL_PLAN_DELIVERY_COACH_IDS = new Set([PIYUSH_COACH_ID, RAKSHIT_COACH_ID])
 
 /**
  * New paying clients are assigned here after checkout.
- * Independent of plan delivery — Rakshit still takes new clients, then coaches them by hand.
+ * Initial diet/workout still auto-generates and delivers (same path as Piyush).
  */
 const AUTO_ASSIGN_COACH_IDS = new Set([RAKSHIT_COACH_ID])
+
+/** Coaches whose new clients get AI journey + initial plan auto-delivered. */
+const AUTO_INITIAL_PLAN_COACH_IDS = new Set([PIYUSH_COACH_ID, RAKSHIT_COACH_ID])
 
 export const MANUAL_DELIVER_FROM_PLAN_PAGE =
   'Open the plan, add a coach note if needed, then use Deliver to client. Mark complete only clears the queue after the plan is already delivered.'
@@ -60,7 +63,7 @@ export function clientRequiresJourneySetup(createdAt: string | null | undefined)
 /**
  * Initial plan jobs are queued automatically for auto-delivery coaches,
  * or for one-time digital customised-plan buyers (AI auto-publish path).
- * Piyush is handled separately via shouldAutoJourneyAndDeliverInitialPlan
+ * Piyush / Rakshit use shouldAutoJourneyAndDeliverInitialPlan instead
  * (AI writes journey first, then generates + delivers).
  */
 export function shouldAutoEnqueueInitialPlan(
@@ -72,13 +75,14 @@ export function shouldAutoEnqueueInitialPlan(
 }
 
 /**
- * Piyush only: AI creates the client journey plan when missing, generates the
- * initial diet/workout draft, and delivers it to the client (no coach review gate).
+ * Live coaching coaches: AI creates the client journey when missing, generates the
+ * initial diet/workout draft, and delivers it (no coach review gate).
+ * Weekly replies / queue publish stay manual via MANUAL_PLAN_DELIVERY_COACH_IDS.
  */
 export function shouldAutoJourneyAndDeliverInitialPlan(
   coachId: string | null | undefined
 ): boolean {
-  return coachId === PIYUSH_COACH_ID
+  return Boolean(coachId && AUTO_INITIAL_PLAN_COACH_IDS.has(coachId))
 }
 
 /** Mid-week replies stay automatic for every coach. Weekly replies stay manual. */

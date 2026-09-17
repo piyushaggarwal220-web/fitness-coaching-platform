@@ -8,6 +8,7 @@ import { Check, Dumbbell, MessageCircle, Smartphone, UserRound, X } from 'lucide
 import { BRAND_NAME } from '@/lib/brand'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
 import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
+import { InstantFitnessQuiz } from '@/components/landing/InstantFitnessQuiz'
 import styles from './customised-plan.module.css'
 
 const COMPLETE_HREF = '/checkout?plan=digital_complete'
@@ -88,55 +89,18 @@ const FAQS = [
   },
 ]
 
-const BOT_KB = [
-  ...FAQS,
-  {
-    q: 'price cost 99 49 89 complete',
-    a: 'Workout is ₹49. Diet is ₹89. Complete Guidance is ₹99 for both, plus sleep, cardio, water, and optional supplements.',
-  },
-  {
-    q: 'ai generic template',
-    a: 'Generic AI plans often reuse one template. Ours follow coach principles and your questionnaire answers.',
-  },
-  {
-    q: 'sweat sweating fat loss myth',
-    a: 'Sweating does not equal fat loss. Fat loss needs a sustainable calorie setup, protein, training, sleep, and consistency.',
-  },
-]
-
 type ChatMsg = { role: 'bot' | 'user'; text: string }
-
-function answerQuestion(input: string): string {
-  const q = input.toLowerCase()
-  let best = BOT_KB[0]!
-  let score = 0
-  for (const item of BOT_KB) {
-    const keys = `${item.q} ${item.a}`.toLowerCase().split(/[^a-z0-9]+/)
-    let s = 0
-    for (const key of keys) {
-      if (key.length < 3) continue
-      if (q.includes(key)) s += 1
-    }
-    if (s > score) {
-      score = s
-      best = item
-    }
-  }
-  if (score < 1) {
-    return 'Ask about price, delivery time, personalisation, moneyback, or how Complete differs from generic plans. Or scroll to FAQ below.'
-  }
-  return best.a
-}
 
 export default function CustomisedPlanLandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const [showSticky, setShowSticky] = useState(false)
   const [botOpen, setBotOpen] = useState(false)
   const [botInput, setBotInput] = useState('')
+  const [botBusy, setBotBusy] = useState(false)
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
       role: 'bot',
-      text: 'Hi. Ask me about plans, delivery, moneyback, or why customised beats generic templates.',
+      text: 'Hi. Ask me about Instant Plans, delivery, moneyback, or Complete vs Workout/Diet.',
     },
   ])
 
@@ -148,19 +112,47 @@ export default function CustomisedPlanLandingPage() {
   }, [])
 
   const suggestions = useMemo(
-    () => ['How fast do I get the plan?', 'Why ₹99 Complete?', 'Moneyback?', 'AI vs your plan?'],
+    () => ['How fast do I get the plan?', 'Why ₹99 Complete?', 'Moneyback?', 'Workout or Complete?'],
     []
   )
 
-  function sendBot(text: string) {
+  async function sendBot(text: string) {
     const trimmed = text.trim()
-    if (!trimmed) return
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', text: trimmed },
-      { role: 'bot', text: answerQuestion(trimmed) },
-    ])
+    if (!trimmed || botBusy) return
+    const history = messages.slice(-6).map((m) => ({
+      role: m.role === 'bot' ? ('assistant' as const) : ('user' as const),
+      content: m.text,
+    }))
+    setMessages((prev) => [...prev, { role: 'user', text: trimmed }])
     setBotInput('')
+    setBotBusy(true)
+    try {
+      const res = await fetch('/api/marketing/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: trimmed, history, surface: 'instant' }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { reply?: string }
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'bot',
+          text:
+            data.reply?.trim() ||
+            'Workout ₹49 · Diet ₹89 · Complete ₹99. After pay, finish the short questionnaire for delivery.',
+        },
+      ])
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'bot',
+          text: 'Could not reach help right now. Scroll to FAQ, or pick Complete ₹99 below.',
+        },
+      ])
+    } finally {
+      setBotBusy(false)
+    }
   }
 
   return (
@@ -342,6 +334,10 @@ export default function CustomisedPlanLandingPage() {
         <AnimatedTransformations variant="instant" />
       </section>
 
+      <section className={styles.section} id="find-plan">
+        <InstantFitnessQuiz />
+      </section>
+
       <section className={styles.section}>
         <p className={styles.sectionEyebrow}>How it works</p>
         <h2 className={styles.sectionTitle}>Your plan in 3 steps</h2>
@@ -433,7 +429,7 @@ export default function CustomisedPlanLandingPage() {
         <div id="instant-help-bot" className={styles.botPanel} role="dialog" aria-label="Plan help bot">
           <div className={styles.botHeader}>
             <strong>Plan help</strong>
-            <span>Quick answers</span>
+            <span>{botBusy ? 'Thinking…' : 'Instant answers'}</span>
           </div>
           <div className={styles.botMessages}>
             {messages.map((msg, i) => (
@@ -447,7 +443,7 @@ export default function CustomisedPlanLandingPage() {
           </div>
           <div className={styles.botSuggestions}>
             {suggestions.map((item) => (
-              <button key={item} type="button" onClick={() => sendBot(item)}>
+              <button key={item} type="button" disabled={botBusy} onClick={() => void sendBot(item)}>
                 {item}
               </button>
             ))}
@@ -456,7 +452,7 @@ export default function CustomisedPlanLandingPage() {
             className={styles.botForm}
             onSubmit={(e) => {
               e.preventDefault()
-              sendBot(botInput)
+              void sendBot(botInput)
             }}
           >
             <input
@@ -464,8 +460,11 @@ export default function CustomisedPlanLandingPage() {
               onChange={(e) => setBotInput(e.target.value)}
               placeholder="Type your question"
               aria-label="Your question"
+              disabled={botBusy}
             />
-            <button type="submit">Send</button>
+            <button type="submit" disabled={botBusy}>
+              Send
+            </button>
           </form>
         </div>
       ) : null}
