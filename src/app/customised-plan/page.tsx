@@ -29,12 +29,16 @@ const PLAN_BULLETS: Record<string, string[]> = {
   digital_complete: [
     'Workout guidance',
     'Diet chart',
-    'Sleep guidance',
-    'Cardio guidance',
-    'Water intake guidance',
-    'Supplement guidance (optional)',
   ],
 }
+
+const COMPLETE_FREEBIES = [
+  'Supplement guidance',
+  'Cardio guidance',
+  'Sleep guidance',
+  'Water intake guidance',
+] as const
+
 
 const FAIL_POINTS = [
   'Generic AI plans copy the same template for everyone',
@@ -50,7 +54,7 @@ const WIN_POINTS = [
   'Science first: calories, protein, progressive overload, recovery',
   'Clear weekly workout structure with sets and reps',
   'Diet chart matched to your goal and food reality',
-  'Sleep, cardio, and water guidance included in Complete',
+  'Sleep, cardio, water, and supplement guidance free with Complete',
   'Simple rules you can follow for weeks, not one hard day',
 ]
 
@@ -337,8 +341,7 @@ export default function CustomisedPlanLandingPage() {
               </p>
               {plan.slug === 'digital_complete' ? (
                 <p className={styles.planValueNote}>
-                  ₹138 if bought separately. Complete is ₹99 with sleep, cardio, water, and optional
-                  supplement guidance.
+                  ₹138 if bought separately. Complete is ₹99 — and these extras come free.
                 </p>
               ) : null}
               <ul className={styles.bulletList}>
@@ -348,6 +351,22 @@ export default function CustomisedPlanLandingPage() {
                   </li>
                 ))}
               </ul>
+              {plan.slug === 'digital_complete' ? (
+                <div className={styles.freebies}>
+                  <p className={styles.freebiesTitle}>
+                    <span className={styles.freeBadge}>FREE</span>
+                    Included at no extra cost
+                  </p>
+                  <ul className={styles.freebiesList}>
+                    {COMPLETE_FREEBIES.map((item) => (
+                      <li key={item}>
+                        <span className={styles.freeChip}>FREE</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               <Link href={`/checkout?plan=${plan.slug}`} className={styles.planCta}>
                 {plan.slug === 'digital_complete' ? 'Get Complete Plan' : 'Get plan'}
               </Link>
@@ -431,7 +450,7 @@ export default function CustomisedPlanLandingPage() {
         <div className={styles.stickyInner}>
           <div>
             <strong>Complete Plan</strong>
-            <span className={styles.stickyMeta}>₹99 · moneyback if no results</span>
+            <span className={styles.stickyMeta}>₹99 · 4 free extras · moneyback</span>
           </div>
           <Link href={COMPLETE_HREF} className={styles.stickyCta}>
             <span className={styles.ctaFull}>Get Complete Plan · ₹99</span>

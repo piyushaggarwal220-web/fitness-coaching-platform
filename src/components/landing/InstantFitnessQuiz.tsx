@@ -271,7 +271,7 @@ export function InstantFitnessQuiz() {
               <Check size={15} aria-hidden /> Delivered to app + email in a few hours
             </li>
             <li>
-              <Check size={15} aria-hidden /> Complete Guidance ₹99 · moneyback if no results
+              <Check size={15} aria-hidden /> Complete ₹99 — sleep, cardio, water &amp; supplement guidance free
             </li>
           </ul>
           <div className={styles.resultActions}>
