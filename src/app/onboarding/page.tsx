@@ -69,6 +69,7 @@ import {
   WORKOUT_DURATION_OPTIONS,
   WORKOUT_TIME_OPTIONS,
 } from '@/lib/onboarding'
+import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import { isGoalVisibleForGender, resolveGoalPlanTier } from '@/lib/plan-goals'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
 import {
@@ -187,10 +188,14 @@ export default function OnboardingPage() {
         .limit(1)
         .maybeSingle()
 
+      const purchaseSlug = purchase?.plan_slug as string | undefined
+      // Keep Instant (digital) SKUs as-is so goal UI stays flat — no coaching lock/upgrade path.
       setPlanSlug(
-        resolveGoalPlanTier(purchase?.plan_slug as string | undefined, {
-          accessSource: result.profile?.access_source,
-        })
+        isDigitalPlanSlug(purchaseSlug)
+          ? purchaseSlug
+          : resolveGoalPlanTier(purchaseSlug, {
+              accessSource: result.profile?.access_source,
+            })
       )
 
       if (result.profile) {

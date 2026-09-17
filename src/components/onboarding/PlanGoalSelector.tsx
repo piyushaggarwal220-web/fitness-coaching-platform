@@ -5,8 +5,10 @@ import { useMemo, useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
 import { colors, radius, spacing } from '@/lib/design-tokens'
+import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import {
   ALL_PLAN_GOAL_OPTIONS,
+  DIGITAL_GOAL_TIER,
   GOAL_BODY_TYPE_META,
   GOAL_BODY_TYPE_ORDER,
   PLAN_GOAL_MAX,
@@ -43,7 +45,8 @@ export function PlanGoalSelector({
   onBodyTypeChange,
   onChange,
 }: PlanGoalSelectorProps) {
-  const currentTier = resolveGoalPlanTier(planSlug)
+  const isDigital = isDigitalPlanSlug(planSlug)
+  const currentTier = isDigital ? DIGITAL_GOAL_TIER : resolveGoalPlanTier(planSlug)
   const selectedBodyType = isValidGoalBodyType(bodyType) ? bodyType : null
   const [upgradeTarget, setUpgradeTarget] = useState<PlanGoalOption | null>(null)
 
@@ -70,11 +73,30 @@ export function PlanGoalSelector({
     return map
   }, [selectedBodyType, gender])
 
-  const hasPhysiqueGoals = PLAN_GOAL_TIER_ORDER.some((tier) => physiqueGoalsByTier[tier].length > 0)
+  const digitalBodyGoals = useMemo(
+    () =>
+      getGoalsForBodyType(selectedBodyType, { gender, section: 'body' }).filter((goal) =>
+        isGoalUnlockedForPlan(goal, planSlug)
+      ),
+    [selectedBodyType, gender, planSlug]
+  )
+
+  const digitalPhysiqueGoals = useMemo(
+    () =>
+      getGoalsForBodyType(selectedBodyType, { gender, section: 'physique' }).filter((goal) =>
+        isGoalUnlockedForPlan(goal, planSlug)
+      ),
+    [selectedBodyType, gender, planSlug]
+  )
+
+  const hasPhysiqueGoals = isDigital
+    ? digitalPhysiqueGoals.length > 0
+    : PLAN_GOAL_TIER_ORDER.some((tier) => physiqueGoalsByTier[tier].length > 0)
 
   const toggle = (goal: PlanGoalOption) => {
-    const unlocked = isGoalUnlockedForPlan(goal, currentTier)
+    const unlocked = isGoalUnlockedForPlan(goal, isDigital ? planSlug : currentTier)
     if (!unlocked) {
+      if (isDigital) return
       setUpgradeTarget(goal)
       return
     }
@@ -122,7 +144,7 @@ export function PlanGoalSelector({
         <div>
           <p style={{ margin: 0, fontSize: 13, color: colors.textMuted }}>Your plan</p>
           <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>
-            {planDisplayName(currentTier)}
+            {planDisplayName(isDigital ? planSlug : currentTier)}
           </p>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -144,8 +166,9 @@ export function PlanGoalSelector({
       </div>
 
       <p style={{ ...s.stepHint, marginBottom: spacing[4] }}>
-        First pick your starting point. Then choose at least {PLAN_GOAL_MIN} and up to {PLAN_GOAL_MAX}{' '}
-        goals. Locked goals can be unlocked by upgrading your plan.
+        {isDigital
+          ? `First pick your starting point. Then choose at least ${PLAN_GOAL_MIN} and up to ${PLAN_GOAL_MAX} goals for your plan.`
+          : `First pick your starting point. Then choose at least ${PLAN_GOAL_MIN} and up to ${PLAN_GOAL_MAX} goals. Locked goals can be unlocked by upgrading your plan.`}
       </p>
 
       <section style={{ marginBottom: spacing[5] }}>
@@ -191,42 +214,57 @@ export function PlanGoalSelector({
         <section style={{ marginBottom: spacing[5] }}>
           <h3 style={sectionHeading}>2. Goals for {GOAL_BODY_TYPE_META[selectedBodyType].title.toLowerCase()}</h3>
           <p style={{ margin: '0 0 14px', fontSize: 13, color: colors.textMuted, lineHeight: 1.4 }}>
-            Choose at least {PLAN_GOAL_MIN}. Your {planDisplayName(currentTier)} plan unlocks included tiers.
+            {isDigital
+              ? `Choose at least ${PLAN_GOAL_MIN} goals that match what you want from your plan.`
+              : `Choose at least ${PLAN_GOAL_MIN}. Your ${planDisplayName(currentTier)} plan unlocks included tiers.`}
           </p>
 
-          {PLAN_GOAL_TIER_ORDER.map((tier) => {
-            const goals = bodyGoalsByTier[tier]
-            if (goals.length === 0) return null
-            const meta = PLAN_GOAL_TIER_META[tier]
-            const unlocked = planTierUnlocked(tier, currentTier)
-            return (
-              <div key={tier} style={{ marginBottom: spacing[4] }}>
-                <TierHeader
-                  tier={tier}
-                  currentTier={currentTier}
-                  unlocked={unlocked}
-                  labelSuffix={
-                    unlocked
-                      ? tier === currentTier
-                        ? 'Your plan'
-                        : 'Included'
-                      : 'Locked — upgrade'
-                  }
-                />
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {goals.map((goal) =>
-                    renderGoalChip({
-                      goal,
-                      selected: values.includes(goal.value),
-                      locked: !unlocked,
-                      blockedByMax: !values.includes(goal.value) && atMax,
-                      onToggle: () => toggle(goal),
-                    })
-                  )}
+          {isDigital ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {digitalBodyGoals.map((goal) =>
+                renderGoalChip({
+                  goal,
+                  selected: values.includes(goal.value),
+                  locked: false,
+                  blockedByMax: !values.includes(goal.value) && atMax,
+                  onToggle: () => toggle(goal),
+                })
+              )}
+            </div>
+          ) : (
+            PLAN_GOAL_TIER_ORDER.map((tier) => {
+              const goals = bodyGoalsByTier[tier]
+              if (goals.length === 0) return null
+              const unlocked = planTierUnlocked(tier, currentTier)
+              return (
+                <div key={tier} style={{ marginBottom: spacing[4] }}>
+                  <TierHeader
+                    tier={tier}
+                    currentTier={currentTier}
+                    unlocked={unlocked}
+                    labelSuffix={
+                      unlocked
+                        ? tier === currentTier
+                          ? 'Your plan'
+                          : 'Included'
+                        : 'Locked — upgrade'
+                    }
+                  />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {goals.map((goal) =>
+                      renderGoalChip({
+                        goal,
+                        selected: values.includes(goal.value),
+                        locked: !unlocked,
+                        blockedByMax: !values.includes(goal.value) && atMax,
+                        onToggle: () => toggle(goal),
+                      })
+                    )}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </section>
       )}
 
@@ -248,32 +286,46 @@ export function PlanGoalSelector({
                   ? 'Men-only shape goals you can add on top.'
                   : 'Optional shape goals for your profile.'}
             </p>
-            {PLAN_GOAL_TIER_ORDER.map((tier) => {
-              const goals = physiqueGoalsByTier[tier]
-              if (goals.length === 0) return null
-              const unlocked = planTierUnlocked(tier, currentTier)
-              return (
-                <div key={tier} style={{ marginBottom: spacing[3] }}>
-                  <TierHeader
-                    tier={tier}
-                    currentTier={currentTier}
-                    unlocked={unlocked}
-                    labelSuffix={unlocked ? (tier === currentTier ? 'Your plan' : 'Included') : 'Locked'}
-                  />
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {goals.map((goal) =>
-                      renderGoalChip({
-                        goal,
-                        selected: values.includes(goal.value),
-                        locked: !unlocked,
-                        blockedByMax: !values.includes(goal.value) && atMax,
-                        onToggle: () => toggle(goal),
-                      })
-                    )}
+            {isDigital ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {digitalPhysiqueGoals.map((goal) =>
+                  renderGoalChip({
+                    goal,
+                    selected: values.includes(goal.value),
+                    locked: false,
+                    blockedByMax: !values.includes(goal.value) && atMax,
+                    onToggle: () => toggle(goal),
+                  })
+                )}
+              </div>
+            ) : (
+              PLAN_GOAL_TIER_ORDER.map((tier) => {
+                const goals = physiqueGoalsByTier[tier]
+                if (goals.length === 0) return null
+                const unlocked = planTierUnlocked(tier, currentTier)
+                return (
+                  <div key={tier} style={{ marginBottom: spacing[3] }}>
+                    <TierHeader
+                      tier={tier}
+                      currentTier={currentTier}
+                      unlocked={unlocked}
+                      labelSuffix={unlocked ? (tier === currentTier ? 'Your plan' : 'Included') : 'Locked'}
+                    />
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {goals.map((goal) =>
+                        renderGoalChip({
+                          goal,
+                          selected: values.includes(goal.value),
+                          locked: !unlocked,
+                          blockedByMax: !values.includes(goal.value) && atMax,
+                          onToggle: () => toggle(goal),
+                        })
+                      )}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })
+            )}
           </div>
         </section>
       )}
@@ -284,7 +336,7 @@ export function PlanGoalSelector({
         </p>
       )}
 
-      {upgradeTarget && (
+      {upgradeTarget && !isDigital && (
         <UpgradePrompt
           goal={upgradeTarget}
           currentTier={currentTier}
