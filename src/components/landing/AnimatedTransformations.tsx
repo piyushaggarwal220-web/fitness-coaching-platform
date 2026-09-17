@@ -32,7 +32,7 @@ function TransformationCard({
       startTransition(() => setShowAfter(true))
       intervalId = window.setInterval(() => {
         startTransition(() => setShowAfter((v) => !v))
-      }, 1600)
+      }, 800)
     }, delayMs)
     return () => {
       window.clearTimeout(startId)
@@ -103,7 +103,7 @@ export function AnimatedTransformations({
             key={item.id}
             item={item}
             reduceMotion={reduceMotion}
-            delayMs={index * 180}
+            delayMs={index * 90}
           />
         ))}
       </div>
