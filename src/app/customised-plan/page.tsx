@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Check, Dumbbell, Instagram, MessageCircle, Send, Smartphone, UserRound, X } from 'lucide-react'
+import { Check, Dumbbell, MessageCircle, Send, Smartphone, UserRound, X } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
 import { coaches } from '@/lib/content'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
@@ -39,6 +39,16 @@ const COMPLETE_FREEBIES = [
   'Sleep guidance',
   'Water intake guidance',
 ] as const
+
+function InstagramMark() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
+      <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+    </svg>
+  )
+}
 
 
 const FAIL_POINTS = [
@@ -266,7 +276,7 @@ export default function CustomisedPlanLandingPage() {
                     rel="noopener noreferrer"
                     className={styles.heroInstagram}
                   >
-                    <Instagram size={13} strokeWidth={2.2} aria-hidden />
+                    <InstagramMark />
                     {coach.instagramHandle}
                   </a>
                 </figcaption>
