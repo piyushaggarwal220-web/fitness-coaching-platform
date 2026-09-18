@@ -283,6 +283,7 @@ export default function CustomisedPlanLandingPage() {
               </figure>
             ))}
           </div>
+          <p className={styles.instaHint}>Tap a handle to open Instagram</p>
           <div className={styles.photoHeadline}>
             <p className={styles.photoHeadlineMain}>Transformed over 7000 people</p>
             <p className={styles.photoHeadlineSub}>Guaranteed results · moneyback if none</p>

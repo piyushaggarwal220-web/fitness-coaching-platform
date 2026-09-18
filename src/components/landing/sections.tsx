@@ -89,6 +89,7 @@ export function Hero() {
                 </a>
               ))}
             </div>
+            <p className="lp-coach-hint">Tap a handle to open Instagram</p>
             <p
               style={{
                 margin: '12px 0 0',

@@ -329,6 +329,16 @@
   border-color: rgba(251, 191, 36, 0.5);
 }
 
+.instaHint {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
 .photoHeadline {
   text-align: center;
   padding: 4px 8px 2px;

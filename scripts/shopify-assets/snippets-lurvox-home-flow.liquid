@@ -13,6 +13,7 @@
 {%- if mode == 'find' -%}
   <section class="lx-flow" aria-label="Find your plan">
     <div class="lx-flow__inner lx-flow__inner--stamp">
+      {% render 'lurvox-coaches' %}
       {% render 'lurvox-guarantee-stamp' %}
       <a class="lx-flow__btn lx-flow__btn--primary" href="{{ find_url }}">
         <span class="lx-flow__main">Find your plan quiz <em>(free)</em></span>
