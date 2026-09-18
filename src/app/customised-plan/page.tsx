@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Check, Dumbbell, MessageCircle, Send, Smartphone, UserRound, X } from 'lucide-react'
+import { Check, Dumbbell, Instagram, MessageCircle, Send, Smartphone, UserRound, X } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
 import { coaches } from '@/lib/content'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
@@ -245,10 +245,10 @@ export default function CustomisedPlanLandingPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className={styles.heroPortraitsWrap}>
-            <div className={styles.heroPortraits}>
-              {coaches.map((coach) => (
-                <figure key={coach.instagramHandle} className={styles.heroPortrait}>
+          <div className={styles.heroPortraits}>
+            {coaches.map((coach) => (
+              <figure key={coach.instagramHandle} className={styles.heroPortrait}>
+                <div className={styles.heroPhotoFrame}>
                   <Image
                     src={coach.photo}
                     alt={`${coach.name}, Lurvox coach`}
@@ -257,35 +257,26 @@ export default function CustomisedPlanLandingPage() {
                     sizes="(max-width: 900px) 48vw, 360px"
                     className={styles.heroImage}
                   />
-                  <figcaption className={styles.heroCaption}>
-                    <span>{coach.firstName}</span>
-                    <a
-                      href={coach.instagramUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.heroInstagram}
-                    >
-                      {coach.instagramHandle}
-                    </a>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-            <div className={styles.photoHeadline}>
-              <p className={styles.photoHeadlineMain}>Transformed over 7000 people</p>
-              <p className={styles.photoHeadlineSub}>Guaranteed results · moneyback if none</p>
-            </div>
-          </div>
-          <p className={styles.coachLine}>
-            {coaches.map((coach, i) => (
-              <span key={coach.instagramHandle}>
-                {i > 0 ? ' · ' : null}
-                <a href={coach.instagramUrl} target="_blank" rel="noopener noreferrer">
-                  {coach.firstName} {coach.instagramHandle}
-                </a>
-              </span>
+                </div>
+                <figcaption className={styles.heroCaption}>
+                  <span className={styles.heroName}>{coach.firstName}</span>
+                  <a
+                    href={coach.instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.heroInstagram}
+                  >
+                    <Instagram size={13} strokeWidth={2.2} aria-hidden />
+                    {coach.instagramHandle}
+                  </a>
+                </figcaption>
+              </figure>
             ))}
-          </p>
+          </div>
+          <div className={styles.photoHeadline}>
+            <p className={styles.photoHeadlineMain}>Transformed over 7000 people</p>
+            <p className={styles.photoHeadlineSub}>Guaranteed results · moneyback if none</p>
+          </div>
         </motion.div>
       </section>
 

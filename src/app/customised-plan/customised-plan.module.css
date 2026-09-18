@@ -254,127 +254,108 @@
 .heroVisual {
   position: relative;
   min-height: 0;
-}
-
-.heroPortraitsWrap {
-  position: relative;
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .heroPortraits {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
   align-items: stretch;
 }
 
 .heroPortrait {
-  position: relative;
-  isolation: isolate;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #1a1613;
+  border: 1px solid rgba(251, 191, 36, 0.16);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+}
+
+.heroPhotoFrame {
+  position: relative;
   aspect-ratio: 3 / 4;
-  max-height: 680px;
-  border-radius: 0;
+  max-height: 560px;
   overflow: hidden;
   background: #2a221c;
-  box-shadow: none;
 }
 
 .heroImage {
-  z-index: 0;
   object-fit: cover;
   object-position: center 12%;
 }
 
 .heroCaption {
-  position: absolute;
-  left: auto;
-  right: 10px;
-  top: 10px;
-  bottom: auto;
-  z-index: 8;
-  margin: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: #111;
-  border: 1px solid #fbbf24;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 10px 14px;
+  background: linear-gradient(180deg, #161311 0%, #100e0c 100%);
+}
+
+.heroName {
   color: #fff;
   font-family: var(--font-brand);
   font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  pointer-events: auto;
 }
 
 .heroInstagram {
-  color: #fbbf24 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  color: #fbbf24;
   font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0;
-  text-transform: none;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+}
+
+.heroInstagram:hover,
+.heroInstagram:focus-visible {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.5);
 }
 
 .photoHeadline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
-  padding: 56px 14px 16px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.7) 58%, transparent 100%);
   text-align: center;
-  pointer-events: none;
-}
-
-.coachLine {
-  margin: 12px 0 0;
-  color: #fff;
-  font-family: var(--font-body);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  text-align: center;
-}
-
-.coachLine a {
-  color: #fbbf24;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  padding: 4px 8px 2px;
 }
 
 .photoHeadlineMain {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.55rem, 3.4vw, 2.55rem);
+  font-size: clamp(1.35rem, 3.2vw, 2.1rem);
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1.05;
+  line-height: 1.1;
   color: #fff;
 }
 
 .photoHeadlineSub {
   display: inline-block;
-  margin: 12px 0 0;
-  padding: 10px 14px;
-  border-radius: 12px;
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 999px;
   background: var(--yellow);
   color: #111;
   font-family: var(--font-brand);
-  font-size: clamp(0.95rem, 2.1vw, 1.2rem);
+  font-size: clamp(0.82rem, 2vw, 1rem);
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1.2;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 .truthSection {
@@ -1199,16 +1180,16 @@
     font-size: 12px;
   }
 
-  .heroPortrait {
-    max-height: 390px;
+  .heroPhotoFrame {
+    max-height: 320px;
   }
 
-  .heroPortraitsWrap {
-    border-radius: 18px;
+  .heroPortrait {
+    border-radius: 16px;
   }
 
   .photoHeadline {
-    padding: 14px 10px 16px;
+    padding: 2px 6px 0;
   }
 
   .photoHeadlineMain {
@@ -1282,8 +1263,9 @@
 }
 
 @media (max-width: 400px) {
-  .heroPortrait {
-    max-height: 280px;
+  .heroInstagram {
+    font-size: 12px;
+    padding: 4px 8px;
   }
 
   .guaranteeStamp {
