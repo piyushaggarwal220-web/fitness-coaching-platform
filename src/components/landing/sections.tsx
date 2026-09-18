@@ -176,28 +176,36 @@ export function SocialProof() {
 
 export function WhyPeopleFail() {
   return (
-    <section className="lp-section">
+    <section className="lp-section lp-truth" aria-labelledby="truth-title">
       <div className="lp-container">
         <Reveal>
           <div className="lp-section-head">
             <p className="lp-eyebrow">{whyPeopleFail.eyebrow}</p>
-            <h2 className="lp-headline">{whyPeopleFail.headline}</h2>
+            <h2 className="lp-headline" id="truth-title">
+              {whyPeopleFail.headline}
+            </h2>
             <p className="lp-sub">{whyPeopleFail.subheadline}</p>
           </div>
         </Reveal>
 
-        <div className="lp-fail-grid">
-          {whyPeopleFail.cards.map((card, i) => (
-            <Reveal key={card.title} delay={i * 0.06}>
-              <TiltCard className="lp-card lp-fail-card" intensity={6}>
-                <h3>{card.title}</h3>
-                <p>{card.body}</p>
-              </TiltCard>
-            </Reveal>
-          ))}
+        <div className="lp-truth-grid">
+          <article className="lp-truth-card lp-truth-card--fail">
+            <p className="lp-truth-label">{whyPeopleFail.failLabel}</p>
+            <ul>
+              {whyPeopleFail.fail.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+          <article className="lp-truth-card lp-truth-card--win">
+            <p className="lp-truth-label">{whyPeopleFail.winLabel}</p>
+            <ul>
+              {whyPeopleFail.win.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
         </div>
-
-        <SectionCta href={`${site.checkoutBase}?plan=3_months`}>{whyPeopleFail.cta}</SectionCta>
       </div>
     </section>
   )

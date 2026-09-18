@@ -157,24 +157,29 @@ export const transformations = [
 ] as const
 
 export const whyPeopleFail = {
-  eyebrow: 'Why most people quit',
-  headline: 'It Is Not Willpower. It Is the System.',
-  subheadline: 'Most fitness journeys fail for the same three reasons.',
-  cards: [
-    {
-      title: 'Generic Plans',
-      body: 'A random PDF does not know your schedule, equipment, injuries, or food preferences. You follow it until life gets in the way — then you stop.',
-    },
-    {
-      title: 'No Accountability',
-      body: 'Without weekly check-ins and a coach watching your progress, small slips become permanent. Motivation alone does not last.',
-    },
-    {
-      title: 'No Tracking',
-      body: 'If you are not tracking workouts, diet, sleep, and habits, you cannot fix what is broken. Guessing is why progress stalls.',
-    },
+  eyebrow: 'Truth check',
+  headline: 'Why we give results, but you fail',
+  subheadline:
+    'Most people fail on generic templates and gym myths. We build customised plans on science and coach principles.',
+  failLabel: 'Why people fail',
+  winLabel: 'Why our plans work',
+  fail: [
+    'Generic AI plans copy the same template for everyone',
+    'Old beliefs like “more sweat means more fat loss”',
+    'Random YouTube workouts with no weekly structure',
+    'Crash diets that crash your energy and adherence',
+    'Ignoring sleep, water, and recovery',
+    'Changing plans every week before results can show',
   ],
-  cta: 'Get a System That Works',
+  win: [
+    'Personal workout and diet built from your assessment',
+    'Science first: calories, protein, progressive overload, recovery',
+    'Weekly check-ins and 1-to-1 coach chat',
+    'Daily trackers so we can see what is actually happening',
+    'Plan updates when you stall — not a static PDF',
+    'Built for your schedule, gym or home, veg or mixed diet',
+  ],
+  cta: 'Get a system that works',
 } as const
 
 export const howItWorks = {
