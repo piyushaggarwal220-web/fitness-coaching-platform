@@ -25,13 +25,16 @@ const OPEN: InstantLockState = {
   locked: { tracker: false, journey: false, ai_chat: false },
 }
 
+/** Optimistic lock while resolving — Instant clients never flash open nav/pages. */
+const PENDING: InstantLockState = {
+  loading: true,
+  isInstantOnly: false,
+  locked: { tracker: true, journey: true, ai_chat: true },
+}
+
 /** Shared client hook so nav + pages hide Instant-locked surfaces. */
 export function useInstantLockState(): InstantLockState {
-  const [state, setState] = useState<InstantLockState>({
-    loading: true,
-    isInstantOnly: false,
-    locked: { tracker: false, journey: false, ai_chat: false },
-  })
+  const [state, setState] = useState<InstantLockState>(PENDING)
 
   useEffect(() => {
     let active = true

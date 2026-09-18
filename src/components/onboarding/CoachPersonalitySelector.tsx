@@ -34,7 +34,7 @@ export function CoachPersonalitySelector({ values, onChange }: Props) {
         How should your coach talk to you?
       </h3>
       <p style={{ margin: '0 0 12px', fontSize: 13, color: colors.textMuted, lineHeight: 1.4 }}>
-        Pick {COACH_PERSONALITY_MIN}–{COACH_PERSONALITY_MAX} styles. Your AI coach blends them.
+        Pick {COACH_PERSONALITY_MIN}–{COACH_PERSONALITY_MAX} styles. Your coach blends them.
       </p>
       <div style={{ display: 'grid', gap: 8 }}>
         {COACH_PERSONALITY_IDS.map((id) => {

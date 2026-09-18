@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Map, ClipboardList, MessageCircle, ListChecks, Trophy, Lock } from 'lucide-react'
+import { Home, Map, ClipboardList, MessageCircle, ListChecks, Trophy } from 'lucide-react'
 import { colors, layout, spacing } from '@/lib/design-tokens'
 import { useInstantLockState } from '@/hooks/useInstantLockState'
 import { unlockHrefForFeature, type InstantFeature } from '@/lib/instant-feature-access'
@@ -27,7 +27,7 @@ function hrefForItem(
 
 export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
   const pathname = usePathname()
-  const { locked } = useInstantLockState()
+  const { loading, locked } = useInstantLockState()
 
   return (
     <nav
@@ -51,10 +51,12 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
       aria-label="Main navigation"
     >
       {NAV_ITEMS.map(({ href, label, icon: Icon, tour, feature }) => {
+        const isLocked = Boolean(feature && (loading || locked[feature]))
+        // Instant-locked surfaces stay off the nav until unlocked (unlock via dashboard /unlock).
+        if (isLocked) return null
         const target = hrefForItem(href, feature, locked)
-        const isLocked = Boolean(feature && locked[feature])
         const active =
-          !isLocked && (pathname === href || (href !== '/dashboard' && pathname.startsWith(href)))
+          pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
         return (
           <Link
             key={href}
@@ -71,23 +73,14 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
               color: active ? colors.accent : colors.textMuted,
               textDecoration: 'none',
               transition: 'color 150ms ease',
-              opacity: isLocked ? 0.72 : 1,
             }}
             aria-current={active ? 'page' : undefined}
-            aria-label={isLocked ? `${label} (locked)` : label}
+            aria-label={label}
             data-tour={tour}
           >
             <span style={{ position: 'relative', display: 'flex' }}>
               <Icon size={22} strokeWidth={active ? 2.5 : 2} />
-              {isLocked && (
-                <Lock
-                  size={10}
-                  strokeWidth={2.5}
-                  style={{ position: 'absolute', right: -8, top: -4 }}
-                  aria-hidden
-                />
-              )}
-              {href === '/client/chat' && !isLocked && unreadChats > 0 && (
+              {href === '/client/chat' && unreadChats > 0 && (
                 <span
                   style={{
                     position: 'absolute',

@@ -4,7 +4,15 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Script from 'next/script'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { CheckCircle2, Lock } from 'lucide-react'
+import {
+  Check,
+  CheckCircle2,
+  ListChecks,
+  Lock,
+  Map,
+  MessageCircle,
+  Sparkles,
+} from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
 import { authStyles } from '@/lib/auth-styles'
 import {
@@ -22,7 +30,12 @@ import {
 } from '@/lib/payments/platform-unlock-catalog'
 import { startPlatformUnlockCheckout } from '@/lib/payments/platform-unlock-checkout-client'
 import { createClient } from '@/lib/supabase/client'
-import { colors, spacing } from '@/lib/design-tokens'
+import { colors, radius, spacing } from '@/lib/design-tokens'
+import {
+  INSTANT_BUNDLE_PITCH,
+  instantBundleSavingsPaise,
+  instantUnlockPitchForFeature,
+} from '@/lib/instant-unlock-pitch'
 import type { OnboardingProfile } from '@/types/database'
 
 const supabase = createClient()
@@ -34,6 +47,13 @@ function redirectForFeature(sku: PlatformUnlockSku): string {
   return '/dashboard'
 }
 
+function UnlockIcon({ sku }: { sku: PlatformUnlockSku }) {
+  if (sku === 'unlock_tracker') return <ListChecks size={28} color={colors.accent} strokeWidth={2.2} />
+  if (sku === 'unlock_journey') return <Map size={28} color={colors.accent} strokeWidth={2.2} />
+  if (sku === 'unlock_ai_chat') return <MessageCircle size={28} color={colors.accent} strokeWidth={2.2} />
+  return <Sparkles size={28} color={colors.accent} strokeWidth={2.2} />
+}
+
 function PlatformUnlockInner() {
   const router = useRouter()
   const search = useSearchParams()
@@ -43,6 +63,11 @@ function PlatformUnlockInner() {
   )
   const meta = PLATFORM_UNLOCK_META[sku]
   const priceLabel = formatInrFromPaise(meta.amountPaise)
+  const pitch =
+    sku === 'unlock_platform_bundle'
+      ? INSTANT_BUNDLE_PITCH
+      : instantUnlockPitchForFeature(meta.feature ?? 'tracker')
+  const savings = formatInrFromPaise(instantBundleSavingsPaise())
 
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<OnboardingProfile | null>(null)
@@ -160,21 +185,26 @@ function PlatformUnlockInner() {
   if (entitled) {
     return (
       <div style={authStyles.page}>
-        <div style={authStyles.card}>
+        <div
+          style={{
+            ...authStyles.card,
+            textAlign: 'center',
+            animation: 'cardEnter 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: spacing[3] }}>
-            <CheckCircle2 size={40} color={colors.success} />
+            <CheckCircle2 size={44} color={colors.success} />
           </div>
-          <h1 style={{ ...authStyles.title, fontSize: 22 }}>Unlocked</h1>
+          <h1 style={{ ...authStyles.title, fontSize: 22, marginBottom: spacing[2] }}>Unlocked for life</h1>
           <p
             style={{
               margin: `0 0 ${spacing[4]}px`,
               fontSize: 15,
               lineHeight: 1.5,
               color: colors.textSecondary,
-              textAlign: 'center',
             }}
           >
-            {meta.label} is available on your account for life.
+            {meta.label} is ready on your account. One payment — yours forever.
           </p>
           <Link
             href={redirectForFeature(sku)}
@@ -188,67 +218,245 @@ function PlatformUnlockInner() {
   }
 
   return (
-    <div style={authStyles.page}>
+    <div
+      style={{
+        ...authStyles.page,
+        background:
+          'radial-gradient(ellipse 90% 55% at 50% -5%, rgba(249,115,22,0.18), transparent 55%), #09090b',
+      }}
+    >
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={() => setRazorpayReady(true)}
       />
-      <div style={authStyles.card}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: spacing[3] }}>
-          <Lock size={36} color={colors.accent} />
-        </div>
-        <p style={authStyles.logo}>{BRAND_NAME}</p>
-        <h1 style={{ ...authStyles.title, fontSize: 22 }}>{meta.label}</h1>
-        <p
-          style={{
-            margin: `0 0 ${spacing[2]}px`,
-            fontSize: 28,
-            fontWeight: 800,
-            color: colors.textPrimary,
-            textAlign: 'center',
-          }}
-        >
-          {priceLabel}
-          <span style={{ fontSize: 14, fontWeight: 600, color: colors.textMuted }}> lifetime</span>
-        </p>
-        <p
-          style={{
-            margin: `0 0 ${spacing[4]}px`,
-            fontSize: 15,
-            lineHeight: 1.5,
-            color: colors.textSecondary,
-            textAlign: 'center',
-          }}
-        >
-          Instant plans include your customised plan. Coaching memberships already include tracker,
-          journey, and AI chat.
-        </p>
-        {error && (
-          <p style={{ margin: `0 0 ${spacing[3]}px`, color: colors.danger, fontSize: 14 }}>{error}</p>
-        )}
-        <button
-          type="button"
-          onClick={() => void handlePay()}
-          disabled={paying || (!razorpayReady && process.env.NODE_ENV === 'production')}
-          style={authStyles.button}
-        >
-          {paying ? 'Opening checkout…' : `Pay ${priceLabel}`}
-        </button>
-        {sku !== 'unlock_platform_bundle' && (
-          <Link
-            href="/unlock?feature=bundle"
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 420,
+          overflow: 'hidden',
+          borderRadius: radius.lg,
+          border: '1px solid rgba(249,115,22,0.22)',
+          background:
+            'linear-gradient(165deg, rgba(249,115,22,0.14) 0%, rgba(24,24,27,0.98) 36%, rgba(9,9,11,1) 100%)',
+          boxShadow: '0 22px 56px rgba(0,0,0,0.4)',
+          animation: 'cardEnter 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        }}
+      >
+        <div style={{ padding: `${spacing[5]}px ${spacing[4]}px ${spacing[4]}px` }}>
+          <p
             style={{
-              display: 'block',
-              marginTop: spacing[3],
+              margin: 0,
               textAlign: 'center',
-              color: colors.textSecondary,
-              fontSize: 14,
+              fontSize: 13,
+              fontWeight: 800,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: colors.accent,
             }}
           >
-            Or unlock all three for{' '}
-            {formatInrFromPaise(PLATFORM_UNLOCK_META.unlock_platform_bundle.amountPaise)}
-          </Link>
-        )}
+            {BRAND_NAME}
+          </p>
+
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: spacing[4],
+              padding: '5px 10px',
+              borderRadius: radius.full,
+              background: 'rgba(249,115,22,0.14)',
+              border: '1px solid rgba(249,115,22,0.28)',
+              color: colors.accent,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}
+          >
+            <Lock size={12} strokeWidth={2.5} />
+            {pitch.eyebrow}
+          </div>
+
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 16,
+              marginTop: spacing[4],
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: colors.accentMuted,
+              border: '1px solid rgba(249,115,22,0.25)',
+            }}
+          >
+            <UnlockIcon sku={sku} />
+          </div>
+
+          <h1
+            style={{
+              margin: `${spacing[3]}px 0 0`,
+              fontSize: 'clamp(1.4rem, 5vw, 1.75rem)',
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              lineHeight: 1.15,
+              color: colors.textPrimary,
+            }}
+          >
+            {pitch.headline}
+          </h1>
+
+          <p
+            style={{
+              margin: `${spacing[2]}px 0 0`,
+              fontSize: 14,
+              lineHeight: 1.55,
+              color: colors.textSecondary,
+            }}
+          >
+            {pitch.blurb}
+          </p>
+
+          <ul
+            style={{
+              listStyle: 'none',
+              margin: `${spacing[4]}px 0 0`,
+              padding: 0,
+              display: 'grid',
+              gap: 10,
+            }}
+          >
+            {pitch.benefits.map((item) => (
+              <li
+                key={item}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                  color: colors.textPrimary,
+                }}
+              >
+                <span
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 999,
+                    flexShrink: 0,
+                    marginTop: 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: colors.successMuted,
+                    color: colors.success,
+                  }}
+                >
+                  <Check size={12} strokeWidth={3} />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <div
+            style={{
+              marginTop: spacing[5],
+              padding: spacing[3],
+              borderRadius: radius.md,
+              background: 'rgba(255,255,255,0.03)',
+              border: `1px solid ${colors.borderSubtle}`,
+              textAlign: 'center',
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontSize: 34,
+                fontWeight: 800,
+                letterSpacing: '-0.03em',
+                color: colors.textPrimary,
+                lineHeight: 1,
+              }}
+            >
+              {priceLabel}
+            </p>
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.textMuted, fontWeight: 600 }}>
+              One-time · lifetime access · not monthly
+            </p>
+            {sku === 'unlock_platform_bundle' && (
+              <p style={{ margin: '6px 0 0', fontSize: 12, color: colors.accent, fontWeight: 700 }}>
+                Save {savings} vs buying each add-on
+              </p>
+            )}
+          </div>
+
+          {error && (
+            <p
+              style={{
+                margin: `${spacing[3]}px 0 0`,
+                color: colors.danger,
+                fontSize: 14,
+                textAlign: 'center',
+              }}
+            >
+              {error}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={() => void handlePay()}
+            disabled={paying || (!razorpayReady && process.env.NODE_ENV === 'production')}
+            style={{
+              ...authStyles.button,
+              width: '100%',
+              marginTop: spacing[4],
+              opacity: paying ? 0.75 : 1,
+            }}
+          >
+            {paying ? 'Opening checkout…' : `Pay ${priceLabel} · Unlock now`}
+          </button>
+
+          {sku !== 'unlock_platform_bundle' && (
+            <Link
+              href="/unlock?feature=bundle"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                marginTop: spacing[3],
+                padding: '12px 14px',
+                borderRadius: radius.md,
+                border: '1px solid rgba(249,115,22,0.28)',
+                background: 'rgba(249,115,22,0.08)',
+                color: colors.textPrimary,
+                fontSize: 14,
+                fontWeight: 600,
+                textDecoration: 'none',
+                textAlign: 'center',
+              }}
+            >
+              <Sparkles size={16} color={colors.accent} />
+              Or unlock all three for{' '}
+              {formatInrFromPaise(PLATFORM_UNLOCK_META.unlock_platform_bundle.amountPaise)}
+            </Link>
+          )}
+
+          <p
+            style={{
+              margin: `${spacing[3]}px 0 0`,
+              textAlign: 'center',
+              fontSize: 12,
+              lineHeight: 1.45,
+              color: colors.textMuted,
+            }}
+          >
+            Secure checkout via Razorpay. Coaching memberships already include these.
+          </p>
+        </div>
       </div>
     </div>
   )

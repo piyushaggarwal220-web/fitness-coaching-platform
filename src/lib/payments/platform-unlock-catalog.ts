@@ -28,25 +28,25 @@ export const PLATFORM_UNLOCK_META: Record<
   }
 > = {
   unlock_tracker: {
-    label: 'Daily tracker unlock',
+    label: 'Daily tracker',
     amountPaise: PLATFORM_UNLOCK_SINGLE_PAISE,
     features: ['tracker'],
     feature: 'tracker',
   },
   unlock_journey: {
-    label: 'Journey unlock',
+    label: 'Journey',
     amountPaise: PLATFORM_UNLOCK_SINGLE_PAISE,
     features: ['journey'],
     feature: 'journey',
   },
   unlock_ai_chat: {
-    label: 'AI coach chat unlock',
+    label: 'Coach chat',
     amountPaise: PLATFORM_UNLOCK_SINGLE_PAISE,
     features: ['ai_chat'],
     feature: 'ai_chat',
   },
   unlock_platform_bundle: {
-    label: 'Tracker + Journey + AI chat',
+    label: 'Tracker + Journey + Coach chat',
     amountPaise: PLATFORM_UNLOCK_BUNDLE_PAISE,
     features: ['tracker', 'journey', 'ai_chat'],
   },

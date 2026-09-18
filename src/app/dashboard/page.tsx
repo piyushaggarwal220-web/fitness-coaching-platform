@@ -422,7 +422,7 @@ export default function Dashboard() {
     },
     {
       key: 'chat',
-      title: instantLocked.ai_chat ? 'AI coach chat' : 'Coach chat',
+      title: 'Coach chat',
       subtitle: instantLocked.ai_chat
         ? 'Unlock for lifetime access'
         : chatReady && unreadMessages > 0
@@ -508,7 +508,8 @@ export default function Dashboard() {
       </div>
     </Card>
   ) : null;
-  const trackerCard = activePlan && coachingDayPending ? (
+  const trackerCard =
+    instantLocked.tracker ? null : activePlan && coachingDayPending ? (
     <Card variant="glass">
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
         <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -576,7 +577,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {stickyCheckin && !isPublicDemoEmail(user?.email) && (
+      {stickyCheckin && !isPublicDemoEmail(user?.email) && !instantLocked.tracker && (
         <CheckinDueBanner
           checkin={stickyCheckin}
           mode={stickyCheckinMode}
@@ -664,7 +665,9 @@ export default function Dashboard() {
                 Everything important is one tap away
               </h2>
               <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.55 }}>
-                Track today, open your plan, stay on top of check-ins, review your journey, and message your coach from one place.
+                {instantLocked.tracker || instantLocked.journey || instantLocked.ai_chat
+                  ? 'Open your plan from one place. Tracker, Journey, and Coach chat unlock separately if you want them.'
+                  : 'Track today, open your plan, stay on top of check-ins, review your journey, and message your coach from one place.'}
               </p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[2] }}>
@@ -678,9 +681,11 @@ export default function Dashboard() {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2] }}>
               <Button onClick={() => router.push(heroActionHref)}>{heroActionLabel}</Button>
-              <Button variant="secondary" onClick={() => router.push('/journey')}>
-                Open journey
-              </Button>
+              {!instantLocked.journey && (
+                <Button variant="secondary" onClick={() => router.push('/journey')}>
+                  Open journey
+                </Button>
+              )}
             </div>
           </div>
         </Card>

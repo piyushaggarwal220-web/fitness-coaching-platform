@@ -273,6 +273,7 @@
 
 .heroPortrait {
   position: relative;
+  isolation: isolate;
   margin: 0;
   aspect-ratio: 3 / 4;
   max-height: 680px;
@@ -283,6 +284,7 @@
 }
 
 .heroImage {
+  z-index: 0;
   object-fit: cover;
   object-position: center 12%;
 }
@@ -293,17 +295,33 @@
   right: 10px;
   top: 10px;
   bottom: auto;
+  z-index: 8;
   margin: 0;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #111;
+  border: 1px solid #fbbf24;
   color: #fff;
   font-family: var(--font-brand);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  z-index: 2;
+  pointer-events: auto;
+}
+
+.heroInstagram {
+  color: #fbbf24 !important;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .photoHeadline {
@@ -316,6 +334,22 @@
   background: linear-gradient(to top, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.7) 58%, transparent 100%);
   text-align: center;
   pointer-events: none;
+}
+
+.coachLine {
+  margin: 12px 0 0;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+
+.coachLine a {
+  color: #fbbf24;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .photoHeadlineMain {
@@ -341,16 +375,6 @@
   letter-spacing: 0.01em;
   line-height: 1.2;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-}
-
-.coachLine {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  text-align: center;
 }
 
 .truthSection {
@@ -1184,7 +1208,7 @@
   }
 
   .photoHeadline {
-    padding: 44px 10px 14px;
+    padding: 14px 10px 16px;
   }
 
   .photoHeadlineMain {
@@ -1259,7 +1283,7 @@
 
 @media (max-width: 400px) {
   .heroPortrait {
-    max-height: 325px;
+    max-height: 280px;
   }
 
   .guaranteeStamp {

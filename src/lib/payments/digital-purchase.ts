@@ -64,13 +64,20 @@ export async function latestDigitalPurchase(
   return { id: row.id, planSlug: row.plan_slug }
 }
 
-/** Latest paid coaching purchase (ignores Instant digital rows). */
+/** Latest paid coaching membership (ignores Instant digital + platform unlock SKUs). */
 export async function latestCoachingPurchase(
   admin: SupabaseClient,
   clientId: string
 ): Promise<{ id: string; planSlug: string } | null> {
   const paid = await latestPaidPurchases(admin, clientId, 15)
-  const row = paid.find((p) => p.plan_slug && !isDigitalPlanSlug(p.plan_slug))
+  const row = paid.find((p) => {
+    const slug = p.plan_slug
+    if (!slug || isDigitalPlanSlug(slug)) return false
+    if (slug.startsWith('unlock_') || slug === 'exercise_library') return false
+    // Redeemed / expired codes are not an active coaching membership.
+    const status = (p.status || '').toLowerCase()
+    return status === 'paid' || status === 'captured' || status === 'completed'
+  })
   if (!row?.plan_slug) return null
   return { id: row.id, planSlug: row.plan_slug }
 }

@@ -2,6 +2,7 @@
 
 import {
   affordability,
+  coaches,
   faq,
   finalCta,
   footer,
@@ -65,16 +66,29 @@ export function Hero() {
 
         <Reveal delay={0.1}>
           <div className="lp-hero-photo-wrap">
-            <Floating amplitude={6} duration={5.5}>
-              <TiltCard intensity={6} className="lp-card" style={{ borderRadius: 24, overflow: 'hidden' }}>
-                {/* Replace with coach photo — set hero.coachPhoto in content.ts */}
-                <ImagePlaceholder
-                  label={hero.coachPhotoAlt}
-                  src={hero.coachPhoto || undefined}
-                  className="lp-hero-photo"
-                />
-              </TiltCard>
-            </Floating>
+            <div className="lp-coach-grid" aria-label={hero.coachPhotoAlt}>
+              {coaches.map((coach) => (
+                <a
+                  key={coach.instagramHandle}
+                  href={coach.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="lp-coach-card"
+                  aria-label={`${coach.name} on Instagram, ${coach.instagramHandle}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- local public coach photos */}
+                  <img
+                    src={coach.photo}
+                    alt={`${coach.name}, LURVOX coach`}
+                    className="lp-coach-photo"
+                  />
+                  <span className="lp-coach-caption">
+                    <strong>{coach.firstName}</strong>
+                    <span className="lp-coach-instagram">{coach.instagramHandle}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
             <p
               style={{
                 margin: '12px 0 0',

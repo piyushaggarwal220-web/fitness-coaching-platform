@@ -80,7 +80,7 @@ export function AiCoachChatThread() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}>
         {loading && (
-          <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Loading your AI coach…</p>
+          <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Loading coach chat…</p>
         )}
         {!loading && messages.length === 0 && (
           <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>
@@ -137,7 +137,7 @@ export function AiCoachChatThread() {
               void send()
             }
           }}
-          placeholder="Message your AI coach…"
+          placeholder="Message your coach…"
           style={{
             flex: 1,
             minHeight: 44,

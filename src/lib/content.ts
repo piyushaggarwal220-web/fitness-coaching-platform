@@ -19,11 +19,28 @@ export const hero = {
   primaryCta: 'Start My Transformation',
   secondaryCta: 'See Plans & Pricing',
   proofStripLabel: 'Real client results',
-  coachPhotoAlt: 'LURVOX coach',
+  coachPhotoAlt: 'LURVOX coaches Piyush Aggarwal and Rakshit Mohla',
   /** Put file in public/landing/coach.jpg then set: '/landing/coach.jpg' */
   coachPhoto: '',
   finalCtaImage: '',
 } as const
+
+export const coaches = [
+  {
+    name: 'Piyush Aggarwal',
+    firstName: 'Piyush',
+    photo: '/landing/instant-coach-piyush.png',
+    instagramHandle: '@maximusvault',
+    instagramUrl: 'https://www.instagram.com/maximusvault/',
+  },
+  {
+    name: 'Rakshit Mohla',
+    firstName: 'Rakshit',
+    photo: '/landing/instant-coach-rakshit.png',
+    instagramHandle: '@rakshitmohla_',
+    instagramUrl: 'https://www.instagram.com/rakshitmohla_/',
+  },
+] as const
 
 export const heroTransforms = [
   {

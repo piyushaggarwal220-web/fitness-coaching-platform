@@ -22,7 +22,6 @@ import { mobileStyles } from '@/lib/mobile-styles'
 import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
 import { PublicDemoBanner } from '@/components/ui/PublicDemoBanner'
 import { useInstantLockState } from '@/hooks/useInstantLockState'
-import { unlockHrefForFeature } from '@/lib/instant-feature-access'
 
 type ClientShellProps = {
   children?: ReactNode
@@ -57,21 +56,21 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
     return () => window.clearTimeout(timer)
   }, [])
   const unreadChats = useChatUnreadCount('client', unreadReady)
-  const { locked } = useInstantLockState()
-  const drawerItems = baseDrawerItems.map((item) => {
-    if (item.href === '/tracker' && locked.tracker) {
-      return { ...item, href: unlockHrefForFeature('tracker'), label: "Today's Tracker (locked)" }
+  const { loading: instantLockLoading, locked } = useInstantLockState()
+  const drawerItems = baseDrawerItems.flatMap((item) => {
+    if (item.href === '/tracker') {
+      if (instantLockLoading || locked.tracker) return []
+      return [item]
     }
-    if (item.href === '/journey' && locked.journey) {
-      return { ...item, href: unlockHrefForFeature('journey'), label: 'Journey (locked)' }
+    if (item.href === '/journey') {
+      if (instantLockLoading || locked.journey) return []
+      return [item]
     }
     if (item.href === '/client/chat') {
-      if (locked.ai_chat) {
-        return { ...item, href: unlockHrefForFeature('ai_chat'), label: 'Chat (locked)', badge: 0 }
-      }
-      return { ...item, badge: unreadChats }
+      if (instantLockLoading || locked.ai_chat) return []
+      return [{ ...item, badge: unreadChats }]
     }
-    return item
+    return [item]
   })
 
   useEffect(() => {

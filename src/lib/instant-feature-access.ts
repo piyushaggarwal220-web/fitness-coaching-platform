@@ -19,7 +19,7 @@ export const INSTANT_FEATURE_UNLOCK_HREF: Record<InstantFeature, string> = {
 export const INSTANT_FEATURE_LABEL: Record<InstantFeature, string> = {
   tracker: 'Daily tracker',
   journey: 'Journey',
-  ai_chat: 'AI coach chat',
+  ai_chat: 'Coach chat',
 }
 
 /** Non-membership purchase rows (unlocks / library) — not coaching. */
@@ -76,8 +76,9 @@ export function isInstantFeatureEntitled(
 }
 
 /**
- * Instant-only buyers must unlock tracker / journey / AI chat (lifetime ₹99 / ₹199).
+ * Instant-only buyers must unlock tracker / journey / coach chat (lifetime ₹99 / ₹199).
  * Coaching membership, trial, and enrollment include everything.
+ * Default deny — never open platform features unless coaching or entitled.
  */
 export function canAccessInstantFeature(
   profile: InstantFeatureProfile | null | undefined,
@@ -90,7 +91,6 @@ export function canAccessInstantFeature(
   }
 ): boolean {
   if (!profile) return false
-  if (options?.hasCoachingPurchase) return true
   if (
     profile.access_source === 'admin_trial' ||
     profile.access_source === 'enrollment_code'
@@ -103,15 +103,17 @@ export function canAccessInstantFeature(
     isDigitalPlanSlug(options?.planSlug) ||
     profile.instant_gates_enabled === true
 
+  // Instant digital buyers stay gated even if an old redeemed coaching row exists.
   if (instantOnly) {
     return isInstantFeatureEntitled(profile, feature)
   }
 
+  if (options?.hasCoachingPurchase) return true
   if (coachingIncludesInstantFeatures(options?.planSlug, profile.access_source)) {
     return true
   }
 
-  return true
+  return isInstantFeatureEntitled(profile, feature)
 }
 
 export function unlockHrefForFeature(feature: InstantFeature): string {

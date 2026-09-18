@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Check, Dumbbell, MessageCircle, Send, Smartphone, UserRound, X } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
+import { coaches } from '@/lib/content'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
 import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
 import { InstantFitnessQuiz } from '@/components/landing/InstantFitnessQuiz'
@@ -213,7 +214,7 @@ export default function CustomisedPlanLandingPage() {
           </h1>
           <p className={styles.lede}>
             Coach-made plans around your goals, from ₹49. Delivered to email and the app within a few
-            hours. Written guidance — not live coaching. Tracker, Journey, and AI chat are optional
+            hours. Written guidance — not live coaching. Tracker, Journey, and Coach chat are optional
             add-ons if you want them later.
           </p>
           <div className={styles.stampRow}>
@@ -246,35 +247,45 @@ export default function CustomisedPlanLandingPage() {
         >
           <div className={styles.heroPortraitsWrap}>
             <div className={styles.heroPortraits}>
-              <figure className={styles.heroPortrait}>
-                <Image
-                  src="/landing/instant-coach-piyush.png"
-                  alt="Piyush, Lurvox coach"
-                  fill
-                  priority
-                  sizes="(max-width: 900px) 48vw, 360px"
-                  className={styles.heroImage}
-                />
-                <figcaption className={styles.heroCaption}>Piyush</figcaption>
-              </figure>
-              <figure className={styles.heroPortrait}>
-                <Image
-                  src="/landing/instant-coach-rakshit.png"
-                  alt="Rakshit, Lurvox coach"
-                  fill
-                  priority
-                  sizes="(max-width: 900px) 48vw, 360px"
-                  className={styles.heroImage}
-                />
-                <figcaption className={styles.heroCaption}>Rakshit</figcaption>
-              </figure>
+              {coaches.map((coach) => (
+                <figure key={coach.instagramHandle} className={styles.heroPortrait}>
+                  <Image
+                    src={coach.photo}
+                    alt={`${coach.name}, Lurvox coach`}
+                    fill
+                    priority
+                    sizes="(max-width: 900px) 48vw, 360px"
+                    className={styles.heroImage}
+                  />
+                  <figcaption className={styles.heroCaption}>
+                    <span>{coach.firstName}</span>
+                    <a
+                      href={coach.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.heroInstagram}
+                    >
+                      {coach.instagramHandle}
+                    </a>
+                  </figcaption>
+                </figure>
+              ))}
             </div>
             <div className={styles.photoHeadline}>
               <p className={styles.photoHeadlineMain}>Transformed over 7000 people</p>
               <p className={styles.photoHeadlineSub}>Guaranteed results · moneyback if none</p>
             </div>
           </div>
-          <p className={styles.coachLine}>Piyush and Rakshit · Lurvox coaches</p>
+          <p className={styles.coachLine}>
+            {coaches.map((coach, i) => (
+              <span key={coach.instagramHandle}>
+                {i > 0 ? ' · ' : null}
+                <a href={coach.instagramUrl} target="_blank" rel="noopener noreferrer">
+                  {coach.firstName} {coach.instagramHandle}
+                </a>
+              </span>
+            ))}
+          </p>
         </motion.div>
       </section>
 

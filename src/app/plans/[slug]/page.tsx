@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const productName = PLAN_PRODUCT_NAME[planSlug]
   return {
     title: brandTitle(`${productName} · ${copy.durationLabel}`),
-    description: `${productName} coaching (${copy.durationLabel}) — from ${plan.displayPrice}. Personal workout, diet, check-ins, tracker, journey, and AI coach chat included.`,
+    description: `${productName} coaching (${copy.durationLabel}) — from ${plan.displayPrice}. Personal workout, diet, check-ins, tracker, journey, and coach chat included.`,
   }
 }
 

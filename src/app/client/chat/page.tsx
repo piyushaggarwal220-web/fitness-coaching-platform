@@ -151,7 +151,7 @@ export default function ClientChatPage() {
 
   if (featureLocked) {
     return (
-      <ClientShell title="Chat">
+      <ClientShell title="Coach chat">
         <InstantFeatureLockedPanel feature="ai_chat" />
       </ClientShell>
     )
@@ -159,7 +159,7 @@ export default function ClientChatPage() {
 
   if (aiMode) {
     return (
-      <ClientShell title="AI Coach" hideBottomNav fullHeight>
+      <ClientShell title="Coach chat" hideBottomNav fullHeight>
         <AiCoachChatThread />
       </ClientShell>
     )

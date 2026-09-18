@@ -52,7 +52,7 @@ export const PLAN_PAGE_COPY: Record<
     eyebrow: 'Fat loss',
     goalName: PLAN_PRODUCT_NAME['3_months'],
     durationLabel: '3 months',
-    promise: 'Personal workout, diet, and a human coach for a 90-day fat-loss push.',
+    promise: 'Personal workout, diet, and a coach for a 90-day fat-loss push.',
     bestFor: '90-day fat loss',
     goals: [],
   },
