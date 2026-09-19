@@ -16,7 +16,9 @@
   .lurvox-offer-strip.lurvox-offer-strip--home {
     background: #050505 !important;
     background-image:
-      radial-gradient(ellipse 70% 120% at 50% -40%, rgba(255, 98, 0, 0.28), transparent 60%) !important;
+      radial-gradient(ellipse 36% 120% at 8% -40%, rgba(225, 29, 72, 0.28), transparent 58%),
+      radial-gradient(ellipse 55% 120% at 48% -40%, rgba(255, 98, 0, 0.34), transparent 60%),
+      radial-gradient(ellipse 36% 120% at 92% -40%, rgba(37, 99, 235, 0.26), transparent 58%) !important;
     border-bottom: 1px solid rgba(255, 98, 0, 0.35) !important;
     color: #fff !important;
   }
@@ -249,13 +251,15 @@
     display: none !important;
   }
 
-  /* Homepage leftovers: Try the app, find-plan quiz, talk-to-a-coach, old AI cards */
+  /* Homepage leftovers: Try the app, find-plan quiz, old AI price cards */
   #lx-welcome,
   .lx-welcome,
   .lx-find-float,
   [data-lx-find-float],
   .lx-consult,
-  [data-lx-hero-cta] a[href*="choose-your-plan"] {
+  [data-lx-hero-cta] a[href*="choose-your-plan"],
+  #shopify-block-AWTUyVllzcVIzY25yT__ai_gen_block_361650c_qqYKXh,
+  .shopify-block:has([class*="ai-transformation-plan-card-start-"]) {
     display: none !important;
   }
 
@@ -484,10 +488,11 @@
           a.setAttribute('aria-hidden', 'true');
         }
       });
-      document.querySelectorAll('[class*="ai-contact-header"]').forEach(function (el) {
-        var block = el.closest('[class*="ai-contact-"]') || el;
-        if (block.querySelector('.lx-plans, .lx-steps, .lx-anim-tf, .lx-fq')) return;
+      document.querySelectorAll('[class*="ai-transformation-plan-card-start-"]').forEach(function (a) {
+        var block = a.closest('.shopify-block');
+        if (!block || block.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf')) return;
         block.style.setProperty('display', 'none', 'important');
+        block.setAttribute('hidden', '');
         block.setAttribute('aria-hidden', 'true');
       });
     }

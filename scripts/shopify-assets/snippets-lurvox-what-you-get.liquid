@@ -1,6 +1,6 @@
 {% comment %}
   Homepage insert: Instant-style plan cards + 3 steps + truth check.
-  “What you get” now lives on each plan card.
+  Old AI plan cards are hidden and the new cards move into that spot.
 {% endcomment %}
 <style id="lx-home-hide-legacy">
   #lx-welcome,
@@ -12,7 +12,27 @@
   [data-lx-hero-cta] a[href*="choose-your-plan"] {
     display: none !important;
   }
+
+  #shopify-block-AWTUyVllzcVIzY25yT__ai_gen_block_361650c_qqYKXh,
+  .shopify-block:has([class*="ai-transformation-plan-card-start-"]) {
+    display: none !important;
+  }
 </style>
 {% render 'lurvox-plan-cards' %}
 {% render 'lurvox-three-steps' %}
 {% render 'lurvox-truth-check' %}
+<script>
+  (function () {
+    function placeNewPlans() {
+      var neu = document.querySelector('.lx-plans');
+      var oldCard = document.querySelector('[class*="ai-transformation-plan-card-"]');
+      if (!neu || !oldCard) return;
+      var block = oldCard.closest('.shopify-block');
+      if (!block || block.contains(neu) || block.querySelector('.lx-steps, .lx-fq, .lx-anim-tf')) return;
+      if (neu.nextElementSibling === block || block.previousElementSibling === neu) return;
+      block.parentNode.insertBefore(neu, block);
+    }
+    placeNewPlans();
+    document.addEventListener('DOMContentLoaded', placeNewPlans);
+  })();
+</script>
