@@ -71,7 +71,7 @@
       <article class="lx-anim-tf__card" data-delay="450">
         <div class="lx-anim-tf__frame">
           <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-woman-weak-before.png?v=feminine1" alt="Before: soft untrained physique" loading="lazy" decoding="async" width="480" height="600">
-          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-woman-strong-after.png?v=feminine1" alt="After: feminine sculpted physique" loading="lazy" decoding="async" width="480" height="600">
+          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="{{ 'tf-woman-strong-after.png' | asset_url }}" alt="After: feminine sculpted physique" loading="lazy" decoding="async" width="480" height="600">
           <div class="lx-anim-tf__badges" aria-hidden="true">
             <span class="lx-anim-tf__badge lx-anim-tf__badge--before">Before</span>
             <span class="lx-anim-tf__badge lx-anim-tf__badge--after">After</span>
@@ -87,7 +87,7 @@
 <style>
   .lx-anim-tf {
     --lx-orange: #ff6200;
-    background: #050505;
+    background: transparent;
     color: #fff;
     padding: 36px 16px 48px;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -136,6 +136,8 @@
     margin: 0;
     padding: 0;
     background: transparent;
+    content-visibility: auto;
+    contain-intrinsic-size: 360px 480px;
   }
   .lx-anim-tf__card h3 {
     margin: 12px 0 4px;
@@ -197,6 +199,7 @@
     border-color: rgba(74, 222, 128, 0.85);
     background: #4ade80;
   }
+  .lx-anim-tf__frame { contain: layout paint; }
   .lx-anim-tf__card:nth-child(3n+1) h3 { color: #ff8a3d; }
   .lx-anim-tf__card:nth-child(3n+2) h3 { color: #4ade80; }
   .lx-anim-tf__card:nth-child(3n) h3 { color: #60a5fa; }
@@ -210,21 +213,27 @@
   var root = document.querySelector('[data-lx-anim-tf]');
   if (!root || root.getAttribute('data-bound') === '1') return;
   root.setAttribute('data-bound', '1');
+  var cards = Array.prototype.slice.call(root.querySelectorAll('.lx-anim-tf__card'));
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  root.querySelectorAll('.lx-anim-tf__card').forEach(function (card) {
-    var before = card.querySelector('.lx-anim-tf__img--before');
-    var after = card.querySelector('.lx-anim-tf__img--after');
-    if (!before || !after) return;
-    if (reduce) {
-      before.classList.remove('is-visible');
-      after.classList.add('is-visible');
+  if (reduce) {
+    cards.forEach(function (card) {
+      var before = card.querySelector('.lx-anim-tf__img--before');
+      var after = card.querySelector('.lx-anim-tf__img--after');
+      if (before) before.classList.remove('is-visible');
+      if (after) after.classList.add('is-visible');
       card.classList.add('is-after');
-      return;
-    }
-    var delay = parseInt(card.getAttribute('data-delay') || '0', 10) || 0;
-    var showAfter = false;
-    function tick() {
-      showAfter = !showAfter;
+    });
+    return;
+  }
+  var inView = false;
+  var timer = 0;
+  function tick() {
+    if (!inView) return;
+    cards.forEach(function (card) {
+      var before = card.querySelector('.lx-anim-tf__img--before');
+      var after = card.querySelector('.lx-anim-tf__img--after');
+      if (!before || !after) return;
+      var showAfter = !card.classList.contains('is-after');
       if (showAfter) {
         before.classList.remove('is-visible');
         after.classList.add('is-visible');
@@ -234,11 +243,28 @@
         before.classList.add('is-visible');
         card.classList.remove('is-after');
       }
-    }
-    window.setTimeout(function () {
-      tick();
-      window.setInterval(tick, 1000);
-    }, delay);
-  });
+    });
+  }
+  function start() {
+    if (timer) return;
+    tick();
+    timer = window.setInterval(tick, 2200);
+  }
+  function stop() {
+    if (!timer) return;
+    window.clearInterval(timer);
+    timer = 0;
+  }
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      inView = entries.some(function (entry) { return entry.isIntersecting; });
+      if (inView) start();
+      else stop();
+    }, { rootMargin: '80px 0px' });
+    io.observe(root);
+  } else {
+    inView = true;
+    start();
+  }
 })();
 </script>

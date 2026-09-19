@@ -60,7 +60,7 @@ export const PLAN_TRANSFORMATIONS: PlanTransformation[] = [
     title: 'Soft → Sculpted',
     subtitle: 'Expected change within 30 days',
     beforeSrc: '/landing/transformations/tf-woman-weak-before.png',
-    afterSrc: '/landing/transformations/tf-woman-strong-after.png',
+    afterSrc: '/landing/transformations/tf-woman-strong-after.png?v=slim2',
     beforeAlt: 'Before: low muscle tone',
     afterAlt: 'After: sculpted toned physique',
   },

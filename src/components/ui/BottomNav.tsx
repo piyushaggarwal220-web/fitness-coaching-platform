@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Map, ClipboardList, MessageCircle, ListChecks, Trophy } from 'lucide-react'
+import { Home, Map, ClipboardList, MessageCircle, ListChecks } from 'lucide-react'
 import { colors, layout, spacing } from '@/lib/design-tokens'
 import { useInstantLockState } from '@/hooks/useInstantLockState'
 import { unlockHrefForFeature, type InstantFeature } from '@/lib/instant-feature-access'
@@ -11,7 +11,6 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: Home, tour: 'nav-home', feature: null },
   { href: '/tracker', label: 'Tracker', icon: ListChecks, tour: 'nav-tracker', feature: 'tracker' as const },
   { href: '/plan', label: 'Plan', icon: ClipboardList, tour: 'nav-plan', feature: null },
-  { href: '/league', label: 'League', icon: Trophy, tour: 'nav-league', feature: null },
   { href: '/client/chat', label: 'Chat', icon: MessageCircle, tour: 'nav-chat', feature: 'ai_chat' as const },
   { href: '/journey', label: 'Journey', icon: Map, tour: 'nav-journey', feature: 'journey' as const },
 ] as const

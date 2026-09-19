@@ -286,7 +286,7 @@ export default function CheckinPage() {
       setForm(INITIAL_WEEKLY_FORM);
       setPhotos({ front: null, side: null, back: null });
       setExtraPhotos([]);
-      setTimeout(() => router.push('/league'), 2000);
+      setTimeout(() => router.push('/dashboard'), 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit check-in.');
     } finally {

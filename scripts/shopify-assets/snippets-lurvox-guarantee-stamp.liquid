@@ -28,11 +28,15 @@
     0 0 32px rgba(225, 29, 72, 0.4),
     0 18px 40px rgba(0, 0, 0, 0.4);
     transform: rotate(-10deg);
-    animation: lxStampPulse 2.8s ease-in-out infinite;
+  }
+  @media (min-width: 900px) {
+    .lx-guarantee-stamp {
+      animation: lxStampPulse 3.6s ease-in-out infinite;
+    }
   }
   @keyframes lxStampPulse {
-    0%, 100% { transform: rotate(-10deg) scale(1); }
-    50% { transform: rotate(-8deg) scale(1.03); }
+    0%, 100% { transform: rotate(-10deg); }
+    50% { transform: rotate(-8deg); }
   }
   @media (prefers-reduced-motion: reduce) {
     .lx-guarantee-stamp { animation: none; }

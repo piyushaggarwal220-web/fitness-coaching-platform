@@ -252,7 +252,6 @@ export const clientDrawerItems = (icons: {
 }): DrawerNavItem[] => [
   { href: '/dashboard', label: 'Dashboard', icon: <icons.Home size={20} /> },
   { href: '/tracker', label: "Today's Tracker", icon: <icons.ListChecks size={20} /> },
-  { href: '/league', label: 'League', icon: <icons.Trophy size={20} /> },
   { href: '/journey', label: 'Journey', icon: <icons.Map size={20} /> },
   { href: '/plan', label: 'My Plan', icon: <icons.ClipboardList size={20} /> },
   { href: '/checkin', label: 'Check-ins', icon: <icons.Calendar size={20} /> },

@@ -16,7 +16,12 @@
   }
 
   #shopify-block-AWTUyVllzcVIzY25yT__ai_gen_block_361650c_qqYKXh,
-  .shopify-block:has([class*="ai-transformation-plan-card-start-"]) {
+  .shopify-block:has([class*="ai-transformation-plan-card-start-"]),
+  #shopify-section-template--22567106412795__lurvox_home_gallery,
+  #shopify-block-AQ1JYRnRFSzBBRHFXV__ai_gen_block_52353f6_MmHVRV,
+  [class*="ai-fitness-gallery-"]:not([class*="__"]),
+  .shopify-block:has([data-gallery-main]),
+  .shopify-section:has([data-gallery-main]):not(:has(.lx-home-flow)):not(:has(.lx-plans)):not(:has(.lx-intro)) {
     display: none !important;
   }
 
@@ -31,6 +36,7 @@
   {% render 'lurvox-three-steps' %}
 </div>
 {% render 'lurvox-athletic-float' %}
+{% render 'lurvox-header-match' %}
 {% render 'lurvox-meta-attribution' %}
 <script>
   (function () {
@@ -42,6 +48,29 @@
       if (!block || block.contains(flow) || block.querySelector('.lx-steps, .lx-fq, .lx-anim-tf, .lx-intro')) return;
       if (flow.nextElementSibling === block || block.previousElementSibling === flow) return;
       block.parentNode.insertBefore(flow, block);
+    }
+    function hideTopCarousel() {
+      document.querySelectorAll('[data-gallery-main]').forEach(function (el) {
+        var block = el.closest('.shopify-block');
+        var section = el.closest('.shopify-section');
+        var keep = '.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro, .lx-home-flow';
+        if (block && !block.querySelector(keep)) {
+          block.style.setProperty('display', 'none', 'important');
+          block.setAttribute('hidden', '');
+          block.setAttribute('aria-hidden', 'true');
+        }
+        if (section && !section.querySelector(keep)) {
+          section.style.setProperty('display', 'none', 'important');
+          section.setAttribute('hidden', '');
+          section.setAttribute('aria-hidden', 'true');
+        }
+      });
+      var heroGallery = document.getElementById('shopify-section-template--22567106412795__lurvox_home_gallery');
+      if (heroGallery && !heroGallery.querySelector('.lx-home-flow, .lx-intro, .lx-plans')) {
+        heroGallery.style.setProperty('display', 'none', 'important');
+        heroGallery.setAttribute('hidden', '');
+        heroGallery.setAttribute('aria-hidden', 'true');
+      }
     }
     function hideTalkCoach() {
       var nodes = document.querySelectorAll('h2, h3');
@@ -68,12 +97,17 @@
       }
     }
     placeFlow();
+    hideTopCarousel();
     hideTalkCoach();
     document.addEventListener('DOMContentLoaded', function () {
       placeFlow();
+      hideTopCarousel();
       hideTalkCoach();
     });
-    window.addEventListener('load', hideTalkCoach);
+    window.addEventListener('load', function () {
+      hideTopCarousel();
+      hideTalkCoach();
+    });
     setTimeout(hideTalkCoach, 800);
     setTimeout(hideTalkCoach, 2200);
   })();

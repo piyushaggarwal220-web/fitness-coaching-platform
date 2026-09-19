@@ -14,7 +14,6 @@ import {
   MessageCircle,
   Star,
   Timer,
-  Trophy,
   LucideIcon,
 } from 'lucide-react';
 import { ClientShell } from '@/components/ui/ClientShell';
@@ -43,7 +42,6 @@ import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptio
 import { CheckinDueBanner } from '@/components/dashboard/CheckinDueBanner';
 import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner';
 import { GoalUpgradeCard } from '@/components/dashboard/GoalUpgradeCard';
-import { LeagueHomeCard } from '@/components/league/LeagueHomeCard';
 import { CoachQueueCard } from '@/components/dashboard/CoachQueueCard';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { isPublicDemoEmail, PUBLIC_DEMO_CLIENT_NAME } from '@/lib/public-demo';
@@ -398,16 +396,6 @@ export default function Dashboard() {
       icon: Flame,
       badge: instantLocked.journey ? 'Locked' : null,
       accent: '#a78bfa',
-      visible: true,
-    },
-    {
-      key: 'league',
-      title: 'League',
-      subtitle: 'Rank, points, and monthly climb',
-      href: '/league',
-      icon: Trophy,
-      badge: null,
-      accent: '#eab308',
       visible: true,
     },
     {
@@ -771,8 +759,6 @@ export default function Dashboard() {
           </div>
         </section>
       )}
-
-      <LeagueHomeCard />
 
       {/* Coaching week + next check-in */}
       {checkinSchedule && (

@@ -3,23 +3,19 @@
   Headline → stamp → coach photos (tap opens Instagram) → 7000 people.
 {% endcomment %}
 <section class="lx-intro" id="lx-intro" aria-labelledby="lx-intro-title">
+  <a class="lx-intro__login" href="https://app.lurvox.in/login">Existing client log in</a>
   <div class="lx-intro__grid">
     <div class="lx-intro__copy">
-      <p class="lx-intro__eyebrow">Personalised fitness plans</p>
       <h1 class="lx-intro__title" id="lx-intro-title">
-        Personal diet and workout,
+        Personalised fitness plans,
         <span> within a few hours.</span>
       </h1>
       <p class="lx-intro__lede">
-        Coach-made plans around your goals, from ₹599. Personal workout + diet, check-ins, trackers, and coach chat.
-        Delivered after a short onboarding — usually within a few hours, always inside 48 hours.
+        Coach-made workout and diet around your goals, from ₹599. You get a <strong>new plan every week</strong>, and trackers, coach chat, and Journey are already unlocked from day one — not add-ons later.
       </p>
-      <div class="lx-intro__stamp">
-        {% render 'lurvox-guarantee-stamp' %}
-      </div>
       <ul class="lx-intro__trust">
-        <li>Made by the coach</li>
-        <li>Personal workout + diet</li>
+        <li>New weekly plans</li>
+        <li>Trackers, coach chat, Journey unlocked</li>
         <li>Beginner friendly</li>
       </ul>
     </div>
@@ -75,6 +71,10 @@
         <p class="lx-intro__people-sub">Guaranteed results · moneyback if none</p>
       </div>
     </div>
+
+    <div class="lx-intro__stamp">
+      {% render 'lurvox-guarantee-stamp' %}
+    </div>
   </div>
 </section>
 <style>
@@ -82,14 +82,32 @@
     --yellow: #fbbf24;
     --green: #22c55e;
     --red: #e11d48;
-    background:
-      radial-gradient(ellipse 70% 45% at 85% 0%, rgba(225, 29, 72, 0.22), transparent 55%),
-      radial-gradient(ellipse 55% 40% at 0% 15%, rgba(34, 197, 94, 0.16), transparent 50%),
-      radial-gradient(ellipse 50% 35% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 55%),
-      #12100f;
+    position: relative;
+    background: transparent;
     color: #f8fafc;
-    padding: 28px 16px 36px;
+    padding: 56px 16px 36px;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  .lx-intro__login {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--yellow);
+    color: #111;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 8px 18px rgba(251, 191, 36, 0.28);
+  }
+  .lx-intro__login:hover,
+  .lx-intro__login:focus {
+    filter: brightness(1.06);
   }
   .lx-intro__grid {
     max-width: 1180px;
@@ -98,17 +116,11 @@
     gap: 28px;
     align-items: center;
   }
-  .lx-intro__eyebrow {
-    margin: 0 0 14px;
-    display: inline-flex;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(251, 191, 36, 0.18);
-    color: var(--yellow);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+  .lx-intro__stamp {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 4px 0 0;
   }
   .lx-intro__title {
     margin: 0;
@@ -127,7 +139,7 @@
     font-weight: 500;
     line-height: 1.6;
   }
-  .lx-intro__stamp { margin-top: 22px; }
+  .lx-intro__lede strong { color: #fff; font-weight: 800; }
   .lx-intro__trust {
     list-style: none;
     margin: 22px 0 0;
@@ -236,10 +248,12 @@
     line-height: 1.2;
   }
   @media screen and (min-width: 900px) {
-    .lx-intro { padding: 36px 20px 48px; }
+    .lx-intro { padding: 64px 20px 48px; }
+    .lx-intro__login { top: 20px; right: 24px; }
     .lx-intro__grid {
       grid-template-columns: 0.95fr 1.05fr;
       gap: 32px;
     }
+    .lx-intro__stamp { grid-column: 1 / -1; margin-top: 8px; }
   }
 </style>
