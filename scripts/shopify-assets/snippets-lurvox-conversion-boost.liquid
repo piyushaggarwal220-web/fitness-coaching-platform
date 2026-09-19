@@ -42,55 +42,12 @@
     <span class="lx-conv__badge">SSL Encrypted</span>
   </div>
 
-  <div class="lx-conv__how" id="how-it-works">
-    <p class="lx-conv__eyebrow">How LURVOX works</p>
-    <h2 class="lx-conv__title">Assessment → personal plan → weekly coaching</h2>
-    <p class="lx-conv__lede">
-      Built for India: vegetarian and home cooked diets, gym or home workouts, and 1-to-1 coaching in the app.
-    </p>
-    <ol class="lx-conv__steps">
-      <li>
-        <span class="lx-conv__num">01</span>
-        <div>
-          <h3>Tell us your body & schedule</h3>
-          <p>Short assessment + progress photos after checkout.</p>
-        </div>
-      </li>
-      <li>
-        <span class="lx-conv__num">02</span>
-        <div>
-          <h3>Get your personal plan</h3>
-          <p>Workout + diet matched to you within 24–48 hours.</p>
-        </div>
-      </li>
-      <li>
-        <span class="lx-conv__num">03</span>
-        <div>
-          <h3>Train with daily trackers</h3>
-          <p>Log workouts, meals, sleep, steps — coach sees what matters.</p>
-        </div>
-      </li>
-      <li>
-        <span class="lx-conv__num">04</span>
-        <div>
-          <h3>Weekly reviews</h3>
-          <p>Plan updates when you stall. Your coach adjusts from real check-ins.</p>
-        </div>
-      </li>
-    </ol>
-
-    <div class="lx-conv__risk">
-      <p>
-        Refunds and guarantees (if any) are only as stated in our
-        <a href="{{ terms_url }}" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>.
-      </p>
-    </div>
-
-    <div class="lx-conv__actions">
-      <a class="lx-conv__link" href="{{ find_url | default: start_url }}">Find your plan</a>
-      <span class="lx-conv__sep" aria-hidden="true">·</span>
-      <a class="lx-conv__link" href="#plans">See plans · ₹599 · ₹999 · ₹1,699</a>
-    </div>
+  <div class="lx-conv__badges" aria-label="Secure payment">
+    <span class="lx-conv__badge">UPI</span>
+    <span class="lx-conv__badge">Cards</span>
+    <span class="lx-conv__badge">Netbanking</span>
+    <span class="lx-conv__badge">Razorpay Secure</span>
+    <span class="lx-conv__badge">SSL Encrypted</span>
   </div>
 </section>
 
@@ -643,8 +600,19 @@
   .lx-conv__link--talk,
   .lx-flow__link--talk,
   [data-lurvox-fab],
-  .lurvox-fab {
+  .lurvox-fab,
+  #lx-welcome,
+  .lx-welcome,
+  .lx-hdr__talk,
+  .lx-consult,
+  .shopify-section:has(.lx-consult),
+  .lx-find-float,
+  a[href*="/pages/choose-your-plan"] {
     display: none !important;
+  }
+
+  [data-lx-hero-cta] > a[href="#plans"] {
+    display: flex !important;
   }
 
   .lx-conv__actions {
@@ -752,6 +720,24 @@
     document.addEventListener('DOMContentLoaded', hideTalkLinks);
     window.addEventListener('load', hideTalkLinks);
     setTimeout(hideTalkLinks, 400);
+
+    function rewriteHeroQuiz() {
+      document.querySelectorAll('[data-lx-hero-cta] a, a[href*="/pages/choose-your-plan"]').forEach(function (a) {
+        a.setAttribute('href', '#plans');
+        var text = (a.textContent || '').toLowerCase();
+        if (text.indexOf('find your plan') !== -1 || text.indexOf('try the app') !== -1) {
+          a.innerHTML = 'See plans <small>Fat loss ₹599 · Muscle ₹999 · Athletic ₹1,699</small>';
+        }
+      });
+      var welcome = document.getElementById('lx-welcome');
+      if (welcome) welcome.style.setProperty('display', 'none', 'important');
+      document.querySelectorAll('.lx-hdr__talk, .lx-consult, .lx-find-float').forEach(function (el) {
+        el.style.setProperty('display', 'none', 'important');
+      });
+    }
+    rewriteHeroQuiz();
+    document.addEventListener('DOMContentLoaded', rewriteHeroQuiz);
+    window.addEventListener('load', rewriteHeroQuiz);
 
     // lurvox-matrix-choose-rewrite-v1
     function rewriteMatrixChoose() {

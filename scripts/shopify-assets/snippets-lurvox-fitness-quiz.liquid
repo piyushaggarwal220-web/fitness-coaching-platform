@@ -1,0 +1,360 @@
+{% comment %} Instant-style fitness knowledge quiz for Orange. Not a plan-finder. {% endcomment %}
+<section class="lx-fq" id="lx-fitness-quiz" aria-labelledby="lx-fq-title">
+  <div class="lx-fq__inner">
+    <div class="lx-fq__hero">
+      <p class="lx-fq__eyebrow">Fitness knowledge check</p>
+      <h2 class="lx-fq__title" id="lx-fq-title">Think you know fitness?</h2>
+      <p class="lx-fq__lede">10 real questions. No fluff. See where you stand — then get a plan built around you so you do not have to memorise all of this.</p>
+    </div>
+    <div class="lx-fq__progress" aria-hidden="true"><span class="lx-fq__fill" data-lx-fq-fill></span></div>
+    <p class="lx-fq__label" data-lx-fq-label>Question 1 of 10</p>
+    <div class="lx-fq__card" data-lx-fq-card>
+      <p class="lx-fq__badge" data-lx-fq-badge>Q1</p>
+      <h3 class="lx-fq__prompt" data-lx-fq-prompt></h3>
+      <p class="lx-fq__hint" data-lx-fq-hint></p>
+      <div class="lx-fq__options" data-lx-fq-options></div>
+      <button type="button" class="lx-fq__back" data-lx-fq-back hidden>Back</button>
+    </div>
+    <div class="lx-fq__result" data-lx-fq-result hidden>
+      <p class="lx-fq__score" data-lx-fq-score></p>
+      <h3 data-lx-fq-result-title></h3>
+      <p data-lx-fq-result-blurb></p>
+      <ul>
+        <li>You do not need to memorise every rule</li>
+        <li>Personal workout + diet from your assessment</li>
+        <li>Weekly check-ins and 1-to-1 coach chat</li>
+        <li>Plan updates when you stall — not a static PDF</li>
+      </ul>
+      <a class="lx-fq__cta" href="#plans">See plans — from ₹599</a>
+      <button type="button" class="lx-fq__restart" data-lx-fq-restart>Retake quiz</button>
+    </div>
+  </div>
+</section>
+<style>
+  .lx-fq {
+    background: #070707;
+    color: #fff;
+    padding: 28px 16px 48px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  .lx-fq__inner { max-width: 760px; margin: 0 auto; }
+  .lx-fq__hero {
+    margin-bottom: 18px;
+    padding: 18px 16px;
+    border-radius: 20px;
+    background:
+      radial-gradient(ellipse 70% 80% at 0% 0%, rgba(255, 98, 0, 0.35), transparent 55%),
+      radial-gradient(ellipse 60% 70% at 100% 20%, rgba(34, 197, 94, 0.22), transparent 50%),
+      #1a1512;
+    border: 1px solid rgba(255, 98, 0, 0.28);
+  }
+  .lx-fq__eyebrow {
+    margin: 0 0 8px;
+    color: #ffb07a;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .lx-fq__title {
+    margin: 0 0 10px;
+    font-size: clamp(1.65rem, 4vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+  .lx-fq__lede { margin: 0; color: #e2e8f0; line-height: 1.55; font-size: 0.98rem; }
+  .lx-fq__progress {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .lx-fq__fill {
+    display: block;
+    height: 100%;
+    width: 10%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #e11d48, #ff6200, #22c55e);
+    transition: width 0.28s ease;
+  }
+  .lx-fq__label {
+    margin: 10px 0 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffb07a;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .lx-fq__card {
+    border-radius: 22px;
+    padding: 24px 18px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: #1c1917;
+  }
+  .lx-fq__card.is-correct { border-color: rgba(34, 197, 94, 0.65); }
+  .lx-fq__card.is-wrong { border-color: rgba(225, 29, 72, 0.65); }
+  .lx-fq__badge {
+    display: inline-flex;
+    margin: 0 0 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    background: #ff6200;
+    color: #111;
+  }
+  .lx-fq__prompt { margin: 0 0 8px; font-size: 1.2rem; font-weight: 800; line-height: 1.3; }
+  .lx-fq__hint { margin: 0 0 16px; color: #94a3b8; font-size: 0.9rem; font-style: italic; }
+  .lx-fq__hint:empty { display: none; }
+  .lx-fq__options { display: grid; gap: 10px; }
+  .lx-fq__options button {
+    appearance: none;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    text-align: left;
+    padding: 14px;
+    border-radius: 14px;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+    color: #fff;
+    border: 1px solid transparent;
+  }
+  .lx-fq__options button span:first-child {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 900;
+    background: rgba(0,0,0,0.28);
+  }
+  .lx-fq__opt-0 { background: linear-gradient(135deg, #be123c, #e11d48); }
+  .lx-fq__opt-1 { background: linear-gradient(135deg, #c2410c, #ea580c); }
+  .lx-fq__opt-2 { background: linear-gradient(135deg, #15803d, #16a34a); }
+  .lx-fq__opt-3 { background: linear-gradient(135deg, #1d4ed8, #2563eb); }
+  .lx-fq__back {
+    margin-top: 14px;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #cbd5e1;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+  }
+  .lx-fq__result {
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    background: radial-gradient(ellipse 70% 60% at 100% 0%, rgba(34, 197, 94, 0.28), transparent 55%), #1c1917;
+    border-radius: 22px;
+    padding: 26px 18px;
+  }
+  .lx-fq__score {
+    margin: 0 0 8px;
+    color: #4ade80;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .lx-fq__result h3 { margin: 0; font-size: 1.45rem; font-weight: 800; }
+  .lx-fq__result p { margin: 12px 0 16px; color: #e2e8f0; line-height: 1.55; }
+  .lx-fq__result ul {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .lx-fq__result li {
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.22);
+    font-weight: 600;
+  }
+  .lx-fq__cta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 48px;
+    border-radius: 14px;
+    background: #16a34a;
+    color: #052e16 !important;
+    font-weight: 800;
+    text-decoration: none !important;
+  }
+  .lx-fq__restart {
+    display: block;
+    margin: 12px auto 0;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+</style>
+<script>
+(function () {
+  var root = document.getElementById('lx-fitness-quiz');
+  if (!root || root.getAttribute('data-bound') === '1') return;
+  root.setAttribute('data-bound', '1');
+  var QUESTIONS = [
+    { prompt: 'What actually drives fat loss over weeks?', hint: 'Think physics, not trends.', options: [
+      { id: 'sweat', label: 'Sweating more in the gym' },
+      { id: 'deficit', label: 'Eating fewer calories than you burn', ok: 1 },
+      { id: 'detox', label: 'Detox teas and cutting carbs only at night' },
+      { id: 'spot', label: 'Only doing ab exercises' }
+    ]},
+    { prompt: 'Roughly how much protein do most active adults need daily?', hint: 'Per kg of body weight.', options: [
+      { id: 'low', label: '0.3–0.5 g per kg' },
+      { id: 'mid', label: '1.6–2.2 g per kg when training', ok: 1 },
+      { id: 'huge', label: '5 g per kg no matter what' },
+      { id: 'zero', label: 'Protein only matters for bodybuilders' }
+    ]},
+    { prompt: 'For building muscle, what matters most?', options: [
+      { id: 'light', label: 'Only light weights and endless reps' },
+      { id: 'progressive', label: 'Progressive overload with enough protein and recovery', ok: 1 },
+      { id: 'daily', label: 'Training the same muscle hard every single day' },
+      { id: 'cardio', label: 'Cardio alone is enough for muscle' }
+    ]},
+    { prompt: 'Between hard sets for muscle growth, rest is usually…', options: [
+      { id: 'none', label: 'No rest — keep the heart rate maxed' },
+      { id: 'short', label: 'About 1.5–3 minutes for most compound lifts', ok: 1 },
+      { id: 'hour', label: 'At least 15 minutes every set' },
+      { id: 'walk', label: 'Only walking between sets works' }
+    ]},
+    { prompt: 'Does cardio “kill gains”?', options: [
+      { id: 'always', label: 'Yes — never do cardio if you lift' },
+      { id: 'myth', label: 'No — smart cardio supports fat loss and heart health', ok: 1 },
+      { id: 'onlyfasted', label: 'Only fasted cardio burns fat' },
+      { id: 'hour', label: 'You need 2 hours of cardio daily' }
+    ]},
+    { prompt: 'How does sleep affect fat loss and muscle?', options: [
+      { id: 'none', label: 'Sleep does not matter if diet is perfect' },
+      { id: 'huge', label: 'Poor sleep raises hunger hormones and slows recovery', ok: 1 },
+      { id: 'nap', label: 'Only naps matter, night sleep is optional' },
+      { id: 'four', label: '4 hours is the optimal fat-loss sleep' }
+    ]},
+    { prompt: 'The scale went up after a salty restaurant meal. What is most likely?', options: [
+      { id: 'fat', label: 'You gained 1–2 kg of pure fat overnight' },
+      { id: 'water', label: 'Water retention and food weight — not overnight fat', ok: 1 },
+      { id: 'muscle', label: 'You built muscle in one dinner' },
+      { id: 'fail', label: 'The whole plan failed permanently' }
+    ]},
+    { prompt: 'Daily steps / NEAT mainly helps because…', options: [
+      { id: 'magic', label: 'Steps burn “special” fat only from the belly' },
+      { id: 'burn', label: 'They raise total daily calorie burn without crushing recovery', ok: 1 },
+      { id: 'useless', label: 'Steps do nothing if you lift weights' },
+      { id: 'replace', label: '10k steps replace the need for strength training' }
+    ]},
+    { prompt: 'Is meal timing more important than total calories and protein?', options: [
+      { id: 'timing', label: 'Yes — you must eat every 2 hours or fat loss stops' },
+      { id: 'totals', label: 'No — daily totals matter far more than perfect timing', ok: 1 },
+      { id: 'night', label: 'Never eat after 7 pm or you store fat' },
+      { id: 'fast', label: 'Intermittent fasting is the only way that works' }
+    ]},
+    { prompt: 'Progress stalls for 3 weeks. Best first move?', options: [
+      { id: 'crash', label: 'Cut calories in half overnight' },
+      { id: 'check', label: 'Check adherence, steps, sleep, then adjust calories or training', ok: 1 },
+      { id: 'quit', label: 'Quit and start a random new program tomorrow' },
+      { id: 'supps', label: 'Buy more fat burners first' }
+    ]}
+  ];
+  var step = 0;
+  var answers = {};
+  var lock = false;
+  var card = root.querySelector('[data-lx-fq-card]');
+  var result = root.querySelector('[data-lx-fq-result]');
+  var optionsEl = root.querySelector('[data-lx-fq-options]');
+  var fill = root.querySelector('[data-lx-fq-fill]');
+  var label = root.querySelector('[data-lx-fq-label]');
+  var back = root.querySelector('[data-lx-fq-back]');
+
+  function score() {
+    var n = 0;
+    QUESTIONS.forEach(function (q) {
+      var picked = answers[q.prompt];
+      var opt = q.options.filter(function (o) { return o.id === picked; })[0];
+      if (opt && opt.ok) n += 1;
+    });
+    return n;
+  }
+
+  function render() {
+    var q = QUESTIONS[step];
+    fill.style.width = Math.round(((step) / QUESTIONS.length) * 100) + '%';
+    label.textContent = 'Question ' + (step + 1) + ' of ' + QUESTIONS.length;
+    root.querySelector('[data-lx-fq-badge]').textContent = 'Q' + (step + 1);
+    root.querySelector('[data-lx-fq-prompt]').textContent = q.prompt;
+    var hint = root.querySelector('[data-lx-fq-hint]');
+    hint.textContent = q.hint || '';
+    optionsEl.innerHTML = '';
+    q.options.forEach(function (opt, i) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'lx-fq__opt-' + (i % 4);
+      btn.innerHTML = '<span>' + String.fromCharCode(65 + i) + '</span><span>' + opt.label + '</span>';
+      btn.addEventListener('click', function () { pick(opt); });
+      optionsEl.appendChild(btn);
+    });
+    back.hidden = step === 0;
+    card.hidden = false;
+    result.hidden = true;
+    card.classList.remove('is-correct', 'is-wrong');
+  }
+
+  function pick(opt) {
+    if (lock) return;
+    lock = true;
+    answers[QUESTIONS[step].prompt] = opt.id;
+    card.classList.add(opt.ok ? 'is-correct' : 'is-wrong');
+    window.setTimeout(function () {
+      lock = false;
+      if (step >= QUESTIONS.length - 1) {
+        showResult();
+        return;
+      }
+      step += 1;
+      render();
+    }, 420);
+  }
+
+  function showResult() {
+    var s = score();
+    fill.style.width = '100%';
+    label.textContent = 'Score ' + s + ' / ' + QUESTIONS.length;
+    card.hidden = true;
+    result.hidden = false;
+    root.querySelector('[data-lx-fq-score]').textContent = 'Your score · ' + s + '/' + QUESTIONS.length;
+    var title = s >= 7
+      ? 'Strong knowledge. Still skip the guesswork.'
+      : s >= 4
+        ? 'Decent base. A written plan beats random tips.'
+        : 'You do not need to learn all this alone.';
+    var blurb = s >= 7
+      ? 'You already know a lot. We still build workout + diet around your body, schedule, and food — so you execute instead of researching.'
+      : 'Most people fail on generic tips and gym myths. We take care of the science with a personal plan and weekly coaching.';
+    root.querySelector('[data-lx-fq-result-title]').textContent = title;
+    root.querySelector('[data-lx-fq-result-blurb]').textContent = blurb;
+  }
+
+  back.addEventListener('click', function () {
+    if (lock || step === 0) return;
+    step -= 1;
+    render();
+  });
+  root.querySelector('[data-lx-fq-restart]').addEventListener('click', function () {
+    step = 0;
+    answers = {};
+    render();
+  });
+  render();
+})();
+</script>

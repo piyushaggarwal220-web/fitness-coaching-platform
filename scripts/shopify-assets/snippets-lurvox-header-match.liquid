@@ -240,15 +240,13 @@
     display: none !important;
   }
 
-  /* Talk / phone action — orange accent */
-  .header a[aria-label*="Talk" i],
-  .header a[href*="book-a-free-call"],
+  /* Hide coach-call / talk CTAs in the header */
+  .lx-hdr__talk,
   .header a[href*="talk-to-a-coach"],
-  .header a[href*="wa.me"],
-  .header a[href*="tel:"],
-  header-component a[aria-label*="Talk" i],
+  .header a[href*="book-a-free-call"],
+  header-component a[href*="talk-to-a-coach"],
   header-component a[href*="book-a-free-call"] {
-    color: var(--lx-nav-orange) !important;
+    display: none !important;
   }
 
   .header a[aria-label*="Talk" i] svg,

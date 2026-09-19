@@ -1,0 +1,198 @@
+{% comment %}
+  Instant-style coaching plan cards. What you get lives on each card.
+{% endcomment %}
+<section class="lx-plans" id="plans" aria-labelledby="lx-plans-title">
+  <div class="lx-plans__inner">
+    <p class="lx-plans__eyebrow">Choose your plan</p>
+    <h2 class="lx-plans__title" id="lx-plans-title">Simple plans. Real coaching.</h2>
+    <p class="lx-plans__lede">One price. Personal workout + diet, check-ins, trackers, and coach chat included.</p>
+    <div class="lx-plans__stack">
+      <article class="lx-plans__card">
+        <h3>Fat loss</h3>
+        <p class="lx-plans__price">₹599</p>
+        <p class="lx-plans__meta">3 months · ≈ ₹200/mo</p>
+        <ul class="lx-plans__bullets">
+          <li>Personal workout + diet</li>
+          <li>1-to-1 coach chat</li>
+          <li>Weekly check-ins</li>
+          <li>Daily trackers</li>
+          <li>Progress photos</li>
+          <li>Plan tweaks when you stall</li>
+        </ul>
+        <a class="lx-plans__cta" href="https://app.lurvox.in/checkout?plan=3_months">Get Fat loss</a>
+      </article>
+
+      <article class="lx-plans__card lx-plans__card--popular">
+        <p class="lx-plans__tag">Most popular</p>
+        <h3>Fat loss + muscle</h3>
+        <p class="lx-plans__price">₹999</p>
+        <p class="lx-plans__meta">6 months · ≈ ₹167/mo</p>
+        <p class="lx-plans__note">Everything in Fat loss, plus muscle programmed in for 6 months.</p>
+        <ul class="lx-plans__bullets">
+          <li>Personal workout + diet</li>
+          <li>1-to-1 coach chat</li>
+          <li>Weekly check-ins</li>
+          <li>Daily trackers + progress photos</li>
+          <li>Weekly plan updates</li>
+          <li>Fat loss and muscle in one plan</li>
+        </ul>
+        <a class="lx-plans__cta" href="https://app.lurvox.in/checkout?plan=6_months">Get this plan</a>
+      </article>
+
+      <article class="lx-plans__card">
+        <h3>Athletic body</h3>
+        <p class="lx-plans__price">₹1,699</p>
+        <p class="lx-plans__meta">12 months · ≈ ₹142/mo</p>
+        <ul class="lx-plans__bullets">
+          <li>Personal workout + diet</li>
+          <li>1-to-1 coach chat</li>
+          <li>Weekly check-ins + trackers</li>
+          <li>Progress photos + plan tweaks</li>
+          <li>Fat loss, muscle, and stamina</li>
+          <li>Weekly coach phone call</li>
+        </ul>
+        <a class="lx-plans__cta" href="https://app.lurvox.in/checkout?plan=12_months">Get Athletic body</a>
+      </article>
+    </div>
+  </div>
+</section>
+<style>
+  .lx-plans {
+    background: #070707;
+    color: #fff;
+    padding: 36px 16px 28px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  .lx-plans__inner { max-width: 1080px; margin: 0 auto; }
+  .lx-plans__eyebrow {
+    margin: 0;
+    color: #ff6200;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .lx-plans__title {
+    margin: 8px 0 0;
+    text-align: center;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+  .lx-plans__lede {
+    margin: 10px auto 0;
+    max-width: 36rem;
+    text-align: center;
+    color: rgba(255,255,255,0.68);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .lx-plans__stack {
+    margin-top: 26px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    align-items: stretch;
+  }
+  .lx-plans__card {
+    display: flex;
+    flex-direction: column;
+    background: #141414;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 22px 20px;
+  }
+  .lx-plans__card--popular {
+    border: 2px solid #ff6200;
+    box-shadow: 0 16px 40px rgba(255, 98, 0, 0.16);
+    background: #18110c;
+  }
+  .lx-plans__tag {
+    margin: 0 0 8px;
+    color: #ff6200;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .lx-plans__card h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .lx-plans__price {
+    margin: 12px 0 0;
+    color: #ff6200;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+  .lx-plans__meta {
+    margin: 4px 0 0;
+    color: rgba(255,255,255,0.62);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .lx-plans__note {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(34, 197, 94, 0.12);
+    color: #bbf7d0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+  .lx-plans__bullets {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+    flex: 1;
+  }
+  .lx-plans__bullets li {
+    position: relative;
+    padding-left: 18px;
+    color: rgba(255,255,255,0.78);
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  .lx-plans__bullets li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.45em;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16a34a;
+  }
+  .lx-plans__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 18px;
+    min-height: 48px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: #15803d;
+    color: #fff !important;
+    font-weight: 800;
+    text-decoration: none !important;
+    border: 1px solid rgba(255, 98, 0, 0.35);
+    box-sizing: border-box;
+  }
+  @media screen and (min-width: 860px) {
+    .lx-plans__stack {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: stretch;
+    }
+    .lx-plans__card--popular { transform: translateY(-6px); }
+  }
+</style>

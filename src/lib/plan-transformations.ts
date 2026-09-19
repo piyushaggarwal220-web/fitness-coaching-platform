@@ -29,12 +29,12 @@ export const PLAN_TRANSFORMATIONS: PlanTransformation[] = [
     afterAlt: 'After: shredded lean physique',
   },
   {
-    id: 'weak-strong',
-    title: 'Weak → Strong',
+    id: 'average-strong',
+    title: 'Soft → Strong',
     subtitle: 'Expected change within 30 days',
-    beforeSrc: '/landing/transformations/tf-man-weak-before.png',
-    afterSrc: '/landing/transformations/tf-man-strong-after.png',
-    beforeAlt: 'Before: undertrained build',
+    beforeSrc: '/landing/transformations/tf-man-average-before.png',
+    afterSrc: '/landing/transformations/tf-man-average-after.png',
+    beforeAlt: 'Before: untrained average build',
     afterAlt: 'After: strong athletic build',
   },
   {

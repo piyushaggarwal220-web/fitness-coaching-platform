@@ -11,30 +11,10 @@
 -%}
 
 {%- if mode == 'find' -%}
-  <section class="lx-flow" aria-label="Find your plan">
-    <div class="lx-flow__inner lx-flow__inner--stamp">
-      {% render 'lurvox-coaches' %}
-      {% render 'lurvox-guarantee-stamp' %}
-      <a class="lx-flow__btn lx-flow__btn--primary" href="{{ find_url }}">
-        <span class="lx-flow__main">Find your plan quiz <em>(free)</em></span>
-        <span class="lx-flow__sub">No cost · No commitment · Guaranteed results</span>
-      </a>
-    </div>
-  </section>
+  {% comment %} Find-your-plan quiz removed — Instant-style fitness quiz lives after transformations. {% endcomment %}
 {%- else -%}
   {% render 'lurvox-animated-transforms' %}
-  <section class="lx-flow lx-flow--after" aria-label="Next steps">
-    <div class="lx-flow__inner lx-flow__inner--links">
-      <p class="lx-flow__hint">Fat loss ₹599 · Fat loss + muscle ₹999 · Athletic body ₹1,699</p>
-      <div class="lx-flow__links">
-        <a class="lx-flow__link" href="{{ find_url }}">Find your plan</a>
-        <span class="lx-flow__sep" aria-hidden="true">·</span>
-        <a class="lx-flow__link" href="{{ compare_url }}">Compare plans</a>
-        <span class="lx-flow__sep" aria-hidden="true">·</span>
-        <a class="lx-flow__link" href="{{ how_url }}">How it works</a>
-      </div>
-    </div>
-  </section>
+  {% render 'lurvox-fitness-quiz' %}
 {%- endif -%}
 
 <style>

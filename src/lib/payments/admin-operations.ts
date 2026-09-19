@@ -323,6 +323,8 @@ export async function resendPurchaseSetup(input: {
       phone: purchase.customer_phone,
       name: purchase.customer_name,
       stage: `manual_${operation.id}`,
+      planSlug: purchase.plan_slug,
+      planName: purchase.plan_name,
     })
     if (result.failed > 0 && result.sent === 0) throw new Error('All configured delivery channels failed')
     await completeOperation(operation.id, 'succeeded', { metadata: result })

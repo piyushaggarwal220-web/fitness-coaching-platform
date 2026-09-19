@@ -257,8 +257,18 @@ export async function POST(request: Request) {
             phone: trustedPhone,
             name: result.customerName,
             stage: 'confirmed',
+            planSlug: plan.slug,
+            planName: plan.name,
           })
-        : Promise.resolve({ sent: 0, skipped: 1, failed: 0 }),
+        : sendAccountSetupRecovery({
+            purchaseId: result.purchaseId,
+            email: result.customerEmail,
+            phone: trustedPhone,
+            name: result.customerName,
+            stage: 'confirmed',
+            planSlug: plan.slug,
+            planName: plan.name,
+          }),
     ])
 
     if (result.alreadyClaimed) {

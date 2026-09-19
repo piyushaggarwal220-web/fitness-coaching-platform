@@ -44,6 +44,42 @@
         <h3>Soft → Hourglass</h3>
         <p>Expected change within 30 days</p>
       </article>
+      <article class="lx-anim-tf__card" data-delay="270">
+        <div class="lx-anim-tf__frame">
+          <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-man-average-before.png" alt="Before: untrained average build" loading="lazy" decoding="async" width="480" height="600">
+          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-man-average-after.png" alt="After: strong athletic build" loading="lazy" decoding="async" width="480" height="600">
+          <div class="lx-anim-tf__badges" aria-hidden="true">
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--before">Before</span>
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--after">After</span>
+          </div>
+        </div>
+        <h3>Soft → Strong</h3>
+        <p>Expected change within 30 days</p>
+      </article>
+      <article class="lx-anim-tf__card" data-delay="360">
+        <div class="lx-anim-tf__frame">
+          <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-woman-skinny-before.png" alt="Before: slim frame" loading="lazy" decoding="async" width="480" height="600">
+          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-woman-athletic-after.png" alt="After: toned hourglass physique" loading="lazy" decoding="async" width="480" height="600">
+          <div class="lx-anim-tf__badges" aria-hidden="true">
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--before">Before</span>
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--after">After</span>
+          </div>
+        </div>
+        <h3>Slim → Toned</h3>
+        <p>Expected change within 30 days</p>
+      </article>
+      <article class="lx-anim-tf__card" data-delay="450">
+        <div class="lx-anim-tf__frame">
+          <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-woman-weak-before.png" alt="Before: low muscle tone" loading="lazy" decoding="async" width="480" height="600">
+          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-woman-strong-after.png" alt="After: sculpted toned physique" loading="lazy" decoding="async" width="480" height="600">
+          <div class="lx-anim-tf__badges" aria-hidden="true">
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--before">Before</span>
+            <span class="lx-anim-tf__badge lx-anim-tf__badge--after">After</span>
+          </div>
+        </div>
+        <h3>Soft → Sculpted</h3>
+        <p>Expected change within 30 days</p>
+      </article>
     </div>
   </div>
 </section>
@@ -89,6 +125,12 @@
   }
   @media (min-width: 720px) {
     .lx-anim-tf__grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  }
+  @media (max-width: 719px) {
+    .lx-anim-tf__grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 420px) {
+    .lx-anim-tf__grid { grid-template-columns: 1fr; }
   }
   .lx-anim-tf__card {
     margin: 0;

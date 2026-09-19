@@ -389,14 +389,6 @@ export default function CustomisedPlanLandingPage() {
         </div>
       </section>
 
-      <section className={styles.sectionAlt}>
-        <AnimatedTransformations variant="instant" />
-      </section>
-
-      <section className={styles.section} id="find-plan">
-        <InstantFitnessQuiz />
-      </section>
-
       <section className={styles.section}>
         <p className={styles.sectionEyebrow}>How it works</p>
         <h2 className={styles.sectionTitle}>Your plan in 3 steps</h2>
@@ -423,6 +415,14 @@ export default function CustomisedPlanLandingPage() {
             </div>
           </li>
         </ol>
+      </section>
+
+      <section className={styles.sectionAlt}>
+        <AnimatedTransformations variant="instant" />
+      </section>
+
+      <section className={styles.section} id="find-plan">
+        <InstantFitnessQuiz />
       </section>
 
       <section className={styles.section}>
