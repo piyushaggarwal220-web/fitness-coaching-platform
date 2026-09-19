@@ -70,8 +70,8 @@
       </article>
       <article class="lx-anim-tf__card" data-delay="450">
         <div class="lx-anim-tf__frame">
-          <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-woman-weak-before.png" alt="Before: low muscle tone" loading="lazy" decoding="async" width="480" height="600">
-          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-woman-strong-after.png" alt="After: sculpted toned physique" loading="lazy" decoding="async" width="480" height="600">
+          <img class="lx-anim-tf__img lx-anim-tf__img--before is-visible" src="https://app.lurvox.in/landing/transformations/tf-woman-weak-before.png?v=sculpted2" alt="Before: soft untrained physique" loading="lazy" decoding="async" width="480" height="600">
+          <img class="lx-anim-tf__img lx-anim-tf__img--after" src="https://app.lurvox.in/landing/transformations/tf-woman-strong-after.png?v=sculpted2" alt="After: sculpted athletic physique" loading="lazy" decoding="async" width="480" height="600">
           <div class="lx-anim-tf__badges" aria-hidden="true">
             <span class="lx-anim-tf__badge lx-anim-tf__badge--before">Before</span>
             <span class="lx-anim-tf__badge lx-anim-tf__badge--after">After</span>
@@ -187,12 +187,19 @@
     color: rgba(255,255,255,0.45);
     border: 1px solid rgba(255,255,255,0.12);
   }
-  .lx-anim-tf__card.is-after .lx-anim-tf__badge--after,
   .lx-anim-tf__card:not(.is-after) .lx-anim-tf__badge--before {
     color: #fff;
-    border-color: rgba(255, 98, 0, 0.55);
-    background: rgba(255, 98, 0, 0.28);
+    border-color: rgba(225, 29, 72, 0.7);
+    background: rgba(225, 29, 72, 0.42);
   }
+  .lx-anim-tf__card.is-after .lx-anim-tf__badge--after {
+    color: #052e16;
+    border-color: rgba(74, 222, 128, 0.85);
+    background: #4ade80;
+  }
+  .lx-anim-tf__card:nth-child(3n+1) h3 { color: #ff8a3d; }
+  .lx-anim-tf__card:nth-child(3n+2) h3 { color: #4ade80; }
+  .lx-anim-tf__card:nth-child(3n) h3 { color: #60a5fa; }
   @media (prefers-reduced-motion: reduce) {
     .lx-anim-tf__img { transition: none; }
   }
