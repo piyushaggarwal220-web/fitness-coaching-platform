@@ -8,7 +8,7 @@
         <span>01</span>
         <div>
           <strong>Pay once</strong>
-          <p>Checkout with Razorpay. UPI, cards, or netbanking.</p>
+          <p>Checkout with Razorpay. UPI, cards, or netbanking. You get an email with every next step.</p>
         </div>
       </li>
       <li>
@@ -22,7 +22,7 @@
         <span>03</span>
         <div>
           <strong>Receive your plan</strong>
-          <p>Personal workout + diet in 24–48 hours, then weekly coaching from real check-ins.</p>
+          <p>Personal workout + diet in 24–48 hours. If it does not arrive, you get a refund. Issues after that go through Coach chat, weekly check-ins, or reply to the email.</p>
         </div>
       </li>
     </ol>
@@ -30,7 +30,10 @@
 </section>
 <style>
   .lx-steps {
-    background: #070707;
+    background:
+      radial-gradient(ellipse 50% 40% at 0% 0%, rgba(37, 99, 235, 0.16), transparent 55%),
+      radial-gradient(ellipse 45% 40% at 100% 100%, rgba(34, 197, 94, 0.12), transparent 50%),
+      #070707;
     color: #fff;
     padding: 12px 16px 40px;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -70,11 +73,25 @@
     border-radius: 16px;
     padding: 16px 18px;
   }
+  .lx-steps__list li:nth-child(1) {
+    border-color: rgba(255, 98, 0, 0.45);
+    background: radial-gradient(circle at 0% 0%, rgba(255, 98, 0, 0.16), #141414 55%);
+  }
+  .lx-steps__list li:nth-child(2) {
+    border-color: rgba(37, 99, 235, 0.45);
+    background: radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.16), #141414 55%);
+  }
+  .lx-steps__list li:nth-child(3) {
+    border-color: rgba(22, 163, 74, 0.45);
+    background: radial-gradient(circle at 0% 0%, rgba(22, 163, 74, 0.16), #141414 55%);
+  }
   .lx-steps__list span {
-    color: #ff6200;
     font-weight: 800;
     font-size: 18px;
   }
+  .lx-steps__list li:nth-child(1) span { color: #ff6200; }
+  .lx-steps__list li:nth-child(2) span { color: #60a5fa; }
+  .lx-steps__list li:nth-child(3) span { color: #4ade80; }
   .lx-steps__list strong {
     display: block;
     font-size: 16px;

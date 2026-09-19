@@ -2,17 +2,15 @@
 
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Check, Dumbbell, MessageCircle, Send, Smartphone, UserRound, X } from 'lucide-react'
 import { BRAND_NAME } from '@/lib/brand'
 import { coaches } from '@/lib/content'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
 import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
+import { CheckoutFunnelLink } from '@/components/analytics/CheckoutFunnelLink'
 import { InstantFitnessQuiz } from '@/components/landing/InstantFitnessQuiz'
 import styles from './customised-plan.module.css'
-
-const COMPLETE_HREF = '/checkout?plan=digital_complete'
 
 const PLAN_BULLETS: Record<string, string[]> = {
   digital_workout: [
@@ -205,9 +203,9 @@ export default function CustomisedPlanLandingPage() {
 
       <header className={styles.topBar}>
         <p className={styles.wordmark}>{BRAND_NAME}</p>
-        <Link href={COMPLETE_HREF} className={styles.topCta}>
+        <CheckoutFunnelLink plan="digital_complete" planName="Complete" value={99} className={styles.topCta}>
           Get Complete · ₹99
-        </Link>
+        </CheckoutFunnelLink>
       </header>
 
       <section className={styles.hero}>
@@ -258,16 +256,24 @@ export default function CustomisedPlanLandingPage() {
           <div className={styles.heroPortraits}>
             {coaches.map((coach) => (
               <figure key={coach.instagramHandle} className={styles.heroPortrait}>
-                <div className={styles.heroPhotoFrame}>
-                  <Image
-                    src={coach.photo}
-                    alt={`${coach.name}, Lurvox coach`}
-                    fill
-                    priority
-                    sizes="(max-width: 900px) 48vw, 360px"
-                    className={styles.heroImage}
-                  />
-                </div>
+                <a
+                  href={coach.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.heroPhotoLink}
+                  aria-label={`${coach.firstName} on Instagram ${coach.instagramHandle}`}
+                >
+                  <div className={styles.heroPhotoFrame}>
+                    <Image
+                      src={coach.photo}
+                      alt={`${coach.name}, Lurvox coach`}
+                      fill
+                      priority
+                      sizes="(max-width: 900px) 48vw, 360px"
+                      className={styles.heroImage}
+                    />
+                  </div>
+                </a>
                 <figcaption className={styles.heroCaption}>
                   <span className={styles.heroName}>{coach.firstName}</span>
                   <a
@@ -283,7 +289,7 @@ export default function CustomisedPlanLandingPage() {
               </figure>
             ))}
           </div>
-          <p className={styles.instaHint}>Tap a handle to open Instagram</p>
+          <p className={styles.instaHint}>Tap a photo to open Instagram</p>
           <div className={styles.photoHeadline}>
             <p className={styles.photoHeadlineMain}>Transformed over 7000 people</p>
             <p className={styles.photoHeadlineSub}>Guaranteed results · moneyback if none</p>
@@ -381,9 +387,14 @@ export default function CustomisedPlanLandingPage() {
                   </ul>
                 </div>
               ) : null}
-              <Link href={`/checkout?plan=${plan.slug}`} className={styles.planCta}>
+              <CheckoutFunnelLink
+                plan={plan.slug}
+                planName={plan.name}
+                value={Number(plan.displayPrice.replace(/[^\d]/g, '')) || undefined}
+                className={styles.planCta}
+              >
                 {plan.slug === 'digital_complete' ? 'Get Complete Plan' : 'Get plan'}
-              </Link>
+              </CheckoutFunnelLink>
             </motion.article>
           ))}
         </div>
@@ -466,10 +477,15 @@ export default function CustomisedPlanLandingPage() {
             <strong>Complete Plan</strong>
             <span className={styles.stickyMeta}>₹99 · 4 free extras · moneyback</span>
           </div>
-          <Link href={COMPLETE_HREF} className={styles.stickyCta}>
+          <CheckoutFunnelLink
+            plan="digital_complete"
+            planName="Complete"
+            value={99}
+            className={styles.stickyCta}
+          >
             <span className={styles.ctaFull}>Get Complete Plan · ₹99</span>
             <span className={styles.ctaShort}>Get Complete · ₹99</span>
-          </Link>
+          </CheckoutFunnelLink>
         </div>
       </div>
 

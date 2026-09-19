@@ -16,7 +16,7 @@ import {
   type PlatformUnlockSku,
 } from '@/lib/payments/platform-unlock-catalog'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
-import { metaAttributionFromRequest } from '@/lib/analytics/meta-attribution'
+import { metaAttributionFromRequest, razorpayMetaNotes } from '@/lib/analytics/meta-attribution'
 import {
   createRazorpayOrder,
   fetchRazorpayOrder,
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
 
-  let body: { sku?: string } = {}
+  let body: { sku?: string; meta_fbp?: string; meta_fbc?: string } = {}
   try {
     body = await request.json()
   } catch {
@@ -134,6 +134,7 @@ export async function POST(request: Request) {
         customer_name: name,
         customer_phone: phone ?? '',
         amount_paise: String(meta.amountPaise),
+        ...razorpayMetaNotes(body),
       },
     })
     return NextResponse.json({
@@ -162,6 +163,8 @@ export async function PUT(request: Request) {
     razorpay_payment_id?: string
     razorpay_signature?: string
     sku?: string
+    meta_fbp?: string
+    meta_fbc?: string
   }
   try {
     body = await request.json()
@@ -250,7 +253,7 @@ export async function PUT(request: Request) {
     amountPaise: payment.amount,
     currency: payment.currency || 'INR',
     planSlug: sku,
-    ...metaAttributionFromRequest(request),
+    ...metaAttributionFromRequest(request, body, notes),
   }).catch(() => undefined)
   return NextResponse.json({ success: true, entitled: true, purchaseId: result.purchaseId })
 }

@@ -18,7 +18,7 @@ import {
 } from '@/lib/payments/razorpay'
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
-import { metaAttributionFromRequest } from '@/lib/analytics/meta-attribution'
+import { metaIdsFromOrderNotes } from '@/lib/analytics/meta-attribution'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   fulfillExerciseLibraryAddon,
@@ -271,7 +271,7 @@ export async function POST(request: Request) {
         amountPaise: payment.amount,
         currency: payment.currency || 'INR',
         planSlug: sku,
-        ...metaAttributionFromRequest(request),
+        ...metaIdsFromOrderNotes(notes),
       })
       return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: sku })
     }
@@ -303,7 +303,7 @@ export async function POST(request: Request) {
         amountPaise: payment.amount,
         currency: payment.currency || 'INR',
         planSlug: 'exercise_library',
-        ...metaAttributionFromRequest(request),
+        ...metaIdsFromOrderNotes(notes),
       })
       return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: 'exercise_library' })
     }
@@ -395,7 +395,7 @@ export async function POST(request: Request) {
       amountPaise: payment.amount,
       currency: payment.currency || 'INR',
       planSlug: plan.slug,
-      ...metaAttributionFromRequest(request),
+      ...metaIdsFromOrderNotes(notes),
     })
 
     await Promise.allSettled([

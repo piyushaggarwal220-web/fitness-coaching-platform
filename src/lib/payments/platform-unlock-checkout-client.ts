@@ -1,3 +1,5 @@
+import { metaBrowserIdsForRequest } from '@/lib/analytics/meta-attribution'
+import { queueMetaPurchase } from '@/lib/analytics/meta-pixel'
 import {
   PLATFORM_UNLOCK_META,
   type PlatformUnlockSku,
@@ -45,7 +47,7 @@ async function verifyPayment(
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, sku }),
+    body: JSON.stringify({ ...payload, sku, ...metaBrowserIdsForRequest() }),
   })
   const verifyData = (await verifyRes.json().catch(() => null)) as { error?: string } | null
   if (!verifyRes.ok) {
@@ -61,7 +63,7 @@ export async function startPlatformUnlockCheckout(
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sku }),
+    body: JSON.stringify({ sku, ...metaBrowserIdsForRequest() }),
   })
   const orderData = (await orderRes.json().catch(() => null)) as OrderResponse | null
 
@@ -74,6 +76,15 @@ export async function startPlatformUnlockCheckout(
 
   const finish = async (payload: RazorpayHandlerResponse) => {
     await verifyPayment(sku, payload)
+    if (payload.razorpay_payment_id.startsWith('test_')) return
+    queueMetaPurchase({
+      eventID: `razorpay_${payload.razorpay_payment_id}`,
+      value: PLATFORM_UNLOCK_META[sku].amountPaise / 100,
+      currency: 'INR',
+      content_name: PLATFORM_UNLOCK_META[sku].label,
+      content_ids: [sku],
+      content_type: 'product',
+    })
   }
 
   if (orderData.testMode) {

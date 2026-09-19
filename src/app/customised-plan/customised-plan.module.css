@@ -285,6 +285,12 @@
   background: #2a221c;
 }
 
+.heroPhotoLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
 .heroImage {
   object-fit: cover;
   object-position: center 12%;

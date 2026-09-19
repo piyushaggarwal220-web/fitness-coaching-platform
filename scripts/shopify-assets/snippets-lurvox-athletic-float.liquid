@@ -1,0 +1,95 @@
+{% comment %}
+  Homepage floating CTA for Athletic body (12 months · ₹1,699).
+{% endcomment %}
+<div class="lx-ath-float" data-lx-ath-float hidden>
+  <div class="lx-ath-float__inner">
+    <div class="lx-ath-float__copy">
+      <strong>Athletic body</strong>
+      <span>12 months · ₹1,699 · lowest monthly cost</span>
+    </div>
+    <a class="lx-ath-float__cta" href="https://app.lurvox.in/checkout?plan=12_months">Get Athletic body</a>
+  </div>
+</div>
+<style>
+  .lx-ath-float {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    transform: translateY(110%);
+    transition: transform 0.28s ease;
+    background: rgba(18, 16, 15, 0.94);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(251, 191, 36, 0.25);
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  .lx-ath-float.is-on {
+    transform: translateY(0);
+  }
+  .lx-ath-float__inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .lx-ath-float__copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .lx-ath-float__copy strong {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  }
+  .lx-ath-float__copy span {
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .lx-ath-float__cta {
+    white-space: nowrap;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1c1400 !important;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none !important;
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.35);
+  }
+  @media screen and (max-width: 480px) {
+    .lx-ath-float__copy span { display: none; }
+    .lx-ath-float__cta { padding: 11px 12px; font-size: 12.5px; }
+  }
+</style>
+<script>
+  (function () {
+    var bar = document.querySelector('[data-lx-ath-float]');
+    if (!bar) return;
+    bar.removeAttribute('hidden');
+    function on() {
+      var y = window.scrollY || 0;
+      var plans = document.getElementById('plans');
+      var footer = document.querySelector('footer, .lx-close');
+      var show = y > 420;
+      if (plans) {
+        var r = plans.getBoundingClientRect();
+        if (r.top < window.innerHeight * 0.2 && r.bottom > 80) show = true;
+      }
+      if (footer) {
+        var f = footer.getBoundingClientRect();
+        if (f.top < window.innerHeight - 40) show = false;
+      }
+      bar.classList.toggle('is-on', show);
+    }
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    window.addEventListener('resize', on);
+  })();
+</script>

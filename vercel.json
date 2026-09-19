@@ -22,7 +22,11 @@
     },
     {
       "path": "/api/cron/piyush-initial-plans",
-      "schedule": "0 */2 * * *"
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/meta-purchase-backfill",
+      "schedule": "10 * * * *"
     }
   ]
 }

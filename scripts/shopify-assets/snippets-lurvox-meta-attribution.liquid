@@ -1,0 +1,90 @@
+{% comment %}
+  Pass Meta click ids (fbclid / _fbp / _fbc) onto app.lurvox.in checkout links.
+  Without this, Purchase CAPI on the app host has no click id and ads miss sales.
+{% endcomment %}
+<script>
+  (function () {
+    if (window.__lxMetaAttr) return;
+    window.__lxMetaAttr = 1;
+
+    function readCookie(name) {
+      var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+      return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function writeCookie(name, value) {
+      if (!value) return;
+      var expires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toUTCString();
+      var encoded = encodeURIComponent(value);
+      document.cookie = name + '=' + encoded + '; expires=' + expires + '; path=/; SameSite=Lax';
+      document.cookie = name + '=' + encoded + '; expires=' + expires + '; path=/; domain=.lurvox.in; SameSite=Lax';
+    }
+
+    function persistFromLocation() {
+      var u = new URL(window.location.href);
+      var fbclid = (u.searchParams.get('fbclid') || '').trim();
+      var fbp = (u.searchParams.get('fbp') || '').trim();
+      var fbc = (u.searchParams.get('fbc') || '').trim();
+      if (fbp.indexOf('fb.') === 0) writeCookie('_fbp', fbp);
+      if (fbc.indexOf('fb.') === 0) writeCookie('_fbc', fbc);
+      else if (fbclid && !readCookie('_fbc')) {
+        writeCookie('_fbc', 'fb.1.' + Math.floor(Date.now() / 1000) + '.' + fbclid);
+      }
+    }
+
+    function extraParams() {
+      persistFromLocation();
+      var u = new URL(window.location.href);
+      var out = {};
+      ['fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (key) {
+        var value = u.searchParams.get(key);
+        if (value) out[key] = value;
+      });
+      var fbp = readCookie('_fbp');
+      var fbc = readCookie('_fbc');
+      if (fbp) out.fbp = fbp;
+      if (fbc) out.fbc = fbc;
+      return out;
+    }
+
+    function decorate(href) {
+      if (!href || href.indexOf('app.lurvox.in') === -1) return href;
+      try {
+        var dest = new URL(href, window.location.origin);
+        var extra = extraParams();
+        Object.keys(extra).forEach(function (key) {
+          if (!dest.searchParams.get(key)) dest.searchParams.set(key, extra[key]);
+        });
+        return dest.toString();
+      } catch (err) {
+        return href;
+      }
+    }
+
+    function decorateAll() {
+      document.querySelectorAll('a[href*="app.lurvox.in"]').forEach(function (a) {
+        var next = decorate(a.getAttribute('href') || '');
+        if (next) a.setAttribute('href', next);
+      });
+    }
+
+    persistFromLocation();
+    document.addEventListener(
+      'click',
+      function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a[href*="app.lurvox.in"]') : null;
+        if (!a) return;
+        var next = decorate(a.href);
+        if (next && next !== a.href) a.href = next;
+      },
+      true
+    );
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', decorateAll);
+    } else {
+      decorateAll();
+    }
+    window.addEventListener('load', decorateAll);
+  })();
+</script>

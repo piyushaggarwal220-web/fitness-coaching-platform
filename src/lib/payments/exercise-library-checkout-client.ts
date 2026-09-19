@@ -1,3 +1,5 @@
+import { metaBrowserIdsForRequest } from '@/lib/analytics/meta-attribution'
+import { queueMetaPurchase } from '@/lib/analytics/meta-pixel'
 import {
   EXERCISE_LIBRARY_ADDON_LABEL,
   EXERCISE_LIBRARY_ADDON_PAISE,
@@ -42,7 +44,7 @@ async function verifyPayment(payload: RazorpayHandlerResponse): Promise<void> {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, ...metaBrowserIdsForRequest() }),
   })
   const verifyData = (await verifyRes.json().catch(() => null)) as { error?: string } | null
   if (!verifyRes.ok) {
@@ -55,6 +57,8 @@ export async function startExerciseLibraryCheckout(): Promise<ExerciseLibraryChe
   const orderRes = await fetch('/api/payment/addons/exercise-library', {
     method: 'POST',
     credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(metaBrowserIdsForRequest()),
   })
   const orderData = (await orderRes.json().catch(() => null)) as OrderResponse | null
 
@@ -67,6 +71,15 @@ export async function startExerciseLibraryCheckout(): Promise<ExerciseLibraryChe
 
   const finish = async (payload: RazorpayHandlerResponse) => {
     await verifyPayment(payload)
+    if (payload.razorpay_payment_id.startsWith('test_')) return
+    queueMetaPurchase({
+      eventID: `razorpay_${payload.razorpay_payment_id}`,
+      value: EXERCISE_LIBRARY_ADDON_PAISE / 100,
+      currency: 'INR',
+      content_name: EXERCISE_LIBRARY_ADDON_LABEL,
+      content_ids: ['exercise_library'],
+      content_type: 'product',
+    })
   }
 
   if (orderData.testMode) {

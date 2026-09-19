@@ -1,6 +1,6 @@
 {% comment %}
-  Homepage insert: Instant-style plan cards + 3 steps + truth check.
-  Old AI plan cards are hidden and the new cards move into that spot.
+  Homepage insert: Instant-style intro → truth → plan cards → 3 steps.
+  Old AI plan cards and talk-to-a-coach leftovers are hidden — never hide .shopify-section.
 {% endcomment %}
 <style id="lx-home-hide-legacy">
   #lx-welcome,
@@ -9,7 +9,9 @@
   [data-lx-find-float],
   .lx-consult,
   .lx-hdr__talk,
-  [data-lx-hero-cta] a[href*="choose-your-plan"] {
+  [data-lx-hero-cta] a[href*="choose-your-plan"],
+  a[href*="talk-to-a-coach"],
+  a[href*="book-a-free-call"] {
     display: none !important;
   }
 
@@ -17,22 +19,62 @@
   .shopify-block:has([class*="ai-transformation-plan-card-start-"]) {
     display: none !important;
   }
+
+  body {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
 </style>
-{% render 'lurvox-plan-cards' %}
-{% render 'lurvox-three-steps' %}
-{% render 'lurvox-truth-check' %}
+<div class="lx-home-flow">
+  {% render 'lurvox-instant-intro' %}
+  {% render 'lurvox-truth-check' %}
+  {% render 'lurvox-plan-cards' %}
+  {% render 'lurvox-three-steps' %}
+</div>
+{% render 'lurvox-athletic-float' %}
+{% render 'lurvox-meta-attribution' %}
 <script>
   (function () {
-    function placeNewPlans() {
-      var neu = document.querySelector('.lx-plans');
+    function placeFlow() {
+      var flow = document.querySelector('.lx-home-flow');
       var oldCard = document.querySelector('[class*="ai-transformation-plan-card-"]');
-      if (!neu || !oldCard) return;
+      if (!flow || !oldCard) return;
       var block = oldCard.closest('.shopify-block');
-      if (!block || block.contains(neu) || block.querySelector('.lx-steps, .lx-fq, .lx-anim-tf')) return;
-      if (neu.nextElementSibling === block || block.previousElementSibling === neu) return;
-      block.parentNode.insertBefore(neu, block);
+      if (!block || block.contains(flow) || block.querySelector('.lx-steps, .lx-fq, .lx-anim-tf, .lx-intro')) return;
+      if (flow.nextElementSibling === block || block.previousElementSibling === flow) return;
+      block.parentNode.insertBefore(flow, block);
     }
-    placeNewPlans();
-    document.addEventListener('DOMContentLoaded', placeNewPlans);
+    function hideTalkCoach() {
+      var nodes = document.querySelectorAll('h2, h3');
+      for (var i = 0; i < nodes.length; i++) {
+        var t = (nodes[i].textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (t.indexOf('talk to a coach') === -1 && t.indexOf('not sure yet') === -1) continue;
+        var block = nodes[i].closest('.shopify-block');
+        if (block && !block.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro, .lx-truth, .lx-home-flow')) {
+          block.style.setProperty('display', 'none', 'important');
+          block.setAttribute('hidden', '');
+          block.setAttribute('aria-hidden', 'true');
+          continue;
+        }
+        var node = nodes[i];
+        while (node) {
+          var next = node.nextElementSibling;
+          var label = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+          if (label.indexOf('questions before you start') !== -1 || (node.classList && (node.classList.contains('lx-faq') || node.id === 'faq'))) break;
+          node.style.setProperty('display', 'none', 'important');
+          node.setAttribute('hidden', '');
+          node.setAttribute('aria-hidden', 'true');
+          node = next;
+        }
+      }
+    }
+    placeFlow();
+    hideTalkCoach();
+    document.addEventListener('DOMContentLoaded', function () {
+      placeFlow();
+      hideTalkCoach();
+    });
+    window.addEventListener('load', hideTalkCoach);
+    setTimeout(hideTalkCoach, 800);
+    setTimeout(hideTalkCoach, 2200);
   })();
 </script>

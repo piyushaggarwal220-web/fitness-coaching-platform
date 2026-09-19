@@ -17,7 +17,10 @@ import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
 import { queueMetaPurchase } from '@/lib/analytics/meta-pixel';
-import { readMetaBrowserIds } from '@/lib/analytics/meta-attribution';
+import {
+  persistMetaClickIdsFromLocation,
+  readMetaBrowserIds,
+} from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
 import {
   formatInrFromPaise,
@@ -512,7 +515,10 @@ function CheckoutForm() {
     razorpay_payment_id: string;
     razorpay_signature: string;
   }) => {
-    const metaIds = readMetaBrowserIds();
+    const metaIds = { ...readMetaBrowserIds(), ...(() => {
+      persistMetaClickIdsFromLocation()
+      return readMetaBrowserIds()
+    })() }
     const verifyRes = await fetch('/api/payment/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -584,6 +590,14 @@ function CheckoutForm() {
           policyAgreementAccepted,
           verificationId: verificationId || undefined,
           discountCode: appliedDiscount?.code || undefined,
+          ...(() => {
+            persistMetaClickIdsFromLocation()
+            const ids = readMetaBrowserIds()
+            return {
+              ...(ids.fbp ? { meta_fbp: ids.fbp } : {}),
+              ...(ids.fbc ? { meta_fbc: ids.fbc } : {}),
+            }
+          })(),
         }),
       });
 

@@ -251,15 +251,19 @@
     display: none !important;
   }
 
-  /* Homepage leftovers: Try the app, find-plan quiz, old AI price cards */
+  /* Homepage leftovers: Try the app, find-plan quiz, old AI price cards, talk-to-coach */
   #lx-welcome,
   .lx-welcome,
   .lx-find-float,
   [data-lx-find-float],
   .lx-consult,
   [data-lx-hero-cta] a[href*="choose-your-plan"],
+  a[href*="talk-to-a-coach"],
+  a[href*="book-a-free-call"],
   #shopify-block-AWTUyVllzcVIzY25yT__ai_gen_block_361650c_qqYKXh,
-  .shopify-block:has([class*="ai-transformation-plan-card-start-"]) {
+  .shopify-block:has([class*="ai-transformation-plan-card-start-"]),
+  #ContactForm-AUk54am5SN2RDazJGN__contact_form_ArpxEr,
+  .contact-form:has(#ContactForm-AUk54am5SN2RDazJGN__contact_form_ArpxEr) {
     display: none !important;
   }
 
@@ -475,7 +479,9 @@
         '.lx-find-float',
         '[data-lx-find-float]',
         '.lx-hdr__talk',
-        '.lx-consult'
+        '.lx-consult',
+        'a[href*="talk-to-a-coach"]',
+        'a[href*="book-a-free-call"]'
       ];
       document.querySelectorAll(sels.join(',')).forEach(function (el) {
         el.style.setProperty('display', 'none', 'important');
@@ -490,10 +496,39 @@
       });
       document.querySelectorAll('[class*="ai-transformation-plan-card-start-"]').forEach(function (a) {
         var block = a.closest('.shopify-block');
-        if (!block || block.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf')) return;
+        if (!block || block.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro')) return;
         block.style.setProperty('display', 'none', 'important');
         block.setAttribute('hidden', '');
         block.setAttribute('aria-hidden', 'true');
+      });
+      document.querySelectorAll('form[action*="/contact"]').forEach(function (f) {
+        if (location.pathname !== '/' && location.pathname !== '') return;
+        var wrap = f.closest('.shopify-block') || f.closest('.contact-form') || f;
+        if (wrap.querySelector && wrap.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro, .lx-home-flow')) return;
+        wrap.style.setProperty('display', 'none', 'important');
+        wrap.setAttribute('hidden', '');
+        wrap.setAttribute('aria-hidden', 'true');
+      });
+      document.querySelectorAll('h2, h3').forEach(function (h) {
+        var t = (h.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (t.indexOf('talk to a coach') === -1 && t.indexOf('not sure yet') === -1) return;
+        var block = h.closest('.shopify-block');
+        if (block && !block.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro, .lx-home-flow')) {
+          block.style.setProperty('display', 'none', 'important');
+          block.setAttribute('hidden', '');
+          block.setAttribute('aria-hidden', 'true');
+          return;
+        }
+        var node = h;
+        while (node) {
+          var next = node.nextElementSibling;
+          var label = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+          if (label.indexOf('questions before you start') !== -1 || node.classList.contains('lx-faq') || node.id === 'faq') break;
+          node.style.setProperty('display', 'none', 'important');
+          node.setAttribute('hidden', '');
+          node.setAttribute('aria-hidden', 'true');
+          node = next;
+        }
       });
     }
     hideLegacyHome();
@@ -501,3 +536,4 @@
     window.addEventListener('load', hideLegacyHome);
   })();
 </script>
+{% render 'lurvox-meta-attribution' %}

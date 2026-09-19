@@ -85,6 +85,7 @@ export async function POST(request: Request) {
   let appliedDiscountPaise = 0
   let supplementAddonPaid = 0
   let paidAddonIds: import('@/lib/payments/checkout-discounts').CheckoutAddonId[] = []
+  let orderNotes: Record<string, string> = {}
 
   if (!orderId) {
     return NextResponse.json(
@@ -140,6 +141,7 @@ export async function POST(request: Request) {
 
       const order = await fetchRazorpayOrder(orderId)
       const trustedNotes = { ...(order.notes ?? {}), ...(payment.notes ?? {}) }
+      orderNotes = trustedNotes
       const expectedAmount = expectedAmountPaiseFromOrderNotes(plan, trustedNotes)
       appliedDiscountCode = normalizeDiscountCode(trustedNotes.discount_code)
       appliedDiscountPaise = Number(trustedNotes.discount_paise ?? 0) || 0
@@ -236,7 +238,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const metaAttribution = metaAttributionFromRequest(request, body)
+    const metaAttribution = metaAttributionFromRequest(request, body, orderNotes)
 
     await Promise.allSettled([
       sendMetaPurchase({

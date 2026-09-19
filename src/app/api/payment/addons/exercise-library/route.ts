@@ -12,7 +12,7 @@ import {
   fulfillExerciseLibraryAddon,
 } from '@/lib/payments/exercise-library-addon'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
-import { metaAttributionFromRequest } from '@/lib/analytics/meta-attribution'
+import { metaAttributionFromRequest, razorpayMetaNotes } from '@/lib/analytics/meta-attribution'
 import {
   createRazorpayOrder,
   fetchRazorpayOrder,
@@ -26,6 +26,13 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
+
+  let body: { meta_fbp?: string; meta_fbc?: string } = {}
+  try {
+    body = await request.json()
+  } catch {
+    body = {}
+  }
 
   const { data: profile } = await auth.supabase
     .from('profiles')
@@ -76,6 +83,7 @@ export async function POST(request: Request) {
         addon_ids: EXERCISE_LIBRARY_ADDON_ID,
         addon_total_paise: String(EXERCISE_LIBRARY_ADDON_PAISE),
         amount_paise: '0',
+        ...razorpayMetaNotes(body),
       },
     })
     return NextResponse.json({
@@ -102,6 +110,8 @@ export async function PUT(request: Request) {
     razorpay_order_id?: string
     razorpay_payment_id?: string
     razorpay_signature?: string
+    meta_fbp?: string
+    meta_fbc?: string
   }
   try {
     body = await request.json()
@@ -178,7 +188,7 @@ export async function PUT(request: Request) {
     amountPaise: payment.amount,
     currency: payment.currency || 'INR',
     planSlug: EXERCISE_LIBRARY_PLAN_SLUG,
-    ...metaAttributionFromRequest(request),
+    ...metaAttributionFromRequest(request, body, notes),
   }).catch(() => undefined)
   return NextResponse.json({ success: true, entitled: true, purchaseId: result.purchaseId })
 }
