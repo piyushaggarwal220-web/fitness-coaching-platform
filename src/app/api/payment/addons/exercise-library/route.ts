@@ -4,6 +4,7 @@ import { shouldBypassPayment } from '@/lib/config'
 import { profileEntitledForExerciseLibrary } from '@/lib/addon-protocols'
 import {
   EXERCISE_LIBRARY_ADDON_ID,
+  EXERCISE_LIBRARY_ADDON_LABEL,
   EXERCISE_LIBRARY_ADDON_PAISE,
 } from '@/lib/payments/checkout-discounts'
 import {
@@ -188,6 +189,8 @@ export async function PUT(request: Request) {
     amountPaise: payment.amount,
     currency: payment.currency || 'INR',
     planSlug: EXERCISE_LIBRARY_PLAN_SLUG,
+    contentName: EXERCISE_LIBRARY_ADDON_LABEL,
+    eventSourcePath: '/library/unlock',
     ...metaAttributionFromRequest(request, body, notes),
   }).catch(() => undefined)
   return NextResponse.json({ success: true, entitled: true, purchaseId: result.purchaseId })

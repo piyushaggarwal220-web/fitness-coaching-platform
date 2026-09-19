@@ -1,4 +1,4 @@
-import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
+import { sendMetaPurchase, metaEventSourcePathForPlanSlug } from '@/lib/analytics/meta-conversions'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export type MetaPurchaseBackfillSummary = {
@@ -66,6 +66,7 @@ export async function backfillMetaPurchases(options?: {
       amountPaise: row.amount_paise,
       currency: row.currency || 'INR',
       planSlug: row.plan_slug,
+      eventSourcePath: metaEventSourcePathForPlanSlug(row.plan_slug),
       eventTime: Math.floor(new Date(row.created_at).getTime() / 1000),
     })
 

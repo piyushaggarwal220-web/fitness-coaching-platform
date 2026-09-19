@@ -80,6 +80,8 @@ export async function startExerciseLibraryCheckout(): Promise<ExerciseLibraryChe
       content_ids: ['exercise_library'],
       content_type: 'product',
     })
+    // Give the pixel beacon a moment before any UI state change.
+    await new Promise((resolve) => setTimeout(resolve, 400))
   }
 
   if (orderData.testMode) {

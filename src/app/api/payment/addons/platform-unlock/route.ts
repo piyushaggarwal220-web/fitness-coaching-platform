@@ -253,6 +253,8 @@ export async function PUT(request: Request) {
     amountPaise: payment.amount,
     currency: payment.currency || 'INR',
     planSlug: sku,
+    contentName: meta.label,
+    eventSourcePath: '/unlock',
     ...metaAttributionFromRequest(request, body, notes),
   }).catch(() => undefined)
   return NextResponse.json({ success: true, entitled: true, purchaseId: result.purchaseId })

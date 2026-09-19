@@ -6,6 +6,7 @@ import {
   expectedAmountPaiseFromOrderNotes,
   normalizeDiscountCode,
   checkoutAddonsFromNotes,
+  EXERCISE_LIBRARY_ADDON_LABEL,
   EXERCISE_LIBRARY_ADDON_PAISE,
 } from '@/lib/payments/checkout-discounts'
 import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
@@ -271,6 +272,8 @@ export async function POST(request: Request) {
         amountPaise: payment.amount,
         currency: payment.currency || 'INR',
         planSlug: sku,
+        contentName: unlockMeta.label,
+        eventSourcePath: '/unlock',
         ...metaIdsFromOrderNotes(notes),
       })
       return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: sku })
@@ -303,6 +306,8 @@ export async function POST(request: Request) {
         amountPaise: payment.amount,
         currency: payment.currency || 'INR',
         planSlug: 'exercise_library',
+        contentName: EXERCISE_LIBRARY_ADDON_LABEL,
+        eventSourcePath: '/library/unlock',
         ...metaIdsFromOrderNotes(notes),
       })
       return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: 'exercise_library' })
