@@ -1,5 +1,5 @@
 {% comment %}
-  Instant-style coaching plan cards. What you get lives on each card.
+  Instant-style coaching plan cards — yellow prices, green CTAs, glow.
 {% endcomment %}
 <section class="lx-plans" id="plans" aria-labelledby="lx-plans-title">
   <div class="lx-plans__inner">
@@ -7,7 +7,8 @@
     <h2 class="lx-plans__title" id="lx-plans-title">Simple plans. Real coaching.</h2>
     <p class="lx-plans__lede">One price. Personal workout + diet, check-ins, trackers, and coach chat included.</p>
     <div class="lx-plans__stack">
-      <article class="lx-plans__card">
+      <article class="lx-plans__card lx-plans__card--fat">
+        <span class="lx-plans__dur">90 days</span>
         <h3>Fat loss</h3>
         <p class="lx-plans__price">₹599</p>
         <p class="lx-plans__meta">3 months · ≈ ₹200/mo</p>
@@ -24,9 +25,10 @@
 
       <article class="lx-plans__card lx-plans__card--popular">
         <p class="lx-plans__tag">Most popular</p>
+        <span class="lx-plans__dur">6 months</span>
         <h3>Fat loss + muscle</h3>
         <p class="lx-plans__price">₹999</p>
-        <p class="lx-plans__meta">6 months · ≈ ₹167/mo</p>
+        <p class="lx-plans__meta">≈ ₹167/mo</p>
         <p class="lx-plans__note">Everything in Fat loss, plus muscle programmed in for 6 months.</p>
         <ul class="lx-plans__bullets">
           <li>Personal workout + diet</li>
@@ -36,13 +38,21 @@
           <li>Weekly plan updates</li>
           <li>Fat loss and muscle in one plan</li>
         </ul>
+        <div class="lx-plans__extras">
+          <p class="lx-plans__extras-title"><span>INCLUDED</span> At no extra cost</p>
+          <ul>
+            <li><em>PLUS</em> Muscle programming</li>
+            <li><em>PLUS</em> Weekly plan updates</li>
+          </ul>
+        </div>
         <a class="lx-plans__cta" href="https://app.lurvox.in/checkout?plan=6_months">Get this plan</a>
       </article>
 
-      <article class="lx-plans__card">
+      <article class="lx-plans__card lx-plans__card--athletic">
+        <span class="lx-plans__dur">12 months</span>
         <h3>Athletic body</h3>
         <p class="lx-plans__price">₹1,699</p>
-        <p class="lx-plans__meta">12 months · ≈ ₹142/mo</p>
+        <p class="lx-plans__meta">≈ ₹142/mo</p>
         <ul class="lx-plans__bullets">
           <li>Personal workout + diet</li>
           <li>1-to-1 coach chat</li>
@@ -51,6 +61,9 @@
           <li>Fat loss, muscle, and stamina</li>
           <li>Weekly coach phone call</li>
         </ul>
+        <div class="lx-plans__extras lx-plans__extras--blue">
+          <p class="lx-plans__extras-title"><span>CALL</span> Weekly coach phone call</p>
+        </div>
         <a class="lx-plans__cta" href="https://app.lurvox.in/checkout?plan=12_months">Get Athletic body</a>
       </article>
     </div>
@@ -58,15 +71,24 @@
 </section>
 <style>
   .lx-plans {
-    background: #070707;
-    color: #fff;
-    padding: 36px 16px 28px;
+    --yellow: #fbbf24;
+    --orange: #ff6200;
+    --green: #22c55e;
+    --green-deep: #16a34a;
+    --blue: #3b82f6;
+    background:
+      radial-gradient(ellipse 55% 50% at 0% 0%, rgba(255, 98, 0, 0.22), transparent 55%),
+      radial-gradient(ellipse 50% 45% at 100% 10%, rgba(34, 197, 94, 0.16), transparent 50%),
+      radial-gradient(ellipse 40% 40% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 55%),
+      #12100f;
+    color: #f8fafc;
+    padding: 40px 16px 36px;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
   .lx-plans__inner { max-width: 1080px; margin: 0 auto; }
   .lx-plans__eyebrow {
     margin: 0;
-    color: #ff6200;
+    color: var(--yellow);
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.12em;
@@ -76,63 +98,118 @@
   .lx-plans__title {
     margin: 8px 0 0;
     text-align: center;
-    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-size: clamp(1.7rem, 4vw, 2.4rem);
     font-weight: 800;
     letter-spacing: -0.03em;
     line-height: 1.15;
+    color: #fff;
   }
   .lx-plans__lede {
     margin: 10px auto 0;
     max-width: 36rem;
     text-align: center;
-    color: rgba(255,255,255,0.68);
+    color: #cbd5e1;
     font-size: 15px;
     line-height: 1.5;
   }
   .lx-plans__stack {
-    margin-top: 26px;
+    margin-top: 28px;
     display: grid;
     grid-template-columns: 1fr;
     gap: 14px;
     align-items: stretch;
   }
   .lx-plans__card {
+    position: relative;
     display: flex;
     flex-direction: column;
-    background: #141414;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 20px;
+    background: #1c1917;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 22px;
     padding: 22px 20px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+  }
+  .lx-plans__card--fat {
+    border-color: rgba(255, 98, 0, 0.45);
+    background:
+      radial-gradient(ellipse 80% 60% at 0% -10%, rgba(255, 98, 0, 0.28), transparent 55%),
+      #1c1917;
   }
   .lx-plans__card--popular {
-    border: 2px solid #ff6200;
-    box-shadow: 0 16px 40px rgba(255, 98, 0, 0.16);
-    background: #18110c;
+    border: 2px solid var(--yellow);
+    transform: none;
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.2),
+      0 18px 44px rgba(251, 191, 36, 0.18);
+    background:
+      radial-gradient(ellipse 90% 70% at 100% -20%, rgba(251, 191, 36, 0.28), transparent 50%),
+      radial-gradient(ellipse 70% 50% at 0% 110%, rgba(34, 197, 94, 0.18), transparent 50%),
+      #241f1c;
+  }
+  .lx-plans__card--athletic {
+    border-color: rgba(59, 130, 246, 0.5);
+    background:
+      radial-gradient(ellipse 80% 60% at 100% -10%, rgba(59, 130, 246, 0.28), transparent 55%),
+      #1c1917;
   }
   .lx-plans__tag {
-    margin: 0 0 8px;
-    color: #ff6200;
+    display: inline-flex;
+    align-self: flex-start;
+    margin: 0 0 10px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--yellow);
+    color: #1c1400;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .lx-plans__dur {
+    display: inline-flex;
+    align-self: flex-start;
+    margin: 0 0 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+  .lx-plans__card--fat .lx-plans__dur {
+    color: #ffd4a8;
+    background: rgba(255, 98, 0, 0.18);
+    border: 1px solid rgba(255, 98, 0, 0.45);
+  }
+  .lx-plans__card--popular .lx-plans__dur {
+    color: #fde68a;
+    background: rgba(251, 191, 36, 0.16);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+  }
+  .lx-plans__card--athletic .lx-plans__dur {
+    color: #bfdbfe;
+    background: rgba(59, 130, 246, 0.16);
+    border: 1px solid rgba(59, 130, 246, 0.4);
   }
   .lx-plans__card h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     letter-spacing: -0.02em;
+    color: #fff;
   }
   .lx-plans__price {
     margin: 12px 0 0;
-    color: #ff6200;
-    font-size: 36px;
+    color: var(--yellow);
+    font-size: 40px;
     font-weight: 800;
     letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
   }
   .lx-plans__meta {
     margin: 4px 0 0;
-    color: rgba(255,255,255,0.62);
+    color: #cbd5e1;
     font-size: 14px;
     font-weight: 600;
   }
@@ -140,7 +217,7 @@
     margin: 12px 0 0;
     padding: 10px 12px;
     border-radius: 12px;
-    background: rgba(34, 197, 94, 0.12);
+    background: rgba(34, 197, 94, 0.16);
     color: #bbf7d0;
     font-size: 13px;
     font-weight: 600;
@@ -151,13 +228,13 @@
     margin: 16px 0 0;
     padding: 0;
     display: grid;
-    gap: 8px;
+    gap: 9px;
     flex: 1;
   }
   .lx-plans__bullets li {
     position: relative;
-    padding-left: 18px;
-    color: rgba(255,255,255,0.78);
+    padding-left: 22px;
+    color: #e2e8f0;
     font-size: 14px;
     line-height: 1.4;
     font-weight: 600;
@@ -166,11 +243,80 @@
     content: '';
     position: absolute;
     left: 0;
-    top: 0.45em;
-    width: 8px;
-    height: 8px;
+    top: 0.15em;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    background: #16a34a;
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='%2322c55e' d='M6.2 11.2 3.4 8.4l1.1-1.1 1.7 1.7 4.4-4.4 1.1 1.1z'/></svg>")
+      center / 16px 16px no-repeat;
+  }
+  .lx-plans__extras {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    background:
+      radial-gradient(ellipse 80% 70% at 0% 0%, rgba(34, 197, 94, 0.22), transparent 60%),
+      rgba(0, 0, 0, 0.22);
+  }
+  .lx-plans__extras--blue {
+    border-color: rgba(59, 130, 246, 0.45);
+    background:
+      radial-gradient(ellipse 80% 70% at 0% 0%, rgba(59, 130, 246, 0.22), transparent 60%),
+      rgba(0, 0, 0, 0.22);
+  }
+  .lx-plans__extras-title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #bbf7d0;
+  }
+  .lx-plans__extras--blue .lx-plans__extras-title { color: #bfdbfe; }
+  .lx-plans__extras-title span {
+    display: inline-flex;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #22c55e;
+    color: #052e16;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+  .lx-plans__extras--blue .lx-plans__extras-title span {
+    background: #3b82f6;
+    color: #fff;
+  }
+  .lx-plans__extras ul {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .lx-plans__extras li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 650;
+    color: #f8fafc;
+  }
+  .lx-plans__extras em {
+    flex-shrink: 0;
+    display: inline-flex;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(251, 191, 36, 0.2);
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    color: #fde68a;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 900;
+    letter-spacing: 0.06em;
   }
   .lx-plans__cta {
     display: inline-flex;
@@ -178,21 +324,35 @@
     justify-content: center;
     width: 100%;
     margin-top: 18px;
-    min-height: 48px;
+    min-height: 50px;
     padding: 14px 18px;
     border-radius: 14px;
-    background: #15803d;
+    background: var(--green-deep);
     color: #fff !important;
     font-weight: 800;
+    font-size: 15px;
     text-decoration: none !important;
-    border: 1px solid rgba(255, 98, 0, 0.35);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    box-shadow: 0 10px 22px rgba(22, 163, 74, 0.28);
     box-sizing: border-box;
   }
+  .lx-plans__card--fat .lx-plans__cta {
+    background: linear-gradient(180deg, #ff7a1a 0%, #ff6200 100%);
+    color: #1c0a00 !important;
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 10px 22px rgba(255, 98, 0, 0.32);
+  }
+  .lx-plans__card--athletic .lx-plans__cta {
+    background: linear-gradient(180deg, #4f8dff 0%, #2563eb 100%);
+    border-color: rgba(147, 197, 253, 0.4);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.32);
+  }
+  .lx-plans__cta:hover { filter: brightness(1.06); }
   @media screen and (min-width: 860px) {
     .lx-plans__stack {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       align-items: stretch;
     }
-    .lx-plans__card--popular { transform: translateY(-6px); }
+    .lx-plans__card--popular { transform: translateY(-8px); }
   }
 </style>
