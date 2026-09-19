@@ -15,10 +15,9 @@
 
 {%- if request.page_type == 'index' -%}
 <style id="lx-newcomer-pass-css">
-  /* lurvox-newcomer-pass-v1 — Try the app removed */
+  /* lurvox-newcomer-pass-v1 — hide Try the app card only, never the whole section */
   #lx-welcome,
-  .lx-welcome,
-  .shopify-section:has(#lx-welcome) {
+  .lx-welcome {
     display: none !important;
   }
 

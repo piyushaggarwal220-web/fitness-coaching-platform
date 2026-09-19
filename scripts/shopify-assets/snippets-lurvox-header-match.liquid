@@ -255,10 +255,7 @@
   .lx-find-float,
   [data-lx-find-float],
   .lx-consult,
-  [data-lx-hero-cta] a[href*="choose-your-plan"],
-  [class*="ai-contact-header"],
-  [class*="ai-transformation-plan-card"],
-  [class*="ai-transformation-plan-subheadline"] {
+  [data-lx-hero-cta] a[href*="choose-your-plan"] {
     display: none !important;
   }
 
@@ -474,21 +471,24 @@
         '.lx-find-float',
         '[data-lx-find-float]',
         '.lx-hdr__talk',
-        '.lx-consult',
-        '[class*="ai-contact-header"]',
-        '[class*="ai-transformation-plan-card"]'
+        '.lx-consult'
       ];
       document.querySelectorAll(sels.join(',')).forEach(function (el) {
-        var wrap = el.closest('.shopify-section, .shopify-block') || el;
-        wrap.style.setProperty('display', 'none', 'important');
-        wrap.setAttribute('aria-hidden', 'true');
+        el.style.setProperty('display', 'none', 'important');
+        el.setAttribute('aria-hidden', 'true');
       });
-      document.querySelectorAll('[data-lx-hero-cta] a, a[href*="/pages/choose-your-plan"]').forEach(function (a) {
+      document.querySelectorAll('[data-lx-hero-cta] a').forEach(function (a) {
         var text = (a.textContent || '').toLowerCase();
-        if (text.indexOf('find your plan') !== -1 || /choose-your-plan/.test(a.getAttribute('href') || '')) {
+        if (text.indexOf('find your plan') !== -1) {
           a.style.setProperty('display', 'none', 'important');
           a.setAttribute('aria-hidden', 'true');
         }
+      });
+      document.querySelectorAll('[class*="ai-contact-header"]').forEach(function (el) {
+        var block = el.closest('[class*="ai-contact-"]') || el;
+        if (block.querySelector('.lx-plans, .lx-steps, .lx-anim-tf, .lx-fq')) return;
+        block.style.setProperty('display', 'none', 'important');
+        block.setAttribute('aria-hidden', 'true');
       });
     }
     hideLegacyHome();
