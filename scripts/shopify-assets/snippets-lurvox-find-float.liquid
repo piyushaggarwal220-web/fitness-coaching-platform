@@ -22,7 +22,7 @@
   endif
 -%}
 
-<div class="lx-find-float" data-lx-find-float aria-label="Quick actions">
+<div class="lx-find-float" data-lx-find-float aria-hidden="true" hidden style="display:none !important">
   {%- if on_home -%}
     <div class="lx-find-float__row lx-find-float__row--single">
       <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
@@ -59,6 +59,11 @@
 </div>
 
 <style id="lx-find-float-css">
+  .lx-find-float,
+  [data-lx-find-float] {
+    display: none !important;
+  }
+
   .lx-find-float {
     position: fixed;
     left: 50%;

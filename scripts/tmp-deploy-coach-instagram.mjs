@@ -56,6 +56,8 @@ const files = [
   ['snippets/lurvox-sales-closer.liquid', 'scripts/shopify-assets/snippets-lurvox-sales-closer.liquid'],
   ['snippets/lurvox-conversion-boost.liquid', 'scripts/shopify-assets/snippets-lurvox-conversion-boost.liquid'],
   ['snippets/lurvox-header-match.liquid', 'scripts/shopify-assets/snippets-lurvox-header-match.liquid'],
+  ['snippets/lurvox-find-float.liquid', 'scripts/shopify-assets/snippets-lurvox-find-float.liquid'],
+  ['snippets/lurvox-newcomer-pass.liquid', 'scripts/shopify-assets/snippets-lurvox-newcomer-pass.liquid'],
 ].map(([filename, rel]) => ({
   filename,
   body: { type: 'TEXT', value: read(rel) },

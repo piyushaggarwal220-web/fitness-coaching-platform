@@ -249,6 +249,19 @@
     display: none !important;
   }
 
+  /* Homepage leftovers: Try the app, find-plan quiz, talk-to-a-coach, old AI cards */
+  #lx-welcome,
+  .lx-welcome,
+  .lx-find-float,
+  [data-lx-find-float],
+  .lx-consult,
+  [data-lx-hero-cta] a[href*="choose-your-plan"],
+  [class*="ai-contact-header"],
+  [class*="ai-transformation-plan-card"],
+  [class*="ai-transformation-plan-subheadline"] {
+    display: none !important;
+  }
+
   .header a[aria-label*="Talk" i] svg,
   .header a[href*="book-a-free-call"] svg,
   header-component a[aria-label*="Talk" i] svg,
@@ -453,5 +466,33 @@
       place();
     }
     setTimeout(place, 600);
+
+    function hideLegacyHome() {
+      var sels = [
+        '#lx-welcome',
+        '.lx-welcome',
+        '.lx-find-float',
+        '[data-lx-find-float]',
+        '.lx-hdr__talk',
+        '.lx-consult',
+        '[class*="ai-contact-header"]',
+        '[class*="ai-transformation-plan-card"]'
+      ];
+      document.querySelectorAll(sels.join(',')).forEach(function (el) {
+        var wrap = el.closest('.shopify-section, .shopify-block') || el;
+        wrap.style.setProperty('display', 'none', 'important');
+        wrap.setAttribute('aria-hidden', 'true');
+      });
+      document.querySelectorAll('[data-lx-hero-cta] a, a[href*="/pages/choose-your-plan"]').forEach(function (a) {
+        var text = (a.textContent || '').toLowerCase();
+        if (text.indexOf('find your plan') !== -1 || /choose-your-plan/.test(a.getAttribute('href') || '')) {
+          a.style.setProperty('display', 'none', 'important');
+          a.setAttribute('aria-hidden', 'true');
+        }
+      });
+    }
+    hideLegacyHome();
+    document.addEventListener('DOMContentLoaded', hideLegacyHome);
+    window.addEventListener('load', hideLegacyHome);
   })();
 </script>
