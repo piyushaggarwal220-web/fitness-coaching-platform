@@ -605,14 +605,26 @@
   .lx-welcome,
   .lx-hdr__talk,
   .lx-consult,
-  .shopify-section:has(.lx-consult),
   .lx-find-float,
-  a[href*="/pages/choose-your-plan"] {
+  .shopify-section:has(.lx-consult),
+  .shopify-section:has([class*="ai-contact-header"]),
+  [class*="ai-contact-"],
+  [class*="ai-transformation-plan-card"],
+  [class*="ai-transformation-plan-subheadline"],
+  [class*="ai-transformation-plan-"]:has([class*="plan-card"]),
+  a[href*="/pages/choose-your-plan"],
+  a[href*="/pages/talk-to-a-coach"],
+  a[href*="/pages/book-a-free-call"] {
     display: none !important;
   }
 
+  .lx-plans,
+  .lx-plans a,
   [data-lx-hero-cta] > a[href="#plans"] {
-    display: flex !important;
+    display: revert !important;
+  }
+  .lx-plans a.lx-plans__cta {
+    display: inline-flex !important;
   }
 
   .lx-conv__actions {
@@ -731,8 +743,13 @@
       });
       var welcome = document.getElementById('lx-welcome');
       if (welcome) welcome.style.setProperty('display', 'none', 'important');
-      document.querySelectorAll('.lx-hdr__talk, .lx-consult, .lx-find-float').forEach(function (el) {
-        el.style.setProperty('display', 'none', 'important');
+      document.querySelectorAll('.lx-hdr__talk, .lx-consult, .lx-find-float, #lx-welcome, .lx-welcome, [class*="ai-contact-"]').forEach(function (el) {
+        var section = el.closest('.shopify-section') || el;
+        section.style.setProperty('display', 'none', 'important');
+      });
+      document.querySelectorAll('[class*="ai-transformation-plan-card"]').forEach(function (el) {
+        var wrap = el.closest('.shopify-section, .shopify-block') || el;
+        wrap.style.setProperty('display', 'none', 'important');
       });
     }
     rewriteHeroQuiz();
