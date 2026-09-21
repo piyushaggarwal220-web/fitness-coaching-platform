@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
-import { formatCoachPersonalityDirective } from '@/lib/coach-personality'
+import {
+  buildNamedCoachSystemPrompt,
+  truncatePlanExcerpt,
+} from '@/lib/ai/coach-chat-persona'
+import { autoCoachFirstName } from '@/lib/coach-delivery-policy'
 import { usesAiCoach } from '@/lib/coach-service'
 import { assertInstantFeatureAccess } from '@/lib/instant-feature-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -14,28 +18,6 @@ type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
 const MAX_HISTORY = 12
 const MAX_MESSAGE_LEN = 1200
-
-function buildSystemPrompt(input: {
-  name: string | null
-  fitnessGoal: string | null
-  personalities: string[] | null
-  planTitle: string | null
-  journeySummary: string | null
-}): string {
-  return [
-    'You are the client\'s Lurvox coach inside the app.',
-    'You help with their customised diet/workout plan, adherence, and motivation.',
-    'Do not claim to be a doctor. No medical advice. No inventing discounts or prices.',
-    'Keep replies short (2–5 sentences) unless they ask for detail. India-friendly English.',
-    formatCoachPersonalityDirective(input.personalities),
-    `Client name: ${input.name || 'Member'}`,
-    `Primary goal: ${input.fitnessGoal || 'not set'}`,
-    input.planTitle ? `Active plan: ${input.planTitle}` : 'Active plan: not delivered yet — focus on onboarding / habits.',
-    input.journeySummary ? `Journey note: ${input.journeySummary}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n')
-}
 
 export async function GET() {
   const auth = await requireApiUser()
@@ -67,7 +49,13 @@ export async function GET() {
     .order('created_at', { ascending: true })
     .limit(80)
 
-  return NextResponse.json({ messages: rows ?? [] })
+  const coachFirstName = autoCoachFirstName(profile.coach_id)
+
+  return NextResponse.json({
+    messages: rows ?? [],
+    coachFirstName,
+    coachId: profile.coach_id,
+  })
 }
 
 export async function POST(request: Request) {
@@ -107,6 +95,7 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient()
   const now = new Date().toISOString()
+  const coachFirstName = autoCoachFirstName(profile.coach_id)
 
   const { error: userInsertError } = await admin.from('ai_coach_messages').insert({
     client_id: auth.user.id,
@@ -115,7 +104,6 @@ export async function POST(request: Request) {
     created_at: now,
   })
   if (userInsertError) {
-    // Table may not exist yet in local envs without migration — surface clearly.
     return NextResponse.json(
       { error: userInsertError.message || 'Could not save message' },
       { status: 500 }
@@ -135,7 +123,7 @@ export async function POST(request: Request) {
 
   const { data: plan } = await admin
     .from('plans')
-    .select('title')
+    .select('title, nutrition_plan, workout_plan')
     .eq('client_id', auth.user.id)
     .eq('active', true)
     .maybeSingle()
@@ -144,12 +132,16 @@ export async function POST(request: Request) {
     (profile.onboarding_data as { goals?: { coachPersonalities?: string[] } } | null)?.goals
       ?.coachPersonalities ?? null
 
-  const systemPrompt = buildSystemPrompt({
+  const systemPrompt = buildNamedCoachSystemPrompt({
+    coachFirstName,
     name: profile.name,
     fitnessGoal: profile.fitness_goal,
     personalities,
     planTitle: plan?.title ?? null,
     journeySummary: profile.journey_summary,
+    nutritionExcerpt: truncatePlanExcerpt(plan?.nutrition_plan),
+    workoutExcerpt: truncatePlanExcerpt(plan?.workout_plan),
+    mode: 'ai_thread',
   })
 
   const transcript = history
@@ -160,12 +152,18 @@ export async function POST(request: Request) {
   try {
     const result = await generateOpenAIResponse({
       systemPrompt,
-      userPrompt: transcript || `Client: ${message}`,
+      userPrompt: [
+        transcript || `Client: ${message}`,
+        '',
+        'Write the next coach reply only. No quotes around it. No hyphen characters.',
+      ].join('\n'),
       model: MODELS.GPT_LUNA,
       maxTokens: 400,
       temperature: 0.6,
     })
-    replyText = result.text.trim() || replyText
+    replyText =
+      result.text.replace(/[\u2010-\u2015\u2212-]/g, ' ').replace(/\s{2,}/g, ' ').trim() ||
+      replyText
   } catch {
     replyText =
       'I could not reply just now. Try again in a moment — or open your plan and stick to today\'s workouts and meals.'
@@ -186,5 +184,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: assistantError.message }, { status: 500 })
   }
 
-  return NextResponse.json({ message: assistantRow })
+  return NextResponse.json({ message: assistantRow, coachFirstName })
 }

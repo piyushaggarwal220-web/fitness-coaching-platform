@@ -84,8 +84,8 @@ async function handle(request: Request) {
     ? null
     : await processAutoCoachWorkQueues(admin, {
         initialPlanLimit: 0,
-        checkinLimit: 1,
-        chatLimit: 4,
+        checkinLimit: 4,
+        chatLimit: 8,
         ignoreCheckinDelay: ignoreDelay,
       })
 

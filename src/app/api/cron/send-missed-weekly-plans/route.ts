@@ -7,11 +7,16 @@ import { hasClientEntitlement } from '@/lib/entitlements'
 import { sendNotification } from '@/lib/notifications/service'
 import { activatePlan } from '@/lib/plans'
 import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
+import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
+
+/** How far back the scheduled batch looks for missed weekly plan updates. */
+const BATCH_LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000
+const BATCH_LIMIT = 5
 
 function authorize(request: Request): boolean {
   const secrets = [
@@ -168,11 +173,101 @@ async function statusOneCheckin(checkinId: string) {
   return { checkinId, name: profile?.name ?? checkin.client_id, status: 'PENDING' as const }
 }
 
+type MissedCheckin = {
+  id: string
+  client_id: string
+  coach_id: string
+  coaching_week: number
+  submitted_at: string
+}
+
+/** Discover weekly check-ins that still need a post-check-in plan delivery. */
+async function discoverMissedWeeklyCheckins(limit: number): Promise<MissedCheckin[]> {
+  const admin = createAdminClient()
+  const since = new Date(Date.now() - BATCH_LOOKBACK_MS).toISOString()
+
+  const { data: checkins, error } = await admin
+    .from('checkins')
+    .select('id, client_id, coach_id, coaching_week, submitted_at')
+    .eq('checkin_type', 'weekly')
+    .gte('submitted_at', since)
+    .order('submitted_at', { ascending: true })
+    .limit(80)
+
+  if (error) throw new Error(error.message)
+
+  const queued: MissedCheckin[] = []
+
+  for (const checkin of (checkins ?? []) as MissedCheckin[]) {
+    if (queued.length >= limit) break
+    if (coachRequiresManualPlanDelivery(checkin.coach_id)) continue
+
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('id, name, email, payment_confirmed, access_source, subscription_expires_at')
+      .eq('id', checkin.client_id)
+      .maybeSingle()
+
+    if (profile?.email?.includes('@lurvox.test')) continue
+    if (!hasClientEntitlement(profile)) continue
+
+    const planSlug = await fetchCapturedPlanSlug(checkin.client_id)
+    if (!shouldAutoGenerateWeeklyPlanDraft(planSlug, checkin.coaching_week)) continue
+
+    const { data: active } = await admin
+      .from('plans')
+      .select('id, delivered_at')
+      .eq('client_id', checkin.client_id)
+      .eq('active', true)
+      .maybeSingle()
+
+    const alreadyUpdated =
+      active?.delivered_at &&
+      new Date(active.delivered_at).getTime() >= new Date(checkin.submitted_at).getTime()
+    if (alreadyUpdated) continue
+
+    queued.push(checkin)
+  }
+
+  return queued
+}
+
+async function runBatch(limit: number) {
+  const missed = await discoverMissedWeeklyCheckins(limit)
+  for (const row of missed) {
+    await persistDraftGenerationStarted({
+      clientId: row.client_id,
+      coachId: row.coach_id,
+      checkinId: row.id,
+      trigger: 'retry',
+    }).catch((err) =>
+      console.error('[cron/send-missed-weekly-plans] draft start log failed:', err)
+    )
+
+    const checkinId = row.id
+    after(() =>
+      sendOneCheckin(checkinId).catch((err) => {
+        console.error(
+          '[cron/send-missed-weekly-plans] background send failed:',
+          err instanceof Error ? err.message : err
+        )
+      })
+    )
+  }
+  return {
+    ok: true,
+    mode: 'batch' as const,
+    queued: missed.length,
+    checkinIds: missed.map((row) => row.id),
+  }
+}
+
 export async function GET(request: Request) {
   if (!authorize(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const ping = new URL(request.url).searchParams.get('ping')
+  const url = new URL(request.url)
+  const ping = url.searchParams.get('ping')
   if (ping === '1') {
     try {
       const result = await pingOpenAI()
@@ -183,13 +278,24 @@ export async function GET(request: Request) {
     }
   }
 
-  const checkinId = new URL(request.url).searchParams.get('checkinId')?.trim()
+  const checkinId = url.searchParams.get('checkinId')?.trim()
   if (checkinId) {
     const result = await statusOneCheckin(checkinId)
     return NextResponse.json(result)
   }
 
-  return NextResponse.json({ error: 'POST checkinId or GET ?ping=1' }, { status: 400 })
+  // Scheduled cron / ops: discover and queue a small batch of missed weekly plans.
+  const limit = Math.min(
+    10,
+    Math.max(1, Number(url.searchParams.get('limit') ?? String(BATCH_LIMIT)) || BATCH_LIMIT)
+  )
+  try {
+    const result = await runBatch(limit)
+    return NextResponse.json(result, { status: 202 })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'batch failed'
+    return NextResponse.json({ ok: false, error: message }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {
@@ -197,14 +303,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let body: { checkinId?: string; ping?: boolean } = {}
+  let body: { checkinId?: string; ping?: boolean; batch?: boolean; limit?: number } = {}
   try {
-    body = (await request.json()) as { checkinId?: string; ping?: boolean }
+    body = (await request.json()) as typeof body
   } catch {
     body = {}
   }
 
-  const ping = body.ping || new URL(request.url).searchParams.get('ping') === '1'
+  const url = new URL(request.url)
+  const ping = body.ping || url.searchParams.get('ping') === '1'
   if (ping) {
     try {
       const result = await pingOpenAI()
@@ -215,8 +322,29 @@ export async function POST(request: Request) {
     }
   }
 
-  const checkinId =
-    body.checkinId?.trim() || new URL(request.url).searchParams.get('checkinId')?.trim() || ''
+  const wantBatch =
+    body.batch === true ||
+    url.searchParams.get('batch') === '1' ||
+    (!body.checkinId?.trim() && !url.searchParams.get('checkinId')?.trim())
+
+  if (wantBatch && !body.checkinId?.trim() && !url.searchParams.get('checkinId')?.trim()) {
+    const limit = Math.min(
+      10,
+      Math.max(
+        1,
+        Number(body.limit ?? url.searchParams.get('limit') ?? String(BATCH_LIMIT)) || BATCH_LIMIT
+      )
+    )
+    try {
+      const result = await runBatch(limit)
+      return NextResponse.json(result, { status: 202 })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'batch failed'
+      return NextResponse.json({ ok: false, error: message }, { status: 500 })
+    }
+  }
+
+  const checkinId = body.checkinId?.trim() || url.searchParams.get('checkinId')?.trim() || ''
   if (!checkinId) {
     return NextResponse.json({ error: 'checkinId is required' }, { status: 400 })
   }
@@ -251,10 +379,7 @@ export async function POST(request: Request) {
       })
     )
 
-    return NextResponse.json(
-      { checkinId, status: 'QUEUED', error: null },
-      { status: 202 }
-    )
+    return NextResponse.json({ checkinId, status: 'QUEUED', error: null }, { status: 202 })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'send failed'
     return NextResponse.json({ checkinId, status: 'FAIL', error: message }, { status: 500 })

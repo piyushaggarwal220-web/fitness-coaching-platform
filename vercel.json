@@ -37,6 +37,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/send-missed-weekly-plans",
+      "schedule": "0 7 * * *"
+    },
+    {
       "path": "/api/cron/meta-purchase-backfill",
       "schedule": "10 * * * *"
     }

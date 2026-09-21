@@ -7,7 +7,8 @@ import { shouldScheduleCheckinAutoReply, coachRequiresManualPlanDelivery } from 
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { generateMidWeekAnalysis, loadCachedMidWeekPack } from '@/lib/ai/midweek-analysis'
-import { findAiDraftForCheckin } from '@/lib/ai/weekly-plan-draft'
+import { findAiDraftForCheckin, generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
+import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
 import { activatePlan } from '@/lib/plans'
@@ -53,9 +54,9 @@ async function resolveReply(
     const week = checkin.coaching_week
     const draftExpected =
       typeof week === 'number' && shouldAutoGenerateWeeklyPlanDraft(planSlug, week)
-    const submittedMs = new Date(checkin.submitted_at).getTime()
-    const tooOld = Number.isFinite(submittedMs) && Date.now() - submittedMs > 48 * 60 * 60 * 1000
-    if (draftExpected && !tooOld) {
+    // Keep signalling draft_not_ready even past 48h so we regenerate instead of
+    // abandoning with a note-only reply. Sweep age cap (7d) still bounds retries.
+    if (draftExpected) {
       return { error: 'draft_not_ready' }
     }
   }
@@ -163,6 +164,23 @@ export async function sendCheckinAutoReply(
 
   if ('error' in resolved) {
     if (resolved.error === 'draft_not_ready') {
+      // Self-heal: kick draft generation again, then retry auto-reply later.
+      void persistDraftGenerationStarted({
+        clientId: checkin.client_id,
+        coachId: checkin.coach_id,
+        checkinId: checkin.id,
+        trigger: 'retry',
+      }).catch((err) => console.error('[checkin-auto-reply] draft start log failed:', err))
+
+      void generateWeeklyPlanDraft({
+        clientId: checkin.client_id,
+        coachId: checkin.coach_id,
+        checkinId: checkin.id,
+        coachingWeek:
+          typeof checkin.coaching_week === 'number' ? checkin.coaching_week : 1,
+        trigger: 'retry',
+      }).catch((err) => console.error('[checkin-auto-reply] draft regenerate failed:', err))
+
       const nextAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
       await supabase.from('checkins').update({ auto_reply_at: nextAt }).eq('id', checkin.id)
       return { status: 'skipped', reason: 'draft_not_ready' }

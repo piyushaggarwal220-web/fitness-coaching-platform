@@ -1,12 +1,20 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { logApiDev } from '@/lib/api-dev-log'
 import { markConversationRead, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
 import { requireConversationParticipant } from '@/lib/chat-api-access'
 import { getCoachResponseTargetFromAnchor } from '@/lib/chat-response-target'
 import { enforceClientCallPolicy, loadClientCallBookingPolicy } from '@/lib/call-booking-policy-server'
+import {
+  autoCoachFirstName,
+  isAutoDeliveryCoach,
+} from '@/lib/coach-delivery-policy'
 import { hasClientEntitlement } from '@/lib/entitlements'
+import { autoReplyUnreadChat, chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
 
 export async function GET(request: Request) {
   try {
@@ -220,11 +228,14 @@ export async function POST(request: Request) {
       senderType,
     })
 
+    const messageType =
+      (body.messageType as 'text' | 'voice' | 'image' | 'system' | undefined) ?? 'text'
+
     const { data, error } = await sendChatMessage(admin, {
       conversationId,
       senderType,
       senderId,
-      messageType: (body.messageType as 'text' | 'voice' | 'image' | 'system' | undefined) ?? 'text',
+      messageType,
       content: body.content,
       mediaUrl: body.mediaUrl,
       mediaDurationSeconds: body.mediaDurationSeconds,
@@ -235,6 +246,45 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, error: 'Message could not be sent right now. Please retry.' },
         { status: 500 }
+      )
+    }
+
+    // Instant AI reply for Piyush/Rakshit (and other auto-delivery coaches).
+    // Cron remains a fallback; autoReplyUnreadChat skips if already answered.
+    if (
+      senderType === 'client' &&
+      isAutoDeliveryCoach(participant.coachId) &&
+      !chatNeedsHumanCoach({ messageType, content: body.content })
+    ) {
+      await setTypingIndicator(admin, conversationId, 'coach')
+      const coachId = participant.coachId
+      const clientId = participant.conversation.client_id
+      after(() =>
+        (async () => {
+          const { data: coach } = await admin
+            .from('coaches')
+            .select('user_id, name')
+            .eq('id', coachId)
+            .maybeSingle()
+          if (!coach?.user_id) return
+          const firstName =
+            coach.name?.trim().split(/\s+/)[0] || autoCoachFirstName(coachId)
+          const result = await autoReplyUnreadChat(admin, {
+            conversationId,
+            clientId,
+            coachUserId: coach.user_id,
+            coachId,
+            coachFirstName: firstName,
+          })
+          if (result.status === 'failed') {
+            console.error('[chat-messages] instant auto-reply failed:', result.detail)
+          }
+        })().catch((err) => {
+          console.error(
+            '[chat-messages] instant auto-reply error:',
+            err instanceof Error ? err.message : err
+          )
+        })
       )
     }
 

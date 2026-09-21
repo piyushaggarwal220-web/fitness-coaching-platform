@@ -11,6 +11,7 @@ export function AiCoachChatThread() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [coachFirstName, setCoachFirstName] = useState('your coach')
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -29,6 +30,9 @@ export function AiCoachChatThread() {
         }
         if (!active) return
         setMessages((data?.messages as Msg[]) ?? [])
+        if (typeof data?.coachFirstName === 'string' && data.coachFirstName.trim()) {
+          setCoachFirstName(data.coachFirstName.trim())
+        }
         setLoading(false)
       } catch {
         if (!active) return
@@ -66,6 +70,9 @@ export function AiCoachChatThread() {
         setSending(false)
         return
       }
+      if (typeof data?.coachFirstName === 'string' && data.coachFirstName.trim()) {
+        setCoachFirstName(data.coachFirstName.trim())
+      }
       if (data?.message) {
         setMessages((prev) => [...prev, data.message as Msg])
       }
@@ -76,16 +83,32 @@ export function AiCoachChatThread() {
     }
   }
 
+  const named = coachFirstName !== 'your coach'
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <div
+        style={{
+          padding: `${spacing[3]}px ${spacing[4]}px`,
+          borderBottom: `1px solid ${colors.divider}`,
+          background: colors.bgGlass,
+        }}
+      >
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>
+          {named ? coachFirstName : 'Coach'}
+        </p>
+        <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
+          {named ? `Chat with ${coachFirstName}` : 'Coach chat'}
+        </p>
+      </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}>
         {loading && (
           <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Loading coach chat…</p>
         )}
         {!loading && messages.length === 0 && (
           <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>
-            Ask about your plan, meals, workouts, or what to do today. Your coach matches the styles you
-            picked in onboarding.
+            Ask {named ? coachFirstName : 'your coach'} about your plan, meals, workouts, or what to do
+            today. Replies match the coaching styles you picked in onboarding.
           </p>
         )}
         {messages.map((msg, index) => {
@@ -110,7 +133,9 @@ export function AiCoachChatThread() {
           )
         })}
         {sending && (
-          <p style={{ margin: 0, color: colors.textMuted, fontSize: 13 }}>Coach is typing…</p>
+          <p style={{ margin: 0, color: colors.textMuted, fontSize: 13 }}>
+            {named ? `${coachFirstName} is typing…` : 'Coach is typing…'}
+          </p>
         )}
         <div ref={bottomRef} />
       </div>
@@ -137,7 +162,7 @@ export function AiCoachChatThread() {
               void send()
             }
           }}
-          placeholder="Message your coach…"
+          placeholder={named ? `Message ${coachFirstName}…` : 'Message your coach…'}
           style={{
             flex: 1,
             minHeight: 44,

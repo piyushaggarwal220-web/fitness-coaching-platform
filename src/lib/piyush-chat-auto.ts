@@ -2,8 +2,11 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
+import {
+  buildNamedCoachSystemPrompt,
+  truncatePlanExcerpt,
+} from '@/lib/ai/coach-chat-persona'
 import { autoCoachFirstName } from '@/lib/coach-delivery-policy'
-import { formatCoachPersonalityDirective } from '@/lib/coach-personality'
 import { markConversationRead, sendChatMessage } from '@/lib/coach-chat'
 
 const HUMAN_ONLY =
@@ -35,6 +38,8 @@ function buildReplyPrompt(input: {
   fitnessGoal: string | null
   journeySummary: string | null
   planTitle: string | null
+  nutritionExcerpt: string | null
+  workoutExcerpt: string | null
   personalities: string[] | null
   history: ChatRow[]
 }): { systemPrompt: string; userPrompt: string } {
@@ -47,27 +52,23 @@ function buildReplyPrompt(input: {
     .join('\n')
 
   return {
-    systemPrompt: [
-      `You are ${input.coachFirstName}, the client's Lurvox coach, replying inside the app chat.`,
-      'Write as a real Indian online coach. Do not mention AI, automation, or templates.',
-      'Keep replies to 2–5 short sentences unless they asked for detail.',
-      'No medical diagnoses. No invented prices, refunds, or discounts.',
-      'If they ask to change food or training, give a safe same-week swap they can follow, and say the written plan will update shortly.',
-      formatCoachPersonalityDirective(input.personalities),
-    ].join('\n'),
+    systemPrompt: buildNamedCoachSystemPrompt({
+      coachFirstName: input.coachFirstName,
+      name: input.name,
+      fitnessGoal: input.fitnessGoal,
+      personalities: input.personalities,
+      planTitle: input.planTitle,
+      journeySummary: input.journeySummary,
+      nutritionExcerpt: input.nutritionExcerpt,
+      workoutExcerpt: input.workoutExcerpt,
+      mode: 'human_thread',
+    }),
     userPrompt: [
-      `Client name: ${input.name}`,
-      `Goal: ${input.fitnessGoal || 'not set'}`,
-      input.planTitle ? `Active plan: ${input.planTitle}` : 'Active plan: not delivered yet',
-      input.journeySummary ? `Journey: ${input.journeySummary}` : '',
-      '',
       'Recent chat:',
       history || '(no prior messages)',
       '',
       'Write the next coach reply only. No quotes around it. No hyphen characters.',
-    ]
-      .filter(Boolean)
-      .join('\n'),
+    ].join('\n'),
   }
 }
 
@@ -94,6 +95,15 @@ export async function autoReplyUnreadChat(
   const latestClient = [...chronological].reverse().find((row) => row.sender_type === 'client')
   if (!latestClient) return { status: 'skipped', detail: 'no unread client message' }
 
+  // Already answered after this client message (instant reply or coach).
+  const answeredAfter = chronological.some(
+    (row) =>
+      row.sender_type === 'coach' &&
+      row.message_type !== 'system' &&
+      row.created_at > latestClient.created_at
+  )
+  if (answeredAfter) return { status: 'skipped', detail: 'already_replied' }
+
   if (chatNeedsHumanCoach(latestClient)) {
     return { status: 'skipped', detail: 'needs_human' }
   }
@@ -106,7 +116,7 @@ export async function autoReplyUnreadChat(
 
   const { data: plan } = await admin
     .from('plans')
-    .select('title')
+    .select('title, nutrition_plan, workout_plan')
     .eq('client_id', input.clientId)
     .eq('active', true)
     .maybeSingle()
@@ -124,6 +134,8 @@ export async function autoReplyUnreadChat(
     fitnessGoal: profile?.fitness_goal ?? null,
     journeySummary: profile?.journey_summary ?? null,
     planTitle: plan?.title ?? null,
+    nutritionExcerpt: truncatePlanExcerpt(plan?.nutrition_plan),
+    workoutExcerpt: truncatePlanExcerpt(plan?.workout_plan),
     personalities,
     history: chronological.slice(-12),
   })
