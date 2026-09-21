@@ -260,7 +260,7 @@ export async function POST(request: Request) {
       training_performance: body.workout_adherence,
       pain_injuries: body.pain_injuries ?? null,
       reviewed: false,
-      // Mid-week always auto-replies. Weekly stays on the coach for manual-delivery coaches.
+      // Mid-week always auto-replies. Weekly auto-replies for auto-delivery coaches.
       auto_reply_at: shouldScheduleCheckinAutoReply(body.checkinType, profile.coach_id)
         ? computeAutoReplyAt(new Date()).toISOString()
         : null,

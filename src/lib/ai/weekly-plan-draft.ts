@@ -643,14 +643,16 @@ export async function generateWeeklyPlanDraft(input: {
       sections,
     })
 
-    await notifyCoachWeeklyDraftReady({
-      coachId: input.coachId,
-      clientId: input.clientId,
-      checkinId: input.checkinId,
-      coachingWeek: input.coachingWeek,
-      planId: draft.id,
-      clientName: (profile as OnboardingProfile).name,
-    }).catch(() => undefined)
+    if (coachRequiresManualPlanDelivery(input.coachId)) {
+      await notifyCoachWeeklyDraftReady({
+        coachId: input.coachId,
+        clientId: input.clientId,
+        checkinId: input.checkinId,
+        coachingWeek: input.coachingWeek,
+        planId: draft.id,
+        clientName: (profile as OnboardingProfile).name,
+      }).catch(() => undefined)
+    }
 
     return { planId: draft.id, error: null, generationTimeMs }
   } catch (err) {
@@ -684,13 +686,15 @@ export async function generateWeeklyPlanDraft(input: {
           planVersion: `v${existing.version}`,
           error: `partial_ok: ${message}`,
         })
-        await notifyCoachWeeklyDraftReady({
-          coachId: input.coachId,
-          clientId: input.clientId,
-          checkinId: input.checkinId,
-          coachingWeek: input.coachingWeek,
-          planId: existing.id,
-        }).catch(() => undefined)
+        if (coachRequiresManualPlanDelivery(input.coachId)) {
+          await notifyCoachWeeklyDraftReady({
+            coachId: input.coachId,
+            clientId: input.clientId,
+            checkinId: input.checkinId,
+            coachingWeek: input.coachingWeek,
+            planId: existing.id,
+          }).catch(() => undefined)
+        }
         return { planId: existing.id, error: null, generationTimeMs }
       }
     } catch {

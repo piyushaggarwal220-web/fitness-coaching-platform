@@ -46,14 +46,14 @@ assert.equal(
 assert.equal(coachAcceptsAutoAssignment(PIYUSH_COACH_ID), false)
 assert.equal(coachAcceptsAutoAssignment(RAKSHIT_COACH_ID), true)
 assert.equal(coachAcceptsAutoAssignment(null), false)
-assert.equal(coachRequiresManualPlanDelivery(PIYUSH_COACH_ID), true)
-assert.equal(coachRequiresManualPlanDelivery(RAKSHIT_COACH_ID), true)
+assert.equal(coachRequiresManualPlanDelivery(PIYUSH_COACH_ID), false)
+assert.equal(coachRequiresManualPlanDelivery(RAKSHIT_COACH_ID), false)
 assert.equal(shouldScheduleCheckinAutoReply('mid_week', PIYUSH_COACH_ID), true)
 assert.equal(shouldScheduleCheckinAutoReply('mid_week', RAKSHIT_COACH_ID), true)
-assert.equal(shouldScheduleCheckinAutoReply('weekly', PIYUSH_COACH_ID), false)
-assert.equal(shouldScheduleCheckinAutoReply('weekly', RAKSHIT_COACH_ID), false)
+assert.equal(shouldScheduleCheckinAutoReply('weekly', PIYUSH_COACH_ID), true)
+assert.equal(shouldScheduleCheckinAutoReply('weekly', RAKSHIT_COACH_ID), true)
 assert.equal(coachUsesFifoWorkQueue(PIYUSH_COACH_ID), true)
-assert.equal(coachUsesFifoWorkQueue(RAKSHIT_COACH_ID), false)
+assert.equal(coachUsesFifoWorkQueue(RAKSHIT_COACH_ID), true)
 
 const resolveSrc = fs.readFileSync(path.join(root, 'src/lib/coach-work-queue-resolve.ts'), 'utf8')
 assert.match(resolveSrc, /coachRequiresManualPlanDelivery/)
@@ -79,5 +79,5 @@ assert.match(autoReplySrc, /coachRequiresManualPlanDelivery\(checkin\.coach_id\)
 assert.match(autoReplySrc, /Manual-delivery coaches never auto-publish/)
 
 console.log(
-  '✓ trial clients stay hidden; weekly plans are manual; mid-week auto-replies for both coaches; Complete does not auto-publish for manual coaches'
+  '✓ trial clients stay hidden; Piyush and Rakshit weekly plans auto-deliver; mid-week auto-replies for both coaches; Complete does not auto-publish for remaining manual coaches'
 )

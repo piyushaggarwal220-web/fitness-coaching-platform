@@ -59,6 +59,7 @@ assert.doesNotMatch(panelSrc, /requireCoach\(/)
 // API uses service role after coach auth (bypass slow RLS EXISTS scans).
 assert.match(routeSrc, /createAdminClient/)
 assert.match(routeSrc, /getCoachWorkQueue/)
+assert.match(routeSrc, /visibleCoachWorkQueueTasks/)
 assert.match(routeSrc, /maxDuration/)
 
 // Dashboard must not block the queue on full check-in history.

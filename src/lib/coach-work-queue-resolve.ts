@@ -257,7 +257,7 @@ export async function resolveWorkQueueTask(
       }
 
       if (!plan.active || !plan.delivered_at) {
-        // Piyush / Rakshit: Complete must not auto-publish. Coach delivers from the plan page.
+        // Manual-delivery coaches: Complete must not auto-publish. Coach delivers from the plan page.
         if (coachRequiresManualPlanDelivery(coachId)) {
           return {
             ok: false,

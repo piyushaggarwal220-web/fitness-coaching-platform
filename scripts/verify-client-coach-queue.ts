@@ -74,10 +74,19 @@ const view = buildClientCoachQueueView({
   planDelivered: true,
 })
 assert('eligible 12-month view', view.eligible)
-assert('your call is #2', view.yourCall?.position === 2 && view.yourCall.aheadCount === 1)
+assert('your call is first among calls', view.yourCall?.position === 1 && view.yourCall.aheadCount === 0)
 assert('message has no call time', !view.message.includes('11:00') && !view.message.includes('Sep'))
 assert('message says coach will call', view.message.includes('will call you this week'))
 assert('does not leak other client names', !view.message.includes('Rahul') && !view.items.some((row) => row.label.includes('Rahul')))
+assert('hides non-call work from the client', view.items.every((row) => row.type === 'call_request'))
+
+const idle = buildClientCoachQueueView({
+  tasks,
+  clientId: 'someone-else',
+  planDelivered: true,
+})
+assert('idle client is told to book from Home', idle.message.toLowerCase().includes('from home'))
+assert('idle client does not see the coach backlog', idle.items.length === 0 && idle.yourCall === null)
 
 const waiting = buildClientCoachQueueView({
   tasks,

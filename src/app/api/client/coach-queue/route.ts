@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
 import { loadClientCoachQueueView } from '@/lib/client-coach-queue-server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { ensureWeeklyCallForClient } from '@/lib/weekly-call-schedule'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -12,12 +11,6 @@ export async function GET() {
   if (!auth.ok) return auth.response
 
   const admin = createAdminClient()
-
-  try {
-    await ensureWeeklyCallForClient(admin, auth.user.id)
-  } catch (err) {
-    console.error('[client/coach-queue] auto-book failed', err)
-  }
 
   try {
     const queue = await loadClientCoachQueueView(admin, auth.user.id)

@@ -304,9 +304,7 @@ export async function activatePlan(
     console.error('[activatePlan] tracker refresh failed', err)
   }
 
-  // Weekly 12-month calls are scheduled by server callers (publish route, work queue,
-  // check-in auto-reply, cron) and by coach UI via /api/coach/weekly-call/ensure —
-  // do not import weekly-call-schedule here; plans.ts is used from client components.
+  // Weekly calls are booked from Home by grandfathered Athletic Body clients only.
 
   return { error: null }
 }

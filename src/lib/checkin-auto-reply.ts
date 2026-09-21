@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { AUTO_REPLY_MIN_DELAY_MS } from '@/lib/checkin-auto-reply-schedule'
+import { AUTO_REPLY_MIN_DELAY_MS, computeAutoReplyAt } from '@/lib/checkin-auto-reply-schedule'
 import { serializeCoachResponse } from '@/lib/checkin'
 import { getCheckinTypeDisplayName } from '@/lib/checkin-schedule'
 import { postCoachCheckinFeedbackToChat } from '@/lib/coach-chat'
@@ -115,7 +115,8 @@ async function resolveReply(
  */
 export async function sendCheckinAutoReply(
   supabase: SupabaseClient,
-  checkin: Checkin
+  checkin: Checkin,
+  options?: { ignoreMinDelay?: boolean }
 ): Promise<AutoReplyOutcome> {
   if (checkin.reviewed) return { status: 'skipped', reason: 'already_reviewed' }
 
@@ -126,6 +127,7 @@ export async function sendCheckinAutoReply(
 
   const submittedMs = new Date(checkin.submitted_at).getTime()
   if (
+    !options?.ignoreMinDelay &&
     Number.isFinite(submittedMs) &&
     Date.now() - submittedMs < AUTO_REPLY_MIN_DELAY_MS
   ) {
@@ -224,6 +226,31 @@ export async function sendCheckinAutoReply(
   return { status: 'sent', publishedPlanId: resolved.publishedPlanId }
 }
 
+async function scheduleMissingCheckinAutoReplies(
+  supabase: SupabaseClient,
+  now: Date
+): Promise<void> {
+  const { data: rows, error } = await supabase
+    .from('checkins')
+    .select('id, coach_id, checkin_type, submitted_at')
+    .eq('reviewed', false)
+    .is('auto_replied_at', null)
+    .is('auto_reply_at', null)
+    .gte('submitted_at', new Date(now.getTime() - MAX_AUTO_REPLY_AGE_MS).toISOString())
+    .order('submitted_at', { ascending: true })
+    .limit(50)
+
+  if (error || !rows?.length) return
+
+  for (const row of rows) {
+    const checkinType = row.checkin_type === 'mid_week' ? 'mid_week' : 'weekly'
+    if (!shouldScheduleCheckinAutoReply(checkinType, row.coach_id)) continue
+    const due = computeAutoReplyAt(row.submitted_at)
+    const when = due.getTime() <= now.getTime() ? now : due
+    await supabase.from('checkins').update({ auto_reply_at: when.toISOString() }).eq('id', row.id)
+  }
+}
+
 export type AutoReplySweepSummary = {
   due: number
   sent: number
@@ -251,6 +278,8 @@ export async function processDueCheckinAutoReplies(
     deferredForQuietHours: false,
     details: [],
   }
+
+  await scheduleMissingCheckinAutoReplies(supabase, now)
 
   const { data: rows, error } = await supabase
     .from('checkins')

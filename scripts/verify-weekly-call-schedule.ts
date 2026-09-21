@@ -31,9 +31,9 @@ assert(
 assert('invalid date is not eligible', getInitialWeeklyCallWindow('not-a-date', new Date()).eligible === false)
 
 const scheduleSrc = readFileSync(resolve('src/lib/weekly-call-schedule.ts'), 'utf8')
-assert('completion schedules next call after 7 days', /Date\.now\(\) \+ 7 \* 24 \* 60 \* 60 \* 1000/.test(scheduleSrc))
-assert('ensureWeeklyCall honors after gate', /before_after_gate/.test(scheduleSrc))
-assert('ensureWeeklyCall skips recently completed', /recently_completed/.test(scheduleSrc))
+assert('ensureWeeklyCall does not auto-book', /client_initiated_only/.test(scheduleSrc))
+assert('leftover auto-booked weekly calls are cancelled', /cancelAutoBookedWeeklyCalls/.test(scheduleSrc))
+assert('does not insert weekly_entitlement', !/source: 'weekly_entitlement'/.test(scheduleSrc))
 
 if (process.exitCode) {
   console.error('\nweekly-call-timing checks failed')

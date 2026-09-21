@@ -1,13 +1,12 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { evaluateCallBookingPolicy } from '@/lib/call-booking-policy'
+import { loadClientCallBookingPolicy } from '@/lib/call-booking-policy-server'
 import { getCoachWorkQueue } from '@/lib/coach-work-queue'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import {
   buildClientCoachQueueView,
   type ClientCoachQueueView,
 } from '@/lib/client-coach-queue'
-import { getClientPlanSlug } from '@/lib/weekly-call-schedule'
 
 const EMPTY_INELIGIBLE: ClientCoachQueueView = {
   eligible: false,
@@ -33,14 +32,8 @@ export async function loadClientCoachQueueView(
 
   if (!profile || !hasClientEntitlement(profile)) return EMPTY_INELIGIBLE
 
-  const planSlug = await getClientPlanSlug(admin, clientId)
-  if (planSlug !== '12_months') return EMPTY_INELIGIBLE
-
-  const policy = evaluateCallBookingPolicy({
-    planSlug,
-    checkinScheduleStartedAt: profile.checkin_schedule_started_at ?? null,
-    planDelivered: Boolean(profile.plan_delivered),
-  })
+  const policy = await loadClientCallBookingPolicy(admin, clientId)
+  if (!policy.isGrandfatheredAthleticBody) return EMPTY_INELIGIBLE
 
   if (!profile.coach_id) {
     return buildClientCoachQueueView({

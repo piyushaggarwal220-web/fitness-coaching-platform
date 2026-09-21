@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
-import { coachRequiresManualPlanDelivery, coachUsesFifoWorkQueue, clientRequiresJourneySetup } from '@/lib/coach-delivery-policy'
+import {
+  coachRequiresManualPlanDelivery,
+  coachUsesFifoWorkQueue,
+  clientRequiresJourneySetup,
+  shouldAutoProcessCoachWorkQueue,
+} from '@/lib/coach-delivery-policy'
 import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
 import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
@@ -587,15 +592,11 @@ export async function getCoachWorkQueue(
   for (const request of callRequests ?? []) {
     if (!clientNameById.has(request.client_id)) continue
     const name = clientNameById.get(request.client_id) ?? 'Client'
-    const isWeekly = (request as { source?: string }).source === 'weekly_entitlement'
-    const weeklyLabel = isWeekly ? 'Weekly 12-mo call' : 'Call'
     tasks.push({
       id: `call-${request.id}`,
       type: 'call_request',
-      title: `${weeklyLabel} with ${name}`,
-      subtitle: isWeekly
-        ? 'Call this client this week when you are ready'
-        : 'Open chat — call when ready',
+      title: `Weekly call with ${name}`,
+      subtitle: 'Client started this call — call when ready',
       href: `/coach/chat/${request.conversation_id}`,
       clientId: request.client_id,
       clientName: name,
@@ -748,4 +749,13 @@ export function filterWorkQueue(tasks: WorkQueueTask[], filter: WorkQueueFilter)
     return tasks.filter((t) => t.type === 'initial_plan' || t.type === 'journey_setup')
   }
   return tasks.filter((t) => t.type === filter)
+}
+
+/** Auto-delivery coaches only see client-started weekly calls. AI handles the rest. */
+export function visibleCoachWorkQueueTasks(
+  tasks: WorkQueueTask[],
+  coachId: string
+): WorkQueueTask[] {
+  if (!shouldAutoProcessCoachWorkQueue(coachId)) return tasks
+  return tasks.filter((task) => task.type === 'call_request')
 }

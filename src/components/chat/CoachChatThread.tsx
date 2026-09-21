@@ -22,10 +22,8 @@ import {
   formatNextCoachWorkingHours,
   getCoachWorkingHoursStatus,
 } from '@/lib/coach-working-hours'
-import type { CallBookingPolicy } from '@/lib/call-booking-policy'
 import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability'
-import { CoachQueueCard } from '@/components/dashboard/CoachQueueCard'
-import { CalendarClock, Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
+import { Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
 
 /** WhatsApp-like dark palette (client portal) */
 const waDark = {
@@ -151,7 +149,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [peerLastSeenAt, setPeerLastSeenAt] = useState<string | null>(null)
   const [serverResponseTarget, setServerResponseTarget] = useState<CoachResponseTarget | null>(null)
   const [callRequests, setCallRequests] = useState<CallRequest[]>([])
-  const [callBookingPolicy, setCallBookingPolicy] = useState<CallBookingPolicy | null>(null)
   const [callRequestBusy, setCallRequestBusy] = useState(false)
   const [now, setNow] = useState(0)
   const [error, setError] = useState('')
@@ -211,7 +208,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       messages?: ConversationMessage[]
       peerTyping?: boolean
       callRequests?: CallRequest[]
-      bookingPolicy?: CallBookingPolicy | null
+      bookingPolicy?: unknown
       peerLastSeenAt?: string | null
       responseTarget?: CoachResponseTarget | null
       error?: string
@@ -276,7 +273,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
     }
     if (typeof parsed.data.peerTyping === 'boolean') setPeerTyping(parsed.data.peerTyping)
     if (parsed.data.callRequests) setCallRequests(parsed.data.callRequests)
-    if ('bookingPolicy' in parsed.data) setCallBookingPolicy(parsed.data.bookingPolicy ?? null)
     if ('peerLastSeenAt' in parsed.data) setPeerLastSeenAt(parsed.data.peerLastSeenAt ?? null)
     if ('responseTarget' in parsed.data) setServerResponseTarget(parsed.data.responseTarget ?? null)
   }, [conversationId, viewer])
@@ -338,27 +334,6 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const activeCallRequest = callRequests.find(
     (request) => request.status === 'requested' || request.status === 'scheduled'
   )
-
-  const createCallRequest = async () => {
-    if (callRequestBusy) return
-    setCallRequestBusy(true)
-    setError('')
-    try {
-      const res = await fetch('/api/chat/call-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ conversationId }),
-      })
-      const parsed = await readApiJson<{ request?: CallRequest }>(res)
-      if (!parsed.ok) throw new Error(parsed.error)
-      await fetchMessages(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not request a call')
-    } finally {
-      setCallRequestBusy(false)
-    }
-  }
 
   const updateCallRequest = async (status: CallRequestStatus) => {
     if (!activeCallRequest || callRequestBusy) return
@@ -630,72 +605,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       ) : null}
       <div style={styles.contextBar}>
         <span style={{ color: peerOnline ? '#53d769' : wa.textMuted }}>{presenceText}</span>
-        {viewer === 'client' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {activeCallRequest ? (
-              <>
-                <span
-                  style={{
-                    ...styles.bookCallBtn,
-                    cursor: 'default',
-                    background: 'rgba(83,215,105,0.14)',
-                    borderColor: 'rgba(83,215,105,0.4)',
-                    color: '#53d769',
-                  }}
-                >
-                  <CalendarClock size={15} />
-                  {activeCallRequest.source === 'weekly_entitlement'
-                    ? 'Your coach will call you this week'
-                    : 'Call requested — your coach will call you'}
-                </span>
-                {activeCallRequest.source !== 'weekly_entitlement' ? (
-                  <button
-                    type="button"
-                    onClick={() => void updateCallRequest('cancelled')}
-                    disabled={callRequestBusy}
-                    style={{
-                      ...styles.bookCallBtn,
-                      padding: '7px 10px',
-                      color: wa.textMuted,
-                    }}
-                  >
-                    Cancel
-                  </button>
-                ) : null}
-              </>
-            ) : callBookingPolicy?.canRequestManualCall ? (
-              <button
-                type="button"
-                onClick={() => void createCallRequest()}
-                disabled={callRequestBusy}
-                style={styles.bookCallBtn}
-              >
-                <CalendarClock size={15} />
-                Book a call
-              </button>
-            ) : callBookingPolicy?.message ? (
-              <span
-                style={{
-                  ...styles.bookCallBtn,
-                  cursor: 'default',
-                  maxWidth: 280,
-                  whiteSpace: 'normal',
-                  lineHeight: 1.35,
-                  fontSize: 12,
-                  color: wa.textMuted,
-                  background: 'rgba(255,255,255,0.04)',
-                  borderColor: 'rgba(255,255,255,0.1)',
-                }}
-              >
-                <CalendarClock size={15} style={{ flexShrink: 0 }} />
-                {callBookingPolicy.message}
-              </span>
-            ) : null}
-          </div>
-        )}
       </div>
-
-      {viewer === 'client' && callBookingPolicy?.isTwelveMonth ? <CoachQueueCard compact /> : null}
 
       {viewer === 'client' && remainingMs !== null && workingHours?.isOpen && (
         <div style={{
@@ -720,19 +630,10 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
 
       {viewer === 'coach' && activeCallRequest && (
         <div style={styles.callRequestPanel}>
-          <strong>
-            Call request: {activeCallRequest.status}
-            {activeCallRequest.source === 'weekly_entitlement' ? ' · Weekly (auto)' : ''}
-          </strong>
-          {activeCallRequest.source === 'weekly_entitlement' ? (
-            <p style={{ margin: '8px 0 0', fontSize: 13, color: wa.textMuted }}>
-              Call this client this week when you are ready — mark complete after you call.
-            </p>
-          ) : (
-            <p style={{ margin: '8px 0 0', fontSize: 13, color: wa.textMuted }}>
-              Call when ready — do not set a time.
-            </p>
-          )}
+          <strong>Weekly call: {activeCallRequest.status}</strong>
+          <p style={{ margin: '8px 0 0', fontSize: 13, color: wa.textMuted }}>
+            Client booked this from Home. Call when ready — do not set a time.
+          </p>
           <button type="button" onClick={() => void updateCallRequest('completed')} disabled={callRequestBusy} style={styles.callAction}>Complete</button>
           <button type="button" onClick={() => void updateCallRequest('declined')} disabled={callRequestBusy} style={styles.callAction}>Decline</button>
           <button type="button" onClick={() => void updateCallRequest('cancelled')} disabled={callRequestBusy} style={styles.callAction}>Cancel</button>

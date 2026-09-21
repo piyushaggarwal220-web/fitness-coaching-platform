@@ -1,36 +1,50 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ListOrdered } from 'lucide-react'
+import { Phone } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { readApiJson } from '@/lib/api-response'
+import type { CallBookingPolicy } from '@/lib/call-booking-policy'
 import type { ClientCoachQueueView } from '@/lib/client-coach-queue'
 import { colors, spacing } from '@/lib/design-tokens'
+
+type ActiveCall = {
+  id: string
+  status: string
+}
 
 type Props = {
   compact?: boolean
 }
 
 export function CoachQueueCard({ compact = false }: Props) {
+  const [policy, setPolicy] = useState<CallBookingPolicy | null>(null)
   const [queue, setQueue] = useState<ClientCoachQueueView | null>(null)
+  const [activeCall, setActiveCall] = useState<ActiveCall | null>(null)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/client/coach-queue', { credentials: 'include', cache: 'no-store' })
-      const parsed = await readApiJson<{ success?: boolean; queue?: ClientCoachQueueView; error?: string }>(res)
+      const res = await fetch('/api/client/weekly-call', { credentials: 'include', cache: 'no-store' })
+      const parsed = await readApiJson<{
+        success?: boolean
+        policy?: CallBookingPolicy
+        request?: ActiveCall | null
+        queue?: ClientCoachQueueView
+        error?: string
+      }>(res)
       if (!parsed.ok) {
-        setError(parsed.error || 'Could not load your coach’s queue.')
-        return
-      }
-      if (!parsed.data.queue) {
-        setError(parsed.data.error || 'Could not load your coach’s queue.')
+        setError(parsed.error || 'Could not load weekly call.')
         return
       }
       setError('')
-      setQueue(parsed.data.queue)
+      setPolicy(parsed.data.policy ?? null)
+      setQueue(parsed.data.queue ?? null)
+      setActiveCall(parsed.data.request ?? null)
     } catch {
-      setError('Could not load your coach’s queue.')
+      setError('Could not load weekly call.')
     }
   }, [])
 
@@ -40,11 +54,59 @@ export function CoachQueueCard({ compact = false }: Props) {
     return () => window.clearInterval(timer)
   }, [load])
 
-  if (error && !queue) {
-    if (compact) return null
-    return null
+  const startCall = async () => {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/api/client/weekly-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'start' }),
+      })
+      const parsed = await readApiJson<{ error?: string }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not book this week’s call')
+    } finally {
+      setBusy(false)
+    }
   }
-  if (!queue || !queue.eligible) return null
+
+  const cancelCall = async () => {
+    if (busy || !activeCall) return
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/api/client/weekly-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'cancel', requestId: activeCall.id }),
+      })
+      const parsed = await readApiJson<{ error?: string }>(res)
+      if (!parsed.ok) throw new Error(parsed.error)
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not cancel this call')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!policy?.isGrandfatheredAthleticBody) return null
+
+  const heading = activeCall ? 'Your coach will call you this week' : 'Book a weekly call'
+  const message =
+    activeCall
+      ? queue?.yourCall
+        ? queue.message
+        : 'Requested from Home. Your coach will call you when ready — you do not pick a time.'
+      : policy.message ||
+        queue?.message ||
+        'Athletic Body members can book one weekly coach call from Home.'
 
   if (compact) {
     return (
@@ -57,29 +119,8 @@ export function CoachQueueCard({ compact = false }: Props) {
           border: '1px solid rgba(255,255,255,0.08)',
         }}
       >
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#e9edef' }}>
-          Your coach will call you this week
-        </p>
-        <p style={{ margin: '4px 0 0', fontSize: 12, color: '#aebac1', lineHeight: 1.4 }}>
-          {queue.message}
-        </p>
-        {queue.items.length > 0 ? (
-          <ol style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 12, color: '#e9edef' }}>
-            {queue.items.slice(0, 6).map((item) => (
-              <li
-                key={`${item.position}-${item.type}`}
-                style={{
-                  marginBottom: 2,
-                  fontWeight: item.yours ? 700 : 400,
-                  color: item.yours ? '#53d769' : '#aebac1',
-                }}
-              >
-                {item.label}
-                {item.yours ? ' · you' : ''}
-              </li>
-            ))}
-          </ol>
-        ) : null}
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#e9edef' }}>{heading}</p>
+        <p style={{ margin: '4px 0 0', fontSize: 12, color: '#aebac1', lineHeight: 1.4 }}>{message}</p>
       </div>
     )
   }
@@ -105,7 +146,7 @@ export function CoachQueueCard({ compact = false }: Props) {
             flexShrink: 0,
           }}
         >
-          <ListOrdered size={20} color={colors.accent} />
+          <Phone size={20} color={colors.accent} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p
@@ -118,70 +159,28 @@ export function CoachQueueCard({ compact = false }: Props) {
               color: colors.accent,
             }}
           >
-            Coach work queue
+            Athletic Body
           </p>
           <h2 style={{ margin: '6px 0 0', fontSize: 18, fontWeight: 800, color: colors.textPrimary }}>
-            Your coach will call you this week
+            {heading}
           </h2>
           <p style={{ margin: '8px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-            {queue.message}
+            {message}
           </p>
-          {queue.items.length > 0 ? (
-            <ol
-              style={{
-                margin: '14px 0 0',
-                padding: 0,
-                listStyle: 'none',
-                display: 'grid',
-                gap: 8,
-              }}
-            >
-              {queue.items.map((item) => (
-                <li
-                  key={`${item.position}-${item.type}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 10px',
-                    borderRadius: 10,
-                    background: item.yours ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)',
-                    border: item.yours
-                      ? '1px solid rgba(34,197,94,0.35)'
-                      : '1px solid rgba(255,255,255,0.06)',
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 999,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: item.yours ? '#86efac' : colors.textMuted,
-                      background: item.yours ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {item.position}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: item.yours ? 700 : 500,
-                      color: item.yours ? colors.textPrimary : colors.textSecondary,
-                    }}
-                  >
-                    {item.label}
-                    {item.yours ? ' · you' : ''}
-                  </span>
-                </li>
-              ))}
-            </ol>
+          {error ? (
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: colors.danger }}>{error}</p>
           ) : null}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+            {activeCall ? (
+              <Button variant="secondary" onClick={() => void cancelCall()} disabled={busy}>
+                Cancel this week’s call
+              </Button>
+            ) : policy.canRequestManualCall ? (
+              <Button onClick={() => void startCall()} disabled={busy} loading={busy}>
+                Book weekly call
+              </Button>
+            ) : null}
+          </div>
         </div>
       </div>
     </Card>

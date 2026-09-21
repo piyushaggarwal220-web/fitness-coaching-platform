@@ -9,7 +9,7 @@ import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { publicDemoReadOnlyJson, rejectIfPublicDemoMutation } from '@/lib/public-demo-guard'
-import type { CallRequest, CallRequestStatus } from '@/types/database'
+import type { CallRequestStatus } from '@/types/database'
 
 const FINAL_STATUSES = new Set<CallRequestStatus>(['completed', 'declined', 'cancelled'])
 const COACH_STATUSES = new Set<CallRequestStatus>([
@@ -101,6 +101,7 @@ export async function POST(request: Request) {
       client_id: participant.conversation.client_id,
       coach_id: participant.conversation.coach_id,
       status: 'requested',
+      source: 'client_requested',
       updated_by: userId,
       requested_at: now,
       created_at: now,
@@ -140,7 +141,7 @@ export async function POST(request: Request) {
       userId: coach.user_id,
       type: 'call_requested',
       title: 'Client requested a call',
-      body: 'A client requested a coaching call. Review it in your work queue.',
+      body: 'A client started a weekly coaching call. Call them when you are ready.',
       actionUrl: `/coach/chat/${conversationId}`,
       metadata: { callRequestId: created.id, conversationId },
     })
@@ -179,17 +180,10 @@ export async function PATCH(request: Request) {
   const isCoach =
     access.participant.viewer === 'coach' &&
     access.participant.coachId === current.coach_id
-  const isWeeklyEntitlement = (current as CallRequest).source === 'weekly_entitlement'
   const isClientCancelling =
     access.userId === current.client_id &&
     body.status === 'cancelled' &&
     (current.status === 'requested' || current.status === 'scheduled')
-  if (isClientCancelling && isWeeklyEntitlement) {
-    return NextResponse.json(
-      { error: 'Weekly calls are opened automatically and cannot be cancelled from the app.' },
-      { status: 403 }
-    )
-  }
   if (!isCoach && !isClientCancelling) {
     return NextResponse.json({ error: 'Not allowed to update this request' }, { status: 403 })
   }
@@ -249,21 +243,6 @@ export async function PATCH(request: Request) {
       actionUrl: '/client/chat',
       metadata: { callRequestId: current.id, status: body.status },
     })
-  }
-
-  if (body.status === 'completed' && (current as CallRequest).source === 'weekly_entitlement') {
-    try {
-      const { scheduleNextWeeklyCallAfterCompletion } = await import('@/lib/weekly-call-schedule')
-      await scheduleNextWeeklyCallAfterCompletion(admin, {
-        id: current.id,
-        client_id: current.client_id,
-        coach_id: current.coach_id,
-        scheduled_for: current.scheduled_for,
-        source: (current as CallRequest).source,
-      })
-    } catch (err) {
-      console.error('[call-requests] next weekly call schedule failed', err)
-    }
   }
 
   return NextResponse.json({ request: updated })

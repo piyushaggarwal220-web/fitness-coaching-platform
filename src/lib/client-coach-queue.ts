@@ -89,8 +89,9 @@ export function buildClientCoachQueueView(input: {
   daysUntilEligible?: number | null
   planDelivered?: boolean
 }): ClientCoachQueueView {
-  const items = toClientCoachQueueItems(input.tasks, input.clientId)
-  const yourCall = findYourCallInQueue(input.tasks, input.clientId)
+  const callTasks = input.tasks.filter((task) => task.type === 'call_request')
+  const items = toClientCoachQueueItems(callTasks, input.clientId)
+  const yourCall = findYourCallInQueue(callTasks, input.clientId)
 
   if (input.withinInitialTwoWeeks) {
     const days = input.daysUntilEligible ?? 0
@@ -116,21 +117,21 @@ export function buildClientCoachQueueView(input: {
       planDelivered: false,
       items: [],
       yourCall: null,
-      message: 'Your weekly coach call is booked automatically after your first plan is delivered.',
+      message: 'You can book a weekly coach call from Home after your first plan is delivered.',
     }
   }
 
   if (yourCall) {
     const place =
       yourCall.aheadCount === 0
-        ? 'You are next in your coach’s work queue.'
-        : `You are #${yourCall.position} of ${yourCall.total} in your coach’s work queue.`
+        ? 'You are next in your coach’s call list.'
+        : `You are #${yourCall.position} of ${yourCall.total} in your coach’s call list.`
     return {
       eligible: true,
       withinInitialTwoWeeks: false,
       daysUntilEligible: null,
       planDelivered: true,
-      items,
+      items: items,
       yourCall,
       message: `${place} Your coach will call you this week — you do not pick a time.`,
     }
@@ -141,11 +142,8 @@ export function buildClientCoachQueueView(input: {
     withinInitialTwoWeeks: false,
     daysUntilEligible: null,
     planDelivered: true,
-    items,
+    items: [],
     yourCall: null,
-    message:
-      items.length > 0
-        ? 'Your coach’s current work queue is below. Your weekly call is booked automatically when it is due.'
-        : 'Your weekly call is booked automatically. Your coach’s queue is clear right now.',
+    message: 'Want a weekly call? Book it from Home. Your coach will call after you request it.',
   }
 }

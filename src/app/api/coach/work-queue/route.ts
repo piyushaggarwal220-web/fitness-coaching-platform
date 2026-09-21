@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
-import { getCoachWorkQueue } from '@/lib/coach-work-queue'
+import { getCoachWorkQueue, visibleCoachWorkQueueTasks } from '@/lib/coach-work-queue'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const maxDuration = 30
@@ -23,7 +23,10 @@ export async function GET() {
 
   try {
     const admin = createAdminClient()
-    const tasks = await getCoachWorkQueue(admin, coach.id)
+    const tasks = visibleCoachWorkQueueTasks(
+      await getCoachWorkQueue(admin, coach.id),
+      coach.id
+    )
     return NextResponse.json({ tasks, coachId: coach.id })
   } catch (error) {
     console.error('[work-queue] failed to load queue', error)

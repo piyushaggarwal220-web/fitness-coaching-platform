@@ -1,0 +1,171 @@
+import 'server-only'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { generateOpenAIResponse } from '@/lib/ai/openai'
+import { MODELS } from '@/lib/ai/config'
+import { autoCoachFirstName } from '@/lib/coach-delivery-policy'
+import { formatCoachPersonalityDirective } from '@/lib/coach-personality'
+import { markConversationRead, sendChatMessage } from '@/lib/coach-chat'
+
+const HUMAN_ONLY =
+  /\b(call me|phone (call|me)|video call|whatsapp call|speak to (you|piyush|rakshit|the coach)|talk to (you|piyush|rakshit|a human|the coach)|real (person|coach|human)|human coach|refund|cancel (my )?(plan|membership|subscription)|chargeback|lawyer|chest pain|suicid|kill myself|self.?harm|emergency|hospitalized)\b/i
+
+type ChatRow = {
+  id: string
+  sender_type: string
+  message_type: string | null
+  content: string | null
+  created_at: string
+}
+
+export function chatNeedsHumanCoach(input: {
+  messageType?: string | null
+  message_type?: string | null
+  content?: string | null
+}): boolean {
+  const type = input.messageType ?? input.message_type ?? 'text'
+  if (type === 'voice') return true
+  const text = input.content?.trim() ?? ''
+  if (!text) return type === 'image'
+  return HUMAN_ONLY.test(text)
+}
+
+function buildReplyPrompt(input: {
+  coachFirstName: string
+  name: string
+  fitnessGoal: string | null
+  journeySummary: string | null
+  planTitle: string | null
+  personalities: string[] | null
+  history: ChatRow[]
+}): { systemPrompt: string; userPrompt: string } {
+  const history = input.history
+    .map((row) => {
+      const who = row.sender_type === 'client' ? 'Client' : row.sender_type === 'coach' ? 'Coach' : 'System'
+      const body = row.content?.trim() || `[${row.message_type || 'message'}]`
+      return `${who}: ${body}`
+    })
+    .join('\n')
+
+  return {
+    systemPrompt: [
+      `You are ${input.coachFirstName}, the client's Lurvox coach, replying inside the app chat.`,
+      'Write as a real Indian online coach. Do not mention AI, automation, or templates.',
+      'Keep replies to 2–5 short sentences unless they asked for detail.',
+      'No medical diagnoses. No invented prices, refunds, or discounts.',
+      'If they ask to change food or training, give a safe same-week swap they can follow, and say the written plan will update shortly.',
+      formatCoachPersonalityDirective(input.personalities),
+    ].join('\n'),
+    userPrompt: [
+      `Client name: ${input.name}`,
+      `Goal: ${input.fitnessGoal || 'not set'}`,
+      input.planTitle ? `Active plan: ${input.planTitle}` : 'Active plan: not delivered yet',
+      input.journeySummary ? `Journey: ${input.journeySummary}` : '',
+      '',
+      'Recent chat:',
+      history || '(no prior messages)',
+      '',
+      'Write the next coach reply only. No quotes around it. No hyphen characters.',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  }
+}
+
+export async function autoReplyUnreadChat(
+  admin: SupabaseClient,
+  input: {
+    conversationId: string
+    clientId: string
+    coachUserId: string
+    coachId?: string | null
+    coachFirstName?: string | null
+  }
+): Promise<{ status: 'sent' | 'skipped' | 'failed'; detail: string }> {
+  const { data: messages, error } = await admin
+    .from('conversation_messages')
+    .select('id, sender_type, message_type, content, created_at, read_at')
+    .eq('conversation_id', input.conversationId)
+    .order('created_at', { ascending: false })
+    .limit(16)
+
+  if (error) return { status: 'failed', detail: error.message }
+
+  const chronological = [...(messages ?? [])].reverse() as ChatRow[]
+  const latestClient = [...chronological].reverse().find((row) => row.sender_type === 'client')
+  if (!latestClient) return { status: 'skipped', detail: 'no unread client message' }
+
+  if (chatNeedsHumanCoach(latestClient)) {
+    return { status: 'skipped', detail: 'needs_human' }
+  }
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('name, fitness_goal, journey_summary, onboarding_data')
+    .eq('id', input.clientId)
+    .maybeSingle()
+
+  const { data: plan } = await admin
+    .from('plans')
+    .select('title')
+    .eq('client_id', input.clientId)
+    .eq('active', true)
+    .maybeSingle()
+
+  const personalities =
+    (profile?.onboarding_data as { goals?: { coachPersonalities?: string[] } } | null)?.goals
+      ?.coachPersonalities ?? null
+
+  const coachFirstName =
+    input.coachFirstName?.trim() || autoCoachFirstName(input.coachId)
+
+  const prompts = buildReplyPrompt({
+    coachFirstName,
+    name: profile?.name?.trim() || 'there',
+    fitnessGoal: profile?.fitness_goal ?? null,
+    journeySummary: profile?.journey_summary ?? null,
+    planTitle: plan?.title ?? null,
+    personalities,
+    history: chronological.slice(-12),
+  })
+
+  let reply: string
+  try {
+    const generated = await generateOpenAIResponse({
+      systemPrompt: prompts.systemPrompt,
+      userPrompt: prompts.userPrompt,
+      model: MODELS.GPT_LUNA,
+      maxTokens: 400,
+      temperature: 0.5,
+    })
+    reply = generated.text.replace(/[\u2010-\u2015\u2212-]/g, ' ').replace(/\s{2,}/g, ' ').trim()
+  } catch (err) {
+    return { status: 'failed', detail: err instanceof Error ? err.message : 'chat generation failed' }
+  }
+
+  if (!reply) return { status: 'failed', detail: 'empty reply' }
+
+  const sent = await sendChatMessage(admin, {
+    conversationId: input.conversationId,
+    senderType: 'coach',
+    senderId: input.coachUserId,
+    content: reply,
+  })
+  if (sent.error) return { status: 'failed', detail: sent.error }
+
+  await markConversationRead(admin, input.conversationId, 'coach', latestClient.created_at)
+  return { status: 'sent', detail: 'replied' }
+}
+
+/** @deprecated Use autoReplyUnreadChat — works for Piyush and Rakshit. */
+export async function autoReplyPiyushUnreadChat(
+  admin: SupabaseClient,
+  input: {
+    conversationId: string
+    clientId: string
+    coachUserId: string
+    coachId?: string | null
+    coachFirstName?: string | null
+  }
+): Promise<{ status: 'sent' | 'skipped' | 'failed'; detail: string }> {
+  return autoReplyUnreadChat(admin, input)
+}

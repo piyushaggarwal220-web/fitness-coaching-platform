@@ -1,6 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
+  isAutoDeliveryCoach,
   planRequiresCoachReviewBeforeAutoDeliver,
   shouldAutoJourneyAndDeliverInitialPlan,
 } from '@/lib/coach-delivery-policy'
@@ -27,7 +28,9 @@ export async function deliverPiyushInitialPlan(
     .eq('id', input.planId)
     .maybeSingle()
 
-  if (planRequiresCoachReviewBeforeAutoDeliver(planRow?.coach_notes)) {
+  // Auto-delivery coaches ship even when the model flagged a calorie floor —
+  // the floor is already applied in the draft. Manual coaches still hold for review.
+  if (!isAutoDeliveryCoach(input.coachId) && planRequiresCoachReviewBeforeAutoDeliver(planRow?.coach_notes)) {
     const { data: coach } = await admin
       .from('coaches')
       .select('user_id')

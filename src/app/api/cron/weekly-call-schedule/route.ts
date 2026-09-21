@@ -6,7 +6,7 @@ import { scheduleWeeklyCallsForAllEligible } from '@/lib/weekly-call-schedule'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-/** Vercel cron: daily 04:00 UTC (09:30 IST) — ensure 12-month clients have a scheduled weekly call. */
+/** Vercel cron: daily 04:00 UTC (09:30 IST) — close leftover auto-booked weekly calls. Clients start calls themselves. */
 
 function authorizeCron(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim()

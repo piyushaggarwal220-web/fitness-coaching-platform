@@ -1,8 +1,6 @@
 import { after, NextResponse } from 'next/server'
-import {
-  processPiyushPendingInitialPlans,
-  runPiyushInitialPlanForClient,
-} from '@/lib/piyush-initial-plan-auto'
+import { processPiyushPendingInitialPlans, runPiyushInitialPlanForClient } from '@/lib/piyush-initial-plan-auto'
+import { processAutoCoachWorkQueues } from '@/lib/piyush-work-queue-auto'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
@@ -31,12 +29,13 @@ function authorize(request: Request): boolean {
 }
 
 /**
- * Piyush only: AI journey → initial plan generate → auto-deliver for clients
- * still waiting on their first plan.
+ * Auto-coach: drain AI-capable work for Piyush and Rakshit (plans, check-ins, chats,
+ * certificates) and leave only phone calls / human-only chats.
  *
  *   GET/POST /api/cron/piyush-initial-plans?limit=2
- *   Optional: &clientId=<uuid> to process one client
+ *   Optional: &clientId=<uuid> to process one initial-plan client
  *   Optional: &sync=1 to generate inline (default: background after response)
+ *   Optional: &queue=0 to skip the full work-queue sweep
  */
 async function handle(request: Request) {
   if (!authorize(request)) {
@@ -47,6 +46,8 @@ async function handle(request: Request) {
   const limit = Math.min(5, Math.max(1, Number(url.searchParams.get('limit') ?? '2') || 2))
   const clientId = url.searchParams.get('clientId')?.trim() || null
   const sync = url.searchParams.get('sync') === '1'
+  const skipQueue = url.searchParams.get('queue') === '0'
+  const ignoreDelay = url.searchParams.get('ignoreDelay') === '1'
 
   const admin = createAdminClient()
 
@@ -79,6 +80,15 @@ async function handle(request: Request) {
     return NextResponse.json({ ok: true, sync: false, results: [prepared] })
   }
 
+  const queue = skipQueue
+    ? null
+    : await processAutoCoachWorkQueues(admin, {
+        initialPlanLimit: 0,
+        checkinLimit: 1,
+        chatLimit: 4,
+        ignoreCheckinDelay: ignoreDelay,
+      })
+
   if (sync) {
     const results = await processPiyushPendingInitialPlans(admin, limit)
     return NextResponse.json({
@@ -86,6 +96,7 @@ async function handle(request: Request) {
       sync: true,
       processed: results.length,
       results,
+      queue,
     })
   }
 
@@ -117,6 +128,7 @@ async function handle(request: Request) {
     sync: false,
     processed: prepared.length,
     results: prepared,
+    queue,
   })
 }
 
