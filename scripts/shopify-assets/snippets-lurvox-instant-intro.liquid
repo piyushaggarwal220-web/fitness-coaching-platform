@@ -1,0 +1,259 @@
+{% comment %}
+  Instant landing copy, pasted onto Orange before plan cards.
+  Headline → stamp → coach photos (tap opens Instagram) → 7000 people.
+{% endcomment %}
+<section class="lx-intro" id="lx-intro" aria-labelledby="lx-intro-title">
+  <a class="lx-intro__login" href="https://app.lurvox.in/login">Existing client log in</a>
+  <div class="lx-intro__grid">
+    <div class="lx-intro__copy">
+      <h1 class="lx-intro__title" id="lx-intro-title">
+        Personalised fitness plans,
+        <span> within a few hours.</span>
+      </h1>
+      <p class="lx-intro__lede">
+        Coach-made workout and diet around your goals, from ₹599. You get a <strong>new plan every week</strong>, and trackers, coach chat, and Journey are already unlocked from day one — not add-ons later.
+      </p>
+      <ul class="lx-intro__trust">
+        <li>New weekly plans</li>
+        <li>Trackers, coach chat, Journey unlocked</li>
+        <li>Beginner friendly</li>
+      </ul>
+    </div>
+
+    <div class="lx-intro__visual">
+      <div class="lx-intro__portraits">
+        <figure class="lx-intro__portrait">
+          <a
+            class="lx-intro__photo"
+            href="https://www.instagram.com/maximusvault/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Piyush on Instagram @maximusvault"
+          >
+            <img
+              src="https://app.lurvox.in/landing/instant-coach-piyush.png"
+              alt="Piyush Aggarwal, LURVOX coach"
+              width="400"
+              height="533"
+              loading="eager"
+            />
+          </a>
+          <figcaption>
+            <strong>Piyush</strong>
+            <a href="https://www.instagram.com/maximusvault/" target="_blank" rel="noopener noreferrer">@maximusvault</a>
+          </figcaption>
+        </figure>
+        <figure class="lx-intro__portrait">
+          <a
+            class="lx-intro__photo"
+            href="https://www.instagram.com/rakshitmohla_/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Rakshit on Instagram @rakshitmohla_"
+          >
+            <img
+              src="https://app.lurvox.in/landing/instant-coach-rakshit.png"
+              alt="Rakshit Mohla, LURVOX coach"
+              width="400"
+              height="533"
+              loading="eager"
+            />
+          </a>
+          <figcaption>
+            <strong>Rakshit</strong>
+            <a href="https://www.instagram.com/rakshitmohla_/" target="_blank" rel="noopener noreferrer">@rakshitmohla_</a>
+          </figcaption>
+        </figure>
+      </div>
+      <p class="lx-intro__hint">Tap a photo to open Instagram</p>
+      <div class="lx-intro__people">
+        <p class="lx-intro__people-main">Transformed over 7000 people</p>
+        <p class="lx-intro__people-sub">Guaranteed results · moneyback if none</p>
+      </div>
+    </div>
+
+    <div class="lx-intro__stamp">
+      {% render 'lurvox-guarantee-stamp' %}
+    </div>
+  </div>
+</section>
+<style>
+  .lx-intro {
+    --yellow: #fbbf24;
+    --green: #22c55e;
+    --red: #e11d48;
+    position: relative;
+    background: transparent;
+    color: #f8fafc;
+    padding: 56px 16px 36px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  .lx-intro__login {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--yellow);
+    color: #111;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 8px 18px rgba(251, 191, 36, 0.28);
+  }
+  .lx-intro__login:hover,
+  .lx-intro__login:focus {
+    filter: brightness(1.06);
+  }
+  .lx-intro__grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    gap: 28px;
+    align-items: center;
+  }
+  .lx-intro__stamp {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 4px 0 0;
+  }
+  .lx-intro__title {
+    margin: 0;
+    font-size: clamp(2.05rem, 5.2vw, 3.2rem);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+  .lx-intro__title span { color: var(--yellow); }
+  .lx-intro__lede {
+    margin: 14px 0 0;
+    max-width: 34rem;
+    color: #cbd5e1;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  .lx-intro__lede strong { color: #fff; font-weight: 800; }
+  .lx-intro__trust {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    color: #cbd5e1;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .lx-intro__trust li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .lx-intro__trust li::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .lx-intro__portraits {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .lx-intro__portrait {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #1a1613;
+    border: 1px solid rgba(251, 191, 36, 0.16);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+  }
+  .lx-intro__photo {
+    display: block;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background: #2a221c;
+  }
+  .lx-intro__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 12%;
+    display: block;
+  }
+  .lx-intro__portrait figcaption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 12px 10px 14px;
+    background: linear-gradient(180deg, #161311 0%, #100e0c 100%);
+  }
+  .lx-intro__portrait strong {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .lx-intro__portrait figcaption a {
+    display: inline-flex;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.28);
+    color: #fbbf24;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .lx-intro__hint {
+    margin: 12px 0 0;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .lx-intro__people {
+    text-align: center;
+    padding: 8px 8px 0;
+  }
+  .lx-intro__people-main {
+    margin: 0;
+    font-size: clamp(1.35rem, 3.2vw, 2.1rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: #fff;
+  }
+  .lx-intro__people-sub {
+    display: inline-block;
+    margin: 10px 0 0;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: var(--yellow);
+    color: #111;
+    font-size: clamp(0.82rem, 2vw, 1rem);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  @media screen and (min-width: 900px) {
+    .lx-intro { padding: 64px 20px 48px; }
+    .lx-intro__login { top: 20px; right: 24px; }
+    .lx-intro__grid {
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 32px;
+    }
+    .lx-intro__stamp { grid-column: 1 / -1; margin-top: 8px; }
+  }
+</style>

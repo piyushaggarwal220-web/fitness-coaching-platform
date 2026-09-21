@@ -21,6 +21,7 @@ import { PageTransition } from '@/components/motion/PageTransition'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
 import { PublicDemoBanner } from '@/components/ui/PublicDemoBanner'
+import { useInstantLockState } from '@/hooks/useInstantLockState'
 
 type ClientShellProps = {
   children?: ReactNode
@@ -55,9 +56,22 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
     return () => window.clearTimeout(timer)
   }, [])
   const unreadChats = useChatUnreadCount('client', unreadReady)
-  const drawerItems = baseDrawerItems.map((item) => (
-    item.href === '/client/chat' ? { ...item, badge: unreadChats } : item
-  ))
+  const { loading: instantLockLoading, locked } = useInstantLockState()
+  const drawerItems = baseDrawerItems.flatMap((item) => {
+    if (item.href === '/tracker') {
+      if (instantLockLoading || locked.tracker) return []
+      return [item]
+    }
+    if (item.href === '/journey') {
+      if (instantLockLoading || locked.journey) return []
+      return [item]
+    }
+    if (item.href === '/client/chat') {
+      if (instantLockLoading || locked.ai_chat) return []
+      return [{ ...item, badge: unreadChats }]
+    }
+    return [item]
+  })
 
   useEffect(() => {
     if (!fullHeight) return

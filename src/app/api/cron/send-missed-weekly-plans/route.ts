@@ -6,6 +6,7 @@ import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { sendNotification } from '@/lib/notifications/service'
 import { activatePlan } from '@/lib/plans'
+import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
@@ -72,6 +73,9 @@ async function sendOneCheckin(checkinId: string) {
   }
   if (!hasClientEntitlement(profile)) {
     return { checkinId, name, status: 'SKIP' as const, error: 'no entitlement' }
+  }
+  if (coachRequiresManualPlanDelivery(checkin.coach_id)) {
+    return { checkinId, name, status: 'SKIP' as const, error: 'manual_plan_delivery' }
   }
 
   const { data: active } = await admin

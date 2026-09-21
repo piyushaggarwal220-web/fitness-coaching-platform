@@ -14,10 +14,19 @@ type SectionKey = keyof ParsedPlanSections
 const SECTION_ORDER: SectionKey[] = ['diet', 'workout', 'supplements', 'cardio', 'coachNotes']
 
 const HEADER_PATTERNS: { key: SectionKey; regex: RegExp }[] = [
-  { key: 'diet', regex: /^(?:#{1,3}\s*)?(?:daily\s+)?(?:diet|nutrition|meal\s*plan|meals|food\s*plan)\s*:?\s*$/i },
-  { key: 'workout', regex: /^(?:#{1,3}\s*)?(?:workout|training|exercise(?:\s*plan)?|strength\s*program)\s*:?\s*$/i },
-  { key: 'supplements', regex: /^(?:#{1,3}\s*)?(?:supplements?|supplementation)\s*:?\s*$/i },
-  { key: 'cardio', regex: /^(?:#{1,3}\s*)?(?:cardio|cardiovascular|conditioning|steps)\s*:?\s*$/i },
+  // "NUTRITION PLAN" / "Weekly Diet Plan" / "Meal Plan" — not only bare "Nutrition"
+  {
+    key: 'diet',
+    regex:
+      /^(?:#{1,3}\s*)?(?:daily\s+|weekly\s+)?(?:diet|nutrition|meal|food)(?:\s*plan)?\s*:?\s*$/i,
+  },
+  {
+    key: 'workout',
+    regex:
+      /^(?:#{1,3}\s*)?(?:daily\s+|weekly\s+)?(?:workout|training|exercise|strength)(?:\s*plan|\s*program)?\s*:?\s*$/i,
+  },
+  { key: 'supplements', regex: /^(?:#{1,3}\s*)?(?:supplements?|supplementation)(?:\s*plan)?\s*:?\s*$/i },
+  { key: 'cardio', regex: /^(?:#{1,3}\s*)?(?:cardio|cardiovascular|conditioning|steps)(?:\s*plan)?\s*:?\s*$/i },
   { key: 'coachNotes', regex: /^(?:#{1,3}\s*)?(?:coach\s*notes?|coaching\s*notes?|notes|lifestyle)\s*:?\s*$/i },
 ]
 
@@ -54,12 +63,14 @@ function matchHeaderLine(trimmed: string): SectionKey | null {
   }
 
   const inline = cleaned.match(
-    /^(?:.*?:\s*)?(diet|nutrition|meal\s*plan|workout|training|supplements?|cardio|coach\s*notes?)\s*:?\s*$/i
+    /^(?:.*?:\s*)?(diet|nutrition|meal(?:\s*plan)?|food(?:\s*plan)?|workout|training|exercise(?:\s*plan)?|supplements?|cardio|coach\s*notes?)\s*:?\s*$/i
   )
   if (!inline) return null
   const label = inline[1].toLowerCase()
-  if (label.includes('diet') || label.includes('nutrition') || label.includes('meal')) return 'diet'
-  if (label.includes('workout') || label.includes('training')) return 'workout'
+  if (label.includes('diet') || label.includes('nutrition') || label.includes('meal') || label.includes('food')) {
+    return 'diet'
+  }
+  if (label.includes('workout') || label.includes('training') || label.includes('exercise')) return 'workout'
   if (label.includes('supplement')) return 'supplements'
   if (label.includes('cardio')) return 'cardio'
   return 'coachNotes'
@@ -70,6 +81,8 @@ function stripInlineSectionBlocks(text: string, keysToRemove: SectionKey[]): str
   if (!text.trim() || keysToRemove.length === 0) return text.trim()
 
   const patterns: Partial<Record<SectionKey, RegExp>> = {
+    diet:
+      /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:daily\s+|weekly\s+)?(?:diet|nutrition|meal|food)(?:\s*plan)?\s*:?\s*\*{0,2}\s*(?:\n|[\t ]*).*/gi,
     cardio:
       /(?:^|\n)\s*(?:\*{0,2}|#{1,3}\s*)?(?:cardio(?:\s*(?:plan|this\s+week))?|conditioning|steps)\s*:?\s*\*{0,2}\s*(?:\n|[\t ]*).*/gi,
     supplements:
@@ -87,9 +100,13 @@ function stripInlineSectionBlocks(text: string, keysToRemove: SectionKey[]): str
 }
 
 /** Split prose on known section headers (case-insensitive, markdown-tolerant). */
-export function splitPlanTextByHeaders(text: string): Partial<Record<SectionKey, string>> {
+export function splitPlanTextByHeaders(
+  text: string,
+  options?: { preambleKey?: SectionKey }
+): Partial<Record<SectionKey, string>> {
   const input = text.replace(/\r\n/g, '\n').trim()
   if (!input) return {}
+  const preambleKey = options?.preambleKey ?? 'diet'
 
   const lines = input.split('\n')
   const sections: Partial<Record<SectionKey, string>> = {}
@@ -132,11 +149,8 @@ export function splitPlanTextByHeaders(text: string): Partial<Record<SectionKey,
 
   const preambleText = preamble.join('\n').trim()
   if (preambleText) {
-    if (sections.diet) {
-      sections.diet = `${preambleText}\n\n${sections.diet}`.trim()
-    } else {
-      sections.diet = preambleText
-    }
+    const existing = sections[preambleKey]?.trim()
+    sections[preambleKey] = existing ? `${preambleText}\n\n${existing}`.trim() : preambleText
   }
 
   return sections
@@ -188,8 +202,8 @@ export function resolvePlanSections(input: {
   const cardioExplicit = normalizeText(input.cardio_plan)
   const notesExplicit = clientCoachNotes(normalizeText(input.coach_notes))
 
-  const fromNutrition = splitPlanTextByHeaders(nutrition)
-  const fromWorkout = splitPlanTextByHeaders(workout)
+  const fromNutrition = splitPlanTextByHeaders(nutrition, { preambleKey: 'diet' })
+  const fromWorkout = splitPlanTextByHeaders(workout, { preambleKey: 'workout' })
 
   const coachNotes = pickSection(
     notesExplicit,
@@ -224,10 +238,29 @@ export function resolvePlanSections(input: {
     fromWorkout.workout ?? '',
     fromNutrition.workout ?? ''
   )
-  if (fromWorkout.cardio || fromWorkout.coachNotes || fromWorkout.supplements) {
-    workoutText = stripEmbeddedSections(workout, ['cardio', 'coachNotes', 'supplements'])
+  // Client-change / remake bugs often paste a full NUTRITION PLAN into workout_plan.
+  // Strip embedded diet (and support sections) so Workout never shows a second diet.
+  if (
+    fromWorkout.diet ||
+    fromWorkout.cardio ||
+    fromWorkout.coachNotes ||
+    fromWorkout.supplements
+  ) {
+    workoutText = stripEmbeddedSections(workout, ['diet', 'cardio', 'coachNotes', 'supplements'])
   }
-  workoutText = stripInlineSectionBlocks(workoutText, ['cardio', 'coachNotes', 'supplements'])
+  // If the whole workout field is diet-like and we extracted a workout slice, prefer it.
+  if (!isMeaningful(workoutText) && isMeaningful(fromWorkout.workout ?? '')) {
+    workoutText = (fromWorkout.workout ?? '').trim()
+  }
+  if (!isMeaningful(workoutText) && isMeaningful(fromNutrition.workout ?? '')) {
+    workoutText = (fromNutrition.workout ?? '').trim()
+  }
+  workoutText = stripInlineSectionBlocks(workoutText, ['diet', 'cardio', 'coachNotes', 'supplements'])
+
+  // If nutrition was empty but workout carried a diet block, surface it as diet.
+  if (!isMeaningful(diet) && isMeaningful(fromWorkout.diet ?? '')) {
+    diet = (fromWorkout.diet ?? '').trim()
+  }
 
   const cardio = pickSection(
     cardioExplicit,

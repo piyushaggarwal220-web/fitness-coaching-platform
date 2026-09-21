@@ -124,8 +124,17 @@ export default function CoachClientDetailPage() {
         </div>
 
         <div style={styles.actions}>
-          <button style={styles.generateBtn} onClick={() => router.push(`/coach/client/${client.id}/generate-plan`)}>
-            AI coaching actions
+          <button
+            style={styles.generateBtn}
+            onClick={() =>
+              router.push(
+                activePlanId
+                  ? `/coach/client/${client.id}/generate-plan`
+                  : `/coach/client/${client.id}/generate-plan?intent=initial`
+              )
+            }
+          >
+            {activePlanId ? 'AI coaching actions' : 'Generate initial plan'}
           </button>
           <button
             style={styles.actionBtn}

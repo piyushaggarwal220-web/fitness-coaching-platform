@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
-import { coachRequiresManualPlanDelivery, coachUsesFifoWorkQueue } from '@/lib/coach-delivery-policy'
+import { coachRequiresManualPlanDelivery, coachUsesFifoWorkQueue, clientRequiresJourneySetup } from '@/lib/coach-delivery-policy'
 import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
 import { formatGenerationFailureSubtitle, getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { buildPlanSlugByClient } from '@/lib/client-plan-tier'
@@ -8,6 +8,13 @@ import { hasClientEntitlement, type AccessSource } from '@/lib/entitlements'
 import { listPendingLeagueCertificateWinners } from '@/lib/league/service'
 import { buildLeagueCertificateChatGptPrompt } from '@/lib/league/certificate-prompt'
 import { LEAGUE_TIER_LABELS } from '@/lib/league/scoring'
+import { isUnfinishedCoachReviewDraftTitle, parsePlanMeta } from '@/lib/plan-metadata'
+import { DRAFT_GENERATING_WINDOW_MS } from '@/lib/ai/draft-status'
+
+/** Unfinished auto drafts that should not count as a real prior delivery or ready review item. */
+function isUnfinishedQueueDraftTitle(title: string | null | undefined): boolean {
+  return isUnfinishedCoachReviewDraftTitle(title)
+}
 
 export type WorkQueueTaskType =
   | 'initial_plan'
@@ -59,6 +66,19 @@ type GenerationJobRow = {
   error_code: string | null
   error_message: string | null
   queued_at: string | null
+  started_at: string | null
+}
+
+/** Match manual-plan stale window — hide queue items only while generation is still live. */
+const ACTIVE_GENERATION_STALE_MS = 20 * 60 * 1000
+
+function isActivelyGenerating(job: GenerationJobRow | undefined): boolean {
+  if (!job) return false
+  if (job.status !== 'queued' && job.status !== 'generating') return false
+  const anchor = job.started_at ?? job.queued_at
+  if (!anchor) return true
+  const age = Date.now() - new Date(anchor).getTime()
+  return Number.isFinite(age) ? age < ACTIVE_GENERATION_STALE_MS : true
 }
 
 /** 12-month clients first, then FIFO within each tier. */
@@ -105,6 +125,7 @@ async function fetchReadyActivePlanClientIds(
     .eq('coach_id', coachId)
     .eq('active', true)
     .eq('has_core_content', true)
+    .not('delivered_at', 'is', null)
 
   if (!primary.error) {
     return new Set(
@@ -120,6 +141,7 @@ async function fetchReadyActivePlanClientIds(
     .select('client_id')
     .eq('coach_id', coachId)
     .eq('active', true)
+    .not('delivered_at', 'is', null)
     .not('nutrition_plan', 'is', null)
     .not('workout_plan', 'is', null)
 
@@ -155,7 +177,7 @@ export async function getCoachWorkQueue(
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, name, email, plan_delivered, onboarding_complete, created_at, payment_confirmed, access_source, subscription_expires_at, journey_goal')
+      .select('id, name, email, plan_delivered, onboarding_complete, created_at, payment_confirmed, access_source, subscription_expires_at, journey_goal, coach_service')
       .eq('coach_id', coachId),
     supabase
       .from('plan_change_requests')
@@ -188,7 +210,9 @@ export async function getCoachWorkQueue(
       .eq('coach_id', coachId),
   ])
 
-  const visibleClients = (clients ?? []).filter((c) => !isTrialClientHiddenFromCoaches(c))
+  const visibleClients = (clients ?? []).filter(
+    (c) => !isTrialClientHiddenFromCoaches(c) && (c as { coach_service?: string | null }).coach_service !== 'ai'
+  )
   const clientNameById = new Map(
     visibleClients.map((c) => [c.id, c.name || c.email || 'Client'])
   )
@@ -205,11 +229,13 @@ export async function getCoachWorkQueue(
     activePlanReadyByClient,
     { data: issueRows },
     { data: purchases },
+    { data: weeklyCheckinRows },
+    { data: priorDeliveredRows },
   ] = await Promise.all([
     pendingClientIds.size > 0
       ? supabase
           .from('initial_plan_generation_jobs')
-          .select('id, client_id, status, draft_plan_id, error_code, error_message, queued_at')
+          .select('id, client_id, status, draft_plan_id, error_code, error_message, queued_at, started_at')
           .eq('coach_id', coachId)
           .in('status', ['queued', 'generating', 'ready', 'failed'])
           .order('queued_at', { ascending: false })
@@ -217,11 +243,11 @@ export async function getCoachWorkQueue(
     pendingClientIds.size > 0
       ? supabase
           .from('plans')
-          .select('id, client_id, created_at')
+          .select('id, client_id, created_at, title')
           .eq('coach_id', coachId)
           .is('delivered_at', null)
           .order('created_at', { ascending: false })
-      : Promise.resolve({ data: [] as { id: string; client_id: string; created_at: string }[] }),
+      : Promise.resolve({ data: [] as { id: string; client_id: string; created_at: string; title: string | null }[] }),
     fetchReadyActivePlanClientIds(supabase, coachId, pendingClientIds),
     // Join profiles so we never ship a huge client_id=in.(...) query string.
     supabase
@@ -235,9 +261,47 @@ export async function getCoachWorkQueue(
       .select('user_id, plan_slug, status, created_at, profiles!inner(coach_id)')
       .eq('profiles.coach_id', coachId)
       .in('status', ['captured', 'redeemed']),
+    // Used with first-plan exception below for journey / cold initial-plan gating.
+    pendingClientIds.size > 0
+      ? supabase
+          .from('checkins')
+          .select('client_id')
+          .eq('coach_id', coachId)
+          .eq('checkin_type', 'weekly')
+      : Promise.resolve({ data: [] as { client_id: string }[] }),
+    pendingClientIds.size > 0
+      ? supabase
+          .from('plans')
+          .select('client_id, title')
+          .eq('coach_id', coachId)
+          .not('delivered_at', 'is', null)
+      : Promise.resolve({ data: [] as { client_id: string; title: string | null }[] }),
   ])
 
+  const clientsWithWeeklyCheckin = new Set<string>()
+  for (const row of weeklyCheckinRows ?? []) {
+    if (pendingClientIds.has(row.client_id)) clientsWithWeeklyCheckin.add(row.client_id)
+  }
+
+  const clientsWithPriorDelivery = new Set<string>()
+  for (const row of priorDeliveredRows ?? []) {
+    if (!pendingClientIds.has(row.client_id)) continue
+    // Auto-published unfinished AI drafts do not count as a real prior delivery.
+    if (isUnfinishedQueueDraftTitle(row.title)) continue
+    clientsWithPriorDelivery.add(row.client_id)
+  }
+
   const planSlugByClient = buildPlanSlugByClient(purchases ?? [])
+
+  const latestDraftByClient = new Map<string, { id: string; created_at: string }>()
+  for (const draft of undeliveredDrafts ?? []) {
+    if (!pendingClientIds.has(draft.client_id)) continue
+    // Undelivered AI drafts (including "AI Draft · Ready for coach note/review")
+    // are the review queue — do not filter them out by title.
+    if (!latestDraftByClient.has(draft.client_id)) {
+      latestDraftByClient.set(draft.client_id, { id: draft.id, created_at: draft.created_at })
+    }
+  }
 
   const generationByClient = new Map<string, GenerationJobRow>()
   for (const job of (generationJobs ?? []) as GenerationJobRow[]) {
@@ -245,14 +309,6 @@ export async function getCoachWorkQueue(
     // Newest first from query order — keep the latest job per pending client.
     if (!generationByClient.has(job.client_id)) {
       generationByClient.set(job.client_id, job)
-    }
-  }
-
-  const latestDraftByClient = new Map<string, { id: string; created_at: string }>()
-  for (const draft of undeliveredDrafts ?? []) {
-    if (!pendingClientIds.has(draft.client_id)) continue
-    if (!latestDraftByClient.has(draft.client_id)) {
-      latestDraftByClient.set(draft.client_id, { id: draft.id, created_at: draft.created_at })
     }
   }
 
@@ -270,15 +326,44 @@ export async function getCoachWorkQueue(
     const generation = generationByClient.get(client.id)
     const draft = latestDraftByClient.get(client.id)
     const clientName = clientNameById.get(client.id) ?? 'Client'
-    const readyDraftId =
-      (generation?.status === 'ready' && generation.draft_plan_id) || draft?.id || null
+    // While AI is writing, keep this client off the queue — even if a partial diet draft already exists.
+    if (isActivelyGenerating(generation)) continue
 
-    if (manualPlanDelivery && !client.journey_goal?.trim()) {
+    const generationFailed =
+      generation?.status === 'failed' ||
+      ((generation?.status === 'queued' || generation?.status === 'generating') &&
+        !isActivelyGenerating(generation))
+
+    const readyDraftId =
+      generation?.status === 'ready'
+        ? generation.draft_plan_id || draft?.id || null
+        : generationFailed
+          ? null
+          : draft?.id || null
+    const hasWeeklyCheckin = clientsWithWeeklyCheckin.has(client.id)
+    // New clients (never received a plan) must still appear for first journey/plan work.
+    // Re-queued / prior-delivery clients only return after a weekly check-in.
+    const canShowColdPlanWork =
+      hasWeeklyCheckin || !clientsWithPriorDelivery.has(client.id)
+
+    // Journey setup only for new clients (joined on/after cutoff). Old roster
+    // without a journey goal must not flood the queue.
+    const needsJourneySetup = clientRequiresJourneySetup(client.created_at)
+    if (
+      manualPlanDelivery &&
+      needsJourneySetup &&
+      !client.journey_goal?.trim() &&
+      !readyDraftId &&
+      !generationFailed
+    ) {
+      if (!canShowColdPlanWork) continue
       tasks.push({
         id: `journey-${client.id}`,
         type: 'journey_setup',
         title: 'Set client journey plan',
-        subtitle: `${clientName} · define the coaching roadmap before generating a draft`,
+        subtitle: hasWeeklyCheckin
+          ? `${clientName} · weekly check-in in — define the coaching roadmap before generating a draft`
+          : `${clientName} · define the coaching roadmap before generating a draft`,
         href: `/coach/client/${client.id}#journey-plan`,
         clientId: client.id,
         clientName,
@@ -292,29 +377,33 @@ export async function getCoachWorkQueue(
       continue
     }
 
+    // Old clients (pre-journey cutoff) do not need a journey plan. Still queue
+    // them for initial generate / ready draft / failure recovery when they have
+    // never received a plan — otherwise never-delivered clients disappear.
+
     const title =
       generation?.status === 'ready' || readyDraftId
-        ? 'Ready for coach note/review'
-        : generation?.status === 'failed'
+        ? 'Initial plan generated — ready for review'
+        : generationFailed
           ? 'AI plan generation failed'
           : manualPlanDelivery && !readyDraftId && !generation
             ? 'Generate initial plan draft'
             : 'AI plan is generating'
-    const isGenerating =
-      !readyDraftId &&
-      generation?.status !== 'failed' &&
-      (generation?.status === 'queued' || generation?.status === 'generating')
-    if (isGenerating) continue
+    const isColdStart =
+      !readyDraftId && !generationFailed && !generation
+    if (isColdStart && !canShowColdPlanWork) continue
     const href = readyDraftId
       ? `/coach/plan/${readyDraftId}`
-      : generation?.status === 'failed'
-        ? `/coach/client/${client.id}/generate-plan`
-        : manualPlanDelivery && !readyDraftId && !generation
+      : generationFailed
+        ? `/coach/client/${client.id}/generate-plan?intent=initial`
+        : manualPlanDelivery && needsJourneySetup && !readyDraftId && !generation
           ? `/coach/client/${client.id}#journey-plan`
-          : `/coach/client/${client.id}`
+          : manualPlanDelivery && !readyDraftId && !generation
+            ? `/coach/client/${client.id}/generate-plan?intent=initial`
+            : `/coach/client/${client.id}`
     const failedGuidance =
-      generation?.status === 'failed'
-        ? getGenerationFailureGuidance(generation.error_code, generation.error_message)
+      generationFailed
+        ? getGenerationFailureGuidance(generation?.error_code, generation?.error_message)
         : null
     tasks.push({
       id: `plan-${client.id}`,
@@ -331,11 +420,23 @@ export async function getCoachWorkQueue(
       coachNextSteps:
         failedGuidance?.nextSteps ??
         (manualPlanDelivery && !readyDraftId && !generation
-          ? [
-              'Journey plan is saved. Generate an AI draft from the client profile.',
-              'Review the draft, add a coach note, then deliver to the client.',
-            ]
-          : undefined),
+          ? needsJourneySetup
+            ? [
+                'Journey plan is saved. Generate an AI draft from the client profile.',
+                'Review the draft, add a coach note, then Deliver to client from the plan page.',
+                'Mark complete only after the plan is already delivered — it does not send the plan.',
+              ]
+            : [
+                'Generate an AI draft from the client profile (journey plan is optional for this client).',
+                'Review the draft, add a coach note, then Deliver to client from the plan page.',
+                'Mark complete only after the plan is already delivered — it does not send the plan.',
+              ]
+          : manualPlanDelivery && readyDraftId
+            ? [
+                'Open Start, review the draft, and add a coach note for the client.',
+                'Use Deliver to client on the plan page — Mark complete will not publish.',
+              ]
+            : undefined),
     })
   }
 
@@ -360,23 +461,126 @@ export async function getCoachWorkQueue(
       clientName: name,
       priority: QUEUE_PRIORITY,
       createdAt: change.locked_at ?? change.draft_ready_at ?? new Date().toISOString(),
+      coachNextSteps: manualPlanDelivery
+        ? [
+            'Open the draft, review changes, and add a coach note.',
+            'Deliver from the plan page. Mark complete only clears the queue after delivery.',
+          ]
+        : undefined,
     })
+  }
+
+  // Weekly draft in-flight / ready state (same pattern as initial plan generation).
+  const weeklyCheckinIds = new Set(
+    (pendingCheckins ?? [])
+      .filter((c) => c.checkin_type === 'weekly' && clientNameById.has(c.client_id))
+      .map((c) => c.id as string)
+  )
+  const weeklyDraftByCheckinId = new Map<string, { id: string; updated_at: string }>()
+  const weeklyDraftGenerating = new Set<string>()
+
+  if (weeklyCheckinIds.size > 0) {
+    const sinceIso = new Date(Date.now() - DRAFT_GENERATING_WINDOW_MS).toISOString()
+    const [{ data: weeklyDraftRows }, { data: weeklyDraftLogs }] = await Promise.all([
+      supabase
+        .from('plans')
+        .select('id, client_id, title, coach_notes, updated_at')
+        .eq('coach_id', coachId)
+        .eq('active', false)
+        .is('delivered_at', null)
+        .ilike('title', 'AI Draft%')
+        .order('updated_at', { ascending: false })
+        .limit(120),
+      supabase
+        .from('ai_generation_logs')
+        .select('action, success, created_at, rendered_output, validation_result')
+        .eq('coach_id', coachId)
+        .in('action', [
+          'weekly_draft_started',
+          'weekly_draft_manual',
+          'weekly_draft_retry',
+          'weekly_draft_auto',
+        ])
+        .gte('created_at', sinceIso)
+        .order('created_at', { ascending: false })
+        .limit(120),
+    ])
+
+    for (const plan of weeklyDraftRows ?? []) {
+      const checkinId = parsePlanMeta(plan).checkinId
+      if (!checkinId || !weeklyCheckinIds.has(checkinId)) continue
+      if (weeklyDraftByCheckinId.has(checkinId)) continue
+      weeklyDraftByCheckinId.set(checkinId, {
+        id: plan.id as string,
+        updated_at: (plan.updated_at as string) ?? new Date().toISOString(),
+      })
+    }
+
+    const latestLogByCheckin = new Map<
+      string,
+      { phase: 'started' | 'finished' | 'failed'; createdAt: string }
+    >()
+    for (const row of weeklyDraftLogs ?? []) {
+      const output = row.rendered_output as { checkinId?: string; phase?: string } | null
+      const checkinId = output?.checkinId
+      if (!checkinId || !weeklyCheckinIds.has(checkinId)) continue
+      if (latestLogByCheckin.has(checkinId)) continue
+      const isStarted =
+        row.action === 'weekly_draft_started' ||
+        output?.phase === 'started' ||
+        row.validation_result === 'started'
+      let phase: 'started' | 'finished' | 'failed' = 'finished'
+      if (isStarted) phase = 'started'
+      else if (!row.success) phase = 'failed'
+      latestLogByCheckin.set(checkinId, {
+        phase,
+        createdAt: row.created_at as string,
+      })
+    }
+
+    for (const [checkinId, log] of latestLogByCheckin) {
+      if (log.phase !== 'started') continue
+      if (weeklyDraftByCheckinId.has(checkinId)) continue
+      const age = Date.now() - new Date(log.createdAt).getTime()
+      if (Number.isFinite(age) && age < DRAFT_GENERATING_WINDOW_MS) {
+        weeklyDraftGenerating.add(checkinId)
+      }
+    }
   }
 
   for (const checkin of pendingCheckins ?? []) {
     if (isCheckinPendingAutoReply(checkin)) continue
     if (!clientNameById.has(checkin.client_id)) continue
     const name = clientNameById.get(checkin.client_id) ?? 'Client'
+    const isWeekly = checkin.checkin_type === 'weekly'
+
+    // Hide weekly check-in while AI draft is generating (mirrors initial plan).
+    if (isWeekly && weeklyDraftGenerating.has(checkin.id)) continue
+
+    const readyDraft = isWeekly ? weeklyDraftByCheckinId.get(checkin.id) : null
     tasks.push({
       id: `checkin-${checkin.id}`,
       type: 'checkin_review',
-      title: checkin.checkin_type === 'mid_week' ? 'Review Mid-Week Check-in' : 'Review Weekly Check-in',
-      subtitle: name,
-      href: `/coach/checkin/${checkin.id}`,
+      title: readyDraft
+        ? 'Weekly AI draft ready for review'
+        : checkin.checkin_type === 'mid_week'
+          ? 'Review Mid-Week Check-in'
+          : 'Review Weekly Check-in',
+      subtitle: readyDraft
+        ? `${name} · open the draft, then deliver when ready`
+        : name,
+      href: readyDraft ? `/coach/plan/${readyDraft.id}` : `/coach/checkin/${checkin.id}`,
       clientId: checkin.client_id,
       clientName: name,
       priority: QUEUE_PRIORITY,
-      createdAt: checkin.submitted_at,
+      createdAt: readyDraft?.updated_at ?? checkin.submitted_at,
+      coachNextSteps: readyDraft
+        ? [
+            'Open Start to review the AI draft.',
+            'Add a coach note if needed, then Publish / Deliver to the client.',
+            'Mark complete only after the plan is delivered — it does not send the plan.',
+          ]
+        : undefined,
     })
   }
 

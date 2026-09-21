@@ -1,5 +1,5 @@
 import 'server-only'
-import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
+import { sendMetaPurchase, metaEventSourcePathForPlanSlug } from '@/lib/analytics/meta-conversions'
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { issuePurchaseClaimToken } from '@/lib/payments/fulfillment'
 import { createRazorpayRefund } from '@/lib/payments/razorpay'
@@ -323,6 +323,8 @@ export async function resendPurchaseSetup(input: {
       phone: purchase.customer_phone,
       name: purchase.customer_name,
       stage: `manual_${operation.id}`,
+      planSlug: purchase.plan_slug,
+      planName: purchase.plan_name,
     })
     if (result.failed > 0 && result.sent === 0) throw new Error('All configured delivery channels failed')
     await completeOperation(operation.id, 'succeeded', { metadata: result })
@@ -368,6 +370,7 @@ export async function retryMetaPurchase(input: {
     amountPaise: purchase.amount_paise,
     currency: purchase.currency,
     planSlug: purchase.plan_slug,
+    eventSourcePath: metaEventSourcePathForPlanSlug(purchase.plan_slug),
   })
   await completeOperation(operation.id, result.ok ? 'succeeded' : 'failed', { error: result.error })
   if (!result.ok) throw new Error(result.error || 'Meta delivery failed')

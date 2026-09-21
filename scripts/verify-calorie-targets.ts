@@ -15,6 +15,8 @@ import {
   dietTextHasCalorieConflict,
   enforceDietSafety,
   getAuthoritativeNutritionCalories,
+  clientFacingDietPlanText,
+  stripLeadingDietMacroHeader,
 } from '../src/lib/ai/nutrition-macro-sync'
 
 let failed = 0
@@ -314,6 +316,24 @@ const guidance = formatCalorieGuidanceBlock({
 assert('guidance names the hard target', Boolean(guidance && /WRITE THIS NUMBER/i.test(guidance)))
 assert('guidance forbids crash-diet templates', Boolean(guidance && /FORBIDDEN: 1400/i.test(guidance)))
 assert('guidance includes a 4-digit kcal target', Boolean(guidance && /\b2\d{3} kcal/.test(guidance)))
+
+const clientDiet = clientFacingDietPlanText(`Calories: 1450
+Protein: 120g
+Carbs: 140g
+Fat: 45g
+
+Day 1 (Monday)
+Breakfast: oats
+(P: 24g | C: 54g | F: 18g | ~480 kcal)
+Daily Total: P: 119g | C: 248g | F: 70g | ~2080 kcal`)
+assert('client diet strips Calories header', !/^Calories:/im.test(clientDiet))
+assert('client diet strips Protein header', !/^Protein:/im.test(clientDiet))
+assert('client diet keeps meal kcal lines', /~480 kcal/.test(clientDiet))
+assert('client diet keeps daily total', /~2080 kcal/.test(clientDiet))
+assert(
+  'stripLeadingDietMacroHeader is idempotent',
+  stripLeadingDietMacroHeader(clientDiet) === clientDiet
+)
 
 if (failed > 0) {
   console.error(`\n${failed} calorie target checks failed`)

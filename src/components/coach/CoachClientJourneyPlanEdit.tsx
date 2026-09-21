@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
+import { coachRequiresManualPlanDelivery, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
 import { colors } from '@/lib/coach-theme'
 import { coachPageStyles as pageStyles } from '@/lib/coach-page-styles'
 import type { CoachClientDetail } from '@/types/database'
@@ -23,9 +23,11 @@ export function CoachClientJourneyPlanEdit({ client, coachId, onSaved }: CoachCl
   const [message, setMessage] = useState('')
 
   const manualDelivery = coachRequiresManualPlanDelivery(coachId)
+  const piyushAutoInitial = shouldAutoJourneyAndDeliverInitialPlan(coachId, client.created_at)
   const journeySaved = Boolean(client.journey_goal?.trim())
   const canGenerateDraft =
     manualDelivery &&
+    !piyushAutoInitial &&
     journeySaved &&
     !client.plan_delivered &&
     client.onboarding_complete === true
@@ -100,9 +102,11 @@ export function CoachClientJourneyPlanEdit({ client, coachId, onSaved }: CoachCl
     <section id="journey-plan" style={styles.card}>
       <h2 style={styles.title}>Journey plan (AI memory)</h2>
       <p style={styles.lede}>
-        {manualDelivery
-          ? 'Step 1: After a coach call, write the long-term roadmap and current phase. Step 2: Generate an AI draft. Step 3: Review the draft and deliver it to the client — nothing is sent automatically.'
-          : 'After a coach call, set the long-term roadmap and where the client is right now. AI uses this on every plan update so diet calories and food choices stay aligned with their phase.'}
+        {piyushAutoInitial
+          ? 'For new clients, AI writes a journey plan from their intake, generates the first diet/workout draft, and delivers it automatically. You can still edit the journey fields anytime — later plan updates will use what you save here.'
+          : manualDelivery
+            ? 'Step 1: After a coach call, write the long-term roadmap and current phase. Step 2: Generate an AI draft. Step 3: Review the draft and deliver it to the client — nothing is sent automatically.'
+            : 'After a coach call, set the long-term roadmap and where the client is right now. AI uses this on every plan update so diet calories and food choices stay aligned with their phase.'}
       </p>
 
       {client.client_goal_details?.trim() ? (

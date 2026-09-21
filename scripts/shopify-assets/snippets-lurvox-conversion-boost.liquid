@@ -2,15 +2,32 @@
   LURVOX conversion boost — trust + how it works (draft).
 {% endcomment %}
 
-{%- assign consult_url = '/pages/talk-to-a-coach' -%}
-{%- assign start_url = '/pages/choose-your-plan' -%}
 {%- assign terms_url = 'https://app.lurvox.in/terms' -%}
+{%- assign find_url = '/pages/choose-your-plan' -%}
+{%- assign start_url = '/pages/choose-your-plan' -%}
 
 <section class="lx-conv" id="lx-conv" data-lx-conv aria-label="Why LURVOX">
+  <div class="lx-coaches" aria-label="LURVOX coaches">
+    <a class="lx-coach" href="https://www.instagram.com/maximusvault/" target="_blank" rel="noopener noreferrer">
+      <img src="https://app.lurvox.in/landing/instant-coach-piyush.png" alt="Piyush Aggarwal, LURVOX coach" width="400" height="533" />
+      <strong>Piyush</strong>
+      <span>@maximusvault</span>
+    </a>
+    <a class="lx-coach" href="https://www.instagram.com/rakshitmohla_/" target="_blank" rel="noopener noreferrer">
+      <img src="https://app.lurvox.in/landing/instant-coach-rakshit.png" alt="Rakshit Mohla, LURVOX coach" width="400" height="533" />
+      <strong>Rakshit</strong>
+      <span>@rakshitmohla_</span>
+    </a>
+  </div>
   <div class="lx-conv__trust" aria-label="Trust signals">
+    <div class="lx-conv__stamp">
+      {% render 'lurvox-guarantee-stamp' %}
+    </div>
     <p class="lx-conv__trust-item"><strong>Personal plan</strong> in 24–48 hrs</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
-    <p class="lx-conv__trust-item"><strong>Human coach</strong> — not a PDF</p>
+    <p class="lx-conv__trust-item"><strong>1-to-1 coaching</strong> — not a PDF</p>
+    <span class="lx-conv__dot" aria-hidden="true"></span>
+    <p class="lx-conv__trust-item"><strong>Guaranteed results</strong> · moneyback if none</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
     <p class="lx-conv__trust-item"><strong>UPI / Razorpay</strong> checkout</p>
     <span class="lx-conv__dot" aria-hidden="true"></span>
@@ -25,57 +42,12 @@
     <span class="lx-conv__badge">SSL Encrypted</span>
   </div>
 
-  <div class="lx-conv__how" id="how-it-works">
-    <p class="lx-conv__eyebrow">How LURVOX works</p>
-    <h2 class="lx-conv__title">Assessment → personal plan → weekly coaching</h2>
-    <p class="lx-conv__lede">
-      Built for India: vegetarian and home cooked diets, gym or home workouts, and a real coach in the app.
-    </p>
-    <ol class="lx-conv__steps">
-      <li>
-        <span class="lx-conv__num">01</span>
-        <div>
-          <h3>Tell us your body & schedule</h3>
-          <p>Short assessment + progress photos after checkout.</p>
-        </div>
-      </li>
-      <li>
-        <span class="lx-conv__num">02</span>
-        <div>
-          <h3>Get your personal plan</h3>
-          <p>Workout + diet matched to you within 24–48 hours.</p>
-        </div>
-      </li>
-      <li>
-        <span class="lx-conv__num">03</span>
-        <div>
-          <h3>Train with daily trackers</h3>
-          <p>Log workouts, meals, sleep, steps — coach sees what matters.</p>
-        </div>
-      </li>
-      <li>
-        <span class="lx-conv__num">04</span>
-        <div>
-          <h3>Weekly reviews</h3>
-          <p>Plan updates when you stall. Your coach adjusts from real check-ins.</p>
-        </div>
-      </li>
-    </ol>
-
-    <div class="lx-conv__risk">
-      <p>
-        Refunds and guarantees (if any) are only as stated in our
-        <a href="{{ terms_url }}" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>.
-      </p>
-    </div>
-
-    <div class="lx-conv__actions">
-      <a class="lx-conv__link lx-conv__link--talk" href="{{ consult_url }}">Talk to a coach</a>
-      <span class="lx-conv__sep" aria-hidden="true">·</span>
-      <a class="lx-conv__link" href="{{ start_url }}">Find your plan</a>
-      <span class="lx-conv__sep" aria-hidden="true">·</span>
-      <a class="lx-conv__link" href="#plans">See plans · ₹1,999 · ₹3,499 · ₹5,999</a>
-    </div>
+  <div class="lx-conv__badges" aria-label="Secure payment">
+    <span class="lx-conv__badge">UPI</span>
+    <span class="lx-conv__badge">Cards</span>
+    <span class="lx-conv__badge">Netbanking</span>
+    <span class="lx-conv__badge">Razorpay Secure</span>
+    <span class="lx-conv__badge">SSL Encrypted</span>
   </div>
 </section>
 
@@ -89,6 +61,52 @@
     color: #fff;
     padding: 28px 18px 36px;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .lx-coaches {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 520px;
+    margin: 0 auto 22px;
+  }
+
+  .lx-coach {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 0 0 12px;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #141414;
+    border: 1px solid rgba(255, 98, 0, 0.35);
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .lx-coach img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    object-position: center 12%;
+    display: block;
+  }
+
+  .lx-coach strong {
+    margin-top: 4px;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .lx-coach span {
+    color: #ff6200;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .lx-conv__trust {
@@ -105,6 +123,22 @@
     background:
       radial-gradient(circle at 12% -40%, rgba(255, 98, 0, 0.22), transparent 55%),
       #0b0b0b;
+  }
+
+  .lx-conv__stamp {
+    flex: 0 0 auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  @media (min-width: 720px) {
+    .lx-conv__stamp {
+      width: auto;
+      margin-bottom: 0;
+      margin-right: 6px;
+    }
   }
 
   .lx-conv__trust-item {
@@ -524,41 +558,55 @@
 
   [data-lx-hero-cta] {
     display: flex !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: stretch !important;
-    gap: 8px !important;
+    gap: 10px !important;
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: 420px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     box-sizing: border-box !important;
-    padding: 12px 12px 8px !important;
+    padding: 18px 18px 16px !important;
   }
 
   [data-lx-hero-cta] > a {
-    flex: 1 1 auto !important;
+    flex: 0 0 auto !important;
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
-    padding: 10px 12px !important;
-    font-size: 14px !important;
+    padding: 11px 16px !important;
+    font-size: 16px !important;
+    gap: 3px !important;
+  }
+
+  [data-lx-hero-cta] > a[class*="cta-primary"] {
+    min-height: 52px !important;
+    font-size: 16.5px !important;
+  }
+
+  [data-lx-hero-cta] > a small {
+    font-size: 11.5px !important;
   }
 
   [data-lx-hero-cta] > a.lx-hero-cta-text,
-  [data-lx-hero-cta] > a[href="/pages/talk-to-a-coach"] {
-    flex: 0 0 auto !important;
-    width: auto !important;
-    align-self: center !important;
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    padding: 4px 8px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    text-decoration: underline !important;
-    text-underline-offset: 3px !important;
-    opacity: 0.85;
+  [data-lx-hero-cta] > a[href="/pages/talk-to-a-coach"],
+  a[href*="/pages/talk-to-a-coach"],
+  a[href*="/pages/book-a-free-call"],
+  .lx-find-float__btn--talk,
+  .lx-pf__btn--talk,
+  .lx-conv__link--talk,
+  .lx-flow__link--talk,
+  [data-lurvox-fab],
+  .lurvox-fab,
+  #lx-welcome,
+  .lx-welcome,
+  .lx-hdr__talk,
+  .lx-consult,
+  .lx-find-float {
+    display: none !important;
   }
 
   .lx-conv__actions {
@@ -608,9 +656,9 @@
       if (matrix) {
         var strongs = matrix.querySelectorAll('thead strong');
         if (strongs.length >= 3) {
-          strongs[0].textContent = '₹1,999';
-          strongs[1].textContent = '₹3,499';
-          strongs[2].textContent = '₹5,999';
+          strongs[0].textContent = '₹599';
+          strongs[1].textContent = '₹999';
+          strongs[2].textContent = '₹1,699';
         }
       }
       document.querySelectorAll('.lx-conv__btn-sub, .lx-conv-sticky__meta').forEach(function (el) {
@@ -643,14 +691,47 @@
     setTimeout(ensurePlansAnchor, 0);
     setTimeout(ensurePlansAnchor, 250);
 
-    // Keep Talk CTAs on the working consult form page.
-    function normalizeTalkLinks() {
-      document.querySelectorAll('a[href*="/pages/book-a-free-call"]').forEach(function (a) {
-        a.setAttribute('href', '/pages/talk-to-a-coach');
+    // Remove Talk-to-a-coach entry points from marketing surfaces.
+    function hideTalkLinks() {
+      document.querySelectorAll(
+        'a[href*="/pages/talk-to-a-coach"], a[href*="/pages/book-a-free-call"], a[href*="wa.me"][href*="consult"], a[href*="wa.me"][href*="consultation"]'
+      ).forEach(function (a) {
+        var label = ((a.textContent || '') + ' ' + (a.getAttribute('aria-label') || '')).toLowerCase();
+        if (
+          /talk to a coach|book a free|free consult|consultation call|whatsapp a coach/.test(label) ||
+          /talk-to-a-coach|book-a-free-call/.test(a.getAttribute('href') || '')
+        ) {
+          a.style.setProperty('display', 'none', 'important');
+          a.setAttribute('aria-hidden', 'true');
+          a.setAttribute('tabindex', '-1');
+        }
+      });
+      document.querySelectorAll('[data-lurvox-fab], .lurvox-fab').forEach(function (el) {
+        el.style.setProperty('display', 'none', 'important');
       });
     }
-    normalizeTalkLinks();
-    document.addEventListener('DOMContentLoaded', normalizeTalkLinks);
+    hideTalkLinks();
+    document.addEventListener('DOMContentLoaded', hideTalkLinks);
+    window.addEventListener('load', hideTalkLinks);
+    setTimeout(hideTalkLinks, 400);
+
+    function rewriteHeroQuiz() {
+      document.querySelectorAll('[data-lx-hero-cta] a, a[href*="/pages/choose-your-plan"]').forEach(function (a) {
+        a.setAttribute('href', '#plans');
+        var text = (a.textContent || '').toLowerCase();
+        if (text.indexOf('find your plan') !== -1 || text.indexOf('try the app') !== -1) {
+          a.innerHTML = 'See plans <small>Fat loss ₹599 · Muscle ₹999 · Athletic ₹1,699</small>';
+        }
+      });
+      var welcome = document.getElementById('lx-welcome');
+      if (welcome) welcome.style.setProperty('display', 'none', 'important');
+      document.querySelectorAll('.lx-hdr__talk, .lx-consult, .lx-find-float, #lx-welcome, .lx-welcome').forEach(function (el) {
+        el.style.setProperty('display', 'none', 'important');
+      });
+    }
+    rewriteHeroQuiz();
+    document.addEventListener('DOMContentLoaded', rewriteHeroQuiz);
+    window.addEventListener('load', rewriteHeroQuiz);
 
     // lurvox-matrix-choose-rewrite-v1
     function rewriteMatrixChoose() {

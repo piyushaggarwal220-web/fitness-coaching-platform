@@ -3,7 +3,7 @@ import { AUTO_REPLY_MIN_DELAY_MS } from '@/lib/checkin-auto-reply-schedule'
 import { serializeCoachResponse } from '@/lib/checkin'
 import { getCheckinTypeDisplayName } from '@/lib/checkin-schedule'
 import { postCoachCheckinFeedbackToChat } from '@/lib/coach-chat'
-import { shouldScheduleCheckinAutoReply } from '@/lib/coach-delivery-policy'
+import { shouldScheduleCheckinAutoReply, coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { generateMidWeekAnalysis, loadCachedMidWeekPack } from '@/lib/ai/midweek-analysis'
@@ -61,6 +61,17 @@ async function resolveReply(
   }
 
   if (draft) {
+    // Manual-delivery coaches never auto-publish — even if a weekly auto-reply path runs.
+    if (coachRequiresManualPlanDelivery(checkin.coach_id)) {
+      const message = clientCoachNotes(draft.coach_notes).trim() || fallbackPublishCoachNotes(draft)
+      return {
+        feedback:
+          message ||
+          'Thanks for checking in. Your coach is reviewing your plan update and will send it when ready.',
+        publishedPlanId: null,
+      }
+    }
+
     const { error: activateError } = await activatePlan(supabase, {
       id: draft.id,
       client_id: draft.client_id,

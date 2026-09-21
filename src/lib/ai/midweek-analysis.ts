@@ -7,6 +7,7 @@
 import { MODELS } from '@/lib/ai/config'
 import { callPlanProvider, getPlanProviderMode } from '@/lib/ai/plan-provider'
 import { logAiGeneration } from '@/lib/ai/trace-log'
+import { formatCoachPersonalityDirective } from '@/lib/coach-personality'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Checkin, OnboardingProfile } from '@/types/database'
 
@@ -285,8 +286,10 @@ export async function generateMidWeekAnalysis(input: {
   }
 
   const previous = await loadPreviousCheckin(input.checkin)
-  // Keep pack format fixed; library templates tend to inflate length and sound AI.
-  const systemPrompt = PACK_SYSTEM
+  const personalities =
+    (input.profile.onboarding_data as { goals?: { coachPersonalities?: string[] } } | null)?.goals
+      ?.coachPersonalities ?? null
+  const systemPrompt = `${PACK_SYSTEM}\n${formatCoachPersonalityDirective(personalities)}`
   const userPrompt = buildPackUserPrompt(input.profile, input.checkin, previous)
 
   const started = Date.now()

@@ -8,7 +8,12 @@ import {
   shouldStartInitialGeneration,
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
-import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
+import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import {
+  latestCoachingPurchase,
+  latestDigitalPurchase,
+} from '@/lib/payments/digital-purchase'
+import { clientHasDeliveredPlanStrict } from '@/lib/plans-delivery-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -43,16 +48,48 @@ export async function POST() {
     return NextResponse.json({ success: true, status: 'skipped', reason: 'plan_already_delivered' })
   }
 
-  const { count: deliveredCount } = await admin
-    .from('plans')
-    .select('id', { count: 'exact', head: true })
-    .eq('client_id', auth.user.id)
-    .not('delivered_at', 'is', null)
-  if ((deliveredCount ?? 0) > 0) {
+  const deliveredGuard = await clientHasDeliveredPlanStrict(admin, auth.user.id)
+  if (deliveredGuard.error) {
+    return NextResponse.json(
+      { error: `Could not verify delivery history: ${deliveredGuard.error}` },
+      { status: 503 }
+    )
+  }
+  if (deliveredGuard.delivered) {
     return NextResponse.json({ success: true, status: 'skipped', reason: 'plan_already_delivered' })
   }
 
-  if (!shouldAutoEnqueueInitialPlan(completed)) {
+  const [digitalPurchase, coachingPurchase] = await Promise.all([
+    latestDigitalPurchase(admin, auth.user.id),
+    latestCoachingPurchase(admin, auth.user.id),
+  ])
+  const hasDigital = Boolean(digitalPurchase)
+  const isInstantOnly = hasDigital && !coachingPurchase
+
+  if (
+    !isInstantOnly &&
+    shouldAutoJourneyAndDeliverInitialPlan(completed.coach_id, completed.created_at)
+  ) {
+    after(() =>
+      import('@/lib/piyush-initial-plan-auto')
+        .then(({ runPiyushInitialPlanForClient }) =>
+          runPiyushInitialPlanForClient(admin, auth.user.id)
+        )
+        .catch((err) => {
+          console.error(
+            '[onboarding/ensure-generation] Piyush auto initial plan failed:',
+            err instanceof Error ? err.message : err
+          )
+        })
+    )
+    return NextResponse.json({
+      success: true,
+      status: 'generating',
+      reason: 'piyush_auto_journey_deliver',
+    }, { status: 202 })
+  }
+
+  if (!shouldAutoEnqueueInitialPlan(completed, { digitalPurchase: hasDigital })) {
     return NextResponse.json({
       success: true,
       status: 'awaiting_coach_journey',

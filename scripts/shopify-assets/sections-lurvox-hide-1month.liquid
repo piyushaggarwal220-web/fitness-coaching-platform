@@ -1,9 +1,9 @@
 {% comment %}
   LURVOX: hide retired trial / 1-month only.
-  Do NOT hide ₹1,999 — that is the current 3-month Fat loss price.
+  Do NOT hide ₹599 — that is the current 3-month Fat loss price.
 {% endcomment %}
 <style id="lurvox-hide-1month-style">
-  /* lurvox-hide-retired-plans-v2 */
+  /* lurvox-hide-retired-plans-v3 */
   [data-plan-link*="trial"],
   [data-plan-link*="1_week_trial"],
   [data-plan-link*="1_month"],
@@ -24,19 +24,20 @@
   [data-plan-link*="3_months"],
   [data-plan-link*="6_months"],
   [data-plan-link*="12_months"],
+  /* Current plan prices */
+  [data-plan-price="599"],
   [data-plan-price="999"],
   [data-plan-price="1699"],
-  [data-plan-price="2999"],
-  /* Current plan prices */
+  /* Legacy prices (keep visible for cached HTML) */
   [data-plan-price="1999"],
   [data-plan-price="3499"],
   [data-plan-price="5999"],
-  /* Legacy sale prices (keep visible for cached HTML) */
   [data-plan-price="1799"],
   [data-plan-price="2799"],
   [data-plan-price="4499"],
   [data-plan-price="1299"],
-  [data-plan-price="2099"] {
+  [data-plan-price="2099"],
+  [data-plan-price="2999"] {
     display: block !important;
   }
 </style>
@@ -61,7 +62,9 @@
         }
         if (
           /3_months|6_months|12_months/i.test(link) ||
-          /^(999|1699|2999|1499|2699|3999|1299|2099|1799|2799|4499|1999|3499|5999)$/.test(card.getAttribute('data-plan-price') || '')
+          /^(599|999|1699|1999|3499|5999|1299|2099|1799|2799|4499|2999)$/.test(
+            card.getAttribute('data-plan-price') || ''
+          )
         ) {
           card.style.setProperty('display', 'block', 'important')
         }
@@ -81,16 +84,10 @@
         )
       })
   }
-  wire()
-  document.addEventListener('DOMContentLoaded', wire)
-  setTimeout(wire, 400)
-  setTimeout(wire, 1500)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wire)
+  } else {
+    wire()
+  }
 })()
 </script>
-{% schema %}
-{
-  "name": "LURVOX hide 1-month",
-  "settings": [],
-  "presets": [{ "name": "LURVOX hide 1-month" }]
-}
-{% endschema %}

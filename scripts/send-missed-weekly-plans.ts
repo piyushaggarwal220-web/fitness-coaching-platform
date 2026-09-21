@@ -7,6 +7,7 @@ import { hasClientEntitlement } from '../src/lib/entitlements'
 import { generateWeeklyPlanDraft } from '../src/lib/ai/weekly-plan-draft'
 import { sendNotification } from '../src/lib/notifications/service'
 import { activatePlan } from '../src/lib/plans'
+import { coachRequiresManualPlanDelivery } from '../src/lib/coach-delivery-policy'
 import { createAdminClient } from '../src/lib/supabase/admin'
 
 const START = '2026-09-05T18:30:00.000Z'
@@ -94,6 +95,11 @@ async function main() {
 
     if (!hasClientEntitlement(profile)) {
       console.log(`SKIP no entitlement ${name}`)
+      skipped += 1
+      continue
+    }
+    if (coachRequiresManualPlanDelivery(checkin.coach_id)) {
+      console.log(`SKIP manual_plan_delivery ${name}`)
       skipped += 1
       continue
     }

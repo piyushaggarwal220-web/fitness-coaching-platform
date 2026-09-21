@@ -3,22 +3,32 @@ export type CoachingPlanSlug = '3_months' | '6_months' | '12_months'
 /** Historical slugs kept for existing purchases / entitlements only. */
 export type LegacyCoachingPlanSlug = '1_month' | '1_week_trial'
 
+/** One-time customised digital plans (Instant Plan product line). */
+export type DigitalPlanSlug = 'digital_workout' | 'digital_diet' | 'digital_complete'
+
 export type AnyCoachingPlanSlug = CoachingPlanSlug | LegacyCoachingPlanSlug
+export type AnyProductPlanSlug = AnyCoachingPlanSlug | DigitalPlanSlug
+
+export type DigitalPlanSections = 'workout' | 'diet' | 'both'
 
 export type CoachingPlan = {
-  slug: AnyCoachingPlanSlug
+  slug: AnyProductPlanSlug
   name: string
   displayPrice: string
   amountPaise: number
   /** Month-based duration; use 0 when `durationDays` is set. */
   durationMonths: number
-  /** Day-based duration (e.g. retired trial). Prefer over months when set. */
+  /** Day-based duration (e.g. retired trial / digital access window). Prefer over months when set. */
   durationDays?: number
   saveLabel: string
   popular?: boolean
   best?: boolean
   /** Retired paid trial — not purchasable. */
   isTrial?: boolean
+  /** One time customised digital plan (coach principles, auto delivery). */
+  isDigital?: boolean
+  /** Which sections to generate/deliver for digital SKUs. */
+  sections?: DigitalPlanSections
 }
 
 /** Active coaching plan catalog — amounts match storefront pricing. */
@@ -26,16 +36,16 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
   '3_months': {
     slug: '3_months',
     name: 'Fat loss',
-    displayPrice: '₹1,999',
-    amountPaise: 199900,
+    displayPrice: '₹599',
+    amountPaise: 59900,
     durationMonths: 3,
     saveLabel: 'Fat loss',
   },
   '6_months': {
     slug: '6_months',
     name: 'Fat loss + muscle gain',
-    displayPrice: '₹3,499',
-    amountPaise: 349900,
+    displayPrice: '₹999',
+    amountPaise: 99900,
     durationMonths: 6,
     saveLabel: 'Fat loss + muscle gain',
     popular: true,
@@ -43,11 +53,52 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
   '12_months': {
     slug: '12_months',
     name: 'Athletic body',
-    displayPrice: '₹5,999',
-    amountPaise: 599900,
+    displayPrice: '₹1,699',
+    amountPaise: 169900,
     durationMonths: 12,
     saveLabel: 'Athletic body',
     best: true,
+  },
+}
+
+/**
+ * Customised digital plans (workout ₹49 / diet ₹89 / complete ₹99).
+ * Honest list prices only. Access window: 365 days to reopen the plan in app.
+ */
+export const DIGITAL_PLANS: Record<DigitalPlanSlug, CoachingPlan> = {
+  digital_workout: {
+    slug: 'digital_workout',
+    name: 'Workout Plan',
+    displayPrice: '₹49',
+    amountPaise: 4900,
+    durationMonths: 0,
+    durationDays: 365,
+    saveLabel: 'Workout only',
+    isDigital: true,
+    sections: 'workout',
+  },
+  digital_diet: {
+    slug: 'digital_diet',
+    name: 'Diet Plan',
+    displayPrice: '₹89',
+    amountPaise: 8900,
+    durationMonths: 0,
+    durationDays: 365,
+    saveLabel: 'Diet only',
+    isDigital: true,
+    sections: 'diet',
+  },
+  digital_complete: {
+    slug: 'digital_complete',
+    name: 'Complete Guidance',
+    displayPrice: '₹99',
+    amountPaise: 9900,
+    durationMonths: 0,
+    durationDays: 365,
+    saveLabel: 'Workout + diet · 4 free extras',
+    popular: true,
+    isDigital: true,
+    sections: 'both',
   },
 }
 
@@ -74,26 +125,53 @@ export const LEGACY_COACHING_PLANS: Record<LegacyCoachingPlanSlug, CoachingPlan>
 }
 
 export const COACHING_PLAN_LIST = Object.values(COACHING_PLANS)
+/** Display order: singles on the sides, Complete featured in the centre. */
+export const DIGITAL_PLAN_LIST = [
+  DIGITAL_PLANS.digital_workout,
+  DIGITAL_PLANS.digital_complete,
+  DIGITAL_PLANS.digital_diet,
+]
+
+export function isDigitalPlanSlug(slug: string | null | undefined): slug is DigitalPlanSlug {
+  return Boolean(slug && slug in DIGITAL_PLANS)
+}
+
+export function getDigitalPlan(slug: string | null | undefined): CoachingPlan | null {
+  if (!slug || !(slug in DIGITAL_PLANS)) return null
+  return DIGITAL_PLANS[slug as DigitalPlanSlug]
+}
 
 export function getCoachingPlan(slug: string | null | undefined): CoachingPlan | null {
   if (!slug) return null
   if (slug in COACHING_PLANS) return COACHING_PLANS[slug as CoachingPlanSlug]
+  if (slug in DIGITAL_PLANS) return DIGITAL_PLANS[slug as DigitalPlanSlug]
   if (slug in LEGACY_COACHING_PLANS) return LEGACY_COACHING_PLANS[slug as LegacyCoachingPlanSlug]
   return null
 }
 
-/** Purchasable plans only — rejects retired slugs like `1_month` and `1_week_trial`. */
+/** Purchasable plans — coaching 3/6/12 + digital customised SKUs. */
 export function getPurchasablePlan(slug: string | null | undefined): CoachingPlan | null {
-  if (!slug || !(slug in COACHING_PLANS)) return null
-  return COACHING_PLANS[slug as CoachingPlanSlug]
+  if (!slug) return null
+  if (slug in COACHING_PLANS) return COACHING_PLANS[slug as CoachingPlanSlug]
+  if (slug in DIGITAL_PLANS) return DIGITAL_PLANS[slug as DigitalPlanSlug]
+  return null
 }
 
 export function isValidPlanSlug(slug: string): slug is CoachingPlanSlug {
   return slug in COACHING_PLANS
 }
 
+export function isValidPurchasableSlug(slug: string): boolean {
+  return slug in COACHING_PLANS || slug in DIGITAL_PLANS
+}
+
 export function isTrialPlanSlug(slug: string | null | undefined): boolean {
   return slug === '1_week_trial'
+}
+
+export function digitalPlanSections(slug: string | null | undefined): DigitalPlanSections | null {
+  const plan = getDigitalPlan(slug)
+  return plan?.sections ?? null
 }
 
 /** Compute subscription end from plan duration (days preferred when set). */

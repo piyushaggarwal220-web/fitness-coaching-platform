@@ -11,6 +11,13 @@ export type MetaPurchaseInput = {
   amountPaise: number
   currency: string
   planSlug: string
+  /** Product label for Meta custom_data (e.g. unlock / library add-ons). */
+  contentName?: string | null
+  /**
+   * Path on the app host where the purchase happened.
+   * Defaults to `/checkout`. Use `/unlock` or `/library/unlock` for add-ons.
+   */
+  eventSourcePath?: string | null
   eventTime?: number
   /** Meta browser cookies — improves CAPI match rate when browser pixel is blocked. */
   fbp?: string | null
@@ -48,6 +55,14 @@ export function resolveMetaPurchaseEventTime(
   const age = nowSec - preferred
   if (age > META_MAX_EVENT_AGE_SEC || age < -300) return nowSec
   return preferred
+}
+
+/** Map purchase plan_slug to the page where that product is bought. */
+export function metaEventSourcePathForPlanSlug(planSlug: string | null | undefined): string {
+  if (!planSlug) return '/checkout'
+  if (planSlug.startsWith('unlock_')) return '/unlock'
+  if (planSlug === 'exercise_library') return '/library/unlock'
+  return '/checkout'
 }
 
 export async function sendMetaPurchase(
@@ -96,6 +111,11 @@ export async function sendMetaPurchase(
   if (clientIp) userData.client_ip_address = clientIp
   if (clientUa) userData.client_user_agent = clientUa
 
+  const appOrigin = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.lurvox.in').replace(/\/+$/, '')
+  const rawPath = input.eventSourcePath?.trim() || '/checkout'
+  const sourcePath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`
+  const contentName = input.contentName?.trim()
+
   try {
     const response = await fetch(`https://graph.facebook.com/${apiVersion}/${pixelId}/events`, {
       method: 'POST',
@@ -110,13 +130,14 @@ export async function sendMetaPurchase(
             event_time: resolveMetaPurchaseEventTime(input.eventTime),
             event_id: eventId,
             action_source: 'website',
-            event_source_url: `${(process.env.NEXT_PUBLIC_APP_URL || 'https://app.lurvox.in').replace(/\/+$/, '')}/checkout`,
+            event_source_url: `${appOrigin}${sourcePath}`,
             user_data: userData,
             custom_data: {
               currency: input.currency,
               value: input.amountPaise / 100,
               content_ids: [input.planSlug],
               content_type: 'product',
+              ...(contentName ? { content_name: contentName } : {}),
             },
           },
         ],

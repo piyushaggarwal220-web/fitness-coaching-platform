@@ -61,9 +61,8 @@
           <span data-pf-checkout-label>See this plan</span>
         </a>
         <a class="lx-pf__btn lx-pf__btn--ghost" data-pf-upgrade href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/12-months" hidden>
-          Prefer Athletic body? 12 months · ₹5,999
+          Prefer Athletic body? 12 months · ₹1,699
         </a>
-        <a class="lx-pf__btn lx-pf__btn--ghost" href="{{ talk_url }}">Talk to a coach</a>
         <a class="lx-pf__btn lx-pf__btn--ghost" href="/">Back to home</a>
         <a class="lx-pf__link" href="{{ plans_url }}">Compare all plans</a>
       </div>
@@ -610,7 +609,7 @@
         slug: '3_months',
         path: '3-months',
         label: 'Fat loss',
-        price: '₹1,999',
+        price: '₹599',
         per: '90 days',
         bullets: [
           'Best for a focused 90-day fat-loss plan',
@@ -622,7 +621,7 @@
         slug: '6_months',
         path: '6-months',
         label: 'Fat loss + muscle gain',
-        price: '₹3,499',
+        price: '₹999',
         per: '6 months',
         bullets: [
           'Best for: losing fat while building muscle',
@@ -634,7 +633,7 @@
         slug: '12_months',
         path: '12-months',
         label: 'Athletic body',
-        price: '₹5,999',
+        price: '₹1,699',
         per: '12 months',
         bullets: [
           'Best for: fat loss, muscle gain, and stamina',
@@ -705,7 +704,7 @@
 
       var why = '';
       if (planKey === '3_months') {
-        why = 'This is the 90-day Fat loss plan: a focused start with a real coach.';
+        why = 'This is the 90-day Fat loss plan: a focused start with 1-to-1 coaching.';
       } else if (planKey === '6_months') {
         why = 'This is Fat loss + muscle gain. Six months to lose fat while building muscle.';
       } else {

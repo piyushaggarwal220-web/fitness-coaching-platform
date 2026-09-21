@@ -19,6 +19,7 @@ import { generatedCardioFormData, generatedDietFormData, generatedSupplementForm
 import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-actions'
 import { encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
 import { getNextPlanVersion } from '@/lib/plans'
+import { sendNotification } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
@@ -271,6 +272,44 @@ async function upsertWeeklyPlanDraft(input: {
   }
 
   return { id: draft.id as string, version: draft.version as number }
+}
+
+async function notifyCoachWeeklyDraftReady(input: {
+  coachId: string
+  clientId: string
+  checkinId: string
+  coachingWeek: number
+  planId: string
+  clientName?: string | null
+}): Promise<void> {
+  const admin = createAdminClient()
+  const { data: coach } = await admin.from('coaches').select('user_id').eq('id', input.coachId).maybeSingle()
+  if (!coach?.user_id) return
+
+  let clientName = input.clientName?.trim() || null
+  if (!clientName) {
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('name, email')
+      .eq('id', input.clientId)
+      .maybeSingle()
+    clientName = profile?.name?.trim() || profile?.email || 'Client'
+  }
+
+  const weekLabel = input.coachingWeek > 0 ? `Week ${input.coachingWeek}` : 'Weekly'
+  await sendNotification({
+    userId: coach.user_id,
+    type: 'weekly_plan_draft_ready',
+    title: 'Weekly AI draft ready for review',
+    body: `${clientName}: ${weekLabel} draft is ready. Review and publish when you are ready.`,
+    actionUrl: `/coach/plan/${input.planId}`,
+    metadata: {
+      checkinId: input.checkinId,
+      planId: input.planId,
+      clientId: input.clientId,
+      coachingWeek: input.coachingWeek,
+    },
+  })
 }
 
 export async function generateWeeklyPlanDraft(input: {
@@ -604,6 +643,15 @@ export async function generateWeeklyPlanDraft(input: {
       sections,
     })
 
+    await notifyCoachWeeklyDraftReady({
+      coachId: input.coachId,
+      clientId: input.clientId,
+      checkinId: input.checkinId,
+      coachingWeek: input.coachingWeek,
+      planId: draft.id,
+      clientName: (profile as OnboardingProfile).name,
+    }).catch(() => undefined)
+
     return { planId: draft.id, error: null, generationTimeMs }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Draft generation failed'
@@ -636,6 +684,13 @@ export async function generateWeeklyPlanDraft(input: {
           planVersion: `v${existing.version}`,
           error: `partial_ok: ${message}`,
         })
+        await notifyCoachWeeklyDraftReady({
+          coachId: input.coachId,
+          clientId: input.clientId,
+          checkinId: input.checkinId,
+          coachingWeek: input.coachingWeek,
+          planId: existing.id,
+        }).catch(() => undefined)
         return { planId: existing.id, error: null, generationTimeMs }
       }
     } catch {

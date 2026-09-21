@@ -21,6 +21,7 @@
       "schedule": "*/15 * * * *"
     },
     {
+<<<<<<< HEAD
       "path": "/api/cron/ai-marketing-sync",
       "schedule": "0 5 * * *"
     },
@@ -31,6 +32,14 @@
     {
       "path": "/api/cron/jarvis-cycle",
       "schedule": "0 6 * * *"
+=======
+      "path": "/api/cron/piyush-initial-plans",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/meta-purchase-backfill",
+      "schedule": "10 * * * *"
+>>>>>>> origin/main
     }
   ]
 }

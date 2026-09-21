@@ -24,7 +24,7 @@ import {
   markManualPlanStarted,
   queueManualPlanJob,
 } from '@/lib/coach/background-initial-plan'
-import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
+import { coachRequiresManualPlanDelivery, clientRequiresJourneySetup } from '@/lib/coach-delivery-policy'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadClientJourneySnapshot } from '@/lib/ai/client-journey'
@@ -182,6 +182,7 @@ export async function POST(request: Request) {
   if (
     manualDelivery &&
     isInitialPlanAction(actionId) &&
+    clientRequiresJourneySetup(profile.created_at) &&
     !profile.journey_goal?.trim()
   ) {
     return NextResponse.json(

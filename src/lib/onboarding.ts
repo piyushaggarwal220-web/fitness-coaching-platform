@@ -22,6 +22,7 @@ import {
   formatSelectedGoals,
   validateSelectedPlanGoals,
 } from '@/lib/plan-goals'
+import { validateCoachPersonalities } from '@/lib/coach-personality'
 import type {
   OnboardingData,
   OnboardingFormData,
@@ -526,6 +527,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   fitness_goal: '',
   starting_body_type: '',
   selected_goals: [],
+  coach_personalities: [],
   target_weight: '',
   goal_deadline: '',
   biggest_struggle: '',
@@ -593,6 +595,76 @@ export type SavedPhotoUrls = {
   back: string | null
 }
 
+export type ProgressPhotoBucket = typeof ONBOARDING_PHOTO_BUCKET | 'avatars'
+
+export type ProgressPhotoRef = {
+  path: string
+  bucket: ProgressPhotoBucket
+  label: 'front' | 'side' | 'back'
+}
+
+function galleryPathsFromProfile(
+  profile: Pick<OnboardingProfile, 'profile_gallery_paths'>
+): string[] {
+  const raw = profile.profile_gallery_paths
+  if (!Array.isArray(raw)) return []
+  return raw.filter((p): p is string => typeof p === 'string' && p.trim().length > 0).map((p) => p.trim())
+}
+
+/**
+ * Prefer dedicated onboarding progress columns; if missing, use profile gallery
+ * uploads (avatars bucket) in order as front / side / back.
+ * Some clients finish onboarding via gallery photos instead of the photo step.
+ */
+export function resolveProgressPhotoRefs(
+  profile: Pick<
+    OnboardingProfile,
+    'progress_photo_front' | 'progress_photo_side' | 'progress_photo_back' | 'profile_gallery_paths'
+  >
+): { front: ProgressPhotoRef | null; side: ProgressPhotoRef | null; back: ProgressPhotoRef | null } {
+  const fromColumn = (
+    path: string | null | undefined,
+    label: 'front' | 'side' | 'back'
+  ): ProgressPhotoRef | null => {
+    const trimmed = path?.trim()
+    if (!trimmed) return null
+    return { path: trimmed, bucket: ONBOARDING_PHOTO_BUCKET, label }
+  }
+
+  let front = fromColumn(profile.progress_photo_front, 'front')
+  let side = fromColumn(profile.progress_photo_side, 'side')
+  let back = fromColumn(profile.progress_photo_back, 'back')
+
+  const unused = galleryPathsFromProfile(profile).filter(
+    (path) => path !== front?.path && path !== side?.path && path !== back?.path
+  )
+  if (!front && unused.length > 0) {
+    front = { path: unused.shift()!, bucket: 'avatars', label: 'front' }
+  }
+  if (!side && unused.length > 0) {
+    side = { path: unused.shift()!, bucket: 'avatars', label: 'side' }
+  }
+  if (!back && unused.length > 0) {
+    back = { path: unused.shift()!, bucket: 'avatars', label: 'back' }
+  }
+
+  return { front, side, back }
+}
+
+export function savedPhotoUrlsFromProfile(
+  profile: Pick<
+    OnboardingProfile,
+    'progress_photo_front' | 'progress_photo_side' | 'progress_photo_back' | 'profile_gallery_paths'
+  >
+): SavedPhotoUrls {
+  const refs = resolveProgressPhotoRefs(profile)
+  return {
+    front: refs.front?.path ?? null,
+    side: refs.side?.path ?? null,
+    back: refs.back?.path ?? null,
+  }
+}
+
 export type OnboardingPhotoFiles = {
   front: File | null
   side: File | null
@@ -619,6 +691,9 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
       typeof data.goals?.startingBodyType === 'string' ? data.goals.startingBodyType : '',
     selected_goals: Array.isArray(data.goals?.selectedGoals)
       ? data.goals.selectedGoals.filter((value): value is string => typeof value === 'string')
+      : [],
+    coach_personalities: Array.isArray(data.goals?.coachPersonalities)
+      ? data.goals.coachPersonalities.filter((value): value is string => typeof value === 'string')
       : [],
     training_experience: profile.training_experience ?? '',
     activity_level: profile.activity_level ?? '',
@@ -735,11 +810,7 @@ export function getResumeStep(
 
   // Flag alone is not enough — resume at the first missing required answer.
   const form = formFromProfile(profile)
-  const photoUrls = {
-    front: profile.progress_photo_front ?? null,
-    side: profile.progress_photo_side ?? null,
-    back: profile.progress_photo_back ?? null,
-  }
+  const photoUrls = savedPhotoUrlsFromProfile(profile)
   const mealTimingContext = mealTimingContextFromForm(
     form,
     parseOnboardingData(profile.onboarding_data)?.eatingPattern?.mealsForTiming
@@ -790,6 +861,8 @@ export function buildOnboardingData(
       goalDetails: form.goal_details.trim() || null,
       startingBodyType: form.starting_body_type.trim() || null,
       selectedGoals: form.selected_goals.length > 0 ? form.selected_goals : null,
+      coachPersonalities:
+        form.coach_personalities.length > 0 ? form.coach_personalities : null,
       goalSelectionMethod: userUnsure || options?.aiSelectedGoal ? 'ai' : 'user',
       aiSelectedGoal: userUnsure || options?.aiSelectedGoal ? true : undefined,
       userIndicatedUnsure: userUnsure ? true : undefined,
@@ -1091,6 +1164,8 @@ export function validateOnboardingStep(
       } else if (!data.fitness_goal || data.fitness_goal === 'ai_decide') {
         return 'Please select your goals.'
       }
+      const personalityError = validateCoachPersonalities(data.coach_personalities)
+      if (personalityError) return personalityError
       if (needsTargetWeight(data.fitness_goal)) {
         if (!data.target_weight || Number(data.target_weight) <= 0) return 'Enter a valid target weight.'
       }
@@ -1308,8 +1383,8 @@ export function buildReviewSections(
         { label: 'Name', value: form.name },
         { label: 'Age', value: form.age },
         { label: 'Gender', value: getOnboardingLabel('gender', form.gender) },
-        { label: 'Height', value: `${form.height} cm` },
-        { label: 'Weight', value: `${form.weight} kg` },
+        { label: 'Height', value: form.height ? `${form.height} cm` : 'Not set' },
+        { label: 'Weight', value: form.weight ? `${form.weight} kg` : 'Not set' },
         { label: 'Chest', value: form.chest ? `${form.chest} cm` : 'Not set' },
         { label: 'Thigh', value: form.thigh ? `${form.thigh} cm` : 'Not set' },
         { label: 'Belly (navel)', value: form.navel ? `${form.navel} cm` : 'Not set' },
@@ -1327,6 +1402,36 @@ export function buildReviewSections(
               ? formatSelectedGoals(form.selected_goals)
               : getOnboardingLabel('fitness_goal', form.fitness_goal),
         },
+        {
+          label: 'Starting body type',
+          value: getOnboardingLabel('starting_body_type', form.starting_body_type) || 'Not set',
+        },
+        { label: 'Target weight', value: form.target_weight ? `${form.target_weight} kg` : 'Not set' },
+        { label: 'Deadline', value: form.goal_deadline.trim() || 'Not set' },
+        { label: 'Biggest struggle', value: form.biggest_struggle.trim() || 'Not set' },
+        { label: 'Goal details', value: form.goal_details.trim() || 'Not set' },
+      ],
+    },
+    {
+      title: 'Lifestyle',
+      items: [
+        { label: 'Occupation', value: getOnboardingLabel('occupation', form.occupation) || 'Not set' },
+        { label: 'Work / school schedule', value: form.work_school_schedule.trim() || 'Not set' },
+        {
+          label: 'Activity level',
+          value: getOnboardingLabel('activity_level', form.activity_level) || 'Not set',
+        },
+        { label: 'Daily steps', value: getOnboardingLabel('daily_steps', form.daily_steps) || 'Not set' },
+        {
+          label: 'Sleep',
+          value: getOnboardingLabel('sleep_duration', form.sleep_duration) || 'Not set',
+        },
+        { label: 'Stress', value: getOnboardingLabel('stress_level', form.stress_level) || 'Not set' },
+        { label: 'Water intake', value: getOnboardingLabel('water_intake', form.water_intake) || 'Not set' },
+        {
+          label: 'Training + diet push',
+          value: getOnboardingLabel('flux_capacity', form.flux_capacity) || 'Not set',
+        },
       ],
     },
     {
@@ -1343,6 +1448,8 @@ export function buildReviewSections(
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
         { label: 'Equipment', value: equipment },
+        { label: 'Favorite exercises', value: form.favorite_exercises.trim() || 'Not set' },
+        { label: 'Exercises disliked', value: form.exercises_disliked.trim() || 'Not set' },
         { label: 'Squats', value: getOnboardingLabel('can_squat', form.can_squat) },
         { label: 'Push-ups', value: getOnboardingLabel('can_pushup', form.can_pushup) },
         { label: 'Pull-ups', value: getOnboardingLabel('can_pullup', form.can_pullup) },
@@ -1354,6 +1461,8 @@ export function buildReviewSections(
       items: [
         { label: 'Injuries', value: form.injuries || 'None' },
         { label: 'Medical conditions', value: form.medical_notes || 'None' },
+        { label: 'Pain during exercise', value: form.pain_during_exercise.trim() || 'None' },
+        { label: 'Medications', value: form.medications.trim() || 'None' },
         { label: 'Acne', value: ACNE_OPTIONS.find((o) => o.value === form.acne_status)?.label ?? 'Not set' },
         { label: 'Hair loss', value: HAIR_LOSS_OPTIONS.find((o) => o.value === form.hair_loss_status)?.label ?? 'Not set' },
         { label: 'Sexual health', value: SEXUAL_HEALTH_OPTIONS.find((o) => o.value === form.sexual_health_status)?.label ?? 'Not set' },
@@ -1371,6 +1480,25 @@ export function buildReviewSections(
         { label: 'Fish days/week', value: form.fish_days || 'N/A' },
         { label: 'Fish days', value: formatProteinWeekdays(form.fish_allowed_days) },
         { label: 'Whey protein', value: getOnboardingLabel('whey_protein', form.whey_protein) },
+        { label: 'Food allergies', value: form.food_allergies.trim() || 'None' },
+        { label: 'Foods disliked', value: form.foods_disliked.trim() || 'None' },
+        { label: 'Favorite foods', value: form.favorite_foods.trim() || 'Not set' },
+        { label: 'Previous diets that failed', value: form.previous_diets_failed.trim() || 'Not set' },
+        { label: 'Monthly food budget', value: getOnboardingLabel('monthly_food_budget', form.monthly_food_budget) },
+        {
+          label: 'Cooking ability',
+          value: getOnboardingLabel('cooking_ability', form.cooking_ability) || 'Not set',
+        },
+        { label: 'Diet notes / exceptions', value: form.diet_custom_notes.trim() || 'None' },
+      ],
+    },
+    {
+      title: 'Eating pattern',
+      items: [
+        { label: 'Breakfast', value: form.breakfast.trim() || 'Not set' },
+        { label: 'Lunch', value: form.lunch.trim() || 'Not set' },
+        { label: 'Dinner', value: form.dinner.trim() || 'Not set' },
+        { label: 'Snacks', value: form.snacks.trim() || 'Not set' },
       ],
     },
     {
@@ -1380,6 +1508,12 @@ export function buildReviewSections(
         { label: 'Lunch time', value: formatMealTime24(form.timing_lunch) },
         { label: 'Dinner time', value: formatMealTime24(form.timing_dinner) },
         { label: 'Snack time', value: formatMealTime24(form.timing_snacks) },
+      ],
+    },
+    {
+      title: 'Supplements',
+      items: [
+        { label: 'Current supplements', value: form.current_supplements.trim() || 'None' },
       ],
     },
     {
@@ -1569,11 +1703,7 @@ export function validateOnboardingAnswersForProfile(
 ): string | null {
   const form = formFromProfile(profile)
   if (options?.termsAccepted || profile.terms_accepted_at) form.terms_accepted = true
-  const photoUrls = {
-    front: profile.progress_photo_front ?? null,
-    side: profile.progress_photo_side ?? null,
-    back: profile.progress_photo_back ?? null,
-  }
+  const photoUrls = savedPhotoUrlsFromProfile(profile)
   const meals = mealTimingContextFromForm(
     form,
     parseOnboardingData(profile.onboarding_data)?.eatingPattern?.mealsForTiming

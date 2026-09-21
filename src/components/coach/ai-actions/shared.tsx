@@ -48,11 +48,36 @@ export function AiReasoningPanel({ reasoning }: { reasoning: AiReasoningDisplay 
 export function OptionalCoachNote({
   value,
   onChange,
+  mode = 'optional',
 }: {
   value: string
   onChange: (v: string) => void
+  /** Always-visible discussion notes for weekly / initial generate. */
+  mode?: 'optional' | 'discussion'
 }) {
-  const [show, setShow] = useState(false)
+  const [show, setShow] = useState(mode === 'discussion' || Boolean(value))
+
+  if (mode === 'discussion') {
+    return (
+      <label style={{ display: 'grid', gap: 6, marginBottom: 16 }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>
+          What you discussed with the client
+        </span>
+        <span style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 1.45 }}>
+          Add agreements from the call or check-in (food swaps, injury limits, schedule changes, calorie
+          hold, etc.). The AI must follow these when generating the draft.
+        </span>
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={4}
+          placeholder="e.g. Keep calories the same this week, swap paneer for tofu on Tue/Thu, no lunges — knee flare-up, train only 4 days"
+          style={{ ...s.noteInput, minHeight: 96, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.45 }}
+        />
+      </label>
+    )
+  }
+
   if (!show && !value) {
     return (
       <button type="button" style={s.noteToggle} onClick={() => setShow(true)}>
@@ -66,12 +91,12 @@ export function OptionalCoachNote({
         {show ? 'Hide coaching note' : 'Show coaching note'}
       </button>
       {show && (
-        <input
-          type="text"
+        <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          rows={3}
           placeholder="e.g. Emphasize home workouts, reduce leg volume"
-          style={s.noteInput}
+          style={{ ...s.noteInput, minHeight: 72, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.45 }}
         />
       )}
     </div>

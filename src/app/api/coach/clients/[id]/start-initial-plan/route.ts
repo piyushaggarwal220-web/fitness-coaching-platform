@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
-import { coachRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy'
+import { coachRequiresManualPlanDelivery, clientRequiresJourneySetup } from '@/lib/coach-delivery-policy'
 import {
   canRetryInitialGeneration,
   enqueueInitialPlanGeneration,
@@ -9,6 +9,7 @@ import {
   shouldStartInitialGeneration,
   type InitialPlanGenerationJob,
 } from '@/lib/initial-plan-generation'
+import { clientHasDeliveredPlanStrict } from '@/lib/plans-delivery-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -63,7 +64,7 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Client has not finished onboarding yet.' }, { status: 409 })
   }
 
-  if (!profile.journey_goal?.trim()) {
+  if (clientRequiresJourneySetup(profile.created_at) && !profile.journey_goal?.trim()) {
     return NextResponse.json(
       { error: 'Set the client journey plan before generating a draft.' },
       { status: 422 }
@@ -74,13 +75,14 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Client already has a delivered plan.' }, { status: 409 })
   }
 
-  const { count: deliveredCount } = await admin
-    .from('plans')
-    .select('id', { count: 'exact', head: true })
-    .eq('client_id', clientId)
-    .not('delivered_at', 'is', null)
-
-  if ((deliveredCount ?? 0) > 0) {
+  const deliveredGuard = await clientHasDeliveredPlanStrict(admin, clientId)
+  if (deliveredGuard.error) {
+    return NextResponse.json(
+      { error: `Could not verify delivery history: ${deliveredGuard.error}` },
+      { status: 503 }
+    )
+  }
+  if (deliveredGuard.delivered) {
     return NextResponse.json({ error: 'Client already has a delivered plan.' }, { status: 409 })
   }
 

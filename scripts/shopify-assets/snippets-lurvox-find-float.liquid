@@ -1,25 +1,19 @@
 {% comment %}
-  LURVOX — one floating dock, two orange-and-black actions.
-  Talk is first and slightly larger. Plan buttons show prices.
-  Swap the pair so the current page is not repeated.
-  Demo lives on the welcome card, not here.
+  LURVOX — floating dock.
+  Quiz / plans only — no Talk to a coach CTAs.
 {% endcomment %}
 
 {%- liquid
   assign find_url = '/pages/choose-your-plan'
-  assign talk_url = '/pages/talk-to-a-coach'
   assign plans_url = '/pages/compare-fit?view=compare-short'
+  assign on_home = false
   assign on_finder = false
-  assign on_talk = false
   assign on_compare = false
+  if request.page_type == 'index'
+    assign on_home = true
+  endif
   if request.page_type == 'page' and page.handle == 'choose-your-plan'
     assign on_finder = true
-  endif
-  if request.page_type == 'page' and page.handle == 'talk-to-a-coach'
-    assign on_talk = true
-  endif
-  if request.page_type == 'page' and page.handle == 'book-a-free-call'
-    assign on_talk = true
   endif
   if request.page_type == 'page'
     if page.handle == 'compare-fit' or page.handle == 'compare-plans' or page.handle contains 'compare'
@@ -28,55 +22,48 @@
   endif
 -%}
 
-<div class="lx-find-float" data-lx-find-float aria-label="Quick actions">
-  {%- if on_finder -%}
-    <div class="lx-find-float__row lx-find-float__row--talk-first">
-      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
-        <span class="lx-find-float__main">Talk to a coach</span>
-        <span class="lx-find-float__sub">Free consult</span>
-      </a>
-      <a class="lx-find-float__btn" href="{{ plans_url }}">
-        <span class="lx-find-float__main">See plans</span>
-        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
+<div class="lx-find-float" data-lx-find-float aria-hidden="true" hidden style="display:none !important">
+  {%- if on_home -%}
+    <div class="lx-find-float__row lx-find-float__row--single">
+      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
+        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
+        <span class="lx-find-float__sub">No cost · No commitment</span>
       </a>
     </div>
-  {%- elsif on_talk -%}
-    <div class="lx-find-float__row">
-      <a class="lx-find-float__btn" href="{{ find_url }}">
-        <span class="lx-find-float__main">Find your plan</span>
-        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
-      </a>
-      <a class="lx-find-float__btn" href="{{ plans_url }}">
+  {%- elsif on_finder -%}
+    <div class="lx-find-float__row lx-find-float__row--single">
+      <a class="lx-find-float__btn lx-find-float__btn--ghost" href="{{ plans_url }}">
         <span class="lx-find-float__main">See plans</span>
-        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
+        <span class="lx-find-float__sub">₹599 · ₹999 · ₹1,699</span>
       </a>
     </div>
   {%- elsif on_compare -%}
-    <div class="lx-find-float__row lx-find-float__row--talk-second">
-      <a class="lx-find-float__btn" href="{{ find_url }}">
-        <span class="lx-find-float__main">Find your plan</span>
-        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
-      </a>
-      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
-        <span class="lx-find-float__main">Talk to a coach</span>
-        <span class="lx-find-float__sub">Free consult</span>
+    <div class="lx-find-float__row lx-find-float__row--single">
+      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
+        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
+        <span class="lx-find-float__sub">No cost · No commitment</span>
       </a>
     </div>
   {%- else -%}
-    <div class="lx-find-float__row lx-find-float__row--talk-first">
-      <a class="lx-find-float__btn lx-find-float__btn--talk" href="{{ talk_url }}">
-        <span class="lx-find-float__main">Talk to a coach</span>
-        <span class="lx-find-float__sub">Free consult</span>
+    <div class="lx-find-float__row">
+      <a class="lx-find-float__btn lx-find-float__btn--quiz" href="{{ find_url }}">
+        <span class="lx-find-float__main">Find your plan quiz <em>(free)</em></span>
+        <span class="lx-find-float__sub">No cost · No commitment</span>
       </a>
-      <a class="lx-find-float__btn" href="{{ find_url }}">
-        <span class="lx-find-float__main">Find your plan</span>
-        <span class="lx-find-float__sub">₹1,999 · ₹3,499 · ₹5,999</span>
+      <a class="lx-find-float__btn lx-find-float__btn--ghost" href="{{ plans_url }}">
+        <span class="lx-find-float__main">See plans</span>
+        <span class="lx-find-float__sub">Compare options</span>
       </a>
     </div>
   {%- endif -%}
 </div>
 
 <style id="lx-find-float-css">
+  .lx-find-float,
+  [data-lx-find-float] {
+    display: none !important;
+  }
+
   .lx-find-float {
     position: fixed;
     left: 50%;
@@ -105,7 +92,7 @@
     pointer-events: none;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
     align-items: stretch;
     padding: 0;
@@ -115,12 +102,16 @@
     box-shadow: none;
   }
 
+  .lx-find-float__row--single {
+    grid-template-columns: 1fr;
+  }
+
   .lx-find-float__row--talk-first {
-    grid-template-columns: 1.18fr 1fr;
+    grid-template-columns: 1.12fr 1fr;
   }
 
   .lx-find-float__row--talk-second {
-    grid-template-columns: 1fr 1.18fr;
+    grid-template-columns: 1fr 1.12fr;
   }
 
   .lx-find-float__btn {
@@ -129,61 +120,94 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     width: 100%;
-    min-height: 56px;
-    padding: 10px 10px;
+    min-height: 54px;
+    padding: 11px 12px;
     box-sizing: border-box;
     text-align: center;
     text-decoration: none !important;
     border-radius: 14px;
     color: #140900 !important;
-    background: #ff6200 !important;
-    border: 2px solid #140900;
-    box-shadow: 0 8px 22px rgba(255, 98, 0, 0.4);
+    background: linear-gradient(165deg, #ff9a45 0%, #ff6200 70%, #e85700 100%) !important;
+    border: 0 !important;
+    outline: none !important;
+    box-shadow:
+      0 10px 24px rgba(255, 98, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
     -webkit-tap-highlight-color: transparent;
   }
 
   .lx-find-float__btn:hover,
   .lx-find-float__btn:focus-visible {
-    background: #ff7a1a !important;
-    color: #140900 !important;
+    filter: brightness(1.04);
   }
 
   .lx-find-float__btn--talk {
-    min-height: 62px;
-    box-shadow: 0 12px 28px rgba(255, 98, 0, 0.58);
+    min-height: 56px;
+  }
+
+  .lx-find-float__row--single .lx-find-float__btn--talk {
+    min-height: 54px;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .lx-find-float__btn--quiz,
+  .lx-find-float__btn--ghost {
+    color: #fff !important;
+    background:
+      radial-gradient(ellipse 80% 90% at 50% 0%, rgba(255, 98, 0, 0.16), transparent 55%),
+      linear-gradient(180deg, #1a1511 0%, #101010 100%) !important;
+    border: 1.5px solid rgba(255, 138, 61, 0.7) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .lx-find-float__btn--quiz .lx-find-float__main,
+  .lx-find-float__btn--ghost .lx-find-float__main {
+    color: #fff !important;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .lx-find-float__btn--quiz .lx-find-float__main em {
+    color: #ff8a3d;
+    font-style: normal;
+    font-weight: 800;
+  }
+
+  .lx-find-float__btn--quiz .lx-find-float__sub,
+  .lx-find-float__btn--ghost .lx-find-float__sub {
+    color: rgba(255, 210, 170, 0.72) !important;
   }
 
   .lx-find-float__btn--talk .lx-find-float__main {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   .lx-find-float__main {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     font-weight: 850;
     letter-spacing: -0.02em;
-    line-height: 1.15;
+    line-height: 1.2;
     color: #140900 !important;
   }
 
   .lx-find-float__sub {
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 650;
-    color: rgba(20, 9, 0, 0.78) !important;
+    color: rgba(20, 9, 0, 0.72) !important;
     white-space: normal;
-    line-height: 1.2;
+    line-height: 1.25;
   }
 
   body.lx-has-find-float {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .lx-flow:not(.lx-flow--after),
   .lx-conv-sticky,
-  [data-lx-conv-sticky],
-  [data-lx-hero-cta],
-  .lx-hero-first-cta {
+  [data-lx-conv-sticky] {
     display: none !important;
   }
 
@@ -195,8 +219,8 @@
     }
 
     .lx-find-float__btn {
-      min-height: 54px;
-      padding: 9px 8px;
+      min-height: 52px;
+      padding: 10px 12px;
     }
 
     .lx-find-float__main { font-size: 0.84rem; }
@@ -216,10 +240,6 @@
       document.body.classList.add('lx-has-find-float');
       el.classList.remove('is-hidden');
       el.setAttribute('aria-hidden', 'false');
-
-      document.querySelectorAll('a[href*="/pages/book-a-free-call"]').forEach(function (a) {
-        a.setAttribute('href', '/pages/talk-to-a-coach');
-      });
 
       var bar =
         document.getElementById('PBarNextFrameWrapper') ||

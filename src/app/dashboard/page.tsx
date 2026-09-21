@@ -14,7 +14,6 @@ import {
   MessageCircle,
   Star,
   Timer,
-  Trophy,
   LucideIcon,
 } from 'lucide-react';
 import { ClientShell } from '@/components/ui/ClientShell';
@@ -33,14 +32,16 @@ import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { formatPlanDate } from '@/lib/plans';
 import { clientFacingPlanTitle, parsePlanMeta } from '@/lib/plan-metadata';
 import { planGoalName } from '@/lib/payments/plan-pages';
+import { isDigitalPlanSlug } from '@/lib/payments/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
+import { useInstantLockState } from '@/hooks/useInstantLockState';
+import { unlockHrefForFeature } from '@/lib/instant-feature-access';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
 import { CheckinDueBanner } from '@/components/dashboard/CheckinDueBanner';
 import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner';
 import { GoalUpgradeCard } from '@/components/dashboard/GoalUpgradeCard';
-import { LeagueHomeCard } from '@/components/league/LeagueHomeCard';
 import { CoachQueueCard } from '@/components/dashboard/CoachQueueCard';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { isPublicDemoEmail, PUBLIC_DEMO_CLIENT_NAME } from '@/lib/public-demo';
@@ -93,6 +94,7 @@ export default function Dashboard() {
   const [loadError, setLoadError] = useState('');
   const [scheduleNow, setScheduleNow] = useState(() => new Date());
   const [generationJob, setGenerationJob] = useState<InitialPlanGenerationJob | null>(null);
+  const { locked: instantLocked } = useInstantLockState();
 
   useEffect(() => {
     if (!profile?.checkin_schedule_started_at) return;
@@ -339,12 +341,16 @@ export default function Dashboard() {
     {
       key: 'tracker',
       title: 'Tracker',
-      subtitle: trackerSubtitle,
-      href: '/tracker',
+      subtitle: instantLocked.tracker ? 'Unlock for lifetime access' : trackerSubtitle,
+      href: instantLocked.tracker ? unlockHrefForFeature('tracker') : '/tracker',
       icon: ListChecks,
-      badge: todayTrackerPercent != null ? `${todayTrackerPercent}%` : null,
+      badge: instantLocked.tracker
+        ? 'Locked'
+        : todayTrackerPercent != null
+          ? `${todayTrackerPercent}%`
+          : null,
       accent: colors.accent,
-      visible: Boolean(activePlan),
+      visible: Boolean(activePlan) || instantLocked.tracker,
     },
     {
       key: 'plan',
@@ -363,35 +369,33 @@ export default function Dashboard() {
     {
       key: 'checkin',
       title: 'Check-in',
-      subtitle: dueCheckin
-        ? `${getCheckinTypeDisplayName(dueCheckin.type)} available now`
-        : checkinSchedule?.nextCheckin
-          ? `${getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)} · Day ${checkinSchedule.nextCheckin.coachingDay}`
-          : 'Weekly accountability and coach review',
-      href: dueCheckin ? dueCheckin.href : '/checkin',
+      subtitle: instantLocked.tracker
+        ? 'Unlock tracker to use check-ins'
+        : dueCheckin
+          ? `${getCheckinTypeDisplayName(dueCheckin.type)} available now`
+          : checkinSchedule?.nextCheckin
+            ? `${getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)} · Day ${checkinSchedule.nextCheckin.coachingDay}`
+            : 'Weekly accountability and coach review',
+      href: instantLocked.tracker
+        ? unlockHrefForFeature('tracker')
+        : dueCheckin
+          ? dueCheckin.href
+          : '/checkin',
       icon: Calendar,
-      badge: dueCheckin ? 'Due' : null,
+      badge: instantLocked.tracker ? 'Locked' : dueCheckin ? 'Due' : null,
       accent: '#f59e0b',
       visible: true,
     },
     {
       key: 'journey',
       title: 'Journey',
-      subtitle: 'Photos, check-ins, and progress history',
-      href: '/journey',
+      subtitle: instantLocked.journey
+        ? 'Unlock for lifetime access'
+        : 'Photos, check-ins, and progress history',
+      href: instantLocked.journey ? unlockHrefForFeature('journey') : '/journey',
       icon: Flame,
-      badge: null,
+      badge: instantLocked.journey ? 'Locked' : null,
       accent: '#a78bfa',
-      visible: true,
-    },
-    {
-      key: 'league',
-      title: 'League',
-      subtitle: 'Rank, points, and monthly climb',
-      href: '/league',
-      icon: Trophy,
-      badge: null,
-      accent: '#eab308',
       visible: true,
     },
     {
@@ -407,14 +411,22 @@ export default function Dashboard() {
     {
       key: 'chat',
       title: 'Coach chat',
-      subtitle: chatReady && unreadMessages > 0
-        ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
-        : chatReady
-          ? `Message ${coach?.name}`
-          : CHAT_AFTER_ENROLLMENT_MESSAGE,
-      href: '/client/chat',
+      subtitle: instantLocked.ai_chat
+        ? 'Unlock for lifetime access'
+        : chatReady && unreadMessages > 0
+          ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
+          : chatReady
+            ? `Message ${coach?.name}`
+            : CHAT_AFTER_ENROLLMENT_MESSAGE,
+      href: instantLocked.ai_chat ? unlockHrefForFeature('ai_chat') : '/client/chat',
       icon: MessageCircle,
-      badge: chatReady && unreadMessages > 0 ? (unreadMessages > 9 ? '9+' : String(unreadMessages)) : null,
+      badge: instantLocked.ai_chat
+        ? 'Locked'
+        : chatReady && unreadMessages > 0
+          ? unreadMessages > 9
+            ? '9+'
+            : String(unreadMessages)
+          : null,
       accent: '#22c55e',
       visible: true,
     },
@@ -428,16 +440,22 @@ export default function Dashboard() {
       return 0;
     });
 
-  const heroActionLabel = dueCheckin
+  const heroActionLabel = dueCheckin && !instantLocked.tracker
     ? `Start ${getCheckinTypeDisplayName(dueCheckin.type)}`
     : status?.nextActionHref
       ? status.nextAction ?? 'Continue'
-      : activePlan
+      : activePlan && !instantLocked.tracker
         ? "Open today's tracker"
         : 'View your coaching dashboard';
-  const heroActionHref = dueCheckin?.href
-    ?? status?.nextActionHref
-    ?? (activePlan ? '/tracker' : '/plan');
+  const heroActionHref =
+    dueCheckin && !instantLocked.tracker
+      ? dueCheckin.href
+      : status?.nextActionHref
+        ?? (activePlan && !instantLocked.tracker
+          ? '/tracker'
+          : instantLocked.tracker
+            ? unlockHrefForFeature('tracker')
+            : '/plan');
   const planCard = profile ? (
     <Card
       variant="glass"
@@ -478,7 +496,8 @@ export default function Dashboard() {
       </div>
     </Card>
   ) : null;
-  const trackerCard = activePlan && coachingDayPending ? (
+  const trackerCard =
+    instantLocked.tracker ? null : activePlan && coachingDayPending ? (
     <Card variant="glass">
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
         <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -546,7 +565,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {stickyCheckin && !isPublicDemoEmail(user?.email) && (
+      {stickyCheckin && !isPublicDemoEmail(user?.email) && !instantLocked.tracker && (
         <CheckinDueBanner
           checkin={stickyCheckin}
           mode={stickyCheckinMode}
@@ -559,7 +578,8 @@ export default function Dashboard() {
         <MembershipRenewalBanner prompt={renewalPrompt} />
       )}
 
-      {(generationJob || clientRequiresManualPlanDelivery(profile)) &&
+      {(generationJob ||
+        (clientRequiresManualPlanDelivery(profile) && !isDigitalPlanSlug(purchase?.plan_slug))) &&
         !activePlan &&
         profile?.plan_delivered !== true &&
         profile?.onboarding_complete && (
@@ -573,7 +593,13 @@ export default function Dashboard() {
           lineHeight: 1.5,
         }}>
           <strong>
-            {!generationJob && clientRequiresManualPlanDelivery(profile)
+            {isDigitalPlanSlug(purchase?.plan_slug)
+              ? generationJob?.status === 'ready'
+                ? 'Your customised plan is almost ready.'
+                : generationJob?.status === 'failed'
+                  ? 'We hit a snag building your plan — retry from onboarding or contact support.'
+                  : 'Building your customised plan…'
+              : !generationJob && clientRequiresManualPlanDelivery(profile)
               ? 'Your coach is preparing your personalized plan.'
               : generationJob?.status === 'queued' || generationJob?.status === 'generating'
               ? 'Your coach is preparing your personalized plan.'
@@ -582,7 +608,9 @@ export default function Dashboard() {
                 : 'Your coach is working on your plan. Please check back shortly.'}
           </strong>
           <div>
-            Your plan appears here only after your coach reviews and sends it.
+            {isDigitalPlanSlug(purchase?.plan_slug)
+              ? 'You’ll get an email when it’s ready, and it will also appear in My Plan (usually within a few hours).'
+              : 'Your plan appears here only after your coach reviews and sends it.'}
           </div>
         </div>
       )}
@@ -625,7 +653,9 @@ export default function Dashboard() {
                 Everything important is one tap away
               </h2>
               <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.55 }}>
-                Track today, open your plan, stay on top of check-ins, review your journey, and message your coach from one place.
+                {instantLocked.tracker || instantLocked.journey || instantLocked.ai_chat
+                  ? 'Open your plan from one place. Tracker, Journey, and Coach chat unlock separately if you want them.'
+                  : 'Track today, open your plan, stay on top of check-ins, review your journey, and message your coach from one place.'}
               </p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[2] }}>
@@ -639,9 +669,11 @@ export default function Dashboard() {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2] }}>
               <Button onClick={() => router.push(heroActionHref)}>{heroActionLabel}</Button>
-              <Button variant="secondary" onClick={() => router.push('/journey')}>
-                Open journey
-              </Button>
+              {!instantLocked.journey && (
+                <Button variant="secondary" onClick={() => router.push('/journey')}>
+                  Open journey
+                </Button>
+              )}
             </div>
           </div>
         </Card>
@@ -696,6 +728,7 @@ export default function Dashboard() {
             coachName={status.coachName ?? coach?.name}
             coachBio={coach?.bio}
             coachPhotoPath={coach?.display_photo_path}
+            planSlug={purchase?.plan_slug}
           />
         )}
         {!isPublicDemoEmail(user?.email) && <NotificationActivationGate />}
@@ -726,8 +759,6 @@ export default function Dashboard() {
           </div>
         </section>
       )}
-
-      <LeagueHomeCard />
 
       {/* Coaching week + next check-in */}
       {checkinSchedule && (

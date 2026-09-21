@@ -321,48 +321,6 @@
     position: relative;
   }
 
-  .lx-hero-first-cta {
-    position: absolute;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    z-index: 4;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    pointer-events: none;
-  }
-
-  .lx-hero-first-cta a {
-    pointer-events: auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1 1 140px;
-    min-height: 46px;
-    padding: 0 14px;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 800;
-    text-decoration: none !important;
-    text-align: center;
-    box-sizing: border-box;
-  }
-
-  .lx-hero-first-cta__primary {
-    background: linear-gradient(180deg, #ff8a3d 0%, #ff6200 100%);
-    border: 1px solid #ff6200;
-    color: #140900 !important;
-    box-shadow: 0 10px 26px rgba(255, 98, 0, 0.32);
-  }
-
-  .lx-hero-first-cta__ghost {
-    background: rgba(5, 5, 5, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.32);
-    color: #fff !important;
-    backdrop-filter: blur(8px);
-  }
-
   .ai-fitness-gallery__main-{{ ai_gen_id }} {
     width: 100%;
     overflow-x: auto;
@@ -521,52 +479,97 @@
     margin: 0;
   }
 
-  /* lurvox-hero-cta-v3 */
+  /* lurvox-hero-cta-v10 — spaced, balanced CTA stack */
   .ai-fitness-gallery__cta-{{ ai_gen_id }} {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     justify-content: center;
     align-items: stretch;
     gap: 10px;
     width: 100%;
-    max-width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
     box-sizing: border-box;
-    padding: 16px 16px 10px;
+    padding: 20px 20px 18px;
   }
 
   .ai-fitness-gallery__cta-primary-{{ ai_gen_id }},
+  .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }},
   .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1px;
-    flex: 1 1 180px;
+    gap: 5px;
+    width: 100%;
     min-width: 0;
     max-width: 100%;
     min-height: 52px;
-    padding: 9px 18px;
+    padding: 12px 18px;
     border-radius: 14px;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 800;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.015em;
     text-decoration: none;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    line-height: 1.15;
+    line-height: 1.2;
     box-sizing: border-box;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
   }
 
   .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} {
-    color: #140a00;
-    background: linear-gradient(180deg, #ff8a3d 0%, {{ block.settings.accent_color }} 100%);
-    border: 1px solid {{ block.settings.accent_color }};
-    box-shadow: 0 10px 26px rgba(255, 98, 0, 0.32);
+    color: #140900;
+    background: linear-gradient(165deg, #ff9a45 0%, #ff6200 70%, #e85700 100%);
+    border: 0 !important;
+    outline: none;
+    box-shadow:
+      0 12px 28px rgba(255, 98, 0, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    min-height: 54px;
+    font-size: 16.5px;
+  }
+
+  .ai-fitness-gallery__cta-primary-{{ ai_gen_id }}:hover,
+  .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }}:hover {
+    transform: translateY(-1px);
+  }
+
+  .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} span {
+    color: rgba(20, 9, 0, 0.78);
+    font-weight: 800;
+  }
+
+  .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} small,
+  .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }} small {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.25;
   }
 
   .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} small {
-    font-size: 11px;
-    font-weight: 650;
-    opacity: 0.8;
+    color: rgba(20, 9, 0, 0.7);
+  }
+
+  .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }} {
+    color: #ffffff;
+    background:
+      radial-gradient(ellipse 80% 90% at 50% 0%, rgba(255, 98, 0, 0.16), transparent 55%),
+      linear-gradient(180deg, #1a1511 0%, #101010 100%);
+    border: 1.5px solid rgba(255, 138, 61, 0.7) !important;
+    outline: none;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }} span {
+    color: #ff8a3d;
+    font-weight: 800;
+  }
+
+  .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }} small {
+    color: rgba(255, 210, 170, 0.72);
   }
 
   .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} {
@@ -577,36 +580,22 @@
     min-height: 52px;
   }
 
-  /* lurvox-hero-cta-v6 — secondary is a text link, not a second button */
-  .ai-fitness-gallery__cta-{{ ai_gen_id }}[data-lx-hero-cta-single] {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .ai-fitness-gallery__cta-{{ ai_gen_id }}[data-lx-hero-cta-single] .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} {
-    flex: none;
-    width: 100%;
-    min-height: 58px;
-    padding: 14px 22px;
-    font-size: 16px;
-  }
-
-  .ai-fitness-gallery__cta-{{ ai_gen_id }}[data-lx-hero-cta-single] .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }},
+  .ai-fitness-gallery__cta-{{ ai_gen_id }}[data-lx-hero-cta-stack] .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }},
   .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }}.lx-hero-cta-text {
-    flex: none;
     width: auto;
     align-self: center;
     min-height: 0;
-    padding: 4px 6px;
+    margin-top: 4px;
+    padding: 8px 10px;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    color: rgba(255, 255, 255, 0.72) !important;
-    font-size: 0.92rem;
+    color: rgba(255, 170, 110, 0.88) !important;
+    font-size: 0.88rem;
     font-weight: 650;
+    letter-spacing: 0.01em;
     text-decoration: underline !important;
-    text-underline-offset: 3px;
+    text-underline-offset: 4px;
   }
 
   @media screen and (max-width: 430px) {
@@ -715,15 +704,17 @@
     .ai-fitness-gallery__cta-{{ ai_gen_id }} {
       gap: 8px;
       padding: 12px 12px 8px;
+      flex-direction: column;
+      align-items: stretch;
     }
 
     .ai-fitness-gallery__cta-primary-{{ ai_gen_id }},
-    .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} {
-      flex: 1 1 calc(50% - 8px);
+    .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }} {
+      width: 100%;
       min-width: 0;
-      padding: 8px 10px;
-      font-size: 13px;
-      min-height: 48px;
+      padding: 12px 14px;
+      font-size: 14px;
+      min-height: 54px;
     }
   }
 
@@ -733,7 +724,7 @@
     }
 
     .ai-fitness-gallery__cta-primary-{{ ai_gen_id }},
-    .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} {
+    .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }} {
       width: 100%;
       flex-basis: auto;
     }
@@ -776,10 +767,6 @@
         {% endif %}
       </div>
     </div>
-      <div class="lx-hero-first-cta">
-        <a class="lx-hero-first-cta__primary" href="https://app.lurvox.in/try">Try the platform free</a>
-        <a class="lx-hero-first-cta__ghost" href="/pages/compare-fit?view=compare-short">Compare plans</a>
-      </div>
     </div>
   </div>
 
@@ -831,11 +818,11 @@
     <h2>{{ block.settings.headline_line_1 }} {{ block.settings.headline_line_2 }} <span style="color: {{ block.settings.accent_color }};">{{ block.settings.headline_highlight }}</span></h2>
   </div>
 
-  {%- comment -%} lurvox-hero-cta-v6-one-primary {%- endcomment -%}
-  <div class="ai-fitness-gallery__cta-{{ ai_gen_id }}" data-lx-hero-cta data-lx-hero-cta-single>
-    <a class="ai-fitness-gallery__cta-primary-{{ ai_gen_id }}" href="https://app.lurvox.in/try">
-      Try the platform free
-      <small>No signup. Look around first.</small>
+  {%- comment -%} lurvox-hero-cta-v11 — quiz leads; Try lives in welcome box {%- endcomment -%}
+  <div class="ai-fitness-gallery__cta-{{ ai_gen_id }}" data-lx-hero-cta data-lx-hero-cta-stack>
+    <a class="ai-fitness-gallery__cta-primary-{{ ai_gen_id }}" href="/pages/choose-your-plan">
+      Find your plan quiz <span>(free)</span>
+      <small>No cost · No commitment</small>
     </a>
     <a class="ai-fitness-gallery__cta-ghost-{{ ai_gen_id }} lx-hero-cta-text" href="/pages/compare-fit?view=compare-short">Compare plans →</a>
   </div>
@@ -880,38 +867,42 @@
       flex-direction: column !important;
       align-items: stretch !important;
       gap: 10px !important;
-      padding: 12px 16px 16px !important;
+      padding: 18px 18px 20px !important;
       width: 100% !important;
       max-width: 100% !important;
       box-sizing: border-box !important;
     }
 
-    .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} {
+    .ai-fitness-gallery__cta-primary-{{ ai_gen_id }},
+    .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }} {
       flex: none !important;
       width: 100% !important;
       max-width: 100% !important;
-      min-height: 58px !important;
-      padding: 14px 16px !important;
+      min-height: 52px !important;
+      padding: 11px 16px !important;
       font-size: 16px !important;
-      border-radius: 14px !important;
+      border-radius: 13px !important;
+      gap: 3px !important;
     }
 
-    .ai-fitness-gallery__cta-{{ ai_gen_id }}[data-lx-hero-cta-single] .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }},
+    .ai-fitness-gallery__cta-{{ ai_gen_id }}[data-lx-hero-cta-stack] .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }},
     .ai-fitness-gallery__cta-ghost-{{ ai_gen_id }}.lx-hero-cta-text {
       flex: none !important;
       width: auto !important;
       max-width: 100% !important;
       min-height: 0 !important;
-      padding: 4px 6px !important;
-      font-size: 0.92rem !important;
+      margin-top: 2px !important;
+      padding: 8px 10px !important;
+      font-size: 0.88rem !important;
       font-weight: 650 !important;
       border-radius: 0 !important;
       background: transparent !important;
       border: none !important;
     }
 
-    .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} small {
-      font-size: 12px !important;
+    .ai-fitness-gallery__cta-primary-{{ ai_gen_id }} small,
+    .ai-fitness-gallery__cta-quiz-{{ ai_gen_id }} small {
+      font-size: 11.5px !important;
       white-space: normal;
     }
   }

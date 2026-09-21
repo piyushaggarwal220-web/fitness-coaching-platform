@@ -19,6 +19,7 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
+import { razorpayMetaNotes } from '@/lib/analytics/meta-attribution'
 
 type CreateOrderBody = {
   planSlug?: string
@@ -28,6 +29,8 @@ type CreateOrderBody = {
   policyAgreementAccepted?: boolean
   verificationId?: string
   discountCode?: string
+  meta_fbp?: string
+  meta_fbc?: string
   /** Ignored. Checkout no longer sells add-ons. */
   supplementAddon?: boolean
   /** Ignored. Checkout no longer sells add-ons. */
@@ -149,6 +152,7 @@ export async function POST(request: Request) {
         refund_policy_version: acknowledgement.refundPolicyVersion,
         policy_acknowledged_at: acknowledgement.acknowledgedAt,
         ...discountNotes,
+        ...razorpayMetaNotes(body),
       },
     })
     await storeOrderPolicyAcknowledgement(admin, order.id, acknowledgement)

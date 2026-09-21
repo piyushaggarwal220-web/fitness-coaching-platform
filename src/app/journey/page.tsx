@@ -14,6 +14,7 @@ import { colors, spacing } from '@/lib/design-tokens'
 import { staggerClass, useCountUp } from '@/lib/motion'
 import { createClient } from '@/lib/supabase/client'
 import { StorageImage } from '@/components/ui/StorageImage'
+import { InstantFeatureGate } from '@/components/instant/InstantFeatureGate'
 
 const supabase = createClient()
 
@@ -56,14 +57,27 @@ export default function JourneyPage() {
 
   const weightChangeAnimated = useCountUp(data?.stats.weightChange ?? 0)
 
-  if (loading) return <ClientShell title="Journey" loading />
-  if (!data) return null
+  if (loading) {
+    return (
+      <InstantFeatureGate feature="journey" title="Journey">
+        <ClientShell title="Journey" loading />
+      </InstantFeatureGate>
+    )
+  }
+  if (!data) {
+    return (
+      <InstantFeatureGate feature="journey" title="Journey">
+        <ClientShell title="Journey" loading />
+      </InstantFeatureGate>
+    )
+  }
 
   const { stats, milestones, weeklyEntries, weightHistory, progressPhotos, coachComments, recentWorkouts, measurements } = data
   const latest = weeklyEntries[weeklyEntries.length - 1] ?? null
   const prior = weeklyEntries.length > 1 ? weeklyEntries[weeklyEntries.length - 2] : null
 
   return (
+    <InstantFeatureGate feature="journey" title="Journey">
     <ClientShell title="Journey">
       {gallery && (
         <PhotoGalleryViewer
@@ -304,6 +318,7 @@ export default function JourneyPage() {
         </section>
       )}
     </ClientShell>
+    </InstantFeatureGate>
   )
 }
 

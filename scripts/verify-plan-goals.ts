@@ -90,6 +90,30 @@ assert(
   '12_months has no upgrade suggestion',
   suggestedUpgradeTier('12_months', { gender: 'female', bodyType: 'lose_fat_fast' }) === null
 )
+assert(
+  'digital_complete has no coaching upgrade suggestion',
+  suggestedUpgradeTier('digital_complete', { gender: 'male', bodyType: 'skinny_fat' }) === null
+)
+assert(
+  'digital_complete unlocks only starter goals',
+  getUnlockedGoals('digital_complete', 'male', 'weight_gain').every((g) => g.tier === '3_months')
+)
+assert(
+  'digital_complete can select starter goals',
+  validateSelectedPlanGoals(['healthy_weight_gain', 'muscle_gain'], 'digital_complete', {
+    gender: 'male',
+    bodyType: 'weight_gain',
+    requireBodyType: true,
+  }) === null
+)
+assert(
+  'digital_complete cannot select 6-month coaching goals',
+  validateSelectedPlanGoals(['healthy_weight_gain', 'fill_out_frame'], 'digital_complete', {
+    gender: 'male',
+    bodyType: 'weight_gain',
+    requireBodyType: true,
+  }) !== null
+)
 
 assert(
   'paid 6_months resolves to 6_months',

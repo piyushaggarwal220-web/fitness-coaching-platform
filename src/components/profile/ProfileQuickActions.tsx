@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ClipboardCheck, Flame, Map, Trophy } from 'lucide-react'
+import { ClipboardCheck, Flame, Map } from 'lucide-react'
 import { colors } from '@/lib/design-tokens'
 import styles from '@/app/profile/profile.module.css'
 
@@ -26,13 +26,6 @@ const ITEMS = [
     sub: 'Progress timeline',
     icon: Map,
     color: '#38bdf8',
-  },
-  {
-    href: '/league',
-    title: 'League',
-    sub: 'Climb the ladder',
-    icon: Trophy,
-    color: '#facc15',
   },
 ] as const
 

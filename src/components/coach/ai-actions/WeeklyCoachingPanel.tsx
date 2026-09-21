@@ -107,8 +107,16 @@ export function WeeklyCoachingPanel({
           planUpdateCadence?: string
           nextAutoUpdateWeek?: number
         }
-        setIsGenerating(Boolean(data.isGenerating) && !draft)
-        setGenerationFailed(Boolean(data.generationFailed) && !draft)
+        const apiGenerating = Boolean(data.isGenerating) && !draft
+        const apiFailed = Boolean(data.generationFailed) && !draft
+        // Keep local "queued" state if status lags behind the start log write.
+        setIsGenerating((prev) => {
+          if (draft || apiFailed) return false
+          if (apiGenerating) return true
+          if (prev && (busy || retrying || waitingForDraft)) return true
+          return false
+        })
+        setGenerationFailed(apiFailed)
         setFailureMessage(data.failureError?.trim() ?? '')
         if (typeof data.autoDraftScheduled === 'boolean') {
           setAutoDraftScheduled(data.autoDraftScheduled)
@@ -121,7 +129,7 @@ export function WeeklyCoachingPanel({
     } catch {
       const submitted = checkinSubmittedAt ? new Date(checkinSubmittedAt).getTime() : 0
       const recent = submitted > 0 && Date.now() - submitted < 12 * 60 * 1000
-      setIsGenerating(!draft && recent)
+      setIsGenerating((prev) => (!draft && (prev || recent)) || false)
       setGenerationFailed(false)
     }
   }, [clientId, checkinId, checkinSubmittedAt, isGenerating, busy, retrying])
@@ -162,10 +170,10 @@ export function WeeklyCoachingPanel({
     setStatusVariant('loading')
     setStatus(
       mode === 'regenerate'
-        ? 'Regenerating AI draft from active plan and latest check-in…'
+        ? 'Queuing regenerate in the background…'
         : mode === 'retry'
-          ? 'Retrying AI draft — reusing active plan, check-in, and prompt cache…'
-          : 'Queuing AI draft from this check-in…'
+          ? 'Queuing retry in the background…'
+          : 'Queuing AI draft in the background…'
     )
     setIsGenerating(true)
     setGenerationFailed(false)
@@ -174,6 +182,8 @@ export function WeeklyCoachingPanel({
       const res = await fetch('/api/coach/ai-draft/retry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // Keep the request alive if the coach navigates away right after clicking.
+        keepalive: true,
         body: JSON.stringify({
           clientId,
           checkinId,
@@ -206,7 +216,9 @@ export function WeeklyCoachingPanel({
 
       if (data.queued || res.status === 202) {
         setStatusVariant('loading')
-        setStatus('AI is building the draft. This page updates automatically…')
+        setStatus(
+          'Draft is generating in the background. You can leave this page — open this check-in again from the work queue when you are ready to review.'
+        )
         // Keep polling via isGenerating; clear local busy flags so Retry isn't stuck.
         setBusy(false)
         setRetrying(false)
@@ -330,11 +342,13 @@ export function WeeklyCoachingPanel({
           : cadenceSkip
             ? `This client gets a plan update ${planUpdateCadence?.toLowerCase() ?? 'every 14 days'}. ${weekLabel} is check in only. Next auto draft is week ${nextAutoUpdateWeek ?? '—'}. Generate now only if the plan needs a change.`
             : showFailure
-              ? 'Automatic draft generation did not complete. Retry uses your active plan, latest check-in, and cached context.'
+              ? 'Automatic draft generation did not complete. Add what you discussed with the client, then retry.'
               : isGenerating
-                ? 'AI is building a draft from this check-in. This usually takes a few minutes for a full week.'
-                : 'No AI draft yet. Generate one when you are ready to update the plan.'}
+                ? 'AI is building a full-week draft in the background. You can leave this page — come back from the work queue to review when it is ready.'
+                : 'Add what you discussed with the client below, then generate a draft. Generation runs in the background so you can leave the page.'}
       </p>
+
+      {!hasDraft ? <OptionalCoachNote mode="discussion" value={coachNote} onChange={setCoachNote} /> : null}
 
       {hasDraft ? (
         <button
@@ -375,9 +389,15 @@ export function WeeklyCoachingPanel({
           style={primaryBtnStyle(primaryDisabled)}
           className="btn-press"
         >
-          {busy || isGenerating ? 'Generating…' : 'Generate AI Draft'}
+          {busy || isGenerating ? 'Generating in background…' : 'Generate AI Draft'}
         </button>
       )}
+
+      {isGenerating && !hasDraft ? (
+        <p style={{ margin: '12px 0 0', fontSize: 13, color: colors.textMuted, lineHeight: 1.45 }}>
+          Safe to leave — generation keeps running on the server.
+        </p>
+      ) : null}
 
       {hasDraft && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
@@ -408,7 +428,15 @@ export function WeeklyCoachingPanel({
         </div>
       )}
 
-      <OptionalCoachNote value={coachNote} onChange={setCoachNote} />
+      {hasDraft ? (
+        <div style={{ marginTop: 12 }}>
+          <OptionalCoachNote mode="discussion" value={coachNote} onChange={setCoachNote} />
+          <p style={{ margin: '0 0 8px', fontSize: 12, color: colors.textMuted, lineHeight: 1.4 }}>
+            Update discussion notes above, then Regenerate so the new draft follows them.
+          </p>
+        </div>
+      ) : null}
+
       <GenerationStatus message={status} variant={statusVariant} />
       {error && <div style={s.error}>{error}</div>}
       {publishSuccess && !error && (

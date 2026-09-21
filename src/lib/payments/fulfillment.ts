@@ -1,4 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from 'crypto'
+import { assignCoachToClient } from '@/lib/admin/assign-coach'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
@@ -582,10 +583,12 @@ export async function claimPurchaseWithPassword(
   const existingExpiry = existingProfile?.subscription_expires_at
     ? new Date(existingProfile.subscription_expires_at).getTime()
     : 0
-  // Trials start from now (don't stack on leftover access). Long plans still extend from max(now, existing).
-  const nextExpiry = plan.isTrial
-    ? planExpiry.toISOString()
-    : new Date(Math.max(planExpiry.getTime(), existingExpiry, Date.now())).toISOString()
+  // Trials + digital one-time plans start from now (don't stack on leftover access).
+  // Long coaching plans still extend from max(now, existing).
+  const nextExpiry =
+    plan.isTrial || plan.isDigital
+      ? planExpiry.toISOString()
+      : new Date(Math.max(planExpiry.getTime(), existingExpiry, Date.now())).toISOString()
 
   const purchasePhone = (purchase.customer_phone || '').trim()
   const existingPhone = (existingProfile?.phone || '').trim()
@@ -634,6 +637,31 @@ export async function claimPurchaseWithPassword(
     profilePayload.exercise_library_entitled = true
   }
 
+  // New clients get AI coach service. Keep human for existing assignments / preferred coach.
+  const existingCoachService = (existingProfile as { coach_service?: string | null } | null)
+    ?.coach_service
+  const existingCoachId = (existingProfile as { coach_id?: string | null } | null)?.coach_id
+  if (
+    existingCoachService === 'human' ||
+    (existingCoachId && existingCoachService !== 'ai') ||
+    Boolean(purchase.preferred_coach_id)
+  ) {
+    profilePayload.coach_service = 'human'
+  } else {
+    profilePayload.coach_service = 'ai'
+  }
+
+  // Instant feature gates: only new digital claims. Coaching purchase clears the gate.
+  if (plan.isDigital) {
+    profilePayload.instant_gates_enabled = true
+  } else if (!plan.isTrial) {
+    // Coaching membership includes tracker / journey / AI chat.
+    profilePayload.instant_gates_enabled = false
+    profilePayload.addon_tracker_entitled = true
+    profilePayload.addon_journey_entitled = true
+    profilePayload.addon_ai_chat_entitled = true
+  }
+
   const { error: profileError } = await admin.from('profiles').upsert(profilePayload)
   if (profileError) {
     logPurchaseStep('profile_create_failed', { userId, error: profileError.message })
@@ -669,22 +697,52 @@ export async function claimPurchaseWithPassword(
     }
   }
 
-  const assignResult = await autoAssignCoachToClient(userId, admin)
+  const assignResult = purchase.preferred_coach_id
+    ? await (async () => {
+        const { error } = await assignCoachToClient(admin, userId, purchase.preferred_coach_id!)
+        if (error) return { coachId: null as string | null, error }
+        return { coachId: purchase.preferred_coach_id as string, error: null as string | null }
+      })()
+    : await autoAssignCoachToClient(userId, admin)
   if (assignResult.coachId) {
-    const { data: coach } = await admin
-      .from('coaches')
-      .select('name')
-      .eq('id', assignResult.coachId)
-      .maybeSingle()
     const welcome = NotificationTemplates.welcome()
-    await sendNotification({ userId, ...welcome })
-    if (coach?.name) {
-      const assigned = NotificationTemplates.coachAssigned(coach.name)
-      await sendNotification({ userId, ...assigned })
+    await sendNotification({
+      userId,
+      ...welcome,
+      ...(plan.isDigital
+        ? {
+            body: 'Complete your onboarding to get your customised plan by email and in the app.',
+            actionUrl: '/onboarding',
+          }
+        : null),
+    })
+    if (!plan.isDigital) {
+      // AI coach for new clients — skip "coach assigned" human notification.
+      const service = profilePayload.coach_service
+      if (service !== 'ai') {
+        const { data: coach } = await admin
+          .from('coaches')
+          .select('name')
+          .eq('id', assignResult.coachId)
+          .maybeSingle()
+        if (coach?.name) {
+          const assigned = NotificationTemplates.coachAssigned(coach.name)
+          await sendNotification({ userId, ...assigned })
+        }
+      }
     }
   } else {
     const welcome = NotificationTemplates.welcome()
-    await sendNotification({ userId, ...welcome })
+    await sendNotification({
+      userId,
+      ...welcome,
+      ...(plan.isDigital
+        ? {
+            body: 'Complete your onboarding to get your customised plan by email and in the app.',
+            actionUrl: '/onboarding',
+          }
+        : null),
+    })
   }
 
   logPurchaseStep('claim_complete', { userId, purchaseId: purchase.id, isNewUser, needsLogin })

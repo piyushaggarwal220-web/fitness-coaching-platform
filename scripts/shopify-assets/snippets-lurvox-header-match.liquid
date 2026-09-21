@@ -1,13 +1,105 @@
 {% comment %}
-  LURVOX — match stock header / offer strip to black + #ff6200 site theme.
+  LURVOX — Instant-style homepage chrome: hide old header, colorful page bg, existing-client login in intro.
 {% endcomment %}
+<script>
+  (function () {
+    var p = location.pathname.replace(/\/+$/, '') || '/';
+    if (p === '/') document.documentElement.classList.add('lx-home-bare');
+  })();
+</script>
 <style id="lx-header-match">
+  /* hide-hero-gallery-v1 */
   :root {
     --lx-nav-bg: #050505;
     --lx-nav-ink: #ffffff;
     --lx-nav-muted: rgba(255, 255, 255, 0.72);
     --lx-nav-orange: #ff6200;
     --lx-nav-line: rgba(255, 98, 0, 0.28);
+    --lx-page-bg:
+      radial-gradient(ellipse 70% 45% at 85% 0%, rgba(225, 29, 72, 0.22), transparent 55%),
+      radial-gradient(ellipse 55% 40% at 0% 15%, rgba(34, 197, 94, 0.16), transparent 50%),
+      radial-gradient(ellipse 50% 35% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 55%),
+      #12100f;
+  }
+
+  body.template-index,
+  html.lx-home-bare body {
+    --header-height: 0px !important;
+    --header-bottom-position: 0px !important;
+    background: var(--lx-page-bg) !important;
+    background-attachment: scroll !important;
+    background-color: #12100f !important;
+  }
+
+  html.lx-home-bare {
+    background-color: #12100f !important;
+  }
+
+  html.lx-home-bare .shopify-section-group-header-group,
+  body.template-index .shopify-section-group-header-group,
+  html.lx-home-bare .lurvox-offer-strip,
+  body.template-index .lurvox-offer-strip,
+  html.lx-home-bare #lurvox-offer-strip-live,
+  body.template-index #lurvox-offer-strip-live,
+  html.lx-home-bare #lurvox-offer-strip-home,
+  body.template-index #lurvox-offer-strip-home,
+  html.lx-home-bare .announcement-bar,
+  body.template-index .announcement-bar,
+  html.lx-home-bare .utility-bar,
+  body.template-index .utility-bar,
+  html.lx-home-bare header-component,
+  body.template-index header-component,
+  html.lx-home-bare sticky-header,
+  body.template-index sticky-header,
+  html.lx-home-bare .header-wrapper,
+  body.template-index .header-wrapper,
+  html.lx-home-bare #shopify-section-header,
+  body.template-index #shopify-section-header,
+  html.lx-home-bare #header-group,
+  body.template-index #header-group {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+
+  body.template-index #MainContent,
+  html.lx-home-bare #MainContent,
+  body.template-index .lx-intro,
+  body.template-index .lx-truth,
+  body.template-index .lx-plans,
+  body.template-index .lx-steps,
+  body.template-index .lx-faq,
+  body.template-index .lx-fq,
+  body.template-index .lx-close,
+  body.template-index .lx-anim-tf,
+  body.template-index .lx-flow,
+  body.template-index .lx-conv,
+  body.template-index .lx-wyg,
+  body.template-index .lx-home-flow,
+  html.lx-home-bare .lx-intro,
+  html.lx-home-bare .lx-truth,
+  html.lx-home-bare .lx-plans,
+  html.lx-home-bare .lx-steps,
+  html.lx-home-bare .lx-faq,
+  html.lx-home-bare .lx-fq,
+  html.lx-home-bare .lx-close,
+  html.lx-home-bare .lx-anim-tf,
+  html.lx-home-bare .lx-flow,
+  html.lx-home-bare .lx-conv,
+  html.lx-home-bare .lx-wyg,
+  html.lx-home-bare .lx-home-flow {
+    background: transparent !important;
+    background-image: none !important;
+    background-color: transparent !important;
+  }
+
+  html.lx-home-bare #MainContent,
+  body.template-index #MainContent {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
   }
 
   /* Offer strip above nav — pure black + orange (kill brown gradient) */
@@ -16,7 +108,9 @@
   .lurvox-offer-strip.lurvox-offer-strip--home {
     background: #050505 !important;
     background-image:
-      radial-gradient(ellipse 70% 120% at 50% -40%, rgba(255, 98, 0, 0.28), transparent 60%) !important;
+      radial-gradient(ellipse 36% 120% at 8% -40%, rgba(225, 29, 72, 0.28), transparent 58%),
+      radial-gradient(ellipse 55% 120% at 48% -40%, rgba(255, 98, 0, 0.34), transparent 60%),
+      radial-gradient(ellipse 36% 120% at 92% -40%, rgba(37, 99, 235, 0.26), transparent 58%) !important;
     border-bottom: 1px solid rgba(255, 98, 0, 0.35) !important;
     color: #fff !important;
   }
@@ -240,15 +334,34 @@
     display: none !important;
   }
 
-  /* Talk / phone action — orange accent */
-  .header a[aria-label*="Talk" i],
-  .header a[href*="book-a-free-call"],
+  /* Hide coach-call / talk CTAs in the header */
+  .lx-hdr__talk,
   .header a[href*="talk-to-a-coach"],
-  .header a[href*="wa.me"],
-  .header a[href*="tel:"],
-  header-component a[aria-label*="Talk" i],
+  .header a[href*="book-a-free-call"],
+  header-component a[href*="talk-to-a-coach"],
   header-component a[href*="book-a-free-call"] {
-    color: var(--lx-nav-orange) !important;
+    display: none !important;
+  }
+
+  /* Homepage leftovers: Try the app, find-plan quiz, old AI price cards, talk-to-coach */
+  #lx-welcome,
+  .lx-welcome,
+  .lx-find-float,
+  [data-lx-find-float],
+  .lx-consult,
+  [data-lx-hero-cta] a[href*="choose-your-plan"],
+  a[href*="talk-to-a-coach"],
+  a[href*="book-a-free-call"],
+  #shopify-block-AWTUyVllzcVIzY25yT__ai_gen_block_361650c_qqYKXh,
+  .shopify-block:has([class*="ai-transformation-plan-card-start-"]),
+  #ContactForm-AUk54am5SN2RDazJGN__contact_form_ArpxEr,
+  .contact-form:has(#ContactForm-AUk54am5SN2RDazJGN__contact_form_ArpxEr),
+  #shopify-section-template--22567106412795__lurvox_home_gallery,
+  #shopify-block-AQ1JYRnRFSzBBRHFXV__ai_gen_block_52353f6_MmHVRV,
+  [class*="ai-fitness-gallery-"]:not([class*="__"]),
+  .shopify-block:has([data-gallery-main]),
+  .shopify-section:has([data-gallery-main]):not(:has(.lx-home-flow)):not(:has(.lx-plans)):not(:has(.lx-intro)) {
+    display: none !important;
   }
 
   .header a[aria-label*="Talk" i] svg,
@@ -412,6 +525,8 @@
 </style>
 <script>
   (function () {
+    if (window.__lxHeaderMatch) return;
+    window.__lxHeaderMatch = true;
     var URL = 'https://app.lurvox.in/login';
     var ICON =
       '<svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.1" stroke="currentColor" stroke-width="1.7"/><path d="M4.4 16.2c.7-2.8 2.8-4.2 5.6-4.2s4.9 1.4 5.6 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
@@ -455,5 +570,90 @@
       place();
     }
     setTimeout(place, 600);
+
+    function hideLegacyHome() {
+      var sels = [
+        '#lx-welcome',
+        '.lx-welcome',
+        '.lx-find-float',
+        '[data-lx-find-float]',
+        '.lx-hdr__talk',
+        '.lx-consult',
+        'a[href*="talk-to-a-coach"]',
+        'a[href*="book-a-free-call"]'
+      ];
+      document.querySelectorAll(sels.join(',')).forEach(function (el) {
+        el.style.setProperty('display', 'none', 'important');
+        el.setAttribute('aria-hidden', 'true');
+      });
+      document.querySelectorAll('[data-lx-hero-cta] a').forEach(function (a) {
+        var text = (a.textContent || '').toLowerCase();
+        if (text.indexOf('find your plan') !== -1) {
+          a.style.setProperty('display', 'none', 'important');
+          a.setAttribute('aria-hidden', 'true');
+        }
+      });
+      document.querySelectorAll('[class*="ai-transformation-plan-card-start-"]').forEach(function (a) {
+        var block = a.closest('.shopify-block');
+        if (!block || block.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro')) return;
+        block.style.setProperty('display', 'none', 'important');
+        block.setAttribute('hidden', '');
+        block.setAttribute('aria-hidden', 'true');
+      });
+      document.querySelectorAll('[data-gallery-main]').forEach(function (el) {
+        var block = el.closest('.shopify-block');
+        var section = el.closest('.shopify-section');
+        var keep = '.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro, .lx-home-flow';
+        if (block && !block.querySelector(keep)) {
+          block.style.setProperty('display', 'none', 'important');
+          block.setAttribute('hidden', '');
+          block.setAttribute('aria-hidden', 'true');
+        }
+        if (section && !section.querySelector(keep)) {
+          section.style.setProperty('display', 'none', 'important');
+          section.setAttribute('hidden', '');
+          section.setAttribute('aria-hidden', 'true');
+        }
+      });
+      var heroGallery = document.getElementById('shopify-section-template--22567106412795__lurvox_home_gallery');
+      if (heroGallery && !heroGallery.querySelector('.lx-home-flow, .lx-intro, .lx-plans')) {
+        heroGallery.style.setProperty('display', 'none', 'important');
+        heroGallery.setAttribute('hidden', '');
+        heroGallery.setAttribute('aria-hidden', 'true');
+      }
+      document.querySelectorAll('form[action*="/contact"]').forEach(function (f) {
+        if (location.pathname !== '/' && location.pathname !== '') return;
+        var wrap = f.closest('.shopify-block') || f.closest('.contact-form') || f;
+        if (wrap.querySelector && wrap.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro, .lx-home-flow')) return;
+        wrap.style.setProperty('display', 'none', 'important');
+        wrap.setAttribute('hidden', '');
+        wrap.setAttribute('aria-hidden', 'true');
+      });
+      document.querySelectorAll('h2, h3').forEach(function (h) {
+        var t = (h.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (t.indexOf('talk to a coach') === -1 && t.indexOf('not sure yet') === -1) return;
+        var block = h.closest('.shopify-block');
+        if (block && !block.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro, .lx-home-flow')) {
+          block.style.setProperty('display', 'none', 'important');
+          block.setAttribute('hidden', '');
+          block.setAttribute('aria-hidden', 'true');
+          return;
+        }
+        var node = h;
+        while (node) {
+          var next = node.nextElementSibling;
+          var label = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+          if (label.indexOf('questions before you start') !== -1 || node.classList.contains('lx-faq') || node.id === 'faq') break;
+          node.style.setProperty('display', 'none', 'important');
+          node.setAttribute('hidden', '');
+          node.setAttribute('aria-hidden', 'true');
+          node = next;
+        }
+      });
+    }
+    hideLegacyHome();
+    document.addEventListener('DOMContentLoaded', hideLegacyHome);
+    window.addEventListener('load', hideLegacyHome);
   })();
 </script>
+{% render 'lurvox-meta-attribution' %}

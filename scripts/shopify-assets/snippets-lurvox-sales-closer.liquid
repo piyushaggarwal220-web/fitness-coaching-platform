@@ -2,15 +2,22 @@
   LURVOX sales closer — multi-plan bottom CTA + risk reversal + badges (draft).
 {% endcomment %}
 
-{%- assign consult_url = '/pages/talk-to-a-coach' -%}
 {%- assign terms_url = 'https://app.lurvox.in/terms' -%}
+{%- assign find_url = '/pages/choose-your-plan' -%}
 
 <section class="lx-close" id="start" data-lx-close aria-label="Choose your plan and start">
   <p class="lx-close__eyebrow">Ready to start</p>
   <h2 class="lx-close__title">Start with your goal. We build everything around it.</h2>
-  <p class="lx-close__lede"> Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹1,999</strong>. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹3,499</strong>. <strong>Athletic body</strong> is 12 months · <strong>₹5,999</strong> — fat loss, muscle, and stamina, with a weekly coach phone call included.</p>
+  <p class="lx-close__lede"> Goal first. Time is the runway. <strong>Fat loss</strong> is 90 days · <strong>₹599</strong>. <strong>Fat loss + muscle gain</strong> is 6 months · <strong>₹999</strong>. <strong>Athletic body</strong> is 12 months · <strong>₹1,699</strong> — fat loss, muscle, and stamina, with coach chat and weekly check-ins all year.</p>
 
-  <a class="lx-close__jump" href="#plans">See plans — ₹1,999 · ₹3,499 · ₹5,999</a>
+  <a class="lx-close__jump" href="#plans">See plans — ₹599 · ₹999 · ₹1,699</a>
+
+  <div class="lx-close__stamp-wrap" style="display:flex;justify-content:center;margin:18px 0 8px;">
+    {% render 'lurvox-guarantee-stamp' %}
+  </div>
+  <p class="lx-close__stamp-note" style="margin:0 0 16px;text-align:center;color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;">
+    Guaranteed results · moneyback if none
+  </p>
 
   <div class="lx-close__badges" aria-label="Secure checkout">
     <span>🔒 Razorpay Secure</span>
@@ -28,7 +35,7 @@
   </div>
 
   <p class="lx-close__alt">
-    Still deciding? <a href="{{ consult_url }}">Talk to a coach</a>
+    Still deciding? <a href="#lx-fitness-quiz">Take the fitness quiz</a>
     · <a href="#plans">See plans above</a>
   </p>
 </section>
@@ -38,7 +45,7 @@
     --lx-orange: #ff6200;
     --lx-muted: rgba(255, 255, 255, 0.68);
     --lx-line: rgba(255, 255, 255, 0.12);
-    background: #050505;
+    background: transparent;
     color: #fff;
     padding: 40px 18px 48px;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -100,9 +107,9 @@
     line-height: 1.55;
   }
 
-  .lx-close__lede strong {
-    color: #fff;
-  }
+  .lx-close__lede strong:nth-of-type(1) { color: #ff8a3d; }
+  .lx-close__lede strong:nth-of-type(2) { color: #4ade80; }
+  .lx-close__lede strong:nth-of-type(3) { color: #60a5fa; }
 
   .lx-close__jump {
     display: inline-flex;

@@ -1,0 +1,104 @@
+{% comment %}
+  lurvox-newcomer-pass-v1
+  ---------------------------------------------------------
+  ONE-GO UNDO:
+    1. Remove this line from layout/theme.liquid:
+       {% render 'lurvox-newcomer-pass' %}
+    2. (Optional) delete snippets/lurvox-newcomer-pass.liquid
+
+  Does not permanently rewrite theme JSON. Safe to toggle.
+  - Softens redundant welcome card
+  - Replaces early price-list copy with value-first copy
+  - Hides Talk float while plan cards are on screen
+  ---------------------------------------------------------
+{% endcomment %}
+
+{%- if request.page_type == 'index' -%}
+<style id="lx-newcomer-pass-css">
+  /* lurvox-newcomer-pass-v1 — hide Try the app card only, never the whole section */
+  #lx-welcome,
+  .lx-welcome {
+    display: none !important;
+  }
+
+  .lx-find-float.is-hidden-near-plans {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateX(-50%) translateY(16px) !important;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  body.lx-float-near-plans {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+</style>
+
+<script>
+  (function () {
+    /* lurvox-newcomer-pass-v1 */
+    var VALUE_COPY =
+      'Pick a goal below — or take the free quiz above. Prices show on each plan card when you are ready.';
+
+    function rewriteEarlyPrices() {
+      var nodes = document.querySelectorAll(
+        'p, [class*="subheadline"], [class*="lx-flow__hint"], .lx-welcome__lede'
+      );
+      nodes.forEach(function (el) {
+        if (el.closest && el.closest('[class*="ai-transformation-plan-card"], [class*="plan-card"], .lx-matrix')) {
+          return;
+        }
+        var text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!text) return;
+        var looksLikePriceList =
+          /Fat loss/i.test(text) &&
+          /₹\s?1,?999/.test(text) &&
+          /₹\s?5,?999/.test(text) &&
+          text.length < 220;
+        if (looksLikePriceList) {
+          el.setAttribute('data-lx-newcomer-old', text);
+          el.textContent = VALUE_COPY;
+        }
+      });
+    }
+
+    function hideFloatNearPlans() {
+      var floatEl = document.querySelector('[data-lx-find-float]');
+      if (!floatEl) return;
+
+      var plans =
+        document.querySelector('[class*="ai-transformation-plan-"]:not([class*="__"])') ||
+        document.getElementById('plans') ||
+        document.querySelector('[data-plan-cta]') &&
+          document.querySelector('[data-plan-cta]').closest('.shopify-block, .shopify-section, section');
+
+      if (!plans) return;
+
+      function tick() {
+        var rect = plans.getBoundingClientRect();
+        var vh = window.innerHeight || 800;
+        var near = rect.top < vh - 72 && rect.bottom > 100;
+        floatEl.classList.toggle('is-hidden-near-plans', near);
+        document.body.classList.toggle('lx-float-near-plans', near);
+      }
+
+      tick();
+      window.addEventListener('scroll', tick, { passive: true });
+      window.addEventListener('resize', tick);
+      setTimeout(tick, 250);
+      setTimeout(tick, 1000);
+    }
+
+    function run() {
+      rewriteEarlyPrices();
+      hideFloatNearPlans();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', run);
+    } else {
+      run();
+    }
+    window.addEventListener('load', run);
+  })();
+</script>
+{%- endif -%}

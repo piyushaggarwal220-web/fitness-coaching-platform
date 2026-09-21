@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
+import { persistMetaClickIdsFromLocation } from '@/lib/analytics/meta-attribution'
 import { flushPendingMetaPurchase } from '@/lib/analytics/meta-pixel'
 
 /** Retries queued Purchase after checkout redirect until fbq is ready. */
 export function PendingMetaPurchaseFlush() {
   useEffect(() => {
+    persistMetaClickIdsFromLocation()
     if (flushPendingMetaPurchase()) return
 
     let attempts = 0

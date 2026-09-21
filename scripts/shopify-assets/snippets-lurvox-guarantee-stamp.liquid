@@ -1,0 +1,95 @@
+{% comment %}
+  Moneyback guarantee stamp for Orange theme — large Instant-style seal.
+{% endcomment %}
+<div class="lx-guarantee-stamp" aria-label="Guaranteed results, moneyback if none">
+  <span class="lx-guarantee-stamp__ring">
+    <span class="lx-guarantee-stamp__top">Guaranteed</span>
+    <span class="lx-guarantee-stamp__mid">Results</span>
+    <span class="lx-guarantee-stamp__bot">Moneyback</span>
+  </span>
+</div>
+
+<style>
+  .lx-guarantee-stamp {
+    --lx-orange: #ff6200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 210px;
+    height: 210px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 32% 28%, #fff3c4 0%, #ffb020 42%, #ff8a00 78%, #e67700 100%);
+    border: 6px solid #111;
+    box-shadow:
+    0 0 0 5px #fff,
+    0 0 0 11px #e11d48,
+    0 0 32px rgba(225, 29, 72, 0.4),
+    0 18px 40px rgba(0, 0, 0, 0.4);
+    transform: rotate(-10deg);
+  }
+  @media (min-width: 900px) {
+    .lx-guarantee-stamp {
+      animation: lxStampPulse 3.6s ease-in-out infinite;
+    }
+  }
+  @keyframes lxStampPulse {
+    0%, 100% { transform: rotate(-10deg); }
+    50% { transform: rotate(-8deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lx-guarantee-stamp { animation: none; }
+  }
+  .lx-guarantee-stamp__ring {
+    width: 168px;
+    height: 168px;
+    border-radius: 50%;
+    border: 3px dashed #e11d48;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-align: center;
+    padding: 12px;
+    box-sizing: border-box;
+    box-shadow: inset 0 0 0 2px rgba(255, 98, 0, 0.12);
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  .lx-guarantee-stamp__top,
+  .lx-guarantee-stamp__bot {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #e11d48;
+    line-height: 1.05;
+  }
+  .lx-guarantee-stamp__mid {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #111;
+    line-height: 1;
+  }
+  @media (max-width: 480px) {
+    .lx-guarantee-stamp {
+      width: 176px;
+      height: 176px;
+    }
+    .lx-guarantee-stamp__ring {
+      width: 140px;
+      height: 140px;
+    }
+    .lx-guarantee-stamp__top,
+    .lx-guarantee-stamp__bot {
+      font-size: 12px;
+    }
+    .lx-guarantee-stamp__mid {
+      font-size: 20px;
+    }
+  }
+</style>

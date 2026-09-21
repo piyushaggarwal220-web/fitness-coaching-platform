@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { serializeCoachResponse } from '@/lib/checkin'
 import { assertCheckinReplyWaitElapsed } from '@/lib/checkin-reply-timing'
+import {
+  coachRequiresManualPlanDelivery,
+  MANUAL_DELIVER_FROM_PLAN_PAGE,
+} from '@/lib/coach-delivery-policy'
 import { markConversationRead } from '@/lib/coach-chat'
 import type { WorkQueueTask } from '@/lib/coach-work-queue'
 import { isTrialClientHiddenFromCoaches } from '@/lib/coach-roster-visibility'
@@ -253,6 +257,14 @@ export async function resolveWorkQueueTask(
       }
 
       if (!plan.active || !plan.delivered_at) {
+        // Piyush / Rakshit: Complete must not auto-publish. Coach delivers from the plan page.
+        if (coachRequiresManualPlanDelivery(coachId)) {
+          return {
+            ok: false,
+            resolved: false,
+            error: MANUAL_DELIVER_FROM_PLAN_PAGE,
+          }
+        }
         const { error: activateError } = await activatePlan(admin, {
           id: plan.id,
           client_id: plan.client_id,
@@ -305,6 +317,14 @@ export async function resolveWorkQueueTask(
 
         if (draft?.nutrition_plan?.trim() && draft?.workout_plan?.trim()) {
           if (!draft.active || !draft.delivered_at) {
+            // Keep old change requests open for manual coaches — do not auto-approve/publish.
+            if (coachRequiresManualPlanDelivery(coachId)) {
+              return {
+                ok: false,
+                resolved: false,
+                error: MANUAL_DELIVER_FROM_PLAN_PAGE,
+              }
+            }
             const { error: activateError } = await activatePlan(admin, {
               id: draft.id,
               client_id: draft.client_id,

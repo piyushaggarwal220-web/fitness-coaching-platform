@@ -11,7 +11,6 @@ import { PlanEditor } from '@/components/PlanEditor';
 import { PlanDraftReviewActions } from '@/components/coach/PlanDraftReviewActions';
 import { evaluateHighFluxPlanReview } from '@/lib/ai/high-flux-review';
 import {
-  activatePlan,
   deactivatePlan,
   formatPlanDate,
   getNextPlanVersion,
@@ -19,6 +18,7 @@ import {
   planToForm,
   validatePlanForm,
 } from '@/lib/plans'
+import { publishPlanViaApi } from '@/lib/coach/publish-plan-client'
 import { prepareCoachNotesForSave } from '@/lib/plan-metadata';
 import { prepareNutritionPlanForSave, parseHeaderCalories } from '@/lib/ai/nutrition-macro-sync';
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules';
@@ -219,23 +219,23 @@ export default function CoachPlanDetailPage() {
     if (!plan) return;
     setActionLoading(true);
     setError('');
-    const { error: activateError } = await activatePlan(supabase, plan);
-    if (activateError) setError(activateError);
-    else {
-      const sync = await syncTrackerAfterPlanPublishAsync(plan.client_id, plan.id);
-      setSuccess(
-        sync.ok
-          ? 'Plan delivered. Client tracker updated for today.'
-          : `Plan delivered, but tracker sync failed: ${sync.error ?? 'unknown error'}.`
-      );
-      setPlan({ ...plan, active: true, delivered_at: new Date().toISOString() });
-      setHistory((h) => h.map((p) => ({ ...p, active: p.id === plan.id })));
-      void fetch('/api/coach/weekly-call/ensure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: plan.client_id }),
-      });
+    const published = await publishPlanViaApi({
+      clientId: plan.client_id,
+      planId: plan.id,
+    });
+    if (!published.ok) {
+      setError(published.error);
+      setActionLoading(false);
+      return;
     }
+    const sync = await syncTrackerAfterPlanPublishAsync(plan.client_id, published.planId);
+    setSuccess(
+      sync.ok
+        ? 'Plan delivered. Client tracker updated for today.'
+        : `Plan delivered, but tracker sync failed: ${sync.error ?? 'unknown error'}.`
+    );
+    setPlan({ ...plan, active: true, delivered_at: new Date().toISOString() });
+    setHistory((h) => h.map((p) => ({ ...p, active: p.id === plan.id })));
     setActionLoading(false);
   };
 

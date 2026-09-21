@@ -52,7 +52,7 @@ export const PLAN_PAGE_COPY: Record<
     eyebrow: 'Fat loss',
     goalName: PLAN_PRODUCT_NAME['3_months'],
     durationLabel: '3 months',
-    promise: 'Personal workout, diet, and a human coach for a 90-day fat-loss push.',
+    promise: 'Personal workout, diet, and a coach for a 90-day fat-loss push.',
     bestFor: '90-day fat loss',
     goals: [],
   },
@@ -77,12 +77,22 @@ export const PLAN_PAGE_COPY: Record<
 export function planGoalName(slug: AnyCoachingPlanSlug | string): string {
   if (slug === '1_week_trial') return 'Trial'
   if (slug === '1_month') return '1 month'
+  if (slug === 'digital_workout') return 'Workout Plan'
+  if (slug === 'digital_diet') return 'Diet Plan'
+  if (slug === 'digital_complete') return 'Complete Guidance'
   return PLAN_PRODUCT_NAME[slug as LongCoachingPlanSlug] ?? 'Coaching'
 }
 
 export function planDurationLabel(slug: AnyCoachingPlanSlug | string): string {
   if (slug === '1_week_trial') return '7 days'
   if (slug === '1_month') return '1 month'
+  if (
+    slug === 'digital_workout' ||
+    slug === 'digital_diet' ||
+    slug === 'digital_complete'
+  ) {
+    return 'One time · digital'
+  }
   return PLAN_PAGE_COPY[slug as LongCoachingPlanSlug]?.durationLabel ?? ''
 }
 
@@ -144,14 +154,14 @@ export const PLAN_COMPARE_ROWS: {
   {
     group: 'Value',
     label: 'Per month',
-    cells: { '3_months': '₹666', '6_months': '₹583', '12_months': '₹500' },
+    cells: { '3_months': '₹200', '6_months': '₹167', '12_months': '₹142' },
   },
 ]
 
 export const PLAN_INCLUSIONS = [
   'Personal workout plan (gym, home, or both)',
   'Personal diet plan around your food and schedule',
-  'Human coach in the app. A real person owns your case',
+  '1-to-1 coaching in the app — your case, your plan',
   'Mid week + weekly check ins',
   'Daily trackers: workout, meals, water, sleep, steps, habits',
   'Journey + progress photos',

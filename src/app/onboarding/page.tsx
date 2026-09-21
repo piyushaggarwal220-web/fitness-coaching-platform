@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { OnboardingReview } from '@/components/onboarding/OnboardingReview'
 import { ChipGroup, Field, MultiChipGroup, RadioCards } from '@/components/onboarding/inputs'
 import { PlanGoalSelector } from '@/components/onboarding/PlanGoalSelector'
+import { CoachPersonalitySelector } from '@/components/onboarding/CoachPersonalitySelector'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
 import { HeightInput } from '@/components/ui/HeightInput'
 import { PhotoSourceControl } from '@/components/ui/PhotoSourceControl'
@@ -69,6 +70,7 @@ import {
   WORKOUT_DURATION_OPTIONS,
   WORKOUT_TIME_OPTIONS,
 } from '@/lib/onboarding'
+import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import { isGoalVisibleForGender, resolveGoalPlanTier } from '@/lib/plan-goals'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
 import {
@@ -187,10 +189,14 @@ export default function OnboardingPage() {
         .limit(1)
         .maybeSingle()
 
+      const purchaseSlug = purchase?.plan_slug as string | undefined
+      // Keep Instant (digital) SKUs as-is so goal UI stays flat — no coaching lock/upgrade path.
       setPlanSlug(
-        resolveGoalPlanTier(purchase?.plan_slug as string | undefined, {
-          accessSource: result.profile?.access_source,
-        })
+        isDigitalPlanSlug(purchaseSlug)
+          ? purchaseSlug
+          : resolveGoalPlanTier(purchaseSlug, {
+              accessSource: result.profile?.access_source,
+            })
       )
 
       if (result.profile) {
@@ -904,6 +910,10 @@ function renderStep(
                   fitness_goal: selected_goals[0] ?? '',
                 })
               }
+            />
+            <CoachPersonalitySelector
+              values={form.coach_personalities}
+              onChange={(coach_personalities) => update({ coach_personalities })}
             />
           </Field>
           <Field

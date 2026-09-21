@@ -24,26 +24,11 @@ import { createClient } from '@/lib/supabase/client'
 import { PUBLIC_DEMO_READ_ONLY_MESSAGE, isPublicDemoEmail } from '@/lib/public-demo'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { colors, spacing } from '@/lib/design-tokens'
-import {
-  LEAGUE_TIER_LABELS,
-  normalizeLeagueTier,
-  pointsToNextTier,
-  type LeagueStandingRow,
-  type LeagueTier,
-} from '@/lib/league/scoring'
-import { nextEligibleLeagueDivision } from '@/lib/league/eligibility'
 import type { ProfileForm } from '@/types/database'
 import styles from './profile.module.css'
 
 const supabase = createClient()
 const PROFILE_EDIT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000
-
-type LeaguePayload = {
-  optIn: boolean
-  me: LeagueStandingRow | null
-  standings: LeagueStandingRow[]
-  crazyEligible?: boolean
-}
 
 function daysUntilUnlock(editedAt: string | null | undefined): number {
   if (!editedAt) return 0
@@ -56,37 +41,6 @@ function daysUntilUnlock(editedAt: string | null | undefined): number {
 function parseGalleryPaths(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
   return raw.filter((item): item is string => typeof item === 'string' && item.length > 0)
-}
-
-function leagueHeroStats(data: LeaguePayload | null) {
-  if (!data?.me) {
-    return { rankProgress: 12, pointsLabel: 'Join the league to start earning points' }
-  }
-
-  const tier = normalizeLeagueTier(data.me.tier ?? 'bronze') as LeagueTier
-  const crazyEligible = data.crazyEligible ?? false
-  const { next: nextDivision, blockedByCrazyGate } = nextEligibleLeagueDivision(tier, crazyEligible)
-  const pointsNeeded = data.optIn ? pointsToNextTier(tier, data.me.points, data.standings) : null
-  const currentTierFloor =
-    data.standings.reduce((floor, row) => Math.min(floor, row.points), data.me.points) ?? 0
-  const nextFloor = pointsNeeded != null ? data.me.points + pointsNeeded : null
-  const rankProgress =
-    nextFloor != null && nextFloor > currentTierFloor
-      ? Math.max(4, Math.min(100, ((data.me.points - currentTierFloor) / (nextFloor - currentTierFloor)) * 100))
-      : data.me.promotionZone
-        ? 100
-        : 12
-
-  let pointsLabel = `${LEAGUE_TIER_LABELS[tier]} · keep logging to climb`
-  if (blockedByCrazyGate) {
-    pointsLabel = 'Crazy League locked · 12-month plan required'
-  } else if (nextDivision && pointsNeeded != null) {
-    pointsLabel = `${pointsNeeded} pts to top 10% → ${LEAGUE_TIER_LABELS[nextDivision]}`
-  } else if (nextDivision) {
-    pointsLabel = `Top 10% advance to ${LEAGUE_TIER_LABELS[nextDivision]}`
-  }
-
-  return { rankProgress, pointsLabel }
 }
 
 export default function Profile() {
@@ -103,7 +57,6 @@ export default function Profile() {
   })
   const [avatarPath, setAvatarPath] = useState<string | null>(null)
   const [galleryPaths, setGalleryPaths] = useState<string[]>([])
-  const [leagueData, setLeagueData] = useState<LeaguePayload | null>(null)
   const [settingsEditedAt, setSettingsEditedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -119,7 +72,6 @@ export default function Profile() {
 
   const lockDays = daysUntilUnlock(settingsEditedAt)
   const settingsLocked = lockDays > 0
-  const { rankProgress, pointsLabel } = leagueHeroStats(leagueData)
 
   useEffect(() => {
     const checkUser = async () => {
@@ -152,14 +104,6 @@ export default function Profile() {
         setPreviousDisplayScore(
           typeof result.profile.complexity_score === 'number' ? result.profile.complexity_score : null
         )
-      }
-
-      try {
-        const response = await fetch('/api/league', { credentials: 'include' })
-        const json = await response.json()
-        if (response.ok) setLeagueData(json as LeaguePayload)
-      } catch {
-        // League stats are optional on profile.
       }
 
       setLoading(false)
@@ -345,10 +289,6 @@ export default function Profile() {
           avatarPath={avatarPath}
           uploadingAvatar={uploadingAvatar}
           onAvatarPick={(file) => void handleAvatar(file)}
-          leagueMe={leagueData?.me ?? null}
-          leagueOptIn={leagueData?.optIn ?? false}
-          rankProgress={rankProgress}
-          pointsLabel={pointsLabel}
         />
 
         <ProfileQuickActions />

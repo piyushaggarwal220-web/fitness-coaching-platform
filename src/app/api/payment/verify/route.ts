@@ -59,7 +59,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: 'This plan is no longer available. Choose a 3, 6, or 12 month plan at checkout.',
+        error:
+          'This plan is no longer available. Choose a coaching plan or a customised digital plan at checkout.',
       },
       { status: 400 }
     )
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
   let appliedDiscountPaise = 0
   let supplementAddonPaid = 0
   let paidAddonIds: import('@/lib/payments/checkout-discounts').CheckoutAddonId[] = []
+  let orderNotes: Record<string, string> = {}
 
   if (!orderId) {
     return NextResponse.json(
@@ -139,6 +141,7 @@ export async function POST(request: Request) {
 
       const order = await fetchRazorpayOrder(orderId)
       const trustedNotes = { ...(order.notes ?? {}), ...(payment.notes ?? {}) }
+      orderNotes = trustedNotes
       const expectedAmount = expectedAmountPaiseFromOrderNotes(plan, trustedNotes)
       appliedDiscountCode = normalizeDiscountCode(trustedNotes.discount_code)
       appliedDiscountPaise = Number(trustedNotes.discount_paise ?? 0) || 0
@@ -235,7 +238,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const metaAttribution = metaAttributionFromRequest(request, body)
+    const metaAttribution = metaAttributionFromRequest(request, body, orderNotes)
 
     await Promise.allSettled([
       sendMetaPurchase({
@@ -256,8 +259,18 @@ export async function POST(request: Request) {
             phone: trustedPhone,
             name: result.customerName,
             stage: 'confirmed',
+            planSlug: plan.slug,
+            planName: plan.name,
           })
-        : Promise.resolve({ sent: 0, skipped: 1, failed: 0 }),
+        : sendAccountSetupRecovery({
+            purchaseId: result.purchaseId,
+            email: result.customerEmail,
+            phone: trustedPhone,
+            name: result.customerName,
+            stage: 'confirmed',
+            planSlug: plan.slug,
+            planName: plan.name,
+          }),
     ])
 
     if (result.alreadyClaimed) {

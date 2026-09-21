@@ -19,8 +19,20 @@ import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { resolveVisionMediaType, type VisionSafeMediaType } from '@/lib/photo'
 import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
-import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
+import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import {
+  clientHasDigitalPurchase,
+  clientLatestDigitalSections,
+  latestCoachingPurchase,
+  latestDigitalPurchase,
+  latestPurchasePlanSlug,
+} from '@/lib/payments/digital-purchase'
+import { autoDeliverDigitalPlan } from '@/lib/payments/digital-delivery'
+import { deliverPiyushInitialPlan } from '@/lib/piyush-initial-plan-delivery'
+import { clientHasDeliveredPlanStrict } from '@/lib/plans-delivery-guard'
+import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveProgressPhotoRefs } from '@/lib/onboarding'
 import type { OnboardingProfile, PlanFormData } from '@/types/database'
 
 export {
@@ -47,6 +59,9 @@ export type InitialPlanGenerationJob = {
   completed_at: string | null
   failed_at: string | null
   updated_at: string
+  purchase_id?: string | null
+  plan_slug?: string | null
+  product_kind?: 'coaching' | 'digital' | null
 }
 
 export async function enqueueInitialPlanGeneration(
@@ -56,18 +71,33 @@ export async function enqueueInitialPlanGeneration(
   const gateError = validateAuthoritativeOnboarding(profile)
   if (gateError) return { job: null, error: gateError, deduplicated: false }
 
-  const { count: deliveredCount } = await admin
-    .from('plans')
-    .select('id', { count: 'exact', head: true })
-    .eq('client_id', profile.id)
-    .not('delivered_at', 'is', null)
-  if ((deliveredCount ?? 0) > 0) {
+  const delivered = await clientHasDeliveredPlanStrict(admin, profile.id)
+  if (delivered.error) {
+    return {
+      job: null,
+      error: `Could not verify delivery history: ${delivered.error}`,
+      deduplicated: false,
+    }
+  }
+  if (delivered.delivered) {
     return {
       job: null,
       error: 'A delivered plan already exists. Use the explicit coach regeneration workflow.',
       deduplicated: false,
     }
   }
+
+  const digital = await latestDigitalPurchase(admin, profile.id)
+  const coaching = await latestCoachingPurchase(admin, profile.id)
+  // Prefer Instant when that is the only paid product; otherwise stamp coaching.
+  const bind =
+    digital && !coaching
+      ? { purchase_id: digital.id, plan_slug: digital.planSlug, product_kind: 'digital' as const }
+      : coaching
+        ? { purchase_id: coaching.id, plan_slug: coaching.planSlug, product_kind: 'coaching' as const }
+        : digital
+          ? { purchase_id: digital.id, plan_slug: digital.planSlug, product_kind: 'digital' as const }
+          : { purchase_id: null, plan_slug: null, product_kind: null }
 
   const now = new Date().toISOString()
   const { data, error } = await admin
@@ -78,6 +108,9 @@ export async function enqueueInitialPlanGeneration(
       status: 'queued',
       queued_at: now,
       updated_at: now,
+      purchase_id: bind.purchase_id,
+      plan_slug: bind.plan_slug,
+      product_kind: bind.product_kind,
     })
     .select()
     .single()
@@ -105,23 +138,22 @@ async function loadProgressImages(
   admin: SupabaseClient,
   profile: OnboardingProfile
 ): Promise<{ mediaType: VisionSafeMediaType; data: string }[]> {
-  const paths = [
-    profile.progress_photo_front,
-    profile.progress_photo_side,
-    profile.progress_photo_back,
-  ].filter((path): path is string => Boolean(path))
+  const refs = resolveProgressPhotoRefs(profile)
+  const ordered = [refs.front, refs.side, refs.back].filter(
+    (ref): ref is NonNullable<typeof ref> => Boolean(ref)
+  )
   const images: { mediaType: VisionSafeMediaType; data: string }[] = []
 
-  for (const path of paths) {
-    const { data, error } = await admin.storage.from('onboarding-photos').download(path)
+  for (const ref of ordered) {
+    const { data, error } = await admin.storage.from(ref.bucket).download(ref.path)
     if (error || !data) {
       throw new Error(
-        `An uploaded onboarding photo could not be loaded (${path.split('/').pop() || 'photo'}). Ask the client to re-upload it in the app, then retry.`
+        `An uploaded onboarding photo could not be loaded (${ref.path.split('/').pop() || 'photo'}). Ask the client to re-upload it in the app, then retry.`
       )
     }
     const buffer = await data.arrayBuffer()
     // Supabase often returns an empty Blob.type — sniff bytes / extension instead.
-    const mediaType = resolveVisionMediaType(data.type, buffer, path)
+    const mediaType = resolveVisionMediaType(data.type, buffer, ref.path)
     images.push({
       mediaType,
       data: Buffer.from(buffer).toString('base64'),
@@ -189,10 +221,12 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
   if (!claimed) return
 
   const job = claimed as InitialPlanGenerationJob
+  let profileCreatedAt: string | null = null
   try {
     const { data: profileData } = await admin.from('profiles').select('*').eq('id', job.client_id).single()
     if (!profileData) throw new Error('Authoritative onboarding profile is unavailable.')
     const profile = profileData as OnboardingProfile
+    profileCreatedAt = profile.created_at ?? null
     const gateError = validateAuthoritativeOnboarding(profile)
     if (gateError) throw new Error(`Onboarding validation failed: ${gateError}`)
     const metricsGate = profileBlocksAiPlanWork(profile)
@@ -220,6 +254,20 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       profile,
       currentCheckin: null,
     })
+    const stampedSlug = job.plan_slug ?? null
+    const stampedKind = job.product_kind ?? null
+    const digitalSections =
+      stampedKind === 'digital' && isDigitalPlanSlug(stampedSlug)
+        ? digitalPlanSections(stampedSlug)
+        : stampedKind === 'coaching'
+          ? null
+          : await clientLatestDigitalSections(admin, profile.id)
+    const planSlug = stampedSlug ?? (await latestPurchasePlanSlug(admin, profile.id))
+    const isDigital = digitalSections != null
+    const needDiet = !digitalSections || digitalSections === 'diet' || digitalSections === 'both'
+    const needWorkout =
+      !digitalSections || digitalSections === 'workout' || digitalSections === 'both'
+
     const runSection = async (
       actionId: 'initial_diet' | 'initial_workout' | 'initial_cardio' | 'initial_supplements'
     ) => {
@@ -288,40 +336,79 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       }
     }
 
-    const dietResult = await runSection('initial_diet')
-    let workoutResult: Awaited<ReturnType<typeof runSection>>
-    try {
-      workoutResult = await runSection('initial_workout')
-    } catch (workoutError) {
-      // Keep the successful diet so a mid-pipeline failure does not discard LLM work.
-      const dietOnly = generatedDietFormData(dietResult.generatedPlan, profile.id)
-      const partial = await persistAiPlanDraft(admin, {
-        clientId: profile.id,
-        coachId: job.coach_id,
-        form: {
-          ...dietOnly,
+    let dietResult: Awaited<ReturnType<typeof runSection>> | null = null
+    let workoutResult: Awaited<ReturnType<typeof runSection>> | null = null
+
+    if (needDiet) {
+      dietResult = await runSection('initial_diet')
+    }
+    if (needWorkout) {
+      try {
+        workoutResult = await runSection('initial_workout')
+      } catch (workoutError) {
+        if (dietResult) {
+          // Keep the successful diet so a mid-pipeline failure does not discard LLM work.
+          const dietOnly = generatedDietFormData(dietResult.generatedPlan, profile.id)
+          const partial = await persistAiPlanDraft(admin, {
+            clientId: profile.id,
+            coachId: job.coach_id,
+            form: {
+              ...dietOnly,
+              workout_plan: '',
+              cardio_plan: '',
+              supplement_plan: '',
+              coach_notes: '',
+              title: 'Complete Coaching Plan (Draft)',
+            },
+            title: 'AI Draft · Partial (diet only — retry workout)',
+          })
+          if (partial.data) {
+            await admin
+              .from('initial_plan_generation_jobs')
+              .update({
+                draft_plan_id: partial.data.id,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', job.id)
+              .eq('status', 'generating')
+          }
+        }
+        throw workoutError
+      }
+    }
+
+    const diet = dietResult
+      ? generatedDietFormData(dietResult.generatedPlan, profile.id)
+      : {
+          client_id: profile.id,
+          title: '',
+          phase: '',
           workout_plan: '',
+          nutrition_plan: '',
           cardio_plan: '',
           supplement_plan: '',
           coach_notes: '',
-          title: 'Complete Coaching Plan (Draft)',
-        },
-        title: 'AI Draft · Partial (diet only — retry workout)',
-      })
-      if (partial.data) {
-        await admin
-          .from('initial_plan_generation_jobs')
-          .update({
-            draft_plan_id: partial.data.id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', job.id)
-          .eq('status', 'generating')
-      }
-      throw workoutError
-    }
-    const diet = generatedDietFormData(dietResult.generatedPlan, profile.id)
-    const workout = generatedWorkoutFormData(workoutResult.generatedPlan, profile.id)
+        }
+    const workout = workoutResult
+      ? generatedWorkoutFormData(workoutResult.generatedPlan, profile.id)
+      : { workout_plan: '' }
+
+    const digitalCoachNotes =
+      digitalSections === 'both'
+        ? [
+            'Your plan follows coach principles built around your goals, lifestyle, and answers.',
+            '',
+            'Sleep guidance: Aim for 7 to 8 hours each night. Keep a steady bedtime and wake time. Dim bright screens in the last hour before bed.',
+            '',
+            'Water intake guidance: Target about 3 to 4 litres across the day unless your notes say otherwise. Sip steadily from morning onward.',
+            '',
+            'Open Workout guidance, Diet chart, Cardio guidance, and Supplement guidance in My Plan. Supplements are optional.',
+          ].join('\n')
+        : digitalSections === 'workout'
+          ? 'Your workout plan follows coach principles built around your goals and experience. Open My Plan to start.'
+          : digitalSections === 'diet'
+            ? 'Your diet chart follows coach principles built around your goals and food preferences. Open My Plan to start.'
+            : ''
 
     // Persist a publishable core draft before optional cardio/supplement calls.
     // If the serverless isolate is killed mid-pipeline, coaches still get diet+workout.
@@ -329,18 +416,17 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       workout_plan: workout.workout_plan,
       cardio_plan: '',
       supplement_plan: '',
-      // Keep the client-facing coach note empty: delivery is blocked until a
-      // coach reviews the draft and adds their own note.
-      coach_notes: '',
-      title: 'Complete Coaching Plan (Draft)',
+      // Digital auto publish needs a client facing note. Coaching drafts stay empty
+      // until a human coach reviews.
+      coach_notes: isDigital ? digitalCoachNotes : '',
+      title: isDigital ? 'Customised Plan' : 'Complete Coaching Plan (Draft)',
     })
 
-    const { count: deliveredCount } = await admin
-      .from('plans')
-      .select('id', { count: 'exact', head: true })
-      .eq('client_id', profile.id)
-      .not('delivered_at', 'is', null)
-    if ((deliveredCount ?? 0) > 0) {
+    const deliveredGuard = await clientHasDeliveredPlanStrict(admin, profile.id)
+    if (deliveredGuard.error) {
+      throw new Error(`Could not verify delivery history: ${deliveredGuard.error}`)
+    }
+    if (deliveredGuard.delivered) {
       throw new Error('A plan was delivered while generation was running.')
     }
 
@@ -348,7 +434,9 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       clientId: profile.id,
       coachId: job.coach_id,
       form: coreForm,
-      title: 'AI Draft · Ready for coach note/review',
+      title: isDigital
+        ? 'Customised Plan · Ready'
+        : 'AI Draft · Ready for coach note/review',
     })
     if (persisted.error || !persisted.data) {
       throw new Error(persisted.error ?? 'Draft persistence failed.')
@@ -364,26 +452,31 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       .eq('id', job.id)
       .eq('status', 'generating')
 
-    const cardioResult = await runOptionalSection('initial_cardio')
-    const supplementResult = await runOptionalSection('initial_supplements')
-    const cardio = cardioResult
-      ? generatedCardioFormData(cardioResult.generatedPlan, profile.id)
-      : null
-    const supplements = supplementResult
-      ? generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
-      : null
+    // Coaching drafts always get support sections for coach review.
+    // Digital Complete (₹99) also gets cardio + optional supplements before auto publish.
+    const needSupportSections = !isDigital || digitalSections === 'both'
+    if (needSupportSections) {
+      const cardioResult = await runOptionalSection('initial_cardio')
+      const supplementResult = await runOptionalSection('initial_supplements')
+      const cardio = cardioResult
+        ? generatedCardioFormData(cardioResult.generatedPlan, profile.id)
+        : null
+      const supplements = supplementResult
+        ? generatedSupplementFormData(supplementResult.generatedPlan, profile.id)
+        : null
 
-    if (cardio || supplements) {
-      const updated = await updateAiPlanDraft(admin, persisted.data.id, {
-        cardio_plan: cardio?.cardio_plan ?? '',
-        supplement_plan: supplements?.supplement_plan ?? '',
-      })
-      if (updated.error) {
-        // Core draft is already usable — do not fail the whole job for support sections.
-        console.warn(
-          '[initial-plan-generation] support section draft update failed:',
-          updated.error
-        )
+      if (cardio || supplements) {
+        const updated = await updateAiPlanDraft(admin, persisted.data.id, {
+          cardio_plan: cardio?.cardio_plan ?? '',
+          supplement_plan: supplements?.supplement_plan ?? '',
+        })
+        if (updated.error) {
+          // Core draft is already usable — do not fail the whole job for support sections.
+          console.warn(
+            '[initial-plan-generation] support section draft update failed:',
+            updated.error
+          )
+        }
       }
     }
 
@@ -402,16 +495,38 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
       .eq('id', job.id)
       .eq('status', 'generating')
 
-    const { data: coach } = await admin.from('coaches').select('user_id').eq('id', job.coach_id).single()
-    if (coach?.user_id) {
-      await sendNotification({
-        userId: coach.user_id,
-        type: 'initial_plan_draft_ready',
-        title: 'AI plan draft ready for review',
-        body: 'Diet, workout, cardio, and supplement drafts are ready. Add your coach note, review, and explicitly deliver.',
-        actionUrl: `/coach/plan/${persisted.data.id}`,
-        metadata: { jobId: job.id, planId: persisted.data.id, clientId: profile.id },
+    if (isDigital) {
+      const delivered = await autoDeliverDigitalPlan(admin, {
+        clientId: profile.id,
+        coachId: job.coach_id,
+        planId: persisted.data.id,
+        planSlug,
       })
+      if (delivered.error) {
+        throw new Error(`Digital auto-delivery failed: ${delivered.error}`)
+      }
+    } else if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id, profile.created_at)) {
+      const delivered = await deliverPiyushInitialPlan(admin, {
+        clientId: profile.id,
+        coachId: job.coach_id,
+        planId: persisted.data.id,
+        createdAt: profile.created_at,
+      })
+      if (delivered.error) {
+        throw new Error(`Piyush auto-delivery failed: ${delivered.error}`)
+      }
+    } else {
+      const { data: coach } = await admin.from('coaches').select('user_id').eq('id', job.coach_id).single()
+      if (coach?.user_id) {
+        await sendNotification({
+          userId: coach.user_id,
+          type: 'initial_plan_draft_ready',
+          title: 'AI plan draft ready for review',
+          body: 'Diet, workout, cardio, and supplement drafts are ready. Add your coach note, review, and explicitly deliver.',
+          actionUrl: `/coach/plan/${persisted.data.id}`,
+          metadata: { jobId: job.id, planId: persisted.data.id, clientId: profile.id },
+        })
+      }
     }
   } catch (error) {
     const safe = safeFailure(error)
@@ -432,7 +547,7 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
         .eq('id', draftPlanId)
         .maybeSingle()
       const hasCore =
-        Boolean(draft?.nutrition_plan?.trim()) && Boolean(draft?.workout_plan?.trim())
+        Boolean(draft?.nutrition_plan?.trim()) || Boolean(draft?.workout_plan?.trim())
       if (hasCore) {
         await admin
           .from('initial_plan_generation_jobs')
@@ -447,6 +562,28 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
           })
           .eq('id', job.id)
           .eq('status', 'generating')
+
+        const digitalSections = await clientLatestDigitalSections(admin, job.client_id)
+        if (digitalSections) {
+          const planSlug = await latestPurchasePlanSlug(admin, job.client_id)
+          const delivered = await autoDeliverDigitalPlan(admin, {
+            clientId: job.client_id,
+            coachId: job.coach_id,
+            planId: draftPlanId,
+            planSlug,
+          })
+          if (!delivered.error) return
+        }
+
+        if (shouldAutoJourneyAndDeliverInitialPlan(job.coach_id, profileCreatedAt)) {
+          const delivered = await deliverPiyushInitialPlan(admin, {
+            clientId: job.client_id,
+            coachId: job.coach_id,
+            planId: draftPlanId,
+            createdAt: profileCreatedAt,
+          })
+          if (!delivered.error) return
+        }
 
         const { data: coach } = await admin
           .from('coaches')
@@ -568,7 +705,8 @@ export async function backfillMissingInitialPlanJobs(
   for (const row of clients) {
     if (started.length >= limit) break
     if (hasJob.has(row.id) || hasDelivered.has(row.id)) continue
-    if (!shouldAutoEnqueueInitialPlan(row as OnboardingProfile)) continue
+    const digitalPurchase = await clientHasDigitalPurchase(admin, row.id)
+    if (!shouldAutoEnqueueInitialPlan(row as OnboardingProfile, { digitalPurchase })) continue
     const profile = row as OnboardingProfile
     const result = await enqueueInitialPlanGeneration(admin, profile)
     if (!result.job || result.error) continue

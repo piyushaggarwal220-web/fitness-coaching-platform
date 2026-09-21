@@ -2,20 +2,31 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Map, ClipboardList, MessageCircle, ListChecks, Trophy } from 'lucide-react'
+import { Home, Map, ClipboardList, MessageCircle, ListChecks } from 'lucide-react'
 import { colors, layout, spacing } from '@/lib/design-tokens'
+import { useInstantLockState } from '@/hooks/useInstantLockState'
+import { unlockHrefForFeature, type InstantFeature } from '@/lib/instant-feature-access'
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Home', icon: Home, tour: 'nav-home' },
-  { href: '/tracker', label: 'Tracker', icon: ListChecks, tour: 'nav-tracker' },
-  { href: '/plan', label: 'Plan', icon: ClipboardList, tour: 'nav-plan' },
-  { href: '/league', label: 'League', icon: Trophy, tour: 'nav-league' },
-  { href: '/client/chat', label: 'Chat', icon: MessageCircle, tour: 'nav-chat' },
-  { href: '/journey', label: 'Journey', icon: Map, tour: 'nav-journey' },
+  { href: '/dashboard', label: 'Home', icon: Home, tour: 'nav-home', feature: null },
+  { href: '/tracker', label: 'Tracker', icon: ListChecks, tour: 'nav-tracker', feature: 'tracker' as const },
+  { href: '/plan', label: 'Plan', icon: ClipboardList, tour: 'nav-plan', feature: null },
+  { href: '/client/chat', label: 'Chat', icon: MessageCircle, tour: 'nav-chat', feature: 'ai_chat' as const },
+  { href: '/journey', label: 'Journey', icon: Map, tour: 'nav-journey', feature: 'journey' as const },
 ] as const
+
+function hrefForItem(
+  href: string,
+  feature: InstantFeature | null,
+  locked: Record<InstantFeature, boolean>
+): string {
+  if (feature && locked[feature]) return unlockHrefForFeature(feature)
+  return href
+}
 
 export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
   const pathname = usePathname()
+  const { loading, locked } = useInstantLockState()
 
   return (
     <nav
@@ -38,12 +49,17 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
       }}
       aria-label="Main navigation"
     >
-      {NAV_ITEMS.map(({ href, label, icon: Icon, tour }) => {
-        const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+      {NAV_ITEMS.map(({ href, label, icon: Icon, tour, feature }) => {
+        const isLocked = Boolean(feature && (loading || locked[feature]))
+        // Instant-locked surfaces stay off the nav until unlocked (unlock via dashboard /unlock).
+        if (isLocked) return null
+        const target = hrefForItem(href, feature, locked)
+        const active =
+          pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
         return (
           <Link
             key={href}
-            href={href}
+            href={target}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -58,27 +74,30 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
               transition: 'color 150ms ease',
             }}
             aria-current={active ? 'page' : undefined}
+            aria-label={label}
             data-tour={tour}
           >
             <span style={{ position: 'relative', display: 'flex' }}>
               <Icon size={22} strokeWidth={active ? 2.5 : 2} />
               {href === '/client/chat' && unreadChats > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: -8,
-                  right: -12,
-                  minWidth: 17,
-                  height: 17,
-                  padding: '0 4px',
-                  borderRadius: 999,
-                  backgroundColor: colors.accent,
-                  color: colors.textInverse,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 9,
-                  fontWeight: 700,
-                }}>
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -12,
+                    minWidth: 17,
+                    height: 17,
+                    padding: '0 4px',
+                    borderRadius: 999,
+                    backgroundColor: colors.accent,
+                    color: colors.textInverse,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 9,
+                    fontWeight: 700,
+                  }}
+                >
                   {unreadChats > 9 ? '9+' : unreadChats}
                 </span>
               )}

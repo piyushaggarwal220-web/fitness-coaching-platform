@@ -1,4 +1,4 @@
-import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
+import { sendMetaPurchase, metaEventSourcePathForPlanSlug } from '@/lib/analytics/meta-conversions'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export type MetaPurchaseBackfillSummary = {
@@ -30,13 +30,17 @@ export async function backfillMetaPurchases(options?: {
   }
 
   const admin = createAdminClient()
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const { data: rows, error } = await admin
     .from('purchases')
     .select(
-      'id, razorpay_payment_id, customer_email, customer_phone, amount_paise, currency, plan_slug, created_at'
+      'id, razorpay_payment_id, customer_email, customer_phone, amount_paise, currency, plan_slug, created_at, meta_purchase_status'
     )
     .eq('status', 'captured')
-    .in('meta_purchase_status', ['skipped_no_config', 'failed'])
+    .gt('amount_paise', 0)
+    .gte('created_at', cutoff)
+    .or('meta_purchase_status.is.null,meta_purchase_status.in.(skipped_no_config,failed,skipped)')
+    .like('razorpay_payment_id', 'pay_%')
     .order('created_at', { ascending: true })
     .limit(limit)
 
@@ -62,6 +66,7 @@ export async function backfillMetaPurchases(options?: {
       amountPaise: row.amount_paise,
       currency: row.currency || 'INR',
       planSlug: row.plan_slug,
+      eventSourcePath: metaEventSourcePathForPlanSlug(row.plan_slug),
       eventTime: Math.floor(new Date(row.created_at).getTime() / 1000),
     })
 

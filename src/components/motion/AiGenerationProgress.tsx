@@ -17,7 +17,7 @@ export function AiGenerationProgress({ active = true }: AiGenerationProgressProp
     if (!active || reduced) return
 
     const interval = setInterval(() => {
-      setStepIndex((i) => Math.min(i + 1, AI_GENERATION_STEPS.length - 1))
+      setStepIndex((i) => (i + 1) % AI_GENERATION_STEPS.length)
     }, 2800)
 
     return () => clearInterval(interval)
@@ -28,7 +28,8 @@ export function AiGenerationProgress({ active = true }: AiGenerationProgressProp
   }, [active])
 
   const step = AI_GENERATION_STEPS[stepIndex]
-  const progress = ((stepIndex + 1) / AI_GENERATION_STEPS.length) * 100
+  // Indeterminate feel — never imply the draft is finished while still loading.
+  const progress = 18 + ((stepIndex + 1) / AI_GENERATION_STEPS.length) * 62
 
   return (
     <div style={{ marginTop: 12 }}>

@@ -133,15 +133,69 @@ function summarize(results: ('sent' | 'skipped' | 'failed')[]): DeliveryResult {
 
 export async function sendAccountSetupRecovery(input: {
   purchaseId: string
-  token: string
+  token?: string | null
   email: string
   phone?: string | null
   name?: string | null
   stage: string
+  planSlug?: string | null
+  planName?: string | null
 }): Promise<DeliveryResult> {
-  const setupUrl = `${appBaseUrl()}/create-account?token=${encodeURIComponent(input.token)}`
+  const loginUrl = `${appBaseUrl()}/login`
+  const onboardingUrl = `${appBaseUrl()}/onboarding`
+  const dashboardUrl = `${appBaseUrl()}/dashboard`
+  const setupUrl = input.token
+    ? `${appBaseUrl()}/create-account?token=${encodeURIComponent(input.token)}`
+    : loginUrl
   const greeting = firstName(input.name)
   const kind = `account_setup_${input.stage}`
+  const digital = Boolean(input.planSlug && input.planSlug.startsWith('digital_'))
+  const planLabel = input.planName?.trim() || (digital ? 'customised plan' : 'coaching plan')
+  const planEta = digital ? 'usually within a few hours' : 'within 24–48 hours'
+  const subject = `Your LURVOX ${planLabel} is paid — here are your next steps`
+  const text = [
+    `Hi ${greeting}, your payment is confirmed.`,
+    '',
+    'If you feel lost, follow these steps in order:',
+    `1. Create your login (link expires in 7 days): ${setupUrl}`,
+    `2. Sign in anytime at ${loginUrl}`,
+    digital
+      ? `3. Open Plan setup / onboarding and answer the short questionnaire: ${onboardingUrl}`
+      : `3. Finish onboarding (questionnaire + front, side, and back photos): ${onboardingUrl}`,
+    digital
+      ? `4. Your written plan is delivered to My Plan in the app and to this email, ${planEta}.`
+      : `4. Your personal workout + diet lands ${planEta}. Then use daily trackers, weekly check-ins, and Coach chat.`,
+    `5. Home base after that: ${dashboardUrl}`,
+    '',
+    'If anything is unclear, reply to this email. Keep this message until your plan arrives.',
+  ].join('\n')
+  const html = `
+    <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:560px;line-height:1.5;color:#111">
+      <p>Hi ${escapeHtml(greeting)},</p>
+      <p>Your payment is confirmed. If you feel lost, do these steps in order — you do not need to guess.</p>
+      <ol>
+        <li style="margin:0 0 10px"><strong>Create your account</strong><br/>Tap the button below. This secure link expires in 7 days.${
+          input.token
+            ? ''
+            : ' If you already have a login, sign in instead.'
+        }</li>
+        <li style="margin:0 0 10px"><strong>Sign in next time</strong><br/>Use <a href="${escapeHtml(loginUrl)}">${escapeHtml(loginUrl)}</a></li>
+        <li style="margin:0 0 10px"><strong>${
+          digital ? 'Complete the short questionnaire' : 'Finish onboarding + photos'
+        }</strong><br/>Open <a href="${escapeHtml(onboardingUrl)}">plan setup</a>${
+          digital ? '.' : ' and upload front, side, and back photos.'
+        }</li>
+        <li style="margin:0 0 10px"><strong>Receive your plan</strong><br/>${
+          digital
+            ? `Your coach-made plan appears under My Plan and in this inbox, ${planEta}.`
+            : `Your personal workout + diet is delivered ${planEta}. Then log daily trackers, send weekly check-ins, and message your coach in Coach chat.`
+        }</li>
+        <li style="margin:0 0 10px"><strong>Your home in the app</strong><br/><a href="${escapeHtml(dashboardUrl)}">Open dashboard</a></li>
+      </ol>
+      <p><a href="${escapeHtml(setupUrl)}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:10px">Continue setup</a></p>
+      <p style="color:#555;font-size:14px">Stuck? Reply to this email and we will point you to the exact next screen.</p>
+    </div>
+  `
 
   const results = await Promise.all([
     deliverOnce(
@@ -154,9 +208,9 @@ export async function sendAccountSetupRecovery(input: {
       () =>
         sendDirectEmail({
           to: input.email,
-          subject: 'Finish setting up your LURVOX account',
-          text: `Hi ${greeting}, your payment is confirmed. Create your account securely: ${setupUrl}. This link expires in 7 days.`,
-          html: `<p>Hi ${escapeHtml(greeting)},</p><p>Your payment is confirmed.</p><p><a href="${escapeHtml(setupUrl)}">Finish creating your LURVOX account</a></p><p>This link expires in 7 days.</p>`,
+          subject,
+          text,
+          html,
         })
     ),
     deliverOnce(

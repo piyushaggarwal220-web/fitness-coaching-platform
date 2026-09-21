@@ -19,13 +19,14 @@ import type { PromoCodeKind } from '@/types/database'
 /** Retired public promo — kept only so old links can be rejected cleanly. */
 export const DEFAULT_FIRST_TIMER_DISCOUNT_CODE = 'WELCOME60'
 
-const RETIRED_PUBLIC_DISCOUNT_CODES = new Set(['WELCOME60'])
+/** SUMMER60 retired after catalog dropped to ₹599/999/1699 — another 60% off would undercut list. */
+const RETIRED_PUBLIC_DISCOUNT_CODES = new Set(['WELCOME60', 'SUMMER60'])
 
 export function isRetiredPublicDiscountCode(raw: string | null | undefined): boolean {
   return RETIRED_PUBLIC_DISCOUNT_CODES.has(normalizeDiscountCode(raw))
 }
 
-/** Only public sale code. Affiliate codes like LUKE stay separate. */
+/** Retired public sale code — still recognized so checkout can reject it cleanly. */
 export const PUBLIC_SALE_CODE = 'SUMMER60'
 export const PUBLIC_SALE_PERCENT = 60
 
@@ -33,13 +34,9 @@ export function isPublicSaleCode(raw: string | null | undefined): boolean {
   return normalizeDiscountCode(raw) === PUBLIC_SALE_CODE
 }
 
-export function publicSaleDiscountPaise(listAmountPaise: number): number | null {
-  if (!Number.isFinite(listAmountPaise) || listAmountPaise <= 0) return null
-  const salePaise =
-    Math.round((listAmountPaise * (100 - PUBLIC_SALE_PERCENT)) / 100 / 100) * 100
-  const discount = listAmountPaise - salePaise
-  if (discount <= 0 || discount >= listAmountPaise) return null
-  return discount
+/** Always null — SUMMER60 is retired; catalog prices are already the public offer. */
+export function publicSaleDiscountPaise(_listAmountPaise: number): number | null {
+  return null
 }
 
 type FirstTimerPlanSlug = CoachingPlanSlug
@@ -52,9 +49,9 @@ export const FIRST_TIMER_DISCOUNT_PERCENT = 60
  * Promo codes can still reduce below these amounts at checkout.
  */
 export const FIRST_TIMER_SALE_PAISE: Record<FirstTimerPlanSlug, number> = {
-  '3_months': 199900,
-  '6_months': 349900,
-  '12_months': 599900,
+  '3_months': 59900,
+  '6_months': 99900,
+  '12_months': 169900,
 }
 
 const FIRST_TIMER_PLAN_SLUGS = new Set<string>(['3_months', '6_months', '12_months'])
@@ -336,7 +333,7 @@ function buildAppliedDiscount(input: {
  * customer types an email. Create-order must pass a real email with enforcement on
  * so promo validity is checked before charging.
  *
- * Public SUMMER60 is available to everyone — not first-timer only. WELCOME60 is retired.
+ * Public SUMMER60 is retired (catalog is already the public offer). WELCOME60 is retired.
  */
 export async function resolveCheckoutPricing(input: {
   admin: SupabaseClient
@@ -373,6 +370,14 @@ export async function resolveCheckoutPricing(input: {
     return {
       ok: false,
       error: 'Discount / referral codes cannot be applied to the trial.',
+      status: 400,
+    }
+  }
+
+  if (plan.isDigital) {
+    return {
+      ok: false,
+      error: 'Discount / referral codes cannot be applied to customised digital plans.',
       status: 400,
     }
   }

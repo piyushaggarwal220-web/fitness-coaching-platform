@@ -301,7 +301,7 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
         'MANDATORY DAILY CALORIES — Mifflin-St Jeor when weight, height, and age exist.',
         `BMR = ${formatBmrFormula(profile.gender)}; Maintenance = BMR × ${activityFactor}.`,
         weight > 0
-          ? `Client ~${Math.round(weight)} kg — plan at or above ${Math.max(DIET_FLOOR_BASE_KCAL, Math.round(weight * 25))} kcal. Never a 1500–1800 template.`
+          ? `Client ~${Math.round(weight)} kg — plan at or above ${Math.max(DIET_FLOOR_BASE_KCAL, Math.min(2400, Math.round(weight * 22)))} kcal. Never a 1500–1800 template.`
           : `Plan at or above ${DIET_FLOOR_BASE_KCAL} kcal. No crash diet.`,
       ]
 

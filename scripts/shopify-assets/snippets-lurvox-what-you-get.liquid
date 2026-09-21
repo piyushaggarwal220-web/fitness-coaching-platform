@@ -1,164 +1,114 @@
-{% doc %}
-  Homepage “What you get on the platform” feature cards.
-  @example
-  {% render 'lurvox-what-you-get' %}
-{% enddoc %}
-
-<section class="lx-wyg" id="what-you-get" aria-labelledby="lx-wyg-title">
-  <div class="lx-wyg__inner">
-    <header class="lx-wyg__header">
-      <p class="lx-wyg__eyebrow">Included</p>
-      <h2 class="lx-wyg__title" id="lx-wyg-title">What you get</h2>
-    </header>
-
-    <ul class="lx-wyg__grid">
-      <li class="lx-wyg__card">
-        <span class="lx-wyg__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 9v6M19 9v6M3 11v2M21 11v2M5 12h14M7.5 8.5v7M16.5 8.5v7"/>
-          </svg>
-        </span>
-        <h3>Workout + diet</h3>
-      </li>
-      <li class="lx-wyg__card">
-        <span class="lx-wyg__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="3.25"/>
-            <path d="M5.5 19.5c1.1-3.2 3.5-4.8 6.5-4.8s5.4 1.6 6.5 4.8"/>
-          </svg>
-        </span>
-        <h3>Human coach</h3>
-      </li>
-      <li class="lx-wyg__card">
-        <span class="lx-wyg__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3.5" y="5" width="17" height="15" rx="2"/>
-            <path d="M8 3.5v3.5M16 3.5v3.5M3.5 10h17"/>
-          </svg>
-        </span>
-        <h3>Weekly check-ins</h3>
-      </li>
-      <li class="lx-wyg__card">
-        <span class="lx-wyg__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 19V5M4 19h16"/>
-            <path d="M8 15v-3.5M12 15V9M16 15V7"/>
-          </svg>
-        </span>
-        <h3>Daily trackers</h3>
-      </li>
-      <li class="lx-wyg__card">
-        <span class="lx-wyg__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 8.5h3.2l1.3-2h7l1.3 2H20v10.5H4V8.5z"/>
-            <circle cx="12" cy="13.5" r="3.1"/>
-          </svg>
-        </span>
-        <h3>Progress photos</h3>
-      </li>
-      <li class="lx-wyg__card">
-        <span class="lx-wyg__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14.6 6.4a4.2 4.2 0 1 0-5.2 5.2L5 16l3 3 4.4-4.4a4.2 4.2 0 0 0 5.2-5.2L15.4 11l-2.4-2.4 1.6-2.2z"/>
-          </svg>
-        </span>
-        <h3>Plan tweaks</h3>
-      </li>
-    </ul>
-  </div>
-</section>
-
-<style>
-  .lx-wyg {
-    --lx-wyg-accent: #ff6200;
-    --lx-wyg-ink: #f5f5f5;
-    position: relative;
-    color: var(--lx-wyg-ink);
-    background: #070707;
-    padding: 28px 16px 24px;
+{% comment %}
+  Homepage insert: Instant-style intro → truth → plan cards → 3 steps.
+  Old AI plan cards and talk-to-a-coach leftovers are hidden — never hide .shopify-section.
+{% endcomment %}
+<style id="lx-home-hide-legacy">
+  #lx-welcome,
+  .lx-welcome,
+  .lx-find-float,
+  [data-lx-find-float],
+  .lx-consult,
+  .lx-hdr__talk,
+  [data-lx-hero-cta] a[href*="choose-your-plan"],
+  a[href*="talk-to-a-coach"],
+  a[href*="book-a-free-call"] {
+    display: none !important;
   }
 
-  .lx-wyg__inner {
-    max-width: 760px;
-    margin: 0 auto;
+  #shopify-block-AWTUyVllzcVIzY25yT__ai_gen_block_361650c_qqYKXh,
+  .shopify-block:has([class*="ai-transformation-plan-card-start-"]),
+  #shopify-section-template--22567106412795__lurvox_home_gallery,
+  #shopify-block-AQ1JYRnRFSzBBRHFXV__ai_gen_block_52353f6_MmHVRV,
+  [class*="ai-fitness-gallery-"]:not([class*="__"]),
+  .shopify-block:has([data-gallery-main]),
+  .shopify-section:has([data-gallery-main]):not(:has(.lx-home-flow)):not(:has(.lx-plans)):not(:has(.lx-intro)) {
+    display: none !important;
   }
 
-  .lx-wyg__header {
-    text-align: center;
-    margin: 0 auto 18px;
-  }
-
-  .lx-wyg__eyebrow {
-    margin: 0 0 8px;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--lx-wyg-accent);
-  }
-
-  .lx-wyg__title {
-    margin: 0;
-    font-size: clamp(1.4rem, 5.5vw, 1.9rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.12;
-  }
-
-  .lx-wyg__grid {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .lx-wyg__card {
-    display: grid;
-    grid-template-columns: 40px 1fr;
-    gap: 12px;
-    align-items: center;
-    min-height: 56px;
-    padding: 10px 12px;
-    border: 1px solid rgba(255, 98, 0, 0.28);
-    border-radius: 14px;
-    background: #0c0c0c;
-  }
-
-  .lx-wyg__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 11px;
-    display: grid;
-    place-items: center;
-    color: var(--lx-wyg-accent);
-    background: rgba(255, 98, 0, 0.14);
-  }
-
-  .lx-wyg__icon svg {
-    width: 18px;
-    height: 18px;
-    display: block;
-  }
-
-  .lx-wyg__card h3 {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-    color: var(--lx-wyg-ink);
-  }
-
-  @media screen and (min-width: 750px) {
-    .lx-wyg {
-      padding: 40px 24px 36px;
-    }
-
-    .lx-wyg__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
+  body {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
   }
 </style>
+<div class="lx-home-flow">
+  {% render 'lurvox-instant-intro' %}
+  {% render 'lurvox-truth-check' %}
+  {% render 'lurvox-plan-cards' %}
+  {% render 'lurvox-three-steps' %}
+</div>
+{% render 'lurvox-athletic-float' %}
+{% render 'lurvox-header-match' %}
+{% render 'lurvox-meta-attribution' %}
+<script>
+  (function () {
+    function placeFlow() {
+      var flow = document.querySelector('.lx-home-flow');
+      var oldCard = document.querySelector('[class*="ai-transformation-plan-card-"]');
+      if (!flow || !oldCard) return;
+      var block = oldCard.closest('.shopify-block');
+      if (!block || block.contains(flow) || block.querySelector('.lx-steps, .lx-fq, .lx-anim-tf, .lx-intro')) return;
+      if (flow.nextElementSibling === block || block.previousElementSibling === flow) return;
+      block.parentNode.insertBefore(flow, block);
+    }
+    function hideTopCarousel() {
+      document.querySelectorAll('[data-gallery-main]').forEach(function (el) {
+        var block = el.closest('.shopify-block');
+        var section = el.closest('.shopify-section');
+        var keep = '.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro, .lx-home-flow';
+        if (block && !block.querySelector(keep)) {
+          block.style.setProperty('display', 'none', 'important');
+          block.setAttribute('hidden', '');
+          block.setAttribute('aria-hidden', 'true');
+        }
+        if (section && !section.querySelector(keep)) {
+          section.style.setProperty('display', 'none', 'important');
+          section.setAttribute('hidden', '');
+          section.setAttribute('aria-hidden', 'true');
+        }
+      });
+      var heroGallery = document.getElementById('shopify-section-template--22567106412795__lurvox_home_gallery');
+      if (heroGallery && !heroGallery.querySelector('.lx-home-flow, .lx-intro, .lx-plans')) {
+        heroGallery.style.setProperty('display', 'none', 'important');
+        heroGallery.setAttribute('hidden', '');
+        heroGallery.setAttribute('aria-hidden', 'true');
+      }
+    }
+    function hideTalkCoach() {
+      var nodes = document.querySelectorAll('h2, h3');
+      for (var i = 0; i < nodes.length; i++) {
+        var t = (nodes[i].textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (t.indexOf('talk to a coach') === -1 && t.indexOf('not sure yet') === -1) continue;
+        var block = nodes[i].closest('.shopify-block');
+        if (block && !block.querySelector('.lx-plans, .lx-steps, .lx-fq, .lx-anim-tf, .lx-intro, .lx-truth, .lx-home-flow')) {
+          block.style.setProperty('display', 'none', 'important');
+          block.setAttribute('hidden', '');
+          block.setAttribute('aria-hidden', 'true');
+          continue;
+        }
+        var node = nodes[i];
+        while (node) {
+          var next = node.nextElementSibling;
+          var label = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+          if (label.indexOf('questions before you start') !== -1 || (node.classList && (node.classList.contains('lx-faq') || node.id === 'faq'))) break;
+          node.style.setProperty('display', 'none', 'important');
+          node.setAttribute('hidden', '');
+          node.setAttribute('aria-hidden', 'true');
+          node = next;
+        }
+      }
+    }
+    placeFlow();
+    hideTopCarousel();
+    hideTalkCoach();
+    document.addEventListener('DOMContentLoaded', function () {
+      placeFlow();
+      hideTopCarousel();
+      hideTalkCoach();
+    });
+    window.addEventListener('load', function () {
+      hideTopCarousel();
+      hideTalkCoach();
+    });
+    setTimeout(hideTalkCoach, 800);
+    setTimeout(hideTalkCoach, 2200);
+  })();
+</script>

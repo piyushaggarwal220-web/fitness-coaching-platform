@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { colors, spacing } from '@/lib/design-tokens'
+import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import {
   GOAL_BODY_TYPE_META,
   PLAN_GOAL_TIER_META,
@@ -28,6 +29,9 @@ type Props = {
 /** Homepage CTA when higher-plan goals are locked for this client. */
 export function GoalUpgradeCard({ planSlug, accessSource, gender, bodyType }: Props) {
   const router = useRouter()
+  // Instant / digital buyers don't upgrade into coaching goal tiers from the dashboard.
+  if (isDigitalPlanSlug(planSlug)) return null
+
   const currentTier = resolveGoalPlanTier(planSlug, { accessSource })
   const resolvedBodyType: GoalBodyType | null = isValidGoalBodyType(bodyType) ? bodyType : null
   const upgradeTier = suggestedUpgradeTier(currentTier, {

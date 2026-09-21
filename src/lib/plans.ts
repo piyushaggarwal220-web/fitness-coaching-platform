@@ -9,6 +9,7 @@ import {
   fallbackPublishCoachNotes,
   formatPublishedPlanTitle,
   isAiDraftTitle,
+  isUnfinishedCoachReviewDraftTitle,
   parsePlanMeta,
   prepareCoachNotesForPublish,
 } from '@/lib/plan-metadata'
@@ -117,7 +118,7 @@ export async function syncPlanDeliveredFlag(
 export async function activatePlan(
   supabase: SupabaseClient,
   plan: Pick<Plan, 'id' | 'client_id' | 'coach_id'>,
-  options?: { skipReplyWait?: boolean }
+  options?: { skipReplyWait?: boolean; digitalAutoPublish?: boolean }
 ): Promise<{ error: string | null }> {
   const { data: client, error: clientError } = await supabase
     .from('profiles')
@@ -129,10 +130,14 @@ export async function activatePlan(
   if (!client) {
     return { error: 'Cannot deliver plan: client profile could not be verified.' }
   }
-  if (!client.coach_id) {
-    return { error: 'Cannot deliver plan: client has no assigned coach.' }
-  }
-  if (client.coach_id !== plan.coach_id) {
+  if (!options?.digitalAutoPublish) {
+    if (!client.coach_id) {
+      return { error: 'Cannot deliver plan: client has no assigned coach.' }
+    }
+    if (client.coach_id !== plan.coach_id) {
+      return { error: 'Cannot deliver plan: plan coach does not match assigned coach.' }
+    }
+  } else if (client.coach_id && client.coach_id !== plan.coach_id) {
     return { error: 'Cannot deliver plan: plan coach does not match assigned coach.' }
   }
 
@@ -163,9 +168,14 @@ export async function activatePlan(
   }
 
   const publishPrep = prepareCoachNotesForPublish(fullPlan.coach_notes, {
-    fallbackMessage: isAiDraftTitle(fullPlan.title)
-      ? fallbackPublishCoachNotes(fullPlan)
-      : null,
+    fallbackMessage:
+      options?.digitalAutoPublish ||
+      isAiDraftTitle(fullPlan.title) ||
+      isUnfinishedCoachReviewDraftTitle(fullPlan.title)
+        ? options?.digitalAutoPublish
+          ? 'Your customised plan is ready. Open it in the app anytime — this is an AI-built plan, not live coaching.'
+          : fallbackPublishCoachNotes(fullPlan)
+        : null,
   })
   if (publishPrep.error || !publishPrep.notes) {
     return { error: publishPrep.error ?? 'Cannot publish: Coach Notes must include a client-facing message.' }
@@ -182,9 +192,9 @@ export async function activatePlan(
   if (activeCountError) return { error: activeCountError.message }
 
   const isUpdate = (activeCount ?? 0) > 0
-  const publishedTitle = isAiDraftTitle(fullPlan.title)
-    ? formatPublishedPlanTitle(fullPlan, isUpdate)
-    : fullPlan.title.trim()
+  // Always normalize draft-looking titles on deliver so bulk cleanups cannot
+  // mistake a coach-published plan for an unfinished AI draft again.
+  const publishedTitle = formatPublishedPlanTitle(fullPlan, isUpdate)
 
   const { error: deactivateError } = await supabase
     .from('plans')
@@ -241,6 +251,29 @@ export async function activatePlan(
     })
     .eq('draft_plan_id', plan.id)
     .in('status', ['generating', 'draft_ready', 'in_review'])
+
+  // Delivering a check-in-linked weekly draft clears the check-in from the work queue.
+  // Without this, coaches keep seeing "Review Weekly Check-in" after Publish.
+  if (meta.checkinId) {
+    const { error: checkinError } = await supabase
+      .from('checkins')
+      .update({
+        reviewed: true,
+        reviewed_at: deliveredAt,
+      })
+      .eq('id', meta.checkinId)
+      .eq('client_id', plan.client_id)
+      .eq('reviewed', false)
+
+    if (checkinError) {
+      console.error('[activatePlan] failed to mark source check-in reviewed:', checkinError.message)
+    } else {
+      await supabase
+        .from('profiles')
+        .update({ checkin_awaiting: false })
+        .eq('id', plan.client_id)
+    }
+  }
 
   void invalidateForEvent('plan_activated', plan.client_id)
 

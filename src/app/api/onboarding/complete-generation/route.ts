@@ -13,27 +13,18 @@ import {
   type InitialPlanGenerationJob,
   validatePersistedOnboardingAnswers,
 } from '@/lib/initial-plan-generation'
-import { shouldAutoEnqueueInitialPlan } from '@/lib/coach-delivery-policy'
+import { shouldAutoEnqueueInitialPlan, shouldAutoJourneyAndDeliverInitialPlan } from '@/lib/coach-delivery-policy'
+import {
+  latestCoachingPurchase,
+  latestDigitalPurchase,
+} from '@/lib/payments/digital-purchase'
+import { clientHasDeliveredPlanStrict } from '@/lib/plans-delivery-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingProfile } from '@/types/database'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
-
-async function clientHasDeliveredPlan(
-  admin: ReturnType<typeof createAdminClient>,
-  clientId: string,
-  planDeliveredFlag: boolean | null | undefined
-): Promise<boolean> {
-  if (planDeliveredFlag === true) return true
-  const { count } = await admin
-    .from('plans')
-    .select('id', { count: 'exact', head: true })
-    .eq('client_id', clientId)
-    .not('delivered_at', 'is', null)
-  return (count ?? 0) > 0
-}
 
 export async function POST(request: Request) {
   const auth = rejectIfPublicDemoMutation(await requireApiUser())
@@ -56,11 +47,15 @@ export async function POST(request: Request) {
 
   const persistedProfile = profile as OnboardingProfile
   const termsAccepted = Boolean(profile.terms_accepted_at) || body?.termsAccepted === true
-  const alreadyHasPlan = await clientHasDeliveredPlan(
-    admin,
-    auth.user.id,
-    persistedProfile.plan_delivered
-  )
+
+  const deliveredGuard = await clientHasDeliveredPlanStrict(admin, auth.user.id)
+  if (deliveredGuard.error) {
+    return NextResponse.json(
+      { error: `Could not verify delivery history: ${deliveredGuard.error}` },
+      { status: 503 }
+    )
+  }
+  const alreadyHasPlan = persistedProfile.plan_delivered === true || deliveredGuard.delivered
 
   // Clients who already received a plan do not need AI generation queued again.
   // Still require terms, but do not block completion on newly added intake fields.
@@ -122,7 +117,39 @@ export async function POST(request: Request) {
     })
   }
 
-  if (!shouldAutoEnqueueInitialPlan(completedProfile)) {
+  const [digitalPurchase, coachingPurchase] = await Promise.all([
+    latestDigitalPurchase(admin, auth.user.id),
+    latestCoachingPurchase(admin, auth.user.id),
+  ])
+  const hasDigital = Boolean(digitalPurchase)
+  // Instant-only buyers must never enter the coaching auto-journey path.
+  const isInstantOnly = hasDigital && !coachingPurchase
+
+  if (
+    !isInstantOnly &&
+    shouldAutoJourneyAndDeliverInitialPlan(completedProfile.coach_id, completedProfile.created_at)
+  ) {
+    after(() =>
+      import('@/lib/piyush-initial-plan-auto')
+        .then(({ runPiyushInitialPlanForClient }) =>
+          runPiyushInitialPlanForClient(admin, auth.user.id)
+        )
+        .catch((err) => {
+          console.error(
+            '[onboarding/complete-generation] Piyush auto initial plan failed:',
+            err instanceof Error ? err.message : err
+          )
+        })
+    )
+    return NextResponse.json({
+      success: true,
+      status: 'generating',
+      deduplicated: false,
+      message: 'Your personalized plan is being prepared. You will be notified when it is ready.',
+    }, { status: 202 })
+  }
+
+  if (!shouldAutoEnqueueInitialPlan(completedProfile, { digitalPurchase: hasDigital })) {
     return NextResponse.json({
       success: true,
       status: 'awaiting_coach_journey',

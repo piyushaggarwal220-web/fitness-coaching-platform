@@ -29,8 +29,10 @@ import { buildDietHardConstraintsSection } from '@/lib/ai/prompt-builder'
 import { enforceDietPreference, dietScanOptionsFromProfile } from '@/lib/ai/diet-preference-guard'
 import { applyDietPlanRepair } from '@/lib/ai/diet-plan-repair'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
+import { applyParsedSectionsToFormData } from '@/lib/plan-section-parser'
 import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction, autoDietModifyInstruction } from '@/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
+import { shouldApplyHighFluxRules } from '@/lib/ai/metabolic-flux'
 import {
   parseHeaderCalories,
   syncStoredDietText,
@@ -294,8 +296,12 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     targetsMaintenance && source !== 'coach'
       ? 'MAINTENANCE FOCUS: Rebuild portions to maintenance-level food — generous enough to train and recover. Header, daily totals, and meal lines must all match.'
       : null,
-    input.section === 'cardio' || source === 'coach' ? null : HIGH_FLUX_PHILOSOPHY_RULES,
-    input.section === 'cardio' || source === 'coach' ? null : HIGH_FLUX_OUTPUT_PAIRING_RULES,
+    input.section === 'cardio' || source === 'coach' || !shouldApplyHighFluxRules(input.profile as OnboardingProfile | undefined)
+      ? null
+      : HIGH_FLUX_PHILOSOPHY_RULES,
+    input.section === 'cardio' || source === 'coach' || !shouldApplyHighFluxRules(input.profile as OnboardingProfile | undefined)
+      ? null
+      : HIGH_FLUX_OUTPUT_PAIRING_RULES,
     '- Keep language natural, human, and coach-ready in plain text, not JSON.',
     '- Do not use Markdown, asterisks, star bullets, or hyphen bullets.',
     input.section === 'cardio'
@@ -708,6 +714,7 @@ export async function editPlanForClientChange(
     : touchesCalories
       ? SAFE_RATE_OF_CHANGE_RULE
       : EDIT_CALORIE_PRESERVATION_RULES
+  const applyHighFlux = shouldApplyHighFluxRules(input.profile as OnboardingProfile | undefined)
   const systemPrompt = [
     'You are an expert fitness coach rewriting a client\'s diet and workout from their request.',
     'Output ONLY valid JSON with keys "nutritionPlan" and "workoutPlan" (plain text values, no markdown fences).',
@@ -721,8 +728,8 @@ export async function editPlanForClientChange(
     WORKOUT_VOLUME_PROMPT_RULES,
     PROTEIN_CALORIE_PROMPT_RULES,
     CALORIE_FORMULA_PROMPT_RULES,
-    HIGH_FLUX_PHILOSOPHY_RULES,
-    HIGH_FLUX_OUTPUT_PAIRING_RULES,
+    applyHighFlux ? HIGH_FLUX_PHILOSOPHY_RULES : null,
+    applyHighFlux ? HIGH_FLUX_OUTPUT_PAIRING_RULES : null,
     calorieRules,
     mandatoryCalorieTarget,
     targetsMaintenance
@@ -783,7 +790,7 @@ export async function editPlanForClientChange(
     throw new ClaudeResponseError('AI returned an invalid combined plan edit.')
   }
 
-  const nutritionPlan = syncStoredDietText(
+  let nutritionPlan = syncStoredDietText(
     stripPlanEditMetaLanguage(
       stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.nutritionPlan))
     ),
@@ -793,11 +800,29 @@ export async function editPlanForClientChange(
       floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
     }
   )
-  const workoutPlan = stripPlanEditMetaLanguage(
+  let workoutPlan = stripPlanEditMetaLanguage(
     stripClientWeekHandoffLanguage(normalizeAiPlanProse(parsed.workoutPlan))
   )
   if (!nutritionPlan || !workoutPlan) {
     throw new ClaudeResponseError('AI returned empty section text.')
+  }
+
+  // Client-change edits sometimes paste a full NUTRITION PLAN into workout_plan.
+  // Normalize section boundaries before we persist so clients never see 2 diets / 0 workouts.
+  const separated = applyParsedSectionsToFormData({
+    client_id: input.clientId ?? '',
+    title: 'Client change edit',
+    phase: 'Phase 1',
+    nutrition_plan: nutritionPlan,
+    workout_plan: workoutPlan,
+    cardio_plan: '',
+    supplement_plan: '',
+    coach_notes: '',
+  })
+  nutritionPlan = separated.nutrition_plan.trim() || nutritionPlan
+  workoutPlan = separated.workout_plan.trim() || workoutPlan
+  if (!nutritionPlan || !workoutPlan) {
+    throw new ClaudeResponseError('AI returned empty section text after section split.')
   }
 
   if (input.profile) {

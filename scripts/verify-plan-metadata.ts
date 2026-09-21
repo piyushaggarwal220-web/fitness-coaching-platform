@@ -3,6 +3,8 @@ import {
   encodePlanMeta,
   formatPublishedPlanTitle,
   isAiDraftTitle,
+  isSafeToUnsendUnfinishedAiDraft,
+  isUnfinishedCoachReviewDraftTitle,
   parsePlanMeta,
   planMatchesCheckin,
   prepareCoachNotesForPublish,
@@ -92,6 +94,52 @@ assert(
   ) === 'Week 5 Updated Plan'
 )
 assert('isAiDraftTitle detects draft', isAiDraftTitle('AI Draft · Week 1'))
+assert(
+  'isUnfinishedCoachReviewDraftTitle matches stripped ready title',
+  isUnfinishedCoachReviewDraftTitle('Ready for coach note/review')
+)
+assert(
+  'isUnfinishedCoachReviewDraftTitle matches restored ready title',
+  isUnfinishedCoachReviewDraftTitle('Ready for coach note/review (restored v1)')
+)
+assert(
+  'isUnfinishedCoachReviewDraftTitle ignores real week titles',
+  !isUnfinishedCoachReviewDraftTitle('Week 3 Updated Plan')
+)
+assert(
+  'formatPublishedPlanTitle never leaves ready-for-review wording',
+  formatPublishedPlanTitle(
+    { title: 'Ready for coach note/review', coach_notes: 'Keep going this week.', phase: null },
+    false
+  ) === 'Coaching Plan'
+)
+assert(
+  'formatPublishedPlanTitle renames restored ready title on update',
+  formatPublishedPlanTitle(
+    {
+      title: 'Ready for coach note/review (restored v1)',
+      coach_notes: 'Keep going this week.',
+      phase: null,
+    },
+    true
+  ) === 'Updated Plan'
+)
+assert(
+  'isSafeToUnsendUnfinishedAiDraft blocks delivered plans',
+  !isSafeToUnsendUnfinishedAiDraft({
+    title: 'Ready for coach note/review',
+    delivered_at: '2026-09-01T00:00:00.000Z',
+    active: true,
+  })
+)
+assert(
+  'isSafeToUnsendUnfinishedAiDraft allows undelivered unfinished draft',
+  isSafeToUnsendUnfinishedAiDraft({
+    title: 'AI Draft · Ready for coach note/review',
+    delivered_at: null,
+    active: true,
+  })
+)
 
 assert(
   'sanitizeDraftFailureError hides stack traces',

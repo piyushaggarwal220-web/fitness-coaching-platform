@@ -1,6 +1,8 @@
 import {
   COACHING_PLANS,
   getCoachingPlan,
+  getDigitalPlan,
+  isDigitalPlanSlug,
   type CoachingPlanSlug,
 } from '@/lib/payments/plans'
 import { planPathForSlug } from '@/lib/payments/plan-pages'
@@ -10,6 +12,9 @@ export const PLAN_GOAL_MAX = 4
 
 /** Goal tiers match active coaching plans. */
 export type PlanGoalTier = CoachingPlanSlug
+
+/** Instant (digital) buyers get a flat starter goal list — no coaching tier locks. */
+export const DIGITAL_GOAL_TIER: PlanGoalTier = '3_months'
 
 export type PlanGoalGender = 'female' | 'male'
 
@@ -306,6 +311,10 @@ export function isGoalUnlockedForPlan(
 ): boolean {
   const tier = typeof goal === 'string' ? ALL_PLAN_GOAL_OPTIONS.find((g) => g.value === goal)?.tier : goal.tier
   if (!tier) return false
+  // Customised digital plans: starter goals only — never show coaching upgrades.
+  if (isDigitalPlanSlug(planSlug)) {
+    return planTierRank(tier) <= planTierRank(DIGITAL_GOAL_TIER)
+  }
   return planTierRank(planSlug) >= planTierRank(tier)
 }
 
@@ -473,6 +482,9 @@ export function upgradePlanPathForTier(tier: PlanGoalTier): string {
 }
 
 export function planDisplayName(planSlug: string | null | undefined): string {
+  if (isDigitalPlanSlug(planSlug)) {
+    return getDigitalPlan(planSlug)?.name ?? 'Customised Plan'
+  }
   if (planSlug === '1_month') return '1 Month (legacy)'
   return getCoachingPlan(planSlug)?.name ?? COACHING_PLANS['3_months'].name
 }
@@ -488,6 +500,8 @@ export function suggestedUpgradeTier(
   planSlug: string | null | undefined,
   options?: { gender?: string | null; bodyType?: GoalBodyType | null }
 ): PlanGoalTier | null {
+  // Instant / digital purchases are one-time plans — no coaching goal upgrades.
+  if (isDigitalPlanSlug(planSlug)) return null
   const locked = getLockedGoals(planSlug, options?.gender, options?.bodyType)
   if (locked.length === 0) return null
   const ranks = locked.map((goal) => planTierRank(goal.tier)).filter((rank) => rank >= 0)

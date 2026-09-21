@@ -48,14 +48,16 @@ function parsePreference(raw: string | null | undefined): FluxCapacityPreference
 
 /**
  * Resolve how hard to push caloric intake AND training/steps together.
- * Default is high_flux when the client has not answered yet.
- * Sleep, stress, injuries, and experience cap aggressiveness.
+ * Default is steady when the client has not answered — high flux (and its step
+ * targets) only apply when they explicitly chose high_flux. Not everyone can
+ * hit high daily steps.
+ * Sleep, stress, injuries, and experience further cap aggressiveness.
  */
 export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicFluxPlan {
   const preference =
     parsePreference(profile.onboarding_data?.lifestyle?.fluxCapacity) ?? null
-  // Product default: push toward high flux unless the client opted steady or recovery forbids it.
-  let level: MetabolicFluxLevel = preference ?? 'high_flux'
+  // Only clients who opted into high_flux get that bias. Unset → steady.
+  let level: MetabolicFluxLevel = preference ?? 'steady'
   const dampenReasons: string[] = []
 
   if (profile.sleep_duration === 'less_than_6') {
@@ -85,17 +87,6 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
       level = next
       dampenReasons.push('injury/pain flagged — reduce training density one notch')
     }
-  }
-
-  if (
-    !preference &&
-    profile.training_experience === 'advanced' &&
-    (profile.sleep_duration === '7_to_8' || profile.sleep_duration === '8_plus') &&
-    profile.onboarding_data?.lifestyle?.stressLevel === 'low' &&
-    level === 'build_up' &&
-    dampenReasons.length === 0
-  ) {
-    level = 'high_flux'
   }
 
   const labels: Record<MetabolicFluxLevel, string> = {
@@ -162,18 +153,34 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
   }
 }
 
+/** True only when this client's effective flux level is high_flux (explicit opt-in). */
+export function shouldApplyHighFluxRules(
+  profile: OnboardingProfile | null | undefined
+): boolean {
+  if (!profile) return false
+  return resolveMetabolicFluxPlan(profile).level === 'high_flux'
+}
+
 /** Prompt block injected into plan generation. */
 export function buildMetabolicFluxSection(profile: OnboardingProfile): string {
   const plan = resolveMetabolicFluxPlan(profile)
   const preferenceLabel = plan.preference
     ? plan.label
-    : `${plan.label} (default — client has not answered yet; lean toward higher flux safely)`
+    : `${plan.label} (default — client has not chosen flux capacity; keep steps realistic for their schedule)`
+
+  const levelRule =
+    plan.level === 'high_flux'
+      ? 'This client opted into HIGH flux: pair higher caloric intake with higher training/steps. Never a crash deficit with low output, and never huge calories with sedentary days.'
+      : plan.level === 'build_up'
+        ? 'This client is BUILD-UP: raise food and output gradually. Step targets must stay realistic for their schedule — do not force high-flux step counts.'
+        : 'This client is STEADY: keep food and training comfortable. Modest step targets only (~+0–1k vs habit). Do NOT prescribe high-flux step targets or force large meal volumes.'
 
   return [
-    '## Metabolic Flux Bias (MUST follow; scale intake AND output together)',
-    'LURVOX preference: push clients toward HIGH metabolic flux — higher caloric intake paired with higher training/steps. Increase expenditure before reducing calories. Never a crash deficit with low output, and never huge calories with sedentary days.',
-    'When progress stalls or the client is "not losing": raise steps/cardio/training density first; do NOT cut food unless intake is already well above maintenance and output is maxed within their schedule.',
-    'Pair with mesocycle: calories rise with weekly intensity inside the month. On a new lower-volume month, HOLD calories (do not trim) and raise steps/cardio if fat loss is the goal.',
+    '## Metabolic Flux Bias (MUST follow; scale intake AND output to THIS client\'s level)',
+    'Match intensity to the effective level below. High flux / very high steps are ONLY for clients at high_flux — many clients cannot sustain high daily steps.',
+    'Increase expenditure before reducing calories when progress stalls, but only within what their schedule and flux level allow.',
+    'Pair with mesocycle: HOLD calories flat week to week — do NOT raise food with weekly intensity. Change calories only when the coach specifically asks. On a new lower-volume month, still HOLD calories (do not trim) and raise steps/cardio only if that fits their level and schedule.',
+    levelRule,
     `- Effective level: ${preferenceLabel}`,
     plan.dampenReasons.length > 0
       ? `- Safety dampeners applied: ${plan.dampenReasons.join('; ')}`

@@ -1,0 +1,107 @@
+{% comment %} Instant-style “Your plan in 3 steps” for Orange coaching. {% endcomment %}
+<section class="lx-steps" id="lx-steps" aria-labelledby="lx-steps-title">
+  <div class="lx-steps__inner">
+    <p class="lx-steps__eyebrow">How it works</p>
+    <h2 class="lx-steps__title" id="lx-steps-title">Your plan in 3 steps</h2>
+    <ol class="lx-steps__list">
+      <li>
+        <span>01</span>
+        <div>
+          <strong>Pay once</strong>
+          <p>Checkout with Razorpay. UPI, cards, or netbanking. You get an email with every next step.</p>
+        </div>
+      </li>
+      <li>
+        <span>02</span>
+        <div>
+          <strong>Create your account</strong>
+          <p>We email the next steps. Finish the short assessment and photos in the app.</p>
+        </div>
+      </li>
+      <li>
+        <span>03</span>
+        <div>
+          <strong>Receive your plan</strong>
+          <p>First workout + diet in 24–48 hours, then a new plan each week. Trackers, coach chat, and Journey are already unlocked. If the first plan does not arrive, you get a refund.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+<style>
+  .lx-steps {
+    background: transparent;
+    color: #fff;
+    padding: 12px 16px 40px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  .lx-steps__inner { max-width: 1080px; margin: 0 auto; }
+  .lx-steps__eyebrow {
+    margin: 0;
+    color: #ff6200;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .lx-steps__title {
+    margin: 8px 0 0;
+    text-align: center;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .lx-steps__list {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .lx-steps__list li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: start;
+    background: #141414;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 16px 18px;
+  }
+  .lx-steps__list li:nth-child(1) {
+    border-color: rgba(255, 98, 0, 0.45);
+    background: radial-gradient(circle at 0% 0%, rgba(255, 98, 0, 0.16), #141414 55%);
+  }
+  .lx-steps__list li:nth-child(2) {
+    border-color: rgba(37, 99, 235, 0.45);
+    background: radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.16), #141414 55%);
+  }
+  .lx-steps__list li:nth-child(3) {
+    border-color: rgba(22, 163, 74, 0.45);
+    background: radial-gradient(circle at 0% 0%, rgba(22, 163, 74, 0.16), #141414 55%);
+  }
+  .lx-steps__list span {
+    font-weight: 800;
+    font-size: 18px;
+  }
+  .lx-steps__list li:nth-child(1) span { color: #ff6200; }
+  .lx-steps__list li:nth-child(2) span { color: #60a5fa; }
+  .lx-steps__list li:nth-child(3) span { color: #4ade80; }
+  .lx-steps__list strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .lx-steps__list p {
+    margin: 4px 0 0;
+    color: rgba(255,255,255,0.68);
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+  @media screen and (min-width: 750px) {
+    .lx-steps__list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>

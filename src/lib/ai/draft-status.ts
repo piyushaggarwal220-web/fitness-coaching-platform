@@ -88,7 +88,7 @@ const LABELS: Record<AiGenerationStatus, Omit<AiGenerationStatusInfo, 'status'>>
   },
   generating: {
     label: 'Generating…',
-    description: 'AI is building the updated plan.',
+    description: 'AI is building the updated plan in the background. You can leave this page.',
     tone: 'accent',
   },
   generation_failed: {

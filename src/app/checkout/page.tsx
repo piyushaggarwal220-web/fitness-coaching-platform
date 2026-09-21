@@ -5,14 +5,22 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { BRAND_NAME } from '@/lib/brand';
-import { COACHING_PLAN_LIST, getPurchasablePlan } from '@/lib/payments/plans';
+import {
+  COACHING_PLAN_LIST,
+  DIGITAL_PLAN_LIST,
+  getPurchasablePlan,
+  isDigitalPlanSlug,
+} from '@/lib/payments/plans';
 import { planDurationLabel, planGoalName } from '@/lib/payments/plan-pages';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
 import { colors, spacing, radius } from '@/lib/design-tokens';
 import { queueMetaPurchase } from '@/lib/analytics/meta-pixel';
-import { readMetaBrowserIds } from '@/lib/analytics/meta-attribution';
+import {
+  persistMetaClickIdsFromLocation,
+  readMetaBrowserIds,
+} from '@/lib/analytics/meta-attribution';
 import { trackFunnelStep } from '@/lib/analytics/funnel';
 import {
   formatInrFromPaise,
@@ -34,7 +42,7 @@ import {
   formatCountdownHms,
   getSaleCountdownRemainingMs,
 } from '@/lib/sale-countdown';
-import { CheckoutTransformationCarousel } from '@/components/checkout/TransformationCarousel';
+import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations';
 import { isPublicDemoEmail } from '@/lib/public-demo';
 import { leavePublicDemoSession } from '@/lib/public-demo-session';
 
@@ -110,6 +118,8 @@ function CheckoutForm() {
   const verifyRef = useRef<HTMLDivElement>(null);
   const testMode = isPaymentBypassClient();
   const isTrialCheckout = plan.isTrial === true;
+  const isDigitalCheckout = plan.isDigital === true || isDigitalPlanSlug(plan.slug);
+  const planPickerList = isDigitalCheckout ? DIGITAL_PLAN_LIST : COACHING_PLAN_LIST;
   const planPayablePaise = appliedDiscount?.amountPaise ?? plan.amountPaise;
   const payablePaise = planPayablePaise;
   const payableDisplay = formatInrFromPaise(payablePaise);
@@ -136,7 +146,7 @@ function CheckoutForm() {
   useEffect(() => {
     setEnrollmentHref(null);
     autoApplyKeyRef.current = '';
-    if (isTrialCheckout) {
+    if (isTrialCheckout || isDigitalCheckout) {
       setReferralCode('');
       setAppliedDiscount(null);
     } else if (codeFromUrl) {
@@ -144,7 +154,7 @@ function CheckoutForm() {
     } else {
       setReferralCode((prev) => prev);
     }
-  }, [plan.slug, isTrialCheckout, codeFromUrl, welcomeCode]);
+  }, [plan.slug, isTrialCheckout, isDigitalCheckout, codeFromUrl, welcomeCode]);
 
   useEffect(() => {
     const tick = () => {
@@ -265,7 +275,7 @@ function CheckoutForm() {
 
   // Auto-apply as soon as a code is present (no email required).
   useEffect(() => {
-    if (isTrialCheckout || applyingCode) return;
+    if (isTrialCheckout || isDigitalCheckout || applyingCode) return;
     if (!referralCode.trim()) {
       setAppliedDiscount(null);
       return;
@@ -278,7 +288,7 @@ function CheckoutForm() {
     }, 150);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [email, referralCode, plan.slug, isTrialCheckout]);
+  }, [email, referralCode, plan.slug, isTrialCheckout, isDigitalCheckout]);
 
   const clearReferralCode = () => {
     setReferralCode('');
@@ -505,7 +515,10 @@ function CheckoutForm() {
     razorpay_payment_id: string;
     razorpay_signature: string;
   }) => {
-    const metaIds = readMetaBrowserIds();
+    const metaIds = { ...readMetaBrowserIds(), ...(() => {
+      persistMetaClickIdsFromLocation()
+      return readMetaBrowserIds()
+    })() }
     const verifyRes = await fetch('/api/payment/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -577,6 +590,14 @@ function CheckoutForm() {
           policyAgreementAccepted,
           verificationId: verificationId || undefined,
           discountCode: appliedDiscount?.code || undefined,
+          ...(() => {
+            persistMetaClickIdsFromLocation()
+            const ids = readMetaBrowserIds()
+            return {
+              ...(ids.fbp ? { meta_fbp: ids.fbp } : {}),
+              ...(ids.fbc ? { meta_fbc: ids.fbc } : {}),
+            }
+          })(),
         }),
       });
 
@@ -671,41 +692,66 @@ function CheckoutForm() {
       ? formatInrFromPaise(firstTimerSavingsPaise)
       : null);
 
-  return (
-    <div style={{ ...styles.page, ...(checkoutScreen === 2 ? styles.pageWithSticky : null) }}>
-      <div style={styles.card}>
-        <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
+  const dig = (base: CSSProperties, key?: keyof typeof digitalTheme): CSSProperties =>
+    isDigitalCheckout && key ? { ...base, ...digitalTheme[key] } : base
 
-        <p style={styles.brandMark}>{BRAND_NAME}</p>
-        <h1 style={styles.title}>
-          {isTrialCheckout ? 'Start your 7-day trial' : 'Checkout'}
+  return (
+    <div
+      style={{
+        ...styles.page,
+        ...(checkoutScreen === 2 ? styles.pageWithSticky : null),
+        ...(isDigitalCheckout ? digitalTheme.page : null),
+      }}
+    >
+      <div style={{ ...styles.card, ...(isDigitalCheckout ? digitalTheme.card : null) }}>
+        <Link
+          href={isDigitalCheckout ? '/customised-plan' : marketingBaseUrl}
+          style={dig(styles.backLink, 'backLink')}
+        >
+          ← {isDigitalCheckout ? 'Back to plans' : 'Back to home'}
+        </Link>
+
+        <p style={{ ...styles.brandMark, ...(isDigitalCheckout ? digitalTheme.brandMark : null) }}>
+          {BRAND_NAME}
+        </p>
+        {isDigitalCheckout ? (
+          <p style={digitalTheme.eyebrow}>PERSONALISED FITNESS PLANS</p>
+        ) : null}
+        <h1 style={{ ...styles.title, ...(isDigitalCheckout ? digitalTheme.title : null) }}>
+          {isTrialCheckout
+            ? 'Start your 7-day trial'
+            : isDigitalCheckout
+              ? 'Get your customised plan'
+              : 'Checkout'}
         </h1>
-        <p style={styles.subtitle}>
+        <p style={dig(styles.subtitle, 'subtitle')}>
           {checkoutScreen === 1
             ? (isTrialCheckout
               ? 'Full coaching access for 7 days. Upgrade anytime.'
-              : 'Choose your plan and enter your details.')
+              : isDigitalCheckout
+                ? 'One time payment · no subscription · plan made by the coach, delivered to email and app within a few hours.'
+                : 'Choose your plan and enter your details.')
             : 'Verify your email and pay securely.'}
         </p>
 
         <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 2`}>
-          <span style={{ ...styles.screenDot, ...(checkoutScreen === 1 ? styles.screenDotActive : null) }} />
-          <span style={{ ...styles.screenDot, ...(checkoutScreen === 2 ? styles.screenDotActive : null) }} />
+          <span style={{ ...styles.screenDot, ...(checkoutScreen === 1 ? styles.screenDotActive : null), ...(isDigitalCheckout && checkoutScreen === 1 ? digitalTheme.dotActive : null) }} />
+          <span style={{ ...styles.screenDot, ...(checkoutScreen === 2 ? styles.screenDotActive : null), ...(isDigitalCheckout && checkoutScreen === 2 ? digitalTheme.dotActive : null) }} />
         </div>
 
         {checkoutScreen === 1 && (
           <>
             {!isTrialCheckout && (
-              <div style={styles.trustStrip} aria-label="Checkout trust">
+              <div style={dig(styles.trustStrip, 'trustStrip')} aria-label="Checkout trust">
                 <div style={styles.trustBadges}>
-                  <span style={styles.trustBadge}>UPI</span>
-                  <span style={styles.trustBadge}>Cards</span>
-                  <span style={styles.trustBadge}>Netbanking</span>
-                  <span style={styles.trustBadge}>Razorpay Secure</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>UPI</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>Cards</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>Netbanking</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>Razorpay Secure</span>
                 </div>
-                <p style={styles.trustLine}>
+                <p style={dig(styles.trustLine, 'trustLine')}>
                   Secure checkout via Razorpay. By paying, you agree to our{' '}
-                  <Link href="/terms" target="_blank" style={styles.inlineLink}>
+                  <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
                     Terms &amp; Conditions
                   </Link>
                   .
@@ -715,12 +761,12 @@ function CheckoutForm() {
 
             {!isTrialCheckout && (
               <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
-                {COACHING_PLAN_LIST.map((item) => {
+                {planPickerList.map((item) => {
                   const selected = item.slug === plan.slug;
                   return (
                     <Link
                       key={item.slug}
-                      href={`/checkout?plan=${item.slug}${referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}`}
+                      href={`/checkout?plan=${item.slug}${!isDigitalCheckout && referralCode ? `&code=${encodeURIComponent(referralCode)}` : ''}`}
                       role="tab"
                       aria-selected={selected}
                       onClick={() =>
@@ -733,12 +779,22 @@ function CheckoutForm() {
                       style={{
                         ...styles.planChip,
                         ...(selected ? styles.planChipSelected : null),
+                        ...(isDigitalCheckout ? digitalTheme.planChip : null),
+                        ...(isDigitalCheckout && selected ? digitalTheme.planChipSelected : null),
                       }}
                     >
-                      <span style={styles.planChipName}>{planGoalName(item.slug)}</span>
-                      <span style={styles.planChipDuration}>{planDurationLabel(item.slug)}</span>
-                      <span style={styles.planChipPrice}>{item.displayPrice}</span>
-                      {item.popular ? <span style={styles.planChipMrp}>Most popular</span> : null}
+                      <span style={dig(styles.planChipName, 'planChipName')}>
+                        {isDigitalCheckout ? item.name.replace('Complete Guidance', 'Complete') : planGoalName(item.slug)}
+                      </span>
+                      <span style={dig(styles.planChipDuration, 'planChipDuration')}>
+                        {isDigitalCheckout ? item.saveLabel : planDurationLabel(item.slug)}
+                      </span>
+                      <span style={dig(styles.planChipPrice, 'planChipPrice')}>{item.displayPrice}</span>
+                      {item.popular ? (
+                        <span style={isDigitalCheckout ? digitalTheme.planChipPopular : styles.planChipMrp}>
+                          Most popular
+                        </span>
+                      ) : null}
                       {item.best ? <span style={styles.planChipMrp}>Best value</span> : null}
                     </Link>
                   );
@@ -752,25 +808,36 @@ function CheckoutForm() {
               </div>
             )}
 
-            <section style={styles.orderSummary}>
+            <section style={dig(styles.orderSummary, 'orderSummary')}>
               <div style={styles.orderRow}>
                 <div>
-                  <div style={styles.orderPlanName}>
+                  <div style={dig(styles.orderPlanName, 'orderPlanName')}>
                     {isTrialCheckout
                       ? `${plan.name} coaching`
-                      : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+                      : isDigitalCheckout
+                        ? plan.name
+                        : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
                   </div>
-                  <div style={styles.orderPlanMeta}>
-                    Workout · diet · check-ins · coach chat
+                  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>
+                    {isDigitalCheckout
+                      ? plan.sections === 'workout'
+                        ? 'Workout guidance · digital delivery'
+                        : plan.sections === 'diet'
+                          ? 'Diet chart · digital delivery'
+                          : 'Workout ₹49 · Diet ₹89 · both ₹99'
+                      : 'Workout · diet · checkins · coach chat'}
                   </div>
                 </div>
                 <div style={styles.orderPriceCol}>
                   {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
-                  <span style={styles.orderSummaryPrice}>
-                    {isTrialCheckout ? plan.displayPrice : formatInrFromPaise(planPayablePaise)}
+                  <span style={dig(styles.orderSummaryPrice, 'orderSummaryPrice')}>
+                    {isTrialCheckout || isDigitalCheckout
+                      ? plan.displayPrice
+                      : formatInrFromPaise(planPayablePaise)}
                   </span>
                 </div>
               </div>
+                {!isDigitalCheckout ? (
                 <div style={styles.offerBanner}>
                   <div style={styles.offerBannerTop}>
                     <strong>{discountLockedIn ? 'Discount applied' : 'Have a promo code?'}</strong>
@@ -830,12 +897,19 @@ function CheckoutForm() {
                     </div>
                   )}
                 </div>
+                ) : (
+                  <p style={digitalTheme.honestNote}>
+                    Honest pricing · Made by the coach · Written plan, not live coaching
+                  </p>
+                )}
             </section>
 
             <p style={styles.leagueNote}>
               {isTrialCheckout
                 ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
-                : plan.slug === '12_months'
+                : isDigitalCheckout
+                  ? 'After payment, verify email, complete a short onboarding, and receive your plan by email and in the app within a few hours.'
+                  : plan.slug === '12_months'
                   ? 'Weekly coach phone call included. 12 month exclusive.'
                   : 'Personal workout, diet, coach chat, and weekly check-ins are included.'}
             </p>
@@ -843,19 +917,19 @@ function CheckoutForm() {
             {error && <div style={styles.error}>{error}</div>}
 
             <div style={styles.form}>
-              <h2 style={styles.sectionLabel}>Your details</h2>
+              <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>Your details</h2>
 
-              <label style={styles.label} htmlFor="checkout-name">Full name</label>
+              <label style={dig(styles.label, 'label')} htmlFor="checkout-name">Full name</label>
               <input
                 id="checkout-name"
                 ref={nameRef}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
-                style={styles.input}
+                style={dig(styles.input, 'input')}
               />
 
-              <label style={styles.label} htmlFor="checkout-email">Email</label>
+              <label style={dig(styles.label, 'label')} htmlFor="checkout-email">Email</label>
               <input
                 id="checkout-email"
                 ref={emailRef}
@@ -866,10 +940,10 @@ function CheckoutForm() {
                   resetVerification();
                 }}
                 autoComplete="email"
-                style={styles.input}
+                style={dig(styles.input, 'input')}
               />
 
-              <label style={styles.label} htmlFor="checkout-phone">WhatsApp number</label>
+              <label style={dig(styles.label, 'label')} htmlFor="checkout-phone">WhatsApp number</label>
               <input
                 id="checkout-phone"
                 ref={phoneRef}
@@ -881,12 +955,12 @@ function CheckoutForm() {
                 }}
                 placeholder="+91 98765 43210"
                 autoComplete="tel"
-                style={styles.input}
+                style={dig(styles.input, 'input')}
               />
 
               <button
                 type="button"
-                style={styles.payBtn}
+                style={dig(styles.payBtn, 'payBtn')}
                 onClick={() => {
                   const missing: string[] = [];
                   if (!name.trim()) missing.push('Full name');
@@ -909,7 +983,7 @@ function CheckoutForm() {
 
             {!isTrialCheckout && (
               <div style={{ marginTop: 28 }}>
-                <CheckoutTransformationCarousel />
+                <AnimatedTransformations variant="checkout" />
               </div>
             )}
           </>
@@ -920,25 +994,29 @@ function CheckoutForm() {
             <button
               type="button"
               onClick={() => { setCheckoutScreen(1); setError(''); }}
-              style={styles.backToDetails}
+              style={dig(styles.backToDetails, 'backLink')}
             >
               ← Edit plan & details
             </button>
 
-            <section style={{ ...styles.orderSummary, marginBottom: 16 }}>
+            <section style={{ ...dig(styles.orderSummary, 'orderSummary'), marginBottom: 16 }}>
               <div style={styles.orderRow}>
                 <div>
-                  <div style={styles.orderPlanName}>
+                  <div style={dig(styles.orderPlanName, 'orderPlanName')}>
                     {isTrialCheckout
                       ? plan.name
-                      : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+                      : isDigitalCheckout
+                        ? plan.name
+                        : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
                   </div>
-                  <div style={styles.orderPlanMeta}>{email.trim() || '—'}</div>
+                  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || '—'}</div>
                 </div>
                 <div style={styles.orderPriceCol}>
                   {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
-                  <span style={styles.orderSummaryPrice}>
-                    {isTrialCheckout ? plan.displayPrice : formatInrFromPaise(planPayablePaise)}
+                  <span style={dig(styles.orderSummaryPrice, 'orderSummaryPrice')}>
+                    {isTrialCheckout || isDigitalCheckout
+                      ? plan.displayPrice
+                      : formatInrFromPaise(planPayablePaise)}
                   </span>
                 </div>
               </div>
@@ -983,9 +1061,9 @@ function CheckoutForm() {
 
             <form id="checkout-pay-form" onSubmit={handleSubmit} style={styles.form} noValidate>
               {!testMode && (
-                <div ref={verifyRef} style={styles.otpBox}>
+                <div ref={verifyRef} style={dig(styles.otpBox, 'otpBox')}>
                   <div style={styles.otpHead}>
-                    <span style={styles.otpTitle}>Email verification</span>
+                    <span style={dig(styles.otpTitle, 'otpTitle')}>Email verification</span>
                     <span
                       style={{
                         ...styles.otpStatusPill,
@@ -995,15 +1073,15 @@ function CheckoutForm() {
                       {emailVerified ? 'Verified' : emailLinkSent ? 'Link sent' : 'Required'}
                     </span>
                   </div>
-                  <p style={styles.otpHint}>
-                    We email a secure link — open it on this device, then continue.
+                  <p style={dig(styles.otpHint, 'otpHint')}>
+                    We email a secure link. Open it on this device, then continue.
                   </p>
                   <div style={styles.otpBtnRow}>
                     <button
                       type="button"
                       onClick={() => void sendEmailOtp()}
                       disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
-                      style={styles.otpBtn}
+                      style={dig(styles.otpBtn, 'otpBtn')}
                     >
                       {sendingEmailOtp
                         ? 'Sending…'
@@ -1025,7 +1103,7 @@ function CheckoutForm() {
                           if (data.emailVerified) setEmailVerified(true);
                           else setError('Not verified yet. Open the newest link in your email, then tap this again.');
                         }}
-                        style={styles.otpBtnSecondary}
+                        style={dig(styles.otpBtnSecondary, 'otpBtnSecondary')}
                       >
                         I’ve opened the link
                       </button>
@@ -1038,13 +1116,13 @@ function CheckoutForm() {
                         onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                         placeholder="Code from email"
                         inputMode="numeric"
-                        style={styles.otpInput}
+                        style={dig(styles.otpInput, 'otpInput')}
                       />
                       <button
                         type="button"
                         onClick={() => void verifyEmailOtp()}
                         disabled={verifyingEmailOtp || emailCode.length < 6 || !verificationId}
-                        style={styles.otpBtn}
+                        style={dig(styles.otpBtn, 'otpBtn')}
                       >
                         {verifyingEmailOtp ? 'Checking…' : 'Verify code'}
                       </button>
@@ -1064,9 +1142,9 @@ function CheckoutForm() {
                   aria-describedby="checkout-policy-agreement"
                   style={styles.policyCheck}
                 />
-                <span id="checkout-policy-agreement" style={styles.policyText}>
+                <span id="checkout-policy-agreement" style={dig(styles.policyText, 'policyText')}>
                   I agree to the{' '}
-                  <Link href="/terms" target="_blank" style={styles.inlineLink}>
+                  <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
                     Terms &amp; Conditions
                   </Link>
                   . All guarantees, refunds, upgrades, and service rules are only as stated there.
@@ -1076,34 +1154,34 @@ function CheckoutForm() {
               <div style={{ height: 88 }} aria-hidden />
             </form>
 
-            <p style={styles.secure}>
+            <p style={dig(styles.secure, 'secure')}>
               After payment you&apos;ll create your login password.
               {' '}
-              <Link href="/create-account" style={styles.inlineLink}>Already paid?</Link>
+              <Link href="/create-account" style={dig(styles.inlineLink, 'inlineLink')}>Already paid?</Link>
               {' · '}
-              <Link href="/enroll" style={styles.inlineLink}>Enrollment code</Link>
+              <Link href="/enroll" style={dig(styles.inlineLink, 'inlineLink')}>Enrollment code</Link>
             </p>
           </>
         )}
       </div>
 
       {checkoutScreen === 2 && (
-        <div style={styles.stickyPayBar}>
+        <div style={dig(styles.stickyPayBar, 'stickyPayBar')}>
           <div style={styles.stickyPayInner}>
             <div style={styles.stickyPayMeta}>
-              <span style={styles.stickyPayLabel}>Total due</span>
-              <strong style={styles.stickyPayAmount}>{payableDisplay}</strong>
+              <span style={dig(styles.stickyPayLabel, 'stickyPayLabel')}>Total due</span>
+              <strong style={dig(styles.stickyPayAmount, 'stickyPayAmount')}>{payableDisplay}</strong>
             </div>
             <button
               type="submit"
               form="checkout-pay-form"
               disabled={loading}
-              style={styles.stickyPayBtn}
+              style={dig(styles.stickyPayBtn, 'stickyPayBtn')}
             >
               {loading ? 'Processing…' : `Pay ${payableDisplay}`}
             </button>
           </div>
-          <p style={styles.stickyPayNote}>Secure checkout via Razorpay · SSL encrypted</p>
+          <p style={dig(styles.stickyPayNote, 'stickyPayNote')}>Secure checkout via Razorpay · SSL encrypted</p>
         </div>
       )}
 
@@ -1123,6 +1201,170 @@ export default function CheckoutPage() {
       <CheckoutForm />
     </Suspense>
   );
+}
+
+const digitalTheme: Record<string, CSSProperties> = {
+  page: {
+    backgroundColor: '#F4F8FF',
+    backgroundImage:
+      'radial-gradient(ellipse 90% 55% at 50% -15%, rgba(37,99,235,0.18), transparent 55%)',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(37,99,235,0.14)',
+    boxShadow: '0 18px 48px rgba(15,23,42,0.08)',
+  },
+  backLink: {
+    color: '#64748B',
+  },
+  brandMark: {
+    color: '#1D4ED8',
+  },
+  eyebrow: {
+    margin: '0 0 8px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '6px 10px',
+    borderRadius: 999,
+    backgroundColor: 'rgba(37,99,235,0.12)',
+    color: '#0F172A',
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+  },
+  title: {
+    color: '#0F172A',
+  },
+  subtitle: {
+    color: '#475569',
+  },
+  dotActive: {
+    backgroundColor: '#2563EB',
+  },
+  trustStrip: {
+    backgroundColor: '#F8FBFF',
+    border: '1px solid rgba(37,99,235,0.14)',
+  },
+  trustBadge: {
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(37,99,235,0.18)',
+    color: '#334155',
+  },
+  trustLine: {
+    color: '#475569',
+  },
+  planChip: {
+    backgroundColor: '#F8FBFF',
+    border: '1px solid rgba(37,99,235,0.18)',
+    color: '#0F172A',
+  },
+  planChipSelected: {
+    backgroundColor: '#EFF6FF',
+    border: '2px solid #2563EB',
+    boxShadow: 'none',
+  },
+  planChipName: {
+    color: '#0F172A',
+  },
+  planChipDuration: {
+    color: '#64748B',
+  },
+  planChipPrice: {
+    color: '#0F172A',
+  },
+  planChipPopular: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#2563EB',
+    textDecoration: 'none',
+  },
+  orderSummary: {
+    backgroundColor: '#F8FBFF',
+    border: '1px solid rgba(37,99,235,0.14)',
+  },
+  orderPlanName: {
+    color: '#0F172A',
+  },
+  orderPlanMeta: {
+    color: '#64748B',
+  },
+  orderSummaryPrice: {
+    color: '#0F172A',
+  },
+  sectionLabel: {
+    color: '#64748B',
+  },
+  label: {
+    color: '#334155',
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(37,99,235,0.22)',
+    color: '#0F172A',
+  },
+  payBtn: {
+    backgroundColor: '#2563EB',
+    color: '#FFFFFF',
+  },
+  paySecureNote: {
+    color: '#64748B',
+  },
+  stickyPayBar: {
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderTop: '1px solid rgba(37,99,235,0.16)',
+  },
+  stickyPayLabel: {
+    color: '#64748B',
+  },
+  stickyPayAmount: {
+    color: '#0F172A',
+  },
+  stickyPayBtn: {
+    backgroundColor: '#2563EB',
+    color: '#FFFFFF',
+  },
+  stickyPayNote: {
+    color: '#64748B',
+  },
+  secure: {
+    color: '#64748B',
+  },
+  inlineLink: {
+    color: '#2563EB',
+  },
+  otpBox: {
+    backgroundColor: '#F8FBFF',
+    border: '1px solid rgba(37,99,235,0.14)',
+  },
+  otpTitle: {
+    color: '#0F172A',
+  },
+  otpHint: {
+    color: '#64748B',
+  },
+  otpInput: {
+    backgroundColor: '#FFFFFF',
+    border: '1px solid rgba(37,99,235,0.22)',
+    color: '#0F172A',
+  },
+  otpBtn: {
+    backgroundColor: '#2563EB',
+    color: '#FFFFFF',
+  },
+  otpBtnSecondary: {
+    border: '1px solid rgba(37,99,235,0.22)',
+    color: '#1D4ED8',
+    backgroundColor: '#FFFFFF',
+  },
+  policyText: {
+    color: '#475569',
+  },
+  honestNote: {
+    margin: '12px 0 0',
+    fontSize: 13,
+    lineHeight: 1.45,
+    color: '#475569',
+  },
 }
 
 const styles: Record<string, CSSProperties> = {

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { recordCapturedPayment } from '@/lib/payments/fulfillment'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { getCoachingPlan } from '@/lib/payments/plans'
@@ -6,6 +6,7 @@ import {
   expectedAmountPaiseFromOrderNotes,
   normalizeDiscountCode,
   checkoutAddonsFromNotes,
+  EXERCISE_LIBRARY_ADDON_LABEL,
   EXERCISE_LIBRARY_ADDON_PAISE,
 } from '@/lib/payments/checkout-discounts'
 import { isAffiliateDiscountCode } from '@/lib/payments/affiliate-codes'
@@ -18,14 +19,29 @@ import {
 } from '@/lib/payments/razorpay'
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
-import { metaAttributionFromRequest } from '@/lib/analytics/meta-attribution'
+import { metaIdsFromOrderNotes } from '@/lib/analytics/meta-attribution'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   fulfillExerciseLibraryAddon,
   isExerciseLibraryAddonOrder,
 } from '@/lib/payments/exercise-library-addon'
+import {
+  fulfillPlatformUnlockAddon,
+  isPlatformUnlockOrder,
+} from '@/lib/payments/platform-unlock-addon'
+import {
+  parsePlatformUnlockSku,
+  PLATFORM_UNLOCK_META,
+} from '@/lib/payments/platform-unlock-catalog'
 import { getOrderPolicyAcknowledgement } from '@/lib/payments/policy-acknowledgement'
 import { isCurrentPolicyAcknowledgement } from '@/lib/policies'
+
+function scheduleMetaPurchaseBackup(input: Parameters<typeof sendMetaPurchase>[0]) {
+  after(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 8000))
+    await sendMetaPurchase(input).catch(() => undefined)
+  })
+}
 
 /**
  * Razorpay webhook — records captured payments when the browser never reaches /verify.
@@ -226,6 +242,43 @@ export async function POST(request: Request) {
     }
 
     const planSlug = notes.plan_slug
+    if (isPlatformUnlockOrder(notes)) {
+      const sku = parsePlatformUnlockSku(notes.unlock_sku)
+      const userId = notes.user_id?.trim()
+      const email = (notes.customer_email || payment.email || '').trim().toLowerCase()
+      const name = (notes.customer_name || '').trim() || 'Member'
+      if (!sku || !userId || !email) {
+        return NextResponse.json({ success: false, error: 'Missing platform unlock buyer' }, { status: 422 })
+      }
+      const unlockMeta = PLATFORM_UNLOCK_META[sku]
+      if (payment.amount !== unlockMeta.amountPaise) {
+        return NextResponse.json({ success: false, error: 'Amount mismatch' }, { status: 422 })
+      }
+      const result = await fulfillPlatformUnlockAddon({
+        userId,
+        email,
+        name,
+        phone: notes.customer_phone || payment.contact || null,
+        razorpayPaymentId: payment.id,
+        razorpayOrderId: payment.order_id,
+        amountPaise: payment.amount,
+        sku,
+      })
+      scheduleMetaPurchaseBackup({
+        purchaseId: result.purchaseId,
+        paymentId: payment.id,
+        email,
+        phone: notes.customer_phone || payment.contact || null,
+        amountPaise: payment.amount,
+        currency: payment.currency || 'INR',
+        planSlug: sku,
+        contentName: unlockMeta.label,
+        eventSourcePath: '/unlock',
+        ...metaIdsFromOrderNotes(notes),
+      })
+      return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: sku })
+    }
+
     if (isExerciseLibraryAddonOrder(notes)) {
       const userId = notes.user_id?.trim()
       const email = (notes.customer_email || payment.email || '').trim().toLowerCase()
@@ -245,7 +298,7 @@ export async function POST(request: Request) {
         razorpayOrderId: payment.order_id,
         amountPaise: payment.amount,
       })
-      await sendMetaPurchase({
+      scheduleMetaPurchaseBackup({
         purchaseId: result.purchaseId,
         paymentId: payment.id,
         email,
@@ -253,8 +306,10 @@ export async function POST(request: Request) {
         amountPaise: payment.amount,
         currency: payment.currency || 'INR',
         planSlug: 'exercise_library',
-        ...metaAttributionFromRequest(request),
-      }).catch(() => undefined)
+        contentName: EXERCISE_LIBRARY_ADDON_LABEL,
+        eventSourcePath: '/library/unlock',
+        ...metaIdsFromOrderNotes(notes),
+      })
       return NextResponse.json({ success: true, purchaseId: result.purchaseId, addon: 'exercise_library' })
     }
 
@@ -337,27 +392,28 @@ export async function POST(request: Request) {
       }
     }
 
+    scheduleMetaPurchaseBackup({
+      purchaseId: result.purchaseId,
+      paymentId: result.razorpayPaymentId,
+      email: result.customerEmail,
+      phone,
+      amountPaise: payment.amount,
+      currency: payment.currency || 'INR',
+      planSlug: plan.slug,
+      ...metaIdsFromOrderNotes(notes),
+    })
+
     await Promise.allSettled([
-      sendMetaPurchase({
+      sendAccountSetupRecovery({
         purchaseId: result.purchaseId,
-        paymentId: result.razorpayPaymentId,
+        token: result.claimToken,
         email: result.customerEmail,
         phone,
-        amountPaise: payment.amount,
-        currency: payment.currency || 'INR',
+        name: result.customerName,
+        stage: 'confirmed',
         planSlug: plan.slug,
-        ...metaAttributionFromRequest(request),
+        planName: plan.name,
       }),
-      result.claimToken
-        ? sendAccountSetupRecovery({
-            purchaseId: result.purchaseId,
-            token: result.claimToken,
-            email: result.customerEmail,
-            phone,
-            name: result.customerName,
-            stage: 'confirmed',
-          })
-        : Promise.resolve({ sent: 0, skipped: 1, failed: 0 }),
     ])
 
     logPurchaseStep('webhook_recorded', {

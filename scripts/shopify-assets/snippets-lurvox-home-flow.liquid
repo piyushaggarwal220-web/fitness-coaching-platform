@@ -6,38 +6,20 @@
 {%- liquid
   assign mode = mode | default: 'find'
   assign find_url = '/pages/choose-your-plan'
-  assign talk_url = '/pages/talk-to-a-coach'
   assign how_url = '/pages/how-lurvox-works'
   assign compare_url = '/pages/compare-fit?view=compare-short'
 -%}
 
 {%- if mode == 'find' -%}
-  <section class="lx-flow" aria-label="Find your plan">
-    <div class="lx-flow__inner">
-      <a class="lx-flow__btn lx-flow__btn--primary" href="{{ find_url }}">
-        <span class="lx-flow__main">Find My Plan — Free Quiz</span>
-        <span class="lx-flow__sub">2 minutes · no payment · instant recommendation</span>
-      </a>
-    </div>
-  </section>
+  {% comment %} Find-your-plan quiz removed — Instant-style fitness quiz lives after transformations. {% endcomment %}
 {%- else -%}
-  <section class="lx-flow lx-flow--after" aria-label="Next steps">
-    <div class="lx-flow__inner lx-flow__inner--links">
-      <p class="lx-flow__hint">Fat loss ₹1,999 · Fat loss + muscle ₹3,499 · Athletic body ₹5,999</p>
-      <div class="lx-flow__links">
-        <a class="lx-flow__link lx-flow__link--talk" href="{{ talk_url }}">Talk to a coach</a>
-        <span class="lx-flow__sep" aria-hidden="true">·</span>
-        <a class="lx-flow__link" href="{{ find_url }}">Find your plan</a>
-        <span class="lx-flow__sep" aria-hidden="true">·</span>
-        <a class="lx-flow__link" href="{{ compare_url }}">Compare plans</a>
-      </div>
-    </div>
-  </section>
+  {% render 'lurvox-animated-transforms' %}
+  {% render 'lurvox-fitness-quiz' %}
 {%- endif -%}
 
 <style>
   .lx-flow {
-    background: #050505;
+    background: transparent;
     padding: 8px 16px 28px;
   }
   .lx-flow--after {
@@ -51,6 +33,14 @@
     gap: 12px;
     width: 100%;
     box-sizing: border-box;
+  }
+
+  .lx-flow__inner--stamp {
+    align-items: center;
+  }
+
+  .lx-flow__inner--stamp {
+    align-items: center;
   }
   .lx-flow__inner--links {
     align-items: center;
@@ -123,6 +113,11 @@
     line-height: 1.25;
     color: inherit !important;
     opacity: 1 !important;
+  }
+  .lx-flow__main em {
+    color: rgba(10, 10, 10, 0.72);
+    font-style: normal;
+    font-weight: 800;
   }
   .lx-flow__sub {
     font-size: 0.8rem;

@@ -2,18 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { brandTitle } from '@/lib/brand'
 import { CoachShell } from '@/components/ui/CoachShell'
-import { colors } from '@/lib/coach-theme'
 import { createClient } from '@/lib/supabase/client'
 import { requireCoach } from '@/lib/coach-session'
 import { INITIAL_PLAN_ACTIONS, type AiReasoningDisplay } from '@/lib/coach/ai-actions'
 import { savePlanDraftToSession } from '@/lib/ai/plan-format'
-import { getOnboardingLabel } from '@/lib/onboarding'
-import { formatFitnessGoal } from '@/lib/coach-utils'
 import { planToForm, restorePlanAsDraft } from '@/lib/plans'
 import { ClientContextCard } from '@/components/coach/ai-actions/ClientContextCard'
+import { ClientOnboardingBrief } from '@/components/coach/ClientOnboardingBrief'
 import { PlanCompareDrawer } from '@/components/coach/ai-actions/PlanCompareDrawer'
 import { PlanVersionList } from '@/components/coach/ai-actions/PlanVersionList'
 import { ActionCard, AiReasoningPanel, GenerationStatus, MessageClientButton, OptionalCoachNote } from '@/components/coach/ai-actions/shared'
@@ -28,7 +26,9 @@ const supabase = createClient()
 export default function CoachGeneratePlanPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const clientId = typeof params.id === 'string' ? params.id : ''
+  const intentInitial = searchParams.get('intent') === 'initial'
 
   const [coach, setCoach] = useState<Coach | null>(null)
   const [client, setClient] = useState<OnboardingProfile | null>(null)
@@ -291,13 +291,19 @@ export default function CoachGeneratePlanPage() {
     (Array.isArray(client.complexity_input_review_reasons) &&
       client.complexity_input_review_reasons.length > 0)
 
+  const isInitialPlanFlow = intentInitial || !activePlan
+
   return (
     <CoachShell narrow>
           <Link href={`/coach/client/${client.id}`} style={s.backLink}>← Back to client</Link>
 
-          <h1 style={s.title}>{brandTitle('AI coaching actions')}</h1>
+          <h1 style={s.title}>
+            {brandTitle(isInitialPlanFlow ? 'Initial plan generation' : 'AI coaching actions')}
+          </h1>
           <p style={s.subtitle}>
-            Generate a complete plan or a single section. Work continues in the background if you leave this page.
+            {isInitialPlanFlow
+              ? 'Build this client’s first diet and workout draft from their intake. Work continues in the background if you leave this page.'
+              : 'Generate a complete plan or a single section. Work continues in the background if you leave this page.'}
           </p>
 
           {metricsBlocked && (
@@ -397,22 +403,10 @@ export default function CoachGeneratePlanPage() {
             latestDraft={latestDraft}
           />
 
-          <div style={s.card}>
-            <h2 style={{ margin: '0 0 12px 0', fontSize: 15, fontWeight: 600 }}>Client summary</h2>
-            <div style={{ display: 'grid', gap: 8, fontSize: 14, color: colors.textSecondary }}>
-              <span>Goal: {formatFitnessGoal(client.fitness_goal)}</span>
-              <span>Training: {getOnboardingLabel('training_experience', client.training_experience)}</span>
-              <span>Diet: {getOnboardingLabel('diet_preference', client.diet_preference)}</span>
-              {client.onboarding_data?.diet?.customNotes?.trim() ? (
-                <span>Diet exceptions: {client.onboarding_data.diet.customNotes.trim()}</span>
-              ) : null}
-              <span>
-                Age / weight: {client.age ?? '—'} yrs · {client.weight ?? '—'} kg
-              </span>
-            </div>
-          </div>
+          <ClientOnboardingBrief client={client} />
 
           <p style={s.sectionLabel}>Initial planning</p>
+          <OptionalCoachNote mode="discussion" value={coachNote} onChange={setCoachNote} />
           {INITIAL_PLAN_ACTIONS.map((action) => (
             <ActionCard
               key={action.id}
@@ -430,7 +424,6 @@ export default function CoachGeneratePlanPage() {
             onClick={() => void runCompletePlan()}
           />
 
-          <OptionalCoachNote value={coachNote} onChange={setCoachNote} />
           <GenerationStatus
             message={status}
             stepLabel={stepLabel}

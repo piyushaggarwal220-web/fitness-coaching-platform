@@ -1,0 +1,404 @@
+{% comment %}
+  LURVOX marketing chat (Orange theme) — polished help panel.
+  Render once in theme.liquid: {% render 'lurvox-marketing-chat' %}
+{% endcomment %}
+
+<div id="lx-mchat" class="lx-mchat" data-lx-mchat hidden>
+  <button type="button" class="lx-mchat__fab" data-lx-mchat-toggle aria-expanded="false" aria-controls="lx-mchat-panel">
+    <span class="lx-mchat__fab-ico" aria-hidden="true">💬</span>
+    <span data-lx-mchat-fab-label>Ask</span>
+  </button>
+  <div id="lx-mchat-panel" class="lx-mchat__panel" role="dialog" aria-label="Lurvox help" hidden>
+    <div class="lx-mchat__head">
+      <div class="lx-mchat__identity">
+        <span class="lx-mchat__avatar" aria-hidden="true">L</span>
+        <div>
+          <strong>Lurvox help</strong>
+          <span class="lx-mchat__status" data-lx-mchat-status>
+            <span class="lx-mchat__dot" aria-hidden="true"></span>
+            Usually replies in seconds
+          </span>
+        </div>
+      </div>
+      <button type="button" class="lx-mchat__close" data-lx-mchat-close aria-label="Close chat">×</button>
+    </div>
+    <div class="lx-mchat__msgs" data-lx-mchat-msgs>
+      <p class="lx-mchat__bot">Hi. Ask about Fat loss ₹599, 6 months ₹999, or Athletic body ₹1,699.</p>
+    </div>
+    <div class="lx-mchat__suggestions" data-lx-mchat-suggestions>
+      <button type="button" data-lx-mchat-chip>What do I get?</button>
+      <button type="button" data-lx-mchat-chip>Why ₹599?</button>
+      <button type="button" data-lx-mchat-chip>Moneyback?</button>
+      <button type="button" data-lx-mchat-chip>How fast is delivery?</button>
+    </div>
+    <form class="lx-mchat__form" data-lx-mchat-form>
+      <input type="text" name="q" maxlength="500" placeholder="Ask about plans, delivery, moneyback…" aria-label="Your question" required autocomplete="off" />
+      <button type="submit" aria-label="Send">➤</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .lx-mchat {
+    --lx-orange: #ff6200;
+    position: fixed;
+    right: 14px;
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    z-index: 9999;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  body.lx-has-find-float .lx-mchat {
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
+  .lx-mchat__fab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #ff8533 0%, #ff6200 55%, #e85a00 100%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 12px 32px rgba(255, 98, 0, 0.4);
+  }
+  .lx-mchat__fab.is-open {
+    background: #292524;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+  .lx-mchat__fab-ico { font-size: 15px; line-height: 1; }
+  .lx-mchat__panel {
+    position: absolute;
+    right: 0;
+    bottom: 58px;
+    width: min(380px, calc(100vw - 24px));
+    max-height: min(520px, calc(100vh - 160px));
+    display: none;
+    flex-direction: column;
+    background:
+      radial-gradient(ellipse 80% 50% at 100% 0%, rgba(255, 98, 0, 0.2), transparent 55%),
+      #14110e;
+    color: #f7f7f7;
+    border: 1px solid rgba(255, 98, 0, 0.38);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.5);
+  }
+  .lx-mchat__panel.is-open {
+    display: flex;
+  }
+  .lx-mchat__panel[hidden] {
+    display: none !important;
+  }
+  .lx-mchat__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .lx-mchat__identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .lx-mchat__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: linear-gradient(145deg, #ffb020, #ff6200);
+    color: #111;
+    font-weight: 900;
+    font-size: 14px;
+  }
+  .lx-mchat__identity strong {
+    display: block;
+    font-size: 15px;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .lx-mchat__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+    font-size: 11px;
+    color: rgba(247, 247, 247, 0.62);
+    font-weight: 600;
+  }
+  .lx-mchat__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22);
+  }
+  .lx-mchat__close {
+    border: 0;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f7f7f7;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+  }
+  .lx-mchat__close:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .lx-mchat__msgs {
+    flex: 1;
+    min-height: 160px;
+    max-height: 260px;
+    overflow: auto;
+    padding: 14px 12px;
+    display: grid;
+    gap: 10px;
+  }
+  .lx-mchat__bot,
+  .lx-mchat__user {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    max-width: 92%;
+  }
+  .lx-mchat__bot {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom-left-radius: 5px;
+    justify-self: start;
+  }
+  .lx-mchat__user {
+    background: rgba(255, 98, 0, 0.22);
+    border: 1px solid rgba(255, 98, 0, 0.4);
+    border-bottom-right-radius: 5px;
+    justify-self: end;
+  }
+  .lx-mchat__typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+    padding: 12px 14px;
+  }
+  .lx-mchat__typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(247, 247, 247, 0.55);
+    animation: lxMchatDot 1s ease-in-out infinite;
+  }
+  .lx-mchat__typing span:nth-child(2) { animation-delay: 0.15s; }
+  .lx-mchat__typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes lxMchatDot {
+    0%, 80%, 100% { opacity: 0.35; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-3px); }
+  }
+  .lx-mchat__suggestions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 0 12px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .lx-mchat__suggestions::-webkit-scrollbar { display: none; }
+  .lx-mchat__suggestions button {
+    flex: 0 0 auto;
+    border: 1px solid rgba(255, 98, 0, 0.4);
+    background: rgba(255, 98, 0, 0.1);
+    color: #ffc299;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .lx-mchat__suggestions button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .lx-mchat__form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.28);
+  }
+  .lx-mchat__form input {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border-radius: 12px;
+    padding: 11px 13px;
+    font-size: 14px;
+    min-width: 0;
+  }
+  .lx-mchat__form input:focus {
+    outline: none;
+    border-color: rgba(255, 98, 0, 0.55);
+    box-shadow: 0 0 0 3px rgba(255, 98, 0, 0.15);
+  }
+  .lx-mchat__form button {
+    border: 0;
+    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    background: var(--lx-orange);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .lx-mchat__form button:disabled { opacity: 0.4; cursor: not-allowed; }
+  @media (max-width: 480px) {
+    .lx-mchat {
+      right: 10px;
+      left: auto;
+    }
+    .lx-mchat__panel {
+      width: min(100vw - 20px, 380px);
+    }
+  }
+</style>
+
+<script>
+(function () {
+  var root = document.getElementById('lx-mchat')
+  if (!root || root.dataset.wired === '1') return
+  root.dataset.wired = '1'
+  root.hidden = false
+
+  var API = 'https://app.lurvox.in/api/marketing/chat'
+  var toggle = root.querySelector('[data-lx-mchat-toggle]')
+  var closeBtn = root.querySelector('[data-lx-mchat-close]')
+  var fabLabel = root.querySelector('[data-lx-mchat-fab-label]')
+  var panel = root.querySelector('#lx-mchat-panel')
+  var msgs = root.querySelector('[data-lx-mchat-msgs]')
+  var form = root.querySelector('[data-lx-mchat-form]')
+  var status = root.querySelector('[data-lx-mchat-status]')
+  var chips = root.querySelectorAll('[data-lx-mchat-chip]')
+  var input = form.querySelector('input')
+  var submit = form.querySelector('button[type="submit"]')
+  var history = []
+  var busy = false
+  var typingEl = null
+
+  function setOpen(open) {
+    if (open) {
+      panel.hidden = false
+      panel.removeAttribute('hidden')
+      panel.classList.add('is-open')
+      toggle.setAttribute('aria-expanded', 'true')
+      toggle.classList.add('is-open')
+      if (fabLabel) fabLabel.textContent = 'Close'
+      setTimeout(function () { input && input.focus() }, 60)
+    } else {
+      panel.hidden = true
+      panel.setAttribute('hidden', '')
+      panel.classList.remove('is-open')
+      toggle.setAttribute('aria-expanded', 'false')
+      toggle.classList.remove('is-open')
+      if (fabLabel) fabLabel.textContent = 'Ask'
+    }
+  }
+
+  function add(role, text) {
+    var p = document.createElement('p')
+    p.className = role === 'user' ? 'lx-mchat__user' : 'lx-mchat__bot'
+    p.textContent = text
+    msgs.appendChild(p)
+    msgs.scrollTop = msgs.scrollHeight
+  }
+
+  function setTyping(on) {
+    if (on) {
+      if (typingEl) return
+      typingEl = document.createElement('p')
+      typingEl.className = 'lx-mchat__bot lx-mchat__typing'
+      typingEl.setAttribute('aria-live', 'polite')
+      typingEl.innerHTML = '<span></span><span></span><span></span>'
+      msgs.appendChild(typingEl)
+      msgs.scrollTop = msgs.scrollHeight
+      status.innerHTML = '<span class="lx-mchat__dot" aria-hidden="true"></span>Typing…'
+    } else if (typingEl) {
+      typingEl.remove()
+      typingEl = null
+      status.innerHTML = '<span class="lx-mchat__dot" aria-hidden="true"></span>Usually replies in seconds'
+    }
+  }
+
+  async function ask(text) {
+    var q = (text || '').trim()
+    if (!q || busy) return
+    add('user', q)
+    history.push({ role: 'user', content: q })
+    busy = true
+    chips.forEach(function (c) { c.disabled = true })
+    if (submit) submit.disabled = true
+    setTyping(true)
+    try {
+      var res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: q, history: history.slice(-6), surface: 'coaching' }),
+      })
+      var data = await res.json().catch(function () { return {} })
+      var reply = (data && data.reply) || 'Plans: Fat loss ₹599 · 6 months ₹999 · Athletic body ₹1,699.'
+      setTyping(false)
+      add('bot', reply)
+      history.push({ role: 'assistant', content: reply })
+    } catch (err) {
+      setTyping(false)
+      add('bot', 'Could not reach help right now. Plans start at ₹599 for 3 months.')
+    } finally {
+      busy = false
+      chips.forEach(function (c) { c.disabled = false })
+      if (submit) submit.disabled = false
+    }
+  }
+
+  toggle.addEventListener('click', function (e) {
+    e.preventDefault()
+    e.stopPropagation()
+    setOpen(panel.hidden || panel.hasAttribute('hidden') || !panel.classList.contains('is-open'))
+  })
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function (e) {
+      e.preventDefault()
+      e.stopPropagation()
+      setOpen(false)
+    })
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && panel.classList.contains('is-open')) setOpen(false)
+  })
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () { ask(chip.textContent || '') })
+  })
+  form.addEventListener('submit', function (e) {
+    e.preventDefault()
+    var text = (input.value || '').trim()
+    input.value = ''
+    ask(text)
+  })
+})()
+</script>

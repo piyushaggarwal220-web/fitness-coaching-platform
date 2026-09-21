@@ -2,6 +2,7 @@
 
 import {
   affordability,
+  coaches,
   faq,
   finalCta,
   footer,
@@ -65,16 +66,30 @@ export function Hero() {
 
         <Reveal delay={0.1}>
           <div className="lp-hero-photo-wrap">
-            <Floating amplitude={6} duration={5.5}>
-              <TiltCard intensity={6} className="lp-card" style={{ borderRadius: 24, overflow: 'hidden' }}>
-                {/* Replace with coach photo — set hero.coachPhoto in content.ts */}
-                <ImagePlaceholder
-                  label={hero.coachPhotoAlt}
-                  src={hero.coachPhoto || undefined}
-                  className="lp-hero-photo"
-                />
-              </TiltCard>
-            </Floating>
+            <div className="lp-coach-grid" aria-label={hero.coachPhotoAlt}>
+              {coaches.map((coach) => (
+                <a
+                  key={coach.instagramHandle}
+                  href={coach.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="lp-coach-card"
+                  aria-label={`${coach.name} on Instagram, ${coach.instagramHandle}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- local public coach photos */}
+                  <img
+                    src={coach.photo}
+                    alt={`${coach.name}, LURVOX coach`}
+                    className="lp-coach-photo"
+                  />
+                  <span className="lp-coach-caption">
+                    <strong>{coach.firstName}</strong>
+                    <span className="lp-coach-instagram">{coach.instagramHandle}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+            <p className="lp-coach-hint">Tap a handle to open Instagram</p>
             <p
               style={{
                 margin: '12px 0 0',
@@ -161,28 +176,36 @@ export function SocialProof() {
 
 export function WhyPeopleFail() {
   return (
-    <section className="lp-section">
+    <section className="lp-section lp-truth" aria-labelledby="truth-title">
       <div className="lp-container">
         <Reveal>
           <div className="lp-section-head">
             <p className="lp-eyebrow">{whyPeopleFail.eyebrow}</p>
-            <h2 className="lp-headline">{whyPeopleFail.headline}</h2>
+            <h2 className="lp-headline" id="truth-title">
+              {whyPeopleFail.headline}
+            </h2>
             <p className="lp-sub">{whyPeopleFail.subheadline}</p>
           </div>
         </Reveal>
 
-        <div className="lp-fail-grid">
-          {whyPeopleFail.cards.map((card, i) => (
-            <Reveal key={card.title} delay={i * 0.06}>
-              <TiltCard className="lp-card lp-fail-card" intensity={6}>
-                <h3>{card.title}</h3>
-                <p>{card.body}</p>
-              </TiltCard>
-            </Reveal>
-          ))}
+        <div className="lp-truth-grid">
+          <article className="lp-truth-card lp-truth-card--fail">
+            <p className="lp-truth-label">{whyPeopleFail.failLabel}</p>
+            <ul>
+              {whyPeopleFail.fail.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+          <article className="lp-truth-card lp-truth-card--win">
+            <p className="lp-truth-label">{whyPeopleFail.winLabel}</p>
+            <ul>
+              {whyPeopleFail.win.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
         </div>
-
-        <SectionCta href={`${site.checkoutBase}?plan=3_months`}>{whyPeopleFail.cta}</SectionCta>
       </div>
     </section>
   )

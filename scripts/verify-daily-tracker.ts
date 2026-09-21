@@ -1193,6 +1193,94 @@ Water: 3–4 litres. No whey. This plan is a sample so visitors can smoke the ap
   )
 }
 
+{
+  // WEEKLY SPLIT outlines used to become monday/tuesday keys with only shared
+  // warmups, stealing the day picker from real Day N sessions that have mains.
+  const splitOutlinePlan: Plan = {
+    ...planV1,
+    id: 'plan-split-outline',
+    workout_plan: `WEEKLY SPLIT
+
+Monday — Chest + Biceps
+Tuesday — Back + Triceps
+Wednesday — Quads
+Sunday — Full Rest
+
+BEFORE EVERY WORKOUT
+• 5 min brisk walk
+• Arm circles 10 each way
+• Bodyweight squats 10
+
+DAY 1 — CHEST + BICEPS
+1. Incline Press — 3×8-12
+2. Flat Dumbbell Press — 3×8-12
+3. Cable Curl — 3×10-15
+
+DAY 2 — BACK + TRICEPS
+1. Lat Pulldown — 3×8-12
+2. Chest Supported Row — 3×8-12
+3. Triceps Pushdown — 3×10-15
+
+DAY 3 — QUADS
+1. Hack Squat — 3×8-12
+2. Leg Extension — 3×12-15`,
+  }
+  const outlineSnap = buildTrackerSnapshot(splitOutlinePlan)
+  const outlineWorkouts = outlineSnap.items.filter((i) => i.type === 'workout')
+  const outlineKeys = outlineWorkouts
+    .map((i) => (i.type === 'workout' ? i.workoutDay : null))
+    .filter(Boolean)
+  assert(
+    'split outline does not create weekday warmup-only days',
+    outlineWorkouts.every(
+      (i) =>
+        i.type !== 'workout' ||
+        !['monday', 'tuesday', 'wednesday'].includes(i.workoutDay ?? '') ||
+        i.exercises.length === 0
+    ) && !outlineKeys.includes('monday') && !outlineKeys.includes('tuesday')
+  )
+  const day1 = outlineWorkouts.find((i) => i.type === 'workout' && i.workoutDay === 'day-1')
+  assert(
+    'split outline Day 1 keeps main lifts',
+    day1?.type === 'workout' &&
+      (day1.phases.find((p) => p.phase === 'main')?.exercises.length ?? 0) >= 2 &&
+      day1.exercises.some((ex) => /incline|press/i.test(ex.name))
+  )
+  const suggested = resolveSuggestedDayKey(outlineSnap.workoutDays ?? [], new Date('2026-09-14T12:00:00+05:30'))
+  assert(
+    `split outline suggests a Day N with mains (got ${suggested})`,
+    suggested === 'day-1' ||
+      (Boolean(suggested) &&
+        outlineWorkouts.some(
+          (i) =>
+            i.type === 'workout' &&
+            i.workoutDay === suggested &&
+            (i.phases.find((p) => p.phase === 'main')?.exercises.length ?? 0) > 0
+        ))
+  )
+}
+
+{
+  // Title-only remakes must not invent default-warmup-only tracker days.
+  const titleOnlyPlan: Plan = {
+    ...planV1,
+    id: 'plan-title-only',
+    workout_plan: `Day 1 (Monday): Push A Chest, shoulders, triceps
+Day 2 (Tuesday): Pull A Back and biceps
+Day 3 (Wednesday): Legs A Quads and hamstrings
+Day 7 (Sunday): Active Recovery`,
+  }
+  const titleSnap = buildTrackerSnapshot(titleOnlyPlan)
+  const titleWorkouts = titleSnap.items.filter((i) => i.type === 'workout')
+  const warmupOnly = titleWorkouts.filter(
+    (i) =>
+      i.type === 'workout' &&
+      i.exercises.length > 0 &&
+      !(i.phases.find((p) => p.phase === 'main')?.exercises.length)
+  )
+  assert('title-only plan does not create warmup-only training days', warmupOnly.length === 0)
+}
+
 if (failed > 0) {
   console.error(`\n${failed} daily tracker checks failed`)
   process.exit(1)

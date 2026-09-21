@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 18
+export const TRACKER_PARSER_VERSION = 19
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -562,7 +562,7 @@ function isExplicitRestDayText(text: string): boolean {
   }
   // Training-like titles should never be auto-classified as rest when empty.
   if (
-    /\b(lower|upper|push|pull|legs?|chest|back|shoulders?|arms?|full\s*body|power|strength|hypertrophy|glute|hinge|squat|conditioning|metcon)\b/i.test(
+    /\b(lower|upper|push|pull|legs?|chest|back|shoulders?|arms?|quads?|hamstrings?|calves|biceps?|triceps?|delts?|obliques?|core|full\s*body|power|strength|hypertrophy|glute|hinge|squat|conditioning|metcon)\b/i.test(
       normalized
     )
   ) {
@@ -573,6 +573,20 @@ function isExplicitRestDayText(text: string): boolean {
     .replace(/^(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b[^\n]*/i, '')
     .trim()
   return withoutHeader.length < 8
+}
+
+/** Rest from the day title even when a shared "BEFORE EVERY WORKOUT" preamble leaked into the body. */
+function dayHeaderIsExplicitRest(label: string, body: string): boolean {
+  const first = stripMarkdownDecorators((body.split('\n')[0] ?? label).trim())
+  if (!first) return false
+  if (/\b(full\s*rest|rest\s*day|active\s*recovery|off\s*day|recovery\s*day)\b/i.test(first)) {
+    return true
+  }
+  return (
+    /^(?:#{1,3}\s*)?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b.{0,40}\brest\b/i.test(
+      first
+    ) && !/\b(push|pull|legs?|upper|lower|chest|back)\b/i.test(first)
+  )
 }
 
 function stripExerciseListPrefix(value: string): string {
@@ -1113,7 +1127,9 @@ function parseWorkouts(workoutText: string): {
 
   const sharedWarmup = extractSharedPhaseExercises(workoutText, 'warmup')
   const sharedCooldown = extractSharedPhaseExercises(workoutText, 'cooldown')
-  const blocks = splitWorkoutDayBlocks(workoutText)
+  // Strip shared preambles so "BEFORE EVERY WORKOUT" does not stick to the prior
+  // rest/outline day and become a fake main session.
+  const blocks = splitWorkoutDayBlocks(stripSharedPreambleSections(workoutText))
   const byKey = new Map<
     string,
     { workout: TrackerWorkoutItem; option?: TrackerPlanDayOption; quality: number }
@@ -1133,9 +1149,13 @@ function parseWorkouts(workoutText: string): {
   for (const day of blocks) {
     const parsed = parseWorkoutPhases(day.body)
     const dayLabel = parsed.dayLabel ?? day.label
-    const looksLikeRestDay = isExplicitRestDayText(`${day.label}\n${day.body}`)
+    const headerRest = dayHeaderIsExplicitRest(day.label, day.body)
+    const looksLikeRestDay =
+      headerRest || isExplicitRestDayText(`${day.label}\n${day.body}`)
+    // Explicit rest titles win even if a shared warmup preamble leaked into the body.
     const isRestDay =
-      parsed.exercises.length === 0 && day.key !== 'default' && looksLikeRestDay
+      day.key !== 'default' &&
+      (headerRest || (parsed.exercises.length === 0 && looksLikeRestDay))
     const option: TrackerPlanDayOption | undefined =
       day.key === 'default'
         ? undefined
@@ -1165,6 +1185,11 @@ function parseWorkouts(workoutText: string): {
       )
       continue
     }
+
+    // Title-only / WEEKLY SPLIT outline days have no lifts. Do not invent a
+    // warmup-only session from shared/default warmups — that hides real Day N
+    // work when the day picker prefers calendar weekday keys.
+    if (parsed.exercises.length === 0) continue
 
     const merged = mergePhaseExercises(
       parsed.phases,
@@ -1305,13 +1330,23 @@ function parseNarrativeMovementList(
  */
 function workoutSharedRegions(fullWorkout: string): string {
   const text = fullWorkout.replace(/\r\n/g, '\n')
-  const dayStart = text.search(
-    new RegExp(`(?:^|\\n)(?=${DAY_HEADER_BOUNDARY})`, 'i')
-  )
+  // Prefer content before the first Day N training block. WEEKLY SPLIT weekday
+  // outlines often appear first and would otherwise hide "BEFORE EVERY WORKOUT".
+  const dayNStart = text.search(/(?:^|\n)(?=(?:\*{0,2}|#{1,3}\s*)?day\s*\d+\b)/i)
+  if (dayNStart >= 0) return text.slice(0, dayNStart).trim()
+  const dayStart = text.search(new RegExp(`(?:^|\\n)(?=${DAY_HEADER_BOUNDARY})`, 'i'))
   if (dayStart < 0) return ''
   // Prefer preamble only. Trailing shared blocks after the last day are uncommon
   // and would otherwise sit inside the last day body with the current splitter.
   return text.slice(0, dayStart).trim()
+}
+
+/** Remove shared pre-session blocks so they are not parsed as part of a day body. */
+function stripSharedPreambleSections(workoutText: string): string {
+  return workoutText.replace(/\r\n/g, '\n').replace(
+    /(?:^|\n)(?:#{1,3}\s*)?(?:before every (?:session|workout)[^\n]*|warm[- ]?up(?:\s+routine)?[^\n]*(?:before every|every session)[^\n]*|warm[- ]?up routine[^\n]*)\n[\s\S]*?(?=\n(?:\*{0,2}|#{1,3}\s*)?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b|$)/gi,
+    '\n'
+  )
 }
 
 /** Strength compounds accidentally captured into warmup/cooldown are moved back to main. */
@@ -1385,8 +1420,12 @@ function sharedPhasePatterns(phase: 'warmup' | 'cooldown'): RegExp[] {
   if (phase === 'warmup') {
     return [
       new RegExp(
-        `(?:before every session[^\\n]*warmup|warmup routine|warm[- ]?up(?:\\s+routine)?)[:\\s]+([\\s\\S]+?)(?=\\n\\s*\\n(?:here's how|here is how|${dayBoundary})|$)`,
+        `(?:before every (?:session|workout)[^:\\n]*warmup|before every (?:session|workout)\\s*|warmup routine|warm[- ]?up(?:\\s+routine)?)[:\\s]+([\\s\\S]+?)(?=\\n\\s*\\n(?:here's how|here is how|${dayBoundary})|$)`,
         'i'
+      ),
+      new RegExp(
+        `(?:^|\\n)(?:#{1,3}\\s*)?(?:before every (?:session|workout)|warm[- ]?up(?:\\s+routine)?(?:[^\\n]*(?:before every|every session))?)\\s*\\n([\\s\\S]+?)(?=\\n\\s*(?:#{1,3}\\s*)?(?:${dayBoundary})|$)`,
+        'im'
       ),
       new RegExp(
         `(?:##\\s*)?warmup[^\\n]*\\n([\\s\\S]+?)(?=\\n\\s*##|\\n\\s*(?:\\*{0,2})?(?:${dayBoundary})|$)`,
