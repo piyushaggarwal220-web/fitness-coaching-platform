@@ -1,0 +1,264 @@
+{
+  "createdAt": "2026-09-05T12:42:59.551Z",
+  "count": 2,
+  "concurrency": 2,
+  "scenarios": true,
+  "clients": [
+    {
+      "index": 1,
+      "scenarioId": "same-meals-daily",
+      "scenarioLabel": "Same meals every day (poha / dal-roti)",
+      "clientId": "14378913-9a6d-4139-9450-840e385e75d0",
+      "email": "trial-mtodg3pf-65fe675c@trial.test.local",
+      "name": "Sneha Repeat",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha with peanuts every day",
+      "lunch": "Dal, two rotis, and sabzi every day",
+      "dinner": "Dal, roti, and salad every day",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Poha, dal, roti, curd",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2226,
+      "preferredKcal": 2288,
+      "floorKcal": 2000,
+      "planChars": 9808,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=13:30(hit); dinner=20:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: poha, peanuts"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rotis, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, salad"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: curd"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "7/8 keywords (need 4) — matched: poha, peanuts, rotis, sabzi, roti, salad, curd"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (same-meals-daily)",
+          "ok": true,
+          "detail": "matched poha, dal, roti / need poha, dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Same-daily preference (staple repeats)",
+          "ok": true,
+          "detail": "\"poha\" on 7/7 days"
+        },
+        {
+          "name": "No calorie-fill labels",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Header matches plan calories",
+          "ok": true,
+          "detail": "header 2226 vs food 2226"
+        },
+        {
+          "name": "Did not dump identical late-snack calorie pads",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2226 vs Mifflin 2288 (maintenance 2288, floor 2000, delta -62)"
+        }
+      ],
+      "passed": 19,
+      "failed": 0
+    },
+    {
+      "index": 2,
+      "scenarioId": "variety-different-daily",
+      "scenarioLabel": "Wants a different plate most days",
+      "clientId": "75ce69d3-7911-44a5-a5d9-f7ad1b67a826",
+      "email": "trial-mtodg5tg-215a77bc@trial.test.local",
+      "name": "Meera Variety",
+      "dietPreference": "vegetarian",
+      "breakfast": "Rotate idli, poha, and upma across the week",
+      "lunch": "Dal roti some days, rice sambar other days, khichdi once",
+      "dinner": "Rotate paneer, thepla, and curd rice",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:00",
+      "favorites": "Idli, poha, dal, roti, khichdi, thepla, curd rice",
+      "disliked": "None",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2266,
+      "preferredKcal": 2331,
+      "floorKcal": 2000,
+      "planChars": 17206,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:00(hit); dinner=20:00(hit); snacks=16:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: rotate, idli, poha, upma, across, week"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, days, rice, sambar, other, khichdi, once"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: rotate, paneer, thepla, curd, rice"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: fruit, roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "16/17 keywords (need 4) — matched: rotate, idli, poha, upma, across, week, roti, days"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (variety-different-daily)",
+          "ok": true,
+          "detail": "matched dal, roti / need dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Variety preference (days must not all match)",
+          "ok": true,
+          "detail": "7/7 distinct day bodies"
+        },
+        {
+          "name": "No calorie-fill labels",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Header matches plan calories",
+          "ok": true,
+          "detail": "header 2266 vs food 2266"
+        },
+        {
+          "name": "Did not dump identical late-snack calorie pads",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2266 vs Mifflin 2331 (maintenance 2056, floor 2000, delta -65)"
+        }
+      ],
+      "passed": 19,
+      "failed": 0
+    }
+  ],
+  "summary": {
+    "clients": 2,
+    "generationErrors": 0,
+    "totalChecks": 38,
+    "checksPassed": 38,
+    "checksFailed": 0,
+    "clientsFullyPassing": 2,
+    "correctPlanPercent": 100,
+    "failByCheck": {}
+  }
+}

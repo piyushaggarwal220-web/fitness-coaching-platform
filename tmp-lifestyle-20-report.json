@@ -1,0 +1,1115 @@
+{
+  "createdAt": "2026-09-02T01:55:13.012Z",
+  "count": 20,
+  "concurrency": 2,
+  "clients": [
+    {
+      "index": 1,
+      "clientId": "0439d4c9-6208-484c-8c05-400534ab904f",
+      "email": "trial-mtjezvho-687f310f@trial.test.local",
+      "name": "Aditya Mehta",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha with peanuts",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Dal tadka with rice and sabzi",
+      "timingBreakfast": "08:30",
+      "timingLunch": "14:00",
+      "timingDinner": "21:00",
+      "favorites": "Soya, chana, vegetables",
+      "disliked": "Bitter gourd",
+      "allergies": "Lactose intolerant",
+      "whey": "no",
+      "cookingAbility": "intermediate",
+      "planChars": 12873,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": false,
+          "detail": "found: paneer, curd"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:30(hit); lunch=14:00(hit); dinner=21:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/10 keywords — matched: poha, peanuts, roti, salad, tadka, rice, sabzi, soya"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "intermediate"
+        }
+      ],
+      "passed": 7,
+      "failed": 1
+    },
+    {
+      "index": 2,
+      "clientId": "d6eed9b6-3f53-4982-aed7-9284b22ab8b9",
+      "email": "trial-mtjezxaw-75f6e755@trial.test.local",
+      "name": "Kavya Kapoor",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha with peanuts",
+      "lunch": "Khichdi with kadhi",
+      "dinner": "Soya chunks curry with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Rajma, roti, sabzi",
+      "disliked": "Bitter gourd",
+      "allergies": "Lactose intolerant",
+      "whey": "no",
+      "cookingAbility": "advanced",
+      "planChars": 15883,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": false,
+          "detail": "found: paneer, curd"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:00(hit); lunch=13:00(hit); dinner=20:30(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "10/10 keywords — matched: poha, peanuts, khichdi, kadhi, soya, chunks, curry, roti"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "advanced"
+        }
+      ],
+      "passed": 7,
+      "failed": 1
+    },
+    {
+      "index": 3,
+      "clientId": "a41b70e3-11d0-4c2f-9d10-8da74c67272a",
+      "email": "trial-mtjezyzt-f7ae84d5@trial.test.local",
+      "name": "Isha Mehta",
+      "dietPreference": "eggetarian",
+      "breakfast": "Egg bhurji with 2 rotis",
+      "lunch": "Paneer wrap with side salad",
+      "dinner": "Egg curry with 2 rotis",
+      "timingBreakfast": "08:00",
+      "timingLunch": "14:00",
+      "timingDinner": "20:30",
+      "favorites": "Paneer, eggs, salad",
+      "disliked": "Mushrooms",
+      "allergies": "Nut allergy",
+      "whey": "yes",
+      "cookingAbility": "basic",
+      "planChars": 12301,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (eggetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Nut allergy)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:00(hit); lunch=14:00(hit); dinner=20:30(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "7/7 keywords — matched: bhurji, rotis, paneer, wrap, salad, curry, eggs"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "index": 4,
+      "clientId": "84231c74-b2c6-4247-a986-0249e046d223",
+      "email": "trial-mtjf00qd-c1a6622c@trial.test.local",
+      "name": "Dev Patel",
+      "dietPreference": "eggetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Egg curry with rice",
+      "dinner": "Dal tadka with rice and sabzi",
+      "timingBreakfast": "08:30",
+      "timingLunch": "14:00",
+      "timingDinner": "20:30",
+      "favorites": "Rajma, roti, sabzi",
+      "disliked": "Bitter gourd",
+      "allergies": "Lactose intolerant",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 10193,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (eggetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": false,
+          "detail": "found: curd"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:30(hit); lunch=14:00(hit); dinner=20:30(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/8 keywords — matched: idli, sambar, curry, rice, tadka, sabzi, rajma, roti"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        }
+      ],
+      "passed": 7,
+      "failed": 1
+    },
+    {
+      "index": 5,
+      "clientId": "b298a2d5-b604-48a4-83c1-ea2865db3ffd",
+      "email": "trial-mtjf027k-708ad0fc@trial.test.local",
+      "name": "Rahul Nair",
+      "dietPreference": "vegan",
+      "breakfast": "Idli with sambar",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Mixed veg with dal and rice",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:00",
+      "favorites": "Rajma, roti, sabzi",
+      "disliked": "Olives",
+      "allergies": "Lactose intolerant",
+      "whey": "no",
+      "cookingAbility": "advanced",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1620 are below the 1900 kcal floor."
+    },
+    {
+      "index": 6,
+      "clientId": "d95c349e-419f-4b0b-98a2-c7f70ead2483",
+      "email": "trial-mtjf03w5-5d6c4789@trial.test.local",
+      "name": "Priya Sharma",
+      "dietPreference": "eggetarian",
+      "breakfast": "Oats with boiled eggs",
+      "lunch": "Veg pulao with raita",
+      "dinner": "Palak paneer with roti",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:00",
+      "timingDinner": "20:00",
+      "favorites": "Idli, eggs, curd",
+      "disliked": "Olives",
+      "allergies": "Gluten sensitivity",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1566 are below the 1900 kcal floor."
+    },
+    {
+      "index": 7,
+      "clientId": "503f1c6c-0945-4bfc-9aa5-8107a4266ee0",
+      "email": "trial-mtjf05jw-8b5a2265@trial.test.local",
+      "name": "Isha Nair",
+      "dietPreference": "eggetarian",
+      "breakfast": "Oats with boiled eggs",
+      "lunch": "Brown rice, rajma, and curd",
+      "dinner": "Paneer bhurji with roti",
+      "timingBreakfast": "07:30",
+      "timingLunch": "13:30",
+      "timingDinner": "21:00",
+      "favorites": "Eggs, roti, dal",
+      "disliked": "Mushrooms",
+      "allergies": "None",
+      "whey": "yes",
+      "cookingAbility": "advanced",
+      "planChars": 8645,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (eggetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=07:30(hit); lunch=13:30(hit); dinner=21:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/10 keywords — matched: oats, eggs, brown, rice, rajma, curd, paneer, bhurji"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "advanced"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "index": 8,
+      "clientId": "b284114f-3a59-4fe9-8c60-dc4ac11395a0",
+      "email": "trial-mtjf074m-8c804d3c@trial.test.local",
+      "name": "Aarav Mehta",
+      "dietPreference": "eggetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Veg pulao with raita",
+      "dinner": "Paneer bhurji with roti",
+      "timingBreakfast": "08:30",
+      "timingLunch": "14:00",
+      "timingDinner": "21:00",
+      "favorites": "Eggs, roti, dal",
+      "disliked": "None",
+      "allergies": "None",
+      "whey": "yes",
+      "cookingAbility": "advanced",
+      "planChars": 9430,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (eggetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:30(hit); lunch=14:00(hit); dinner=21:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/8 keywords — matched: idli, sambar, pulao, raita, paneer, bhurji, roti, eggs"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "advanced"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "index": 9,
+      "clientId": "57ecc85f-0a15-493c-9a19-40da23aa1ce2",
+      "email": "trial-mtjf08mk-215f733f@trial.test.local",
+      "name": "Isha Verma",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Eggs, toast, and black coffee",
+      "lunch": "Grilled fish with rice",
+      "dinner": "Dal tadka with rice and sabzi",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Fish, vegetables, oats",
+      "disliked": "Bitter gourd",
+      "allergies": "Gluten sensitivity",
+      "whey": "yes",
+      "cookingAbility": "basic",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1776 are below the 1900 kcal floor."
+    },
+    {
+      "index": 10,
+      "clientId": "0b374f89-0379-4303-9185-99d72ac4b008",
+      "email": "trial-mtjf0add-4ff23b1c@trial.test.local",
+      "name": "Rahul Reddy",
+      "dietPreference": "vegetarian",
+      "breakfast": "Oats with banana and curd",
+      "lunch": "Paneer wrap with side salad",
+      "dinner": "Paneer bhurji with roti",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Dal, rice, curd",
+      "disliked": "None",
+      "allergies": "Gluten sensitivity",
+      "whey": "no",
+      "cookingAbility": "intermediate",
+      "planChars": 9791,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "advisory only (Gluten sensitivity)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:30(hit); lunch=13:30(hit); dinner=20:30(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/9 keywords — matched: oats, banana, curd, paneer, salad, bhurji, roti, rice"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": false,
+          "detail": "whey mentioned"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "intermediate"
+        }
+      ],
+      "passed": 7,
+      "failed": 1
+    },
+    {
+      "index": 11,
+      "clientId": "dcbd203b-b601-43f1-a8d9-03e81039029c",
+      "email": "trial-mtjf0c13-5ac9f331@trial.test.local",
+      "name": "Arjun Sharma",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Eggs, toast, and black coffee",
+      "lunch": "Brown rice, rajma, and curd",
+      "dinner": "Grilled chicken with sweet potato",
+      "timingBreakfast": "08:30",
+      "timingLunch": "14:00",
+      "timingDinner": "20:30",
+      "favorites": "Eggs, chicken, roti",
+      "disliked": "None",
+      "allergies": "Nut allergy",
+      "whey": "no",
+      "cookingAbility": "intermediate",
+      "planChars": 12305,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (non_vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Nut allergy)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:30(hit); lunch=14:00(hit); dinner=20:30(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/11 keywords — matched: eggs, coffee, brown, rice, rajma, curd, grilled, chicken"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": false,
+          "detail": "whey mentioned"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "intermediate"
+        }
+      ],
+      "passed": 7,
+      "failed": 1
+    },
+    {
+      "index": 12,
+      "clientId": "78885a51-381c-4e86-bc90-f93ccbbf7383",
+      "email": "trial-mtjf0dlt-1acae6d2@trial.test.local",
+      "name": "Ananya Singh",
+      "dietPreference": "vegetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Veg pulao with raita",
+      "dinner": "Paneer bhurji with roti",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:00",
+      "favorites": "Rajma, roti, sabzi",
+      "disliked": "Bitter gourd",
+      "allergies": "Nut allergy",
+      "whey": "yes",
+      "cookingAbility": "advanced",
+      "planChars": 14056,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Nut allergy)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:30(hit); lunch=13:30(hit); dinner=20:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/9 keywords — matched: idli, sambar, pulao, raita, paneer, bhurji, roti, rajma"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "advanced"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "index": 13,
+      "clientId": "ce2492c7-9980-43ac-9da4-fa400477315d",
+      "email": "trial-mtjf0f27-7b361879@trial.test.local",
+      "name": "Aarav Gupta",
+      "dietPreference": "vegetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Khichdi with kadhi",
+      "dinner": "Palak paneer with 2 rotis",
+      "timingBreakfast": "07:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Rajma, roti, sabzi",
+      "disliked": "Olives",
+      "allergies": "Nut allergy",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1569 are below the 1900 kcal floor."
+    },
+    {
+      "index": 14,
+      "clientId": "2f3a5e69-b14f-434a-aa6b-c34bfcc04e63",
+      "email": "trial-mtjf0gjf-aab1fc7f@trial.test.local",
+      "name": "Vikram Singh",
+      "dietPreference": "vegetarian",
+      "breakfast": "Oats with banana and curd",
+      "lunch": "Khichdi with kadhi",
+      "dinner": "Palak paneer with 2 rotis",
+      "timingBreakfast": "07:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:00",
+      "favorites": "Paneer, roti, salad",
+      "disliked": "Bitter gourd",
+      "allergies": "None",
+      "whey": "yes",
+      "cookingAbility": "intermediate",
+      "planChars": 11706,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=07:30(hit); lunch=13:30(hit); dinner=20:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "10/10 keywords — matched: oats, banana, curd, khichdi, kadhi, palak, paneer, rotis"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "intermediate"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "index": 15,
+      "clientId": "9e769f30-5e2e-4eff-9310-5d3a17d91321",
+      "email": "trial-mtjf0hzt-5af70fce@trial.test.local",
+      "name": "Meera Singh",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Eggs, toast, and black coffee",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Grilled chicken with sweet potato",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:00",
+      "favorites": "Soya, chana, vegetables",
+      "disliked": "Bitter gourd",
+      "allergies": "Lactose intolerant",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 11998,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (non_vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": false,
+          "detail": "found: curd"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:30(hit); lunch=13:30(hit); dinner=20:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "10/11 keywords — matched: eggs, coffee, roti, salad, grilled, chicken, sweet, potato"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        }
+      ],
+      "passed": 7,
+      "failed": 1
+    },
+    {
+      "index": 16,
+      "clientId": "ecc8d6e2-f040-4b61-bfd0-6a725da6b29c",
+      "email": "trial-mtjf0jeo-44fe699c@trial.test.local",
+      "name": "Karan Das",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha with peanuts",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Dal tadka with rice and sabzi",
+      "timingBreakfast": "07:30",
+      "timingLunch": "13:30",
+      "timingDinner": "21:00",
+      "favorites": "Rajma, roti, sabzi",
+      "disliked": "None",
+      "allergies": "Gluten sensitivity",
+      "whey": "yes",
+      "cookingAbility": "intermediate",
+      "planChars": 11682,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "advisory only (Gluten sensitivity)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=07:30(hit); lunch=13:30(hit); dinner=21:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/8 keywords — matched: poha, peanuts, roti, salad, tadka, rice, sabzi, rajma"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "intermediate"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "index": 17,
+      "clientId": "1da9d7ea-96da-418f-8d3d-cad6086341e2",
+      "email": "trial-mtjf0kyl-d26845ad@trial.test.local",
+      "name": "Arjun Joshi",
+      "dietPreference": "eggetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Veg pulao with raita",
+      "dinner": "Egg curry with 2 rotis",
+      "timingBreakfast": "07:30",
+      "timingLunch": "13:00",
+      "timingDinner": "20:00",
+      "favorites": "Paneer, eggs, salad",
+      "disliked": "None",
+      "allergies": "Nut allergy",
+      "whey": "yes",
+      "cookingAbility": "basic",
+      "planChars": 8002,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (eggetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Nut allergy)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=07:30(hit); lunch=13:00(hit); dinner=20:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/9 keywords — matched: idli, sambar, pulao, raita, curry, rotis, paneer, eggs"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "index": 18,
+      "clientId": "309bb728-57d4-4c8a-b016-97f3c812bcde",
+      "email": "trial-mtjf0mdh-c981f3b3@trial.test.local",
+      "name": "Meera Reddy",
+      "dietPreference": "vegetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Veg pulao with raita",
+      "dinner": "Mixed veg with dal and rice",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "21:00",
+      "favorites": "Paneer, roti, salad",
+      "disliked": "Mushrooms",
+      "allergies": "Gluten sensitivity",
+      "whey": "yes",
+      "cookingAbility": "intermediate",
+      "planChars": 12247,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "advisory only (Gluten sensitivity)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:00(hit); lunch=13:30(hit); dinner=21:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/9 keywords — matched: idli, sambar, pulao, raita, mixed, rice, paneer, roti"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "intermediate"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "index": 19,
+      "clientId": "68b94048-d3b4-4f4b-ae51-a8f7eb94a9dc",
+      "email": "trial-mtjf0nws-5253c96b@trial.test.local",
+      "name": "Neha Gupta",
+      "dietPreference": "vegetarian",
+      "breakfast": "Paratha with curd",
+      "lunch": "Khichdi with kadhi",
+      "dinner": "Palak paneer with 2 rotis",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "20:00",
+      "favorites": "Rajma, roti, sabzi",
+      "disliked": "Olives",
+      "allergies": "Gluten sensitivity",
+      "whey": "yes",
+      "cookingAbility": "advanced",
+      "planChars": 9893,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Olives)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "advisory only (Gluten sensitivity)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:00(hit); lunch=13:30(hit); dinner=20:00(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "10/10 keywords — matched: paratha, curd, khichdi, kadhi, palak, paneer, rotis, rajma"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "advanced"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "index": 20,
+      "clientId": "9c06f0f3-4adf-41bb-9598-7e25644af8a6",
+      "email": "trial-mtjf0pds-0b60f530@trial.test.local",
+      "name": "Aditya Patel",
+      "dietPreference": "vegan",
+      "breakfast": "Oats with banana and peanut butter",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Soya chunks curry with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "14:00",
+      "timingDinner": "20:30",
+      "favorites": "Soya, chana, vegetables",
+      "disliked": "Bitter gourd",
+      "allergies": "Lactose intolerant",
+      "whey": "no",
+      "cookingAbility": "intermediate",
+      "planChars": 13063,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegan)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Lactose intolerant)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=08:00(hit); lunch=14:00(hit); dinner=20:30(hit)"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "11/11 keywords — matched: oats, banana, peanut, butter, roti, salad, soya, chunks"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "intermediate"
+        }
+      ],
+      "passed": 8,
+      "failed": 0
+    }
+  ],
+  "summary": {
+    "clients": 20,
+    "generationErrors": 4,
+    "totalChecks": 128,
+    "checksPassed": 122,
+    "checksFailed": 10,
+    "clientsFullyPassing": 10
+  }
+}

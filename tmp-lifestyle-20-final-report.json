@@ -1,0 +1,1197 @@
+{
+  "createdAt": "2026-09-02T04:33:59.637Z",
+  "count": 20,
+  "concurrency": 2,
+  "scenarios": true,
+  "clients": [
+    {
+      "index": 1,
+      "scenarioId": "office-canteen-veg",
+      "scenarioLabel": "Office canteen vegetarian, late dinner",
+      "clientId": "43af8ef8-7479-4cb5-99e1-86e6c36866f4",
+      "email": "trial-mtjk1t04-2d2f577a@trial.test.local",
+      "name": "Karan Office",
+      "dietPreference": "vegetarian",
+      "breakfast": "Office canteen sandwich and chai",
+      "lunch": "Office thali — dal, roti, sabzi, curd",
+      "dinner": "Leftover roti with dal or late delivery",
+      "timingBreakfast": "09:30",
+      "timingLunch": "14:00",
+      "timingDinner": "22:30",
+      "favorites": "Canteen thali, dal, roti, sandwich",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 10322,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=09:30(hit); lunch=14:00(hit); dinner=22:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: office, canteen, sandwich, chai"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: office, thali, roti, sabzi, curd"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, late"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: chai, roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/11 keywords (need 4) — matched: office, canteen, sandwich, chai, thali, roti, sabzi, curd"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (office-canteen-veg)",
+          "ok": true,
+          "detail": "matched sandwich, thali, dal, roti / need sandwich, thali, dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        },
+        {
+          "name": "Same-daily preference (staple repeats)",
+          "ok": true,
+          "detail": "\"sandwich\" on 5/7 days"
+        }
+      ],
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "index": 2,
+      "scenarioId": "night-shift-nurse",
+      "scenarioLabel": "Night-shift nurse, inverted meals",
+      "clientId": "184eab2c-529f-4a57-81fe-59fea02d6ec2",
+      "email": "trial-mtjk1v1y-7ee3a4b1@trial.test.local",
+      "name": "Divya Nightshift",
+      "dietPreference": "vegetarian",
+      "breakfast": "Post-shift paratha and chai",
+      "lunch": "I sleep through lunch on shift days — skip it",
+      "dinner": "Pre-shift rice, dal, and sabzi",
+      "timingBreakfast": "07:00",
+      "timingLunch": null,
+      "timingDinner": "20:00",
+      "favorites": "Paratha, dal, rice, chai",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 8467,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=07:00(hit); lunch=—(skipped); dinner=20:00(hit); snacks=02:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: post, shift, paratha, chai"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: shift, rice, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: hospital, canteen, biscuits, banana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "10/10 keywords (need 4) — matched: post, shift, paratha, chai, sleep, through, lunch, days"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (night-shift-nurse)",
+          "ok": true,
+          "detail": "matched paratha, chai, dal, rice / need paratha, chai, dal, rice"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Did not invent a lunch slot on skip-lunch lifestyle",
+          "ok": true,
+          "detail": "Lunch mentions=2"
+        }
+      ],
+      "passed": 14,
+      "failed": 0
+    },
+    {
+      "index": 3,
+      "scenarioId": "hostel-mess-vegan",
+      "scenarioLabel": "Hostel mess vegan, no cooking, tight budget",
+      "clientId": "c46e5226-12f0-41bc-97e3-f3278eb7044a",
+      "email": "trial-mtjk1wmf-c710d0c6@trial.test.local",
+      "name": "Aarav Hostel",
+      "dietPreference": "vegan",
+      "breakfast": "Hostel mess poha or bread",
+      "lunch": "Mess rice, dal, and sabzi",
+      "dinner": "Mess roti and mixed veg",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:00",
+      "favorites": "Mess dal, rice, roti, poha",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "minimal",
+      "planChars": 12983,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegan)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:00(hit); dinner=20:00(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: hostel, mess, poha, bread"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: mess, rice, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: mess, roti, mixed"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: banana, canteen"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/8 keywords (need 4) — matched: hostel, mess, poha, bread, rice, sabzi, roti, mixed"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (minimal)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (hostel-mess-vegan)",
+          "ok": true,
+          "detail": "matched poha, dal, rice, roti / need poha, dal, rice, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        },
+        {
+          "name": "Stayed within low food budget",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "index": 4,
+      "scenarioId": "if-skip-breakfast",
+      "scenarioLabel": "Intermittent fasting — skips breakfast",
+      "clientId": "c1abf12b-e917-47d7-8f5c-d726bb300a5b",
+      "email": "trial-mtjk1yiw-d8e73fa6@trial.test.local",
+      "name": "Neha Fasting",
+      "dietPreference": "vegetarian",
+      "breakfast": "I skip breakfast. First meal is lunch.",
+      "lunch": "Dal, roti, salad, and curd",
+      "dinner": "Paneer or dal with roti",
+      "timingBreakfast": null,
+      "timingLunch": "12:30",
+      "timingDinner": "20:00",
+      "favorites": "Dal, roti, paneer, rice",
+      "disliked": "Olives",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Anthropic plan generation failed: Request timed out."
+    },
+    {
+      "index": 5,
+      "scenarioId": "jain-no-root",
+      "scenarioLabel": "Jain vegetarian — no onion garlic potato",
+      "clientId": "a1f8dc5b-3b17-447a-a273-e4c2b8762689",
+      "email": "trial-mtjk209b-36045d75@trial.test.local",
+      "name": "Meera Jain",
+      "dietPreference": "vegetarian",
+      "breakfast": "Thepla with chutney (no onion garlic)",
+      "lunch": "Dal, rice, and doodhi sabzi",
+      "dinner": "Roti with cabbage or tinda sabzi",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Dal, steamed rice, doodhi, cabbage sabzi, thepla",
+      "disliked": "Onion, garlic, potato",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1627 are below the 1900 kcal floor."
+    },
+    {
+      "index": 6,
+      "scenarioId": "lactose-veg-no-dairy",
+      "scenarioLabel": "Lactose-intolerant vegetarian",
+      "clientId": "c2a0c2a2-6138-46eb-94b7-2adbc5b2f7c0",
+      "email": "trial-mtjk21v2-d4475d6a@trial.test.local",
+      "name": "Priya Lactose",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha with peanuts",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Soya chunks curry with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "21:00",
+      "favorites": "Poha, dal, roti, soya, chana",
+      "disliked": "Bitter gourd",
+      "allergies": "Lactose intolerant",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 11246,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": false,
+          "detail": "found: whey"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:30(hit); dinner=21:00(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: poha, peanuts"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, salad"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: soya, chunks, curry, roti"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/8 keywords (need 4) — matched: poha, peanuts, roti, salad, soya, chunks, curry, chana"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": false,
+          "detail": "whey mentioned"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (lactose-veg-no-dairy)",
+          "ok": true,
+          "detail": "matched poha, dal, soya / need poha, dal, soya"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": false,
+          "detail": "found: whey"
+        }
+      ],
+      "passed": 11,
+      "failed": 3
+    },
+    {
+      "index": 7,
+      "scenarioId": "nut-allergy-vegan",
+      "scenarioLabel": "Vegan with nut allergy",
+      "clientId": "79fbcd55-65a7-443a-906c-dd56b2e13eea",
+      "email": "trial-mtjk23g6-26e0f38c@trial.test.local",
+      "name": "Isha Nuts",
+      "dietPreference": "vegan",
+      "breakfast": "Idli with sambar",
+      "lunch": "Dal, rice, and salad",
+      "dinner": "Chole with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Idli, sambar, dal, rice, roti",
+      "disliked": "Mushrooms",
+      "allergies": "Nut allergy",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1677 are below the 1900 kcal floor."
+    },
+    {
+      "index": 8,
+      "scenarioId": "gluten-sensitive",
+      "scenarioLabel": "Gluten-sensitive vegetarian",
+      "clientId": "09d6fade-5700-4e7c-b21d-b3a5e5ea0fae",
+      "email": "trial-mtjk252s-4edd05ad@trial.test.local",
+      "name": "Rohan Gluten",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha or idli",
+      "lunch": "Rice, dal, and sabzi",
+      "dinner": "Rice with dal tadka and vegetables",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Rice, dal, idli, poha, sabzi",
+      "disliked": "None",
+      "allergies": "Gluten allergy / celiac",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1769 are below the 1950 kcal floor."
+    },
+    {
+      "index": 9,
+      "scenarioId": "eggs-mwf-only",
+      "scenarioLabel": "Eggetarian — eggs only Mon/Wed/Fri",
+      "clientId": "52207925-e0ac-473c-b787-7f5c4c71db48",
+      "email": "trial-mtjk26q2-e8711c8e@trial.test.local",
+      "name": "Aditya Eggs",
+      "dietPreference": "eggetarian",
+      "breakfast": "Egg bhurji with roti on egg days, else poha",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Egg curry or dal with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "21:00",
+      "favorites": "Eggs, dal, roti, oats",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "yes",
+      "cookingAbility": "basic",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed preference safety after 5 attempts: Diet preference (eggetarian) violated by: sunday:eggs (eggs-weekday)."
+    },
+    {
+      "index": 10,
+      "scenarioId": "chicken-tue-thu-fish-sun",
+      "scenarioLabel": "Non-veg — chicken Tue/Thu, fish Sunday only",
+      "clientId": "53c986cf-69b1-4308-aba3-fe7362616e8d",
+      "email": "trial-mtjk289q-8abd3984@trial.test.local",
+      "name": "Vikram Nonveg",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Eggs and toast on egg days, else poha",
+      "lunch": "Rice, dal, and sabzi — chicken only Tue/Thu",
+      "dinner": "Roti with sabzi, fish only Sunday",
+      "timingBreakfast": "07:30",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Chicken curry, rice, dal, eggs",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "yes",
+      "cookingAbility": "basic",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1806 are below the 2050 kcal floor."
+    },
+    {
+      "index": 11,
+      "scenarioId": "ultra-budget-dal-rice",
+      "scenarioLabel": "₹4000/month — dal rice roti only",
+      "clientId": "295ca113-3b85-4ae2-bbef-cb79a145aef0",
+      "email": "trial-mtjk29so-ae28709d@trial.test.local",
+      "name": "Ravi Budget",
+      "dietPreference": "vegetarian",
+      "breakfast": "Leftover roti with pickle or chai and biscuits",
+      "lunch": "Rice and dal",
+      "dinner": "Roti and seasonal sabzi",
+      "timingBreakfast": "07:30",
+      "timingLunch": "13:00",
+      "timingDinner": "21:00",
+      "favorites": "Dal, rice, seasonal sabzi, roti",
+      "disliked": "None",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 10229,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=07:30(hit); lunch=13:00(hit); dinner=21:00(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: roti, pickle"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, seasonal, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "5/8 keywords (need 4) — matched: roti, pickle, rice, seasonal, sabzi"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": false,
+          "detail": "whey mentioned"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (ultra-budget-dal-rice)",
+          "ok": true,
+          "detail": "matched dal, rice, roti / need dal, rice, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Stayed within low food budget",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 14,
+      "failed": 1
+    },
+    {
+      "index": 12,
+      "scenarioId": "south-indian-staples",
+      "scenarioLabel": "South Indian home — idli dosa sambar rice",
+      "clientId": "5a7d5e12-36ed-48fc-be2e-1ad604b958d5",
+      "email": "trial-mtjk2bk0-56e13f78@trial.test.local",
+      "name": "Ananya South",
+      "dietPreference": "vegetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Rice, sambar, rasam, and poriyal",
+      "dinner": "Dosa or idli with sambar, or curd rice",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "20:00",
+      "favorites": "Idli, dosa, sambar, rasam, rice, curd rice",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1517 are below the 1900 kcal floor."
+    },
+    {
+      "index": 13,
+      "scenarioId": "bengali-fish-rice",
+      "scenarioLabel": "Bengali — fish and rice, fish only 3 days",
+      "clientId": "d611a699-de3a-4f08-bbed-8ddc77697491",
+      "email": "trial-mtjk2d4c-38f40355@trial.test.local",
+      "name": "Dev Bengali",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Puffed rice or leftover rice with dal",
+      "lunch": "Rice, dal, and fish curry on fish days",
+      "dinner": "Rice with dal and sabzi",
+      "timingBreakfast": "08:30",
+      "timingLunch": "14:00",
+      "timingDinner": "21:30",
+      "favorites": "Rice, macher jhol, dal, aloo posto, begun bhaja",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "planChars": 9989,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (non_vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=14:00(hit); dinner=21:30(hit); snacks=18:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: puffed, rice"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, fish, curry, days"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: rice, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: muri"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "12/13 keywords (need 4) — matched: puffed, rice, fish, curry, days, sabzi, macher, jhol"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": false,
+          "detail": "whey mentioned"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "Animal protein only on allowed weekdays",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Lifestyle staples (bengali-fish-rice)",
+          "ok": true,
+          "detail": "matched rice, dal, fish / need rice, dal, fish"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 14,
+      "failed": 1
+    },
+    {
+      "index": 14,
+      "scenarioId": "late-it-shift",
+      "scenarioLabel": "IT shift — dinner at 11pm",
+      "clientId": "471117ca-9b73-4c01-be4e-ce8ac21a3e7a",
+      "email": "trial-mtjk2en9-074ef038@trial.test.local",
+      "name": "Rahul Lateit",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Late breakfast — eggs and toast around 10:30",
+      "lunch": "Office cafeteria rice and dal",
+      "dinner": "Swiggy bowl or Maggi after 11pm",
+      "timingBreakfast": "10:30",
+      "timingLunch": "15:30",
+      "timingDinner": "23:00",
+      "favorites": "Eggs, chicken rice bowl, dal, Maggi",
+      "disliked": "Olives",
+      "allergies": "none",
+      "whey": "yes",
+      "cookingAbility": "minimal",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 2051 are below the 2100 kcal floor."
+    },
+    {
+      "index": 15,
+      "scenarioId": "busy-parent-leftovers",
+      "scenarioLabel": "Busy parent — kids leftovers, 9:30pm dinner",
+      "clientId": "a6de1719-ede8-4f5b-b542-0799c253299e",
+      "email": "trial-mtjk2g7z-ccf1c9a6@trial.test.local",
+      "name": "Meera Parent",
+      "dietPreference": "vegetarian",
+      "breakfast": "Kids leftover paratha or poha while packing tiffins",
+      "lunch": "Whatever I cooked for the kids — dal rice or khichdi",
+      "dinner": "Family roti, dal, sabzi after kids eat",
+      "timingBreakfast": "07:45",
+      "timingLunch": "13:30",
+      "timingDinner": "21:30",
+      "favorites": "Khichdi, dal, roti, kids pasta, banana",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "planChars": 12761,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=07:45(hit); lunch=13:30(hit); dinner=21:30(hit); snacks=16:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: kids, paratha, poha, while"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: cooked, kids, rice, khichdi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: family, roti, sabzi, after, kids"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: chai, biscuit, while, homework"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "12/17 keywords (need 4) — matched: kids, paratha, poha, while, cooked, rice, khichdi, family"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": false,
+          "detail": "whey mentioned"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "Lifestyle staples (busy-parent-leftovers)",
+          "ok": true,
+          "detail": "matched dal, roti, khichdi / need dal, roti, khichdi"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        }
+      ],
+      "passed": 14,
+      "failed": 1
+    },
+    {
+      "index": 16,
+      "scenarioId": "street-food-mumbai",
+      "scenarioLabel": "Mumbai street-food lifestyle",
+      "clientId": "c3c8774c-11d4-4870-8dfd-82e670cea74e",
+      "email": "trial-mtjk2hs2-41d78231@trial.test.local",
+      "name": "Aarav Mumbai",
+      "dietPreference": "vegetarian",
+      "breakfast": "Vada pav or poha from stall",
+      "lunch": "Mess thali or pav bhaji",
+      "dinner": "Misal pav or dal rice",
+      "timingBreakfast": "09:00",
+      "timingLunch": "14:00",
+      "timingDinner": "22:00",
+      "favorites": "Vada pav, pav bhaji, misal, poha",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "minimal",
+      "planChars": 10831,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=09:00(hit); lunch=14:00(hit); dinner=22:00(hit); snacks=18:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: vada, poha, stall"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: mess, thali, bhaji"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: misal, rice"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: cutting, chai, maska"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/8 keywords (need 4) — matched: vada, poha, stall, mess, thali, bhaji, misal, rice"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (minimal)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (street-food-mumbai)",
+          "ok": true,
+          "detail": "matched poha, pav, dal / need poha, pav, dal"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Stayed within low food budget",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "index": 17,
+      "scenarioId": "tuesday-fast",
+      "scenarioLabel": "Religious Tuesday fast — fruit till sunset",
+      "clientId": "f059414f-3530-44a0-b0a9-dfb9c9b58944",
+      "email": "trial-mtjk2jms-baf4efe2@trial.test.local",
+      "name": "Ananya Fasttue",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha on normal days",
+      "lunch": "Dal roti sabzi on normal days",
+      "dinner": "Roti and sabzi",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Dal, roti, sabzi, fruit, milk",
+      "disliked": "None",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 750 are below the 1900 kcal floor."
+    },
+    {
+      "index": 18,
+      "scenarioId": "vegan-south-no-ghee",
+      "scenarioLabel": "Vegan South Indian — oil only, no ghee ever",
+      "clientId": "50c8de2b-1495-4d77-89ea-a25258799706",
+      "email": "trial-mtjk2lay-17fa6549@trial.test.local",
+      "name": "Priya Vegansouth",
+      "dietPreference": "vegan",
+      "breakfast": "Idli with sambar and coconut chutney",
+      "lunch": "Rice, sambar, and vegetable poriyal",
+      "dinner": "Dosa with sambar or lemon rice",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:00",
+      "favorites": "Idli, dosa, sambar, rice, poriyal, coconut chutney",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed preference safety after 5 attempts: Diet preference (vegan) violated by: ghee, butter (dairy)."
+    },
+    {
+      "index": 19,
+      "scenarioId": "labour-physical-job",
+      "scenarioLabel": "Physical labour — 6am breakfast, big lunch",
+      "clientId": "5e38fe56-fd82-4896-b19d-35f1d02f93aa",
+      "email": "trial-mtjk2mv3-790fbc18@trial.test.local",
+      "name": "Rahul Labour",
+      "dietPreference": "vegetarian",
+      "breakfast": "Two parathas with pickle and chai before site",
+      "lunch": "Big tiffin — rice, dal, sabzi",
+      "dinner": "Roti, dal, sabzi",
+      "timingBreakfast": "06:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Paratha, dal, rice, buttermilk, banana",
+      "disliked": "None",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 12996,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=06:00(hit); lunch=13:00(hit); dinner=20:30(hit); snacks=16:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: parathas, pickle, chai, site"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: banana, buttermilk, site"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "10/12 keywords (need 4) — matched: parathas, pickle, chai, site, rice, sabzi, roti, paratha"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (labour-physical-job)",
+          "ok": true,
+          "detail": "matched paratha, dal, rice / need paratha, dal, rice"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        }
+      ],
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "index": 20,
+      "scenarioId": "dislikes-plus-allergy-stack",
+      "scenarioLabel": "Stacked dislikes + peanut allergy + no whey",
+      "clientId": "bcc1e0bb-bd2d-4d49-bd07-df8d171ee15a",
+      "email": "trial-mtjk2ofb-8b24d21e@trial.test.local",
+      "name": "Isha Stacked",
+      "dietPreference": "vegetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Paneer bhurji with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Idli, dal, roti, rice, paneer",
+      "disliked": "Mushrooms, bitter gourd, olives",
+      "allergies": "Nut allergy",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "planChars": 0,
+      "checks": [],
+      "passed": 0,
+      "failed": 1,
+      "error": "Diet plan failed calorie safety after 5 attempts: Diet daily calories 1519 are below the 1900 kcal floor."
+    }
+  ],
+  "summary": {
+    "clients": 20,
+    "generationErrors": 11,
+    "totalChecks": 135,
+    "checksPassed": 129,
+    "checksFailed": 17,
+    "clientsFullyPassing": 5,
+    "correctPlanPercent": 25,
+    "failByCheck": {
+      "Avoids allergy-related foods": 1,
+      "No whey when client does not use it": 4,
+      "Did not invent off-lifestyle foods": 1
+    }
+  }
+}

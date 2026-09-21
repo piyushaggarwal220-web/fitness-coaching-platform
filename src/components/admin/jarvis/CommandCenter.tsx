@@ -1,0 +1,139 @@
+'use client'
+
+import { Menu, X } from 'lucide-react'
+import AdminNavbar from '@/components/admin/AdminNavbar'
+import { colors } from '@/lib/design-tokens'
+import { JarvisSidebar } from './Sidebar'
+import { ChatPane } from './ChatPane'
+import { TasksView } from './TasksView'
+import { ApprovalsView } from './ApprovalsView'
+import { ActivityView } from './ActivityView'
+import { MemoryView } from './MemoryView'
+import { SettingsView } from './SettingsView'
+import { NotificationsView } from './NotificationsView'
+import { IntegrationsView } from './IntegrationsView'
+import { DiagnosticsView } from './DiagnosticsView'
+import { CockpitHome } from './CockpitHome'
+import { DomainView } from './DomainViews'
+import { JarvisTopBar } from './TopBar'
+import { useJarvisCommand, useLayoutMode } from './use-jarvis-command'
+import type { CommandView } from './types'
+import * as s from './styles'
+
+const DOMAIN_VIEWS: CommandView[] = [
+  'revenue',
+  'funnels',
+  'customers',
+  'growth',
+  'marketing',
+  'creatives',
+  'instagram',
+  'experiments',
+]
+
+export function JarvisCommandCenter() {
+  const jarvis = useJarvisCommand()
+  const mode = useLayoutMode()
+  const isDesktop = mode === 'desktop'
+  const compact = mode !== 'desktop'
+
+  function navigate(view: CommandView) {
+    jarvis.setView(view)
+    jarvis.setSidebarOpen(false)
+    if (view !== 'tasks') jarvis.setSelectedTaskId(null)
+  }
+
+  const main =
+    jarvis.view === 'command' ? (
+      <CockpitHome jarvis={jarvis} onNavigate={navigate} compact={compact} />
+    ) : jarvis.view === 'chat' ? (
+      <ChatPane jarvis={jarvis} />
+    ) : DOMAIN_VIEWS.includes(jarvis.view) ? (
+      <DomainView view={jarvis.view} jarvis={jarvis} onAsk={(q) => void jarvis.sendMessage(q)} />
+    ) : jarvis.view === 'tasks' ? (
+      <TasksView selectedTaskId={jarvis.selectedTaskId} onSelect={jarvis.setSelectedTaskId} />
+    ) : jarvis.view === 'approvals' ? (
+      <ApprovalsView
+        approvals={jarvis.pendingApprovals}
+        busy={jarvis.busy}
+        onDecide={jarvis.decide}
+        onRevise={(label) => void jarvis.sendMessage(`Modify this approval: ${label}. Propose a safer alternative.`)}
+      />
+    ) : jarvis.view === 'activity' ? (
+      <ActivityView items={jarvis.dashboard?.activity ?? []} />
+    ) : jarvis.view === 'memory' ? (
+      <MemoryView />
+    ) : jarvis.view === 'integrations' ? (
+      <IntegrationsView jarvis={jarvis} />
+    ) : jarvis.view === 'diagnostics' ? (
+      <DiagnosticsView jarvis={jarvis} />
+    ) : jarvis.view === 'settings' ? (
+      <SettingsView />
+    ) : (
+      <NotificationsView />
+    )
+
+  return (
+    <div style={s.page}>
+      <AdminNavbar />
+      {jarvis.error ? (
+        <div
+          style={{
+            background: colors.dangerMuted,
+            color: colors.danger,
+            padding: '8px 16px',
+            fontSize: 13,
+            borderBottom: `1px solid ${colors.danger}`,
+          }}
+        >
+          {jarvis.error}
+        </div>
+      ) : null}
+
+      {isDesktop ? <JarvisTopBar jarvis={jarvis} onNavigate={navigate} /> : (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 12px',
+            borderBottom: `1px solid ${colors.divider}`,
+            background: '#0a0a0c',
+          }}
+        >
+          <button type="button" style={s.ghostBtn} onClick={() => jarvis.setSidebarOpen(true)} aria-label="Open menu">
+            <Menu size={16} />
+          </button>
+          <div style={{ fontWeight: 750, letterSpacing: '-0.03em' }}>JARVIS</div>
+          <button type="button" style={s.ghostBtn} onClick={() => navigate('approvals')}>
+            {jarvis.pendingApprovals.length || '—'}
+          </button>
+        </div>
+      )}
+
+      <div style={{ ...s.shell, height: isDesktop ? s.shell.height : 'calc(100vh - 104px)' }}>
+        {isDesktop ? (
+          <aside style={s.sidebar}>
+            <JarvisSidebar jarvis={jarvis} onNavigate={navigate} />
+          </aside>
+        ) : null}
+
+        <main style={s.main}>{main}</main>
+      </div>
+
+      {jarvis.sidebarOpen && !isDesktop ? (
+        <>
+          <div style={s.overlay} onClick={() => jarvis.setSidebarOpen(false)} />
+          <aside style={s.drawer}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 8 }}>
+              <button type="button" style={s.ghostBtn} onClick={() => jarvis.setSidebarOpen(false)}>
+                <X size={14} />
+              </button>
+            </div>
+            <JarvisSidebar jarvis={jarvis} onNavigate={navigate} />
+          </aside>
+        </>
+      ) : null}
+    </div>
+  )
+}

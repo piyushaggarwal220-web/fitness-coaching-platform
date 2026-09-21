@@ -1,0 +1,1788 @@
+{
+  "createdAt": "2026-09-07T15:29:37.335Z",
+  "models": {
+    "create": "gpt-5.6-terra",
+    "weekly": "gpt-5.6-luna",
+    "astra": "blocked"
+  },
+  "concurrency": 2,
+  "clients": [
+    {
+      "index": 1,
+      "scenarioId": "office-canteen-veg",
+      "clientId": "633baa40-e94f-40a1-a5d9-3bfa56a42723",
+      "email": "trial-mtrdqz4y-9df64a65@trial.test.local",
+      "name": "Karan Office",
+      "weeks": [
+        {
+          "week": 0,
+          "title": "onboarding",
+          "dietModel": "gpt-5.6-terra",
+          "workoutModel": "gpt-5.6-terra",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 56,
+          "checks": [
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "4 sessions, 56 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 1,
+          "title": "solid week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 54,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "4 sessions, 54 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 2,
+          "title": "messy travel week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 72,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 72 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 3,
+          "title": "back on track",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 72,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 72 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 4,
+          "title": "tired month-end",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 72,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 72 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "scenarioId": "hostel-mess-vegan",
+      "clientId": "b166b3ef-f36b-40f0-9b67-d3697b800422",
+      "email": "trial-mtrdr11s-9e5a1a71@trial.test.local",
+      "name": "Aarav Hostel",
+      "weeks": [
+        {
+          "week": 0,
+          "title": "onboarding",
+          "dietModel": "gpt-5.6-terra",
+          "workoutModel": "gpt-5.6-terra",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 70,
+          "checks": [
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "5 sessions, 70 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 1,
+          "title": "solid week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 72,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "5 sessions, 72 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 2,
+          "title": "messy travel week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 72,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "5 sessions, 72 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 3,
+          "title": "back on track",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 84,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 84 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 4,
+          "title": "tired month-end",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 80,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 80 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "scenarioId": "eggs-mwf-only",
+      "clientId": "d4b5ffad-6076-4b30-8aa7-3b057e5ac0da",
+      "email": "trial-mtrdr2ix-1c09e0ba@trial.test.local",
+      "name": "Aditya Eggs",
+      "weeks": [
+        {
+          "week": 0,
+          "title": "onboarding",
+          "dietModel": "gpt-5.6-terra",
+          "workoutModel": "gpt-5.6-terra",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 66,
+          "checks": [
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 66 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 1,
+          "title": "solid week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 76,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 76 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 2,
+          "title": "messy travel week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 76,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 76 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 3,
+          "title": "back on track",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 76,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 76 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 4,
+          "title": "tired month-end",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 70,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "7 sessions, 70 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "scenarioId": "gluten-sensitive",
+      "clientId": "6b496b64-763b-4f5e-921d-5dcc892f44ea",
+      "email": "trial-mtrdr40z-28e84046@trial.test.local",
+      "name": "Rohan Gluten",
+      "weeks": [
+        {
+          "week": 0,
+          "title": "onboarding",
+          "dietModel": "gpt-5.6-terra",
+          "workoutModel": "gpt-5.6-terra",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 37,
+          "checks": [
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "3 sessions, 37 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 1,
+          "title": "solid week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 39,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "3 sessions, 39 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 2,
+          "title": "messy travel week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 39,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "3 sessions, 39 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 3,
+          "title": "back on track",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 39,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "3 sessions, 39 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 4,
+          "title": "tired month-end",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 39,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "3 sessions, 39 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "scenarioId": "labour-physical-job",
+      "clientId": "d05579af-2e05-4063-8f37-6827e883ff9d",
+      "email": "trial-mtrdr5j1-46b6844c@trial.test.local",
+      "name": "Rahul Labour",
+      "weeks": [
+        {
+          "week": 0,
+          "title": "onboarding",
+          "dietModel": "gpt-5.6-terra",
+          "workoutModel": "gpt-5.6-terra",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 39,
+          "checks": [
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Model is terra (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-terra"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "3 sessions, 39 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 1,
+          "title": "solid week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 39,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "3 sessions, 39 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 2,
+          "title": "messy travel week",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 39,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "3 sessions, 39 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 3,
+          "title": "back on track",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 39,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "3 sessions, 39 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        },
+        {
+          "week": 4,
+          "title": "tired month-end",
+          "dietModel": "gpt-5.6-luna",
+          "workoutModel": "gpt-5.6-luna",
+          "dietDays": 7,
+          "mealCount": 7,
+          "workoutDays": 7,
+          "exerciseCount": 57,
+          "checks": [
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Model is luna (not Astra)",
+              "ok": true,
+              "detail": "gpt-5.6-luna"
+            },
+            {
+              "name": "Diet days in tracker",
+              "ok": true,
+              "detail": "7 diet days"
+            },
+            {
+              "name": "Meals parsed",
+              "ok": false,
+              "detail": "7 meals"
+            },
+            {
+              "name": "Meal foods not empty",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Training sessions parsed",
+              "ok": true,
+              "detail": "6 sessions, 57 exercises"
+            },
+            {
+              "name": "Exercise names are real lifts",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Water tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Sleep tracker",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Lifestyle foods still present",
+              "ok": true,
+              "detail": "ok"
+            },
+            {
+              "name": "Banned lifestyle foods absent",
+              "ok": true,
+              "detail": "ok"
+            }
+          ],
+          "passed": 10,
+          "failed": 1
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "clients": 5,
+    "weekSnapshots": 25,
+    "weekErrors": 0,
+    "weeksFullyPassing": 0,
+    "astraCalls": 0
+  }
+}

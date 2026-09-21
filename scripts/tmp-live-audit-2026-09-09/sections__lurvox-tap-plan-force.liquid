@@ -1,0 +1,46 @@
+{% comment %} lurvox-tap-force-section — wire plan cards; only hide retired trial CTAs {% endcomment %}
+<style>
+  a[data-cta-button][href*="1-month"],
+  a[data-cta-button][href*="1_month"],
+  a[data-cta-button][href*="trial"],
+  a[data-cta-button][href*="1_week"] {
+    display: none !important;
+  }
+</style>
+<script>
+(function () {
+  function wire() {
+    document.querySelectorAll('a[data-cta-button]').forEach(function (el) {
+      var href = el.getAttribute('href') || ''
+      if (/trial|1_week|1_month|1-month/i.test(href)) {
+        el.style.setProperty('display', 'none', 'important')
+      } else {
+        el.style.removeProperty('display')
+      }
+    })
+    document.querySelectorAll('[class*="ai-transformation-plan-card-"][data-plan-link]').forEach(function (card) {
+      if (card.dataset.lurvoxTapWired === '1') return
+      card.dataset.lurvoxTapWired = '1'
+      card.style.cursor = 'pointer'
+      card.addEventListener(
+        'click',
+        function (e) {
+          var link = card.getAttribute('data-plan-link')
+          if (!link) return
+          e.preventDefault()
+          e.stopPropagation()
+          window.location.href = link
+        },
+        true
+      )
+    })
+  }
+  wire()
+  document.addEventListener('DOMContentLoaded', wire)
+  setTimeout(wire, 400)
+  setTimeout(wire, 1500)
+})()
+</script>
+{% schema %}
+{ "name": "LURVOX tap plan force", "settings": [], "presets": [{ "name": "LURVOX tap plan force" }] }
+{% endschema %}

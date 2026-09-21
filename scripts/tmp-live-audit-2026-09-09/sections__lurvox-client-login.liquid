@@ -1,0 +1,147 @@
+{% comment %}
+  LURVOX — Compact existing-client login rail at the top of the header.
+{% endcomment %}
+{%- if section.settings.enabled -%}
+  {%- assign show_login = true -%}
+  {%- if section.settings.homepage_only and request.page_type != 'index' -%}
+    {%- assign show_login = false -%}
+  {%- endif -%}
+
+  {%- if show_login -%}
+    <aside
+      class="lurvox-client-login"
+      id="lurvox-client-login"
+      style="--lurvox-login-accent: {{ section.settings.accent_color }};"
+      aria-label="Existing client login"
+    >
+      <div class="lurvox-client-login__inner">
+        {%- if section.settings.prompt != blank -%}
+          <span class="lurvox-client-login__prompt">{{ section.settings.prompt }}</span>
+        {%- endif -%}
+        <a class="lurvox-client-login__link" href="{{ section.settings.login_url }}">
+          {{ section.settings.label }}
+        </a>
+      </div>
+    </aside>
+  {%- endif -%}
+{%- endif -%}
+
+<style id="lurvox-client-login-css">
+  /* Header pill in lurvox-header-match is the visible login; this rail stays off. */
+  .lurvox-client-login,
+  aside.lurvox-client-login,
+  .shopify-section-group-header-group .lurvox-client-login {
+    display: none !important;
+  }
+
+  .lurvox-client-login__inner {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    min-height: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 6px 16px;
+    box-sizing: border-box;
+  }
+
+  .lurvox-client-login__prompt {
+    display: inline !important;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .lurvox-client-login__link {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0 13px;
+    color: #140900 !important;
+    background: var(--lurvox-login-accent);
+    border: 1px solid #ff7a1a;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    text-decoration: none !important;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .lurvox-client-login__link:hover {
+    filter: brightness(1.08);
+  }
+
+  .lurvox-client-login__link:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .lurvox-client-login__inner {
+      justify-content: space-between;
+      min-height: 38px;
+      padding: 5px 12px;
+    }
+
+    .lurvox-client-login__prompt {
+      font-size: 12px;
+    }
+
+    .lurvox-client-login__link {
+      min-height: 28px;
+      padding: 0 12px;
+      font-size: 12px;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Client login CTA",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Show client login",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "homepage_only",
+      "label": "Show on homepage only",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "prompt",
+      "label": "Prompt",
+      "default": "Already a client?"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Button label",
+      "default": "Log in"
+    },
+    {
+      "type": "text",
+      "id": "login_url",
+      "label": "Login URL",
+      "default": "https://app.lurvox.in/login"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent colour",
+      "default": "#FF6200"
+    }
+  ]
+}
+{% endschema %}

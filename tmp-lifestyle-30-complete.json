@@ -1,0 +1,4417 @@
+{
+  "createdAt": "2026-09-02T14:07:53.047Z",
+  "count": 30,
+  "concurrency": 2,
+  "scenarios": true,
+  "clients": [
+    {
+      "index": 1,
+      "scenarioId": "office-canteen-veg",
+      "scenarioLabel": "Office canteen vegetarian, late dinner",
+      "clientId": "bfa3a99c-1759-4d7a-83bd-c3a1fcb413d5",
+      "email": "trial-mtk4lnbc-ffc9b9d4@trial.test.local",
+      "name": "Karan Office",
+      "dietPreference": "vegetarian",
+      "breakfast": "Office canteen sandwich and chai",
+      "lunch": "Office thali — dal, roti, sabzi, curd",
+      "dinner": "Leftover roti with dal or late delivery",
+      "timingBreakfast": "09:30",
+      "timingLunch": "14:00",
+      "timingDinner": "22:30",
+      "favorites": "Canteen thali, dal, roti, sandwich",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2782,
+      "preferredKcal": 2782,
+      "floorKcal": 2150,
+      "planChars": 11813,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=09:30(hit); lunch=14:00(hit); dinner=22:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: office, canteen, sandwich, chai"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: office, thali, roti, sabzi, curd"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, late"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: chai, roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/11 keywords (need 4) — matched: office, canteen, sandwich, chai, thali, roti, sabzi, curd"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (office-canteen-veg)",
+          "ok": true,
+          "detail": "matched sandwich, thali, dal, roti / need sandwich, thali, dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        },
+        {
+          "name": "Same-daily preference (staple repeats)",
+          "ok": true,
+          "detail": "\"sandwich\" on 6/7 days"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2782 vs Mifflin 2782 (maintenance 2782, floor 2150, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 42 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "42 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 6 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "6 sessions / 85 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 25,
+      "failed": 0
+    },
+    {
+      "index": 2,
+      "scenarioId": "night-shift-nurse",
+      "scenarioLabel": "Night-shift nurse, inverted meals",
+      "clientId": "eba6174f-5d32-4a63-9bde-0a660365c6ed",
+      "email": "trial-mtk4lpnd-d3c546b4@trial.test.local",
+      "name": "Divya Nightshift",
+      "dietPreference": "vegetarian",
+      "breakfast": "Post-shift paratha and chai",
+      "lunch": "I sleep through lunch on shift days — skip it",
+      "dinner": "Pre-shift rice, dal, and sabzi",
+      "timingBreakfast": "07:00",
+      "timingLunch": null,
+      "timingDinner": "20:00",
+      "favorites": "Paratha, dal, rice, chai",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2055,
+      "preferredKcal": 2000,
+      "floorKcal": 2000,
+      "planChars": 12465,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=07:00(hit); lunch=—(skipped); dinner=20:00(hit); snacks=02:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: post, shift, paratha, chai"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: shift, rice, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: canteen, biscuits, banana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/10 keywords (need 4) — matched: post, shift, paratha, chai, sleep, days, rice, sabzi"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (night-shift-nurse)",
+          "ok": true,
+          "detail": "matched paratha, chai, dal, rice / need paratha, chai, dal, rice"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Did not invent a lunch slot on skip-lunch lifestyle",
+          "ok": true,
+          "detail": "Lunch mentions=0"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2055 vs Mifflin 2000 (maintenance 2180, floor 2000, delta 55)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 7 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": false,
+          "detail": "7 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 75 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 22,
+      "failed": 1
+    },
+    {
+      "index": 3,
+      "scenarioId": "hostel-mess-vegan",
+      "scenarioLabel": "Hostel mess vegan, no cooking, tight budget",
+      "clientId": "faa9109b-f2eb-4eab-9ba1-0e525291bebc",
+      "email": "trial-mtk4lrko-1fd08dd2@trial.test.local",
+      "name": "Aarav Hostel",
+      "dietPreference": "vegan",
+      "breakfast": "Hostel mess poha or bread",
+      "lunch": "Mess rice, dal, and sabzi",
+      "dinner": "Mess roti and mixed veg",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:00",
+      "favorites": "Mess dal, rice, roti, poha",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "minimal",
+      "kcal": 3091,
+      "preferredKcal": 3091,
+      "floorKcal": 2000,
+      "planChars": 8947,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegan)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:00(hit); dinner=20:00(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: mess, poha, bread"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: mess, rice, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: mess, roti, mixed"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: banana, canteen"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "7/8 keywords (need 4) — matched: mess, poha, bread, rice, sabzi, roti, mixed"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (minimal)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (hostel-mess-vegan)",
+          "ok": true,
+          "detail": "matched poha, dal, rice, roti / need poha, dal, rice, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        },
+        {
+          "name": "Stayed within low food budget",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 3091 vs Mifflin 3091 (maintenance 2816, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": false,
+          "detail": "6 unique diet days, 36 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "36 meals across 6 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 72 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 1
+    },
+    {
+      "index": 4,
+      "scenarioId": "if-skip-breakfast",
+      "scenarioLabel": "Intermittent fasting — skips breakfast",
+      "clientId": "4523f4a2-5784-4c76-8291-c4c6415ffd86",
+      "email": "trial-mtk4lts4-545f1dfd@trial.test.local",
+      "name": "Neha Fasting",
+      "dietPreference": "vegetarian",
+      "breakfast": "I skip breakfast. First meal is lunch.",
+      "lunch": "Dal, roti, salad, and curd",
+      "dinner": "Paneer or dal with roti",
+      "timingBreakfast": null,
+      "timingLunch": "12:30",
+      "timingDinner": "20:00",
+      "favorites": "Dal, roti, paneer, rice",
+      "disliked": "Olives",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2688,
+      "preferredKcal": 2688,
+      "floorKcal": 2000,
+      "planChars": 15087,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Olives)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=—(skipped); lunch=12:30(hit); dinner=20:00(hit); snacks=16:30(hit)"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, salad, curd"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: paneer, roti"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: roasted, chana, around"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/9 keywords (need 4) — matched: first, meal, lunch, roti, salad, curd, paneer, rice"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (if-skip-breakfast)",
+          "ok": true,
+          "detail": "matched dal, roti / need dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Did not invent a breakfast slot",
+          "ok": true,
+          "detail": "Breakfast mentions=0"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2688 vs Mifflin 2688 (maintenance 2413, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 21 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "21 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 54 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 5,
+      "scenarioId": "jain-no-root",
+      "scenarioLabel": "Jain vegetarian — no onion garlic potato",
+      "clientId": "07cf1c7e-6fa7-4ac2-a57b-f4dcf5210317",
+      "email": "trial-mtk4lw7e-154bed70@trial.test.local",
+      "name": "Meera Jain",
+      "dietPreference": "vegetarian",
+      "breakfast": "Thepla with chutney (no onion garlic)",
+      "lunch": "Dal, rice, and doodhi sabzi",
+      "dinner": "Roti with cabbage or tinda sabzi",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Dal, steamed rice, doodhi, cabbage sabzi, thepla",
+      "disliked": "Onion, garlic, potato",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "kcal": 2481,
+      "preferredKcal": 2481,
+      "floorKcal": 2000,
+      "planChars": 15197,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Onion, garlic, potato)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=13:30(hit); dinner=20:30(hit); snacks=17:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: thepla, chutney"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, doodhi, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, cabbage, tinda, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/11 keywords (need 4) — matched: thepla, chutney, rice, doodhi, sabzi, roti, cabbage, tinda"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "Lifestyle staples (jain-no-root)",
+          "ok": true,
+          "detail": "matched dal, thepla, doodhi / need dal, thepla, doodhi"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2481 vs Mifflin 2481 (maintenance 2206, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 46 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "46 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 4 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "4 sessions / 53 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "index": 6,
+      "scenarioId": "lactose-veg-no-dairy",
+      "scenarioLabel": "Lactose-intolerant vegetarian",
+      "clientId": "c7528ae6-f1bc-4259-9a47-110d35cc8cae",
+      "email": "trial-mtk4lz5r-4b17c4af@trial.test.local",
+      "name": "Priya Lactose",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha with peanuts",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Soya chunks curry with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "21:00",
+      "favorites": "Poha, dal, roti, soya, chana",
+      "disliked": "Bitter gourd",
+      "allergies": "Lactose intolerant",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2000,
+      "preferredKcal": 2000,
+      "floorKcal": 2000,
+      "planChars": 9251,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Lactose intolerant)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:30(hit); dinner=21:00(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: poha, peanuts"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, salad"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: soya, chunks, curry, roti"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/8 keywords (need 4) — matched: poha, peanuts, roti, salad, soya, chunks, curry, chana"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (lactose-veg-no-dairy)",
+          "ok": true,
+          "detail": "matched poha, dal, soya / need poha, dal, soya"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2000 vs Mifflin 2000 (maintenance 2143, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 28 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "28 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 4 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "4 sessions / 64 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "index": 7,
+      "scenarioId": "nut-allergy-vegan",
+      "scenarioLabel": "Vegan with nut allergy",
+      "clientId": "4a3b4e02-5554-407e-bef7-594d4feb0d79",
+      "email": "trial-mtk4m1kt-217bab91@trial.test.local",
+      "name": "Isha Nuts",
+      "dietPreference": "vegan",
+      "breakfast": "Idli with sambar",
+      "lunch": "Dal, rice, and salad",
+      "dinner": "Chole with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Idli, sambar, dal, rice, roti",
+      "disliked": "Mushrooms",
+      "allergies": "Nut allergy",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2000,
+      "preferredKcal": 2000,
+      "floorKcal": 2000,
+      "planChars": 12446,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegan)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Nut allergy)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:00(hit); dinner=20:30(hit); snacks=16:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: idli, sambar"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, salad"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: chole, roti"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: roasted, chana, fruit"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "6/6 keywords (need 4) — matched: idli, sambar, rice, salad, chole, roti"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (nut-allergy-vegan)",
+          "ok": true,
+          "detail": "matched idli, sambar, dal / need idli, sambar, dal"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2000 vs Mifflin 2000 (maintenance 2015, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 42 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "42 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 3 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "3 sessions / 48 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "index": 8,
+      "scenarioId": "gluten-sensitive",
+      "scenarioLabel": "Gluten-sensitive vegetarian",
+      "clientId": "4f908c43-71cd-4b82-a1b8-6c13ca4adeb2",
+      "email": "trial-mtk4m413-f94d4ade@trial.test.local",
+      "name": "Rohan Gluten",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha or idli",
+      "lunch": "Rice, dal, and sabzi",
+      "dinner": "Rice with dal tadka and vegetables",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Rice, dal, idli, poha, sabzi",
+      "disliked": "None",
+      "allergies": "Gluten allergy / celiac",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "kcal": 2795,
+      "preferredKcal": 2831,
+      "floorKcal": 2000,
+      "planChars": 11407,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Gluten allergy / celiac)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=13:30(hit); dinner=20:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: poha, idli"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: rice, tadka, vegetables"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: fruit"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "6/6 keywords (need 4) — matched: poha, idli, rice, sabzi, tadka, vegetables"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "Lifestyle staples (gluten-sensitive)",
+          "ok": true,
+          "detail": "matched rice, dal, poha / need rice, dal, poha"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2795 vs Mifflin 2831 (maintenance 2956, floor 2000, delta -36)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 49 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "49 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 38 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "index": 9,
+      "scenarioId": "eggs-mwf-only",
+      "scenarioLabel": "Eggetarian — eggs only Mon/Wed/Fri",
+      "clientId": "95f1d4df-ed7b-4135-bf2f-5c0ed3ecc9de",
+      "email": "trial-mtk4m6hx-4943185f@trial.test.local",
+      "name": "Aditya Eggs",
+      "dietPreference": "eggetarian",
+      "breakfast": "Egg bhurji with roti on egg days, else poha",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Egg curry or dal with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "21:00",
+      "favorites": "Eggs, dal, roti, oats",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "yes",
+      "cookingAbility": "basic",
+      "kcal": 2922,
+      "preferredKcal": 2922,
+      "floorKcal": 2000,
+      "planChars": 11031,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (eggetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:30(hit); dinner=21:00(hit); snacks=17:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: bhurji, roti, days, poha"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, salad"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: curry, roti"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/9 keywords (need 4) — matched: bhurji, roti, days, poha, salad, curry, eggs, oats"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Animal protein only on allowed weekdays",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Lifestyle staples (eggs-mwf-only)",
+          "ok": true,
+          "detail": "matched egg, dal, roti / need egg, dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2922 vs Mifflin 2922 (maintenance 2647, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 49 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "49 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 82 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 10,
+      "scenarioId": "chicken-tue-thu-fish-sun",
+      "scenarioLabel": "Non-veg — chicken Tue/Thu, fish Sunday only",
+      "clientId": "4dc3f806-b183-49ee-83e8-7c3bdc13c69e",
+      "email": "trial-mtk4m8ou-8ea5b0d5@trial.test.local",
+      "name": "Vikram Nonveg",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Eggs and toast on egg days, else poha",
+      "lunch": "Rice, dal, and sabzi — chicken only Tue/Thu",
+      "dinner": "Roti with sabzi, fish only Sunday",
+      "timingBreakfast": "07:30",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Chicken curry, rice, dal, eggs",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "yes",
+      "cookingAbility": "basic",
+      "kcal": 3380,
+      "preferredKcal": 3380,
+      "floorKcal": 2050,
+      "planChars": 14057,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (non_vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=07:30(hit); lunch=13:00(hit); dinner=20:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: eggs, days, poha"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, sabzi, chicken"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, sabzi, fish, sunday"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: buttermilk, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "10/12 keywords (need 4) — matched: eggs, days, poha, rice, sabzi, chicken, roti, fish"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Animal protein only on allowed weekdays",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Lifestyle staples (chicken-tue-thu-fish-sun)",
+          "ok": true,
+          "detail": "matched dal, rice, chicken / need dal, rice, chicken"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 3380 vs Mifflin 3380 (maintenance 3105, floor 2050, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 57 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "57 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 69 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 11,
+      "scenarioId": "same-meals-daily",
+      "scenarioLabel": "Same meals every day (poha / dal-roti)",
+      "clientId": "2d2ae05c-b521-4303-97ff-00be750acba7",
+      "email": "trial-mtk4mb11-325a0dc3@trial.test.local",
+      "name": "Sneha Repeat",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha with peanuts every day",
+      "lunch": "Dal, two rotis, and sabzi every day",
+      "dinner": "Dal, roti, and salad every day",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Poha, dal, roti, curd",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2000,
+      "preferredKcal": 2000,
+      "floorKcal": 2000,
+      "planChars": 13811,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=13:30(hit); dinner=20:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: poha, peanuts, every"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rotis, sabzi, every"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, salad, every"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: curd, fruit"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/8 keywords (need 4) — matched: poha, peanuts, every, rotis, sabzi, roti, salad, curd"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (same-meals-daily)",
+          "ok": true,
+          "detail": "matched poha, dal, roti / need poha, dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Same-daily preference (staple repeats)",
+          "ok": true,
+          "detail": "\"poha\" on 7/7 days"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2000 vs Mifflin 2000 (maintenance 2056, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 38 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "38 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 3 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "3 sessions / 45 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 12,
+      "scenarioId": "ultra-budget-dal-rice",
+      "scenarioLabel": "₹4000/month — dal rice roti only",
+      "clientId": "f571ef86-d656-4d92-a30a-675aef330f80",
+      "email": "trial-mtk4mcrb-a48d3290@trial.test.local",
+      "name": "Ravi Budget",
+      "dietPreference": "vegetarian",
+      "breakfast": "Leftover roti with pickle or chai and biscuits",
+      "lunch": "Rice and dal",
+      "dinner": "Roti and seasonal sabzi",
+      "timingBreakfast": "07:30",
+      "timingLunch": "13:00",
+      "timingDinner": "21:00",
+      "favorites": "Dal, rice, seasonal sabzi, roti",
+      "disliked": "None",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 3199,
+      "preferredKcal": 3199,
+      "floorKcal": 2000,
+      "planChars": 12291,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=07:30(hit); lunch=13:00(hit); dinner=21:00(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: roti, pickle, chai"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, seasonal, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "6/8 keywords (need 4) — matched: roti, pickle, chai, rice, seasonal, sabzi"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (ultra-budget-dal-rice)",
+          "ok": true,
+          "detail": "matched dal, rice, roti / need dal, rice, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Stayed within low food budget",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 3199 vs Mifflin 3199 (maintenance 2924, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 42 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "42 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 4 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "4 sessions / 71 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 13,
+      "scenarioId": "south-indian-staples",
+      "scenarioLabel": "South Indian home — idli dosa sambar rice",
+      "clientId": "fcf01618-008d-4c0a-92cb-fb4116f3e694",
+      "email": "trial-mtk4mem7-0e66b4d7@trial.test.local",
+      "name": "Ananya South",
+      "dietPreference": "vegetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Rice, sambar, rasam, and poriyal",
+      "dinner": "Dosa or idli with sambar, or curd rice",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "20:00",
+      "favorites": "Idli, dosa, sambar, rasam, rice, curd rice",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "kcal": 2461,
+      "preferredKcal": 2461,
+      "floorKcal": 2000,
+      "planChars": 11586,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:30(hit); dinner=20:00(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: idli, sambar"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, sambar, rasam, poriyal"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: dosa, idli, sambar, curd, rice"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: sundal"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "7/7 keywords (need 4) — matched: idli, sambar, rice, rasam, poriyal, dosa, curd"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "Lifestyle staples (south-indian-staples)",
+          "ok": true,
+          "detail": "matched idli, sambar, rice / need idli, sambar, rice"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2461 vs Mifflin 2461 (maintenance 2186, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 42 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "42 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 75 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "index": 14,
+      "scenarioId": "punjabi-home",
+      "scenarioLabel": "Punjabi home cook — paratha, dal, paneer",
+      "clientId": "fd5ada41-5ffc-4e3f-8503-e8da3df83219",
+      "email": "trial-mtk4mgfl-cde69fbb@trial.test.local",
+      "name": "Kavya Punjabi",
+      "dietPreference": "vegetarian",
+      "breakfast": "Aloo paratha with curd",
+      "lunch": "Dal, roti, sabzi, salad",
+      "dinner": "Paneer or dal with roti",
+      "timingBreakfast": "09:00",
+      "timingLunch": "14:00",
+      "timingDinner": "21:00",
+      "favorites": "Paratha, dal makhani, paneer, lassi, roti",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "advanced",
+      "kcal": 2263,
+      "preferredKcal": 2243,
+      "floorKcal": 2000,
+      "planChars": 11984,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=09:00(hit); lunch=14:00(hit); dinner=21:00(hit); snacks=17:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: aloo, paratha, curd"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, sabzi, salad"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: paneer, roti"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: lassi, fruit"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/9 keywords (need 4) — matched: aloo, paratha, curd, roti, sabzi, salad, paneer, makhani"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "advanced"
+        },
+        {
+          "name": "Lifestyle staples (punjabi-home)",
+          "ok": true,
+          "detail": "matched paratha, dal, paneer, roti / need paratha, dal, paneer, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": false,
+          "detail": "found: tofu"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2263 vs Mifflin 2243 (maintenance 2443, floor 2000, delta 20)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 35 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "35 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 68 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 22,
+      "failed": 1
+    },
+    {
+      "index": 15,
+      "scenarioId": "bengali-fish-rice",
+      "scenarioLabel": "Bengali — fish and rice, fish only 3 days",
+      "clientId": "1f0aa7c1-7343-483d-be65-e30c1fafe7b8",
+      "email": "trial-mtk4miep-957a3f6f@trial.test.local",
+      "name": "Dev Bengali",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Puffed rice or leftover rice with dal",
+      "lunch": "Rice, dal, and fish curry on fish days",
+      "dinner": "Rice with dal and sabzi",
+      "timingBreakfast": "08:30",
+      "timingLunch": "14:00",
+      "timingDinner": "21:30",
+      "favorites": "Rice, macher jhol, dal, aloo posto, begun bhaja",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "kcal": 3179,
+      "preferredKcal": 3179,
+      "floorKcal": 2000,
+      "planChars": 14283,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (non_vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=14:00(hit); dinner=21:30(hit); snacks=18:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: puffed, rice, leftover"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, fish, curry, days"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: rice, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: muri"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "13/13 keywords (need 4) — matched: puffed, rice, leftover, fish, curry, days, sabzi, macher"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "Animal protein only on allowed weekdays",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Lifestyle staples (bengali-fish-rice)",
+          "ok": true,
+          "detail": "matched rice, dal, fish / need rice, dal, fish"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 3179 vs Mifflin 3179 (maintenance 2904, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 42 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "42 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 46 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 16,
+      "scenarioId": "gujarati-thepla-khichdi",
+      "scenarioLabel": "Gujarati — thepla, khichdi, dal dhokli",
+      "clientId": "bea94f9b-71e5-4c26-b0fb-5793c4e440fd",
+      "email": "trial-mtk4mk8s-106637b7@trial.test.local",
+      "name": "Isha Gujarati",
+      "dietPreference": "vegetarian",
+      "breakfast": "Thepla with chunda or pickle",
+      "lunch": "Khichdi with kadhi",
+      "dinner": "Roti, dal, and sabzi — sometimes dal dhokli",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Thepla, khichdi, kadhi, dal dhokli, undhiyu",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "advanced",
+      "kcal": 2000,
+      "preferredKcal": 2000,
+      "floorKcal": 2000,
+      "planChars": 10048,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=13:00(hit); dinner=20:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: thepla, chunda, pickle"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: khichdi, kadhi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, sabzi, dhokli"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: handful, peanuts, fruit"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/10 keywords (need 4) — matched: thepla, chunda, pickle, khichdi, kadhi, roti, sabzi, dhokli"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "advanced"
+        },
+        {
+          "name": "Lifestyle staples (gujarati-thepla-khichdi)",
+          "ok": true,
+          "detail": "matched thepla, khichdi, kadhi / need thepla, khichdi, kadhi"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2000 vs Mifflin 2000 (maintenance 1795, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 35 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "35 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 3 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "3 sessions / 49 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "index": 17,
+      "scenarioId": "early-gym-then-breakfast",
+      "scenarioLabel": "5:30am gym, breakfast after at 7:00",
+      "clientId": "18c193a4-8645-4312-b163-01576fca102c",
+      "email": "trial-mtk4mluo-223a1e1a@trial.test.local",
+      "name": "Arjun Earlygym",
+      "dietPreference": "eggetarian",
+      "breakfast": "Post-workout oats with banana and whey, or eggs",
+      "lunch": "Dal, roti, and curd",
+      "dinner": "Egg curry or paneer with roti",
+      "timingBreakfast": "07:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Eggs, oats, dal, roti, whey",
+      "disliked": "None",
+      "allergies": "none",
+      "whey": "yes",
+      "cookingAbility": "basic",
+      "kcal": 2879,
+      "preferredKcal": 2804,
+      "floorKcal": 2000,
+      "planChars": 11508,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (eggetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=07:00(hit); lunch=13:00(hit); dinner=20:30(hit); snacks=16:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: post, workout, oats, banana, whey, eggs"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, curd"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: curry, paneer, roti"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: whey"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "10/10 keywords (need 4) — matched: post, workout, oats, banana, whey, eggs, roti, curd"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Animal protein only on allowed weekdays",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Lifestyle staples (early-gym-then-breakfast)",
+          "ok": true,
+          "detail": "matched oats, egg, dal / need oats, egg, dal"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2879 vs Mifflin 2804 (maintenance 3004, floor 2000, delta 75)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 42 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "42 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 81 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 18,
+      "scenarioId": "late-it-shift",
+      "scenarioLabel": "IT shift — dinner at 11pm",
+      "clientId": "7f0b3c7a-d405-4abb-af08-a569ced0a0cc",
+      "email": "trial-mtk4mo44-1895418a@trial.test.local",
+      "name": "Rahul Lateit",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Late breakfast — eggs and toast around 10:30",
+      "lunch": "Office cafeteria rice and dal",
+      "dinner": "Swiggy bowl or Maggi after 11pm",
+      "timingBreakfast": "10:30",
+      "timingLunch": "15:30",
+      "timingDinner": "23:00",
+      "favorites": "Eggs, chicken rice bowl, dal, Maggi",
+      "disliked": "Olives",
+      "allergies": "none",
+      "whey": "yes",
+      "cookingAbility": "minimal",
+      "kcal": 2806,
+      "preferredKcal": 2806,
+      "floorKcal": 2100,
+      "planChars": 12535,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (non_vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Olives)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=10:30(hit); lunch=15:30(hit); dinner=23:00(hit); snacks=18:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: late, breakfast, eggs, around"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: office, rice"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: swiggy, maggi, after, 11pm"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: office, chai, biscuits"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "11/12 keywords (need 4) — matched: late, breakfast, eggs, around, office, rice, swiggy, maggi"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability (minimal)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Animal protein only on allowed weekdays",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Lifestyle staples (late-it-shift)",
+          "ok": true,
+          "detail": "matched egg, dal, rice / need egg, dal, rice"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2806 vs Mifflin 2806 (maintenance 2806, floor 2100, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 49 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "49 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 4 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "4 sessions / 43 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 19,
+      "scenarioId": "busy-parent-leftovers",
+      "scenarioLabel": "Busy parent — kids leftovers, 9:30pm dinner",
+      "clientId": "58f1dc21-ad3d-4208-b3f9-019048df2762",
+      "email": "trial-mtk4mpr0-b0a57e07@trial.test.local",
+      "name": "Meera Parent",
+      "dietPreference": "vegetarian",
+      "breakfast": "Kids leftover paratha or poha while packing tiffins",
+      "lunch": "Whatever I cooked for the kids — dal rice or khichdi",
+      "dinner": "Family roti, dal, sabzi after kids eat",
+      "timingBreakfast": "07:45",
+      "timingLunch": "13:30",
+      "timingDinner": "21:30",
+      "favorites": "Khichdi, dal, roti, kids pasta, banana",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "kcal": 2381,
+      "preferredKcal": 2381,
+      "floorKcal": 2000,
+      "planChars": 25765,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=07:45(hit); lunch=13:30(hit); dinner=21:30(hit); snacks=16:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: kids, leftover, paratha, poha, while, packing, tiffins"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: whatever, cooked, kids, rice, khichdi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: family, roti, sabzi, after, kids"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: chai, biscuit, while, homework"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "17/17 keywords (need 4) — matched: kids, leftover, paratha, poha, while, packing, tiffins, whatever"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "Lifestyle staples (busy-parent-leftovers)",
+          "ok": true,
+          "detail": "matched dal, roti, khichdi / need dal, roti, khichdi"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2381 vs Mifflin 2381 (maintenance 2381, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 35 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "35 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 60 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 20,
+      "scenarioId": "traveller-no-kitchen",
+      "scenarioLabel": "Travelling consultant — hotels and dhabas",
+      "clientId": "4392e565-d2a5-4c53-9557-69cb6a12d0c8",
+      "email": "trial-mtk4mrnh-6002c557@trial.test.local",
+      "name": "Karan Travel",
+      "dietPreference": "eggetarian",
+      "breakfast": "Hotel omelette and toast",
+      "lunch": "Dhaba dal tadka with roti",
+      "dinner": "Hotel dal, rice, and salad",
+      "timingBreakfast": "08:00",
+      "timingLunch": "14:00",
+      "timingDinner": "21:00",
+      "favorites": "Eggs, dal tadka, roti, curd, banana",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "yes",
+      "cookingAbility": "minimal",
+      "kcal": 2695,
+      "preferredKcal": 2695,
+      "floorKcal": 2025,
+      "planChars": 11909,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (eggetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=14:00(hit); dinner=21:00(hit); snacks=17:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: hotel, omelette"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: dhaba, tadka, roti"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: hotel, rice, salad"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: banana, roasted, chana, shop"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "10/10 keywords (need 4) — matched: hotel, omelette, dhaba, tadka, roti, rice, salad, eggs"
+        },
+        {
+          "name": "Whey rule",
+          "ok": true,
+          "detail": "client uses whey (optional in plan)"
+        },
+        {
+          "name": "Cooking ability (minimal)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Animal protein only on allowed weekdays",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Lifestyle staples (traveller-no-kitchen)",
+          "ok": true,
+          "detail": "matched omelette, dal, roti / need omelette, dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2695 vs Mifflin 2695 (maintenance 2695, floor 2025, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 49 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "49 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 4 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "4 sessions / 65 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 21,
+      "scenarioId": "street-food-mumbai",
+      "scenarioLabel": "Mumbai street-food lifestyle",
+      "clientId": "02496fbc-aeb8-454b-bf8a-79a4fc757193",
+      "email": "trial-mtk4mtgy-79d0240b@trial.test.local",
+      "name": "Aarav Mumbai",
+      "dietPreference": "vegetarian",
+      "breakfast": "Vada pav or poha from stall",
+      "lunch": "Mess thali or pav bhaji",
+      "dinner": "Misal pav or dal rice",
+      "timingBreakfast": "09:00",
+      "timingLunch": "14:00",
+      "timingDinner": "22:00",
+      "favorites": "Vada pav, pav bhaji, misal, poha",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "minimal",
+      "kcal": 2590,
+      "preferredKcal": 2590,
+      "floorKcal": 2000,
+      "planChars": 15812,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=09:00(hit); lunch=14:00(hit); dinner=22:00(hit); snacks=18:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: vada, poha, stall"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: mess, thali, bhaji"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: misal, rice"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: cutting, chai, maska"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/8 keywords (need 4) — matched: vada, poha, stall, mess, thali, bhaji, misal, rice"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (minimal)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (street-food-mumbai)",
+          "ok": true,
+          "detail": "matched poha, pav, dal / need poha, pav, dal"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Stayed within low food budget",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2590 vs Mifflin 2590 (maintenance 2590, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 40 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "40 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 4 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "4 sessions / 61 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 22,
+      "scenarioId": "tuesday-fast",
+      "scenarioLabel": "Religious Tuesday fast — fruit till sunset",
+      "clientId": "a5d44045-88fa-4dcc-a9af-823ecbee24cd",
+      "email": "trial-mtk4mvq3-cc3258c4@trial.test.local",
+      "name": "Ananya Fasttue",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha on normal days",
+      "lunch": "Dal roti sabzi on normal days",
+      "dinner": "Roti and sabzi",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Dal, roti, sabzi, fruit, milk",
+      "disliked": "None",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2039,
+      "preferredKcal": 2064,
+      "floorKcal": 2000,
+      "planChars": 10354,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=13:30(hit); dinner=20:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: poha, days"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, sabzi, days"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: fruit"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "6/7 keywords (need 4) — matched: poha, days, roti, sabzi, fruit, milk"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (tuesday-fast)",
+          "ok": true,
+          "detail": "matched dal, roti / need dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "tuesday fasting respected",
+          "ok": true,
+          "detail": "fast/light pattern found"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2039 vs Mifflin 2064 (maintenance 2264, floor 2000, delta -25, skip tuesday)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 35 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "35 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 3 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "3 sessions / 51 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 23,
+      "scenarioId": "keto-failed",
+      "scenarioLabel": "Keto already failed — wants normal Indian meals",
+      "clientId": "f4d25f66-def2-4301-8802-2c3e420f4954",
+      "email": "trial-mtk4mxno-b8664bff@trial.test.local",
+      "name": "Vikram Ketofail",
+      "dietPreference": "non_vegetarian",
+      "breakfast": "Poha or eggs with roti",
+      "lunch": "Rice, dal, and sabzi",
+      "dinner": "Roti with chicken or dal",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "21:00",
+      "favorites": "Rice, dal, roti, chicken curry",
+      "disliked": "Cauliflower (ate too much on keto)",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2817,
+      "preferredKcal": 2817,
+      "floorKcal": 2200,
+      "planChars": 11624,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (non_vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Cauliflower (ate too much on keto))"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=13:30(hit); dinner=21:00(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: poha, eggs, roti"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, chicken"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "7/7 keywords (need 4) — matched: poha, eggs, roti, rice, sabzi, chicken, curry"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Animal protein only on allowed weekdays",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Lifestyle staples (keto-failed)",
+          "ok": true,
+          "detail": "matched rice, dal, roti / need rice, dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2817 vs Mifflin 2817 (maintenance 2817, floor 2200, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 42 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "42 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 3 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "3 sessions / 32 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 24,
+      "scenarioId": "no-whey-basic-veg",
+      "scenarioLabel": "Vegetarian, no whey, basic cooking",
+      "clientId": "2e4872be-6204-4400-b972-c08893b3cbe2",
+      "email": "trial-mtk4mz9z-54624d38@trial.test.local",
+      "name": "Sneha Nowhey",
+      "dietPreference": "vegetarian",
+      "breakfast": "Besan chilla with chutney",
+      "lunch": "Dal, roti, curd, salad",
+      "dinner": "Palak paneer with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Paneer, dal, roti, rice, curd",
+      "disliked": "Olives",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2319,
+      "preferredKcal": 2319,
+      "floorKcal": 2000,
+      "planChars": 10147,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Olives)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:00(hit); dinner=20:30(hit); snacks=16:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: besan, chilla, chutney"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, curd, salad"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: palak, paneer, roti"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: curd, fruit"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/9 keywords (need 4) — matched: besan, chilla, chutney, roti, curd, salad, palak, paneer"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (no-whey-basic-veg)",
+          "ok": true,
+          "detail": "matched chilla, dal, paneer / need chilla, dal, paneer"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2319 vs Mifflin 2319 (maintenance 2044, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 35 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "35 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 5 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "5 sessions / 71 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "index": 25,
+      "scenarioId": "college-maggi-nights",
+      "scenarioLabel": "College student — Maggi nights, skipped breakfast",
+      "clientId": "dafe893d-3ff1-4ce2-ae61-f11c02a8ec84",
+      "email": "trial-mtk4n0vb-265fc8fc@trial.test.local",
+      "name": "Rohan College",
+      "dietPreference": "eggetarian",
+      "breakfast": "Usually skip — maybe tea",
+      "lunch": "College canteen dal rice or bread omelette",
+      "dinner": "Maggi or egg bhurji with bread",
+      "timingBreakfast": null,
+      "timingLunch": "13:30",
+      "timingDinner": "22:30",
+      "favorites": "Maggi, eggs, bread omelette, dal rice",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "minimal",
+      "kcal": 2743,
+      "preferredKcal": 2743,
+      "floorKcal": 2000,
+      "planChars": 12327,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (eggetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "3/3 — breakfast=—(skipped); lunch=13:30(hit); dinner=22:30(hit); snacks=18:00(hit)"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: college, canteen, rice, bread, omelette"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: maggi, bhurji, bread"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: biscuit, chai"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "8/10 keywords (need 4) — matched: college, canteen, rice, bread, omelette, maggi, bhurji, eggs"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (minimal)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Animal protein only on allowed weekdays",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Lifestyle staples (college-maggi-nights)",
+          "ok": true,
+          "detail": "matched egg, dal / need egg, dal"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Did not invent a breakfast slot",
+          "ok": true,
+          "detail": "Breakfast mentions=0"
+        },
+        {
+          "name": "Stayed within low food budget",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2743 vs Mifflin 2743 (maintenance 2743, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 39 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "39 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 4 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "4 sessions / 54 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 25,
+      "failed": 0
+    },
+    {
+      "index": 26,
+      "scenarioId": "standing-retail-odd-hours",
+      "scenarioLabel": "Retail standing job — lunch at 4pm",
+      "clientId": "be071943-c130-443f-a1cb-bd2d005590dc",
+      "email": "trial-mtk4n2fx-5c42f2fb@trial.test.local",
+      "name": "Neha Retail",
+      "dietPreference": "vegetarian",
+      "breakfast": "Thepla packed from home with chai",
+      "lunch": "Tiffin dal rice eaten during 4pm break",
+      "dinner": "Roti and sabzi after reaching home",
+      "timingBreakfast": "10:30",
+      "timingLunch": "16:00",
+      "timingDinner": "21:30",
+      "favorites": "Poha, thepla, dal, rice",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2322,
+      "preferredKcal": 2394,
+      "floorKcal": 2000,
+      "planChars": 11989,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=10:30(hit); lunch=16:00(hit); dinner=21:30(hit); snacks=13:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: thepla, packed, home, chai"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: tiffin, rice, break"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, sabzi, after, reaching, home"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: roasted, chana, behind, counter"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "12/14 keywords (need 4) — matched: thepla, packed, home, chai, tiffin, rice, break, roti"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (standing-retail-odd-hours)",
+          "ok": true,
+          "detail": "matched thepla, dal, rice / need thepla, dal, rice"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2322 vs Mifflin 2394 (maintenance 2394, floor 2000, delta -72)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 41 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "41 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 4 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "4 sessions / 60 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 27,
+      "scenarioId": "vegan-south-no-ghee",
+      "scenarioLabel": "Vegan South Indian — oil only, no ghee ever",
+      "clientId": "0c6caeff-0262-48b7-b8a7-8f6ebb0b2cce",
+      "email": "trial-mtk4n42q-9f47b6c0@trial.test.local",
+      "name": "Priya Vegansouth",
+      "dietPreference": "vegan",
+      "breakfast": "Idli with sambar and coconut chutney",
+      "lunch": "Rice, sambar, and vegetable poriyal",
+      "dinner": "Dosa with sambar or lemon rice",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:00",
+      "favorites": "Idli, dosa, sambar, rice, poriyal, coconut chutney",
+      "disliked": "Mushrooms",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "kcal": 2634,
+      "preferredKcal": 2529,
+      "floorKcal": 2000,
+      "planChars": 14386,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegan)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:00(hit); dinner=20:00(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: idli, sambar, coconut, chutney"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, sambar, vegetable, poriyal"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: dosa, sambar, lemon, rice"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: sundal, fruit"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/9 keywords (need 4) — matched: idli, sambar, coconut, chutney, rice, vegetable, poriyal, dosa"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "Lifestyle staples (vegan-south-no-ghee)",
+          "ok": true,
+          "detail": "matched idli, sambar, rice / need idli, sambar, rice"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2634 vs Mifflin 2529 (maintenance 2254, floor 2000, delta 105)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 42 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "42 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 3 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "3 sessions / 36 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "index": 28,
+      "scenarioId": "high-stress-wedding",
+      "scenarioLabel": "Wedding in 12 weeks, high stress, family dinners",
+      "clientId": "dd814cdc-3361-4769-aa84-b35ce1aa0c0b",
+      "email": "trial-mtk4n5ou-13b62587@trial.test.local",
+      "name": "Kavya Wedding",
+      "dietPreference": "vegetarian",
+      "breakfast": "Upma or poha",
+      "lunch": "Office dabba — roti, sabzi, dal",
+      "dinner": "Family meal — roti, dal, sabzi, sometimes paneer",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "21:00",
+      "favorites": "Roti, dal, paneer, rice, family sweets on weekends",
+      "disliked": "Bitter gourd",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 1944,
+      "preferredKcal": 2061,
+      "floorKcal": 2000,
+      "planChars": 15843,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Bitter gourd)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=13:30(hit); dinner=21:00(hit); snacks=17:30(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: upma, poha"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: family, meal, roti, sabzi, paneer"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: chai, rusk"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "9/13 keywords (need 4) — matched: upma, poha, roti, sabzi, family, meal, paneer, rice"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (high-stress-wedding)",
+          "ok": true,
+          "detail": "matched poha, dal, roti / need poha, dal, roti"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 1944 vs Mifflin 2061 (maintenance 2261, floor 2000, delta -117)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 34 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "34 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 3 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "3 sessions / 46 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    },
+    {
+      "index": 29,
+      "scenarioId": "labour-physical-job",
+      "scenarioLabel": "Physical labour — 6am breakfast, big lunch",
+      "clientId": "89486e10-885b-41a0-b7ee-b5cd1da9ce30",
+      "email": "trial-mtk4n7at-d11a2302@trial.test.local",
+      "name": "Rahul Labour",
+      "dietPreference": "vegetarian",
+      "breakfast": "Two parathas with pickle and chai before site",
+      "lunch": "Big tiffin — rice, dal, sabzi",
+      "dinner": "Roti, dal, sabzi",
+      "timingBreakfast": "06:00",
+      "timingLunch": "13:00",
+      "timingDinner": "20:30",
+      "favorites": "Paratha, dal, rice, buttermilk, banana",
+      "disliked": "None",
+      "allergies": "none",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 3023,
+      "preferredKcal": 3026,
+      "floorKcal": 2000,
+      "planChars": 12466,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=06:00(hit); lunch=13:00(hit); dinner=20:30(hit); snacks=16:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: parathas, chai, before, site"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: tiffin, rice, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: roti, sabzi"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: banana, buttermilk, site"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "11/12 keywords (need 4) — matched: parathas, chai, before, site, tiffin, rice, sabzi, roti"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (labour-physical-job)",
+          "ok": true,
+          "detail": "matched paratha, dal, rice / need paratha, dal, rice"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot from lifestyle kept",
+          "ok": true,
+          "detail": "snack reflected"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 3023 vs Mifflin 3026 (maintenance 2751, floor 2000, delta -3)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 35 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "35 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 3 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "3 sessions / 53 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 24,
+      "failed": 0
+    },
+    {
+      "index": 30,
+      "scenarioId": "dislikes-plus-allergy-stack",
+      "scenarioLabel": "Stacked dislikes + peanut allergy + no whey",
+      "clientId": "db215d2f-d311-470a-8f5e-8f349a2af03b",
+      "email": "trial-mtk4n8xf-f8caebf0@trial.test.local",
+      "name": "Isha Stacked",
+      "dietPreference": "vegetarian",
+      "breakfast": "Idli with sambar",
+      "lunch": "Dal, roti, and salad",
+      "dinner": "Paneer bhurji with roti",
+      "timingBreakfast": "08:00",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Idli, dal, roti, rice, paneer",
+      "disliked": "Mushrooms, bitter gourd, olives",
+      "allergies": "Nut allergy",
+      "whey": "no",
+      "cookingAbility": "basic",
+      "kcal": 2301,
+      "preferredKcal": 2301,
+      "floorKcal": 2000,
+      "planChars": 13920,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "ok (Mushrooms, bitter gourd, olives)"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Nut allergy)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:00(hit); lunch=13:30(hit); dinner=20:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: idli, sambar"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: roti, salad"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: paneer, bhurji, roti"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: fruit, roasted, chana"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "7/7 keywords (need 4) — matched: idli, sambar, roti, salad, paneer, bhurji, rice"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability (basic)",
+          "ok": true,
+          "detail": "simple language ok"
+        },
+        {
+          "name": "Lifestyle staples (dislikes-plus-allergy-stack)",
+          "ok": true,
+          "detail": "matched idli, dal, paneer / need idli, dal, paneer"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Calories match Mifflin target",
+          "ok": true,
+          "detail": "plan 2301 vs Mifflin 2301 (maintenance 2301, floor 2000, delta 0)"
+        },
+        {
+          "name": "Tracker diet days (unique)",
+          "ok": true,
+          "detail": "7 unique diet days, 49 meals"
+        },
+        {
+          "name": "Tracker meals match the written diet",
+          "ok": true,
+          "detail": "49 meals across 7 days"
+        },
+        {
+          "name": "Tracker meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Tracker workout days (unique, not duplicated)",
+          "ok": true,
+          "detail": "7 unique workout days, 4 training sessions"
+        },
+        {
+          "name": "Tracker training days have real exercises",
+          "ok": true,
+          "detail": "4 sessions / 42 exercises"
+        },
+        {
+          "name": "Tracker exercise names are lifts not coaching prose",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 23,
+      "failed": 0
+    }
+  ],
+  "summary": {
+    "clients": 30,
+    "generationErrors": 0,
+    "totalChecks": 711,
+    "checksPassed": 708,
+    "checksFailed": 3,
+    "clientsFullyPassing": 27,
+    "correctPlanPercent": 90,
+    "failByCheck": {
+      "Tracker meals match the written diet": 1,
+      "Tracker diet days (unique)": 1,
+      "Did not invent off-lifestyle foods": 1
+    }
+  }
+}

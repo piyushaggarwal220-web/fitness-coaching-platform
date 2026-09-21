@@ -1,0 +1,242 @@
+import type { JarvisView } from '@/lib/jarvis/operator-present'
+import type { CockpitPresentation } from '@/lib/jarvis/operator-cockpit'
+
+export type ApprovalCard = {
+  id: string
+  action_label: string
+  reason: string
+  evidence?: string[]
+  current_state?: Record<string, unknown>
+  proposed_state?: Record<string, unknown>
+  expected_cost_note?: string | null
+  risk_level: string
+  risk_class: string
+  tool_name: string
+  status: string
+  created_at?: string
+}
+
+export type ChatMsg = {
+  id: string
+  role: string
+  content: string
+  thinking_summary?: string
+  tool_activity?: {
+    tool?: string
+    family?: string
+    label?: string
+    status?: string
+    summary?: string
+  }[]
+  approval_ids?: string[]
+  cost_usd?: number
+  created_at?: string
+}
+
+export type Conversation = {
+  id: string
+  title: string
+  updated_at: string
+  status?: string
+}
+
+export type JarvisTask = {
+  id: string
+  name: string
+  status: string
+  status_label: string
+  created_at: string
+  current_step?: string
+  progress?: number | null
+  tools?: string[]
+  estimated_cost_usd?: number | null
+  actual_cost_usd?: number | null
+  result?: string | null
+  error?: string | null
+  cancellable?: boolean
+  conversation_id?: string | null
+}
+
+export type TimelineStep = {
+  id: string
+  label: string
+  state: 'pending' | 'active' | 'done' | 'error'
+  detail?: string
+}
+
+export type PulseMetric = number | null
+
+export type PulseMetricCell = {
+  value: number | null
+  display: string
+  status: 'ok' | 'not_connected' | 'no_data' | 'error'
+  source: string
+  hint: string
+  data_status?: string
+  period_start?: string | null
+  period_end?: string | null
+  timezone?: string
+  currency?: string | null
+  calculation_method?: string
+}
+
+export type BusinessPulse = {
+  as_of?: string
+  today?: {
+    revenue: PulseMetricCell
+    orders: PulseMetricCell
+    ad_spend: PulseMetricCell
+    purchases: PulseMetricCell
+    cpa: PulseMetricCell
+    roas: PulseMetricCell
+    conversion_rate: PulseMetricCell
+    aov?: PulseMetricCell
+  }
+  yesterday?: {
+    revenue?: PulseMetricCell
+    orders?: PulseMetricCell
+  }
+  series?: {
+    revenue_7d?: { date: string; value: number }[]
+    sales_7d?: { date: string; value: number }[]
+    ads_7d?: { date: string; value: number }[] | null
+  }
+  by_plan?: { plan_slug: string; gross_inr: number; paid_count: number }[]
+  shopify?: {
+    connected?: boolean
+    source?: string
+    as_of?: string
+    aov?: number | null
+    orders?: number | null
+    revenue?: number | null
+    refunds_count?: number | null
+    refunds_amount?: number | null
+    currency?: string
+    products?: { title: string; quantity: number }[]
+    note?: string
+    unavailable_reason?: string
+    data_status?: string
+  }
+  funnel_health?: {
+    funnel_id: string | null
+    funnel_name: string
+    price_inr: number | null
+    spend: PulseMetricCell
+    purchases: PulseMetricCell
+    cpa: PulseMetricCell
+    roas: PulseMetricCell
+    target_cpa: number | null
+    target_roas: number | null
+    max_acceptable_cpa?: number | null
+    available: boolean
+  }[]
+  attention?: string[]
+  opportunities?: string[]
+  wins?: string[]
+  research?: { id: string; title: string; finding: string; created_at: string }[]
+  research_unavailable?: string | null
+  note?: string
+}
+
+export type IntegrationStatus = 'connected' | 'not_connected' | 'error' | 'disabled' | 'partial'
+
+export type IntegrationCard = {
+  id: string
+  name: string
+  status: IntegrationStatus
+  summary: string
+  can_do: string[]
+  cannot_do: string[]
+  configure_hint: string | null
+  testable: boolean
+  missing: string[]
+}
+
+export type CapabilityGroup = 'WORKING' | 'WAITING FOR INTEGRATION' | 'REQUIRES APPROVAL' | 'BLOCKED'
+
+export type CapabilityItem = {
+  title: string
+  detail: string
+  group: CapabilityGroup
+  tool?: string
+}
+
+export type SystemHealth = {
+  level: 'operational' | 'partial' | 'action_required'
+  label: string
+  explanation: string
+  connected_count?: number
+  total_count?: number
+  attention_count?: number
+}
+
+export type ActivityItem = {
+  id: string
+  at: string
+  kind: string
+  title: string
+  detail?: string
+}
+
+export type MemoryRow = {
+  id: string
+  category: string
+  group?: string
+  title: string
+  summary: string
+  confidence?: string
+  created_at?: string
+  updated_at?: string
+  tags?: string[]
+}
+
+export type NotificationRow = {
+  id: string
+  kind: string
+  category?: string
+  title: string
+  body: string
+  created_at: string
+  read_at?: string | null
+  link?: string | null
+}
+
+export type JarvisDashboard = {
+  pulse?: BusinessPulse | null
+  cockpit?: CockpitPresentation | null
+  open_incidents?: number
+  today?: {
+    byFunnel?: Record<string, unknown>[]
+    unclassified?: Record<string, unknown>
+    pendingApprovals?: number
+  }
+  funnels?: Record<string, unknown>[]
+  cost?: Record<string, unknown>
+  budgets?: Record<string, unknown>
+  approvals?: ApprovalCard[]
+  notifications?: NotificationRow[]
+  unread_notifications?: number
+  jobs?: Record<string, unknown>[]
+  tasks?: { id: string; objective: string; status: string; status_label?: string; created_at: string; spent_usd?: number }[]
+  memory?: MemoryRow[]
+  activity?: ActivityItem[]
+  activity_digest?: {
+    observed?: string[]
+    actions?: string[]
+    learned?: string[]
+    waiting?: string[]
+    recommends?: string[]
+    spent_usd?: number
+    summary?: string
+    digest_date?: string
+  } | null
+  conversations?: Conversation[]
+  autonomy_level?: number
+  live_meta_execution?: boolean
+  meta?: Record<string, unknown>
+  health?: SystemHealth | null
+  integrations?: IntegrationCard[]
+  capabilities?: Record<CapabilityGroup, CapabilityItem[]> | null
+}
+
+export type CommandView = JarvisView

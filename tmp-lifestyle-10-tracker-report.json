@@ -1,0 +1,636 @@
+{
+  "createdAt": "2026-09-02T12:37:19.978Z",
+  "count": 10,
+  "concurrency": 2,
+  "clients": [
+    {
+      "index": 1,
+      "scenarioId": "office-canteen-veg",
+      "clientId": "05fbd9d0-98b7-45ba-8911-a93b704f7612",
+      "email": "trial-mtk2h8yn-3a26a03b@trial.test.local",
+      "name": "Karan Office",
+      "dietDays": 7,
+      "mealCount": 46,
+      "workoutDays": 14,
+      "trainingSessions": 8,
+      "exerciseCount": 89,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": true,
+          "detail": "46 meals across 7 days"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 8 sessions, 6 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "8 sessions, 89 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "index": 2,
+      "scenarioId": "night-shift-nurse",
+      "clientId": "90896965-c37c-4618-ab82-19c27ef89041",
+      "email": "trial-mtk2hbrl-5f757e20@trial.test.local",
+      "name": "Divya Nightshift",
+      "dietDays": 7,
+      "mealCount": 17,
+      "workoutDays": 14,
+      "trainingSessions": 8,
+      "exerciseCount": 86,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": false,
+          "detail": "17 meals across 7 days; thin: monday=1, tuesday=1, wednesday=1, thursday=1, friday=1"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 8 sessions, 6 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "8 sessions, 86 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Skip-lunch did not fill every day with lunch",
+          "ok": true,
+          "detail": "lunch meals=2"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 9,
+      "failed": 1
+    },
+    {
+      "index": 3,
+      "scenarioId": "hostel-mess-vegan",
+      "clientId": "d47dfb56-0f47-4bdb-889f-b6c6e9af7cb3",
+      "email": "trial-mtk2hdub-cf5eb9a9@trial.test.local",
+      "name": "Aarav Hostel",
+      "dietDays": 7,
+      "mealCount": 35,
+      "workoutDays": 14,
+      "trainingSessions": 8,
+      "exerciseCount": 98,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": true,
+          "detail": "35 meals across 7 days"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 8 sessions, 6 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "8 sessions, 98 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "index": 4,
+      "scenarioId": "if-skip-breakfast",
+      "clientId": "413e1d67-2ff5-4609-9c67-77ba874329ce",
+      "email": "trial-mtk2hfh3-2e7316df@trial.test.local",
+      "name": "Neha Fasting",
+      "dietDays": 7,
+      "mealCount": 43,
+      "workoutDays": 14,
+      "trainingSessions": 8,
+      "exerciseCount": 124,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": true,
+          "detail": "43 meals across 7 days"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 8 sessions, 6 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "8 sessions, 124 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Skip-breakfast did not fill every day with breakfast",
+          "ok": true,
+          "detail": "breakfast meals=0"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "index": 5,
+      "scenarioId": "jain-no-root",
+      "clientId": "499c098a-2126-4d4a-b95c-2687b56a692a",
+      "email": "trial-mtk2hh33-4bcdfd55@trial.test.local",
+      "name": "Meera Jain",
+      "dietDays": 7,
+      "mealCount": 42,
+      "workoutDays": 14,
+      "trainingSessions": 10,
+      "exerciseCount": 95,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": true,
+          "detail": "42 meals across 7 days"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 10 sessions, 4 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "10 sessions, 95 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "index": 6,
+      "scenarioId": "lactose-veg-no-dairy",
+      "clientId": "add0f076-03d2-4ac7-b836-65a2b265c089",
+      "email": "trial-mtk2hios-151bcd0e@trial.test.local",
+      "name": "Priya Lactose",
+      "dietDays": 7,
+      "mealCount": 35,
+      "workoutDays": 14,
+      "trainingSessions": 6,
+      "exerciseCount": 54,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": true,
+          "detail": "35 meals across 7 days"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 6 sessions, 8 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "6 sessions, 54 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "index": 7,
+      "scenarioId": "nut-allergy-vegan",
+      "clientId": "2ed8b94c-e6c5-4a3c-b730-ef34751cb1e7",
+      "email": "trial-mtk2hkav-259898be@trial.test.local",
+      "name": "Isha Nuts",
+      "dietDays": 7,
+      "mealCount": 35,
+      "workoutDays": 14,
+      "trainingSessions": 8,
+      "exerciseCount": 111,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": true,
+          "detail": "35 meals across 7 days"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 8 sessions, 6 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "8 sessions, 111 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "index": 8,
+      "scenarioId": "gluten-sensitive",
+      "clientId": "97681544-1b28-48f0-b82e-5069242f6350",
+      "email": "trial-mtk2hmgf-0fedcb86@trial.test.local",
+      "name": "Rohan Gluten",
+      "dietDays": 7,
+      "mealCount": 40,
+      "workoutDays": 14,
+      "trainingSessions": 10,
+      "exerciseCount": 103,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": true,
+          "detail": "40 meals across 7 days"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 10 sessions, 4 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "10 sessions, 103 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "index": 9,
+      "scenarioId": "eggs-mwf-only",
+      "clientId": "438716e4-5a53-4563-9759-39c8f0cb8db3",
+      "email": "trial-mtk2ho0z-e694f9a8@trial.test.local",
+      "name": "Aditya Eggs",
+      "dietDays": 7,
+      "mealCount": 41,
+      "workoutDays": 14,
+      "trainingSessions": 6,
+      "exerciseCount": 84,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": true,
+          "detail": "41 meals across 7 days"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 6 sessions, 8 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "6 sessions, 84 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "index": 10,
+      "scenarioId": "chicken-tue-thu-fish-sun",
+      "clientId": "a2a13357-f9eb-42e5-b76c-3c54470885a6",
+      "email": "trial-mtk2hpmn-6a3f82d3@trial.test.local",
+      "name": "Vikram Nonveg",
+      "dietDays": 7,
+      "mealCount": 49,
+      "workoutDays": 14,
+      "trainingSessions": 6,
+      "exerciseCount": 51,
+      "checks": [
+        {
+          "name": "Diet days in tracker picker",
+          "ok": true,
+          "detail": "7 diet days"
+        },
+        {
+          "name": "Meals parsed per diet day",
+          "ok": true,
+          "detail": "49 meals across 7 days"
+        },
+        {
+          "name": "Meal foods are not empty",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Workout days in tracker picker",
+          "ok": true,
+          "detail": "14 workout days, 6 sessions, 8 rest"
+        },
+        {
+          "name": "Training days have enough exercises",
+          "ok": true,
+          "detail": "6 sessions, 51 exercises"
+        },
+        {
+          "name": "Exercise names are real lifts",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Water tracker present",
+          "ok": true,
+          "detail": "3000 ml"
+        },
+        {
+          "name": "Sleep tracker present",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Snack slot parsed into tracker",
+          "ok": true,
+          "detail": "snack meals present"
+        }
+      ],
+      "passed": 9,
+      "failed": 0
+    }
+  ],
+  "summary": {
+    "clients": 10,
+    "generationErrors": 0,
+    "clientsFullyPassing": 9,
+    "correctPercent": 90,
+    "failByCheck": {
+      "Meals parsed per diet day": 1
+    }
+  }
+}

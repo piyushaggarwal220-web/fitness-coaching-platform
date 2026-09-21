@@ -1,0 +1,113 @@
+{
+  "createdAt": "2026-09-02T05:00:10.982Z",
+  "count": 1,
+  "concurrency": 1,
+  "scenarios": true,
+  "clients": [
+    {
+      "index": 1,
+      "scenarioId": "gluten-sensitive",
+      "scenarioLabel": "Gluten-sensitive vegetarian",
+      "clientId": "34dc97ef-b2a7-498b-801a-7712204a8204",
+      "email": "trial-mtjmm19q-68afcfd4@trial.test.local",
+      "name": "Rohan Gluten",
+      "dietPreference": "vegetarian",
+      "breakfast": "Poha or idli",
+      "lunch": "Rice, dal, and sabzi",
+      "dinner": "Rice with dal tadka and vegetables",
+      "timingBreakfast": "08:30",
+      "timingLunch": "13:30",
+      "timingDinner": "20:30",
+      "favorites": "Rice, dal, idli, poha, sabzi",
+      "disliked": "None",
+      "allergies": "Gluten allergy / celiac",
+      "whey": "no",
+      "cookingAbility": "comfortable",
+      "planChars": 11583,
+      "checks": [
+        {
+          "name": "Has Day 1–7 headers",
+          "ok": true,
+          "detail": "all 7 day headers found"
+        },
+        {
+          "name": "Diet preference (vegetarian)",
+          "ok": true,
+          "detail": "no forbidden foods"
+        },
+        {
+          "name": "Avoids disliked foods",
+          "ok": true,
+          "detail": "none listed"
+        },
+        {
+          "name": "Avoids allergy-related foods",
+          "ok": true,
+          "detail": "ok (Gluten allergy / celiac)"
+        },
+        {
+          "name": "Meal timings reflected",
+          "ok": true,
+          "detail": "4/4 — breakfast=08:30(hit); lunch=13:30(hit); dinner=20:30(hit); snacks=17:00(hit)"
+        },
+        {
+          "name": "Usual breakfast foods in plan",
+          "ok": true,
+          "detail": "matched: poha, idli"
+        },
+        {
+          "name": "Usual lunch foods in plan",
+          "ok": true,
+          "detail": "matched: rice, sabzi"
+        },
+        {
+          "name": "Usual dinner foods in plan",
+          "ok": true,
+          "detail": "matched: rice, tadka"
+        },
+        {
+          "name": "Usual snacks foods in plan",
+          "ok": true,
+          "detail": "matched: fruit"
+        },
+        {
+          "name": "Usual/favorite food themes present",
+          "ok": true,
+          "detail": "5/6 keywords (need 4) — matched: poha, idli, rice, sabzi, tadka"
+        },
+        {
+          "name": "No whey when client does not use it",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "Cooking ability",
+          "ok": true,
+          "detail": "comfortable"
+        },
+        {
+          "name": "Lifestyle staples (gluten-sensitive)",
+          "ok": true,
+          "detail": "matched rice, dal, poha / need rice, dal, poha"
+        },
+        {
+          "name": "Did not invent off-lifestyle foods",
+          "ok": true,
+          "detail": "ok"
+        }
+      ],
+      "passed": 14,
+      "failed": 0
+    }
+  ],
+  "summary": {
+    "clients": 1,
+    "generationErrors": 0,
+    "totalChecks": 14,
+    "checksPassed": 14,
+    "checksFailed": 0,
+    "clientsFullyPassing": 1,
+    "correctPlanPercent": 100,
+    "failByCheck": {}
+  }
+}
