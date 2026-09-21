@@ -325,6 +325,21 @@ function testResearchConfig() {
   delete process.env.BRAVE_SEARCH_API_KEY
   process.env.JARVIS_WEB_SEARCH_PROVIDER = 'brave'
   assert.equal(isBraveSearchConfigured(), false)
+
+  // Human errors distinguish missing key vs rate limit / auth
+  assert.match(
+    humanizeJarvisError('BRAVE_SEARCH_API_KEY is not configured'),
+    /BRAVE_SEARCH_API_KEY is not configured/
+  )
+  assert.match(
+    humanizeJarvisError('Brave search rate limited'),
+    /rate-limited/i
+  )
+  assert.match(
+    humanizeJarvisError('Brave search unauthorized (invalid or missing BRAVE_SEARCH_API_KEY)'),
+    /rejected by Brave/i
+  )
+
   if (prevKey) process.env.BRAVE_SEARCH_API_KEY = prevKey
   else delete process.env.BRAVE_SEARCH_API_KEY
   if (prevProv) process.env.JARVIS_WEB_SEARCH_PROVIDER = prevProv

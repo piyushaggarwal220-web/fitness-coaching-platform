@@ -19,7 +19,19 @@ export function humanizeJarvisError(raw: unknown): string {
     (lower.includes('web search') && lower.includes('not configured')) ||
     lower.includes('brave_search_api_key')
   ) {
-    return 'Research unavailable because BRAVE_SEARCH_API_KEY is not configured.'
+    if (lower.includes('rate limit')) {
+      return 'Research paused because Brave Search rate-limited the request.'
+    }
+    if (lower.includes('unauthorized') || lower.includes('forbidden') || lower.includes('invalid')) {
+      return 'Research unavailable because BRAVE_SEARCH_API_KEY was rejected by Brave.'
+    }
+    if (lower.includes('timed out') || lower.includes('timeout')) {
+      return 'Research unavailable because Brave Search timed out.'
+    }
+    if (lower.includes('not configured')) {
+      return 'Research unavailable because BRAVE_SEARCH_API_KEY is not configured.'
+    }
+    return 'Live web research failed. Check Brave Search configuration.'
   }
   if (
     (lower.includes('meta') &&

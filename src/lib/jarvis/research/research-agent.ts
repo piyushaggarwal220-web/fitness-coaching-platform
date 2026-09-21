@@ -52,7 +52,13 @@ export type ResearchJobResult = {
   conclusion?: string
   key_findings?: string[]
   confidence?: string
-  sources?: { title: string; url?: string; note: string }[]
+  sources?: {
+    title: string
+    url?: string
+    domain?: string
+    note: string
+    retrieved_at?: string
+  }[]
   queries?: string[]
   spent_usd: number
   tokens_used?: number
@@ -63,6 +69,29 @@ export type ResearchJobResult = {
   error?: string
   note?: string
   decision_influence?: string
+}
+
+/** Map runtime statuses onto jarvis_research CHECK constraint values. */
+function persistStatus(
+  status: ResearchJobResult['status']
+): 'planned' | 'running' | 'completed' | 'stopped_budget' | 'stopped_sufficient' | 'failed' | 'cancelled' {
+  switch (status) {
+    case 'completed':
+      return 'completed'
+    case 'stopped_sufficient':
+    case 'reused':
+      return 'stopped_sufficient'
+    case 'stopped_budget':
+    case 'stopped_search_limit':
+    case 'stopped_runtime':
+    case 'stopped_sources':
+      return 'stopped_budget'
+    case 'not_configured':
+    case 'failed':
+      return 'failed'
+    default:
+      return 'failed'
+  }
 }
 
 function normalizeQuestion(q: string): string {
@@ -175,7 +204,13 @@ export async function runObjectiveResearch(input: ResearchJobInput): Promise<Res
   let spent = 0
   let tokens = 0
   let searchesUsed = 0
-  const sources: { title: string; url?: string; note: string }[] = []
+  const sources: {
+    title: string
+    url?: string
+    domain?: string
+    note: string
+    retrieved_at?: string
+  }[] = []
   const queries: string[] = []
 
   const runtimeExceeded = () => Date.now() - startedAt >= maxRuntimeMs
@@ -194,29 +229,26 @@ export async function runObjectiveResearch(input: ResearchJobInput): Promise<Res
       research_id: row?.id,
       ...extra,
     }
-    await admin
-      .from('jarvis_research')
-      .update({
-        status:
-          status === 'reused'
-            ? 'stopped_sufficient'
-            : status === 'not_configured'
-              ? 'failed'
-              : status,
-        sources,
-        queries,
-        key_findings: extra.key_findings ?? [],
-        conclusion: extra.conclusion ?? null,
-        confidence: extra.confidence ?? null,
-        decision_influenced: extra.decision_influence ?? null,
-        searches_used: searchesUsed,
-        spent_usd: spent,
-        tokens_used: tokens,
-        stop_reason: extra.stop_reason ?? status,
-        memory_id: extra.memory_id ?? null,
-        completed_at: new Date().toISOString(),
-      })
-      .eq('id', row?.id)
+    if (row?.id) {
+      await admin
+        .from('jarvis_research')
+        .update({
+          status: persistStatus(status),
+          sources,
+          queries,
+          key_findings: extra.key_findings ?? [],
+          conclusion: extra.conclusion ?? null,
+          confidence: extra.confidence ?? null,
+          decision_influenced: extra.decision_influence ?? null,
+          searches_used: searchesUsed,
+          spent_usd: spent,
+          tokens_used: tokens,
+          stop_reason: extra.stop_reason ?? status,
+          memory_id: extra.memory_id ?? null,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', row.id)
+    }
     return result
   }
 
@@ -330,7 +362,19 @@ Give only what can be inferred from the decision context without browsing.`,
       })
 
       if (!search.ok) {
-        sources.push({ title: q, note: search.error || 'Search failed' })
+        sources.push({
+          title: q,
+          note: search.error || `Search failed (${search.error_code || 'provider_error'})`,
+          retrieved_at: search.retrieved_at,
+        })
+        continue
+      }
+      if (search.error_code === 'empty' || search.results.length === 0) {
+        sources.push({
+          title: q,
+          note: search.error || 'Brave returned no web results',
+          retrieved_at: search.retrieved_at,
+        })
         continue
       }
       for (const r of search.results) {
@@ -338,7 +382,9 @@ Give only what can be inferred from the decision context without browsing.`,
         sources.push({
           title: r.title,
           url: r.url,
+          domain: r.domain,
           note: r.description,
+          retrieved_at: r.retrieved_at,
         })
       }
 
