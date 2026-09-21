@@ -1,0 +1,50 @@
+---
+description: Discover actual Jarvis/business sources of truth in the repo before changing anything. Do not trust assumed file paths, table names, or metric labels.
+alwaysApply: true
+---
+
+# Jarvis: repository discovery first
+
+When implementing Jarvis features or fixing Jarvis problems, do not rely on file paths, tables, functions, or architecture claims from the user unless they explicitly mark them as fixed requirements. Search the repository. Discover the implementation.
+
+## Before any non-trivial Jarvis change
+
+1. Search the repo for the functionality (tools, pulse, admin analytics, checkout, payments, migrations, tests).
+2. Identify the actual source of truth.
+3. Trace the complete data flow (UI → API → service → DB/API).
+4. Reuse existing authoritative implementations. Do not duplicate business math.
+5. Identify duplicate or conflicting implementations. If two systems disagree, STOP and investigate before choosing.
+6. Verify schema/migrations and existing tests.
+7. Then write DISCOVERY + PLAN. Implement only after that.
+
+Preferred reuse: existing authoritative calculation → shared service → Jarvis tool. Never: existing impl + separate Jarvis impl + different formula.
+
+## Do not assume
+
+- Shopify is LURVOX product revenue
+- A file named analytics is authoritative
+- A tool name matches its underlying source
+- A table is the source of truth because it has similar columns
+- A prompt or `jarvis_*` memory row is authoritative
+- A metric named "revenue" or "purchases" means the same thing everywhere
+
+User-supplied paths are hypotheses until verified in this repo.
+
+## Every important business metric
+
+Document in `src/lib/jarvis/metrics/source-of-truth.ts` (not only in chat/memory):
+
+METRIC, SOURCE OF TRUTH, CODE PATH, DATABASE/API, CALCULATION, TIMEZONE, REFUND/ADJUSTMENT, DATA STATUS, EXISTING TESTS.
+
+If you cannot prove the source of truth, say `Source of truth not verified.` Do not guess.
+
+## Production-impacting changes
+
+Investigate automatically → propose fix → require approval for significant changes → test → verify the original problem → add/update regression tests → record in Jarvis diagnostics/memory.
+
+API/data failure ≠ zero. Never convert null, undefined, timeout, permission error, API error, schema error, or empty/unavailable into numeric 0 unless the source explicitly returned zero. Use `data_status`.
+
+Before modifying, the reply must include:
+
+DISCOVERY: what you found, exact source of truth, existing implementation, existing tests, current problem  
+PLAN: files to change, files not to change, DB changes, tests, risks
