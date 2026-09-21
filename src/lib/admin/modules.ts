@@ -15,6 +15,23 @@ export type AdminModule = {
 /** Canonical registry of admin console modules. Implement one module at a time. */
 export const ADMIN_MODULES: AdminModule[] = [
   {
+    id: 'jarvis',
+    title: 'JARVIS',
+    description: 'AI business operator — observe, decide, act, ask, learn across marketing and ops.',
+    href: '/admin/jarvis',
+    status: 'implemented',
+    showInNav: true,
+    navOrder: 8,
+    tables: [
+      'jarvis_conversations',
+      'jarvis_tasks',
+      'jarvis_approvals',
+      'jarvis_memory',
+      'jarvis_cost_usage',
+      'jarvis_incidents',
+    ],
+  },
+  {
     id: 'dashboard',
     title: 'Dashboard',
     description: 'Financial P&L, customers, enrollment, and platform health.',
@@ -153,6 +170,23 @@ export const ADMIN_MODULES: AdminModule[] = [
     showInNav: true,
     navOrder: 100,
     tables: ['prompt_library', 'prompt_library_versions'],
+  },
+  {
+    id: 'ai-marketing',
+    title: 'AI Marketing OS',
+    description: 'Meta ads, creative factory, UGC, Instagram, experiments, and approval-gated automation.',
+    href: '/admin/ai-marketing',
+    status: 'implemented',
+    showInNav: true,
+    navOrder: 105,
+    tables: [
+      'marketing_creatives',
+      'marketing_campaigns',
+      'marketing_performance',
+      'marketing_ai_decisions',
+      'marketing_ai_actions',
+      'marketing_experiments',
+    ],
   },
   {
     id: 'ai-logs',

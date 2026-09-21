@@ -30,5 +30,11 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
 , "src/middleware.js"  ],
-  "exclude": ["node_modules", "scripts"]
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "fitness-coaching-platform",
+    "fitness-coaching-platform-1",
+    "fitness-coaching-platform-2"
+  ]
 }

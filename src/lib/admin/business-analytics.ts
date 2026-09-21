@@ -2,6 +2,17 @@ import { getActiveTodayMetrics } from '@/lib/admin/active-today'
 import { calculateAiCostUsd, calculateRazorpayFeeInr, usdToInr } from '@/lib/admin/pricing'
 import { DEFAULTS, MODELS } from '@/lib/ai/config'
 import { COACHING_TIME_ZONE, getCoachingDateKey } from '@/lib/checkin-schedule'
+import {
+  filterPurchaseWindow,
+  grossCapturedRevenueInr,
+  refundsInr as refundsInrFromLedger,
+} from '@/lib/payments/purchase-revenue'
+import {
+  BUSINESS_TIMEZONE,
+  businessRevenueWindows,
+  lastNCalendarDays,
+  zonedYmd,
+} from '@/lib/time/business-calendar'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AiGenerationLog, Purchase } from '@/types/database'
 
@@ -21,6 +32,7 @@ export type RevenueMetrics = {
   weekInr: number
   monthInr: number
   lifetimeInr: number
+  timezone: typeof BUSINESS_TIMEZONE
 }
 
 export type CustomerMetrics = {
@@ -161,41 +173,16 @@ type AiLogRow = Pick<
   | 'created_at'
 >
 
-function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-}
-
-function startOfWeek(d: Date): Date {
-  const day = startOfDay(d)
-  const diff = (day.getDay() + 6) % 7
-  day.setDate(day.getDate() - diff)
-  return day
-}
-
-function startOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1)
-}
-
 function isoDay(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return zonedYmd(d, BUSINESS_TIMEZONE)
 }
 
 function isoMonth(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  return zonedYmd(d, BUSINESS_TIMEZONE).slice(0, 7)
 }
 
 function sumPurchaseInr(rows: PurchaseRow[], from?: Date, to?: Date): number {
-  return (
-    rows
-      .filter((r) => r.status === 'captured')
-      .filter((r) => {
-        const t = new Date(r.created_at).getTime()
-        if (from && t < from.getTime()) return false
-        if (to && t >= to.getTime()) return false
-        return true
-      })
-      .reduce((sum, r) => sum + r.amount_paise, 0) / 100
-  )
+  return grossCapturedRevenueInr(filterPurchaseWindow(rows, from, to))
 }
 
 function resolveLogCostUsd(log: AiLogRow): number {
@@ -285,16 +272,13 @@ export function enrollmentCountsForDay(
 export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
   const admin = createAdminClient()
   const now = new Date()
-  const todayStart = startOfDay(now)
-  const yesterdayStart = new Date(todayStart)
-  yesterdayStart.setDate(yesterdayStart.getDate() - 1)
-  const weekStart = startOfWeek(now)
-  const monthStart = startOfMonth(now)
-  const nextDay = new Date(todayStart)
-  nextDay.setDate(nextDay.getDate() + 1)
-
-  const since90 = new Date(todayStart)
-  since90.setDate(since90.getDate() - 90)
+  const windows = businessRevenueWindows(now)
+  const todayStart = windows.today.start
+  const nextDay = windows.today.endExclusive
+  const yesterdayStart = windows.yesterday.start
+  const weekStart = windows.weekToDate.start
+  const monthStart = windows.monthToDate.start
+  const since90 = lastNCalendarDays(BUSINESS_TIMEZONE, now, 90).start
 
   const [
     purchasesRes,
@@ -372,10 +356,11 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
 
   const revenue: RevenueMetrics = {
     todayInr: sumPurchaseInr(purchases, todayStart, nextDay),
-    yesterdayInr: sumPurchaseInr(purchases, yesterdayStart, todayStart),
-    weekInr: sumPurchaseInr(purchases, weekStart),
-    monthInr: sumPurchaseInr(purchases, monthStart),
+    yesterdayInr: sumPurchaseInr(purchases, yesterdayStart, windows.yesterday.endExclusive),
+    weekInr: sumPurchaseInr(purchases, weekStart, windows.weekToDate.endExclusive),
+    monthInr: sumPurchaseInr(purchases, monthStart, windows.monthToDate.endExclusive),
     lifetimeInr: sumPurchaseInr(purchases),
+    timezone: BUSINESS_TIMEZONE,
   }
 
   const customers: CustomerMetrics = {
@@ -383,7 +368,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
     activeCustomers: activeClientIds.size,
     activeToday: activeToday.count,
     newToday: uniqueDays(purchases, todayStart, nextDay),
-    newThisMonth: uniqueDays(purchases, monthStart),
+    newThisMonth: uniqueDays(purchases, monthStart, windows.monthToDate.endExclusive),
   }
 
   const plans: PlanMetrics = {
@@ -411,7 +396,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
       })
       .reduce((sum, { cost }) => sum + cost, 0)
 
-  const monthCost = sumCost(costs, monthStart)
+  const monthCost = sumCost(costs, monthStart, windows.monthToDate.endExclusive)
   const daysInMonth = now.getDate()
   const estimatedMonthlySpendUsd = daysInMonth > 0 ? (monthCost / daysInMonth) * 30 : monthCost
 
@@ -432,7 +417,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
 
   const aiCosts: AiCostMetrics = {
     todayUsd: Math.round(sumCost(costs, todayStart, nextDay) * 1_000_000) / 1_000_000,
-    weekUsd: Math.round(sumCost(costs, weekStart) * 1_000_000) / 1_000_000,
+    weekUsd: Math.round(sumCost(costs, weekStart, windows.weekToDate.endExclusive) * 1_000_000) / 1_000_000,
     monthUsd: Math.round(monthCost * 1_000_000) / 1_000_000,
     lifetimeUsd: Math.round(sumCost(lifetimeCosts) * 1_000_000) / 1_000_000,
     avgPerGenerationUsd:
@@ -477,14 +462,7 @@ export async function computeBusinessAnalytics(): Promise<BusinessAnalytics> {
   }
 
   const lifetimeRevenueInr = revenue.lifetimeInr
-  const refundsInr =
-    Math.round(
-      (purchases
-        .filter((p) => p.status === 'captured' || p.status === 'refunded')
-        .reduce((sum, p) => sum + (p.refunded_amount_paise ?? 0), 0) /
-        100) *
-        100
-    ) / 100
+  const refundsInr = refundsInrFromLedger(purchases)
   const netSalesInr = Math.round((lifetimeRevenueInr - refundsInr) * 100) / 100
   const razorpayFeesInr = purchases
     .filter((p) => p.status === 'captured')
