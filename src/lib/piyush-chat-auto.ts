@@ -67,7 +67,7 @@ function buildReplyPrompt(input: {
       'Recent chat:',
       history || '(no prior messages)',
       '',
-      'Write the next coach reply only. No quotes around it. No hyphen characters.',
+      'Write the next coach reply only: 2–3 short lines max. No quotes. No hyphen characters. No bullet lists.',
     ].join('\n'),
   }
 }
@@ -146,7 +146,7 @@ export async function autoReplyUnreadChat(
       systemPrompt: prompts.systemPrompt,
       userPrompt: prompts.userPrompt,
       model: MODELS.GPT_LUNA,
-      maxTokens: 400,
+      maxTokens: 120,
       temperature: 0.5,
     })
     reply = generated.text.replace(/[\u2010-\u2015\u2212-]/g, ' ').replace(/\s{2,}/g, ' ').trim()
