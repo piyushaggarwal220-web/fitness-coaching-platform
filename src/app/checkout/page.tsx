@@ -1,17 +1,18 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { BRAND_NAME } from '@/lib/brand';
+import { planDurationLabel, planGoalName, planPathForSlug } from '@/lib/payments/plan-pages';
 import {
   COACHING_PLAN_LIST,
   DIGITAL_PLAN_LIST,
   getPurchasablePlan,
   isDigitalPlanSlug,
+  type CoachingPlanSlug,
 } from '@/lib/payments/plans';
-import { planDurationLabel, planGoalName } from '@/lib/payments/plan-pages';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
 import { resolveAuthEmailRedirectOrigin, resolveMarketingBaseUrl } from '@/lib/admin/portal-urls';
@@ -44,6 +45,7 @@ import {
 } from '@/lib/sale-countdown';
 import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations';
 import { CheckoutBasicsStep, type CheckoutBasicsFormState } from '@/components/checkout/CheckoutBasicsStep';
+import { validateCheckoutBasicsFields } from '@/lib/payments/checkout-intake-basics-shared';
 import { isPublicDemoEmail } from '@/lib/public-demo';
 import { leavePublicDemoSession } from '@/lib/public-demo-session';
 
@@ -194,7 +196,7 @@ function CheckoutForm() {
         displayListPrice: plan.displayPrice,
         displaySalePrice: formatInrFromPaise(amountPaise),
         displayDiscount: formatInrFromPaise(discountPaise),
-        message: `Referral applied — save ${formatInrFromPaise(discountPaise)} on ${plan.name} (sale + ${affiliate.extraPercentOffSale}% via ${affiliate.referrerLabel}).`,
+        message: `Referral applied â€” save ${formatInrFromPaise(discountPaise)} on ${plan.name} (sale + ${affiliate.extraPercentOffSale}% via ${affiliate.referrerLabel}).`,
       };
     }
 
@@ -209,7 +211,7 @@ function CheckoutForm() {
         displayListPrice: plan.displayPrice,
         displaySalePrice: formatInrFromPaise(plan.amountPaise - discountPaise),
         displayDiscount: formatInrFromPaise(discountPaise),
-        message: `Discount applied — save ${formatInrFromPaise(discountPaise)} on ${plan.name}.`,
+        message: `Discount applied â€” save ${formatInrFromPaise(discountPaise)} on ${plan.name}.`,
       };
     }
 
@@ -225,7 +227,7 @@ function CheckoutForm() {
       displayListPrice: plan.displayPrice,
       displaySalePrice: formatInrFromPaise(amountPaise),
       displayDiscount: formatInrFromPaise(discountPaise),
-      message: `Discount applied — save ${formatInrFromPaise(discountPaise)} on ${plan.name}.`,
+      message: `Discount applied â€” save ${formatInrFromPaise(discountPaise)} on ${plan.name}.`,
     };
   };
 
@@ -238,7 +240,7 @@ function CheckoutForm() {
       return;
     }
 
-    // Instant local apply for SUMMER60 / LUKE — no email required.
+    // Instant local apply for SUMMER60 / LUKE â€” no email required.
     const local = buildLocalWelcomeDiscount(code);
     if (local) setAppliedDiscount(local);
 
@@ -274,7 +276,7 @@ function CheckoutForm() {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not apply referral code';
-      // Eligibility failed (invalid code, etc.) — drop the preview discount when email is known.
+      // Eligibility failed (invalid code, etc.) â€” drop the preview discount when email is known.
       if (email.trim().includes('@') || !local) {
         setAppliedDiscount(null);
       }
@@ -382,7 +384,7 @@ function CheckoutForm() {
       setEmailVerified(true);
       setEmailLinkSent(true);
       setEmailDelivery('magic_link');
-      setCheckoutScreen((current) => (current < 3 ? 3 : current));
+      setCheckoutScreen(3);
     }
   }, [searchParams]);
 
@@ -470,7 +472,7 @@ function CheckoutForm() {
       missing.push(
         emailLinkSent
           ? 'Open the verification link in your email (check spam too)'
-          : 'Verify your email (tap “Send verification email”)'
+          : 'Verify your email (tap â€œSend verification emailâ€)'
       );
     }
     if (!testMode && !basicsComplete) {
@@ -541,7 +543,7 @@ function CheckoutForm() {
       setEmailDelivery(delivery);
 
       if (delivery === 'magic_link' && !data.emailVerified) {
-        // Always use the public app origin — never localhost (emails open on other devices).
+        // Always use the public app origin â€” never localhost (emails open on other devices).
         const appOrigin = resolveAuthEmailRedirectOrigin(window.location.origin);
         const redirectTo = `${appOrigin}/checkout/confirm-email?vid=${encodeURIComponent(data.verificationId)}&plan=${encodeURIComponent(plan.slug)}${
           referralCode.trim()
@@ -643,6 +645,17 @@ function CheckoutForm() {
     } finally {
       setSavingBasics(false);
     }
+  };
+
+  const continueFromBasics = () => {
+    const validated = validateCheckoutBasicsFields(basics);
+    if (!validated.ok) {
+      setError(validated.error);
+      return;
+    }
+    setError('');
+    setCheckoutScreen(2);
+    trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'details' });
   };
 
   const continueAfterPayment = (redirectTo: string) => {
@@ -811,10 +824,10 @@ function CheckoutForm() {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
-          <Link href={marketingBaseUrl} style={styles.backLink}>← Back to home</Link>
+          <Link href={marketingBaseUrl} style={styles.backLink}>â† Back to home</Link>
           <p style={styles.brandMark}>{BRAND_NAME}</p>
           <h1 style={styles.title}>Payment confirmed</h1>
-          <p style={styles.subtitle}>Taking you to create your login password…</p>
+          <p style={styles.subtitle}>Taking you to create your login passwordâ€¦</p>
         </div>
       </div>
     );
@@ -859,7 +872,7 @@ function CheckoutForm() {
           href={isDigitalCheckout ? '/customised-plan' : marketingBaseUrl}
           style={dig(styles.backLink, 'backLink')}
         >
-          ← {isDigitalCheckout ? 'Back to plans' : 'Back to home'}
+          â† {isDigitalCheckout ? 'Back to plans' : 'Back to home'}
         </Link>
 
         <p style={{ ...styles.brandMark, ...(isDigitalCheckout ? digitalTheme.brandMark : null) }}>
@@ -877,15 +890,13 @@ function CheckoutForm() {
         </h1>
         <p style={dig(styles.subtitle, 'subtitle')}>
           {checkoutScreen === 1
-            ? (isTrialCheckout
-              ? 'Full coaching access for 7 days. Upgrade anytime.'
-              : isDigitalCheckout
-                ? 'Start intake → unlock your plan → get diet & workout on the platform.'
-                : 'Start intake → unlock full customization → get your plan on the platform.')
+            ? 'Answer a few basics so we can customize your coaching.'
             : checkoutScreen === 2
-              ? 'Verify your email to continue intake.'
+              ? (isTrialCheckout
+                ? 'Full coaching access for 7 days. Upgrade anytime.'
+                : 'Enter your details to continue intake â€” payment comes after.')
               : checkoutScreen === 3
-                ? 'Answer a few basics so we can customize your coaching.'
+                ? 'Verify your email to save your answers and continue.'
                 : 'Unlock your customized plan and pay securely.'}
         </p>
 
@@ -903,24 +914,32 @@ function CheckoutForm() {
         </div>
 
         {checkoutScreen === 1 && (
+          <CheckoutBasicsStep
+            value={basics}
+            onChange={setBasics}
+            onBack={() => {
+              const planHref = isDigitalCheckout
+                ? '/customised-plan'
+                : `/plans/${planPathForSlug(plan.slug as CoachingPlanSlug)}`;
+              window.location.href = planHref;
+            }}
+            onSubmit={continueFromBasics}
+            saving={false}
+            error={error}
+            styles={styles}
+            dig={dig}
+          />
+        )}
+
+        {checkoutScreen === 2 && (
           <>
-            {!isTrialCheckout && (
-              <div style={dig(styles.trustStrip, 'trustStrip')} aria-label="Checkout trust">
-                <div style={styles.trustBadges}>
-                  <span style={dig(styles.trustBadge, 'trustBadge')}>UPI</span>
-                  <span style={dig(styles.trustBadge, 'trustBadge')}>Cards</span>
-                  <span style={dig(styles.trustBadge, 'trustBadge')}>Netbanking</span>
-                  <span style={dig(styles.trustBadge, 'trustBadge')}>Razorpay Secure</span>
-                </div>
-                <p style={dig(styles.trustLine, 'trustLine')}>
-                  Secure checkout via Razorpay. By paying, you agree to our{' '}
-                  <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
-                    Terms &amp; Conditions
-                  </Link>
-                  .
-                </p>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => { setCheckoutScreen(1); setError(''); }}
+              style={dig(styles.backToDetails, 'backLink')}
+            >
+              â† Edit basics
+            </button>
 
             {!isTrialCheckout && (
               <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
@@ -967,7 +986,7 @@ function CheckoutForm() {
 
             {isTrialCheckout && (
               <div style={styles.trialBadge}>
-                {plan.name} · {plan.displayPrice}
+                {plan.name} Â· {plan.displayPrice}
               </div>
             )}
 
@@ -979,16 +998,16 @@ function CheckoutForm() {
                       ? `${plan.name} coaching`
                       : isDigitalCheckout
                         ? plan.name
-                        : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+                        : `${planGoalName(plan.slug)} Â· ${planDurationLabel(plan.slug)}`}
                   </div>
                   <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>
                     {isDigitalCheckout
                       ? plan.sections === 'workout'
-                        ? 'Workout guidance · digital delivery'
+                        ? 'Workout guidance Â· digital delivery'
                         : plan.sections === 'diet'
-                          ? 'Diet chart · digital delivery'
-                          : 'Workout ₹49 · Diet ₹89 · both ₹99'
-                      : 'Workout · diet · checkins · coach chat'}
+                          ? 'Diet chart Â· digital delivery'
+                          : 'Workout â‚¹49 Â· Diet â‚¹89 Â· both â‚¹99'
+                      : 'Basics done Â· next: your contact details'}
                   </div>
                 </div>
                 <div style={styles.orderPriceCol}>
@@ -1000,71 +1019,6 @@ function CheckoutForm() {
                   </span>
                 </div>
               </div>
-                {!isDigitalCheckout ? (
-                <div style={styles.offerBanner}>
-                  <div style={styles.offerBannerTop}>
-                    <strong>{discountLockedIn ? 'Discount applied' : 'Have a promo code?'}</strong>
-                    {offerSaveDisplay ? <span style={styles.offerSave}>Save {offerSaveDisplay}</span> : null}
-                  </div>
-                  <p style={styles.offerBannerText}>
-                    {discountLockedIn
-                      ? `You pay ${appliedDiscount!.displaySalePrice} today.`
-                      : 'Enter a referral or promo code and tap Apply.'}
-                  </p>
-                  {discountLockedIn ? (
-                    <div style={styles.appliedCodeRow}>
-                      <span style={styles.appliedCodeChip}>{appliedDiscount!.code}</span>
-                      <button type="button" onClick={clearReferralCode} style={styles.backToPay}>
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={styles.codeRow}>
-                      <input
-                        value={referralCode}
-                        onChange={(e) => {
-                          setReferralCode(e.target.value.toUpperCase());
-                          setEnrollmentHref(null);
-                          setAppliedDiscount(null);
-                        }}
-                        placeholder="Promo code"
-                        autoComplete="off"
-                        aria-label="Discount code"
-                        style={{ ...styles.input, marginTop: 0, flex: 1, minHeight: 48 }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void applyReferralCode()}
-                        disabled={applyingCode || !referralCode.trim()}
-                        style={styles.validateBtn}
-                      >
-                        {applyingCode ? '…' : 'Apply'}
-                      </button>
-                    </div>
-                  )}
-                  <div style={styles.priceIncreaseTimer} aria-live="polite">
-                    <span style={styles.priceIncreaseLabel}>Price increases in</span>
-                    <strong style={styles.priceIncreaseValue}>{saleCountdown}</strong>
-                  </div>
-                  {enrollmentHref && (
-                    <div style={styles.discountApplied}>
-                      <p style={{ margin: '0 0 10px' }}>
-                        This looks like a membership enrollment code — redeem it on the enrollment page.
-                      </p>
-                      <a
-                        href={enrollmentHref}
-                        style={{ ...styles.validateBtn, display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}
-                      >
-                        Continue to enrollment →
-                      </a>
-                    </div>
-                  )}
-                </div>
-                ) : (
-                  <p style={digitalTheme.honestNote}>
-                    Honest pricing · Made by the coach · Written plan, not live coaching
-                  </p>
-                )}
             </section>
 
             <p style={styles.leagueNote}>
@@ -1136,30 +1090,24 @@ function CheckoutForm() {
                   }
                   setError('');
                   setMissingItems([]);
-                  setCheckoutScreen(2);
+                  setCheckoutScreen(3);
                   trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'verify' });
                 }}
               >
-                Continue
+                Continue to verify email
               </button>
             </div>
-
-            {!isTrialCheckout && (
-              <div style={{ marginTop: 28 }}>
-                <AnimatedTransformations variant="checkout" />
-              </div>
-            )}
           </>
         )}
 
-        {checkoutScreen === 2 && (
+        {checkoutScreen === 3 && (
           <>
             <button
               type="button"
-              onClick={() => { setCheckoutScreen(1); setError(''); }}
+              onClick={() => { setCheckoutScreen(2); setError(''); }}
               style={dig(styles.backToDetails, 'backLink')}
             >
-              ← Edit plan & details
+              â† Edit details
             </button>
 
             <section style={{ ...dig(styles.orderSummary, 'orderSummary'), marginBottom: 16 }}>
@@ -1170,9 +1118,9 @@ function CheckoutForm() {
                       ? plan.name
                       : isDigitalCheckout
                         ? plan.name
-                        : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+                        : `${planGoalName(plan.slug)} Â· ${planDurationLabel(plan.slug)}`}
                   </div>
-                  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || '—'}</div>
+                  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || 'â€”'}</div>
                 </div>
                 <div style={styles.orderPriceCol}>
                   {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
@@ -1187,7 +1135,7 @@ function CheckoutForm() {
 
             {testMode && (
               <div style={styles.testBanner}>
-                Development mode — payment will be simulated. No Razorpay charge.
+                Development mode â€” payment will be simulated. No Razorpay charge.
               </div>
             )}
 
@@ -1218,7 +1166,7 @@ function CheckoutForm() {
                       style={dig(styles.otpBtn, 'otpBtn')}
                     >
                       {sendingEmailOtp
-                        ? 'Sending…'
+                        ? 'Sendingâ€¦'
                         : emailVerified
                           ? 'Verified'
                           : emailLinkSent
@@ -1239,7 +1187,7 @@ function CheckoutForm() {
                         }}
                         style={dig(styles.otpBtnSecondary, 'otpBtnSecondary')}
                       >
-                        I’ve opened the link
+                        Iâ€™ve opened the link
                       </button>
                     )}
                   </div>
@@ -1258,7 +1206,7 @@ function CheckoutForm() {
                         disabled={verifyingEmailOtp || emailCode.length < 6 || !verificationId}
                         style={dig(styles.otpBtn, 'otpBtn')}
                       >
-                        {verifyingEmailOtp ? 'Checking…' : 'Verify code'}
+                        {verifyingEmailOtp ? 'Checkingâ€¦' : 'Verify code'}
                       </button>
                     </>
                   )}
@@ -1268,35 +1216,21 @@ function CheckoutForm() {
               <button
                 type="button"
                 style={dig(styles.payBtn, 'payBtn')}
-                disabled={!testMode && !emailVerified}
+                disabled={savingBasics || (!testMode && !emailVerified)}
                 onClick={() => {
                   if (!testMode && !emailVerified) {
                     setError('Verify your email before continuing.');
                     return;
                   }
-                  setError('');
-                  setCheckoutScreen(3);
-                  trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'basics' });
+                  void saveBasicsAndContinue();
                 }}
               >
-                Continue to basics
+                {savingBasics ? 'Saving…' : 'Continue to unlock plan'}
               </button>
             </div>
           </>
         )}
 
-        {checkoutScreen === 3 && (
-          <CheckoutBasicsStep
-            value={basics}
-            onChange={setBasics}
-            onBack={() => { setCheckoutScreen(2); setError(''); }}
-            onSubmit={() => void saveBasicsAndContinue()}
-            saving={savingBasics}
-            error={error}
-            styles={styles}
-            dig={dig}
-          />
-        )}
 
         {checkoutScreen === 4 && (
           <>
@@ -1305,8 +1239,26 @@ function CheckoutForm() {
               onClick={() => { setCheckoutScreen(3); setError(''); }}
               style={dig(styles.backToDetails, 'backLink')}
             >
-              ← Edit basics
+              ← Back
             </button>
+
+            {!isTrialCheckout && (
+              <div style={dig(styles.trustStrip, 'trustStrip')} aria-label="Checkout trust">
+                <div style={styles.trustBadges}>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>UPI</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>Cards</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>Netbanking</span>
+                  <span style={dig(styles.trustBadge, 'trustBadge')}>Razorpay Secure</span>
+                </div>
+                <p style={dig(styles.trustLine, 'trustLine')}>
+                  Secure checkout via Razorpay. By paying, you agree to our{' '}
+                  <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
+                    Terms &amp; Conditions
+                  </Link>
+                  .
+                </p>
+              </div>
+            )}
 
             <section style={{ ...dig(styles.orderSummary, 'orderSummary'), marginBottom: 16 }}>
               <div style={styles.orderRow}>
@@ -1333,16 +1285,13 @@ function CheckoutForm() {
 
             <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>Unlock your customized plan</h2>
             <p style={dig(styles.otpHint, 'otpHint')}>
-              You’ve started intake. To continue and get your full plan on the platform, pay for your plan.
+              You've answered the basics. To continue and get your full plan on the platform, pay for your plan.
             </p>
             <ul style={{ ...styles.todoList, marginBottom: 16 }}>
               <li>Full coaching intake after payment</li>
               <li>Customized diet chart, workout, cardio & sleep guidance</li>
               <li>Delivered on the {BRAND_NAME} platform</li>
             </ul>
-            <p style={{ ...dig(styles.otpHint, 'otpHint'), marginBottom: 16 }}>
-              After payment: create login → finish intake → your plan appears on the platform.
-            </p>
 
             {testMode && (
               <div style={styles.testBanner}>
@@ -1351,18 +1300,6 @@ function CheckoutForm() {
             )}
 
             {error && <div style={styles.error}>{error}</div>}
-            {isTrialCheckout && error && /trial|already used|renewal|new customers/i.test(error) && (
-              <div style={styles.todoBox}>
-                <p style={styles.todoTitle}>Upgrade instead</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {COACHING_PLAN_LIST.map((item) => (
-                    <Link key={item.slug} href={`/checkout?plan=${item.slug}`} style={styles.validateBtn}>
-                      {planGoalName(item.slug)} · {item.displayPrice}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
             {attemptedPay && liveMissing.length > 0 && (
               <div style={styles.todoBox}>
                 <p style={styles.todoTitle}>Finish these to pay</p>
@@ -1382,10 +1319,7 @@ function CheckoutForm() {
             )}
 
             <form id="checkout-pay-form" onSubmit={handleSubmit} style={styles.form} noValidate>
-              <label
-                ref={policyRef}
-                style={styles.policyRow}
-              >
+              <label ref={policyRef} style={styles.policyRow}>
                 <input
                   type="checkbox"
                   checked={policyAgreementAccepted}
@@ -1401,7 +1335,6 @@ function CheckoutForm() {
                   . All guarantees, refunds, upgrades, and service rules are only as stated there.
                 </span>
               </label>
-
               <div style={{ height: 88 }} aria-hidden />
             </form>
 

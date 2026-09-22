@@ -44,7 +44,7 @@ export function CheckoutBasicsStep({
   return (
     <>
       <button type="button" onClick={onBack} style={dig(styles.backToDetails, 'backLink')}>
-        ← Back
+        ← Back to plan
       </button>
 
       <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>A few basics for your coach</h2>

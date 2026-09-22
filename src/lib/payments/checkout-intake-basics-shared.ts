@@ -54,6 +54,46 @@ export function normalizeCheckoutBasicsEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
+export function validateCheckoutBasicsFields(input: {
+  age: number | string
+  gender: string
+  heightCm: number | string
+  weightKg?: number | string | null
+  dietPreference: string
+  mainGoal: string
+}): { ok: true } | { ok: false; error: string; missing: string[] } {
+  const missing: string[] = []
+  const age = typeof input.age === 'number' ? input.age : Number(String(input.age).trim())
+  const heightCm =
+    typeof input.heightCm === 'number' ? input.heightCm : Number(String(input.heightCm).trim())
+  const weightRaw =
+    input.weightKg === null || input.weightKg === undefined || input.weightKg === ''
+      ? null
+      : typeof input.weightKg === 'number'
+        ? input.weightKg
+        : Number(String(input.weightKg).trim())
+
+  if (!Number.isFinite(age) || age < 13 || age > 100) missing.push('Age (13–100)')
+  if (!isGender(String(input.gender ?? '').trim())) missing.push('Gender')
+  if (!Number.isFinite(heightCm) || heightCm < 120 || heightCm > 230) {
+    missing.push('Height in cm (120–230)')
+  }
+  if (weightRaw != null && (!Number.isFinite(weightRaw) || weightRaw < 30 || weightRaw > 250)) {
+    missing.push('Weight in kg (30–250)')
+  }
+  if (!isDiet(String(input.dietPreference ?? '').trim())) missing.push('Diet type')
+  if (!isMainGoal(String(input.mainGoal ?? '').trim())) missing.push('Main goal')
+
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      error: `Complete these basics first: ${missing.join('; ')}`,
+      missing,
+    }
+  }
+  return { ok: true }
+}
+
 export function validateCheckoutBasicsPayload(input: CheckoutBasicsInput): {
   ok: true
   value: {
