@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
@@ -824,7 +824,7 @@ function CheckoutForm() {
  return (
  <div style={styles.page}>
  <div style={styles.card}>
- <Link href={marketingBaseUrl} style={styles.backLink}><- Back to home</Link>
+ <Link href={marketingBaseUrl} style={styles.backLink}>{'← Back to home'}</Link>
  <p style={styles.brandMark}>{BRAND_NAME}</p>
  <h1 style={styles.title}>Payment confirmed</h1>
  <p style={styles.subtitle}>Taking you to create your login password...</p>
@@ -872,7 +872,7 @@ function CheckoutForm() {
  href={isDigitalCheckout ? '/customised-plan' : marketingBaseUrl}
  style={dig(styles.backLink, 'backLink')}
  >
- <- {isDigitalCheckout ? 'Back to plans' : 'Back to home'}
+ {'← '}{isDigitalCheckout ? 'Back to plans' : 'Back to home'}
  </Link>
 
  <p style={{ ...styles.brandMark, ...(isDigitalCheckout ? digitalTheme.brandMark : null) }}>
@@ -938,7 +938,7 @@ function CheckoutForm() {
  onClick={() => { setCheckoutScreen(1); setError(''); }}
  style={dig(styles.backToDetails, 'backLink')}
  >
- <- Edit basics
+ {'← Edit basics'}
  </button>
 
  {!isTrialCheckout && (
@@ -986,7 +986,7 @@ function CheckoutForm() {
 
  {isTrialCheckout && (
  <div style={styles.trialBadge}>
- {plan.name} · {plan.displayPrice}
+ {plan.name} Â· {plan.displayPrice}
  </div>
  )}
 
@@ -998,16 +998,16 @@ function CheckoutForm() {
  ? `${plan.name} coaching`
  : isDigitalCheckout
  ? plan.name
- : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+ : `${planGoalName(plan.slug)} Â· ${planDurationLabel(plan.slug)}`}
  </div>
  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>
  {isDigitalCheckout
  ? plan.sections === 'workout'
- ? 'Workout guidance · digital delivery'
+ ? 'Workout guidance Â· digital delivery'
  : plan.sections === 'diet'
- ? 'Diet chart · digital delivery'
- : 'Workout Rs 49 · Diet Rs 89 · both Rs 99'
- : 'Basics done · next: your contact details'}
+ ? 'Diet chart Â· digital delivery'
+ : 'Workout Rs 49 Â· Diet Rs 89 Â· both Rs 99'
+ : 'Basics done Â· next: your contact details'}
  </div>
  </div>
  <div style={styles.orderPriceCol}>
@@ -1107,7 +1107,7 @@ function CheckoutForm() {
  onClick={() => { setCheckoutScreen(2); setError(''); }}
  style={dig(styles.backToDetails, 'backLink')}
  >
- <- Edit details
+ {'← Edit details'}
  </button>
 
  <section style={{ ...dig(styles.orderSummary, 'orderSummary'), marginBottom: 16 }}>
@@ -1118,7 +1118,7 @@ function CheckoutForm() {
  ? plan.name
  : isDigitalCheckout
  ? plan.name
- : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+ : `${planGoalName(plan.slug)} Â· ${planDurationLabel(plan.slug)}`}
  </div>
  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || ' - '}</div>
  </div>
@@ -1239,7 +1239,7 @@ function CheckoutForm() {
  onClick={() => { setCheckoutScreen(3); setError(''); }}
  style={dig(styles.backToDetails, 'backLink')}
  >
- <- Back
+ {'← Back'}
  </button>
 
  {!isTrialCheckout && (
@@ -1268,7 +1268,7 @@ function CheckoutForm() {
  ? plan.name
  : isDigitalCheckout
  ? plan.name
- : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+ : `${planGoalName(plan.slug)} Â· ${planDurationLabel(plan.slug)}`}
  </div>
  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || ' - '}</div>
  </div>
@@ -1342,7 +1342,7 @@ function CheckoutForm() {
  After payment you&apos;ll create your login password and continue intake.
  {' '}
  <Link href="/create-account" style={dig(styles.inlineLink, 'inlineLink')}>Already paid?</Link>
- {' · '}
+ {' Â· '}
  <Link href="/enroll" style={dig(styles.inlineLink, 'inlineLink')}>Enrollment code</Link>
  </p>
  </>
@@ -1365,7 +1365,7 @@ function CheckoutForm() {
  {loading ? 'Processing...' : `Pay ${payableDisplay}`}
  </button>
  </div>
- <p style={dig(styles.stickyPayNote, 'stickyPayNote')}>Secure checkout via Razorpay · SSL encrypted</p>
+ <p style={dig(styles.stickyPayNote, 'stickyPayNote')}>Secure checkout via Razorpay Â· SSL encrypted</p>
  </div>
  )}
 
