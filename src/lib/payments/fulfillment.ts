@@ -6,7 +6,6 @@ import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
-import { consumeCheckoutIntakeBasicsForUser } from '@/lib/payments/checkout-intake-basics'
 import type { CoachingPlan } from '@/lib/payments/plans'
 import { getCoachingPlan, subscriptionExpiryFromPlan } from '@/lib/payments/plans'
 import type { CheckoutAddonId } from '@/lib/payments/checkout-discounts'
@@ -667,26 +666,6 @@ export async function claimPurchaseWithPassword(
   if (profileError) {
     logPurchaseStep('profile_create_failed', { userId, error: profileError.message })
     throw new Error(`Failed to create profile: ${profileError.message}`)
-  }
-
-  try {
-    const basics = await consumeCheckoutIntakeBasicsForUser({
-      email,
-      userId,
-    })
-    if (basics) {
-      logPurchaseStep('checkout_intake_basics_merged', {
-        email,
-        userId,
-        basicsId: basics.id,
-      })
-    }
-  } catch (basicsError) {
-    logPurchaseStep('checkout_intake_basics_merge_failed', {
-      email,
-      userId,
-      error: basicsError instanceof Error ? basicsError.message : 'unknown',
-    })
   }
 
   const { data: claimedRows, error: claimError } = await admin

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { claimPurchaseWithPassword } from '@/lib/payments/fulfillment'
+import { consumeCheckoutIntakeBasicsForUser } from '@/lib/payments/checkout-intake-basics'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { establishPurchaseSession } from '@/lib/payments/purchase-session'
 import { scheduleOpportunisticNotificationDrain } from '@/lib/notifications/drain'
@@ -48,6 +49,27 @@ export async function POST(request: Request) {
       password,
       name: body.name,
     })
+
+    try {
+      const basics = await consumeCheckoutIntakeBasicsForUser({
+        email: result.email,
+        userId: result.userId,
+      })
+      if (basics) {
+        logPurchaseStep('checkout_intake_basics_merged', {
+          email: result.email,
+          userId: result.userId,
+          basicsId: basics.id,
+        })
+      }
+    } catch (basicsError) {
+      logPurchaseStep('checkout_intake_basics_merge_failed', {
+        email: result.email,
+        userId: result.userId,
+        error: basicsError instanceof Error ? basicsError.message : 'unknown',
+      })
+    }
+
     scheduleOpportunisticNotificationDrain()
 
     if (result.needsLogin) {
