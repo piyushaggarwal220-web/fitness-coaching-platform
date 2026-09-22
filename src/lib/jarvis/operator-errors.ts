@@ -43,6 +43,13 @@ export function humanizeJarvisError(raw: unknown): string {
   ) {
     return 'Meta connection failed. Jarvis could not retrieve campaign data.'
   }
+  if (
+    lower.includes('instagram_access_token') ||
+    (lower.includes('instagram') &&
+      (lower.includes('not configured') || lower.includes('permission') || lower.includes('oauth')))
+  ) {
+    return 'Instagram connection failed. Check INSTAGRAM_ACCESS_TOKEN and account scopes.'
+  }
   if (lower.includes('video') && (lower.includes('not configured') || lower.includes('webhook'))) {
     return 'Video provider is not configured.'
   }
@@ -55,9 +62,6 @@ export function humanizeJarvisError(raw: unknown): string {
   }
   if (lower.includes('shopify') && lower.includes('not configured')) {
     return 'Shopify is not configured. Jarvis could not retrieve store data.'
-  }
-  if (lower.includes('instagram') && lower.includes('not configured')) {
-    return 'Instagram publishing is not configured.'
   }
   if (firstLine.includes('    at ') || /\.tsx?:\d+:\d+/.test(firstLine)) {
     return 'Jarvis hit an unexpected error while working on this request.'

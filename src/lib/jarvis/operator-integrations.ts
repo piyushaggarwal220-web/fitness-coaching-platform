@@ -4,10 +4,16 @@ import { liveMetaExecutionEnabled } from '@/lib/ai-marketing/autonomy'
 import { getShopifyCredentials, shopifyTestConnection } from '@/lib/jarvis/shopify/client'
 import { isBraveSearchConfigured } from '@/lib/jarvis/research/brave-search'
 import { isVideoProviderConfigured, getVideoEditProvider } from '@/lib/jarvis/video/provider'
+import {
+  isInstagramConfigured,
+  liveInstagramPublishingEnabled,
+  instagramStatus,
+} from '@/lib/jarvis/instagram'
 import { ensureJarvisToolsRegistered } from '@/lib/jarvis/tools/builtins'
 import { FORBIDDEN_TOOL_NAMES, listTools } from '@/lib/jarvis/tools/registry'
 import { evaluateToolPermission } from '@/lib/jarvis/permissions/risk-engine'
 import { humanToolLabel, toolFamily } from '@/lib/jarvis/operator-present'
+import { describeRealtimeCapability } from '@/lib/jarvis/realtime/config'
 
 export type IntegrationStatus = 'connected' | 'not_connected' | 'error' | 'disabled' | 'partial'
 
@@ -138,16 +144,56 @@ export async function listIntegrationCards(): Promise<IntegrationCard[]> {
     {
       id: 'instagram',
       name: 'Instagram',
-      status: openai ? 'partial' : 'not_connected',
-      summary: openai
-        ? 'Idea generation works. Publishing Reels/posts is not connected.'
-        : 'Instagram ideas need OpenAI. Publishing is not connected.',
-      can_do: openai ? ['Generate Instagram content ideas'] : [],
-      cannot_do: ['Publish Reels', 'Instagram Graph posting'],
-      configure_hint:
-        'Publishing is not implemented. Idea generation uses OpenAI. No Instagram access token is stored in this UI.',
-      testable: false,
-      missing: openai ? ['INSTAGRAM_PUBLISHING'] : ['OPENAI_API_KEY', 'INSTAGRAM_PUBLISHING'],
+      status: openai
+        ? isInstagramConfigured()
+          ? 'connected'
+          : 'partial'
+        : 'not_connected',
+      summary: !openai
+        ? 'Instagram ideas need OpenAI. Graph publishing is gated.'
+        : isInstagramConfigured()
+          ? liveInstagramPublishingEnabled()
+            ? 'Graph reads available. Live publishing enabled after approval.'
+            : 'Graph reads available when token scopes allow. Publishing requires approval + LIVE_INSTAGRAM_PUBLISHING_ENABLED.'
+          : 'Idea generation/planning works. Instagram Graph account not fully configured.',
+      can_do: [
+        ...(openai
+          ? [
+              'Generate Instagram content ideas',
+              'Plan structured Instagram content',
+              'Research fitness/Reels trends (via Brave when configured)',
+              'Analyze local marketing_content performance',
+              'Prepare publish drafts from completed video jobs',
+            ]
+          : []),
+        ...(isInstagramConfigured()
+          ? [
+              'Read profile/media/insights (scope-dependent)',
+              'Sync content intelligence snapshots (read-only)',
+              'Analyze historical organic performance',
+            ]
+          : []),
+      ],
+      cannot_do: [
+        'Autonomous publishing',
+        ...(liveInstagramPublishingEnabled() ? [] : ['Live Graph publish until LIVE_INSTAGRAM_PUBLISHING_ENABLED']),
+        'Modify account settings',
+        'Change Instagram credentials',
+      ],
+      configure_hint: isInstagramConfigured()
+        ? liveInstagramPublishingEnabled()
+          ? null
+          : 'Set LIVE_INSTAGRAM_PUBLISHING_ENABLED=true only after you intentionally want approved publishes to hit Graph.'
+        : 'Set INSTAGRAM_ACCESS_TOKEN and INSTAGRAM_BUSINESS_ACCOUNT_ID (Instagram Login → graph.instagram.com). META_ADS_ACCESS_TOKEN remains for Ads only. Publishing stays approval-gated.',
+      testable: true,
+      missing: [
+        ...(!openai ? ['OPENAI_API_KEY'] : []),
+        ...(!isInstagramConfigured()
+          ? ['INSTAGRAM_ACCESS_TOKEN', 'INSTAGRAM_BUSINESS_ACCOUNT_ID']
+          : liveInstagramPublishingEnabled()
+            ? []
+            : ['LIVE_INSTAGRAM_PUBLISHING_ENABLED']),
+      ],
     },
     {
       id: 'brave',
@@ -171,20 +217,62 @@ export async function listIntegrationCards(): Promise<IntegrationCard[]> {
       summary: isVideoProviderConfigured()
         ? `Provider ${video.name} is ready. Publish still needs approval.`
         : 'Video rendering unavailable.',
-      can_do: isVideoProviderConfigured() ? ['Queue gym footage edits', 'Check job status'] : [],
+      can_do: isVideoProviderConfigured()
+        ? ['Queue gym footage edits', 'Check job status', 'Receive Shotstack webhooks']
+        : [],
       cannot_do: isVideoProviderConfigured()
         ? ['Publish without approval']
         : ['Render Reels', 'Remove silence / captions automatically'],
       configure_hint: isVideoProviderConfigured()
         ? null
-        : 'Set VIDEO_EDIT_PROVIDER=http and VIDEO_EDIT_WEBHOOK_URL on the server.',
+        : 'Set VIDEO_EDIT_PROVIDER=shotstack, VIDEO_EDIT_API_KEY, and VIDEO_EDIT_WEBHOOK_URL=https://app.lurvox.in/api/admin/jarvis/video-webhook (not www.lurvox.in).',
       testable: true,
-      missing: isVideoProviderConfigured() ? [] : ['VIDEO_EDIT_WEBHOOK_URL'],
+      missing: isVideoProviderConfigured()
+        ? []
+        : ['VIDEO_EDIT_PROVIDER', 'VIDEO_EDIT_API_KEY', 'VIDEO_EDIT_WEBHOOK_URL'],
     },
+    (() => {
+      const rt = describeRealtimeCapability()
+      const mapStatus = (): IntegrationStatus => {
+        if (rt.status === 'CONNECTED') return 'connected'
+        if (rt.status === 'DISABLED') return 'disabled'
+        if (rt.status === 'NOT_CONFIGURED') return 'not_connected'
+        if (rt.status === 'DEGRADED' || rt.status === 'ERROR') return 'error'
+        return 'partial'
+      }
+      return {
+        id: 'jarvis_realtime',
+        name: 'Jarvis Realtime Voice',
+        status: mapStatus(),
+        summary: rt.note,
+        can_do:
+          rt.modalities.voice_input === 'CONNECTED'
+            ? [
+                'Push-to-talk voice input',
+                'Spoken replies (optional)',
+                'Same orchestrator as text chat',
+              ]
+            : ['Text Jarvis (always)'],
+        cannot_do: [
+          'Bypass approval / cost / live Meta / Instagram publish',
+          'Always-listening microphone',
+          'Wake word',
+          'Raw audio storage',
+        ],
+        configure_hint:
+          rt.missing.length > 0
+            ? `Configured through server environment: ${rt.missing.join(', ')}. Never paste secrets into the UI.`
+            : rt.enabled
+              ? null
+              : 'Set JARVIS_REALTIME_ENABLED=true and OPENAI_API_KEY on the server to enable push-to-talk.',
+        testable: false,
+        missing: rt.missing,
+      } satisfies IntegrationCard
+    })(),
   ]
 }
 
-const OPTIONAL_INTEGRATIONS = new Set(['brave', 'video'])
+const OPTIONAL_INTEGRATIONS = new Set(['brave', 'video', 'jarvis_realtime'])
 
 export function buildSystemHealth(cards: IntegrationCard[]): SystemHealth {
   const core = cards.filter((c) => c.id === 'openai' || c.id === 'supabase')
@@ -304,8 +392,9 @@ export async function buildCapabilities(): Promise<Record<CapabilityGroup, Capab
 
   if (byId.get('instagram')?.status === 'partial') {
     groups['WAITING FOR INTEGRATION'].push({
-      title: 'Publish Instagram Reels',
-      detail: 'Publishing is not connected. Idea generation still works when OpenAI is available.',
+      title: 'Live Instagram Graph publish',
+      detail:
+        'Prepare drafts and request approval anytime. Live Graph publish also needs LIVE_INSTAGRAM_PUBLISHING_ENABLED=true.',
       group: 'WAITING FOR INTEGRATION',
     })
   }
@@ -383,12 +472,28 @@ export async function testIntegration(id: string): Promise<{
     }
   }
   if (id === 'instagram') {
+    const status = instagramStatus()
+    const openai = openaiConfigured()
+    if (!openai && !status.ok) {
+      return {
+        ok: false,
+        status: 'not_connected',
+        message: 'Instagram ideas need OpenAI. Graph credentials are also missing.',
+      }
+    }
+    if (status.ok) {
+      return {
+        ok: true,
+        status: liveInstagramPublishingEnabled() ? 'connected' : 'partial',
+        message: status.note,
+      }
+    }
     return {
-      ok: openaiConfigured(),
-      status: openaiConfigured() ? 'partial' : 'not_connected',
-      message: openaiConfigured()
-        ? 'Idea generation available. Publishing is not connected.'
-        : 'Instagram ideas need OpenAI. Publishing is not connected.',
+      ok: openai,
+      status: openai ? 'partial' : 'not_connected',
+      message: openai
+        ? 'Idea generation/planning available. Instagram Graph account not fully configured.'
+        : 'Instagram ideas need OpenAI. Publishing is gated.',
     }
   }
   return { ok: false, status: 'not_connected', message: 'Unknown integration.' }

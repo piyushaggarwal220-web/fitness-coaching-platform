@@ -7,6 +7,7 @@ import { looksLikeRawPayload } from '@/lib/jarvis/operator-cockpit'
 import { investigationTimelineIsActive } from '@/lib/jarvis/reasoning/boundaries'
 import type { JarvisCommandState } from './use-jarvis-command'
 import { CommandBar } from './CommandBar'
+import { VoiceOperatorPanel } from './VoiceOperatorPanel'
 import * as s from './styles'
 
 function StatusDot({ state }: { state: 'pending' | 'active' | 'done' | 'error' }) {
@@ -191,6 +192,12 @@ export function ChatPane({ jarvis }: { jarvis: JarvisCommandState }) {
       </div>
 
       <div style={s.composerDock}>
+        <VoiceOperatorPanel
+          conversationId={jarvis.conversationId}
+          busy={jarvis.busy}
+          compact
+          onVoiceResult={(result) => jarvis.ingestVoiceResult(result)}
+        />
         <CommandBar
           value={jarvis.input}
           onChange={jarvis.setInput}

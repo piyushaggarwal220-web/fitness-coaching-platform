@@ -268,6 +268,39 @@ export function useJarvisCommand() {
     }
   }
 
+  /** Ingest a voice turn already processed by /api/admin/jarvis/realtime (no re-orchestrate). */
+  function ingestVoiceResult(result: {
+    transcript: string
+    assistantText: string
+    conversationId: string | null
+    approvals: Array<{ id: string; summary: string; risk: string }>
+  }) {
+    if (result.conversationId) setConversationId(result.conversationId)
+    setMessages((prev) => {
+      const next = [...prev]
+      if (result.transcript) {
+        next.push({
+          id: uid(),
+          role: 'user',
+          content: result.transcript,
+          thinking_summary: 'voice',
+        })
+      }
+      if (result.assistantText) {
+        next.push({
+          id: uid(),
+          role: 'assistant',
+          content: result.assistantText,
+          approval_ids: result.approvals.map((a) => a.id),
+        })
+      }
+      return next
+    })
+    if (result.approvals.length) {
+      void loadDashboard()
+    }
+  }
+
   const pendingApprovals = dashboard?.approvals ?? []
   const activeTask = conversationTasks[0] ?? dashboard?.tasks?.[0] ?? null
 
@@ -301,6 +334,7 @@ export function useJarvisCommand() {
     openConversation,
     decide,
     loadDashboard,
+    ingestVoiceResult,
     pendingApprovals,
     activeTask,
   }

@@ -6,6 +6,7 @@ import { formatUsd } from '@/lib/jarvis/operator-present'
 import type { CommandView } from './types'
 import type { JarvisCommandState } from './use-jarvis-command'
 import * as s from './styles'
+import { VoiceStatusChip } from './VoiceOperatorPanel'
 
 function healthTone(level?: string): 'ok' | 'warn' | 'danger' {
   if (level === 'action_required') return 'danger'
@@ -55,6 +56,7 @@ export function JarvisTopBar({
         <span style={{ color: colors.textMuted, fontSize: 12 }}>{connectedLine}</span>
       </button>
       <div style={{ flex: 1 }} />
+      <VoiceStatusChip status={jarvis.dashboard?.realtime?.modalities?.voice_input || jarvis.dashboard?.realtime?.status} />
       <div style={{ fontSize: 11, color: freshness?.stale ? colors.warning : colors.textMuted }}>
         {freshness?.label || 'Updated —'}
       </div>

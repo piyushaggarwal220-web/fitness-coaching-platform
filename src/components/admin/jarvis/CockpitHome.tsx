@@ -7,6 +7,7 @@ import type { CockpitMetric, ChangeCard, AttentionItem, OperatorState } from '@/
 import type { CommandView } from './types'
 import type { JarvisCommandState } from './use-jarvis-command'
 import { CommandBar } from './CommandBar'
+import { VoiceOperatorPanel } from './VoiceOperatorPanel'
 import { ExecutiveChart } from './Sparkline'
 import * as s from './styles'
 
@@ -128,6 +129,31 @@ export function CockpitHome({
             </button>
           ))}
         </div>
+
+        {jarvis.dashboard?.autonomous_operator?.attention?.length ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Attention</div>
+            {(jarvis.dashboard.autonomous_operator.attention as {
+              severity: string
+              system: string
+              title: string
+              next_action: string
+            }[])
+              .slice(0, 5)
+              .map((a, idx) => (
+                <div
+                  key={`${a.system}-${idx}`}
+                  style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}
+                >
+                  <span style={{ color: a.severity === 'CRITICAL' || a.severity === 'WARNING' ? colors.danger : colors.warning }}>
+                    {a.severity}
+                  </span>{' '}
+                  · {a.system} — {a.title}
+                  <span style={{ color: colors.textMuted }}> · {a.next_action}</span>
+                </div>
+              ))}
+          </div>
+        ) : null}
 
         <div
           style={{
@@ -259,6 +285,59 @@ export function CockpitHome({
               <div style={s.muted}>Nothing requires your attention.</div>
             )}
           </section>
+
+          {(jarvis.dashboard as { recent_learning?: { id: string; title: string; summary: string; category: string }[] } | null)
+            ?.recent_learning?.length ? (
+            <section>
+              <div style={s.sectionLabel}>Recent learning</div>
+              {(
+                jarvis.dashboard as {
+                  recent_learning: { id: string; title: string; summary: string; category: string }[]
+                }
+              ).recent_learning.slice(0, 4).map((row) => (
+                <div key={row.id} style={{ padding: '3px 0', borderBottom: `1px solid ${colors.divider}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 650 }}>{row.title}</div>
+                  <div style={{ ...s.muted, fontSize: 11 }}>{row.summary.slice(0, 160)}</div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => onNavigate('memory')}
+                style={{ ...s.ghostBtn, border: 'none', padding: 0, marginTop: 4, color: s.accent, fontSize: 12 }}
+              >
+                Open memory →
+              </button>
+            </section>
+          ) : null}
+
+          {(jarvis.dashboard as { business_systems?: { id: string; display_name: string; connection_state: string; health: string }[] } | null)
+            ?.business_systems?.length ? (
+            <section>
+              <div style={s.sectionLabel}>System health</div>
+              {(
+                jarvis.dashboard as {
+                  business_systems: { id: string; display_name: string; connection_state: string; health: string }[]
+                }
+              ).business_systems
+                .filter((sys) =>
+                  ['meta_ads', 'instagram', 'shopify', 'lurvox_revenue', 'video', 'research'].includes(sys.id)
+                )
+                .map((sys) => (
+                  <div key={sys.id} style={{ padding: '2px 0', fontSize: 11 }}>
+                    <span style={{ fontWeight: 650 }}>{sys.display_name}</span>
+                    <span style={{ ...s.muted }}> · {sys.connection_state}</span>
+                    <div style={{ ...s.muted }}>{sys.health.slice(0, 100)}</div>
+                  </div>
+                ))}
+              <button
+                type="button"
+                onClick={() => onNavigate('integrations')}
+                style={{ ...s.ghostBtn, border: 'none', padding: 0, marginTop: 4, color: s.accent, fontSize: 12 }}
+              >
+                Open integrations →
+              </button>
+            </section>
+          ) : null}
         </div>
 
         <div
@@ -324,6 +403,16 @@ export function CockpitHome({
       </div>
 
       <div style={s.composerDock}>
+        <VoiceOperatorPanel
+          conversationId={jarvis.conversationId}
+          busy={jarvis.busy}
+          onVoiceResult={(result) => {
+            jarvis.ingestVoiceResult(result)
+            if (result.conversationId || result.assistantText) {
+              jarvis.setView('chat')
+            }
+          }}
+        />
         <CommandBar
           value={jarvis.input}
           onChange={jarvis.setInput}

@@ -115,6 +115,7 @@ export async function rememberResolvedIncident(report: DiagnosticReport, actorId
   try {
     const memory = await remember({
       category: 'outcome',
+      kind: 'LESSON',
       title: `Diagnostic: ${report.symptom.slice(0, 80)}`,
       summary: [
         `Problem: ${report.symptom}`,
@@ -126,7 +127,7 @@ export async function rememberResolvedIncident(report: DiagnosticReport, actorId
         .filter(Boolean)
         .join('\n'),
       confidence: report.root_cause?.confidence ?? 'medium',
-      tags: ['diagnostic', 'regression', report.system],
+      tags: ['diagnostic', 'regression', report.system, 'lesson'],
       details: redactDiagnosticValue({
         incident_id: report.incident_id,
         pipeline_break: report.root_cause?.pipeline_break,
@@ -135,6 +136,13 @@ export async function rememberResolvedIncident(report: DiagnosticReport, actorId
       }) as Record<string, unknown>,
       actorId,
       source: 'jarvis_diagnostics',
+      evidence: [
+        `incident:${report.incident_id}`,
+        `symptom:${report.symptom.slice(0, 120)}`,
+        report.root_cause?.summary
+          ? `root_cause:${report.root_cause.summary.slice(0, 120)}`
+          : 'root_cause:unverified',
+      ],
     })
     return memory?.id as string | undefined
   } catch {

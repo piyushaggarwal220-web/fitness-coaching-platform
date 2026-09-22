@@ -158,7 +158,9 @@ function testForbiddenTools() {
   assert.ok(FORBIDDEN_TOOL_NAMES.has('system.raise_budget'))
   assert.ok(FORBIDDEN_TOOL_NAMES.has('system.disable_audit'))
   assert.ok(FORBIDDEN_TOOL_NAMES.has('shopify.change_payment_settings'))
-  console.log('✓ forbidden self-modification + shopify payment tools listed')
+  assert.ok(FORBIDDEN_TOOL_NAMES.has('instagram.change_credentials'))
+  assert.ok(FORBIDDEN_TOOL_NAMES.has('instagram.modify_settings'))
+  console.log('✓ forbidden self-modification + shopify payment + instagram credential tools listed')
 }
 
 async function testPermissionEngine() {
@@ -219,6 +221,39 @@ async function testPermissionEngine() {
   })
   assert.equal(blockedPay.allowed, false)
 
+  const igPublish = await evaluateToolPermission({
+    toolName: 'instagram.publish',
+    source: 'chat',
+  })
+  assert.equal(igPublish.allowed, true)
+  if (igPublish.allowed) assert.equal(igPublish.mode, 'require_approval')
+
+  const igRead = await evaluateToolPermission({
+    toolName: 'instagram.get_profile',
+    source: 'chat',
+  })
+  assert.equal(igRead.allowed, true)
+  if (igRead.allowed) assert.equal(igRead.mode, 'execute')
+
+  const igPlan = await evaluateToolPermission({
+    toolName: 'instagram.plan_content',
+    source: 'chat',
+  })
+  assert.equal(igPlan.allowed, true)
+  if (igPlan.allowed) assert.equal(igPlan.mode, 'execute')
+
+  const igCreds = await evaluateToolPermission({
+    toolName: 'instagram.change_credentials',
+    source: 'chat',
+  })
+  assert.equal(igCreds.allowed, false)
+
+  const igSettings = await evaluateToolPermission({
+    toolName: 'instagram.modify_settings',
+    source: 'chat',
+  })
+  assert.equal(igSettings.allowed, false)
+
   const blocked = await evaluateToolPermission({
     toolName: 'system.raise_budget',
     source: 'chat',
@@ -270,12 +305,29 @@ function testToolRegistry() {
   assert.ok(getTool('shopify.update_price'))
   assert.ok(getTool('video.provider_status'))
   assert.ok(getTool('video.create_edit_job'))
+  assert.ok(getTool('video.analyze'))
+  assert.ok(getTool('video.render'))
+  assert.ok(getTool('video.cancel'))
+  assert.ok(getTool('instagram.generate_draft'))
+  assert.equal(getTool('video.analyze')?.riskClass, 'READ')
+  assert.equal(getTool('instagram.generate_draft')?.riskClass, 'LOW_RISK')
+  assert.equal(getTool('instagram.publish')?.requiresApproval, true)
   assert.ok(getTool('system.self_test'))
   assert.ok(getTool('system.diagnose'))
   assert.ok(getTool('system.why'))
   assert.ok(getTool('diagnostics.propose_fix'))
   assert.ok(getTool('diagnostics.apply_safe_fix'))
   assert.ok(getTool('lurvox.revenue'))
+  assert.ok(getTool('instagram.status'))
+  assert.ok(getTool('instagram.get_profile'))
+  assert.ok(getTool('instagram.plan_content'))
+  assert.ok(getTool('instagram.publish'))
+  assert.ok(getTool('instagram.generate_ideas'))
+  assert.ok(getTool('instagram.research_trends'))
+  assert.ok(getTool('instagram.sync_content'))
+  assert.ok(getTool('instagram.analyze_performance'))
+  assert.equal(getTool('instagram.sync_content')?.riskClass, 'READ')
+  assert.equal(getTool('instagram.analyze_performance')?.riskClass, 'READ')
   console.log('✓ phase-2 tools registered')
 }
 
@@ -408,8 +460,9 @@ function testMetricSourceOfTruthCatalog() {
   assert.ok(META_AD_PURCHASES.do_not.some((d) => d.toLowerCase().includes('revenue')))
   assert.equal(getMetricSource('lurvox_product_revenue')?.metric, 'lurvox_product_revenue')
   assert.equal(requireVerifiedMetricSource('not_a_real_metric'), SOURCE_OF_TRUTH_NOT_VERIFIED)
-  assert.ok(METRIC_SOURCES.length >= 3)
+  assert.ok(METRIC_SOURCES.length >= 4)
   assert.ok(jarvisMetricOperatorNotes().some((n) => n.includes('public.purchases')))
+  assert.ok(jarvisMetricOperatorNotes().some((n) => /instagram/i.test(n)))
   assert.deepEqual(dataSourcesForQuestion('How has my business been going over the last 2 days?'), [
     LURVOX_PRODUCT_REVENUE_METRIC,
   ])
@@ -422,6 +475,9 @@ function testMetricSourceOfTruthCatalog() {
   ])
   assert.deepEqual(dataSourcesForQuestion('How much did I spend on Meta ads today?'), [
     META_AD_PURCHASES_METRIC,
+  ])
+  assert.deepEqual(dataSourcesForQuestion('How are my Instagram Reels performing?'), [
+    'instagram_organic_engagement',
   ])
   console.log('✓ metric source-of-truth catalog does not treat Shopify as LURVOX cash revenue')
 }
@@ -1637,6 +1693,614 @@ async function testMetaSyncStageBounds() {
   console.log('✓ meta sync stage-level bounds and failure semantics')
 }
 
+async function testInstagramOperator() {
+  const { MetaApiError } = await import('../src/lib/ai-marketing/meta/client')
+  const {
+    getInstagramProfile,
+    listInstagramMedia,
+    getInstagramMediaInsights,
+    followersFromProfileEnvelope,
+    normalizeContentPlan,
+    executeInstagramPublish,
+    executeInstagramDelete,
+    blockedInstagramAccountSettings,
+    blockedInstagramCredentialChanges,
+    writeInstagramAudit,
+    resetInstagramAuditSinkForTests,
+    getInstagramAuditSinkForTests,
+    instagramStatus,
+    localEngagementScore,
+  } = await import('../src/lib/jarvis/instagram')
+  const { redactSecrets } = await import('../src/lib/jarvis/operator-errors')
+
+  const prev = {
+    token: process.env.INSTAGRAM_ACCESS_TOKEN,
+    adsToken: process.env.META_ADS_ACCESS_TOKEN,
+    page: process.env.META_ADS_PAGE_ID,
+    ig: process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID,
+    live: process.env.LIVE_INSTAGRAM_PUBLISHING_ENABLED,
+  }
+  delete process.env.INSTAGRAM_ACCESS_TOKEN
+  delete process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID
+  delete process.env.LIVE_INSTAGRAM_PUBLISHING_ENABLED
+  // Ads token must not satisfy Instagram Login config
+  process.env.META_ADS_ACCESS_TOKEN = 'ADS_TOKEN_MUST_NOT_CONFIGURE_INSTAGRAM'
+
+  resetInstagramAuditSinkForTests()
+
+  // unavailable API / not configured
+  const unavailable = await getInstagramProfile({ skipAudit: false })
+  assert.equal(unavailable.data_status, 'unavailable')
+  assert.equal(unavailable.value, null)
+  assert.equal(followersFromProfileEnvelope(unavailable), null)
+  assert.match(unavailable.note ?? '', /not zero|unavailable/i)
+
+  const status = instagramStatus()
+  assert.equal(status.ok, false)
+  assert.equal(status.data_status, 'unavailable')
+  assert.equal(status.auth_mode, 'unavailable')
+  assert.equal(status.host, 'graph.instagram.com')
+  assert.ok(Array.isArray(status.missing) && status.missing.includes('INSTAGRAM_ACCESS_TOKEN'))
+  const statusJson = JSON.stringify(status)
+  assert.equal(/["']EAA[A-Za-z0-9]+/.test(statusJson), false)
+  assert.equal(statusJson.includes('SECRET_TOKEN'), false)
+  assert.equal(statusJson.includes('ADS_TOKEN_MUST_NOT_CONFIGURE_INSTAGRAM'), false)
+  assert.equal(/"accessToken"\s*:/.test(statusJson), false)
+
+  // mock success path
+  const transportOk = {
+    get: async (path: string) => {
+      if (path.includes('/media')) {
+        return {
+          data: [
+            {
+              id: 'm1',
+              caption: 'hello',
+              media_type: 'VIDEO',
+              timestamp: '2026-09-01T00:00:00+0000',
+              like_count: 0,
+              comments_count: 0,
+            },
+          ],
+        }
+      }
+      return {
+        id: 'ig_123',
+        username: 'lurvox',
+        followers_count: 0,
+        follows_count: 10,
+        media_count: 0,
+        account_type: 'BUSINESS',
+      }
+    },
+    post: async () => ({ id: 'created' }),
+  }
+  const creds = {
+    accessToken: 'SECRET_TOKEN_SHOULD_NEVER_APPEAR',
+    apiVersion: 'v22.0',
+    host: 'graph.instagram.com' as const,
+    authMode: 'instagram_login' as const,
+    pageId: null,
+    igUserId: 'ig_123',
+    livePublishingEnabled: false,
+  }
+
+  const profile = await getInstagramProfile({
+    transport: transportOk,
+    credentials: creds,
+    skipAudit: false,
+  })
+  assert.equal(profile.data_status, 'verified')
+  assert.equal(profile.value?.followers_count, 0)
+  assert.equal(followersFromProfileEnvelope(profile), 0)
+  assert.ok(profile.retrieved_at)
+  assert.equal(profile.source.includes('instagram'), true)
+
+  const media = await listInstagramMedia({ limit: 5 }, { transport: transportOk, credentials: creds })
+  assert.equal(media.data_status, 'verified')
+  assert.equal(media.value?.length, 1)
+  assert.equal(media.value?.[0]?.like_count, 0)
+
+  // permission failure
+  const transportPerm = {
+    get: async () => {
+      throw new MetaApiError('(#10) Application does not have permission', 403, {
+        code: 10,
+        message: 'permission',
+      })
+    },
+    post: async () => ({}),
+  }
+  const permFail = await getInstagramProfile({
+    transport: transportPerm,
+    credentials: creds,
+  })
+  assert.equal(permFail.data_status, 'failed')
+  assert.equal(permFail.error_code, 'permission')
+  assert.equal(permFail.value, null)
+  assert.equal(followersFromProfileEnvelope(permFail), null)
+
+  // rate limit
+  const transportRate = {
+    get: async () => {
+      throw new MetaApiError('(#4) Application request limit reached', 429, {
+        code: 4,
+        message: 'rate',
+      })
+    },
+    post: async () => ({}),
+  }
+  const rateFail = await listInstagramMedia(
+    { limit: 3 },
+    { transport: transportRate, credentials: creds }
+  )
+  assert.equal(rateFail.data_status, 'failed')
+  assert.equal(rateFail.error_code, 'rate_limit')
+  assert.equal(rateFail.value, null)
+
+  // malformed response
+  const transportBad = {
+    get: async () => ({ not_data: true }),
+    post: async () => ({}),
+  }
+  const malformed = await listInstagramMedia(
+    { limit: 3 },
+    { transport: transportBad, credentials: creds }
+  )
+  assert.equal(malformed.data_status, 'failed')
+  assert.equal(malformed.error_code, 'malformed_response')
+  assert.equal(malformed.value, null)
+
+  // insights unavailable vs success
+  const insightsUnavailable = await getInstagramMediaInsights('m1')
+  assert.equal(insightsUnavailable.data_status, 'unavailable')
+  assert.equal(insightsUnavailable.value, null)
+
+  const transportInsights = {
+    get: async () => ({
+      data: [{ name: 'reach', period: 'lifetime', values: [{ value: 0 }] }],
+    }),
+    post: async () => ({}),
+  }
+  const insights = await getInstagramMediaInsights('m1', ['reach'], {
+    transport: transportInsights,
+    credentials: creds,
+  })
+  assert.equal(insights.data_status, 'verified')
+  assert.equal(insights.value?.[0]?.values[0]?.value, 0)
+
+  // content planning normalizer + fact separation
+  const plan = normalizeContentPlan({
+    topic: 'Protein myths',
+    hook: 'Stop believing this',
+    format: 'reel',
+    reel_concept: 'Bust 3 protein myths in 20s',
+    caption: 'Save this',
+    cta: 'Comment PROTEIN',
+    sourced_facts: ['FACT: public source X'],
+    jarvis_inference: ['INFERENCE: beginners confuse total protein'],
+    jarvis_recommendation: ['RECOMMENDATION: post midweek'],
+  })
+  assert.equal(plan.format, 'reel')
+  assert.ok(plan.sourced_facts[0]?.startsWith('FACT'))
+  assert.ok(plan.jarvis_inference[0]?.startsWith('INFERENCE'))
+  assert.ok(plan.jarvis_recommendation[0]?.startsWith('RECOMMENDATION'))
+
+  // local engagement: nulls not zeroed
+  assert.equal(
+    localEngagementScore({
+      id: '1',
+      platform: 'instagram',
+      content_type: 'reel',
+      topic: null,
+      hook: null,
+      script: null,
+      caption: null,
+      keywords: [],
+      hashtags: [],
+      cta: null,
+      content_category: null,
+      reason: null,
+      scheduled_for: null,
+      posted_at: null,
+      views: null,
+      reach: null,
+      watch_time_seconds: null,
+      likes: null,
+      comments: null,
+      shares: null,
+      saves: null,
+      followers_gained: null,
+      status: 'idea',
+      metadata: null,
+      created_at: '',
+      updated_at: '',
+    }),
+    null
+  )
+  assert.equal(
+    localEngagementScore({
+      id: '2',
+      platform: 'instagram',
+      content_type: 'reel',
+      topic: null,
+      hook: null,
+      script: null,
+      caption: null,
+      keywords: [],
+      hashtags: [],
+      cta: null,
+      content_category: null,
+      reason: null,
+      scheduled_for: null,
+      posted_at: null,
+      views: null,
+      reach: null,
+      watch_time_seconds: null,
+      likes: 0,
+      comments: 0,
+      shares: null,
+      saves: null,
+      followers_gained: null,
+      status: 'posted',
+      metadata: null,
+      created_at: '',
+      updated_at: '',
+    }),
+    0
+  )
+
+  // approval required for publishing
+  const unapproved = await executeInstagramPublish({
+    caption: 'test',
+    mediaUrl: 'https://example.com/a.mp4',
+    approved: false,
+  })
+  assert.equal(unapproved.published, false)
+  assert.equal(unapproved.error, 'approval_required')
+
+  // approved but live flag off → recorded_not_executed (no Graph publish)
+  const recorded = await executeInstagramPublish({
+    caption: 'test',
+    mediaUrl: 'https://example.com/a.mp4',
+    approved: true,
+  })
+  assert.equal(recorded.published, false)
+  assert.equal(recorded.recorded_not_executed, true)
+
+  // blocked destructive settings/credentials
+  assert.equal(blockedInstagramAccountSettings().blocked, true)
+  assert.equal(blockedInstagramCredentialChanges().blocked, true)
+  const del = await executeInstagramDelete({ mediaId: 'm1', approved: false })
+  assert.equal(del.error, 'approval_required')
+
+  // secret redaction + audit logging
+  await writeInstagramAudit({
+    action: 'instagram.test',
+    target: 't',
+    actor: 'jarvis',
+    approval_state: null,
+    result: 'ok',
+    provider_response_status: 200,
+    error_redacted: 'failed Bearer SECRET_TOKEN_SHOULD_NEVER_APPEAR access_token=abc',
+  })
+  const audits = getInstagramAuditSinkForTests()
+  assert.ok(audits.length >= 1)
+  const blob = JSON.stringify(audits)
+  assert.equal(blob.includes('SECRET_TOKEN_SHOULD_NEVER_APPEAR'), false)
+  assert.equal(
+    redactSecrets('failed Bearer SECRET_TOKEN_SHOULD_NEVER_APPEAR').includes(
+      'SECRET_TOKEN_SHOULD_NEVER_APPEAR'
+    ),
+    false
+  )
+
+  // cost exhaustion payload (no infinite retry; honest unavailable)
+  const { instagramBudgetExhaustedResult } = await import('../src/lib/jarvis/instagram/research')
+  const exhausted = instagramBudgetExhaustedResult('Daily AI budget exhausted ($1 / $1)')
+  assert.equal(exhausted.ok, false)
+  assert.equal(exhausted.data_status, 'unavailable')
+  assert.equal(exhausted.value, null)
+  assert.match(exhausted.error ?? '', /budget exhausted/i)
+
+  // restore env
+  if (prev.token === undefined) delete process.env.INSTAGRAM_ACCESS_TOKEN
+  else process.env.INSTAGRAM_ACCESS_TOKEN = prev.token
+  if (prev.adsToken === undefined) delete process.env.META_ADS_ACCESS_TOKEN
+  else process.env.META_ADS_ACCESS_TOKEN = prev.adsToken
+  if (prev.page === undefined) delete process.env.META_ADS_PAGE_ID
+  else process.env.META_ADS_PAGE_ID = prev.page
+  if (prev.ig === undefined) delete process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID
+  else process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID = prev.ig
+  if (prev.live === undefined) delete process.env.LIVE_INSTAGRAM_PUBLISHING_ENABLED
+  else process.env.LIVE_INSTAGRAM_PUBLISHING_ENABLED = prev.live
+
+  console.log('✓ Instagram operator: Instagram Login provider honesty, planning, approval, audit, blocks')
+}
+
+async function testInstagramContentIntelligence() {
+  const {
+    createMemorySnapshotStore,
+    normalizeMetricForPersist,
+    calculatePerformanceFromSnapshots,
+    syncInstagramContentForTests,
+  } = await import('../src/lib/jarvis/instagram')
+  const { MetaApiError } = await import('../src/lib/ai-marketing/meta/client')
+
+  // explicit zero vs unavailable
+  assert.deepEqual(normalizeMetricForPersist(0), { value: 0, status: 'verified' })
+  assert.deepEqual(normalizeMetricForPersist(null), { value: null, status: 'unavailable' })
+  assert.deepEqual(normalizeMetricForPersist(undefined, 'unsupported'), {
+    value: null,
+    status: 'unsupported',
+  })
+
+  const memory = createMemorySnapshotStore()
+  const fetchedAt = new Date().toISOString()
+
+  // duplicate media / idempotent daily upsert
+  memory.upsertSnapshots([
+    {
+      igAccountId: 'ig1',
+      mediaId: 'm1',
+      metricName: 'reach',
+      metricValue: 100,
+      metricStatus: 'verified',
+      fetchedAt,
+      syncRunId: 'run1',
+    },
+  ])
+  memory.upsertSnapshots([
+    {
+      igAccountId: 'ig1',
+      mediaId: 'm1',
+      metricName: 'reach',
+      metricValue: 150,
+      metricStatus: 'verified',
+      fetchedAt,
+      syncRunId: 'run2',
+    },
+  ])
+  const reachRows = memory.snapshots.filter(
+    (s) => s.mediaId === 'm1' && s.metricName === 'reach'
+  )
+  assert.equal(reachRows.length, 1)
+  assert.equal(reachRows[0]?.metricValue, 150)
+
+  // unavailable must not become zero
+  memory.upsertSnapshots([
+    {
+      igAccountId: 'ig1',
+      mediaId: 'm1',
+      metricName: 'views',
+      metricValue: null,
+      metricStatus: 'unavailable',
+      fetchedAt,
+      syncRunId: 'run2',
+    },
+  ])
+  const views = memory.snapshots.find((s) => s.metricName === 'views')
+  assert.equal(views?.metricValue, null)
+  assert.equal(views?.metricStatus, 'unavailable')
+
+  // explicit zero saves
+  memory.upsertSnapshots([
+    {
+      igAccountId: 'ig1',
+      mediaId: 'm1',
+      metricName: 'saved',
+      metricValue: 0,
+      metricStatus: 'verified',
+      fetchedAt,
+      syncRunId: 'run2',
+    },
+  ])
+  const saved = memory.snapshots.find((s) => s.metricName === 'saved')
+  assert.equal(saved?.metricValue, 0)
+  assert.equal(saved?.metricStatus, 'verified')
+
+  // performance calculations + sample-size gate
+  const analysis = calculatePerformanceFromSnapshots({
+    snapshots: [
+      {
+        media_id: 'a',
+        metric_name: 'reach',
+        metric_value: 1000,
+        metric_status: 'verified',
+        media_timestamp: '2026-09-01T10:00:00.000Z',
+        media_type: 'CAROUSEL_ALBUM',
+        media_product_type: 'FEED',
+        snapshot_day: '2026-09-21',
+        fetched_at: fetchedAt,
+      },
+      {
+        media_id: 'b',
+        metric_name: 'reach',
+        metric_value: 200,
+        metric_status: 'verified',
+        media_timestamp: '2026-09-02T10:00:00.000Z',
+        media_type: 'VIDEO',
+        media_product_type: 'REELS',
+        snapshot_day: '2026-09-21',
+        fetched_at: fetchedAt,
+      },
+      {
+        media_id: 'a',
+        metric_name: 'total_interactions',
+        metric_value: 50,
+        metric_status: 'verified',
+        media_timestamp: '2026-09-01T10:00:00.000Z',
+        media_type: 'CAROUSEL_ALBUM',
+        media_product_type: 'FEED',
+        snapshot_day: '2026-09-21',
+        fetched_at: fetchedAt,
+      },
+    ],
+    media: [
+      {
+        media_id: 'a',
+        media_type: 'CAROUSEL_ALBUM',
+        media_product_type: 'FEED',
+        media_timestamp: '2026-09-01T10:00:00.000Z',
+        caption: null,
+      },
+      {
+        media_id: 'b',
+        media_type: 'VIDEO',
+        media_product_type: 'REELS',
+        media_timestamp: '2026-09-02T10:00:00.000Z',
+        caption: null,
+      },
+    ],
+  })
+  assert.equal(analysis.sample_size, 2)
+  assert.equal(analysis.strongest_patterns.length, 0) // n < 5 per format
+  assert.ok(analysis.observations.some((o) => /Not enough posts per format/i.test(o)))
+  assert.ok(analysis.rates.interaction_rate != null)
+
+  // sync with injected transport: success path + rate limit + cost exhaustion
+  const transportOk = {
+    get: async (path: string) => {
+      if (path.includes('/insights')) {
+        return {
+          data: [
+            { name: 'reach', period: 'lifetime', values: [{ value: 10 }] },
+            { name: 'saved', period: 'lifetime', values: [{ value: 0 }] },
+            { name: 'total_interactions', period: 'lifetime', values: [{ value: 3 }] },
+          ],
+        }
+      }
+      if (path.includes('/media')) {
+        return {
+          data: [
+            {
+              id: 'media_dup',
+              media_type: 'IMAGE',
+              media_product_type: 'FEED',
+              timestamp: '2026-09-10T00:00:00+0000',
+              like_count: 0,
+              comments_count: 0,
+              caption: 'x',
+              permalink: 'https://instagram.com/p/x',
+            },
+          ],
+        }
+      }
+      return {
+        id: 'ig_test',
+        username: 'maximusvault',
+        followers_count: 0,
+        follows_count: 1,
+        media_count: 1,
+        account_type: 'MEDIA_CREATOR',
+      }
+    },
+    post: async () => ({}),
+  }
+  const creds = {
+    accessToken: 'SECRET_SHOULD_NOT_LEAK',
+    apiVersion: 'v22.0',
+    host: 'graph.instagram.com' as const,
+    authMode: 'instagram_login' as const,
+    pageId: null,
+    igUserId: 'ig_test',
+    livePublishingEnabled: false,
+  }
+
+  const mem2 = createMemorySnapshotStore()
+  const sync1 = await syncInstagramContentForTests({
+    memory: mem2,
+    mediaLimit: 5,
+    providerOpts: { transport: transportOk, credentials: creds, skipAudit: true },
+  })
+  assert.equal(sync1.ok, true)
+  assert.equal(sync1.live_publishing_enabled, false)
+  assert.equal(sync1.profile?.followers_count, 0) // explicit zero
+  assert.ok((sync1.snapshots_upserted ?? 0) > 0)
+  const before = mem2.snapshots.length
+  const sync2 = await syncInstagramContentForTests({
+    memory: mem2,
+    mediaLimit: 5,
+    providerOpts: { transport: transportOk, credentials: creds, skipAudit: true },
+  })
+  assert.equal(sync2.ok, true)
+  // same IST day → upsert replaces, does not grow unbounded for same keys
+  assert.ok(mem2.snapshots.length <= before + 2)
+
+  // rate limit during insights
+  const transportRate = {
+    get: async (path: string) => {
+      if (path.includes('/insights')) {
+        throw new MetaApiError('(#4) Application request limit reached', 429, {
+          code: 4,
+          message: 'rate',
+        })
+      }
+      if (path.includes('/media')) {
+        return {
+          data: [
+            {
+              id: 'm_rate',
+              media_type: 'IMAGE',
+              timestamp: '2026-09-10T00:00:00+0000',
+              like_count: 1,
+              comments_count: 0,
+            },
+          ],
+        }
+      }
+      return {
+        id: 'ig_test',
+        username: 'maximusvault',
+        followers_count: 5,
+        follows_count: 1,
+        media_count: 1,
+      }
+    },
+    post: async () => ({}),
+  }
+  const mem3 = createMemorySnapshotStore()
+  const rateSync = await syncInstagramContentForTests({
+    memory: mem3,
+    providerOpts: { transport: transportRate, credentials: creds, skipAudit: true },
+  })
+  assert.equal(rateSync.data_status, 'partial')
+  assert.ok(
+    mem3.snapshots.some((s) => s.metricStatus === 'failed' || s.metricName === 'followers_count')
+  )
+
+  // budget exhaustion
+  const { syncInstagramContent } = await import('../src/lib/jarvis/instagram')
+  const prevIgTok = process.env.INSTAGRAM_ACCESS_TOKEN
+  const prevIgId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID
+  process.env.INSTAGRAM_ACCESS_TOKEN = 'test_token_not_used'
+  process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID = '17841405951020511'
+  const exhausted = await syncInstagramContent({
+    skipBudgetCheck: false,
+    deps: {
+      assertBudget: async () =>
+        ({
+          ok: false,
+          reason: 'Daily AI budget exhausted ($1 / $1)',
+          dailySpent: 1,
+          dailyLimit: 1,
+        }) as never,
+    },
+  })
+  if (prevIgTok === undefined) delete process.env.INSTAGRAM_ACCESS_TOKEN
+  else process.env.INSTAGRAM_ACCESS_TOKEN = prevIgTok
+  if (prevIgId === undefined) delete process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID
+  else process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID = prevIgId
+  assert.equal(exhausted.ok, false)
+  assert.equal(exhausted.error_code, 'budget_exhausted')
+  assert.equal(exhausted.live_publishing_enabled, false)
+
+  const dump = JSON.stringify({ sync1, sync2, rateSync, exhausted, mem2: mem2.snapshots })
+  assert.equal(dump.includes('SECRET_SHOULD_NOT_LEAK'), false)
+
+  console.log('✓ Instagram content intelligence: sync idempotency, zeroes, unavailable, rate limit, budget')
+}
+
 testForbiddenTools()
 testJarvisPlanNormalization()
 testBudgets()
@@ -1658,6 +2322,8 @@ void testVideoProvider()
   .then(() => testDiagnostics())
   .then(() => testMetaSyncPipelineHonesty())
   .then(() => testMetaSyncStageBounds())
+  .then(() => testInstagramOperator())
+  .then(() => testInstagramContentIntelligence())
   .then(() => {
     console.log('\nAll Jarvis unit checks passed.')
   })

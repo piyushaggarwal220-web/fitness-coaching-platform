@@ -14,6 +14,7 @@ export const SOURCE_OF_TRUTH_NOT_VERIFIED = 'Source of truth not verified.' as c
 export const LURVOX_PRODUCT_REVENUE_METRIC = 'lurvox_product_revenue'
 export const SHOPIFY_STORE_COMMERCE_METRIC = 'shopify_store_commerce'
 export const META_AD_PURCHASES_METRIC = 'meta_ad_purchases'
+export const INSTAGRAM_ORGANIC_ENGAGEMENT_METRIC = 'instagram_organic_engagement'
 
 export type MetricAlignment = 'aligned' | 'mismatch_pending_approval' | 'unverified'
 
@@ -146,10 +147,75 @@ export const META_AD_PURCHASES: MetricSourceOfTruth = {
   ],
 }
 
+/**
+ * Instagram organic engagement + content intelligence.
+ * Local drafts/plans/manual metrics: marketing_content.
+ * Live account/media/insights: Instagram Graph (provider-dependent scopes).
+ * Historical organic metrics: marketing_instagram_metric_snapshots (not Meta ads).
+ */
+export const INSTAGRAM_ORGANIC_ENGAGEMENT: MetricSourceOfTruth = {
+  metric: INSTAGRAM_ORGANIC_ENGAGEMENT_METRIC,
+  business_concept: 'Instagram organic content engagement (not Meta ads, not LURVOX cash)',
+  source_of_truth:
+    'Split: (1) local marketing_content for plans/drafts/manual metrics; (2) Instagram Graph live reads; (3) marketing_instagram_metric_snapshots for historical organic metrics after instagram.sync_content',
+  source_of_truth_verified: true,
+  accepted_sources: [
+    'marketing_content',
+    'instagram.graph',
+    'instagram',
+    'marketing_instagram_metric_snapshots',
+    'marketing_instagram_media',
+  ],
+  code_path: [
+    'src/lib/jarvis/instagram/content-store.ts',
+    'src/lib/jarvis/instagram/analysis.ts',
+    'src/lib/jarvis/instagram/provider.ts',
+    'src/lib/jarvis/instagram/client.ts',
+    'src/lib/jarvis/instagram/credentials.ts',
+    'src/lib/jarvis/instagram/sync.ts',
+    'src/lib/jarvis/instagram/snapshots.ts',
+    'src/lib/jarvis/instagram/intelligence.ts',
+    'src/lib/jarvis/instagram/planner.ts',
+    'src/lib/jarvis/instagram/draft.ts',
+    'src/lib/ai-marketing/agents/instagram.ts',
+  ],
+  database_or_api:
+    'public.marketing_content (platform=instagram) + Instagram Graph via INSTAGRAM_ACCESS_TOKEN (graph.instagram.com) + public.marketing_instagram_media / marketing_instagram_metric_snapshots for history. META_ADS_ACCESS_TOKEN is Ads-only.',
+  calculation:
+    'Local score = sum of non-null likes+comments+shares+saves. Graph insights use provider metric values only when the field is present. Snapshot sync upserts one row per (account, media, metric, IST day). Explicit Meta 0 is verified zero; unavailable/unsupported stay NULL. Performance rates use median of per-post ratios where both sides are verified.',
+  timezone: 'Snapshot days are Asia/Kolkata; Graph periods are provider-defined.',
+  refund_adjustment: 'N/A — not a cash metric.',
+  data_status_rule:
+    'API failure / missing Graph config ≠ 0 followers/posts/engagement. Explicit empty media array after successful Graph read is verified zero for that page. Unsupported insights metrics are status=unsupported with null value.',
+  existing_tests: [
+    'scripts/verify-jarvis.ts',
+    'scripts/verify-instagram-live.ts',
+    'scripts/verify-instagram-operator-e2e.ts',
+    'scripts/verify-instagram-intelligence.ts',
+    'scripts/verify-video.ts',
+  ],
+  jarvis_current: {
+    source: 'marketing_content + Instagram Graph + metric snapshots',
+    tool: 'instagram.sync_content / instagram.analyze_performance / instagram.plan_content / instagram.generate_draft / instagram.media_insights',
+    code_path: 'src/lib/jarvis/instagram/* + src/lib/jarvis/video/*',
+  },
+  alignment: 'aligned',
+  do_not: [
+    'Treat Meta ad purchases as Instagram organic engagement',
+    'Convert unavailable Graph insights into 0 views/likes',
+    'Claim causation from format/hook without verified experiment evidence',
+    'Write organic metrics into marketing_performance (ads table)',
+    'Claim video completed without provider output_video',
+    'Publish Instagram content without approval / LIVE_INSTAGRAM_PUBLISHING_ENABLED',
+    'Point VIDEO_EDIT_WEBHOOK_URL at www.lurvox.in (Shopify) — use https://app.lurvox.in/api/admin/jarvis/video-webhook',
+  ],
+}
+
 export const METRIC_SOURCES: readonly MetricSourceOfTruth[] = [
   LURVOX_PRODUCT_REVENUE,
   SHOPIFY_STORE_COMMERCE,
   META_AD_PURCHASES,
+  INSTAGRAM_ORGANIC_ENGAGEMENT,
 ]
 
 export function getMetricSource(metric: string): MetricSourceOfTruth | null {
@@ -177,6 +243,7 @@ export type CatalogMetricId =
   | typeof LURVOX_PRODUCT_REVENUE_METRIC
   | typeof SHOPIFY_STORE_COMMERCE_METRIC
   | typeof META_AD_PURCHASES_METRIC
+  | typeof INSTAGRAM_ORGANIC_ENGAGEMENT_METRIC
 
 /** Deterministic routing for investigation + tests. Chat still uses tool descriptions. */
 export function dataSourcesForQuestion(question: string): CatalogMetricId[] {
@@ -184,14 +251,22 @@ export function dataSourcesForQuestion(question: string): CatalogMetricId[] {
   const shopifyAsked = /\bshopify\b|\bstorefront\b|shopify store|shopify orders/.test(q)
   const metaAsked =
     /\bmeta\b|\bads?\b spend|ad spend|\bcpa\b|\broas\b|attributed purchase|meta-attributed/.test(q)
+  const instagramAsked = /\binstagram\b|\breels?\b|organic (content|engagement)|ig (followers|reach)/.test(
+    q
+  )
   const revenueAsked =
     /\brevenue\b|\bmoney\b|how has my business|business been going|last \d+ days|paid sales/.test(q)
 
   const sources = new Set<CatalogMetricId>()
   if (shopifyAsked) sources.add(SHOPIFY_STORE_COMMERCE_METRIC)
   if (metaAsked) sources.add(META_AD_PURCHASES_METRIC)
-  if (revenueAsked && !shopifyAsked && !metaAsked) sources.add(LURVOX_PRODUCT_REVENUE_METRIC)
-  if (!shopifyAsked && !metaAsked && !revenueAsked) sources.add(LURVOX_PRODUCT_REVENUE_METRIC)
+  if (instagramAsked) sources.add(INSTAGRAM_ORGANIC_ENGAGEMENT_METRIC)
+  if (revenueAsked && !shopifyAsked && !metaAsked && !instagramAsked) {
+    sources.add(LURVOX_PRODUCT_REVENUE_METRIC)
+  }
+  if (!shopifyAsked && !metaAsked && !instagramAsked && !revenueAsked) {
+    sources.add(LURVOX_PRODUCT_REVENUE_METRIC)
+  }
   return [...sources]
 }
 
@@ -200,6 +275,7 @@ export function jarvisMetricOperatorNotes(): string[] {
     'LURVOX product revenue = lurvox.revenue → public.purchases captured amount_paise (Asia/Kolkata). Never Shopify. Never Meta.',
     'shopify.today_revenue is Shopify store commerce only. Use it only for "how much did my Shopify store make / how many Shopify orders".',
     'Pulse "Purchases", CPA, ROAS, and ad spend are Meta marketing_performance. Do not call them LURVOX revenue.',
+    'Instagram organic engagement is marketing_content and/or Instagram Graph — never Meta ad purchases and never cash revenue.',
     'Do not reconcile LURVOX Razorpay payments against Shopify orders unless an explicit verified relationship exists. Shopify ₹0 does not explain LURVOX revenue.',
     'Never assign funnel_id from purchase amount or plan price. Funnel identity requires configured mapping; otherwise attribution is unavailable.',
     'If Meta lastSyncAt is null, investigate Meta sync before unrelated Shopify reporting.',

@@ -207,6 +207,36 @@ export async function resolveApproval(input: {
       actor_id: input.actorId,
       execution_result: result as Record<string, unknown>,
     })
+
+    // Link decision ledger if a waiting decision exists for this approval
+    try {
+      const { createAdminClient: adminClient } = await import('@/lib/supabase/admin')
+      const a = adminClient()
+      const { data: decision } = await a
+        .from('jarvis_decisions')
+        .select('id')
+        .eq('related_approval_id', approval.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (decision?.id) {
+        const { linkActionToDecision, scheduleOutcomeCheck } = await import(
+          '@/lib/jarvis/memory/learning-loop'
+        )
+        await linkActionToDecision({
+          decisionId: decision.id,
+          actionStatus: result.status === 'executed' ? 'executed' : 'recorded_not_executed',
+          actionResult: result as unknown as Record<string, unknown>,
+          relatedApprovalId: approval.id,
+        })
+        if (result.status === 'executed') {
+          await scheduleOutcomeCheck({ decisionId: decision.id })
+        }
+      }
+    } catch {
+      // non-fatal
+    }
+
     return { ok: true, execution: result }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Execution failed'

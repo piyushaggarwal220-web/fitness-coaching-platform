@@ -86,6 +86,15 @@ export async function GET() {
     listIncidents().catch(() => []),
   ])
 
+  const { listRecentLearnings } = await import('@/lib/jarvis/memory/learning-loop')
+  const recentLearning = await listRecentLearnings(8).catch(() => [])
+
+  const { buildBusinessSystemRegistry } = await import('@/lib/jarvis/operator/systems/registry')
+  const systemRegistry = await buildBusinessSystemRegistry().catch(() => ({
+    systems: [],
+    retrieved_at: new Date().toISOString(),
+  }))
+
   const publicApprovals = approvals.map((a) => ({
     ...a,
     current_state: sanitizePublicJson(a.current_state) ?? {},
@@ -155,6 +164,8 @@ export async function GET() {
       jobs: jobs ?? [],
       tasks: mappedTasks,
       memory: memory ?? [],
+      recent_learning: recentLearning,
+      business_systems: systemRegistry.systems,
       activity,
       activity_digest: digests?.[0] ?? null,
       recent_digests: digests ?? [],
@@ -172,6 +183,186 @@ export async function GET() {
       health: system?.health ?? null,
       integrations: system?.integrations ?? [],
       capabilities: system?.capabilities ?? null,
+      instagram_intelligence: await (async () => {
+        try {
+          const { getInstagramIntelligenceSummary, liveInstagramPublishingEnabled } = await import(
+            '@/lib/jarvis/instagram'
+          )
+          const summary = await getInstagramIntelligenceSummary()
+          return sanitizePublicJson({
+            ...summary,
+            live_publishing_enabled: liveInstagramPublishingEnabled(),
+            connected: summary.configured,
+          })
+        } catch {
+          return {
+            configured: false,
+            connected: false,
+            live_publishing_enabled: false,
+            followers: null,
+            posts_synced: null,
+            latest_sync_at: null,
+            latest_sync_status: null,
+            reach_median: null,
+            interactions_median: null,
+            data_coverage_note: 'Instagram intelligence unavailable.',
+          }
+        }
+      })(),
+      video_workspace: await (async () => {
+        try {
+          const { describeVideoProviderConfig, listRecentVideoJobs } = await import(
+            '@/lib/ai-marketing/workflows/video-jobs'
+          )
+          const { describeVideoIntelligenceConfig, listVideoSessions } = await import(
+            '@/lib/jarvis/video/intelligence'
+          )
+          const cfg = describeVideoProviderConfig()
+          const intel = describeVideoIntelligenceConfig()
+          const jobs = await listRecentVideoJobs(12)
+          const sessions = await listVideoSessions(12).catch(() => [])
+          return sanitizePublicJson({
+            provider_configured: cfg.configured,
+            provider: cfg.provider,
+            provider_kind: cfg.kind,
+            note: cfg.note,
+            missing: cfg.missing,
+            stage: cfg.stage ?? null,
+            callback_configured: cfg.callback_configured ?? false,
+            intelligence: {
+              configured: intel.configured,
+              provider: intel.provider,
+              kind: intel.kind,
+              note: intel.note,
+              missing: intel.missing,
+              capabilities: intel.capabilities,
+            },
+            sessions: sessions.map((s) => ({
+              id: s.id,
+              title: s.title,
+              status: s.status,
+              source_count: s.source_count,
+              total_duration_sec: s.total_duration_sec,
+              opportunity_count: s.opportunity_count,
+              created_at: s.created_at,
+              updated_at: s.updated_at,
+            })),
+            recent_jobs: jobs.map((j) => ({
+              id: j.id,
+              status: j.status,
+              provider: j.provider,
+              provider_job_id: j.provider_job_id,
+              has_output: j.has_output,
+              approval_status: j.approval_status,
+              error: j.error,
+              created_at: j.created_at,
+              preset: j.preset,
+              aspect_ratio: j.aspect_ratio,
+              estimated_cost_usd: j.estimated_cost_usd,
+              actual_cost_usd: j.actual_cost_usd,
+            })),
+          })
+        } catch {
+          return {
+            provider_configured: false,
+            provider: 'stub',
+            provider_kind: 'STUB',
+            note: 'VIDEO PROVIDER: NOT CONNECTED',
+            missing: ['VIDEO_EDIT_PROVIDER', 'VIDEO_EDIT_API_KEY'],
+            intelligence: {
+              configured: false,
+              provider: 'stub',
+              kind: 'STUB',
+              note: 'VIDEO INTELLIGENCE: NOT CONFIGURED',
+              missing: [],
+              capabilities: {},
+            },
+            sessions: [],
+            recent_jobs: [],
+          }
+        }
+      })(),
+      creative_director: await (async () => {
+        try {
+          const { listCreativePlans } = await import('@/lib/jarvis/creative')
+          const plans = await listCreativePlans({ limit: 12 })
+          return sanitizePublicJson({
+            note: 'Phase 5 Creative Director — plans only. No auto-publish. No auto-render.',
+            plan_count: plans.length,
+            plans: plans.map((p) => ({
+              id: p.id,
+              title: p.title,
+              hook: p.hook,
+              status: p.status,
+              version: p.version,
+              objective: p.objective,
+              estimated_duration_sec: p.estimated_duration_sec,
+              confidence: p.confidence,
+              video_session_id: p.video_session_id,
+              updated_at: p.updated_at,
+            })),
+          })
+        } catch {
+          return {
+            note: 'Creative Director unavailable (migration may be pending).',
+            plan_count: 0,
+            plans: [],
+          }
+        }
+      })(),
+      autonomous_operator: await (async () => {
+        try {
+          const { listOpenAttention, getLatestMorningBrief } = await import(
+            '@/lib/jarvis/autonomous'
+          )
+          const [attention, brief] = await Promise.all([
+            listOpenAttention(12),
+            getLatestMorningBrief(),
+          ])
+          return sanitizePublicJson({
+            note: 'Phase 10 attention queue — significant writes remain approval-gated.',
+            attention: attention.map((a) => ({
+              fingerprint: a.fingerprint,
+              severity: a.severity,
+              system: a.system,
+              title: a.title,
+              observation: a.observation,
+              next_action: a.next_action,
+              requires_approval: a.requires_approval,
+              occurrence_count: a.occurrence_count ?? 1,
+            })),
+            morning_brief: brief
+              ? { date: brief.brief_date, text: brief.text.slice(0, 800) }
+              : null,
+          })
+        } catch {
+          return {
+            note: 'Autonomous operator unavailable (migration may be pending).',
+            attention: [],
+            morning_brief: null,
+          }
+        }
+      })(),
+      realtime: await (async () => {
+        try {
+          const { describeRealtimeCapability } = await import('@/lib/jarvis/realtime/config')
+          return sanitizePublicJson(describeRealtimeCapability())
+        } catch {
+          return {
+            enabled: false,
+            provider: 'unknown',
+            status: 'UNKNOWN',
+            note: 'Realtime capability unavailable.',
+            modalities: {
+              text: 'AVAILABLE',
+              voice_input: 'UNKNOWN',
+              voice_output: 'UNKNOWN',
+              realtime: 'UNKNOWN',
+            },
+            missing: [],
+          }
+        }
+      })(),
     },
   })
 }

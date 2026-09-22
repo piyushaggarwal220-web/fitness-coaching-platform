@@ -54,4 +54,6 @@ export const FORBIDDEN_TOOL_NAMES = new Set([
   'shopify.change_payment_settings',
   'shopify.change_credentials',
   'shopify.billing',
+  'instagram.change_credentials',
+  'instagram.modify_settings',
 ])

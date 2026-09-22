@@ -6,6 +6,7 @@ import { getCostDashboard } from '@/lib/jarvis/cost/usage'
 import { isBraveSearchConfigured } from '@/lib/jarvis/research/brave-search'
 import { isVideoProviderConfigured, getVideoEditProvider } from '@/lib/jarvis/video/provider'
 import { getShopifyCredentials, shopifyTestConnection } from '@/lib/jarvis/shopify/client'
+import { isInstagramConfigured, liveInstagramPublishingEnabled } from '@/lib/jarvis/instagram'
 import { listTools } from '@/lib/jarvis/tools/registry'
 import { jarvisPlanSchema } from '@/lib/jarvis/core/plan'
 import type { HealthCheckResult, HealthStatus } from './diagnostic-types'
@@ -210,10 +211,20 @@ export async function runHealthChecks(): Promise<HealthCheckResult[]> {
   const instagram: HealthCheckResult = {
     id: 'instagram',
     name: 'Instagram',
-    status: openaiConfigured() ? 'degraded' : 'not_configured',
-    summary: openaiConfigured()
-      ? 'Idea generation works. Publishing is not connected.'
-      : 'Instagram ideas need OpenAI. Publishing is not connected.',
+    status: !openaiConfigured()
+      ? 'not_configured'
+      : isInstagramConfigured()
+        ? liveInstagramPublishingEnabled()
+          ? 'healthy'
+          : 'degraded'
+        : 'degraded',
+    summary: !openaiConfigured()
+      ? 'Instagram ideas need OpenAI. Graph publishing is gated.'
+      : isInstagramConfigured()
+        ? liveInstagramPublishingEnabled()
+          ? 'Instagram Login Graph configured. Live publishing enabled after approval.'
+          : 'Instagram Login Graph configured for reads. Publishing requires approval + LIVE_INSTAGRAM_PUBLISHING_ENABLED.'
+        : 'Idea generation/planning available. Instagram Login (INSTAGRAM_ACCESS_TOKEN) not fully configured.',
     checked_at,
   }
 
@@ -332,6 +343,40 @@ export async function runHealthChecks(): Promise<HealthCheckResult[]> {
     }
   }
 
+  let realtimeVoice: HealthCheckResult = {
+    id: 'realtime_voice',
+    name: 'Realtime voice',
+    status: 'unknown',
+    summary: 'Realtime capability not probed.',
+    checked_at,
+  }
+  try {
+    const { describeRealtimeCapability } = await import('@/lib/jarvis/realtime/config')
+    const rt = describeRealtimeCapability()
+    realtimeVoice = {
+      id: 'realtime_voice',
+      name: 'Realtime voice',
+      status:
+        rt.status === 'CONNECTED'
+          ? 'healthy'
+          : rt.status === 'DISABLED' || rt.status === 'NOT_CONFIGURED'
+            ? 'not_configured'
+            : rt.status === 'DEGRADED' || rt.status === 'ERROR'
+              ? 'degraded'
+              : 'unknown',
+      summary: `${rt.status} · ${rt.provider}${rt.model ? ` · ${rt.model}` : ''}. Text modality remains AVAILABLE.`,
+      checked_at,
+    }
+  } catch (err) {
+    realtimeVoice = {
+      id: 'realtime_voice',
+      name: 'Realtime voice',
+      status: 'failed',
+      summary: redactDiagnosticText(err instanceof Error ? err.message : 'Realtime probe failed'),
+      checked_at,
+    }
+  }
+
   const toolRegistry: HealthCheckResult = {
     id: 'tool_registry',
     name: 'Tool registry',
@@ -395,6 +440,7 @@ export async function runHealthChecks(): Promise<HealthCheckResult[]> {
     toolRegistry,
     aiSchemas,
     costGovernor,
+    realtimeVoice,
     approvalEngine,
     memory,
     events,

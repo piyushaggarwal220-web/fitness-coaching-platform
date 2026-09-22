@@ -2,8 +2,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getTool } from '@/lib/jarvis/tools/registry'
 import { evaluateToolPermission } from '@/lib/jarvis/permissions/risk-engine'
 import { createApprovalRequest } from '@/lib/jarvis/permissions/approval-engine'
+import {
+  buildApprovalBriefing,
+  enrichmentForApprovalRow,
+} from '@/lib/jarvis/permissions/approval-briefing'
 import { assertAiBudgetAvailable, recordCostUsage } from '@/lib/jarvis/cost/usage'
 import { writeMarketingAudit } from '@/lib/ai-marketing/audit'
+import {
+  verifyAfterWrite,
+  formatVerificationForOperator,
+} from '@/lib/jarvis/core/verify-after-write'
 import type { JarvisApprovalCard, ToolExecutionContext } from '@/lib/jarvis/types'
 
 export type RunToolResult = {
@@ -15,6 +23,10 @@ export type RunToolResult = {
   summary: string
   riskClass: string
   costUsd: number
+  verification?: {
+    state: string
+    summary: string
+  }
 }
 
 export async function runTool(
@@ -128,26 +140,46 @@ export async function runTool(
         costUsd: 0,
       }
     }
+    const briefing = buildApprovalBriefing({
+      toolName,
+      riskClass: tool.riskClass,
+      riskLevel: perm.riskLevel,
+      reason: perm.reason,
+      toolInput: parsed.data as Record<string, unknown>,
+      estimatedCostUsd: tool.estimatedCostUsd,
+    })
+    const enriched = enrichmentForApprovalRow(briefing)
     const approval = await createApprovalRequest({
       conversationId: ctx.conversationId,
       taskId: ctx.source === 'chat' && ctx.taskId && ctx.taskId !== 'approved' ? ctx.taskId : null,
       toolCallId,
       toolName,
-      actionLabel: `${toolName}`,
-      reason: perm.reason,
-      evidence: [`Tool: ${toolName}`, `Risk: ${tool.riskClass}`],
-      currentState: {},
-      proposedState: parsed.data as Record<string, unknown>,
-      expectedCostNote: `Est. AI/tool cost ~$${tool.estimatedCostUsd}`,
+      actionLabel: enriched.actionLabel,
+      reason: briefing.why,
+      evidence: enriched.evidence,
+      currentState: enriched.currentState,
+      proposedState: enriched.proposedState,
+      expectedCostNote: enriched.expectedCostNote,
       riskLevel: perm.riskLevel,
       riskClass: tool.riskClass,
       actorId: ctx.actorId,
     })
+
+    void maybeRecordLearningDecision({
+      toolName,
+      toolInput: parsed.data as Record<string, unknown>,
+      toolCallId,
+      ctx,
+      actionStatus: 'waiting_for_approval',
+      approvalId: approval.id,
+      scheduleMeasurement: false,
+    }).catch(() => null)
+
     return {
       status: 'requires_approval',
       toolCallId,
       approval,
-      summary: `Approval required: ${toolName}`,
+      summary: `Approval required: ${briefing.what}`,
       riskClass: tool.riskClass,
       costUsd: 0,
     }
@@ -194,13 +226,56 @@ export async function runTool(
       })
     }
 
+    let verification:
+      | { state: string; summary: string }
+      | undefined
+    if (tool.riskClass !== 'READ') {
+      const v = await verifyAfterWrite({
+        toolName,
+        riskClass: tool.riskClass,
+        output,
+        ctx,
+      })
+      verification = {
+        state: v.state,
+        summary: formatVerificationForOperator(v),
+      }
+      if (toolCallId) {
+        await admin
+          .from('jarvis_tool_calls')
+          .update({
+            output: {
+              ...(typeof output === 'object' && output ? (output as object) : { value: output }),
+              _verification: verification,
+            },
+          })
+          .eq('id', toolCallId)
+      }
+    }
+
+    const baseSummary = summarizeOutput(output)
+    // Phase 3: durable decision + scheduled measurement for significant writes
+    if (tool.riskClass === 'SIGNIFICANT' || tool.riskClass === 'DANGEROUS') {
+      void maybeRecordLearningDecision({
+        toolName,
+        toolInput: parsed.data as Record<string, unknown>,
+        toolCallId,
+        ctx,
+        actionStatus: 'executed',
+        actionResult: { summary: baseSummary },
+        verificationState: verification?.state ?? null,
+        approvalId: ctx.approvalId ?? null,
+      }).catch(() => null)
+    }
+
     return {
       status: 'executed',
       toolCallId,
       output,
-      summary: summarizeOutput(output),
+      summary: verification ? `${baseSummary} | ${verification.summary}` : baseSummary,
       riskClass: tool.riskClass,
       costUsd,
+      verification,
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Tool failed'
@@ -234,4 +309,95 @@ function summarizeOutput(output: unknown): string {
   } catch {
     return 'ok'
   }
+}
+
+async function maybeRecordLearningDecision(input: {
+  toolName: string
+  toolInput: Record<string, unknown>
+  toolCallId?: string
+  ctx: ToolExecutionContext
+  actionStatus:
+    | 'waiting_for_approval'
+    | 'executed'
+    | 'verified'
+    | 'failed'
+    | 'blocked'
+    | 'recorded_not_executed'
+  actionResult?: Record<string, unknown>
+  verificationState?: string | null
+  approvalId?: string | null
+  scheduleMeasurement?: boolean
+}) {
+  // Skip pure analytics / memory tools
+  if (
+    input.toolName.startsWith('memory.') ||
+    input.toolName.startsWith('analytics.') ||
+    input.toolName.startsWith('system.') ||
+    input.toolName.startsWith('diagnostics.')
+  ) {
+    return
+  }
+
+  const { recordDecisionActionAndSchedule } = await import('@/lib/jarvis/memory/learning-loop')
+  const { defaultWindowForTool } = await import('@/lib/jarvis/memory/scopes')
+
+  const system = input.toolName.split('.')[0] || 'meta'
+  const objective = `${input.toolName}: ${JSON.stringify(input.toolInput).slice(0, 180)}`
+  const baseline: Record<string, unknown> = {}
+  const metrics: { metric: string; baseline: number | null; direction: 'maintain' | 'increase' | 'decrease' | 'unavailable'; target?: number | null }[] = []
+
+  // Prefer configured targets when present on input; otherwise qualitative
+  if (typeof input.toolInput.target_cpa === 'number') {
+    metrics.push({
+      metric: 'cpa',
+      baseline: typeof input.toolInput.baseline_cpa === 'number' ? (input.toolInput.baseline_cpa as number) : null,
+      target: input.toolInput.target_cpa as number,
+      direction: 'maintain',
+    })
+  }
+
+  await recordDecisionActionAndSchedule({
+    objective,
+    system,
+    scope: system === 'instagram' ? 'INSTAGRAM_ACCOUNT' : system === 'meta' ? 'AD_SET' : 'GLOBAL_BUSINESS',
+    scopeId:
+      (input.toolInput.adset_id as string) ||
+      (input.toolInput.funnel_id as string) ||
+      (input.toolInput.campaign_id as string) ||
+      null,
+    reason: `Significant tool ${input.toolName} — expected outcome recorded before measurement.`,
+    evidence: [`tool:${input.toolName}`, input.toolCallId ? `tool_call:${input.toolCallId}` : 'tool_call:unknown'],
+    expectedOutcome: {
+      metrics,
+      qualitative:
+        metrics.length === 0
+          ? 'No explicit numeric success criterion configured for this action — outcome will be qualitative or unavailable.'
+          : undefined,
+    },
+    baseline,
+    baselineSource:
+      metrics.length > 0
+        ? 'tool_input / configured target when provided'
+        : 'unavailable — no explicit baseline on tool input',
+    measurementWindowHours: defaultWindowForTool(input.toolName),
+    risk: 'high',
+    approvalRequired: input.actionStatus === 'waiting_for_approval',
+    approvalStatus:
+      input.actionStatus === 'waiting_for_approval'
+        ? 'pending'
+        : input.ctx.approvedExecution
+          ? 'approved'
+          : 'not_required',
+    source: input.ctx.approvedExecution ? 'JARVIS' : input.ctx.source === 'cron' ? 'SYSTEM_AUTOMATION' : 'JARVIS',
+    toolName: input.toolName,
+    actionInput: input.toolInput,
+    actionStatus: input.actionStatus,
+    actionResult: input.actionResult,
+    verificationState: input.verificationState,
+    relatedApprovalId: input.approvalId,
+    relatedTaskId: input.ctx.taskId,
+    relatedToolCallId: input.toolCallId,
+    actorId: input.ctx.actorId,
+    scheduleMeasurement: input.scheduleMeasurement ?? input.actionStatus === 'executed',
+  })
 }

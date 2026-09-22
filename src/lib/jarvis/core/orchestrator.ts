@@ -25,6 +25,12 @@ import {
   operatorComposeSystemPrompt,
   presentOperatorReply,
 } from '@/lib/jarvis/reasoning/operator-reply'
+import {
+  buildDurablePlanFromToolCalls,
+  persistTaskPlan,
+  updatePlanStep,
+} from '@/lib/jarvis/core/durable-plan'
+import { learnFromChatTurn } from '@/lib/jarvis/memory/learning-loop'
 import type { JarvisStreamEvent } from '@/lib/jarvis/types'
 
 export async function getOrCreateConversation(input: {
@@ -121,14 +127,32 @@ export async function runJarvisTurn(input: {
   const toolResults: { tool: string; status: string; summary: string; output?: unknown }[] = []
 
   try {
-    const ctx = await buildJarvisContext(conversationId)
+    const ctx = await buildJarvisContext(conversationId, { objective: input.message })
 
-    emit({ type: 'status', message: 'Thinking…' })
+    const complex =
+      /\b(why|fix|investigate|plan|research|compare|prepare|across|sales down|cpa)\b/i.test(
+        input.message
+      )
+    if (complex) {
+      emit({
+        type: 'status',
+        message: 'Give me a moment — checking the relevant business systems together…',
+      })
+    } else {
+      emit({ type: 'status', message: 'Thinking…' })
+    }
+
     const plan = await generateMarketingJson({
       systemPrompt: `You are JARVIS, the LURVOX AI Business Operator — not a chatbot that only talks.
 Operating loop: OBSERVE → THINK → DECIDE → ACT → ASK WHEN NECESSARY → LEARN.
 
 Choose registered tools when data/actions are needed. Do not invent numbers.
+Prefer analytics.investigate (with pattern_id when matching) for cross-system "why" questions instead of blindly calling every tool.
+For "how is the business doing" prefer lurvox.revenue + funnels.performance or analytics.investigate pattern business_health.
+Never interpret "do whatever you think is necessary" as bypassing SIGNIFICANT approval gates.
+When reporting external writes, distinguish PLANNED / REQUESTED / EXECUTED / VERIFIED / FAILED / BLOCKED / WAITING_FOR_APPROVAL using tool verification summaries.
+Use memory only as context — never as the source of truth for live metrics.
+If memory_conflicts are present, tell the user which record you are using and why.
 If the user asks why a metric, tool, recommendation, or integration is wrong/missing, call system.why or system.diagnose. Investigate the pipeline; do not answer from memory.
 Never report revenue/orders/spend as 0 when data_status is failed, unavailable, or unknown.
 Business revenue questions ("how has my business been doing", "revenue today/yesterday", "last N days") MUST use lurvox.revenue (public.purchases, Asia/Kolkata).
@@ -138,9 +162,12 @@ Meta tools are ads only (spend, attributed purchases, CPA, ROAS) — never LURVO
 If Meta performance is unavailable / lastSyncAt is null, call system.diagnose or meta.status / investigate Meta sync before unrelated Shopify reporting.
 Never infer funnel_id from purchase amount or plan price — funnel identity comes from configured mapping only.
 If a metric is not in the source-of-truth catalog, say Source of truth not verified.
+Distinguish facts, observations, hypotheses, and recommendations in your thinking_summary.
+Answer like an operator: "I checked X/Y/Z. Observed… Likely interpretation… Uncertain… Recommend… Approval required for…"
+Follow-ups refer to prior history.structured tool_results — do not restart cold.
 ${investigationSystemGuardrails()}
 ${separateCommerceSystemsNote()}
-For SIGNIFICANT Meta writes, still request the tool — the permission engine will create an approval card.
+For SIGNIFICANT Meta writes, still request the tool — the permission engine will create an approval card with WHAT/WHY/TARGET/EXPECTED/RISK/COST.
 If the user only wants explanation and context already has enough, set tool_calls=[].
 Never call forbidden self-permission/budget tools.
 Keep thinking_summary concise (evidence-oriented, not hidden chain-of-thought dump).
@@ -202,24 +229,55 @@ ${JARVIS_PLAN_JSON_CONTRACT}`,
     }
 
     const calls = plan.data.tool_calls.slice(0, budgets.max_tool_calls_per_task)
-    for (const call of calls) {
+    const durable = buildDurablePlanFromToolCalls({
+      objective: input.message,
+      thinkingSummary: plan.data.thinking_summary,
+      toolCalls: calls,
+      estimatedCostUsd: spentUsd,
+    })
+    await persistTaskPlan(taskId, durable)
+
+    for (let i = 0; i < calls.length; i++) {
+      const call = calls[i]
+      const stepId = `step_${i + 1}`
       if (spentUsd >= budgets.per_chat_budget_usd) {
         emit({
           type: 'status',
           message: 'Per-chat budget reached — stopping further tools.',
         })
+        await updatePlanStep(taskId, stepId, {
+          status: 'skipped',
+          error: 'per_chat_budget',
+          planStatus: 'paused_budget',
+        })
         break
       }
       if (tokensUsed >= budgets.max_tokens_per_task) {
         emit({ type: 'status', message: 'Token limit reached — stopping.' })
+        await updatePlanStep(taskId, stepId, {
+          status: 'skipped',
+          error: 'token_limit',
+          planStatus: 'paused_budget',
+        })
         break
       }
 
       const daily = await assertAiBudgetAvailable(0.05)
       if (!daily.ok) {
         emit({ type: 'error', error: daily.reason })
+        await updatePlanStep(taskId, stepId, {
+          status: 'skipped',
+          error: daily.reason,
+          planStatus: 'paused_budget',
+        })
         break
       }
+
+      await updatePlanStep(taskId, stepId, {
+        status: 'running',
+        started_at: new Date().toISOString(),
+        planStatus: 'running',
+      })
 
       emit({
         type: 'tool_start',
@@ -254,6 +312,30 @@ ${JARVIS_PLAN_JSON_CONTRACT}`,
       if (result.approval) {
         approvals.push(result.approval)
         emit({ type: 'approval', approval: result.approval })
+        await updatePlanStep(taskId, stepId, {
+          status: 'waiting_for_approval',
+          result_summary: result.summary,
+          risk: result.riskClass as 'READ' | 'LOW_RISK' | 'SIGNIFICANT' | 'DANGEROUS',
+          planStatus: 'waiting_for_approval',
+          completed_at: new Date().toISOString(),
+        })
+      } else if (result.status === 'executed') {
+        await updatePlanStep(taskId, stepId, {
+          status: 'completed',
+          result_summary: result.summary,
+          risk: result.riskClass as 'READ' | 'LOW_RISK' | 'SIGNIFICANT' | 'DANGEROUS',
+          completed_at: new Date().toISOString(),
+        })
+      } else {
+        await updatePlanStep(taskId, stepId, {
+          status: 'failed',
+          error: result.error || result.summary,
+          result_summary: result.summary,
+          risk: result.riskClass as 'READ' | 'LOW_RISK' | 'SIGNIFICANT' | 'DANGEROUS',
+          planStatus: result.status === 'budget_exhausted' ? 'paused_budget' : 'failed',
+          completed_at: new Date().toISOString(),
+        })
+        // Preserve prior successes — do not blindly retry the failed step
       }
 
       await admin
@@ -366,8 +448,18 @@ ${JARVIS_PLAN_JSON_CONTRACT}`,
       { toolResults, approvals }
     )
 
-    // Light learning: store decision note for significant tool outcomes
+    // LEARN: durable outcome + optional explicit preference; activity notification
     if (toolResults.some((t) => t.status === 'executed' || t.status === 'requires_approval')) {
+      await learnFromChatTurn({
+        userMessage: input.message,
+        thinkingSummary: plan.data.thinking_summary,
+        toolResults,
+        approvals,
+        taskId,
+        conversationId,
+        actorId: input.actorId,
+      }).catch(() => undefined)
+
       await admin.from('jarvis_notifications').insert({
         kind: 'activity',
         title: 'Jarvis acted',

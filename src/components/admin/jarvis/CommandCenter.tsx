@@ -9,6 +9,10 @@ import { TasksView } from './TasksView'
 import { ApprovalsView } from './ApprovalsView'
 import { ActivityView } from './ActivityView'
 import { MemoryView } from './MemoryView'
+import { LearningCenterView } from './LearningCenterView'
+import { TasteView } from './TasteView'
+import { InstagramIntelligenceView } from './InstagramIntelligenceView'
+import { ContentOpsView } from './ContentOpsView'
 import { SettingsView } from './SettingsView'
 import { NotificationsView } from './NotificationsView'
 import { IntegrationsView } from './IntegrationsView'
@@ -28,6 +32,7 @@ const DOMAIN_VIEWS: CommandView[] = [
   'marketing',
   'creatives',
   'instagram',
+  'video',
   'experiments',
 ]
 
@@ -63,6 +68,14 @@ export function JarvisCommandCenter() {
       <ActivityView items={jarvis.dashboard?.activity ?? []} />
     ) : jarvis.view === 'memory' ? (
       <MemoryView />
+    ) : jarvis.view === 'learning' ? (
+      <LearningCenterView />
+    ) : jarvis.view === 'taste' ? (
+      <TasteView />
+    ) : jarvis.view === 'instagram_intel' ? (
+      <InstagramIntelligenceView onAsk={(prompt) => void jarvis.sendMessage(prompt)} />
+    ) : jarvis.view === 'content_ops' ? (
+      <ContentOpsView onAsk={(prompt) => void jarvis.sendMessage(prompt)} />
     ) : jarvis.view === 'integrations' ? (
       <IntegrationsView jarvis={jarvis} />
     ) : jarvis.view === 'diagnostics' ? (

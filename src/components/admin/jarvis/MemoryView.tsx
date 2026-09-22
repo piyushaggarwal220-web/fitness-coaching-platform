@@ -16,7 +16,8 @@ const GROUP_DEFAULT_CATEGORY: Record<MemoryUiGroup, (typeof MEMORY_CATEGORIES)[n
   DECISIONS: 'decision',
   PREFERENCES: 'preference',
   RULES: 'business_rule',
-  LEARNINGS: 'insight',
+  LEARNINGS: 'outcome',
+  HYPOTHESES: 'insight',
   'RESEARCH FINDINGS': 'research',
 }
 

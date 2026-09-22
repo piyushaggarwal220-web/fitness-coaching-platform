@@ -27,11 +27,16 @@ export type JarvisView =
   | 'marketing'
   | 'creatives'
   | 'instagram'
+  | 'instagram_intel'
+  | 'content_ops'
+  | 'video'
   | 'experiments'
   | 'tasks'
   | 'approvals'
   | 'activity'
   | 'memory'
+  | 'learning'
+  | 'taste'
   | 'integrations'
   | 'diagnostics'
   | 'settings'
@@ -43,6 +48,7 @@ export type MemoryUiGroup =
   | 'PREFERENCES'
   | 'RULES'
   | 'LEARNINGS'
+  | 'HYPOTHESES'
   | 'RESEARCH FINDINGS'
 
 export const MEMORY_CATEGORIES = [
@@ -67,7 +73,7 @@ const MEMORY_GROUP_MAP: Record<string, MemoryUiGroup> = {
   decision: 'DECISIONS',
   preference: 'PREFERENCES',
   business_rule: 'RULES',
-  insight: 'LEARNINGS',
+  insight: 'HYPOTHESES',
   outcome: 'LEARNINGS',
   experiment: 'LEARNINGS',
   research: 'RESEARCH FINDINGS',
@@ -79,10 +85,12 @@ export const MEMORY_GROUP_ORDER: MemoryUiGroup[] = [
   'PREFERENCES',
   'RULES',
   'LEARNINGS',
+  'HYPOTHESES',
   'RESEARCH FINDINGS',
 ]
 
-export function memoryGroup(category: string): MemoryUiGroup {
+export function memoryGroup(category: string, tags?: string[] | null): MemoryUiGroup {
+  if (tags?.includes('hypothesis') || category === 'insight') return 'HYPOTHESES'
   return MEMORY_GROUP_MAP[category] ?? 'LEARNINGS'
 }
 

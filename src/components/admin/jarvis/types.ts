@@ -233,10 +233,107 @@ export type JarvisDashboard = {
   conversations?: Conversation[]
   autonomy_level?: number
   live_meta_execution?: boolean
+  realtime?: {
+    enabled?: boolean
+    provider?: string
+    model?: string | null
+    status?: string
+    note?: string
+    modalities?: {
+      text?: string
+      voice_input?: string
+      voice_output?: string
+      realtime?: string
+    }
+    missing?: string[]
+  }
   meta?: Record<string, unknown>
   health?: SystemHealth | null
   integrations?: IntegrationCard[]
   capabilities?: Record<CapabilityGroup, CapabilityItem[]> | null
+  instagram_intelligence?: {
+    configured?: boolean
+    connected?: boolean
+    live_publishing_enabled?: boolean
+    followers?: number | null
+    posts_synced?: number | null
+    latest_sync_at?: string | null
+    latest_sync_status?: string | null
+    reach_median?: number | null
+    interactions_median?: number | null
+    data_coverage_note?: string
+  }
+  video_workspace?: {
+    provider_configured?: boolean
+    provider?: string
+    provider_kind?: 'REAL' | 'TEST' | 'STUB'
+    note?: string
+    missing?: string[]
+    stage?: string
+    callback_configured?: boolean
+    intelligence?: {
+      configured?: boolean
+      provider?: string
+      kind?: 'REAL' | 'TEST' | 'STUB'
+      note?: string
+      missing?: string[]
+      capabilities?: Record<string, string>
+    }
+    sessions?: {
+      id: string
+      title: string
+      status?: string
+      source_count?: number
+      total_duration_sec?: number
+      opportunity_count?: number
+      created_at?: string
+      updated_at?: string
+    }[]
+    recent_jobs?: {
+      id: string
+      status: string
+      provider?: string
+      provider_job_id?: string | null
+      has_output?: boolean
+      approval_status?: string | null
+      error?: string | null
+      created_at?: string
+      preset?: string | null
+      aspect_ratio?: string | null
+      estimated_cost_usd?: number | null
+      actual_cost_usd?: number | null
+    }[]
+  }
+  creative_director?: {
+    note?: string
+    plan_count?: number
+    plans?: {
+      id: string
+      title: string
+      hook?: string | null
+      status: string
+      version: number
+      objective?: string | null
+      estimated_duration_sec?: number | null
+      confidence?: string | null
+      video_session_id?: string | null
+      updated_at?: string
+    }[]
+  }
+  autonomous_operator?: {
+    note?: string
+    attention?: {
+      fingerprint?: string
+      severity: string
+      system: string
+      title: string
+      observation?: string
+      next_action: string
+      requires_approval?: boolean
+      occurrence_count?: number
+    }[]
+    morning_brief?: { date?: string; text?: string } | null
+  }
 }
 
 export type CommandView = JarvisView
