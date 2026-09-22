@@ -222,6 +222,69 @@ export function CockpitHome({
           </div>
         ) : null}
 
+        {jarvis.dashboard?.opportunities ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Opportunities</div>
+            {(jarvis.dashboard.opportunities.critical || []).slice(0, 2).map((o) => (
+              <div key={o.id || o.title} style={{ fontSize: 12, marginTop: 4, color: colors.danger }}>
+                CRITICAL · {o.title}
+              </div>
+            ))}
+            {(jarvis.dashboard.opportunities.high || []).slice(0, 3).map((o) => (
+              <div key={o.id || o.title} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                HIGH · {o.title}
+              </div>
+            ))}
+            {!jarvis.dashboard.opportunities.critical?.length &&
+            !jarvis.dashboard.opportunities.high?.length ? (
+              <div style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
+                {jarvis.dashboard.opportunities.note || 'No scored opportunities.'}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {jarvis.dashboard?.strategy?.goals?.length ||
+        jarvis.dashboard?.strategy?.plans?.length ||
+        (jarvis.dashboard?.strategy as { long_horizon?: unknown } | undefined)?.long_horizon ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Strategy / long-horizon</div>
+            {(jarvis.dashboard?.strategy?.plans as { name?: string; status?: string }[] | undefined)
+              ?.slice(0, 2)
+              .map((p, i) => (
+                <div key={i} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                  Plan · {p.name} ({p.status})
+                </div>
+              ))}
+            {(jarvis.dashboard?.strategy?.at_risk as { name?: string }[] | undefined)?.slice(0, 2).map((g, i) => (
+              <div key={i} style={{ fontSize: 12, marginTop: 4, color: colors.warning }}>
+                At risk · {g.name}
+              </div>
+            ))}
+            {(
+              (jarvis.dashboard?.strategy as { attention?: { CRITICAL?: { title?: string }[] } } | undefined)
+                ?.attention?.CRITICAL || []
+            )
+              .slice(0, 2)
+              .map((a, i) => (
+                <div key={`c-${i}`} style={{ fontSize: 12, marginTop: 4, color: colors.danger }}>
+                  Priority · {a.title}
+                </div>
+              ))}
+          </div>
+        ) : null}
+
+        {jarvis.dashboard?.experiments?.recent?.length ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Experiments</div>
+            {jarvis.dashboard.experiments.recent.slice(0, 3).map((e) => (
+              <div key={e.id || e.name} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                {e.name} · {e.lifecycle || e.status}
+              </div>
+            ))}
+          </div>
+        ) : null}
+
         {jarvis.dashboard?.autonomous_operator?.attention?.length ? (
           <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
             <div style={s.sectionLabel}>Attention</div>

@@ -157,10 +157,66 @@ export async function runAutonomousOperatorCycle(opts?: {
   } catch {
     /* Phase 14 optional */
   }
+
+  // Phase 15 — detect/persist opportunities (bounded, idempotent)
+  let opportunityLines: string[] = []
+  try {
+    const budget = await assertAiBudgetAvailable(0.02)
+    if (budget.ok) {
+      const { detectAndPersistOpportunities, reviewOpportunities } = await import(
+        '@/lib/jarvis/opportunities'
+      )
+      await detectAndPersistOpportunities({ days: 7 })
+      const review = await reviewOpportunities()
+      const top = [
+        ...((review.critical as { title?: string }[]) || []),
+        ...((review.high as { title?: string }[]) || []),
+      ].slice(0, 3)
+      opportunityLines = top.map((o) => o.title || 'Opportunity').filter(Boolean)
+      actions.push('opportunities_scanned')
+    }
+  } catch {
+    /* Phase 15 optional */
+  }
+
+  // Phase 16/19/20 brief crumbs (cheap reads)
+  try {
+    const { strategyHealth } = await import('@/lib/jarvis/strategy')
+    const sh = await strategyHealth()
+    if ((sh.goals_at_risk as number) > 0) {
+      learnedLines.push(`At-risk goals: ${sh.goals_at_risk}`)
+    }
+  } catch {
+    /* optional */
+  }
+
+  // Phase 21 — long-horizon review (bounded)
+  let planLines: string[] = []
+  try {
+    const { longHorizonReviewAll, attentionBudget } = await import(
+      '@/lib/jarvis/strategy/long-horizon'
+    )
+    const review = await longHorizonReviewAll()
+    const atRisk = ((review.reviews as { health?: string; plan_id?: string }[]) || []).filter(
+      (r) => r.health === 'AT_RISK' || r.health === 'BLOCKED' || r.health === 'REPLAN_REQUIRED'
+    )
+    planLines = atRisk.slice(0, 3).map((r) => `Plan ${r.plan_id?.slice(0, 8)}: ${r.health}`)
+    const attn = await attentionBudget()
+    const crit = ((attn.CRITICAL as { title?: string }[]) || []).slice(0, 2)
+    for (const c of crit) {
+      if (c.title) opportunityLines.push(`Priority: ${c.title}`)
+    }
+    actions.push('long_horizon_reviewed')
+  } catch {
+    /* Phase 21 optional until migration */
+  }
+
   const brief = buildMorningBrief(observation, {
     pendingApprovalLabel: pendingLabel,
     eventLines,
     learnedLines,
+    opportunityLines,
+    planLines,
   })
   const briefDate = zonedYmd(new Date(observation.observed_at), BUSINESS_TIMEZONE)
   await persistMorningBrief({

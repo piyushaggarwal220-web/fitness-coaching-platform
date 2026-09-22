@@ -187,5 +187,22 @@ export {
   explainMemory,
   getStrategicMemoryHealth,
 } from '@/lib/jarvis/memory/strategic'
+export {
+  detectAndPersistOpportunities,
+  reviewOpportunities,
+  getOpportunityHealth,
+} from '@/lib/jarvis/opportunities'
+export { strategyReview, strategyHealth, createGoal, createStrategicPlan } from '@/lib/jarvis/strategy'
+export {
+  longHorizonReviewAll,
+  longHorizonHealth,
+  attentionBudget,
+  prioritizeItems,
+  assessPlanHealth,
+} from '@/lib/jarvis/strategy/long-horizon'
+export { runHardeningAudit } from '@/lib/jarvis/hardening'
+export { growthSnapshot, growthHealth } from '@/lib/jarvis/growth'
+export { financeSnapshot, financeHealth } from '@/lib/jarvis/finance'
+export { listExperiments, experimentsHealth } from '@/lib/jarvis/experiments'
 export { loadLurvoxRevenue } from '@/lib/jarvis/metrics/lurvox-revenue'
 export type { JarvisStreamEvent, JarvisApprovalCard, JarvisRiskClass } from '@/lib/jarvis/types'

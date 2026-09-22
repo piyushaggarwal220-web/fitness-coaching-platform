@@ -268,6 +268,26 @@ export type JarvisDashboard = {
     conflicts?: { id?: string; reason: string; funnel_id: string | null }[]
     limitations?: string[]
   }
+  opportunities?: {
+    note?: string
+    health?: Record<string, unknown> | null
+    critical?: { id?: string; title?: string; priority?: string }[]
+    high?: { id?: string; title?: string; priority?: string }[]
+    watch?: { id?: string; title?: string }[]
+  }
+  strategy?: {
+    note?: string
+    goals?: unknown[]
+    plans?: unknown[]
+    at_risk?: unknown[]
+    health?: Record<string, unknown>
+  }
+  finance?: Record<string, unknown>
+  experiments?: {
+    note?: string
+    health?: Record<string, unknown>
+    recent?: { id?: string; name?: string; status?: string; lifecycle?: string }[]
+  }
   realtime?: {
     enabled?: boolean
     provider?: string

@@ -134,6 +134,28 @@ export async function buildAwaySummary(opts?: {
     /* Phase 14 optional */
   }
 
+  // Phase 15–20 — opportunities / goals / experiments (bounded)
+  try {
+    const { reviewOpportunities } = await import('@/lib/jarvis/opportunities')
+    const rev = await reviewOpportunities()
+    for (const o of [...((rev.critical as { title?: string }[]) || []), ...((rev.high as { title?: string }[]) || [])].slice(0, 3)) {
+      if (o.title) summary.opportunities.push(o.title)
+    }
+  } catch {
+    /* optional */
+  }
+  try {
+    const { listExperiments } = await import('@/lib/jarvis/experiments')
+    const exps = (await listExperiments(5)).filter(
+      (e) => e.status === 'running' || e.jarvis_lifecycle === 'RUNNING'
+    )
+    for (const e of exps.slice(0, 2)) {
+      summary.business.push(`Active experiment: ${e.name}`)
+    }
+  } catch {
+    /* optional */
+  }
+
   // Dedupe lines
   for (const key of Object.keys(summary) as (keyof AwaySummary)[]) {
     if (Array.isArray(summary[key])) {

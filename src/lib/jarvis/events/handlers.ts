@@ -90,6 +90,18 @@ export async function dispatchEventAction(ev: StoredJarvisEvent): Promise<Handle
     } catch {
       /* strategic write optional if migration pending */
     }
+    try {
+      const { opportunityFromEvent } = await import('@/lib/jarvis/opportunities')
+      await opportunityFromEvent({
+        eventId: ev.id,
+        eventType: ev.event_type,
+        funnelId: ev.funnel_id,
+        reason: ev.significance_reason || def.default_action,
+        significance,
+      })
+    } catch {
+      /* Phase 15 optional */
+    }
   }
 
   // Attention for ALERT / URGENT / INVESTIGATE

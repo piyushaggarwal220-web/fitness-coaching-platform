@@ -29,11 +29,15 @@ import { listPendingApprovals } from '@/lib/jarvis/permissions/approval-engine'
 import { registerExecutionTools } from '@/lib/jarvis/tools/execution-tools'
 import { registerEventTools } from '@/lib/jarvis/tools/event-tools'
 import { registerStrategicMemoryTools } from '@/lib/jarvis/tools/strategic-memory-tools'
+import { registerPhase1520Tools } from '@/lib/jarvis/tools/phase15-20-tools'
+import { registerLongHorizonTools } from '@/lib/jarvis/tools/long-horizon-tools'
 
 export function ensureJarvisToolsRegistered(): void {
   registerExecutionTools()
   registerEventTools()
   registerStrategicMemoryTools()
+  registerPhase1520Tools()
+  registerLongHorizonTools()
   // registerTool is idempotent for phase expansions
   registerTool({
     name: 'analytics.today_overview',

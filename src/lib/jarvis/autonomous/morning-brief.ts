@@ -12,7 +12,13 @@ function inr(n: number | null | undefined): string {
 
 export function buildMorningBrief(
   obs: UnifiedObservation,
-  opts?: { pendingApprovalLabel?: string | null; eventLines?: string[]; learnedLines?: string[] }
+  opts?: {
+    pendingApprovalLabel?: string | null
+    eventLines?: string[]
+    learnedLines?: string[]
+    opportunityLines?: string[]
+    planLines?: string[]
+  }
 ): { text: string; structured: MorningBriefStructured; meaningful: boolean } {
   const date = zonedYmd(new Date(obs.observed_at), obs.timezone || BUSINESS_TIMEZONE)
   const rev = obs.revenue as {
@@ -115,6 +121,18 @@ export function buildMorningBrief(
     for (const l of learnedLines) lines.push(`- ${l}`)
   }
 
+  const opportunityLines = opts?.opportunityLines?.slice(0, 4) ?? []
+  if (opportunityLines.length) {
+    lines.push('', 'Top opportunities:')
+    for (const l of opportunityLines) lines.push(`- ${l}`)
+  }
+
+  const planLines = opts?.planLines?.slice(0, 4) ?? []
+  if (planLines.length) {
+    lines.push('', 'Plan health:')
+    for (const l of planLines) lines.push(`- ${l}`)
+  }
+
   const meaningful =
     important.length > 0 ||
     Boolean(recommended) ||
@@ -122,7 +140,9 @@ export function buildMorningBrief(
     (content.blocked ?? 0) > 0 ||
     (content.needs_review ?? 0) > 0 ||
     eventLines.length > 0 ||
-    learnedLines.length > 0
+    learnedLines.length > 0 ||
+    opportunityLines.length > 0 ||
+    planLines.length > 0
 
   return { text: lines.join('\n'), structured, meaningful }
 }

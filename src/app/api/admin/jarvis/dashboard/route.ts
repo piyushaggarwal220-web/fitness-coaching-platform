@@ -460,6 +460,72 @@ export async function GET() {
           }
         }
       })(),
+      opportunities: await (async () => {
+        try {
+          const { reviewOpportunities, getOpportunityHealth } = await import(
+            '@/lib/jarvis/opportunities'
+          )
+          const [review, health] = await Promise.all([
+            reviewOpportunities(),
+            getOpportunityHealth(),
+          ])
+          return sanitizePublicJson({
+            note: 'Phase 15 opportunities — evidence-backed; no auto-execute.',
+            health,
+            critical: review.critical,
+            high: review.high,
+            watch: (review.watch as unknown[])?.slice?.(0, 5) ?? review.watch,
+          })
+        } catch {
+          return { note: 'Opportunities unavailable (migration may be pending).', health: null }
+        }
+      })(),
+      strategy: await (async () => {
+        try {
+          const { strategyReview, strategyHealth } = await import('@/lib/jarvis/strategy')
+          const { longHorizonHealth, resumeLongHorizon, attentionBudget } = await import(
+            '@/lib/jarvis/strategy/long-horizon'
+          )
+          return sanitizePublicJson({
+            note: 'Phase 16+21 strategy / long-horizon',
+            ...(await strategyReview()),
+            health: await strategyHealth(),
+            long_horizon: await longHorizonHealth(),
+            resumable: (await resumeLongHorizon()).resumable,
+            attention: await attentionBudget(),
+          })
+        } catch {
+          return { note: 'Strategy unavailable (migration may be pending).' }
+        }
+      })(),
+      finance: await (async () => {
+        try {
+          const { financeHealth } = await import('@/lib/jarvis/finance')
+          return sanitizePublicJson({ note: 'Phase 19 finance', ...(await financeHealth()) })
+        } catch {
+          return { note: 'Finance intelligence unavailable.' }
+        }
+      })(),
+      experiments: await (async () => {
+        try {
+          const { experimentsHealth, listExperiments } = await import('@/lib/jarvis/experiments')
+          const active = (await listExperiments(8)).filter((e) =>
+            ['running', 'draft'].includes(String(e.status))
+          )
+          return sanitizePublicJson({
+            note: 'Phase 20 experiments — no live Meta writes from tools.',
+            health: await experimentsHealth(),
+            recent: active.map((e) => ({
+              id: e.id,
+              name: e.name,
+              status: e.status,
+              lifecycle: e.jarvis_lifecycle,
+            })),
+          })
+        } catch {
+          return { note: 'Experiments unavailable.' }
+        }
+      })(),
     },
   })
 }
