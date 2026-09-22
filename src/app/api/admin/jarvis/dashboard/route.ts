@@ -179,6 +179,39 @@ export async function GET() {
       })),
       autonomy_level: autonomy,
       live_meta_execution: liveMetaExecutionEnabled(),
+      execution: await (async () => {
+        try {
+          const { getExecutionConfig } = await import('@/lib/jarvis/execution/policy/config')
+          const { liveInstagramPublishingEnabled } = await import('@/lib/jarvis/instagram')
+          const cfg = await getExecutionConfig()
+          return sanitizePublicJson({
+            kill_switch: cfg.kill_switch,
+            mode: cfg.mode,
+            dry_run: cfg.dry_run,
+            shadow_mode: cfg.shadow_mode,
+            canary: cfg.canary,
+            note: cfg.note,
+            live_meta_execution: liveMetaExecutionEnabled(),
+            live_instagram_publishing: liveInstagramPublishingEnabled(),
+            limits: {
+              max_auto_action_cost_usd: cfg.limits.max_auto_action_cost_usd,
+              max_auto_daily_action_cost_usd: cfg.limits.max_auto_daily_action_cost_usd,
+              max_auto_actions_per_day: cfg.limits.max_auto_actions_per_day,
+            },
+          })
+        } catch {
+          return {
+            kill_switch: false,
+            mode: 'approval',
+            dry_run: false,
+            shadow_mode: false,
+            canary: false,
+            note: 'Execution status unavailable.',
+            live_meta_execution: liveMetaExecutionEnabled(),
+            live_instagram_publishing: false,
+          }
+        }
+      })(),
       meta: context.meta_status,
       health: system?.health ?? null,
       integrations: system?.integrations ?? [],

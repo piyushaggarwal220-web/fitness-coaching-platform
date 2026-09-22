@@ -130,6 +130,45 @@ export function CockpitHome({
           ))}
         </div>
 
+        {jarvis.dashboard?.execution ? (
+          <div
+            style={{
+              marginTop: 8,
+              padding: '6px 0',
+              borderBottom: `1px solid ${colors.divider}`,
+              fontSize: 12,
+              color: colors.textSecondary,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 10,
+              alignItems: 'center',
+            }}
+          >
+            <span style={s.sectionLabel}>Execution</span>
+            <span
+              style={{
+                color: jarvis.dashboard.execution.kill_switch ? colors.danger : colors.textSecondary,
+              }}
+            >
+              {jarvis.dashboard.execution.kill_switch ? 'KILL SWITCH' : 'Writes gated'}
+            </span>
+            <span>· Mode {jarvis.dashboard.execution.mode || 'approval'}</span>
+            {jarvis.dashboard.execution.dry_run ? <span>· DRY RUN</span> : null}
+            {jarvis.dashboard.execution.shadow_mode ? <span>· SHADOW</span> : null}
+            <span>
+              · Live Meta {jarvis.dashboard.execution.live_meta_execution ? 'ON' : 'OFF'} · IG publish{' '}
+              {jarvis.dashboard.execution.live_instagram_publishing ? 'ON' : 'OFF'}
+            </span>
+            <button
+              type="button"
+              style={{ ...s.ghostBtn, border: 'none', padding: '2px 6px', fontSize: 11 }}
+              onClick={() => onNavigate('settings')}
+            >
+              Controls →
+            </button>
+          </div>
+        ) : null}
+
         {jarvis.dashboard?.autonomous_operator?.attention?.length ? (
           <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
             <div style={s.sectionLabel}>Attention</div>

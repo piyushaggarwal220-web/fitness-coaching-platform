@@ -12,6 +12,28 @@ type SettingsPayload = {
   live_meta_execution?: boolean
 }
 
+type ExecutionStatus = {
+  kill_switch?: boolean
+  mode?: string
+  dry_run?: boolean
+  shadow_mode?: boolean
+  note?: string
+  live_meta_execution?: boolean
+  live_instagram_publishing?: boolean
+  limits?: Record<string, number>
+}
+
+type ReceiptSummary = {
+  id: string
+  tool_name: string
+  system: string
+  status: string
+  policy_decision?: string | null
+  verification_status?: string | null
+  dry_run?: boolean
+  created_at?: string
+}
+
 export function SettingsView() {
   const [data, setData] = useState<SettingsPayload | null>(null)
   const [draft, setDraft] = useState<Record<string, number | boolean>>({})
@@ -20,6 +42,11 @@ export function SettingsView() {
   const [error, setError] = useState('')
   const [saved, setSaved] = useState('')
   const [busy, setBusy] = useState(false)
+  const [execution, setExecution] = useState<ExecutionStatus | null>(null)
+  const [receipts, setReceipts] = useState<ReceiptSummary[]>([])
+  const [incidents, setIncidents] = useState<{ id: string; tool_name: string; message: string; error_class: string }[]>(
+    []
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -32,6 +59,13 @@ export function SettingsView() {
         setData(json)
         setDraft(json.budgets ?? {})
         setAutonomy(json.autonomy_level ?? 2)
+        const ex = await fetch('/api/admin/jarvis/execution')
+        const exJson = await ex.json()
+        if (!cancelled && exJson.success) {
+          setExecution(exJson.execution)
+          setReceipts(exJson.receipts ?? [])
+          setIncidents(exJson.incidents ?? [])
+        }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed')
       }
@@ -40,6 +74,26 @@ export function SettingsView() {
       cancelled = true
     }
   }, [])
+
+  async function saveExecution(patch: Record<string, unknown>) {
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/api/admin/jarvis/execution', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set_controls', ...patch }),
+      })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error || 'Failed')
+      setExecution(json.execution)
+      setSaved('Execution controls updated (admin only — Jarvis cannot change these via tools).')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function save() {
     setBusy(true)
@@ -127,6 +181,82 @@ export function SettingsView() {
             <input type="checkbox" checked={confirmHigh} onChange={(e) => setConfirmHigh(e.target.checked)} />
             I understand levels 3–4 increase autonomy. Live Meta execution stays off unless enabled separately.
           </label>
+        ) : null}
+      </section>
+
+      <section style={{ ...s.card, marginBottom: 16 }}>
+        <div style={s.eyebrow}>EXECUTION CONTROLS (PHASE 12)</div>
+        <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.5, color: colors.textSecondary }}>
+          Kill switch: {execution?.kill_switch ? 'ACTIVE — writes stopped' : 'OFF'}
+          <br />
+          Mode: {execution?.mode || 'approval'}
+          {execution?.dry_run ? ' · DRY RUN' : ''}
+          {execution?.shadow_mode ? ' · SHADOW' : ''}
+          <br />
+          Live Meta: {execution?.live_meta_execution ? 'ON' : 'OFF'} · Live Instagram publish:{' '}
+          {execution?.live_instagram_publishing ? 'ON' : 'OFF'}
+          <div style={{ ...s.muted, marginTop: 6 }}>{execution?.note}</div>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          <button
+            type="button"
+            style={s.ghostBtn}
+            disabled={busy}
+            onClick={() => void saveExecution({ kill_switch: !execution?.kill_switch })}
+          >
+            {execution?.kill_switch ? 'Clear kill switch' : 'Engage kill switch'}
+          </button>
+          <button
+            type="button"
+            style={s.ghostBtn}
+            disabled={busy}
+            onClick={() => void saveExecution({ dry_run: !execution?.dry_run })}
+          >
+            Toggle dry-run
+          </button>
+          <button
+            type="button"
+            style={s.ghostBtn}
+            disabled={busy}
+            onClick={() => void saveExecution({ shadow_mode: !execution?.shadow_mode })}
+          >
+            Toggle shadow
+          </button>
+        </div>
+      </section>
+
+      <section style={{ ...s.card, marginBottom: 16 }}>
+        <div style={s.eyebrow}>RECENT EXECUTIONS</div>
+        {receipts.length === 0 ? (
+          <div style={{ ...s.muted, marginTop: 10 }}>No execution receipts yet.</div>
+        ) : (
+          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {receipts.slice(0, 12).map((r) => (
+              <div key={r.id} style={{ fontSize: 12, color: colors.textSecondary }}>
+                <strong style={{ color: colors.textPrimary }}>{r.tool_name}</strong> · {r.system} · {r.status}
+                {r.policy_decision ? ` · ${r.policy_decision}` : ''}
+                {r.verification_status ? ` · verify:${r.verification_status}` : ''}
+                {r.dry_run ? ' · DRY_RUN' : ''}
+              </div>
+            ))}
+          </div>
+        )}
+        {incidents.length > 0 ? (
+          <div style={{ marginTop: 12 }}>
+            <div style={s.muted}>Open execution incidents</div>
+            {incidents.slice(0, 5).map((i) => (
+              <div key={i.id} style={{ fontSize: 12, color: colors.danger, marginTop: 4 }}>
+                {i.error_class}: {i.tool_name} — {i.message.slice(0, 120)}
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {execution?.limits ? (
+          <div style={{ ...s.muted, marginTop: 10, fontSize: 11 }}>
+            Caps: ${execution.limits.max_auto_action_cost_usd}/action · $
+            {execution.limits.max_auto_daily_action_cost_usd}/day · {execution.limits.max_auto_actions_per_day}
+            /day actions
+          </div>
         ) : null}
       </section>
 

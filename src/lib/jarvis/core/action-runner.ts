@@ -12,6 +12,12 @@ import {
   verifyAfterWrite,
   formatVerificationForOperator,
 } from '@/lib/jarvis/core/verify-after-write'
+import { runExecutionGate } from '@/lib/jarvis/execution/gate'
+import { updateExecutionReceipt } from '@/lib/jarvis/execution/receipts'
+import { reconcileReservation } from '@/lib/jarvis/execution/reservations'
+import { releaseExecutionLock } from '@/lib/jarvis/execution/locks'
+import { recordExecutionIncident, executionIncidentFingerprint } from '@/lib/jarvis/execution/incidents'
+import { classifyError } from '@/lib/jarvis/execution/retry'
 import type { JarvisApprovalCard, ToolExecutionContext } from '@/lib/jarvis/types'
 
 export type RunToolResult = {
@@ -130,7 +136,89 @@ export async function runTool(
     }
   }
 
-  if (perm.mode === 'require_approval') {
+  // Phase 12 — controlled execution gate (tightens only)
+  const gate = await runExecutionGate({
+    toolName,
+    riskClass: tool.riskClass,
+    riskLevel: perm.allowed ? perm.riskLevel : 'critical',
+    estimatedCostUsd: tool.estimatedCostUsd,
+    toolInput: parsed.data as Record<string, unknown>,
+    source: ctx.source,
+    approvedExecution: ctx.approvedExecution,
+    actorId: ctx.actorId,
+    toolCallId,
+    taskId: ctx.taskId,
+    permissionMode: perm.mode,
+  })
+
+  if (gate.blockStatus === 'blocked' || gate.blockStatus === 'budget_exhausted') {
+    if (toolCallId) {
+      await admin
+        .from('jarvis_tool_calls')
+        .update({
+          permission_result: 'blocked',
+          error: gate.blockSummary,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', toolCallId)
+    }
+    await writeMarketingAudit({
+      agent: 'jarvis',
+      decision: 'execution_policy_blocked',
+      action: toolName,
+      reasoning: gate.blockSummary,
+      actor_id: ctx.actorId,
+      execution_result: { code: gate.policy.code, receipt_id: gate.receipt?.id },
+    })
+    return {
+      status: gate.blockStatus === 'budget_exhausted' ? 'budget_exhausted' : 'blocked',
+      toolCallId,
+      error: gate.blockSummary,
+      summary: gate.blockSummary || gate.policy.reason,
+      riskClass: tool.riskClass,
+      costUsd: 0,
+    }
+  }
+
+  if (gate.blockStatus === 'prepare_only') {
+    if (toolCallId) {
+      await admin
+        .from('jarvis_tool_calls')
+        .update({
+          permission_result: gate.dryRun || gate.shadow ? 'recorded_not_executed' : 'blocked',
+          output: {
+            status: gate.dryRun ? 'dry_run' : gate.shadow ? 'shadow' : 'prepare_only',
+            receipt_id: gate.receipt?.id,
+            note: gate.blockSummary,
+          },
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', toolCallId)
+    }
+    return {
+      status: 'executed',
+      toolCallId,
+      output: {
+        status: gate.dryRun ? 'dry_run' : gate.shadow ? 'shadow' : 'prepare_only',
+        executed: false,
+        receipt_id: gate.receipt?.id,
+        note: gate.blockSummary,
+      },
+      summary: gate.blockSummary || 'Prepared without external write.',
+      riskClass: tool.riskClass,
+      costUsd: 0,
+      verification: {
+        state: 'RECORDED_NOT_EXECUTED',
+        summary: gate.dryRun
+          ? 'DRY_RUN — no external write performed.'
+          : gate.shadow
+            ? 'SHADOW — proposal recorded only.'
+            : 'PREPARE_ONLY — no external write.',
+      },
+    }
+  }
+
+  if (gate.blockStatus === 'requires_approval' || perm.mode === 'require_approval') {
     if (!toolCallId) {
       return {
         status: 'failed',
@@ -144,7 +232,7 @@ export async function runTool(
       toolName,
       riskClass: tool.riskClass,
       riskLevel: perm.riskLevel,
-      reason: perm.reason,
+      reason: gate.policy.reason || perm.reason,
       toolInput: parsed.data as Record<string, unknown>,
       estimatedCostUsd: tool.estimatedCostUsd,
     })
@@ -156,7 +244,12 @@ export async function runTool(
       toolName,
       actionLabel: enriched.actionLabel,
       reason: briefing.why,
-      evidence: enriched.evidence,
+      evidence: [
+        ...enriched.evidence,
+        `policy:${gate.policy.code}`,
+        `action_class:${gate.policy.action_class}`,
+        gate.rollbackNote ? `rollback:${gate.rollbackNote}` : '',
+      ].filter(Boolean),
       currentState: enriched.currentState,
       proposedState: enriched.proposedState,
       expectedCostNote: enriched.expectedCostNote,
@@ -185,6 +278,13 @@ export async function runTool(
     }
   }
 
+  if (gate.receipt?.id) {
+    await updateExecutionReceipt(gate.receipt.id, {
+      status: 'executing',
+      started_at: new Date().toISOString(),
+    })
+  }
+
   const started = Date.now()
   try {
     const output = await Promise.race([
@@ -200,8 +300,21 @@ export async function runTool(
       taskId: ctx.source === 'chat' && ctx.taskId && ctx.taskId !== 'approved' ? ctx.taskId : null,
       conversationId: ctx.conversationId,
       costUsd: tool.estimatedCostUsd,
-      metadata: { executed: true },
+      metadata: {
+        executed: true,
+        receipt_id: gate.receipt?.id,
+        action_class: gate.policy.action_class,
+        system: gate.policy.system,
+      },
     })
+
+    if (gate.reservationId) {
+      await reconcileReservation({
+        reservationId: gate.reservationId,
+        actualCostUsd: costUsd,
+        consume: true,
+      })
+    }
 
     if (toolCallId) {
       await admin
@@ -222,7 +335,7 @@ export async function runTool(
         decision: 'tool_executed',
         action: toolName,
         actor_id: ctx.actorId,
-        execution_result: { toolCallId, summary: summarizeOutput(output) },
+        execution_result: { toolCallId, summary: summarizeOutput(output), receipt_id: gate.receipt?.id },
       })
     }
 
@@ -251,10 +364,46 @@ export async function runTool(
           })
           .eq('id', toolCallId)
       }
+
+      if (gate.receipt?.id) {
+        await updateExecutionReceipt(gate.receipt.id, {
+          status: v.state === 'FAILED' || v.state === 'EXECUTED_UNVERIFIED' ? (v.state === 'FAILED' ? 'verification_failed' : 'executed') : v.state === 'VERIFIED' ? 'verified' : 'executed',
+          actual_cost_usd: costUsd,
+          after_state: typeof output === 'object' && output ? (output as Record<string, unknown>) : { value: output },
+          verification_status: v.state,
+          verification_summary: verification.summary,
+          completed_at: new Date().toISOString(),
+        })
+      }
+
+      if (v.state === 'FAILED') {
+        await recordExecutionIncident({
+          fingerprint: executionIncidentFingerprint({
+            system: gate.policy.system,
+            toolName,
+            targetId: gate.receipt?.target_id,
+            errorClass: 'PROVIDER',
+          }),
+          system: gate.policy.system,
+          toolName,
+          targetId: gate.receipt?.target_id,
+          errorClass: 'PROVIDER',
+          message: verification.summary,
+          receiptId: gate.receipt?.id,
+          recommendedNext: 'Investigate provider state; do not assume success.',
+        })
+      }
+    } else if (gate.receipt?.id) {
+      await updateExecutionReceipt(gate.receipt.id, {
+        status: 'executed',
+        actual_cost_usd: costUsd,
+        completed_at: new Date().toISOString(),
+      })
     }
 
+    await releaseExecutionLock(gate.lockKey, toolCallId || ctx.actorId || gate.idempotencyKey)
+
     const baseSummary = summarizeOutput(output)
-    // Phase 3: durable decision + scheduled measurement for significant writes
     if (tool.riskClass === 'SIGNIFICANT' || tool.riskClass === 'DANGEROUS') {
       void maybeRecordLearningDecision({
         toolName,
@@ -279,6 +428,7 @@ export async function runTool(
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Tool failed'
+    const errorClass = classifyError(err)
     if (toolCallId) {
       await admin
         .from('jarvis_tool_calls')
@@ -290,6 +440,36 @@ export async function runTool(
         })
         .eq('id', toolCallId)
     }
+    if (gate.reservationId) {
+      await reconcileReservation({
+        reservationId: gate.reservationId,
+        actualCostUsd: 0,
+        consume: false,
+      })
+    }
+    if (gate.receipt?.id) {
+      await updateExecutionReceipt(gate.receipt.id, {
+        status: 'failed',
+        failure_code: errorClass,
+        failure_message: message.slice(0, 400),
+        completed_at: new Date().toISOString(),
+      })
+    }
+    await recordExecutionIncident({
+      fingerprint: executionIncidentFingerprint({
+        system: gate.policy.system,
+        toolName,
+        targetId: gate.receipt?.target_id,
+        errorClass,
+      }),
+      system: gate.policy.system,
+      toolName,
+      targetId: gate.receipt?.target_id,
+      errorClass,
+      message,
+      receiptId: gate.receipt?.id,
+    })
+    await releaseExecutionLock(gate.lockKey, toolCallId || ctx.actorId || gate.idempotencyKey)
     return {
       status: 'failed',
       toolCallId,

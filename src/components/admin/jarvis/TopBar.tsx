@@ -57,6 +57,22 @@ export function JarvisTopBar({
       </button>
       <div style={{ flex: 1 }} />
       <VoiceStatusChip status={jarvis.dashboard?.realtime?.modalities?.voice_input || jarvis.dashboard?.realtime?.status} />
+      {jarvis.dashboard?.execution?.kill_switch ? (
+        <span style={s.badge('danger')}>Kill switch ON</span>
+      ) : jarvis.dashboard?.execution?.dry_run ? (
+        <span style={s.badge('warn')}>Dry-run</span>
+      ) : jarvis.dashboard?.execution?.shadow_mode ? (
+        <span style={s.badge('muted')}>Shadow</span>
+      ) : (
+        <button
+          type="button"
+          style={{ ...s.ghostBtn, border: 'none', padding: '4px 6px', fontSize: 11 }}
+          onClick={() => onNavigate('settings')}
+          title={jarvis.dashboard?.execution?.note || 'Execution controls'}
+        >
+          Exec {jarvis.dashboard?.execution?.mode || 'approval'}
+        </button>
+      )}
       <div style={{ fontSize: 11, color: freshness?.stale ? colors.warning : colors.textMuted }}>
         {freshness?.label || 'Updated —'}
       </div>

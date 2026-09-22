@@ -1,8 +1,10 @@
 /**
  * Structured approval briefing — never "Should I do it?"
+ * Phase 12: explicit WHAT/WHY/TARGET/CHANGE/COST/RISK/ROLLBACK/EXPIRATION.
  */
 
 import type { JarvisApprovalCard, JarvisRiskClass, JarvisRiskLevel } from '@/lib/jarvis/types'
+import { buildRollbackPlan } from '@/lib/jarvis/execution/rollback'
 
 export type ApprovalBriefing = {
   what: string
@@ -12,6 +14,11 @@ export type ApprovalBriefing = {
   risk: string
   cost: string
   reversibility: 'easy' | 'moderate' | 'difficult'
+  will_happen: string[]
+  will_not_happen: string[]
+  rollback_plan: string
+  expiration_note: string
+  rollback_reversibility: 'REVERSIBLE' | 'PARTIALLY_REVERSIBLE' | 'NOT_REVERSIBLE'
   current: Record<string, unknown>
   proposed: Record<string, unknown>
 }
@@ -23,6 +30,7 @@ export function buildApprovalBriefing(input: {
   reason: string
   toolInput: Record<string, unknown>
   estimatedCostUsd: number
+  approvalTtlHours?: number
 }): ApprovalBriefing {
   const target =
     String(
@@ -36,18 +44,27 @@ export function buildApprovalBriefing(input: {
         'unspecified target'
     ).slice(0, 120)
 
+  const rollback = buildRollbackPlan({
+    toolName: input.toolName,
+    beforeState: {},
+    toolInput: input.toolInput,
+  })
   const reversibility: ApprovalBriefing['reversibility'] =
-    input.riskClass === 'SIGNIFICANT'
-      ? input.toolName.includes('budget') || input.toolName.includes('bid')
+    rollback.reversibility === 'REVERSIBLE'
+      ? input.riskClass === 'SIGNIFICANT'
+        ? 'moderate'
+        : 'easy'
+      : rollback.reversibility === 'PARTIALLY_REVERSIBLE'
         ? 'moderate'
         : 'difficult'
-      : 'easy'
 
   const what = describeWhat(input.toolName, input.toolInput)
   const expected =
     typeof input.toolInput.expected_effect === 'string'
       ? input.toolInput.expected_effect
       : `Apply ${input.toolName} as proposed. Measure outcome before further changes.`
+
+  const ttl = input.approvalTtlHours ?? 24
 
   return {
     what,
@@ -61,6 +78,19 @@ export function buildApprovalBriefing(input: {
         : ''
     }`,
     reversibility,
+    will_happen: [
+      `Run ${input.toolName} through action-runner after approval`,
+      'Capture before/after state when provider supports it',
+      'Verify write result and record an execution receipt',
+    ],
+    will_not_happen: [
+      'Raise Jarvis autonomy, budgets, or kill-switch settings',
+      'Bypass LIVE_META / LIVE_INSTAGRAM / cost governor',
+      'Retry blindly without idempotency if the write may have succeeded',
+    ],
+    rollback_plan: rollback.note || `Reversibility: ${rollback.reversibility}`,
+    expiration_note: `Approval expires in ~${ttl}h. Materially changing the action invalidates this approval.`,
+    rollback_reversibility: rollback.reversibility,
     current: {},
     proposed: input.toolInput,
   }
@@ -106,10 +136,15 @@ export function enrichmentForApprovalRow(briefing: ApprovalBriefing): {
       `WHAT: ${briefing.what}`,
       `WHY: ${briefing.why}`,
       `TARGET: ${briefing.target}`,
-      `EXPECTED: ${briefing.expected}`,
+      `PROPOSED CHANGE: see proposed_state`,
+      `ESTIMATED COST: ${briefing.cost}`,
       `RISK: ${briefing.risk}`,
-      `COST: ${briefing.cost}`,
-      `REVERSIBILITY: ${briefing.reversibility}`,
+      `REVERSIBILITY: ${briefing.reversibility} (${briefing.rollback_reversibility})`,
+      `EXPECTED OUTCOME: ${briefing.expected}`,
+      `WHAT WILL HAPPEN: ${briefing.will_happen.join('; ')}`,
+      `WHAT WILL NOT HAPPEN: ${briefing.will_not_happen.join('; ')}`,
+      `ROLLBACK: ${briefing.rollback_plan}`,
+      `EXPIRATION: ${briefing.expiration_note}`,
     ],
     currentState: { ...briefing.current, briefing },
     proposedState: briefing.proposed,
@@ -118,9 +153,12 @@ export function enrichmentForApprovalRow(briefing: ApprovalBriefing): {
 }
 
 export function formatApprovalCardForOperator(card: JarvisApprovalCard): string {
-  const evidence = card.evidence || []
-  if (evidence.some((e) => e.startsWith('WHAT:'))) {
-    return evidence.join('\n')
-  }
-  return `${card.action_label}\nWhy: ${card.reason}`
+  return [
+    `Approve: ${card.action_label}`,
+    card.reason,
+    `Risk: ${card.risk_level} / ${card.risk_class}`,
+    card.expected_cost_note ? `Cost: ${card.expected_cost_note}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n')
 }

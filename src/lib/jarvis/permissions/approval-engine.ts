@@ -21,6 +21,16 @@ export async function createApprovalRequest(input: {
   actorId?: string | null
 }): Promise<JarvisApprovalCard> {
   const admin = createAdminClient()
+  let ttlHours = 24
+  try {
+    const { getExecutionConfig } = await import('@/lib/jarvis/execution/policy/config')
+    const cfg = await getExecutionConfig()
+    ttlHours = cfg.limits.approval_ttl_hours
+  } catch {
+    /* default */
+  }
+  const expiresAt = new Date(Date.now() + ttlHours * 3600_000).toISOString()
+
   const { data, error } = await admin
     .from('jarvis_approvals')
     .insert({
@@ -37,16 +47,44 @@ export async function createApprovalRequest(input: {
       risk_level: input.riskLevel,
       risk_class: input.riskClass,
       status: 'pending',
+      expires_at: expiresAt,
     })
     .select('*')
     .maybeSingle()
 
-  if (error || !data) throw new Error(error?.message || 'Failed to create approval')
+  // If expires_at column not migrated yet, retry without it
+  let row = data
+  let err = error
+  if (error && /expires_at/i.test(error.message)) {
+    const retry = await admin
+      .from('jarvis_approvals')
+      .insert({
+        conversation_id: input.conversationId,
+        task_id: input.taskId,
+        tool_call_id: input.toolCallId,
+        tool_name: input.toolName,
+        action_label: input.actionLabel,
+        reason: input.reason,
+        evidence: input.evidence,
+        current_state: input.currentState,
+        proposed_state: input.proposedState,
+        expected_cost_note: input.expectedCostNote ?? null,
+        risk_level: input.riskLevel,
+        risk_class: input.riskClass,
+        status: 'pending',
+      })
+      .select('*')
+      .maybeSingle()
+    row = retry.data
+    err = retry.error
+  }
+
+  if (err || !row) throw new Error(err?.message || 'Failed to create approval')
 
   await admin
     .from('jarvis_tool_calls')
     .update({
-      approval_id: data.id,
+      approval_id: row.id,
       permission_result: 'requires_approval',
     })
     .eq('id', input.toolCallId)
@@ -56,7 +94,7 @@ export async function createApprovalRequest(input: {
     title: 'Approval required',
     body: input.actionLabel,
     link: '/admin/jarvis',
-    metadata: { approval_id: data.id },
+    metadata: { approval_id: row.id },
   })
 
   await writeMarketingAudit({
@@ -66,21 +104,21 @@ export async function createApprovalRequest(input: {
     approval: 'pending',
     reasoning: input.reason,
     actor_id: input.actorId ?? null,
-    execution_result: { approval_id: data.id, evidence: input.evidence },
+    execution_result: { approval_id: row.id, evidence: input.evidence },
   })
 
   return {
-    id: data.id,
-    action_label: data.action_label,
-    reason: data.reason,
-    evidence: Array.isArray(data.evidence) ? (data.evidence as string[]) : [],
-    current_state: (data.current_state as Record<string, unknown>) ?? {},
-    proposed_state: (data.proposed_state as Record<string, unknown>) ?? {},
-    expected_cost_note: data.expected_cost_note,
-    risk_level: data.risk_level,
-    risk_class: data.risk_class,
-    tool_name: data.tool_name,
-    status: data.status,
+    id: row.id,
+    action_label: row.action_label,
+    reason: row.reason,
+    evidence: Array.isArray(row.evidence) ? (row.evidence as string[]) : [],
+    current_state: (row.current_state as Record<string, unknown>) ?? {},
+    proposed_state: (row.proposed_state as Record<string, unknown>) ?? {},
+    expected_cost_note: row.expected_cost_note,
+    risk_level: row.risk_level,
+    risk_class: row.risk_class,
+    tool_name: row.tool_name,
+    status: row.status,
   }
 }
 
@@ -100,6 +138,30 @@ export async function resolveApproval(input: {
   if (error || !approval) return { ok: false, error: 'Approval not found' }
   if (approval.status !== 'pending') {
     return { ok: false, error: `Approval already ${approval.status}` }
+  }
+
+  // Phase 12 — approval expiration
+  const expiresAt = approval.expires_at ? Date.parse(String(approval.expires_at)) : NaN
+  if (Number.isFinite(expiresAt) && Date.now() > expiresAt) {
+    await admin
+      .from('jarvis_approvals')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('id', input.approvalId)
+    return { ok: false, error: 'This approval has expired. Prepare the action again.' }
+  }
+
+  // Kill switch blocks post-approval external writes
+  try {
+    const { getExecutionConfig } = await import('@/lib/jarvis/execution/policy/config')
+    const cfg = await getExecutionConfig()
+    if (cfg.kill_switch && input.approve) {
+      return {
+        ok: false,
+        error: 'Kill switch is active — approved writes cannot execute until an admin clears it.',
+      }
+    }
+  } catch {
+    /* continue */
   }
 
   if (!input.approve) {

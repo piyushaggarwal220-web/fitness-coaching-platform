@@ -26,8 +26,10 @@ import { getCostDashboard } from '@/lib/jarvis/cost/usage'
 import { getJarvisBudgets } from '@/lib/jarvis/cost/governor'
 import { getAutonomyLevel } from '@/lib/ai-marketing/settings'
 import { listPendingApprovals } from '@/lib/jarvis/permissions/approval-engine'
+import { registerExecutionTools } from '@/lib/jarvis/tools/execution-tools'
 
 export function ensureJarvisToolsRegistered(): void {
+  registerExecutionTools()
   // registerTool is idempotent for phase expansions
   registerTool({
     name: 'analytics.today_overview',

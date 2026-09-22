@@ -233,6 +233,17 @@ export type JarvisDashboard = {
   conversations?: Conversation[]
   autonomy_level?: number
   live_meta_execution?: boolean
+  execution?: {
+    kill_switch?: boolean
+    mode?: string
+    dry_run?: boolean
+    shadow_mode?: boolean
+    canary?: boolean
+    note?: string
+    live_meta_execution?: boolean
+    live_instagram_publishing?: boolean
+    limits?: Record<string, number>
+  }
   realtime?: {
     enabled?: boolean
     provider?: string

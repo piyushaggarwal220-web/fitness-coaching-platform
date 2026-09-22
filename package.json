@@ -63,6 +63,7 @@
     "verify:jarvis-content-operations": "tsx scripts/verify-jarvis-content-operations.ts",
     "verify:jarvis-autonomous-operator": "tsx scripts/verify-jarvis-autonomous-operator.ts",
     "verify:jarvis-realtime": "tsx scripts/verify-jarvis-realtime.ts",
+    "verify:jarvis-controlled-execution": "tsx scripts/verify-jarvis-controlled-execution.ts",
     "verify:instagram-intelligence": "tsx scripts/verify-instagram-intelligence.ts",
     "verify:video": "tsx scripts/verify-video.ts",
     "verify:shotstack-webhook": "tsx --env-file=.env.local scripts/verify-shotstack-webhook-e2e.ts",

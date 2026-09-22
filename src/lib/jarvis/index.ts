@@ -162,5 +162,14 @@ export {
   processRealtimeAudio,
   interruptRealtimeSpeech,
 } from '@/lib/jarvis/realtime'
+export {
+  evaluateExecutionPolicy,
+  resolveAndEvaluatePolicy,
+  getExecutionConfig,
+  runExecutionGate,
+  listRecentReceipts,
+  explainExecutionDecision,
+  executionKillSwitchActive,
+} from '@/lib/jarvis/execution'
 export { loadLurvoxRevenue } from '@/lib/jarvis/metrics/lurvox-revenue'
 export type { JarvisStreamEvent, JarvisApprovalCard, JarvisRiskClass } from '@/lib/jarvis/types'

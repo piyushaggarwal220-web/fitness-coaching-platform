@@ -59,6 +59,17 @@ export const PROTECTED_JARVIS_SETTING_KEYS = new Set([
   'max_runtime_minutes',
   'autonomy_enabled',
   'background_enabled',
+  'execution_kill_switch',
+  'execution_mode',
+  'execution_dry_run',
+  'execution_shadow_mode',
+  'execution_canary',
+  'max_auto_action_cost_usd',
+  'max_auto_daily_action_cost_usd',
+  'max_auto_monthly_action_cost_usd',
+  'max_auto_actions_per_hour',
+  'max_auto_actions_per_day',
+  'approval_ttl_hours',
 ])
 
 export async function setJarvisSetting(
