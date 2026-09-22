@@ -380,3 +380,81 @@ export async function sendMembershipRenewalReminder(input: {
 
   return summarize(results)
 }
+
+/** Pre-pay abandon: email + basics saved, no purchase yet. Deduped on checkout_intake_basics columns. */
+export async function sendAbandonedCheckoutIntakeReminder(input: {
+  basicsId: string
+  email: string
+  name?: string | null
+  planSlug: string
+  stage: 'day_1' | 'day_2'
+}): Promise<{ sent: number; skipped: number; failed: number }> {
+  const admin = createAdminClient()
+  const column = input.stage === 'day_1' ? 'nurture_day1_sent_at' : 'nurture_day2_sent_at'
+  const { data: row } = await admin
+    .from('checkout_intake_basics')
+    .select('id, consumed_at, nurture_day1_sent_at, nurture_day2_sent_at, email')
+    .eq('id', input.basicsId)
+    .maybeSingle()
+
+  if (!row || row.consumed_at || (row as Record<string, unknown>)[column]) {
+    return { sent: 0, skipped: 1, failed: 0 }
+  }
+
+  const { data: purchase } = await admin
+    .from('purchases')
+    .select('id')
+    .eq('customer_email', input.email.trim().toLowerCase())
+    .limit(1)
+    .maybeSingle()
+  if (purchase) {
+    await admin
+      .from('checkout_intake_basics')
+      .update({ [column]: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', input.basicsId)
+    return { sent: 0, skipped: 1, failed: 0 }
+  }
+
+  const greeting = firstName(input.name)
+  const checkoutUrl = `${appBaseUrl()}/checkout?plan=${encodeURIComponent(input.planSlug)}`
+  const subject =
+    input.stage === 'day_1'
+      ? 'Your LURVOX intake is waiting'
+      : 'Finish unlocking your customized plan'
+  const text = [
+    `Hi ${greeting},`,
+    '',
+    'You started your coaching intake.',
+    'To unlock full customization and get your diet + workout plan on the platform, finish payment here:',
+    checkoutUrl,
+    '',
+    'After payment we only ask the remaining questions — then your plan is built for you on the app.',
+    '',
+    '— LURVOX',
+  ].join('\n')
+  const html = `
+    <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:560px;line-height:1.5;color:#111">
+      <p>Hi ${escapeHtml(greeting)},</p>
+      <p>You started your coaching intake. To unlock full customization and get your diet + workout plan on the platform, finish payment.</p>
+      <p><a href="${escapeHtml(checkoutUrl)}" style="display:inline-block;padding:12px 18px;background:#111;color:#fff;text-decoration:none;border-radius:8px">Continue checkout</a></p>
+      <p>After payment we only ask the remaining questions — then your plan is built for you on the app.</p>
+    </div>
+  `
+
+  const result = await sendDirectEmail({
+    to: input.email,
+    subject,
+    text,
+    html,
+  })
+
+  if (result.ok && !result.skipped) {
+    await admin
+      .from('checkout_intake_basics')
+      .update({ [column]: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', input.basicsId)
+    return { sent: 1, skipped: 0, failed: 0 }
+  }
+  if (result.skipped) return { sent: 0, skipped: 1, failed: 0 }
+  return { sent: 0, skipped: 0, failed: 1 }
+}

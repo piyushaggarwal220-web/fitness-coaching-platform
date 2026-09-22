@@ -11,6 +11,7 @@ import {
   normalizeCheckoutEmail,
   normalizeCheckoutPhone,
 } from '@/lib/payments/checkout-otp'
+import { assertCheckoutIntakeBasicsComplete } from '@/lib/payments/checkout-intake-basics'
 import {
   checkoutDiscountNotes,
   checkoutTotalPaise,
@@ -89,6 +90,21 @@ export async function POST(request: Request) {
         missing: ['Email verification (tap Send verification email, then open the link)'],
       },
       { status: contactCheck.status }
+    )
+  }
+
+  const basicsCheck = await assertCheckoutIntakeBasicsComplete({
+    verificationId: body.verificationId,
+    email: body.email!,
+    phone: body.phone!,
+  })
+  if (!basicsCheck.ok) {
+    return NextResponse.json(
+      {
+        error: basicsCheck.error,
+        missing: ['Quick intake basics (age, height, diet, goal)'],
+      },
+      { status: basicsCheck.status }
     )
   }
 

@@ -43,12 +43,15 @@ import {
   getSaleCountdownRemainingMs,
 } from '@/lib/sale-countdown';
 import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations';
+import { CheckoutBasicsStep, type CheckoutBasicsFormState } from '@/components/checkout/CheckoutBasicsStep';
 import { isPublicDemoEmail } from '@/lib/public-demo';
 import { leavePublicDemoSession } from '@/lib/public-demo-session';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
 const PAYMENT_SUCCESS_KEY = 'lurvox_checkout_success_redirect';
+const CHECKOUT_DRAFT_KEY = 'lurvox_checkout_draft_v1';
+type CheckoutScreen = 1 | 2 | 3 | 4;
 
 type AppliedDiscountPreview = {
   code: string;
@@ -107,7 +110,17 @@ function CheckoutForm() {
   const [applyingCode, setApplyingCode] = useState(false);
   const [enrollmentHref, setEnrollmentHref] = useState<string | null>(null);
   const [attemptedPay, setAttemptedPay] = useState(false);
-  const [checkoutScreen, setCheckoutScreen] = useState<1 | 2>(1);
+  const [checkoutScreen, setCheckoutScreen] = useState<CheckoutScreen>(1);
+  const [basicsComplete, setBasicsComplete] = useState(false);
+  const [savingBasics, setSavingBasics] = useState(false);
+  const [basics, setBasics] = useState<CheckoutBasicsFormState>({
+    age: '',
+    gender: '',
+    heightCm: '',
+    weightKg: '',
+    dietPreference: '',
+    mainGoal: '',
+  });
   const [demoHandoff, setDemoHandoff] = useState(false);
   const paymentSucceededRef = useRef(false);
   const autoApplyKeyRef = useRef('');
@@ -320,6 +333,48 @@ function CheckoutForm() {
   }, []);
 
   useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(CHECKOUT_DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as {
+        name?: string;
+        email?: string;
+        phone?: string;
+        verificationId?: string;
+        basics?: CheckoutBasicsFormState;
+        basicsComplete?: boolean;
+      };
+      if (draft.name && !name) setName(draft.name);
+      if (draft.email && !email) setEmail(draft.email);
+      if (draft.phone && !phone) setPhone(draft.phone);
+      if (draft.verificationId && !verificationId) setVerificationId(draft.verificationId);
+      if (draft.basics) setBasics((prev) => ({ ...prev, ...draft.basics }));
+      if (draft.basicsComplete) setBasicsComplete(true);
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restore once on mount
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        CHECKOUT_DRAFT_KEY,
+        JSON.stringify({
+          name,
+          email,
+          phone,
+          verificationId,
+          basics,
+          basicsComplete,
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }, [name, email, phone, verificationId, basics, basicsComplete]);
+
+  useEffect(() => {
     const vid = searchParams.get('vid')?.trim() ?? '';
     const verified = searchParams.get('emailVerified') === '1';
     if (vid) setVerificationId(vid);
@@ -327,8 +382,49 @@ function CheckoutForm() {
       setEmailVerified(true);
       setEmailLinkSent(true);
       setEmailDelivery('magic_link');
+      setCheckoutScreen((current) => (current < 3 ? 3 : current));
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!verificationId || !emailVerified) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const statusRes = await fetch(
+          `/api/payment/verification-status?verificationId=${encodeURIComponent(verificationId)}`
+        );
+        const statusData = await statusRes.json();
+        if (!cancelled && statusData.email) setEmail(statusData.email);
+        if (!cancelled && statusData.phone && !phone.trim()) setPhone(statusData.phone);
+
+        const basicsRes = await fetch(
+          `/api/payment/checkout-basics?verificationId=${encodeURIComponent(verificationId)}`
+        );
+        const basicsData = await basicsRes.json();
+        if (cancelled) return;
+        if (basicsData.complete && basicsData.basics) {
+          setBasics({
+            age: String(basicsData.basics.age ?? ''),
+            gender: basicsData.basics.gender ?? '',
+            heightCm: String(basicsData.basics.heightCm ?? ''),
+            weightKg:
+              basicsData.basics.weightKg == null ? '' : String(basicsData.basics.weightKg),
+            dietPreference: basicsData.basics.dietPreference ?? '',
+            mainGoal: basicsData.basics.mainGoal ?? '',
+          });
+          setBasicsComplete(true);
+          if (basicsData.basics.name && !name.trim()) setName(basicsData.basics.name);
+          setCheckoutScreen((current) => (current < 4 ? 4 : current));
+        }
+      } catch {
+        // ignore restore errors
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [verificationId, emailVerified]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (testMode || emailVerified || !verificationId || emailDelivery !== 'magic_link') return;
@@ -376,6 +472,9 @@ function CheckoutForm() {
           ? 'Open the verification link in your email (check spam too)'
           : 'Verify your email (tap “Send verification email”)'
       );
+    }
+    if (!testMode && !basicsComplete) {
+      missing.push('Answer the quick intake basics');
     }
     if (!policyAgreementAccepted) {
       missing.push('Tick the box to agree to the Terms & Conditions');
@@ -491,6 +590,58 @@ function CheckoutForm() {
       setError(err instanceof Error ? err.message : 'Verification failed');
     } finally {
       setVerifyingEmailOtp(false);
+    }
+  };
+
+  const saveBasicsAndContinue = async () => {
+    setError('');
+    setSavingBasics(true);
+    try {
+      let activeVerificationId = verificationId;
+      if (testMode && !activeVerificationId) {
+        const res = await fetch('/api/payment/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel: 'email',
+            email,
+            phone,
+            name,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? 'Could not start checkout session');
+        activeVerificationId = data.verificationId;
+        setVerificationId(data.verificationId);
+        setEmailVerified(true);
+      }
+
+      const res = await fetch('/api/payment/checkout-basics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          verificationId: activeVerificationId,
+          email,
+          phone,
+          name,
+          planSlug: plan.slug,
+          age: basics.age,
+          gender: basics.gender,
+          heightCm: basics.heightCm,
+          weightKg: basics.weightKg || null,
+          dietPreference: basics.dietPreference,
+          mainGoal: basics.mainGoal,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Could not save basics');
+      setBasicsComplete(true);
+      setCheckoutScreen(4);
+      trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'paywall' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save basics');
+    } finally {
+      setSavingBasics(false);
     }
   };
 
@@ -699,7 +850,7 @@ function CheckoutForm() {
     <div
       style={{
         ...styles.page,
-        ...(checkoutScreen === 2 ? styles.pageWithSticky : null),
+        ...(checkoutScreen === 4 ? styles.pageWithSticky : null),
         ...(isDigitalCheckout ? digitalTheme.page : null),
       }}
     >
@@ -721,22 +872,34 @@ function CheckoutForm() {
           {isTrialCheckout
             ? 'Start your 7-day trial'
             : isDigitalCheckout
-              ? 'Get your customised plan'
-              : 'Checkout'}
+              ? 'Start your customised plan'
+              : 'Start your coaching intake'}
         </h1>
         <p style={dig(styles.subtitle, 'subtitle')}>
           {checkoutScreen === 1
             ? (isTrialCheckout
               ? 'Full coaching access for 7 days. Upgrade anytime.'
               : isDigitalCheckout
-                ? 'One time payment · no subscription · plan made by the coach, delivered to email and app within a few hours.'
-                : 'Choose your plan and enter your details.')
-            : 'Verify your email and pay securely.'}
+                ? 'Start intake → unlock your plan → get diet & workout on the platform.'
+                : 'Start intake → unlock full customization → get your plan on the platform.')
+            : checkoutScreen === 2
+              ? 'Verify your email to continue intake.'
+              : checkoutScreen === 3
+                ? 'Answer a few basics so we can customize your coaching.'
+                : 'Unlock your customized plan and pay securely.'}
         </p>
 
-        <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 2`}>
-          <span style={{ ...styles.screenDot, ...(checkoutScreen === 1 ? styles.screenDotActive : null), ...(isDigitalCheckout && checkoutScreen === 1 ? digitalTheme.dotActive : null) }} />
-          <span style={{ ...styles.screenDot, ...(checkoutScreen === 2 ? styles.screenDotActive : null), ...(isDigitalCheckout && checkoutScreen === 2 ? digitalTheme.dotActive : null) }} />
+        <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 4`}>
+          {([1, 2, 3, 4] as CheckoutScreen[]).map((step) => (
+            <span
+              key={step}
+              style={{
+                ...styles.screenDot,
+                ...(checkoutScreen === step ? styles.screenDotActive : null),
+                ...(isDigitalCheckout && checkoutScreen === step ? digitalTheme.dotActive : null),
+              }}
+            />
+          ))}
         </div>
 
         {checkoutScreen === 1 && (
@@ -908,7 +1071,7 @@ function CheckoutForm() {
               {isTrialCheckout
                 ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
                 : isDigitalCheckout
-                  ? 'After payment, verify email, complete a short onboarding, and receive your plan by email and in the app within a few hours.'
+                  ? 'After payment, finish the remaining intake questions and receive your plan on the platform.'
                   : plan.slug === '12_months'
                   ? 'Weekly coach phone call included. 12 month exclusive.'
                   : 'Personal workout, diet, coach chat, and weekly check-ins are included.'}
@@ -974,10 +1137,10 @@ function CheckoutForm() {
                   setError('');
                   setMissingItems([]);
                   setCheckoutScreen(2);
-                  trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'verify_pay' });
+                  trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'verify' });
                 }}
               >
-                Continue to pay
+                Continue
               </button>
             </div>
 
@@ -1029,37 +1192,8 @@ function CheckoutForm() {
             )}
 
             {error && <div style={styles.error}>{error}</div>}
-            {isTrialCheckout && error && /trial|already used|renewal|new customers/i.test(error) && (
-              <div style={styles.todoBox}>
-                <p style={styles.todoTitle}>Upgrade instead</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {COACHING_PLAN_LIST.map((item) => (
-                    <Link key={item.slug} href={`/checkout?plan=${item.slug}`} style={styles.validateBtn}>
-                      {planGoalName(item.slug)} · {item.displayPrice}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-            {attemptedPay && liveMissing.length > 0 && (
-              <div style={styles.todoBox}>
-                <p style={styles.todoTitle}>Finish these to pay</p>
-                <ul style={styles.todoList}>
-                  {liveMissing.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {missingItems.length > 0 && error && (
-              <ul style={styles.missingList}>
-                {missingItems.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            )}
 
-            <form id="checkout-pay-form" onSubmit={handleSubmit} style={styles.form} noValidate>
+            <div style={styles.form}>
               {!testMode && (
                 <div ref={verifyRef} style={dig(styles.otpBox, 'otpBox')}>
                   <div style={styles.otpHead}>
@@ -1131,6 +1265,123 @@ function CheckoutForm() {
                 </div>
               )}
 
+              <button
+                type="button"
+                style={dig(styles.payBtn, 'payBtn')}
+                disabled={!testMode && !emailVerified}
+                onClick={() => {
+                  if (!testMode && !emailVerified) {
+                    setError('Verify your email before continuing.');
+                    return;
+                  }
+                  setError('');
+                  setCheckoutScreen(3);
+                  trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'basics' });
+                }}
+              >
+                Continue to basics
+              </button>
+            </div>
+          </>
+        )}
+
+        {checkoutScreen === 3 && (
+          <CheckoutBasicsStep
+            value={basics}
+            onChange={setBasics}
+            onBack={() => { setCheckoutScreen(2); setError(''); }}
+            onSubmit={() => void saveBasicsAndContinue()}
+            saving={savingBasics}
+            error={error}
+            styles={styles}
+            dig={dig}
+          />
+        )}
+
+        {checkoutScreen === 4 && (
+          <>
+            <button
+              type="button"
+              onClick={() => { setCheckoutScreen(3); setError(''); }}
+              style={dig(styles.backToDetails, 'backLink')}
+            >
+              ← Edit basics
+            </button>
+
+            <section style={{ ...dig(styles.orderSummary, 'orderSummary'), marginBottom: 16 }}>
+              <div style={styles.orderRow}>
+                <div>
+                  <div style={dig(styles.orderPlanName, 'orderPlanName')}>
+                    {isTrialCheckout
+                      ? plan.name
+                      : isDigitalCheckout
+                        ? plan.name
+                        : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
+                  </div>
+                  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || '—'}</div>
+                </div>
+                <div style={styles.orderPriceCol}>
+                  {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
+                  <span style={dig(styles.orderSummaryPrice, 'orderSummaryPrice')}>
+                    {isTrialCheckout || isDigitalCheckout
+                      ? plan.displayPrice
+                      : formatInrFromPaise(planPayablePaise)}
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>Unlock your customized plan</h2>
+            <p style={dig(styles.otpHint, 'otpHint')}>
+              You’ve started intake. To continue and get your full plan on the platform, pay for your plan.
+            </p>
+            <ul style={{ ...styles.todoList, marginBottom: 16 }}>
+              <li>Full coaching intake after payment</li>
+              <li>Customized diet chart, workout, cardio & sleep guidance</li>
+              <li>Delivered on the {BRAND_NAME} platform</li>
+            </ul>
+            <p style={{ ...dig(styles.otpHint, 'otpHint'), marginBottom: 16 }}>
+              After payment: create login → finish intake → your plan appears on the platform.
+            </p>
+
+            {testMode && (
+              <div style={styles.testBanner}>
+                Development mode — payment will be simulated. No Razorpay charge.
+              </div>
+            )}
+
+            {error && <div style={styles.error}>{error}</div>}
+            {isTrialCheckout && error && /trial|already used|renewal|new customers/i.test(error) && (
+              <div style={styles.todoBox}>
+                <p style={styles.todoTitle}>Upgrade instead</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {COACHING_PLAN_LIST.map((item) => (
+                    <Link key={item.slug} href={`/checkout?plan=${item.slug}`} style={styles.validateBtn}>
+                      {planGoalName(item.slug)} · {item.displayPrice}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            {attemptedPay && liveMissing.length > 0 && (
+              <div style={styles.todoBox}>
+                <p style={styles.todoTitle}>Finish these to pay</p>
+                <ul style={styles.todoList}>
+                  {liveMissing.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {missingItems.length > 0 && error && (
+              <ul style={styles.missingList}>
+                {missingItems.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            )}
+
+            <form id="checkout-pay-form" onSubmit={handleSubmit} style={styles.form} noValidate>
               <label
                 ref={policyRef}
                 style={styles.policyRow}
@@ -1155,7 +1406,7 @@ function CheckoutForm() {
             </form>
 
             <p style={dig(styles.secure, 'secure')}>
-              After payment you&apos;ll create your login password.
+              After payment you&apos;ll create your login password and continue intake.
               {' '}
               <Link href="/create-account" style={dig(styles.inlineLink, 'inlineLink')}>Already paid?</Link>
               {' · '}
@@ -1165,7 +1416,7 @@ function CheckoutForm() {
         )}
       </div>
 
-      {checkoutScreen === 2 && (
+      {checkoutScreen === 4 && (
         <div style={dig(styles.stickyPayBar, 'stickyPayBar')}>
           <div style={styles.stickyPayInner}>
             <div style={styles.stickyPayMeta}>

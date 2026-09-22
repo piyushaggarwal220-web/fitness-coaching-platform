@@ -124,6 +124,7 @@ export async function getCheckoutVerificationStatus(verificationId: string): Pro
   ok: boolean
   emailVerified: boolean
   email?: string
+  phone?: string
   expired?: boolean
   error?: string
 }> {
@@ -136,6 +137,7 @@ export async function getCheckoutVerificationStatus(verificationId: string): Pro
     ok: true,
     emailVerified: Boolean(row.email_verified_at),
     email: row.email,
+    phone: row.phone_e164,
   }
 }
 

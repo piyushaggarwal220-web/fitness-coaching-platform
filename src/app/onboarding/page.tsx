@@ -656,7 +656,8 @@ export default function OnboardingPage() {
         <div style={s.header}>
           <h1 style={s.title}>{brandTitle('Coaching intake')}</h1>
           <p style={s.subtitle}>
-            Help your coach build a personalised diet and workout plan tailored to your life.
+            Basics from checkout are saved. Continue with the details your coach needs for diet,
+            workout, cardio, and sleep guidance on the platform.
           </p>
         </div>
 

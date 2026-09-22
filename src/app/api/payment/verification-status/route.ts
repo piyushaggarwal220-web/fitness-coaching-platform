@@ -20,5 +20,6 @@ export async function GET(request: Request) {
     success: true,
     emailVerified: status.emailVerified,
     email: status.email,
+    phone: status.phone,
   })
 }

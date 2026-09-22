@@ -47,7 +47,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-const AFTER_PAY = 'Pay → create login → short assessment → personal plan in 24–48 hours.'
+const AFTER_PAY =
+  'Start intake → unlock full customization → finish details → personal plan on the platform in 24–48 hours.'
 
 export default async function PlanLandingPage({ params }: PageProps) {
   const { slug } = await params

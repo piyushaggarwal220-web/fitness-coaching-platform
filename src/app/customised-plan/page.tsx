@@ -70,11 +70,11 @@ const WIN_POINTS = [
 const FAQS = [
   {
     q: 'Is this plan really personalised?',
-    a: 'Yes. After payment you complete a short in app questionnaire. Your plan is built around your goals, lifestyle, preferences, experience, and requirements.',
+    a: 'Yes. You start with a few basics before payment, then finish a short in-app questionnaire after. Your plan is built around your goals, lifestyle, preferences, experience, and requirements.',
   },
   {
     q: 'What happens after I pay?',
-    a: 'Verify your email, create your login, then open plan setup in the app. Complete the short questionnaire so we can prepare your plan.',
+    a: 'Verify your email, answer a few basics, unlock the plan, create your login, then finish the remaining questionnaire so we can prepare your plan.',
   },
   {
     q: 'How will I receive my plan?',
@@ -402,27 +402,34 @@ export default function CustomisedPlanLandingPage() {
 
       <section className={styles.section}>
         <p className={styles.sectionEyebrow}>How it works</p>
-        <h2 className={styles.sectionTitle}>Your plan in 3 steps</h2>
+        <h2 className={styles.sectionTitle}>Your plan in 4 steps</h2>
         <ol className={styles.steps}>
           <li>
             <span>01</span>
             <div>
-              <strong>Pay once</strong>
-              <p>Checkout with Razorpay. UPI, cards, or netbanking.</p>
+              <strong>Start intake</strong>
+              <p>Verify email and answer a few basics (age, height, diet, goal).</p>
             </div>
           </li>
           <li>
             <span>02</span>
             <div>
-              <strong>Open your plan setup</strong>
-              <p>Verify email, then complete a short in app questionnaire.</p>
+              <strong>Unlock your plan</strong>
+              <p>Pay once with Razorpay — UPI, cards, or netbanking.</p>
             </div>
           </li>
           <li>
             <span>03</span>
             <div>
+              <strong>Finish details</strong>
+              <p>Create login, then complete the remaining questionnaire on the platform.</p>
+            </div>
+          </li>
+          <li>
+            <span>04</span>
+            <div>
               <strong>Receive your plan</strong>
-              <p>Your coach made plan is delivered to the app and email, usually within a few hours.</p>
+              <p>Your coach-made plan is delivered on the platform and email, usually within a few hours.</p>
             </div>
           </li>
         </ol>

@@ -16,6 +16,7 @@ import {
   subscriptionDaysRemaining,
 } from '@/lib/entitlements'
 import {
+  sendAbandonedCheckoutIntakeReminder,
   sendAccountSetupRecovery,
   sendMembershipRenewalReminder,
   sendOnboardingReminder,
@@ -163,6 +164,58 @@ async function sendMembershipExpiryReminders(admin: SupabaseClient, now: number)
   return { checked: profiles?.length ?? 0, sent, failed, skipped }
 }
 
+async function sendAbandonedCheckoutReminders(
+  admin: SupabaseClient,
+  now: number
+): Promise<{ checked: number; sent: number; failed: number; skipped: number }> {
+  const { data: rows, error } = await admin
+    .from('checkout_intake_basics')
+    .select('id, email, customer_name, plan_slug, created_at, nurture_day1_sent_at, nurture_day2_sent_at')
+    .is('consumed_at', null)
+    .order('created_at', { ascending: true })
+    .limit(80)
+
+  if (error) {
+    console.error('[cron/lifecycle-reminders] abandoned checkout query failed:', error.message)
+    return { checked: 0, sent: 0, failed: 0, skipped: 0 }
+  }
+
+  let sent = 0
+  let failed = 0
+  let skipped = 0
+
+  for (const row of rows ?? []) {
+    const ageHours = (now - new Date(row.created_at).getTime()) / 3_600_000
+    let stage: 'day_1' | 'day_2' | null = null
+    if (ageHours >= 48 && !row.nurture_day2_sent_at) stage = 'day_2'
+    else if (ageHours >= 12 && !row.nurture_day1_sent_at) stage = 'day_1'
+    if (!stage) {
+      skipped += 1
+      continue
+    }
+    try {
+      const result = await sendAbandonedCheckoutIntakeReminder({
+        basicsId: row.id,
+        email: row.email,
+        name: row.customer_name,
+        planSlug: row.plan_slug,
+        stage,
+      })
+      sent += result.sent
+      failed += result.failed
+      skipped += result.skipped
+    } catch (deliveryError) {
+      failed += 1
+      console.error(
+        '[cron/lifecycle-reminders] abandoned checkout failed:',
+        deliveryError instanceof Error ? deliveryError.message : 'unknown'
+      )
+    }
+  }
+
+  return { checked: rows?.length ?? 0, sent, failed, skipped }
+}
+
 export async function GET(request: Request) {
   if (!authorizeCron(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -173,6 +226,7 @@ export async function GET(request: Request) {
   const recoveredJobs = await scheduleInitialPlanRecovery(admin)
   const now = Date.now()
   const membershipReminders = await sendMembershipExpiryReminders(admin, now)
+  const abandonedCheckout = await sendAbandonedCheckoutReminders(admin, now)
   const cutoff = new Date(now - 24 * 3_600_000).toISOString()
   const { data: purchases, error } = await admin
     .from('purchases')
@@ -188,9 +242,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Lifecycle query failed' }, { status: 500 })
   }
 
-  let sent = membershipReminders.sent
-  let failed = membershipReminders.failed
-  let skipped = membershipReminders.skipped
+  let sent = membershipReminders.sent + abandonedCheckout.sent
+  let failed = membershipReminders.failed + abandonedCheckout.failed
+  let skipped = membershipReminders.skipped + abandonedCheckout.skipped
   const processedUsers = new Set<string>()
 
   for (const row of purchases ?? []) {
@@ -283,6 +337,7 @@ export async function GET(request: Request) {
     recoveredJobs,
     revokedSubscriptions,
     membershipReminders,
+    abandonedCheckout,
   }
   console.info('[cron/lifecycle-reminders]', summary)
   return NextResponse.json(summary)

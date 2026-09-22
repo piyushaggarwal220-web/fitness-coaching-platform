@@ -31,7 +31,9 @@ export function logPurchaseStep(
     | 'webhook_missing_email'
     | 'webhook_missing_policy_agreement'
     | 'webhook_recorded'
-    | 'webhook_failed',
+    | 'webhook_failed'
+    | 'checkout_intake_basics_merged'
+    | 'checkout_intake_basics_merge_failed',
   details?: Record<string, unknown>
 ): void {
   const enabled =
