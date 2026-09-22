@@ -155,10 +155,10 @@ export async function POST(request: Request) {
       userPrompt: [
         transcript || `Client: ${message}`,
         '',
-        'Write the next coach reply only: 2–3 short lines max. No quotes. No hyphen characters. No bullet lists.',
+        'Write the next coach reply only: 1–2 short lines max (~40 words). No quotes. No hyphen characters. No bullet lists.',
       ].join('\n'),
       model: MODELS.GPT_LUNA,
-      maxTokens: 120,
+      maxTokens: 95,
       temperature: 0.6,
     })
     replyText =
