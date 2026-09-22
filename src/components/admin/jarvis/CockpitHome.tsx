@@ -169,6 +169,59 @@ export function CockpitHome({
           </div>
         ) : null}
 
+        {jarvis.dashboard?.events?.recent?.length ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Signals</div>
+            {(jarvis.dashboard.events.summary_lines || [])
+              .slice(0, 4)
+              .map((line) => (
+                <div key={line} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                  {line}
+                </div>
+              ))}
+            {!jarvis.dashboard.events.summary_lines?.length
+              ? jarvis.dashboard.events.recent.slice(0, 4).map((e) => (
+                  <div key={e.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                    {e.event_type} · {e.significance || e.status}
+                    {e.funnel_id ? ` · ${e.funnel_id}` : ''}
+                  </div>
+                ))
+              : null}
+          </div>
+        ) : null}
+
+        {jarvis.dashboard?.strategic_memory ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Strategic intelligence</div>
+            {(jarvis.dashboard.strategic_memory.patterns || []).slice(0, 3).map((p) => (
+              <div key={p} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                {p}
+              </div>
+            ))}
+            {(jarvis.dashboard.strategic_memory.open_questions || []).slice(0, 2).map((q) => (
+              <div key={q} style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
+                Open: {q}
+              </div>
+            ))}
+            {(jarvis.dashboard.strategic_memory.stale_assumptions || []).slice(0, 2).map((q) => (
+              <div key={q} style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
+                Stale: {q}
+              </div>
+            ))}
+            {(jarvis.dashboard.strategic_memory.conflicts || []).slice(0, 2).map((c) => (
+              <div key={c.id || c.reason} style={{ fontSize: 12, marginTop: 4, color: colors.warning }}>
+                Conflict: {c.reason.slice(0, 140)}
+              </div>
+            ))}
+            {!jarvis.dashboard.strategic_memory.patterns?.length &&
+            !jarvis.dashboard.strategic_memory.conflicts?.length ? (
+              <div style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
+                {jarvis.dashboard.strategic_memory.note || 'No active strategic patterns yet.'}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {jarvis.dashboard?.autonomous_operator?.attention?.length ? (
           <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
             <div style={s.sectionLabel}>Attention</div>

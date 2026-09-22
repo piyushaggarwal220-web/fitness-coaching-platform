@@ -396,6 +396,70 @@ export async function GET() {
           }
         }
       })(),
+      events: await (async () => {
+        try {
+          const { listRecentEvents, getEventHealth, summarizeEventsForBrief } = await import(
+            '@/lib/jarvis/events'
+          )
+          const [recent, health] = await Promise.all([listRecentEvents(20), getEventHealth()])
+          return sanitizePublicJson({
+            note: 'Phase 13 event signals — triggers only; writes still Phase 12 gated.',
+            health,
+            summary_lines: summarizeEventsForBrief(recent),
+            recent: recent.slice(0, 12).map((e) => ({
+              id: e.id,
+              event_type: e.event_type,
+              system: e.system,
+              priority: e.priority,
+              significance: e.significance,
+              status: e.status,
+              funnel_id: e.funnel_id,
+              created_at: e.created_at,
+            })),
+          })
+        } catch {
+          return {
+            note: 'Events unavailable (migration may be pending).',
+            health: null,
+            summary_lines: [],
+            recent: [],
+          }
+        }
+      })(),
+      strategic_memory: await (async () => {
+        try {
+          const { buildBusinessKnowledgeSnapshot, getStrategicMemoryHealth, listOpenConflicts } =
+            await import('@/lib/jarvis/memory/strategic')
+          const [snapshot, health, conflicts] = await Promise.all([
+            buildBusinessKnowledgeSnapshot(),
+            getStrategicMemoryHealth(),
+            listOpenConflicts(8),
+          ])
+          return sanitizePublicJson({
+            note: 'Phase 14 strategic intelligence — evidence-backed; Taste ≠ strategy; Phase 12 authoritative.',
+            health,
+            patterns: snapshot.strategic_patterns.slice(0, 5),
+            open_questions: snapshot.open_questions.slice(0, 4),
+            stale_assumptions: snapshot.stale_assumptions.slice(0, 4),
+            conflicts: conflicts.map((c) => ({
+              id: c.id,
+              reason: c.reason,
+              funnel_id: c.funnel_id,
+            })),
+            limitations: snapshot.limitations.slice(0, 4),
+          })
+        } catch {
+          return {
+            note: 'Strategic memory unavailable (migration may be pending).',
+            health: null,
+            patterns: [],
+            open_questions: [],
+            stale_assumptions: [],
+            conflicts: [],
+            limitations: [],
+          }
+        }
+      })(),
     },
   })
 }

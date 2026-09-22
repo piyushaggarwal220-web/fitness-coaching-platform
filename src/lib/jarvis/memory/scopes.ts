@@ -20,7 +20,7 @@ export type MemoryScope =
   | 'TASK'
   | 'DECISION'
 
-export type MemoryLifecycleStatus = 'ACTIVE' | 'STALE' | 'SUPERSEDED' | 'ARCHIVED'
+export type MemoryLifecycleStatus = 'ACTIVE' | 'STALE' | 'SUPERSEDED' | 'ARCHIVED' | 'CONFLICTED'
 
 export type EvidenceLabel =
   | 'OBSERVED'
@@ -28,8 +28,26 @@ export type EvidenceLabel =
   | 'REPEATED_PATTERN'
   | 'SUPPORTED_HYPOTHESIS'
   | 'CAUSALITY_NOT_ESTABLISHED'
+  | 'CORRELATION'
+  | 'SUPPORTED_CAUSAL_HYPOTHESIS'
 
 export type LearningConfidence = 'low' | 'medium' | 'high'
+
+/** Phase 14 expanded confidence (maps to LearningConfidence for DB). */
+export type StrategicConfidence = 'VERY_LOW' | 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH'
+
+export function toLearningConfidence(c: StrategicConfidence): LearningConfidence {
+  if (c === 'VERY_HIGH' || c === 'HIGH') return 'high'
+  if (c === 'MEDIUM') return 'medium'
+  return 'low'
+}
+
+export function toStrategicConfidence(c: LearningConfidence | string | null | undefined): StrategicConfidence {
+  if (c === 'high') return 'HIGH'
+  if (c === 'medium') return 'MEDIUM'
+  if (c === 'low') return 'LOW'
+  return 'VERY_LOW'
+}
 
 export type OutcomeState =
   | 'SUCCESS'
@@ -57,6 +75,7 @@ export function confidenceFromEvidence(input: {
   consistent: boolean
   sourceReliable: boolean
   freshnessDays: number
+  contradictions?: number
 }): LearningConfidence {
   let score = 0
   if (input.sampleSize >= 5) score += 2
@@ -64,9 +83,24 @@ export function confidenceFromEvidence(input: {
   if (input.consistent) score += 1
   if (input.sourceReliable) score += 1
   if (input.freshnessDays <= 14) score += 1
+  if ((input.contradictions ?? 0) > 0) score -= 2
   if (score >= 4) return 'high'
   if (score >= 2) return 'medium'
   return 'low'
+}
+
+export function strategicConfidenceFromEvidence(input: {
+  sampleSize: number
+  consistent: boolean
+  sourceReliable: boolean
+  freshnessDays: number
+  contradictions?: number
+}): StrategicConfidence {
+  const base = confidenceFromEvidence(input)
+  if (base === 'high' && input.sampleSize >= 5 && input.consistent && !(input.contradictions ?? 0)) {
+    return 'VERY_HIGH'
+  }
+  return toStrategicConfidence(base)
 }
 
 export function defaultWindowForTool(toolName: string): MeasurementWindowHours {
@@ -88,6 +122,7 @@ export function observationalStatement(input: {
   if (input.before == null || input.after == null) {
     return `${input.metric} could not be fully compared after "${input.actionLabel}" during the ${input.windowHours}h window.`
   }
-  const direction = input.after > input.before ? 'increased' : input.after < input.before ? 'decreased' : 'was unchanged'
+  const direction =
+    input.after > input.before ? 'increased' : input.after < input.before ? 'decreased' : 'was unchanged'
   return `${input.metric} ${direction} during the ${input.windowHours}-hour period following "${input.actionLabel}" (${input.before} → ${input.after}). Causality is not established.`
 }

@@ -16,6 +16,7 @@ import {
   patternStrength,
   type EvidenceLabel,
   type MeasurementWindowHours,
+  type MemoryScope,
   type OutcomeState,
 } from '@/lib/jarvis/memory/scopes'
 import { remember } from '@/lib/jarvis/memory/business-memory'
@@ -479,6 +480,31 @@ async function evaluateAndStoreLesson(input: {
           scope_id: input.decision.scope_id,
         },
       }).catch(() => null)
+    }
+
+    // Phase 14 — promote PATTERN when independent sample ≥ 3 (still not an operating rule)
+    if (similar + 1 >= 3) {
+      try {
+        const { maybePromoteOutcomePattern } = await import(
+          '@/lib/jarvis/memory/strategic/synthesis'
+        )
+        await maybePromoteOutcomePattern({
+          decisionId: input.decision.id,
+          system: input.decision.system,
+          scope: (input.decision.scope as MemoryScope) || 'GLOBAL_BUSINESS',
+          scopeId: input.decision.scope_id,
+          funnelId:
+            input.decision.scope === 'FUNNEL' ? input.decision.scope_id : null,
+          metric: primary.metric,
+          sampleSize: similar + 1,
+          statement: lessonStatement,
+          before: primary.before,
+          after: primary.after,
+          windowHours: input.windowHours,
+        })
+      } catch {
+        /* strategic promotion optional */
+      }
     }
   }
 

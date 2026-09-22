@@ -64,6 +64,8 @@
     "verify:jarvis-autonomous-operator": "tsx scripts/verify-jarvis-autonomous-operator.ts",
     "verify:jarvis-realtime": "tsx scripts/verify-jarvis-realtime.ts",
     "verify:jarvis-controlled-execution": "tsx scripts/verify-jarvis-controlled-execution.ts",
+    "verify:jarvis-event-driven-brain": "tsx scripts/verify-jarvis-event-driven-brain.ts",
+    "verify:jarvis-strategic-memory": "tsx scripts/verify-jarvis-strategic-memory.ts",
     "verify:instagram-intelligence": "tsx scripts/verify-instagram-intelligence.ts",
     "verify:video": "tsx scripts/verify-video.ts",
     "verify:shotstack-webhook": "tsx --env-file=.env.local scripts/verify-shotstack-webhook-e2e.ts",

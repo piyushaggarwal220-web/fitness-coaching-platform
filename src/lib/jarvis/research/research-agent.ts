@@ -151,6 +151,31 @@ export async function runObjectiveResearch(input: ResearchJobInput): Promise<Res
       }
     }
 
+    // Phase 14 — check strategic memory before expensive research
+    try {
+      const { findRecentStrategicAnswer } = await import('@/lib/jarvis/memory/strategic/synthesis')
+      const strategic = await findRecentStrategicAnswer({
+        query: input.question,
+        maxAgeDays: 14,
+      })
+      if (strategic.reuse && strategic.memory) {
+        return {
+          status: 'reused',
+          conclusion: strategic.memory.summary,
+          confidence: 'medium',
+          spent_usd: 0,
+          memory_id: strategic.memory.id,
+          stop_reason: 'reused_strategic_memory',
+          note: 'Reused recent high-confidence strategic memory — no new research spend.',
+        }
+      }
+      if (strategic.memory?.status === 'STALE') {
+        // Fall through to research; stale answer is not authoritative
+      }
+    } catch {
+      /* strategic optional */
+    }
+
     const { data: priorResearch } = await admin
       .from('jarvis_research')
       .select('id, question, conclusion, confidence, key_findings, spent_usd, completed_at, status')

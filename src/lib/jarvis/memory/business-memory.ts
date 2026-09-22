@@ -105,6 +105,9 @@ export async function remember(input: {
   if (kind === 'LESSON' && !tags.includes('lesson')) tags.push('lesson')
   if (kind === 'OUTCOME' && !tags.includes('outcome_record')) tags.push('outcome_record')
   if (kind === 'ACTION' && !tags.includes('action')) tags.push('action')
+  if (kind === 'OBSERVATION' && !tags.includes('observation')) tags.push('observation')
+  if (kind === 'PATTERN' && !tags.includes('pattern')) tags.push('pattern')
+  if (kind === 'STRATEGIC_INSIGHT' && !tags.includes('strategic_insight')) tags.push('strategic_insight')
 
   const scope =
     input.scope ??

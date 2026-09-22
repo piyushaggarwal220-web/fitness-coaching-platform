@@ -135,7 +135,33 @@ export async function runAutonomousOperatorCycle(opts?: {
   const pendingLabel = approvals[0]
     ? String(approvals[0].action_label || approvals[0].tool_name)
     : null
-  const brief = buildMorningBrief(observation, { pendingApprovalLabel: pendingLabel })
+  let eventLines: string[] = []
+  try {
+    const { listRecentEvents, summarizeEventsForBrief } = await import('@/lib/jarvis/events')
+    const since = Date.now() - 18 * 3600_000
+    const recent = (await listRecentEvents(40)).filter((e) => Date.parse(e.created_at) >= since)
+    eventLines = summarizeEventsForBrief(recent)
+  } catch {
+    /* Phase 13 optional */
+  }
+  let learnedLines: string[] = []
+  try {
+    const { buildBusinessKnowledgeSnapshot } = await import('@/lib/jarvis/memory/strategic')
+    const snap = await buildBusinessKnowledgeSnapshot()
+    learnedLines = [
+      ...snap.strategic_patterns.slice(0, 2).map((l) => `Pattern: ${l}`),
+      ...snap.recent_wins.slice(0, 1).map((l) => `Working: ${l}`),
+      ...snap.recent_failures.slice(0, 1).map((l) => `Not working: ${l}`),
+      ...snap.open_questions.slice(0, 1).map((l) => `Uncertain: ${l}`),
+    ]
+  } catch {
+    /* Phase 14 optional */
+  }
+  const brief = buildMorningBrief(observation, {
+    pendingApprovalLabel: pendingLabel,
+    eventLines,
+    learnedLines,
+  })
   const briefDate = zonedYmd(new Date(observation.observed_at), BUSINESS_TIMEZONE)
   await persistMorningBrief({
     briefDate,

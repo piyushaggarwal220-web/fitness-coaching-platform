@@ -89,11 +89,17 @@ function kindPriority(kind: JarvisMemoryKind): number {
       return 100
     case 'OPERATING_RULE':
       return 90
+    case 'STRATEGIC_INSIGHT':
+      return 85
     case 'BUSINESS_FACT':
     case 'FACT':
       return 80
+    case 'PATTERN':
+      return 75
     case 'LESSON':
       return 70
+    case 'OBSERVATION':
+      return 65
     case 'DECISION':
     case 'ACTION':
     case 'OUTCOME':

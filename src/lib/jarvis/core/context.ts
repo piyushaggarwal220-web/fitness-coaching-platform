@@ -102,6 +102,27 @@ export async function buildJarvisContext(
     autonomousSlice = { note: 'Phase 10 autonomous tables may be pending migration.' }
   }
 
+  let strategicSlice: Record<string, unknown> = { note: 'Strategic memory not loaded' }
+  try {
+    const { buildBusinessKnowledgeSnapshot, listOpenConflicts } = await import(
+      '@/lib/jarvis/memory/strategic'
+    )
+    const [snapshot, conflicts] = await Promise.all([
+      buildBusinessKnowledgeSnapshot(),
+      listOpenConflicts(5),
+    ])
+    strategicSlice = {
+      patterns: snapshot.strategic_patterns.slice(0, 4),
+      open_questions: snapshot.open_questions.slice(0, 3),
+      stale_assumptions: snapshot.stale_assumptions.slice(0, 3),
+      conflicts: conflicts.map((c) => c.reason).slice(0, 3),
+      limitations: snapshot.limitations.slice(0, 3),
+      note: 'Bounded strategic context — Phase 12 policy remains authoritative for actions. Taste ≠ strategy.',
+    }
+  } catch {
+    strategicSlice = { note: 'Phase 14 strategic tables may be pending migration.' }
+  }
+
   return {
     brand: 'LURVOX',
     role: 'Jarvis — AI Business Operator',
@@ -118,6 +139,7 @@ export async function buildJarvisContext(
       operations: businessCtx.operations,
     },
     autonomous_operator: autonomousSlice,
+    strategic_memory: strategicSlice,
     // Back-compat fields used by older prompts / verify scripts
     meta_status: businessCtx.marketing.data.meta,
     funnels: businessCtx.business.data.active_funnels,
@@ -139,6 +161,6 @@ export async function buildJarvisContext(
     follow_up_note:
       'If the user asks a follow-up (e.g. "what about Instagram?"), interpret it in the context of the prior investigation in history.structured — do not restart from scratch.',
     learning_note:
-      'Current user instruction overrides stored preferences for this turn. Operating rules constrain plans; lessons inform plans (do not auto-enforce as hard rules). Never claim causality from lessons.',
+      'Current user instruction overrides stored preferences for this turn. Operating rules constrain plans; lessons inform plans (do not auto-enforce as hard rules). Never claim causality from lessons. Strategic insights inform only — never bypass Phase 12.',
   }
 }

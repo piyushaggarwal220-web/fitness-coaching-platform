@@ -171,5 +171,21 @@ export {
   explainExecutionDecision,
   executionKillSwitchActive,
 } from '@/lib/jarvis/execution'
+export {
+  ingestJarvisEvent,
+  processJarvisEventQueue,
+  listRecentEvents,
+  getEventHealth,
+  explainStoredEvent,
+  evaluateSignificance,
+  normalizeJarvisEvent,
+} from '@/lib/jarvis/events'
+export {
+  searchStrategicMemory,
+  buildBusinessKnowledgeSnapshot,
+  runStrategicReview,
+  explainMemory,
+  getStrategicMemoryHealth,
+} from '@/lib/jarvis/memory/strategic'
 export { loadLurvoxRevenue } from '@/lib/jarvis/metrics/lurvox-revenue'
 export type { JarvisStreamEvent, JarvisApprovalCard, JarvisRiskClass } from '@/lib/jarvis/types'

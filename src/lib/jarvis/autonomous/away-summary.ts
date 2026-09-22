@@ -95,6 +95,45 @@ export async function buildAwaySummary(opts?: {
     for (const r of d.recommends ?? []) summary.recommend_next.push(r)
   }
 
+  // Phase 13 — event aggregation
+  try {
+    const { listRecentEvents, summarizeEventsForBrief } = await import('@/lib/jarvis/events')
+    const recent = (await listRecentEvents(50)).filter((e) => Date.parse(e.created_at) >= Date.parse(since))
+    const lines = summarizeEventsForBrief(recent)
+    const investigated = recent.filter((e) =>
+      ['INVESTIGATE', 'ALERT', 'URGENT'].includes(String(e.significance))
+    ).length
+    const completed = recent.filter((e) => ['COMPLETED', 'processed'].includes(e.status)).length
+    if (lines.length) {
+      summary.business.push(
+        `While you were away: ${recent.length} event(s); ${investigated} needed investigation; ${completed} completed/processed.`
+      )
+      for (const l of lines.slice(0, 6)) {
+        if (/meta|cpa|roas|spend/i.test(l)) summary.marketing.push(l)
+        else if (/instagram|content/i.test(l)) summary.instagram.push(l)
+        else summary.business.push(l)
+      }
+    }
+  } catch {
+    /* migration pending */
+  }
+
+  // Phase 14 — strategic learning while away
+  try {
+    const { buildBusinessKnowledgeSnapshot, listOpenConflicts } = await import(
+      '@/lib/jarvis/memory/strategic'
+    )
+    const snap = await buildBusinessKnowledgeSnapshot()
+    const conflicts = await listOpenConflicts(3)
+    if (snap.strategic_patterns[0]) {
+      summary.opportunities.push(`Strategic pattern: ${snap.strategic_patterns[0]}`)
+    }
+    if (snap.recent_failures[0]) summary.problems.push(`Lesson: ${snap.recent_failures[0]}`)
+    for (const c of conflicts) summary.problems.push(`Memory conflict: ${c.reason.slice(0, 120)}`)
+  } catch {
+    /* Phase 14 optional */
+  }
+
   // Dedupe lines
   for (const key of Object.keys(summary) as (keyof AwaySummary)[]) {
     if (Array.isArray(summary[key])) {

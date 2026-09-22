@@ -244,6 +244,30 @@ export type JarvisDashboard = {
     live_instagram_publishing?: boolean
     limits?: Record<string, number>
   }
+  events?: {
+    note?: string
+    health?: Record<string, unknown> | null
+    summary_lines?: string[]
+    recent?: {
+      id: string
+      event_type: string
+      system: string | null
+      priority: string | null
+      significance: string | null
+      status: string
+      funnel_id: string | null
+      created_at: string
+    }[]
+  }
+  strategic_memory?: {
+    note?: string
+    health?: Record<string, unknown> | null
+    patterns?: string[]
+    open_questions?: string[]
+    stale_assumptions?: string[]
+    conflicts?: { id?: string; reason: string; funnel_id: string | null }[]
+    limitations?: string[]
+  }
   realtime?: {
     enabled?: boolean
     provider?: string

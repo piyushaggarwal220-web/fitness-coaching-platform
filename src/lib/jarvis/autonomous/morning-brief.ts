@@ -12,7 +12,7 @@ function inr(n: number | null | undefined): string {
 
 export function buildMorningBrief(
   obs: UnifiedObservation,
-  opts?: { pendingApprovalLabel?: string | null }
+  opts?: { pendingApprovalLabel?: string | null; eventLines?: string[]; learnedLines?: string[] }
 ): { text: string; structured: MorningBriefStructured; meaningful: boolean } {
   const date = zonedYmd(new Date(obs.observed_at), obs.timezone || BUSINESS_TIMEZONE)
   const rev = obs.revenue as {
@@ -103,12 +103,26 @@ export function buildMorningBrief(
     lines.push(`Pending approval: ${structured.pending_approval}`)
   }
 
+  const eventLines = opts?.eventLines?.slice(0, 5) ?? []
+  if (eventLines.length) {
+    lines.push('', 'Overnight signals:')
+    for (const l of eventLines) lines.push(`- ${l}`)
+  }
+
+  const learnedLines = opts?.learnedLines?.slice(0, 5) ?? []
+  if (learnedLines.length) {
+    lines.push('', 'Learning / strategy:')
+    for (const l of learnedLines) lines.push(`- ${l}`)
+  }
+
   const meaningful =
     important.length > 0 ||
     Boolean(recommended) ||
     Boolean(structured.pending_approval) ||
     (content.blocked ?? 0) > 0 ||
-    (content.needs_review ?? 0) > 0
+    (content.needs_review ?? 0) > 0 ||
+    eventLines.length > 0 ||
+    learnedLines.length > 0
 
   return { text: lines.join('\n'), structured, meaningful }
 }
