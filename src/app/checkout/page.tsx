@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Suspense, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
@@ -45,6 +45,7 @@ import {
 } from '@/lib/sale-countdown';
 import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations';
 import { CheckoutBasicsStep, type CheckoutBasicsFormState } from '@/components/checkout/CheckoutBasicsStep';
+import { CheckoutMoreInfoStep } from '@/components/checkout/CheckoutMoreInfoStep';
 import { validateCheckoutBasicsFields } from '@/lib/payments/checkout-intake-basics-shared';
 import { isPublicDemoEmail } from '@/lib/public-demo';
 import { leavePublicDemoSession } from '@/lib/public-demo-session';
@@ -53,7 +54,7 @@ const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
 const PAYMENT_SUCCESS_KEY = 'lurvox_checkout_success_redirect';
 const CHECKOUT_DRAFT_KEY = 'lurvox_checkout_draft_v1';
-type CheckoutScreen = 1 | 2 | 3 | 4;
+type CheckoutScreen = 1 | 2 | 3 | 4 | 5;
 
 type AppliedDiscountPreview = {
  code: string;
@@ -384,7 +385,7 @@ function CheckoutForm() {
  setEmailVerified(true);
  setEmailLinkSent(true);
  setEmailDelivery('magic_link');
- setCheckoutScreen(3);
+ setCheckoutScreen(4);
  }
  }, [searchParams]);
 
@@ -417,7 +418,7 @@ function CheckoutForm() {
  });
  setBasicsComplete(true);
  if (basicsData.basics.name && !name.trim()) setName(basicsData.basics.name);
- setCheckoutScreen((current) => (current < 4 ? 4 : current));
+ setCheckoutScreen((current) => (current < 5 ? 5 : current));
  }
  } catch {
  // ignore restore errors
@@ -638,7 +639,7 @@ function CheckoutForm() {
  const data = await res.json();
  if (!res.ok) throw new Error(data.error ?? 'Could not save basics');
  setBasicsComplete(true);
- setCheckoutScreen(4);
+ setCheckoutScreen(5);
  trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'paywall' });
  } catch (err) {
  setError(err instanceof Error ? err.message : 'Could not save basics');
@@ -655,7 +656,7 @@ function CheckoutForm() {
  }
  setError('');
  setCheckoutScreen(2);
- trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'details' });
+ trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'more_info' });
  };
 
  const continueAfterPayment = (redirectTo: string) => {
@@ -824,7 +825,7 @@ function CheckoutForm() {
  return (
  <div style={styles.page}>
  <div style={styles.card}>
- <Link href={marketingBaseUrl} style={styles.backLink}>{'← Back to home'}</Link>
+ <Link href={marketingBaseUrl} style={styles.backLink}>{'<- Back to home'}</Link>
  <p style={styles.brandMark}>{BRAND_NAME}</p>
  <h1 style={styles.title}>Payment confirmed</h1>
  <p style={styles.subtitle}>Taking you to create your login password...</p>
@@ -856,32 +857,34 @@ function CheckoutForm() {
  ? formatInrFromPaise(firstTimerSavingsPaise)
  : null);
 
- const dig = (base: CSSProperties, key?: keyof typeof digitalTheme): CSSProperties =>
- isDigitalCheckout && key ? { ...base, ...digitalTheme[key] } : base
+ const dig = (base: CSSProperties, key?: keyof typeof intakeTheme): CSSProperties =>
+ key ? { ...base, ...intakeTheme[key] } : base
 
  return (
  <div
  style={{
  ...styles.page,
- ...(checkoutScreen === 4 ? styles.pageWithSticky : null),
- ...(isDigitalCheckout ? digitalTheme.page : null),
+ ...(checkoutScreen === 5 ? styles.pageWithSticky : null),
+ ...intakeTheme.page,
  }}
  >
- <div style={{ ...styles.card, ...(isDigitalCheckout ? digitalTheme.card : null) }}>
+ <div style={{ ...styles.card, ...intakeTheme.card }}>
  <Link
  href={isDigitalCheckout ? '/customised-plan' : marketingBaseUrl}
  style={dig(styles.backLink, 'backLink')}
  >
- {'← '}{isDigitalCheckout ? 'Back to plans' : 'Back to home'}
+ {'<- '}{isDigitalCheckout ? 'Back to plans' : 'Back to home'}
  </Link>
 
- <p style={{ ...styles.brandMark, ...(isDigitalCheckout ? digitalTheme.brandMark : null) }}>
+ <p style={{ ...styles.brandMark, ...intakeTheme.brandMark }}>
  {BRAND_NAME}
  </p>
  {isDigitalCheckout ? (
- <p style={digitalTheme.eyebrow}>PERSONALISED FITNESS PLANS</p>
- ) : null}
- <h1 style={{ ...styles.title, ...(isDigitalCheckout ? digitalTheme.title : null) }}>
+ <p style={intakeTheme.eyebrow}>PERSONALISED FITNESS PLANS</p>
+ ) : (
+ <p style={intakeTheme.eyebrow}>COACHING INTAKE</p>
+ )}
+ <h1 style={{ ...styles.title, ...intakeTheme.title }}>
  {isTrialCheckout
  ? 'Start your 7-day trial'
  : isDigitalCheckout
@@ -892,22 +895,22 @@ function CheckoutForm() {
  {checkoutScreen === 1
  ? 'Answer a few basics so we can customize your coaching.'
  : checkoutScreen === 2
- ? (isTrialCheckout
- ? 'Full coaching access for 7 days. Upgrade anytime.'
- : 'Enter your details to continue intake - payment comes after.')
+ ? 'Almost there - we need more details after you unlock.'
  : checkoutScreen === 3
+ ? 'Enter your details to continue - payment comes after.'
+ : checkoutScreen === 4
  ? 'Verify your email to save your answers and continue.'
  : 'Unlock your customized plan and pay securely.'}
  </p>
 
- <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 4`}>
- {([1, 2, 3, 4] as CheckoutScreen[]).map((step) => (
+ <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 5`}>
+ {([1, 2, 3, 4, 5] as CheckoutScreen[]).map((step) => (
  <span
  key={step}
  style={{
  ...styles.screenDot,
  ...(checkoutScreen === step ? styles.screenDotActive : null),
- ...(isDigitalCheckout && checkoutScreen === step ? digitalTheme.dotActive : null),
+ ...(checkoutScreen === step ? intakeTheme.dotActive : null),
  }}
  />
  ))}
@@ -930,15 +933,28 @@ function CheckoutForm() {
  dig={dig}
  />
  )}
-
  {checkoutScreen === 2 && (
+ <CheckoutMoreInfoStep
+ onBack={() => { setCheckoutScreen(1); setError(''); }}
+ onContinue={() => {
+ setError('');
+ setCheckoutScreen(3);
+ trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'details' });
+ }}
+ styles={styles}
+ dig={dig}
+ />
+ )}
+
+
+ {checkoutScreen === 3 && (
  <>
  <button
  type="button"
- onClick={() => { setCheckoutScreen(1); setError(''); }}
+ onClick={() => { setCheckoutScreen(2); setError(''); }}
  style={dig(styles.backToDetails, 'backLink')}
  >
- {'← Edit basics'}
+ {'<- Back'}
  </button>
 
  {!isTrialCheckout && (
@@ -961,8 +977,8 @@ function CheckoutForm() {
  style={{
  ...styles.planChip,
  ...(selected ? styles.planChipSelected : null),
- ...(isDigitalCheckout ? digitalTheme.planChip : null),
- ...(isDigitalCheckout && selected ? digitalTheme.planChipSelected : null),
+ ...intakeTheme.planChip,
+ ...(selected ? intakeTheme.planChipSelected : null),
  }}
  >
  <span style={dig(styles.planChipName, 'planChipName')}>
@@ -973,7 +989,7 @@ function CheckoutForm() {
  </span>
  <span style={dig(styles.planChipPrice, 'planChipPrice')}>{item.displayPrice}</span>
  {item.popular ? (
- <span style={isDigitalCheckout ? digitalTheme.planChipPopular : styles.planChipMrp}>
+ <span style={intakeTheme.planChipPopular}>
  Most popular
  </span>
  ) : null}
@@ -986,7 +1002,7 @@ function CheckoutForm() {
 
  {isTrialCheckout && (
  <div style={styles.trialBadge}>
- {plan.name} Â· {plan.displayPrice}
+ {plan.name} · {plan.displayPrice}
  </div>
  )}
 
@@ -998,16 +1014,16 @@ function CheckoutForm() {
  ? `${plan.name} coaching`
  : isDigitalCheckout
  ? plan.name
- : `${planGoalName(plan.slug)} Â· ${planDurationLabel(plan.slug)}`}
+ : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
  </div>
  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>
  {isDigitalCheckout
  ? plan.sections === 'workout'
- ? 'Workout guidance Â· digital delivery'
+ ? 'Workout guidance · digital delivery'
  : plan.sections === 'diet'
- ? 'Diet chart Â· digital delivery'
- : 'Workout Rs 49 Â· Diet Rs 89 Â· both Rs 99'
- : 'Basics done Â· next: your contact details'}
+ ? 'Diet chart · digital delivery'
+ : 'Workout Rs 49 · Diet Rs 89 · both Rs 99'
+ : 'Basics done · next: your contact details'}
  </div>
  </div>
  <div style={styles.orderPriceCol}>
@@ -1020,6 +1036,12 @@ function CheckoutForm() {
  </div>
  </div>
  </section>
+
+ <p style={styles.leagueNote}>
+ <a href={marketingBaseUrl} style={dig(styles.inlineLink, 'inlineLink')}>
+ See all plans on lurvox.in
+ </a>
+ </p>
 
  <p style={styles.leagueNote}>
  {isTrialCheckout
@@ -1090,7 +1112,7 @@ function CheckoutForm() {
  }
  setError('');
  setMissingItems([]);
- setCheckoutScreen(3);
+ setCheckoutScreen(4);
  trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'verify' });
  }}
  >
@@ -1100,14 +1122,14 @@ function CheckoutForm() {
  </>
  )}
 
- {checkoutScreen === 3 && (
+ {checkoutScreen === 4 && (
  <>
  <button
  type="button"
- onClick={() => { setCheckoutScreen(2); setError(''); }}
+ onClick={() => { setCheckoutScreen(3); setError(''); }}
  style={dig(styles.backToDetails, 'backLink')}
  >
- {'← Edit details'}
+ {'<- Edit details'}
  </button>
 
  <section style={{ ...dig(styles.orderSummary, 'orderSummary'), marginBottom: 16 }}>
@@ -1118,7 +1140,7 @@ function CheckoutForm() {
  ? plan.name
  : isDigitalCheckout
  ? plan.name
- : `${planGoalName(plan.slug)} Â· ${planDurationLabel(plan.slug)}`}
+ : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
  </div>
  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || ' - '}</div>
  </div>
@@ -1232,14 +1254,14 @@ function CheckoutForm() {
  )}
 
 
- {checkoutScreen === 4 && (
+ {checkoutScreen === 5 && (
  <>
  <button
  type="button"
- onClick={() => { setCheckoutScreen(3); setError(''); }}
+ onClick={() => { setCheckoutScreen(4); setError(''); }}
  style={dig(styles.backToDetails, 'backLink')}
  >
- {'← Back'}
+ {'<- Back'}
  </button>
 
  {!isTrialCheckout && (
@@ -1268,7 +1290,7 @@ function CheckoutForm() {
  ? plan.name
  : isDigitalCheckout
  ? plan.name
- : `${planGoalName(plan.slug)} Â· ${planDurationLabel(plan.slug)}`}
+ : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
  </div>
  <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || ' - '}</div>
  </div>
@@ -1342,14 +1364,14 @@ function CheckoutForm() {
  After payment you&apos;ll create your login password and continue intake.
  {' '}
  <Link href="/create-account" style={dig(styles.inlineLink, 'inlineLink')}>Already paid?</Link>
- {' Â· '}
+ {' · '}
  <Link href="/enroll" style={dig(styles.inlineLink, 'inlineLink')}>Enrollment code</Link>
  </p>
  </>
  )}
  </div>
 
- {checkoutScreen === 4 && (
+ {checkoutScreen === 5 && (
  <div style={dig(styles.stickyPayBar, 'stickyPayBar')}>
  <div style={styles.stickyPayInner}>
  <div style={styles.stickyPayMeta}>
@@ -1365,7 +1387,7 @@ function CheckoutForm() {
  {loading ? 'Processing...' : `Pay ${payableDisplay}`}
  </button>
  </div>
- <p style={dig(styles.stickyPayNote, 'stickyPayNote')}>Secure checkout via Razorpay Â· SSL encrypted</p>
+ <p style={dig(styles.stickyPayNote, 'stickyPayNote')}>Secure checkout via Razorpay · SSL encrypted</p>
  </div>
  )}
 
@@ -1387,189 +1409,195 @@ export default function CheckoutPage() {
  );
 }
 
-const digitalTheme: Record<string, CSSProperties> = {
- page: {
- backgroundColor: '#F4F8FF',
- backgroundImage:
- 'radial-gradient(ellipse 90% 55% at 50% -15%, rgba(37,99,235,0.18), transparent 55%)',
- },
- card: {
- backgroundColor: '#FFFFFF',
- border: '1px solid rgba(37,99,235,0.14)',
- boxShadow: '0 18px 48px rgba(15,23,42,0.08)',
- },
- backLink: {
- color: '#64748B',
- },
- brandMark: {
- color: '#1D4ED8',
- },
- eyebrow: {
- margin: '0 0 8px',
- display: 'inline-flex',
- alignItems: 'center',
- padding: '6px 10px',
- borderRadius: 999,
- backgroundColor: 'rgba(37,99,235,0.12)',
- color: '#0F172A',
- fontSize: 11,
- fontWeight: 800,
- letterSpacing: '0.06em',
- },
- title: {
- color: '#0F172A',
- },
- subtitle: {
- color: '#475569',
- },
- dotActive: {
- backgroundColor: '#2563EB',
- },
- trustStrip: {
- backgroundColor: '#F8FBFF',
- border: '1px solid rgba(37,99,235,0.14)',
- },
- trustBadge: {
- backgroundColor: '#FFFFFF',
- border: '1px solid rgba(37,99,235,0.18)',
- color: '#334155',
- },
- trustLine: {
- color: '#475569',
- },
- planChip: {
- backgroundColor: '#F8FBFF',
- border: '1px solid rgba(37,99,235,0.18)',
- color: '#0F172A',
- },
- planChipSelected: {
- backgroundColor: '#EFF6FF',
- border: '2px solid #2563EB',
- boxShadow: 'none',
- },
- planChipName: {
- color: '#0F172A',
- },
- planChipDuration: {
- color: '#64748B',
- },
- planChipPrice: {
- color: '#0F172A',
- },
- planChipPopular: {
- fontSize: 11,
- fontWeight: 700,
- color: '#2563EB',
- textDecoration: 'none',
- },
- orderSummary: {
- backgroundColor: '#F8FBFF',
- border: '1px solid rgba(37,99,235,0.14)',
- },
- orderPlanName: {
- color: '#0F172A',
- },
- orderPlanMeta: {
- color: '#64748B',
- },
- orderSummaryPrice: {
- color: '#0F172A',
- },
- sectionLabel: {
- color: '#64748B',
- },
- label: {
- color: '#334155',
- },
- input: {
- backgroundColor: '#FFFFFF',
- border: '1px solid rgba(37,99,235,0.22)',
- color: '#0F172A',
- },
- payBtn: {
- backgroundColor: '#2563EB',
- color: '#FFFFFF',
- },
- paySecureNote: {
- color: '#64748B',
- },
- stickyPayBar: {
- backgroundColor: 'rgba(255,255,255,0.96)',
- borderTop: '1px solid rgba(37,99,235,0.16)',
- },
- stickyPayLabel: {
- color: '#64748B',
- },
- stickyPayAmount: {
- color: '#0F172A',
- },
- stickyPayBtn: {
- backgroundColor: '#2563EB',
- color: '#FFFFFF',
- },
- stickyPayNote: {
- color: '#64748B',
- },
- secure: {
- color: '#64748B',
- },
- inlineLink: {
- color: '#2563EB',
- },
- otpBox: {
- backgroundColor: '#F8FBFF',
- border: '1px solid rgba(37,99,235,0.14)',
- },
- otpTitle: {
- color: '#0F172A',
- },
- otpHint: {
- color: '#64748B',
- },
- otpInput: {
- backgroundColor: '#FFFFFF',
- border: '1px solid rgba(37,99,235,0.22)',
- color: '#0F172A',
- },
- otpBtn: {
- backgroundColor: '#2563EB',
- color: '#FFFFFF',
- },
- otpBtnSecondary: {
- border: '1px solid rgba(37,99,235,0.22)',
- color: '#1D4ED8',
- backgroundColor: '#FFFFFF',
- },
- policyText: {
- color: '#475569',
- },
- honestNote: {
- margin: '12px 0 0',
- fontSize: 13,
- lineHeight: 1.45,
- color: '#475569',
- },
+const intakeTheme: Record<string, CSSProperties> = {
+  page: {
+    backgroundColor: '#12100f',
+    backgroundImage: `
+      radial-gradient(ellipse 70% 45% at 85% 0%, rgba(225, 29, 72, 0.22), transparent 55%),
+      radial-gradient(ellipse 55% 40% at 0% 15%, rgba(34, 197, 94, 0.16), transparent 50%),
+      radial-gradient(ellipse 50% 35% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 55%)
+    `,
+  },
+  card: {
+    backgroundColor: '#1c1917',
+    border: '1px solid rgba(251, 191, 36, 0.22)',
+    boxShadow: '0 18px 48px rgba(0,0,0,0.35)',
+  },
+  backLink: {
+    color: '#cbd5e1',
+  },
+  brandMark: {
+    color: '#fbbf24',
+  },
+  eyebrow: {
+    margin: '0 0 8px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '6px 10px',
+    borderRadius: 999,
+    backgroundColor: 'rgba(251, 191, 36, 0.18)',
+    color: '#fbbf24',
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+  },
+  title: {
+    color: '#f8fafc',
+  },
+  subtitle: {
+    color: '#cbd5e1',
+  },
+  dotActive: {
+    backgroundColor: '#22c55e',
+  },
+  trustStrip: {
+    backgroundColor: '#241f1c',
+    border: '1px solid rgba(251, 191, 36, 0.22)',
+  },
+  trustBadge: {
+    backgroundColor: '#1c1917',
+    border: '1px solid rgba(34, 197, 94, 0.35)',
+    color: '#f8fafc',
+  },
+  trustLine: {
+    color: '#cbd5e1',
+  },
+  planChip: {
+    backgroundColor: '#241f1c',
+    border: '1px solid rgba(251, 191, 36, 0.22)',
+    color: '#f8fafc',
+  },
+  planChipSelected: {
+    backgroundColor: 'rgba(34, 197, 94, 0.14)',
+    border: '2px solid #22c55e',
+    boxShadow: '0 0 0 1px rgba(34, 197, 94, 0.25)',
+  },
+  planChipName: {
+    color: '#f8fafc',
+  },
+  planChipDuration: {
+    color: '#cbd5e1',
+  },
+  planChipPrice: {
+    color: '#fbbf24',
+  },
+  planChipPopular: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#fbbf24',
+    textDecoration: 'none',
+  },
+  orderSummary: {
+    backgroundColor: '#241f1c',
+    border: '1px solid rgba(251, 191, 36, 0.22)',
+  },
+  orderPlanName: {
+    color: '#f8fafc',
+  },
+  orderPlanMeta: {
+    color: '#cbd5e1',
+  },
+  orderSummaryPrice: {
+    color: '#fbbf24',
+  },
+  sectionLabel: {
+    color: '#fbbf24',
+  },
+  label: {
+    color: '#e2e8f0',
+  },
+  input: {
+    backgroundColor: '#12100f',
+    border: '1px solid rgba(251, 191, 36, 0.28)',
+    color: '#f8fafc',
+  },
+  payBtn: {
+    backgroundColor: '#16a34a',
+    color: '#ffffff',
+  },
+  paySecureNote: {
+    color: '#cbd5e1',
+  },
+  stickyPayBar: {
+    backgroundColor: 'rgba(28, 25, 23, 0.96)',
+    borderTop: '1px solid rgba(251, 191, 36, 0.22)',
+  },
+  stickyPayLabel: {
+    color: '#cbd5e1',
+  },
+  stickyPayAmount: {
+    color: '#fbbf24',
+  },
+  stickyPayBtn: {
+    backgroundColor: '#16a34a',
+    color: '#ffffff',
+  },
+  stickyPayNote: {
+    color: '#cbd5e1',
+  },
+  secure: {
+    color: '#cbd5e1',
+  },
+  inlineLink: {
+    color: '#fbbf24',
+  },
+  otpBox: {
+    backgroundColor: '#241f1c',
+    border: '1px solid rgba(251, 191, 36, 0.22)',
+  },
+  otpTitle: {
+    color: '#f8fafc',
+  },
+  otpHint: {
+    color: '#cbd5e1',
+  },
+  otpInput: {
+    backgroundColor: '#12100f',
+    border: '1px solid rgba(251, 191, 36, 0.28)',
+    color: '#f8fafc',
+  },
+  otpBtn: {
+    backgroundColor: '#16a34a',
+    color: '#ffffff',
+  },
+  otpBtnSecondary: {
+    border: '1px solid rgba(251, 191, 36, 0.35)',
+    color: '#fbbf24',
+    backgroundColor: '#1c1917',
+  },
+  policyText: {
+    color: '#cbd5e1',
+  },
+  honestNote: {
+    margin: '12px 0 0',
+    fontSize: 13,
+    lineHeight: 1.45,
+    color: '#cbd5e1',
+  },
 }
 
 const styles: Record<string, CSSProperties> = {
- page: {
- minHeight: '100vh',
- backgroundColor: colors.bgPrimary,
- backgroundImage:
- 'radial-gradient(ellipse 90% 50% at 50% -10%, rgba(249,115,22,0.14), transparent 55%)',
- padding: `${spacing[5]}px ${spacing[2]}px ${spacing[7]}px`,
- overflowX: 'hidden',
- boxSizing: 'border-box',
- },
- pageWithSticky: {
- paddingBottom: 120,
- },
- screenDots: {
- display: 'flex',
- gap: 8,
- marginBottom: 20,
- },
- screenDot: {
+  page: {
+    minHeight: '100vh',
+    backgroundColor: '#12100f',
+    backgroundImage: `
+      radial-gradient(ellipse 70% 45% at 85% 0%, rgba(225, 29, 72, 0.22), transparent 55%),
+      radial-gradient(ellipse 55% 40% at 0% 15%, rgba(34, 197, 94, 0.16), transparent 50%),
+      radial-gradient(ellipse 50% 35% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 55%)
+    `,
+    padding: `${spacing[5]}px ${spacing[2]}px ${spacing[7]}px`,
+    overflowX: 'hidden',
+    boxSizing: 'border-box',
+  },
+  pageWithSticky: {
+    paddingBottom: 120,
+  },
+  screenDots: {
+    display: 'flex',
+    gap: 8,
+    marginBottom: 20,
+  },
+  screenDot: {
  width: 8,
  height: 8,
  borderRadius: 999,
@@ -1650,16 +1678,16 @@ const styles: Record<string, CSSProperties> = {
  width: '100%',
  maxWidth: 480,
  margin: '0 auto',
- backgroundColor: colors.bgCard,
+ backgroundColor: '#1c1917',
  borderRadius: radius.lg,
  padding: `${spacing[4]}px ${spacing[3]}px ${spacing[5]}px`,
- border: `1px solid ${colors.borderSubtle}`,
+ border: '1px solid rgba(251, 191, 36, 0.22)',
  boxSizing: 'border-box',
  boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
  },
  backLink: {
  display: 'inline-block',
- color: colors.textMuted,
+ color: '#cbd5e1',
  textDecoration: 'none',
  fontSize: 13,
  fontWeight: 600,
@@ -1671,19 +1699,19 @@ const styles: Record<string, CSSProperties> = {
  fontWeight: 800,
  letterSpacing: '0.14em',
  textTransform: 'uppercase' as const,
- color: colors.accent,
+ color: '#fbbf24',
  },
  title: {
  margin: '0 0 8px',
  fontSize: 28,
- color: colors.textPrimary,
+ color: '#f8fafc',
  fontWeight: 800,
  letterSpacing: '-0.03em',
  lineHeight: 1.15,
  },
  subtitle: {
  margin: '0 0 22px',
- color: colors.textSecondary,
+ color: '#cbd5e1',
  fontSize: 15,
  lineHeight: 1.45,
  },

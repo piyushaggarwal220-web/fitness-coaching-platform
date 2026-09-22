@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import type { CSSProperties } from 'react'
 import {
@@ -44,7 +44,7 @@ export function CheckoutBasicsStep({
  return (
  <>
  <button type="button" onClick={onBack} style={dig(styles.backToDetails, 'backLink')}>
- {'← Back to plan'}
+ {'<- Back to plan'}
  </button>
 
  <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>A few basics for your coach</h2>
@@ -98,7 +98,7 @@ export function CheckoutBasicsStep({
  />
 
  <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-weight">
- Weight (kg) Â· optional
+ Weight (kg) · optional
  </label>
  <input
  id="checkout-basics-weight"

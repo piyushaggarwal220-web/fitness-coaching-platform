@@ -88,7 +88,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
 
  <header style={styles.header}>
  <a href={marketingBase} style={styles.brand}>
- LURV<span style={{ color: '#ff6200' }}>OX</span>
+ LURV<span style={{ color: '#fbbf24' }}>OX</span>
  </a>
  <div style={styles.headerRight}>
  <a href="/login" style={styles.headerLink}>
@@ -101,13 +101,15 @@ export default async function PlanLandingPage({ params }: PageProps) {
  </header>
 
  <main style={styles.main}>
+ <a href={marketingBase} style={styles.planTap} aria-label="Open LURVOX home">
  <p style={styles.eyebrow}>{copy.durationLabel}</p>
  <h1 className="plan-page-title">{productName}</h1>
  <p style={styles.promise}>{copy.promise}</p>
-
  <div style={styles.priceBlock}>
  <p style={styles.price}>{saleDisplay}</p>
  </div>
+ <p style={styles.shopifyHint}>Tap to open lurvox.in</p>
+ </a>
 
  <a href={`/checkout?plan=${plan.slug}`} style={styles.cta}>
  Start my intake
@@ -140,8 +142,8 @@ export default async function PlanLandingPage({ params }: PageProps) {
 const styles: Record<string, CSSProperties> = {
  page: {
  minHeight: '100dvh',
- background: '#050505',
- color: '#ffffff',
+ background: '#12100f',
+ color: '#f8fafc',
  position: 'relative',
  overflowX: 'hidden',
  fontFamily: 'var(--font-plan-body), system-ui, sans-serif',
@@ -150,8 +152,9 @@ const styles: Record<string, CSSProperties> = {
  position: 'absolute',
  inset: 0,
  background: `
- radial-gradient(ellipse 70% 120% at 50% -40%, rgba(255, 98, 0, 0.28), transparent 60%),
- linear-gradient(180deg, #050505 0%, #070707 100%)
+ radial-gradient(ellipse 70% 45% at 85% 0%, rgba(225, 29, 72, 0.22), transparent 55%),
+ radial-gradient(ellipse 55% 40% at 0% 15%, rgba(34, 197, 94, 0.16), transparent 50%),
+ radial-gradient(ellipse 50% 35% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 55%)
  `,
  pointerEvents: 'none',
  },
@@ -163,14 +166,14 @@ const styles: Record<string, CSSProperties> = {
  justifyContent: 'space-between',
  gap: 12,
  padding: '14px 20px',
- borderBottom: '1px solid rgba(255, 98, 0, 0.22)',
- background: '#050505',
+ borderBottom: '1px solid rgba(251, 191, 36, 0.22)',
+ background: '#12100f',
  },
  brand: {
  fontSize: 20,
  fontWeight: 800,
  letterSpacing: '0.04em',
- color: '#ffffff',
+ color: '#fbbf24',
  textDecoration: 'none',
  },
  headerRight: {
@@ -183,25 +186,35 @@ const styles: Record<string, CSSProperties> = {
  headerLink: {
  fontSize: 13,
  fontWeight: 700,
- color: '#ff8a3d',
+ color: '#fbbf24',
  textDecoration: 'none',
  whiteSpace: 'nowrap',
  },
  headerCall: {
  fontSize: 13,
  fontWeight: 700,
- color: '#ff6200',
+ color: '#22c55e',
  textDecoration: 'none',
  whiteSpace: 'nowrap',
  },
  main: {
  position: 'relative',
  zIndex: 1,
- maxWidth: 860,
+ padding: '40px 20px 48px',
+ maxWidth: 520,
  margin: '0 auto',
- padding: '28px 20px 72px',
- boxSizing: 'border-box',
- width: '100%',
+ },
+ planTap: {
+ display: 'block',
+ textDecoration: 'none',
+ color: 'inherit',
+ marginBottom: 20,
+ },
+ shopifyHint: {
+ margin: '10px 0 0',
+ fontSize: 12,
+ color: '#cbd5e1',
+ opacity: 0.8,
  },
  eyebrow: {
  margin: 0,
@@ -209,14 +222,14 @@ const styles: Record<string, CSSProperties> = {
  fontWeight: 800,
  letterSpacing: '0.14em',
  textTransform: 'uppercase',
- color: '#ff6200',
+ color: '#fbbf24',
  },
  promise: {
  margin: '14px 0 0',
  maxWidth: 520,
  fontSize: 16,
  lineHeight: 1.5,
- color: 'rgba(255,255,255,0.72)',
+ color: '#cbd5e1',
  },
  priceBlock: {
  marginTop: 24,
@@ -230,32 +243,31 @@ const styles: Record<string, CSSProperties> = {
  fontSize: 'clamp(1.7rem, 5.5vw, 2.35rem)',
  fontWeight: 800,
  letterSpacing: '-0.03em',
- color: '#ffffff',
- textShadow: '0 0 18px rgba(255,255,255,0.28)',
+ color: '#fbbf24',
  },
  cta: {
  display: 'inline-flex',
  marginTop: 24,
  padding: '14px 22px',
  borderRadius: 999,
- background: '#ff6200',
- color: '#050505',
+ background: '#16a34a',
+ color: '#ffffff',
  fontWeight: 800,
  fontSize: 15,
  textDecoration: 'none',
- boxShadow: '0 8px 28px rgba(255, 98, 0, 0.35)',
+ boxShadow: '0 8px 28px rgba(22, 163, 74, 0.35)',
  },
  afterPayLine: {
  margin: '14px 0 0',
  maxWidth: 420,
  fontSize: 13,
  lineHeight: 1.45,
- color: 'rgba(255,255,255,0.5)',
+ color: '#cbd5e1',
  },
  siblings: {
  marginTop: 40,
  paddingTop: 28,
- borderTop: '1px solid rgba(255,255,255,0.08)',
+ borderTop: '1px solid rgba(251, 191, 36, 0.22)',
  },
  siblingsLabel: {
  margin: 0,
@@ -263,7 +275,7 @@ const styles: Record<string, CSSProperties> = {
  fontWeight: 800,
  letterSpacing: '0.14em',
  textTransform: 'uppercase',
- color: '#ff6200',
+ color: '#fbbf24',
  },
  siblingRow: {
  marginTop: 12,
@@ -274,9 +286,9 @@ const styles: Record<string, CSSProperties> = {
  siblingChip: {
  padding: '10px 14px',
  borderRadius: 999,
- border: '1px solid rgba(255, 98, 0, 0.35)',
- background: 'rgba(255, 98, 0, 0.08)',
- color: '#fff',
+ border: '1px solid rgba(251, 191, 36, 0.35)',
+ background: 'rgba(251, 191, 36, 0.08)',
+ color: '#f8fafc',
  fontSize: 13,
  fontWeight: 600,
  textDecoration: 'none',
