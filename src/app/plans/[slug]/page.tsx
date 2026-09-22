@@ -101,20 +101,23 @@ export default async function PlanLandingPage({ params }: PageProps) {
  </header>
 
  <main style={styles.main}>
- <a href={marketingBase} style={styles.planTap} aria-label="Open LURVOX home">
  <p style={styles.eyebrow}>{copy.durationLabel}</p>
  <h1 className="plan-page-title">{productName}</h1>
  <p style={styles.promise}>{copy.promise}</p>
+
  <div style={styles.priceBlock}>
  <p style={styles.price}>{saleDisplay}</p>
  </div>
- <p style={styles.shopifyHint}>Tap to open lurvox.in</p>
- </a>
 
  <a href={`/checkout?plan=${plan.slug}`} style={styles.cta}>
  Start my intake
  </a>
  <p style={styles.afterPayLine}>{AFTER_PAY}</p>
+ <p style={styles.shopifyHint}>
+ <a href={marketingBase} style={styles.shopifyLink}>
+ See all plans on lurvox.in
+ </a>
+ </p>
 
  <section style={styles.siblings}>
  <p style={styles.siblingsLabel}>Other plans</p>
@@ -204,17 +207,15 @@ const styles: Record<string, CSSProperties> = {
  maxWidth: 520,
  margin: '0 auto',
  },
- planTap: {
- display: 'block',
- textDecoration: 'none',
- color: 'inherit',
- marginBottom: 20,
- },
  shopifyHint: {
- margin: '10px 0 0',
- fontSize: 12,
- color: '#cbd5e1',
- opacity: 0.8,
+ margin: '14px 0 0',
+ fontSize: 13,
+ },
+ shopifyLink: {
+ color: '#fbbf24',
+ fontWeight: 700,
+ textDecoration: 'underline',
+ textUnderlineOffset: 3,
  },
  eyebrow: {
  margin: 0,
