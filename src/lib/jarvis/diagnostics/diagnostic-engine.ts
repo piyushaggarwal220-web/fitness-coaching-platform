@@ -246,6 +246,7 @@ async function createDiagnosticApproval(input: {
       .maybeSingle()
 
     const primary = input.remediations[0]
+    const remediationTitle = primary?.title || 'Apply diagnostic fix'
     const { data, error } = await admin
       .from('jarvis_approvals')
       .insert({
@@ -253,9 +254,14 @@ async function createDiagnosticApproval(input: {
         task_id: input.taskId,
         tool_call_id: toolCall?.id ?? null,
         tool_name: 'diagnostics.propose_fix',
-        action_label: primary?.title || 'Apply diagnostic fix',
+        // Never present a code-change remediation as if it were a live data query.
+        action_label: `Diagnostic code change: ${remediationTitle}`,
         reason: `${input.root}\n\nDIAGNOSIS\n${input.root}\n\nPROPOSED FIX\n${input.remediations.map((r) => r.description).join('\n')}`,
-        evidence: input.remediations.map((r) => r.title),
+        evidence: [
+          'Tool: diagnostics.propose_fix (SIGNIFICANT)',
+          'This is a proposed code/config remediation — not a live Shopify/Meta/Instagram read.',
+          ...input.remediations.map((r) => r.title),
+        ],
         current_state: primary?.current_state ?? {},
         proposed_state: primary?.proposed_state ?? { remediations: input.remediations },
         expected_cost_note: 'No production writes until approved. Code changes still require implementation after approval.',
@@ -269,7 +275,7 @@ async function createDiagnosticApproval(input: {
     await admin.from('jarvis_notifications').insert({
       kind: 'approval',
       title: 'Diagnostic fix needs approval',
-      body: primary?.title || input.symptom,
+      body: `Diagnostic code change: ${remediationTitle}`,
       link: '/admin/jarvis',
       metadata: { approval_id: data?.id },
     })

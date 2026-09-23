@@ -208,18 +208,24 @@ export function evaluateExecutionPolicy(facts: PolicyFacts): PolicyResult {
 
   // Level 2: prepare + approval for writes
   if (facts.autonomy_level === 2 && !facts.approved_execution) {
-    // Honor registry risk class: READ/LOW_RISK auto-execute even if action_class is
-    // mislabeled UNKNOWN (e.g. historical lurvox.revenue → false "writes require approval").
-    // ALWAYS_APPROVAL / SIGNIFICANT already handled above.
-    if (
-      (facts.risk_class === 'READ' || facts.risk_class === 'LOW_RISK') &&
-      !ALWAYS_APPROVAL_CLASSES.has(action_class)
-    ) {
+    // Architecture: registry riskClass READ always AUTO_EXECUTE at Level 2,
+    // even if legacy action_class is UNKNOWN. Writes already gated above via
+    // ALWAYS_APPROVAL_CLASSES / SIGNIFICANT risk_class.
+    if (facts.risk_class === 'READ' && !ALWAYS_APPROVAL_CLASSES.has(action_class)) {
       return {
         ...base,
         decision: 'AUTO_EXECUTE',
         code: 'OK',
-        reason: 'Level 2 — READ/LOW_RISK tools execute automatically; significant stays approval-gated.',
+        reason: 'Level 2 — registry READ tools execute automatically; no approval.',
+      }
+    }
+    // LOW_RISK follows existing Level 2 policy (auto when not an always-approval write class).
+    if (facts.risk_class === 'LOW_RISK' && !ALWAYS_APPROVAL_CLASSES.has(action_class)) {
+      return {
+        ...base,
+        decision: 'AUTO_EXECUTE',
+        code: 'OK',
+        reason: 'Level 2 — LOW_RISK tools execute automatically; significant stays approval-gated.',
       }
     }
     if (GUARDED_AUTO_CLASSES.has(action_class) && (facts.risk_class === 'READ' || facts.risk_class === 'LOW_RISK')) {

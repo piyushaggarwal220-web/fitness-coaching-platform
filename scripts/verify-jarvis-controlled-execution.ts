@@ -384,75 +384,84 @@ async function main() {
     ok('Live flags off; payment + self-privilege tools forbidden')
   }
 
-  // 34 classify tools
+  // 34 classify tools + registry-first READ architecture
   {
     ensureJarvisToolsRegistered()
     assert.equal(classifyToolAction('meta.increase_budget').action_class, 'AD_BUDGET_INCREASE')
     assert.equal(systemForTool('instagram.publish'), 'INSTAGRAM')
     assert.equal(getTool('lurvox.revenue')?.riskClass, 'READ')
     assert.equal(classifyToolAction('lurvox.revenue').action_class, 'READ')
-    // Future lurvox.* must not inherit READ from prefix alone when unregistered.
+    assert.equal(getTool('shopify.today_revenue')?.riskClass, 'READ')
+    assert.equal(classifyToolAction('shopify.today_revenue').action_class, 'READ')
+    assert.equal(getTool('shopify.order_stats')?.riskClass, 'READ')
+    assert.equal(classifyToolAction('shopify.order_stats').action_class, 'READ')
+    assert.equal(getTool('shopify.status')?.riskClass, 'READ')
+    assert.equal(classifyToolAction('shopify.status').action_class, 'READ')
+    // Writes must not be softened by ".status" / namespace heuristics
+    assert.equal(getTool('shopify.update_status')?.riskClass, 'SIGNIFICANT')
+    assert.equal(classifyToolAction('shopify.update_status').action_class, 'SHOPIFY_STATUS_UPDATE')
+    assert.equal(getTool('shopify.update_price')?.riskClass, 'SIGNIFICANT')
+    assert.equal(classifyToolAction('shopify.update_price').action_class, 'SHOPIFY_PRICE_UPDATE')
+    // Future unregistered lurvox.* must not inherit READ from prefix alone
     assert.equal(classifyToolAction('lurvox.hypothetical_write').action_class, 'UNKNOWN')
     assert.equal(classifyToolAction('instagram.get_profile').action_class, 'READ')
-    assert.equal(classifyToolAction('instagram.content_performance').action_class, 'READ')
+    assert.equal(classifyToolAction('instagram.media_insights').action_class, 'READ')
     assert.equal(classifyToolAction('instagram.prepare_publish').action_class, 'PREPARE')
     assert.equal(classifyToolAction('instagram.publish').action_class, 'CONTENT_PUBLISH')
-    assert.equal(classifyToolAction('memory.remember').action_class, 'GENERATE')
+    assert.equal(getTool('diagnostics.propose_fix')?.riskClass, 'SIGNIFICANT')
     assert.equal(ALWAYS_APPROVAL_CLASSES.has('CONTENT_PUBLISH'), true)
     assert.equal(ALWAYS_APPROVAL_CLASSES.has('AD_BUDGET_INCREASE'), true)
-    ok('Action classification maps tools to classes/systems')
+    ok('Action classification maps tools to classes/systems (registry-first READ)')
   }
 
-  // READ registry tools must not require approval at autonomy level 2
+  // Registry READ → AUTO_EXECUTE at L2; writes stay gated (A–J matrix)
   {
-    const classified = classifyToolAction('lurvox.revenue')
-    const decision = evaluateExecutionPolicy({
-      ...baseFacts({
-        tool_name: 'lurvox.revenue',
-        action_class: classified.action_class,
-        system: systemForTool('lurvox.revenue'),
-        risk_class: 'READ',
-        autonomy_level: 2,
-      }),
-    })
-    assert.equal(decision.decision, 'AUTO_EXECUTE')
+    function l2(toolName: string, risk: PolicyFacts['risk_class'], action?: PolicyFacts['action_class']) {
+      const classified = classifyToolAction(toolName)
+      return evaluateExecutionPolicy({
+        ...baseFacts({
+          tool_name: toolName,
+          action_class: action ?? classified.action_class,
+          system: systemForTool(toolName),
+          risk_class: risk,
+          autonomy_level: 2,
+          live_instagram_publishing: false,
+          live_meta_enabled: false,
+        }),
+      })
+    }
 
-    // Safety net: even UNKNOWN action_class + registry READ risk must auto-execute at L2.
-    const unknownButRead = evaluateExecutionPolicy({
-      ...baseFacts({
-        tool_name: 'lurvox.revenue',
-        action_class: 'UNKNOWN',
-        system: 'OTHER',
-        risk_class: 'READ',
-        autonomy_level: 2,
-      }),
-    })
-    assert.equal(unknownButRead.decision, 'AUTO_EXECUTE')
-
-    // Significant writes still require approval at L2.
-    const budget = evaluateExecutionPolicy({
-      ...baseFacts({
-        tool_name: 'meta.increase_budget',
-        action_class: 'AD_BUDGET_INCREASE',
-        system: 'META',
-        risk_class: 'SIGNIFICANT',
-        autonomy_level: 2,
-      }),
-    })
-    assert.equal(budget.decision, 'APPROVAL_REQUIRED')
-
-    const publish = evaluateExecutionPolicy({
-      ...baseFacts({
-        tool_name: 'instagram.publish',
-        action_class: 'CONTENT_PUBLISH',
-        system: 'INSTAGRAM',
-        risk_class: 'SIGNIFICANT',
-        autonomy_level: 2,
-        live_instagram_publishing: false,
-      }),
-    })
-    assert.equal(publish.decision, 'APPROVAL_REQUIRED')
-    ok('lurvox.revenue READ auto-executes at L2; Meta/IG writes stay approval-gated')
+    // A. lurvox.revenue
+    assert.equal(l2('lurvox.revenue', 'READ').decision, 'AUTO_EXECUTE')
+    // B. Shopify calendar-day commerce read
+    assert.equal(l2('shopify.today_revenue', 'READ').decision, 'AUTO_EXECUTE')
+    assert.equal(l2('shopify.order_stats', 'READ').decision, 'AUTO_EXECUTE')
+    // C. Meta status/performance read
+    assert.equal(getTool('meta.status')?.riskClass, 'READ')
+    assert.equal(l2('meta.status', 'READ').decision, 'AUTO_EXECUTE')
+    // D. Instagram insights read
+    assert.equal(l2('instagram.media_insights', 'READ').decision, 'AUTO_EXECUTE')
+    assert.equal(l2('instagram.get_profile', 'READ').decision, 'AUTO_EXECUTE')
+    // Safety net: UNKNOWN action_class + registry READ still auto
+    assert.equal(l2('shopify.today_revenue', 'READ', 'UNKNOWN').decision, 'AUTO_EXECUTE')
+    // E–G Meta writes
+    assert.equal(l2('meta.increase_budget', 'SIGNIFICANT').decision, 'APPROVAL_REQUIRED')
+    assert.equal(l2('meta.decrease_budget', 'SIGNIFICANT').decision, 'APPROVAL_REQUIRED')
+    assert.equal(l2('meta.pause_ad', 'SIGNIFICANT').decision, 'APPROVAL_REQUIRED')
+    // H Instagram publish
+    assert.equal(l2('instagram.publish', 'SIGNIFICANT').decision, 'APPROVAL_REQUIRED')
+    // I Significant Shopify write
+    assert.equal(l2('shopify.update_price', 'SIGNIFICANT').decision, 'APPROVAL_REQUIRED')
+    assert.equal(l2('shopify.update_status', 'SIGNIFICANT').decision, 'APPROVAL_REQUIRED')
+    // J Dangerous / unknown protected
+    assert.equal(
+      l2('shopify.change_payment_settings', 'DANGEROUS', 'PAYMENT_CONFIGURATION').decision,
+      'BLOCKED'
+    )
+    assert.equal(l2('lurvox.hypothetical_write', 'SIGNIFICANT', 'UNKNOWN').decision, 'APPROVAL_REQUIRED')
+    // Diagnostic code-change proposal is SIGNIFICANT (not a Shopify read)
+    assert.equal(l2('diagnostics.propose_fix', 'SIGNIFICANT').decision, 'APPROVAL_REQUIRED')
+    ok('Registry READ auto-executes at L2; Meta/IG/Shopify writes + diagnostics.propose_fix stay gated')
   }
 
   // Tools registered
