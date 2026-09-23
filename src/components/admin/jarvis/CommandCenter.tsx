@@ -25,6 +25,7 @@ import { JarvisCommandPalette } from './JarvisCommandPalette'
 import { useJarvisCommand, useLayoutMode } from './use-jarvis-command'
 import type { CommandView } from './types'
 import * as s from './styles'
+import { j2 } from './styles'
 
 const DOMAIN_VIEWS: CommandView[] = [
   'revenue',
@@ -65,7 +66,6 @@ export function JarvisCommandCenter() {
           setPaletteOpen(false)
           return
         }
-        // Escape stops speech only — never auto-approves.
         window.dispatchEvent(new CustomEvent('jarvis:interrupt-speech'))
       }
     }
@@ -118,16 +118,19 @@ export function JarvisCommandCenter() {
       <NotificationsView />
     )
 
+  // Compact admin chrome: ~36px navbar + 36px topbar on desktop
+  const shellHeight = isDesktop ? 'calc(100vh - 72px)' : 'calc(100vh - 88px)'
+
   return (
-    <div style={s.page}>
-      <AdminNavbar />
-      {jarvis.error ? (
+    <div style={{ ...s.page, background: j2.bg }}>
+      <AdminNavbar compact />
+      {jarvis.error && jarvis.view !== 'command' ? (
         <div
           style={{
             background: colors.dangerMuted,
             color: colors.danger,
-            padding: '8px 16px',
-            fontSize: 13,
+            padding: '6px 12px',
+            fontSize: 12,
             borderBottom: `1px solid ${colors.danger}`,
           }}
         >
@@ -143,15 +146,16 @@ export function JarvisCommandCenter() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '8px 12px',
-            borderBottom: `1px solid ${colors.divider}`,
-            background: '#0a0a0c',
+            padding: '6px 10px',
+            borderBottom: `1px solid ${j2.glassBorder}`,
+            background: 'rgba(8,8,10,0.95)',
+            height: 40,
           }}
         >
           <button type="button" style={s.ghostBtn} onClick={() => jarvis.setSidebarOpen(true)} aria-label="Open menu">
             <Menu size={16} />
           </button>
-          <div style={{ fontWeight: 750, letterSpacing: '-0.03em' }}>JARVIS</div>
+          <div style={{ fontWeight: 750, letterSpacing: '-0.03em', fontSize: 13 }}>JARVIS</div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button type="button" style={s.ghostBtn} onClick={() => setPaletteOpen(true)} aria-label="Open command palette">
               ⌘K
@@ -163,26 +167,26 @@ export function JarvisCommandCenter() {
         </div>
       )}
 
-      <div style={{ ...s.shell, height: isDesktop ? s.shell.height : 'calc(100vh - 104px)' }}>
+      <div style={{ ...s.shell, height: shellHeight, minHeight: 420 }}>
         {isDesktop ? (
-          <aside style={s.sidebar}>
-            <JarvisSidebar jarvis={jarvis} onNavigate={navigate} />
+          <aside style={{ flexShrink: 0 }}>
+            <JarvisSidebar jarvis={jarvis} onNavigate={navigate} rail />
           </aside>
         ) : null}
 
-        <main style={s.main}>{main}</main>
+        <main style={{ ...s.main, background: 'transparent' }}>{main}</main>
       </div>
 
       {jarvis.sidebarOpen && !isDesktop ? (
         <>
           <div style={s.overlay} onClick={() => jarvis.setSidebarOpen(false)} />
-          <aside style={s.drawer}>
+          <aside style={{ ...s.drawer, width: 220, background: '#08080a' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 8 }}>
               <button type="button" style={s.ghostBtn} onClick={() => jarvis.setSidebarOpen(false)}>
                 <X size={14} />
               </button>
             </div>
-            <JarvisSidebar jarvis={jarvis} onNavigate={navigate} />
+            <JarvisSidebar jarvis={jarvis} onNavigate={navigate} rail={false} />
           </aside>
         </>
       ) : null}

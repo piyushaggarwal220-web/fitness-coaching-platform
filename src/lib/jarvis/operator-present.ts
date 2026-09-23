@@ -308,6 +308,53 @@ export function coreStateFromContext(input: {
   return { state: 'THINKING', detail: 'Understanding request' }
 }
 
+/** Extremely short operator copy under the core — never dashboard prose. */
+export function coreHeadline(state: JarvisCoreState, greeting?: string | null): string {
+  switch (state) {
+    case 'IDLE':
+      return greeting?.split(/[.!]/)[0]?.trim() || 'Ready.'
+    case 'LISTENING':
+      return 'Listening.'
+    case 'THINKING':
+      return 'Analyzing.'
+    case 'OBSERVING':
+      return 'Observing your business.'
+    case 'RESEARCHING':
+      return 'Researching.'
+    case 'PLANNING':
+      return 'Planning.'
+    case 'CREATING':
+      return 'Creating.'
+    case 'RENDERING':
+      return 'Rendering.'
+    case 'WAITING_FOR_APPROVAL':
+      return 'Waiting for your approval.'
+    case 'EXECUTING':
+      return 'Executing.'
+    case 'VERIFYING':
+      return 'Verifying.'
+    case 'LEARNING':
+      return 'Learning.'
+    case 'COMPLETED':
+      return 'Done.'
+    case 'ERROR':
+      return 'Something needs attention.'
+    case 'PAUSED':
+      return 'Paused.'
+    default:
+      return 'Ready.'
+  }
+}
+
+export const OPERATOR_QUICK_CHIPS = [
+  { id: 'reel', label: 'Create Reel', prompt: 'Make a Reel from today’s footage.' },
+  { id: 'ad', label: 'Create Ad', prompt: 'Create five ads for the ₹99 funnel.' },
+  { id: 'analyze', label: 'Analyze', prompt: 'What happened today? What needs my attention?' },
+  { id: 'research', label: 'Research', prompt: "Research what's trending." },
+  { id: 'content', label: 'Prepare Content', prompt: "Prepare tomorrow's Instagram content." },
+  { id: 'opps', label: 'Opportunities', prompt: 'Show me top opportunities and critical alerts.' },
+] as const
+
 export type ActivityKindUi =
   | 'OBSERVATION'
   | 'ANALYSIS'

@@ -1,13 +1,14 @@
 'use client'
 
 /**
- * Jarvis 2.0 operator home — front door to existing orchestration.
- * Reuses dashboard cockpit metrics, chat/voice, Phase 12 approvals.
+ * Jarvis 2.0 operator home — hero core + contextual panels.
+ * Conversation left · Core center · Context right · Command bottom.
  */
 
 import { useMemo } from 'react'
 import {
-  OPERATOR_QUICK_ACTIONS,
+  OPERATOR_QUICK_CHIPS,
+  coreHeadline,
   coreStateFromContext,
 } from '@/lib/jarvis/operator-present'
 import type { CommandView } from './types'
@@ -15,14 +16,8 @@ import type { JarvisCommandState } from './use-jarvis-command'
 import { CommandBar } from './CommandBar'
 import { JarvisCore } from './JarvisCore'
 import { JarvisConversation } from './JarvisConversation'
-import { JarvisVoiceButton } from './JarvisVoiceButton'
-import { JarvisBusinessPulse } from './JarvisBusinessPulse'
-import { JarvisAttention } from './JarvisAttention'
-import { JarvisCostStatus } from './JarvisCostStatus'
-import { JarvisSystemStatus } from './JarvisSystemStatus'
-import { JarvisVideoResult } from './JarvisVideoResult'
-import { JarvisCreativeGallery } from './JarvisCreativeGallery'
-import { j2, glassPanel, ghostBtn, composerDock } from './styles'
+import { JarvisContextPanel } from './JarvisContextPanel'
+import { j2, composerDock } from './styles'
 
 export function CockpitHome({
   jarvis,
@@ -69,24 +64,15 @@ export function CockpitHome({
     ]
   )
 
-  const videoJobs = (jarvis.dashboard?.video_workspace as { recent_jobs?: { id?: string; title?: string; status?: string; duration?: string; aspect_ratio?: string; cost?: string }[] } | undefined)
-    ?.recent_jobs
-  const latestReadyVideo = videoJobs?.find((j) => /ready|complete|rendered/i.test(j.status || ''))
-
-  const creativeSamples =
-    (
-      jarvis.dashboard as {
-        creatives?: { id?: string; headline?: string; primary_text?: string; status?: string; funnel?: string }[]
-      } | null
-    )?.creatives?.slice(0, 4) || []
-
-  if (!cockpit) {
-    return (
-      <div style={{ padding: 24, color: j2.muted }}>
-        <JarvisCore state="THINKING" detail="Loading business state…" size={96} />
-      </div>
-    )
-  }
+  const realtime = jarvis.dashboard?.realtime
+  const voiceMod = realtime?.modalities?.voice_input || realtime?.status
+  const voiceStatus: 'ready' | 'off' | 'unavailable' =
+    voiceMod === 'CONNECTED' ? 'ready' : voiceMod === 'DISABLED' ? 'off' : 'unavailable'
+  const voiceTitle =
+    (realtime as { note?: string } | undefined)?.note ||
+    (voiceStatus === 'off'
+      ? 'JARVIS_REALTIME_ENABLED is not true. Text chat remains available.'
+      : 'Voice not configured. Text chat remains available.')
 
   const autonomous = (jarvis.dashboard?.autonomous_operator?.attention || []) as {
     severity: string
@@ -95,145 +81,173 @@ export function CockpitHome({
     next_action: string
   }[]
 
+  const headline = coreHeadline(core.state, cockpit?.greeting)
+  const showConversation = jarvis.messages.length > 0 || Boolean(jarvis.streamText) || jarvis.busy
+
+  if (!cockpit) {
+    return (
+      <div style={{ display: 'grid', placeItems: 'center', height: '100%', padding: 24 }}>
+        <JarvisCore state="THINKING" headline="Loading." size={compact ? 220 : 280} />
+      </div>
+    )
+  }
+
+  const coreSize = compact ? 220 : 300
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <div style={{ flex: 1, overflowY: 'auto', padding: compact ? '10px 10px 4px' : '12px 18px 4px' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: j2.muted, fontWeight: 650 }}>
-              Jarvis operator
-            </div>
-            <div style={{ fontSize: compact ? 18 : 22, fontWeight: 750, letterSpacing: '-0.04em', marginTop: 4 }}>
-              {cockpit.greeting}
-            </div>
-            <div style={{ color: j2.muted, marginTop: 4, fontSize: 13, lineHeight: 1.4, maxWidth: 560 }}>
-              {cockpit.brief}
-            </div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        background: `
+          radial-gradient(ellipse 55% 45% at 50% 38%, rgba(255,98,0,0.07), transparent 70%),
+          radial-gradient(ellipse 80% 60% at 50% 100%, rgba(0,0,0,0.55), transparent 55%),
+          linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 40%),
+          ${j2.bg}
+        `,
+        position: 'relative',
+      }}
+    >
+      {/* subtle grid */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          opacity: 0.04,
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+          pointerEvents: 'none',
+          maskImage: 'radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent)',
+        }}
+      />
+
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'grid',
+          gridTemplateColumns: compact
+            ? '1fr'
+            : showConversation
+              ? 'minmax(220px, 0.85fr) minmax(0, 1.35fr) minmax(260px, 0.9fr)'
+              : 'minmax(0, 1.4fr) minmax(280px, 0.9fr)',
+          gap: compact ? 12 : 16,
+          padding: compact ? '12px 12px 4px' : '16px 20px 4px',
+          alignItems: 'stretch',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        {!compact && showConversation ? (
+          <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <JarvisConversation jarvis={jarvis} compact />
           </div>
-          <div style={{ fontSize: 11, color: j2.muted, textAlign: 'right', flexShrink: 0 }}>
-            {cockpit.date_label}
-            <div>{cockpit.timezone}</div>
-            <div style={{ marginTop: 6 }}>
-              Meta {execution?.live_meta_execution ? 'LIVE' : 'OFF'} · IG{' '}
-              {execution?.live_instagram_publishing ? 'LIVE' : 'OFF'}
-            </div>
-          </div>
-        </header>
+        ) : null}
 
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: compact ? '1fr' : 'minmax(0, 1.1fr) minmax(280px, 0.7fr)',
-            gap: compact ? 12 : 16,
-            marginTop: 16,
-            alignItems: 'start',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: compact ? 'flex-start' : 'center',
+            paddingTop: compact ? 8 : 0,
+            gap: 18,
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ ...glassPanel, padding: compact ? 16 : 22 }}>
-              <JarvisCore state={core.state} detail={core.detail} size={compact ? 96 : 128} />
-              <div
+          <JarvisCore
+            state={core.state}
+            headline={headline}
+            detail={core.state === 'IDLE' ? 'What should I take care of?' : core.detail}
+            size={coreSize}
+          />
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              maxWidth: '100%',
+              overflowX: 'auto',
+              padding: '0 4px 4px',
+              scrollbarWidth: 'thin',
+            }}
+          >
+            {OPERATOR_QUICK_CHIPS.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => void jarvis.sendMessage(a.prompt)}
                 style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 8,
-                  justifyContent: 'center',
-                  marginTop: 16,
+                  flexShrink: 0,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${j2.glassBorder}`,
+                  borderRadius: 999,
+                  color: j2.muted,
+                  fontSize: 12,
+                  padding: '7px 14px',
+                  cursor: 'pointer',
                 }}
               >
-                {OPERATOR_QUICK_ACTIONS.map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    style={{
-                      ...ghostBtn,
-                      borderColor: j2.glassBorder,
-                      background: 'rgba(255,255,255,0.02)',
-                      fontSize: 12,
-                    }}
-                    onClick={() => void jarvis.sendMessage(a.prompt)}
-                  >
-                    {a.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <JarvisVoiceButton jarvis={jarvis} compact={compact} />
-            <JarvisConversation jarvis={jarvis} compact={compact} />
-
-            {latestReadyVideo ? (
-              <JarvisVideoResult
-                video={{
-                  title: latestReadyVideo.title || 'Rendered video',
-                  duration: latestReadyVideo.duration,
-                  aspect_ratio: latestReadyVideo.aspect_ratio,
-                  status: latestReadyVideo.status,
-                  cost: latestReadyVideo.cost,
-                  publishing_enabled: Boolean(execution?.live_instagram_publishing),
-                }}
-                onRevise={() => void jarvis.sendMessage('Revise the latest rendered Reel based on taste and performance.')}
-                onVariation={() => void jarvis.sendMessage('Create a variation of the latest rendered Reel.')}
-                onDetails={() => onNavigate('video')}
-              />
-            ) : null}
-
-            {creativeSamples.length ? (
-              <JarvisCreativeGallery
-                creatives={creativeSamples.map((c, i) => ({
-                  id: c.id || `creative-${i}`,
-                  headline: c.headline,
-                  primary_text: c.primary_text,
-                  funnel: c.funnel,
-                  status: c.status,
-                }))}
-                publishingEnabled={Boolean(execution?.live_meta_execution)}
-                onRevise={(id) => void jarvis.sendMessage(`Revise creative ${id} for the ₹99 funnel.`)}
-                onVariation={(id) => void jarvis.sendMessage(`Create a variation of creative ${id}.`)}
-              />
-            ) : null}
+                {a.label}
+              </button>
+            ))}
           </div>
-
-          <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <JarvisBusinessPulse metrics={cockpit.metrics} onNavigate={onNavigate} compact={compact} />
-            <JarvisAttention
-              items={cockpit.attention || []}
-              autonomous={autonomous}
-              onNavigate={onNavigate}
-              onAsk={(p) => void jarvis.sendMessage(p)}
-            />
-            <JarvisCostStatus spentUsd={spent} limitUsd={limit} paused={budgetExhausted} />
-            <JarvisSystemStatus dashboard={jarvis.dashboard} compact={compact} />
-            <div style={{ ...glassPanel, padding: 12, fontSize: 12, color: j2.muted, lineHeight: 1.45 }}>
-              Specialized workspaces stay available for deep work — video, creatives, Instagram intel, content ops,
-              learning, and settings.
-              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {(
-                  [
-                    ['video', 'Video'],
-                    ['creatives', 'Creatives'],
-                    ['content_ops', 'Content'],
-                    ['approvals', 'Approvals'],
-                    ['settings', 'Settings'],
-                  ] as const
-                ).map(([view, label]) => (
-                  <button key={view} type="button" style={{ ...ghostBtn, padding: '4px 8px', fontSize: 11 }} onClick={() => onNavigate(view)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+          {compact && showConversation ? (
+            <div style={{ width: '100%', minHeight: 0, flex: 1 }}>
+              <JarvisConversation jarvis={jarvis} compact />
             </div>
-          </aside>
+          ) : null}
         </div>
+
+        {!compact || !showConversation ? (
+          <JarvisContextPanel
+            mode={core.state}
+            jarvis={jarvis}
+            metrics={cockpit.metrics}
+            attention={cockpit.attention || []}
+            autonomous={autonomous}
+            onNavigate={onNavigate}
+            compact={compact}
+          />
+        ) : null}
       </div>
 
-      <div style={{ ...composerDock }}>
+      {compact && showConversation ? null : compact ? (
+        <div style={{ padding: '0 12px 4px', position: 'relative', zIndex: 1 }}>
+          <JarvisContextPanel
+            mode={core.state}
+            jarvis={jarvis}
+            metrics={cockpit.metrics}
+            attention={cockpit.attention || []}
+            autonomous={autonomous}
+            onNavigate={onNavigate}
+            compact
+          />
+        </div>
+      ) : null}
+
+      <div
+        style={{
+          ...composerDock,
+          background: 'rgba(5,5,6,0.85)',
+          borderTop: `1px solid ${j2.glassBorder}`,
+          padding: compact ? '10px 12px 12px' : '12px 20px 16px',
+          position: 'relative',
+          zIndex: 2,
+        }}
+      >
         <CommandBar
           value={jarvis.input}
           onChange={jarvis.setInput}
           onSubmit={(text) => void jarvis.sendMessage(text)}
           busy={jarvis.busy}
-          extra
+          placeholder="Ask Jarvis anything..."
+          voiceStatus={voiceStatus}
+          voiceTitle={voiceTitle}
+          showChips={false}
         />
       </div>
     </div>

@@ -461,11 +461,19 @@ export function VoiceOperatorPanel({
 
 export function VoiceStatusChip({ status }: { status?: RealtimeProviderStatus | string }) {
   const label = statusLabel(status)
-  const tone =
-    label === 'CONNECTED' ? colors.success : label === 'DISABLED' || label === 'NOT CONFIGURED' ? colors.textMuted : colors.warning
+  const muted = label === 'DISABLED' || label === 'NOT CONFIGURED' || label === 'UNKNOWN'
   return (
-    <span style={{ fontSize: 11, color: tone }}>
-      Voice: {label}
+    <span
+      title={
+        label === 'DISABLED'
+          ? 'JARVIS_REALTIME_ENABLED is not true. Text Jarvis remains available.'
+          : label === 'NOT CONFIGURED'
+            ? 'Voice credentials missing. Text Jarvis remains available.'
+            : undefined
+      }
+      style={{ fontSize: 11, color: muted ? colors.textMuted : colors.success, cursor: muted ? 'help' : 'default' }}
+    >
+      ● Voice {label === 'CONNECTED' ? 'ready' : label === 'DISABLED' ? 'off' : 'unavailable'}
     </span>
   )
 }

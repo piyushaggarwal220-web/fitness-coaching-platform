@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type CSSProperties } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutGrid } from 'lucide-react'
 import { getAdminNavModules } from '@/lib/admin/modules'
@@ -12,11 +12,13 @@ import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
 
-export default function AdminNavbar() {
+export default function AdminNavbar({ compact }: { compact?: boolean }) {
+  const pathname = usePathname()
   const router = useRouter()
   const navLinks = getAdminNavModules()
   const [signedInAs, setSignedInAs] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const isJarvis = compact || pathname?.startsWith('/admin/jarvis')
 
   useEffect(() => {
     let cancelled = false
@@ -59,17 +61,21 @@ export default function AdminNavbar() {
 
   return (
     <>
-      <nav style={styles.navbar}>
-        <div style={styles.container}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <nav style={isJarvis ? styles.navbarCompact : styles.navbar}>
+        <div style={isJarvis ? styles.containerCompact : styles.container}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isJarvis ? 8 : 12 }}>
             <DrawerMenuButton onClick={() => setDrawerOpen(true)} />
-            <Link href="/admin" style={styles.logo}>
-              {BRAND_ADMIN_LABEL}
+            <Link href="/admin" style={isJarvis ? styles.logoCompact : styles.logo}>
+              {isJarvis ? 'Admin' : BRAND_ADMIN_LABEL}
             </Link>
           </div>
           <div style={styles.links}>
-            {signedInAs ? <span style={styles.identity}>{signedInAs}</span> : null}
-            <button type="button" onClick={() => void handleLogout()} style={styles.logoutBtn}>
+            {!isJarvis && signedInAs ? <span style={styles.identity}>{signedInAs}</span> : null}
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              style={isJarvis ? styles.logoutBtnCompact : styles.logoutBtn}
+            >
               Logout
             </button>
           </div>
@@ -137,5 +143,44 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 14,
     fontWeight: 600,
     minHeight: 40,
+  },
+  navbarCompact: {
+    backgroundColor: 'rgba(5,5,6,0.92)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    padding: '4px 12px',
+    paddingTop: 'calc(4px + env(safe-area-inset-top))',
+    borderBottom: `1px solid rgba(255,255,255,0.06)`,
+    position: 'sticky' as const,
+    top: 0,
+    zIndex: 100,
+  },
+  containerCompact: {
+    maxWidth: '100%',
+    margin: '0 auto',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 28,
+  },
+  logoCompact: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: 650,
+    textDecoration: 'none',
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase' as const,
+  },
+  logoutBtnCompact: {
+    backgroundColor: 'transparent',
+    color: colors.textMuted,
+    border: `1px solid rgba(255,255,255,0.08)`,
+    padding: '4px 10px',
+    borderRadius: 8,
+    cursor: 'pointer',
+    fontSize: 11,
+    fontWeight: 600,
+    minHeight: 28,
   },
 }
