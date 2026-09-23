@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import AdminNavbar from '@/components/admin/AdminNavbar'
 import { colors } from '@/lib/design-tokens'
@@ -20,6 +21,7 @@ import { DiagnosticsView } from './DiagnosticsView'
 import { CockpitHome } from './CockpitHome'
 import { DomainView } from './DomainViews'
 import { JarvisTopBar } from './TopBar'
+import { JarvisCommandPalette } from './JarvisCommandPalette'
 import { useJarvisCommand, useLayoutMode } from './use-jarvis-command'
 import type { CommandView } from './types'
 import * as s from './styles'
@@ -41,12 +43,42 @@ export function JarvisCommandCenter() {
   const mode = useLayoutMode()
   const isDesktop = mode === 'desktop'
   const compact = mode !== 'desktop'
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   function navigate(view: CommandView) {
     jarvis.setView(view)
     jarvis.setSidebarOpen(false)
     if (view !== 'tasks') jarvis.setSelectedTaskId(null)
   }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const meta = e.metaKey || e.ctrlKey
+      if (meta && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen((v) => !v)
+        return
+      }
+      if (e.key === 'Escape') {
+        if (paletteOpen) {
+          e.preventDefault()
+          setPaletteOpen(false)
+          return
+        }
+        // Escape stops speech only — never auto-approves.
+        window.dispatchEvent(new CustomEvent('jarvis:interrupt-speech'))
+      }
+    }
+    function onOpenPalette() {
+      setPaletteOpen(true)
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('jarvis:open-palette', onOpenPalette)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('jarvis:open-palette', onOpenPalette)
+    }
+  }, [paletteOpen])
 
   const main =
     jarvis.view === 'command' ? (
@@ -103,7 +135,9 @@ export function JarvisCommandCenter() {
         </div>
       ) : null}
 
-      {isDesktop ? <JarvisTopBar jarvis={jarvis} onNavigate={navigate} /> : (
+      {isDesktop ? (
+        <JarvisTopBar jarvis={jarvis} onNavigate={navigate} />
+      ) : (
         <div
           style={{
             display: 'flex',
@@ -118,9 +152,14 @@ export function JarvisCommandCenter() {
             <Menu size={16} />
           </button>
           <div style={{ fontWeight: 750, letterSpacing: '-0.03em' }}>JARVIS</div>
-          <button type="button" style={s.ghostBtn} onClick={() => navigate('approvals')}>
-            {jarvis.pendingApprovals.length || '—'}
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button type="button" style={s.ghostBtn} onClick={() => setPaletteOpen(true)} aria-label="Open command palette">
+              ⌘K
+            </button>
+            <button type="button" style={s.ghostBtn} onClick={() => navigate('approvals')}>
+              {jarvis.pendingApprovals.length || '—'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -147,6 +186,13 @@ export function JarvisCommandCenter() {
           </aside>
         </>
       ) : null}
+
+      <JarvisCommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onAsk={(prompt) => void jarvis.sendMessage(prompt)}
+        onNavigate={navigate}
+      />
     </div>
   )
 }

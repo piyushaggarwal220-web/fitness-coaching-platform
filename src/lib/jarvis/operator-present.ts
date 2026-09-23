@@ -141,44 +141,171 @@ export function toolFamily(toolName: string): ToolFamily {
   return 'System'
 }
 
+/** Operator-facing activity language — never expose raw tool ids by default. */
 export function humanToolLabel(toolName: string): string {
   const special: Record<string, string> = {
-    'lurvox.revenue': 'Checked LURVOX revenue',
-    'analytics.today_overview': 'Checked business overview',
-    'shopify.order_stats': 'Checked Shopify orders',
-    'shopify.today_commerce': 'Checked Shopify store commerce',
-    'meta.today_performance': 'Checked Meta performance',
-    'meta.sync': 'Synced Meta campaigns',
+    'lurvox.revenue': 'Checking LURVOX revenue',
+    'analytics.today_overview': 'Analyzing performance',
+    'analytics.performance_analysis': 'Analyzing performance',
+    'shopify.order_stats': 'Checking Shopify orders',
+    'shopify.today_commerce': 'Checking Shopify commerce',
+    'meta.today_performance': 'Checking Meta performance',
+    'meta.sync': 'Syncing Meta campaigns',
+    'memory.search': "Checking what we've learned before",
+    'execution.policy_status': 'Checking execution permissions',
+    'video.create_edl': 'Creating video edit',
+    'video.render': 'Rendering video',
+    'video.analyze': 'Analyzing footage',
+    'instagram.plan_content': 'Planning Instagram content',
+    'instagram.publish': 'Preparing Instagram publish package',
+    'creatives.generate': 'Creating ad creatives',
+    'research.web': 'Researching the web',
+    'research.brave': "Researching what's trending",
   }
   if (special[toolName]) return special[toolName]
   const family = toolFamily(toolName)
   const action = toolName.split('.')[1]?.replace(/_/g, ' ') ?? toolName
-  return `${family} · ${action}`
+  const familyVerb: Partial<Record<ToolFamily, string>> = {
+    LURVOX: 'Checking',
+    'Meta Ads': 'Checking',
+    Shopify: 'Checking',
+    Research: 'Researching',
+    Analytics: 'Analyzing',
+    Funnels: 'Analyzing',
+    Video: 'Working on',
+    Instagram: 'Working on',
+    Memory: 'Checking',
+    System: 'Running',
+  }
+  return `${familyVerb[family] ?? 'Working on'} ${action}`
 }
 
 export function workingStatusForTool(toolName: string): string {
   const family = toolFamily(toolName)
   switch (family) {
     case 'LURVOX':
-      return 'Checking paid sales...'
+      return 'Checking paid sales…'
     case 'Meta Ads':
-      return 'Analyzing Meta performance...'
+      return 'Analyzing Meta performance…'
     case 'Shopify':
-      return 'Checking Shopify orders...'
+      return 'Checking Shopify orders…'
     case 'Research':
-      return 'Researching competitors...'
+      return 'Researching…'
     case 'Analytics':
     case 'Funnels':
-      return 'Checking business context...'
+      return 'Checking business context…'
     case 'Video':
-      return 'Checking video jobs...'
+      return 'Working on video…'
     case 'Instagram':
-      return 'Generating Instagram ideas...'
+      return 'Planning Instagram content…'
     case 'Memory':
-      return 'Checking business memory...'
+      return "Checking what we've learned before…"
     default:
-      return `Working: ${family}`
+      return `Working · ${family}`
   }
+}
+
+/** ⌘K / Ctrl+K command palette entries — route through existing orchestrator prompts. */
+export const PALETTE_COMMANDS = [
+  { id: 'reel', label: 'Create Reel', prompt: 'Make a Reel from today’s footage.', group: 'Create' },
+  { id: 'ad', label: 'Create Ad', prompt: 'Create five ads for the ₹99 funnel.', group: 'Create' },
+  { id: 'content', label: 'Prepare Content', prompt: "Prepare tomorrow's Instagram content.", group: 'Create' },
+  { id: 'today', label: "Show Today's Business", prompt: 'What happened today?', group: 'Analyze' },
+  { id: 'perf', label: 'Analyze Performance', prompt: 'Analyze performance and explain any CPA changes.', group: 'Analyze' },
+  { id: 'opps', label: 'Show Opportunities', prompt: 'Show me what needs my attention and top opportunities.', group: 'Analyze' },
+  { id: 'approvals', label: 'Show Approvals', prompt: 'Show me pending approvals.', group: 'Operate' },
+  { id: 'research', label: 'Research Topic', prompt: "Research what's trending in fitness content.", group: 'Operate' },
+  { id: 'finance', label: 'Check Finances', prompt: 'Summarize financial status using available verified sources.', group: 'Analyze' },
+  { id: 'experiments', label: 'Review Experiments', prompt: 'Review active and recent experiments.', group: 'Analyze' },
+  { id: 'plans', label: 'Show Active Plans', prompt: 'Show active strategic plans and any at-risk goals.', group: 'Analyze' },
+  { id: 'health', label: 'System Health', prompt: 'Report system health and integration status.', group: 'System' },
+] as const
+
+export const OPERATOR_QUICK_ACTIONS = [
+  { id: 'reel', label: 'Create Reel', prompt: 'Make a Reel from today’s footage.' },
+  { id: 'ad', label: 'Create Ad', prompt: 'Create five ads for the ₹99 funnel.' },
+  { id: 'content', label: 'Prepare Content', prompt: "Prepare tomorrow's Instagram content." },
+  { id: 'analyze', label: 'Analyze Business', prompt: 'What happened today? What needs my attention?' },
+  { id: 'research', label: 'Research', prompt: "Research what's trending." },
+  { id: 'opps', label: 'Show Opportunities', prompt: 'Show me top opportunities and critical alerts.' },
+] as const
+
+export type JarvisCoreState =
+  | 'IDLE'
+  | 'LISTENING'
+  | 'THINKING'
+  | 'OBSERVING'
+  | 'RESEARCHING'
+  | 'PLANNING'
+  | 'CREATING'
+  | 'RENDERING'
+  | 'WAITING_FOR_APPROVAL'
+  | 'EXECUTING'
+  | 'VERIFYING'
+  | 'LEARNING'
+  | 'COMPLETED'
+  | 'ERROR'
+  | 'PAUSED'
+
+export function coreStateFromContext(input: {
+  busy?: boolean
+  listening?: boolean
+  speaking?: boolean
+  error?: string | null
+  pendingApprovals?: number
+  budgetExhausted?: boolean
+  killSwitch?: boolean
+  activeTool?: string | null
+  timelineActiveLabel?: string | null
+}): { state: JarvisCoreState; detail: string } {
+  if (input.killSwitch) return { state: 'PAUSED', detail: 'Kill switch active' }
+  if (input.budgetExhausted) return { state: 'PAUSED', detail: 'Daily AI budget reached' }
+  if (input.error) return { state: 'ERROR', detail: input.error }
+  if (input.listening) return { state: 'LISTENING', detail: 'Listening' }
+  if (input.speaking) return { state: 'COMPLETED', detail: 'Responding' }
+  if ((input.pendingApprovals ?? 0) > 0 && !input.busy) {
+    return { state: 'WAITING_FOR_APPROVAL', detail: 'Waiting for your approval' }
+  }
+  if (!input.busy) return { state: 'IDLE', detail: 'Ready' }
+
+  const tool = (input.activeTool || '').toLowerCase()
+  const label = (input.timelineActiveLabel || '').toLowerCase()
+  if (tool.includes('render') || label.includes('render') || label.includes('shotstack')) {
+    return { state: 'RENDERING', detail: 'Waiting for render provider' }
+  }
+  if (tool.startsWith('research.') || label.includes('research')) {
+    return { state: 'RESEARCHING', detail: workingStatusForTool(input.activeTool || 'research.web') }
+  }
+  if (tool.startsWith('memory.') || label.includes('learn')) {
+    return { state: 'LEARNING', detail: workingStatusForTool(input.activeTool || 'memory.search') }
+  }
+  if (
+    tool.startsWith('video.') ||
+    tool.startsWith('instagram.') ||
+    tool.startsWith('creatives.') ||
+    label.includes('creating') ||
+    label.includes('creative')
+  ) {
+    return { state: 'CREATING', detail: workingStatusForTool(input.activeTool || 'video.create_edl') }
+  }
+  if (tool.startsWith('execution.') || label.includes('execut')) {
+    return { state: 'EXECUTING', detail: 'Executing approved action' }
+  }
+  if (label.includes('verif')) return { state: 'VERIFYING', detail: 'Verifying result' }
+  if (label.includes('plan') || label.includes('prepar')) {
+    return { state: 'PLANNING', detail: 'Planning next steps' }
+  }
+  if (
+    tool.startsWith('analytics.') ||
+    tool.startsWith('lurvox.') ||
+    tool.startsWith('meta.') ||
+    tool.startsWith('shopify.') ||
+    label.includes('observ') ||
+    label.includes('check')
+  ) {
+    return { state: 'OBSERVING', detail: workingStatusForTool(input.activeTool || 'analytics.today_overview') }
+  }
+  return { state: 'THINKING', detail: 'Understanding request' }
 }
 
 export type ActivityKindUi =

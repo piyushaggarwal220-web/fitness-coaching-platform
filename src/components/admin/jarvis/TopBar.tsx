@@ -56,6 +56,15 @@ export function JarvisTopBar({
         <span style={{ color: colors.textMuted, fontSize: 12 }}>{connectedLine}</span>
       </button>
       <div style={{ flex: 1 }} />
+      <button
+        type="button"
+        style={{ ...s.ghostBtn, border: 'none', padding: '4px 8px', fontSize: 11 }}
+        onClick={() => window.dispatchEvent(new CustomEvent('jarvis:open-palette'))}
+        title="Command palette (Ctrl/⌘ K)"
+        aria-label="Open command palette"
+      >
+        ⌘K
+      </button>
       <VoiceStatusChip status={jarvis.dashboard?.realtime?.modalities?.voice_input || jarvis.dashboard?.realtime?.status} />
       {jarvis.dashboard?.execution?.kill_switch ? (
         <span style={s.badge('danger')}>Kill switch ON</span>

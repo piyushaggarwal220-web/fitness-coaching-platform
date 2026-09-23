@@ -76,6 +76,7 @@
     "verify:jarvis-long-horizon": "tsx scripts/verify-jarvis-long-horizon.ts",
     "verify:jarvis-hardening": "tsx scripts/verify-jarvis-hardening.ts",
     "verify:jarvis-final-system": "tsx scripts/verify-jarvis-final-system.ts",
+    "verify:jarvis-operator-ui": "tsx scripts/verify-jarvis-operator-ui.ts",
     "verify:instagram-intelligence": "tsx scripts/verify-instagram-intelligence.ts",
     "verify:video": "tsx scripts/verify-video.ts",
     "verify:shotstack-webhook": "tsx --env-file=.env.local scripts/verify-shotstack-webhook-e2e.ts",

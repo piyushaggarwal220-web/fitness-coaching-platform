@@ -223,6 +223,15 @@ export function VoiceOperatorPanel({
     }).catch(() => undefined)
   }
 
+  useEffect(() => {
+    const onInterrupt = () => {
+      void handleInterrupt()
+    }
+    window.addEventListener('jarvis:interrupt-speech', onInterrupt)
+    return () => window.removeEventListener('jarvis:interrupt-speech', onInterrupt)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bind once for Escape speech stop
+  }, [])
+
   async function startListening() {
     setError('')
     if (busy) return

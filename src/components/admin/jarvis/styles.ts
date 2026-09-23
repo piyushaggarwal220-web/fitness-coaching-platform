@@ -4,9 +4,33 @@ import { JARVIS_ACCENT } from '@/lib/jarvis/operator-present'
 
 export const accent = JARVIS_ACCENT
 
+/** Jarvis 2.0 visual tokens — cinematic dark, subtle glass, amber accents. */
+export const j2 = {
+  bg: '#050506',
+  surface: 'rgba(18, 18, 22, 0.72)',
+  surfaceSolid: '#0e0e12',
+  glass: 'rgba(255, 255, 255, 0.03)',
+  glassBorder: 'rgba(255, 255, 255, 0.08)',
+  amber: JARVIS_ACCENT,
+  amberSoft: 'rgba(255, 98, 0, 0.18)',
+  amberGlow: 'rgba(255, 98, 0, 0.35)',
+  cyan: 'rgba(125, 211, 252, 0.85)',
+  cyanSoft: 'rgba(125, 211, 252, 0.12)',
+  text: '#f4f4f5',
+  muted: 'rgba(161, 161, 170, 0.85)',
+} as const
+
+export const glassPanel: CSSProperties = {
+  background: j2.surface,
+  border: `1px solid ${j2.glassBorder}`,
+  borderRadius: 14,
+  backdropFilter: 'blur(16px)',
+  WebkitBackdropFilter: 'blur(16px)',
+}
+
 export const page: CSSProperties = {
   minHeight: '100vh',
-  background: '#070708',
+  background: `radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,98,0,0.08), transparent 55%), ${j2.bg}`,
   color: colors.textPrimary,
 }
 

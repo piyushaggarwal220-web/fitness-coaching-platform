@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ApprovalCard, ChatMsg, JarvisDashboard, TimelineStep } from './types'
 import type { CommandView } from './types'
+import { humanToolLabel } from '@/lib/jarvis/operator-present'
 
 function uid() {
   return `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -98,7 +99,8 @@ export function useJarvisCommand() {
     setError('')
     setStreamText('')
     setInput('')
-    setView('chat')
+    // Stay on operator home when already there — chat view remains for deep conversation.
+    if (view !== 'command') setView('chat')
     setSidebarOpen(false)
     setTimeline([
       { id: 'understand', label: 'Understanding request', state: 'active' },
@@ -170,16 +172,17 @@ export function useJarvisCommand() {
             upsertTimeline({ id: 'context', label: 'Checking business context', state: 'done' })
             upsertTimeline({
               id: `tool-${payload.tool}`,
-              label: payload.tool,
+              label: humanToolLabel(payload.tool),
               state: 'active',
+              detail: payload.tool,
             })
           }
           if (payload.type === 'tool_result' && payload.tool) {
             upsertTimeline({
               id: `tool-${payload.tool}`,
-              label: payload.tool,
+              label: humanToolLabel(payload.tool),
               state: payload.summary?.toLowerCase().includes('fail') ? 'error' : 'done',
-              detail: payload.summary,
+              detail: payload.summary || payload.tool,
             })
           }
           if (payload.type === 'token' && payload.text) {
