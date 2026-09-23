@@ -15,7 +15,7 @@ function severityTone(sev: string) {
   return { fg: j2.muted, label: 'INFO' }
 }
 
-function oneLine(text: string, max = 90) {
+function oneLine(text: string, max = 64) {
   const t = text.replace(/\s+/g, ' ').trim()
   return t.length > max ? `${t.slice(0, max - 1)}…` : t
 }
@@ -26,14 +26,20 @@ export function JarvisAttention({
   onNavigate,
   onAsk,
   dense,
+  embedded,
+  maxItems,
 }: {
   items: AttentionItem[]
   autonomous?: { severity: string; system: string; title: string; next_action: string }[]
   onNavigate: (view: CommandView) => void
   onAsk?: (prompt: string) => void
   dense?: boolean
+  /** Skip outer glass card when nested in context panel */
+  embedded?: boolean
+  maxItems?: number
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
+  const limit = maxItems ?? (dense ? 3 : 6)
   const rows: {
     key: string
     sev: string
@@ -46,7 +52,7 @@ export function JarvisAttention({
       key: a.id,
       sev: a.category || 'INFO',
       title: a.title,
-      next: oneLine(a.detail || ''),
+      next: oneLine(a.detail || '', dense ? 56 : 72),
       full: a.detail,
       action: a.action,
     })),
@@ -54,14 +60,19 @@ export function JarvisAttention({
       key: `auto-${a.system}-${i}`,
       sev: a.severity,
       title: a.title,
-      next: oneLine(a.next_action || ''),
+      next: oneLine(a.next_action || '', dense ? 56 : 72),
       full: `${a.system}: ${a.next_action}`,
     })),
-  ].slice(0, dense ? 4 : 6)
+  ].slice(0, limit)
+
+  const shell = embedded
+    ? { padding: 0 as const }
+    : { ...glassPanel, padding: dense ? 10 : 12 }
 
   if (!rows.length) {
+    if (embedded) return null
     return (
-      <section style={{ ...glassPanel, padding: 12 }} aria-label="Attention">
+      <section style={shell} aria-label="Attention">
         <div style={labelStyle}>Attention</div>
         <div style={{ marginTop: 8, fontSize: 13, color: j2.muted }}>Nothing urgent.</div>
       </section>
@@ -69,14 +80,15 @@ export function JarvisAttention({
   }
 
   return (
-    <section style={{ ...glassPanel, padding: dense ? 10 : 12 }} aria-label="Attention">
+    <section style={shell} aria-label="Attention">
       <div style={labelStyle}>Attention</div>
       <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0 }}>
         {rows.map((row) => {
           const tone = severityTone(row.sev)
           const expanded = openId === row.key
+          const needsDetails = Boolean(row.full && row.full.length > 56)
           return (
-            <li key={row.key} style={{ padding: '8px 0', borderBottom: `1px solid ${j2.glassBorder}` }}>
+            <li key={row.key} style={{ padding: '7px 0', borderBottom: `1px solid ${j2.glassBorder}` }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', minWidth: 0 }}>
                 <span style={{ fontSize: 10, letterSpacing: '0.08em', color: tone.fg, fontWeight: 700, flexShrink: 0 }}>
                   {tone.label}
@@ -100,7 +112,7 @@ export function JarvisAttention({
                   {expanded ? row.full : row.next}
                 </div>
               ) : null}
-              <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 10, marginTop: 5, flexWrap: 'wrap' }}>
                 {row.action === 'review' ? (
                   <button type="button" style={linkBtn} onClick={() => onNavigate('approvals')}>
                     Review
@@ -111,12 +123,17 @@ export function JarvisAttention({
                     Diagnostics
                   </button>
                 ) : null}
+                {row.action === 'integrations' ? (
+                  <button type="button" style={linkBtn} onClick={() => onNavigate('integrations')}>
+                    Integrations
+                  </button>
+                ) : null}
                 {onAsk ? (
                   <button type="button" style={linkBtn} onClick={() => onAsk(`Investigate: ${row.title}`)}>
                     Investigate
                   </button>
                 ) : null}
-                {row.full && row.full.length > 90 ? (
+                {needsDetails ? (
                   <button
                     type="button"
                     style={{ ...linkBtn, color: j2.muted }}

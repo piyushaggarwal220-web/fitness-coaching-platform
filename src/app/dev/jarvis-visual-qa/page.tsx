@@ -194,6 +194,8 @@ export default function JarvisVisualQaPage() {
             <div style={{ padding: 12, color: 'rgba(248,113,113,0.95)', fontSize: 13 }}>Action required</div>
           ) : (
             <>
+              <JarvisBusinessPulse metrics={METRICS} onNavigate={() => undefined} layout="grid" preferData />
+              <div style={{ height: 12 }} />
               <JarvisAttention
                 items={[
                   {
@@ -206,9 +208,9 @@ export default function JarvisVisualQaPage() {
                 ]}
                 onNavigate={() => undefined}
                 dense
+                embedded
+                maxItems={2}
               />
-              <div style={{ height: 12 }} />
-              <JarvisBusinessPulse metrics={METRICS} onNavigate={() => undefined} layout="grid" />
             </>
           )}
         </div>

@@ -87,12 +87,12 @@ export function CockpitHome({
   if (!cockpit) {
     return (
       <div style={{ display: 'grid', placeItems: 'center', height: '100%', padding: 24 }}>
-        <JarvisCore state="THINKING" headline="Loading." size={compact ? 220 : 280} />
+        <JarvisCore state="THINKING" headline="Loading." size={compact ? 240 : 300} />
       </div>
     )
   }
 
-  const coreSize = compact ? 220 : 300
+  const coreSize = compact ? 240 : 320
 
   return (
     <div

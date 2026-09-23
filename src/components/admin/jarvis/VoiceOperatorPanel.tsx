@@ -353,8 +353,13 @@ export function VoiceOperatorPanel({
           />
           <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.4 }}>
             <div style={{ color: colors.textSecondary, fontWeight: 650 }}>What should I handle?</div>
-            <div>
-              Voice: {voiceLabel}
+            <div title={capability?.note || undefined}>
+              ● Voice{' '}
+              {voiceLabel === 'CONNECTED'
+                ? 'ready'
+                : voiceLabel === 'DISABLED'
+                  ? 'off'
+                  : 'unavailable'}
               {capability?.provider ? ` · ${capability.provider}` : ''}
             </div>
             {estimatedCost != null ? (

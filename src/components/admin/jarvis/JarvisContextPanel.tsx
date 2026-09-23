@@ -17,7 +17,7 @@ import { JarvisOperationTimeline } from './JarvisOperationTimeline'
 import { JarvisVideoResult } from './JarvisVideoResult'
 import { JarvisCreativeGallery } from './JarvisCreativeGallery'
 import { JarvisCostStatus } from './JarvisCostStatus'
-import { j2, glassPanel } from './styles'
+import { j2 } from './styles'
 
 export function JarvisContextPanel({
   mode,
@@ -145,6 +145,30 @@ export function JarvisContextPanel({
         onVariation={() => void jarvis.sendMessage('Create a variation of the latest Reel.')}
       />
     )
+  } else if (mode === 'IDLE' || mode === 'PAUSED' || mode === 'COMPLETED') {
+    // IDLE / calm states: Business Pulse owns the panel — attention is a compact strip only.
+    body = (
+      <>
+        <JarvisBusinessPulse metrics={metrics} onNavigate={onNavigate} compact layout="grid" preferData />
+        {(attention.length || autonomous?.length) ? (
+          <div style={{ marginTop: 12 }}>
+            <JarvisAttention
+              items={attention}
+              autonomous={autonomous}
+              onNavigate={onNavigate}
+              onAsk={(p) => void jarvis.sendMessage(p)}
+              dense
+              embedded
+              maxItems={2}
+            />
+          </div>
+        ) : null}
+        <div style={{ marginTop: 10 }}>
+          <JarvisCostStatus spentUsd={spent} limitUsd={limit} paused={mode === 'PAUSED'} />
+        </div>
+        <SystemHint dashboard={jarvis.dashboard} />
+      </>
+    )
   } else if (attention.length || autonomous?.length) {
     body = (
       <>
@@ -154,22 +178,20 @@ export function JarvisContextPanel({
           onNavigate={onNavigate}
           onAsk={(p) => void jarvis.sendMessage(p)}
           dense
+          embedded
+          maxItems={3}
         />
         <div style={{ marginTop: 10 }}>
-          <JarvisBusinessPulse metrics={metrics} onNavigate={onNavigate} compact layout="list" />
+          <JarvisBusinessPulse metrics={metrics} onNavigate={onNavigate} compact layout="list" preferData />
         </div>
       </>
     )
   } else {
     body = (
       <>
-        <JarvisBusinessPulse metrics={metrics} onNavigate={onNavigate} compact layout="grid" />
+        <JarvisBusinessPulse metrics={metrics} onNavigate={onNavigate} compact layout="grid" preferData />
         <div style={{ marginTop: 10 }}>
-          <JarvisCostStatus
-            spentUsd={spent}
-            limitUsd={limit}
-            paused={mode === 'PAUSED'}
-          />
+          <JarvisCostStatus spentUsd={spent} limitUsd={limit} paused={false} />
         </div>
         <SystemHint dashboard={jarvis.dashboard} />
       </>
@@ -179,12 +201,12 @@ export function JarvisContextPanel({
   return (
     <aside
       style={{
-        ...glassPanel,
-        padding: compact ? 10 : 12,
+        padding: compact ? 10 : 14,
         height: '100%',
         minHeight: 0,
         overflowY: 'auto',
-        background: 'rgba(12,12,16,0.55)',
+        background: 'transparent',
+        borderLeft: compact ? 'none' : `1px solid ${j2.glassBorder}`,
       }}
       aria-label="Contextual panel"
     >

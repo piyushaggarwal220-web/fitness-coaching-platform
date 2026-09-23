@@ -74,7 +74,7 @@ console.log('  [PASS] operator home composition (hero core)')
 const pulse = read('src/components/admin/jarvis/JarvisBusinessPulse.tsx')
 assert.ok(pulse.includes('minmax(0'), 'pulse uses minmax(0) overflow-safe grid')
 assert.ok(pulse.includes('textOverflow') || pulse.includes('ellipsis'), 'pulse ellipsis')
-assert.ok(pulse.includes("layout === 'list'") || pulse.includes('layout === "list"'), 'pulse list layout')
+assert.ok(pulse.includes('preferData') || pulse.includes('Meta metrics'), 'pulse prefers data / collapses Meta')
 console.log('  [PASS] business pulse overflow guards')
 
 const center = read('src/components/admin/jarvis/CommandCenter.tsx')

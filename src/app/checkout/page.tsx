@@ -897,6 +897,24 @@ function CheckoutForm() {
  ) : (
  <p style={intakeTheme.eyebrow}>COACHING INTAKE</p>
  )}
+ <h1 style={{ ...styles.title, ...intakeTheme.title }}>
+ {isTrialCheckout
+ ? 'Start your 7-day trial'
+ : isDigitalCheckout
+ ? 'Start your customised plan'
+ : 'Start your coaching intake'}
+ </h1>
+ <p style={dig(styles.subtitle, 'subtitle')}>
+ {checkoutScreen === 1
+ ? 'Answer a few basics so we can customize your coaching.'
+ : checkoutScreen === 2
+ ? 'Almost there - we need more details after you unlock.'
+ : checkoutScreen === 3
+ ? 'Enter your details to continue - payment comes after.'
+ : checkoutScreen === 4
+ ? 'Verify your email to save your answers and continue.'
+ : 'Unlock your customized plan and pay securely.'}
+ </p>
 
  <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 5`}>
  {([1, 2, 3, 4, 5] as CheckoutScreen[]).map((step) => (
@@ -910,44 +928,6 @@ function CheckoutForm() {
  />
  ))}
  </div>
- <p style={styles.stepCaption}>
- {checkoutScreen === 1
- ? 'Step 1 of 5 · Basics'
- : checkoutScreen === 2
- ? 'Step 2 of 5 · What’s next'
- : checkoutScreen === 3
- ? 'Step 3 of 5 · Your details'
- : checkoutScreen === 4
- ? 'Step 4 of 5 · Verify email'
- : 'Step 5 of 5 · Unlock plan'}
- </p>
-
- <h1 style={{ ...styles.title, ...intakeTheme.title }}>
- {checkoutScreen === 1
- ? 'Tell us a few basics'
- : checkoutScreen === 2
- ? 'Almost ready'
- : checkoutScreen === 3
- ? 'Your contact details'
- : checkoutScreen === 4
- ? 'Verify your email'
- : isTrialCheckout
- ? 'Start your 7-day trial'
- : isDigitalCheckout
- ? 'Unlock your plan'
- : 'Unlock coaching'}
- </h1>
- <p style={dig(styles.subtitle, 'subtitle')}>
- {checkoutScreen === 1
- ? 'So we can customize your coaching before payment.'
- : checkoutScreen === 2
- ? 'A short follow-up comes after you unlock — then your plan is built.'
- : checkoutScreen === 3
- ? 'We use this to save your progress and send your plan.'
- : checkoutScreen === 4
- ? 'Confirm your email so nothing gets lost.'
- : 'Pay securely and unlock your customized plan.'}
- </p>
 
  {checkoutScreen === 1 && (
  <CheckoutBasicsStep
@@ -991,24 +971,9 @@ function CheckoutForm() {
  </button>
 
  {!isTrialCheckout && (
- <div
- style={{
- ...styles.planPicker,
- ...(!isDigitalCheckout ? styles.planPickerStack : null),
- }}
- role="tablist"
- aria-label="Choose plan"
- >
+ <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
  {planPickerList.map((item) => {
  const selected = item.slug === plan.slug;
- const coachingHint =
- !isDigitalCheckout && item.slug === '3_months'
- ? 'Short-term, focused fat loss.'
- : !isDigitalCheckout && item.slug === '6_months'
- ? 'Recomposition — lose fat and build muscle.'
- : !isDigitalCheckout && item.slug === '12_months'
- ? 'Complete transformation with guaranteed results.'
- : null;
  return (
  <Link
  key={item.slug}
@@ -1024,29 +989,17 @@ function CheckoutForm() {
  }
  style={{
  ...styles.planChip,
- ...(!isDigitalCheckout ? styles.planChipStack : null),
  ...(selected ? styles.planChipSelected : null),
  ...intakeTheme.planChip,
  ...(selected ? intakeTheme.planChipSelected : null),
  }}
  >
- <div style={!isDigitalCheckout ? styles.planChipStackTop : undefined}>
- <span
- style={{
- ...dig(styles.planChipName, 'planChipName'),
- ...(!isDigitalCheckout ? { fontSize: 16 } : null),
- }}
- >
+ <span style={dig(styles.planChipName, 'planChipName')}>
  {isDigitalCheckout ? item.name.replace('Complete Guidance', 'Complete') : planGoalName(item.slug)}
  </span>
  <span style={dig(styles.planChipDuration, 'planChipDuration')}>
  {isDigitalCheckout ? item.saveLabel : planDurationLabel(item.slug)}
  </span>
- {coachingHint ? (
- <span style={styles.planChipHint}>{coachingHint}</span>
- ) : null}
- </div>
- <div style={!isDigitalCheckout ? styles.planChipStackMeta : undefined}>
  <span style={dig(styles.planChipPrice, 'planChipPrice')}>{item.displayPrice}</span>
  {item.popular ? (
  <span style={{ ...styles.planChipBadge, ...intakeTheme.planChipPopular }}>
@@ -1058,7 +1011,6 @@ function CheckoutForm() {
  Best value
  </span>
  ) : null}
- </div>
  </Link>
  );
  })}
@@ -1671,7 +1623,7 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 20,
   },
   screenDot: {
     width: 8,
@@ -1683,14 +1635,6 @@ const styles: Record<string, CSSProperties> = {
   screenDotActive: {
     backgroundColor: '#22c55e',
     width: 22,
-  },
-  stepCaption: {
-    margin: '0 0 22px',
-    fontSize: 12,
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase' as const,
-    color: '#94a3b8',
   },
   backToDetails: {
     display: 'block',
@@ -1854,10 +1798,6 @@ const styles: Record<string, CSSProperties> = {
     maxWidth: '100%',
     boxSizing: 'border-box',
   },
-  planPickerStack: {
-    gridTemplateColumns: '1fr',
-    gap: 10,
-  },
   planChip: {
     display: 'flex',
     flexDirection: 'column',
@@ -1874,24 +1814,6 @@ const styles: Record<string, CSSProperties> = {
     maxWidth: '100%',
     overflow: 'hidden',
     boxSizing: 'border-box',
-  },
-  planChipStack: {
-    alignItems: 'stretch',
-    textAlign: 'left' as const,
-    padding: '14px 14px',
-    gap: 10,
-  },
-  planChipStackTop: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    minWidth: 0,
-  },
-  planChipStackMeta: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    alignItems: 'center',
-    gap: 8,
   },
   planChipSelected: {
     borderColor: colors.accent,
@@ -1912,13 +1834,6 @@ const styles: Record<string, CSSProperties> = {
     textTransform: 'uppercase' as const,
     color: colors.textMuted,
     marginTop: 1,
-  },
-  planChipHint: {
-    marginTop: 2,
-    fontSize: 13,
-    lineHeight: 1.4,
-    fontWeight: 500,
-    color: '#cbd5e1',
   },
   planChipPrice: {
     fontSize: 15,
