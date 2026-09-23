@@ -50,27 +50,44 @@ export async function POST(request: Request) {
       name: body.name,
     })
 
+    let intakeBasicsMerged: boolean | null = null
+    let intakeBasicsMergeError: string | undefined
     try {
       const basics = await consumeCheckoutIntakeBasicsForUser({
         email: result.email,
         userId: result.userId,
       })
+      intakeBasicsMerged = Boolean(basics)
       if (basics) {
         logPurchaseStep('checkout_intake_basics_merged', {
           email: result.email,
           userId: result.userId,
           basicsId: basics.id,
         })
+      } else {
+        logPurchaseStep('checkout_intake_basics_none', {
+          email: result.email,
+          userId: result.userId,
+        })
       }
     } catch (basicsError) {
+      // Claim must still succeed (money already captured), but do not hide the miss.
+      intakeBasicsMerged = false
+      intakeBasicsMergeError =
+        basicsError instanceof Error ? basicsError.message : 'unknown'
       logPurchaseStep('checkout_intake_basics_merge_failed', {
         email: result.email,
         userId: result.userId,
-        error: basicsError instanceof Error ? basicsError.message : 'unknown',
+        error: intakeBasicsMergeError,
       })
     }
 
     scheduleOpportunisticNotificationDrain()
+
+    const intakeMeta = {
+      intakeBasicsMerged,
+      ...(intakeBasicsMergeError ? { intakeBasicsMergeError } : {}),
+    }
 
     if (result.needsLogin) {
       return NextResponse.json({
@@ -80,6 +97,7 @@ export async function POST(request: Request) {
         isNewUser: false,
         sessionEstablished: false,
         needsLogin: true,
+        ...intakeMeta,
         redirectTo: '/login?linked=1',
         message:
           'Payment linked to your existing account. Sign in with your current password, or use Forgot password if it never worked.',
@@ -100,6 +118,7 @@ export async function POST(request: Request) {
           error:
             'Your account was created but we could not sign you in automatically. Please use the login page.',
           redirectTo: '/login',
+          ...intakeMeta,
         },
         { status: 500 }
       )
@@ -111,6 +130,7 @@ export async function POST(request: Request) {
       purchaseId: result.purchaseId,
       isNewUser: result.isNewUser,
       sessionEstablished: true,
+      ...intakeMeta,
       redirectTo: '/onboarding',
     })
   } catch (err) {

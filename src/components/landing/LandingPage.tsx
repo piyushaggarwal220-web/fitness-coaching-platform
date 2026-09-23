@@ -29,21 +29,23 @@ function WhatsAppIcon() {
 export function LandingPage() {
   return (
     <div className="landing">
-      <Nav />
-      <main>
-        <Hero />
-        <SocialProof />
-        <WhyPeopleFail />
-        <HowItWorks />
-        <InsideCoaching />
-        <WhatYouGet />
-        <Pricing />
-        <Affordability />
-        <Guarantee />
-        <FaqSection />
-        <FinalCta />
-      </main>
-      <Footer />
+      <div className="landing-content">
+        <Nav />
+        <main>
+          <Hero />
+          <SocialProof />
+          <WhyPeopleFail />
+          <HowItWorks />
+          <InsideCoaching />
+          <WhatYouGet />
+          <Pricing />
+          <Affordability />
+          <Guarantee />
+          <FaqSection />
+          <FinalCta />
+        </main>
+        <Footer />
+      </div>
 
       <a
         className="lp-wa"

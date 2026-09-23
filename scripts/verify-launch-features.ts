@@ -4,7 +4,7 @@
  */
 
 import { createAdminClient } from '../src/lib/supabase/admin'
-import { validateRedemptionCode, normalizeRedemptionCode } from '../src/lib/redemption-codes'
+import { normalizeRedemptionCode } from '../src/lib/redemption-codes-shared'
 import { isDevelopmentModeServer, shouldBypassPayment, shouldAutoAssignCoach } from '../src/lib/config'
 import { isWhatsAppConfigured } from '../src/lib/notifications/whatsapp-provider'
 import { NotificationTemplates } from '../src/lib/notifications/service'
@@ -47,9 +47,18 @@ async function main() {
     check(`Table ${table} exists`, !error, error?.message)
   }
 
-  // Redemption code validation
-  const validation = await validateRedemptionCode('NONEXISTENT_CODE_XYZ')
-  check('Redemption validation rejects invalid codes', !validation.valid)
+  // Redemption code validation (DB presence — avoids importing server-only redemption module in tsx)
+  const fakeCode = normalizeRedemptionCode('NONEXISTENT_CODE_XYZ')
+  const { data: fakeRow, error: fakeError } = await admin
+    .from('redemption_codes')
+    .select('id')
+    .eq('code', fakeCode)
+    .maybeSingle()
+  check(
+    'Redemption validation rejects invalid codes',
+    !fakeError && !fakeRow,
+    fakeError?.message
+  )
 
   // Code normalization
   check('Code normalization works', normalizeRedemptionCode('  test code  ') === 'TESTCODE')

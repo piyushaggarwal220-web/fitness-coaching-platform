@@ -33,6 +33,7 @@ export function logPurchaseStep(
     | 'webhook_recorded'
     | 'webhook_failed'
     | 'checkout_intake_basics_merged'
+    | 'checkout_intake_basics_none'
     | 'checkout_intake_basics_merge_failed',
   details?: Record<string, unknown>
 ): void {

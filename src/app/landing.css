@@ -26,9 +26,15 @@
   color: var(--lp-text);
   font-family: var(--font-landing-body), system-ui, sans-serif;
   min-height: 100vh;
-  overflow-x: clip;
+  /* overflow-x must not wrap .lp-sticky — clip creates a containing block and the CTA drifts mid-scroll */
   position: relative;
   -webkit-tap-highlight-color: transparent;
+}
+
+.landing-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .landing h1,
@@ -62,7 +68,7 @@
   z-index: 0;
 }
 
-.landing > * {
+.landing > *:not(.lp-sticky):not(.lp-wa) {
   position: relative;
   z-index: 1;
 }
@@ -1050,7 +1056,7 @@
   text-decoration: none;
 }
 
-/* Sticky mobile CTA + WhatsApp */
+/* Sticky mobile CTA + WhatsApp — must stay fixed (do not inherit .landing > * relative) */
 .lp-sticky {
   position: fixed;
   left: 0;
@@ -1062,6 +1068,9 @@
   display: flex;
   justify-content: center;
   pointer-events: none;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .lp-sticky .lp-btn {

@@ -14,8 +14,10 @@ import {
   getCoachingDay,
   getNextCoachingDayStart,
   getCheckinWindowEnd,
+  getScheduleWeekOneStart,
   hasCoachingDayStarted,
   isCheckinAvailableToday,
+  isSlotBeforeScheduleStart,
   isWithinCheckinSubmissionWindow,
 } from '../src/lib/checkin-schedule'
 
@@ -71,23 +73,71 @@ function main() {
   )
 
   console.log('\nExact timestamps and windows:')
-  const day3 = buildScheduledCheckin(anchor, 1, 'mid_week')
-  const day7 = buildScheduledCheckin(anchor, 1, 'weekly')
-  const week2Day3 = buildScheduledCheckin(anchor, 2, 'mid_week')
-  check('Day 3 is anchor +48h', sameInstant(day3.dueDate, '2026-01-03T12:34:56.789Z'))
-  check('Day 7 is anchor +144h', sameInstant(day7.dueDate, '2026-01-07T12:34:56.789Z'))
-  check('Week 2 Day 3 recurs after seven days', sameInstant(week2Day3.dueDate, '2026-01-10T12:34:56.789Z'))
-  check('Anchor timestamp is not rounded to local midnight', day3.dueDate.getUTCHours() === 12)
+  // Product contract: mid-week = Wednesday 00:00 IST, weekly = Sunday 00:00 IST
+  // of the client's Nth coaching week (calendar rhythm), not elapsed +48h from the exact
+  // delivery timestamp. Late-week starts (Fri–Sun) roll week 1 to the following Monday.
+  const thursdayAnchor = '2026-01-01T12:34:56.789Z' // Thursday IST → current week Mon–Sun
+  const day3 = buildScheduledCheckin(thursdayAnchor, 1, 'mid_week')
+  const day7 = buildScheduledCheckin(thursdayAnchor, 1, 'weekly')
+  const week2Day3 = buildScheduledCheckin(thursdayAnchor, 2, 'mid_week')
+  check(
+    'Week 1 starts Monday 00:00 IST for a Thursday delivery',
+    sameInstant(getScheduleWeekOneStart(thursdayAnchor), '2025-12-28T18:30:00.000Z')
+  )
+  check(
+    'Day 3 (mid-week) is Wednesday 00:00 IST of week 1',
+    sameInstant(day3.dueDate, '2025-12-30T18:30:00.000Z')
+  )
+  check(
+    'Day 7 (weekly) is Sunday 00:00 IST of week 1',
+    sameInstant(day7.dueDate, '2026-01-03T18:30:00.000Z')
+  )
+  check(
+    'Week 2 mid-week is the following Wednesday 00:00 IST',
+    sameInstant(week2Day3.dueDate, '2026-01-06T18:30:00.000Z')
+  )
+  check(
+    'Calendar due dates land on IST midnight (not the raw delivery clock)',
+    day3.dueDate.getUTCHours() === 18 && day3.dueDate.getUTCMinutes() === 30
+  )
+  check(
+    'Mid-week before a Thursday start is skipped (not the client’s miss)',
+    isSlotBeforeScheduleStart(thursdayAnchor, day3.dueDate)
+  )
 
-  const oneMsBefore = new Date(day3.dueDate.getTime() - 1)
-  const exactDue = new Date(day3.dueDate)
-  const oneMsBeforeClose = new Date(day3.dueDate.getTime() + CHECKIN_SUBMISSION_WINDOW_MS - 1)
-  const exactClose = getCheckinWindowEnd(day3.dueDate, 'mid_week')
-  check('Window is closed before exact due instant', !isWithinCheckinSubmissionWindow(day3.dueDate, oneMsBefore, 'mid_week'))
-  check('Window opens at exact due instant', isWithinCheckinSubmissionWindow(day3.dueDate, exactDue, 'mid_week'))
-  check('Window remains open one millisecond before close', isWithinCheckinSubmissionWindow(day3.dueDate, oneMsBeforeClose, 'mid_week'))
-  check('Window closes at exact +48h boundary', !isWithinCheckinSubmissionWindow(day3.dueDate, exactClose, 'mid_week'))
-  check('Coaching day uses elapsed 24-hour periods', getCoachingDay(anchor, exactDue) === 3)
+  const oneMsBefore = new Date(day7.dueDate.getTime() - 1)
+  const exactDue = new Date(day7.dueDate)
+  const oneMsBeforeClose = new Date(day7.dueDate.getTime() + WEEKLY_SUBMISSION_WINDOW_MS - 1)
+  const exactClose = getCheckinWindowEnd(day7.dueDate, 'weekly')
+  check('Window is closed before exact due instant', !isWithinCheckinSubmissionWindow(day7.dueDate, oneMsBefore, 'weekly'))
+  check('Window opens at exact due instant', isWithinCheckinSubmissionWindow(day7.dueDate, exactDue, 'weekly'))
+  check('Window remains open one millisecond before close', isWithinCheckinSubmissionWindow(day7.dueDate, oneMsBeforeClose, 'weekly'))
+  check('Window closes at exact +72h weekly boundary', !isWithinCheckinSubmissionWindow(day7.dueDate, exactClose, 'weekly'))
+  check('Coaching day uses elapsed 24-hour periods', getCoachingDay(thursdayAnchor, exactDue) === 3)
+
+  const mondayAnchor = '2026-01-05T04:30:00.000Z' // Monday 10:00 IST
+  const mondayMidWeek = buildScheduledCheckin(mondayAnchor, 1, 'mid_week')
+  const mondayWeekly = buildScheduledCheckin(mondayAnchor, 1, 'weekly')
+  check(
+    'Monday start keeps mid-week in the same calendar week',
+    sameInstant(mondayMidWeek.dueDate, '2026-01-06T18:30:00.000Z') &&
+      !isSlotBeforeScheduleStart(mondayAnchor, mondayMidWeek.dueDate)
+  )
+  check(
+    'Monday start weekly is that Sunday 00:00 IST',
+    sameInstant(mondayWeekly.dueDate, '2026-01-10T18:30:00.000Z')
+  )
+
+  const midWeekOpen = new Date(mondayMidWeek.dueDate.getTime() + CHECKIN_SUBMISSION_WINDOW_MS - 1)
+  const midWeekClose = getCheckinWindowEnd(mondayMidWeek.dueDate, 'mid_week')
+  check(
+    'Mid-week stays open for 48h',
+    isWithinCheckinSubmissionWindow(mondayMidWeek.dueDate, midWeekOpen, 'mid_week')
+  )
+  check(
+    'Mid-week closes at exact +48h boundary',
+    !isWithinCheckinSubmissionWindow(mondayMidWeek.dueDate, midWeekClose, 'mid_week')
+  )
 
   const weeklyOpenTue = new Date(day7.dueDate.getTime() + WEEKLY_SUBMISSION_WINDOW_MS - 1)
   const weeklyClose = getCheckinWindowEnd(day7.dueDate, 'weekly')
@@ -106,7 +156,7 @@ function main() {
     { checkin_type: 'weekly' as const, coaching_week: 1, coaching_day: 7 },
   ]
   const week2Schedule = getClientCheckinSchedule(
-    anchor,
+    thursdayAnchor,
     week1Complete,
     new Date('2026-01-08T12:34:56.789Z')
   )

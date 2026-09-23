@@ -8,6 +8,9 @@ import { isEmailConfigured, sendDirectEmail } from '@/lib/notifications/email-pr
 import { resolveAuthEmailRedirectOrigin } from '@/lib/admin/portal-urls'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { RedemptionCode } from '@/types/database'
+import { normalizeRedemptionCode } from '@/lib/redemption-codes-shared'
+
+export { normalizeRedemptionCode } from '@/lib/redemption-codes-shared'
 
 export type ValidateCodeResult = {
   valid: boolean
@@ -18,10 +21,6 @@ export type ValidateCodeResult = {
   >
   planName?: string
   membershipExpiresAt?: string | null
-}
-
-export function normalizeRedemptionCode(code: string): string {
-  return code.trim().toUpperCase().replace(/\s+/g, '')
 }
 
 function enrollmentSigningSecret(): string {

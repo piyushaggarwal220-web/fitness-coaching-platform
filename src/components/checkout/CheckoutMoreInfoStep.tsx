@@ -3,44 +3,86 @@
 import type { CSSProperties } from 'react'
 
 type Props = {
- onContinue: () => void
- onBack: () => void
- styles: Record<string, CSSProperties>
- dig: (base: CSSProperties, key?: string) => CSSProperties
+  onContinue: () => void
+  onBack: () => void
+  styles: Record<string, CSSProperties>
+  dig: (base: CSSProperties, key?: string) => CSSProperties
+}
+
+const panel: CSSProperties = {
+  margin: '0 0 24px',
+  padding: '18px 16px',
+  borderRadius: 14,
+  border: '1px solid rgba(251, 191, 36, 0.22)',
+  background:
+    'linear-gradient(165deg, rgba(34, 197, 94, 0.1) 0%, rgba(28, 25, 23, 0.92) 42%, #1c1917 100%)',
+}
+
+const list: CSSProperties = {
+  margin: 0,
+  padding: 0,
+  listStyle: 'none',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+}
+
+const item: CSSProperties = {
+  display: 'flex',
+  gap: 12,
+  alignItems: 'flex-start',
+  fontSize: 14,
+  lineHeight: 1.45,
+  color: '#e2e8f0',
+}
+
+const mark: CSSProperties = {
+  flexShrink: 0,
+  width: 22,
+  height: 22,
+  borderRadius: 999,
+  display: 'grid',
+  placeItems: 'center',
+  background: 'rgba(34, 197, 94, 0.18)',
+  color: '#4ade80',
+  fontSize: 12,
+  fontWeight: 800,
+  marginTop: 1,
 }
 
 export function CheckoutMoreInfoStep({ onContinue, onBack, styles, dig }: Props) {
- return (
- <>
- <button type="button" onClick={onBack} style={dig(styles.backToDetails, 'backLink')}>
- {'<- Edit basics'}
- </button>
+  return (
+    <div style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
+      <button type="button" onClick={onBack} style={dig(styles.backToDetails, 'backLink')}>
+        {'<- Edit basics'}
+      </button>
 
- <p style={dig(styles.sectionLabel, 'sectionLabel')}>NEXT STEP</p>
- <h2
- style={{
- ...dig(styles.title, 'title'),
- fontSize: 26,
- margin: '0 0 12px',
- }}
- >
- We need more about you to create your plan
- </h2>
- <p style={dig(styles.subtitle, 'subtitle')}>
- Basics are a start. After checkout we ask about your lifestyle, training, diet details, and
- photos - then your customized diet, workout, cardio, and sleep guidance is built on the
- platform.
- </p>
+      <div style={panel}>
+        <ul style={list}>
+          <li style={item}>
+            <span style={mark} aria-hidden>
+              1
+            </span>
+            <span>Short follow-up questions after you unlock</span>
+          </li>
+          <li style={item}>
+            <span style={mark} aria-hidden>
+              2
+            </span>
+            <span>Plan delivered in the app — not a generic PDF</span>
+          </li>
+          <li style={item}>
+            <span style={mark} aria-hidden>
+              3
+            </span>
+            <span>Built from your answers, by the coach</span>
+          </li>
+        </ul>
+      </div>
 
- <ul style={{ ...styles.todoList, margin: '20px 0 28px' }}>
- <li>More questions after you unlock</li>
- <li>Plan delivered on the platform</li>
- <li>Not a random PDF - built from your answers</li>
- </ul>
-
- <button type="button" style={dig(styles.payBtn, 'payBtn')} onClick={onContinue}>
- Complete checkout to continue
- </button>
- </>
- )
+      <button type="button" style={{ ...dig(styles.payBtn, 'payBtn'), width: '100%' }} onClick={onContinue}>
+        Complete checkout to continue
+      </button>
+    </div>
+  )
 }

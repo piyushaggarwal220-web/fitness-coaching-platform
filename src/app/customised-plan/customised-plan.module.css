@@ -25,8 +25,14 @@
   font-family: var(--font-body);
   font-optical-sizing: auto;
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
-  overflow-x: clip;
+  /* Do not set overflow-x here — it makes position:fixed sticky CTAs scroll with the page. */
   -webkit-font-smoothing: antialiased;
+}
+
+.pageContent {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .ticker {
@@ -810,16 +816,13 @@
   right: 0;
   bottom: 0;
   z-index: 40;
-  transform: translateY(110%);
-  transition: transform 0.28s ease;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   background: rgba(18, 16, 15, 0.94);
   backdrop-filter: blur(12px);
   border-top: 1px solid rgba(251, 191, 36, 0.25);
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-}
-
-.stickyBarVisible {
-  transform: translateY(0);
 }
 
 .stickyInner {

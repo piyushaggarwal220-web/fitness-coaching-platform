@@ -106,7 +106,6 @@ type ChatMsg = { role: 'bot' | 'user'; text: string }
 
 export default function CustomisedPlanLandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0)
-  const [showSticky, setShowSticky] = useState(false)
   const [botOpen, setBotOpen] = useState(false)
   const [botInput, setBotInput] = useState('')
   const [botBusy, setBotBusy] = useState(false)
@@ -118,13 +117,6 @@ export default function CustomisedPlanLandingPage() {
   ])
   const messagesRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    const onScroll = () => setShowSticky(window.scrollY > 320)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   useEffect(() => {
     const el = messagesRef.current
@@ -193,6 +185,7 @@ export default function CustomisedPlanLandingPage() {
 
   return (
     <main className={styles.page}>
+      <div className={styles.pageContent}>
       <div className={styles.ticker} aria-hidden>
         <div className={styles.tickerTrack}>
           {Array.from({ length: 8 }).map((_, i) => (
@@ -477,8 +470,9 @@ export default function CustomisedPlanLandingPage() {
           </a>
         </p>
       </footer>
+      </div>
 
-      <div className={`${styles.stickyBar} ${showSticky ? styles.stickyBarVisible : ''}`}>
+      <div className={styles.stickyBar}>
         <div className={styles.stickyInner}>
           <div>
             <strong>Complete Plan</strong>

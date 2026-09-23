@@ -2,159 +2,212 @@
 
 import type { CSSProperties } from 'react'
 import {
- CHECKOUT_BASICS_DIET_OPTIONS,
- CHECKOUT_BASICS_GENDER_OPTIONS,
- CHECKOUT_MAIN_GOAL_OPTIONS,
+  CHECKOUT_BASICS_DIET_OPTIONS,
+  CHECKOUT_BASICS_GENDER_OPTIONS,
+  CHECKOUT_MAIN_GOAL_OPTIONS,
 } from '@/lib/payments/checkout-intake-basics-shared'
 
 export type CheckoutBasicsFormState = {
- age: string
- gender: string
- heightCm: string
- weightKg: string
- dietPreference: string
- mainGoal: string
+  age: string
+  gender: string
+  heightCm: string
+  weightKg: string
+  dietPreference: string
+  mainGoal: string
 }
 
 type Props = {
- value: CheckoutBasicsFormState
- onChange: (next: CheckoutBasicsFormState) => void
- onSubmit: () => void
- onBack: () => void
- saving: boolean
- error?: string
- styles: Record<string, CSSProperties>
- dig: (base: CSSProperties, key?: string) => CSSProperties
+  value: CheckoutBasicsFormState
+  onChange: (next: CheckoutBasicsFormState) => void
+  onSubmit: () => void
+  onBack?: () => void
+  saving: boolean
+  error?: string
+  styles: Record<string, CSSProperties>
+  dig: (base: CSSProperties, key?: string) => CSSProperties
+}
+
+const wrap: CSSProperties = {
+  width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
+  overflowX: 'hidden',
+  boxSizing: 'border-box',
+}
+
+const metricsRow: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 10,
+  marginBottom: 4,
+  width: '100%',
+  maxWidth: '100%',
+  boxSizing: 'border-box',
+}
+
+const chipRow: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 8,
+  marginBottom: 18,
+  width: '100%',
+  maxWidth: '100%',
+  boxSizing: 'border-box',
+}
+
+const chipBase: CSSProperties = {
+  borderRadius: 999,
+  border: '1px solid rgba(251, 191, 36, 0.28)',
+  background: '#12100f',
+  color: '#e2e8f0',
+  padding: '10px 12px',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+  minHeight: 42,
+  maxWidth: '100%',
+  boxSizing: 'border-box',
+  whiteSpace: 'nowrap',
+}
+
+const chipActive: CSSProperties = {
+  ...chipBase,
+  background: 'rgba(34, 197, 94, 0.16)',
+  border: '1px solid #22c55e',
+  color: '#f8fafc',
+}
+
+const field: CSSProperties = {
+  width: '100%',
+  maxWidth: '100%',
+  boxSizing: 'border-box',
+  minHeight: 48,
+  borderRadius: 12,
+  border: '1px solid rgba(251, 191, 36, 0.28)',
+  background: '#12100f',
+  color: '#f8fafc',
+  padding: '12px 14px',
+  fontSize: 16,
+  marginBottom: 16,
 }
 
 export function CheckoutBasicsStep({
- value,
- onChange,
- onSubmit,
- onBack,
- saving,
- error,
- styles,
- dig,
+  value,
+  onChange,
+  onSubmit,
+  onBack,
+  saving,
+  error,
+  styles,
+  dig,
 }: Props) {
- const set = <K extends keyof CheckoutBasicsFormState>(key: K, next: CheckoutBasicsFormState[K]) => {
- onChange({ ...value, [key]: next })
- }
+  const set = <K extends keyof CheckoutBasicsFormState>(key: K, next: CheckoutBasicsFormState[K]) => {
+    onChange({ ...value, [key]: next })
+  }
 
- return (
- <>
- <button type="button" onClick={onBack} style={dig(styles.backToDetails, 'backLink')}>
- {'<- Back to plan'}
- </button>
+  return (
+    <div style={wrap}>
+      {onBack ? (
+        <button type="button" onClick={onBack} style={dig(styles.backToDetails, 'backLink')}>
+          {'<- Back to plan'}
+        </button>
+      ) : null}
 
- <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>A few basics for your coach</h2>
- <p style={dig(styles.otpHint ?? { margin: '0 0 16px', fontSize: 14, lineHeight: 1.45 }, 'otpHint')}>
- This starts your intake (~30 seconds). Your full customized diet, workout, cardio, and sleep
- guidance come after purchase and the detailed questions.
- </p>
+      {error ? (
+        <div style={{ ...styles.error, marginBottom: 14, wordBreak: 'break-word' }}>{error}</div>
+      ) : null}
 
- {error ? <div style={styles.error ?? { color: '#b91c1c', marginBottom: 12 }}>{error}</div> : null}
+      <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-age">
+        Age
+      </label>
+      <input
+        id="checkout-basics-age"
+        inputMode="numeric"
+        value={value.age}
+        onChange={(e) => set('age', e.target.value.replace(/\D/g, '').slice(0, 3))}
+        placeholder="e.g. 28"
+        style={{ ...dig(styles.input, 'input'), ...field }}
+      />
 
- <div style={styles.form}>
- <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-age">
- Age
- </label>
- <input
- id="checkout-basics-age"
- inputMode="numeric"
- value={value.age}
- onChange={(e) => set('age', e.target.value.replace(/\D/g, '').slice(0, 3))}
- placeholder="e.g. 28"
- style={dig(styles.input, 'input')}
- />
+      <p style={dig(styles.label, 'label')}>Gender</p>
+      <div style={chipRow} role="group" aria-label="Gender">
+        {CHECKOUT_BASICS_GENDER_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => set('gender', option.value)}
+            style={value.gender === option.value ? chipActive : chipBase}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
 
- <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-gender">
- Gender
- </label>
- <select
- id="checkout-basics-gender"
- value={value.gender}
- onChange={(e) => set('gender', e.target.value)}
- style={dig(styles.input, 'input')}
- >
- <option value="">Select</option>
- {CHECKOUT_BASICS_GENDER_OPTIONS.map((option) => (
- <option key={option.value} value={option.value}>
- {option.label}
- </option>
- ))}
- </select>
+      <div style={metricsRow}>
+        <div style={{ minWidth: 0 }}>
+          <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-height">
+            Height (cm)
+          </label>
+          <input
+            id="checkout-basics-height"
+            inputMode="decimal"
+            value={value.heightCm}
+            onChange={(e) => set('heightCm', e.target.value.replace(/[^\d.]/g, '').slice(0, 6))}
+            placeholder="172"
+            style={{ ...dig(styles.input, 'input'), ...field, marginBottom: 16 }}
+          />
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-weight">
+            Weight (kg)
+          </label>
+          <input
+            id="checkout-basics-weight"
+            inputMode="decimal"
+            value={value.weightKg}
+            onChange={(e) => set('weightKg', e.target.value.replace(/[^\d.]/g, '').slice(0, 6))}
+            placeholder="Optional"
+            style={{ ...dig(styles.input, 'input'), ...field, marginBottom: 16 }}
+          />
+        </div>
+      </div>
 
- <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-height">
- Height (cm)
- </label>
- <input
- id="checkout-basics-height"
- inputMode="decimal"
- value={value.heightCm}
- onChange={(e) => set('heightCm', e.target.value.replace(/[^\d.]/g, '').slice(0, 6))}
- placeholder="e.g. 172"
- style={dig(styles.input, 'input')}
- />
+      <p style={dig(styles.label, 'label')}>Diet type</p>
+      <div style={chipRow} role="group" aria-label="Diet type">
+        {CHECKOUT_BASICS_DIET_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => set('dietPreference', option.value)}
+            style={value.dietPreference === option.value ? chipActive : chipBase}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
 
- <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-weight">
- Weight (kg) · optional
- </label>
- <input
- id="checkout-basics-weight"
- inputMode="decimal"
- value={value.weightKg}
- onChange={(e) => set('weightKg', e.target.value.replace(/[^\d.]/g, '').slice(0, 6))}
- placeholder="e.g. 70"
- style={dig(styles.input, 'input')}
- />
+      <p style={dig(styles.label, 'label')}>Main goal</p>
+      <div style={chipRow} role="group" aria-label="Main goal">
+        {CHECKOUT_MAIN_GOAL_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => set('mainGoal', option.value)}
+            style={value.mainGoal === option.value ? chipActive : chipBase}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
 
- <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-diet">
- Diet type
- </label>
- <select
- id="checkout-basics-diet"
- value={value.dietPreference}
- onChange={(e) => set('dietPreference', e.target.value)}
- style={dig(styles.input, 'input')}
- >
- <option value="">Select</option>
- {CHECKOUT_BASICS_DIET_OPTIONS.map((option) => (
- <option key={option.value} value={option.value}>
- {option.label}
- </option>
- ))}
- </select>
-
- <label style={dig(styles.label, 'label')} htmlFor="checkout-basics-goal">
- Main goal
- </label>
- <select
- id="checkout-basics-goal"
- value={value.mainGoal}
- onChange={(e) => set('mainGoal', e.target.value)}
- style={dig(styles.input, 'input')}
- >
- <option value="">Select</option>
- {CHECKOUT_MAIN_GOAL_OPTIONS.map((option) => (
- <option key={option.value} value={option.value}>
- {option.label}
- </option>
- ))}
- </select>
-
- <button
- type="button"
- style={dig(styles.payBtn, 'payBtn')}
- disabled={saving}
- onClick={onSubmit}
- >
- {saving ? 'Saving...' : 'Continue'}
- </button>
- <p style={dig(styles.otpHint ?? { marginTop: 12, fontSize: 13 }, 'otpHint')}>
- Next: unlock your full customized plan.
- </p>
- </div>
- </>
- )
+      <button
+        type="button"
+        style={{ ...dig(styles.payBtn, 'payBtn'), width: '100%', marginTop: 8 }}
+        disabled={saving}
+        onClick={onSubmit}
+      >
+        {saving ? 'Saving...' : 'Continue'}
+      </button>
+    </div>
+  )
 }

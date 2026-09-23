@@ -346,6 +346,7 @@ function CheckoutForm() {
  verificationId?: string;
  basics?: CheckoutBasicsFormState;
  basicsComplete?: boolean;
+ checkoutScreen?: number;
  };
  if (draft.name && !name) setName(draft.name);
  if (draft.email && !email) setEmail(draft.email);
@@ -353,6 +354,17 @@ function CheckoutForm() {
  if (draft.verificationId && !verificationId) setVerificationId(draft.verificationId);
  if (draft.basics) setBasics((prev) => ({ ...prev, ...draft.basics }));
  if (draft.basicsComplete) setBasicsComplete(true);
+ const savedScreen = Number(draft.checkoutScreen);
+ if (Number.isInteger(savedScreen) && savedScreen >= 1 && savedScreen <= 5) {
+ const emailOk = searchParams.get('emailVerified') === '1';
+ // Plan chip navigation remounts this page; keep the buyer on the same step.
+ // Never reopen paywall (5) without a verified email return URL.
+ const nextScreen =
+ savedScreen >= 5 && !emailOk
+ ? (draft.verificationId ? 4 : 3)
+ : (savedScreen as CheckoutScreen);
+ setCheckoutScreen(nextScreen as CheckoutScreen);
+ }
  } catch {
  // ignore
  }
@@ -370,12 +382,13 @@ function CheckoutForm() {
  verificationId,
  basics,
  basicsComplete,
+ checkoutScreen,
  })
  );
  } catch {
  // ignore
  }
- }, [name, email, phone, verificationId, basics, basicsComplete]);
+ }, [name, email, phone, verificationId, basics, basicsComplete, checkoutScreen]);
 
  useEffect(() => {
  const vid = searchParams.get('vid')?.trim() ?? '';
@@ -884,24 +897,6 @@ function CheckoutForm() {
  ) : (
  <p style={intakeTheme.eyebrow}>COACHING INTAKE</p>
  )}
- <h1 style={{ ...styles.title, ...intakeTheme.title }}>
- {isTrialCheckout
- ? 'Start your 7-day trial'
- : isDigitalCheckout
- ? 'Start your customised plan'
- : 'Start your coaching intake'}
- </h1>
- <p style={dig(styles.subtitle, 'subtitle')}>
- {checkoutScreen === 1
- ? 'Answer a few basics so we can customize your coaching.'
- : checkoutScreen === 2
- ? 'Almost there - we need more details after you unlock.'
- : checkoutScreen === 3
- ? 'Enter your details to continue - payment comes after.'
- : checkoutScreen === 4
- ? 'Verify your email to save your answers and continue.'
- : 'Unlock your customized plan and pay securely.'}
- </p>
 
  <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 5`}>
  {([1, 2, 3, 4, 5] as CheckoutScreen[]).map((step) => (
@@ -915,6 +910,44 @@ function CheckoutForm() {
  />
  ))}
  </div>
+ <p style={styles.stepCaption}>
+ {checkoutScreen === 1
+ ? 'Step 1 of 5 · Basics'
+ : checkoutScreen === 2
+ ? 'Step 2 of 5 · What’s next'
+ : checkoutScreen === 3
+ ? 'Step 3 of 5 · Your details'
+ : checkoutScreen === 4
+ ? 'Step 4 of 5 · Verify email'
+ : 'Step 5 of 5 · Unlock plan'}
+ </p>
+
+ <h1 style={{ ...styles.title, ...intakeTheme.title }}>
+ {checkoutScreen === 1
+ ? 'Tell us a few basics'
+ : checkoutScreen === 2
+ ? 'Almost ready'
+ : checkoutScreen === 3
+ ? 'Your contact details'
+ : checkoutScreen === 4
+ ? 'Verify your email'
+ : isTrialCheckout
+ ? 'Start your 7-day trial'
+ : isDigitalCheckout
+ ? 'Unlock your plan'
+ : 'Unlock coaching'}
+ </h1>
+ <p style={dig(styles.subtitle, 'subtitle')}>
+ {checkoutScreen === 1
+ ? 'So we can customize your coaching before payment.'
+ : checkoutScreen === 2
+ ? 'A short follow-up comes after you unlock — then your plan is built.'
+ : checkoutScreen === 3
+ ? 'We use this to save your progress and send your plan.'
+ : checkoutScreen === 4
+ ? 'Confirm your email so nothing gets lost.'
+ : 'Pay securely and unlock your customized plan.'}
+ </p>
 
  {checkoutScreen === 1 && (
  <CheckoutBasicsStep
@@ -958,9 +991,24 @@ function CheckoutForm() {
  </button>
 
  {!isTrialCheckout && (
- <div style={styles.planPicker} role="tablist" aria-label="Choose plan">
+ <div
+ style={{
+ ...styles.planPicker,
+ ...(!isDigitalCheckout ? styles.planPickerStack : null),
+ }}
+ role="tablist"
+ aria-label="Choose plan"
+ >
  {planPickerList.map((item) => {
  const selected = item.slug === plan.slug;
+ const coachingHint =
+ !isDigitalCheckout && item.slug === '3_months'
+ ? 'Short-term, focused fat loss.'
+ : !isDigitalCheckout && item.slug === '6_months'
+ ? 'Recomposition — lose fat and build muscle.'
+ : !isDigitalCheckout && item.slug === '12_months'
+ ? 'Complete transformation with guaranteed results.'
+ : null;
  return (
  <Link
  key={item.slug}
@@ -976,24 +1024,41 @@ function CheckoutForm() {
  }
  style={{
  ...styles.planChip,
+ ...(!isDigitalCheckout ? styles.planChipStack : null),
  ...(selected ? styles.planChipSelected : null),
  ...intakeTheme.planChip,
  ...(selected ? intakeTheme.planChipSelected : null),
  }}
  >
- <span style={dig(styles.planChipName, 'planChipName')}>
+ <div style={!isDigitalCheckout ? styles.planChipStackTop : undefined}>
+ <span
+ style={{
+ ...dig(styles.planChipName, 'planChipName'),
+ ...(!isDigitalCheckout ? { fontSize: 16 } : null),
+ }}
+ >
  {isDigitalCheckout ? item.name.replace('Complete Guidance', 'Complete') : planGoalName(item.slug)}
  </span>
  <span style={dig(styles.planChipDuration, 'planChipDuration')}>
  {isDigitalCheckout ? item.saveLabel : planDurationLabel(item.slug)}
  </span>
+ {coachingHint ? (
+ <span style={styles.planChipHint}>{coachingHint}</span>
+ ) : null}
+ </div>
+ <div style={!isDigitalCheckout ? styles.planChipStackMeta : undefined}>
  <span style={dig(styles.planChipPrice, 'planChipPrice')}>{item.displayPrice}</span>
  {item.popular ? (
- <span style={intakeTheme.planChipPopular}>
+ <span style={{ ...styles.planChipBadge, ...intakeTheme.planChipPopular }}>
  Most popular
  </span>
  ) : null}
- {item.best ? <span style={styles.planChipMrp}>Best value</span> : null}
+ {item.best ? (
+ <span style={{ ...styles.planChipBadge, ...styles.planChipBadgeBest, ...intakeTheme.planChipBest }}>
+ Best value
+ </span>
+ ) : null}
+ </div>
  </Link>
  );
  })}
@@ -1422,6 +1487,8 @@ const intakeTheme: Record<string, CSSProperties> = {
     backgroundColor: '#1c1917',
     border: '1px solid rgba(251, 191, 36, 0.22)',
     boxShadow: '0 18px 48px rgba(0,0,0,0.35)',
+    overflowX: 'hidden',
+    minWidth: 0,
   },
   backLink: {
     color: '#cbd5e1',
@@ -1485,6 +1552,12 @@ const intakeTheme: Record<string, CSSProperties> = {
     fontSize: 11,
     fontWeight: 700,
     color: '#fbbf24',
+    textDecoration: 'none',
+  },
+  planChipBest: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#4ade80',
     textDecoration: 'none',
   },
   orderSummary: {
@@ -1578,7 +1651,10 @@ const intakeTheme: Record<string, CSSProperties> = {
 
 const styles: Record<string, CSSProperties> = {
   page: {
-    minHeight: '100vh',
+    minHeight: '100dvh',
+    width: '100%',
+    maxWidth: '100%',
+    overflowX: 'hidden',
     backgroundColor: '#12100f',
     backgroundImage: `
       radial-gradient(ellipse 70% 45% at 85% 0%, rgba(225, 29, 72, 0.22), transparent 55%),
@@ -1586,7 +1662,6 @@ const styles: Record<string, CSSProperties> = {
       radial-gradient(ellipse 50% 35% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 55%)
     `,
     padding: `${spacing[5]}px ${spacing[2]}px ${spacing[7]}px`,
-    overflowX: 'hidden',
     boxSizing: 'border-box',
   },
   pageWithSticky: {
@@ -1594,127 +1669,145 @@ const styles: Record<string, CSSProperties> = {
   },
   screenDots: {
     display: 'flex',
-    gap: 8,
-    marginBottom: 20,
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
   },
   screenDot: {
- width: 8,
- height: 8,
- borderRadius: 999,
- backgroundColor: colors.borderSubtle,
- },
- screenDotActive: {
- backgroundColor: colors.accent,
- width: 22,
- },
- backToDetails: {
- background: 'none',
- border: 'none',
- color: colors.textMuted,
- cursor: 'pointer',
- fontSize: 13,
- fontWeight: 600,
- padding: '0 0 16px',
- minHeight: 36,
- },
- stickyPayBar: {
- position: 'fixed',
- left: 0,
- right: 0,
- bottom: 0,
- zIndex: 50,
- padding: `10px ${spacing[2]}px calc(10px + env(safe-area-inset-bottom))`,
- backgroundColor: 'rgba(9,9,11,0.92)',
- backdropFilter: 'blur(16px)',
- WebkitBackdropFilter: 'blur(16px)',
- borderTop: `1px solid ${colors.borderSubtle}`,
- },
- stickyPayInner: {
- maxWidth: 480,
- margin: '0 auto',
- display: 'flex',
- alignItems: 'center',
- gap: 12,
- },
- stickyPayMeta: {
- display: 'flex',
- flexDirection: 'column',
- minWidth: 0,
- flex: 1,
- },
- stickyPayLabel: {
- fontSize: 11,
- fontWeight: 600,
- color: colors.textMuted,
- letterSpacing: '0.04em',
- textTransform: 'uppercase' as const,
- },
- stickyPayAmount: {
- fontSize: 18,
- fontWeight: 800,
- color: colors.textPrimary,
- },
- stickyPayBtn: {
- flex: '1 1 auto',
- maxWidth: 220,
- padding: '14px 18px',
- backgroundColor: colors.accent,
- color: colors.textInverse,
- border: 'none',
- borderRadius: radius.sm,
- fontWeight: 800,
- fontSize: 15,
- cursor: 'pointer',
- minHeight: 52,
- },
- stickyPayNote: {
- maxWidth: 480,
- margin: '6px auto 0',
- fontSize: 11,
- color: colors.textMuted,
- textAlign: 'center' as const,
- },
- card: {
- width: '100%',
- maxWidth: 480,
- margin: '0 auto',
- backgroundColor: '#1c1917',
- borderRadius: radius.lg,
- padding: `${spacing[4]}px ${spacing[3]}px ${spacing[5]}px`,
- border: '1px solid rgba(251, 191, 36, 0.22)',
- boxSizing: 'border-box',
- boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
- },
- backLink: {
- display: 'inline-block',
- color: '#cbd5e1',
- textDecoration: 'none',
- fontSize: 13,
- fontWeight: 600,
- marginBottom: 16,
- },
- brandMark: {
- margin: '0 0 6px',
- fontSize: 13,
- fontWeight: 800,
- letterSpacing: '0.14em',
- textTransform: 'uppercase' as const,
- color: '#fbbf24',
- },
- title: {
- margin: '0 0 8px',
- fontSize: 28,
- color: '#f8fafc',
- fontWeight: 800,
- letterSpacing: '-0.03em',
- lineHeight: 1.15,
- },
- subtitle: {
- margin: '0 0 22px',
- color: '#cbd5e1',
- fontSize: 15,
- lineHeight: 1.45,
- },
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(251, 191, 36, 0.28)',
+    flexShrink: 0,
+  },
+  screenDotActive: {
+    backgroundColor: '#22c55e',
+    width: 22,
+  },
+  stepCaption: {
+    margin: '0 0 22px',
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
+    color: '#94a3b8',
+  },
+  backToDetails: {
+    display: 'block',
+    background: 'none',
+    border: 'none',
+    color: '#cbd5e1',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    padding: '0 0 16px',
+    margin: '0 0 4px',
+    minHeight: 36,
+    textAlign: 'left' as const,
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+  },
+  stickyPayBar: {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
+    padding: `10px ${spacing[2]}px calc(10px + env(safe-area-inset-bottom))`,
+    backgroundColor: 'rgba(28, 25, 23, 0.96)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    borderTop: '1px solid rgba(251, 191, 36, 0.22)',
+  },
+  stickyPayInner: {
+    maxWidth: 480,
+    margin: '0 auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stickyPayMeta: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+    flex: 1,
+  },
+  stickyPayLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#cbd5e1',
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase' as const,
+  },
+  stickyPayAmount: {
+    fontSize: 18,
+    fontWeight: 800,
+    color: '#fbbf24',
+  },
+  stickyPayBtn: {
+    flex: '1 1 auto',
+    maxWidth: 220,
+    padding: '14px 18px',
+    backgroundColor: '#16a34a',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: radius.sm,
+    fontWeight: 800,
+    fontSize: 15,
+    cursor: 'pointer',
+    minHeight: 52,
+  },
+  stickyPayNote: {
+    maxWidth: 480,
+    margin: '6px auto 0',
+    fontSize: 11,
+    color: '#cbd5e1',
+    textAlign: 'center' as const,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 480,
+    minWidth: 0,
+    margin: '0 auto',
+    backgroundColor: '#1c1917',
+    borderRadius: radius.lg,
+    padding: `${spacing[4]}px ${spacing[3]}px ${spacing[5]}px`,
+    border: '1px solid rgba(251, 191, 36, 0.22)',
+    boxSizing: 'border-box',
+    boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
+    overflowX: 'hidden',
+  },
+  backLink: {
+    display: 'inline-block',
+    color: '#cbd5e1',
+    textDecoration: 'none',
+    fontSize: 13,
+    fontWeight: 600,
+    marginBottom: 16,
+  },
+  brandMark: {
+    margin: '0 0 6px',
+    fontSize: 13,
+    fontWeight: 800,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
+    color: '#fbbf24',
+  },
+  title: {
+    margin: '0 0 8px',
+    fontSize: 28,
+    color: '#f8fafc',
+    fontWeight: 800,
+    letterSpacing: '-0.03em',
+    lineHeight: 1.15,
+  },
+  subtitle: {
+    margin: '0 0 18px',
+    color: '#cbd5e1',
+    fontSize: 15,
+    lineHeight: 1.45,
+  },
  trustStrip: {
  margin: '0 0 18px',
  padding: '12px 14px',
@@ -1752,57 +1845,111 @@ const styles: Record<string, CSSProperties> = {
  lineHeight: 1.4,
  color: colors.textMuted,
  },
- planPicker: {
- display: 'grid',
- gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
- gap: 8,
- marginBottom: 16,
- },
- planChip: {
- display: 'flex',
- flexDirection: 'column',
- alignItems: 'center',
- gap: 2,
- padding: '12px 8px',
- borderRadius: radius.sm,
- border: `1px solid ${colors.borderSubtle}`,
- textDecoration: 'none',
- color: colors.textPrimary,
- backgroundColor: colors.bgElevated,
- textAlign: 'center' as const,
- minWidth: 0,
- },
- planChipSelected: {
- borderColor: colors.accent,
- backgroundColor: colors.accentMuted,
- boxShadow: `0 0 0 1px ${colors.accent}`,
- },
- planChipName: {
- fontSize: 13,
- fontWeight: 800,
- color: colors.textPrimary,
- letterSpacing: '-0.02em',
- lineHeight: 1.2,
- },
- planChipDuration: {
- fontSize: 10,
- fontWeight: 650,
- letterSpacing: '0.04em',
- textTransform: 'uppercase' as const,
- color: colors.textMuted,
- marginTop: 1,
- },
- planChipPrice: {
- fontSize: 15,
- fontWeight: 800,
- color: colors.textPrimary,
- },
- planChipMrp: {
- fontSize: 11,
- color: colors.textMuted,
- textDecoration: 'line-through',
- },
- trialBadge: {
+  planPicker: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 8,
+    marginBottom: 16,
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+  },
+  planPickerStack: {
+    gridTemplateColumns: '1fr',
+    gap: 10,
+  },
+  planChip: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 2,
+    padding: '12px 6px',
+    borderRadius: radius.sm,
+    border: `1px solid ${colors.borderSubtle}`,
+    textDecoration: 'none',
+    color: colors.textPrimary,
+    backgroundColor: colors.bgElevated,
+    textAlign: 'center' as const,
+    minWidth: 0,
+    maxWidth: '100%',
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+  },
+  planChipStack: {
+    alignItems: 'stretch',
+    textAlign: 'left' as const,
+    padding: '14px 14px',
+    gap: 10,
+  },
+  planChipStackTop: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    minWidth: 0,
+  },
+  planChipStackMeta: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    alignItems: 'center',
+    gap: 8,
+  },
+  planChipSelected: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+    boxShadow: `0 0 0 1px ${colors.accent}`,
+  },
+  planChipName: {
+    fontSize: 13,
+    fontWeight: 800,
+    color: colors.textPrimary,
+    letterSpacing: '-0.02em',
+    lineHeight: 1.2,
+  },
+  planChipDuration: {
+    fontSize: 10,
+    fontWeight: 650,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase' as const,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  planChipHint: {
+    marginTop: 2,
+    fontSize: 13,
+    lineHeight: 1.4,
+    fontWeight: 500,
+    color: '#cbd5e1',
+  },
+  planChipPrice: {
+    fontSize: 15,
+    fontWeight: 800,
+    color: colors.textPrimary,
+  },
+  planChipBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '4px 8px',
+    borderRadius: 999,
+    border: '1px solid rgba(251, 191, 36, 0.35)',
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase' as const,
+    color: '#fbbf24',
+    textDecoration: 'none',
+  },
+  planChipBadgeBest: {
+    border: '1px solid rgba(34, 197, 94, 0.45)',
+    backgroundColor: 'rgba(34, 197, 94, 0.16)',
+    color: '#4ade80',
+  },
+  planChipMrp: {
+    fontSize: 11,
+    color: colors.textMuted,
+    textDecoration: 'line-through',
+  },
+  trialBadge: {
  marginBottom: 16,
  padding: '12px 14px',
  borderRadius: radius.sm,
