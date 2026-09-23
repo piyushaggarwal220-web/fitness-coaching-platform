@@ -12,8 +12,9 @@ export const ALLOWED_VIDEO_MIME = new Set([
   'video/mp4',
   'video/quicktime',
   'video/webm',
+  'video/x-m4v',
 ])
-export const ALLOWED_VIDEO_EXT = new Set(['.mp4', '.mov', '.webm'])
+export const ALLOWED_VIDEO_EXT = new Set(['.mp4', '.mov', '.webm', '.m4v'])
 
 const SOURCE_REF_PREFIX = 'jarvis-video://'
 
@@ -83,7 +84,7 @@ export function validateVideoUpload(input: {
   if (!ALLOWED_VIDEO_MIME.has(mime)) {
     return {
       ok: false,
-      error: `Unsupported MIME type: ${mime || '(missing)'}. Allowed: MP4, MOV, WebM.`,
+      error: `Unsupported MIME type: ${mime || '(missing)'}. Allowed: MP4, MOV, WebM, M4V.`,
       code: 'unsupported_mime',
     }
   }
@@ -91,7 +92,7 @@ export function validateVideoUpload(input: {
   if (!ALLOWED_VIDEO_EXT.has(ext)) {
     return {
       ok: false,
-      error: `Unsupported extension: ${ext || '(none)'}. Allowed: .mp4, .mov, .webm.`,
+      error: `Unsupported extension: ${ext || '(none)'}. Allowed: .mp4, .mov, .webm, .m4v.`,
       code: 'unsupported_extension',
     }
   }

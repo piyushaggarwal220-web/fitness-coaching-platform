@@ -17,6 +17,7 @@ export function CommandBar({
   onAttach,
   attachTitle,
   attachDisabled,
+  attachBusy,
   showChips,
   chips,
   /** @deprecated use showChips + chips */
@@ -35,6 +36,8 @@ export function CommandBar({
   onAttach?: () => void
   attachTitle?: string
   attachDisabled?: boolean
+  /** True while ingest request is in flight (label shows Uploading…). */
+  attachBusy?: boolean
   showChips?: boolean
   chips?: { id: string; label: string; prompt: string }[]
   extra?: boolean
@@ -52,6 +55,7 @@ export function CommandBar({
         ]
       : undefined)
   const shouldShowChips = showChips ?? Boolean(extra)
+  const attachEnabled = Boolean(onAttach) && !attachDisabled && !busy
 
   return (
     <div>
@@ -123,27 +127,35 @@ export function CommandBar({
               }
             }}
           />
-          <button
-            type="button"
-            aria-label="Attach footage"
-            title={attachTitle || (onAttach ? 'Attach raw footage' : 'Attachments unavailable')}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              border: 'none',
-              background: 'transparent',
-              color: onAttach && !attachDisabled ? j2.text : j2.muted,
-              display: 'grid',
-              placeItems: 'center',
-              cursor: onAttach && !attachDisabled ? 'pointer' : 'default',
-              opacity: onAttach && !attachDisabled ? 1 : 0.5,
-            }}
-            disabled={!onAttach || attachDisabled || busy}
-            onClick={() => onAttach?.()}
-          >
-            <Paperclip size={15} />
-          </button>
+          {onAttach ? (
+            <button
+              type="button"
+              aria-label="Attach footage"
+              title={attachTitle || 'Attach raw footage (private ingest)'}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                flexShrink: 0,
+                height: 32,
+                padding: '0 10px',
+                borderRadius: 8,
+                border: `1px solid ${attachEnabled ? 'rgba(255,98,0,0.45)' : colors.borderSubtle}`,
+                background: attachBusy ? 'rgba(255,98,0,0.12)' : 'transparent',
+                color: attachEnabled || attachBusy ? j2.amber : j2.muted,
+                fontSize: 11,
+                fontWeight: 650,
+                letterSpacing: '0.02em',
+                cursor: attachEnabled ? 'pointer' : 'default',
+                opacity: attachEnabled || attachBusy ? 1 : 0.55,
+              }}
+              disabled={!attachEnabled}
+              onClick={() => onAttach()}
+            >
+              <Paperclip size={13} />
+              {attachBusy ? 'Uploading…' : 'Attach footage'}
+            </button>
+          ) : null}
           <button
             type="submit"
             style={{

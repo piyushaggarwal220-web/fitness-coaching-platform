@@ -7,6 +7,8 @@ import { DOMAIN_COMMANDS, formatInr } from '@/lib/jarvis/operator-present'
 import type { CommandView } from './types'
 import type { JarvisCommandState } from './use-jarvis-command'
 import { Sparkline } from './Sparkline'
+import { FootageAttachStrip } from './FootageAttachStrip'
+import { analyzePromptForFootage, useFootageUpload } from './use-footage-upload'
 import * as s from './styles'
 
 function Panel({
@@ -32,6 +34,61 @@ function HonestEmpty({ domain, reason }: { domain: string; reason: string }) {
     <div style={s.card}>
       <div style={{ fontWeight: 650 }}>{domain}</div>
       <p style={{ ...s.muted, marginBottom: 0 }}>{reason}</p>
+    </div>
+  )
+}
+
+function VideoFootageIngest({
+  jarvis,
+  onAsk,
+}: {
+  jarvis: JarvisCommandState
+  onAsk: (q: string) => void
+}) {
+  const footage = useFootageUpload({
+    reloadDashboard: () => jarvis.loadDashboard(),
+    onReady: (ready) => {
+      jarvis.setInput(analyzePromptForFootage(ready))
+    },
+  })
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      {footage.fileInput}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+        <button
+          type="button"
+          style={{
+            ...s.solidBtn,
+            padding: '7px 12px',
+            fontSize: 12,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+          onClick={footage.openPicker}
+          disabled={footage.busy || jarvis.busy}
+        >
+          {footage.busy ? 'Uploading…' : 'Attach footage'}
+        </button>
+        <span style={s.muted}>mp4 · mov · webm · m4v → private session via /api/admin/jarvis/video-sources</span>
+      </div>
+      <FootageAttachStrip
+        state={footage.state}
+        onUpload={() => void footage.uploadSelected()}
+        onClear={footage.clear}
+        onUseInCommand={() => {
+          if (footage.state.status !== 'ready') return
+          onAsk(
+            analyzePromptForFootage({
+              filename: footage.state.filename,
+              sessionId: footage.state.sessionId,
+              sourceRef: footage.state.sourceRef,
+              sourceId: footage.state.sourceId,
+            })
+          )
+        }}
+      />
     </div>
   )
 }
@@ -427,6 +484,7 @@ export function DomainView({
       vw?.provider_configured && (vw?.provider_kind === 'REAL' || vw?.provider_kind === 'TEST')
     return (
       <Panel kicker="Marketing" title="Video">
+        <VideoFootageIngest jarvis={jarvis} onAsk={onAsk} />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
           <div style={s.card}>
             <div style={s.eyebrow}>Edit provider</div>
@@ -458,8 +516,8 @@ export function DomainView({
         <div style={{ ...s.sectionLabel, marginLeft: 0 }}>Content sessions</div>
         {sessions.length === 0 ? (
           <div style={s.muted}>
-            No sessions yet. Create one via video.create_session, upload with sessionId to
-            /api/admin/jarvis/video-sources, then video.analyze.
+            No sessions yet. Use Attach footage above — creates a session, stores the private source, then ask Jarvis to
+            video.analyze.
           </div>
         ) : (
           sessions.slice(0, 6).map((sess) => (

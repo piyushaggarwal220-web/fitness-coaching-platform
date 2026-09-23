@@ -66,11 +66,27 @@ assert.ok(!cockpit.includes('JarvisCore'), 'home must not mount giant JarvisCore
 assert.ok(!cockpit.includes('coreSize'), 'home must not size a hero orb')
 assert.ok(cockpit.includes('cockpit.metrics'), 'dense metrics strip restored')
 assert.ok(cockpit.includes('Video operations'), 'video workflow section present')
-assert.ok(cockpit.includes('onAttach') || cockpit.includes('uploadFootage'), 'footage attach path')
+assert.ok(cockpit.includes('Attach footage') || cockpit.includes('useFootageUpload'), 'footage attach control')
+assert.ok(cockpit.includes('onAttach') || cockpit.includes('openPicker'), 'footage attach wired to command bar')
 assert.ok(cockpit.includes('composerDock') || cockpit.includes('CommandBar'), 'command input dock')
 assert.ok(cockpit.includes('core.state'), 'compact state indicator (not orb)')
 assert.ok(!/Waiting for your approval\./.test(cockpit), 'no orb headline dominating home')
 console.log('  [PASS] dense operator home (no giant orb)')
+
+const commandBar = read('src/components/admin/jarvis/CommandBar.tsx')
+assert.ok(commandBar.includes('Attach footage'), 'command bar shows Attach footage label')
+assert.ok(commandBar.includes('onAttach'), 'command bar attach handler')
+console.log('  [PASS] attach footage visible in command bar')
+
+const chat = read('src/components/admin/jarvis/ChatPane.tsx')
+assert.ok(chat.includes('useFootageUpload') || chat.includes('onAttach'), 'chat pane wires footage ingest')
+console.log('  [PASS] chat pane footage ingest wired')
+
+const ingest = read('src/components/admin/jarvis/use-footage-upload.tsx')
+assert.ok(ingest.includes('/api/admin/jarvis/video-sources'), 'ingest uses existing video-sources API')
+assert.ok(ingest.includes('create_session'), 'ingest creates video session')
+assert.ok(ingest.includes('FormData'), 'ingest posts multipart file')
+console.log('  [PASS] footage ingest uses existing video-sources pipeline')
 
 const center = read('src/components/admin/jarvis/CommandCenter.tsx')
 assert.ok(center.includes('RightRail'), 'desktop right rail wired')

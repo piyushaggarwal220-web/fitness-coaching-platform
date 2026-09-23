@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { colors } from '@/lib/design-tokens'
 import {
   formatTime,
@@ -13,6 +13,8 @@ import type { JarvisCommandState } from './use-jarvis-command'
 import { CommandBar } from './CommandBar'
 import { VoiceOperatorPanel } from './VoiceOperatorPanel'
 import { ExecutiveChart } from './Sparkline'
+import { FootageAttachStrip } from './FootageAttachStrip'
+import { analyzePromptForFootage, useFootageUpload } from './use-footage-upload'
 import * as s from './styles'
 
 function metricColor(status: CockpitMetric['status']) {
@@ -60,9 +62,13 @@ export function CockpitHome({
 }) {
   const cockpit = jarvis.dashboard?.cockpit
   const [evidenceOpen, setEvidenceOpen] = useState(false)
-  const [uploadNote, setUploadNote] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
+
+  const footage = useFootageUpload({
+    reloadDashboard: () => jarvis.loadDashboard(),
+    onReady: (ready) => {
+      jarvis.setInput(analyzePromptForFootage(ready))
+    },
+  })
 
   const execution = jarvis.dashboard?.execution
   const cost = jarvis.dashboard?.cost as { daily_spent_usd?: number | null; daily_limit_usd?: number | null } | undefined
@@ -111,50 +117,6 @@ export function CockpitHome({
   const videoSessions = (videoWs?.sessions ?? []).slice(0, 3)
   const videoJobs = (videoWs?.recent_jobs ?? []).slice(0, 4)
   const creativePlans = (jarvis.dashboard?.creative_director?.plans ?? []).slice(0, 3)
-
-  async function uploadFootage(file: File) {
-    setUploading(true)
-    setUploadNote(null)
-    try {
-      const sessionRes = await fetch('/api/admin/jarvis/video-sources', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create_session',
-          title: file.name.replace(/\.[^.]+$/, '') || 'Footage session',
-          description: 'Operator upload from Command Center',
-        }),
-      })
-      const sessionJson = await sessionRes.json()
-      if (!sessionJson.success || !sessionJson.session?.id) {
-        throw new Error(sessionJson.error || 'Could not create video session')
-      }
-      const sessionId = sessionJson.session.id as string
-      const form = new FormData()
-      form.set('file', file)
-      form.set('sessionId', sessionId)
-      const up = await fetch('/api/admin/jarvis/video-sources', { method: 'POST', body: form })
-      const upJson = await up.json()
-      if (!upJson.success) {
-        throw new Error(upJson.error || 'Upload failed')
-      }
-      setUploadNote(`Footage ingested · session ${sessionId.slice(0, 8)}…`)
-      await jarvis.sendMessage(
-        [
-          `I uploaded raw footage into video session ${sessionId} (source ${upJson.source_ref || upJson.id || 'stored'}).`,
-          'Use the Short-form Fitness Reel pipeline: analyze → opportunities → creative plan → EDL → Shotstack render (9:16).',
-          'Do not invent macros. Do not publish. Wait for webhook confirmation before claiming render success.',
-        ].join(' ')
-      )
-      await jarvis.loadDashboard()
-      onNavigate('video')
-    } catch (e) {
-      setUploadNote(e instanceof Error ? e.message : 'Upload failed')
-    } finally {
-      setUploading(false)
-      if (fileRef.current) fileRef.current.value = ''
-    }
-  }
 
   if (!cockpit) {
     return (
@@ -307,10 +269,10 @@ export function CockpitHome({
               <button
                 type="button"
                 style={{ ...s.ghostBtn, border: 'none', padding: 0, color: s.accent, fontSize: 11 }}
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading || jarvis.busy}
+                onClick={footage.openPicker}
+                disabled={footage.busy || jarvis.busy}
               >
-                {uploading ? 'Uploading…' : 'Attach footage'}
+                {footage.busy ? 'Uploading…' : 'Attach footage'}
               </button>
               <button
                 type="button"
@@ -356,9 +318,6 @@ export function CockpitHome({
               {j.error ? ` · ${j.error.slice(0, 80)}` : ''}
             </div>
           ))}
-          {uploadNote ? (
-            <div style={{ fontSize: 11, marginTop: 4, color: colors.textMuted }}>{uploadNote}</div>
-          ) : null}
         </div>
 
         {jarvis.timeline.length ? (
@@ -776,14 +735,20 @@ export function CockpitHome({
       </div>
 
       <div style={s.composerDock}>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="video/*,.mp4,.mov,.webm,.m4v"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) void uploadFootage(f)
+        {footage.fileInput}
+        <FootageAttachStrip
+          state={footage.state}
+          onUpload={() => void footage.uploadSelected()}
+          onClear={footage.clear}
+          onUseInCommand={() => {
+            if (footage.state.status !== 'ready') return
+            const prompt = analyzePromptForFootage({
+              filename: footage.state.filename,
+              sessionId: footage.state.sessionId,
+              sourceRef: footage.state.sourceRef,
+              sourceId: footage.state.sourceId,
+            })
+            void jarvis.sendMessage(prompt)
           }}
         />
         <VoiceOperatorPanel
@@ -800,18 +765,16 @@ export function CockpitHome({
           value={jarvis.input}
           onChange={jarvis.setInput}
           onSubmit={(text) => void jarvis.sendMessage(text)}
-          busy={jarvis.busy || uploading}
+          busy={jarvis.busy || footage.busy}
           placeholder="Ask Jarvis…"
           voiceStatus={voiceStatus}
           voiceTitle={voiceTitle}
           showChips
-          onAttach={() => fileRef.current?.click()}
-          attachTitle={uploading ? 'Uploading footage…' : 'Attach raw footage (private ingest)'}
-          attachDisabled={uploading || jarvis.busy}
+          onAttach={footage.openPicker}
+          attachTitle={footage.busy ? 'Uploading footage…' : 'Attach raw footage (private ingest)'}
+          attachDisabled={footage.busy || jarvis.busy}
+          attachBusy={footage.busy}
         />
-        {uploadNote ? (
-          <div style={{ marginTop: 4, fontSize: 11, color: colors.textMuted }}>{uploadNote}</div>
-        ) : null}
       </div>
     </div>
   )

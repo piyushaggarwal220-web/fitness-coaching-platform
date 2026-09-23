@@ -8,6 +8,8 @@ import { investigationTimelineIsActive } from '@/lib/jarvis/reasoning/boundaries
 import type { JarvisCommandState } from './use-jarvis-command'
 import { CommandBar } from './CommandBar'
 import { VoiceOperatorPanel } from './VoiceOperatorPanel'
+import { FootageAttachStrip } from './FootageAttachStrip'
+import { analyzePromptForFootage, useFootageUpload } from './use-footage-upload'
 import * as s from './styles'
 
 function StatusDot({ state }: { state: 'pending' | 'active' | 'done' | 'error' }) {
@@ -65,6 +67,13 @@ export function ChatPane({ jarvis }: { jarvis: JarvisCommandState }) {
   const title =
     jarvis.dashboard?.conversations?.find((c) => c.id === jarvis.conversationId)?.title ||
     (jarvis.conversationId ? 'Conversation' : 'New conversation')
+
+  const footage = useFootageUpload({
+    reloadDashboard: () => jarvis.loadDashboard(),
+    onReady: (ready) => {
+      jarvis.setInput(analyzePromptForFootage(ready))
+    },
+  })
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -201,6 +210,23 @@ export function ChatPane({ jarvis }: { jarvis: JarvisCommandState }) {
       </div>
 
       <div style={s.composerDock}>
+        {footage.fileInput}
+        <FootageAttachStrip
+          state={footage.state}
+          onUpload={() => void footage.uploadSelected()}
+          onClear={footage.clear}
+          onUseInCommand={() => {
+            if (footage.state.status !== 'ready') return
+            void jarvis.sendMessage(
+              analyzePromptForFootage({
+                filename: footage.state.filename,
+                sessionId: footage.state.sessionId,
+                sourceRef: footage.state.sourceRef,
+                sourceId: footage.state.sourceId,
+              })
+            )
+          }}
+        />
         <VoiceOperatorPanel
           conversationId={jarvis.conversationId}
           busy={jarvis.busy}
@@ -211,8 +237,12 @@ export function ChatPane({ jarvis }: { jarvis: JarvisCommandState }) {
           value={jarvis.input}
           onChange={jarvis.setInput}
           onSubmit={(text) => void jarvis.sendMessage(text)}
-          busy={jarvis.busy}
+          busy={jarvis.busy || footage.busy}
           extra
+          onAttach={footage.openPicker}
+          attachTitle={footage.busy ? 'Uploading footage…' : 'Attach raw footage (private ingest)'}
+          attachDisabled={footage.busy || jarvis.busy}
+          attachBusy={footage.busy}
         />
       </div>
     </div>
