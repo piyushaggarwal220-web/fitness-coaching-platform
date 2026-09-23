@@ -140,7 +140,16 @@ export function ChatPane({ jarvis }: { jarvis: JarvisCommandState }) {
             <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: 14, marginTop: 4 }}>{m.content}</div>
             {m.tool_activity?.length ? <MessageEvidence tools={m.tool_activity} /> : null}
             {m.approval_ids?.length ? (
-              <div style={{ ...s.muted, color: colors.warning }}>Jarvis wants permission — see Approvals.</div>
+              <div style={{ ...s.muted, color: colors.warning }}>
+                {(() => {
+                  const related = jarvis.pendingApprovals.filter((a) => m.approval_ids?.includes(a.id))
+                  const labels = related.map((a) => a.action_label || a.tool_name).filter(Boolean)
+                  if (labels.length) {
+                    return `Permission needed for: ${labels.join('; ')} — see Approvals.`
+                  }
+                  return 'Jarvis wants permission for a significant action — see Approvals (not required for ordinary reads).'
+                })()}
+              </div>
             ) : null}
           </div>
         ))}

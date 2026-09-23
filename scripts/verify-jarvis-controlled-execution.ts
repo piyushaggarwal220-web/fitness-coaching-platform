@@ -386,9 +386,73 @@ async function main() {
 
   // 34 classify tools
   {
+    ensureJarvisToolsRegistered()
     assert.equal(classifyToolAction('meta.increase_budget').action_class, 'AD_BUDGET_INCREASE')
     assert.equal(systemForTool('instagram.publish'), 'INSTAGRAM')
+    assert.equal(getTool('lurvox.revenue')?.riskClass, 'READ')
+    assert.equal(classifyToolAction('lurvox.revenue').action_class, 'READ')
+    // Future lurvox.* must not inherit READ from prefix alone when unregistered.
+    assert.equal(classifyToolAction('lurvox.hypothetical_write').action_class, 'UNKNOWN')
+    assert.equal(classifyToolAction('instagram.get_profile').action_class, 'READ')
+    assert.equal(classifyToolAction('instagram.content_performance').action_class, 'READ')
+    assert.equal(classifyToolAction('instagram.prepare_publish').action_class, 'PREPARE')
+    assert.equal(classifyToolAction('instagram.publish').action_class, 'CONTENT_PUBLISH')
+    assert.equal(classifyToolAction('memory.remember').action_class, 'GENERATE')
+    assert.equal(ALWAYS_APPROVAL_CLASSES.has('CONTENT_PUBLISH'), true)
+    assert.equal(ALWAYS_APPROVAL_CLASSES.has('AD_BUDGET_INCREASE'), true)
     ok('Action classification maps tools to classes/systems')
+  }
+
+  // READ registry tools must not require approval at autonomy level 2
+  {
+    const classified = classifyToolAction('lurvox.revenue')
+    const decision = evaluateExecutionPolicy({
+      ...baseFacts({
+        tool_name: 'lurvox.revenue',
+        action_class: classified.action_class,
+        system: systemForTool('lurvox.revenue'),
+        risk_class: 'READ',
+        autonomy_level: 2,
+      }),
+    })
+    assert.equal(decision.decision, 'AUTO_EXECUTE')
+
+    // Safety net: even UNKNOWN action_class + registry READ risk must auto-execute at L2.
+    const unknownButRead = evaluateExecutionPolicy({
+      ...baseFacts({
+        tool_name: 'lurvox.revenue',
+        action_class: 'UNKNOWN',
+        system: 'OTHER',
+        risk_class: 'READ',
+        autonomy_level: 2,
+      }),
+    })
+    assert.equal(unknownButRead.decision, 'AUTO_EXECUTE')
+
+    // Significant writes still require approval at L2.
+    const budget = evaluateExecutionPolicy({
+      ...baseFacts({
+        tool_name: 'meta.increase_budget',
+        action_class: 'AD_BUDGET_INCREASE',
+        system: 'META',
+        risk_class: 'SIGNIFICANT',
+        autonomy_level: 2,
+      }),
+    })
+    assert.equal(budget.decision, 'APPROVAL_REQUIRED')
+
+    const publish = evaluateExecutionPolicy({
+      ...baseFacts({
+        tool_name: 'instagram.publish',
+        action_class: 'CONTENT_PUBLISH',
+        system: 'INSTAGRAM',
+        risk_class: 'SIGNIFICANT',
+        autonomy_level: 2,
+        live_instagram_publishing: false,
+      }),
+    })
+    assert.equal(publish.decision, 'APPROVAL_REQUIRED')
+    ok('lurvox.revenue READ auto-executes at L2; Meta/IG writes stay approval-gated')
   }
 
   // Tools registered
