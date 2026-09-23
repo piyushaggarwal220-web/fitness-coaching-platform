@@ -14,37 +14,47 @@ function isUnavailable(m: CockpitMetric) {
   return m.status === 'unavailable' || m.status === 'error' || m.status === 'stale'
 }
 
+/**
+ * Compact Business Pulse — available metrics in a tight 2-col grid;
+ * Meta/unavailable collapsed to one muted line (never giant empty cards).
+ */
 export function JarvisBusinessPulse({
   metrics,
   onNavigate,
   compact,
   layout = 'grid',
-  preferData,
+  preferData = true,
 }: {
   metrics: CockpitMetric[]
   onNavigate: (view: CommandView) => void
   compact?: boolean
   layout?: 'grid' | 'list'
-  /** Show metrics with data first; collapse unavailable into one muted line */
   preferData?: boolean
 }) {
   const available = metrics.filter((m) => !isUnavailable(m))
   const unavailable = metrics.filter((m) => isUnavailable(m))
-  const ordered = preferData
-    ? available
-    : [...metrics].sort((a, b) => Number(isUnavailable(a)) - Number(isUnavailable(b)))
-
   const metaUnavailable = unavailable.filter((m) => m.source === 'META')
-  const otherUnavailable = preferData ? unavailable.filter((m) => m.source !== 'META') : []
+  const otherUnavailable = unavailable.filter((m) => m.source !== 'META')
+
+  const show = preferData ? available : metrics
 
   return (
     <section aria-label="Business pulse" style={{ minWidth: 0 }}>
-      <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: j2.muted, fontWeight: 650 }}>
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: j2.muted,
+          fontWeight: 650,
+        }}
+      >
         Business pulse
       </div>
+
       {layout === 'list' ? (
-        <ul style={{ listStyle: 'none', margin: '10px 0 0', padding: 0 }}>
-          {(preferData ? [...available, ...otherUnavailable] : ordered).map((m) => (
+        <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0 }}>
+          {[...available, ...(preferData ? otherUnavailable : [])].map((m) => (
             <MetricListRow key={m.id} m={m} onNavigate={onNavigate} />
           ))}
         </ul>
@@ -53,51 +63,74 @@ export function JarvisBusinessPulse({
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 8,
-            marginTop: 10,
+            gap: 6,
+            marginTop: 8,
           }}
         >
-          {(preferData ? available : ordered).map((m) => (
-            <MetricCard key={m.id} m={m} onNavigate={onNavigate} />
+          {show.map((m) => (
+            <MetricCard key={m.id} m={m} onNavigate={onNavigate} dense={compact} />
           ))}
         </div>
       )}
-      {preferData && metaUnavailable.length ? (
-        <button
-          type="button"
-          onClick={() => onNavigate('marketing')}
-          style={{
-            marginTop: 10,
-            width: '100%',
-            textAlign: 'left',
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            fontSize: 11,
-            color: j2.muted,
-          }}
-        >
-          Meta metrics · Unavailable
-        </button>
+
+      {preferData && (metaUnavailable.length > 0 || otherUnavailable.length > 0) ? (
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {metaUnavailable.length ? (
+            <button
+              type="button"
+              onClick={() => onNavigate('marketing')}
+              style={compactUnavailableBtn}
+            >
+              Meta · Unavailable
+            </button>
+          ) : null}
+          {otherUnavailable.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onNavigate(m.view)}
+              style={compactUnavailableBtn}
+            >
+              {m.label} · Unavailable
+            </button>
+          ))}
+        </div>
       ) : null}
-      {!preferData && unavailable.length && layout === 'grid' ? null : null}
-      {compact ? null : null}
     </section>
   )
 }
 
-function MetricCard({ m, onNavigate }: { m: CockpitMetric; onNavigate: (view: CommandView) => void }) {
+const compactUnavailableBtn = {
+  width: '100%' as const,
+  textAlign: 'left' as const,
+  background: 'none' as const,
+  border: 'none' as const,
+  padding: '2px 0',
+  cursor: 'pointer' as const,
+  fontSize: 11,
+  color: j2.muted,
+  lineHeight: 1.35,
+}
+
+function MetricCard({
+  m,
+  onNavigate,
+  dense,
+}: {
+  m: CockpitMetric
+  onNavigate: (view: CommandView) => void
+  dense?: boolean
+}) {
   return (
     <button
       type="button"
       onClick={() => onNavigate(m.view)}
       style={{
         textAlign: 'left',
-        background: 'rgba(255,255,255,0.02)',
+        background: 'rgba(255,255,255,0.025)',
         border: `1px solid ${j2.glassBorder}`,
-        borderRadius: 10,
-        padding: '10px 10px',
+        borderRadius: 8,
+        padding: dense ? '7px 8px' : '8px 9px',
         cursor: 'pointer',
         color: 'inherit',
         minWidth: 0,
@@ -107,7 +140,7 @@ function MetricCard({ m, onNavigate }: { m: CockpitMetric; onNavigate: (view: Co
       <div
         style={{
           fontSize: 9,
-          letterSpacing: '0.1em',
+          letterSpacing: '0.08em',
           color: j2.muted,
           textTransform: 'uppercase',
           overflow: 'hidden',
@@ -119,9 +152,9 @@ function MetricCard({ m, onNavigate }: { m: CockpitMetric; onNavigate: (view: Co
       </div>
       <div
         style={{
-          fontSize: 16,
+          fontSize: dense ? 14 : 15,
           fontWeight: 700,
-          marginTop: 4,
+          marginTop: 2,
           color: metricColor(m.status),
           letterSpacing: '-0.03em',
           overflow: 'hidden',
@@ -131,25 +164,27 @@ function MetricCard({ m, onNavigate }: { m: CockpitMetric; onNavigate: (view: Co
       >
         {isUnavailable(m) ? '—' : m.display}
       </div>
-      <div
-        style={{
-          fontSize: 10,
-          marginTop: 3,
-          color: j2.muted,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {isUnavailable(m) ? 'Unavailable' : m.change_label || m.period}
-      </div>
+      {!isUnavailable(m) && (m.change_label || m.period) ? (
+        <div
+          style={{
+            fontSize: 10,
+            marginTop: 2,
+            color: j2.muted,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {m.change_label || m.period}
+        </div>
+      ) : null}
     </button>
   )
 }
 
 function MetricListRow({ m, onNavigate }: { m: CockpitMetric; onNavigate: (view: CommandView) => void }) {
   return (
-    <li style={{ padding: '8px 0', borderBottom: `1px solid ${j2.glassBorder}`, minWidth: 0 }}>
+    <li style={{ padding: '6px 0', borderBottom: `1px solid ${j2.glassBorder}`, minWidth: 0 }}>
       <button
         type="button"
         onClick={() => onNavigate(m.view)}
@@ -157,7 +192,7 @@ function MetricListRow({ m, onNavigate }: { m: CockpitMetric; onNavigate: (view:
           display: 'flex',
           width: '100%',
           justifyContent: 'space-between',
-          gap: 12,
+          gap: 10,
           alignItems: 'baseline',
           background: 'none',
           border: 'none',
@@ -168,12 +203,20 @@ function MetricListRow({ m, onNavigate }: { m: CockpitMetric; onNavigate: (view:
           minWidth: 0,
         }}
       >
-        <span style={{ fontSize: 11, color: j2.muted, letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>
+        <span
+          style={{
+            fontSize: 10,
+            color: j2.muted,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            flexShrink: 0,
+          }}
+        >
           {m.label}
         </span>
         <span
           style={{
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 700,
             color: metricColor(m.status),
             letterSpacing: '-0.03em',
@@ -184,12 +227,9 @@ function MetricListRow({ m, onNavigate }: { m: CockpitMetric; onNavigate: (view:
             textAlign: 'right',
           }}
         >
-          {isUnavailable(m) ? '—' : m.display}
+          {isUnavailable(m) ? 'Unavailable' : m.display}
         </span>
       </button>
-      <div style={{ fontSize: 10, color: j2.muted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {isUnavailable(m) ? `${m.source} unavailable` : m.change_label || m.period}
-      </div>
     </li>
   )
 }

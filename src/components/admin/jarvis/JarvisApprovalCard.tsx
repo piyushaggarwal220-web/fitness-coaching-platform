@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * Polished approval card for Jarvis 2.0 — reuses Phase 12 decide path.
- * Voice "yes" must never auto-approve; only explicit Approve on a specific card.
+ * Compact approval card — action + decide first; long diagnostics behind View details.
  */
 
+import { useState } from 'react'
 import { ApprovalCardView } from './ApprovalsView'
 import type { ApprovalCard } from './types'
 import { j2, glassPanel } from './styles'
@@ -22,11 +22,14 @@ export function JarvisApprovalCard({
   onRevise?: (label: string) => void
   compact?: boolean
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  void compact
+
   return (
     <div style={{ ...glassPanel, padding: 0, overflow: 'hidden' }}>
       <div
         style={{
-          padding: '8px 14px',
+          padding: '7px 12px',
           borderBottom: `1px solid ${j2.glassBorder}`,
           fontSize: 10,
           letterSpacing: '0.12em',
@@ -35,7 +38,7 @@ export function JarvisApprovalCard({
           fontWeight: 700,
         }}
       >
-        Approval center · explicit confirmation required
+        Approval required
       </div>
       <div style={{ padding: 4 }}>
         <ApprovalCardView
@@ -43,12 +46,28 @@ export function JarvisApprovalCard({
           busy={busy}
           onDecide={onDecide}
           onRevise={onRevise}
-          compact={compact}
+          compact={!detailsOpen}
         />
       </div>
-      <div style={{ padding: '0 14px 12px', fontSize: 11, color: j2.muted }}>
-        Approving runs through Phase 12 policy. Live Meta and Instagram publishing stay off unless separately enabled in
-        environment configuration.
+      <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((v) => !v)}
+          style={{
+            alignSelf: 'flex-start',
+            background: 'none',
+            border: 'none',
+            color: j2.amber,
+            fontSize: 11,
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          {detailsOpen ? 'Hide details' : 'View details'}
+        </button>
+        <div style={{ fontSize: 10, color: j2.muted, lineHeight: 1.4 }}>
+          Live Meta / Instagram publishing stay off unless enabled in environment.
+        </div>
       </div>
     </div>
   )

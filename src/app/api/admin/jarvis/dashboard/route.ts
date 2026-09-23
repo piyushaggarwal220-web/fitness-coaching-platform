@@ -293,6 +293,13 @@ export async function GET() {
               aspect_ratio: j.aspect_ratio,
               estimated_cost_usd: j.estimated_cost_usd,
               actual_cost_usd: j.actual_cost_usd,
+              title: j.preset || 'Video job',
+              cost:
+                typeof j.actual_cost_usd === 'number'
+                  ? `$${j.actual_cost_usd.toFixed(2)}`
+                  : typeof j.estimated_cost_usd === 'number'
+                    ? `~$${j.estimated_cost_usd.toFixed(2)}`
+                    : null,
             })),
           })
         } catch {

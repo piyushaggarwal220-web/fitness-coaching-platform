@@ -36,17 +36,19 @@ export function ApprovalCardView({
     <div style={{ ...s.card, borderColor: 'rgba(245, 158, 11, 0.35)', marginBottom: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
         <div>
-          <div style={s.eyebrow}>Approval required</div>
+          <div style={s.eyebrow}>ACTION</div>
           <div style={{ fontWeight: 700, fontSize: 14, marginTop: 4 }}>{approval.action_label}</div>
         </div>
-        <span style={s.badge(riskTone(approval.risk_level))}>{approval.risk_level}</span>
+        <span style={s.badge(riskTone(approval.risk_level))}>RISK · {approval.risk_level}</span>
       </div>
       <div style={{ marginTop: 10 }}>
         <div style={s.eyebrow}>WHY</div>
         <p style={{ fontSize: 13, margin: '4px 0 0', color: colors.textSecondary }}>{approval.reason}</p>
       </div>
       <div style={{ ...s.muted, marginTop: 8 }}>
-        Target · {toolFamily(approval.tool_name)}
+        <span style={{ letterSpacing: '0.06em', fontSize: 10, color: colors.textMuted }}>TARGET</span>
+        {' · '}
+        {toolFamily(approval.tool_name)}
         {approval.created_at ? ` · ${formatDateTime(approval.created_at)}` : ''}
       </div>
       {approval.expected_cost_note ? (

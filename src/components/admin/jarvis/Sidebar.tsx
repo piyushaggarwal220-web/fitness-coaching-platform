@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import {
   Activity,
   BarChart3,
@@ -25,113 +24,107 @@ import {
 import type { CommandView } from './types'
 import type { JarvisCommandState } from './use-jarvis-command'
 import { SidebarStatus } from './TopBar'
-import { j2 } from './styles'
+import * as s from './styles'
 
-type NavItem = { id: CommandView; label: string; icon: typeof MessageSquare }
+type NavItem = { id: CommandView; label: string; icon: typeof MessageSquare; count?: 'approvals' | 'alerts' }
 
-const ITEMS: NavItem[] = [
-  { id: 'command', label: 'Command', icon: LayoutDashboard },
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'revenue', label: 'Revenue', icon: BarChart3 },
-  { id: 'funnels', label: 'Funnels', icon: Store },
-  { id: 'customers', label: 'Customers', icon: Users },
-  { id: 'growth', label: 'Growth', icon: TrendingUp },
-  { id: 'marketing', label: 'Meta Ads', icon: Megaphone },
-  { id: 'creatives', label: 'Creatives', icon: Wand2 },
-  { id: 'instagram', label: 'Instagram', icon: Camera },
-  { id: 'instagram_intel', label: 'IG Intel', icon: Sparkles },
-  { id: 'content_ops', label: 'Content', icon: LayoutDashboard },
-  { id: 'video', label: 'Video', icon: Film },
-  { id: 'experiments', label: 'Experiments', icon: Sparkles },
-  { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-  { id: 'approvals', label: 'Approvals', icon: ShieldCheck },
-  { id: 'activity', label: 'Activity', icon: Activity },
-  { id: 'diagnostics', label: 'Diagnostics', icon: HeartPulse },
-  { id: 'integrations', label: 'Integrations', icon: Plug },
-  { id: 'memory', label: 'Memory', icon: Brain },
-  { id: 'learning', label: 'Learning', icon: Lightbulb },
-  { id: 'taste', label: 'Taste', icon: Wand2 },
-  { id: 'settings', label: 'Settings', icon: Settings },
+const GROUPS: { title: string; items: NavItem[] }[] = [
+  {
+    title: 'Jarvis',
+    items: [
+      { id: 'command', label: 'Command Center', icon: LayoutDashboard },
+      { id: 'chat', label: 'Chat', icon: MessageSquare },
+    ],
+  },
+  {
+    title: 'Business',
+    items: [
+      { id: 'revenue', label: 'Revenue', icon: BarChart3 },
+      { id: 'funnels', label: 'Funnels', icon: Store },
+      { id: 'customers', label: 'Customers', icon: Users },
+      { id: 'growth', label: 'Growth', icon: TrendingUp },
+    ],
+  },
+  {
+    title: 'Marketing',
+    items: [
+      { id: 'marketing', label: 'Meta Ads', icon: Megaphone },
+      { id: 'creatives', label: 'Creatives', icon: Wand2 },
+      { id: 'instagram', label: 'Instagram', icon: Camera },
+      { id: 'instagram_intel', label: 'IG Intelligence', icon: Sparkles },
+      { id: 'content_ops', label: 'Content Ops', icon: LayoutDashboard },
+      { id: 'video', label: 'Video', icon: Film },
+      { id: 'experiments', label: 'Experiments', icon: Sparkles },
+    ],
+  },
+  {
+    title: 'Operations',
+    items: [
+      { id: 'tasks', label: 'Tasks', icon: CheckSquare },
+      { id: 'approvals', label: 'Approvals', icon: ShieldCheck, count: 'approvals' },
+      { id: 'activity', label: 'Activity', icon: Activity },
+      { id: 'diagnostics', label: 'Diagnostics', icon: HeartPulse },
+    ],
+  },
+  {
+    title: 'System',
+    items: [
+      { id: 'integrations', label: 'Integrations', icon: Plug },
+      { id: 'memory', label: 'Memory', icon: Brain },
+      { id: 'learning', label: 'Learning', icon: Lightbulb },
+      { id: 'taste', label: 'Taste', icon: Wand2 },
+      { id: 'settings', label: 'Settings', icon: Settings },
+    ],
+  },
 ]
 
 export function JarvisSidebar({
   jarvis,
   onNavigate,
-  rail = true,
 }: {
   jarvis: JarvisCommandState
   onNavigate: (view: CommandView) => void
-  /** Narrow icon rail — expands labels on hover */
-  rail?: boolean
 }) {
-  const [expanded, setExpanded] = useState(false)
+  const unread = jarvis.dashboard?.unread_notifications ?? 0
   const pending = jarvis.pendingApprovals.length
-  const width = rail ? (expanded ? 168 : 56) : 196
+  const openIncidents = jarvis.dashboard?.open_incidents ?? 0
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        minHeight: 0,
-        width,
-        transition: 'width 0.2s ease',
-        background: 'rgba(8,8,10,0.95)',
-        borderRight: `1px solid ${j2.glassBorder}`,
-      }}
-      onMouseEnter={() => rail && setExpanded(true)}
-      onMouseLeave={() => rail && setExpanded(false)}
-    >
-      <div style={{ padding: expanded ? '12px 12px 8px' : '12px 0 8px', textAlign: expanded ? 'left' : 'center' }}>
-        <div style={{ fontSize: 9, letterSpacing: '0.14em', color: j2.muted, fontWeight: 650 }}>
-          {expanded ? 'LURVOX' : 'L'}
-        </div>
-        {expanded ? (
-          <div style={{ fontSize: 13, fontWeight: 750, letterSpacing: '-0.03em', marginTop: 2 }}>JARVIS</div>
-        ) : null}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <div style={s.brandMark}>
+        <div style={s.eyebrow}>LURVOX</div>
+        <div style={s.brandTitle}>JARVIS</div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '0 6px 8px' }}>
-        {ITEMS.map((item) => {
-          const Icon = item.icon
-          const active = jarvis.view === item.id
-          const count = item.id === 'approvals' ? pending : 0
-          return (
-            <button
-              key={item.id}
-              type="button"
-              title={item.label}
-              aria-label={item.label}
-              onClick={() => onNavigate(item.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                width: '100%',
-                textAlign: 'left',
-                background: active ? 'rgba(255,98,0,0.1)' : 'transparent',
-                color: active ? j2.text : j2.muted,
-                border: 'none',
-                borderRadius: 8,
-                padding: expanded ? '8px 10px' : '10px 0',
-                justifyContent: expanded ? 'flex-start' : 'center',
-                fontSize: 12,
-                fontWeight: active ? 600 : 450,
-                cursor: 'pointer',
-                marginBottom: 2,
-              }}
-            >
-              <Icon size={15} />
-              {expanded ? <span style={{ flex: 1 }}>{item.label}</span> : null}
-              {expanded && count ? (
-                <span style={{ fontSize: 10, color: 'rgba(251,191,36,0.95)' }}>{count}</span>
-              ) : null}
-            </button>
-          )
-        })}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingBottom: 8 }}>
+        {GROUPS.map((group) => (
+          <div key={group.title}>
+            <div style={s.navSection}>{group.title}</div>
+            {group.items.map((item) => {
+              const Icon = item.icon
+              const count =
+                item.id === 'approvals'
+                  ? pending
+                  : item.id === 'diagnostics'
+                    ? openIncidents
+                    : item.id === 'notifications'
+                      ? unread
+                      : 0
+              const active =
+                jarvis.view === item.id ||
+                (item.id === 'command' && jarvis.view === 'command')
+              return (
+                <button key={item.id} type="button" style={s.navBtn(active)} onClick={() => onNavigate(item.id)}>
+                  <Icon size={14} />
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  {count ? <span style={s.badge(item.id === 'approvals' || item.id === 'diagnostics' ? 'warn' : 'info')}>{count}</span> : null}
+                </button>
+              )
+            })}
+          </div>
+        ))}
       </div>
-      {expanded ? <SidebarStatus jarvis={jarvis} /> : null}
+      <SidebarStatus jarvis={jarvis} />
     </div>
   )
 }

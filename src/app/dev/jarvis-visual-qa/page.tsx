@@ -1,22 +1,20 @@
 'use client'
 
 /**
- * Local visual QA surface for Jarvis 2.0 layout.
+ * Local visual QA surface for the dense Jarvis Command Center (pre-orb restoration).
  * Dev-only — not linked from production nav.
  */
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { JarvisCoreState } from '@/lib/jarvis/operator-present'
-import { coreHeadline } from '@/lib/jarvis/operator-present'
-import { JarvisCore } from '@/components/admin/jarvis/JarvisCore'
-import { JarvisBusinessPulse } from '@/components/admin/jarvis/JarvisBusinessPulse'
-import { JarvisAttention } from '@/components/admin/jarvis/JarvisAttention'
 import { CommandBar } from '@/components/admin/jarvis/CommandBar'
-import { j2 } from '@/components/admin/jarvis/styles'
+import { colors } from '@/lib/design-tokens'
+import * as s from '@/components/admin/jarvis/styles'
 import type { CockpitMetric } from '@/lib/jarvis/operator-cockpit'
 
 function m(
-  partial: Omit<CockpitMetric, 'value' | 'change_pct' | 'hint'> & Partial<Pick<CockpitMetric, 'value' | 'change_pct' | 'hint'>>
+  partial: Omit<CockpitMetric, 'value' | 'change_pct' | 'hint'> &
+    Partial<Pick<CockpitMetric, 'value' | 'change_pct' | 'hint'>>
 ): CockpitMetric {
   return {
     value: null,
@@ -30,26 +28,38 @@ const METRICS: CockpitMetric[] = [
   m({
     id: 'revenue',
     label: 'Revenue',
-    display: '₹3,398',
-    change_label: '2 paid sales',
+    display: '₹4,397',
+    change_label: '3 paid sales',
     period: 'today',
     status: 'ok',
     status_label: 'ok',
     source: 'LURVOX',
     view: 'revenue',
-    value: 3398,
+    value: 4397,
   }),
   m({
-    id: 'aov',
-    label: 'AOV',
-    display: '₹1,699',
+    id: 'orders',
+    label: 'Paid sales',
+    display: '3',
     change_label: null,
     period: 'today',
     status: 'ok',
     status_label: 'ok',
     source: 'LURVOX',
     view: 'revenue',
-    value: 1699,
+    value: 3,
+  }),
+  m({
+    id: 'aov',
+    label: 'AOV',
+    display: '₹1,465',
+    change_label: null,
+    period: 'today',
+    status: 'ok',
+    status_label: 'ok',
+    source: 'LURVOX',
+    view: 'revenue',
+    value: 1465,
   }),
   m({
     id: 'spend',
@@ -84,61 +94,58 @@ const METRICS: CockpitMetric[] = [
     source: 'META',
     view: 'marketing',
   }),
-  m({
-    id: 'orders',
-    label: 'Orders',
-    display: '2',
-    change_label: null,
-    period: 'today',
-    status: 'ok',
-    status_label: 'ok',
-    source: 'LURVOX',
-    view: 'revenue',
-    value: 2,
-  }),
 ]
 
 const STATES: JarvisCoreState[] = [
   'IDLE',
-  'LISTENING',
   'THINKING',
-  'WAITING_FOR_APPROVAL',
+  'RESEARCHING',
   'CREATING',
   'RENDERING',
+  'WAITING_FOR_APPROVAL',
   'COMPLETED',
   'ERROR',
 ]
+
+const NAV = ['Command Center', 'Chat', 'Revenue', 'Video', 'Approvals', 'Integrations']
 
 export default function JarvisVisualQaPage() {
   const [state, setState] = useState<JarvisCoreState>('IDLE')
   const [input, setInput] = useState('')
   const [width, setWidth] = useState(1440)
 
-  const headline = useMemo(() => coreHeadline(state, 'Good afternoon.'), [state])
-
   if (process.env.NODE_ENV === 'production') {
     return <div style={{ padding: 24, color: '#fff' }}>Not available in production.</div>
   }
 
+  const statusTone =
+    state === 'ERROR'
+      ? colors.danger
+      : state === 'WAITING_FOR_APPROVAL'
+        ? colors.warning
+        : state === 'IDLE' || state === 'COMPLETED'
+          ? colors.textMuted
+          : colors.success
+
   return (
-    <div style={{ background: j2.bg, minHeight: '100vh', color: j2.text, padding: 16 }}>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        {STATES.map((s) => (
+    <div style={{ background: '#070708', minHeight: '100vh', color: colors.textPrimary, padding: 12 }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+        {STATES.map((st) => (
           <button
-            key={s}
+            key={st}
             type="button"
-            onClick={() => setState(s)}
+            onClick={() => setState(st)}
             style={{
-              background: state === s ? j2.amberSoft : 'transparent',
-              border: `1px solid ${j2.glassBorder}`,
-              color: j2.text,
-              borderRadius: 999,
+              background: state === st ? 'rgba(255,98,0,0.15)' : 'transparent',
+              border: `1px solid ${colors.borderSubtle}`,
+              color: colors.textPrimary,
+              borderRadius: 6,
               padding: '4px 10px',
               fontSize: 11,
               cursor: 'pointer',
             }}
           >
-            {s}
+            {st}
           </button>
         ))}
         {[1280, 1440, 1920].map((w) => (
@@ -147,16 +154,16 @@ export default function JarvisVisualQaPage() {
             type="button"
             onClick={() => setWidth(w)}
             style={{
-              background: width === w ? 'rgba(125,211,252,0.15)' : 'transparent',
-              border: `1px solid ${j2.glassBorder}`,
-              color: j2.muted,
-              borderRadius: 8,
+              background: width === w ? 'rgba(125,211,252,0.12)' : 'transparent',
+              border: `1px solid ${colors.borderSubtle}`,
+              color: colors.textMuted,
+              borderRadius: 6,
               padding: '4px 8px',
               fontSize: 11,
               cursor: 'pointer',
             }}
           >
-            {w}px
+            {w} px
           </button>
         ))}
       </div>
@@ -166,55 +173,218 @@ export default function JarvisVisualQaPage() {
           width: '100%',
           maxWidth: width,
           margin: '0 auto',
-          border: `1px solid ${j2.glassBorder}`,
-          borderRadius: 16,
+          border: `1px solid ${colors.borderSubtle}`,
+          borderRadius: 8,
           overflow: 'hidden',
           minHeight: 720,
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1.3fr) minmax(280px, 0.9fr)',
-          gap: 0,
-          background: `
-            radial-gradient(ellipse 55% 45% at 50% 38%, rgba(255,98,0,0.07), transparent 70%),
-            ${j2.bg}
-          `,
+          gridTemplateColumns: '196px minmax(0, 1fr) 280px',
+          gridTemplateRows: '44px 1fr auto',
+          background: '#070708',
         }}
       >
-        <div style={{ display: 'grid', placeItems: 'center', padding: 24 }}>
-          <JarvisCore
-            state={state}
-            headline={headline}
-            detail={state === 'IDLE' ? 'What should I take care of?' : undefined}
-            size={width >= 1440 ? 300 : 240}
-          />
+        <div
+          style={{
+            gridColumn: '1 / -1',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '0 14px',
+            borderBottom: `1px solid ${colors.borderSubtle}`,
+            background: '#0a0a0c',
+            fontSize: 12,
+          }}
+        >
+          <strong style={{ letterSpacing: '-0.04em' }}>JARVIS</strong>
+          <span style={s.statusDot(state === 'ERROR' ? 'danger' : state === 'WAITING_FOR_APPROVAL' ? 'warn' : 'ok')} />
+          <span>Operational · 5 connected</span>
+          <div style={{ flex: 1 }} />
+          <span style={{ color: colors.textMuted }}>Approvals 1 · Cost $0.12</span>
         </div>
-        <div style={{ padding: 12, borderLeft: `1px solid ${j2.glassBorder}`, overflow: 'auto' }}>
-          {state === 'WAITING_FOR_APPROVAL' ? (
-            <div style={{ padding: 12, color: j2.muted, fontSize: 13 }}>Approval panel (contextual)</div>
-          ) : state === 'ERROR' ? (
-            <div style={{ padding: 12, color: 'rgba(248,113,113,0.95)', fontSize: 13 }}>Action required</div>
-          ) : (
-            <>
-              <JarvisBusinessPulse metrics={METRICS} onNavigate={() => undefined} layout="grid" preferData />
-              <div style={{ height: 12 }} />
-              <JarvisAttention
-                items={[
-                  {
-                    id: '1',
-                    category: 'WARNING',
-                    title: 'Meta sync issue',
-                    detail: 'Read-only Meta sync is not producing recent data for the active window.',
-                    action: 'diagnostics',
-                  },
-                ]}
-                onNavigate={() => undefined}
-                dense
-                embedded
-                maxItems={2}
-              />
-            </>
-          )}
-        </div>
-        <div style={{ gridColumn: '1 / -1', padding: 16, borderTop: `1px solid ${j2.glassBorder}` }}>
+
+        <aside
+          style={{
+            borderRight: `1px solid ${colors.borderSubtle}`,
+            background: '#0b0b0d',
+            padding: '10px 0',
+            overflow: 'auto',
+          }}
+        >
+          <div style={{ ...s.eyebrow, padding: '0 14px' }}>LURVOX</div>
+          <div style={{ ...s.brandTitle, padding: '0 14px 8px' }}>JARVIS</div>
+          {NAV.map((label, i) => (
+            <div
+              key={label}
+              style={{
+                ...s.navBtn(i === 0),
+                pointerEvents: 'none',
+              }}
+            >
+              {label}
+            </div>
+          ))}
+        </aside>
+
+        <main style={{ display: 'flex', flexDirection: 'column', minHeight: 0, background: '#09090b' }}>
+          <div style={{ flex: 1, overflow: 'auto', padding: '10px 14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.04em' }}>Good afternoon.</div>
+              <span style={{ ...s.badge(state === 'WAITING_FOR_APPROVAL' ? 'warn' : state === 'ERROR' ? 'danger' : 'muted') }}>
+                <span
+                  style={{
+                    ...s.statusDot(
+                      state === 'ERROR' ? 'danger' : state === 'WAITING_FOR_APPROVAL' ? 'warn' : state === 'IDLE' ? 'muted' : 'ok'
+                    ),
+                    marginRight: 6,
+                  }}
+                />
+                {state.replace(/_/g, ' ')}
+              </span>
+            </div>
+            <div style={{ color: colors.textSecondary, marginTop: 3, fontSize: 12 }}>
+              Dense operator console — metrics, video ops, approvals, and command input without a hero orb.
+            </div>
+            {state !== 'IDLE' ? (
+              <div style={{ marginTop: 4, fontSize: 11, color: statusTone }}>
+                {state === 'RENDERING'
+                  ? 'Waiting for render provider'
+                  : state === 'CREATING'
+                    ? 'Analyzing footage'
+                    : state === 'WAITING_FOR_APPROVAL'
+                      ? 'Waiting for your approval'
+                      : state}
+              </div>
+            ) : null}
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+                marginTop: 10,
+                borderTop: `1px solid ${colors.borderSubtle}`,
+                borderBottom: `1px solid ${colors.borderSubtle}`,
+              }}
+            >
+              {METRICS.map((metric, i) => (
+                <div
+                  key={metric.id}
+                  style={{
+                    padding: '6px 8px',
+                    borderLeft: i > 0 ? `1px solid ${colors.divider}` : 'none',
+                  }}
+                >
+                  <div style={{ fontSize: 9, letterSpacing: '0.12em', color: colors.textMuted, textTransform: 'uppercase' }}>
+                    {metric.label}
+                  </div>
+                  <div style={{ fontSize: 17, fontWeight: 700, marginTop: 2 }}>{metric.display}</div>
+                  <div style={{ fontSize: 10, marginTop: 2, color: colors.textMuted }}>
+                    {metric.change_label || metric.period}
+                  </div>
+                  <div style={{ fontSize: 9, marginTop: 1, color: colors.textMuted }}>
+                    {metric.source} · {metric.status_label}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 10, paddingBottom: 8, borderBottom: `1px solid ${colors.divider}` }}>
+              <div style={s.sectionLabel}>Video operations</div>
+              <div style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                Footage session · analyzing · 2 sources · 4 opportunities
+              </div>
+              <div style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                Plan · High-protein dessert Reel · draft
+              </div>
+              <div style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                Render · {state === 'RENDERING' ? 'rendering' : 'queued'} · 9:16
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr',
+                gap: 14,
+                marginTop: 10,
+              }}
+            >
+              <section>
+                <div style={s.sectionLabel}>What changed</div>
+                <div style={{ fontSize: 12, fontWeight: 650 }}>3 paid sales today</div>
+                <div style={{ fontSize: 12, color: colors.textSecondary }}>LURVOX ledger · IST window</div>
+              </section>
+              <section>
+                <div style={s.sectionLabel}>Needs attention</div>
+                <div style={{ fontSize: 12, fontWeight: 650 }}>Meta sync issue</div>
+                <div style={{ ...s.muted, fontSize: 11 }}>Read-only Meta sync has no recent data.</div>
+              </section>
+              <section>
+                <div style={s.sectionLabel}>Jarvis recommends</div>
+                <div style={{ fontSize: 12, fontWeight: 650 }}>Investigate Meta gap</div>
+                <div style={s.muted}>Risk · low · read-only</div>
+              </section>
+            </div>
+          </div>
+        </main>
+
+        <aside
+          style={{
+            borderLeft: `1px solid ${colors.borderSubtle}`,
+            background: '#0b0b0d',
+            padding: 12,
+            overflow: 'auto',
+            fontSize: 12,
+          }}
+        >
+          <div style={s.eyebrow}>LIVE OPS</div>
+          <div style={{ fontWeight: 800, fontSize: 15, marginTop: 4 }}>Today</div>
+          <div style={{ ...s.card, marginTop: 10, padding: 10 }}>
+            <div style={s.eyebrow}>BUSINESS PULSE</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+              <div>
+                <div style={{ fontSize: 10, color: colors.textMuted }}>Revenue</div>
+                <div style={{ fontWeight: 700 }}>₹4,397</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: colors.textMuted }}>Paid sales</div>
+                <div style={{ fontWeight: 700 }}>3</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: colors.textMuted }}>Ad spend</div>
+                <div style={{ fontWeight: 700, color: colors.textMuted }}>Unavailable</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: colors.textMuted }}>ROAS</div>
+                <div style={{ fontWeight: 700, color: colors.textMuted }}>Unavailable</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ ...s.card, marginTop: 10, padding: 10, borderColor: 'rgba(245,158,11,0.35)' }}>
+            <div style={s.eyebrow}>ACTION</div>
+            <div style={{ fontWeight: 700, marginTop: 4 }}>Publish Instagram Reel</div>
+            <div style={{ marginTop: 6 }}>
+              <div style={s.eyebrow}>WHY</div>
+              <div style={{ color: colors.textSecondary, marginTop: 2 }}>Significant write — confirmation required.</div>
+            </div>
+            <div style={{ ...s.muted, marginTop: 6 }}>TARGET · Instagram</div>
+            <span style={{ ...s.badge('warn'), marginTop: 6 }}>RISK · significant</span>
+            <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+              <button type="button" style={{ ...s.solidBtn, padding: '6px 10px', fontSize: 12 }}>
+                Approve
+              </button>
+              <button type="button" style={{ ...s.dangerBtn, padding: '6px 10px', fontSize: 12 }}>
+                Reject
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <div
+          style={{
+            gridColumn: '1 / -1',
+            ...s.composerDock,
+          }}
+        >
           <CommandBar
             value={input}
             onChange={setInput}
@@ -222,11 +392,8 @@ export default function JarvisVisualQaPage() {
             voiceStatus="off"
             voiceTitle="JARVIS_REALTIME_ENABLED is not true. Text Jarvis remains available."
             showChips
-            chips={[
-              { id: 'reel', label: 'Create Reel', prompt: 'reel' },
-              { id: 'ad', label: 'Create Ad', prompt: 'ad' },
-              { id: 'analyze', label: 'Analyze', prompt: 'analyze' },
-            ]}
+            onAttach={() => undefined}
+            attachTitle="Attach raw footage (private ingest)"
           />
         </div>
       </div>

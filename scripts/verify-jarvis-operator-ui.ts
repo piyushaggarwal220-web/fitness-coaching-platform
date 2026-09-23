@@ -1,5 +1,6 @@
 /**
- * Jarvis 2.0 operator UI verification (offline / structural).
+ * Jarvis dense operator UI verification (offline / structural).
+ * Asserts restoration of the pre-orb Command Center layout.
  * Does not enable Meta or Instagram. Does not mutate production business data.
  *
  * Run: npm run verify:jarvis-operator-ui
@@ -33,7 +34,7 @@ function noSecrets(text: string, label: string) {
   assert.ok(!/sk-[A-Za-z0-9]{20,}/.test(text), `${label} leaked OpenAI-like key`)
 }
 
-console.log('=== Jarvis 2.0 operator UI ===')
+console.log('=== Jarvis dense operator UI ===')
 
 assert.equal(liveMetaExecutionEnabled(), false, 'LIVE_META must stay false')
 assert.equal(liveInstagramPublishingEnabled(), false, 'LIVE_IG must stay false')
@@ -45,15 +46,13 @@ console.log(`  [PASS] voice root cause: status=${rt.status}`)
 console.log(`         ${rt.note}`)
 
 const components = [
-  'src/components/admin/jarvis/JarvisCore.tsx',
-  'src/components/admin/jarvis/JarvisContextPanel.tsx',
-  'src/components/admin/jarvis/JarvisConversation.tsx',
-  'src/components/admin/jarvis/JarvisCommandPalette.tsx',
-  'src/components/admin/jarvis/JarvisBusinessPulse.tsx',
-  'src/components/admin/jarvis/JarvisAttention.tsx',
   'src/components/admin/jarvis/CockpitHome.tsx',
   'src/components/admin/jarvis/CommandCenter.tsx',
   'src/components/admin/jarvis/CommandBar.tsx',
+  'src/components/admin/jarvis/RightRail.tsx',
+  'src/components/admin/jarvis/Sidebar.tsx',
+  'src/components/admin/jarvis/TopBar.tsx',
+  'src/components/admin/jarvis/JarvisCommandPalette.tsx',
   'docs/JARVIS-2-OPERATOR-INTERFACE.md',
 ]
 for (const c of components) {
@@ -63,31 +62,30 @@ for (const c of components) {
 console.log('  [PASS] operator UI components present')
 
 const cockpit = read('src/components/admin/jarvis/CockpitHome.tsx')
-assert.ok(cockpit.includes('JarvisCore'), 'home mounts JarvisCore')
-assert.ok(cockpit.includes('JarvisContextPanel'), 'home mounts contextual panel')
-assert.ok(cockpit.includes('OPERATOR_QUICK_CHIPS'), 'home uses chip actions')
-assert.ok(cockpit.includes('coreSize') || cockpit.includes('300'), 'hero core size')
-assert.ok(!/JARVIS OPERATOR/i.test(cockpit), 'no JARVIS OPERATOR eyebrow')
-assert.ok(!/87% intelligent/i.test(cockpit), 'no fake progress copy')
-console.log('  [PASS] operator home composition (hero core)')
-
-const pulse = read('src/components/admin/jarvis/JarvisBusinessPulse.tsx')
-assert.ok(pulse.includes('minmax(0'), 'pulse uses minmax(0) overflow-safe grid')
-assert.ok(pulse.includes('textOverflow') || pulse.includes('ellipsis'), 'pulse ellipsis')
-assert.ok(pulse.includes('preferData') || pulse.includes('Meta metrics'), 'pulse prefers data / collapses Meta')
-console.log('  [PASS] business pulse overflow guards')
+assert.ok(!cockpit.includes('JarvisCore'), 'home must not mount giant JarvisCore orb')
+assert.ok(!cockpit.includes('coreSize'), 'home must not size a hero orb')
+assert.ok(cockpit.includes('cockpit.metrics'), 'dense metrics strip restored')
+assert.ok(cockpit.includes('Video operations'), 'video workflow section present')
+assert.ok(cockpit.includes('onAttach') || cockpit.includes('uploadFootage'), 'footage attach path')
+assert.ok(cockpit.includes('composerDock') || cockpit.includes('CommandBar'), 'command input dock')
+assert.ok(cockpit.includes('core.state'), 'compact state indicator (not orb)')
+assert.ok(!/Waiting for your approval\./.test(cockpit), 'no orb headline dominating home')
+console.log('  [PASS] dense operator home (no giant orb)')
 
 const center = read('src/components/admin/jarvis/CommandCenter.tsx')
+assert.ok(center.includes('RightRail'), 'desktop right rail wired')
+assert.ok(center.includes('JarvisSidebar'), 'sidebar navigation')
 assert.ok(center.includes('JarvisCommandPalette'), 'command palette wired')
-assert.ok(center.includes('rail'), 'sidebar rail mode')
-assert.ok(center.includes('compact'), 'compact admin chrome')
-console.log('  [PASS] chrome minimized + palette')
+assert.ok(!center.includes('rail />') && !center.includes('rail={true}'), 'icon-only rail mode retired')
+console.log('  [PASS] dense chrome: sidebar + main + right rail')
 
-const core = read('src/components/admin/jarvis/JarvisCore.tsx')
-assert.ok(core.includes('jarvis-breathe'), 'core idle animation')
-assert.ok(core.includes('jarvis-listen'), 'core listen animation')
-assert.ok(core.includes('prefers-reduced-motion'), 'reduced motion')
-console.log('  [PASS] core motion states')
+const approvals = read('src/components/admin/jarvis/ApprovalsView.tsx')
+assert.ok(approvals.includes('ACTION'), 'approval ACTION label')
+assert.ok(approvals.includes('WHY'), 'approval WHY label')
+assert.ok(/RISK/.test(approvals), 'approval RISK label')
+assert.ok(/TARGET/.test(approvals), 'approval TARGET label')
+assert.ok(approvals.includes('Approve') && approvals.includes('Reject'), 'approve/reject actions')
+console.log('  [PASS] compact approval card labels')
 
 assert.ok(PALETTE_COMMANDS.length >= 8)
 assert.ok(OPERATOR_QUICK_CHIPS.length >= 4)
@@ -96,11 +94,11 @@ assert.equal(coreHeadline('IDLE', 'Good afternoon.'), 'Good afternoon')
 assert.equal(coreHeadline('WAITING_FOR_APPROVAL'), 'Waiting for your approval.')
 assert.equal(coreStateFromContext({}).state, 'IDLE')
 assert.equal(coreStateFromContext({ pendingApprovals: 1 }).state, 'WAITING_FOR_APPROVAL')
-console.log('  [PASS] activity language + headlines')
+console.log('  [PASS] activity language helpers retained')
 
 const packageJson = JSON.parse(read('package.json')) as { scripts: Record<string, string> }
 assert.ok(packageJson.scripts['verify:jarvis-operator-ui'])
 console.log('  [PASS] verify script registered')
 
-console.log('\nJarvis 2.0 visual overhaul verification passed (offline).')
-console.log('Manual Visual QA still required on /admin/jarvis at 1280/1440/1920.')
+console.log('\nJarvis dense operator UI verification passed (offline).')
+console.log('Manual Visual QA: /admin/jarvis — no giant orb; dense metrics + right rail + command dock.')

@@ -2,7 +2,7 @@
 
 /**
  * Contextual right panel — swaps content by Jarvis core state.
- * Keeps permanent dashboard cards off the home surface.
+ * Dense operational context; no permanent giant diagnostic wall.
  */
 
 import type { ReactNode } from 'react'
@@ -18,6 +18,30 @@ import { JarvisVideoResult } from './JarvisVideoResult'
 import { JarvisCreativeGallery } from './JarvisCreativeGallery'
 import { JarvisCostStatus } from './JarvisCostStatus'
 import { j2 } from './styles'
+
+type VideoJobRow = {
+  id?: string
+  title?: string
+  status?: string
+  duration?: string
+  aspect_ratio?: string
+  cost?: string
+  has_output?: boolean
+  preset?: string
+  estimated_cost_usd?: number | null
+  actual_cost_usd?: number | null
+  approval_status?: string | null
+}
+
+function isReadyVideoJob(j: VideoJobRow) {
+  if (j.has_output) return true
+  return /ready|complete|rendered|awaiting_approval/i.test(j.status || '')
+}
+
+function costLabel(j: VideoJobRow) {
+  const n = j.actual_cost_usd ?? j.estimated_cost_usd
+  return typeof n === 'number' ? `$${n.toFixed(2)}` : j.cost
+}
 
 export function JarvisContextPanel({
   mode,
@@ -40,11 +64,12 @@ export function JarvisContextPanel({
   const spent = (jarvis.dashboard?.cost as { daily_spent_usd?: number } | undefined)?.daily_spent_usd
   const limit = (jarvis.dashboard?.cost as { daily_limit_usd?: number } | undefined)?.daily_limit_usd
   const videoJobs = (
-    jarvis.dashboard?.video_workspace as
-      | { recent_jobs?: { title?: string; status?: string; duration?: string; aspect_ratio?: string; cost?: string }[] }
-      | undefined
+    jarvis.dashboard?.video_workspace as { recent_jobs?: VideoJobRow[] } | undefined
   )?.recent_jobs
-  const readyVideo = videoJobs?.find((j) => /ready|complete|rendered/i.test(j.status || ''))
+  const readyVideo = videoJobs?.find(isReadyVideoJob)
+  const renderingJob = videoJobs?.find((j) =>
+    /render|queued|processing|running|submitted/i.test(j.status || '')
+  )
   const creatives =
     (
       jarvis.dashboard as {
@@ -52,6 +77,7 @@ export function JarvisContextPanel({
       } | null
     )?.creatives?.slice(0, 5) || []
 
+  const videoBusy = mode === 'CREATING' || mode === 'RENDERING'
   let body: ReactNode
 
   if (mode === 'WAITING_FOR_APPROVAL' && pending) {
@@ -83,19 +109,23 @@ export function JarvisContextPanel({
         )}
       </PanelFrame>
     )
-  } else if (mode === 'CREATING' || mode === 'RENDERING') {
+  } else if (videoBusy) {
     body = (
-      <PanelFrame title={mode === 'RENDERING' ? 'Rendering' : 'Creating'}>
-        {jarvis.timeline.length ? <JarvisOperationTimeline steps={jarvis.timeline} open /> : null}
-        {readyVideo ? (
-          <div style={{ marginTop: 12 }}>
+      <PanelFrame title={mode === 'RENDERING' ? 'Rendering Reel' : 'Creating Reel'}>
+        {jarvis.timeline.length ? (
+          <JarvisOperationTimeline steps={jarvis.timeline} open />
+        ) : (
+          <VideoStageHints mode={mode} status={renderingJob?.status || readyVideo?.status} />
+        )}
+        {readyVideo?.has_output ? (
+          <div style={{ marginTop: 10 }}>
             <JarvisVideoResult
               video={{
-                title: readyVideo.title || 'Rendered video',
+                title: readyVideo.title || readyVideo.preset || 'Rendered Reel',
                 duration: readyVideo.duration,
-                aspect_ratio: readyVideo.aspect_ratio,
+                aspect_ratio: readyVideo.aspect_ratio || '9:16',
                 status: readyVideo.status,
-                cost: readyVideo.cost,
+                cost: costLabel(readyVideo),
                 publishing_enabled: Boolean(jarvis.dashboard?.execution?.live_instagram_publishing),
               }}
               onRevise={() => void jarvis.sendMessage('Revise the latest rendered Reel.')}
@@ -105,7 +135,7 @@ export function JarvisContextPanel({
           </div>
         ) : null}
         {creatives.length && mode === 'CREATING' ? (
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 10 }}>
             <JarvisCreativeGallery
               creatives={creatives.map((c, i) => ({
                 id: c.id || `c-${i}`,
@@ -120,9 +150,15 @@ export function JarvisContextPanel({
         ) : null}
       </PanelFrame>
     )
-  } else if (mode === 'THINKING' || mode === 'OBSERVING' || mode === 'PLANNING' || mode === 'EXECUTING' || mode === 'VERIFYING') {
+  } else if (
+    mode === 'THINKING' ||
+    mode === 'OBSERVING' ||
+    mode === 'PLANNING' ||
+    mode === 'EXECUTING' ||
+    mode === 'VERIFYING'
+  ) {
     body = (
-      <PanelFrame title="Operation">
+      <PanelFrame title="Current task">
         {jarvis.timeline.length ? (
           <JarvisOperationTimeline steps={jarvis.timeline} open />
         ) : (
@@ -134,24 +170,25 @@ export function JarvisContextPanel({
     body = (
       <JarvisVideoResult
         video={{
-          title: readyVideo.title || 'Video ready',
+          title: readyVideo.title || readyVideo.preset || 'Video ready',
           duration: readyVideo.duration,
-          aspect_ratio: readyVideo.aspect_ratio,
+          aspect_ratio: readyVideo.aspect_ratio || '9:16',
           status: readyVideo.status,
+          cost: costLabel(readyVideo),
           publishing_enabled: Boolean(jarvis.dashboard?.execution?.live_instagram_publishing),
         }}
         onApprove={pending ? () => jarvis.decide(pending.id, true) : undefined}
         onRevise={() => void jarvis.sendMessage('Revise the latest rendered Reel.')}
         onVariation={() => void jarvis.sendMessage('Create a variation of the latest Reel.')}
+        onDetails={() => onNavigate('video')}
       />
     )
   } else if (mode === 'IDLE' || mode === 'PAUSED' || mode === 'COMPLETED') {
-    // IDLE / calm states: Business Pulse owns the panel — attention is a compact strip only.
     body = (
       <>
         <JarvisBusinessPulse metrics={metrics} onNavigate={onNavigate} compact layout="grid" preferData />
-        {(attention.length || autonomous?.length) ? (
-          <div style={{ marginTop: 12 }}>
+        {attention.length || autonomous?.length ? (
+          <div style={{ marginTop: 10 }}>
             <JarvisAttention
               items={attention}
               autonomous={autonomous}
@@ -163,7 +200,7 @@ export function JarvisContextPanel({
             />
           </div>
         ) : null}
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginTop: 8 }}>
           <JarvisCostStatus spentUsd={spent} limitUsd={limit} paused={mode === 'PAUSED'} />
         </div>
         <SystemHint dashboard={jarvis.dashboard} />
@@ -181,7 +218,7 @@ export function JarvisContextPanel({
           embedded
           maxItems={3}
         />
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginTop: 8 }}>
           <JarvisBusinessPulse metrics={metrics} onNavigate={onNavigate} compact layout="list" preferData />
         </div>
       </>
@@ -190,7 +227,7 @@ export function JarvisContextPanel({
     body = (
       <>
         <JarvisBusinessPulse metrics={metrics} onNavigate={onNavigate} compact layout="grid" preferData />
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginTop: 8 }}>
           <JarvisCostStatus spentUsd={spent} limitUsd={limit} paused={false} />
         </div>
         <SystemHint dashboard={jarvis.dashboard} />
@@ -201,12 +238,11 @@ export function JarvisContextPanel({
   return (
     <aside
       style={{
-        padding: compact ? 10 : 14,
+        padding: compact ? 10 : 12,
         height: '100%',
         minHeight: 0,
         overflowY: 'auto',
         background: 'transparent',
-        borderLeft: compact ? 'none' : `1px solid ${j2.glassBorder}`,
       }}
       aria-label="Contextual panel"
     >
@@ -215,13 +251,54 @@ export function JarvisContextPanel({
   )
 }
 
+function VideoStageHints({ mode, status }: { mode: JarvisCoreState; status?: string }) {
+  const stages =
+    mode === 'RENDERING'
+      ? ['Creating edit', 'Rendering', 'Verifying', 'Video ready']
+      : [
+          'Analyzing footage',
+          'Selecting clips',
+          'Building story',
+          'Planning captions',
+          'Creating edit',
+          'Rendering',
+        ]
+  return (
+    <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+      {stages.map((label, i) => (
+        <li
+          key={label}
+          style={{
+            fontSize: 12,
+            padding: '4px 0',
+            color: i === 0 ? j2.text : j2.muted,
+          }}
+        >
+          {i === 0 ? '●' : '○'} {label}
+          {i === 0 && status ? (
+            <span style={{ color: j2.muted, marginLeft: 6 }}>({status})</span>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function PanelFrame({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: j2.muted, fontWeight: 650 }}>
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: j2.muted,
+          fontWeight: 650,
+        }}
+      >
         {title}
       </div>
-      <div style={{ marginTop: 10 }}>{children}</div>
+      <div style={{ marginTop: 8 }}>{children}</div>
     </div>
   )
 }
@@ -230,14 +307,17 @@ function SystemHint({ dashboard }: { dashboard: JarvisDashboard | null }) {
   const rt = dashboard?.realtime
   const voice = rt?.modalities?.voice_input || rt?.status
   const note = (rt as { note?: string } | undefined)?.note
+  const video = dashboard?.video_workspace as { provider_configured?: boolean } | undefined
   return (
-    <div style={{ marginTop: 12, fontSize: 11, color: j2.muted, lineHeight: 1.4 }}>
+    <div style={{ marginTop: 10, fontSize: 10, color: j2.muted, lineHeight: 1.4 }}>
       <div>
         Meta {dashboard?.execution?.live_meta_execution ? 'LIVE' : 'read-only'} · IG{' '}
         {dashboard?.execution?.live_instagram_publishing ? 'LIVE' : 'read-only'}
       </div>
-      <div style={{ marginTop: 4 }} title={note || undefined}>
+      <div style={{ marginTop: 3 }} title={note || undefined}>
         Voice {voice === 'CONNECTED' ? 'ready' : voice === 'DISABLED' ? 'off' : String(voice || 'unavailable').toLowerCase()}
+        {' · '}
+        Video {video?.provider_configured ? 'ready' : 'check provider'}
       </div>
     </div>
   )
@@ -245,7 +325,7 @@ function SystemHint({ dashboard }: { dashboard: JarvisDashboard | null }) {
 
 const bodyText = { margin: 0, fontSize: 13, color: j2.muted, lineHeight: 1.45 } as const
 const linkBtn = {
-  marginTop: 10,
+  marginTop: 8,
   background: 'none' as const,
   border: 'none' as const,
   color: j2.amber,

@@ -155,7 +155,17 @@ export function humanToolLabel(toolName: string): string {
     'execution.policy_status': 'Checking execution permissions',
     'video.create_edl': 'Creating video edit',
     'video.render': 'Rendering video',
+    'video.render_edl': 'Rendering video',
+    'video.create_edit_job': 'Creating edit job',
     'video.analyze': 'Analyzing footage',
+    'video.create_session': 'Creating footage session',
+    'video.find_sources': 'Finding footage sources',
+    'video.find_opportunities': 'Selecting clip opportunities',
+    'video.validate_edl': 'Validating edit',
+    'video.get_render': 'Verifying render',
+    'video.list_renders': 'Checking renders',
+    'creative.plan': 'Building story',
+    'creatives.plan': 'Building story',
     'instagram.plan_content': 'Planning Instagram content',
     'instagram.publish': 'Preparing Instagram publish package',
     'creatives.generate': 'Creating ad creatives',
@@ -324,9 +334,9 @@ export function coreHeadline(state: JarvisCoreState, greeting?: string | null): 
     case 'PLANNING':
       return 'Planning.'
     case 'CREATING':
-      return 'Creating.'
+      return 'Creating Reel.'
     case 'RENDERING':
-      return 'Rendering.'
+      return 'Rendering Reel.'
     case 'WAITING_FOR_APPROVAL':
       return 'Waiting for your approval.'
     case 'EXECUTING':
@@ -347,7 +357,12 @@ export function coreHeadline(state: JarvisCoreState, greeting?: string | null): 
 }
 
 export const OPERATOR_QUICK_CHIPS = [
-  { id: 'reel', label: 'Create Reel', prompt: 'Make a Reel from today’s footage.' },
+  {
+    id: 'reel',
+    label: 'Create Reel',
+    prompt:
+      'Make a Short-form Fitness Reel (9:16) from the latest uploaded footage session. Analyze first, plan story from real clips only, draft EDL, render via Shotstack, wait for webhook. Do not invent macros. Do not publish.',
+  },
   { id: 'ad', label: 'Create Ad', prompt: 'Create five ads for the ₹99 funnel.' },
   { id: 'analyze', label: 'Analyze', prompt: 'What happened today? What needs my attention?' },
   { id: 'research', label: 'Research', prompt: "Research what's trending." },

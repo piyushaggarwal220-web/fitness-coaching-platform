@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Mic, Paperclip, Send } from 'lucide-react'
+import { colors } from '@/lib/design-tokens'
 import { j2, glassPanel } from './styles'
 
 export function CommandBar({
@@ -13,6 +14,9 @@ export function CommandBar({
   voiceStatus,
   voiceTitle,
   onMic,
+  onAttach,
+  attachTitle,
+  attachDisabled,
   showChips,
   chips,
   /** @deprecated use showChips + chips */
@@ -27,6 +31,10 @@ export function CommandBar({
   voiceStatus?: 'ready' | 'off' | 'unavailable'
   voiceTitle?: string
   onMic?: () => void
+  /** Opens native file picker for private video ingest when provided. */
+  onAttach?: () => void
+  attachTitle?: string
+  attachDisabled?: boolean
   showChips?: boolean
   chips?: { id: string; label: string; prompt: string }[]
   extra?: boolean
@@ -57,14 +65,14 @@ export function CommandBar({
           style={{
             ...glassPanel,
             display: 'flex',
-            gap: 10,
+            gap: 8,
             alignItems: 'center',
-            padding: '10px 12px',
-            borderRadius: 16,
-            borderColor: focused ? 'rgba(255,98,0,0.45)' : j2.glassBorder,
-            boxShadow: focused ? '0 0 0 1px rgba(255,98,0,0.2), 0 0 28px rgba(255,98,0,0.12)' : 'none',
-            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-            background: 'rgba(14,14,18,0.88)',
+            borderRadius: 10,
+            borderColor: focused ? 'rgba(255,98,0,0.4)' : colors.borderSubtle,
+            boxShadow: 'none',
+            transition: 'border-color 0.15s ease',
+            background: '#101012',
+            padding: '6px 8px 6px 10px',
           }}
         >
           <button
@@ -74,11 +82,11 @@ export function CommandBar({
             disabled={!voiceReady || busy}
             onClick={onMic}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              border: `1px solid ${j2.glassBorder}`,
-              background: voiceReady ? j2.amberSoft : 'rgba(255,255,255,0.03)',
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: `1px solid ${colors.borderSubtle}`,
+              background: voiceReady ? 'rgba(255,98,0,0.12)' : 'transparent',
               color: voiceReady ? j2.amber : j2.muted,
               display: 'grid',
               placeItems: 'center',
@@ -87,7 +95,7 @@ export function CommandBar({
               flexShrink: 0,
             }}
           >
-            <Mic size={16} />
+            <Mic size={14} />
           </button>
           <input
             style={{
@@ -97,7 +105,7 @@ export function CommandBar({
               border: 'none',
               outline: 'none',
               color: j2.text,
-              fontSize: 15,
+              fontSize: 13,
               fontFamily: 'inherit',
               padding: '6px 0',
             }}
@@ -117,30 +125,31 @@ export function CommandBar({
           />
           <button
             type="button"
-            aria-label="Attach"
-            title="Attachments use existing private storage when supported"
+            aria-label="Attach footage"
+            title={attachTitle || (onAttach ? 'Attach raw footage' : 'Attachments unavailable')}
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
+              width: 32,
+              height: 32,
+              borderRadius: 8,
               border: 'none',
               background: 'transparent',
-              color: j2.muted,
+              color: onAttach && !attachDisabled ? j2.text : j2.muted,
               display: 'grid',
               placeItems: 'center',
-              cursor: 'default',
-              opacity: 0.5,
+              cursor: onAttach && !attachDisabled ? 'pointer' : 'default',
+              opacity: onAttach && !attachDisabled ? 1 : 0.5,
             }}
-            disabled
+            disabled={!onAttach || attachDisabled || busy}
+            onClick={() => onAttach?.()}
           >
             <Paperclip size={15} />
           </button>
           <button
             type="submit"
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
+              width: 32,
+              height: 32,
+              borderRadius: 8,
               border: 'none',
               background: value.trim() && !busy ? j2.amber : 'rgba(255,255,255,0.06)',
               color: value.trim() && !busy ? '#0a0a0a' : j2.muted,
@@ -152,7 +161,7 @@ export function CommandBar({
             disabled={busy || !value.trim()}
             aria-label="Send to Jarvis"
           >
-            {busy ? '…' : <Send size={15} />}
+            {busy ? '…' : <Send size={13} />}
           </button>
         </div>
       </form>

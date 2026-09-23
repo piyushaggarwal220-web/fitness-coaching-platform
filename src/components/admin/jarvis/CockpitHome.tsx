@@ -1,23 +1,53 @@
 'use client'
 
-/**
- * Jarvis 2.0 operator home — hero core + contextual panels.
- * Conversation left · Core center · Context right · Command bottom.
- */
-
-import { useMemo } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { colors } from '@/lib/design-tokens'
 import {
-  OPERATOR_QUICK_CHIPS,
-  coreHeadline,
+  formatTime,
   coreStateFromContext,
+  humanToolLabel,
 } from '@/lib/jarvis/operator-present'
+import type { CockpitMetric, ChangeCard, AttentionItem, OperatorState } from '@/lib/jarvis/operator-cockpit'
 import type { CommandView } from './types'
 import type { JarvisCommandState } from './use-jarvis-command'
 import { CommandBar } from './CommandBar'
-import { JarvisCore } from './JarvisCore'
-import { JarvisConversation } from './JarvisConversation'
-import { JarvisContextPanel } from './JarvisContextPanel'
-import { j2, composerDock } from './styles'
+import { VoiceOperatorPanel } from './VoiceOperatorPanel'
+import { ExecutiveChart } from './Sparkline'
+import * as s from './styles'
+
+function metricColor(status: CockpitMetric['status']) {
+  if (status === 'error') return colors.danger
+  if (status === 'unavailable' || status === 'stale') return colors.textMuted
+  return colors.textPrimary
+}
+
+function changeColor(label: string | null, status: CockpitMetric['status']) {
+  if (status === 'unavailable' || status === 'error' || status === 'stale') return colors.textMuted
+  if (!label) return colors.textMuted
+  if (label.startsWith('+')) return colors.success
+  if (label.startsWith('-') && label.includes('%')) return colors.danger
+  return colors.textMuted
+}
+
+function toneColor(tone: ChangeCard['tone']) {
+  if (tone === 'up') return colors.success
+  if (tone === 'down' || tone === 'warn') return colors.warning
+  return colors.textMuted
+}
+
+function stateColor(state: OperatorState) {
+  if (state === 'Failed' || state === 'Blocked') return colors.danger
+  if (state === 'Waiting for approval') return colors.warning
+  if (state === 'Completed' || state === 'Idle') return colors.textMuted
+  return colors.success
+}
+
+function actionLabel(item: AttentionItem) {
+  if (item.action === 'review') return 'Review approvals →'
+  if (item.action === 'diagnostics') return 'View diagnostics →'
+  if (item.action === 'integrations') return 'Open integrations →'
+  return null
+}
 
 export function CockpitHome({
   jarvis,
@@ -29,19 +59,22 @@ export function CockpitHome({
   compact?: boolean
 }) {
   const cockpit = jarvis.dashboard?.cockpit
+  const [evidenceOpen, setEvidenceOpen] = useState(false)
+  const [uploadNote, setUploadNote] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
   const execution = jarvis.dashboard?.execution
   const cost = jarvis.dashboard?.cost as { daily_spent_usd?: number | null; daily_limit_usd?: number | null } | undefined
   const spent = cost?.daily_spent_usd
   const limit = cost?.daily_limit_usd
   const budgetExhausted =
     typeof spent === 'number' && typeof limit === 'number' && limit > 0 && spent >= limit
-
   const activeStep = jarvis.timeline.find((t) => t.state === 'active')
   const activeTool =
     (activeStep?.id.startsWith('tool-') ? activeStep.id.replace(/^tool-/, '') : null) ||
     (activeStep?.detail?.includes('.') ? activeStep.detail : null) ||
     null
-
   const core = useMemo(
     () =>
       coreStateFromContext({
@@ -74,181 +107,711 @@ export function CockpitHome({
       ? 'JARVIS_REALTIME_ENABLED is not true. Text chat remains available.'
       : 'Voice not configured. Text chat remains available.')
 
-  const autonomous = (jarvis.dashboard?.autonomous_operator?.attention || []) as {
-    severity: string
-    system: string
-    title: string
-    next_action: string
-  }[]
+  const videoWs = jarvis.dashboard?.video_workspace
+  const videoSessions = (videoWs?.sessions ?? []).slice(0, 3)
+  const videoJobs = (videoWs?.recent_jobs ?? []).slice(0, 4)
+  const creativePlans = (jarvis.dashboard?.creative_director?.plans ?? []).slice(0, 3)
 
-  const headline = coreHeadline(core.state, cockpit?.greeting)
-  const showConversation = jarvis.messages.length > 0 || Boolean(jarvis.streamText) || jarvis.busy
+  async function uploadFootage(file: File) {
+    setUploading(true)
+    setUploadNote(null)
+    try {
+      const sessionRes = await fetch('/api/admin/jarvis/video-sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_session',
+          title: file.name.replace(/\.[^.]+$/, '') || 'Footage session',
+          description: 'Operator upload from Command Center',
+        }),
+      })
+      const sessionJson = await sessionRes.json()
+      if (!sessionJson.success || !sessionJson.session?.id) {
+        throw new Error(sessionJson.error || 'Could not create video session')
+      }
+      const sessionId = sessionJson.session.id as string
+      const form = new FormData()
+      form.set('file', file)
+      form.set('sessionId', sessionId)
+      const up = await fetch('/api/admin/jarvis/video-sources', { method: 'POST', body: form })
+      const upJson = await up.json()
+      if (!upJson.success) {
+        throw new Error(upJson.error || 'Upload failed')
+      }
+      setUploadNote(`Footage ingested · session ${sessionId.slice(0, 8)}…`)
+      await jarvis.sendMessage(
+        [
+          `I uploaded raw footage into video session ${sessionId} (source ${upJson.source_ref || upJson.id || 'stored'}).`,
+          'Use the Short-form Fitness Reel pipeline: analyze → opportunities → creative plan → EDL → Shotstack render (9:16).',
+          'Do not invent macros. Do not publish. Wait for webhook confirmation before claiming render success.',
+        ].join(' ')
+      )
+      await jarvis.loadDashboard()
+      onNavigate('video')
+    } catch (e) {
+      setUploadNote(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
 
   if (!cockpit) {
     return (
-      <div style={{ display: 'grid', placeItems: 'center', height: '100%', padding: 24 }}>
-        <JarvisCore state="THINKING" headline="Loading." size={compact ? 240 : 300} />
+      <div style={{ padding: 16 }}>
+        <div style={s.eyebrow}>Command Center</div>
+        <div style={{ marginTop: 6, color: colors.textMuted }}>Loading business state…</div>
       </div>
     )
   }
 
-  const coreSize = compact ? 240 : 320
+  const goAttention = (item: AttentionItem) => {
+    if (item.action === 'review') onNavigate('approvals')
+    else if (item.action === 'diagnostics') onNavigate('diagnostics')
+    else if (item.action === 'integrations') onNavigate('integrations')
+  }
+
+  const statusTone =
+    core.state === 'ERROR' || core.state === 'PAUSED'
+      ? colors.danger
+      : core.state === 'WAITING_FOR_APPROVAL'
+        ? colors.warning
+        : core.state === 'IDLE' || core.state === 'COMPLETED'
+          ? colors.textMuted
+          : colors.success
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        minHeight: 0,
-        background: `
-          radial-gradient(ellipse 55% 45% at 50% 38%, rgba(255,98,0,0.07), transparent 70%),
-          radial-gradient(ellipse 80% 60% at 50% 100%, rgba(0,0,0,0.55), transparent 55%),
-          linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 40%),
-          ${j2.bg}
-        `,
-        position: 'relative',
-      }}
-    >
-      {/* subtle grid */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          inset: 0,
-          opacity: 0.04,
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
-          pointerEvents: 'none',
-          maskImage: 'radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent)',
-        }}
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: compact ? '8px 10px 4px' : '8px 16px 4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: compact ? 16 : 17, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1.2 }}>
+                {cockpit.greeting}
+              </div>
+              <span
+                style={{
+                  ...s.badge(core.state === 'WAITING_FOR_APPROVAL' ? 'warn' : core.state === 'ERROR' ? 'danger' : 'muted'),
+                  border: `1px solid ${statusTone}44`,
+                }}
+                title={core.detail || core.state}
+              >
+                <span style={{ ...s.statusDot(core.state === 'ERROR' ? 'danger' : core.state === 'WAITING_FOR_APPROVAL' ? 'warn' : core.state === 'IDLE' ? 'muted' : 'ok'), marginRight: 6 }} />
+                {core.state.replace(/_/g, ' ')}
+              </span>
+            </div>
+            <div style={{ color: colors.textSecondary, marginTop: 3, fontSize: 12, lineHeight: 1.35 }}>
+              {cockpit.brief}
+            </div>
+            {core.state !== 'IDLE' && core.detail ? (
+              <div style={{ marginTop: 4, fontSize: 11, color: statusTone }}>
+                {activeTool ? humanToolLabel(activeTool) : core.detail}
+              </div>
+            ) : null}
+          </div>
+          <div style={{ fontSize: 10, color: colors.textMuted, textAlign: 'right', flexShrink: 0, lineHeight: 1.3 }}>
+            {cockpit.date_label}
+            <div>{cockpit.timezone}</div>
+          </div>
+        </div>
 
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          display: 'grid',
-          gridTemplateColumns: compact
-            ? '1fr'
-            : showConversation
-              ? 'minmax(220px, 0.85fr) minmax(0, 1.35fr) minmax(260px, 0.9fr)'
-              : 'minmax(0, 1.4fr) minmax(280px, 0.9fr)',
-          gap: compact ? 12 : 16,
-          padding: compact ? '12px 12px 4px' : '16px 20px 4px',
-          alignItems: 'stretch',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        {!compact && showConversation ? (
-          <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <JarvisConversation jarvis={jarvis} compact />
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: compact ? 'repeat(2, 1fr)' : 'repeat(6, minmax(0, 1fr))',
+            marginTop: 8,
+            borderTop: `1px solid ${colors.borderSubtle}`,
+            borderBottom: `1px solid ${colors.borderSubtle}`,
+          }}
+        >
+          {cockpit.metrics.map((m, i) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onNavigate(m.view)}
+              style={{
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                borderLeft: !compact && i > 0 ? `1px solid ${colors.divider}` : 'none',
+                padding: '6px 8px',
+                cursor: 'pointer',
+                color: 'inherit',
+              }}
+            >
+              <div style={{ fontSize: 9, letterSpacing: '0.12em', color: colors.textMuted, textTransform: 'uppercase' }}>
+                {m.label}
+              </div>
+              <div style={{ fontSize: 17, fontWeight: 700, marginTop: 2, color: metricColor(m.status), letterSpacing: '-0.03em' }}>
+                {m.display}
+              </div>
+              <div style={{ fontSize: 10, marginTop: 2, color: changeColor(m.change_label, m.status) }}>
+                {m.change_label || m.period}
+              </div>
+              <div style={{ fontSize: 9, marginTop: 1, color: colors.textMuted, letterSpacing: '0.04em' }}>
+                {m.source} · {m.status_label}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {jarvis.dashboard?.execution ? (
+          <div
+            style={{
+              marginTop: 8,
+              padding: '6px 0',
+              borderBottom: `1px solid ${colors.divider}`,
+              fontSize: 12,
+              color: colors.textSecondary,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 10,
+              alignItems: 'center',
+            }}
+          >
+            <span style={s.sectionLabel}>Execution</span>
+            <span
+              style={{
+                color: jarvis.dashboard.execution.kill_switch ? colors.danger : colors.textSecondary,
+              }}
+            >
+              {jarvis.dashboard.execution.kill_switch ? 'KILL SWITCH' : 'Writes gated'}
+            </span>
+            <span>· Mode {jarvis.dashboard.execution.mode || 'approval'}</span>
+            {jarvis.dashboard.execution.dry_run ? <span>· DRY RUN</span> : null}
+            {jarvis.dashboard.execution.shadow_mode ? <span>· SHADOW</span> : null}
+            <span>
+              · Live Meta {jarvis.dashboard.execution.live_meta_execution ? 'ON' : 'OFF'} · IG publish{' '}
+              {jarvis.dashboard.execution.live_instagram_publishing ? 'ON' : 'OFF'}
+            </span>
+            <button
+              type="button"
+              style={{ ...s.ghostBtn, border: 'none', padding: '2px 6px', fontSize: 11 }}
+              onClick={() => onNavigate('settings')}
+            >
+              Controls →
+            </button>
           </div>
         ) : null}
 
         <div
           style={{
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: compact ? 'flex-start' : 'center',
-            paddingTop: compact ? 8 : 0,
-            gap: 18,
+            marginTop: 8,
+            paddingBottom: 6,
+            borderBottom: `1px solid ${colors.divider}`,
           }}
         >
-          <JarvisCore
-            state={core.state}
-            headline={headline}
-            detail={core.state === 'IDLE' ? 'What should I take care of?' : core.detail}
-            size={coreSize}
-          />
-          <div
-            style={{
-              display: 'flex',
-              gap: 8,
-              maxWidth: '100%',
-              overflowX: 'auto',
-              padding: '0 4px 4px',
-              scrollbarWidth: 'thin',
-            }}
-          >
-            {OPERATOR_QUICK_CHIPS.map((a) => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div style={s.sectionLabel}>Video operations</div>
+            <div style={{ display: 'flex', gap: 8 }}>
               <button
-                key={a.id}
                 type="button"
-                onClick={() => void jarvis.sendMessage(a.prompt)}
-                style={{
-                  flexShrink: 0,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${j2.glassBorder}`,
-                  borderRadius: 999,
-                  color: j2.muted,
-                  fontSize: 12,
-                  padding: '7px 14px',
-                  cursor: 'pointer',
-                }}
+                style={{ ...s.ghostBtn, border: 'none', padding: 0, color: s.accent, fontSize: 11 }}
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading || jarvis.busy}
               >
-                {a.label}
+                {uploading ? 'Uploading…' : 'Attach footage'}
               </button>
-            ))}
-          </div>
-          {compact && showConversation ? (
-            <div style={{ width: '100%', minHeight: 0, flex: 1 }}>
-              <JarvisConversation jarvis={jarvis} compact />
+              <button
+                type="button"
+                style={{ ...s.ghostBtn, border: 'none', padding: 0, fontSize: 11 }}
+                onClick={() => onNavigate('video')}
+              >
+                Open video →
+              </button>
             </div>
+          </div>
+          <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+            {videoWs?.note ||
+              (videoWs?.provider_configured
+                ? `${videoWs.provider || 'Shotstack'} · ${videoWs.stage || 'ready'}`
+                : 'Video provider status from dashboard.')}
+          </div>
+          {videoSessions.length ? (
+            videoSessions.map((sess) => (
+              <div key={sess.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                <span style={{ fontWeight: 650 }}>{sess.title}</span>
+                {' · '}
+                {sess.status || 'session'}
+                {sess.source_count != null ? ` · ${sess.source_count} source(s)` : ''}
+                {sess.opportunity_count != null ? ` · ${sess.opportunity_count} opportunities` : ''}
+              </div>
+            ))
+          ) : (
+            <div style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
+              No footage sessions yet. Attach raw video to start analyze → plan → EDL → render.
+            </div>
+          )}
+          {creativePlans.map((p) => (
+            <div key={p.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+              Plan · {p.title} · {p.status}
+              {p.hook ? ` · ${p.hook.slice(0, 80)}` : ''}
+            </div>
+          ))}
+          {videoJobs.map((j) => (
+            <div key={j.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+              Render · {j.status}
+              {j.preset ? ` · ${j.preset}` : ''}
+              {j.has_output ? ' · output ready' : ''}
+              {j.error ? ` · ${j.error.slice(0, 80)}` : ''}
+            </div>
+          ))}
+          {uploadNote ? (
+            <div style={{ fontSize: 11, marginTop: 4, color: colors.textMuted }}>{uploadNote}</div>
           ) : null}
         </div>
 
-        {!compact || !showConversation ? (
-          <JarvisContextPanel
-            mode={core.state}
-            jarvis={jarvis}
-            metrics={cockpit.metrics}
-            attention={cockpit.attention || []}
-            autonomous={autonomous}
-            onNavigate={onNavigate}
-            compact={compact}
-          />
+        {jarvis.timeline.length ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Live operation</div>
+            {jarvis.timeline.slice(0, 6).map((step) => (
+              <div key={step.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                <span
+                  style={{
+                    color:
+                      step.state === 'active'
+                        ? colors.success
+                        : step.state === 'error'
+                          ? colors.danger
+                          : colors.textMuted,
+                    fontWeight: 650,
+                  }}
+                >
+                  {step.state}
+                </span>
+                {' · '}
+                {step.label}
+                {step.detail ? ` · ${step.detail}` : ''}
+              </div>
+            ))}
+          </div>
         ) : null}
+
+        {jarvis.dashboard?.events?.recent?.length ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Signals</div>
+            {(jarvis.dashboard.events.summary_lines || [])
+              .slice(0, 4)
+              .map((line) => (
+                <div key={line} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                  {line}
+                </div>
+              ))}
+            {!jarvis.dashboard.events.summary_lines?.length
+              ? jarvis.dashboard.events.recent.slice(0, 4).map((e) => (
+                  <div key={e.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                    {e.event_type} · {e.significance || e.status}
+                    {e.funnel_id ? ` · ${e.funnel_id}` : ''}
+                  </div>
+                ))
+              : null}
+          </div>
+        ) : null}
+
+        {jarvis.dashboard?.strategic_memory ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Strategic intelligence</div>
+            {(jarvis.dashboard.strategic_memory.patterns || []).slice(0, 3).map((p) => (
+              <div key={p} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                {p}
+              </div>
+            ))}
+            {(jarvis.dashboard.strategic_memory.open_questions || []).slice(0, 2).map((q) => (
+              <div key={q} style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
+                Open: {q}
+              </div>
+            ))}
+            {(jarvis.dashboard.strategic_memory.stale_assumptions || []).slice(0, 2).map((q) => (
+              <div key={q} style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
+                Stale: {q}
+              </div>
+            ))}
+            {(jarvis.dashboard.strategic_memory.conflicts || []).slice(0, 2).map((c) => (
+              <div key={c.id || c.reason} style={{ fontSize: 12, marginTop: 4, color: colors.warning }}>
+                Conflict: {c.reason.slice(0, 140)}
+              </div>
+            ))}
+            {!jarvis.dashboard.strategic_memory.patterns?.length &&
+            !jarvis.dashboard.strategic_memory.conflicts?.length ? (
+              <div style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
+                {jarvis.dashboard.strategic_memory.note || 'No active strategic patterns yet.'}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {jarvis.dashboard?.opportunities ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Opportunities</div>
+            {(jarvis.dashboard.opportunities.critical || []).slice(0, 2).map((o) => (
+              <div key={o.id || o.title} style={{ fontSize: 12, marginTop: 4, color: colors.danger }}>
+                CRITICAL · {o.title}
+              </div>
+            ))}
+            {(jarvis.dashboard.opportunities.high || []).slice(0, 3).map((o) => (
+              <div key={o.id || o.title} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                HIGH · {o.title}
+              </div>
+            ))}
+            {!jarvis.dashboard.opportunities.critical?.length &&
+            !jarvis.dashboard.opportunities.high?.length ? (
+              <div style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
+                {jarvis.dashboard.opportunities.note || 'No scored opportunities.'}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {jarvis.dashboard?.strategy?.goals?.length ||
+        jarvis.dashboard?.strategy?.plans?.length ||
+        (jarvis.dashboard?.strategy as { long_horizon?: unknown } | undefined)?.long_horizon ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Strategy / long-horizon</div>
+            {(jarvis.dashboard?.strategy?.plans as { name?: string; status?: string }[] | undefined)
+              ?.slice(0, 2)
+              .map((p, i) => (
+                <div key={i} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                  Plan · {p.name} ({p.status})
+                </div>
+              ))}
+            {(jarvis.dashboard?.strategy?.at_risk as { name?: string }[] | undefined)?.slice(0, 2).map((g, i) => (
+              <div key={i} style={{ fontSize: 12, marginTop: 4, color: colors.warning }}>
+                At risk · {g.name}
+              </div>
+            ))}
+            {(
+              (jarvis.dashboard?.strategy as { attention?: { CRITICAL?: { title?: string }[] } } | undefined)
+                ?.attention?.CRITICAL || []
+            )
+              .slice(0, 2)
+              .map((a, i) => (
+                <div key={`c-${i}`} style={{ fontSize: 12, marginTop: 4, color: colors.danger }}>
+                  Priority · {a.title}
+                </div>
+              ))}
+          </div>
+        ) : null}
+
+        {jarvis.dashboard?.experiments?.recent?.length ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Experiments</div>
+            {jarvis.dashboard.experiments.recent.slice(0, 3).map((e) => (
+              <div key={e.id || e.name} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+                {e.name} · {e.lifecycle || e.status}
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {jarvis.dashboard?.autonomous_operator?.attention?.length ? (
+          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
+            <div style={s.sectionLabel}>Attention</div>
+            {(jarvis.dashboard.autonomous_operator.attention as {
+              severity: string
+              system: string
+              title: string
+              next_action: string
+            }[])
+              .slice(0, 5)
+              .map((a, idx) => (
+                <div
+                  key={`${a.system}-${idx}`}
+                  style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}
+                >
+                  <span style={{ color: a.severity === 'CRITICAL' || a.severity === 'WARNING' ? colors.danger : colors.warning }}>
+                    {a.severity}
+                  </span>{' '}
+                  · {a.system} — {a.title}
+                  <span style={{ color: colors.textMuted }}> · {a.next_action}</span>
+                </div>
+              ))}
+          </div>
+        ) : null}
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: compact ? '1fr' : '1fr 1fr 1fr',
+            gap: compact ? 10 : 14,
+            marginTop: 8,
+            paddingBottom: 6,
+            borderBottom: `1px solid ${colors.divider}`,
+          }}
+        >
+          <div>
+            <div style={s.sectionLabel}>Revenue · 7D</div>
+            {cockpit.charts.revenue_7d.length > 1 ? (
+              <ExecutiveChart points={cockpit.charts.revenue_7d} unit="₹" height={48} />
+            ) : (
+              <div style={s.muted}>No verified LURVOX points for this period.</div>
+            )}
+          </div>
+          <div>
+            <div style={s.sectionLabel}>Paid sales · 7D</div>
+            {cockpit.charts.sales_7d.length > 1 ? (
+              <ExecutiveChart points={cockpit.charts.sales_7d} height={48} />
+            ) : (
+              <div style={s.muted}>No verified LURVOX points for this period.</div>
+            )}
+          </div>
+          <div>
+            <div style={s.sectionLabel}>Meta performance</div>
+            {cockpit.charts.ads_7d && cockpit.charts.ads_7d.length > 1 ? (
+              <ExecutiveChart points={cockpit.charts.ads_7d} unit="₹" height={48} />
+            ) : (
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 650, color: colors.textMuted, marginTop: 1 }}>Unavailable</div>
+                <div style={s.muted}>{cockpit.charts.meta_unavailable || 'No verified marketing_performance rows for this period.'}</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: compact ? '1fr' : '1fr 1.15fr 1fr',
+            gap: compact ? 12 : 16,
+            marginTop: 8,
+            paddingBottom: 4,
+          }}
+        >
+          <section>
+            <div style={s.sectionLabel}>What changed</div>
+            {cockpit.changes.length ? (
+              cockpit.changes.map((c) => (
+                <div key={c.id} style={{ padding: '3px 0', borderBottom: `1px solid ${colors.divider}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
+                    <span style={{ fontWeight: 650 }}>
+                      <span style={{ color: toneColor(c.tone), marginRight: 6 }}>●</span>
+                      {c.title}
+                    </span>
+                    <span style={{ color: colors.textMuted, fontSize: 10, letterSpacing: '0.06em' }}>{c.source}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>{c.why}</div>
+                  {c.impact ? <div style={{ ...s.muted, marginTop: 0, fontSize: 11 }}>{c.impact}</div> : null}
+                </div>
+              ))
+            ) : (
+              <div style={s.muted}>No material changes.</div>
+            )}
+          </section>
+
+          <section>
+            <div style={s.sectionLabel}>Jarvis insight</div>
+            <p style={{ margin: 0, fontSize: 12, lineHeight: 1.4, color: colors.textSecondary }}>
+              {cockpit.insight.text || 'No insight available.'}
+            </p>
+            <div style={{ ...s.muted, marginTop: 4, fontSize: 11 }}>{cockpit.insight.evidence_line}</div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+              <button
+                type="button"
+                style={{ ...s.ghostBtn, border: 'none', padding: 0, color: s.accent, fontSize: 12 }}
+                onClick={() =>
+                  void jarvis.sendMessage(
+                    cockpit.insight.text.includes('Meta')
+                      ? 'Investigate why Meta data is missing.'
+                      : 'Investigate what happened in the business today.'
+                  )
+                }
+              >
+                Investigate
+              </button>
+              <button
+                type="button"
+                style={{ ...s.ghostBtn, border: 'none', padding: 0, fontSize: 12 }}
+                onClick={() => setEvidenceOpen((v) => !v)}
+              >
+                {evidenceOpen ? 'Hide evidence' : 'Show evidence'}
+              </button>
+            </div>
+            {evidenceOpen ? (
+              <div style={{ marginTop: 4 }}>
+                {cockpit.insight.sources.map((src) => (
+                  <div key={src.label} style={{ ...s.muted, marginTop: 2, fontSize: 11 }}>
+                    {src.label} · {src.detail}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </section>
+
+          <section>
+            <div style={s.sectionLabel}>Needs your attention</div>
+            {cockpit.attention.length ? (
+              cockpit.attention.map((item) => (
+                <div key={item.id} style={{ padding: '3px 0', borderBottom: `1px solid ${colors.divider}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 650 }}>{item.title}</div>
+                  {item.detail ? <div style={{ ...s.muted, fontSize: 11 }}>{item.detail}</div> : null}
+                  {actionLabel(item) ? (
+                    <button
+                      type="button"
+                      onClick={() => goAttention(item)}
+                      style={{ ...s.ghostBtn, border: 'none', padding: 0, marginTop: 2, color: s.accent, fontSize: 12 }}
+                    >
+                      {actionLabel(item)}
+                    </button>
+                  ) : null}
+                </div>
+              ))
+            ) : (
+              <div style={s.muted}>Nothing requires your attention.</div>
+            )}
+          </section>
+
+          {(jarvis.dashboard as { recent_learning?: { id: string; title: string; summary: string; category: string }[] } | null)
+            ?.recent_learning?.length ? (
+            <section>
+              <div style={s.sectionLabel}>Recent learning</div>
+              {(
+                jarvis.dashboard as {
+                  recent_learning: { id: string; title: string; summary: string; category: string }[]
+                }
+              ).recent_learning.slice(0, 4).map((row) => (
+                <div key={row.id} style={{ padding: '3px 0', borderBottom: `1px solid ${colors.divider}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 650 }}>{row.title}</div>
+                  <div style={{ ...s.muted, fontSize: 11 }}>{row.summary.slice(0, 160)}</div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => onNavigate('memory')}
+                style={{ ...s.ghostBtn, border: 'none', padding: 0, marginTop: 4, color: s.accent, fontSize: 12 }}
+              >
+                Open memory →
+              </button>
+            </section>
+          ) : null}
+
+          {(jarvis.dashboard as { business_systems?: { id: string; display_name: string; connection_state: string; health: string }[] } | null)
+            ?.business_systems?.length ? (
+            <section>
+              <div style={s.sectionLabel}>System health</div>
+              {(
+                jarvis.dashboard as {
+                  business_systems: { id: string; display_name: string; connection_state: string; health: string }[]
+                }
+              ).business_systems
+                .filter((sys) =>
+                  ['meta_ads', 'instagram', 'shopify', 'lurvox_revenue', 'video', 'research'].includes(sys.id)
+                )
+                .map((sys) => (
+                  <div key={sys.id} style={{ padding: '2px 0', fontSize: 11 }}>
+                    <span style={{ fontWeight: 650 }}>{sys.display_name}</span>
+                    <span style={{ ...s.muted }}> · {sys.connection_state}</span>
+                    <div style={{ ...s.muted }}>{sys.health.slice(0, 100)}</div>
+                  </div>
+                ))}
+              <button
+                type="button"
+                onClick={() => onNavigate('integrations')}
+                style={{ ...s.ghostBtn, border: 'none', padding: 0, marginTop: 4, color: s.accent, fontSize: 12 }}
+              >
+                Open integrations →
+              </button>
+            </section>
+          ) : null}
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: compact ? '1fr' : '1fr 1fr',
+            gap: compact ? 12 : 16,
+            marginTop: 8,
+            paddingTop: 6,
+            borderTop: `1px solid ${colors.divider}`,
+          }}
+        >
+          <section>
+            <div style={s.sectionLabel}>Jarvis is working on</div>
+            {cockpit.operator_timeline.length ? (
+              cockpit.operator_timeline.map((event) => (
+                <div key={event.id} style={{ display: 'flex', gap: 8, padding: '4px 0' }}>
+                  <span style={{ color: stateColor(event.state), marginTop: 2 }}>●</span>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 650 }}>{event.state}</div>
+                    <div style={{ fontSize: 12, color: colors.textSecondary }}>{event.title}</div>
+                    <div style={s.muted}>
+                      {event.at ? formatTime(event.at) : event.detail}
+                      {event.at && event.detail ? ` · ${event.detail}` : ''}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={s.muted}>No operator activity yet.</div>
+            )}
+          </section>
+
+          <section>
+            <div style={s.sectionLabel}>Jarvis recommends</div>
+            {cockpit.recommendations.length ? (
+              cockpit.recommendations.map((r) => (
+                <div key={r.id} style={{ padding: '2px 0 6px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 650 }}>{r.title}</div>
+                  <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 3 }}>Why · {r.problem}</div>
+                  <div style={s.muted}>Evidence · {r.evidence}</div>
+                  <div style={s.muted}>Risk · {r.risk}</div>
+                  <button
+                    type="button"
+                    style={{ ...s.ghostBtn, border: 'none', padding: 0, marginTop: 4, color: s.accent }}
+                    onClick={() =>
+                      void jarvis.sendMessage(
+                        r.action_type === 'Investigate'
+                          ? 'Investigate why Meta data is missing.'
+                          : `Review this recommendation: ${r.title}. Evidence: ${r.evidence}`
+                      )
+                    }
+                  >
+                    {r.action_type}
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div style={s.muted}>Jarvis has no action recommendation right now.</div>
+            )}
+          </section>
+        </div>
       </div>
 
-      {compact && showConversation ? null : compact ? (
-        <div style={{ padding: '0 12px 4px', position: 'relative', zIndex: 1 }}>
-          <JarvisContextPanel
-            mode={core.state}
-            jarvis={jarvis}
-            metrics={cockpit.metrics}
-            attention={cockpit.attention || []}
-            autonomous={autonomous}
-            onNavigate={onNavigate}
-            compact
-          />
-        </div>
-      ) : null}
-
-      <div
-        style={{
-          ...composerDock,
-          background: 'rgba(5,5,6,0.85)',
-          borderTop: `1px solid ${j2.glassBorder}`,
-          padding: compact ? '10px 12px 12px' : '12px 20px 16px',
-          position: 'relative',
-          zIndex: 2,
-        }}
-      >
+      <div style={s.composerDock}>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="video/*,.mp4,.mov,.webm,.m4v"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) void uploadFootage(f)
+          }}
+        />
+        <VoiceOperatorPanel
+          conversationId={jarvis.conversationId}
+          busy={jarvis.busy}
+          onVoiceResult={(result) => {
+            jarvis.ingestVoiceResult(result)
+            if (result.conversationId || result.assistantText) {
+              jarvis.setView('chat')
+            }
+          }}
+        />
         <CommandBar
           value={jarvis.input}
           onChange={jarvis.setInput}
           onSubmit={(text) => void jarvis.sendMessage(text)}
-          busy={jarvis.busy}
-          placeholder="Ask Jarvis anything..."
+          busy={jarvis.busy || uploading}
+          placeholder="Ask Jarvis…"
           voiceStatus={voiceStatus}
           voiceTitle={voiceTitle}
-          showChips={false}
+          showChips
+          onAttach={() => fileRef.current?.click()}
+          attachTitle={uploading ? 'Uploading footage…' : 'Attach raw footage (private ingest)'}
+          attachDisabled={uploading || jarvis.busy}
         />
+        {uploadNote ? (
+          <div style={{ marginTop: 4, fontSize: 11, color: colors.textMuted }}>{uploadNote}</div>
+        ) : null}
       </div>
     </div>
   )
