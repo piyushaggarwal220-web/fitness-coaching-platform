@@ -64,6 +64,51 @@ function spokenBrief(parts: Array<string | null | undefined>): string {
   return text.length > 420 ? `${text.slice(0, 400).trim()}…` : text
 }
 
+function speakChange(label: string | null): string {
+  if (!label) return ''
+  const vs = label.replace(/\s+vs\s+/i, ' from ')
+  if (vs.startsWith('+')) return `, up ${vs.slice(1)}`
+  if (vs.startsWith('-')) return `, down ${vs.slice(1)}`
+  return `, ${vs}`
+}
+
+function openingFromMetrics(metrics: CockpitMetric[]): string[] {
+  const revenue = metrics.find((m) => m.id === 'revenue')
+  const sales = metrics.find((m) => m.id === 'sales')
+  const ads = metrics.find((m) => m.id === 'ad_spend')
+  const lines: string[] = []
+  if (revenue?.status === 'ok') {
+    lines.push(`Today's revenue is ${revenue.display}${speakChange(revenue.change_label)}.`)
+  } else if (revenue) {
+    lines.push("Today's revenue is unavailable.")
+  }
+  if (sales?.status === 'ok') lines.push(`${sales.display} paid sales.`)
+  if (ads && ads.status !== 'ok') lines.push('Ad spend, CPA, and ROAS have no Meta numbers yet.')
+  return lines
+}
+
+function reelLines(
+  jobs: { status: string; preset?: string | null; has_output?: boolean }[]
+): string[] {
+  const groups = new Map<string, { count: number; status: string; preset: string; ready: boolean }>()
+  for (const job of jobs) {
+    const preset = job.preset || 'Reel'
+    const key = `${job.status}|${preset}|${job.has_output ? '1' : '0'}`
+    const existing = groups.get(key)
+    if (existing) existing.count += 1
+    else groups.set(key, { count: 1, status: job.status, preset, ready: Boolean(job.has_output) })
+  }
+  return [...groups.values()].map((group) => {
+    const name = group.preset.replace(/_/g, ' ')
+    const state =
+      group.status === 'awaiting_approval' ? 'waiting for your OK' : group.status.replace(/_/g, ' ')
+    const noun = group.count === 1 ? name : `${group.count} ${name}s`
+    const verb = group.count === 1 ? 'is' : 'are'
+    const ready = group.ready ? ' The output is ready.' : ''
+    return `${noun} ${verb} ${state}.${ready}`
+  })
+}
+
 function readAloud(text: string): boolean {
   if (typeof window === 'undefined' || !window.speechSynthesis || !text.trim()) return false
   window.speechSynthesis.cancel()
@@ -140,7 +185,6 @@ export function CockpitHome({
   const videoWs = jarvis.dashboard?.video_workspace
   const videoSessions = (videoWs?.sessions ?? []).slice(0, 3)
   const videoJobs = (videoWs?.recent_jobs ?? []).slice(0, 4)
-  const creativePlans = (jarvis.dashboard?.creative_director?.plans ?? []).slice(0, 3)
 
   if (!cockpit) {
     return (
@@ -160,22 +204,13 @@ export function CockpitHome({
           ? colors.textMuted
           : colors.success
 
-  const morning = jarvis.dashboard?.autonomous_operator?.morning_brief?.text
-    ?.split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('JARVIS') && !line.startsWith('Date:'))
-    .slice(0, 3)
-    .join(' ')
-  const unreadNote = jarvis.dashboard?.notifications?.find((n) => !n.read_at)
   const waiting = jarvis.pendingApprovals[0]
-  const did = cockpit.operator_timeline.find((event) => event.state === 'Completed')
+  const reelSummary = reelLines(videoJobs)
   const spokenLine = spokenBrief([
-    morning || cockpit.brief,
-    cockpit.changes[0]?.title ? `What changed: ${cockpit.changes[0].title}.` : null,
-    did ? `Already done: ${did.title}.` : null,
+    ...openingFromMetrics(cockpit.metrics),
+    reelSummary[0] ?? null,
     waiting ? `Waiting on you: ${waiting.action_label}.` : null,
-    unreadNote ? unreadNote.title : null,
-  ])
+  ]) || cockpit.brief
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
@@ -332,38 +367,21 @@ export function CockpitHome({
             </div>
           </div>
           <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-            {videoWs?.note ||
-              (videoWs?.provider_configured
-                ? `${videoWs.provider || 'Shotstack'} · ${videoWs.stage || 'ready'}`
-                : 'Video provider status from dashboard.')}
+            {videoWs?.provider_configured ? 'Rendering is connected.' : 'Rendering is not connected yet.'}
           </div>
           {videoSessions.length ? (
             videoSessions.map((sess) => (
               <div key={sess.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
                 <span style={{ fontWeight: 650 }}>{sess.title}</span>
-                {' · '}
-                {sess.status || 'session'}
-                {sess.source_count != null ? ` · ${sess.source_count} source(s)` : ''}
-                {sess.opportunity_count != null ? ` · ${sess.opportunity_count} opportunities` : ''}
+                {sess.source_count != null ? ` · ${sess.source_count} file${sess.source_count === 1 ? '' : 's'}` : ''}
               </div>
             ))
           ) : (
-            <div style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
-              No footage sessions yet. Attach raw video to start analyze → plan → EDL → render.
-            </div>
+            <div style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>No footage attached yet.</div>
           )}
-          {creativePlans.map((p) => (
-            <div key={p.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
-              Plan · {p.title} · {p.status}
-              {p.hook ? ` · ${p.hook.slice(0, 80)}` : ''}
-            </div>
-          ))}
-          {videoJobs.map((j) => (
-            <div key={j.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
-              Render · {j.status}
-              {j.preset ? ` · ${j.preset}` : ''}
-              {j.has_output ? ' · output ready' : ''}
-              {j.error ? ` · ${j.error.slice(0, 80)}` : ''}
+          {reelSummary.map((line) => (
+            <div key={line} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
+              {line}
             </div>
           ))}
         </div>

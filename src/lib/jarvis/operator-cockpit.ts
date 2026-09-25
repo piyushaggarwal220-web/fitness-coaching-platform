@@ -203,7 +203,7 @@ export function greetingAt(now: Date = new Date()): string {
   const hour = istHour(now)
   if (hour >= 5 && hour < 12) return "Good morning. Here's what matters today."
   if (hour >= 12 && hour < 17) return "Good afternoon. Here's what matters today."
-  if (hour >= 17 && hour < 22) return "Good evening. Here's what matters today."
+  if (hour >= 17 || hour < 5) return "Good evening. Here's what matters today."
   return "Here's what matters."
 }
 
