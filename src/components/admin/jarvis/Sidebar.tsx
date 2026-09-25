@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Activity,
   BarChart3,
@@ -41,8 +42,6 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { id: 'revenue', label: 'Revenue', icon: BarChart3 },
       { id: 'funnels', label: 'Funnels', icon: Store },
-      { id: 'customers', label: 'Customers', icon: Users },
-      { id: 'growth', label: 'Growth', icon: TrendingUp },
     ],
   },
   {
@@ -54,7 +53,6 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
       { id: 'instagram_intel', label: 'IG Intelligence', icon: Sparkles },
       { id: 'content_ops', label: 'Content Ops', icon: LayoutDashboard },
       { id: 'video', label: 'Video', icon: Film },
-      { id: 'experiments', label: 'Experiments', icon: Sparkles },
     ],
   },
   {
@@ -71,11 +69,17 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { id: 'integrations', label: 'Integrations', icon: Plug },
       { id: 'memory', label: 'Memory', icon: Brain },
-      { id: 'learning', label: 'Learning', icon: Lightbulb },
-      { id: 'taste', label: 'Taste', icon: Wand2 },
       { id: 'settings', label: 'Settings', icon: Settings },
     ],
   },
+]
+
+const QUIET: NavItem[] = [
+  { id: 'customers', label: 'Customers', icon: Users },
+  { id: 'growth', label: 'Growth', icon: TrendingUp },
+  { id: 'experiments', label: 'Experiments', icon: Sparkles },
+  { id: 'learning', label: 'Learning', icon: Lightbulb },
+  { id: 'taste', label: 'Taste', icon: Wand2 },
 ]
 
 export function JarvisSidebar({
@@ -88,6 +92,7 @@ export function JarvisSidebar({
   const unread = jarvis.dashboard?.unread_notifications ?? 0
   const pending = jarvis.pendingApprovals.length
   const openIncidents = jarvis.dashboard?.open_incidents ?? 0
+  const [quietOpen, setQuietOpen] = useState(false)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
@@ -123,6 +128,27 @@ export function JarvisSidebar({
             })}
           </div>
         ))}
+        <div>
+          <button
+            type="button"
+            onClick={() => setQuietOpen((open) => !open)}
+            style={{ ...s.navSection, background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}
+          >
+            Later {quietOpen ? '–' : '+'}
+          </button>
+          {quietOpen
+            ? QUIET.map((item) => {
+                const Icon = item.icon
+                const active = jarvis.view === item.id
+                return (
+                  <button key={item.id} type="button" style={s.navBtn(active)} onClick={() => onNavigate(item.id)}>
+                    <Icon size={14} />
+                    <span style={{ flex: 1 }}>{item.label}</span>
+                  </button>
+                )
+              })
+            : null}
+        </div>
       </div>
       <SidebarStatus jarvis={jarvis} />
     </div>

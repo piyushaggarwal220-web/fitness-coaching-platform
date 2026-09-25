@@ -36,6 +36,8 @@ type VoiceOperatorProps = {
   }) => void
   busy?: boolean
   compact?: boolean
+  /** Listening / speaking / idle — command home uses this for the status word. */
+  onPresence?: (phase: 'listening' | 'speaking' | 'idle') => void
 }
 
 const MIME_CANDIDATES = [
@@ -86,6 +88,7 @@ export function VoiceOperatorPanel({
   onVoiceResult,
   busy,
   compact,
+  onPresence,
 }: VoiceOperatorProps) {
   const [capability, setCapability] = useState<Capability | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -104,6 +107,13 @@ export function VoiceOperatorPanel({
   useEffect(() => {
     sessionIdRef.current = sessionId
   }, [sessionId])
+
+  useEffect(() => {
+    if (!onPresence) return
+    if (listening || state === 'LISTENING') onPresence('listening')
+    else if (state === 'SPEAKING') onPresence('speaking')
+    else onPresence('idle')
+  }, [listening, state, onPresence])
 
   useEffect(() => {
     let cancelled = false

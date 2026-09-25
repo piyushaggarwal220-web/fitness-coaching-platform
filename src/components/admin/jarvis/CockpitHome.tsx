@@ -7,7 +7,7 @@ import {
   coreStateFromContext,
   humanToolLabel,
 } from '@/lib/jarvis/operator-present'
-import type { CockpitMetric, ChangeCard, AttentionItem, OperatorState } from '@/lib/jarvis/operator-cockpit'
+import type { CockpitMetric, ChangeCard, OperatorState } from '@/lib/jarvis/operator-cockpit'
 import type { CommandView } from './types'
 import type { JarvisCommandState } from './use-jarvis-command'
 import { CommandBar } from './CommandBar'
@@ -44,11 +44,33 @@ function stateColor(state: OperatorState) {
   return colors.success
 }
 
-function actionLabel(item: AttentionItem) {
-  if (item.action === 'review') return 'Review approvals →'
-  if (item.action === 'diagnostics') return 'View diagnostics →'
-  if (item.action === 'integrations') return 'Open integrations →'
-  return null
+function ownerStateWord(input: {
+  busy: boolean
+  voice: 'listening' | 'speaking' | 'idle'
+  core: string
+}): string {
+  if (input.voice === 'listening') return 'Listening'
+  if (input.voice === 'speaking' || input.busy) return 'Working'
+  if (input.core === 'WAITING_FOR_APPROVAL') return 'Needs your OK'
+  if (input.core === 'ERROR' || input.core === 'PAUSED') return 'Stopped'
+  return 'Done'
+}
+
+function spokenBrief(parts: Array<string | null | undefined>): string {
+  const text = parts
+    .map((p) => (p || '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join(' ')
+  return text.length > 420 ? `${text.slice(0, 400).trim()}…` : text
+}
+
+function readAloud(text: string): boolean {
+  if (typeof window === 'undefined' || !window.speechSynthesis || !text.trim()) return false
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.rate = 1
+  window.speechSynthesis.speak(utterance)
+  return true
 }
 
 export function CockpitHome({
@@ -62,6 +84,8 @@ export function CockpitHome({
 }) {
   const cockpit = jarvis.dashboard?.cockpit
   const [evidenceOpen, setEvidenceOpen] = useState(false)
+  const [voicePhase, setVoicePhase] = useState<'listening' | 'speaking' | 'idle'>('idle')
+  const [readNote, setReadNote] = useState('')
 
   const footage = useFootageUpload({
     reloadDashboard: () => jarvis.loadDashboard(),
@@ -127,12 +151,6 @@ export function CockpitHome({
     )
   }
 
-  const goAttention = (item: AttentionItem) => {
-    if (item.action === 'review') onNavigate('approvals')
-    else if (item.action === 'diagnostics') onNavigate('diagnostics')
-    else if (item.action === 'integrations') onNavigate('integrations')
-  }
-
   const statusTone =
     core.state === 'ERROR' || core.state === 'PAUSED'
       ? colors.danger
@@ -141,6 +159,23 @@ export function CockpitHome({
         : core.state === 'IDLE' || core.state === 'COMPLETED'
           ? colors.textMuted
           : colors.success
+
+  const morning = jarvis.dashboard?.autonomous_operator?.morning_brief?.text
+    ?.split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('JARVIS') && !line.startsWith('Date:'))
+    .slice(0, 3)
+    .join(' ')
+  const unreadNote = jarvis.dashboard?.notifications?.find((n) => !n.read_at)
+  const waiting = jarvis.pendingApprovals[0]
+  const did = cockpit.operator_timeline.find((event) => event.state === 'Completed')
+  const spokenLine = spokenBrief([
+    morning || cockpit.brief,
+    cockpit.changes[0]?.title ? `What changed: ${cockpit.changes[0].title}.` : null,
+    did ? `Already done: ${did.title}.` : null,
+    waiting ? `Waiting on you: ${waiting.action_label}.` : null,
+    unreadNote ? unreadNote.title : null,
+  ])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
@@ -159,12 +194,23 @@ export function CockpitHome({
                 title={core.detail || core.state}
               >
                 <span style={{ ...s.statusDot(core.state === 'ERROR' ? 'danger' : core.state === 'WAITING_FOR_APPROVAL' ? 'warn' : core.state === 'IDLE' ? 'muted' : 'ok'), marginRight: 6 }} />
-                {core.state.replace(/_/g, ' ')}
+                {ownerStateWord({ busy: jarvis.busy, voice: voicePhase, core: core.state })}
               </span>
             </div>
             <div style={{ color: colors.textSecondary, marginTop: 3, fontSize: 12, lineHeight: 1.35 }}>
-              {cockpit.brief}
+              {spokenLine}
             </div>
+            <button
+              type="button"
+              style={{ ...s.ghostBtn, border: 'none', padding: '2px 0', marginTop: 2, color: s.accent, fontSize: 12 }}
+              onClick={() => {
+                const ok = readAloud(spokenLine)
+                setReadNote(ok ? '' : 'This browser cannot read the briefing aloud.')
+              }}
+            >
+              Read this
+            </button>
+            {readNote ? <div style={{ fontSize: 11, color: colors.warning }}>{readNote}</div> : null}
             {core.state !== 'IDLE' && core.detail ? (
               <div style={{ marginTop: 4, fontSize: 11, color: statusTone }}>
                 {activeTool ? humanToolLabel(activeTool) : core.detail}
@@ -217,42 +263,44 @@ export function CockpitHome({
           ))}
         </div>
 
-        {jarvis.dashboard?.execution ? (
+        {waiting ? (
           <div
             style={{
               marginTop: 8,
-              padding: '6px 0',
+              padding: '8px 0',
               borderBottom: `1px solid ${colors.divider}`,
-              fontSize: 12,
-              color: colors.textSecondary,
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 10,
-              alignItems: 'center',
             }}
           >
-            <span style={s.sectionLabel}>Execution</span>
-            <span
-              style={{
-                color: jarvis.dashboard.execution.kill_switch ? colors.danger : colors.textSecondary,
-              }}
-            >
-              {jarvis.dashboard.execution.kill_switch ? 'KILL SWITCH' : 'Writes gated'}
-            </span>
-            <span>· Mode {jarvis.dashboard.execution.mode || 'approval'}</span>
-            {jarvis.dashboard.execution.dry_run ? <span>· DRY RUN</span> : null}
-            {jarvis.dashboard.execution.shadow_mode ? <span>· SHADOW</span> : null}
-            <span>
-              · Live Meta {jarvis.dashboard.execution.live_meta_execution ? 'ON' : 'OFF'} · IG publish{' '}
-              {jarvis.dashboard.execution.live_instagram_publishing ? 'ON' : 'OFF'}
-            </span>
-            <button
-              type="button"
-              style={{ ...s.ghostBtn, border: 'none', padding: '2px 6px', fontSize: 11 }}
-              onClick={() => onNavigate('settings')}
-            >
-              Controls →
-            </button>
+            <div style={s.sectionLabel}>Needs your OK</div>
+            <div style={{ fontSize: 13, fontWeight: 650, marginTop: 4 }}>{waiting.action_label}</div>
+            <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{waiting.reason}</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                style={s.solidBtn}
+                disabled={jarvis.busy}
+                onClick={() => void jarvis.decide(waiting.id, true)}
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                style={s.dangerBtn}
+                disabled={jarvis.busy}
+                onClick={() => void jarvis.decide(waiting.id, false)}
+              >
+                Reject
+              </button>
+              {jarvis.pendingApprovals.length > 1 ? (
+                <button
+                  type="button"
+                  style={s.ghostBtn}
+                  onClick={() => onNavigate('approvals')}
+                >
+                  See all {jarvis.pendingApprovals.length}
+                </button>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -399,94 +447,6 @@ export function CockpitHome({
           </div>
         ) : null}
 
-        {jarvis.dashboard?.opportunities ? (
-          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
-            <div style={s.sectionLabel}>Opportunities</div>
-            {(jarvis.dashboard.opportunities.critical || []).slice(0, 2).map((o) => (
-              <div key={o.id || o.title} style={{ fontSize: 12, marginTop: 4, color: colors.danger }}>
-                CRITICAL · {o.title}
-              </div>
-            ))}
-            {(jarvis.dashboard.opportunities.high || []).slice(0, 3).map((o) => (
-              <div key={o.id || o.title} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
-                HIGH · {o.title}
-              </div>
-            ))}
-            {!jarvis.dashboard.opportunities.critical?.length &&
-            !jarvis.dashboard.opportunities.high?.length ? (
-              <div style={{ fontSize: 12, marginTop: 4, color: colors.textMuted }}>
-                {jarvis.dashboard.opportunities.note || 'No scored opportunities.'}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        {jarvis.dashboard?.strategy?.goals?.length ||
-        jarvis.dashboard?.strategy?.plans?.length ||
-        (jarvis.dashboard?.strategy as { long_horizon?: unknown } | undefined)?.long_horizon ? (
-          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
-            <div style={s.sectionLabel}>Strategy / long-horizon</div>
-            {(jarvis.dashboard?.strategy?.plans as { name?: string; status?: string }[] | undefined)
-              ?.slice(0, 2)
-              .map((p, i) => (
-                <div key={i} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
-                  Plan · {p.name} ({p.status})
-                </div>
-              ))}
-            {(jarvis.dashboard?.strategy?.at_risk as { name?: string }[] | undefined)?.slice(0, 2).map((g, i) => (
-              <div key={i} style={{ fontSize: 12, marginTop: 4, color: colors.warning }}>
-                At risk · {g.name}
-              </div>
-            ))}
-            {(
-              (jarvis.dashboard?.strategy as { attention?: { CRITICAL?: { title?: string }[] } } | undefined)
-                ?.attention?.CRITICAL || []
-            )
-              .slice(0, 2)
-              .map((a, i) => (
-                <div key={`c-${i}`} style={{ fontSize: 12, marginTop: 4, color: colors.danger }}>
-                  Priority · {a.title}
-                </div>
-              ))}
-          </div>
-        ) : null}
-
-        {jarvis.dashboard?.experiments?.recent?.length ? (
-          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
-            <div style={s.sectionLabel}>Experiments</div>
-            {jarvis.dashboard.experiments.recent.slice(0, 3).map((e) => (
-              <div key={e.id || e.name} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
-                {e.name} · {e.lifecycle || e.status}
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        {jarvis.dashboard?.autonomous_operator?.attention?.length ? (
-          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
-            <div style={s.sectionLabel}>Attention</div>
-            {(jarvis.dashboard.autonomous_operator.attention as {
-              severity: string
-              system: string
-              title: string
-              next_action: string
-            }[])
-              .slice(0, 5)
-              .map((a, idx) => (
-                <div
-                  key={`${a.system}-${idx}`}
-                  style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}
-                >
-                  <span style={{ color: a.severity === 'CRITICAL' || a.severity === 'WARNING' ? colors.danger : colors.warning }}>
-                    {a.severity}
-                  </span>{' '}
-                  · {a.system} — {a.title}
-                  <span style={{ color: colors.textMuted }}> · {a.next_action}</span>
-                </div>
-              ))}
-          </div>
-        ) : null}
-
         <div
           style={{
             display: 'grid',
@@ -529,7 +489,7 @@ export function CockpitHome({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: compact ? '1fr' : '1fr 1.15fr 1fr',
+            gridTemplateColumns: compact ? '1fr' : '1fr 1.15fr',
             gap: compact ? 12 : 16,
             marginTop: 8,
             paddingBottom: 4,
@@ -594,82 +554,6 @@ export function CockpitHome({
               </div>
             ) : null}
           </section>
-
-          <section>
-            <div style={s.sectionLabel}>Needs your attention</div>
-            {cockpit.attention.length ? (
-              cockpit.attention.map((item) => (
-                <div key={item.id} style={{ padding: '3px 0', borderBottom: `1px solid ${colors.divider}` }}>
-                  <div style={{ fontSize: 12, fontWeight: 650 }}>{item.title}</div>
-                  {item.detail ? <div style={{ ...s.muted, fontSize: 11 }}>{item.detail}</div> : null}
-                  {actionLabel(item) ? (
-                    <button
-                      type="button"
-                      onClick={() => goAttention(item)}
-                      style={{ ...s.ghostBtn, border: 'none', padding: 0, marginTop: 2, color: s.accent, fontSize: 12 }}
-                    >
-                      {actionLabel(item)}
-                    </button>
-                  ) : null}
-                </div>
-              ))
-            ) : (
-              <div style={s.muted}>Nothing requires your attention.</div>
-            )}
-          </section>
-
-          {(jarvis.dashboard as { recent_learning?: { id: string; title: string; summary: string; category: string }[] } | null)
-            ?.recent_learning?.length ? (
-            <section>
-              <div style={s.sectionLabel}>Recent learning</div>
-              {(
-                jarvis.dashboard as {
-                  recent_learning: { id: string; title: string; summary: string; category: string }[]
-                }
-              ).recent_learning.slice(0, 4).map((row) => (
-                <div key={row.id} style={{ padding: '3px 0', borderBottom: `1px solid ${colors.divider}` }}>
-                  <div style={{ fontSize: 12, fontWeight: 650 }}>{row.title}</div>
-                  <div style={{ ...s.muted, fontSize: 11 }}>{row.summary.slice(0, 160)}</div>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => onNavigate('memory')}
-                style={{ ...s.ghostBtn, border: 'none', padding: 0, marginTop: 4, color: s.accent, fontSize: 12 }}
-              >
-                Open memory →
-              </button>
-            </section>
-          ) : null}
-
-          {(jarvis.dashboard as { business_systems?: { id: string; display_name: string; connection_state: string; health: string }[] } | null)
-            ?.business_systems?.length ? (
-            <section>
-              <div style={s.sectionLabel}>System health</div>
-              {(
-                jarvis.dashboard as {
-                  business_systems: { id: string; display_name: string; connection_state: string; health: string }[]
-                }
-              ).business_systems
-                .filter((sys) =>
-                  ['meta_ads', 'instagram', 'shopify', 'lurvox_revenue', 'video', 'research'].includes(sys.id)
-                )
-                .map((sys) => (
-                  <div key={sys.id} style={{ padding: '2px 0', fontSize: 11 }}>
-                    <span style={{ fontWeight: 650 }}>{sys.display_name}</span>
-                    <span style={{ ...s.muted }}> · {sys.connection_state}</span>
-                    <div style={{ ...s.muted }}>{sys.health.slice(0, 100)}</div>
-                  </div>
-                ))}
-              <button
-                type="button"
-                onClick={() => onNavigate('integrations')}
-                style={{ ...s.ghostBtn, border: 'none', padding: 0, marginTop: 4, color: s.accent, fontSize: 12 }}
-              >
-                Open integrations →
-              </button>
-            </section>
-          ) : null}
         </div>
 
         <div
@@ -754,6 +638,7 @@ export function CockpitHome({
         <VoiceOperatorPanel
           conversationId={jarvis.conversationId}
           busy={jarvis.busy}
+          onPresence={setVoicePhase}
           onVoiceResult={(result) => {
             jarvis.ingestVoiceResult(result)
             if (result.conversationId || result.assistantText) {
