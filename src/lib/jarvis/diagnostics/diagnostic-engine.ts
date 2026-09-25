@@ -255,7 +255,7 @@ async function createDiagnosticApproval(input: {
         tool_call_id: toolCall?.id ?? null,
         tool_name: 'diagnostics.propose_fix',
         // Never present a code-change remediation as if it were a live data query.
-        action_label: `Diagnostic code change: ${remediationTitle}`,
+        action_label: `Apply a suggested fix: ${remediationTitle}`,
         reason: `${input.root}\n\nDIAGNOSIS\n${input.root}\n\nPROPOSED FIX\n${input.remediations.map((r) => r.description).join('\n')}`,
         evidence: [
           'Tool: diagnostics.propose_fix (SIGNIFICANT)',

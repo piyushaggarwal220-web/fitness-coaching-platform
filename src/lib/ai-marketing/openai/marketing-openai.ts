@@ -33,16 +33,30 @@ export async function generateMarketingJson<T>(params: {
   maxTokens?: number
   normalize?: (parsed: unknown) => unknown
 }): Promise<{ data: T; rawText: string; model: string }> {
-  const result = await generateOpenAIResponse({
-    systemPrompt: `${params.systemPrompt}
+  const systemPrompt = `${params.systemPrompt}
 
-Return ONLY valid JSON. No markdown fences. No commentary.`,
-    userPrompt: params.userPrompt,
-    model: params.model ?? MODELS.GPT_LUNA,
-    maxTokens: params.maxTokens ?? 4000,
-  })
+Return ONLY valid JSON. No markdown fences. No commentary.`
 
-  const parsed = parseJsonLoose(result.text)
+  async function once(userPrompt: string) {
+    return generateOpenAIResponse({
+      systemPrompt,
+      userPrompt,
+      model: params.model ?? MODELS.GPT_LUNA,
+      maxTokens: params.maxTokens ?? 4000,
+    })
+  }
+
+  let result = await once(params.userPrompt)
+  let parsed: unknown
+  try {
+    parsed = parseJsonLoose(result.text)
+  } catch {
+    result = await once(
+      `${params.userPrompt}\n\nYour previous reply was not valid JSON. Return one JSON object only.`
+    )
+    parsed = parseJsonLoose(result.text)
+  }
+
   const candidate = params.normalize ? params.normalize(parsed) : parsed
   const validated = params.schema.safeParse(candidate)
   if (!validated.success) {

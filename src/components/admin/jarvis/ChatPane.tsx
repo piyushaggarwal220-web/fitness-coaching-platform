@@ -32,6 +32,44 @@ function displayStepLabel(label: string) {
   return label.includes('.') ? humanToolLabel(label) : label
 }
 
+function OperatorMessage({ text }: { text: string }) {
+  const parts = text.split(/\n(?=##\s+)/)
+  const hasHeadings = parts.some((part) => /^##\s+/.test(part.trim()))
+  if (!hasHeadings) {
+    return <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: 14, marginTop: 4 }}>{text}</div>
+  }
+  return (
+    <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {parts.map((part) => {
+        const raw = part.trim()
+        if (!raw) return null
+        const match = raw.match(/^##\s+([^\n]+)\n?([\s\S]*)$/)
+        if (!match) {
+          return (
+            <div key={raw.slice(0, 40)} style={{ whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: 14 }}>
+              {raw}
+            </div>
+          )
+        }
+        const heading = match[1].trim()
+        const body = match[2].trim()
+        return (
+          <div key={heading}>
+            <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: colors.textMuted, fontWeight: 650 }}>
+              {heading}
+            </div>
+            {body ? (
+              <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 14, marginTop: 3, color: colors.textPrimary }}>
+                {body}
+              </div>
+            ) : null}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function MessageEvidence({
   tools,
 }: {
@@ -146,7 +184,7 @@ export function ChatPane({ jarvis }: { jarvis: JarvisCommandState }) {
             }}
           >
             <div style={s.eyebrow}>{m.role === 'user' ? 'You' : 'Jarvis'}</div>
-            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: 14, marginTop: 4 }}>{m.content}</div>
+            <OperatorMessage text={m.content} />
             {m.tool_activity?.length ? <MessageEvidence tools={m.tool_activity} /> : null}
             {m.approval_ids?.length ? (
               <div style={{ ...s.muted, color: colors.warning }}>
@@ -175,9 +213,7 @@ export function ChatPane({ jarvis }: { jarvis: JarvisCommandState }) {
             }}
           >
             <div style={s.eyebrow}>Jarvis</div>
-            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: 14, marginTop: 4 }}>
-              {jarvis.streamText}
-            </div>
+            <OperatorMessage text={jarvis.streamText} />
           </div>
         ) : null}
 

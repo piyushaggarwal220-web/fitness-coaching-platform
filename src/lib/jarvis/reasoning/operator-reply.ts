@@ -73,17 +73,15 @@ The owner asked for detail. You may expand, but still use progressive structure 
 
   if (mode === 'approval') {
     return `${shared}
+Ask for permission in everyday words. No tool names, policy codes, JSON, or rollback essays.
 Format exactly:
-## ACTION
-one line
-## WHY
-1–2 sentences
-## EVIDENCE
-max 3 bullets
-## RISK
-one short line
-End with: Reply Approve or Reject in Approvals.
-Decision-complete but concise — no essay.`
+## What I want to do
+one short sentence
+## Why
+one sentence
+## Risk
+one short sentence a business owner understands
+End with: Approve or reject this in Approvals.`
   }
 
   if (mode === 'investigation') {

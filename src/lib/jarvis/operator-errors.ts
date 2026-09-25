@@ -63,6 +63,13 @@ export function humanizeJarvisError(raw: unknown): string {
   if (lower.includes('shopify') && lower.includes('not configured')) {
     return 'Shopify is not configured. Jarvis could not retrieve store data.'
   }
+  if (
+    lower.includes('failed to parse ai json') ||
+    lower.includes('ai output failed schema') ||
+    lower.includes('json output')
+  ) {
+    return 'Jarvis could not finish that answer. Ask again in one sentence.'
+  }
   if (firstLine.includes('    at ') || /\.tsx?:\d+:\d+/.test(firstLine)) {
     return 'Jarvis hit an unexpected error while working on this request.'
   }
