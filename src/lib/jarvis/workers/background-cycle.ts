@@ -3,14 +3,10 @@ import { ensureJarvisToolsRegistered } from '@/lib/jarvis/tools/builtins'
 import { runTool } from '@/lib/jarvis/core/action-runner'
 import { assertAiBudgetAvailable, getCostDashboard } from '@/lib/jarvis/cost/usage'
 import { getJarvisBudgets } from '@/lib/jarvis/cost/governor'
-import { remember } from '@/lib/jarvis/memory/business-memory'
 import { writeMarketingAudit } from '@/lib/ai-marketing/audit'
 import { listPendingApprovals } from '@/lib/jarvis/permissions/approval-engine'
 import { getPerformanceByFunnel } from '@/lib/ai-marketing/funnels'
-import {
-  detectProactiveFindings,
-  notificationKindForSeverity,
-} from '@/lib/jarvis/workers/proactive'
+import { detectProactiveFindings } from '@/lib/jarvis/workers/proactive'
 import { loadLurvoxRevenue } from '@/lib/jarvis/metrics/lurvox-revenue'
 import { loadMetaIntegrationStatus } from '@/lib/jarvis/diagnostics/meta-sync-pipeline'
 
@@ -308,53 +304,48 @@ export async function runJarvisBackgroundCycle(opts?: {
       (a) => `${a.action_label} (${a.risk_level}) — ${a.tool_name}`
     )
 
-    if (anomalies.priority === 'none') {
-      await admin.from('jarvis_notifications').insert({
-        kind: 'info',
-        title: 'Nothing important changed overnight',
-        body: 'Jarvis observed the business and skipped expensive research/report work.',
-        link: '/admin/jarvis',
+    const serious = proactive.findings.filter(
+      (f) => f.severity === 'WARNING' || f.severity === 'CRITICAL'
+    )
+    let waitingReels = 0
+    try {
+      const { count } = await admin
+        .from('video_edit_jobs')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'awaiting_approval')
+      waitingReels = count ?? 0
+    } catch {
+      waitingReels = 0
+    }
+
+    const { notifyIfMeaningful } = await import('@/lib/jarvis/autonomous/store')
+    if (serious[0]) {
+      await notifyIfMeaningful({
+        fingerprint: `watch:${serious[0].source}:${serious[0].title}`,
+        kind: 'alert',
+        title: serious[0].title,
+        body: serious[0].detail,
       })
-      learned.push('Quiet cycle — no meaningful anomaly requiring spend.')
-      await remember({
-        category: 'insight',
-        kind: 'HYPOTHESIS',
-        title: 'Quiet overnight cycle',
-        summary:
-          'Background cycle found no NOTICE+ findings requiring expensive action. This is an observation, not a causal claim.',
-        confidence: 'medium',
-        actorId: opts?.actorId ?? null,
-        tags: ['background', 'noop', 'hypothesis'],
-        source: 'jarvis.background_cycle',
+      learned.push(serious[0].title)
+    } else if (waitingReels > 0) {
+      await notifyIfMeaningful({
+        fingerprint: 'reels-waiting',
+        kind: 'alert',
+        title: 'A Reel is waiting for you',
+        body:
+          waitingReels === 1
+            ? 'One Reel is ready and waiting for your OK.'
+            : `${waitingReels} Reels are ready and waiting for your OK.`,
       })
-    } else if (anomalies.shouldNotify) {
-      const summary = `${anomalies.severity}. ${anomalies.findings.slice(0, 2).join(' ')}`
-      await admin.from('jarvis_notifications').insert({
-        kind: notificationKindForSeverity(
-          anomalies.severity === 'NONE' ? 'INFO' : anomalies.severity
-        ),
-        title: 'While you were away',
-        body: summary.slice(0, 400),
-        link: '/admin/jarvis',
-        metadata: {
-          findings: anomalies.findings,
-          actions,
-          severity: anomalies.severity,
-        },
+    } else if (approvals[0]) {
+      await notifyIfMeaningful({
+        fingerprint: `approval-waiting:${approvals[0].id}`,
+        kind: 'alert',
+        title: 'Waiting on you',
+        body: approvals[0].action_label,
       })
-      learned.push(summary)
-      await remember({
-        category: 'decision',
-        kind: 'DECISION',
-        title: `Background ${anomalies.priority} findings`,
-        summary,
-        confidence: anomalies.priority === 'high' ? 'high' : 'medium',
-        actorId: opts?.actorId ?? null,
-        tags: ['background', anomalies.priority, String(anomalies.severity)],
-        details: { findings: anomalies.findings, actions, severity: anomalies.severity },
-        source: 'jarvis.background_cycle',
-      })
-      recommends.push('Open Approvals panel and review SIGNIFICANT actions before spend changes.')
+    } else {
+      learned.push('Quiet cycle — nothing important changed.')
     }
 
     const cost = await getCostDashboard()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { colors } from '@/lib/design-tokens'
 import {
   formatTime,
@@ -48,10 +48,11 @@ function ownerStateWord(input: {
   busy: boolean
   voice: 'listening' | 'speaking' | 'idle'
   core: string
+  waiting: boolean
 }): string {
   if (input.voice === 'listening') return 'Listening'
   if (input.voice === 'speaking' || input.busy) return 'Working'
-  if (input.core === 'WAITING_FOR_APPROVAL') return 'Needs your OK'
+  if (input.waiting || input.core === 'WAITING_FOR_APPROVAL') return 'Needs your OK'
   if (input.core === 'ERROR' || input.core === 'PAUSED') return 'Stopped'
   return 'Done'
 }
@@ -185,6 +186,26 @@ export function CockpitHome({
   const videoWs = jarvis.dashboard?.video_workspace
   const videoSessions = (videoWs?.sessions ?? []).slice(0, 3)
   const videoJobs = (videoWs?.recent_jobs ?? []).slice(0, 4)
+  const waiting = jarvis.pendingApprovals[0]
+  const reelsWaiting = videoJobs.some((job) => job.status === 'awaiting_approval')
+  const reelSummary = reelLines(videoJobs)
+  const spokenLine = cockpit
+    ? spokenBrief([
+        ...openingFromMetrics(cockpit.metrics),
+        reelSummary[0] ?? null,
+        waiting ? `Waiting on you: ${waiting.action_label}.` : null,
+      ]) || cockpit.brief
+    : ''
+
+  useEffect(() => {
+    if (!spokenLine || typeof window === 'undefined') return
+    try {
+      if (sessionStorage.getItem('jarvis-spoke') === spokenLine) return
+      if (readAloud(spokenLine)) sessionStorage.setItem('jarvis-spoke', spokenLine)
+    } catch {
+      /* speech can be blocked until the owner taps Read this */
+    }
+  }, [spokenLine])
 
   if (!cockpit) {
     return (
@@ -204,14 +225,6 @@ export function CockpitHome({
           ? colors.textMuted
           : colors.success
 
-  const waiting = jarvis.pendingApprovals[0]
-  const reelSummary = reelLines(videoJobs)
-  const spokenLine = spokenBrief([
-    ...openingFromMetrics(cockpit.metrics),
-    reelSummary[0] ?? null,
-    waiting ? `Waiting on you: ${waiting.action_label}.` : null,
-  ]) || cockpit.brief
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: compact ? '8px 10px 4px' : '8px 16px 4px' }}>
@@ -229,7 +242,12 @@ export function CockpitHome({
                 title={core.detail || core.state}
               >
                 <span style={{ ...s.statusDot(core.state === 'ERROR' ? 'danger' : core.state === 'WAITING_FOR_APPROVAL' ? 'warn' : core.state === 'IDLE' ? 'muted' : 'ok'), marginRight: 6 }} />
-                {ownerStateWord({ busy: jarvis.busy, voice: voicePhase, core: core.state })}
+                {ownerStateWord({
+                  busy: jarvis.busy,
+                  voice: voicePhase,
+                  core: core.state,
+                  waiting: Boolean(waiting) || reelsWaiting,
+                })}
               </span>
             </div>
             <div style={{ color: colors.textSecondary, marginTop: 3, fontSize: 12, lineHeight: 1.35 }}>
@@ -409,27 +427,6 @@ export function CockpitHome({
                 {step.detail ? ` · ${step.detail}` : ''}
               </div>
             ))}
-          </div>
-        ) : null}
-
-        {jarvis.dashboard?.events?.recent?.length ? (
-          <div style={{ marginTop: 8, paddingBottom: 6, borderBottom: `1px solid ${colors.divider}` }}>
-            <div style={s.sectionLabel}>Signals</div>
-            {(jarvis.dashboard.events.summary_lines || [])
-              .slice(0, 4)
-              .map((line) => (
-                <div key={line} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
-                  {line}
-                </div>
-              ))}
-            {!jarvis.dashboard.events.summary_lines?.length
-              ? jarvis.dashboard.events.recent.slice(0, 4).map((e) => (
-                  <div key={e.id} style={{ fontSize: 12, marginTop: 4, color: colors.textSecondary }}>
-                    {e.event_type} · {e.significance || e.status}
-                    {e.funnel_id ? ` · ${e.funnel_id}` : ''}
-                  </div>
-                ))
-              : null}
           </div>
         ) : null}
 

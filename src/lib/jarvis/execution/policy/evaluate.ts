@@ -173,12 +173,17 @@ export function evaluateExecutionPolicy(facts: PolicyFacts): PolicyResult {
   }
 
   if (facts.risk_class === 'SIGNIFICANT' && !facts.approved_execution) {
-    // Level 3–4 still require approval for SIGNIFICANT by default
-    return {
-      ...base,
-      decision: 'APPROVAL_REQUIRED',
-      code: 'RISK_CLASS',
-      reason: 'SIGNIFICANT actions require explicit owner approval before execution.',
+    const finishWithoutCard =
+      facts.autonomy_level >= 3 &&
+      GUARDED_AUTO_CLASSES.has(action_class) &&
+      facts.source !== 'cron'
+    if (!finishWithoutCard) {
+      return {
+        ...base,
+        decision: 'APPROVAL_REQUIRED',
+        code: 'RISK_CLASS',
+        reason: 'This still needs your OK before it runs.',
+      }
     }
   }
 

@@ -160,7 +160,9 @@ export async function GET() {
       budgets,
       approvals: publicApprovals,
       notifications: publicNotifications,
-      unread_notifications: publicNotifications.filter((n) => !n.read_at).length,
+      unread_notifications: publicNotifications.filter(
+        (n) => !n.read_at && (n.kind === 'alert' || n.kind === 'cost')
+      ).length,
       jobs: jobs ?? [],
       tasks: mappedTasks,
       memory: memory ?? [],

@@ -131,6 +131,26 @@ async function main() {
     }))
     assert.equal(r4.decision, 'APPROVAL_REQUIRED')
     ok('Level 4 still requires approval for budget increase')
+
+    const draft = evaluateExecutionPolicy(baseFacts({
+      autonomy_level: 4,
+      tool_name: 'content.write_draft',
+      action_class: 'CONTENT_WRITE',
+      risk_class: 'SIGNIFICANT',
+      system: 'CONTENT',
+      source: 'chat',
+    }))
+    assert.equal(draft.decision, 'AUTO_EXECUTE')
+    const backgroundDraft = evaluateExecutionPolicy(baseFacts({
+      autonomy_level: 4,
+      tool_name: 'content.write_draft',
+      action_class: 'CONTENT_WRITE',
+      risk_class: 'SIGNIFICANT',
+      system: 'CONTENT',
+      source: 'cron',
+    }))
+    assert.equal(backgroundDraft.decision, 'APPROVAL_REQUIRED')
+    ok('Level 4 finishes drafts without a card; background and money still ask')
   }
 
   // 6 blocked classes
