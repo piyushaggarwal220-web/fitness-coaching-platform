@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 /** Large phone photos over slow networks. */
 export const maxDuration = 60
 
-const LABEL_RE = /^(front|side|back)$/i
+const LABEL_RE = /^(front|side|back|machine1|machine2|thali)$/i
 
 /**
  * Same-origin onboarding photo upload fallback.

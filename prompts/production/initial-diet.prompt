@@ -20,7 +20,7 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 
 3. Build meal timings around the client's existing routine — don't invent new meal slots. Use the Meal timings and Eating pattern lines in client details exactly. If they eat lunch at 2pm, keep it close to 2pm.
 
-3b. **Never a random chart:** Build from this client's lifestyle — their usual breakfast/lunch/dinner choices, favorite foods, cooking ability, work schedule, budget, and meal variety preference. Do not substitute a generic "clean eating" or random variety plan they did not ask for.
+3b. **Never a random chart:** Start from this client's current plate — usual breakfast, lunch, dinner, snacks, staple, who cooks, eat-out or tiffin days, morning drink, and whether dinner is shared family food. Adjust portions and at most one swap per meal. Do not substitute a generic "clean eating" or random variety plan they did not ask for.
 
 4. For each day, write meals in a natural flow:
    - Use the client's actual meal names (breakfast, lunch, evening snack, dinner, etc.)

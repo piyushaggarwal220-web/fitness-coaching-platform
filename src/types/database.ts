@@ -112,6 +112,16 @@ export type OnboardingData = {
     durationMinutes?: string | null
     preferredTime?: string | null
     equipmentAvailable?: string[] | null
+    /** Named gym stations the client confirmed are in their gym. */
+    gymStations?: string[] | null
+    /** Heaviest dumbbell pair they can use, in kg. */
+    dumbbellMaxKg?: string | null
+    /** Broken, crowded, or refused machines. */
+    gymLimits?: string | null
+    /** Written description of a station they could not name. */
+    gymUnnamedNote?: string | null
+    gymMachinePhoto1?: string | null
+    gymMachinePhoto2?: string | null
     favoriteExercises?: string | null
     exercisesDisliked?: string | null
     /** yes | with_modification | no */
@@ -157,6 +167,17 @@ export type OnboardingData = {
     lunch?: string | null
     dinner?: string | null
     snacks?: string | null
+    /** rice | roti | both */
+    staple?: string | null
+    /** self | family | tiffin | eating_out | mix */
+    whoCooks?: string | null
+    /** Days per week they eat from a tiffin, canteen, or restaurant. */
+    eatOutDays?: string | null
+    morningDrink?: string | null
+    /** yes | sometimes | no — dinner is the shared family plate. */
+    familyDinner?: string | null
+    /** Optional photo of one normal meal. */
+    thaliPhoto?: string | null
     /** Meals the client chose to set times for (wizard step). */
     mealsForTiming?: Array<'breakfast' | 'lunch' | 'dinner' | 'snacks'> | null
     timings?: {
@@ -289,6 +310,12 @@ export type OnboardingFormData = {
   workout_duration: string
   preferred_workout_time: string
   equipment_available: string[]
+  gym_stations: string[]
+  dumbbell_max_kg: string
+  gym_limits: string
+  gym_unnamed_note: string
+  gym_machine_photo_1: string
+  gym_machine_photo_2: string
   favorite_exercises: string
   exercises_disliked: string
   /** yes | with_modification | no — can comfortably squat */
@@ -325,6 +352,12 @@ export type OnboardingFormData = {
   lunch: string
   dinner: string
   snacks: string
+  staple: string
+  who_cooks: string
+  eat_out_days: string
+  morning_drink: string
+  family_dinner: string
+  thali_photo: string
   timing_breakfast: string
   timing_lunch: string
   timing_dinner: string

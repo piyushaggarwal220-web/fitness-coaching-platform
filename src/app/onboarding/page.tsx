@@ -23,7 +23,10 @@ import {
   DIET_OPTIONS,
   DIET_VARIETY_OPTIONS,
   emptySavedPhotoUrls,
+  EAT_OUT_DAY_OPTIONS,
   EQUIPMENT_OPTIONS,
+  FAMILY_DINNER_OPTIONS,
+  GYM_STATION_OPTIONS,
   findFirstIncompleteOnboardingStep,
   FLUX_CAPACITY_OPTIONS,
   formFromProfile,
@@ -57,6 +60,7 @@ import {
   shouldRequireOnboardingBodyMeasurements,
   STEPS_OPTIONS,
   STRUGGLE_OPTIONS,
+  STAPLE_OPTIONS,
   STRESS_OPTIONS,
   TRAINING_LOCATION_OPTIONS,
   TRAINING_OPTIONS,
@@ -64,7 +68,9 @@ import {
   uploadOnboardingPhoto,
   validateOnboardingStep,
   waitForOnboardingCompletion,
+  trainsAtGym,
   WATER_OPTIONS,
+  WHO_COOKS_OPTIONS,
   WEEKDAY_OPTIONS,
   WHEY_OPTIONS,
   WORKOUT_DURATION_OPTIONS,
@@ -116,6 +122,7 @@ export default function OnboardingPage() {
     back: null,
   })
   const [photoUrls, setPhotoUrls] = useState<SavedPhotoUrls>(emptySavedPhotoUrls)
+  const [referenceUploading, setReferenceUploading] = useState<string | null>(null)
   const [uploadingPhotos, setUploadingPhotos] = useState<Record<PhotoKey, boolean>>({
     front: false,
     side: false,
@@ -428,6 +435,46 @@ export default function OnboardingPage() {
     []
   )
 
+  const handleReferencePhoto = useCallback(
+    (slot: 'gym_machine_photo_1' | 'gym_machine_photo_2' | 'thali_photo') => (files: File[]) => {
+      const file = files[0]
+      if (!file) return
+      const validationError = validatePhotoFiles([file])
+      if (validationError) {
+        setError(validationError)
+        return
+      }
+      const current = stateRef.current
+      if (!current.userId) {
+        setError('Please wait for your session to load, then try the photo again.')
+        return
+      }
+      const label = slot === 'thali_photo' ? 'thali' : slot === 'gym_machine_photo_1' ? 'machine1' : 'machine2'
+      setReferenceUploading(slot)
+      setError('')
+      void (async () => {
+        try {
+          await supabase.auth.refreshSession().catch(() => undefined)
+          const path = await uploadOnboardingPhoto(supabase, current.userId!, file, label)
+          const nextForm = { ...stateRef.current.form, [slot]: path }
+          stateRef.current = { ...stateRef.current, form: nextForm }
+          setForm(nextForm)
+          await saveOnboardingProgress(supabase, current.userId!, nextForm, {
+            email: current.userEmail,
+            step: stateRef.current.step,
+            photoUrls: stateRef.current.photoUrls ?? undefined,
+            mealsForTiming: stateRef.current.mealsForTiming,
+          })
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Could not upload that photo. Please try again.')
+        } finally {
+          setReferenceUploading(null)
+        }
+      })()
+    },
+    [supabase]
+  )
+
   useEffect(() => {
     if (step === 19 && mealsForTiming.length === 0) {
       queueMicrotask(() => setMealsForTiming(defaultMealsForTiming(form)))
@@ -461,6 +508,8 @@ export default function OnboardingPage() {
     requireFluxCapacity: requireBodyMeasurements,
     requireDietVariety: requireBodyMeasurements,
     requireMovementAssessment: requireBodyMeasurements,
+    requireGymDetail: requireBodyMeasurements,
+    requirePlateDetail: requireBodyMeasurements,
     planSlug,
     requireMultiGoals: true,
   }
@@ -706,6 +755,8 @@ export default function OnboardingPage() {
             uploadingPhotos,
             photoSlotErrors,
             handlePhotoChange,
+            handleReferencePhoto,
+            referenceUploading,
             handleEditSection,
             mealsForTiming,
             setMealsForTiming,
@@ -763,6 +814,10 @@ function renderStep(
   uploadingPhotos: Record<PhotoKey, boolean>,
   photoSlotErrors: Record<PhotoKey, string | null>,
   onPhotoChange: (key: PhotoKey) => (files: File[]) => void,
+  onReferencePhoto: (
+    slot: 'gym_machine_photo_1' | 'gym_machine_photo_2' | 'thali_photo'
+  ) => (files: File[]) => void,
+  referenceUploading: string | null,
   onEditSection: (step: number) => void,
   mealsForTiming: MealTimingKey[],
   setMealsForTiming: (meals: MealTimingKey[]) => void,
@@ -1097,24 +1152,102 @@ function renderStep(
         </div>
       )
 
-    case 9:
+    case 9: {
+      const atGym = trainsAtGym(form.training_location)
+      const atHome = form.training_location === 'home' || form.training_location === 'both'
       return (
         <div style={s.stepContent}>
-          <h2 style={s.stepTitle}>Equipment</h2>
+          <h2 style={s.stepTitle}>{atGym && !atHome ? 'Your gym' : 'Equipment'}</h2>
           <p style={s.stepHint}>
-            {form.training_location === 'gym'
-              ? 'Select what you typically use at the gym.'
+            {atGym
+              ? 'Tick only the stations that are actually in your gym. The plan will not use a machine you leave unticked.'
               : 'Select everything you have access to at home.'}
           </p>
-          <Field label="Equipment available" required={form.training_location !== 'gym'}>
-            <MultiChipGroup
-              options={EQUIPMENT_OPTIONS}
-              values={form.equipment_available}
-              onChange={(v) => update({ equipment_available: v })}
-            />
-          </Field>
+          {atHome && (
+            <Field label="Home equipment" required>
+              <MultiChipGroup
+                options={EQUIPMENT_OPTIONS.filter((option) => option.value !== 'full_gym')}
+                values={form.equipment_available}
+                onChange={(v) => update({ equipment_available: v })}
+              />
+            </Field>
+          )}
+          {atGym && (
+            <>
+              <Field label="Stations in your gym" required>
+                <MultiChipGroup
+                  options={GYM_STATION_OPTIONS}
+                  values={form.gym_stations}
+                  onChange={(gym_stations) =>
+                    update({
+                      gym_stations,
+                      ...(gym_stations.includes('dumbbells') ? null : { dumbbell_max_kg: '' }),
+                    })
+                  }
+                />
+              </Field>
+              {form.gym_stations.includes('dumbbells') && (
+                <Field label="Heaviest dumbbell pair you use (kg)" required hint="Example: 20">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={form.dumbbell_max_kg}
+                    onChange={(e) => update({ dumbbell_max_kg: e.target.value })}
+                    placeholder="20"
+                    style={s.input}
+                  />
+                </Field>
+              )}
+              <Field label="Machines that are broken, always taken, or you will not use" hint="Optional">
+                <textarea
+                  value={form.gym_limits}
+                  onChange={(e) => update({ gym_limits: e.target.value })}
+                  placeholder="e.g. smith machine is broken, leg press queue is too long"
+                  style={s.textarea}
+                />
+              </Field>
+              <Field
+                label="A station you cannot name"
+                hint="Optional. Write what it looks like, and add one or two photos if that helps."
+              >
+                <textarea
+                  value={form.gym_unnamed_note}
+                  onChange={(e) => update({ gym_unnamed_note: e.target.value })}
+                  placeholder="e.g. a seated machine with a chest pad and two handles"
+                  style={s.textarea}
+                />
+              </Field>
+              <PhotoSourceControl
+                label="Photo of an unnamed machine"
+                onFiles={onReferencePhoto('gym_machine_photo_1')}
+                selectedText={
+                  referenceUploading === 'gym_machine_photo_1'
+                    ? 'Uploading…'
+                    : form.gym_machine_photo_1
+                      ? 'Uploaded — select a new photo to replace.'
+                      : undefined
+                }
+                disabled={referenceUploading != null}
+                onBeforeCameraOpen={onBeforeCameraOpen}
+              />
+              <PhotoSourceControl
+                label="Second unnamed machine, if needed"
+                onFiles={onReferencePhoto('gym_machine_photo_2')}
+                selectedText={
+                  referenceUploading === 'gym_machine_photo_2'
+                    ? 'Uploading…'
+                    : form.gym_machine_photo_2
+                      ? 'Uploaded — select a new photo to replace.'
+                      : undefined
+                }
+                disabled={referenceUploading != null}
+                onBeforeCameraOpen={onBeforeCameraOpen}
+              />
+            </>
+          )}
         </div>
       )
+    }
 
     case 10:
       return (
@@ -1179,11 +1312,11 @@ function renderStep(
       return (
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Medical background</h2>
-          <Field label="Current or past injuries" hint="Optional">
+          <Field label="Current or past injuries" required>
             <textarea
               value={form.injuries}
               onChange={(e) => update({ injuries: e.target.value })}
-              placeholder="e.g. lower back pain, old shoulder injury"
+              placeholder="e.g. old shoulder injury, or None"
               style={s.textarea}
             />
           </Field>
@@ -1432,19 +1565,33 @@ function renderStep(
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>What you eat now</h2>
           <p style={s.stepHint}>Your coach will adapt to your current routine — not replace it overnight.</p>
-          <Field label="Typical breakfast" required>
+          <Field label="Typical breakfast" required hint="Include the usual amount, such as 2 rotis or 1 bowl.">
             <textarea
               value={form.breakfast}
               onChange={(e) => update({ breakfast: e.target.value })}
-              placeholder="What you usually eat"
+              placeholder="e.g. 2 slices of bread and chai, or 1 bowl poha"
               style={s.textarea}
             />
           </Field>
-          <Field label="Typical lunch" required>
+          <Field label="Typical lunch" required hint="Include the usual amount.">
             <textarea
               value={form.lunch}
               onChange={(e) => update({ lunch: e.target.value })}
+              placeholder="e.g. 2 rotis, 1 katori dal, and sabzi"
               style={s.textarea}
+            />
+          </Field>
+          <Field label="Usual staple" required>
+            <ChipGroup options={STAPLE_OPTIONS} value={form.staple} onChange={(staple) => update({ staple })} />
+          </Field>
+          <Field label="Who cooks?" required>
+            <ChipGroup options={WHO_COOKS_OPTIONS} value={form.who_cooks} onChange={(who_cooks) => update({ who_cooks })} />
+          </Field>
+          <Field label="Days you eat out, from a tiffin, or at a canteen" required>
+            <ChipGroup
+              options={EAT_OUT_DAY_OPTIONS}
+              value={form.eat_out_days}
+              onChange={(eat_out_days) => update({ eat_out_days })}
             />
           </Field>
         </div>
@@ -1454,20 +1601,50 @@ function renderStep(
       return (
         <div style={s.stepContent}>
           <h2 style={s.stepTitle}>Evening eating</h2>
-          <Field label="Typical dinner" required>
+          <Field label="Typical dinner" required hint="Include the usual amount.">
             <textarea
               value={form.dinner}
               onChange={(e) => update({ dinner: e.target.value })}
+              placeholder="e.g. 1 bowl rice, dal, and sabzi"
               style={s.textarea}
             />
           </Field>
-          <Field label="Snacks" required hint='Write "None" if you don&apos;t snack.'>
+          <Field label="Snacks" required hint='Include the amount, or write "None".'>
             <textarea
               value={form.snacks}
               onChange={(e) => update({ snacks: e.target.value })}
+              placeholder="e.g. chai and 2 biscuits at 5pm, or None"
               style={s.textarea}
             />
           </Field>
+          <Field label="Morning drink" required hint='How many cups, or write "None".'>
+            <textarea
+              value={form.morning_drink}
+              onChange={(e) => update({ morning_drink: e.target.value })}
+              placeholder="e.g. 2 cups chai with milk and sugar"
+              style={s.textarea}
+            />
+          </Field>
+          <Field label="Is dinner a shared family plate?" required>
+            <ChipGroup
+              options={FAMILY_DINNER_OPTIONS}
+              value={form.family_dinner}
+              onChange={(family_dinner) => update({ family_dinner })}
+            />
+          </Field>
+          <PhotoSourceControl
+            label="Photo of one normal meal"
+            onFiles={onReferencePhoto('thali_photo')}
+            selectedText={
+              referenceUploading === 'thali_photo'
+                ? 'Uploading…'
+                : form.thali_photo
+                  ? 'Uploaded — select a new photo to replace.'
+                  : undefined
+            }
+            disabled={referenceUploading != null}
+            onBeforeCameraOpen={onBeforeCameraOpen}
+          />
         </div>
       )
 

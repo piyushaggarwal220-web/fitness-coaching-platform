@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v25'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v26'
 
 /** Platform soft floor before weight-based floor. Prefer formula target when higher. */
 export const DIET_FLOOR_BASE_KCAL = 2000
@@ -83,7 +83,7 @@ export const DIET_LIFESTYLE_RESPECT_RULES = [
   'CLIENT LIFESTYLE (non-negotiable — never a random generic chart):',
   '- Build the diet FROM the client\'s onboarding answers — not a stock template, not "ideal" foods they never eat, not a random variety plan.',
   '- Use their actual meal slots and times from Eating pattern / meal timings. Do not invent new meal times or extra meals they did not report.',
-  '- Use their favorite foods, usual breakfast/lunch/dinner/snack choices, and cooking ability. Prioritize what they already eat — adjust portions and swaps, not a full cuisine swap.',
+  '- Use their favorite foods, usual breakfast/lunch/dinner/snack choices, staple (roti, rice, or both), who cooks, eat-out or tiffin days, morning drink, and whether dinner is a shared family plate. The first plan adjusts portions and at most one swap per meal. Do not replace their current plate with a new menu.',
   '- Match work/school schedule and occupation: desk job → practical office-friendly meals; early shift → earlier breakfast; late dinner only if they already eat late.',
   '- Respect monthly food budget with affordable staples they can actually buy. Respect cooking ability — simple meals if they cannot cook elaborate dishes.',
   '- Obey diet variety preference (same daily / 50-50 / different daily). Do not force exotic variety when they want repeat meals.',
@@ -179,6 +179,7 @@ export const WORKOUT_VOLUME_PROMPT_RULES = [
   '- Fit the stated session duration. Prefer the mesocycle set count over junk volume.',
   '- Training days per week is a hard cap. Label all 7 calendar days. Remaining days after training days are rest or active recovery. Do not add extra training days. Do not require both a recovery day AND a rest day if that would steal a training day or overflow 7 days. If they train 6 days, one rest. If 7, no extra rest day.',
   '- Proven splits are fine (full body, upper/lower, PPL) when they fit days, duration, equipment, and injuries. Personalise exercise selection. Do not invent an unsafe novelty split. Do not default to a chest, back, and arms bro-split.',
+  '- If Hard Constraints list gym stations, use only those stations plus bodyweight. Do not assume a full commercial gym.',
 ].join('\n')
 
 export const EXERCISE_NAME_PROMPT_RULES = [

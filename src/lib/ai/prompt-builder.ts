@@ -9,7 +9,7 @@ import {
 import { buildMetabolicFluxSection, shouldApplyHighFluxRules } from '@/lib/ai/metabolic-flux'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
-import { getOnboardingLabel } from '@/lib/onboarding'
+import { formatGymStations, getOnboardingLabel } from '@/lib/onboarding'
 import { clientCoachNotes } from '@/lib/plan-metadata'
 import {
   DAY_HEADER_PROMPT_RULES,
@@ -408,6 +408,19 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
     if (ep.mealsForTiming?.length) {
       lines.push(`Meal slots they set times for: ${ep.mealsForTiming.join(', ')}`)
     }
+    const plate = [
+      ep.staple?.trim() ? `staple ${ep.staple}` : null,
+      ep.whoCooks?.trim() ? `who cooks ${ep.whoCooks}` : null,
+      ep.eatOutDays?.trim() ? `eat-out or tiffin days per week ${ep.eatOutDays}` : null,
+      ep.morningDrink?.trim() ? `morning drink ${ep.morningDrink}` : null,
+      ep.familyDinner?.trim() ? `shared family dinner ${ep.familyDinner}` : null,
+    ].filter(Boolean)
+    if (plate.length > 0) {
+      lines.push(`Current plate (MUST start the diet here): ${plate.join('; ')}`)
+    }
+    if (ep.thaliPhoto?.trim()) {
+      lines.push('They uploaded a photo of one normal meal. Stay with foods they wrote above. Do not invent a different cuisine from the photo path.')
+    }
   }
   if (data.supplements?.current) {
     lines.push(`Current supplements: ${data.supplements.current}`)
@@ -525,7 +538,27 @@ function buildHardConstraintsSection(profile: OnboardingProfile): string {
       `- HOME WORKOUT ONLY: Use only equipment listed — ${equipment.length > 0 ? equipment.join(', ') : 'bodyweight only'}. NEVER prescribe barbell, smith machine, leg press, cable machines, or commercial gym equipment unless listed.`
     )
   } else if (location === 'gym' || location === 'both') {
-    lines.push('- GYM: Full commercial gym equipment is available unless client listed limitations.')
+    const stations = (training?.gymStations ?? []).filter(Boolean)
+    if (stations.length > 0) {
+      lines.push(
+        `- GYM STATIONS (HARD): program ONLY these stations plus bodyweight: ${formatGymStations(stations)}. Do not prescribe a squat rack, Smith machine, leg press, hack squat, cable, lat pulldown, dumbbell, bench, pull-up bar, treadmill, bike, or elliptical unless it is in that list.`
+      )
+      if (training?.dumbbellMaxKg?.trim()) {
+        lines.push(
+          `- Dumbbells: heaviest pair they use is ${training.dumbbellMaxKg.trim()} kg. Do not write a heavier dumbbell.`
+        )
+      }
+      if (training?.gymLimits?.trim()) {
+        lines.push(`- Do NOT program these machines: ${training.gymLimits.trim()}`)
+      }
+      if (training?.gymUnnamedNote?.trim()) {
+        lines.push(
+          `- Unnamed station they described: ${training.gymUnnamedNote.trim()}. Use it only if the description is a clear movement. Do not invent a commercial machine they did not name.`
+        )
+      }
+    } else {
+      lines.push('- GYM: Full commercial gym equipment is available unless client listed limitations.')
+    }
   }
 
   if (training?.daysPerWeek) {

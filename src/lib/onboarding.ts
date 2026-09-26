@@ -372,6 +372,64 @@ export const EQUIPMENT_OPTIONS = [
   { value: 'bodyweight_only', label: 'Bodyweight only' },
 ] as const
 
+/** Stations that change a gym program. Bodyweight is always allowed. */
+export const GYM_STATION_OPTIONS = [
+  { value: 'squat_rack', label: 'Squat rack' },
+  { value: 'smith_machine', label: 'Smith machine' },
+  { value: 'leg_press', label: 'Leg press' },
+  { value: 'hack_squat', label: 'Hack squat' },
+  { value: 'cable_station', label: 'Cable station' },
+  { value: 'lat_pulldown', label: 'Lat pulldown' },
+  { value: 'dumbbells', label: 'Dumbbells' },
+  { value: 'flat_bench', label: 'Flat bench' },
+  { value: 'pull_up_bar', label: 'Pull-up bar' },
+  { value: 'treadmill', label: 'Treadmill' },
+  { value: 'stationary_bike', label: 'Stationary bike' },
+  { value: 'elliptical', label: 'Elliptical' },
+] as const
+
+export const STAPLE_OPTIONS = [
+  { value: 'roti', label: 'Roti' },
+  { value: 'rice', label: 'Rice' },
+  { value: 'both', label: 'Both roti and rice' },
+] as const
+
+export const WHO_COOKS_OPTIONS = [
+  { value: 'self', label: 'I cook' },
+  { value: 'family', label: 'Family cooks' },
+  { value: 'tiffin', label: 'Tiffin or canteen' },
+  { value: 'eating_out', label: 'Mostly eating out' },
+  { value: 'mix', label: 'A mix' },
+] as const
+
+export const FAMILY_DINNER_OPTIONS = [
+  { value: 'yes', label: 'Yes, shared family plate' },
+  { value: 'sometimes', label: 'Sometimes' },
+  { value: 'no', label: 'No, I plate my own dinner' },
+] as const
+
+export const EAT_OUT_DAY_OPTIONS = [
+  { value: '0', label: '0 days' },
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4', label: '4' },
+  { value: '5', label: '5' },
+  { value: '6', label: '6' },
+  { value: '7', label: '7 days' },
+] as const
+
+export function trainsAtGym(location: string | null | undefined): boolean {
+  return location === 'gym' || location === 'both'
+}
+
+export function formatGymStations(stations: string[] | null | undefined): string {
+  if (!stations || stations.length === 0) return 'Not set'
+  return stations
+    .map((value) => GYM_STATION_OPTIONS.find((option) => option.value === value)?.label ?? value)
+    .join(', ')
+}
+
 export const PROTEIN_DAYS_OPTIONS = [
   { value: '0', label: '0 days' },
   { value: '1', label: '1 day' },
@@ -506,6 +564,9 @@ export const ONBOARDING_LABELS: Record<string, Record<string, string>> = {
   whey_protein: Object.fromEntries(WHEY_OPTIONS.map((o) => [o.value, o.label])),
   monthly_food_budget: Object.fromEntries(BUDGET_OPTIONS.map((o) => [o.value, o.label])),
   cooking_ability: Object.fromEntries(COOKING_OPTIONS.map((o) => [o.value, o.label])),
+  staple: Object.fromEntries(STAPLE_OPTIONS.map((o) => [o.value, o.label])),
+  who_cooks: Object.fromEntries(WHO_COOKS_OPTIONS.map((o) => [o.value, o.label])),
+  family_dinner: Object.fromEntries(FAMILY_DINNER_OPTIONS.map((o) => [o.value, o.label])),
 }
 
 export function getOnboardingLabel(field: string, value: string | null | undefined): string {
@@ -549,6 +610,12 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   workout_duration: '',
   preferred_workout_time: '',
   equipment_available: [],
+  gym_stations: [],
+  dumbbell_max_kg: '',
+  gym_limits: '',
+  gym_unnamed_note: '',
+  gym_machine_photo_1: '',
+  gym_machine_photo_2: '',
   favorite_exercises: '',
   exercises_disliked: '',
   can_squat: '',
@@ -581,6 +648,12 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   lunch: '',
   dinner: '',
   snacks: '',
+  staple: '',
+  who_cooks: '',
+  eat_out_days: '',
+  morning_drink: '',
+  family_dinner: '',
+  thali_photo: '',
   timing_breakfast: '',
   timing_lunch: '',
   timing_dinner: '',
@@ -727,6 +800,14 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     workout_duration: data.training?.durationMinutes ?? '',
     preferred_workout_time: data.training?.preferredTime ?? '',
     equipment_available: data.training?.equipmentAvailable ?? [],
+    gym_stations: Array.isArray(data.training?.gymStations)
+      ? data.training.gymStations.filter((value): value is string => typeof value === 'string')
+      : [],
+    dumbbell_max_kg: data.training?.dumbbellMaxKg ?? '',
+    gym_limits: data.training?.gymLimits ?? '',
+    gym_unnamed_note: data.training?.gymUnnamedNote ?? '',
+    gym_machine_photo_1: data.training?.gymMachinePhoto1 ?? '',
+    gym_machine_photo_2: data.training?.gymMachinePhoto2 ?? '',
     favorite_exercises: data.training?.favoriteExercises ?? '',
     exercises_disliked: data.training?.exercisesDisliked ?? '',
     can_squat: data.training?.canSquat ?? '',
@@ -756,6 +837,12 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     lunch: data.eatingPattern?.lunch ?? '',
     dinner: data.eatingPattern?.dinner ?? '',
     snacks: data.eatingPattern?.snacks ?? '',
+    staple: data.eatingPattern?.staple ?? '',
+    who_cooks: data.eatingPattern?.whoCooks ?? '',
+    eat_out_days: data.eatingPattern?.eatOutDays ?? '',
+    morning_drink: data.eatingPattern?.morningDrink ?? '',
+    family_dinner: data.eatingPattern?.familyDinner ?? '',
+    thali_photo: data.eatingPattern?.thaliPhoto ?? '',
     timing_breakfast: data.eatingPattern?.timings?.breakfast ?? '',
     timing_lunch: data.eatingPattern?.timings?.lunch ?? '',
     timing_dinner: data.eatingPattern?.timings?.dinner ?? '',
@@ -824,6 +911,8 @@ export function getResumeStep(
       requireFluxCapacity: requireNewFields,
       requireDietVariety: requireNewFields,
       requireMovementAssessment: requireNewFields,
+      requireGymDetail: requireNewFields,
+      requirePlateDetail: requireNewFields,
       requireMultiGoals: true,
     })
     if (error) return step
@@ -895,6 +984,12 @@ export function buildOnboardingData(
       durationMinutes: form.workout_duration || null,
       preferredTime: form.preferred_workout_time || null,
       equipmentAvailable: form.equipment_available.length > 0 ? form.equipment_available : null,
+      gymStations: form.gym_stations.length > 0 ? form.gym_stations : null,
+      dumbbellMaxKg: form.dumbbell_max_kg.trim() || null,
+      gymLimits: form.gym_limits.trim() || null,
+      gymUnnamedNote: form.gym_unnamed_note.trim() || null,
+      gymMachinePhoto1: form.gym_machine_photo_1.trim() || null,
+      gymMachinePhoto2: form.gym_machine_photo_2.trim() || null,
       favoriteExercises: form.favorite_exercises.trim() || null,
       exercisesDisliked: form.exercises_disliked.trim() || null,
       canSquat: form.can_squat || null,
@@ -934,6 +1029,12 @@ export function buildOnboardingData(
       lunch: form.lunch.trim() || null,
       dinner: form.dinner.trim() || null,
       snacks: form.snacks.trim() || null,
+      staple: form.staple || null,
+      whoCooks: form.who_cooks || null,
+      eatOutDays: form.eat_out_days || null,
+      morningDrink: form.morning_drink.trim() || null,
+      familyDinner: form.family_dinner || null,
+      thaliPhoto: form.thali_photo.trim() || null,
       mealsForTiming:
         options?.mealsForTiming && options.mealsForTiming.length > 0
           ? options.mealsForTiming
@@ -1054,7 +1155,7 @@ export function formatMealTime24(value: string): string {
 }
 
 function needsEquipment(location: string): boolean {
-  return location === 'home' || location === 'both'
+  return location === 'home' || location === 'both' || location === 'gym'
 }
 
 export function validateOnboardingStep(
@@ -1077,6 +1178,10 @@ export function validateOnboardingStep(
     requireDietVariety?: boolean
     /** New clients only — squat/push-up/pull-up comfort + recent program. */
     requireMovementAssessment?: boolean
+    /** New clients at a gym must name the stations they actually have. */
+    requireGymDetail?: boolean
+    /** New clients must describe the plate they eat now. */
+    requirePlateDetail?: boolean
     /** Number wheels that the user has explicitly confirmed. */
     confirmedScrollers?: string[]
     /** Current coaching plan — gates which goals are selectable. */
@@ -1229,7 +1334,19 @@ export function validateOnboardingStep(
       return null
     }
     case 9: {
-      if (needsEquipment(data.training_location) && data.equipment_available.length === 0) {
+      const atGym = trainsAtGym(data.training_location)
+      const atHome = data.training_location === 'home' || data.training_location === 'both'
+      if (atHome && data.equipment_available.length === 0) {
+        return 'Please select available equipment.'
+      }
+      if (atGym && options?.requireGymDetail !== false) {
+        if (data.gym_stations.length === 0) {
+          return 'Select the machines and stations your gym actually has.'
+        }
+        if (data.gym_stations.includes('dumbbells') && !data.dumbbell_max_kg.trim()) {
+          return 'Enter the heaviest dumbbell pair you use, in kg.'
+        }
+      } else if (atGym && data.equipment_available.length === 0 && data.gym_stations.length === 0) {
         return 'Please select available equipment.'
       }
       return null
@@ -1246,6 +1363,7 @@ export function validateOnboardingStep(
       return null
     }
     case 11: {
+      if (!data.injuries.trim()) return 'List current or past injuries, or write None.'
       if (!data.acne_status) return 'Please answer the acne question.'
       if (!data.hair_loss_status) return 'Please answer the hair loss question.'
       if (!data.sexual_health_status) return 'Please answer the sexual health question.'
@@ -1290,13 +1408,22 @@ export function validateOnboardingStep(
       return null
     }
     case 17: {
-      if (!data.breakfast.trim()) return 'Please describe your typical breakfast.'
-      if (!data.lunch.trim()) return 'Please describe your typical lunch.'
+      if (!data.breakfast.trim()) return 'Please describe your typical breakfast, including the usual amount.'
+      if (!data.lunch.trim()) return 'Please describe your typical lunch, including the usual amount.'
+      if (options?.requirePlateDetail !== false) {
+        if (!data.staple) return 'Please choose whether you usually eat roti, rice, or both.'
+        if (!data.who_cooks) return 'Please say who cooks your meals.'
+        if (!data.eat_out_days) return 'Please say how many days you eat out, from a tiffin, or at a canteen.'
+      }
       return null
     }
     case 18: {
-      if (!data.dinner.trim()) return 'Please describe your typical dinner.'
+      if (!data.dinner.trim()) return 'Please describe your typical dinner, including the usual amount.'
       if (!data.snacks.trim()) return 'Please describe your snacks (or write "None").'
+      if (options?.requirePlateDetail !== false) {
+        if (!data.morning_drink.trim()) return 'Describe your morning drink, or write "None".'
+        if (!data.family_dinner) return 'Please say whether dinner is a shared family plate.'
+      }
       return null
     }
     case 19: {
@@ -1448,6 +1575,13 @@ export function buildReviewSections(
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
         { label: 'Equipment', value: equipment },
+        { label: 'Gym stations', value: formatGymStations(form.gym_stations) },
+        {
+          label: 'Heaviest dumbbells',
+          value: form.dumbbell_max_kg.trim() ? `${form.dumbbell_max_kg.trim()} kg` : 'Not set',
+        },
+        { label: 'Machines to avoid', value: form.gym_limits.trim() || 'None' },
+        { label: 'Unnamed gym equipment', value: form.gym_unnamed_note.trim() || 'None' },
         { label: 'Favorite exercises', value: form.favorite_exercises.trim() || 'Not set' },
         { label: 'Exercises disliked', value: form.exercises_disliked.trim() || 'Not set' },
         { label: 'Squats', value: getOnboardingLabel('can_squat', form.can_squat) },
@@ -1499,6 +1633,15 @@ export function buildReviewSections(
         { label: 'Lunch', value: form.lunch.trim() || 'Not set' },
         { label: 'Dinner', value: form.dinner.trim() || 'Not set' },
         { label: 'Snacks', value: form.snacks.trim() || 'Not set' },
+        { label: 'Staple', value: getOnboardingLabel('staple', form.staple) || 'Not set' },
+        { label: 'Who cooks', value: getOnboardingLabel('who_cooks', form.who_cooks) || 'Not set' },
+        { label: 'Eat out / tiffin days', value: form.eat_out_days ? `${form.eat_out_days} days` : 'Not set' },
+        { label: 'Morning drink', value: form.morning_drink.trim() || 'Not set' },
+        {
+          label: 'Shared family dinner',
+          value: getOnboardingLabel('family_dinner', form.family_dinner) || 'Not set',
+        },
+        { label: 'Meal photo', value: form.thali_photo.trim() ? 'Uploaded' : 'Not added' },
       ],
     },
     {
@@ -1549,7 +1692,7 @@ export async function uploadOnboardingPhoto(
   supabase: SupabaseClient,
   clientId: string,
   file: File,
-  label: 'front' | 'side' | 'back'
+  label: 'front' | 'side' | 'back' | 'machine1' | 'machine2' | 'thali'
 ): Promise<string> {
   // Keep these dynamic so other onboarding consumers stay lean, but retry once
   // when a mid-flow deploy leaves the browser holding stale chunk hashes.
@@ -1676,6 +1819,8 @@ export function findFirstIncompleteOnboardingStep(
     requireFluxCapacity?: boolean
     requireDietVariety?: boolean
     requireMovementAssessment?: boolean
+    requireGymDetail?: boolean
+    requirePlateDetail?: boolean
     confirmedScrollers?: string[]
     planSlug?: string | null
     requireMultiGoals?: boolean
@@ -1714,6 +1859,8 @@ export function validateOnboardingAnswersForProfile(
   const requireFluxCapacity = options?.requireFluxCapacity ?? requireNewFields
   const requireDietVariety = options?.requireDietVariety ?? requireNewFields
   const requireMovementAssessment = options?.requireMovementAssessment ?? requireNewFields
+  const requireGymDetail = requireNewFields
+  const requirePlateDetail = requireNewFields
 
   for (const step of getOnboardingWizardSteps(form)) {
     const error = validateOnboardingStep(step, form, undefined, photoUrls, meals, {
@@ -1722,6 +1869,8 @@ export function validateOnboardingAnswersForProfile(
       requireFluxCapacity,
       requireDietVariety,
       requireMovementAssessment,
+      requireGymDetail,
+      requirePlateDetail,
       // Completed / generation checks must accept legacy single-goal profiles.
       requireMultiGoals: false,
     })
