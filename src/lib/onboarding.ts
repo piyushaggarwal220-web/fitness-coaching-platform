@@ -132,7 +132,7 @@ export const ONBOARDING_SCREEN_COUNT = 23
  * Day-1 wizard content steps (must-haves for coaching).
  * Lifestyle / recovery / free-text eating / supplements are deferred —
  * coaches can collect later; plan gen accepts nulls for those fields.
- * Equipment (9) is inserted only when training at home.
+ * Gym stations and home equipment (9) and monthly food budget (16) are always asked.
  */
 export const ONBOARDING_DAY1_CORE_STEPS = [
   0, // Basic info
@@ -140,26 +140,21 @@ export const ONBOARDING_DAY1_CORE_STEPS = [
   2, // Goals
   7, // Training setup
   8, // Training schedule
+  9, // Gym stations / home equipment
   10, // Movement comfort + recent program
   11, // Medical background
   13, // Diet type
   14, // Protein sources
+  16, // Budget & cooking
   19, // Meal timings
   21, // Progress photos
   22, // Review / terms
 ] as const
 
 export function getOnboardingWizardSteps(
-  form: Pick<OnboardingFormData, 'training_location'>
+  _form: Pick<OnboardingFormData, 'training_location'>
 ): number[] {
-  const steps: number[] = [...ONBOARDING_DAY1_CORE_STEPS]
-  const needsGear =
-    form.training_location === 'home' || form.training_location === 'both'
-  if (needsGear) {
-    const scheduleIdx = steps.indexOf(8)
-    steps.splice(scheduleIdx + 1, 0, 9)
-  }
-  return steps
+  return [...ONBOARDING_DAY1_CORE_STEPS]
 }
 
 export function getWizardIndexForStep(step: number, wizardSteps: number[]): number {
