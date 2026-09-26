@@ -154,6 +154,9 @@ export async function OPTIONS(request: Request) {
 export async function POST(request: Request) {
   const origin = request.headers.get('origin')
   const headers = corsHeaders(origin)
+  if ((process.env.PHYSIQUE_PREVIEW_ENABLED || '').trim().toLowerCase() !== 'true') {
+    return NextResponse.json({ error: 'This preview is paused.' }, { status: 503, headers })
+  }
   if (!originAllowed(origin)) {
     return NextResponse.json({ error: 'This preview is only available on Lurvox.' }, { status: 403, headers })
   }
