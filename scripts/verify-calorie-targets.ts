@@ -7,6 +7,7 @@ import {
   clientRequestTouchesCalories,
   clientRequestNeedsExpenditureFocus,
 } from '../src/lib/ai/calorie-targets'
+import { FAT_LOSS_DEFICIT_KCAL, MUSCLE_SURPLUS_KCAL } from '../src/lib/ai/plan-quality-rules'
 import { resolveDietFloorKcal } from '../src/lib/ai/plan-quality-rules'
 import {
   stabilizeDietCaloriesAfterEdit,
@@ -56,13 +57,40 @@ const maintenance = estimateMaintenanceCalories({
 })
 assert('maintenance estimate is realistic', Boolean(maintenance && maintenance >= 2000 && maintenance <= 3200))
 
-const highFluxBand = calorieTargetBand(maintenance ?? 2200, 'fat_loss', 'high_flux', resolveDietFloorKcal(70))
-const legacyBand = calorieTargetBand(maintenance ?? 2200, 'fat_loss', 'steady', resolveDietFloorKcal(70))
+const m = maintenance ?? 2200
+const floor = resolveDietFloorKcal(70)
+const highFluxBand = calorieTargetBand(m, 'fat_loss', 'high_flux', floor)
+const buildUpBand = calorieTargetBand(m, 'fat_loss', 'build_up', floor)
+const legacyBand = calorieTargetBand(m, 'fat_loss', 'steady', floor)
 assert('high flux fat loss band stays above floor', highFluxBand.min >= 2000)
-assert('high flux fat loss target is maintenance minus shallow deficit', highFluxBand.preferred === (maintenance ?? 2200) - 125)
+assert(
+  'high flux fat loss target is the shallowest cut',
+  highFluxBand.preferred === m - FAT_LOSS_DEFICIT_KCAL.high_flux
+)
+assert(
+  'build-up fat loss sits between high flux and steady',
+  buildUpBand.preferred === m - FAT_LOSS_DEFICIT_KCAL.build_up &&
+    buildUpBand.preferred < highFluxBand.preferred &&
+    buildUpBand.preferred > legacyBand.preferred
+)
+assert(
+  'steady fat loss is the largest mild cut',
+  legacyBand.preferred === m - FAT_LOSS_DEFICIT_KCAL.steady
+)
 assert('high flux target sits inside band', highFluxBand.preferred >= highFluxBand.min && highFluxBand.preferred <= highFluxBand.max)
 assert('high flux band is shallower than steady', highFluxBand.min > legacyBand.min)
-assert('high flux band caps deficit', highFluxBand.max <= (maintenance ?? 2200))
+assert('high flux band caps deficit', highFluxBand.max <= m)
+
+const muscleSteady = calorieTargetBand(m, 'muscle_gain', 'steady', floor)
+const muscleBuild = calorieTargetBand(m, 'muscle_gain', 'build_up', floor)
+const muscleHigh = calorieTargetBand(m, 'muscle_gain', 'high_flux', floor)
+assert('steady muscle surplus is the smallest', muscleSteady.preferred === m + MUSCLE_SURPLUS_KCAL.steady)
+assert('build-up muscle surplus sits in the middle', muscleBuild.preferred === m + MUSCLE_SURPLUS_KCAL.build_up)
+assert('high flux muscle surplus is the largest', muscleHigh.preferred === m + MUSCLE_SURPLUS_KCAL.high_flux)
+assert(
+  'muscle surplus rises with flux',
+  muscleSteady.preferred < muscleBuild.preferred && muscleBuild.preferred < muscleHigh.preferred
+)
 
 const priorDiet = `Calories: 2100
 Protein: 120g

@@ -2,8 +2,8 @@ Now give me next week gym workout plan in the same copy-paste coach style.
 
 **MESOCYCLE RULES (authoritative; see Training Mesocycle section in context):**
 - Every 4 coaching weeks = one mesocycle (month).
-- Week 1 of a mesocycle: brand-new split vs last month (proven templates are fine if they fit this client) + BASE (lowest) volume. Calorie trim belongs in the diet plan, not written as numbers here.
-- Weeks 2 to 4: KEEP that same split; progress via load, a few extra reps, or tighter RIR — not extra working sets and not a new split. Stay at 2 to 3 working sets (4 only on one main compound). Never 5+ sets.
+- Week 1 of a mesocycle: brand-new split vs last month (proven templates are fine if they fit this client) + BASE volume of 2 to 3 working sets for everyone. Do not write calorie numbers in the workout. Diet holds calories flat.
+- Weeks 2 to 4: KEEP that same split. Beginners progress with load or reps and stay at 2 to 3 sets in week 2, then 3 sets in weeks 3 and 4. Intermediate and advanced use 3 working sets on main compounds in week 2, then 4 on main compounds and 3 on accessories in weeks 3 and 4. Never 5 or more working sets. Do not invent a new split.
 - After week 4: next plan is a NEW split + volume resets to week 1 base, then the cycle repeats.
 - Keep session duration similar to their usual. Do not mention the week number to the client.
 - Never use hyphen, en dash, or em dash characters in client-facing text.
@@ -17,7 +17,7 @@ Now give me next week gym workout plan in the same copy-paste coach style.
    CRITICAL: Never write "same as Day 1", "repeat Monday", "follow Day X", or any cross-day shorthand. If two days share the same session, rewrite the full exercise list under each day header. The daily tracker cannot resolve day-to-day references.
    Keep each day self-contained. Working lifts go only under Main Workout. Post-Workout is stretches only. Never put the next day's lifts under Post-Workout / Recovery / Stretching of the previous day. Do not use a lone "Recovery" or "Stretching" line between days.
 
-3. Progression rules based on check-in (still obey mesocycle: same split in weeks 2 to 4; progress load/reps/RIR, not extra sets):
+3. Progression rules based on check-in (still obey mesocycle: same split in weeks 2 to 4, and only the set counts that week allows):
    - Strong performance + high adherence → progress load or a few reps on main lifts.
    - Missed workouts / low adherence → simplify exercise selection slightly but keep the same split and 2 to 3 working sets.
    - Poor sleep / low energy → reduce intensity (RIR) a bit; do not add extra sets.

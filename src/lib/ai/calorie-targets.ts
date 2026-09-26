@@ -1,6 +1,11 @@
 import type { MetabolicFluxLevel } from '@/lib/ai/metabolic-flux'
 import { resolveMetabolicFluxPlan } from '@/lib/ai/metabolic-flux'
-import { DIET_FLOOR_BASE_KCAL, resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
+import {
+  DIET_FLOOR_BASE_KCAL,
+  FAT_LOSS_DEFICIT_KCAL,
+  MUSCLE_SURPLUS_KCAL,
+  resolveDietFloorKcal,
+} from '@/lib/ai/plan-quality-rules'
 import type { OnboardingProfile } from '@/types/database'
 
 /** Platform-standard maintenance formula — always use for diet calorie targets when profile inputs exist. */
@@ -126,11 +131,22 @@ export function estimateMaintenanceCalories(input: {
   return Number.isFinite(maintenance) && maintenance > 0 ? maintenance : Math.round(weight * 30)
 }
 
-/** Fat-loss deficit from maintenance: smaller numbers = higher food (high flux = shallow cut). */
-const FAT_LOSS_DEFICIT: Record<MetabolicFluxLevel, { min: number; max: number }> = {
-  steady: { min: 280, max: 120 },
-  build_up: { min: 180, max: 70 },
-  high_flux: { min: 130, max: 40 },
+/**
+ * Allowed fat-loss band around the point target.
+ * `min` is the deeper cut, `max` is the shallower cut.
+ * High flux stays the shallowest so food stays highest.
+ */
+const FAT_LOSS_DEFICIT_BAND: Record<MetabolicFluxLevel, { min: number; max: number }> = {
+  steady: { min: FAT_LOSS_DEFICIT_KCAL.steady + 50, max: FAT_LOSS_DEFICIT_KCAL.steady - 50 },
+  build_up: { min: FAT_LOSS_DEFICIT_KCAL.build_up + 50, max: FAT_LOSS_DEFICIT_KCAL.build_up - 50 },
+  high_flux: { min: FAT_LOSS_DEFICIT_KCAL.high_flux + 50, max: FAT_LOSS_DEFICIT_KCAL.high_flux - 50 },
+}
+
+/** Allowed muscle-gain band around the point surplus. `min`/`max` are kcal above maintenance. */
+const MUSCLE_SURPLUS_BAND: Record<MetabolicFluxLevel, { min: number; max: number }> = {
+  steady: { min: MUSCLE_SURPLUS_KCAL.steady - 50, max: MUSCLE_SURPLUS_KCAL.steady + 50 },
+  build_up: { min: MUSCLE_SURPLUS_KCAL.build_up - 50, max: MUSCLE_SURPLUS_KCAL.build_up + 50 },
+  high_flux: { min: MUSCLE_SURPLUS_KCAL.high_flux - 50, max: MUSCLE_SURPLUS_KCAL.high_flux + 50 },
 }
 
 /** One precise daily kcal from maintenance + goal — not a band guess. */
@@ -144,13 +160,10 @@ function resolveGoalCalorieTarget(
   const m = Math.round(maintenance)
 
   if (/fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)) {
-    // High-flux philosophy: ~100–150 kcal below maintenance; gap mostly from output.
-    const belowMaintenance =
-      fluxLevel === 'high_flux' ? 125 : fluxLevel === 'build_up' ? 125 : 200
-    return Math.max(m - belowMaintenance, floorKcal)
+    return Math.max(m - FAT_LOSS_DEFICIT_KCAL[fluxLevel], floorKcal)
   }
   if (/gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)) {
-    return m + 275
+    return m + MUSCLE_SURPLUS_KCAL[fluxLevel]
   }
   if (/recomp|recomposition|athletic|performance|maintain|strength/.test(goal)) {
     return m
@@ -175,12 +188,13 @@ export function calorieTargetBand(
   let max = maintenance * 1.1
 
   if (/fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)) {
-    const deficit = FAT_LOSS_DEFICIT[fluxLevel]
+    const deficit = FAT_LOSS_DEFICIT_BAND[fluxLevel]
     min = maintenance - deficit.min
     max = maintenance - deficit.max
   } else if (/gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)) {
-    min = maintenance + 150
-    max = maintenance + 400
+    const surplus = MUSCLE_SURPLUS_BAND[fluxLevel]
+    min = maintenance + surplus.min
+    max = maintenance + surplus.max
   } else if (/recomp|recomposition|athletic|performance|maintain|strength/.test(goal)) {
     min = maintenance - 50
     max = maintenance + 200
@@ -240,13 +254,21 @@ function formatBmrFormula(gender: string | null | undefined): string {
 function formatGoalAdjustmentLine(
   goal: string,
   maintenance: number,
-  preferred: number
+  preferred: number,
+  fluxLevel: MetabolicFluxLevel
 ): string {
+  const fluxName =
+    fluxLevel === 'high_flux' ? 'high flux' : fluxLevel === 'build_up' ? 'build-up' : 'steady'
   if (/fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)) {
-    return `Fat loss: maintenance (~${maintenance}) minus a mild high-flux deficit (~100–150 kcal) → plan around ~${preferred} kcal/day. Most gap from steps/training, not food slashing.`
+    const cut = maintenance - preferred
+    if (cut <= 0) {
+      return `Fat loss (${fluxName}): the mild deficit would sit under the calorie floor, so plan at the floor (~${preferred} kcal/day). Most of any further gap comes from steps and training.`
+    }
+    return `Fat loss (${fluxName}): maintenance (~${maintenance}) minus ${cut} kcal → plan around ~${preferred} kcal/day. Most of the gap comes from steps and training.`
   }
   if (/gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)) {
-    return `Muscle gain: maintenance (~${maintenance}) plus surplus → plan around ~${preferred} kcal/day.`
+    const surplus = preferred - maintenance
+    return `Muscle gain (${fluxName}): maintenance (~${maintenance}) plus ${surplus} kcal → plan around ~${preferred} kcal/day.`
   }
   if (/recomp|recomposition|athletic|performance|maintain|strength/.test(goal)) {
     return `Recomp / performance: plan at maintenance (~${preferred} kcal/day) — enough to train hard and recover.`
@@ -289,7 +311,7 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
         `Formula: Mifflin-St Jeor. BMR = ${formatBmrFormula(profile.gender)}`,
         `Inputs: ${Math.round(weight)} kg, ${Math.round(height)} cm, ${Math.round(age)} y, ${profile.gender ?? 'unspecified'}. Activity factor ${activityFactor}.`,
         targets
-          ? `BMR × activity = maintenance ~${targets.maintenance} kcal/day. ${formatGoalAdjustmentLine(goal, targets.maintenance, targets.preferred)}`
+          ? `BMR × activity = maintenance ~${targets.maintenance} kcal/day. ${formatGoalAdjustmentLine(goal, targets.maintenance, targets.preferred, targets.fluxLevel)}`
           : `Compute maintenance = BMR × ${activityFactor}, then a mild goal adjustment.`,
         target
           ? `WRITE THIS NUMBER: every Daily Total and the Calories header must average ${target} kcal/day (±100). Floor is ${targets?.floorKcal ?? DIET_FLOOR_BASE_KCAL}.`
@@ -301,7 +323,7 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
         'MANDATORY DAILY CALORIES — Mifflin-St Jeor when weight, height, and age exist.',
         `BMR = ${formatBmrFormula(profile.gender)}; Maintenance = BMR × ${activityFactor}.`,
         weight > 0
-          ? `Client ~${Math.round(weight)} kg — plan at or above ${Math.max(DIET_FLOOR_BASE_KCAL, Math.min(2400, Math.round(weight * 22)))} kcal. Never a 1500–1800 template.`
+          ? `Client ~${Math.round(weight)} kg — plan at or above ${resolveDietFloorKcal(weight)} kcal. Never a 1500–1800 template.`
           : `Plan at or above ${DIET_FLOOR_BASE_KCAL} kcal. No crash diet.`,
       ]
 

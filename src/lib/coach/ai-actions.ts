@@ -195,8 +195,8 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Generate a personalized workout plan for this client.',
-          'Opening mesocycle week 1: invent a COMPLETELY UNIQUE muscle-shock split for this client — not a stock PPL/upper-lower/bro template.',
-          'Use BASE (lowest) volume for week 1 of the mesocycle.',
+          'Opening mesocycle week 1: pick a proven split that fits this client (full body, upper/lower, or push/pull/legs). Personalise the exercises. Do not invent a novelty split, and do not default to a chest, back, and arms bro-split.',
+          'Use BASE volume for week 1: 2 to 3 working sets per exercise for every experience level.',
           'Follow Metabolic Flux Bias for session density and daily step targets within hard day/duration caps.',
           'Prioritize workout_plan only (strength / resistance training).',
           'Do NOT include a Cardio, Steps, Conditioning, or Supplements section in the workout text.',
@@ -264,7 +264,7 @@ export function buildActionCoachInstructions(
           'CRITICAL: Address every client request, struggle, pain note, and check-in flag with concrete exercise/volume/split changes.',
           'Do NOT return a near-copy of the current workout. Opening lines must name what changed; day lists must show the edits.',
           'If the client asked for easier/harder sessions, different exercises, home vs gym, or injury workarounds — those must appear in the days.',
-          'Obey mesocycle rules: week 1 of a month = NEW unique split + base volume; weeks 2–4 = same split with rising volume; after week 4 reset.',
+          'Obey mesocycle rules: week 1 of a month = a new proven split (full body, upper/lower, or push/pull/legs) at base volume; weeks 2 to 4 = the same split with the mesocycle set progression; after week 4 reset.',
           'Open the workout with a short training-tips block based on days trained (deload/simplify if low, progress if high). Include a Sleep recovery note.',
           'The plan header MAY show Week N. Do not write Welcome to week N in exercise lists.',
           'Adjust workout_plan only (strength / resistance training).',

@@ -11,13 +11,13 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Fat loss fundamentals',
     category: 'fat_loss',
     content:
-      'Target a sustainable 250–400 kcal daily deficit (never more than 400 from maintenance). Protein around 1.6–2.0 g/kg is optional when it fits naturally — not a target to push toward. If allowed foods cannot hit that protein, lower protein and keep calories high (minimum 2000 kcal, or the client\'s Mifflin-St Jeor target if higher) so the client can function. Never cut calories to chase protein grams, and never write protein higher than the meals actually contain. Daily totals count only the primary meal option, never primary plus swap. Weigh 3–4 mornings per week; trend matters more than single readings. Almost nobody needs 1400–1800 kcal; if a textbook cut would go that low, still write 2000+ and flag the coach.',
+      'Use the flux deficit from CALORIE METHOD: 250 kcal below maintenance on steady, 200 on build-up, and 150 on high flux. Never more than 400 kcal below maintenance. Protein around 1.6 to 2.0 g/kg is optional when it fits naturally. If allowed foods cannot hit that protein, lower protein and keep calories high (minimum 2000 kcal, or the client Mifflin-St Jeor target if higher). Never cut calories to chase protein grams, and never write protein higher than the meals actually contain. Daily totals count only the primary meal option, never primary plus swap. Weigh 3 to 4 mornings per week; trend matters more than single readings. Almost nobody needs 1400 to 1800 kcal; if a textbook cut would go that low, still write 2000 or more and flag the coach.',
   },
   {
     title: 'Muscle gain fundamentals',
     category: 'muscle_gain',
     content:
-      'Target a 200–300 kcal surplus. Protein 1.6–2.0 g/kg is optional when comfortable — if it is not possible with their foods, lower protein and keep calories in surplus. Never inflate protein numbers. Progress load or reps when all prescribed sets are completed with good form. Sleep 7–9 hours for recovery.',
+      'Use the flux surplus from CALORIE METHOD: 200 kcal above maintenance on steady, 300 on build-up, and 350 on high flux. Protein 1.6 to 2.0 g/kg is optional when comfortable. If it is not possible with their foods, lower protein and keep calories in surplus. Never inflate protein numbers. Progress load or reps when all prescribed sets are completed with good form. Sleep 7 to 9 hours for recovery.',
   },
   {
     title: 'Recomposition guidance',
@@ -29,7 +29,7 @@ const ENTRIES: { title: string; category: AiKnowledgeCategory; content: string }
     title: 'Strength programming',
     category: 'strength',
     content:
-      'Prioritise compound lifts, 3–6 rep ranges for main lifts, longer rest (2–4 min). 2–3 working sets per exercise (4 only on one main compound). Never 5+ working sets. Deload every 4–8 weeks or when performance stalls with poor recovery.',
+      'Prioritise compound lifts, 3 to 6 rep ranges for main lifts, longer rest (2 to 4 min). Week 1 uses 2 to 3 working sets. Intermediate and advanced clients may reach 4 working sets on main compounds in weeks 3 and 4 of the month. Never 5 or more working sets. Use a proven split (full body, upper/lower, or push/pull/legs). Deload when a new month starts or when performance stalls with poor recovery.',
   },
   {
     title: 'Nutrition principles',

@@ -1,4 +1,8 @@
-import { DIET_FLOOR_TARGET_KCAL } from '@/lib/ai/plan-quality-rules'
+import {
+  DIET_FLOOR_TARGET_KCAL,
+  FAT_LOSS_DEFICIT_KCAL,
+  MUSCLE_SURPLUS_KCAL,
+} from '@/lib/ai/plan-quality-rules'
 import type { OnboardingProfile } from '@/types/database'
 
 /** Client-stated willingness for higher energy-in + higher energy-out coaching. */
@@ -98,28 +102,27 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
   const dietByLevel: Record<MetabolicFluxLevel, string> = {
     steady: [
       'Calorie bias: STEADY; prioritize adherence, but still raise output before cutting food.',
-      'Fat loss: maintenance to shallow 200 to 300 kcal deficit. When progress stalls, add steps/training/cardio FIRST — never slash calories as the first lever.',
-      'Muscle gain: 150 to 250 kcal surplus. Recomp: maintenance.',
+      `Fat loss: ${FAT_LOSS_DEFICIT_KCAL.steady} kcal below maintenance. When progress stalls, add steps/training/cardio FIRST — never slash calories as the first lever.`,
+      `Muscle gain: ${MUSCLE_SURPLUS_KCAL.steady} kcal surplus. Recomp: daily average at maintenance.`,
       'Keep food volume manageable; avoid forcing large meals if appetite is limited.',
       `Floor still at least ${DIET_FLOOR_TARGET_KCAL} kcal. If a lower intake seems indicated, stay at the floor and flag the coach.`,
       'If eating is already low and weight is not dropping: reverse diet (raise calories gradually), never cut further.',
-      'For weight gain goals: do not force oversized surpluses; let metabolism correct with a modest surplus.',
     ].join(' '),
     build_up: [
       'Calorie bias: BUILD-UP toward higher metabolic flux (eat more while moving more).',
-      'Fat loss: mild 200 to 300 kcal deficit — create most of the gap via steps/training, not food cuts.',
-      'Muscle gain: 250 to 350 kcal surplus with enough carbs around training; do not force huge meals.',
-      'Recomp: slight surplus on training days / maintenance on rest (about plus or minus 100 kcal).',
+      `Fat loss: ${FAT_LOSS_DEFICIT_KCAL.build_up} kcal below maintenance. Create most of the gap via steps and training, not food cuts.`,
+      `Muscle gain: ${MUSCLE_SURPLUS_KCAL.build_up} kcal surplus with enough carbs around training; do not force huge meals.`,
+      'Recomp: daily average at maintenance.',
       'Prefer higher-volume meals (veg, lean protein, dairy/curd, fruit) so the client can eat more without feeling restricted.',
       `Floor at least ${DIET_FLOOR_TARGET_KCAL} kcal.`,
       'If eating is already low and weight is not dropping: reverse diet (raise calories gradually).',
     ].join(' '),
     high_flux: [
       'Calorie bias: HIGH FLUX; higher energy-in paired with higher energy-out.',
-      'Fat loss: mild 150 to 250 kcal deficit (keep intake relatively high; create the gap mainly via steps/training).',
-      'Muscle gain: assertive 300 to 400 kcal surplus with high meal volume, still without forcing food they cannot finish.',
-      'Recomp: clear training-day surplus (about 200 to 300) and near-maintenance rest days.',
-      `Use denser + higher-volume foods so hitting calories is realistic; never below ${DIET_FLOOR_TARGET_KCAL} kcal.`,
+      `Fat loss: ${FAT_LOSS_DEFICIT_KCAL.high_flux} kcal below maintenance. Keep intake relatively high; create the gap mainly via steps and training.`,
+      `Muscle gain: ${MUSCLE_SURPLUS_KCAL.high_flux} kcal surplus with high meal volume, still without forcing food they cannot finish.`,
+      'Recomp: daily average at maintenance.',
+      `Use denser and higher-volume foods so hitting calories is realistic; never below ${DIET_FLOOR_TARGET_KCAL} kcal.`,
       'If hunger is low, spread calories across more feedings rather than cutting the target.',
       'If eating is already low and weight is not dropping: reverse diet (raise calories gradually).',
     ].join(' '),
@@ -128,15 +131,15 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
   const outputByLevel: Record<MetabolicFluxLevel, string> = {
     steady: [
       'Output bias: STEADY — stay within stated training days/duration; modest step targets (~+0–1k vs current habit).',
-      'Do not stack extra accessory sets. Keep 2 to 3 working sets per exercise unless a single main compound needs 4.',
+      'Use the mesocycle set count for this week. Do not add junk sets past that count.',
     ].join(' '),
     build_up: [
-      'Output bias: BUILD-UP — fill the allowed training days/duration with quality work (2 to 3 working sets per exercise, not extra junk sets).',
+      'Output bias: BUILD-UP — fill the allowed training days and duration with the mesocycle set count, not extra junk sets.',
       'Steps: raise ~1.5–3k above current daily-steps habit (cap realistically for schedule).',
       'Cardio: prefer sustainable LISS/walks that support the higher intake; avoid punishing HIIT that collapses adherence.',
     ].join(' '),
     high_flux: [
-      'Output bias: HIGH FLUX — use the allowed days/duration fully, still capping working sets (2 to 3 per exercise, 4 only on one main compound).',
+      'Output bias: HIGH FLUX — use the allowed days and duration fully, at the mesocycle set count. Do not add sets past that count.',
       'Steps: raise ~3–5k above current habit when schedule allows (still must be achievable).',
       'Cardio/NEAT: prioritize daily walking + optional LISS so the higher calorie intake is matched by output.',
       'Never exceed hard constraints on days/week, session duration, equipment, or injury limits.',

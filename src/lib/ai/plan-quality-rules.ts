@@ -1,26 +1,49 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v24'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v25'
 
 /** Platform soft floor before weight-based floor. Prefer formula target when higher. */
-export const DIET_FLOOR_BASE_KCAL = 1800
+export const DIET_FLOOR_BASE_KCAL = 2000
 /** Reject (and retry) only when clearly under the floor; ~1% rounding is tolerated. */
-export const DIET_FLOOR_HARD_KCAL = 1780
+export const DIET_FLOOR_HARD_KCAL = 1980
+/** Weight-based floor. 25 kcal/kg is about 22 kcal/kg plus a small buffer above a crash intake. */
+export const DIET_FLOOR_KCAL_PER_KG = 25
+/** Cap so a very heavy client is not forced onto an extreme intake by the floor alone. */
+export const DIET_FLOOR_CAP_KCAL = 2400
+
+/**
+ * Daily fat-loss cut from maintenance. High flux keeps the most food.
+ * Build-up sits between high flux and steady. Steady is the largest mild cut.
+ */
+export const FAT_LOSS_DEFICIT_KCAL = {
+  steady: 250,
+  build_up: 200,
+  high_flux: 150,
+} as const
+
+/**
+ * Daily muscle-gain surplus above maintenance.
+ * High flux is the largest surplus because output rises with the food.
+ */
+export const MUSCLE_SURPLUS_KCAL = {
+  steady: 200,
+  build_up: 300,
+  high_flux: 350,
+} as const
 
 /** @deprecated Use resolveDietFloorKcal(weight) — kept for static fallbacks. */
 export const DIET_FLOOR_TARGET_KCAL = DIET_FLOOR_BASE_KCAL
 
 /**
- * Soft floor: max(base, ~22 kcal/kg), capped so heavy clients are not forced to
+ * Soft floor: max(base, ~25 kcal/kg), capped so heavy clients are not forced to
  * extreme intakes when Mifflin preferred is lower. Preferred calorie targets still
  * come from calorie-targets.ts; this only blocks crash diets.
  */
 export function resolveDietFloorKcal(weightKg?: number | string | null): number {
   const weight = Number(weightKg)
   const byWeight =
-    Number.isFinite(weight) && weight > 0 ? Math.round(weight * 22) : 0
+    Number.isFinite(weight) && weight > 0 ? Math.round(weight * DIET_FLOOR_KCAL_PER_KG) : 0
   const uncapped = Math.max(DIET_FLOOR_BASE_KCAL, byWeight)
-  // Cap weight-driven floor so auto-delivered plans stay reviewable for very heavy clients.
-  return Math.min(uncapped, 2400)
+  return Math.min(uncapped, DIET_FLOOR_CAP_KCAL)
 }
 
 export const DAY_HEADER_PROMPT_RULES = [
@@ -33,6 +56,8 @@ export const CALORIE_FORMULA_PROMPT_RULES = [
   'CALORIE FORMULA (non-negotiable for every new or rewritten diet):',
   '- Always derive the daily calorie target with Mifflin-St Jeor: BMR from weight/height/age/gender, then maintenance = BMR × activity factor.',
   '- Use the CALORIE METHOD block in the client profile — it lists this client\'s already-computed daily target. Write that number (±100 kcal). Never invent a 1400–1800 crash diet.',
+  `- That number is the only daily target. Fat loss is ${FAT_LOSS_DEFICIT_KCAL.steady} kcal below maintenance on steady, ${FAT_LOSS_DEFICIT_KCAL.build_up} on build-up, and ${FAT_LOSS_DEFICIT_KCAL.high_flux} on high flux. Muscle gain is ${MUSCLE_SURPLUS_KCAL.steady} kcal above on steady, ${MUSCLE_SURPLUS_KCAL.build_up} on build-up, and ${MUSCLE_SURPLUS_KCAL.high_flux} on high flux. Recomp is maintenance.`,
+  '- If a template, knowledge entry, or older line names a different deficit or surplus (including 300 to 400 below), ignore it and write the CALORIE METHOD number.',
   '- When editing and the client did NOT ask to change calories, keep the current daily average; when rebuilding from profile, always run the formula fresh.',
   '- WEEK-TO-WEEK: do NOT raise (or cut) calories each week with mesocycle intensity. Hold the established daily average until the coach specifically asks to change calories.',
 ].join('\n')
@@ -120,8 +145,9 @@ export const EDIT_CALORIE_PRESERVATION_RULES = [
 export const HIGH_FLUX_PHILOSOPHY_RULES = [
   'HIGH FLUX PHILOSOPHY (only for clients who chose high flux):',
   '- This client opted into high flux — push HIGHER caloric intake paired with HIGHER output (steps, training, cardio). Both sides up — never low food + hope they walk, and never high food + sedentary days.',
-  '- Follow CALORIE GUIDANCE rules from the profile — maintenance-level food for active clients, shallow deficit only for fat loss, honest header/meal math.',
-  '- Fat loss: mild deficit only; create most of the gap via steps/training/cardio.',
+  '- Follow CALORIE GUIDANCE rules from the profile — maintenance-level food for recomp, the high-flux surplus for muscle gain, and the high-flux deficit for fat loss. Header and meal math must match the food.',
+  `- Fat loss: about ${FAT_LOSS_DEFICIT_KCAL.high_flux} kcal below maintenance. Create most of the gap via steps, training, and cardio.`,
+  `- Muscle gain: about ${MUSCLE_SURPLUS_KCAL.high_flux} kcal above maintenance.`,
   '- Never respond to "not losing" or a plateau by slashing food; raise steps/training first within their schedule.',
 ].join('\n')
 
@@ -143,14 +169,16 @@ export const EDIT_EXPENDITURE_FIRST_RULES = [
 ].join('\n')
 
 export const WORKOUT_VOLUME_PROMPT_RULES = [
-  'TRAINING VOLUME (non-negotiable):',
-  '- Default 2 to 3 working sets per exercise. Beginners 2 to 3. Intermediate 3. Advanced 3, and at most 4 on one main compound only.',
+  'TRAINING VOLUME (non-negotiable — follow the Training Mesocycle week):',
+  '- Week 1 (BASE): 2 to 3 working sets per exercise for every experience level. About 5 to 7 working exercises. Leave 2 to 3 reps in reserve on compounds.',
+  '- Week 2 (BUILD): beginners stay at 2 to 3 working sets and add load or reps. Intermediate and advanced use 3 working sets on main compounds and 2 to 3 on accessories.',
+  '- Weeks 3 and 4: beginners stay at 3 working sets and add load or tighter reps in reserve. Intermediate and advanced use 4 working sets on main compounds only and 3 on accessories.',
   '- Never prescribe 5 or more working sets on an exercise. Warm-up sets are extra and do not count as working sets.',
   '- About 5 to 7 working exercises per session, not counting warm-up or cooldown stretches. One core finisher per training day (2 max on a dedicated core day).',
   '- Reps by experience: beginners 8 to 15 on compounds. Intermediate 6 to 12. Advanced or strength-focused: 3 to 6 on main compounds only, 8 to 15 on accessories.',
-  '- Fit the stated session duration. Prefer fewer quality sets over junk volume.',
+  '- Fit the stated session duration. Prefer the mesocycle set count over junk volume.',
   '- Training days per week is a hard cap. Label all 7 calendar days. Remaining days after training days are rest or active recovery. Do not add extra training days. Do not require both a recovery day AND a rest day if that would steal a training day or overflow 7 days. If they train 6 days, one rest. If 7, no extra rest day.',
-  '- Proven splits are fine (full body, upper/lower, PPL) when they fit days, duration, equipment, and injuries. Personalise exercise selection. Do not invent unsafe novelty just to be unique.',
+  '- Proven splits are fine (full body, upper/lower, PPL) when they fit days, duration, equipment, and injuries. Personalise exercise selection. Do not invent an unsafe novelty split. Do not default to a chest, back, and arms bro-split.',
 ].join('\n')
 
 export const EXERCISE_NAME_PROMPT_RULES = [

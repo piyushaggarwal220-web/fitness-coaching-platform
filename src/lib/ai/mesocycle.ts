@@ -15,10 +15,10 @@ export type MesocycleContext = {
 }
 
 const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
-  1: 'BASE volume: lowest of the month. 2 to 3 working sets per exercise, about 5 to 7 working exercises per session. Leave 2 to 3 reps in reserve on compounds. Do not stack extra sets.',
-  2: 'BUILD volume: progress via load or a few extra reps on main lifts, not extra working sets. Stay at 2 to 3 sets (4 only on one main compound). Never 5+ sets.',
-  3: 'PUSH volume: add load or tighter RIR, not junk sets. Still 2 to 3 working sets per exercise.',
-  4: 'PEAK volume: hardest productive week via load, reps, or RIR, still capped at 3 working sets (4 on one compound). Never 5+ sets.',
+  1: 'BASE volume: lowest of the month. 2 to 3 working sets per exercise for every experience level, about 5 to 7 working exercises per session. Leave 2 to 3 reps in reserve on compounds.',
+  2: 'BUILD volume: beginners stay at 2 to 3 working sets and add load or reps. Intermediate and advanced use 3 working sets on main compounds and 2 to 3 on accessories. Never 5 or more working sets.',
+  3: 'PUSH volume: beginners stay at 3 working sets and add load or tighter reps in reserve. Intermediate and advanced use 4 working sets on main compounds only and 3 on accessories. Never 5 or more working sets.',
+  4: 'PEAK volume: keep the week 3 set counts. Progress with load and tighter reps in reserve, not more sets. Beginners stay at 3. Intermediate and advanced stay at 4 on main compounds and 3 on accessories. Never 5 or more working sets.',
 }
 
 /** Calorie guidance: hold food flat across weeks unless the coach asks to change it. */
@@ -50,7 +50,7 @@ export function resolveMesocycle(coachingWeek: number | null | undefined): Mesoc
 /** Truncate prior workout text so the model can rotate away from the last split. */
 export function summarizePriorSplit(workoutPlan: string | null | undefined, maxLen = 900): string {
   const text = workoutPlan?.trim()
-  if (!text) return 'No prior workout on file — invent a fresh opening split.'
+  if (!text) return 'No prior workout on file — pick a proven split that fits this client (full body, upper/lower, or push/pull/legs).'
   if (text.length <= maxLen) return text
   return `${text.slice(0, maxLen)}…`
 }
@@ -68,9 +68,9 @@ export function formatMesocyclePromptSection(
     `- Volume target: ${meso.volumeGuidance}`,
     `- Calorie target (hold flat unless coach asks): ${meso.calorieGuidance}`,
     meso.requiresNewSplit
-      ? `- Split rule: NEW split vs last month. Proven templates (full body, upper/lower, PPL) are valid if they fit this client. Do not recycle last month's day structure. Drop working sets to BASE (2 to 3) and HOLD calories — raise steps/cardio if fat loss is the goal, never below ${DIET_FLOOR_BASE_KCAL} kcal. Change calories only if the coach specifically asks.`
-      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Progress load/reps/RIR only — HOLD calories flat. Do not add extra working sets or invent a new split.',
-    '- Cycle rule: intensity up each week inside the month via load/reps/RIR — calories stay flat. Do NOT auto-increase calories week to week. Raise or lower food ONLY when the coach specifically asks. New month (new split, lower volume) → still HOLD calories and raise output if needed. Never add working sets past the 2 to 3 cap (4 on one compound) just to hit a percent increase.',
+      ? `- Split rule: NEW split vs last month. Proven templates (full body, upper/lower, PPL) are valid if they fit this client. Do not recycle last month's day structure. Drop working sets to BASE (2 to 3 for everyone) and HOLD calories — raise steps/cardio if fat loss is the goal, never below ${DIET_FLOOR_BASE_KCAL} kcal. Change calories only if the coach specifically asks.`
+      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Progress with the volume target for this week (load, reps, reps in reserve, and the allowed set count). HOLD calories flat. Do not invent a new split.',
+    '- Cycle rule: week 1 is 2 to 3 working sets for everyone. Weeks 2 to 4 follow the volume target (beginners stay lower; intermediate and advanced may reach 4 sets on main compounds). Never 5 or more working sets. Calories stay flat. Do NOT auto-increase calories week to week. Raise or lower food ONLY when the coach specifically asks. New month (new split, base volume) still HOLDS calories and raises steps if fat loss needs more output.',
     '',
     '### Prior workout / split hint (rotate away when a new split is required)',
     priorSplitSummary,

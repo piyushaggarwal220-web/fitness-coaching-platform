@@ -7,12 +7,12 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
 
 1. Start directly with the plan after the client information — no long generic intro.
 
-2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, and goal. Use the CALORIE METHOD block in client details for this client's maintenance reference.
-   - Fat loss: about 300 to 400 kcal below maintenance.
-   - Muscle gain: about 200 to 300 kcal above maintenance.
+2. Calculate the client's daily calorie and protein targets internally based on their age, height, weight, activity level, and goal. The CALORIE METHOD block is the only daily target. Write that number (within 100 kcal). Ignore any other deficit or surplus.
+   - Fat loss (already applied in CALORIE METHOD): steady is 250 kcal below maintenance, build-up is 200 below, high flux is 150 below.
+   - Muscle gain (already applied in CALORIE METHOD): steady is 200 kcal above maintenance, build-up is 300 above, high flux is 350 above.
    - Recomp: maintenance.
    - Protein guide: about 1.8 to 2.2 g/kg for fat loss, 1.6 to 2.0 g/kg for muscle gain when allowed foods can honestly hit it — lower the number if veg days, no whey, or budget make high protein unrealistic. Never cut calories to chase protein.
-   - Daily average must meet the platform minimum in client details (never below ~1900 kcal). Calories come first — keep rice, roti, oil, snacks, and cooking fats on the plate.
+   - Daily average must meet the platform floor in client details (at least 2000 kcal, or about 25 kcal per kg when that is higher, and never a floor above 2400). Calories come first — keep rice, roti, oil, snacks, and cooking fats on the plate.
    - Each meal has ONE primary option. Daily Total and header macros count only that primary option. Swaps get their own macro line; never add primary plus swap together.
    - Never state protein or calories higher than the food on the plate. Meal (P: Xg) lines, daily totals, and header macros must match honest portions.
    Do NOT print these numbers as a formal "Target Macros" table — keep them as your internal guide so the food choices fit.
@@ -27,7 +27,7 @@ Write a 7-day diet plan for a client, based on their onboarding details below. W
    - Give 1 to 3 food choices per meal, written as alternatives in plain sentences — e.g. "Have 2 rotis with 1 katori (approx 150g) dal and a small bowl of sabzi, or swap the dal for 100g paneer bhurji if you're in the mood for something different."
    - Use approximate gram weights alongside everyday portion language (roti, katori, bowl, scoop, glass) rather than only numeric bullet points.
    - **After each meal option, add a compact macro line immediately below it: (P: 28g | C: 45g | F: 12g | ~400 kcal). Macros should be calculated for the full meal option as described, not per ingredient.**
-   - Vary the structure naturally across the week — not every day needs to look identical. When two days share the same meal, you may note that in plain words BUT still write the full meal text again under that day's header (the daily tracker cannot resolve "repeat Monday's breakfast" shortcuts — copy the meals in full with the same macro line).
+   - Vary the structure naturally across the week — not every day needs to look identical. When two days share the same meal, still write the full meal text again under that day's header. NEVER write "same as Monday", "repeat Tuesday", or any other cross-day shorthand (the daily tracker cannot resolve those shortcuts — copy the meals in full with the same macro line).
    - For dal/curries/sabzi with gravy, describe the final cooked portion in everyday terms (e.g. "1 katori cooked dal, approx 150g") — no raw-to-cooked cooking formulas in the client-facing text.
    - At the end of each day, add a **Daily Total** line summing that day's PRIMARY meal macros only.
 
