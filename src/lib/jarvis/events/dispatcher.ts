@@ -22,6 +22,7 @@ import { cooldownKeyFor, isCooldownActive, setCooldown } from '@/lib/jarvis/even
 import { getEventDefinition } from '@/lib/jarvis/events/registry'
 import { dispatchEventAction } from '@/lib/jarvis/events/handlers'
 import { writeMarketingAudit } from '@/lib/ai-marketing/audit'
+import { getJarvisBudgets } from '@/lib/jarvis/cost/governor'
 import type { EventIngestInput, SignificanceResult } from '@/lib/jarvis/events/types'
 
 export type IngestResult = {
@@ -172,6 +173,9 @@ export async function processJarvisEventQueue(limit = 10): Promise<{
   processed: number
   results: Record<string, unknown>[]
 }> {
+  const budgets = await getJarvisBudgets()
+  if (!budgets.background_enabled) return { processed: 0, results: [] }
+
   const claimed = await claimQueuedEvents(limit)
   const results: Record<string, unknown>[] = []
   let processed = 0

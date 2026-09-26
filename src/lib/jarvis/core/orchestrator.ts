@@ -79,6 +79,10 @@ export async function runJarvisTurn(input: {
   const admin = createAdminClient()
   const budgets = await getJarvisBudgets()
 
+  if (!budgets.background_enabled) {
+    throw new Error('Jarvis is paused. Chat, background work, and actions are off.')
+  }
+
   const gate = await assertAiBudgetAvailable(0.05)
   if (!gate.ok) {
     emit({ type: 'error', error: gate.reason })
