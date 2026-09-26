@@ -1,0 +1,199 @@
+{% comment %}
+  One personalised plan illustration per visitor per day.
+  Calls app.lurvox.in. Does not store the photo in the theme.
+{% endcomment %}
+<section class="lx-phys" id="plan-preview" aria-labelledby="lx-phys-title">
+  <div class="lx-phys__inner">
+    <p class="lx-phys__eyebrow">See your plan</p>
+    <h2 class="lx-phys__title" id="lx-phys-title">One preview of you</h2>
+    <p class="lx-phys__lede">Upload one photo and pick a plan. This is an illustration of the direction that plan aims for, not a promise of what your body will look like.</p>
+    <form class="lx-phys__form" data-lx-phys-form>
+      <fieldset class="lx-phys__plans">
+        <legend>Which plan should the picture show?</legend>
+        <label><input type="radio" name="plan" value="3_months"> Fat loss · ₹599</label>
+        <label><input type="radio" name="plan" value="6_months" checked> Fat loss + muscle · ₹999</label>
+        <label><input type="radio" name="plan" value="12_months"> Athletic body · ₹1,699</label>
+      </fieldset>
+      <label class="lx-phys__file">Your photo
+        <input type="file" name="photo" accept="image/*" required>
+      </label>
+      <label class="lx-phys__check">
+        <input type="checkbox" name="adult" value="yes" required>
+        I am 18 or older, and this photo is me.
+      </label>
+      <p class="lx-phys__error" data-lx-phys-error hidden></p>
+      <button class="lx-phys__btn" type="submit">Show my preview</button>
+    </form>
+    <div class="lx-phys__result" data-lx-phys-result hidden>
+      <img alt="" data-lx-phys-img>
+      <p class="lx-phys__caption" data-lx-phys-caption></p>
+      <a class="lx-phys__btn" data-lx-phys-cta href="https://app.lurvox.in/checkout?plan=6_months">Get this plan</a>
+    </div>
+  </div>
+</section>
+<style>
+  .lx-phys {
+    color: #f8fafc;
+    padding: 8px 16px 36px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  .lx-phys__inner { max-width: 520px; margin: 0 auto; }
+  .lx-phys__eyebrow {
+    margin: 0;
+    color: #fbbf24;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .lx-phys__title {
+    margin: 8px 0 0;
+    text-align: center;
+    font-size: clamp(1.6rem, 4vw, 2.1rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .lx-phys__lede {
+    margin: 10px auto 0;
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .lx-phys__form, .lx-phys__result { margin-top: 18px; display: grid; gap: 12px; }
+  .lx-phys__plans { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .lx-phys__plans legend { margin-bottom: 4px; font-weight: 700; }
+  .lx-phys__plans label, .lx-phys__check, .lx-phys__file {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: #e2e8f0;
+  }
+  .lx-phys__file { display: grid; gap: 6px; }
+  .lx-phys__check { align-items: flex-start; }
+  .lx-phys__btn {
+    border: 0;
+    border-radius: 999px;
+    background: #22c55e;
+    color: #052e16;
+    font-weight: 800;
+    text-align: center;
+    text-decoration: none;
+    padding: 14px 18px;
+    cursor: pointer;
+  }
+  .lx-phys__btn:disabled { opacity: 0.7; cursor: wait; }
+  .lx-phys__error { margin: 0; color: #fecaca; }
+  .lx-phys__result img { width: 100%; border-radius: 18px; background: #1c1917; }
+  .lx-phys__caption { margin: 0; color: #cbd5e1; text-align: center; }
+</style>
+<script>
+  (function () {
+    var form = document.querySelector('[data-lx-phys-form]');
+    if (!form) return;
+    var errorEl = document.querySelector('[data-lx-phys-error]');
+    var resultEl = document.querySelector('[data-lx-phys-result]');
+    var imgEl = document.querySelector('[data-lx-phys-img]');
+    var captionEl = document.querySelector('[data-lx-phys-caption]');
+    var ctaEl = document.querySelector('[data-lx-phys-cta]');
+    var endpoint = 'https://app.lurvox.in/api/public/physique-preview';
+    var visitorKey = 'lx_physique_visitor';
+    var usedKey = 'lx_physique_used_day';
+
+    function todayKey() {
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+    }
+    function visitorId() {
+      var existing = window.localStorage.getItem(visitorKey);
+      if (existing) return existing;
+      var created = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : fallbackUuid();
+      window.localStorage.setItem(visitorKey, created);
+      return created;
+    }
+    function fallbackUuid() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0;
+        var v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+    function showError(message) {
+      errorEl.hidden = false;
+      errorEl.textContent = message;
+    }
+    if (window.localStorage.getItem(usedKey) === todayKey()) {
+      form.hidden = true;
+      resultEl.hidden = false;
+      captionEl.textContent = 'You have already used today’s preview. It resets tomorrow.';
+      ctaEl.textContent = 'See plans';
+      ctaEl.href = '#plans';
+    }
+
+    function toJpeg(file) {
+      return createImageBitmap(file).then(function (bitmap) {
+        var maxEdge = 1280;
+        var scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        if (bitmap.close) bitmap.close();
+        return new Promise(function (resolve, reject) {
+          canvas.toBlob(function (blob) {
+            if (!blob) reject(new Error('Could not read this photo.'));
+            else resolve(blob);
+          }, 'image/jpeg', 0.82);
+        });
+      });
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      errorEl.hidden = true;
+      var data = new FormData(form);
+      if (data.get('adult') !== 'yes') {
+        showError('Confirm you are 18 or older and this photo is you.');
+        return;
+      }
+      var file = data.get('photo');
+      if (!file || !file.size) {
+        showError('Choose a photo first.');
+        return;
+      }
+      var button = form.querySelector('button');
+      button.disabled = true;
+      button.textContent = 'Making your preview…';
+      toJpeg(file).then(function (blob) {
+        var body = new FormData();
+        body.set('photo', blob, 'preview.jpg');
+        body.set('plan', data.get('plan') || '6_months');
+        body.set('adult', 'yes');
+        body.set('visitorId', visitorId());
+        return fetch(endpoint, { method: 'POST', body: body });
+      }).then(function (response) {
+        return response.json().then(function (payload) {
+          return { ok: response.ok, status: response.status, payload: payload };
+        });
+      }).then(function (result) {
+        if (!result.ok || !result.payload.image) {
+          showError(result.payload.error || 'We could not make the preview.');
+          button.disabled = false;
+          button.textContent = 'Show my preview';
+          return;
+        }
+        window.localStorage.setItem(usedKey, todayKey());
+        imgEl.src = result.payload.image;
+        captionEl.textContent = 'Illustration for ' + result.payload.plan + ' · ' + result.payload.price + '. Results depend on following the plan.';
+        ctaEl.textContent = 'Get ' + result.payload.plan;
+        ctaEl.href = result.payload.checkoutUrl;
+        form.hidden = true;
+        resultEl.hidden = false;
+      }).catch(function () {
+        showError('We could not make the preview.');
+        button.disabled = false;
+        button.textContent = 'Show my preview';
+      });
+    });
+  })();
+</script>
