@@ -87,5 +87,6 @@ export async function POST(request: Request) {
     success: true,
     complete: true,
     basicsId: result.basics.id,
+    verificationId: result.basics.verification_id,
   })
 }

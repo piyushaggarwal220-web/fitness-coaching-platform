@@ -124,7 +124,6 @@ export function validateCheckoutBasicsPayload(input: CheckoutBasicsInput): {
         ? input.weightKg
         : Number(String(input.weightKg).trim())
 
-  if (!input.verificationId?.trim()) missing.push('Email verification')
   if (!email.includes('@')) missing.push('A valid email')
   if (!phone) missing.push('A valid WhatsApp number')
   if (!plan) missing.push('A valid plan')
@@ -150,7 +149,7 @@ export function validateCheckoutBasicsPayload(input: CheckoutBasicsInput): {
   return {
     ok: true,
     value: {
-      verificationId: input.verificationId.trim(),
+      verificationId: input.verificationId?.trim() ?? '',
       email,
       phone,
       name: input.name?.trim() || null,

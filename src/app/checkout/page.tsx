@@ -54,7 +54,7 @@ const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
 const PAYMENT_SUCCESS_KEY = 'lurvox_checkout_success_redirect';
 const CHECKOUT_DRAFT_KEY = 'lurvox_checkout_draft_v1';
-type CheckoutScreen = 1 | 2 | 3 | 4 | 5;
+type CheckoutScreen = 1 | 2 | 3;
 
 type AppliedDiscountPreview = {
  code: string;
@@ -97,7 +97,6 @@ function CheckoutForm() {
  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
  const [error, setError] = useState('');
  const [razorpayReady, setRazorpayReady] = useState(false);
- const [policyAgreementAccepted, setPolicyAgreementAccepted] = useState(false);
  const [verificationId, setVerificationId] = useState('');
  const [emailCode, setEmailCode] = useState('');
  const [emailVerified, setEmailVerified] = useState(false);
@@ -130,8 +129,6 @@ function CheckoutForm() {
  const nameRef = useRef<HTMLInputElement>(null);
  const emailRef = useRef<HTMLInputElement>(null);
  const phoneRef = useRef<HTMLInputElement>(null);
- const policyRef = useRef<HTMLLabelElement>(null);
- const verifyRef = useRef<HTMLDivElement>(null);
  const testMode = isPaymentBypassClient();
  const isTrialCheckout = plan.isTrial === true;
  const isDigitalCheckout = plan.isDigital === true || isDigitalPlanSlug(plan.slug);
@@ -355,15 +352,8 @@ function CheckoutForm() {
  if (draft.basics) setBasics((prev) => ({ ...prev, ...draft.basics }));
  if (draft.basicsComplete) setBasicsComplete(true);
  const savedScreen = Number(draft.checkoutScreen);
- if (Number.isInteger(savedScreen) && savedScreen >= 1 && savedScreen <= 5) {
- const emailOk = searchParams.get('emailVerified') === '1';
- // Plan chip navigation remounts this page; keep the buyer on the same step.
- // Never reopen paywall (5) without a verified email return URL.
- const nextScreen =
- savedScreen >= 5 && !emailOk
- ? (draft.verificationId ? 4 : 3)
- : (savedScreen as CheckoutScreen);
- setCheckoutScreen(nextScreen as CheckoutScreen);
+ if (Number.isInteger(savedScreen) && savedScreen >= 1) {
+ setCheckoutScreen((savedScreen > 3 ? 3 : savedScreen) as CheckoutScreen);
  }
  } catch {
  // ignore
@@ -398,7 +388,7 @@ function CheckoutForm() {
  setEmailVerified(true);
  setEmailLinkSent(true);
  setEmailDelivery('magic_link');
- setCheckoutScreen(4);
+ setCheckoutScreen(3);
  }
  }, [searchParams]);
 
@@ -431,7 +421,6 @@ function CheckoutForm() {
  });
  setBasicsComplete(true);
  if (basicsData.basics.name && !name.trim()) setName(basicsData.basics.name);
- setCheckoutScreen((current) => (current < 5 ? 5 : current));
  }
  } catch {
  // ignore restore errors
@@ -482,19 +471,6 @@ function CheckoutForm() {
  if (!email.trim()) missing.push('Email');
  else if (!email.includes('@')) missing.push('A valid email address');
  if (!phone.trim()) missing.push('WhatsApp number');
- if (!testMode && !emailVerified) {
- missing.push(
- emailLinkSent
- ? 'Open the verification link in your email (check spam too)'
- : 'Verify your email (tap "Send verification email")'
- );
- }
- if (!testMode && !basicsComplete) {
- missing.push('Answer the quick intake basics');
- }
- if (!policyAgreementAccepted) {
- missing.push('Tick the box to agree to the Terms & Conditions');
- }
  if (!testMode && !razorpayReady) {
  missing.push('Wait for the payment form to finish loading');
  }
@@ -514,14 +490,6 @@ function CheckoutForm() {
  }
  if (!phone.trim()) {
  phoneRef.current?.focus();
- return;
- }
- if (!testMode && !emailVerified) {
- verifyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
- return;
- }
- if (!policyAgreementAccepted) {
- policyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
  }
  };
 
@@ -652,10 +620,15 @@ function CheckoutForm() {
  const data = await res.json();
  if (!res.ok) throw new Error(data.error ?? 'Could not save basics');
  setBasicsComplete(true);
- setCheckoutScreen(5);
- trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'paywall' });
+ const nextVerificationId =
+ typeof data.verificationId === 'string' && data.verificationId
+ ? data.verificationId
+ : activeVerificationId;
+ if (nextVerificationId) setVerificationId(nextVerificationId);
+ return nextVerificationId || 'saved';
  } catch (err) {
  setError(err instanceof Error ? err.message : 'Could not save basics');
+ return '';
  } finally {
  setSavingBasics(false);
  }
@@ -750,6 +723,16 @@ function CheckoutForm() {
  setLoading(true);
 
  try {
+ let checkoutVerificationId = verificationId;
+ if (!basicsComplete) {
+ const savedId = await saveBasicsAndContinue();
+ if (!savedId) {
+ setLoading(false);
+ return;
+ }
+ checkoutVerificationId = savedId;
+ }
+
  const sale = firstTimerSalePaise(plan.slug);
  trackFunnelStep('pay_click', {
  plan: plan.slug,
@@ -765,8 +748,10 @@ function CheckoutForm() {
  email,
  name,
  phone,
- policyAgreementAccepted,
- verificationId: verificationId || undefined,
+ policyAgreementAccepted: true,
+ verificationId: checkoutVerificationId && checkoutVerificationId !== 'saved'
+ ? checkoutVerificationId
+ : undefined,
  discountCode: appliedDiscount?.code || undefined,
  ...(() => {
  persistMetaClickIdsFromLocation()
@@ -877,7 +862,6 @@ function CheckoutForm() {
  <div
  style={{
  ...styles.page,
- ...(checkoutScreen === 5 ? styles.pageWithSticky : null),
  ...intakeTheme.page,
  }}
  >
@@ -909,15 +893,11 @@ function CheckoutForm() {
  ? 'Answer a few basics so we can customize your coaching.'
  : checkoutScreen === 2
  ? 'Almost there - we need more details after you unlock.'
- : checkoutScreen === 3
- ? 'Enter your details to continue - payment comes after.'
- : checkoutScreen === 4
- ? 'Verify your email to save your answers and continue.'
- : 'Unlock your customized plan and pay securely.'}
+ : 'Enter your details, then continue to checkout.'}
  </p>
 
- <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 5`}>
- {([1, 2, 3, 4, 5] as CheckoutScreen[]).map((step) => (
+ <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 3`}>
+ {([1, 2, 3] as CheckoutScreen[]).map((step) => (
  <span
  key={step}
  style={{
@@ -1117,10 +1097,11 @@ function CheckoutForm() {
  <button
  type="button"
  style={dig(styles.payBtn, 'payBtn')}
+ disabled={loading || savingBasics}
  onClick={() => {
  const missing: string[] = [];
  if (!name.trim()) missing.push('Full name');
- if (!email.trim()) missing.push('Email');
+ if (!email.trim() || !email.includes('@')) missing.push('Email');
  if (!phone.trim()) missing.push('WhatsApp number');
  if (missing.length > 0) {
  setError(`Complete these first: ${missing.join(', ')}`);
@@ -1129,284 +1110,21 @@ function CheckoutForm() {
  }
  setError('');
  setMissingItems([]);
- setCheckoutScreen(4);
- trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'verify' });
+ void handleSubmit({ preventDefault() {} } as FormEvent);
  }}
  >
- Continue to verify email
+ {loading || savingBasics ? 'Starting checkout...' : 'Continue to checkout'}
  </button>
- </div>
- </>
- )}
-
- {checkoutScreen === 4 && (
- <>
- <button
- type="button"
- onClick={() => { setCheckoutScreen(3); setError(''); }}
- style={dig(styles.backToDetails, 'backLink')}
- >
- {'<- Edit details'}
- </button>
-
- <section style={{ ...dig(styles.orderSummary, 'orderSummary'), marginBottom: 16 }}>
- <div style={styles.orderRow}>
- <div>
- <div style={dig(styles.orderPlanName, 'orderPlanName')}>
- {isTrialCheckout
- ? plan.name
- : isDigitalCheckout
- ? plan.name
- : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
- </div>
- <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || ' - '}</div>
- </div>
- <div style={styles.orderPriceCol}>
- {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
- <span style={dig(styles.orderSummaryPrice, 'orderSummaryPrice')}>
- {isTrialCheckout || isDigitalCheckout
- ? plan.displayPrice
- : formatInrFromPaise(planPayablePaise)}
- </span>
- </div>
- </div>
- </section>
-
- {testMode && (
- <div style={styles.testBanner}>
- Development mode - payment will be simulated. No Razorpay charge.
- </div>
- )}
-
- {error && <div style={styles.error}>{error}</div>}
-
- <div style={styles.form}>
- {!testMode && (
- <div ref={verifyRef} style={dig(styles.otpBox, 'otpBox')}>
- <div style={styles.otpHead}>
- <span style={dig(styles.otpTitle, 'otpTitle')}>Email verification</span>
- <span
- style={{
- ...styles.otpStatusPill,
- ...(emailVerified ? styles.otpStatusOk : null),
- }}
- >
- {emailVerified ? 'Verified' : emailLinkSent ? 'Link sent' : 'Required'}
- </span>
- </div>
- <p style={dig(styles.otpHint, 'otpHint')}>
- We email a secure link. Open it on this device, then continue.
- </p>
- <div style={styles.otpBtnRow}>
- <button
- type="button"
- onClick={() => void sendEmailOtp()}
- disabled={sendingEmailOtp || emailVerified || !email.trim() || !phone.trim()}
- style={dig(styles.otpBtn, 'otpBtn')}
- >
- {sendingEmailOtp
- ? 'Sending...'
- : emailVerified
- ? 'Verified'
- : emailLinkSent
- ? 'Resend email'
- : 'Send verification email'}
- </button>
- {emailLinkSent && !emailVerified && (
- <button
- type="button"
- onClick={async () => {
- if (!verificationId) return;
- const res = await fetch(
- `/api/payment/verification-status?verificationId=${encodeURIComponent(verificationId)}`
- );
- const data = await res.json();
- if (data.emailVerified) setEmailVerified(true);
- else setError('Not verified yet. Open the newest link in your email, then tap this again.');
- }}
- style={dig(styles.otpBtnSecondary, 'otpBtnSecondary')}
- >
- I've opened the link
- </button>
- )}
- </div>
- {emailDelivery === 'code' && !emailVerified && (
- <>
- <input
- value={emailCode}
- onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
- placeholder="Code from email"
- inputMode="numeric"
- style={dig(styles.otpInput, 'otpInput')}
- />
- <button
- type="button"
- onClick={() => void verifyEmailOtp()}
- disabled={verifyingEmailOtp || emailCode.length < 6 || !verificationId}
- style={dig(styles.otpBtn, 'otpBtn')}
- >
- {verifyingEmailOtp ? 'Checking...' : 'Verify code'}
- </button>
- </>
- )}
- </div>
- )}
-
- <button
- type="button"
- style={dig(styles.payBtn, 'payBtn')}
- disabled={savingBasics || (!testMode && !emailVerified)}
- onClick={() => {
- if (!testMode && !emailVerified) {
- setError('Verify your email before continuing.');
- return;
- }
- void saveBasicsAndContinue();
- }}
- >
- {savingBasics ? 'Saving...' : 'Continue to unlock plan'}
- </button>
- </div>
- </>
- )}
-
-
- {checkoutScreen === 5 && (
- <>
- <button
- type="button"
- onClick={() => { setCheckoutScreen(4); setError(''); }}
- style={dig(styles.backToDetails, 'backLink')}
- >
- {'<- Back'}
- </button>
-
- {!isTrialCheckout && (
- <div style={dig(styles.trustStrip, 'trustStrip')} aria-label="Checkout trust">
- <div style={styles.trustBadges}>
- <span style={dig(styles.trustBadge, 'trustBadge')}>UPI</span>
- <span style={dig(styles.trustBadge, 'trustBadge')}>Cards</span>
- <span style={dig(styles.trustBadge, 'trustBadge')}>Netbanking</span>
- <span style={dig(styles.trustBadge, 'trustBadge')}>Razorpay Secure</span>
- </div>
- <p style={dig(styles.trustLine, 'trustLine')}>
- Secure checkout via Razorpay. By paying, you agree to our{' '}
- <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
- Terms &amp; Conditions
- </Link>
- .
- </p>
- </div>
- )}
-
- <section style={{ ...dig(styles.orderSummary, 'orderSummary'), marginBottom: 16 }}>
- <div style={styles.orderRow}>
- <div>
- <div style={dig(styles.orderPlanName, 'orderPlanName')}>
- {isTrialCheckout
- ? plan.name
- : isDigitalCheckout
- ? plan.name
- : `${planGoalName(plan.slug)} · ${planDurationLabel(plan.slug)}`}
- </div>
- <div style={dig(styles.orderPlanMeta, 'orderPlanMeta')}>{email.trim() || ' - '}</div>
- </div>
- <div style={styles.orderPriceCol}>
- {showListStrike ? <s style={styles.orderSummaryMrp}>{priceMrp}</s> : null}
- <span style={dig(styles.orderSummaryPrice, 'orderSummaryPrice')}>
- {isTrialCheckout || isDigitalCheckout
- ? plan.displayPrice
- : formatInrFromPaise(planPayablePaise)}
- </span>
- </div>
- </div>
- </section>
-
- <h2 style={dig(styles.sectionLabel, 'sectionLabel')}>Unlock your customized plan</h2>
- <p style={dig(styles.otpHint, 'otpHint')}>
- You've answered the basics. To continue and get your full plan on the platform, pay for your plan.
- </p>
- <ul style={{ ...styles.todoList, marginBottom: 16 }}>
- <li>Full coaching intake after payment</li>
- <li>Customized diet chart, workout, cardio & sleep guidance</li>
- <li>Delivered on the {BRAND_NAME} platform</li>
- </ul>
-
- {testMode && (
- <div style={styles.testBanner}>
- Development mode - payment will be simulated. No Razorpay charge.
- </div>
- )}
-
- {error && <div style={styles.error}>{error}</div>}
- {attemptedPay && liveMissing.length > 0 && (
- <div style={styles.todoBox}>
- <p style={styles.todoTitle}>Finish these to pay</p>
- <ul style={styles.todoList}>
- {liveMissing.map((item) => (
- <li key={item}>{item}</li>
- ))}
- </ul>
- </div>
- )}
- {missingItems.length > 0 && error && (
- <ul style={styles.missingList}>
- {missingItems.map((item) => (
- <li key={item}>{item}</li>
- ))}
- </ul>
- )}
-
- <form id="checkout-pay-form" onSubmit={handleSubmit} style={styles.form} noValidate>
- <label ref={policyRef} style={styles.policyRow}>
- <input
- type="checkbox"
- checked={policyAgreementAccepted}
- onChange={(event) => setPolicyAgreementAccepted(event.target.checked)}
- aria-describedby="checkout-policy-agreement"
- style={styles.policyCheck}
- />
- <span id="checkout-policy-agreement" style={dig(styles.policyText, 'policyText')}>
- I agree to the{' '}
- <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
- Terms &amp; Conditions
- </Link>
- . All guarantees, refunds, upgrades, and service rules are only as stated there.
- </span>
- </label>
- <div style={{ height: 88 }} aria-hidden />
- </form>
-
  <p style={dig(styles.secure, 'secure')}>
- After payment you&apos;ll create your login password and continue intake.
- {' '}
- <Link href="/create-account" style={dig(styles.inlineLink, 'inlineLink')}>Already paid?</Link>
- {' · '}
- <Link href="/enroll" style={dig(styles.inlineLink, 'inlineLink')}>Enrollment code</Link>
+ Purchasing this plan means you accept the{' '}
+ <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
+ Terms &amp; Conditions
+ </Link>. You&apos;ll go straight to Razorpay. After payment you&apos;ll create your login password and continue intake.
  </p>
+ </div>
  </>
  )}
  </div>
-
- {checkoutScreen === 5 && (
- <div style={dig(styles.stickyPayBar, 'stickyPayBar')}>
- <div style={styles.stickyPayInner}>
- <div style={styles.stickyPayMeta}>
- <span style={dig(styles.stickyPayLabel, 'stickyPayLabel')}>Total due</span>
- <strong style={dig(styles.stickyPayAmount, 'stickyPayAmount')}>{payableDisplay}</strong>
- </div>
- <button
- type="submit"
- form="checkout-pay-form"
- disabled={loading}
- style={dig(styles.stickyPayBtn, 'stickyPayBtn')}
- >
- {loading ? 'Processing...' : `Pay ${payableDisplay}`}
- </button>
- </div>
- <p style={dig(styles.stickyPayNote, 'stickyPayNote')}>Secure checkout via Razorpay · SSL encrypted</p>
- </div>
- )}
 
  {!testMode && (
  <Script

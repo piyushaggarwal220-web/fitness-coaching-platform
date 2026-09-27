@@ -80,6 +80,46 @@ function isExpired(row: VerificationRow): boolean {
   return new Date(row.expires_at).getTime() < Date.now()
 }
 
+/** Contact row for checkout, without sending a verification email. */
+export async function ensureCheckoutContactSession(input: {
+  email: string
+  phone: string
+  verificationId?: string
+}): Promise<{ ok: true; verificationId: string } | { ok: false; error: string; status: number }> {
+  const email = normalizeCheckoutEmail(input.email)
+  const phone = normalizeCheckoutPhone(input.phone)
+  if (!email || !phone) {
+    return { ok: false, error: 'Valid email and WhatsApp number are required', status: 400 }
+  }
+
+  const requested = input.verificationId?.trim()
+  if (requested) {
+    const row = await getVerification(requested)
+    if (row && !isExpired(row) && row.email === email && row.phone_e164 === phone) {
+      return { ok: true, verificationId: row.id }
+    }
+  }
+
+  const admin = createAdminClient()
+  const now = new Date().toISOString()
+  const { data, error } = await admin
+    .from('checkout_contact_verifications')
+    .insert({
+      email,
+      phone_e164: phone,
+      expires_at: new Date(Date.now() + OTP_TTL_MS).toISOString(),
+      updated_at: now,
+    })
+    .select('id')
+    .single()
+
+  if (error || !data) {
+    return { ok: false, error: 'Could not start checkout', status: 500 }
+  }
+
+  return { ok: true, verificationId: data.id as string }
+}
+
 export async function assertCheckoutContactsVerified(input: {
   verificationId: string | undefined
   email: string

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { shouldBypassPayment } from '@/lib/config'
 import {
   assertCheckoutContactsVerified,
+  ensureCheckoutContactSession,
   normalizeCheckoutEmail,
   normalizeCheckoutPhone,
 } from '@/lib/payments/checkout-otp'
@@ -61,13 +62,13 @@ export async function upsertCheckoutIntakeBasics(
     return { ok: false, error: 'A valid WhatsApp number is required', status: 400 }
   }
 
-  const contactCheck = await assertCheckoutContactsVerified({
-    verificationId: validated.value.verificationId,
+  const session = await ensureCheckoutContactSession({
     email: validated.value.email,
     phone,
+    verificationId: validated.value.verificationId,
   })
-  if (!contactCheck.ok) {
-    return { ok: false, error: contactCheck.error, status: contactCheck.status }
+  if (!session.ok) {
+    return { ok: false, error: session.error, status: session.status }
   }
 
   const admin = createAdminClient()
@@ -76,7 +77,7 @@ export async function upsertCheckoutIntakeBasics(
     .from('checkout_intake_basics')
     .upsert(
       {
-        verification_id: validated.value.verificationId,
+        verification_id: session.verificationId,
         email: validated.value.email,
         plan_slug: validated.value.planSlug,
         age: validated.value.age,
