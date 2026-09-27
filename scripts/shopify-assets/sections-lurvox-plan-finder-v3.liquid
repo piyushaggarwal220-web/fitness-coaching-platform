@@ -575,7 +575,7 @@
         q: 'When do you want to see a real change?',
         options: [
           { id: 'fast', label: 'In about 90 days. Fat loss is the priority', score: -3 },
-          { id: 'steady', label: 'In 3 months. Fat loss and muscle together', score: 1 },
+          { id: 'steady', label: 'In 6 months. Fat loss and muscle together', score: 1 },
           { id: 'patient', label: 'I want an athletic body. Fat loss, muscle, and stamina', score: 4 }
         ]
       },
@@ -617,7 +617,7 @@
         path: '6-months',
         label: 'Fat loss + muscle gain',
         price: '₹999',
-        per: '3 months',
+        per: '6 months',
         bullets: [
           'Best for: losing fat while building muscle',
           '2 weekly check-ins',
@@ -629,7 +629,7 @@
         path: '12-months',
         label: 'Athletic body',
         price: '₹1,699',
-        per: '3 months',
+        per: '12 months',
         bullets: [
           'Best for: fat loss, muscle, stamina, conditioning, testosterone support',
           'Weekly plan updates',
@@ -642,18 +642,18 @@
     var contrast = {
       '3_months': [
         { kind: 'pick', text: 'Best for a focused 90-day fat-loss plan.' },
-        { kind: 'miss', text: '₹999 is Fat loss + muscle gain for 3 months.' },
-        { kind: 'miss', text: 'Athletic body is ₹1,699 for 3 months — fat loss, muscle, stamina, conditioning, and testosterone support. Coaching stays in the app. No coach phone call.' }
+        { kind: 'miss', text: '₹999 is Fat loss + muscle gain for 6 months.' },
+        { kind: 'miss', text: 'Athletic body is ₹1,699 for 12 months — fat loss, muscle, stamina, conditioning, and testosterone support. Coaching stays in the app. No coach phone call.' }
       ],
       '6_months': [
         { kind: 'pick', text: 'Best for: losing fat while building muscle.' },
         { kind: 'miss', text: '₹599 is Fat loss — a focused 3-month plan.' },
-        { kind: 'miss', text: 'Athletic body is ₹1,699 for 3 months — fat loss, muscle, stamina, conditioning, and testosterone support. Coaching stays in the app. No coach phone call.' }
+        { kind: 'miss', text: 'Athletic body is ₹1,699 for 12 months — fat loss, muscle, stamina, conditioning, and testosterone support. Coaching stays in the app. No coach phone call.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Athletic body is ₹1,699 for 3 months — fat loss, muscle, stamina, conditioning, and testosterone support. Coaching stays in the app. No coach phone call.' },
+        { kind: 'pick', text: 'Athletic body is ₹1,699 for 12 months — fat loss, muscle, stamina, conditioning, and testosterone support. Coaching stays in the app. No coach phone call.' },
         { kind: 'miss', text: '₹599 is Fat loss — a focused 3-month plan.' },
-        { kind: 'miss', text: '₹999 is Fat loss + muscle gain for 3 months.' }
+        { kind: 'miss', text: '₹999 is Fat loss + muscle gain for 6 months.' }
       ]
     };
 
@@ -699,12 +699,12 @@
       if (planKey === '3_months') {
         why = 'This is the 90-day Fat loss plan: a focused start with 1-to-1 coaching.';
       } else if (planKey === '6_months') {
-        why = 'This is Fat loss + muscle gain. 3 months to lose fat while building muscle.';
+        why = 'This is Fat loss + muscle gain. 6 months to lose fat while building muscle.';
       } else {
         why =
           'Your goal is ' +
           goalLabel +
-          '. Athletic body is ₹1,699 for 3 months — fat loss, muscle, stamina, conditioning, and testosterone support. Coaching stays in the app. No coach phone call.';
+          '. Athletic body is ₹1,699 for 12 months — fat loss, muscle, stamina, conditioning, and testosterone support. Coaching stays in the app. No coach phone call.';
       }
 
       return { planKey: planKey, why: why, goalLabel: goalLabel };

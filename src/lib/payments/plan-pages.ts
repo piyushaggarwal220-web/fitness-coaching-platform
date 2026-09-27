@@ -51,7 +51,7 @@ export const PLAN_PAGE_COPY: Record<
   '3_months': {
     eyebrow: 'Fat loss',
     goalName: PLAN_PRODUCT_NAME['3_months'],
-    durationLabel: '3 months',
+    durationLabel: '90 days',
     promise: 'Personal workout, diet, and a coach for a 90-day fat-loss push.',
     bestFor: '90-day fat loss',
     goals: [],
@@ -59,17 +59,17 @@ export const PLAN_PAGE_COPY: Record<
   '6_months': {
     eyebrow: 'Fat loss + muscle gain',
     goalName: PLAN_PRODUCT_NAME['6_months'],
-    durationLabel: '3 months',
-    promise: 'Lose fat and build muscle with a coach in the app for 3 months.',
+    durationLabel: '6 months',
+    promise: 'Lose fat and build muscle with a coach in the app for 6 months.',
     bestFor: 'fat loss + muscle',
     goals: [],
   },
   '12_months': {
     eyebrow: 'Athletic body',
     goalName: PLAN_PRODUCT_NAME['12_months'],
-    durationLabel: '3 months',
+    durationLabel: '12 months',
     promise:
-      'Fat loss, muscle gain, stamina, conditioning, and natural testosterone support for 3 months. Coaching stays in the app. No coach phone call.',
+      'Fat loss, muscle gain, stamina, conditioning, and natural testosterone support for 12 months. Coaching stays in the app. No coach phone call.',
     bestFor: 'athletic body',
     goals: [],
   },
@@ -113,9 +113,9 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with debloat',
     label: 'Best for',
     cells: {
-      '3_months': 'Fat loss over 3 months',
-      '6_months': 'Fat loss and muscle gain over 3 months',
-      '12_months': 'Fat loss, muscle, stamina, conditioning, and testosterone support over 3 months',
+      '3_months': 'Fat loss over 90 days',
+      '6_months': 'Fat loss and muscle gain over 6 months',
+      '12_months': 'Fat loss, muscle, stamina, conditioning, and testosterone support over 12 months',
     },
   },
   {
@@ -132,7 +132,7 @@ export const PLAN_COMPARE_ROWS: {
   {
     group: 'More with fat loss',
     label: 'Fuller coaching stack',
-    hint: 'Weekly plan updates, cardio, supplements, journey, plateau coaching past 90 days.',
+    hint: 'Weekly plan updates, cardio, supplements, and journey for the length of the plan.',
     cells: { ...FROM_6 },
   },
   {
@@ -149,8 +149,12 @@ export const PLAN_COMPARE_ROWS: {
   },
   {
     group: 'Value',
-    label: 'Per month',
-    cells: { '3_months': '₹200', '6_months': '₹333', '12_months': '₹566' },
+    label: 'What this plan adds',
+    cells: {
+      '3_months': 'Fat loss coaching',
+      '6_months': 'Weekly updates, cardio, supplements',
+      '12_months': 'Stamina, conditioning, testosterone support',
+    },
   },
 ]
 

@@ -46,7 +46,7 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
     name: 'Fat loss + muscle gain',
     displayPrice: '₹999',
     amountPaise: 99900,
-    durationMonths: 3,
+    durationMonths: 6,
     saveLabel: 'Fat loss + muscle gain',
     popular: true,
   },
@@ -55,22 +55,18 @@ export const COACHING_PLANS: Record<CoachingPlanSlug, CoachingPlan> = {
     name: 'Athletic body',
     displayPrice: '₹1,699',
     amountPaise: 169900,
-    durationMonths: 3,
+    durationMonths: 12,
     saveLabel: 'Athletic body',
     best: true,
   },
 }
 
 /**
- * Before this instant, Fat loss + muscle gain was sold as 6 months and Athletic body as 12.
- * New checkouts use `durationMonths` (3). Stored `subscription_expires_at` still wins for everyone.
+ * For part of 27 Sep 2026, Fat loss + muscle gain and Athletic body were sold as 3 months.
+ * Stored `subscription_expires_at` still wins. This fallback is only when that date was never written.
  */
-export const COACHING_TERM_CHANGED_AT_MS = Date.parse('2026-09-27T09:30:00.000Z')
-
-const LEGACY_SOLD_DURATION_MONTHS: Partial<Record<CoachingPlanSlug, number>> = {
-  '6_months': 6,
-  '12_months': 12,
-}
+export const COACHING_SHORT_TERM_STARTED_AT_MS = Date.parse('2026-09-27T09:30:00.000Z')
+export const COACHING_SHORT_TERM_ENDED_AT_MS = Date.parse('2026-09-27T16:30:00.000Z')
 
 /** Months of access a purchase granted. Used only when no stored expiry exists. */
 export function accessMonthsForPurchase(
@@ -79,11 +75,15 @@ export function accessMonthsForPurchase(
 ): number {
   const at =
     purchasedAt instanceof Date ? purchasedAt : purchasedAt ? new Date(purchasedAt) : null
-  if (at && !Number.isNaN(at.getTime()) && at.getTime() < COACHING_TERM_CHANGED_AT_MS) {
-    const slug = plan.slug
-    if (slug === '6_months' || slug === '12_months') {
-      return LEGACY_SOLD_DURATION_MONTHS[slug] ?? plan.durationMonths
-    }
+  const slug = plan.slug
+  if (
+    at &&
+    !Number.isNaN(at.getTime()) &&
+    (slug === '6_months' || slug === '12_months') &&
+    at.getTime() >= COACHING_SHORT_TERM_STARTED_AT_MS &&
+    at.getTime() < COACHING_SHORT_TERM_ENDED_AT_MS
+  ) {
+    return 3
   }
   return plan.durationMonths
 }

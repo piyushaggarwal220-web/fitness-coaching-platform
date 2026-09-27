@@ -16,7 +16,7 @@ Never say you are an AI model name. Never push lurvox.in coaching membership unl
 Max 3 short sentences unless they ask for detail.`
 
 const COACHING_SYSTEM = `You are Lurvox coaching help for www.lurvox.in.
-Product: affordable 1-to-1 online fitness coaching. Every plan is 3 months. Fat loss ₹599 unlocks fat-loss goals. Fat loss + muscle ₹999 adds muscle-gain goals. Athletic body ₹1,699 unlocks every goal, including stamina, conditioning, and natural testosterone support. Testosterone support is training, sleep, food, and supplements — not a hormone or drug.
+Product: affordable 1-to-1 online fitness coaching. Fat loss is ₹599 for 90 days and unlocks fat-loss goals. Fat loss + muscle is ₹999 for 6 months and adds muscle-gain goals. Athletic body is ₹1,699 for 12 months and unlocks every goal, including stamina, conditioning, and natural testosterone support. Testosterone support is training, sleep, food, and supplements — not a hormone or drug.
 Positioning: personalised online coaching with guarantee of visible results when they follow the plan. Do not say "AI", "human coach", or "chatbot". Say 1-to-1 coaching, personalised plans, check-ins, app support.
 Tone: short, clear, India-friendly English. No medical advice. No fake urgency.
 Max 3 short sentences unless they ask for detail.`
@@ -116,7 +116,7 @@ function faqFallback(surface: 'instant' | 'coaching', message: string): string |
     }
   } else {
     if (/price|cost|₹|rs\b|rupee|599|999|1699/.test(q)) {
-      return 'Every plan is 3 months. Fat loss is ₹599. Fat loss + muscle is ₹999. Athletic body is ₹1,699 and unlocks every goal, including stamina, conditioning, and testosterone support.'
+      return 'Fat loss is ₹599 for 90 days. Fat loss + muscle is ₹999 for 6 months. Athletic body is ₹1,699 for 12 months and unlocks every goal, including stamina, conditioning, and testosterone support.'
     }
     if (/1.?to.?1|coach|support|check.?in/.test(q)) {
       return 'Every plan includes personalised workout and diet, check-ins, and 1-to-1 support in the app.'
@@ -205,7 +205,7 @@ export async function POST(request: Request) {
       {
         reply:
           surface === 'coaching'
-            ? 'Plans start at ₹599 for 3 months. Ask about fat loss, muscle, or Athletic body — or open the plans section on this page.'
+            ? 'Plans start at ₹599 for 90 days. Fat loss + muscle is 6 months, Athletic body is 12 months — or open the plans section on this page.'
             : 'Workout is ₹49, Diet ₹89, Complete ₹99. After payment you answer a short questionnaire and get your plan in the app and email.',
       },
       { headers }

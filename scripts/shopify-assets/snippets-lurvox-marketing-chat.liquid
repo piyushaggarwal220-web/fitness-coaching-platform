@@ -23,7 +23,7 @@
       <button type="button" class="lx-mchat__close" data-lx-mchat-close aria-label="Close chat">×</button>
     </div>
     <div class="lx-mchat__msgs" data-lx-mchat-msgs>
-      <p class="lx-mchat__bot">Hi. Every plan is 3 months. Fat loss ₹599, fat loss + muscle ₹999, or Athletic body ₹1,699.</p>
+      <p class="lx-mchat__bot">Hi. Fat loss is ₹599 for 90 days. Fat loss + muscle is ₹999 for 6 months. Athletic body is ₹1,699 for 12 months.</p>
     </div>
     <div class="lx-mchat__suggestions" data-lx-mchat-suggestions>
       <button type="button" data-lx-mchat-chip>What do I get?</button>
@@ -362,13 +362,13 @@
         body: JSON.stringify({ message: q, history: history.slice(-6), surface: 'coaching' }),
       })
       var data = await res.json().catch(function () { return {} })
-      var reply = (data && data.reply) || 'Every plan is 3 months. Fat loss ₹599 · fat loss + muscle ₹999 · Athletic body ₹1,699.'
+      var reply = (data && data.reply) || 'Fat loss is ₹599 for 90 days. Fat loss + muscle is ₹999 for 6 months. Athletic body is ₹1,699 for 12 months.'
       setTyping(false)
       add('bot', reply)
       history.push({ role: 'assistant', content: reply })
     } catch (err) {
       setTyping(false)
-      add('bot', 'Could not reach help right now. Plans start at ₹599 for 3 months.')
+      add('bot', 'Could not reach help right now. Plans start at ₹599 for 90 days. Longer plans are 6 and 12 months.')
     } finally {
       busy = false
       chips.forEach(function (c) { c.disabled = false })

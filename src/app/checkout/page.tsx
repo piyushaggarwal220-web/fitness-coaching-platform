@@ -1066,10 +1066,10 @@ function CheckoutForm() {
  : isDigitalCheckout
  ? 'After payment, finish the remaining intake questions and receive your plan on the platform.'
  : plan.slug === '12_months'
- ? '3 months. Fat loss, muscle gain, stamina, conditioning, and natural testosterone support. Coach chat and weekly plan updates. No coach phone call.'
+ ? '12 months. Fat loss, muscle gain, stamina, conditioning, and natural testosterone support. Coach chat and weekly plan updates. No coach phone call.'
  : plan.slug === '6_months'
- ? '3 months. Fat loss and muscle gain. Personal workout, diet, coach chat, and weekly plan updates.'
- : '3 months of fat loss. Personal workout, diet, coach chat, and check-ins are included.'}
+ ? '6 months. Fat loss and muscle gain. Personal workout, diet, coach chat, and weekly plan updates.'
+ : '90 days of fat loss. Personal workout, diet, coach chat, and check-ins are included.'}
  </p>
 
  {error && <div style={styles.error}>{error}</div>}

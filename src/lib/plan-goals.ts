@@ -165,8 +165,8 @@ export const PLAN_GOAL_TIER_META: Record<
   { title: string; shortLabel: string; accent: string }
 > = {
   '3_months': { title: 'Fat loss', shortLabel: '3 months · ₹599', accent: '#38bdf8' },
-  '6_months': { title: 'Fat loss + muscle gain', shortLabel: '3 months · ₹999', accent: '#a78bfa' },
-  '12_months': { title: 'Athletic body', shortLabel: '3 months · ₹1,699', accent: '#fbbf24' },
+  '6_months': { title: 'Fat loss + muscle gain', shortLabel: '6 months · ₹999', accent: '#a78bfa' },
+  '12_months': { title: 'Athletic body', shortLabel: '12 months · ₹1,699', accent: '#fbbf24' },
 }
 
 /** Flat catalog of every plan-gated goal. */

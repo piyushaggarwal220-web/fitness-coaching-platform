@@ -466,19 +466,19 @@
 }
 
   .ai-transformation-plan-card-duration-{{ ai_gen_id }} {
-    font-size: 12px;
-    color: {{ block.settings.secondary_text_color }};
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    opacity: 0.78;
-    margin-top: 2px;
-  }};
-    font-weight: 650;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    opacity: 0.75;
-    margin-top: 4px;
+    display: inline-flex;
+    align-self: flex-start;
+    margin-top: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #ff6200;
+    color: #1a0900;
+    font-size: 13px;
+    font-weight: 850;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    opacity: 1;
+    line-height: 1.25;
   }
 
   .ai-transformation-plan-card-description-{{ ai_gen_id }} {
@@ -896,18 +896,20 @@
   }
 
   .ai-transformation-plan-card-duration-{{ ai_gen_id }} {
-    font-size: 12px !important;
-    line-height: 1.3 !important;
-    font-weight: 650 !important;
-    letter-spacing: 0.06em !important;
-    color: {{ block.settings.secondary_text_color }} !important;
-    text-transform: uppercase !important;
-    opacity: 0.75 !important;
-    margin-top: 4px !important;
-    padding: 0 !important;
-    background: transparent !important;
+    display: inline-flex !important;
+    align-self: flex-start !important;
     width: auto !important;
-    display: block !important;
+    margin-top: 6px !important;
+    padding: 6px 10px !important;
+    border-radius: 999px !important;
+    background: #ff6200 !important;
+    color: #1a0900 !important;
+    font-size: 13px !important;
+    font-weight: 850 !important;
+    letter-spacing: -0.01em !important;
+    line-height: 1.25 !important;
+    text-transform: none !important;
+    opacity: 1 !important;
   }
 
   /* Keep short benefit copy on phone; hide redundant description (duplicates plan name) */
@@ -1011,14 +1013,20 @@
     }
 
     .ai-transformation-plan-card-duration-{{ ai_gen_id }} {
-      font-size: 12px !important;
-      font-weight: 650 !important;
-      letter-spacing: 0.06em !important;
-      text-transform: uppercase !important;
-      opacity: 0.75 !important;
-      background: transparent !important;
-      color: {{ block.settings.secondary_text_color }} !important;
-      padding: 0 !important;
+      display: inline-flex !important;
+      align-self: flex-start !important;
+      width: auto !important;
+      margin-top: 6px !important;
+      padding: 6px 10px !important;
+      border-radius: 999px !important;
+      background: #ff6200 !important;
+      color: #1a0900 !important;
+      font-size: 13px !important;
+      font-weight: 850 !important;
+      letter-spacing: -0.01em !important;
+      line-height: 1.25 !important;
+      text-transform: none !important;
+      opacity: 1 !important;
     }
 
     .ai-transformation-plan-card-description-{{ ai_gen_id }} {
@@ -1137,14 +1145,20 @@
     }
 
     .ai-transformation-plan-card-duration-{{ ai_gen_id }} {
-      font-size: 12px !important;
-      font-weight: 650 !important;
-      letter-spacing: 0.06em !important;
-      text-transform: uppercase !important;
-      opacity: 0.75 !important;
-      background: transparent !important;
-      color: {{ block.settings.secondary_text_color }} !important;
-      padding: 0 !important;
+      display: inline-flex !important;
+      align-self: flex-start !important;
+      width: auto !important;
+      margin-top: 6px !important;
+      padding: 6px 10px !important;
+      border-radius: 999px !important;
+      background: #ff6200 !important;
+      color: #1a0900 !important;
+      font-size: 13px !important;
+      font-weight: 850 !important;
+      letter-spacing: -0.01em !important;
+      line-height: 1.25 !important;
+      text-transform: none !important;
+      opacity: 1 !important;
     }
 
     .ai-transformation-plan-card-footer-{{ ai_gen_id }} {
@@ -1524,7 +1538,7 @@
       "type": "text",
       "id": "plan_2_duration",
       "label": "Duration",
-      "default": "3 MONTHS"
+      "default": "90 days"
     },
     {
       "type": "text",
@@ -1597,7 +1611,7 @@
       "type": "text",
       "id": "plan_3_duration",
       "label": "Duration",
-      "default": "3 MONTHS"
+      "default": "6 months"
     },
     {
       "type": "text",
@@ -1670,7 +1684,7 @@
       "type": "text",
       "id": "plan_4_duration",
       "label": "Duration",
-      "default": "3 MONTHS"
+      "default": "12 months"
     },
     {
       "type": "text",
