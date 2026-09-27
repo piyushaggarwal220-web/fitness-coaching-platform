@@ -349,7 +349,7 @@ export default function AdminPromoCodesPage() {
             {form.discountType === 'plan_fixed' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
                 <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>
-                  3 months (₹)
+                  Fat loss (₹)
                   <input
                     value={form.plan3Inr}
                     onChange={(e) => setForm((f) => ({ ...f, plan3Inr: e.target.value }))}
@@ -357,7 +357,7 @@ export default function AdminPromoCodesPage() {
                   />
                 </label>
                 <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>
-                  6 months (₹)
+                  Fat loss + muscle (₹)
                   <input
                     value={form.plan6Inr}
                     onChange={(e) => setForm((f) => ({ ...f, plan6Inr: e.target.value }))}
@@ -365,7 +365,7 @@ export default function AdminPromoCodesPage() {
                   />
                 </label>
                 <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>
-                  12 months (₹)
+                  Athletic body (₹)
                   <input
                     value={form.plan12Inr}
                     onChange={(e) => setForm((f) => ({ ...f, plan12Inr: e.target.value }))}

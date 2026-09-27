@@ -65,7 +65,7 @@ async function loadCrazyEligibilityByClientId(
   return eligible
 }
 
-/** Hard-block: demote Crazy divisions when the client is not on an active 12-month plan. */
+/** Hard-block: demote Crazy divisions when the client is not on an active Athletic body plan. */
 async function enforceCrazyDivisionEligibility(
   admin: ReturnType<typeof createAdminClient>,
   clientId: string,
@@ -89,7 +89,7 @@ async function enforceCrazyDivisionEligibility(
 
 /**
  * Promote a client one division when they finish in the top 10%.
- * Hard-blocks Crazy entry without an active 12-month plan.
+ * Hard-blocks Crazy entry without an active Athletic body plan.
  */
 export async function promoteClientLeagueDivision(clientId: string): Promise<{
   from: LeagueTier

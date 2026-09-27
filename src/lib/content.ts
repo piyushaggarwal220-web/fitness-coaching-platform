@@ -268,7 +268,7 @@ export const pricing = {
   eyebrow: 'Simple pricing',
   headline: 'Choose Your Plan',
   subheadline:
-    'Same coaching on every plan. Longer plans cost less per month — and every higher package includes everything below.',
+    'Every plan is 3 months. Higher plans unlock more goals. Fat loss, then fat loss + muscle gain, then athletic body.',
   comparisonNote: 'Every higher package includes everything in the plans below it.',
   featuresIncluded: [
     'Personal workout plan',
@@ -277,7 +277,7 @@ export const pricing = {
     'Daily habit & health trackers',
     'Coach chat support',
     'Progress photos & journey',
-    'Plan updates every 14 days on 3 months, every week on 6 and 12 months',
+    'Plan updates every 14 days on Fat loss, every week on Fat loss + muscle gain and Athletic body',
   ],
   plans: [
     {
@@ -293,8 +293,8 @@ export const pricing = {
       slug: '6_months',
       name: 'Fat loss + muscle gain',
       price: '₹999',
-      perMonth: '≈ ₹167/month',
-      blurb: 'Fat loss + muscle gain',
+      perMonth: '₹333/month',
+      blurb: 'Fat loss + muscle gain · 3 months',
       save: 'MOST POPULAR',
       popular: true,
     },
@@ -302,8 +302,9 @@ export const pricing = {
       slug: '12_months',
       name: 'Athletic body',
       price: '₹1,699',
-      perMonth: '≈ ₹142/month',
-      blurb: 'Athletic body · 12 months · fat loss, muscle, stamina · weekly coach phone call',
+      perMonth: '≈ ₹566/month',
+      blurb:
+        'Athletic body · 3 months · fat loss, muscle, stamina, conditioning, testosterone support',
       save: 'BEST VALUE',
       popular: false,
     },

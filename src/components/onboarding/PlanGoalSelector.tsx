@@ -489,7 +489,7 @@ function UpgradePrompt({
       </p>
       <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.5, color: colors.textSecondary }}>
         This goal is part of the {requiredMeta.title} plan ({requiredMeta.shortLabel}). Your current{' '}
-        {currentMeta.title} plan already includes shorter-plan goals — upgrade to add this one.
+        {currentMeta.title} plan already includes the goals below it — upgrade to add this one.
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
         <Link

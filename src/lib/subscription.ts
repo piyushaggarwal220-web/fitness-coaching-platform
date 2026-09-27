@@ -5,7 +5,12 @@ import {
   subscriptionDaysRemaining,
   type EntitlementProfile,
 } from '@/lib/entitlements'
-import { getCoachingPlan, getPurchasablePlan, isTrialPlanSlug } from '@/lib/payments/plans'
+import {
+  accessMonthsForPurchase,
+  getCoachingPlan,
+  getPurchasablePlan,
+  isTrialPlanSlug,
+} from '@/lib/payments/plans'
 import {
   canOfferEarlyPlanUpgrade,
   hoursRemainingInPlanUpgradeWindow,
@@ -48,7 +53,7 @@ export function getActiveSubscription(
     endsAt = new Date(subscriptionExpiresAt)
   } else if (plan) {
     endsAt = new Date(startsAt)
-    endsAt.setMonth(endsAt.getMonth() + plan.durationMonths)
+    endsAt.setMonth(endsAt.getMonth() + accessMonthsForPurchase(plan, startsAt))
   } else {
     return null
   }

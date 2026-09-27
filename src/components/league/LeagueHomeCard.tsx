@@ -78,7 +78,7 @@ export function LeagueHomeCard() {
             Consistency League
           </h2>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
-            Free entry · Crazy prizes need 12-month plan
+            Free entry · Crazy prizes need Athletic body
           </p>
         </div>
       </div>

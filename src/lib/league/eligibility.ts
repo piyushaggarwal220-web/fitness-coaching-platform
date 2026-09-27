@@ -8,10 +8,10 @@ export const CRAZY_GATE_FLOOR: LeagueTier = 'diamond'
 export const CRAZY_LEAGUE_PRIZE_LABEL = 'up to ₹5,000'
 
 export const CRAZY_GATE_COPY = {
-  short: 'Crazy League (prize money up to ₹5,000) requires the 12-month plan.',
+  short: 'Crazy League (prize money up to ₹5,000) requires the Athletic body plan.',
   long:
-    'Consistency League entry is free with every coaching plan — certificates and trophies included. Crazy League, where top finishers can win prize money up to ₹5,000, is reserved for members on the 12-month plan.',
-  upgradeCta: 'Unlock Crazy League with the 12-month plan',
+    'Consistency League entry is free with every coaching plan — certificates and trophies included. Crazy League, where top finishers can win prize money up to ₹5,000, is reserved for members on the Athletic body plan.',
+  upgradeCta: 'Unlock Crazy League with the Athletic body plan',
   upgradeHref: '/plans/12-months',
 } as const
 
@@ -19,15 +19,15 @@ export function isCrazyLeagueTier(tier: LeagueTier | null | undefined): boolean 
   return tier === 'crazy_1' || tier === 'crazy_2' || tier === 'crazy_3'
 }
 
-/** True when the client’s active coaching plan is the 12-month catalog SKU. */
+/** True when the client’s active coaching plan is Athletic body. */
 export function isCrazyLeagueEligible(planSlug: string | null | undefined): boolean {
   if (!planSlug) return false
   const plan = getCoachingPlan(planSlug)
-  return plan?.slug === '12_months' && plan.durationMonths >= 12
+  return plan?.slug === '12_months'
 }
 
 /**
- * Hard clamp: non–12-month members cannot sit in Crazy tiers.
+ * Hard clamp: members not on Athletic body cannot sit in Crazy tiers.
  * Returns diamond (last free tier) when blocked.
  */
 export function clampDivisionForCrazyEligibility(

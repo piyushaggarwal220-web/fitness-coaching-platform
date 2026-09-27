@@ -59,16 +59,17 @@ export const PLAN_PAGE_COPY: Record<
   '6_months': {
     eyebrow: 'Fat loss + muscle gain',
     goalName: PLAN_PRODUCT_NAME['6_months'],
-    durationLabel: '6 months',
-    promise: 'Lose fat and build muscle with a coach in the app.',
+    durationLabel: '3 months',
+    promise: 'Lose fat and build muscle with a coach in the app for 3 months.',
     bestFor: 'fat loss + muscle',
     goals: [],
   },
   '12_months': {
     eyebrow: 'Athletic body',
     goalName: PLAN_PRODUCT_NAME['12_months'],
-    durationLabel: '12 months',
-    promise: 'Fat loss, muscle, and stamina — with a weekly coach phone call.',
+    durationLabel: '3 months',
+    promise:
+      'Fat loss, muscle gain, stamina, conditioning, and natural testosterone support for 3 months. Coaching stays in the app. No coach phone call.',
     bestFor: 'athletic body',
     goals: [],
   },
@@ -112,9 +113,9 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with debloat',
     label: 'Best for',
     cells: {
-      '3_months': 'Looking sharp on a special event, not long term results',
-      '6_months': 'Losing fat while building muscle',
-      '12_months': 'Building an athletic body — fat loss, muscle gain, and stamina',
+      '3_months': 'Fat loss over 3 months',
+      '6_months': 'Fat loss and muscle gain over 3 months',
+      '12_months': 'Fat loss, muscle, stamina, conditioning, and testosterone support over 3 months',
     },
   },
   {
@@ -136,13 +137,8 @@ export const PLAN_COMPARE_ROWS: {
   },
   {
     group: 'Everything with Athletic body',
-    label: 'Weekly coach phone call',
-    cells: { ...FROM_12 },
-  },
-  {
-    group: 'Everything with Athletic body',
-    label: 'Lowest monthly rate',
-    hint: 'Full year accountability.',
+    label: 'Stamina, conditioning, testosterone support',
+    hint: 'Every goal unlocks here. Testosterone support is training, sleep, food, and supplements — not a hormone or drug.',
     cells: { ...FROM_12 },
   },
   {
@@ -154,7 +150,7 @@ export const PLAN_COMPARE_ROWS: {
   {
     group: 'Value',
     label: 'Per month',
-    cells: { '3_months': '₹200', '6_months': '₹167', '12_months': '₹142' },
+    cells: { '3_months': '₹200', '6_months': '₹333', '12_months': '₹566' },
   },
 ]
 
