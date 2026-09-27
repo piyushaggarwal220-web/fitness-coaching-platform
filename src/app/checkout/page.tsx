@@ -825,8 +825,12 @@ function CheckoutForm() {
  <div style={styles.card}>
  <Link href={marketingBaseUrl} style={styles.backLink}>{'<- Back to home'}</Link>
  <p style={styles.brandMark}>{BRAND_NAME}</p>
- <h1 style={styles.title}>Payment confirmed</h1>
- <p style={styles.subtitle}>Taking you to create your login password...</p>
+ <h1 style={styles.title}>Payment received</h1>
+ <p style={styles.subtitle}>
+ {plan.isDigital
+ ? 'Next: set your password on the following screen. Then a short questionnaire. Your plan usually arrives within a few hours. We email the same steps if you leave.'
+ : 'Next: set your password on the following screen. Then a short setup with photos. Your plan arrives within 24–48 hours. We email the same steps if you leave.'}
+ </p>
  </div>
  </div>
  );
@@ -1116,10 +1120,14 @@ function CheckoutForm() {
  {loading || savingBasics ? 'Starting checkout...' : 'Continue to checkout'}
  </button>
  <p style={dig(styles.secure, 'secure')}>
- Purchasing this plan means you accept the{' '}
+ Payment is handled by Razorpay. Purchasing means you accept the{' '}
  <Link href="/terms" target="_blank" style={dig(styles.inlineLink, 'inlineLink')}>
  Terms &amp; Conditions
- </Link>. You&apos;ll go straight to Razorpay. After payment you&apos;ll create your login password and continue intake.
+ </Link>
+ .{' '}
+ {isDigitalCheckout
+ ? 'Right after you pay: set your password, then a short questionnaire. Your plan usually arrives within a few hours. If this page closes, we email those steps.'
+ : 'Right after you pay: set your password, then a short setup with photos. Your plan arrives within 24–48 hours. If you leave to finish payment in another app, come back here. If this page closes, we email those steps.'}
  </p>
  </div>
  </>

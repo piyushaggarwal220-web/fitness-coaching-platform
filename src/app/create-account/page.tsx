@@ -25,6 +25,7 @@ function CreateAccountForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [planName, setPlanName] = useState('')
+  const [planSlug, setPlanSlug] = useState('')
   const [loading, setLoading] = useState(false)
   const [lookingUp, setLookingUp] = useState(Boolean(token))
   const [error, setError] = useState('')
@@ -62,6 +63,7 @@ function CreateAccountForm() {
         setEmail(data.customerEmail ?? '')
         setName(data.customerName ?? '')
         setPlanName(data.planName ?? '')
+        setPlanSlug(typeof data.planSlug === 'string' ? data.planSlug : '')
         setMode('token')
       } catch (err) {
         if (cancelled) return
@@ -150,8 +152,29 @@ function CreateAccountForm() {
             : 'Create your login password to unlock onboarding. If you left after paying, use your email and Razorpay payment ID.'}
         </p>
 
-        {lookingUp && <p style={styles.hint}>Checking your payment…</p>}
+        {lookingUp && <p style={styles.hint}>Payment received. Loading your setup…</p>}
         {error && <div style={styles.error}>{error}</div>}
+
+        {!lookingUp && !error && (
+          <>
+            <ol style={styles.steps}>
+              <li><strong>Right now.</strong> Set your password on this screen.</li>
+              <li>
+                <strong>Next.</strong>{' '}
+                {planSlug.startsWith('digital_')
+                  ? 'Answer the short questionnaire.'
+                  : 'Answer a few questions and add your photos.'}
+              </li>
+              <li>
+                <strong>Then.</strong> Your plan arrives{' '}
+                {planSlug.startsWith('digital_')
+                  ? 'usually within a few hours.'
+                  : 'within 24–48 hours.'}
+              </li>
+            </ol>
+            <p style={styles.hint}>We email the same steps, so you can leave and come back.</p>
+          </>
+        )}
 
         {!lookingUp && (
           <form onSubmit={handleSubmit} style={styles.form}>
@@ -323,6 +346,14 @@ const styles: Record<string, CSSProperties> = {
     marginBottom: spacing[2],
   },
   hint: { margin: '0 0 8px', fontSize: 13, color: colors.textMuted, lineHeight: 1.45 },
+  steps: {
+    margin: '0 0 12px',
+    paddingLeft: 20,
+    color: colors.textSecondary,
+    lineHeight: 1.5,
+    display: 'grid',
+    gap: 6,
+  },
   footer: { marginTop: spacing[4], fontSize: 14, color: colors.textMuted, textAlign: 'center' },
   link: { color: colors.accent, fontWeight: 600, textDecoration: 'none' },
   textBtn: {
