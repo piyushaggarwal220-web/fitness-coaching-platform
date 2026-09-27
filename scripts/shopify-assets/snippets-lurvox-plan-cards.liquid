@@ -4,14 +4,14 @@
 <section class="lx-plans" id="plans" aria-labelledby="lx-plans-title">
   <div class="lx-plans__inner">
     <p class="lx-plans__eyebrow">Choose your plan</p>
-    <h2 class="lx-plans__title" id="lx-plans-title">Transform in only 90 days.</h2>
+    <h2 class="lx-plans__title" id="lx-plans-title">Simple plans. Real coaching.</h2>
     <p class="lx-plans__lede">The price is for a <strong>new weekly plan</strong> plus trackers, coach chat, and Journey already unlocked — not a one-time PDF.</p>
     <div class="lx-plans__stack">
       <article class="lx-plans__card lx-plans__card--fat">
-        <p class="lx-plans__transform"><span>Transform in</span><strong>only 90 days</strong></p>
+        <span class="lx-plans__dur">90 days</span>
         <h3>Fat loss</h3>
         <p class="lx-plans__price">₹599</p>
-        <p class="lx-plans__meta">90 days · plan updates every 14 days</p>
+        <p class="lx-plans__meta">3 months · ≈ ₹200/mo</p>
         <ul class="lx-plans__bullets">
           <li>New workout + diet each week</li>
           <li>Trackers unlocked</li>
@@ -24,19 +24,19 @@
       </article>
 
       <article class="lx-plans__card lx-plans__card--popular">
-        <p class="lx-plans__transform"><span>Transform in</span><strong>only 90 days</strong></p>
         <p class="lx-plans__tag">Most popular</p>
+        <span class="lx-plans__dur">6 months</span>
         <h3>Fat loss + muscle</h3>
         <p class="lx-plans__price">₹999</p>
-        <p class="lx-plans__meta">6 months · weekly updates, cardio, and supplements</p>
-        <p class="lx-plans__note">Everything in Fat loss, plus muscle goals, for 6 months.</p>
+        <p class="lx-plans__meta">≈ ₹167/mo</p>
+        <p class="lx-plans__note">Everything in Fat loss, plus muscle programmed in for 6 months.</p>
         <ul class="lx-plans__bullets">
           <li>New workout + diet each week</li>
           <li>Trackers, coach chat, Journey unlocked</li>
           <li>Weekly check-ins</li>
           <li>Progress photos</li>
           <li>Fat loss and muscle in one plan</li>
-          <li>More goals than Fat loss</li>
+          <li>Longer runway to keep results</li>
         </ul>
         <div class="lx-plans__extras">
           <p class="lx-plans__extras-title"><span>INCLUDED</span> At no extra cost</p>
@@ -49,25 +49,25 @@
       </article>
 
       <article class="lx-plans__card lx-plans__card--athletic">
-        <p class="lx-plans__transform"><span>Transform in</span><strong>only 90 days</strong></p>
         <p class="lx-plans__tag lx-plans__tag--best">Best value</p>
+        <span class="lx-plans__dur">12 months</span>
         <h3>Athletic body</h3>
         <p class="lx-plans__price">₹1,699</p>
-        <p class="lx-plans__meta">12 months · stamina, conditioning, and testosterone support</p>
-        <p class="lx-plans__note lx-plans__note--gold">Fat loss, muscle, stamina, conditioning, and testosterone support.</p>
+        <p class="lx-plans__meta">≈ ₹142/mo · lowest monthly cost</p>
+        <p class="lx-plans__note lx-plans__note--gold">Full year of coaching. Fat loss, muscle, and stamina in one plan.</p>
         <ul class="lx-plans__bullets">
           <li>New workout + diet each week</li>
           <li>Trackers, coach chat, Journey unlocked</li>
-          <li>Weekly check-ins</li>
+          <li>Weekly check-ins all year</li>
           <li>Progress photos + plan tweaks</li>
-          <li>Fat loss, muscle, stamina, and conditioning</li>
-          <li>Every goal unlocked</li>
+          <li>Fat loss, muscle, and stamina</li>
+          <li>Longest runway to keep results</li>
         </ul>
         <div class="lx-plans__extras lx-plans__extras--gold">
-          <p class="lx-plans__extras-title"><span>PLUS</span> Athletic goals</p>
+          <p class="lx-plans__extras-title"><span>PLUS</span> 12-month athletic runway</p>
           <ul>
-            <li><em>PLUS</em> Stamina and conditioning</li>
-            <li><em>PLUS</em> Natural testosterone support</li>
+            <li><em>PLUS</em> Stamina programming</li>
+            <li><em>PLUS</em> Lowest ₹/month</li>
           </ul>
         </div>
         <a class="lx-plans__cta" href="https://app.lurvox.in/checkout?plan=12_months">Get Athletic body</a>
@@ -177,28 +177,31 @@
     background: linear-gradient(90deg, #fbbf24, #fb7185);
     color: #1c0a00;
   }
-  .lx-plans__transform {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    margin: -22px -20px 14px;
-    padding: 12px 56px;
-    background: linear-gradient(90deg, #ff7a1a, #fbbf24);
-    color: #1a0900;
-    font-size: 12px;
+  .lx-plans__dur {
+    display: inline-flex;
+    align-self: flex-start;
+    margin: 0 0 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.08em;
-    text-align: center;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    line-height: 1.15;
   }
-  .lx-plans__transform strong {
-    font-size: 22px;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    text-transform: none;
-    line-height: 1.05;
+  .lx-plans__card--fat .lx-plans__dur {
+    color: #ffd4a8;
+    background: rgba(255, 98, 0, 0.18);
+    border: 1px solid rgba(255, 98, 0, 0.45);
+  }
+  .lx-plans__card--popular .lx-plans__dur {
+    color: #fde68a;
+    background: rgba(251, 191, 36, 0.16);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+  }
+  .lx-plans__card--athletic .lx-plans__dur {
+    color: #fde68a;
+    background: rgba(245, 158, 11, 0.18);
+    border: 1px solid rgba(251, 191, 36, 0.45);
   }
   .lx-plans__card h3 {
     margin: 0;

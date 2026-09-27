@@ -51,7 +51,7 @@ export const PLAN_PAGE_COPY: Record<
   '3_months': {
     eyebrow: 'Fat loss',
     goalName: PLAN_PRODUCT_NAME['3_months'],
-    durationLabel: '90 days',
+    durationLabel: '3 months',
     promise: 'Personal workout, diet, and a coach for a 90-day fat-loss push.',
     bestFor: '90-day fat loss',
     goals: [],
@@ -60,7 +60,7 @@ export const PLAN_PAGE_COPY: Record<
     eyebrow: 'Fat loss + muscle gain',
     goalName: PLAN_PRODUCT_NAME['6_months'],
     durationLabel: '6 months',
-    promise: 'Lose fat and build muscle with a coach in the app for 6 months.',
+    promise: 'Lose fat and build muscle with a coach in the app.',
     bestFor: 'fat loss + muscle',
     goals: [],
   },
@@ -68,8 +68,7 @@ export const PLAN_PAGE_COPY: Record<
     eyebrow: 'Athletic body',
     goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
-    promise:
-      'Fat loss, muscle gain, stamina, conditioning, and natural testosterone support for 12 months. Coaching stays in the app. No coach phone call.',
+    promise: 'Fat loss, muscle, and stamina — with a weekly coach phone call.',
     bestFor: 'athletic body',
     goals: [],
   },
@@ -113,9 +112,9 @@ export const PLAN_COMPARE_ROWS: {
     group: 'Opens with debloat',
     label: 'Best for',
     cells: {
-      '3_months': 'Fat loss over 90 days',
-      '6_months': 'Fat loss and muscle gain over 6 months',
-      '12_months': 'Fat loss, muscle, stamina, conditioning, and testosterone support over 12 months',
+      '3_months': 'Looking sharp on a special event, not long term results',
+      '6_months': 'Losing fat while building muscle',
+      '12_months': 'Building an athletic body — fat loss, muscle gain, and stamina',
     },
   },
   {
@@ -132,13 +131,18 @@ export const PLAN_COMPARE_ROWS: {
   {
     group: 'More with fat loss',
     label: 'Fuller coaching stack',
-    hint: 'Weekly plan updates, cardio, supplements, and journey for the length of the plan.',
+    hint: 'Weekly plan updates, cardio, supplements, journey, plateau coaching past 90 days.',
     cells: { ...FROM_6 },
   },
   {
     group: 'Everything with Athletic body',
-    label: 'Stamina, conditioning, testosterone support',
-    hint: 'Every goal unlocks here. Testosterone support is training, sleep, food, and supplements — not a hormone or drug.',
+    label: 'Weekly coach phone call',
+    cells: { ...FROM_12 },
+  },
+  {
+    group: 'Everything with Athletic body',
+    label: 'Lowest monthly rate',
+    hint: 'Full year accountability.',
     cells: { ...FROM_12 },
   },
   {
@@ -149,12 +153,8 @@ export const PLAN_COMPARE_ROWS: {
   },
   {
     group: 'Value',
-    label: 'What this plan adds',
-    cells: {
-      '3_months': 'Fat loss coaching',
-      '6_months': 'Weekly updates, cardio, supplements',
-      '12_months': 'Stamina, conditioning, testosterone support',
-    },
+    label: 'Per month',
+    cells: { '3_months': '₹200', '6_months': '₹167', '12_months': '₹142' },
   },
 ]
 

@@ -268,7 +268,7 @@ export const pricing = {
   eyebrow: 'Simple pricing',
   headline: 'Choose Your Plan',
   subheadline:
-    'Fat loss is 90 days. Fat loss + muscle gain is 6 months. Athletic body is 12 months. Higher plans unlock more goals.',
+    'Same coaching on every plan. Longer plans cost less per month — and every higher package includes everything below.',
   comparisonNote: 'Every higher package includes everything in the plans below it.',
   featuresIncluded: [
     'Personal workout plan',
@@ -277,7 +277,7 @@ export const pricing = {
     'Daily habit & health trackers',
     'Coach chat support',
     'Progress photos & journey',
-    'Plan updates every 14 days on Fat loss, every week on Fat loss + muscle gain and Athletic body',
+    'Plan updates every 14 days on 3 months, every week on 6 and 12 months',
   ],
   plans: [
     {
@@ -285,8 +285,7 @@ export const pricing = {
       name: 'Fat loss',
       price: '₹599',
       perMonth: '≈ ₹200/month',
-      extra: 'Personal workout, diet, coach chat, and plan updates every 14 days.',
-      blurb: '3 months of fat loss coaching',
+      blurb: 'Fat loss',
       save: 'BEST STARTER',
       popular: false,
     },
@@ -295,8 +294,7 @@ export const pricing = {
       name: 'Fat loss + muscle gain',
       price: '₹999',
       perMonth: '≈ ₹167/month',
-      extra: 'Everything in Fat loss, plus weekly plan updates, cardio, and supplements.',
-      blurb: '6 months · fat loss and muscle gain',
+      blurb: 'Fat loss + muscle gain',
       save: 'MOST POPULAR',
       popular: true,
     },
@@ -305,10 +303,7 @@ export const pricing = {
       name: 'Athletic body',
       price: '₹1,699',
       perMonth: '≈ ₹142/month',
-      extra:
-        'Everything in Fat loss + muscle gain, plus stamina, conditioning, and testosterone support.',
-      blurb:
-        'Athletic body · 12 months · fat loss, muscle, stamina, conditioning, testosterone support',
+      blurb: 'Athletic body · 12 months · fat loss, muscle, stamina · weekly coach phone call',
       save: 'BEST VALUE',
       popular: false,
     },

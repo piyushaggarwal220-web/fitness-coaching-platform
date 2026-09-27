@@ -18,7 +18,7 @@
       Vegetarian and home cooked food friendly. Gym or home.
     </p>
     <div class="lx-ad__hero-actions">
-      <a class="lx-ad__btn lx-ad__btn--primary" href="#plans" data-funnel="view_plans">See plans — from ₹599</a>
+      <a class="lx-ad__btn lx-ad__btn--primary" href="#plans" data-funnel="view_plans">See plans — from ₹142/mo</a>
       <a class="lx-ad__btn lx-ad__btn--ghost" href="/pages/choose-your-plan" data-funnel="find_plan">Find your plan</a>
     </div>
     <div class="lx-ad__badges" aria-label="Secure payment">
@@ -42,29 +42,29 @@
 
   <div class="lx-ad__plans" id="plans">
     <p class="lx-ad__eyebrow">Choose your plan</p>
-    <h2 class="lx-ad__plans-title">Transform in only 90 days.</h2>
+    <h2 class="lx-ad__plans-title">Start with 90 days — or go longer</h2>
     <div class="lx-ad__grid">
       <a class="lx-ad__card" href="{{ c3 }}" data-funnel="plan_click" data-plan="3_months" data-plan-name="Fat loss" data-value="599">
-        <span class="lx-ad__dur"><span>Transform in</span><b>only 90 days</b></span>
+        <span class="lx-ad__dur">3 MONTHS · FAT LOSS</span>
         <strong>Fat loss</strong>
-        <span class="lx-ad__price">₹599 <small>90 days · ≈ ₹200/mo</small></span>
-        <span class="lx-ad__note">Fat loss goals</span>
-        <span class="lx-ad__cta">Start · ₹599</span>
+        <span class="lx-ad__price">₹599 <small>≈ ₹200/mo</small></span>
+        <span class="lx-ad__note">Looking sharp on a special event, not long term results</span>
+        <span class="lx-ad__cta">Start 90-day · ₹599</span>
       </a>
       <a class="lx-ad__card lx-ad__card--pop" href="{{ c6 }}" data-funnel="plan_click" data-plan="6_months" data-plan-name="Fat loss + muscle gain" data-value="999">
-        <span class="lx-ad__dur"><span>Transform in</span><b>only 90 days</b></span>
         <span class="lx-ad__pill">MUSCLE GAIN</span>
+        <span class="lx-ad__dur">6 MONTHS</span>
         <strong>Fat loss + muscle gain</strong>
-        <span class="lx-ad__price">₹999 <small>6 months · ≈ ₹167/mo</small></span>
-        <span class="lx-ad__note">Fat loss and muscle gain</span>
-        <span class="lx-ad__cta">Start · ₹999</span>
+        <span class="lx-ad__price">₹999 <small>≈ ₹167/mo</small></span>
+        <span class="lx-ad__note">Lose fat while building muscle</span>
+        <span class="lx-ad__cta">Start 6-month · ₹999</span>
       </a>
       <a class="lx-ad__card" href="{{ c12 }}" data-funnel="plan_click" data-plan="12_months" data-plan-name="Athletic body" data-value="1699">
-        <span class="lx-ad__dur"><span>Transform in</span><b>only 90 days</b></span>
+        <span class="lx-ad__dur">12 MONTHS · STAMINA</span>
         <strong>Athletic body</strong>
-        <span class="lx-ad__price">₹1,699 <small>12 months · ≈ ₹142/mo</small></span>
-        <span class="lx-ad__note">Fat loss, muscle, stamina, conditioning, testosterone support</span>
-        <span class="lx-ad__cta">Start · ₹1,699</span>
+        <span class="lx-ad__price">₹1,699 <small>≈ ₹142/mo</small></span>
+        <span class="lx-ad__note">Fat loss, muscle gain, and stamina</span>
+        <span class="lx-ad__cta">Start 12-month · ₹1,699</span>
       </a>
     </div>
     <p class="lx-ad__fine">One-time payment · Cancel anytime on WhatsApp</p>
@@ -100,11 +100,10 @@
   .lx-ad__plans-title { margin: 0 0 16px; font-size: 1.45rem; font-weight: 850; }
   .lx-ad__grid { display: grid; gap: 12px; }
   @media (min-width: 760px) { .lx-ad__grid { grid-template-columns: repeat(3, 1fr); } }
-  .lx-ad__card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 16px; border: 1px solid var(--line); background: #0b0b0b; color: inherit; text-decoration: none; text-align: left; overflow: hidden; }
+  .lx-ad__card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 16px; border: 1px solid var(--line); background: #0b0b0b; color: inherit; text-decoration: none; text-align: left; }
   .lx-ad__card--pop { border-color: rgba(255,98,0,.55); background: radial-gradient(circle at 80% -20%, rgba(255,98,0,.22), transparent 55%), #100c09; }
-  .lx-ad__pill { align-self: flex-start; padding: 4px 8px; border-radius: 999px; background: var(--o); color: #111; font-size: 10px; font-weight: 850; }
-  .lx-ad__dur { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: -16px -16px 4px; padding: 10px 16px; background: linear-gradient(90deg, #ff7a1a, #fbbf24); color: #1a0900; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; line-height: 1.15; }
-  .lx-ad__dur b { font-size: 18px; font-weight: 900; letter-spacing: -0.03em; text-transform: none; }
+  .lx-ad__pill { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 999px; background: var(--o); color: #111; font-size: 10px; font-weight: 850; }
+  .lx-ad__dur { color: var(--o); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
   .lx-ad__card strong { font-size: 18px; }
   .lx-ad__price { font-size: 22px; font-weight: 850; }
   .lx-ad__price small { font-size: 12px; color: var(--muted); font-weight: 600; }
