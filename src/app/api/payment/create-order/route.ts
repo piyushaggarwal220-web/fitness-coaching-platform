@@ -6,12 +6,7 @@ import {
   createPolicyAcknowledgement,
   storeOrderPolicyAcknowledgement,
 } from '@/lib/payments/policy-acknowledgement'
-import {
-  assertCheckoutContactsVerified,
-  normalizeCheckoutEmail,
-  normalizeCheckoutPhone,
-} from '@/lib/payments/checkout-otp'
-import { assertCheckoutIntakeBasicsComplete } from '@/lib/payments/checkout-intake-basics'
+import { normalizeCheckoutEmail, normalizeCheckoutPhone } from '@/lib/payments/checkout-otp'
 import {
   checkoutDiscountNotes,
   checkoutTotalPaise,
@@ -60,13 +55,8 @@ export async function POST(request: Request) {
   else if (!normalizeCheckoutEmail(body.email).includes('@')) missing.push('A valid email address')
   if (!body.phone?.trim()) missing.push('WhatsApp number')
   else if (!normalizeCheckoutPhone(body.phone)) missing.push('A valid WhatsApp number (e.g. +91 98765 43210)')
+  // The pay step states that purchasing the plan accepts the terms. The client sends true with Pay.
   if (body.policyAgreementAccepted !== true) missing.push('Agree to Terms & Refund Policy')
-
-  if (!shouldBypassPayment()) {
-    if (!body.verificationId?.trim()) {
-      missing.push('Email verification (tap Send verification email, then open the link)')
-    }
-  }
 
   if (missing.length > 0) {
     return NextResponse.json(
@@ -75,36 +65,6 @@ export async function POST(request: Request) {
         missing,
       },
       { status: 400 }
-    )
-  }
-
-  const contactCheck = await assertCheckoutContactsVerified({
-    verificationId: body.verificationId,
-    email: body.email!,
-    phone: body.phone!,
-  })
-  if (!contactCheck.ok) {
-    return NextResponse.json(
-      {
-        error: contactCheck.error,
-        missing: ['Email verification (tap Send verification email, then open the link)'],
-      },
-      { status: contactCheck.status }
-    )
-  }
-
-  const basicsCheck = await assertCheckoutIntakeBasicsComplete({
-    verificationId: body.verificationId,
-    email: body.email!,
-    phone: body.phone!,
-  })
-  if (!basicsCheck.ok) {
-    return NextResponse.json(
-      {
-        error: basicsCheck.error,
-        missing: ['Quick intake basics (age, height, diet, goal)'],
-      },
-      { status: basicsCheck.status }
     )
   }
 
