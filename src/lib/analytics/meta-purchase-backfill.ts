@@ -56,7 +56,14 @@ export async function backfillMetaPurchases(options?: {
   if (!rows?.length) return summary
 
   for (const row of rows) {
-    if (!isMetaPurchaseEligibleSale(row) || !row.customer_email) {
+    if (
+      !isMetaPurchaseEligibleSale({
+        status: row.status,
+        amountPaise: row.amount_paise,
+        razorpayPaymentId: row.razorpay_payment_id,
+      }) ||
+      !row.customer_email
+    ) {
       summary.skipped += 1
       continue
     }

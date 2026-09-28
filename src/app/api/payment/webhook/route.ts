@@ -19,6 +19,7 @@ import {
 } from '@/lib/payments/razorpay'
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
+import { queueMetaPurchaseForRecordedSale } from '@/lib/analytics/meta-purchase-dispatch'
 import { metaIdsFromOrderNotes } from '@/lib/analytics/meta-attribution'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
@@ -367,6 +368,7 @@ export async function POST(request: Request) {
       supplementAddonPaise: checkoutAddonsFromNotes(notes).ids.includes('testo_boost') ? 39900 : 0,
       checkoutAddonIds: checkoutAddonsFromNotes(notes).ids,
     })
+    queueMetaPurchaseForRecordedSale(result.purchaseId)
 
     const discountCode = normalizeDiscountCode(notes.discount_code)
     const discountPaise = Number(notes.discount_paise ?? 0) || 0

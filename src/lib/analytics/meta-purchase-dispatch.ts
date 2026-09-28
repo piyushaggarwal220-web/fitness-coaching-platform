@@ -34,7 +34,13 @@ export async function dispatchMetaPurchaseForRecordedSale(purchaseId: string): P
   }
 
   if (data.meta_purchase_status === 'sent') return
-  if (!isMetaPurchaseEligibleSale(data)) return
+  if (
+    !isMetaPurchaseEligibleSale({
+      status: data.status,
+      amountPaise: data.amount_paise,
+      razorpayPaymentId: data.razorpay_payment_id,
+    })
+  ) return
   if (!data.customer_email?.trim()) return
 
   const createdMs = new Date(data.created_at).getTime()

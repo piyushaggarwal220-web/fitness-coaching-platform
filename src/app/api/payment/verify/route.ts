@@ -10,6 +10,7 @@ import {
 import { shouldBypassPayment } from '@/lib/config'
 import { sendAccountSetupRecovery } from '@/lib/notifications/lifecycle'
 import { sendMetaPurchase } from '@/lib/analytics/meta-conversions'
+import { queueMetaPurchaseForRecordedSale } from '@/lib/analytics/meta-purchase-dispatch'
 import { metaAttributionFromRequest } from '@/lib/analytics/meta-attribution'
 import { getOrderPolicyAcknowledgement } from '@/lib/payments/policy-acknowledgement'
 import {
@@ -215,6 +216,7 @@ export async function POST(request: Request) {
       supplementAddonPaise: supplementAddonPaid,
       checkoutAddonIds: paidAddonIds,
     })
+    queueMetaPurchaseForRecordedSale(result.purchaseId)
 
     if (appliedDiscountCode && appliedDiscountPaise > 0) {
       const usage = await recordPromoCodeUsage(createAdminClient(), {
