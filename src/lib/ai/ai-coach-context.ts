@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { splitSnapshot } from '@/lib/daily-tracker/display'
 import { buildTrackerSnapshot, resolveSuggestedDayKey } from '@/lib/daily-tracker/parser'
-import type { TrackerCompletion, TrackerSnapshot, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
+import type { TrackerCompletion, TrackerPlanDayOption, TrackerSnapshot, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
 import {
   getClientCheckinSchedule,
   getCoachingDateKey,
@@ -84,7 +84,7 @@ function isRestWorkout(workout: TrackerWorkoutItem): boolean {
 }
 
 function pickDayKey(
-  days: { key: string }[] | undefined,
+  days: TrackerPlanDayOption[] | undefined,
   selected: string | null | undefined,
   referenceDate: Date,
   coachingDayInWeek: number | null
