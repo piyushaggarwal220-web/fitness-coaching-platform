@@ -65,7 +65,7 @@ export default function MidWeekCheckinPage() {
         const reason = getCheckinUnavailableReason(scheduleStartedAt, 'mid_week', rows, new Date());
         setUnavailableReason(
           reason === 'plan_not_delivered'
-            ? 'Your check-in schedule will begin when your coach delivers your first plan.'
+            ? 'Your check-in schedule starts when your first plan arrives.'
             : reason === 'window_closed'
               ? 'This Day 3 check-in window has closed (48 hours). Please wait for your next scheduled check-in.'
             : reason === 'already_submitted'
@@ -89,10 +89,6 @@ export default function MidWeekCheckinPage() {
     const validationError = validateMidWeekForm(form);
     if (validationError) {
       setError(validationError);
-      return;
-    }
-    if (!profile?.coach_id) {
-      setError('No coach assigned to your account. Contact support before submitting a check-in.');
       return;
     }
 
@@ -144,16 +140,6 @@ export default function MidWeekCheckinPage() {
   const devMode = shouldBypassCheckinScheduleClient();
 
   if (loading) return <ClientShell title="Check-In" loading hideBottomNav />;
-
-  if (!profile?.coach_id) {
-    return (
-      <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={styles.title}>{brandTitle('Mid-Week Check-In')}</h1>
-        <div style={styles.error}>No coach is assigned to your account yet.</div>
-        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
-      </ClientShell>
-    );
-  }
 
   if (!available) {
     return (

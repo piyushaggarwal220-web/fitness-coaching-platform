@@ -4,8 +4,8 @@ import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
 import {
   buildNamedCoachSystemPrompt,
-  truncatePlanExcerpt,
 } from '@/lib/ai/coach-chat-persona'
+import { loadAiCoachThreadContext } from '@/lib/ai/ai-coach-context'
 import { autoCoachFirstName } from '@/lib/coach-delivery-policy'
 import { markConversationRead, sendChatMessage } from '@/lib/coach-chat'
 
@@ -41,6 +41,13 @@ function buildReplyPrompt(input: {
   nutritionExcerpt: string | null
   workoutExcerpt: string | null
   personalities: string[] | null
+  dietPreference?: string | null
+  injuryNote?: string | null
+  allergyNote?: string | null
+  purchasedPlanLine?: string | null
+  todayPlan?: string | null
+  trackerLine?: string | null
+  checkinLine?: string | null
   history: ChatRow[]
 }): { systemPrompt: string; userPrompt: string } {
   const history = input.history
@@ -61,6 +68,13 @@ function buildReplyPrompt(input: {
       journeySummary: input.journeySummary,
       nutritionExcerpt: input.nutritionExcerpt,
       workoutExcerpt: input.workoutExcerpt,
+      dietPreference: input.dietPreference,
+      injuryNote: input.injuryNote,
+      allergyNote: input.allergyNote,
+      purchasedPlanLine: input.purchasedPlanLine,
+      todayPlan: input.todayPlan,
+      trackerLine: input.trackerLine,
+      checkinLine: input.checkinLine,
       mode: 'human_thread',
     }),
     userPrompt: [
@@ -110,20 +124,15 @@ export async function autoReplyUnreadChat(
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('name, fitness_goal, journey_summary, onboarding_data')
+    .select('name, fitness_goal, journey_summary, onboarding_data, diet_preference, injuries, checkin_schedule_started_at, checkin_overdue, coach_service')
     .eq('id', input.clientId)
-    .maybeSingle()
-
-  const { data: plan } = await admin
-    .from('plans')
-    .select('title, nutrition_plan, workout_plan')
-    .eq('client_id', input.clientId)
-    .eq('active', true)
     .maybeSingle()
 
   const personalities =
     (profile?.onboarding_data as { goals?: { coachPersonalities?: string[] } } | null)?.goals
       ?.coachPersonalities ?? null
+
+  const thread = await loadAiCoachThreadContext(admin, input.clientId, profile ?? {})
 
   const coachFirstName =
     input.coachFirstName?.trim() || autoCoachFirstName(input.coachId)
@@ -133,9 +142,16 @@ export async function autoReplyUnreadChat(
     name: profile?.name?.trim() || 'there',
     fitnessGoal: profile?.fitness_goal ?? null,
     journeySummary: profile?.journey_summary ?? null,
-    planTitle: plan?.title ?? null,
-    nutritionExcerpt: truncatePlanExcerpt(plan?.nutrition_plan),
-    workoutExcerpt: truncatePlanExcerpt(plan?.workout_plan),
+    planTitle: thread.planTitle,
+    nutritionExcerpt: thread.nutritionExcerpt,
+    workoutExcerpt: thread.workoutExcerpt,
+    dietPreference: thread.dietPreference,
+    injuryNote: thread.injuryNote,
+    allergyNote: thread.allergyNote,
+    purchasedPlanLine: thread.purchasedPlanLine,
+    todayPlan: thread.todayPlan,
+    trackerLine: thread.trackerLine,
+    checkinLine: thread.checkinLine,
     personalities,
     history: chronological.slice(-12),
   })

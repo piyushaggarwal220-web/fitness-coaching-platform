@@ -127,9 +127,7 @@ export function getClientDashboardStatus(params: {
   } else if (profile.plan_delivered) {
     planStatus = 'Delivered — awaiting activation'
   } else if (onboardingComplete) {
-    planStatus = isDigital
-      ? 'Building your customised plan'
-      : 'Your coach is building your plan'
+    planStatus = isDigital ? 'Building your customised plan' : 'Your plan is being prepared'
   } else if (paymentConfirmed) {
     planStatus = 'Complete onboarding to start plan delivery'
   }
@@ -151,10 +149,10 @@ export function getClientDashboardStatus(params: {
         : 'Upload front, side, and back photos to finish onboarding — your personalized diet and workout plan will start being prepared after that.'
       : isDigital
         ? 'Finish onboarding so we can build your customised plan (usually within a few hours). Tracker, Journey, and Coach chat unlock separately if you want them.'
-        : 'Finish onboarding (review & submit) so your coach can prepare your personalized diet and workout plan.'
+        : 'Finish onboarding (review & submit) so your plan can be prepared.'
     nextActionHref = '/onboarding'
   } else if (!coachAssigned && !isDigital) {
-    nextAction = 'Setting up your coach — usually within a few minutes'
+    nextAction = 'Your plan is being prepared.'
     nextActionHref = null
   } else if (!planReady && !profile.plan_delivered) {
     // Coach + countdown card handles this — avoid duplicate next-step CTA
@@ -180,7 +178,7 @@ export function getClientDashboardStatus(params: {
     paymentConfirmed,
     onboardingComplete,
     coachAssigned,
-    coachName: coach?.name?.trim() || (profile.coach_id ? 'Your coach' : null),
+    coachName: coach?.name?.trim().split(' ')[0] || (profile.coach_id ? 'Your coach' : 'Rakshit'),
     planStatus,
     expectedDelivery: formatExpectedDelivery(expectedDeliveryDate),
     nextAction,

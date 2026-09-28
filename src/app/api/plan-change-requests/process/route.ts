@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireApiUser } from '@/lib/api-auth'
-import { processPlanChangeRequest } from '@/lib/plan-change-requests'
+import { processPlanChangeRequest, publishReadyPlanChange } from '@/lib/plan-change-requests'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const maxDuration = 300
@@ -38,5 +38,6 @@ export async function POST(request: Request) {
   // Exclusive claim inside processPlanChangeRequest — duplicate POSTs from
   // submit+refresh must not each insert an AI draft.
   await processPlanChangeRequest(requestId)
+  await publishReadyPlanChange(requestId)
   return NextResponse.json({ ok: true })
 }

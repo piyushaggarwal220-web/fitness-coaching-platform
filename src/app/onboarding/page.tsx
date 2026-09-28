@@ -974,7 +974,7 @@ function renderStep(
           </Field>
           <Field
             label="Describe your goals in detail"
-            hint="Optional but helps your coach and AI plan the right journey — timeline, events, fat loss vs muscle, reverse diet, etc."
+            hint="Optional but helps your coach plan the right journey — timeline, events, fat loss vs muscle, reverse diet, etc."
           >
             <textarea
               value={form.goal_details}

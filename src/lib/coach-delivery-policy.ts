@@ -40,6 +40,17 @@ export function autoCoachFirstName(coachId: string | null | undefined): string {
   return 'your coach'
 }
 
+/** First name shown to a new member. Unnamed new members use Rakshit, the auto-assign coach. */
+export function memberFacingCoachFirstName(
+  coachId: string | null | undefined,
+  coachService?: string | null
+): string {
+  const named = autoCoachFirstName(coachId)
+  if (named !== 'your coach') return named
+  if (coachService === 'ai' || !coachId) return 'Rakshit'
+  return 'your coach'
+}
+
 /** Auto-delivery coaches work first-come, first-served — not by plan tier or task type. */
 export function coachUsesFifoWorkQueue(coachId: string | null | undefined): boolean {
   return isAutoDeliveryCoach(coachId)

@@ -3,6 +3,7 @@ import { isCheckinPendingAutoReply } from '@/lib/checkin-pending-auto-reply'
 import {
   coachRequiresManualPlanDelivery,
   coachUsesFifoWorkQueue,
+  isAutoDeliveryCoach,
   clientRequiresJourneySetup,
   shouldAutoProcessCoachWorkQueue,
 } from '@/lib/coach-delivery-policy'
@@ -221,6 +222,14 @@ export async function getCoachWorkQueue(
   const clientNameById = new Map(
     visibleClients.map((c) => [c.id, c.name || c.email || 'Client'])
   )
+  const aiPlanChangeNames = new Map<string, string>()
+  if (isAutoDeliveryCoach(coachId)) {
+    for (const client of clients ?? []) {
+      if ((client as { coach_service?: string | null }).coach_service !== 'ai') continue
+      if (isTrialClientHiddenFromCoaches(client)) continue
+      aiPlanChangeNames.set(client.id, client.name || client.email || 'Client')
+    }
+  }
   const pendingClientIds = new Set(
     visibleClients
       .filter((c) => !c.plan_delivered && c.onboarding_complete)
@@ -447,8 +456,8 @@ export async function getCoachWorkQueue(
 
   for (const change of planChangeRequests ?? []) {
     if (change.status === 'generating') continue
-    if (!clientNameById.has(change.client_id)) continue
-    const name = clientNameById.get(change.client_id) ?? 'Client'
+    const name = clientNameById.get(change.client_id) ?? aiPlanChangeNames.get(change.client_id)
+    if (!name) continue
     const ready = change.status === 'draft_ready' || change.status === 'in_review'
     tasks.push({
       id: `plan-change-${change.id}`,

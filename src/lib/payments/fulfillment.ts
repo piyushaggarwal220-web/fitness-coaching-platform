@@ -717,18 +717,15 @@ export async function claimPurchaseWithPassword(
         : null),
     })
     if (!plan.isDigital) {
-      // AI coach for new clients — skip "coach assigned" human notification.
-      const service = profilePayload.coach_service
-      if (service !== 'ai') {
-        const { data: coach } = await admin
-          .from('coaches')
-          .select('name')
-          .eq('id', assignResult.coachId)
-          .maybeSingle()
-        if (coach?.name) {
-          const assigned = NotificationTemplates.coachAssigned(coach.name)
-          await sendNotification({ userId, ...assigned })
-        }
+      const { data: coach } = await admin
+        .from('coaches')
+        .select('name')
+        .eq('id', assignResult.coachId)
+        .maybeSingle()
+      const coachName = coach?.name?.trim()
+      if (coachName) {
+        const assigned = NotificationTemplates.coachAssigned(coachName.split(' ')[0] || coachName)
+        await sendNotification({ userId, ...assigned })
       }
     }
   } else {

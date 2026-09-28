@@ -14,8 +14,9 @@ import {
   stillOwnsPlanChangeClaim,
 } from '@/lib/plan-change-policy'
 import { encodePlanMeta } from '@/lib/plan-metadata'
-import { persistAiPlanDraft, updateAiPlanDraft } from '@/lib/plans'
+import { persistAiPlanDraft, updateAiPlanDraft, activatePlan } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 
 export const PLAN_CHANGE_DAILY_LIMIT = 1
@@ -538,4 +539,51 @@ export async function processPlanChangeRequest(requestId: string): Promise<void>
       .eq('status', 'generating')
       .eq('generation_started_at', claimedStartedAt)
   }
+}
+
+/** Send a ready client edit to the live plan. Same path for new and existing clients. */
+export async function publishReadyPlanChange(requestId: string): Promise<{ ok: boolean; detail: string }> {
+  const admin = createAdminClient()
+  const { data: fresh } = await admin
+    .from('plan_change_requests')
+    .select('id, status, draft_plan_id, client_id')
+    .eq('id', requestId)
+    .maybeSingle()
+  if (!fresh?.draft_plan_id) return { ok: false, detail: 'no draft' }
+  if (fresh.status === 'approved' || fresh.status === 'failed') {
+    return { ok: fresh.status === 'approved', detail: fresh.status }
+  }
+
+  const { data: draft } = await admin
+    .from('plans')
+    .select('id, client_id, coach_id, nutrition_plan, workout_plan, delivered_at, active')
+    .eq('id', fresh.draft_plan_id)
+    .maybeSingle()
+  if (!draft) return { ok: false, detail: 'draft missing' }
+  if (draft.active && draft.delivered_at) return { ok: true, detail: 'already delivered' }
+  if (!draft.nutrition_plan?.trim() && !draft.workout_plan?.trim()) {
+    return { ok: false, detail: 'draft empty' }
+  }
+
+  let coachId = (draft.coach_id as string | null) ?? null
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('coach_id')
+    .eq('id', fresh.client_id)
+    .maybeSingle()
+  if (!profile?.coach_id) {
+    const assigned = await autoAssignCoachToClient(fresh.client_id, admin)
+    coachId = assigned.coachId ?? coachId
+  } else if (!coachId) {
+    coachId = profile.coach_id
+  }
+  if (!coachId) return { ok: false, detail: 'no coach' }
+
+  const activated = await activatePlan(admin, {
+    id: draft.id,
+    client_id: draft.client_id,
+    coach_id: draft.coach_id ?? coachId,
+  })
+  if (activated.error) return { ok: false, detail: activated.error }
+  return { ok: true, detail: `published ${draft.id}` }
 }

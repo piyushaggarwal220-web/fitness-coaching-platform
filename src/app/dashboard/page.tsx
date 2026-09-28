@@ -602,15 +602,25 @@ export default function Dashboard() {
               : !generationJob && clientRequiresManualPlanDelivery(profile)
               ? 'Your coach is preparing your personalized plan.'
               : generationJob?.status === 'queued' || generationJob?.status === 'generating'
-              ? 'Your coach is preparing your personalized plan.'
+              ? clientRequiresManualPlanDelivery(profile)
+                ? 'Your coach is preparing your personalized plan.'
+                : 'Your plan is being prepared.'
               : generationJob?.status === 'ready'
-                ? 'Your coach is reviewing your plan and will share it with you soon.'
-                : 'Your coach is working on your plan. Please check back shortly.'}
+                ? clientRequiresManualPlanDelivery(profile)
+                  ? 'Your coach is reviewing your plan and will share it with you soon.'
+                  : 'Your plan is almost ready.'
+                : generationJob?.status === 'failed'
+                  ? 'We hit a snag building your plan. Check back shortly.'
+                : clientRequiresManualPlanDelivery(profile)
+                  ? 'Your coach is working on your plan. Please check back shortly.'
+                  : 'Your plan is being prepared.'}
           </strong>
           <div>
             {isDigitalPlanSlug(purchase?.plan_slug)
               ? 'You’ll get an email when it’s ready, and it will also appear in My Plan (usually within a few hours).'
-              : 'Your plan appears here only after your coach reviews and sends it.'}
+              : clientRequiresManualPlanDelivery(profile)
+                ? 'Your plan appears here only after your coach reviews and sends it.'
+                : 'It usually arrives within 24 hours.'}
           </div>
         </div>
       )}

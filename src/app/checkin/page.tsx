@@ -122,7 +122,7 @@ export default function CheckinPage() {
         const reason = getCheckinUnavailableReason(scheduleStartedAt, 'weekly', rows, new Date());
         setUnavailableReason(
           reason === 'plan_not_delivered'
-            ? 'Your check-in schedule will begin when your coach delivers your first plan.'
+            ? 'Your check-in schedule starts when your first plan arrives.'
             : reason === 'window_closed'
               ? 'This weekly check-in window has closed. You can submit Sunday through Tuesday. Please wait for next week.'
             : reason === 'waiting_mid_week'
@@ -203,10 +203,6 @@ export default function CheckinPage() {
     e.preventDefault();
     const validationError = validateWeeklyCheckinForm(form, photos, { gender: profile?.gender });
     if (validationError) { setError(validationError); return; }
-    if (!profile?.coach_id) {
-      setError('No coach assigned to your account. Contact support before submitting a check-in.');
-      return;
-    }
 
     setSubmitting(true);
     setError('');
@@ -297,18 +293,6 @@ export default function CheckinPage() {
   const devMode = shouldBypassCheckinScheduleClient();
 
   if (loading) return <ClientShell title="Check-In" loading hideBottomNav />;
-
-  if (!profile?.coach_id) {
-    return (
-      <ClientShell title="Check-In" hideBottomNav>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800 }}>{brandTitle('Weekly Check-In')}</h1>
-        <div style={mobileStyles.info}>
-          No coach is assigned to your account yet. Your coach will be assigned shortly.
-        </div>
-        <Button fullWidth onClick={() => router.push('/dashboard')}>Back to dashboard</Button>
-      </ClientShell>
-    );
-  }
 
   if (!available) {
     return (

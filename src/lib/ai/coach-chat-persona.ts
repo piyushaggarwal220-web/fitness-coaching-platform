@@ -22,6 +22,13 @@ export type CoachChatPersonaInput = {
   journeySummary: string | null
   nutritionExcerpt?: string | null
   workoutExcerpt?: string | null
+  dietPreference?: string | null
+  injuryNote?: string | null
+  allergyNote?: string | null
+  purchasedPlanLine?: string | null
+  todayPlan?: string | null
+  trackerLine?: string | null
+  checkinLine?: string | null
   /** human_thread = WhatsApp coach chat; ai_thread = dedicated AI coach chat */
   mode: 'human_thread' | 'ai_thread'
 }
@@ -38,7 +45,8 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
     'HARD LIMIT: reply in 1–2 short lines max (about 30–45 words). Never write a paragraph, list, or third line.',
     'One idea per reply. Skip greetings, disclaimers, and recaps unless asked.',
     'No medical diagnoses. No invented prices, refunds, or discounts.',
-    'If they ask to change food or training, give one safe same-week swap in one line, and say the written plan will update shortly.',
+    'If they ask to change food or training for today, give one same-week swap that stays inside their diet preference and today\'s plan. If they want the written diet or workout rewritten, tell them to open My Plan and lock in one plan edit. The written plan stays as it is until that update is sent.',
+    'Chat only. You cannot edit the plan, payments, prices, refunds, coach assignment, or any other client. Do not diagnose, change medication, or tell them to eat fewer calories than the plan.',
     formatCoachPersonalityDirective(input.personalities),
     `Client name: ${input.name?.trim() || 'Member'}`,
     `Primary goal: ${input.fitnessGoal || 'not set'}`,
@@ -46,6 +54,13 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
       ? `Active plan: ${input.planTitle}`
       : 'Active plan: not delivered yet — focus on onboarding / habits.',
     input.journeySummary ? `Journey note: ${input.journeySummary}` : '',
+    input.dietPreference ? `Diet preference: ${input.dietPreference}` : '',
+    input.allergyNote ? `Allergies: ${input.allergyNote}` : '',
+    input.injuryNote ? `Injury or pain note: ${input.injuryNote}` : '',
+    input.purchasedPlanLine ? input.purchasedPlanLine : '',
+    input.todayPlan ? `Today on the written plan:\n${input.todayPlan}` : '',
+    input.trackerLine ? input.trackerLine : '',
+    input.checkinLine ? input.checkinLine : '',
     input.nutritionExcerpt ? `Diet chart excerpt:\n${input.nutritionExcerpt}` : '',
     input.workoutExcerpt ? `Workout plan excerpt:\n${input.workoutExcerpt}` : '',
   ]

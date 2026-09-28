@@ -8,7 +8,6 @@ import { AiCoachChatThread } from '@/components/chat/AiCoachChatThread'
 import { InstantFeatureLockedPanel } from '@/components/instant/InstantFeatureLockedPanel'
 import { authenticateClient } from '@/lib/onboarding'
 import { canAccessInstantFeature, latestDigitalPlanSlug, purchaseRowsIndicateCoaching, purchaseRowsIndicateDigital } from '@/lib/instant-feature-access'
-import { usesAiCoach } from '@/lib/coach-service'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { createClient } from '@/lib/supabase/client'
 import { isPublicDemoEmail } from '@/lib/public-demo'
@@ -85,13 +84,13 @@ export default function ClientChatPage() {
         return
       }
 
-      if (usesAiCoach(profile)) {
+      if (!demo) {
         setAiMode(true)
         setConnecting(false)
         return
       }
 
-      if (demo || !profile.coach_id) {
+      if (!profile.coach_id) {
         setChatLocked(true)
         setConnecting(false)
         return

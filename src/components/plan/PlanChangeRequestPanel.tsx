@@ -107,7 +107,7 @@ export function PlanChangeRequestPanel() {
       }
       setSuccess(
         data.message ??
-          'Your changes are locked in. Your coach will review your request shortly.'
+          'Your changes are locked in. The updated plan is being written.'
       )
       setRequestText('')
       setAcceptedTerms(false)
@@ -122,15 +122,15 @@ export function PlanChangeRequestPanel() {
   const statusMessage = (() => {
     if (!openRequest) return null
     if (openRequest.status === 'generating') {
-      return 'Your request is locked in. Your coach will review it shortly — we are preparing the update for them.'
+      return 'Your request is locked in. The updated plan is being written and will replace the live plan when it is sent.'
     }
     if (openRequest.status === 'draft_ready' || openRequest.status === 'in_review') {
-      return 'Your coach will review your request shortly. Nothing changes on your live plan until they send an update.'
+      return 'Your update is ready to send. The live plan changes when that version goes out.'
     }
     if (openRequest.status === 'failed') {
       return openRequest.errorMessage
         ? `Request failed: ${openRequest.errorMessage}`
-        : 'Request failed. Contact your coach or try again tomorrow.'
+        : 'Request failed. Try again tomorrow.'
     }
     return null
   })()
@@ -139,8 +139,8 @@ export function PlanChangeRequestPanel() {
     <section style={styles.card}>
       <h2 style={styles.title}>Request a plan edit</h2>
       <p style={styles.lead}>
-        Tell us what to change in your diet and/or workout. Your coach reviews every locked-in
-        request before anything goes live.
+        Tell us what to change in your diet and/or workout. The live plan updates after that
+        version is sent.
       </p>
 
       <div style={styles.terms}>
@@ -157,8 +157,8 @@ export function PlanChangeRequestPanel() {
             chance is used — you cannot send a second list the same day.
           </li>
           <li>
-            Locking in does <strong>not</strong> instantly change your live plan. Your coach reviews
-            the update first, then sends it if approved.
+            Locking in does <strong>not</strong> instantly change your live plan. The new version
+            is sent after it is written.
           </li>
           <li>Vague or incomplete requests may be declined or delayed.</li>
         </ul>

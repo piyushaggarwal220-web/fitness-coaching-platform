@@ -19,6 +19,7 @@ import { coachRequiresManualPlanDelivery, shouldScheduleCheckinAutoReply } from 
 import { invalidateForEvent } from '@/lib/ai/prompt-cache'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/dispatcher'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { parseAdherenceDays } from '@/lib/checkin-adherence-days'
 import { areProgressPhotosOptional } from '@/lib/checkin'
 import type { CheckinType } from '@/types/database'
@@ -170,7 +171,15 @@ export async function POST(request: Request) {
     }
 
     if (!profile.coach_id) {
-      return NextResponse.json({ success: false, error: 'No coach assigned.' }, { status: 400 })
+      const assigned = await autoAssignCoachToClient(user.id)
+      if (assigned.coachId) profile.coach_id = assigned.coachId
+    }
+
+    if (!profile.coach_id) {
+      return NextResponse.json(
+        { success: false, error: 'Check-in could not be opened just now. Try again in a minute.' },
+        { status: 503 }
+      )
     }
 
     if (!profile.onboarding_complete) {
@@ -181,7 +190,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Your check-in schedule will begin when your coach delivers your first plan.',
+          error: 'Your check-in schedule starts when your first plan arrives.',
         },
         { status: 403 }
       )

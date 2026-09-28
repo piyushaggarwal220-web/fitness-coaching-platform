@@ -7,6 +7,7 @@ import {
   type PlanChangeScope,
 } from '@/lib/plan-change-requests'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 
 export async function GET() {
   const auth = await requireApiUser()
@@ -59,12 +60,20 @@ export async function POST(request: Request) {
   if (!profile || (profile.role && profile.role !== 'client')) {
     return NextResponse.json({ error: 'Client profile required.' }, { status: 403 })
   }
-  if (!profile.coach_id) {
-    return NextResponse.json({ error: 'No coach assigned yet.' }, { status: 400 })
+  let coachId = profile.coach_id
+  if (!coachId) {
+    const assigned = await autoAssignCoachToClient(auth.user.id, admin)
+    coachId = assigned.coachId
+  }
+  if (!coachId) {
+    return NextResponse.json(
+      { error: 'Plan edit could not be opened just now. Try again in a minute.' },
+      { status: 503 }
+    )
   }
   if (!profile.plan_delivered) {
     return NextResponse.json(
-      { error: 'You can request edits after your coach delivers your first plan.' },
+      { error: 'You can request edits after your first plan arrives.' },
       { status: 400 }
     )
   }
@@ -96,7 +105,7 @@ export async function POST(request: Request) {
 
   const created = await createLockedPlanChangeRequest({
     clientId: auth.user.id,
-    coachId: profile.coach_id,
+    coachId,
     activePlanId: activePlan.id,
     requestText,
     scope,
