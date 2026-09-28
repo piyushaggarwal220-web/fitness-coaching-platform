@@ -3,14 +3,17 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
 import {
+  ASSISTANT_COACH_LABEL,
   buildNamedCoachSystemPrompt,
+  guardAssistantCoachReply,
 } from '@/lib/ai/coach-chat-persona'
+import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
 import { loadAiCoachThreadContext } from '@/lib/ai/ai-coach-context'
 import { autoCoachFirstName } from '@/lib/coach-delivery-policy'
 import { markConversationRead, sendChatMessage } from '@/lib/coach-chat'
 
 const HUMAN_ONLY =
-  /\b(call me|phone (call|me)|video call|whatsapp call|speak to (you|piyush|rakshit|the coach)|talk to (you|piyush|rakshit|a human|the coach)|real (person|coach|human)|human coach|refund|cancel (my )?(plan|membership|subscription)|chargeback|lawyer|chest pain|suicid|kill myself|self.?harm|emergency|hospitalized)\b/i
+  /\b(refund|cancel (my )?(plan|membership|subscription)|chargeback|lawyer|chest pain|suicid|kill myself|self.?harm|emergency|hospitalized)\b/i
 
 type ChatRow = {
   id: string
@@ -58,6 +61,11 @@ function buildReplyPrompt(input: {
     })
     .join('\n')
 
+  const latestClientText = [...input.history]
+    .reverse()
+    .find((row) => row.sender_type === 'client')?.content
+  const dated = datedPlanRequestDirective(latestClientText ?? '')
+
   return {
     systemPrompt: buildNamedCoachSystemPrompt({
       coachFirstName: input.coachFirstName,
@@ -80,8 +88,9 @@ function buildReplyPrompt(input: {
     userPrompt: [
       'Recent chat:',
       history || '(no prior messages)',
+      dated ? `\n${dated}` : '',
       '',
-      'Write the next coach reply only: 1–2 short lines max (~40 words). No quotes. No hyphen characters. No bullet lists.',
+      `Write the next ${ASSISTANT_COACH_LABEL} reply only: 1–2 short lines max (~40 words). No quotes. No hyphen characters. No bullet lists. Do not book a call.`,
     ].join('\n'),
   }
 }
@@ -165,7 +174,9 @@ export async function autoReplyUnreadChat(
       maxTokens: 95,
       temperature: 0.5,
     })
-    reply = generated.text.replace(/[\u2010-\u2015\u2212-]/g, ' ').replace(/\s{2,}/g, ' ').trim()
+    reply = guardAssistantCoachReply(
+      generated.text.replace(/[\u2010-\u2015\u2212-]/g, ' ')
+    )
   } catch (err) {
     return { status: 'failed', detail: err instanceof Error ? err.message : 'chat generation failed' }
   }
@@ -176,7 +187,10 @@ export async function autoReplyUnreadChat(
     conversationId: input.conversationId,
     senderType: 'coach',
     senderId: input.coachUserId,
-    content: reply,
+    content: reply.startsWith(ASSISTANT_COACH_LABEL)
+      ? reply
+      : `${ASSISTANT_COACH_LABEL}: ${reply}`,
+    notificationTitle: 'Assistant coach replied',
   })
   if (sent.error) return { status: 'failed', detail: sent.error }
 

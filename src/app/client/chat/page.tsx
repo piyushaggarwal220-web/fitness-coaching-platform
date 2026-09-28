@@ -158,7 +158,7 @@ export default function ClientChatPage() {
 
   if (aiMode) {
     return (
-      <ClientShell title="Coach chat" hideBottomNav fullHeight>
+      <ClientShell title="Assistant coach" hideBottomNav fullHeight>
         <AiCoachChatThread />
       </ClientShell>
     )

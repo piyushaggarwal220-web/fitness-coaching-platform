@@ -1,4 +1,4 @@
-export const TERMS_POLICY_VERSION = '2026-08-13'
+export const TERMS_POLICY_VERSION = '2026-09-26'
 export const REFUND_POLICY_VERSION = '2026-08-13'
 
 export type CheckoutPolicyAcknowledgement = {

@@ -17,10 +17,9 @@ import { encodePlanMeta } from '@/lib/plan-metadata'
 import { persistAiPlanDraft, updateAiPlanDraft, activatePlan } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
+import { PLAN_CHANGE_DAILY_LIMIT } from '@/lib/plan-change-limits'
+import { futurePlanChangeRefusal } from '@/lib/ai/dated-plan-request'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
-
-export const PLAN_CHANGE_DAILY_LIMIT = 1
-export const PLAN_CHANGE_MONTHLY_LIMIT = 5
 export const PLAN_CHANGE_MIN_CHARS = 10
 export const PLAN_CHANGE_MAX_CHARS = 4000
 
@@ -75,9 +74,7 @@ export type PlanChangeRequestRow = {
 
 export type PlanChangeQuota = {
   usedToday: number
-  usedThisMonth: number
   remainingToday: number
-  remainingThisMonth: number
   canSubmit: boolean
   openRequest: PlanChangeRequestRow | null
 }
@@ -88,28 +85,16 @@ function startOfLocalDayIso(d = new Date()): string {
   return x.toISOString()
 }
 
-function startOfMonthIso(d = new Date()): string {
-  const x = new Date(d.getFullYear(), d.getMonth(), 1)
-  x.setHours(0, 0, 0, 0)
-  return x.toISOString()
-}
-
 export async function getPlanChangeQuota(clientId: string): Promise<PlanChangeQuota> {
   const admin = createAdminClient()
   const dayStart = startOfLocalDayIso()
-  const monthStart = startOfMonthIso()
 
-  const [{ data: todayRows }, { data: monthRows }, { data: openRows }] = await Promise.all([
+  const [{ data: todayRows }, { data: openRows }] = await Promise.all([
     admin
       .from('plan_change_requests')
       .select('id')
       .eq('client_id', clientId)
       .gte('locked_at', dayStart),
-    admin
-      .from('plan_change_requests')
-      .select('id')
-      .eq('client_id', clientId)
-      .gte('locked_at', monthStart),
     admin
       .from('plan_change_requests')
       .select('*')
@@ -120,17 +105,13 @@ export async function getPlanChangeQuota(clientId: string): Promise<PlanChangeQu
   ])
 
   const usedToday = todayRows?.length ?? 0
-  const usedThisMonth = monthRows?.length ?? 0
   const remainingToday = Math.max(0, PLAN_CHANGE_DAILY_LIMIT - usedToday)
-  const remainingThisMonth = Math.max(0, PLAN_CHANGE_MONTHLY_LIMIT - usedThisMonth)
   const openRequest = (openRows?.[0] as PlanChangeRequestRow | undefined) ?? null
 
   return {
     usedToday,
-    usedThisMonth,
     remainingToday,
-    remainingThisMonth,
-    canSubmit: remainingToday > 0 && remainingThisMonth > 0 && !openRequest,
+    canSubmit: remainingToday > 0 && !openRequest,
     openRequest,
   }
 }
@@ -153,6 +134,11 @@ export async function createLockedPlanChangeRequest(input: {
     return { ok: false, error: 'Choose diet, workout, or both.', status: 400 }
   }
 
+  const futureRefusal = futurePlanChangeRefusal(text)
+  if (futureRefusal) {
+    return { ok: false, error: futureRefusal, status: 400 }
+  }
+
   const quota = await getPlanChangeQuota(input.clientId)
   if (quota.openRequest) {
     return {
@@ -164,14 +150,7 @@ export async function createLockedPlanChangeRequest(input: {
   if (quota.remainingToday <= 0) {
     return {
       ok: false,
-      error: 'You can lock in only 1 change request per day. Include every issue in one request next time.',
-      status: 429,
-    }
-  }
-  if (quota.remainingThisMonth <= 0) {
-    return {
-      ok: false,
-      error: 'Monthly limit reached (5 change requests per month). Try again next month.',
+      error: `You can lock in only ${PLAN_CHANGE_DAILY_LIMIT} change requests per day. Try again tomorrow.`,
       status: 429,
     }
   }

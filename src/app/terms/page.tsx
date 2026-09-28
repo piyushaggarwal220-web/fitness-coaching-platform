@@ -32,7 +32,7 @@ export default function TermsPage() {
         </Link>
         <h1 style={{ marginTop: spacing[4] }}>Terms &amp; Conditions</h1>
         <p>
-          <strong>Version:</strong> {TERMS_POLICY_VERSION} · <strong>Effective:</strong> 13 August 2026
+          <strong>Version:</strong> {TERMS_POLICY_VERSION} · <strong>Effective:</strong> 26 September 2026
         </p>
         <p style={{ color: colors.textSecondary }}>
           This page is the only place LURVOX states refund, money-back, guarantee, upgrade, and

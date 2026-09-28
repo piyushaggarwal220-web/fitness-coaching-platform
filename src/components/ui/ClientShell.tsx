@@ -21,6 +21,7 @@ import { PageTransition } from '@/components/motion/PageTransition'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
 import { PublicDemoBanner } from '@/components/ui/PublicDemoBanner'
+import { AppGuide } from '@/components/help/AppGuide'
 import { useInstantLockState } from '@/hooks/useInstantLockState'
 
 type ClientShellProps = {
@@ -74,6 +75,11 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
   })
 
   useEffect(() => {
+    document.documentElement.classList.add('client-portal')
+    return () => document.documentElement.classList.remove('client-portal')
+  }, [])
+
+  useEffect(() => {
     if (!fullHeight) return
     document.documentElement.classList.add('client-chat-page')
     return () => document.documentElement.classList.remove('client-chat-page')
@@ -107,6 +113,7 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
           )}
         </div>
         {!hideBottomNav && <BottomNav unreadChats={unreadChats} />}
+        <AppGuide aboveNav={!hideBottomNav && !fullHeight} />
         <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={`${BRAND_NAME} coaching hub`} />
       </>
     )
@@ -157,6 +164,7 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
         )}
       </main>
       {!hideBottomNav && !fullHeight && <BottomNav unreadChats={unreadChats} />}
+      <AppGuide aboveNav={!hideBottomNav && !fullHeight} />
       <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={`${BRAND_NAME} coaching hub`} />
     </>
   )

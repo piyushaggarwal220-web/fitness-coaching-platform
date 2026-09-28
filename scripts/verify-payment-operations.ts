@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { isMetaPurchaseEligibleSale } from '../src/lib/analytics/meta-purchase-eligibility'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -32,6 +33,31 @@ assert.match(adminActions, /requireSuperAdminApi/)
 assert.match(adminActions, /idempotencyKey: z\.string\(\)\.uuid\(\)/)
 assert.match(meta, /event_id: eventId/)
 assert.match(meta, /sha256\(normalizedEmail/)
+assert.equal(
+  isMetaPurchaseEligibleSale({ status: 'captured', amountPaise: 49900, razorpayPaymentId: 'pay_abc' }),
+  true
+)
+assert.equal(
+  isMetaPurchaseEligibleSale({ status: 'captured', amountPaise: 49900, razorpayPaymentId: 'manual_admin_1' }),
+  true
+)
+assert.equal(
+  isMetaPurchaseEligibleSale({ status: 'captured', amountPaise: 0, razorpayPaymentId: 'pay_abc' }),
+  false
+)
+assert.equal(
+  isMetaPurchaseEligibleSale({ status: 'redeemed', amountPaise: 49900, razorpayPaymentId: 'pay_abc' }),
+  false
+)
+assert.equal(
+  isMetaPurchaseEligibleSale({ status: 'captured', amountPaise: 169900, razorpayPaymentId: 'test_payment_1' }),
+  false
+)
+assert.match(fulfillment, /queueMetaPurchaseForRecordedSale/)
+assert.match(read('src/lib/payments/exercise-library-addon.ts'), /queueMetaPurchaseForRecordedSale/)
+assert.match(read('src/lib/payments/platform-unlock-addon.ts'), /queueMetaPurchaseForRecordedSale/)
+assert.match(read('src/lib/analytics/meta-purchase-backfill.ts'), /isMetaPurchaseEligibleSale/)
+assert.doesNotMatch(read('src/lib/analytics/meta-purchase-backfill.ts'), /like\('razorpay_payment_id', 'pay_%'\)/)
 assert.match(anthropic, /['"]quota['"]/)
 assert.match(anthropic, /ANTHROPIC_FALLBACK_MODEL/)
 assert.match(openai, /['"]quota['"]/)
@@ -53,6 +79,7 @@ console.log('✓ Claim tokens remain hashed at rest')
 console.log('✓ Webhook handles captured, failed, and refunded events')
 console.log('✓ Destructive admin actions require super-admin role')
 console.log('✓ Meta Purchase uses hashed user data and stable event IDs')
+console.log('✓ Every captured paid sale, including manual payments, is eligible for Meta Purchase')
 console.log('✓ Anthropic rollback path has classified retries and model fallback')
 console.log('✓ OpenAI is the default (and only live) plan provider with classified retries')
 console.log('✓ Results-guarantee policy is disclosed in Terms and server-enforced')

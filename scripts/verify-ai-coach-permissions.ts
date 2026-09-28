@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict'
-import { buildNamedCoachSystemPrompt } from '../src/lib/ai/coach-chat-persona'
+import {
+  ASSISTANT_CALL_REFUSAL,
+  buildNamedCoachSystemPrompt,
+  guardAssistantCoachReply,
+} from '../src/lib/ai/coach-chat-persona'
 import {
   formatCheckinLine,
   formatTodayPlan,
   purchasedPlanLine,
 } from '../src/lib/ai/ai-coach-context'
+import {
+  datedPlanRequestDirective,
+  futurePlanChangeRefusal,
+} from '../src/lib/ai/dated-plan-request'
+import { dietCalorieShiftNotice } from '../src/lib/ai/plan-publish-notice'
+import { PLAN_CHANGE_DAILY_LIMIT } from '../src/lib/plan-change-limits'
 import type { TrackerSnapshot } from '../src/lib/daily-tracker/types'
 
 const aiPrompt = buildNamedCoachSystemPrompt({
@@ -22,6 +32,22 @@ const aiPrompt = buildNamedCoachSystemPrompt({
   mode: 'ai_thread',
 })
 
+assert.match(aiPrompt, /Assistant coach/)
+assert.match(aiPrompt, /cannot set a time/)
+assert.doesNotMatch(aiPrompt, /You are Piyush/)
+assert.doesNotMatch(aiPrompt, /Do not mention AI/)
+assert.equal(
+  guardAssistantCoachReply("I'll call you back at 9:30 PM."),
+  ASSISTANT_CALL_REFUSAL
+)
+assert.equal(
+  guardAssistantCoachReply('Your call is at 9:30 pm today.'),
+  ASSISTANT_CALL_REFUSAL
+)
+assert.equal(
+  guardAssistantCoachReply('Log breakfast, then do the squat session on today’s plan.'),
+  'Log breakfast, then do the squat session on today’s plan.'
+)
 assert.match(aiPrompt, /My Plan/)
 assert.match(aiPrompt, /Fat loss \+ muscle gain/)
 assert.match(aiPrompt, /every week/)
@@ -39,6 +65,8 @@ const humanPrompt = buildNamedCoachSystemPrompt({
   journeySummary: null,
   mode: 'human_thread',
 })
+assert.match(humanPrompt, /Assistant coach/)
+assert.doesNotMatch(humanPrompt, /You are Rakshit/)
 assert.match(humanPrompt, /My Plan/)
 assert.doesNotMatch(humanPrompt, /update shortly/)
 
@@ -135,5 +163,37 @@ assert.doesNotMatch(checkin, /cdn\.example|http/)
 assert.doesNotMatch(purchasedPlanLine('3_months'), /₹/)
 assert.match(purchasedPlanLine('3_months'), /every 14 days/)
 assert.match(purchasedPlanLine('12_months'), /weekly coach phone call/)
+
+const beforeWindow = new Date('2026-09-28T12:00:00+05:30')
+const duringWindow = new Date('2026-10-15T12:00:00+05:30')
+assert.match(
+  futurePlanChangeRefusal('I want a veg diet from 11 to 28 Oct', beforeWindow) ?? '',
+  /11 Oct 2026/
+)
+assert.equal(
+  futurePlanChangeRefusal('I want a veg diet from 11 to 28 Oct', duringWindow),
+  null
+)
+assert.equal(futurePlanChangeRefusal('make it veg from today until 28 Oct', beforeWindow), null)
+assert.match(datedPlanRequestDirective('veg from 11 to 28 oct', beforeWindow) ?? '', /11 Oct 2026/)
+assert.match(aiPrompt, /DATE WINDOW/)
+assert.match(aiPrompt, /crash diet/)
+assert.equal(PLAN_CHANGE_DAILY_LIMIT, 3)
+assert.match(
+  dietCalorieShiftNotice({
+    previousNutrition: 'Calories: 2100\nProtein: 140',
+    nextNutrition: 'Calories: 1800\nProtein: 140',
+    reason: 'plan_edit',
+  }) ?? '',
+  /2100 kcal to 1800 kcal/
+)
+assert.equal(
+  dietCalorieShiftNotice({
+    previousNutrition: 'Calories: 2100',
+    nextNutrition: 'Calories: 2140',
+    reason: 'publish',
+  }),
+  null
+)
 
 console.log('ai coach permissions ok')

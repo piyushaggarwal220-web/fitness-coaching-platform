@@ -422,6 +422,13 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
       lines.push('They uploaded a photo of one normal meal. Stay with foods they wrote above. Do not invent a different cuisine from the photo path.')
     }
   }
+  const mess = data.messMenu
+  if (mess?.text?.trim()) {
+    lines.push(
+      `FIXED MESS MENU for the week of ${mess.weekStart ?? 'this week'} (PG, hostel, or canteen). Build meals ONLY from these foods, plus a small add-on they can buy. Do not replace this menu with a home-cooked chart.`
+    )
+    lines.push(mess.text.trim())
+  }
   if (data.supplements?.current) {
     lines.push(`Current supplements: ${data.supplements.current}`)
   }

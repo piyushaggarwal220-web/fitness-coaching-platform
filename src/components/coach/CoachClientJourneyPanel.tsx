@@ -71,8 +71,8 @@ export function CoachClientJourneyPanel({ clientId }: { clientId: string }) {
   }
 
   const { stats, weeklyEntries, progressPhotos, milestones } = data
-  const latest = weeklyEntries[weeklyEntries.length - 1] ?? null
-  const prior = weeklyEntries.length > 1 ? weeklyEntries[weeklyEntries.length - 2] : null
+  const latest = weeklyEntries[0] ?? null
+  const prior = weeklyEntries[1] ?? null
 
   return (
     <div style={styles.section}>

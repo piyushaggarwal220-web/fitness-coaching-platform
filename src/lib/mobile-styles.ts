@@ -8,7 +8,7 @@ export const MOBILE_BREAKPOINT = 768
 export const mobileStyles = {
   page: {
     minHeight: '100vh',
-    backgroundColor: colors.bgPrimary,
+    backgroundColor: 'transparent',
     padding: `${spacing[3]}px`,
     // Match TopBar height (bar + notch) so the first screen content is never tucked under it.
     paddingTop: `calc(${layout.topBarHeight}px + ${spacing[3]}px + env(safe-area-inset-top, 0px))`,
@@ -17,7 +17,7 @@ export const mobileStyles = {
 
   pageNoNav: {
     minHeight: '100dvh',
-    backgroundColor: colors.bgPrimary,
+    backgroundColor: 'transparent',
     padding: `${spacing[3]}px`,
     paddingTop: `calc(${layout.topBarHeight}px + ${spacing[3]}px + env(safe-area-inset-top, 0px))`,
     paddingBottom: `max(${spacing[3]}px, env(safe-area-inset-bottom))`,

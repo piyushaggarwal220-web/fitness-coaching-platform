@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 const AFTER_PAY =
- 'Answer a few basics → verify email → unlock your plan → personal plan on the platform in 24-48 hours.'
+ 'Join, then we ask about your body, food, and photos so the plan fits you. Your plan is on the platform in 24–48 hours.'
 
 export default async function PlanLandingPage({ params }: PageProps) {
  const { slug } = await params
@@ -110,7 +110,7 @@ export default async function PlanLandingPage({ params }: PageProps) {
  </div>
 
  <a href={`/checkout?plan=${plan.slug}`} style={styles.cta}>
- Start my intake
+ Start coaching
  </a>
  <p style={styles.afterPayLine}>{AFTER_PAY}</p>
  <p style={styles.shopifyHint}>

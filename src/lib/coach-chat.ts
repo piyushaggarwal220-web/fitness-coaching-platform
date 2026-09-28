@@ -406,6 +406,7 @@ export async function sendChatMessage(
     content?: string
     mediaUrl?: string
     mediaDurationSeconds?: number
+    notificationTitle?: string
   }
 ): Promise<{ data: ConversationMessage | null; error: string | null }> {
   const now = new Date().toISOString()
@@ -444,7 +445,7 @@ export async function sendChatMessage(
         await sendNotification({
           userId: conv.client_id,
           type: 'coach_replied',
-          title: 'Your coach replied',
+          title: input.notificationTitle?.trim() || 'Your coach replied',
           body: replyBody,
           actionUrl: '/client/chat',
           metadata: { messageSnippet: replyBody, messageId: data.id, conversationId: input.conversationId },

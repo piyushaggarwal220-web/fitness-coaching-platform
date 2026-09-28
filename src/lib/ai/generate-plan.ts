@@ -846,11 +846,13 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     }
 
     // Force the non-negotiable diet numbers (floor + no large weekly swing) on diet generations.
-    // When the coach gave explicit instructions, keep the model output as-is for coach review.
-    // Retry on violation; on the final attempt keep the best draft so the client still gets a plan
-    // (these flows land as coach-review drafts, not auto-published).
+    // Weekly check-in updates are auto-published, so they always run this check.
+    // Other coach-directed generations stay as written for a human to review.
     const enforcesDiet = validationMode === 'nutrition_focus' || validationMode === 'full'
-    const coachDirected = Boolean(input.coachInstructions?.trim())
+    // Weekly check-in diet updates always get the swing check. Those drafts are
+    // auto-published, and their standing instructions are not a calorie request.
+    const coachDirected =
+      Boolean(input.coachInstructions?.trim()) && input.actionId !== 'review_update_diet'
     if (enforcesDiet && !supportSection && providerMode !== 'mock' && !coachDirected) {
       const repaired = applyDietPlanRepair(plan.nutrition_plan, input.profile)
       plan = { ...plan, nutrition_plan: repaired.plan }

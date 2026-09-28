@@ -3,7 +3,13 @@ import { requireApiUser } from '@/lib/api-auth'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
 import { loadAiCoachThreadContext } from '@/lib/ai/ai-coach-context'
-import { buildNamedCoachSystemPrompt } from '@/lib/ai/coach-chat-persona'
+import {
+  ASSISTANT_COACH_LABEL,
+  buildNamedCoachSystemPrompt,
+  guardAssistantCoachReply,
+} from '@/lib/ai/coach-chat-persona'
+import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
+import { chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
 import { memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
 import { assertInstantFeatureAccess } from '@/lib/instant-feature-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -155,6 +161,24 @@ export async function POST(request: Request) {
     )
   }
 
+  if (chatNeedsHumanCoach({ content: message })) {
+    const { data: heldRow, error: heldError } = await admin
+      .from('ai_coach_messages')
+      .insert({
+        client_id: auth.user.id,
+        role: 'assistant',
+        content:
+          'I can’t handle that in this chat. If this is a medical emergency, contact local emergency services. A refund or a call is not something this chat can agree to.',
+        created_at: new Date().toISOString(),
+      })
+      .select('id, role, content, created_at')
+      .single()
+    if (heldError || !heldRow) {
+      return NextResponse.json({ error: heldError?.message ?? 'Could not save message' }, { status: 500 })
+    }
+    return NextResponse.json({ message: heldRow, coachFirstName })
+  }
+
   const { data: historyRows } = await admin
     .from('ai_coach_messages')
     .select('role, content')
@@ -172,6 +196,7 @@ export async function POST(request: Request) {
 
   const thread = await loadAiCoachThreadContext(admin, auth.user.id, profile)
 
+  const dated = datedPlanRequestDirective(message)
   const systemPrompt = buildNamedCoachSystemPrompt({
     coachFirstName,
     name: profile.name,
@@ -192,7 +217,7 @@ export async function POST(request: Request) {
   })
 
   const transcript = [...earlier.slice(-8), ...history]
-    .map((turn) => `${turn.role === 'user' ? 'Client' : 'Coach'}: ${turn.content}`)
+    .map((turn) => `${turn.role === 'user' ? 'Client' : ASSISTANT_COACH_LABEL}: ${turn.content}`)
     .join('\n')
 
   let replyText = 'I am here. Tell me what you need help with on your plan today.'
@@ -201,16 +226,16 @@ export async function POST(request: Request) {
       systemPrompt,
       userPrompt: [
         transcript || `Client: ${message}`,
+        dated ? `\n${dated}` : '',
         '',
-        'Write the next coach reply only: 1–2 short lines max (~40 words). No quotes. No hyphen characters. No bullet lists.',
+        `Write the next ${ASSISTANT_COACH_LABEL} reply only: 1–2 short lines max (~40 words). No quotes. No hyphen characters. No bullet lists. Do not book a call.`,
       ].join('\n'),
       model: MODELS.GPT_LUNA,
       maxTokens: 95,
       temperature: 0.6,
     })
     replyText =
-      result.text.replace(/[\u2010-\u2015\u2212-]/g, ' ').replace(/\s{2,}/g, ' ').trim() ||
-      replyText
+      guardAssistantCoachReply(result.text.replace(/[\u2010-\u2015\u2212-]/g, ' ')) || replyText
   } catch {
     replyText =
       'I could not reply just now. Try again in a moment — or open your plan and stick to today\'s workouts and meals.'

@@ -11,6 +11,7 @@ import {
   Pill,
 } from 'lucide-react';
 import { PlanChangeRequestPanel } from '@/components/plan/PlanChangeRequestPanel';
+import { MessMenuPanel } from '@/components/plan/MessMenuPanel';
 import { ClientShell } from '@/components/ui/ClientShell';
 import { AccordionItem } from '@/components/ui/Accordion';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -320,6 +321,7 @@ export default function ClientPlanPage() {
         </Link>
       ))}
 
+      {!isDigitalPlan && <MessMenuPanel />}
       {!isDigitalPlan && <PlanChangeRequestPanel />}
     </ClientShell>
   );

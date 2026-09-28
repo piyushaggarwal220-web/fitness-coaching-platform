@@ -66,7 +66,8 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
   {
     title: '6. Coaching operations we control completely',
     paragraphs: [
-      'We assign coaches as we wish. We may use human coaches, AI drafting tools, templates, and hybrid workflows. You are not entitled to a specific named coach, response speed, call length, call frequency, or writing style.',
+      'We assign coaches as we wish. We may use human coaches, AI drafting tools, templates, and hybrid workflows. You are not entitled to a specific named coach, response speed, call length, call frequency, or writing style. Purchases on or after 21 September 2026 do not include a coach phone call. Coaching for those purchases is in the app: workout, diet, chat, and check-ins. A weekly phone call continues only for Athletic Body clients who already had that inclusion before 21 September 2026. Checkout, plan pages, and ads must not offer a phone call on a new purchase.',
+      'The first workout and diet are prepared from the onboarding answers you submit, including schedule, equipment, food budget, and injuries. Calories are calculated from your details. Disliking that first target, or asking for changes to movements that conflict with injuries you already reported, is handled by revising the plan. Revision is the remedy. It is not a refund.',
       'Chat timers, “working hours”, and SLA-like UI elements are operational targets, not warranties. Outside 9:00 AM–6:00 PM India time (or any hours we set later), responses may pause indefinitely.',
       'We may change diet protein targets, calories, exercise selection, and check-in rules based on our coaching philosophy, including lower protein intakes when we decide that is appropriate.',
       'Plan updates may be weekly, fortnightly, skipped, batched, delayed, or cancelled for operational reasons, cadence rules, holidays, staff shortages, or your non-adherence.',

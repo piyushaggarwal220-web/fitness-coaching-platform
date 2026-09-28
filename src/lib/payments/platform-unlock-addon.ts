@@ -1,3 +1,4 @@
+import { queueMetaPurchaseForRecordedSale } from '@/lib/analytics/meta-purchase-dispatch'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import {
@@ -52,6 +53,7 @@ export async function fulfillPlatformUnlockAddon(input: {
 
   if (existing?.id) {
     await admin.from('profiles').update(patch).eq('id', input.userId)
+    queueMetaPurchaseForRecordedSale(existing.id as string)
     return { purchaseId: existing.id as string, alreadyRecorded: true }
   }
 
@@ -97,5 +99,6 @@ export async function fulfillPlatformUnlockAddon(input: {
     throw new Error(profileError.message || 'Failed to unlock platform feature')
   }
 
+  queueMetaPurchaseForRecordedSale(inserted.id as string)
   return { purchaseId: inserted.id as string, alreadyRecorded: false }
 }

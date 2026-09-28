@@ -143,7 +143,7 @@ export async function activatePlan(
 
   const { data: fullPlan, error: planError } = await supabase
     .from('plans')
-    .select('id, title, coach_notes, phase')
+    .select('id, title, coach_notes, phase, nutrition_plan')
     .eq('id', plan.id)
     .maybeSingle()
 
@@ -195,6 +195,23 @@ export async function activatePlan(
   // Always normalize draft-looking titles on deliver so bulk cleanups cannot
   // mistake a coach-published plan for an unfinished AI draft again.
   const publishedTitle = formatPublishedPlanTitle(fullPlan, isUpdate)
+
+  const { data: previousActive } = await supabase
+    .from('plans')
+    .select('nutrition_plan')
+    .eq('client_id', plan.client_id)
+    .eq('active', true)
+    .neq('id', plan.id)
+    .limit(1)
+    .maybeSingle()
+
+  const { data: lockedEdit } = await supabase
+    .from('plan_change_requests')
+    .select('id')
+    .eq('draft_plan_id', plan.id)
+    .in('status', ['generating', 'draft_ready', 'in_review'])
+    .limit(1)
+    .maybeSingle()
 
   const { error: deactivateError } = await supabase
     .from('plans')
@@ -302,6 +319,16 @@ export async function activatePlan(
     }
   } catch (err) {
     console.error('[activatePlan] tracker refresh failed', err)
+  }
+
+  if (isUpdate) {
+    const { notifyDietCalorieShift } = await import('@/lib/ai/plan-publish-notice')
+    await notifyDietCalorieShift(supabase, {
+      clientId: plan.client_id,
+      previousNutrition: previousActive?.nutrition_plan,
+      nextNutrition: fullPlan.nutrition_plan,
+      reason: lockedEdit ? 'plan_edit' : meta.checkinId ? 'checkin' : 'publish',
+    })
   }
 
   // Weekly calls are booked from Home by grandfathered Athletic Body clients only.

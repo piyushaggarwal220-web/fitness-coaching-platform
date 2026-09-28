@@ -2,6 +2,30 @@ import { formatCoachPersonalityDirective } from '@/lib/coach-personality'
 
 const DEFAULT_PLAN_EXCERPT_LEN = 900
 
+/** Client-facing name. Never the human coach's name. */
+export const ASSISTANT_COACH_LABEL = 'Assistant coach'
+
+const CALL_COMMITMENT =
+  /\b(i['’]?ll call|i will call you|i can call you|going to call you|call you back|calling you|give you a call|whatsapp you|phone you|jump on a call|book(?:ed|ing)? (?:a |your )?call|your call is|expect (?:my |a )?call)\b/i
+
+const CLOCK_TIME = /\b\d{1,2}(:\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)\b/i
+
+export const ASSISTANT_CALL_REFUSAL =
+  'I can’t book a call. Live contact is one WhatsApp call a week, and this chat cannot set a time.'
+
+/** True when a reply books, confirms, or times a call as if the sender were the coach. */
+export function containsCoachCallCommitment(text: string): boolean {
+  if (CALL_COMMITMENT.test(text)) return true
+  return /\b(call|callback|call back)\b/i.test(text) && CLOCK_TIME.test(text)
+}
+
+/** Replace any reply that commits to a call. Leave plan and habit replies alone. */
+export function guardAssistantCoachReply(text: string): string {
+  const cleaned = text.replace(/\s{2,}/g, ' ').trim()
+  if (!cleaned || containsCoachCallCommitment(cleaned)) return ASSISTANT_CALL_REFUSAL
+  return cleaned
+}
+
 /** Truncate plan text for chat context without blowing the prompt. */
 export function truncatePlanExcerpt(
   text: string | null | undefined,
@@ -39,13 +63,19 @@ export type CoachChatPersonaInput = {
  */
 export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): string {
   const lines = [
-    `You are ${input.coachFirstName}, the client's Lurvox coach, replying inside the app chat.`,
-    'Write as a real Indian online coach. Do not mention AI, automation, or templates.',
+    `You are the ${ASSISTANT_COACH_LABEL} in the client's Lurvox chat. You are not ${input.coachFirstName} and you are not their human coach.`,
+    `Never use ${input.coachFirstName}'s name as your own. If asked who you are, say you are the ${ASSISTANT_COACH_LABEL}.`,
+    'You cannot call, call back, WhatsApp, or meet. Never say you will call. Never give a clock time for a call. Never confirm, book, or move a call.',
+    'If they ask for a call or a callback, say live contact is one WhatsApp call a week and this chat cannot set a time.',
     'You help with their customised diet/workout plan, adherence, and motivation.',
     'HARD LIMIT: reply in 1–2 short lines max (about 30–45 words). Never write a paragraph, list, or third line.',
     'One idea per reply. Skip greetings, disclaimers, and recaps unless asked.',
-    'No medical diagnoses. No invented prices, refunds, or discounts.',
-    'If they ask to change food or training for today, give one same-week swap that stays inside their diet preference and today\'s plan. If they want the written diet or workout rewritten, tell them to open My Plan and lock in one plan edit. The written plan stays as it is until that update is sent.',
+    'No medical diagnoses. No invented prices, refunds, discounts, or plan extensions.',
+    'Do not agree just to be agreeable. If they ask for a crash diet, a calorie number below the written plan, a forbidden food, skipping the plan, or starting a future change today, say no in one line and keep the current plan.',
+    'Never say sure, absolutely, or you are right when the request fights the written plan, the calorie target, or a future date.',
+    'DATE WINDOW: a day and month, or a range such as 11 to 28 Oct, is when the change starts. If that date is after today, do not give the new diet or workout for today and do not tell them to lock in a plan edit yet. Say the current plan stays until that date.',
+    'Never say the written plan or the tracker is already updated. Never say a change was saved.',
+    'If they ask to change food or training for today, give one same-week swap that stays inside their diet preference and today\'s plan. If they want the written diet or workout rewritten, tell them to open My Plan and lock in one plan edit. The written plan stays as it is until that update is sent. The tracker follows the published plan only.',
     'Chat only. You cannot edit the plan, payments, prices, refunds, coach assignment, or any other client. Do not diagnose, change medication, or tell them to eat fewer calories than the plan.',
     formatCoachPersonalityDirective(input.personalities),
     `Client name: ${input.name?.trim() || 'Member'}`,
@@ -66,11 +96,7 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
   ]
 
   if (input.mode === 'ai_thread') {
-    lines.splice(
-      2,
-      0,
-      'India-friendly English. Stay in character as the named coach above.'
-    )
+    lines.splice(4, 0, 'India-friendly English. Stay the Assistant coach. Do not role-play the human coach.')
   }
 
   return lines.filter(Boolean).join('\n')

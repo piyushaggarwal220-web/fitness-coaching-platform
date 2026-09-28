@@ -169,7 +169,7 @@ export type OnboardingData = {
     snacks?: string | null
     /** rice | roti | both */
     staple?: string | null
-    /** self | family | tiffin | eating_out | mix */
+    /** self | family | tiffin | pg_hostel | eating_out | mix */
     whoCooks?: string | null
     /** Days per week they eat from a tiffin, canteen, or restaurant. */
     eatOutDays?: string | null
@@ -186,6 +186,13 @@ export type OnboardingData = {
       dinner?: string | null
       snacks?: string | null
     }
+  }
+  /** This week's fixed PG or hostel mess menu, written or photographed by the client. */
+  messMenu?: {
+    weekStart?: string | null
+    text?: string | null
+    photoPath?: string | null
+    updatedAt?: string | null
   }
   supplements?: {
     current?: string | null

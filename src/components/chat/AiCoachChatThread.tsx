@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { ASSISTANT_COACH_LABEL } from '@/lib/ai/coach-chat-persona'
 import { colors, radius, spacing } from '@/lib/design-tokens'
 
 type Msg = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string }
@@ -11,7 +12,6 @@ export function AiCoachChatThread() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
-  const [coachFirstName, setCoachFirstName] = useState('your coach')
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -30,9 +30,6 @@ export function AiCoachChatThread() {
         }
         if (!active) return
         setMessages((data?.messages as Msg[]) ?? [])
-        if (typeof data?.coachFirstName === 'string' && data.coachFirstName.trim()) {
-          setCoachFirstName(data.coachFirstName.trim())
-        }
         setLoading(false)
       } catch {
         if (!active) return
@@ -70,9 +67,6 @@ export function AiCoachChatThread() {
         setSending(false)
         return
       }
-      if (typeof data?.coachFirstName === 'string' && data.coachFirstName.trim()) {
-        setCoachFirstName(data.coachFirstName.trim())
-      }
       if (data?.message) {
         setMessages((prev) => [...prev, data.message as Msg])
       }
@@ -82,8 +76,6 @@ export function AiCoachChatThread() {
       setSending(false)
     }
   }
-
-  const named = coachFirstName !== 'your coach'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
@@ -95,20 +87,20 @@ export function AiCoachChatThread() {
         }}
       >
         <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>
-          {named ? coachFirstName : 'Coach'}
+          {ASSISTANT_COACH_LABEL}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
-          {named ? `Chat with ${coachFirstName}` : 'Coach chat'}
+          Not your coach. This chat cannot book a call. Live contact is one WhatsApp call a week.
         </p>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}>
         {loading && (
-          <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Loading coach chat…</p>
+          <p style={{ margin: 0, color: colors.textMuted, fontSize: 14 }}>Loading Assistant coach…</p>
         )}
         {!loading && messages.length === 0 && (
           <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>
-            Ask {named ? coachFirstName : 'your coach'} about your plan, meals, workouts, or what to do
-            today. Replies match the coaching styles you picked in onboarding.
+            Ask the Assistant coach about your plan, meals, workouts, or what to do today. Replies
+            match the coaching styles you picked in onboarding. A call time in this chat is not a booking.
           </p>
         )}
         {messages.map((msg, index) => {
@@ -128,13 +120,18 @@ export function AiCoachChatThread() {
                 whiteSpace: 'pre-wrap',
               }}
             >
+              {!mine && (
+                <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted }}>
+                  {ASSISTANT_COACH_LABEL}
+                </p>
+              )}
               {msg.content}
             </div>
           )
         })}
         {sending && (
           <p style={{ margin: 0, color: colors.textMuted, fontSize: 13 }}>
-            {named ? `${coachFirstName} is typing…` : 'Coach is typing…'}
+            {ASSISTANT_COACH_LABEL} is typing…
           </p>
         )}
         <div ref={bottomRef} />
@@ -162,7 +159,7 @@ export function AiCoachChatThread() {
               void send()
             }
           }}
-          placeholder={named ? `Message ${coachFirstName}…` : 'Message your coach…'}
+          placeholder="Message Assistant coach…"
           style={{
             flex: 1,
             minHeight: 44,

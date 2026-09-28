@@ -2,15 +2,14 @@
 
 import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import { colors, radius, spacing } from '@/lib/design-tokens'
+import { PLAN_CHANGE_DAILY_LIMIT } from '@/lib/plan-change-limits'
 import { readApiJson } from '@/lib/read-api-json'
 
 type Scope = 'diet' | 'workout' | 'both'
 
 type QuotaState = {
   usedToday: number
-  usedThisMonth: number
   remainingToday: number
-  remainingThisMonth: number
   canSubmit: boolean
 }
 
@@ -147,14 +146,11 @@ export function PlanChangeRequestPanel() {
         <p style={styles.termsTitle}>Terms for plan changes</p>
         <ul style={styles.termsList}>
           <li>
-            You can lock in plan changes up to <strong>5 times per month</strong>.
+            You can lock in <strong>{PLAN_CHANGE_DAILY_LIMIT} plan changes per day</strong>. The
+            next day the count resets.
           </li>
           <li>
-            You can lock in only <strong>1 change request per day</strong>.
-          </li>
-          <li>
-            Put <strong>all issues in one request</strong>. After you lock in, that day&apos;s
-            chance is used — you cannot send a second list the same day.
+            One change is written at a time. After it is sent, you can use another try the same day.
           </li>
           <li>
             Locking in does <strong>not</strong> instantly change your live plan. The new version
@@ -168,8 +164,7 @@ export function PlanChangeRequestPanel() {
         <p style={styles.muted}>Loading limits…</p>
       ) : (
         <p style={styles.muted}>
-          Remaining today: {quota?.remainingToday ?? 0}/1 · Remaining this month:{' '}
-          {quota?.remainingThisMonth ?? 0}/5
+          Remaining today: {quota?.remainingToday ?? 0}/{PLAN_CHANGE_DAILY_LIMIT}
         </p>
       )}
 

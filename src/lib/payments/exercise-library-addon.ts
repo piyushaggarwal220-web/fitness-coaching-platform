@@ -1,3 +1,4 @@
+import { queueMetaPurchaseForRecordedSale } from '@/lib/analytics/meta-purchase-dispatch'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import {
@@ -42,6 +43,7 @@ export async function fulfillExerciseLibraryAddon(input: {
       .from('profiles')
       .update({ exercise_library_entitled: true, updated_at: new Date().toISOString() })
       .eq('id', input.userId)
+    queueMetaPurchaseForRecordedSale(existing.id as string)
     return { purchaseId: existing.id as string, alreadyRecorded: true }
   }
 
@@ -83,5 +85,6 @@ export async function fulfillExerciseLibraryAddon(input: {
     throw new Error(profileError.message || 'Failed to unlock exercise library')
   }
 
+  queueMetaPurchaseForRecordedSale(inserted.id as string)
   return { purchaseId: inserted.id as string, alreadyRecorded: false }
 }

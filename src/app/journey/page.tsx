@@ -73,8 +73,8 @@ export default function JourneyPage() {
   }
 
   const { stats, milestones, weeklyEntries, weightHistory, progressPhotos, coachComments, recentWorkouts, measurements } = data
-  const latest = weeklyEntries[weeklyEntries.length - 1] ?? null
-  const prior = weeklyEntries.length > 1 ? weeklyEntries[weeklyEntries.length - 2] : null
+  const latest = weeklyEntries[0] ?? null
+  const prior = weeklyEntries[1] ?? null
 
   return (
     <InstantFeatureGate feature="journey" title="Journey">

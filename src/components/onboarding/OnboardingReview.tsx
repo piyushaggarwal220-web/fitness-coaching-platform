@@ -1,5 +1,5 @@
 import type { OnboardingFormData } from '@/types/database'
-import { buildReviewSections, type SavedPhotoUrls } from '@/lib/onboarding'
+import { askedReviewSections, reviewEditStep, type SavedPhotoUrls } from '@/lib/onboarding'
 import { onboardingStyles as s } from './styles'
 
 type OnboardingReviewProps = {
@@ -10,21 +10,6 @@ type OnboardingReviewProps = {
   onTermsChange: (accepted: boolean) => void
 }
 
-/** Map review section titles to the wizard step that contains those fields. */
-const SECTION_EDIT_STEPS: Record<string, number> = {
-  // Name/age are on 0; gender, height, weight, and tape (incl. biceps) are on 1.
-  'Basic Information': 1,
-  Goals: 2,
-  Lifestyle: 4,
-  Training: 7,
-  Medical: 11,
-  Diet: 13,
-  'Eating pattern': 17,
-  'Meal timings': 19,
-  Supplements: 20,
-  'Progress Photos': 21,
-}
-
 export function OnboardingReview({
   form,
   photoUrls,
@@ -32,7 +17,7 @@ export function OnboardingReview({
   termsAccepted,
   onTermsChange,
 }: OnboardingReviewProps) {
-  const sections = buildReviewSections(form, photoUrls)
+  const sections = askedReviewSections(form, photoUrls)
 
   return (
     <div>
@@ -53,7 +38,7 @@ export function OnboardingReview({
           <button
             type="button"
             style={s.editLink}
-            onClick={() => onEditSection(SECTION_EDIT_STEPS[section.title] ?? 0)}
+            onClick={() => onEditSection(reviewEditStep(section.items))}
           >
             Edit
           </button>

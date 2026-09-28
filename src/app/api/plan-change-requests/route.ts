@@ -17,9 +17,7 @@ export async function GET() {
   return NextResponse.json({
     quota: {
       usedToday: quota.usedToday,
-      usedThisMonth: quota.usedThisMonth,
       remainingToday: quota.remainingToday,
-      remainingThisMonth: quota.remainingThisMonth,
       canSubmit: quota.canSubmit,
     },
     openRequest: quota.openRequest

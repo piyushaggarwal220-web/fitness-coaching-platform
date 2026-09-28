@@ -393,6 +393,7 @@ export const WHO_COOKS_OPTIONS = [
   { value: 'self', label: 'I cook' },
   { value: 'family', label: 'Family cooks' },
   { value: 'tiffin', label: 'Tiffin or canteen' },
+  { value: 'pg_hostel', label: 'PG or hostel mess' },
   { value: 'eating_out', label: 'Mostly eating out' },
   { value: 'mix', label: 'A mix' },
 ] as const
@@ -1663,6 +1664,117 @@ export function buildReviewSections(
       ],
     },
   ]
+}
+
+/** Which intake screen actually asks each review label. Review hides labels whose step is not in the wizard. */
+export const REVIEW_LABEL_STEP: Record<string, number> = {
+  Name: 0,
+  Age: 0,
+  Gender: 1,
+  Height: 1,
+  Weight: 1,
+  Chest: 1,
+  Thigh: 1,
+  'Belly (navel)': 1,
+  'Left bicep (flexed)': 1,
+  'Right bicep (flexed)': 1,
+  Goals: 2,
+  'Starting body type': 2,
+  'Target weight': 3,
+  Deadline: 3,
+  'Biggest struggle': 3,
+  'Goal details': 2,
+  Occupation: 4,
+  'Work / school schedule': 4,
+  'Activity level': 4,
+  'Daily steps': 5,
+  Sleep: 5,
+  Stress: 6,
+  'Water intake': 6,
+  'Training + diet push': 6,
+  Location: 7,
+  Experience: 7,
+  'Training duration': 7,
+  'Days per week': 8,
+  'Training days': 8,
+  Duration: 8,
+  'Preferred time': 8,
+  Equipment: 9,
+  'Gym stations': 9,
+  'Heaviest dumbbells': 9,
+  'Machines to avoid': 9,
+  'Unnamed gym equipment': 9,
+  'Favorite exercises': 10,
+  'Exercises disliked': 10,
+  Squats: 10,
+  'Push-ups': 10,
+  'Pull-ups': 10,
+  'Recent program': 10,
+  Injuries: 11,
+  'Medical conditions': 11,
+  'Pain during exercise': 12,
+  Medications: 12,
+  Acne: 11,
+  'Hair loss': 11,
+  'Sexual health': 11,
+  'Diet type': 13,
+  'Meal variety': 13,
+  'Egg days/week': 14,
+  'Egg days': 14,
+  'Chicken days/week': 14,
+  'Chicken days': 14,
+  'Fish days/week': 14,
+  'Fish days': 14,
+  'Whey protein': 14,
+  'Food allergies': 15,
+  'Foods disliked': 15,
+  'Favorite foods': 16,
+  'Previous diets that failed': 15,
+  'Monthly food budget': 16,
+  'Cooking ability': 16,
+  'Diet notes / exceptions': 14,
+  Breakfast: 17,
+  Lunch: 17,
+  Dinner: 17,
+  Snacks: 17,
+  Staple: 18,
+  'Who cooks': 18,
+  'Eat out / tiffin days': 18,
+  'Morning drink': 18,
+  'Shared family dinner': 18,
+  'Meal photo': 18,
+  'Breakfast time': 19,
+  'Lunch time': 19,
+  'Dinner time': 19,
+  'Snack time': 19,
+  'Current supplements': 20,
+  Front: 21,
+  Side: 21,
+  Back: 21,
+}
+
+/** Review rows the client was actually asked. Unasked rows stay off the screen. */
+export function askedReviewSections(
+  form: OnboardingFormData,
+  photoUrls: SavedPhotoUrls
+): ReviewSection[] {
+  const asked = new Set(getOnboardingWizardSteps(form))
+  return buildReviewSections(form, photoUrls)
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        const step = REVIEW_LABEL_STEP[item.label]
+        return step !== undefined && asked.has(step)
+      }),
+    }))
+    .filter((section) => section.items.length > 0)
+}
+
+export function reviewEditStep(items: { label: string }[]): number {
+  const steps = items
+    .map((item) => REVIEW_LABEL_STEP[item.label])
+    .filter((step): step is number => step !== undefined)
+  return steps.length > 0 ? Math.min(...steps) : 0
 }
 
 async function uploadOnboardingPhotoViaApi(file: File, label: string): Promise<string> {

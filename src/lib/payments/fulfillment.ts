@@ -3,6 +3,7 @@ import { assignCoachToClient } from '@/lib/admin/assign-coach'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { sendNotification, NotificationTemplates } from '@/lib/notifications/service'
 import { findAuthUserIdByEmail } from '@/lib/payments/auth-user'
+import { queueMetaPurchaseForRecordedSale } from '@/lib/analytics/meta-purchase-dispatch'
 import { logPurchaseStep } from '@/lib/payments/purchase-flow-log'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasAccessSourceColumn } from '@/lib/db/profile-columns'
@@ -168,6 +169,11 @@ export async function recordCapturedPayment(
   const addonTotalPaise =
     addonIds.length > 0 ? checkoutAddonsPaise(addonIds) : (input.supplementAddonPaise ?? 0)
 
+  const release = <T extends { purchaseId: string }>(result: T): T => {
+    queueMetaPurchaseForRecordedSale(result.purchaseId)
+    return result
+  }
+
   logPurchaseStep('payment_record_started', {
     email,
     paymentId: input.razorpayPaymentId,
@@ -191,7 +197,7 @@ export async function recordCapturedPayment(
       purchaseId: existingPurchase.id,
       email: existingPurchase.customer_email,
     })
-    return {
+    return release({
       purchaseId: existingPurchase.id,
       claimToken: null,
       alreadyClaimed: true,
@@ -199,7 +205,7 @@ export async function recordCapturedPayment(
       customerName: existingPurchase.customer_name,
       planSlug: existingPurchase.plan_slug,
       razorpayPaymentId: existingPurchase.razorpay_payment_id,
-    }
+    })
   }
 
   const tokenStillValid =
@@ -217,7 +223,7 @@ export async function recordCapturedPayment(
       })
     }
 
-    return {
+    return release({
       purchaseId: existingPurchase.id,
       claimToken: null,
       alreadyClaimed: false,
@@ -225,7 +231,7 @@ export async function recordCapturedPayment(
       customerName: existingPurchase.customer_name || name || null,
       planSlug: existingPurchase.plan_slug,
       razorpayPaymentId: existingPurchase.razorpay_payment_id,
-    }
+    })
   }
 
   const token = createClaimToken()
@@ -272,7 +278,7 @@ export async function recordCapturedPayment(
       refreshed: true,
     })
 
-    return {
+    return release({
       purchaseId: (updated as Purchase).id,
       claimToken: token.raw,
       alreadyClaimed: false,
@@ -280,7 +286,7 @@ export async function recordCapturedPayment(
       customerName: (updated as Purchase).customer_name,
       planSlug: (updated as Purchase).plan_slug,
       razorpayPaymentId: (updated as Purchase).razorpay_payment_id,
-    }
+    })
   }
 
   const { data: purchase, error: insertError } = await admin
@@ -323,7 +329,7 @@ export async function recordCapturedPayment(
     if (raced) {
       const racedPurchase = raced as PurchaseRow
       if (isClaimed(racedPurchase)) {
-        return {
+        return release({
           purchaseId: racedPurchase.id,
           claimToken: null,
           alreadyClaimed: true,
@@ -331,7 +337,7 @@ export async function recordCapturedPayment(
           customerName: racedPurchase.customer_name,
           planSlug: racedPurchase.plan_slug,
           razorpayPaymentId: racedPurchase.razorpay_payment_id,
-        }
+        })
       }
 
       const racedTokenValid =
@@ -341,7 +347,7 @@ export async function recordCapturedPayment(
 
       if (racedTokenValid) {
         // Keep the original claim link alive after verify/webhook race.
-        return {
+        return release({
           purchaseId: racedPurchase.id,
           claimToken: null,
           alreadyClaimed: false,
@@ -349,7 +355,7 @@ export async function recordCapturedPayment(
           customerName: racedPurchase.customer_name || name || null,
           planSlug: racedPurchase.plan_slug,
           razorpayPaymentId: racedPurchase.razorpay_payment_id,
-        }
+        })
       }
 
       const refreshToken = createClaimToken()
@@ -369,7 +375,7 @@ export async function recordCapturedPayment(
         throw new Error(updateError?.message ?? 'Failed to store purchase after race')
       }
 
-      return {
+      return release({
         purchaseId: (updated as Purchase).id,
         claimToken: refreshToken.raw,
         alreadyClaimed: false,
@@ -377,7 +383,7 @@ export async function recordCapturedPayment(
         customerName: (updated as Purchase).customer_name,
         planSlug: (updated as Purchase).plan_slug,
         razorpayPaymentId: (updated as Purchase).razorpay_payment_id,
-      }
+      })
     }
 
     logPurchaseStep('payment_record_failed', { email, error: insertError?.message ?? 'unknown' })
@@ -386,7 +392,7 @@ export async function recordCapturedPayment(
 
   logPurchaseStep('payment_recorded', { purchaseId: (purchase as Purchase).id })
 
-  return {
+  return release({
     purchaseId: (purchase as Purchase).id,
     claimToken: token.raw,
     alreadyClaimed: false,
@@ -394,7 +400,7 @@ export async function recordCapturedPayment(
     customerName: (purchase as Purchase).customer_name,
     planSlug: (purchase as Purchase).plan_slug,
     razorpayPaymentId: (purchase as Purchase).razorpay_payment_id,
-  }
+  })
 }
 
 export async function lookupClaimablePurchase(input: {
