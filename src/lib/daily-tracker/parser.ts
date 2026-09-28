@@ -1701,6 +1701,27 @@ export function planContentSignature(plan: Pick<
   ].join('\n')
 }
 
+/** True when today's stored tracker was built from a different plan than the one just loaded. */
+export function trackerSnapshotsDiverged(
+  current: Pick<
+    TrackerSnapshot,
+    'planId' | 'planVersion' | 'planContentSignature' | 'planUpdatedAt' | 'parserVersion'
+  > | null | undefined,
+  next: Pick<
+    TrackerSnapshot,
+    'planId' | 'planVersion' | 'planContentSignature' | 'planUpdatedAt' | 'parserVersion'
+  >
+): boolean {
+  if (!current) return true
+  return (
+    current.planId !== next.planId ||
+    current.planVersion !== next.planVersion ||
+    (current.planContentSignature ?? '') !== (next.planContentSignature ?? '') ||
+    (current.planUpdatedAt ?? '') !== (next.planUpdatedAt ?? '') ||
+    (current.parserVersion ?? 0) !== (next.parserVersion ?? 0)
+  )
+}
+
 /** Build today's tracker template from the active plan — no manual setup. */
 export function buildTrackerSnapshot(
   plan: Plan,

@@ -6,6 +6,8 @@ const DRAFT_PREFIX = 'lurvox:tracker-draft:'
 export type TrackerDraft = {
   dayId: string
   completion: TrackerCompletion
+  /** Plan text the draft was written against. A newer plan ignores this draft. */
+  planContentSignature?: string | null
   updatedAt: string
 }
 
@@ -26,12 +28,17 @@ export function readTrackerDraft(dayId: string): TrackerDraft | null {
   }
 }
 
-export function writeTrackerDraft(dayId: string, completion: TrackerCompletion): void {
+export function writeTrackerDraft(
+  dayId: string,
+  completion: TrackerCompletion,
+  planContentSignature?: string | null
+): void {
   if (typeof window === 'undefined') return
   try {
     const draft: TrackerDraft = {
       dayId,
       completion,
+      planContentSignature: planContentSignature ?? null,
       updatedAt: new Date().toISOString(),
     }
     window.localStorage.setItem(storageKey(dayId), JSON.stringify(draft))

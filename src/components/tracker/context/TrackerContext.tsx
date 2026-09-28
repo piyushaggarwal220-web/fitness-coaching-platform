@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation'
 import { authenticateClient } from '@/lib/onboarding'
 import { createClient } from '@/lib/supabase/client'
 import { getCategoryDisplayScores, splitSnapshot, type TrackerSections } from '@/lib/daily-tracker/display'
-import { mergeCompletion } from '@/lib/daily-tracker/parser'
+import { mergeCompletion, trackerSnapshotsDiverged } from '@/lib/daily-tracker/parser'
 import {
   applyTrackerDraft,
   clearTrackerDraft,
@@ -33,6 +33,8 @@ import type {
 const supabase = createClient()
 const PATCH_RETRY_DELAYS_MS = [0, 400, 1000]
 const PATCH_DEBOUNCE_MS = 400
+/** How often an already-open tracker checks whether the written plan changed. */
+const PLAN_SYNC_MS = 20_000
 
 type TrackerContextValue = {
   view: TodayTrackerView | null
@@ -74,15 +76,19 @@ function withDraft(
   const draft = readTrackerDraft(day.id)
   if (!draft) return view
 
+  const nextSnapshot = day.snapshot
+  if (
+    draft.planContentSignature &&
+    draft.planContentSignature !== (nextSnapshot.planContentSignature ?? '')
+  ) {
+    clearTrackerDraft(day.id)
+    return view
+  }
+
   // Drop local drafts tied to an older plan so a newly delivered plan wins.
   const previousSnapshot = previous?.day?.snapshot
-  const nextSnapshot = day.snapshot
   const planChanged =
-    previousSnapshot != null &&
-    (previousSnapshot.planId !== nextSnapshot.planId ||
-      previousSnapshot.planVersion !== nextSnapshot.planVersion ||
-      previousSnapshot.planContentSignature !== nextSnapshot.planContentSignature ||
-      previousSnapshot.planUpdatedAt !== nextSnapshot.planUpdatedAt)
+    previousSnapshot != null && trackerSnapshotsDiverged(previousSnapshot, nextSnapshot)
 
   if (planChanged) {
     clearTrackerDraft(day.id)
@@ -216,20 +222,32 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
 
           if (result.day) {
             dayIdRef.current = result.day.id
+            const planChanged = trackerSnapshotsDiverged(
+              viewRef.current?.day?.snapshot,
+              result.day.snapshot
+            )
             setView((current) => {
               if (!current) return current
+              if (planChanged) {
+                clearTrackerDraft(result.day!.id)
+                if (current.day?.id && current.day.id !== result.day!.id) {
+                  clearTrackerDraft(current.day.id)
+                }
+                return { ...current, day: result.day! }
+              }
               const nextCompletion = queue.pending
                 ? mergeCompletion(result.day!.completion, queue.pending)
                 : result.day!.completion
 
               if (queue.pending) {
-                writeTrackerDraft(dayId, nextCompletion)
+                writeTrackerDraft(dayId, nextCompletion, current.day?.snapshot.planContentSignature)
               } else {
                 clearTrackerDraft(dayId)
               }
 
               return { ...current, day: { ...result.day!, completion: nextCompletion } }
             })
+            if (planChanged) setRebootNonce((n) => n + 1)
             setError(null)
             waiters.forEach((resolve) => resolve(true))
           } else {
@@ -323,24 +341,60 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     }
   }, [load])
 
+  const syncPlanIfChanged = useCallback(async () => {
+    if (!dayIdRef.current) return
+    const queue = queueRef.current
+    if (queue.pending || queue.flushing || queue.debounceTimer) return
+    if (document.visibilityState === 'hidden') return
+
+    try {
+      await ensureAuthSession(supabase)
+      const res = await fetch('/api/tracker/today', {
+        credentials: 'include',
+        cache: 'no-store',
+      })
+      if (!res.ok) return
+      const data = (await res.json().catch(() => null)) as { view?: TodayTrackerView } | null
+      const loaded = data?.view
+      if (!loaded?.day) return
+      if (queueRef.current.pending || queueRef.current.flushing) return
+      if (!trackerSnapshotsDiverged(viewRef.current?.day?.snapshot, loaded.day.snapshot)) return
+
+      const previousId = viewRef.current?.day?.id
+      if (previousId && previousId !== loaded.day.id) clearTrackerDraft(previousId)
+      clearTrackerDraft(loaded.day.id)
+      dayIdRef.current = loaded.day.id
+      setView(loaded)
+      setRebootNonce((n) => n + 1)
+      setError(null)
+    } catch {
+      // Keep the open tracker. The next interval retries.
+    }
+  }, [])
+
   useEffect(() => {
     const onResume = () => {
       if (document.visibilityState === 'hidden') return
       void (async () => {
         await ensureAuthSession(supabase)
         await flushQueueRef.current()
-        // Don't reload today's snapshot while the client is mid-log — that remounts
-        // inputs and drops in-progress reps/weight. Only fetch if we have no day yet.
+        // A full reload remounts inputs and drops in-progress reps. When a day is
+        // already open, only swap the view if the written plan itself changed.
         if (!dayIdRef.current) await load()
+        else await syncPlanIfChanged()
       })()
     }
     document.addEventListener('visibilitychange', onResume)
     window.addEventListener('online', onResume)
+    const timer = window.setInterval(() => {
+      void syncPlanIfChanged()
+    }, PLAN_SYNC_MS)
     return () => {
       document.removeEventListener('visibilitychange', onResume)
       window.removeEventListener('online', onResume)
+      window.clearInterval(timer)
     }
-  }, [load])
+  }, [load, syncPlanIfChanged])
 
   const day = view?.day ?? null
 
@@ -360,7 +414,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       setView((current) => {
         if (!current?.day) return current
         const nextCompletion = mergeCompletion(current.day.completion, patch)
-        writeTrackerDraft(current.day.id, nextCompletion)
+        writeTrackerDraft(current.day.id, nextCompletion, current.day.snapshot.planContentSignature)
         return {
           ...current,
           day: {

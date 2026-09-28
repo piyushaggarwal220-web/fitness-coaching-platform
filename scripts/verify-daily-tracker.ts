@@ -3,6 +3,7 @@ import {
   dropSelectedDaysForPlanChange,
   mergeCompletion,
   planContentSignature,
+  trackerSnapshotsDiverged,
   remapWorkoutDayKey,
   resolveSuggestedDayKey,
   suggestedWorkoutDayKey,
@@ -233,6 +234,8 @@ assert(
   'snapshot signature matches helper',
   snapV2.planContentSignature === planContentSignature(planV2)
 )
+assert('updated plan diverges from the stored snapshot', trackerSnapshotsDiverged(snapV1, snapV2))
+assert('same snapshot does not diverge', !trackerSnapshotsDiverged(snapV2, snapV2))
 assert(
   'plan change drops frozen diet/workout day picks',
   dropSelectedDaysForPlanChange({

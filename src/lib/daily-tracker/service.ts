@@ -589,10 +589,20 @@ export async function refreshTodayTrackerAfterPlanPublish(
 
   if (existing) {
     const current = rowToDay(existing as Record<string, unknown>)
+    const activeSignature = planContentSignature(plan)
+    const snapshotPlanStamp = current.snapshot.planUpdatedAt ?? current.snapshot.generatedAt
+    const planEditedAfterSnapshot =
+      Boolean(plan.updated_at) &&
+      new Date(plan.updated_at).getTime() > new Date(snapshotPlanStamp).getTime()
     const planSourceChanged =
       current.plan_id !== plan.id ||
       current.snapshot.planId !== plan.id ||
-      current.snapshot.planContentSignature !== planContentSignature(plan)
+      current.plan_version !== plan.version ||
+      current.snapshot.planVersion !== plan.version ||
+      (current.snapshot.planContentSignature ?? null) !== activeSignature ||
+      snapshotContentFingerprint(current.snapshot) !== snapshotContentFingerprint(snapshot) ||
+      snapshot.items.length !== current.snapshot.items.length ||
+      planEditedAfterSnapshot
     const coachingDay = profile?.checkin_schedule_started_at
       ? getCoachingDay(profile.checkin_schedule_started_at)
       : null
