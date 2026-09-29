@@ -13,6 +13,26 @@ export function isAuthNetworkError(error: { message?: string; name?: string } | 
   )
 }
 
+function authErrorText(error: { message?: string; code?: string; name?: string } | null | undefined): string {
+  if (!error) return ''
+  return `${error.code ?? ''} ${error.name ?? ''} ${error.message ?? ''}`
+}
+
+/** Supabase revokes the whole session when a second refresh reuses a rotated token. */
+export function isRefreshReuseError(
+  error: { message?: string; code?: string; name?: string } | null | undefined
+): boolean {
+  return /refresh_token_already_used|already used|too many concurrent token refresh|error_code.:?.conflict/i.test(
+    authErrorText(error)
+  )
+}
+
+export function isSessionLostMessage(message: string): boolean {
+  return /jwt expired|invalid refresh token|auth session missing|refresh token not found|session expired|not authenticated|refresh_token_already_used/i.test(
+    message
+  )
+}
+
 export type ResolvedRole = 'client' | 'coach' | 'admin'
 
 export type SessionUser = { id: string; email?: string }
@@ -55,6 +75,7 @@ type CachedClientSession = {
 let clientSessionCache: CachedClientSession | null = null
 let inFlightRestore: Promise<SessionRestoreResult> | null = null
 let cachedRestore: { result: SessionRestoreResult; at: number } | null = null
+let refreshInFlight: Promise<{ user: SessionUser | null; reuseConflict: boolean }> | null = null
 
 /** Drop any in-memory auth/profile seed (call on login + logout). */
 export function invalidateSessionCache(): void {
@@ -122,6 +143,64 @@ function logSessionRestore(
   console.info(`[session-restore] ${event}`, details)
 }
 
+/**
+ * One refresh at a time in this tab. Onboarding, keepalive, and the camera
+ * return all used to refresh together; the second call reused the rotated
+ * token and Supabase signed the client out.
+ */
+export async function refreshAuthSessionOnce(
+  supabase: SupabaseClient
+): Promise<{ user: SessionUser | null; reuseConflict: boolean }> {
+  if (refreshInFlight) return refreshInFlight
+
+  refreshInFlight = (async () => {
+    const { data, error } = await supabase.auth.refreshSession()
+    if (data?.user && !error) {
+      return {
+        user: { id: data.user.id, email: data.user.email },
+        reuseConflict: false,
+      }
+    }
+
+    if (isRefreshReuseError(error)) {
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        return { user: { id: user.id, email: user.email }, reuseConflict: false }
+      }
+      const localUser = await userFromLocalSession(supabase)
+      if (localUser) return { user: localUser, reuseConflict: false }
+      return { user: null, reuseConflict: true }
+    }
+
+    return { user: null, reuseConflict: false }
+  })().finally(() => {
+    refreshInFlight = null
+  })
+
+  return refreshInFlight
+}
+
+/** Refresh only when the access token is close to expiry. Opening the camera should not rotate a healthy token. */
+export async function refreshAuthSessionIfExpiring(
+  supabase: SupabaseClient,
+  skewMs = 120_000
+): Promise<{ user: SessionUser | null; reuseConflict: boolean }> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const expiresAtMs = (session?.expires_at ?? 0) * 1000
+  if (session?.user?.id && expiresAtMs - Date.now() > skewMs) {
+    return {
+      user: { id: session.user.id, email: session.user.email },
+      reuseConflict: false,
+    }
+  }
+  return refreshAuthSessionOnce(supabase)
+}
+
 /** Ensure the Supabase client has a valid, refreshed auth session. */
 export async function ensureAuthSession(
   supabase: SupabaseClient
@@ -172,15 +251,16 @@ export async function ensureAuthSession(
       }
     }
 
-    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-    if (refreshData?.user && !refreshError) {
+    const refreshedSession = await refreshAuthSessionOnce(supabase)
+    if (refreshedSession.user) {
       sawRefresh = true
-      logSessionRestore('session_refreshed', { userId: refreshData.user.id, attempt })
+      logSessionRestore('session_refreshed', { userId: refreshedSession.user.id, attempt })
       return {
-        user: { id: refreshData.user.id, email: refreshData.user.email },
+        user: refreshedSession.user,
         refreshed: true,
       }
     }
+    if (refreshedSession.reuseConflict) break
 
     const { data: { user: retryUser } } = await supabase.auth.getUser()
     if (retryUser) {

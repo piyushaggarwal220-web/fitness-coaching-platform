@@ -76,6 +76,7 @@ import {
   WORKOUT_DURATION_OPTIONS,
   WORKOUT_TIME_OPTIONS,
 } from '@/lib/onboarding'
+import { isSessionLostMessage, refreshAuthSessionIfExpiring } from '@/lib/session-restore'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import { isGoalVisibleForGender, resolveGoalPlanTier } from '@/lib/plan-goals'
 import { requestComplexityRecalculation } from '@/lib/complexity/client'
@@ -136,6 +137,8 @@ export default function OnboardingPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [signedOut, setSignedOut] = useState(false)
+  const initStarted = useRef(false)
   const [submitting, setSubmitting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
@@ -159,12 +162,22 @@ export default function OnboardingPage() {
   }, [userId, userEmail, step, form, photoUrls, mealsForTiming])
 
   useEffect(() => {
+    if (initStarted.current) return
+    initStarted.current = true
     const init = async () => {
       const result = await authenticateClient(supabase, router, {
         redirectIfOnboarded: true,
         requirePayment: true,
+        deferLoginRedirect: true,
+        keepPaidClients: true,
       })
       if (!result) return
+
+      if (result.profileError === 'signed_out') {
+        setSignedOut(true)
+        setLoading(false)
+        return
+      }
 
       if (result.profileError) {
         setUserId(result.user.id)
@@ -354,7 +367,7 @@ export default function OnboardingPage() {
     const current = stateRef.current
     if (!current.userId) return
     saveOnboardingWizardDraft(current.userId, current.step, current.photoUrls)
-    await supabase.auth.refreshSession().catch(() => undefined)
+    await refreshAuthSessionIfExpiring(supabase).catch(() => undefined)
     try {
       await saveOnboardingProgress(supabase, current.userId, current.form, {
         email: current.userEmail,
@@ -393,7 +406,7 @@ export default function OnboardingPage() {
       void (async () => {
         try {
           // Camera return often happens after the WebView was suspended — refresh auth first.
-          await supabase.auth.refreshSession().catch(() => undefined)
+          await refreshAuthSessionIfExpiring(supabase).catch(() => undefined)
           const path = await uploadOnboardingPhoto(supabase, current.userId!, file, key)
           // Merge against the live ref so concurrent side/back uploads cannot wipe front.
           const nextUrls = mergeSavedPhotoUrls(stateRef.current.photoUrls, { [key]: path })
@@ -419,6 +432,11 @@ export default function OnboardingPage() {
           // Stale `/_next/static` hashes after a deploy surface here because the
           // photo compress/upload modules are loaded lazily on first upload.
           if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-photo')) return
+          const rawMessage = err instanceof Error ? err.message : ''
+          if (isSessionLostMessage(rawMessage)) {
+            setSignedOut(true)
+            return
+          }
           // Keep the local pick so Continue can retry upload from persistProgress.
           const message = isChunkLoadError(err)
             ? CHUNK_LOAD_USER_MESSAGE
@@ -454,7 +472,7 @@ export default function OnboardingPage() {
       setError('')
       void (async () => {
         try {
-          await supabase.auth.refreshSession().catch(() => undefined)
+          await refreshAuthSessionIfExpiring(supabase).catch(() => undefined)
           const path = await uploadOnboardingPhoto(supabase, current.userId!, file, label)
           const nextForm = { ...stateRef.current.form, [slot]: path }
           stateRef.current = { ...stateRef.current, form: nextForm }
@@ -466,7 +484,12 @@ export default function OnboardingPage() {
             mealsForTiming: stateRef.current.mealsForTiming,
           })
         } catch (err) {
-          setError(err instanceof Error ? err.message : 'Could not upload that photo. Please try again.')
+          const message = err instanceof Error ? err.message : 'Could not upload that photo. Please try again.'
+          if (isSessionLostMessage(message)) {
+            setSignedOut(true)
+            return
+          }
+          setError(message)
         } finally {
           setReferenceUploading(null)
         }
@@ -577,7 +600,12 @@ export default function OnboardingPage() {
         setStep(rejoined)
       } catch (err) {
         if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-next')) return
-        setError(isChunkLoadError(err) ? CHUNK_LOAD_USER_MESSAGE : err instanceof Error ? err.message : 'Failed to save progress')
+        const message = err instanceof Error ? err.message : 'Failed to save progress'
+        if (isSessionLostMessage(message)) {
+          setSignedOut(true)
+          return
+        }
+        setError(isChunkLoadError(err) ? CHUNK_LOAD_USER_MESSAGE : message)
       }
       return
     }
@@ -587,7 +615,12 @@ export default function OnboardingPage() {
       setStep(nextStep)
     } catch (err) {
       if (isChunkLoadError(err) && reloadForNewDeployment('onboarding-next')) return
-      setError(isChunkLoadError(err) ? CHUNK_LOAD_USER_MESSAGE : err instanceof Error ? err.message : 'Failed to save progress')
+      const message = err instanceof Error ? err.message : 'Failed to save progress'
+      if (isSessionLostMessage(message)) {
+        setSignedOut(true)
+        return
+      }
+      setError(isChunkLoadError(err) ? CHUNK_LOAD_USER_MESSAGE : message)
     }
   }
 
@@ -686,6 +719,23 @@ export default function OnboardingPage() {
 
   if (loading) {
     return <div style={s.loading}>Loading your coaching intake...</div>
+  }
+
+  if (signedOut) {
+    return (
+      <div style={s.page}>
+        <div style={s.card}>
+          <h1 style={s.title}>Sign in to keep going</h1>
+          <p style={s.subtitle}>
+            Your sign-in dropped while these questions were open. Answers already saved stay on
+            your account. Sign in again and you will return to this intake.
+          </p>
+          <a href="/login?expired=1&redirect=%2Fonboarding" style={{ ...s.nextBtn, display: 'inline-flex', marginTop: 20, textDecoration: 'none' }}>
+            Sign in
+          </a>
+        </div>
+      </div>
+    )
   }
 
   const wizardSteps = getOnboardingWizardSteps(form)

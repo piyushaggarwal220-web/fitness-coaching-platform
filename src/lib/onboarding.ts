@@ -2087,11 +2087,18 @@ export async function authenticateClient(
     requireOnboarding?: boolean
     redirectIfOnboarded?: boolean
     requirePayment?: boolean
+    /** Onboarding stays on the questions and asks the client to sign in. */
+    deferLoginRedirect?: boolean
+    /** A captured purchase keeps a paid client on onboarding if the payment flag has not caught up. */
+    keepPaidClients?: boolean
   }
 ): Promise<AuthResult | null> {
   const restored = await restoreSession(supabase)
 
   if (restored.status === 'unauthenticated') {
+    if (options?.deferLoginRedirect) {
+      return { user: { id: '' }, profile: null, profileError: 'signed_out' }
+    }
     redirectToLogin(router, 'client', 'session_expired')
     return null
   }
@@ -2122,6 +2129,19 @@ export async function authenticateClient(
     !isPaymentConfirmed(profile) &&
     !shouldBypassPaymentGuardClient()
   ) {
+    if (options.keepPaidClients) {
+      const { data: capturedPurchase } = await supabase
+        .from('purchases')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'captured')
+        .neq('plan_slug', 'exercise_library')
+        .limit(1)
+        .maybeSingle()
+      if (capturedPurchase) {
+        return { user, profile }
+      }
+    }
     router.push(getClientPaymentGatePath(profile))
     return null
   }
