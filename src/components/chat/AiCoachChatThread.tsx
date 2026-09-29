@@ -90,7 +90,7 @@ export function AiCoachChatThread() {
           {ASSISTANT_COACH_LABEL}
         </p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
-          Not your coach. This chat cannot book a call. Live contact is one WhatsApp call a week.
+          Not your coach. This chat cannot book a call. Issues go to the coaches on Instagram.
         </p>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}>

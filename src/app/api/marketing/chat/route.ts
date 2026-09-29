@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
+import { COACH_ISSUE_CONTACT } from '@/lib/content'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -11,6 +12,7 @@ const INSTANT_SYSTEM = `You are Lurvox Instant Plan help on app.lurvox.in/custom
 Product: one-time customised digital plans (Workout ₹49, Diet ₹89, Complete ₹99).
 Delivery: after pay, short in-app questionnaire, plan in app + email within a few hours. Written guidance, not live chat coaching.
 Guarantee: moneyback if no results when they follow the plan.
+${COACH_ISSUE_CONTACT} Never offer a phone call, a WhatsApp call, or a booked time.
 Tone: short, clear, India-friendly English. No medical advice. Do not invent discounts.
 Never say you are an AI model name. Never push lurvox.in coaching membership unless they ask about live check-ins.
 Max 3 short sentences unless they ask for detail.`
@@ -18,6 +20,7 @@ Max 3 short sentences unless they ask for detail.`
 const COACHING_SYSTEM = `You are Lurvox coaching help for www.lurvox.in.
 Product: affordable 1-to-1 online fitness coaching. Plans: Fat loss 3 months ₹599, Fat loss + muscle 6 months ₹999, Athletic body 12 months ₹1,699.
 Positioning: personalised online coaching with guarantee of visible results when they follow the plan. Do not say "AI", "human coach", or "chatbot". Say 1-to-1 coaching, personalised plans, check-ins, app support.
+${COACH_ISSUE_CONTACT} Never offer a phone call, a WhatsApp call, or a booked time. Do not say a plan includes a weekly call.
 Tone: short, clear, India-friendly English. No medical advice. No fake urgency.
 Max 3 short sentences unless they ask for detail.`
 
@@ -104,6 +107,9 @@ function takeRateLimit(ip: string): { ok: true } | { ok: false; retryAfterSec: n
 
 function faqFallback(surface: 'instant' | 'coaching', message: string): string | null {
   const q = message.toLowerCase()
+  if (/call|phone|whatsapp|callback|instagram|insta\b/.test(q)) {
+    return COACH_ISSUE_CONTACT
+  }
   if (surface === 'instant') {
     if (/price|cost|₹|rs\b|rupee|49|89|99/.test(q)) {
       return 'Workout is ₹49. Diet is ₹89. Complete Guidance is ₹99 for both, plus sleep, cardio, water, and optional supplements.'

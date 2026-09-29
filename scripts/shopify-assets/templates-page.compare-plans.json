@@ -7,7 +7,7 @@
       "settings": {
         "eyebrow": "Plans",
         "headline": "3, 6, or 12 months",
-        "subheadline": "Workout, diet, and 1-to-1 coaching on every plan. Weekly phone call on 12 months only.",
+        "subheadline": "Workout, diet, and 1-to-1 coaching on every plan. No live calls. Issues go to the coaches on Instagram.",
         "callout": "",
         "col_1_label": "Fat loss",
         "col_1_duration": "3 months",
@@ -22,7 +22,7 @@
         "col_3_label": "Athletic body",
         "col_3_duration": "12 months",
         "col_3_price": "₹1,699",
-        "col_3_note": "Includes a weekly coach phone call",
+        "col_3_note": "12 months. Fat loss, muscle, and stamina. No live call.",
         "col_3_link": "https://app.lurvox.in/plans/12-months",
         "find_url": "/pages/choose-your-plan",
         "consult_url": "/pages/talk-to-a-coach",

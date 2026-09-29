@@ -54,7 +54,7 @@
         <ul class="lx-pf__compare-list" data-pf-compare-list></ul>
       </div>
       <p class="lx-pf__result-next">
-        1-to-1 coaching in the app. Weekly phone calls are 12-month only.
+        1-to-1 coaching in the app. No live calls. Issues go to the coaches on Instagram.
       </p>
       <div class="lx-pf__result-actions">
         <a class="lx-pf__btn lx-pf__btn--primary" data-pf-checkout href="{{ plan_base | default: 'https://app.lurvox.in/plans' }}/3-months">
@@ -599,11 +599,11 @@
       },
       {
         key: 'calls',
-        q: 'Do you want a weekly coach phone call?',
+        q: 'How do you want coaching day to day?',
         options: [
-          { id: 'yes', label: 'Yes. Call me every week', score: 6 },
-          { id: 'maybe', label: 'Maybe, if it is part of the plan', score: 2 },
-          { id: 'no', label: 'App chat + check ins is enough', score: 0 }
+          { id: 'yes', label: 'In the app, with weekly plan updates', score: 6 },
+          { id: 'maybe', label: 'App chat and check-ins are enough', score: 2 },
+          { id: 'no', label: 'A shorter plan is enough', score: 0 }
         ]
       }
     ];
@@ -641,7 +641,7 @@
         per: '12 months',
         bullets: [
           'Best for: fat loss, muscle gain, and stamina',
-          'Weekly coach phone call included',
+          'Weekly plan updates',
           'One-time payment'
         ]
       }
@@ -652,15 +652,15 @@
       '3_months': [
         { kind: 'pick', text: 'Best for a focused 90-day fat-loss plan.' },
         { kind: 'miss', text: '6 months is Fat loss + muscle gain.' },
-        { kind: 'miss', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.' }
+        { kind: 'miss', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina. No live calls.' }
       ],
       '6_months': [
         { kind: 'pick', text: 'Best for: losing fat while building muscle.' },
         { kind: 'miss', text: '3 months is Fat loss — a focused 90-day plan.' },
-        { kind: 'miss', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.' }
+        { kind: 'miss', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina. No live calls.' }
       ],
       '12_months': [
-        { kind: 'pick', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.' },
+        { kind: 'pick', text: 'Athletic body is 12 months — fat loss, muscle gain, and stamina. No live calls.' },
         { kind: 'miss', text: '3 months is Fat loss — a focused 90-day plan.' },
         { kind: 'miss', text: '6 months is Fat loss + muscle gain.' }
       ]
@@ -715,7 +715,7 @@
         why =
           'Your goal is ' +
           goalLabel +
-          '. Athletic body is 12 months — fat loss, muscle gain, and stamina, with a weekly coach phone call included.';
+          '. Athletic body is 12 months — fat loss, muscle gain, and stamina. No live calls.';
       }
 
       return { planKey: planKey, why: why, goalLabel: goalLabel };

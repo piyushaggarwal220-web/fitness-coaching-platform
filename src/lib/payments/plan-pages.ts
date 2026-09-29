@@ -68,7 +68,7 @@ export const PLAN_PAGE_COPY: Record<
     eyebrow: 'Athletic body',
     goalName: PLAN_PRODUCT_NAME['12_months'],
     durationLabel: '12 months',
-    promise: 'Fat loss, muscle, and stamina — with a weekly coach phone call.',
+    promise: 'Fat loss, muscle, and stamina for a full year.',
     bestFor: 'athletic body',
     goals: [],
   },
@@ -135,9 +135,10 @@ export const PLAN_COMPARE_ROWS: {
     cells: { ...FROM_6 },
   },
   {
-    group: 'Everything with Athletic body',
-    label: 'Weekly coach phone call',
-    cells: { ...FROM_12 },
+    group: 'Opens with debloat',
+    label: 'Issues on Instagram',
+    hint: 'Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_). No live calls.',
+    cells: { ...YES },
   },
   {
     group: 'Everything with Athletic body',

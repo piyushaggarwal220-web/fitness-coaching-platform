@@ -64,7 +64,7 @@ export async function scheduleNextWeeklyCallAfterCompletion(
   return { created: false, reason: 'client_initiated_only' }
 }
 
-/** Cancel leftover auto-booked weekly slots. New calls are started by the client. */
+/** Close every open call. Coaching has no phone calls for any client. */
 export async function cancelAutoBookedWeeklyCalls(
   admin: SupabaseClient
 ): Promise<{ cancelled: number }> {
@@ -74,10 +74,9 @@ export async function cancelAutoBookedWeeklyCalls(
     .update({
       status: 'cancelled',
       resolved_at: now,
-      coach_note: 'Auto-closed — weekly calls are started by the client, not auto-booked',
+      coach_note: 'Auto-closed — no coach calls. Message the coaches on Instagram.',
       updated_at: now,
     })
-    .eq('source', 'weekly_entitlement')
     .in('status', ['requested', 'scheduled'])
     .select('id')
 

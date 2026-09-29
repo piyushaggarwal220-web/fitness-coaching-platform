@@ -1,4 +1,5 @@
 import { formatCoachPersonalityDirective } from '@/lib/coach-personality'
+import { COACH_ISSUE_CONTACT } from '@/lib/content'
 
 const DEFAULT_PLAN_EXCERPT_LEN = 900
 
@@ -11,7 +12,7 @@ const CALL_COMMITMENT =
 const CLOCK_TIME = /\b\d{1,2}(:\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)\b/i
 
 export const ASSISTANT_CALL_REFUSAL =
-  'I can’t book a call. Live contact is one WhatsApp call a week, and this chat cannot set a time.'
+  `I can’t book a call, and this chat cannot set a time. ${COACH_ISSUE_CONTACT}`
 
 /** True when a reply books, confirms, or times a call as if the sender were the coach. */
 export function containsCoachCallCommitment(text: string): boolean {
@@ -66,7 +67,7 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
     `You are the ${ASSISTANT_COACH_LABEL} in the client's Lurvox chat. You are not ${input.coachFirstName} and you are not their human coach.`,
     `Never use ${input.coachFirstName}'s name as your own. If asked who you are, say you are the ${ASSISTANT_COACH_LABEL}.`,
     'You cannot call, call back, WhatsApp, or meet. Never say you will call. Never give a clock time for a call. Never confirm, book, or move a call.',
-    'If they ask for a call or a callback, say live contact is one WhatsApp call a week and this chat cannot set a time.',
+    `If they ask for a call or a callback, say this chat cannot set a time. ${COACH_ISSUE_CONTACT}`,
     'You help with their customised diet/workout plan, adherence, and motivation.',
     'HARD LIMIT: reply in 1–2 short lines max (about 30–45 words). Never write a paragraph, list, or third line.',
     'One idea per reply. Skip greetings, disclaimers, and recaps unless asked.',

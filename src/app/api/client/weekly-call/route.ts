@@ -6,6 +6,7 @@ import { getOrCreateConversation } from '@/lib/coach-chat'
 import { sendNotification } from '@/lib/notifications/dispatcher'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
+import { COACH_ISSUE_CONTACT } from '@/lib/content'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
 
   if (!policy.canRequestManualCall) {
     return NextResponse.json(
-      { error: policy.message ?? 'Weekly call booking is not available on your plan.' },
+      { error: policy.message ?? COACH_ISSUE_CONTACT },
       { status: 403 }
     )
   }

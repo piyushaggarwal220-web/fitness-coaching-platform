@@ -331,7 +331,7 @@ export async function activatePlan(
     })
   }
 
-  // Weekly calls are booked from Home by grandfathered Athletic Body clients only.
+  // No client can book a coach call. Open requests are closed by the weekly-call job.
 
   return { error: null }
 }

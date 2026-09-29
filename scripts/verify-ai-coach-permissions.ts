@@ -162,7 +162,11 @@ assert.equal(checkin, 'Check-in: not scheduled yet. Photos: not required today.'
 assert.doesNotMatch(checkin, /cdn\.example|http/)
 assert.doesNotMatch(purchasedPlanLine('3_months'), /₹/)
 assert.match(purchasedPlanLine('3_months'), /every 14 days/)
-assert.match(purchasedPlanLine('12_months'), /weekly coach phone call/)
+assert.match(purchasedPlanLine('12_months'), /no live call/i)
+assert.doesNotMatch(purchasedPlanLine('12_months'), /phone call/)
+assert.match(aiPrompt, /do not do live calls/i)
+assert.match(aiPrompt, /@maximusvault/)
+assert.match(aiPrompt, /@rakshitmohla_/)
 
 const beforeWindow = new Date('2026-09-28T12:00:00+05:30')
 const duringWindow = new Date('2026-10-15T12:00:00+05:30')

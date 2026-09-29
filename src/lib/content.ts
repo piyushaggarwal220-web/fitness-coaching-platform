@@ -25,6 +25,10 @@ export const hero = {
   finalCtaImage: '',
 } as const
 
+/** No live, phone, or WhatsApp calls. Issues go to the two coaches on Instagram. */
+export const COACH_ISSUE_CONTACT =
+  'We do not do live calls. If you have an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.'
+
 export const coaches = [
   {
     name: 'Piyush Aggarwal',
@@ -303,7 +307,7 @@ export const pricing = {
       name: 'Athletic body',
       price: '₹1,699',
       perMonth: '≈ ₹142/month',
-      blurb: 'Athletic body · 12 months · fat loss, muscle, stamina · weekly coach phone call',
+      blurb: 'Athletic body · 12 months · fat loss, muscle, stamina',
       save: 'BEST VALUE',
       popular: false,
     },

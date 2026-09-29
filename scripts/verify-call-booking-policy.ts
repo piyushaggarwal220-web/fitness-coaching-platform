@@ -32,11 +32,7 @@ const twelveBeforeDelivery = evaluateCallBookingPolicy({
   now: day0,
 })
 assert('12-month before delivery blocked', !twelveBeforeDelivery.canRequestManualCall)
-assert(
-  '12-month before delivery mentions plan delivery',
-  Boolean(twelveBeforeDelivery.message?.includes('plan is delivered'))
-)
-assert('old athletic body is grandfathered', twelveBeforeDelivery.isGrandfatheredAthleticBody)
+assert('old athletic body is not grandfathered', twelveBeforeDelivery.isGrandfatheredAthleticBody === false)
 
 const twelveInFirstWeek = evaluateCallBookingPolicy({
   planSlug: '12_months',
@@ -46,12 +42,7 @@ const twelveInFirstWeek = evaluateCallBookingPolicy({
   now: day0,
 })
 assert('12-month in first week still no manual book', !twelveInFirstWeek.canRequestManualCall)
-assert('12-month in first week is wait window', twelveInFirstWeek.withinInitialTwoWeeks === true)
-assert(
-  '12-month in first week mentions first week',
-  Boolean(twelveInFirstWeek.message?.toLowerCase().includes('first week'))
-)
-assert('12-month in first week has days left', (twelveInFirstWeek.daysUntilEligible ?? 0) > 0)
+assert('12-month in first week is not a wait window', twelveInFirstWeek.withinInitialTwoWeeks === false)
 
 const twelveAfterFirstWeek = evaluateCallBookingPolicy({
   planSlug: '12_months',
@@ -60,9 +51,9 @@ const twelveAfterFirstWeek = evaluateCallBookingPolicy({
   joinedAt: oldJoin,
   now: day7,
 })
-assert('old athletic body after first week can book', twelveAfterFirstWeek.canRequestManualCall)
+assert('old athletic body after first week cannot book', !twelveAfterFirstWeek.canRequestManualCall)
 assert('12-month after first week not in wait window', twelveAfterFirstWeek.withinInitialTwoWeeks === false)
-assert('12-month after first week has no block message', twelveAfterFirstWeek.message === null)
+assert('old athletic body stays closed', twelveAfterFirstWeek.isGrandfatheredAthleticBody === false)
 
 const newTwelve = evaluateCallBookingPolicy({
   planSlug: '12_months',

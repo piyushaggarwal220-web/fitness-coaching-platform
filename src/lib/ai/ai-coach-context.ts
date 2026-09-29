@@ -66,7 +66,7 @@ export function purchasedPlanLine(slug: string | null | undefined): string {
     return 'Purchased plan: Fat loss + muscle gain. Plan updates every week, with cardio and supplements.'
   }
   if (slug === '12_months') {
-    return 'Purchased plan: Athletic body. Plan updates every week, with stamina coaching and a weekly coach phone call.'
+    return 'Purchased plan: Athletic body. Plan updates every week, with stamina coaching. There is no live call on this plan.'
   }
   const plan = getCoachingPlan(slug)
   if (!plan || plan.isDigital) {

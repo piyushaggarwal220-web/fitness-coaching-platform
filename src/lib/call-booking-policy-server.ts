@@ -119,7 +119,7 @@ export async function enforceClientCallPolicy(
 
   if (!policy.isGrandfatheredAthleticBody) {
     for (const row of active) {
-      await cancel(row.id, 'Auto-closed — weekly calls are only for existing Athletic Body clients')
+      await cancel(row.id, 'Auto-closed — no coach calls. Message the coaches on Instagram.')
     }
     return
   }

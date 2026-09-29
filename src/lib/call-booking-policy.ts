@@ -1,8 +1,6 @@
-import { getInitialWeeklyCallWindow } from '@/lib/weekly-call-timing'
-
 /**
- * Clients who joined on/after this instant do not get weekly coach calls.
- * 2026-09-21 00:00 IST — existing Athletic Body (12-month) members stay grandfathered.
+ * Kept so older checks still import the cutoff. No client is grandfathered:
+ * nobody gets a coach call, including Athletic Body buyers from before this date.
  */
 export const WEEKLY_CALL_NEW_CLIENTS_FROM_ISO = '2026-09-20T18:30:00.000Z'
 
@@ -18,22 +16,13 @@ export type CallBookingPolicy = {
   daysUntilEligible: number | null
 }
 
-function daysUntil(from: Date, to: Date): number {
-  const ms = to.getTime() - from.getTime()
-  if (ms <= 0) return 0
-  return Math.ceil(ms / (24 * 60 * 60 * 1000))
-}
-
-export function isGrandfatheredAthleticBodyClient(joinedAt: string | null | undefined): boolean {
-  if (!joinedAt) return false
-  const joined = Date.parse(joinedAt)
-  if (!Number.isFinite(joined)) return false
-  return joined < Date.parse(WEEKLY_CALL_NEW_CLIENTS_FROM_ISO)
+export function isGrandfatheredAthleticBodyClient(_joinedAt: string | null | undefined): boolean {
+  return false
 }
 
 /**
- * Weekly coach calls are only for existing Athletic Body (12-month) clients.
- * They book from Home. New clients do not get calls. Nothing is auto-booked.
+ * No client can book a coach call. Home hides the booking card.
+ * Nothing is auto-booked.
  */
 export function evaluateCallBookingPolicy(input: {
   planSlug: string | null
@@ -42,59 +31,12 @@ export function evaluateCallBookingPolicy(input: {
   joinedAt?: string | null
   now?: Date
 }): CallBookingPolicy {
-  const now = input.now ?? new Date()
-  const isTwelveMonth = input.planSlug === '12_months'
-  const planDelivered = input.planDelivered ?? false
-  const isGrandfatheredAthleticBody =
-    isTwelveMonth && isGrandfatheredAthleticBodyClient(input.joinedAt)
-
-  if (!isTwelveMonth || !isGrandfatheredAthleticBody) {
-    return {
-      canRequestManualCall: false,
-      isTwelveMonth,
-      isGrandfatheredAthleticBody: false,
-      withinInitialTwoWeeks: false,
-      planDelivered,
-      message: null,
-      daysUntilEligible: null,
-    }
-  }
-
-  if (!planDelivered || !input.checkinScheduleStartedAt) {
-    return {
-      canRequestManualCall: false,
-      isTwelveMonth: true,
-      isGrandfatheredAthleticBody: true,
-      withinInitialTwoWeeks: false,
-      planDelivered,
-      message: 'You can book a weekly coach call from Home after your first plan is delivered.',
-      daysUntilEligible: null,
-    }
-  }
-
-  const window = getInitialWeeklyCallWindow(input.checkinScheduleStartedAt, now)
-  if (!window.eligible) {
-    const daysUntilEligible = daysUntil(now, window.earliestAfter)
-    return {
-      canRequestManualCall: false,
-      isTwelveMonth: true,
-      isGrandfatheredAthleticBody: true,
-      withinInitialTwoWeeks: true,
-      planDelivered: true,
-      message:
-        daysUntilEligible > 0
-          ? `Weekly calls open after your first week (${daysUntilEligible} day${daysUntilEligible === 1 ? '' : 's'} left).`
-          : 'Your weekly call opens after your first week of coaching.',
-      daysUntilEligible,
-    }
-  }
-
   return {
-    canRequestManualCall: true,
-    isTwelveMonth: true,
-    isGrandfatheredAthleticBody: true,
+    canRequestManualCall: false,
+    isTwelveMonth: input.planSlug === '12_months',
+    isGrandfatheredAthleticBody: false,
     withinInitialTwoWeeks: false,
-    planDelivered: true,
+    planDelivered: input.planDelivered ?? false,
     message: null,
     daysUntilEligible: null,
   }
@@ -107,8 +49,6 @@ export function earliestAllowedCallTime(input: {
   joinedAt?: string | null
   now?: Date
 }): Date | null {
-  if (!evaluateCallBookingPolicy(input).isGrandfatheredAthleticBody) return null
-  if (!input.checkinScheduleStartedAt) return null
-  const window = getInitialWeeklyCallWindow(input.checkinScheduleStartedAt, input.now)
-  return window.eligible ? window.earliestAfter : null
+  void input
+  return null
 }

@@ -42,7 +42,6 @@ import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptio
 import { CheckinDueBanner } from '@/components/dashboard/CheckinDueBanner';
 import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner';
 import { GoalUpgradeCard } from '@/components/dashboard/GoalUpgradeCard';
-import { CoachQueueCard } from '@/components/dashboard/CoachQueueCard';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { isPublicDemoEmail, PUBLIC_DEMO_CLIENT_NAME } from '@/lib/public-demo';
 import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability';
@@ -699,8 +698,6 @@ export default function Dashboard() {
         gender={profile?.gender}
         bodyType={profile?.onboarding_data?.goals?.startingBodyType}
       />
-
-      {!isPublicDemoEmail(user?.email) && <CoachQueueCard />}
 
       <section style={{ marginBottom: spacing[7] }}>
         <SectionHeader

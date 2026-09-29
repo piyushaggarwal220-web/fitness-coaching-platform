@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { CircleHelp, X } from 'lucide-react'
 import { colors, layout, radius } from '@/lib/design-tokens'
+import { COACH_ISSUE_CONTACT } from '@/lib/content'
 
 type Turn = { role: 'user' | 'guide'; text: string }
 
@@ -25,7 +26,7 @@ function guideReply(question: string): string {
     return 'A future date does not change today’s plan. Say “from today” only if you want the change now. Otherwise lock it in on the start date.'
   }
   if (/call|whatsapp|coach reply|available/.test(q)) {
-    return 'Live contact is one WhatsApp call a week. Assistant coach cannot book a call or set a time. A time written in chat is not a booking.'
+    return `${COACH_ISSUE_CONTACT} Assistant coach cannot book a call or set a time.`
   }
   if (/assistant|bot|smart coach|who am i talking/.test(q)) {
     return 'Assistant coach answers plan questions. App guide, this button, only explains the app. They are not your coach.'
@@ -37,9 +38,9 @@ function guideReply(question: string): string {
     return 'Journey keeps weekly check-ins and progress photos. The compare strip is this week next to the week before.'
   }
   if (/refund|cancel|price|1699|₹/.test(q)) {
-    return 'This chat cannot change a payment or start a refund. Use your weekly WhatsApp call for that.'
+    return `This chat cannot change a payment or start a refund. ${COACH_ISSUE_CONTACT}`
   }
-  return 'I can help with My Plan, the tracker, Journey, the PG menu, the 3 daily plan changes, and the weekly WhatsApp call. Diet and workout questions go to Assistant coach.'
+  return 'I can help with My Plan, the tracker, Journey, the PG menu, and the 3 daily plan changes. Diet and workout questions go to Assistant coach.'
 }
 
 export function AppGuide({ aboveNav }: { aboveNav: boolean }) {
