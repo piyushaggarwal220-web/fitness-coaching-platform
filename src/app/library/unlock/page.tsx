@@ -125,16 +125,16 @@ export default function ExerciseLibraryUnlockPage() {
     )
   }
 
-  if (entitled) {
+  if (profile.payment_confirmed || entitled) {
     return (
       <div style={authStyles.page}>
         <div style={authStyles.card}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: spacing[3] }}>
             <CheckCircle2 size={40} color={colors.success} />
           </div>
-          <h1 style={{ ...authStyles.title, fontSize: 22 }}>Library unlocked</h1>
+          <h1 style={{ ...authStyles.title, fontSize: 22 }}>Form videos are included</h1>
           <p style={{ margin: `0 0 ${spacing[4]}px`, fontSize: 15, lineHeight: 1.5, color: colors.textSecondary, textAlign: 'center' }}>
-            Every form video in your workout tracker is available. Open the tracker and tap any exercise name.
+            Every coaching plan includes the exercise videos. Open Workout, then tap Watch video on the exercise.
           </p>
           <Link
             href="/tracker/workout"

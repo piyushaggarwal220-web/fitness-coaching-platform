@@ -135,11 +135,17 @@ function snapshotContentFingerprint(snapshot: DailyTrackerDay['snapshot']): stri
   const items = snapshot.items.map((item) => {
     if (item.type === 'meal') {
       const foods = Array.isArray(item.foods) ? item.foods.join(',') : String(item.foods ?? '')
-      return `meal:${item.id}:${item.title}:${foods}:${item.mealTime ?? ''}:${item.dietDay ?? ''}`
+      const macros = item.macros
+        ? `${item.macros.calories ?? ''}/${item.macros.protein ?? ''}/${item.macros.carbs ?? ''}/${item.macros.fat ?? ''}`
+        : ''
+      return `meal:${item.id}:${item.title}:${foods}:${macros}:${item.mealTime ?? ''}:${item.dietDay ?? ''}`
     }
     if (item.type === 'workout') {
       const names = (item.exercises ?? [])
-        .map((ex) => `${ex.name}:${ex.targetSets}:${ex.targetReps}`)
+        .map(
+          (ex) =>
+            `${ex.name}:${ex.targetSets}:${ex.targetReps}:${ex.targetWeight ?? ''}:${ex.notes ?? ''}`
+        )
         .join(',')
       const phases = (item.phases ?? [])
         .map((phase) => `${phase.phase}:${phase.exercises.map((ex) => ex.name).join(',')}`)
@@ -515,6 +521,48 @@ export async function getOrCreateTodayTracker(
   return { day: rowToDay(inserted as Record<string, unknown>), error: null }
 }
 
+/** Replace a stored day when the live plan text or parser is newer than the snapshot. */
+async function alignTrackerSnapshotWithPlan(
+  supabase: SupabaseClient,
+  clientId: string,
+  current: DailyTrackerDay
+): Promise<DailyTrackerDay> {
+  const plan = await getActivePlan(supabase, clientId)
+  if (!plan) return current
+  const signature = planContentSignature(plan)
+  const stale =
+    current.snapshot.parserVersion !== TRACKER_PARSER_VERSION ||
+    current.plan_id !== plan.id ||
+    current.snapshot.planId !== plan.id ||
+    current.plan_version !== plan.version ||
+    current.snapshot.planVersion !== plan.version ||
+    (current.snapshot.planContentSignature ?? '') !== signature
+  if (!stale) return current
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', clientId)
+    .maybeSingle()
+  const typedProfile = (profile as OnboardingProfile | null) ?? undefined
+  const snapshot = buildTrackerSnapshot(plan, typedProfile)
+  const coachingDay = typedProfile?.checkin_schedule_started_at
+    ? getCoachingDay(typedProfile.checkin_schedule_started_at)
+    : current.coaching_day
+  const completion = applySuggestedDaySelections(
+    dropSelectedDaysForPlanChange(sanitizeCompletionForSnapshot(current.completion, snapshot)),
+    snapshot,
+    coachingDay
+  )
+  return {
+    ...current,
+    plan_id: plan.id,
+    plan_version: plan.version,
+    snapshot,
+    completion,
+  }
+}
+
 export async function updateTrackerCompletion(
   supabase: SupabaseClient,
   clientId: string,
@@ -535,15 +583,27 @@ export async function updateTrackerCompletion(
       return { day: null, error: loadError?.message ?? 'Tracker day not found' }
     }
 
-    const current = rowToDay(existing as Record<string, unknown>)
-    const completion = mergeCompletion(current.completion, patch)
+    const loaded = rowToDay(existing as Record<string, unknown>)
+    const current = await alignTrackerSnapshotWithPlan(supabase, clientId, loaded)
+    const completion = sanitizeCompletionForSnapshot(
+      mergeCompletion(current.completion, patch),
+      current.snapshot
+    )
     const { scores, overall } = calculateTrackerScores(current.snapshot, completion)
     const now = new Date().toISOString()
     const expectedUpdatedAt = current.updated_at
 
     const { data: updated, error } = await supabase
       .from('daily_tracker_days')
-      .update({ completion, scores, overall_percent: overall, updated_at: now })
+      .update({
+        plan_id: current.plan_id,
+        plan_version: current.plan_version,
+        snapshot: current.snapshot,
+        completion,
+        scores,
+        overall_percent: overall,
+        updated_at: now,
+      })
       .eq('id', dayId)
       .eq('client_id', clientId)
       .eq('updated_at', expectedUpdatedAt)

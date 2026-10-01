@@ -2,11 +2,7 @@ import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireApiUser } from '@/lib/api-auth'
 import { profileEntitledForExerciseLibrary } from '@/lib/addon-protocols'
-import {
-  claimFreeExerciseForm,
-  exerciseFormUnlockKey,
-  FREE_EXERCISE_FORM_LIFETIME_CAP,
-} from '@/lib/exercise-form/free-unlocks'
+import { FREE_EXERCISE_FORM_LIFETIME_CAP } from '@/lib/exercise-form/free-unlocks'
 import { lookupExerciseForm, publicFormPayload } from '@/lib/exercise-form/lookup'
 import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
 import { EXERCISE_LIBRARY_ADDON_PAISE } from '@/lib/payments/checkout-discounts'
@@ -43,32 +39,6 @@ function accessMeta(input: {
   }
 }
 
-function lockedPayload(used: number) {
-  return {
-    success: true,
-    ...accessMeta({
-      locked: true,
-      entitled: false,
-      used,
-      remaining: 0,
-    }),
-    configured: true,
-    skipped: false,
-    found: false,
-    name: null,
-    steps: [],
-    muscles: [],
-    category: null,
-    difficulty: null,
-    force: null,
-    mechanic: null,
-    grips: [],
-    videos: [],
-    exerciseId: null,
-    hasVideo: false,
-  }
-}
-
 export async function GET(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
@@ -95,37 +65,9 @@ export async function GET(request: Request) {
       })
     }
 
-    if (profile.entitled) {
-      return NextResponse.json({
-        success: true,
-        ...accessMeta({ locked: false, entitled: true, remaining: FREE_EXERCISE_FORM_LIFETIME_CAP }),
-        ...publicPayload,
-      })
-    }
-
-    const key = exerciseFormUnlockKey(result)
-    if (!key) {
-      return NextResponse.json({
-        success: true,
-        ...accessMeta({ locked: false, entitled: false, remaining: FREE_EXERCISE_FORM_LIFETIME_CAP }),
-        ...publicPayload,
-      })
-    }
-
-    const access = await claimFreeExerciseForm(auth.user.id, key)
-    if (!access.allowed) {
-      return NextResponse.json(lockedPayload(access.used))
-    }
-
     return NextResponse.json({
       success: true,
-      ...accessMeta({
-        locked: false,
-        entitled: access.entitled,
-        freeUnlock: !access.entitled,
-        used: access.used,
-        remaining: access.remaining,
-      }),
+      ...accessMeta({ locked: false, entitled: true, remaining: FREE_EXERCISE_FORM_LIFETIME_CAP }),
       ...publicPayload,
     })
   } catch (err) {

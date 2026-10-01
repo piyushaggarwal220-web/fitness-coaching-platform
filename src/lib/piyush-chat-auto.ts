@@ -11,9 +11,10 @@ import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
 import { loadAiCoachThreadContext } from '@/lib/ai/ai-coach-context'
 import { autoCoachFirstName } from '@/lib/coach-delivery-policy'
 import { markConversationRead, sendChatMessage } from '@/lib/coach-chat'
+import { COACH_REPLY_QUIET_MS } from '@/lib/chat-reply-pause'
 
-const HUMAN_ONLY =
-  /\b(refund|cancel (my )?(plan|membership|subscription)|chargeback|lawyer|chest pain|suicid|kill myself|self.?harm|emergency|hospitalized)\b/i
+const MEDICAL_ONLY =
+  /\b(chest pain|suicid|kill myself|self.?harm|emergency|hospitalized|can'?t breathe|cannot breathe)\b/i
 
 type ChatRow = {
   id: string
@@ -28,11 +29,8 @@ export function chatNeedsHumanCoach(input: {
   message_type?: string | null
   content?: string | null
 }): boolean {
-  const type = input.messageType ?? input.message_type ?? 'text'
-  if (type === 'voice') return true
   const text = input.content?.trim() ?? ''
-  if (!text) return type === 'image'
-  return HUMAN_ONLY.test(text)
+  return MEDICAL_ONLY.test(text)
 }
 
 function buildReplyPrompt(input: {
@@ -90,7 +88,7 @@ function buildReplyPrompt(input: {
       history || '(no prior messages)',
       dated ? `\n${dated}` : '',
       '',
-      `Write the next ${ASSISTANT_COACH_LABEL} reply only: 1–2 short lines max (~40 words). No quotes. No hyphen characters. No bullet lists. Do not book a call.`,
+      `Write the next coach reply only. If they sent several messages, answer the whole explanation. Up to 4 short lines. No quotes. No hyphen characters. No bullet lists. Do not book a call. If this is the first reply, include one short line that the plan is made with the principles of Coach Piyush and Coach Rakshit.`,
     ].join('\n'),
   }
 }
@@ -103,6 +101,8 @@ export async function autoReplyUnreadChat(
     coachUserId: string
     coachId?: string | null
     coachFirstName?: string | null
+    /** Skip the pause so a client can ask for a reply after 2–3 messages. */
+    force?: boolean
   }
 ): Promise<{ status: 'sent' | 'skipped' | 'failed'; detail: string }> {
   const { data: messages, error } = await admin
@@ -117,6 +117,13 @@ export async function autoReplyUnreadChat(
   const chronological = [...(messages ?? [])].reverse() as ChatRow[]
   const latestClient = [...chronological].reverse().find((row) => row.sender_type === 'client')
   if (!latestClient) return { status: 'skipped', detail: 'no unread client message' }
+
+  if (!input.force) {
+    const sentAt = new Date(latestClient.created_at).getTime()
+    if (Number.isFinite(sentAt) && Date.now() - sentAt < COACH_REPLY_QUIET_MS - 400) {
+      return { status: 'skipped', detail: 'waiting_for_more' }
+    }
+  }
 
   // Already answered after this client message (instant reply or coach).
   const answeredAfter = chronological.some(
@@ -171,7 +178,7 @@ export async function autoReplyUnreadChat(
       systemPrompt: prompts.systemPrompt,
       userPrompt: prompts.userPrompt,
       model: MODELS.GPT_LUNA,
-      maxTokens: 95,
+      maxTokens: 180,
       temperature: 0.5,
     })
     reply = guardAssistantCoachReply(
@@ -187,10 +194,8 @@ export async function autoReplyUnreadChat(
     conversationId: input.conversationId,
     senderType: 'coach',
     senderId: input.coachUserId,
-    content: reply.startsWith(ASSISTANT_COACH_LABEL)
-      ? reply
-      : `${ASSISTANT_COACH_LABEL}: ${reply}`,
-    notificationTitle: 'Assistant coach replied',
+    content: reply.replace(new RegExp(`^${ASSISTANT_COACH_LABEL}:\\s*`, 'i'), ''),
+    notificationTitle: 'Coach replied',
   })
   if (sent.error) return { status: 'failed', detail: sent.error }
 

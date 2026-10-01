@@ -4,12 +4,12 @@ import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
 import { loadAiCoachThreadContext } from '@/lib/ai/ai-coach-context'
 import {
-  ASSISTANT_COACH_LABEL,
   buildNamedCoachSystemPrompt,
   guardAssistantCoachReply,
 } from '@/lib/ai/coach-chat-persona'
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
 import { chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
+import { chatTextForModel } from '@/lib/chat-reply-pause'
 import { memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
 import { assertInstantFeatureAccess } from '@/lib/instant-feature-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
 
-  let body: { message?: string }
+  let body: { message?: string; replyNow?: boolean }
   try {
     body = await request.json()
   } catch {
@@ -121,7 +121,8 @@ export async function POST(request: Request) {
   }
 
   const message = (body.message || '').trim()
-  if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 })
+  const replyNow = body.replyNow === true
+  if (!message && !replyNow) return NextResponse.json({ error: 'Message required' }, { status: 400 })
   if (message.length > MAX_MESSAGE_LEN) {
     return NextResponse.json({ error: 'Message is too long' }, { status: 400 })
   }
@@ -148,27 +149,29 @@ export async function POST(request: Request) {
     earlierCoachThread(admin, auth.user.id),
   ])
 
-  const { error: userInsertError } = await admin.from('ai_coach_messages').insert({
-    client_id: auth.user.id,
-    role: 'user',
-    content: message,
-    created_at: now,
-  })
-  if (userInsertError) {
-    return NextResponse.json(
-      { error: userInsertError.message || 'Could not save message' },
-      { status: 500 }
-    )
+  if (message) {
+    const { error: userInsertError } = await admin.from('ai_coach_messages').insert({
+      client_id: auth.user.id,
+      role: 'user',
+      content: message,
+      created_at: now,
+    })
+    if (userInsertError) {
+      return NextResponse.json(
+        { error: userInsertError.message || 'Could not save message' },
+        { status: 500 }
+      )
+    }
   }
 
-  if (chatNeedsHumanCoach({ content: message })) {
+  if (message && chatNeedsHumanCoach({ content: message })) {
     const { data: heldRow, error: heldError } = await admin
       .from('ai_coach_messages')
       .insert({
         client_id: auth.user.id,
         role: 'assistant',
         content:
-          'I can’t handle that in this chat. If this is a medical emergency, contact local emergency services. A refund or a call is not something this chat can agree to.',
+          'If this is a medical emergency, contact local emergency services. For your plan, tell me what you can still do today.',
         created_at: new Date().toISOString(),
       })
       .select('id, role, content, created_at')
@@ -177,6 +180,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: heldError?.message ?? 'Could not save message' }, { status: 500 })
     }
     return NextResponse.json({ message: heldRow, coachFirstName })
+  }
+
+  if (!replyNow) {
+    return NextResponse.json({ pending: true, coachFirstName })
   }
 
   const { data: historyRows } = await admin
@@ -216,8 +223,9 @@ export async function POST(request: Request) {
     mode: 'ai_thread',
   })
 
+  const hasCoachReply = history.some((turn) => turn.role === 'assistant')
   const transcript = [...earlier.slice(-8), ...history]
-    .map((turn) => `${turn.role === 'user' ? 'Client' : ASSISTANT_COACH_LABEL}: ${turn.content}`)
+    .map((turn) => `${turn.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(turn.content)}`)
     .join('\n')
 
   let replyText = 'I am here. Tell me what you need help with on your plan today.'
@@ -228,10 +236,12 @@ export async function POST(request: Request) {
         transcript || `Client: ${message}`,
         dated ? `\n${dated}` : '',
         '',
-        `Write the next ${ASSISTANT_COACH_LABEL} reply only: 1–2 short lines max (~40 words). No quotes. No hyphen characters. No bullet lists. Do not book a call.`,
+        hasCoachReply
+          ? 'Write the next coach reply only. If they sent several messages, answer the whole explanation. Up to 4 short lines. No quotes. No hyphen characters. No bullet lists. Do not book a call.'
+          : 'Write the next coach reply only. Start with one short line that the plan is made with the principles of Coach Piyush and Coach Rakshit, then answer what they asked. Up to 4 short lines. No quotes. No hyphen characters. No bullet lists. Do not book a call.',
       ].join('\n'),
       model: MODELS.GPT_LUNA,
-      maxTokens: 95,
+      maxTokens: 180,
       temperature: 0.6,
     })
     replyText =

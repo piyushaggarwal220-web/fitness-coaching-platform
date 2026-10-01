@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { CircleHelp, X } from 'lucide-react'
 import { colors, layout, radius } from '@/lib/design-tokens'
 import { COACH_ISSUE_CONTACT } from '@/lib/content'
@@ -25,11 +26,11 @@ function guideReply(question: string): string {
   if (/date|11|october|oct|tomorrow|from today/.test(q)) {
     return 'A future date does not change today’s plan. Say “from today” only if you want the change now. Otherwise lock it in on the start date.'
   }
-  if (/call|whatsapp|coach reply|available/.test(q)) {
-    return `${COACH_ISSUE_CONTACT} Assistant coach cannot book a call or set a time.`
+    if (/call|whatsapp|coach reply|available/.test(q)) {
+    return 'Write it in Coach chat. Diet, workouts, and plan questions are handled there.'
   }
   if (/assistant|bot|smart coach|who am i talking/.test(q)) {
-    return 'Assistant coach answers plan questions. App guide, this button, only explains the app. They are not your coach.'
+    return 'Coach chat answers plan questions. App guide, this button, only explains the app.'
   }
   if (/tracker|check.?in|log/.test(q)) {
     return 'The tracker follows the published plan. A chat message does not change it. Log meals and workouts on Tracker. Check-ins are on their own page from Home.'
@@ -44,6 +45,7 @@ function guideReply(question: string): string {
 }
 
 export function AppGuide({ aboveNav }: { aboveNav: boolean }) {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const [turns, setTurns] = useState<Turn[]>([
@@ -53,8 +55,9 @@ export function AppGuide({ aboveNav }: { aboveNav: boolean }) {
     },
   ])
 
+  const lift = pathname.startsWith('/tracker/workout') ? 88 : 12
   const bottom = aboveNav
-    ? `calc(${layout.bottomNavHeight}px + env(safe-area-inset-bottom) + 12px)`
+    ? `calc(${layout.bottomNavHeight}px + env(safe-area-inset-bottom) + ${lift}px)`
     : 'calc(16px + env(safe-area-inset-bottom))'
 
   const send = () => {
@@ -65,7 +68,7 @@ export function AppGuide({ aboveNav }: { aboveNav: boolean }) {
   }
 
   return (
-    <div style={{ position: 'fixed', right: 16, bottom, zIndex: 140, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: open ? 'min(360px, calc(100vw - 32px))' : 'auto' }}>
+    <div style={{ position: 'fixed', left: 16, bottom, zIndex: 40, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: open ? 'min(360px, calc(100vw - 32px))' : 'auto' }}>
       {open && (
         <div
           style={{
@@ -85,7 +88,7 @@ export function AppGuide({ aboveNav }: { aboveNav: boolean }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: `1px solid ${colors.divider}` }}>
             <div>
               <p style={{ margin: 0, fontWeight: 800, color: colors.textPrimary }}>App guide</p>
-              <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>How to use LURVOX. Not your coach.</p>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>How to use LURVOX.</p>
             </div>
             <button type="button" aria-label="Close app guide" onClick={() => setOpen(false)} style={{ border: 'none', background: 'transparent', color: colors.textSecondary, cursor: 'pointer' }}>
               <X size={18} />

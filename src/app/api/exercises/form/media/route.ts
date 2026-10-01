@@ -1,9 +1,4 @@
 import { requireApiUser } from '@/lib/api-auth'
-import { profileEntitledForExerciseLibrary } from '@/lib/addon-protocols'
-import {
-  canPlayFreeExerciseForm,
-  exerciseFormUnlockKey,
-} from '@/lib/exercise-form/free-unlocks'
 import { lookupExerciseForm } from '@/lib/exercise-form/lookup'
 import {
   getCachedMuscleWikiMedia,
@@ -17,13 +12,6 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
-
-  const { data: profile } = await auth.supabase
-    .from('profiles')
-    .select('exercise_library_entitled')
-    .eq('id', auth.user.id)
-    .maybeSingle()
-  const entitled = profileEntitledForExerciseLibrary(profile)
 
   const url = new URL(request.url)
   const name = url.searchParams.get('name')?.trim() ?? ''
@@ -39,14 +27,6 @@ export async function GET(request: Request) {
     const video = pickFormVideo(result.videos, gender, angle)
     if (!video) {
       return new Response('No form video', { status: 404 })
-    }
-
-    if (!entitled) {
-      const key = exerciseFormUnlockKey(result)
-      const allowed = key ? await canPlayFreeExerciseForm(auth.user.id, key) : false
-      if (!allowed) {
-        return new Response('Exercise library locked', { status: 403 })
-      }
     }
 
     const mediaUrl = kind === 'poster' ? video.previewUrl : video.url

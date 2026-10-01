@@ -10,6 +10,16 @@ import { colors, radius, spacing } from '@/lib/design-tokens'
 import { buildModuleSummaries } from '@/lib/daily-tracker/module-summaries'
 import type { TodayTrackerView, TrackerWeekProgress } from '@/lib/daily-tracker/types'
 
+const MODULE_COLOR: Record<string, string> = {
+  diet: '#4ade80',
+  workout: '#38bdf8',
+  water: '#22d3ee',
+  steps: '#a3e635',
+  sleep: '#c4b5fd',
+  supplements: '#fbbf24',
+  cardio: '#fb7185',
+}
+
 function HeroStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div
@@ -207,6 +217,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
       <div style={{ display: 'grid', gap: spacing[2] }}>
         {modules.map((mod) => {
           const done = mod.progress >= 100
+          const tint = MODULE_COLOR[mod.id] ?? colors.accent
           return (
             <Link
               key={mod.id}
@@ -219,10 +230,10 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                 padding: spacing[4],
                 borderRadius: radius.lg,
                 background: done
-                  ? 'linear-gradient(135deg, rgba(34,197,94,0.10) 0%, rgba(24,24,27,0.92) 60%)'
-                  : 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(24,24,27,0.92) 60%)',
+                  ? 'linear-gradient(135deg, rgba(34,197,94,0.16) 0%, rgba(24,24,27,0.92) 60%)'
+                  : `linear-gradient(135deg, ${tint}22 0%, rgba(24,24,27,0.94) 58%)`,
                 backdropFilter: 'blur(16px)',
-                border: `1px solid ${done ? 'rgba(34,197,94,0.22)' : colors.borderSubtle}`,
+                border: `1px solid ${done ? 'rgba(34,197,94,0.28)' : `${tint}55`}`,
                 textDecoration: 'none',
                 color: colors.textPrimary,
                 boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
@@ -233,8 +244,8 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                   width: 52,
                   height: 52,
                   borderRadius: radius.md,
-                  background: done ? colors.successMuted : colors.accentMuted,
-                  border: `1px solid ${done ? 'rgba(34,197,94,0.28)' : 'rgba(249,115,22,0.22)'}`,
+                  background: done ? colors.successMuted : `${tint}24`,
+                  border: `1px solid ${done ? 'rgba(34,197,94,0.28)' : `${tint}66`}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -268,7 +279,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                       borderRadius: 999,
                       background: done
                         ? colors.success
-                        : `linear-gradient(90deg, ${colors.accent}, ${colors.accentHover})`,
+                        : `linear-gradient(90deg, ${tint}, ${colors.accent})`,
                       boxShadow: mod.progress > 0
                         ? `0 0 12px ${done ? 'rgba(34,197,94,0.5)' : colors.accentGlow}`
                         : 'none',

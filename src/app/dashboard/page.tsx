@@ -409,13 +409,13 @@ export default function Dashboard() {
     },
     {
       key: 'chat',
-      title: 'Assistant coach',
+      title: 'Coach chat',
       subtitle: instantLocked.ai_chat
         ? 'Unlock for lifetime access'
         : chatReady && unreadMessages > 0
           ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
           : chatReady
-            ? 'Not your coach. This chat cannot book a call.'
+            ? 'Message or photo. Send a few lines, then the reply comes.'
             : CHAT_AFTER_ENROLLMENT_MESSAGE,
       href: instantLocked.ai_chat ? unlockHrefForFeature('ai_chat') : '/client/chat',
       icon: MessageCircle,

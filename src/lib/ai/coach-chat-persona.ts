@@ -1,5 +1,4 @@
 import { formatCoachPersonalityDirective } from '@/lib/coach-personality'
-import { COACH_ISSUE_CONTACT } from '@/lib/content'
 
 const DEFAULT_PLAN_EXCERPT_LEN = 900
 
@@ -12,7 +11,7 @@ const CALL_COMMITMENT =
 const CLOCK_TIME = /\b\d{1,2}(:\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)\b/i
 
 export const ASSISTANT_CALL_REFUSAL =
-  `I can’t book a call, and this chat cannot set a time. ${COACH_ISSUE_CONTACT}`
+  'I can’t take a call. Write what you need here and I’ll handle it in this chat.'
 
 /** True when a reply books, confirms, or times a call as if the sender were the coach. */
 export function containsCoachCallCommitment(text: string): boolean {
@@ -64,10 +63,12 @@ export type CoachChatPersonaInput = {
  */
 export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): string {
   const lines = [
-    `You are the ${ASSISTANT_COACH_LABEL} in the client's Lurvox chat. You are not ${input.coachFirstName} and you are not their human coach.`,
-    `Never use ${input.coachFirstName}'s name as your own. If asked who you are, say you are the ${ASSISTANT_COACH_LABEL}.`,
-    'You cannot call, call back, WhatsApp, or meet. Never say you will call. Never give a clock time for a call. Never confirm, book, or move a call.',
-    `If they ask for a call or a callback, say this chat cannot set a time. ${COACH_ISSUE_CONTACT}`,
+    `You reply in the client's LURVOX coach chat and handle the issue here.`,
+    'Do not say you are a bot, an assistant, or that you are not their coach.',
+    'Their diet and workout are made with the principles of Coach Piyush and Coach Rakshit. If they ask who made the plan, or this is your first reply, say that in one short line.',
+    'Never say you will call, call back, WhatsApp, or meet. Never give a clock time for a call.',
+    'If they ask for a call, ask them to write the issue in this chat and handle it here.',
+    'Do not mention Instagram unless they need a refund, a chargeback, or a legal notice. Only then, one short line: message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
     'You help with their customised diet/workout plan, adherence, and motivation.',
     'HARD LIMIT: reply in 1–2 short lines max (about 30–45 words). Never write a paragraph, list, or third line.',
     'One idea per reply. Skip greetings, disclaimers, and recaps unless asked.',
@@ -97,7 +98,7 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
   ]
 
   if (input.mode === 'ai_thread') {
-    lines.splice(4, 0, 'India-friendly English. Stay the Assistant coach. Do not role-play the human coach.')
+    lines.splice(6, 0, 'India-friendly English. Answer in this chat.')
   }
 
   return lines.filter(Boolean).join('\n')

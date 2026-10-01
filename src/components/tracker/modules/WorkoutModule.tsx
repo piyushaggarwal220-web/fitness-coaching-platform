@@ -611,7 +611,7 @@ export function WorkoutModule({
           }}
         >
           <div style={{ fontSize: 11, color: colors.accent, fontWeight: 700, textTransform: 'uppercase' }}>
-            Today&apos;s Workout
+            {selectedDay ? selectedDay.label : "Today's workout"}
           </div>
           <div style={{ fontSize: 22, fontWeight: 800, marginTop: 6, overflowWrap: 'anywhere', lineHeight: 1.25 }}>
             {sessionTitle}
@@ -817,19 +817,18 @@ export function WorkoutModule({
                           onClick={() => setFormExercise(ex.name.trim())}
                           style={{
                             flexShrink: 0,
-                            height: 28,
-                            padding: '0 10px',
+                            minHeight: 36,
+                            padding: '0 12px',
                             borderRadius: 999,
-                            border: `1px solid ${colors.accent}`,
-                            background: colors.accentMuted,
-                            color: colors.accent,
+                            border: 'none',
+                            background: '#38bdf8',
+                            color: '#082f49',
                             fontWeight: 800,
-                            fontSize: 11,
-                            letterSpacing: '0.06em',
+                            fontSize: 13,
                             cursor: 'pointer',
                           }}
                         >
-                          FORM
+                          Watch video
                         </button>
                       ) : null}
                     </div>

@@ -928,8 +928,11 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         {readOnly ? null : showSend ? (
           <button
             type="button"
-            onClick={() => void sendMessage()}
-            disabled={sending || !input.trim()}
+            onClick={() => {
+              if (imagePreview) void uploadAndSendImage()
+              else void sendMessage()
+            }}
+            disabled={sending || (!input.trim() && !imagePreview)}
             className="btn-press"
             style={styles.sendBtn}
             aria-label="Send"

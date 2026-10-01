@@ -1,16 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
-import Script from 'next/script'
-import { Loader2, Lock, Play, X } from 'lucide-react'
+import { Loader2, Play, X } from 'lucide-react'
 import { colors, layout, radius, spacing } from '@/lib/design-tokens'
 import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
-import {
-  EXERCISE_LIBRARY_ADDON_PAISE,
-  formatInrFromPaise,
-} from '@/lib/payments/checkout-discounts'
-import { startExerciseLibraryCheckout } from '@/lib/payments/exercise-library-checkout-client'
 
 type VideoOption = { gender: FormDemoGender; angle: string; hasPoster?: boolean }
 
@@ -217,8 +210,6 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
   const titleId = useId()
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<FormPayload | null>(null)
-  const [unlocking, setUnlocking] = useState(false)
-  const [unlockError, setUnlockError] = useState<string | null>(null)
   const activeVideoRef = useRef<HTMLVideoElement | null>(null)
 
   const loadForm = useCallback(() => {
@@ -274,25 +265,6 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
       window.removeEventListener('keydown', onKey)
     }
   }, [onClose])
-
-  const handleUnlock = async () => {
-    setUnlockError(null)
-    setUnlocking(true)
-    try {
-      const result = await startExerciseLibraryCheckout()
-      if (result.status === 'success' || result.status === 'already_unlocked') {
-        loadForm()
-        return
-      }
-      if (result.status === 'error') {
-        setUnlockError(result.message)
-      }
-    } catch (err) {
-      setUnlockError(err instanceof Error ? err.message : 'Could not start checkout')
-    } finally {
-      setUnlocking(false)
-    }
-  }
 
   const gender: FormDemoGender = data?.preferredGender === 'female' ? 'female' : 'male'
   const angles = useMemo(
@@ -362,8 +334,8 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
           }}
         >
           <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: colors.accent }}>
-              FORM
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#38bdf8' }}>
+              HOW TO DO THIS
             </p>
             <h2
               id={titleId}
@@ -431,68 +403,6 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
             </div>
           ) : data?.error ? (
             <p style={{ margin: 0, color: colors.danger }}>{data.error}</p>
-          ) : data?.locked ? (
-            <div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  gap: 10,
-                  padding: '18px 8px 8px',
-                }}
-              >
-                <Lock size={28} color={colors.accent} />
-                <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: colors.textPrimary }}>
-                  You&apos;ve used your 3 free form videos
-                </p>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: colors.textSecondary }}>
-                  Unlock every lift in your tracker for{' '}
-                  {formatInrFromPaise(data.pricePaise ?? EXERCISE_LIBRARY_ADDON_PAISE)}, one-time.
-                </p>
-                {unlockError ? (
-                  <p style={{ margin: 0, color: colors.danger, fontSize: 13 }}>{unlockError}</p>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => void handleUnlock()}
-                  disabled={unlocking}
-                  style={{
-                    marginTop: 6,
-                    height: 48,
-                    width: '100%',
-                    maxWidth: 320,
-                    border: 0,
-                    borderRadius: radius.full,
-                    background: colors.accent,
-                    color: colors.textInverse,
-                    fontWeight: 800,
-                    fontSize: 15,
-                    cursor: unlocking ? 'wait' : 'pointer',
-                  }}
-                >
-                  {unlocking
-                    ? 'Opening checkout…'
-                    : `Unlock all for ${formatInrFromPaise(data.pricePaise ?? EXERCISE_LIBRARY_ADDON_PAISE)}`}
-                </button>
-                <p style={{ margin: 0, fontSize: 12, color: colors.textMuted }}>
-                  One-time payment. Your 3 free videos stay unlocked.
-                </p>
-                <Link
-                  href="/library/unlock"
-                  style={{
-                    marginTop: 4,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: colors.accent,
-                    textDecoration: 'none',
-                  }}
-                >
-                  Pay in your browser instead
-                </Link>
-              </div>
-            </div>
           ) : !data?.configured ? (
             <p style={{ margin: 0, color: colors.textSecondary, lineHeight: 1.45 }}>
               Form videos are not connected yet. Follow your coach&apos;s notes, or ask in chat.
@@ -503,52 +413,6 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
             </p>
           ) : (
             <>
-              {data.freeUnlock ? (
-                <div
-                  style={{
-                    marginBottom: 14,
-                    padding: '10px 12px',
-                    borderRadius: 12,
-                    background: colors.accentMuted,
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                    lineHeight: 1.45,
-                  }}
-                >
-                  <p style={{ margin: 0, fontWeight: 800, color: colors.textPrimary }}>
-                    Free video {data.freeUsed ?? 1} of {data.freeCap ?? 3}
-                  </p>
-                  <p style={{ margin: '4px 0 0' }}>
-                    {data.freeRemaining
-                      ? `${data.freeRemaining} free video${data.freeRemaining === 1 ? '' : 's'} left. Unlock every lift for ${formatInrFromPaise(data.pricePaise ?? EXERCISE_LIBRARY_ADDON_PAISE)}, one-time.`
-                      : `That was your last free video. Unlock every lift for ${formatInrFromPaise(data.pricePaise ?? EXERCISE_LIBRARY_ADDON_PAISE)}, one-time.`}
-                  </p>
-                  {unlockError ? (
-                    <p style={{ margin: '8px 0 0', color: colors.danger }}>{unlockError}</p>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => void handleUnlock()}
-                    disabled={unlocking}
-                    style={{
-                      marginTop: 10,
-                      height: 40,
-                      width: '100%',
-                      border: 0,
-                      borderRadius: radius.full,
-                      background: colors.accent,
-                      color: colors.textInverse,
-                      fontWeight: 800,
-                      fontSize: 13,
-                      cursor: unlocking ? 'wait' : 'pointer',
-                    }}
-                  >
-                    {unlocking
-                      ? 'Opening checkout…'
-                      : `Unlock all for ${formatInrFromPaise(data.pricePaise ?? EXERCISE_LIBRARY_ADDON_PAISE)}`}
-                  </button>
-                </div>
-              ) : null}
               {showPlayers ? (
                 <div style={{ display: 'grid', gap: 14, marginBottom: 14 }}>
                   {angles.map((angle, index) => (
@@ -603,9 +467,6 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
         </div>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      {data?.locked || data?.freeUnlock ? (
-        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
-      ) : null}
     </div>
   )
 }

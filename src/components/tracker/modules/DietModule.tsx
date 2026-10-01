@@ -74,8 +74,14 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
   const visibleMeals = useMemo(() => {
     if (!multiDay) return meals
     if (!selectedKey) return []
-    return meals.filter((m) => m.dietDay === selectedKey)
-  }, [meals, multiDay, selectedKey])
+    const picked = meals.filter((m) => m.dietDay === selectedKey)
+    if (picked.length > 0) return picked
+    if (suggestion) {
+      const suggested = meals.filter((m) => m.dietDay === suggestion)
+      if (suggested.length > 0) return suggested
+    }
+    return meals
+  }, [meals, multiDay, selectedKey, suggestion])
 
   const [expanded, setExpanded] = useState<string | null>(null)
   const done = visibleMeals.filter((m) => completion.meals?.[m.id]?.completed).length
@@ -114,8 +120,9 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
         </div>
 
         <div style={{ display: 'grid', gap: 10 }}>
-          {days.map((day) => {
+          {days.map((day, index) => {
             const isSuggested = day.key === suggestion
+            const tint = ['#4ade80', '#38bdf8', '#fbbf24', '#c4b5fd', '#fb7185', '#22d3ee', '#fb923c'][index % 7]
             return (
               <button
                 key={day.key}
@@ -128,8 +135,8 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
                   gap: 12,
                   padding: '16px 18px',
                   borderRadius: radius.lg,
-                  border: `1px solid ${isSuggested ? colors.accentMuted : colors.borderSubtle}`,
-                  background: isSuggested ? colors.accentMuted : colors.bgGlass,
+                  border: `1px solid ${isSuggested ? tint : `${tint}55`}`,
+                  background: isSuggested ? `${tint}33` : `${tint}14`,
                   color: colors.textPrimary,
                   cursor: saving ? 'wait' : 'pointer',
                   textAlign: 'left',
