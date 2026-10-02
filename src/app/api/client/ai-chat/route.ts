@@ -5,6 +5,8 @@ import { MODELS } from '@/lib/ai/config'
 import { loadAiCoachThreadContext } from '@/lib/ai/ai-coach-context'
 import {
   buildNamedCoachSystemPrompt,
+  clientTextForReply,
+  coachReplyRequest,
   guardAssistantCoachReply,
 } from '@/lib/ai/coach-chat-persona'
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
@@ -227,6 +229,16 @@ export async function POST(request: Request) {
   const transcript = [...earlier.slice(-8), ...history]
     .map((turn) => `${turn.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(turn.content)}`)
     .join('\n')
+  const pending = clientTextForReply(
+    history.map((turn) => ({
+      fromClient: turn.role === 'user',
+      content: chatTextForModel(turn.content),
+    }))
+  )
+  const replyRequest = coachReplyRequest({
+    clientText: pending || message,
+    firstReply: !hasCoachReply,
+  })
 
   let replyText = 'I am here. Tell me what you need help with on your plan today.'
   try {
@@ -236,12 +248,11 @@ export async function POST(request: Request) {
         transcript || `Client: ${message}`,
         dated ? `\n${dated}` : '',
         '',
-        hasCoachReply
-          ? 'Write the next coach reply only. If they sent several messages, answer the whole explanation. Up to 4 short lines. No quotes. No hyphen characters. No bullet lists. Do not book a call.'
-          : 'Write the next coach reply only. Start with one short line that the plan is made with the principles of Coach Piyush and Coach Rakshit, then answer what they asked. Up to 4 short lines. No quotes. No hyphen characters. No bullet lists. Do not book a call.',
+        'Write the next coach reply only.',
+        replyRequest.instruction,
       ].join('\n'),
       model: MODELS.GPT_LUNA,
-      maxTokens: 180,
+      maxTokens: replyRequest.maxTokens,
       temperature: 0.6,
     })
     replyText =

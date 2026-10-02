@@ -5,6 +5,8 @@ import { MODELS } from '@/lib/ai/config'
 import {
   ASSISTANT_COACH_LABEL,
   buildNamedCoachSystemPrompt,
+  clientTextForReply,
+  coachReplyRequest,
   guardAssistantCoachReply,
 } from '@/lib/ai/coach-chat-persona'
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
@@ -50,7 +52,7 @@ function buildReplyPrompt(input: {
   trackerLine?: string | null
   checkinLine?: string | null
   history: ChatRow[]
-}): { systemPrompt: string; userPrompt: string } {
+}): { systemPrompt: string; userPrompt: string; maxTokens: number } {
   const history = input.history
     .map((row) => {
       const who = row.sender_type === 'client' ? 'Client' : row.sender_type === 'coach' ? 'Coach' : 'System'
@@ -59,10 +61,18 @@ function buildReplyPrompt(input: {
     })
     .join('\n')
 
-  const latestClientText = [...input.history]
-    .reverse()
-    .find((row) => row.sender_type === 'client')?.content
-  const dated = datedPlanRequestDirective(latestClientText ?? '')
+  const latestClientText = clientTextForReply(
+    input.history.map((row) => ({
+      fromClient: row.sender_type === 'client',
+      content: row.content,
+    }))
+  )
+  const dated = datedPlanRequestDirective(latestClientText)
+  const hasCoachReply = input.history.some((row) => row.sender_type === 'coach')
+  const replyRequest = coachReplyRequest({
+    clientText: latestClientText,
+    firstReply: !hasCoachReply,
+  })
 
   return {
     systemPrompt: buildNamedCoachSystemPrompt({
@@ -88,8 +98,10 @@ function buildReplyPrompt(input: {
       history || '(no prior messages)',
       dated ? `\n${dated}` : '',
       '',
-      `Write the next coach reply only. If they sent several messages, answer the whole explanation. Up to 4 short lines. No quotes. No hyphen characters. No bullet lists. Do not book a call. If this is the first reply, include one short line that the plan is made with the principles of Coach Piyush and Coach Rakshit.`,
+      'Write the next coach reply only.',
+      replyRequest.instruction,
     ].join('\n'),
+    maxTokens: replyRequest.maxTokens,
   }
 }
 
@@ -178,7 +190,7 @@ export async function autoReplyUnreadChat(
       systemPrompt: prompts.systemPrompt,
       userPrompt: prompts.userPrompt,
       model: MODELS.GPT_LUNA,
-      maxTokens: 180,
+      maxTokens: prompts.maxTokens,
       temperature: 0.5,
     })
     reply = guardAssistantCoachReply(

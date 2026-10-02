@@ -19,11 +19,95 @@ export function containsCoachCallCommitment(text: string): boolean {
   return /\b(call|callback|call back)\b/i.test(text) && CLOCK_TIME.test(text)
 }
 
-/** Replace any reply that commits to a call. Leave plan and habit replies alone. */
+/** Replace any reply that commits to a call. Keep line breaks so a multi-point answer stays readable. */
 export function guardAssistantCoachReply(text: string): string {
-  const cleaned = text.replace(/\s{2,}/g, ' ').trim()
+  const cleaned = text
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
   if (!cleaned || containsCoachCallCommitment(cleaned)) return ASSISTANT_CALL_REFUSAL
   return cleaned
+}
+
+/** How many separate asks are in the text the coach still has to answer. */
+export function clientPointCount(text: string): number {
+  const trimmed = text.trim()
+  if (!trimmed) return 0
+  const pieces = trimmed
+    .split(/\n+/)
+    .flatMap((line) => line.split(/\s*[•·]\s+/))
+    .map((part) => part.replace(/^\s*(?:[-*]|\d+[.)])\s*/, '').trim())
+    .filter((part) => part.length > 12)
+  if (pieces.length >= 2) return pieces.length
+  const questions = trimmed.match(/\?/g)?.length ?? 0
+  return Math.max(questions, 1)
+}
+
+export function unansweredClientText(
+  turns: Array<{ fromClient: boolean; content: string | null | undefined }>
+): string {
+  const chunks: string[] = []
+  for (let i = turns.length - 1; i >= 0; i -= 1) {
+    if (!turns[i].fromClient) break
+    const text = turns[i].content?.trim()
+    if (text) chunks.unshift(text)
+  }
+  return chunks.join('\n')
+}
+
+const INCOMPLETE_REPLY_FOLLOW_UP =
+  /\b(rest|all (?:of|my)|every|didn'?t answer|did not answer|incomplete|other (?:points|questions)|remaining|you missed|not answered|longer answer)\b/i
+
+/** Text the length budget should cover. A short "answer the rest" still includes the earlier list. */
+export function clientTextForReply(
+  turns: Array<{ fromClient: boolean; content: string | null | undefined }>
+): string {
+  const pending = unansweredClientText(turns)
+  if (clientPointCount(pending) >= 2 || !INCOMPLETE_REPLY_FOLLOW_UP.test(pending)) return pending
+  let seenCoach = false
+  const earlier: string[] = []
+  for (let i = turns.length - 1; i >= 0; i -= 1) {
+    if (!seenCoach) {
+      if (!turns[i].fromClient) seenCoach = true
+      continue
+    }
+    if (!turns[i].fromClient) break
+    const text = turns[i].content?.trim()
+    if (text) earlier.unshift(text)
+  }
+  return [...earlier, pending].filter(Boolean).join('\n')
+}
+
+/** One question stays short. A list gets one finished sentence per point, with room to complete it. */
+export function coachReplyRequest(input: { clientText: string; firstReply: boolean }): {
+  maxTokens: number
+  instruction: string
+} {
+  const points = clientPointCount(input.clientText)
+  const opener = input.firstReply
+    ? 'Start with one short line that the plan is made with the principles of Coach Piyush and Coach Rakshit. '
+    : ''
+  const close = 'No quotes. Do not book a call. End on a finished sentence.'
+  if (points >= 2) {
+    return {
+      maxTokens: 900,
+      instruction: [
+        opener,
+        `The client raised ${points} separate points. Answer all ${points}, in that order.`,
+        'Put each answer on its own line as one finished sentence.',
+        'Do not stop after the first point, and do not stop after the medicine or supplement point.',
+        'If they mention medicine, an infection, or supplements, the first sentence tells them to confirm supplements with their doctor. Then answer every other point.',
+        'You cannot change the written plan, the tracker, or League from chat.',
+        'For a diet or workout change, say what still fits today\'s written plan, then tell them to open My Plan and lock in a plan edit.',
+        'If League is missing from their menu, say it is not on the bottom menu. Do not pretend you turned it on.',
+        close,
+      ].join(' '),
+    }
+  }
+  return {
+    maxTokens: 320,
+    instruction: `${opener}They asked one thing. Answer it in 2 to 4 finished sentences. ${close}`,
+  }
 }
 
 /** Truncate plan text for chat context without blowing the prompt. */
@@ -70,8 +154,8 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
     'If they ask for a call, ask them to write the issue in this chat and handle it here.',
     'Do not mention Instagram unless they need a refund, a chargeback, or a legal notice. Only then, one short line: message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
     'You help with their customised diet/workout plan, adherence, and motivation.',
-    'HARD LIMIT: reply in 1–2 short lines max (about 30–45 words). Never write a paragraph, list, or third line.',
-    'One idea per reply. Skip greetings, disclaimers, and recaps unless asked.',
+    'Length follows the reply instruction. One question gets 2 to 4 finished sentences. Several questions get one finished sentence for every point, in order. Never stop mid-sentence.',
+    'Skip greetings and recaps unless this is the first reply.',
     'No medical diagnoses. No invented prices, refunds, discounts, or plan extensions.',
     'Do not agree just to be agreeable. If they ask for a crash diet, a calorie number below the written plan, a forbidden food, skipping the plan, or starting a future change today, say no in one line and keep the current plan.',
     'Never say sure, absolutely, or you are right when the request fights the written plan, the calorie target, or a future date.',
