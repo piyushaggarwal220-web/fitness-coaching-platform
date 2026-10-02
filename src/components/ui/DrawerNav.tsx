@@ -250,12 +250,12 @@ export const clientDrawerItems = (icons: {
   Settings: React.ComponentType<{ size?: number; color?: string }>
   LifeBuoy: React.ComponentType<{ size?: number; color?: string }>
 }): DrawerNavItem[] => [
-  { href: '/dashboard', label: 'Dashboard', icon: <icons.Home size={20} /> },
-  { href: '/tracker', label: "Today's Tracker", icon: <icons.ListChecks size={20} /> },
+  { href: '/dashboard', label: 'Home', icon: <icons.Home size={20} /> },
+  { href: '/tracker', label: 'Track', icon: <icons.ListChecks size={20} /> },
+  { href: '/plan', label: 'Plan', icon: <icons.ClipboardList size={20} /> },
+  { href: '/checkin', label: 'Check-in', icon: <icons.Calendar size={20} /> },
+  { href: '/client/chat', label: 'Coach', icon: <icons.MessageCircle size={20} /> },
   { href: '/journey', label: 'Journey', icon: <icons.Map size={20} /> },
-  { href: '/plan', label: 'My Plan', icon: <icons.ClipboardList size={20} /> },
-  { href: '/checkin', label: 'Check-ins', icon: <icons.Calendar size={20} /> },
-  { href: '/client/chat', label: 'Chat', icon: <icons.MessageCircle size={20} /> },
   { href: '/profile', label: 'Profile', icon: <icons.User size={20} /> },
   { href: '/settings', label: 'Settings', icon: <icons.Settings size={20} /> },
   { href: '/client/support', label: 'Support', icon: <icons.LifeBuoy size={20} /> },

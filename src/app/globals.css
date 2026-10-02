@@ -8,10 +8,10 @@
   --bg-glass: rgba(24, 24, 27, 0.72);
 
   /* Accent — premium orange */
-  --accent: #f97316;
-  --accent-hover: #fb923c;
-  --accent-muted: rgba(249, 115, 22, 0.12);
-  --accent-glow: rgba(249, 115, 22, 0.22);
+  --accent: #ff6200;
+  --accent-hover: #ff7a2e;
+  --accent-muted: rgba(255, 98, 0, 0.14);
+  --accent-glow: rgba(255, 98, 0, 0.22);
 
   /* Semantic */
   --success: #22c55e;
@@ -1051,31 +1051,42 @@ body:has(.wa-chat) header {
 
 html.client-portal,
 html.client-portal body {
-  --bg-primary: #f3f6fb;
-  --bg-secondary: #e7eef8;
-  --bg-card: #ffffff;
-  --bg-elevated: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.94);
-  --accent: #0284c7;
-  --accent-hover: #0369a1;
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --text-inverse: #ffffff;
-  --divider: rgba(15, 23, 42, 0.08);
-  --border-subtle: rgba(15, 23, 42, 0.12);
-  background-color: #f3f6fb;
-  color: #0f172a;
-  background-image:
-    radial-gradient(ellipse 80% 45% at 0% -10%, rgba(56, 189, 248, 0.35), transparent 55%),
-    radial-gradient(ellipse 70% 40% at 100% 0%, rgba(251, 146, 60, 0.28), transparent 50%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(167, 139, 250, 0.28), transparent 52%),
-    radial-gradient(ellipse 55% 40% at 0% 100%, rgba(74, 222, 128, 0.28), transparent 50%);
-  background-attachment: fixed;
+  --bg-primary: #09090b;
+  --bg-secondary: #111113;
+  --bg-card: #18181b;
+  --bg-elevated: #1f1f23;
+  --bg-glass: rgba(24, 24, 27, 0.92);
+  --accent: #ff6200;
+  --accent-hover: #ff7a2e;
+  --text-primary: #fafafa;
+  --text-secondary: #c4c4cc;
+  --text-muted: #a1a1aa;
+  --text-inverse: #09090b;
+  --divider: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  background-color: #09090b;
+  color: #fafafa;
+  background-image: none;
 }
 
 html.client-portal header.client-chrome,
 html.client-portal nav.client-chrome {
-  background-color: rgba(255, 255, 255, 0.94) !important;
-  border-color: rgba(15, 23, 42, 0.08) !important;
+  background-color: rgba(9, 9, 11, 0.94) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.lx-today-grid {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 900px) {
+  .lx-today-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
+    align-items: start;
+  }
+
+  .lx-today-primary {
+    grid-row: span 2;
+  }
 }

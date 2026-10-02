@@ -60,7 +60,7 @@ export function ModuleEmpty({ message }: { message: string }) {
       style={{
         padding: spacing[5],
         borderRadius: radius.lg,
-        background: '#ffffff',
+        background: colors.bgCard,
         border: `1px solid ${colors.borderSubtle}`,
         backdropFilter: 'blur(16px)',
         textAlign: 'center',

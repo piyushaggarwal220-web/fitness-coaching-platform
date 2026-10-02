@@ -9,9 +9,8 @@ import { PhotoGalleryViewer, type GalleryPhoto } from '@/components/journey/Phot
 import { PhotoCompareStrip } from '@/components/journey/PhotoCompareStrip'
 import { authenticateClient } from '@/lib/onboarding'
 import { loadProgressJourney, type ProgressJourneyData, type JourneyWeeklyEntry } from '@/lib/progress-journey'
-import { brandTitle } from '@/lib/brand'
 import { clientColors as colors, spacing } from '@/lib/design-tokens'
-import { staggerClass, useCountUp } from '@/lib/motion'
+import { staggerClass } from '@/lib/motion'
 import { createClient } from '@/lib/supabase/client'
 import { StorageImage } from '@/components/ui/StorageImage'
 import { InstantFeatureGate } from '@/components/instant/InstantFeatureGate'
@@ -55,8 +54,6 @@ export default function JourneyPage() {
     setGallery({ photos, index, meta })
   }
 
-  const weightChangeAnimated = useCountUp(data?.stats.weightChange ?? 0)
-
   if (loading) {
     return (
       <InstantFeatureGate feature="journey" title="Journey">
@@ -90,12 +87,32 @@ export default function JourneyPage() {
 
       <div style={{ marginBottom: spacing[5] }}>
         <h1 style={{ margin: 0, fontSize: 'clamp(1.75rem, 6vw, 2.25rem)', fontWeight: 800, letterSpacing: '-0.03em', color: colors.textPrimary }}>
-          {brandTitle('Your Journey')}
+          Journey
         </h1>
         <p style={{ margin: '8px 0 0', color: colors.textSecondary, fontSize: 15 }}>
-          Every step forward counts
+          {stats.weeksActive > 0
+            ? `Week ${stats.weeksActive} of coaching`
+            : 'Check-ins, photos, and weight live here.'}
         </p>
       </div>
+
+      {(stats.startWeight != null || stats.currentWeight != null) && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: spacing[2],
+            marginBottom: spacing[5],
+          }}
+        >
+          <StatCard label="Started" value={stats.startWeight != null ? `${stats.startWeight} kg` : '—'} />
+          <StatCard label="Now" value={stats.currentWeight != null ? `${stats.currentWeight} kg` : '—'} />
+          <StatCard
+            label="Change"
+            value={stats.weightChange != null ? `${stats.weightChange > 0 ? '+' : ''}${stats.weightChange.toFixed(1)} kg` : '—'}
+          />
+        </div>
+      )}
 
       {latest && prior && (
         <section style={{ marginBottom: spacing[5] }}>
@@ -141,21 +158,15 @@ export default function JourneyPage() {
         <StatCard label="Check-ins" value={String(stats.totalCheckins)} staggerIndex={1} />
         <StatCard label="Workouts" value={String(stats.totalWorkouts)} staggerIndex={2} />
         <StatCard label="Minutes" value={String(stats.totalWorkoutMinutes)} staggerIndex={3} />
-        {stats.weightChange != null && (
-          <StatCard
-            label="Weight Change"
-            value={`${weightChangeAnimated > 0 ? '+' : ''}${weightChangeAnimated.toFixed(1)} kg`}
-            highlight={stats.weightChange < 0}
-            staggerIndex={4}
-          />
-        )}
       </div>
 
       <section style={{ marginBottom: spacing[5] }}>
         <h2 style={sectionHeading}><Trophy size={14} style={{ display: 'inline', marginRight: 6 }} />Milestones</h2>
         <Card variant="elevated">
           {milestones.length === 0 ? (
-            <p style={{ margin: 0, color: colors.textMuted, fontSize: 15 }}>Your timeline will appear as you progress.</p>
+            <p style={{ margin: 0, color: colors.textMuted, fontSize: 15, lineHeight: 1.5 }}>
+              Milestones show up after your first check-in or completed workout.
+            </p>
           ) : (
             <div style={{ position: 'relative', paddingLeft: 28 }}>
               <div style={{ position: 'absolute', left: 10, top: 4, bottom: 4, width: 2, backgroundColor: colors.accent, opacity: 0.3, borderRadius: 1 }} />

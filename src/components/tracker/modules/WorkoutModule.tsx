@@ -113,15 +113,15 @@ function phaseChrome(phase: WorkoutExercisePhase) {
       return {
         title: 'Pre-Workout',
         hint: 'Easy cardio, mobility, light groove sets',
-        accent: '#38bdf8',
-        icon: <Flame size={18} color="#38bdf8" />,
+        accent: colors.textSecondary,
+        icon: <Flame size={18} color={colors.textSecondary} />,
       }
     case 'mobility':
       return {
         title: 'Mobility',
         hint: 'Joints and range of motion',
-        accent: '#818cf8',
-        icon: <Wind size={18} color="#818cf8" />,
+        accent: colors.textSecondary,
+        icon: <Wind size={18} color={colors.textSecondary} />,
       }
     case 'main':
       return {
@@ -134,15 +134,15 @@ function phaseChrome(phase: WorkoutExercisePhase) {
       return {
         title: 'Finisher',
         hint: 'Core or last push',
-        accent: '#f472b6',
-        icon: <Dumbbell size={18} color="#f472b6" />,
+        accent: colors.textSecondary,
+        icon: <Dumbbell size={18} color={colors.textSecondary} />,
       }
     case 'cooldown':
       return {
         title: 'Post-Workout',
         hint: 'Stretches and cool-down',
-        accent: '#34d399',
-        icon: <Wind size={18} color="#34d399" />,
+        accent: colors.textSecondary,
+        icon: <Wind size={18} color={colors.textSecondary} />,
       }
   }
 }
@@ -781,15 +781,13 @@ export function WorkoutModule({
                   // Done and in-progress exercises get tinted glass instead of a flat fill.
                   ...(isDone
                     ? {
-                        background:
-                          'linear-gradient(135deg, rgba(34,197,94,0.2) 0%, #ffffff 72%)',
-                        border: '1px solid rgba(22,163,74,0.35)',
+                        background: colors.successMuted,
+                        border: '1px solid rgba(34,197,94,0.35)',
                       }
                     : isCurrent
                       ? {
-                          background:
-                            'linear-gradient(135deg, rgba(2,132,199,0.16) 0%, #ffffff 72%)',
-                          border: '2px solid #0284c7',
+                          background: colors.accentMuted,
+                          border: `1px solid ${colors.accent}`,
                         }
                       : null),
                 }}
@@ -821,8 +819,8 @@ export function WorkoutModule({
                             padding: '0 12px',
                             borderRadius: 999,
                             border: 'none',
-                            background: '#38bdf8',
-                            color: '#082f49',
+                            background: colors.accent,
+                            color: colors.textInverse,
                             fontWeight: 800,
                             fontSize: 13,
                             cursor: 'pointer',

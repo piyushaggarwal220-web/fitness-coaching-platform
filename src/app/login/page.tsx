@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { fetchClientProfile, getClientPostAuthPath, isOnboardingComplete } from '@/lib/onboarding';
 import { hasClientEntitlement } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/client';
-import { BRAND_NAME, brandTitle } from '@/lib/brand';
+import { BRAND_NAME } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
 import { colors } from '@/lib/design-tokens';
 import { safeInternalPath } from '@/lib/safe-navigation';
@@ -98,13 +98,11 @@ function LoginForm() {
       style={{
         ...authStyles.page,
         backgroundColor: '#09090b',
-        backgroundImage:
-          'radial-gradient(ellipse 80% 50% at 0% -10%, rgba(255, 98, 0, 0.45), transparent 55%), radial-gradient(ellipse 70% 45% at 100% 0%, rgba(251, 191, 36, 0.38), transparent 50%), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(59, 130, 246, 0.28), transparent 52%), radial-gradient(ellipse 55% 40% at 0% 100%, rgba(34, 197, 94, 0.24), transparent 50%)',
       }}
     >
       <div style={authStyles.card}>
         <div style={authStyles.logo}>{BRAND_NAME}</div>
-        <h1 style={authStyles.title}>{brandTitle('Welcome back')}</h1>
+        <h1 style={authStyles.title}>Welcome back</h1>
 
         {sessionExpired && (
           <div style={{

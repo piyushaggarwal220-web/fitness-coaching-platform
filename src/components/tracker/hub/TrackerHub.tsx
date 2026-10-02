@@ -1,23 +1,41 @@
 'use client'
 
 import Link from 'next/link'
-import { Check, ChevronRight } from 'lucide-react'
+import {
+  Activity,
+  Check,
+  ChevronRight,
+  ClipboardList,
+  Droplets,
+  Dumbbell,
+  Moon,
+  Pill,
+  UtensilsCrossed,
+  type LucideIcon,
+} from 'lucide-react'
 import { WearableConnect } from '@/components/tracker/WearableConnect'
 import { ProgressRing } from '@/components/tracker/ProgressRing'
 import { TrackerRefreshControls } from '@/components/tracker/TrackerRefreshControls'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { buildModuleSummaries } from '@/lib/daily-tracker/module-summaries'
+import type { TrackerModuleId } from '@/lib/daily-tracker/module-summaries'
 import type { TodayTrackerView, TrackerWeekProgress } from '@/lib/daily-tracker/types'
 
-const MODULE_COLOR: Record<string, string> = {
-  diet: '#4ade80',
-  workout: '#38bdf8',
-  water: '#22d3ee',
-  steps: '#a3e635',
-  sleep: '#c4b5fd',
-  supplements: '#fbbf24',
-  cardio: '#fb7185',
+const MODULE_ICON: Record<TrackerModuleId, LucideIcon> = {
+  diet: UtensilsCrossed,
+  workout: Dumbbell,
+  water: Droplets,
+  steps: ClipboardList,
+  sleep: Moon,
+  supplements: Pill,
+  cardio: Activity,
+}
+
+function moduleRank(id: TrackerModuleId): number {
+  if (id === 'workout') return 0
+  if (id === 'diet') return 1
+  return 2
 }
 
 function HeroStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
@@ -162,8 +180,8 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           padding: spacing[5],
           borderRadius: radius.xl,
           // Mirrors the dashboard hero so the tracker feels like the same product.
-          background: '#ffffff',
-          border: '2px solid #0284c7',
+          background: colors.bgCard,
+          border: `1px solid ${colors.borderSubtle}`,
           backdropFilter: 'blur(20px)',
           boxShadow: '0 18px 48px rgba(0,0,0,0.38)',
           display: 'flex',
@@ -188,9 +206,9 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
         />
         <ProgressRing
           percent={view.day.overall_percent ?? 0}
-          size={140}
-          stroke={11}
-          label="Today's Progress"
+          size={96}
+          stroke={8}
+          label="Today"
         />
         <div
           style={{
@@ -214,9 +232,12 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
       </div>
 
       <div style={{ display: 'grid', gap: spacing[2] }}>
-        {modules.map((mod) => {
+        {[...modules]
+          .sort((a, b) => moduleRank(a.id) - moduleRank(b.id))
+          .map((mod) => {
           const done = mod.progress >= 100
-          const tint = MODULE_COLOR[mod.id] ?? colors.accent
+          const primary = mod.id === 'workout' || mod.id === 'diet'
+          const Icon = MODULE_ICON[mod.id]
           return (
             <Link
               key={mod.id}
@@ -228,9 +249,9 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                 gap: 14,
                 padding: spacing[4],
                 borderRadius: radius.lg,
-                background: '#ffffff',
+                background: colors.bgCard,
                 backdropFilter: 'blur(16px)',
-                border: `1px solid ${done ? 'rgba(34,197,94,0.28)' : `${tint}55`}`,
+                border: `1px solid ${done ? 'rgba(34,197,94,0.35)' : primary ? colors.accent : colors.borderSubtle}`,
                 textDecoration: 'none',
                 color: colors.textPrimary,
                 boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
@@ -241,16 +262,14 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                   width: 52,
                   height: 52,
                   borderRadius: radius.md,
-                  background: done ? colors.successMuted : `${tint}24`,
-                  border: `1px solid ${done ? 'rgba(34,197,94,0.28)' : `${tint}66`}`,
+                  background: done ? colors.successMuted : colors.accentMuted,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 26,
                   flexShrink: 0,
                 }}
               >
-                {mod.icon}
+                <Icon size={18} color={done ? colors.success : colors.accent} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -274,12 +293,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                       height: '100%',
                       width: `${mod.progress}%`,
                       borderRadius: 999,
-                      background: done
-                        ? colors.success
-                        : `linear-gradient(90deg, ${tint}, ${colors.accent})`,
-                      boxShadow: mod.progress > 0
-                        ? `0 0 12px ${done ? 'rgba(34,197,94,0.5)' : colors.accentGlow}`
-                        : 'none',
+                      background: done ? colors.success : colors.accent,
                       transition: 'width 500ms ease',
                     }}
                   />
@@ -293,8 +307,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
 
       {modules.length === 0 && (
         <p style={{ color: colors.textMuted, textAlign: 'center', lineHeight: 1.6 }}>
-          No tracker modules found in your active plan. Your coach will add diet, workout, and other sections to your
-          plan.
+          Your plan doesn't include tracker items yet. Your coach adds meals, workouts, and daily targets here.
         </p>
       )}
 

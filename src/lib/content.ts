@@ -1,4 +1,4 @@
-/** All LURVOX landing page copy — swap real names/results when photos are ready. */
+/** Public landing copy. Prices and durations come from the coaching catalog, not this file. */
 
 export const site = {
   brand: 'LURVOX',
@@ -8,21 +8,19 @@ export const site = {
 } as const
 
 export const nav = {
-  cta: 'Start Today',
-  pricing: 'See Pricing',
+  cta: 'Start for ₹599',
+  pricing: 'View plans',
 } as const
 
 export const hero = {
-  headline: 'Stop Guessing. Get Coaching That Actually Works.',
-  subheadline:
-    'Personal workout plans, real diet coaching, weekly reviews, and daily tracking — from coaches who adjust your plan based on your progress, not a PDF.',
-  primaryCta: 'Start My Transformation',
-  secondaryCta: 'See Plans & Pricing',
-  proofStripLabel: 'Real client results',
+  kicker: 'Online fitness coaching',
+  headline: 'Build your best physique.',
+  subheadline: 'Personalized coaching built around your body, goals and lifestyle.',
+  priceLabel: 'Starting from',
+  duration: '90 days',
+  primaryCta: 'Start for ₹599',
+  secondaryCta: 'View plans',
   coachPhotoAlt: 'LURVOX coaches Piyush Aggarwal and Rakshit Mohla',
-  /** Put file in public/landing/coach.jpg then set: '/landing/coach.jpg' */
-  coachPhoto: '',
-  finalCtaImage: '',
 } as const
 
 /** No live, phone, or WhatsApp calls. Issues go to the two coaches on Instagram. */
@@ -46,349 +44,161 @@ export const coaches = [
   },
 ] as const
 
-export const heroTransforms = [
-  {
-    name: 'Rahul M.',
-    result: '−11 kg · 14 weeks',
-    /** e.g. '/landing/hero/rahul.jpg' */
-    image: '',
-  },
-  {
-    name: 'Priya S.',
-    result: '−8 kg · 10 weeks',
-    image: '',
-  },
-  {
-    name: 'Aman K.',
-    result: '−14 kg · 16 weeks',
-    image: '',
-  },
-] as const
-
-export const socialProof = {
-  eyebrow: 'Proof, not promises',
-  headline: 'Real Transformations. Real People.',
-  subheadline:
-    'These are clients who followed their personalized plans and stayed consistent with weekly coaching.',
-  cta: 'I Want Results Like These',
-} as const
-
-/**
- * Transformation cards — drop images in public/landing/transforms/
- * then set before/after paths like '/landing/transforms/rahul-before.jpg'
- */
-export const transformations = [
-  {
-    id: 't1',
-    name: 'Rahul M.',
-    time: '14 weeks',
-    weightLost: '11 kg',
-    bodyFatLost: '7%',
-    quote: 'Weekly check-ins stopped me from quitting when I stalled.',
-    before: '',
-    after: '',
-  },
-  {
-    id: 't2',
-    name: 'Priya S.',
-    time: '10 weeks',
-    weightLost: '8 kg',
-    bodyFatLost: '5%',
-    quote: 'My coach rebuilt my diet around night shifts. That changed everything.',
-    before: '',
-    after: '',
-  },
-  {
-    id: 't3',
-    name: 'Aman K.',
-    time: '16 weeks',
-    weightLost: '14 kg',
-    bodyFatLost: '9%',
-    quote: 'Not another generic plan. Someone actually looked at my photos every week.',
-    before: '',
-    after: '',
-  },
-  {
-    id: 't4',
-    name: 'Sneha R.',
-    time: '12 weeks',
-    weightLost: '9 kg',
-    bodyFatLost: '6%',
-    quote: 'Home workouts only. Still got visible results by week 6.',
-    before: '',
-    after: '',
-  },
-  {
-    id: 't5',
-    name: 'Vikram T.',
-    time: '20 weeks',
-    weightLost: '16 kg',
-    bodyFatLost: '10%',
-    quote: 'Cheapest coaching I have tried that still feels truly 1-to-1.',
-    before: '',
-    after: '',
-  },
-  {
-    id: 't6',
-    name: 'Meera J.',
-    time: '8 weeks',
-    weightLost: '6 kg',
-    bodyFatLost: '4%',
-    quote: 'They asked about my kids and schedule before building anything.',
-    before: '',
-    after: '',
-  },
-  {
-    id: 't7',
-    name: 'Arjun P.',
-    time: '18 weeks',
-    weightLost: '12 kg',
-    bodyFatLost: '8%',
-    quote: 'Plan updates after every check-in kept progress moving.',
-    before: '',
-    after: '',
-  },
-  {
-    id: 't8',
-    name: 'Divya N.',
-    time: '11 weeks',
-    weightLost: '7 kg',
-    bodyFatLost: '5%',
-    quote: 'Vegetarian diet, beginner workouts — and I still hit my goal.',
-    before: '',
-    after: '',
-  },
-] as const
-
-export const whyPeopleFail = {
-  eyebrow: 'Truth check',
-  headline: 'Why we give results, but you fail',
-  subheadline:
-    'Most people fail on generic templates and gym myths. We build customised plans on science and coach principles.',
-  failLabel: 'Why people fail',
-  winLabel: 'Why our plans work',
-  fail: [
-    'Generic AI plans copy the same template for everyone',
-    'Old beliefs like “more sweat means more fat loss”',
-    'Random YouTube workouts with no weekly structure',
-    'Crash diets that crash your energy and adherence',
-    'Ignoring sleep, water, and recovery',
-    'Changing plans every week before results can show',
-  ],
-  win: [
-    'Personal workout and diet built from your assessment',
-    'Science first: calories, protein, progressive overload, recovery',
-    'Weekly check-ins and 1-to-1 coach chat',
-    'Daily trackers so we can see what is actually happening',
-    'Plan updates when you stall — not a static PDF',
-    'Built for your schedule, gym or home, veg or mixed diet',
-  ],
-  cta: 'Get a system that works',
-} as const
-
-export const howItWorks = {
-  eyebrow: 'The LURVOX method',
-  headline: 'Why LURVOX Works',
-  subheadline: 'A clear path from day one to visible change.',
-  steps: [
-    { title: 'Assessment', body: 'We learn your goals, schedule, diet, and starting point.' },
-    { title: 'Personal Plan', body: 'Custom workout + diet built for your life — not a template.' },
-    { title: 'Weekly Coaching', body: '1-to-1 reviews and plan adjustments in the app.' },
-    { title: 'Daily Tracking', body: 'Log workouts, food, water, sleep, steps, and more.' },
-    { title: 'Weekly Updates', body: 'Your plan changes based on what is actually happening.' },
-    { title: 'Transformation', body: 'Measurable progress you can see and feel.' },
-  ],
-  cta: 'Start the Process',
-} as const
-
-export const insideCoaching = {
-  eyebrow: 'Your client app',
-  headline: 'Inside Your Coaching',
-  subheadline: 'Everything you need in one place — built so your coach can guide you better.',
-  features: [
-    {
-      title: 'Workout',
-      body: 'Your personal training sessions with clear exercises, sets, and progressions.',
-      image: '',
-    },
-    {
-      title: 'Diet',
-      body: 'Meals and macros built around your preferences, allergies, and schedule.',
-      image: '',
-    },
-    {
-      title: 'Tracker',
-      body: 'Daily logging for workout, diet, water, sleep, steps, and supplements.',
-      image: '',
-    },
-    {
-      title: 'Coach Chat',
-      body: 'Message your coach directly when you need clarity or support.',
-      image: '',
-    },
-    {
-      title: 'Progress',
-      body: 'Weight, measurements, and adherence in one view your coach actually reviews.',
-      image: '',
-    },
-    {
-      title: 'Journey',
-      body: 'Your timeline of check-ins, plan updates, and wins — all in one place.',
-      image: '',
-    },
-    {
-      title: 'Photos',
-      body: 'Progress photos compared over time so changes are impossible to miss.',
-      image: '',
-    },
-  ],
-  cta: 'Get Full Access',
-} as const
-
-export const whatYouGet = {
-  eyebrow: 'Everything included',
-  headline: 'What You Get',
-  subheadline: 'No upsells. No hidden fees. One price covers coaching end to end.',
+export const goals = {
+  eyebrow: 'Choose a direction',
+  headline: 'Three goals. One coaching system.',
   items: [
-    { title: 'Personal Workout Plan', body: 'Built for your goal, level, and equipment.' },
-    { title: 'Personal Diet', body: 'Custom nutrition — veg, non-veg, allergies included.' },
-    { title: 'Weekly Check-ins', body: 'Structured reviews so nothing slips through.' },
-    { title: 'Habit Tracking', body: 'Build consistency with habits that stick.' },
-    { title: 'Workout Tracker', body: 'Log sets, reps, and adherence daily.' },
-    { title: 'Diet Tracker', body: 'Stay on your meal plan without guessing.' },
-    { title: 'Water Tracker', body: 'Hit hydration targets every day.' },
-    { title: 'Sleep Tracker', body: 'Recovery that actually supports progress.' },
-    { title: 'Step Tracker', body: 'Daily movement targets that fit your life.' },
-    { title: 'Supplement Tracker', body: 'Log what your coach recommends.' },
-    { title: 'Coach Chat', body: 'Direct support when you need it.' },
-    { title: 'Progress Photos', body: 'Visual proof of change over time.' },
-    { title: 'Journey', body: 'Your full coaching history in one timeline.' },
-    { title: 'Plan Updates', body: 'Weekly tweaks based on real data.' },
+    {
+      id: 'fat-loss',
+      title: 'Fat loss',
+      audience: 'For a focused 90-day cut',
+      timeframe: '3 months',
+      image: '/images/lurvox/goals/goal-fat-loss.webp',
+      alt: 'Woman training at home in a quiet morning interior',
+      plan: '3_months',
+    },
+    {
+      id: 'muscle-gain',
+      title: 'Muscle gain',
+      audience: 'For losing fat while building muscle',
+      timeframe: '6 months',
+      image: '/images/lurvox/goals/goal-muscle-gain.webp',
+      alt: 'Man performing a dumbbell row in a dark gym',
+      plan: '6_months',
+    },
+    {
+      id: 'athletic',
+      title: 'Athletic body',
+      audience: 'For fat loss, muscle, and stamina',
+      timeframe: '12 months',
+      image: '/images/lurvox/goals/goal-athletic.webp',
+      alt: 'Woman on an outdoor path at dusk',
+      plan: '12_months',
+    },
   ],
-  cta: 'Claim Full Access',
+} as const
+
+export const system = {
+  eyebrow: 'The LURVOX system',
+  headline: 'A plan that changes with you.',
+  lead: 'Technology builds the structure. Your coach uses it to guide the work.',
+  items: [
+    { title: 'Personalized workout', body: 'Sessions for your goal, level, and equipment — gym, home, or both.' },
+    { title: 'Personalized diet', body: 'Meals around your food, schedule, and preferences.' },
+    { title: 'Sleep and recovery', body: 'Sleep, steps, and habits logged beside training.' },
+    { title: 'Daily tracking', body: 'Workout, meals, water, and supplements in one day.' },
+    { title: 'Coach check-ins', body: 'Mid-week and weekly reviews on every plan.' },
+    { title: 'Coach chat', body: 'Message your coach in the app when you need a decision.' },
+    { title: 'Exercise form', body: 'Form videos in the app so the movement is clear.' },
+    { title: 'Plan updates', body: 'Every 14 days on 3 months. Every week on 6 and 12 months.' },
+  ],
+} as const
+
+export const coaching = {
+  eyebrow: 'Human coaching',
+  headline: 'Your coach guides the journey.',
+  lead: 'Piyush and Rakshit review your case in the app. There are no live calls.',
+  note: COACH_ISSUE_CONTACT,
+} as const
+
+export const appExperience = {
+  eyebrow: 'The app',
+  headline: 'What you open each day.',
+  lead: 'The same coaching, on your phone. Open today, do the work, talk to your coach.',
+  items: [
+    { title: 'Today', body: 'Workout, meals, and trackers for the day in front of you.' },
+    { title: 'Plan', body: 'The workout and diet your coach delivered.' },
+    { title: 'Track', body: 'Log a session, a meal, water, sleep, or steps and leave.' },
+    { title: 'Check-in', body: 'Submit the weekly review, including photos when they are due.' },
+    { title: 'Coach', body: 'Read the reply, see who sent it, and know the next step.' },
+    { title: 'Journey', body: 'Where you started, the current phase, and what comes next.' },
+  ],
+} as const
+
+export const pillars = {
+  training: {
+    eyebrow: 'Training',
+    headline: 'Strength, then conditioning.',
+    body: 'Clear sessions. Sets, reps, rest, and a way to mark the work done.',
+    image: '/images/lurvox/editorial/training-strength.webp',
+    alt: 'Man setting up a barbell in a dark studio gym',
+  },
+  nutrition: {
+    eyebrow: 'Nutrition',
+    headline: 'Meals you can repeat.',
+    body: 'A structure for the week — food, quantity, and room to stay consistent.',
+    image: '/images/lurvox/editorial/nutrition-editorial.webp',
+    alt: 'A simple high-protein meal on a dark table',
+  },
+  recovery: {
+    eyebrow: 'Recovery',
+    headline: 'Rest is part of the plan.',
+    body: 'Sleep, walking, and days that are not spent in the gym.',
+    image: '/images/lurvox/editorial/recovery-editorial.webp',
+    alt: 'Woman resting at home in low light',
+  },
 } as const
 
 export const pricing = {
-  eyebrow: 'Simple pricing',
-  headline: 'Choose Your Plan',
-  subheadline:
-    'Same coaching on every plan. Longer plans cost less per month — and every higher package includes everything below.',
-  comparisonNote: 'Every higher package includes everything in the plans below it.',
-  featuresIncluded: [
-    'Personal workout plan',
-    'Personal diet plan',
-    'Mid week + weekly check ins',
-    'Daily habit & health trackers',
-    'Coach chat support',
-    'Progress photos & journey',
+  eyebrow: 'Plans',
+  headline: 'Premium coaching. A clear starting price.',
+  subheadline: 'Same core coaching on every plan. Longer plans cost less per month.',
+  features: [
+    'Personal workout and diet',
+    'Mid-week and weekly check-ins',
+    'Daily trackers',
+    'Coach chat',
+    'Progress photos and journey',
     'Plan updates every 14 days on 3 months, every week on 6 and 12 months',
   ],
-  plans: [
-    {
-      slug: '3_months',
-      name: 'Fat loss',
-      price: '₹599',
-      perMonth: '≈ ₹200/month',
-      blurb: 'Fat loss',
-      save: 'BEST STARTER',
-      popular: false,
-    },
-    {
-      slug: '6_months',
-      name: 'Fat loss + muscle gain',
-      price: '₹999',
-      perMonth: '≈ ₹167/month',
-      blurb: 'Fat loss + muscle gain',
-      save: 'MOST POPULAR',
-      popular: true,
-    },
-    {
-      slug: '12_months',
-      name: 'Athletic body',
-      price: '₹1,699',
-      perMonth: '≈ ₹142/month',
-      blurb: 'Athletic body · 12 months · fat loss, muscle, stamina',
-      save: 'BEST VALUE',
-      popular: false,
-    },
-  ],
-  cta: 'Start Today',
-} as const
-
-export const affordability = {
-  headline: 'Why Are We So Affordable?',
-  body: [
-    'Online coaching lets us skip studio rent and fill dead time with smart systems — so more people get 1-to-1 plans without luxury pricing.',
-    'You still get personalised workout and diet, check-ins, and direct support in the app.',
-    'Premium guidance. Honest India pricing.',
-  ],
-  reassurance:
-    'You still receive personalised 1-to-1 coaching, weekly reviews, customised plans, and direct support.',
-} as const
-
-export const guarantee = {
-  headline: 'Visible Results Within 2 Months.',
-  subheadline:
-    'If you consistently follow your personalised plan and weekly coaching, we are confident you will see measurable progress within the first two months — better energy, better adherence, and clear physical change.',
-  note: 'Results depend on consistency. We do not promise overnight miracles. We promise a coaching system that works when you work it.',
-  cta: 'Start With Confidence',
+  cta: 'Start for ₹599',
 } as const
 
 export const faq = {
   eyebrow: 'Questions',
-  headline: 'FAQ',
+  headline: 'Before you start',
   items: [
     {
-      q: 'Why so affordable?',
-      a: 'We run online coaching at scale — no studio overhead, clear systems, honest pricing. You still get a personalised plan, check-ins, and 1-to-1 support in the app.',
+      q: 'What is LURVOX?',
+      a: 'Online fitness coaching. You get a personal workout, a personal diet, check-ins, and coach chat in the app.',
     },
     {
-      q: 'Is this real 1-to-1 coaching?',
-      a: 'Yes. Your plan, check-ins, and progress are handled as your case — not a one-size PDF. You get chat support and structured reviews inside the app.',
+      q: 'What does ₹599 include?',
+      a: 'The 3-month Fat loss plan: personal workout and diet, mid-week and weekly check-ins, daily trackers, coach chat, and plan updates every 14 days.',
     },
     {
       q: 'Do I need a gym?',
-      a: 'No. We build plans for gym, home, or a mix — based on what you actually have access to.',
+      a: 'No. Plans are built for a gym, home, or a mix, based on what you can actually use.',
     },
     {
-      q: 'Can vegetarians join?',
-      a: 'Absolutely. Diet plans are built around your preferences, including vegetarian, vegan, and allergy restrictions.',
+      q: 'Can beginners and vegetarians join?',
+      a: 'Yes. Training matches your experience. Diet follows your food preferences, including vegetarian meals and allergies.',
     },
     {
-      q: 'Can beginners join?',
-      a: 'Yes. Beginners are welcome. Your plan matches your experience level and progresses safely.',
+      q: 'How do I reach a coach?',
+      a: 'Inside the app. LURVOX does not do live calls. For an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
     },
     {
-      q: 'What if I miss workouts?',
-      a: 'Tell us on the next check-in. Plans get adjusted for real life — travel, busy weeks, and missed sessions happen. Consistency over perfection.',
-    },
-    {
-      q: 'Can I cancel?',
-      a: 'Yes. Message us on WhatsApp and we will process it — no pressure games.',
-    },
-    {
-      q: 'How quickly will I see results?',
-      a: 'Most clients who follow their plan consistently notice measurable progress within the first two months. Exact timelines vary by starting point, adherence, and goals.',
+      q: 'Are results guaranteed?',
+      a: 'No. Progress depends on your starting point and how consistently you follow the plan. Refund and cancellation rules are only in the Terms.',
     },
   ],
-  cta: 'Still Have Questions? Message Us',
 } as const
 
 export const finalCta = {
-  headline: 'Your Transformation Starts With One Decision.',
-  subheadline:
-    '1-to-1 online coaching. Unreal pricing. Real accountability. Get in now — and stop doing this alone.',
-  cta: 'Get My Transformation Started',
+  headline: 'Start the 90 days.',
+  subheadline: 'Online coaching, a personal plan, and a price you can see before you scroll.',
+  cta: 'Start for ₹599',
 } as const
 
 export const stickyCta = {
-  label: 'Start Today — From ₹599',
-  mobileLabel: 'Start Today',
+  label: 'Start for ₹599',
+  mobileLabel: 'Start for ₹599',
 } as const
 
 export const footer = {
-  tagline: '1-to-1 online coaching that actually transforms.',
-  legal: 'Results vary by individual, consistency, and starting point.',
-  payments: 'Secure payments via Razorpay · Cancel anytime',
+  tagline: 'Online fitness coaching.',
+  legal: 'Results vary. LURVOX does not promise a specific change in weight or time.',
+  payments: 'Secure payments via Razorpay',
   copyright: `© ${new Date().getFullYear()} LURVOX. All rights reserved.`,
 } as const

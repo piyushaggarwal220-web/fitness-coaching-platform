@@ -43,7 +43,6 @@ import {
  formatCountdownHms,
  getSaleCountdownRemainingMs,
 } from '@/lib/sale-countdown';
-import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations';
 import { CheckoutBasicsStep, type CheckoutBasicsFormState } from '@/components/checkout/CheckoutBasicsStep';
 import { CheckoutMoreInfoStep } from '@/components/checkout/CheckoutMoreInfoStep';
 import { validateCheckoutBasicsFields } from '@/lib/payments/checkout-intake-basics-shared';

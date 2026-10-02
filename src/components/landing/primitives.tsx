@@ -16,6 +16,8 @@ import {
   useTransform,
 } from 'framer-motion'
 import Link from 'next/link'
+import { CheckoutFunnelLink } from '@/components/analytics/CheckoutFunnelLink'
+import { getCoachingPlan } from '@/lib/payments/plans'
 
 function useIsCompactViewport() {
   const [compact, setCompact] = useState(false)
@@ -174,6 +176,54 @@ export function CtaLink({
     <Link href={href} className={classes}>
       {children}
     </Link>
+  )
+}
+
+/** Primary purchase link. Fires the existing plan_click / AddToCart funnel once. */
+export function PrimaryCta({
+  children,
+  className = '',
+  plan = '3_months',
+}: {
+  children: ReactNode
+  className?: string
+  plan?: string
+}) {
+  const catalog = getCoachingPlan(plan)
+  return (
+    <CheckoutFunnelLink
+      plan={plan}
+      planName={catalog?.name}
+      value={catalog ? catalog.amountPaise / 100 : undefined}
+      source="landing"
+      className={['lp-btn', 'lp-btn-primary', className].filter(Boolean).join(' ')}
+    >
+      {children}
+    </CheckoutFunnelLink>
+  )
+}
+
+export function CampaignImage({
+  src,
+  alt,
+  priority = false,
+  className = '',
+}: {
+  src: string
+  alt: string
+  priority?: boolean
+  className?: string
+}) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- static campaign files in /public
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading={priority ? 'eager' : 'lazy'}
+      fetchPriority={priority ? 'high' : 'auto'}
+      decoding="async"
+    />
   )
 }
 

@@ -7,7 +7,6 @@ import { Check, Dumbbell, MessageCircle, Send, Smartphone, UserRound, X } from '
 import { BRAND_NAME } from '@/lib/brand'
 import { coaches } from '@/lib/content'
 import { DIGITAL_PLAN_LIST } from '@/lib/payments/plans'
-import { AnimatedTransformations } from '@/components/landing/AnimatedTransformations'
 import { CheckoutFunnelLink } from '@/components/analytics/CheckoutFunnelLink'
 import { InstantFitnessQuiz } from '@/components/landing/InstantFitnessQuiz'
 import styles from './customised-plan.module.css'
@@ -426,10 +425,6 @@ export default function CustomisedPlanLandingPage() {
             </div>
           </li>
         </ol>
-      </section>
-
-      <section className={styles.sectionAlt}>
-        <AnimatedTransformations variant="instant" />
       </section>
 
       <section className={styles.section} id="find-plan">

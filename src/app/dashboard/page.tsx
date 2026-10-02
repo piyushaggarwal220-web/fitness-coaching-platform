@@ -5,43 +5,32 @@ import { type User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import {
   ArrowRight,
-  Calendar,
   ChevronDown,
   ClipboardList,
   Dumbbell,
-  Flame,
-  ListChecks,
-  MessageCircle,
-  Star,
-  Timer,
-  LucideIcon,
 } from 'lucide-react';
 import { ClientShell } from '@/components/ui/ClientShell';
-import { Card, StatCard } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { formatCheckinDate } from '@/lib/checkin';
 import {
   getClientCheckinSchedule,
-  getCheckinStatusLabel,
   getCheckinTypeDisplayName,
-  describeCheckinWindow,
   hasCoachingDayStarted,
 } from '@/lib/checkin-schedule';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
-import { formatPlanDate } from '@/lib/plans';
-import { clientFacingPlanTitle, parsePlanMeta } from '@/lib/plan-metadata';
+import { clientFacingPlanTitle } from '@/lib/plan-metadata';
 import { planGoalName } from '@/lib/payments/plan-pages';
 import { isDigitalPlanSlug } from '@/lib/payments/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { useInstantLockState } from '@/hooks/useInstantLockState';
-import { unlockHrefForFeature } from '@/lib/instant-feature-access';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
 import { CheckinDueBanner } from '@/components/dashboard/CheckinDueBanner';
 import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner';
 import { GoalUpgradeCard } from '@/components/dashboard/GoalUpgradeCard';
+import { TodayFocus } from '@/components/dashboard/TodayFocus';
 import { NotificationActivationGate } from '@/components/notifications/PushNotificationActivation';
 import { isPublicDemoEmail, PUBLIC_DEMO_CLIENT_NAME } from '@/lib/public-demo';
 import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability';
@@ -50,8 +39,7 @@ import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { clientRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy';
 import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
-import { isItemComplete } from '@/lib/daily-tracker/scores';
-import type { DailyTrackerDay, TrackerSnapshotItem } from '@/lib/daily-tracker/types';
+import { buildModuleSummaries, type TrackerModuleSummary } from '@/lib/daily-tracker/module-summaries';
 import { createClient } from '@/lib/supabase/client';
 import { clientColors as colors, spacing, typography } from '@/lib/design-tokens';
 import { mobileStyles } from '@/lib/mobile-styles';
@@ -84,6 +72,7 @@ export default function Dashboard() {
   const [weekWorkouts, setWeekWorkouts] = useState(0);
   const [trackerStreak, setTrackerStreak] = useState(0);
   const [todayTrackerPercent, setTodayTrackerPercent] = useState<number | null>(null);
+  const [todayModules, setTodayModules] = useState<TrackerModuleSummary[] | null>(null);
   const [trackerSubtitle, setTrackerSubtitle] = useState('Meals, workout, water & more');
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
@@ -272,11 +261,16 @@ export default function Dashboard() {
 
         if (planData) {
           void loadTodayTrackerView(supabase, userId, profileData).then(({ view }) => {
-            if (!view) return;
+            if (!view) {
+              setTodayModules([]);
+              return;
+            }
             setTrackerStreak(view.streak);
             setTodayTrackerPercent(view.day.overall_percent ?? 0);
-            setTrackerSubtitle(getTrackerHomeSummary(view.day));
+            setTodayModules(buildModuleSummaries(view.day));
           });
+        } else {
+          setTodayModules([]);
         }
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : 'Failed to load dashboard');
@@ -300,7 +294,6 @@ export default function Dashboard() {
   const coachingDayStarted = profile?.checkin_schedule_started_at
     ? hasCoachingDayStarted(profile.checkin_schedule_started_at, scheduleNow)
     : false;
-  const coachingDayPending = Boolean(profile?.checkin_schedule_started_at) && !coachingDayStarted;
   const checkinSchedule = profile?.checkin_schedule_started_at && coachingDayStarted
     ? getClientCheckinSchedule(profile.checkin_schedule_started_at, allCheckins, scheduleNow, {
         bypassSchedule: checkinScheduleBypass,
@@ -320,250 +313,43 @@ export default function Dashboard() {
   const stickyCheckinMode = dueCheckin ? 'due' : 'countdown';
   const chatReady = Boolean(coach) && !isPublicDemoEmail(user?.email);
 
-  const latestWeekly = allCheckins.find((c) => c.checkin_type === 'weekly') ?? null
-  const planMeta = activePlan ? parsePlanMeta(activePlan) : null
-  const planWeekLabel = planMeta?.week ?? checkinSchedule?.activeCoachingWeek ?? null
-  const planFromLatestCheckin = Boolean(
-    latestWeekly && planMeta?.checkinId && planMeta.checkinId === latestWeekly.id
-  )
-  const planAwaitingCheckinUpdate = Boolean(
-    latestWeekly && !latestWeekly.reviewed && !planFromLatestCheckin
-  )
-  const planFreshnessLabel = !activePlan
-    ? null
-    : planFromLatestCheckin
-      ? `Updated from your Week ${planWeekLabel ?? latestWeekly?.coaching_week ?? ''} check-in`
-      : planAwaitingCheckinUpdate
-        ? 'Waiting for your new plan from this check-in'
-        : 'Same plan as before this check-in'
-  const quickLinks = [
-    {
-      key: 'tracker',
-      title: 'Tracker',
-      subtitle: instantLocked.tracker ? 'Unlock for lifetime access' : trackerSubtitle,
-      href: instantLocked.tracker ? unlockHrefForFeature('tracker') : '/tracker',
-      icon: ListChecks,
-      badge: instantLocked.tracker
-        ? 'Locked'
-        : todayTrackerPercent != null
-          ? `${todayTrackerPercent}%`
-          : null,
-      accent: '#38bdf8',
-      visible: Boolean(activePlan) || instantLocked.tracker,
-    },
-    {
-      key: 'plan',
-      title: 'Plan',
-      subtitle: purchase?.plan_slug
-        ? `${planGoalName(purchase.plan_slug)}${activePlan ? ` · v${activePlan.version}` : ''}`
-        : activePlan
-          ? `${clientFacingPlanTitle(activePlan.title)} · v${activePlan.version}`
-          : 'Open your coaching plan',
-      href: '/plan',
-      icon: ClipboardList,
-      badge: activePlan ? 'Ready' : null,
-      accent: '#60a5fa',
-      visible: Boolean(profile),
-    },
-    {
-      key: 'checkin',
-      title: 'Check-in',
-      subtitle: instantLocked.tracker
-        ? 'Unlock tracker to use check-ins'
-        : dueCheckin
-          ? `${getCheckinTypeDisplayName(dueCheckin.type)} available now`
-          : checkinSchedule?.nextCheckin
-            ? `${getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)} · Day ${checkinSchedule.nextCheckin.coachingDay}`
-            : 'Weekly accountability and coach review',
-      href: instantLocked.tracker
-        ? unlockHrefForFeature('tracker')
-        : dueCheckin
-          ? dueCheckin.href
-          : '/checkin',
-      icon: Calendar,
-      badge: instantLocked.tracker ? 'Locked' : dueCheckin ? 'Due' : null,
-      accent: '#fbbf24',
-      visible: true,
-    },
-    {
-      key: 'journey',
-      title: 'Journey',
-      subtitle: instantLocked.journey
-        ? 'Unlock for lifetime access'
-        : 'Photos, check-ins, and progress history',
-      href: instantLocked.journey ? unlockHrefForFeature('journey') : '/journey',
-      icon: Flame,
-      badge: instantLocked.journey ? 'Locked' : null,
-      accent: '#a78bfa',
-      visible: true,
-    },
-    {
-      key: 'feedback',
-      title: 'Feedback',
-      subtitle: 'Review your plan or report a problem',
-      href: '/client/report-issue',
-      icon: Star,
-      badge: null,
-      accent: '#fb7185',
-      visible: true,
-    },
-    {
-      key: 'chat',
-      title: 'Coach chat',
-      subtitle: instantLocked.ai_chat
-        ? 'Unlock for lifetime access'
-        : chatReady && unreadMessages > 0
-          ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
-          : chatReady
-            ? 'Message or photo. Send a few lines, then the reply comes.'
-            : CHAT_AFTER_ENROLLMENT_MESSAGE,
-      href: instantLocked.ai_chat ? unlockHrefForFeature('ai_chat') : '/client/chat',
-      icon: MessageCircle,
-      badge: instantLocked.ai_chat
-        ? 'Locked'
-        : chatReady && unreadMessages > 0
-          ? unreadMessages > 9
-            ? '9+'
-            : String(unreadMessages)
-          : null,
-      accent: '#4ade80',
-      visible: true,
-    },
-  ]
-    .filter((item) => item.visible)
-    .sort((a, b) => {
-      if (dueCheckin) {
-        if (a.key === 'checkin') return -1;
-        if (b.key === 'checkin') return 1;
-      }
-      return 0;
-    });
-
-  const heroActionLabel = dueCheckin && !instantLocked.tracker
-    ? `Start ${getCheckinTypeDisplayName(dueCheckin.type)}`
-    : status?.nextActionHref
-      ? status.nextAction ?? 'Continue'
-      : activePlan && !instantLocked.tracker
-        ? "Open today's tracker"
-        : 'View your coaching dashboard';
-  const heroActionHref =
-    dueCheckin && !instantLocked.tracker
-      ? dueCheckin.href
-      : status?.nextActionHref
-        ?? (activePlan && !instantLocked.tracker
-          ? '/tracker'
-          : instantLocked.tracker
-            ? unlockHrefForFeature('tracker')
-            : '/plan');
-  const planCard = profile ? (
-    <Card
-      variant="glass"
-      onClick={() => router.push('/plan')}
-      style={{
-        cursor: 'pointer',
-        backgroundColor: '#ffffff',
-        backgroundImage: 'none',
-        border: '2px solid #2563eb',
-        boxShadow: '0 10px 24px rgba(37, 99, 235, 0.12)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(96,165,250,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ClipboardList size={22} color="#1d4ed8" />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: 17, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {purchase?.plan_slug
-              ? planGoalName(purchase.plan_slug)
-              : activePlan
-                ? clientFacingPlanTitle(activePlan.title)
-                : profile.plan_delivered
-                  ? 'Plan pending activation'
-                  : 'Plan in preparation'}
-          </p>
-          {activePlan && (
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-              {planWeekLabel != null ? `Week ${planWeekLabel} · ` : ''}v{activePlan.version} · Updated {formatPlanDate(activePlan.updated_at)}
-            </p>
-          )}
-          {planFreshnessLabel && (
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: planFromLatestCheckin ? colors.success : colors.textSecondary }}>
-              {planFreshnessLabel}
-            </p>
-          )}
-          {status?.coachName && (
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textSecondary }}>
-              Coach: {status.coachName}
-            </p>
-          )}
-        </div>
-        <ArrowRight size={20} color={colors.textMuted} />
-      </div>
-    </Card>
-  ) : null;
-  const trackerCard =
-    instantLocked.tracker ? null : activePlan && coachingDayPending ? (
-    <Card variant="glass">
-      <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Timer size={22} color={colors.accent} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: 17 }}>Your first day starts tomorrow</p>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-            Daily tracking opens at 12:00 AM.
-          </p>
-        </div>
-      </div>
-    </Card>
-  ) : activePlan ? (
-    <Card
-      variant={status?.preferTrackerUpTop ? 'elevated' : 'glass'}
-      onClick={() => router.push('/tracker')}
-      style={{
-        cursor: 'pointer',
-        backgroundColor: '#ffffff',
-        backgroundImage: 'none',
-        border: '2px solid #16a34a',
-        boxShadow: '0 10px 24px rgba(22, 163, 74, 0.12)',
-      }}
-      className={status?.preferTrackerUpTop ? 'card-hover' : undefined}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(74,222,128,0.24)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ListChecks size={22} color="#15803d" />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: 17 }}>
-            {status?.preferTrackerUpTop ? "Open today's tracker" : "Today's Tracker"}
-          </p>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-            {trackerSubtitle}
-          </p>
-        </div>
-        {todayTrackerPercent != null && (
-          <span style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: '#15803d',
-            backgroundColor: 'rgba(74,222,128,0.2)',
-            padding: '6px 10px',
-            borderRadius: 999,
-            flexShrink: 0,
-          }}>
-            {todayTrackerPercent}%
-          </span>
-        )}
-        <ArrowRight size={20} color={colors.textMuted} />
-      </div>
-    </Card>
-  ) : null;
-
   const rawName = (profile?.name || user?.email?.split('@')[0] || 'there').trim()
   // Public demo is "Demo Client" — keep the full label (do not split to "Demo").
   const firstName = isPublicDemoEmail(user?.email)
     ? PUBLIC_DEMO_CLIENT_NAME
     : rawName.split(/\s+/)[0]
+
+  const selectedGoals = profile?.onboarding_data?.goals?.selectedGoals
+  const goalLabel = selectedGoals && selectedGoals.length > 0
+    ? selectedGoals.map((goal) => getOnboardingLabel('fitness_goal', goal)).join(', ')
+    : profile
+      ? getOnboardingLabel('fitness_goal', profile.fitness_goal)
+      : ''
+  const contextLine = [
+    goalLabel && goalLabel !== '—' ? goalLabel : null,
+    activePlan
+      ? clientFacingPlanTitle(activePlan.title)
+      : purchase?.plan_slug
+        ? planGoalName(purchase.plan_slug)
+        : null,
+    checkinSchedule ? `Week ${checkinSchedule.activeCoachingWeek}` : null,
+  ].filter(Boolean).join(' · ')
+
+  const upcomingCheckin = dueCheckin ?? checkinSchedule?.nextCheckin ?? null
+  const nextCheckinFocus = upcomingCheckin
+    ? {
+        label: `${getCheckinTypeDisplayName(upcomingCheckin.type)} · Week ${upcomingCheckin.coachingWeek}`,
+        detail: dueCheckin
+          ? 'Due now. Photos and answers go to your coach.'
+          : checkinSchedule?.countdownDetailed
+            ? `Opens in ${checkinSchedule.countdownDetailed}`
+            : checkinSchedule?.countdownLabel
+              ? `Opens in ${checkinSchedule.countdownLabel}`
+              : 'Not open yet',
+        href: dueCheckin ? dueCheckin.href : '/checkin',
+        due: Boolean(dueCheckin),
+      }
+    : null
 
   return (
     <ClientShell
@@ -572,7 +358,23 @@ export default function Dashboard() {
     >
       {loadError && (
         <div style={{ ...mobileStyles.error, marginBottom: spacing[4] }}>
-          {loadError}
+          <p style={{ margin: '0 0 12px' }}>{loadError}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            style={{
+              minHeight: 44,
+              padding: '0 16px',
+              borderRadius: 12,
+              border: 'none',
+              background: colors.accent,
+              color: colors.textInverse,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Try again
+          </button>
         </div>
       )}
 
@@ -636,72 +438,19 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Greeting */}
-      <div style={{ marginBottom: spacing[6] }}>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 13,
-            color: '#0369a1',
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-          }}
-        >
-          Good {getGreeting()}
-        </p>
-        <h1 style={{ ...typography.pageTitle, marginTop: 6, color: colors.textPrimary }}>{firstName}</h1>
-        <p style={{ margin: '10px 0 0', fontSize: 16, color: colors.textSecondary, lineHeight: 1.45 }}>
-          Here&apos;s your coaching overview for today
-        </p>
-      </div>
-
-      <section style={{ marginBottom: spacing[7] }}>
-        <Card
-          variant="glass"
-          style={{
-            overflow: 'hidden',
-            backgroundColor: '#ffffff',
-            backgroundImage: 'none',
-            border: '2px solid #0284c7',
-            boxShadow: '0 12px 28px rgba(2, 132, 199, 0.12)',
-          }}
-        >
-          <div style={{ display: 'grid', gap: spacing[4] }}>
-            <div>
-              <p style={{ margin: 0, fontSize: 12, color: '#0369a1', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Coaching Hub
-              </p>
-              <h2 style={{ margin: '8px 0 0', fontSize: 'clamp(1.55rem, 5vw, 2rem)', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.03em', lineHeight: 1.12 }}>
-                Everything important is one tap away
-              </h2>
-              <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.55 }}>
-                {instantLocked.tracker || instantLocked.journey || instantLocked.ai_chat
-                  ? 'Open your plan from one place. Tracker, Journey, and Coach chat unlock separately if you want them.'
-                  : 'Track today, open your plan, stay on top of check-ins, review your journey, and message your coach from one place.'}
-              </p>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[2] }}>
-              <DashboardHeroStat label="Week workouts" value={String(weekWorkouts)} icon={<Dumbbell size={17} />} tint="#38bdf8" />
-              <DashboardHeroStat label="Streak" value={String(trackerStreak)} icon={<Flame size={17} />} tint="#fb923c" />
-              <DashboardHeroStat
-                label="Today"
-                value={todayTrackerPercent != null ? `${todayTrackerPercent}%` : '—'}
-                icon={<Calendar size={17} />}
-                tint="#4ade80"
-              />
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2] }}>
-              <Button onClick={() => router.push(heroActionHref)}>{heroActionLabel}</Button>
-              {!instantLocked.journey && (
-                <Button variant="secondary" onClick={() => router.push('/journey')}>
-                  Open journey
-                </Button>
-              )}
-            </div>
-          </div>
-        </Card>
-      </section>
+      <TodayFocus
+        firstName={firstName}
+        contextLine={contextLine}
+        modules={activePlan && !instantLocked.tracker ? todayModules : []}
+        coachName={coach?.name ?? null}
+        unreadMessages={unreadMessages}
+        showChat={chatReady}
+        weekWorkouts={weekWorkouts}
+        streak={trackerStreak}
+        todayPercent={todayTrackerPercent}
+        nextCheckin={nextCheckinFocus}
+        missedCount={checkinSchedule?.missedCheckins.length ?? 0}
+      />
 
       {checkinScheduleBypass && (
         <DevelopmentModeBadge style={{ marginBottom: spacing[4] }} />
@@ -713,32 +462,6 @@ export default function Dashboard() {
         gender={profile?.gender}
         bodyType={profile?.onboarding_data?.goals?.startingBodyType}
       />
-
-      <section style={{ marginBottom: spacing[7] }}>
-        <SectionHeader
-          title="Quick access"
-          subtitle={
-            dueCheckin
-              ? 'Your due check-in is surfaced first, followed by the rest of your coaching tools'
-              : 'Main coaching features, organized clearly'
-          }
-        />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: spacing[3] }}>
-          {quickLinks.map((item, index) => (
-            <QuickLinkCard
-              key={item.key}
-              title={item.title}
-              subtitle={item.subtitle}
-              href={item.href}
-              icon={item.icon}
-              badge={item.badge}
-              accent={item.accent}
-              index={index}
-              onOpen={(href) => router.push(href)}
-            />
-          ))}
-        </div>
-      </section>
 
       <section style={{ marginBottom: spacing[7] }}>
         <SectionHeader title="Status" subtitle="Membership, delivery, and device setup" />
@@ -757,210 +480,13 @@ export default function Dashboard() {
         <PwaInstallPrompt />
       </section>
 
-      {/* Keep plan and tracker together; tracker leads once daily tracking is preferred. */}
-      {(profile || activePlan) && (
-        <section style={{ marginBottom: spacing[7] }}>
-          <SectionHeader
-            title="Plan & Tracker"
-            subtitle={status?.preferTrackerUpTop
-              ? 'Log today’s habits, then review your coaching plan'
-              : 'Your coaching plan and daily tracking'}
-          />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[3] }}>
-            {status?.preferTrackerUpTop ? (
-              <>
-                {trackerCard}
-                {planCard}
-              </>
-            ) : (
-              <>
-                {planCard}
-                {trackerCard}
-              </>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Coaching week + next check-in */}
-      {checkinSchedule && (
-        <section style={{ marginBottom: spacing[7] }}>
-          <SectionHeader title="This week" subtitle="Your coaching week and check-in schedule" />
-
-          {checkinSchedule.developmentScheduleMessage ? (
-            <Card variant="glass" style={{ marginBottom: spacing[3] }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-                <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.warningMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Timer size={22} color={colors.warning} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: 13, color: colors.textMuted, fontWeight: 600 }}>Development Mode</p>
-                  <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 700, color: colors.textPrimary }}>
-                    {checkinSchedule.developmentScheduleMessage}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          ) : (
-            <Card
-              variant="glass"
-              style={{
-                marginBottom: spacing[3],
-                backgroundColor: '#fffbeb',
-                backgroundImage: 'none',
-                border: '2px solid #f59e0b',
-              }}
-            >
-              <div style={{ display: 'grid', gap: spacing[3] }}>
-                <div>
-                  <p style={eyebrowLabel}>Current Coaching Week</p>
-                  <p style={{ margin: '6px 0 0', fontSize: 28, fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.03em' }}>
-                    Week {checkinSchedule.activeCoachingWeek}
-                  </p>
-                </div>
-                {checkinSchedule.nextCheckin && (
-                  <>
-                    <div>
-                      <p style={eyebrowLabel}>Next Check-in</p>
-                      <p style={{ margin: '6px 0 0', fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>
-                        {getCheckinTypeDisplayName(checkinSchedule.nextCheckin.type)}
-                      </p>
-                      <p style={{ margin: '4px 0 0', fontSize: 14, color: colors.textSecondary }}>
-                        Week {checkinSchedule.nextCheckin.coachingWeek} · Day {checkinSchedule.nextCheckin.coachingDay}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(251,191,36,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Timer size={20} color="#b45309" />
-                      </div>
-                      <div>
-                        <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, fontWeight: 600 }}>
-                          {checkinSchedule.nextCheckinStatus === 'available'
-                            ? `Available now (${describeCheckinWindow(checkinSchedule.nextCheckin.type)})`
-                            : checkinSchedule.nextCheckinStatus === 'missed'
-                              ? 'Missed — wait for next'
-                              : 'Available in'}
-                        </p>
-                        <p style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>
-                          {checkinSchedule.nextCheckinStatus === 'available'
-                            ? 'Now'
-                            : checkinSchedule.nextCheckinStatus === 'missed'
-                              ? 'Closed'
-                              : checkinSchedule.countdownDetailed ?? checkinSchedule.countdownLabel ?? 'Soon'}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </Card>
-          )}
-
-          {checkinSchedule.weekCheckins.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
-              {checkinSchedule.weekCheckins.map((task) => {
-                const statusColor =
-                  task.status === 'completed' ? colors.success :
-                  task.status === 'available' ? colors.accent :
-                  task.status === 'missed' ? colors.danger :
-                  task.status === 'awaiting_review' ? colors.warning :
-                  colors.textMuted
-                const statusBg =
-                  task.status === 'completed' ? colors.successMuted :
-                  task.status === 'available' ? colors.accentMuted :
-                  task.status === 'missed' ? colors.dangerMuted :
-                  task.status === 'awaiting_review' ? colors.warningMuted :
-                  colors.bgElevated
-
-                return (
-                  <Card key={`${task.type}-${task.coachingWeek}`} variant="elevated" interactive>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: spacing[3] }}>
-                      <div>
-                        <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>{getCheckinTypeDisplayName(task.type)}</p>
-                        <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-                          Day {task.coachingDay}
-                        </p>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2] }}>
-                        <span style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: statusColor,
-                          backgroundColor: statusBg,
-                          padding: '6px 12px',
-                          borderRadius: 999,
-                        }}>
-                          {getCheckinStatusLabel(task.status)}
-                        </span>
-                        {task.status === 'available' && (
-                          <Button size="md" onClick={() => router.push(task.href)}>Start</Button>
-                        )}
-                        {task.status === 'missed' && (
-                          <span style={{ fontSize: 12, color: colors.textMuted, fontWeight: 600, maxWidth: 120, textAlign: 'right' }}>
-                            Window closed — wait for next
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </section>
-      )}
-
-      {checkinSchedule && checkinSchedule.missedCheckins.length > 0 && (
-        <section style={{ marginBottom: spacing[7] }}>
-          <SectionHeader title="Missed check-ins" subtitle="Windows that closed without a submission" />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }}>
-            {checkinSchedule.missedCheckins.slice(0, 8).map((task) => (
-              <Card key={`missed-${task.type}-${task.coachingWeek}`} variant="elevated">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: spacing[3] }}>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>{getCheckinTypeDisplayName(task.type)}</p>
-                    <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-                      Week {task.coachingWeek} · Day {task.coachingDay}
-                    </p>
-                  </div>
-                  <span style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: colors.danger,
-                    backgroundColor: colors.dangerMuted,
-                    padding: '6px 12px',
-                    borderRadius: 999,
-                  }}>
-                    Missed
-                  </span>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Progress — this week / streak / today */}
-      <section style={{ marginBottom: spacing[7] }}>
-        <SectionHeader title="Progress" subtitle="This week’s training pulse" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[2] }}>
-          <StatCard label="Week workouts" value={String(weekWorkouts)} icon={<Dumbbell size={18} />} />
-          <StatCard label="Streak" value={String(trackerStreak)} icon={<Flame size={18} />} />
-          <StatCard
-            label="Today"
-            value={todayTrackerPercent != null ? `${todayTrackerPercent}%` : '—'}
-            icon={<Calendar size={18} />}
-          />
-        </div>
-      </section>
-
       {/* Recent activity */}
       <section style={{ marginBottom: spacing[7] }}>
         <SectionHeader title="Recent activity" subtitle="Latest check-ins and workouts" />
         <Card variant="elevated" padding={0} style={{ overflow: 'hidden' }}>
           {recentActivity.length === 0 ? (
             <p style={{ margin: 0, padding: spacing[4], color: colors.textMuted, fontSize: 15 }}>
-              No activity yet. Log a workout or submit your first check-in.
+              Your coaching activity will appear here after your first workout or check-in.
             </p>
           ) : (
             recentActivity.map((item, i) => (
@@ -1067,179 +593,6 @@ export default function Dashboard() {
   );
 }
 
-function getTrackerHomeSummary(day: DailyTrackerDay): string {
-  const selectedDiet = day.completion.selectedDietDay
-  const selectedWorkout = day.completion.selectedWorkoutDay
-  const hasDietDays = day.snapshot.items.some(
-    (item) => item.type === 'meal' && Boolean(item.dietDay)
-  )
-  if (hasDietDays && !selectedDiet) return "Choose today's diet day"
-
-  const hasWorkoutDays =
-    Boolean(day.snapshot.workoutDays?.length) ||
-    day.snapshot.items.some((item) => item.type === 'workout' && Boolean(item.workoutDay))
-  if (hasWorkoutDays && !selectedWorkout && (day.snapshot.workoutDays?.length ?? 0) > 1) {
-    return "Choose today's workout day"
-  }
-
-  const trackable = day.snapshot.items.filter((item) =>
-    isTrackableForHome(item, selectedDiet, selectedWorkout ?? undefined)
-  )
-  if (trackable.length === 0) return "Open to start today's log"
-
-  const done = trackable.filter((item) => isItemComplete(item, day.completion)).length
-  const total = trackable.length
-  if (done === total) return `${done}/${total} done — all set for today`
-
-  const next = trackable.find((item) => !isItemComplete(item, day.completion))
-  const nextLabel = nextItemLabel(next)
-  return `${done}/${total} done · ${nextLabel}`
-}
-
-function isTrackableForHome(
-  item: TrackerSnapshotItem,
-  selectedDietDay?: string | null,
-  selectedWorkoutDay?: string
-): boolean {
-  if (item.type === 'note') return false
-  if (item.type === 'meal' && item.dietDay) {
-    if (!selectedDietDay) return false
-    return item.dietDay === selectedDietDay
-  }
-  if (item.type === 'workout' && item.workoutDay) {
-    if (!selectedWorkoutDay) return false
-    return item.workoutDay === selectedWorkoutDay
-  }
-  return true
-}
-
-function nextItemLabel(item: TrackerSnapshotItem | undefined): string {
-  if (!item) return 'Continue'
-  switch (item.type) {
-    case 'meal':
-      return 'Meals left'
-    case 'workout':
-      return 'Workout left'
-    case 'water':
-      return 'Water left'
-    case 'sleep':
-      return 'Sleep left'
-    case 'supplement':
-      return 'Supplements left'
-    case 'cardio':
-      return 'Cardio left'
-    default:
-      return 'Continue'
-  }
-}
-
-function DashboardHeroStat({
-  label,
-  value,
-  icon,
-  tint,
-}: {
-  label: string
-  value: string
-  icon: React.ReactNode
-  tint: string
-}) {
-  return (
-    <div
-      style={{
-        borderRadius: 14,
-        padding: spacing[3],
-        backgroundColor: '#ffffff',
-        border: `2px solid ${tint}`,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: tint, fontSize: 12, fontWeight: 700 }}>
-        {icon}
-        {label}
-      </div>
-      <div style={{ marginTop: 10, fontSize: 22, fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.03em' }}>
-        {value}
-      </div>
-    </div>
-  )
-}
-
-function QuickLinkCard({
-  title,
-  subtitle,
-  href,
-  icon: Icon,
-  badge,
-  accent,
-  index,
-  onOpen,
-}: {
-  title: string
-  subtitle: string
-  href: string
-  icon: LucideIcon
-  badge?: string | null
-  accent: string
-  index: number
-  onOpen: (href: string) => void
-}) {
-  return (
-    <Card
-      variant="elevated"
-      interactive
-      staggerIndex={index}
-      onClick={() => onOpen(href)}
-      style={{
-        marginBottom: 0,
-        backgroundColor: '#ffffff',
-        border: `2px solid ${accent}`,
-        boxShadow: `0 10px 24px ${accent}33`,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing[3] }}>
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 12,
-            backgroundColor: `${accent}44`,
-            color: accent,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <Icon size={20} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: colors.textPrimary }}>{title}</p>
-            {badge && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: '4px 8px',
-                  borderRadius: 999,
-                  backgroundColor: `${accent}22`,
-                  color: accent,
-                }}
-              >
-                {badge}
-              </span>
-            )}
-          </div>
-          <p style={{ margin: '6px 0 0', fontSize: 13, lineHeight: 1.45, color: colors.textMuted }}>
-            {subtitle}
-          </p>
-        </div>
-        <ArrowRight size={18} color={colors.textMuted} />
-      </div>
-    </Card>
-  )
-}
-
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div style={{ marginBottom: spacing[3] }}>
@@ -1272,19 +625,3 @@ function GlanceItem({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'morning';
-  if (hour < 17) return 'afternoon';
-  return 'evening';
-}
-
-const eyebrowLabel: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12,
-  color: colors.textMuted,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  fontWeight: 700,
-};

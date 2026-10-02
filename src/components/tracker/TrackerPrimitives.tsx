@@ -21,13 +21,12 @@ export const trackerInputStyle: CSSProperties = {
  * `trackerSurface` is for standalone cards; `trackerSurfaceInset` for panels nested inside one.
  */
 export const trackerSurface: CSSProperties = {
-  background: '#ffffff',
+  background: colors.bgCard,
   border: `1px solid ${colors.borderSubtle}`,
-  boxShadow: '0 10px 24px rgba(15, 23, 42, 0.06)',
 }
 
 export const trackerSurfaceInset: CSSProperties = {
-  background: '#f8fafc',
+  background: colors.bgElevated,
   border: `1px solid ${colors.borderSubtle}`,
 }
 

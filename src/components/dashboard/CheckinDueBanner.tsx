@@ -90,7 +90,7 @@ export function CheckinDueBanner({
     padding: `${spacing[3]}px ${spacing[4]}px`,
     border: 'none',
     borderBottom: isDue ? '2px solid #f97316' : '2px solid #f59e0b',
-    background: isDue ? '#fff7ed' : '#fffbeb',
+    background: colors.bgSecondary,
     color: colors.textPrimary,
     textAlign: 'left',
     boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',

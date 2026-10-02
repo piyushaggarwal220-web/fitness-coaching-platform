@@ -1,32 +1,19 @@
 import type { Metadata } from 'next'
-import { Syne, DM_Sans } from 'next/font/google'
 import { LandingPage } from '@/components/landing/LandingPage'
 import './landing.css'
 
-const syne = Syne({
-  subsets: ['latin'],
-  variable: '--font-landing-display',
-  display: 'swap',
-  weight: ['600', '700', '800'],
-})
-
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-landing-body',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-})
-
 export const metadata: Metadata = {
-  title: 'LURVOX — Personal Fitness Coaching From ₹599',
+  title: 'LURVOX — Online Fitness Coaching From ₹599',
   description:
-    'Personalized workout plans, diet coaching, weekly reviews, and daily tracking. Premium coaching at an incredibly affordable price.',
+    'Personalized workout and diet coaching for 90 days. Starting from ₹599. Check-ins, tracking, and coach chat in one app.',
+  openGraph: {
+    title: 'LURVOX — Online Fitness Coaching From ₹599',
+    description:
+      'Personalized coaching built around your body, goals and lifestyle. Starting from ₹599.',
+    type: 'website',
+  },
 }
 
 export default function Home() {
-  return (
-    <div className={`${syne.variable} ${dmSans.variable}`}>
-      <LandingPage />
-    </div>
-  )
+  return <LandingPage />
 }

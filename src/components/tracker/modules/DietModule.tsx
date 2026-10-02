@@ -120,9 +120,8 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
         </div>
 
         <div style={{ display: 'grid', gap: 10 }}>
-          {days.map((day, index) => {
+          {days.map((day) => {
             const isSuggested = day.key === suggestion
-            const tint = ['#4ade80', '#38bdf8', '#fbbf24', '#c4b5fd', '#fb7185', '#22d3ee', '#fb923c'][index % 7]
             return (
               <button
                 key={day.key}
@@ -135,8 +134,8 @@ export function DietModule({ meals, dietDays, completion, dietScore, saving, onP
                   gap: 12,
                   padding: '16px 18px',
                   borderRadius: radius.lg,
-                  border: `1px solid ${isSuggested ? tint : `${tint}55`}`,
-                  background: isSuggested ? `${tint}33` : `${tint}14`,
+                  border: `1px solid ${isSuggested ? colors.accent : colors.borderSubtle}`,
+                  background: isSuggested ? colors.accentMuted : colors.bgCard,
                   color: colors.textPrimary,
                   cursor: saving ? 'wait' : 'pointer',
                   textAlign: 'left',

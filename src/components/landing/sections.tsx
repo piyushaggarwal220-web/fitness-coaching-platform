@@ -1,45 +1,37 @@
 'use client'
 
+import { useState } from 'react'
 import {
-  affordability,
+  appExperience,
   coaches,
+  coaching,
   faq,
   finalCta,
   footer,
-  guarantee,
+  goals,
   hero,
-  heroTransforms,
-  howItWorks,
-  insideCoaching,
   nav,
+  pillars,
   pricing,
   site,
-  socialProof,
-  transformations,
-  whatYouGet,
-  whyPeopleFail,
+  system,
 } from '@/lib/content'
-import {
-  CtaLink,
-  Floating,
-  ImagePlaceholder,
-  Reveal,
-  SectionCta,
-  TiltCard,
-} from './primitives'
+import { COACHING_PLANS, COACHING_PLAN_LIST } from '@/lib/payments/plans'
+import { PLAN_PAGE_COPY } from '@/lib/payments/plan-pages'
+import { CampaignImage, CtaLink, PrimaryCta } from './primitives'
 
 export function Nav() {
   return (
     <header className="lp-nav">
       <div className="lp-container lp-nav-inner">
         <a href="#top" className="lp-logo">
-          LURV<span>OX</span>
+          LURVOX
         </a>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="lp-nav-actions">
           <CtaLink href="#pricing" variant="ghost" className="lp-nav-ghost">
             {nav.pricing}
           </CtaLink>
-          <CtaLink href={`${site.checkoutBase}?plan=3_months`}>{nav.cta}</CtaLink>
+          <PrimaryCta className="lp-nav-cta">Start for {COACHING_PLANS['3_months'].displayPrice}</PrimaryCta>
         </div>
       </div>
     </header>
@@ -48,385 +40,232 @@ export function Nav() {
 
 export function Hero() {
   return (
-    <section className="lp-section lp-hero" id="top">
-      <div className="lp-container lp-hero-grid">
-        <Reveal>
-          <div className="lp-hero-copy">
-            <p className="lp-eyebrow">{site.brand}</p>
-            <h1>{hero.headline}</h1>
-            <p className="lp-sub">{hero.subheadline}</p>
-            <div className="lp-hero-actions">
-              <CtaLink href={`${site.checkoutBase}?plan=3_months`}>{hero.primaryCta}</CtaLink>
-              <CtaLink href="#pricing" variant="ghost">
-                {hero.secondaryCta}
-              </CtaLink>
-            </div>
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <div className="lp-hero-photo-wrap">
-            <div className="lp-coach-grid" aria-label={hero.coachPhotoAlt}>
-              {coaches.map((coach) => (
-                <a
-                  key={coach.instagramHandle}
-                  href={coach.instagramUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="lp-coach-card"
-                  aria-label={`${coach.name} on Instagram, ${coach.instagramHandle}`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element -- local public coach photos */}
-                  <img
-                    src={coach.photo}
-                    alt={`${coach.name}, LURVOX coach`}
-                    className="lp-coach-photo"
-                  />
-                  <span className="lp-coach-caption">
-                    <strong>{coach.firstName}</strong>
-                    <span className="lp-coach-instagram">{coach.instagramHandle}</span>
-                  </span>
-                </a>
-              ))}
-            </div>
-            <p className="lp-coach-hint">Tap a handle to open Instagram</p>
-            <p
-              style={{
-                margin: '12px 0 0',
-                fontSize: '0.78rem',
-                color: 'var(--lp-dim)',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                fontWeight: 700,
-              }}
-            >
-              {hero.proofStripLabel}
-            </p>
-            <div className="lp-hero-transforms">
-              {heroTransforms.map((item, i) => (
-                <Floating key={item.name} amplitude={4 + i} duration={4.5 + i * 0.4}>
-                  <div className="lp-hero-transform-card">
-                    {/* Replace with transformation — set heroTransforms[].image */}
-                    <ImagePlaceholder label={item.name} src={item.image || undefined} />
-                    <div className="lp-hero-transform-meta">
-                      <strong>{item.name}</strong>
-                      <span>{item.result}</span>
-                    </div>
-                  </div>
-                </Floating>
-              ))}
-            </div>
-          </div>
-        </Reveal>
+    <section className="lp-hero" id="top">
+      <div className="lp-hero-media">
+        <CampaignImage
+          src="/images/lurvox/hero/hero-athletic-male.webp"
+          alt="Athletic man in a dark studio, LURVOX campaign"
+          priority
+          className="lp-hero-img"
+        />
+        <div className="lp-hero-scrim" />
       </div>
-    </section>
-  )
-}
-
-export function SocialProof() {
-  return (
-    <section className="lp-section" id="results">
-      <div className="lp-container">
-        <Reveal>
-          <div className="lp-section-head">
-            <p className="lp-eyebrow">{socialProof.eyebrow}</p>
-            <h2 className="lp-headline">{socialProof.headline}</h2>
-            <p className="lp-sub">{socialProof.subheadline}</p>
-          </div>
-        </Reveal>
-
-        <div className="lp-proof-scroll">
-          {transformations.map((t, index) => (
-            <Reveal key={t.id} delay={Math.min(index * 0.04, 0.24)}>
-              <TiltCard className="lp-card lp-transform-card" intensity={5}>
-                <div className="lp-transform-split">
-                  <div style={{ position: 'relative' }}>
-                    {/* Replace with client before photo — set transformations[].before */}
-                    <ImagePlaceholder label={`${t.name} before`} src={t.before || undefined} />
-                    <span className="lp-badge">Before</span>
-                  </div>
-                  <div style={{ position: 'relative' }}>
-                    {/* Replace with client after photo — set transformations[].after */}
-                    <ImagePlaceholder label={`${t.name} after`} src={t.after || undefined} />
-                    <span className="lp-badge lp-badge-after">After</span>
-                  </div>
-                </div>
-                <div className="lp-transform-body">
-                  <div>
-                    <strong style={{ fontSize: '0.95rem' }}>{t.name}</strong>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--lp-dim)' }}>{t.time}</div>
-                  </div>
-                  <div className="lp-transform-stats">
-                    <span className="lp-chip">−{t.weightLost}</span>
-                    <span className="lp-chip">BF −{t.bodyFatLost}</span>
-                  </div>
-                  {/* Replace with client testimonial */}
-                  <p className="lp-quote">“{t.quote}”</p>
-                </div>
-              </TiltCard>
-            </Reveal>
-          ))}
-        </div>
-
-        <SectionCta href={`${site.checkoutBase}?plan=3_months`}>{socialProof.cta}</SectionCta>
-      </div>
-    </section>
-  )
-}
-
-export function WhyPeopleFail() {
-  return (
-    <section className="lp-section lp-truth" aria-labelledby="truth-title">
-      <div className="lp-container">
-        <Reveal>
-          <div className="lp-section-head">
-            <p className="lp-eyebrow">{whyPeopleFail.eyebrow}</p>
-            <h2 className="lp-headline" id="truth-title">
-              {whyPeopleFail.headline}
-            </h2>
-            <p className="lp-sub">{whyPeopleFail.subheadline}</p>
-          </div>
-        </Reveal>
-
-        <div className="lp-truth-grid">
-          <article className="lp-truth-card lp-truth-card--fail">
-            <p className="lp-truth-label">{whyPeopleFail.failLabel}</p>
-            <ul>
-              {whyPeopleFail.fail.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </article>
-          <article className="lp-truth-card lp-truth-card--win">
-            <p className="lp-truth-label">{whyPeopleFail.winLabel}</p>
-            <ul>
-              {whyPeopleFail.win.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </article>
+      <div className="lp-container lp-hero-copy">
+        <p className="lp-kicker">{hero.kicker}</p>
+        <h1>{hero.headline}</h1>
+        <p className="lp-lead">{hero.subheadline}</p>
+        <p className="lp-price">
+          <span>{hero.priceLabel}</span>
+          <strong>{COACHING_PLANS['3_months'].displayPrice}</strong>
+          <span>{hero.duration}</span>
+        </p>
+        <div className="lp-hero-actions">
+          <PrimaryCta>Start for {COACHING_PLANS['3_months'].displayPrice}</PrimaryCta>
+          <CtaLink href="#pricing" variant="ghost">
+            {hero.secondaryCta}
+          </CtaLink>
         </div>
       </div>
     </section>
   )
 }
 
-export function HowItWorks() {
+export function Goals() {
   return (
-    <section className="lp-section">
-      <div className="lp-container">
-        <Reveal>
-          <div className="lp-section-head">
-            <p className="lp-eyebrow">{howItWorks.eyebrow}</p>
-            <h2 className="lp-headline">{howItWorks.headline}</h2>
-            <p className="lp-sub">{howItWorks.subheadline}</p>
-          </div>
-        </Reveal>
-
-        <div className="lp-process">
-          {howItWorks.steps.map((step, i) => (
-            <Reveal key={step.title} delay={i * 0.05}>
-              <div className="lp-card lp-process-step">
-                <span className="lp-process-num">{i + 1}</span>
-                <h3>{step.title}</h3>
-                <p>{step.body}</p>
+    <section className="lp-goals" id="goals" aria-labelledby="goals-title">
+      <div className="lp-container lp-section-intro">
+        <p className="lp-kicker">{goals.eyebrow}</p>
+        <h2 id="goals-title">{goals.headline}</h2>
+      </div>
+      <div className="lp-goal-grid">
+        {goals.items.map((goal) => {
+          const plan = COACHING_PLAN_LIST.find((item) => item.slug === goal.plan)
+          return (
+            <article key={goal.id} className="lp-goal">
+              <CampaignImage src={goal.image} alt={goal.alt} className="lp-goal-img" />
+              <div className="lp-goal-copy">
+                <p className="lp-kicker">{goal.timeframe}</p>
+                <h3>{goal.title}</h3>
+                <p>{goal.audience}</p>
+                {plan && (
+                  <p className="lp-goal-price">
+                    {plan.displayPrice}
+                    <span> · {plan.durationMonths} months</span>
+                  </p>
+                )}
+                <PrimaryCta plan={goal.plan}>Start for {plan?.displayPrice ?? '₹599'}</PrimaryCta>
               </div>
-            </Reveal>
-          ))}
-        </div>
-
-        <SectionCta href={`${site.checkoutBase}?plan=3_months`}>{howItWorks.cta}</SectionCta>
+            </article>
+          )
+        })}
       </div>
     </section>
   )
 }
 
-export function InsideCoaching() {
+export function System() {
   return (
-    <section className="lp-section">
-      <div className="lp-container">
-        <Reveal>
-          <div className="lp-section-head">
-            <p className="lp-eyebrow">{insideCoaching.eyebrow}</p>
-            <h2 className="lp-headline">{insideCoaching.headline}</h2>
-            <p className="lp-sub">{insideCoaching.subheadline}</p>
-          </div>
-        </Reveal>
-
-        <div className="lp-inside-grid">
-          {insideCoaching.features.map((feature, i) => (
-            <Reveal key={feature.title} delay={Math.min(i * 0.04, 0.2)}>
-              <TiltCard className="lp-card lp-feature-card" intensity={5}>
-                {/* Replace with dashboard — set insideCoaching.features[].image */}
-                <ImagePlaceholder
-                  label={`${feature.title} screen`}
-                  src={feature.image || undefined}
-                />
-                <div className="lp-feature-body">
-                  <h3>{feature.title}</h3>
-                  <p>{feature.body}</p>
-                </div>
-              </TiltCard>
-            </Reveal>
-          ))}
+    <section className="lp-system" id="system" aria-labelledby="system-title">
+      <div className="lp-container lp-system-grid">
+        <div>
+          <p className="lp-kicker">{system.eyebrow}</p>
+          <h2 id="system-title">{system.headline}</h2>
+          <p className="lp-lead">{system.lead}</p>
         </div>
-
-        <SectionCta href={`${site.checkoutBase}?plan=3_months`}>{insideCoaching.cta}</SectionCta>
-      </div>
-    </section>
-  )
-}
-
-export function WhatYouGet() {
-  return (
-    <section className="lp-section">
-      <div className="lp-container">
-        <Reveal>
-          <div className="lp-section-head">
-            <p className="lp-eyebrow">{whatYouGet.eyebrow}</p>
-            <h2 className="lp-headline">{whatYouGet.headline}</h2>
-            <p className="lp-sub">{whatYouGet.subheadline}</p>
-          </div>
-        </Reveal>
-
-        <div className="lp-gets-grid">
-          {whatYouGet.items.map((item, i) => (
-            <Reveal key={item.title} delay={Math.min(i * 0.03, 0.2)}>
-              <TiltCard className="lp-card lp-get-card" intensity={4}>
-                <div className="lp-get-dot" />
-                <h3>{item.title}</h3>
+        <ol className="lp-system-list">
+          {system.items.map((item, index) => (
+            <li key={item.title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <div>
+                <strong>{item.title}</strong>
                 <p>{item.body}</p>
-              </TiltCard>
-            </Reveal>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )
+}
+
+export function Coaching() {
+  return (
+    <section className="lp-coaching" id="coaching" aria-labelledby="coaching-title">
+      <div className="lp-container">
+        <p className="lp-kicker">{coaching.eyebrow}</p>
+        <h2 id="coaching-title">{coaching.headline}</h2>
+        <p className="lp-lead">{coaching.lead}</p>
+        <div className="lp-coach-grid">
+          {coaches.map((coach) => (
+            <a
+              key={coach.instagramHandle}
+              href={coach.instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="lp-coach"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- real coach photographs */}
+              <img src={coach.photo} alt={`${coach.name}, LURVOX coach`} />
+              <span>
+                <strong>{coach.name}</strong>
+                <em>{coach.instagramHandle}</em>
+              </span>
+            </a>
           ))}
         </div>
-
-        <SectionCta href={`${site.checkoutBase}?plan=3_months`}>{whatYouGet.cta}</SectionCta>
+        <p className="lp-note">{coaching.note}</p>
       </div>
+    </section>
+  )
+}
+
+export function AppExperience() {
+  return (
+    <section className="lp-app" id="app" aria-labelledby="app-title">
+      <div className="lp-container">
+        <p className="lp-kicker">{appExperience.eyebrow}</p>
+        <h2 id="app-title">{appExperience.headline}</h2>
+        <p className="lp-lead">{appExperience.lead}</p>
+        <ul className="lp-app-list">
+          {appExperience.items.map((item) => (
+            <li key={item.title}>
+              <strong>{item.title}</strong>
+              <p>{item.body}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+export function Pillars() {
+  const blocks = [pillars.training, pillars.nutrition, pillars.recovery]
+  return (
+    <section className="lp-pillars" aria-label="Training, nutrition, and recovery">
+      {blocks.map((block) => (
+        <article key={block.eyebrow} className="lp-pillar">
+          <CampaignImage src={block.image} alt={block.alt} className="lp-pillar-img" />
+          <div className="lp-pillar-copy">
+            <p className="lp-kicker">{block.eyebrow}</p>
+            <h2>{block.headline}</h2>
+            <p>{block.body}</p>
+          </div>
+        </article>
+      ))}
     </section>
   )
 }
 
 export function Pricing() {
   return (
-    <section className="lp-section" id="pricing">
+    <section className="lp-pricing" id="pricing" aria-labelledby="pricing-title">
       <div className="lp-container">
-        <Reveal>
-          <div className="lp-section-head">
-            <p className="lp-eyebrow">{pricing.eyebrow}</p>
-            <h2 className="lp-headline">{pricing.headline}</h2>
-            <p className="lp-sub">{pricing.subheadline}</p>
-          </div>
-        </Reveal>
-
-        <div className="lp-pricing-grid">
-          {pricing.plans.map((plan, i) => (
-            <Reveal
-              key={plan.slug}
-              delay={i * 0.06}
-              className={plan.popular ? 'lp-price-popular-wrap' : undefined}
-            >
-              <Floating amplitude={plan.popular ? 7 : 4} duration={5 + i * 0.3}>
-                <TiltCard
-                  className={`lp-card lp-price-card${plan.popular ? ' is-popular' : ''}`}
-                  intensity={plan.popular ? 7 : 5}
-                >
-                  {plan.popular ? <span className="lp-popular-badge">MOST POPULAR</span> : null}
-                  <h3 className="lp-price-name">{plan.name}</h3>
-                  <div className="lp-price-amount">{plan.price}</div>
-                  <div className="lp-price-month">{plan.perMonth}</div>
-                  <p className="lp-price-blurb">{plan.blurb}</p>
-                  {plan.save ? <span className="lp-save">{plan.save}</span> : <span style={{ height: 26 }} />}
-                  <ul className="lp-price-features">
-                    {pricing.featuresIncluded.map((f) => (
-                      <li key={f}>{f}</li>
-                    ))}
-                  </ul>
-                  <CtaLink href={`${site.checkoutBase}?plan=${plan.slug}`} block>
-                    {pricing.cta}
-                  </CtaLink>
-                </TiltCard>
-              </Floating>
-            </Reveal>
-          ))}
+        <p className="lp-kicker">{pricing.eyebrow}</p>
+        <h2 id="pricing-title">{pricing.headline}</h2>
+        <p className="lp-lead">{pricing.subheadline}</p>
+        <div className="lp-plan-grid">
+          {COACHING_PLAN_LIST.map((plan) => {
+            const copy = PLAN_PAGE_COPY[plan.slug as keyof typeof PLAN_PAGE_COPY]
+            const monthly = Math.round(plan.amountPaise / 100 / plan.durationMonths)
+            return (
+              <article
+                key={plan.slug}
+                className={plan.popular ? 'lp-plan lp-plan-popular' : 'lp-plan'}
+              >
+                <p className="lp-kicker">{copy?.durationLabel}</p>
+                <h3>{plan.name}</h3>
+                <p className="lp-plan-price">{plan.displayPrice}</p>
+                <p className="lp-plan-month">≈ ₹{monthly}/month</p>
+                <p className="lp-plan-blurb">{copy?.promise}</p>
+                <PrimaryCta plan={plan.slug} className="lp-plan-cta">
+                  Start for {plan.displayPrice}
+                </PrimaryCta>
+              </article>
+            )
+          })}
         </div>
-
-        <p
-          style={{
-            textAlign: 'center',
-            marginTop: 20,
-            color: 'var(--lp-dim)',
-            fontSize: '0.85rem',
-          }}
-        >
-          {pricing.comparisonNote}
-        </p>
-      </div>
-    </section>
-  )
-}
-
-export function Affordability() {
-  return (
-    <section className="lp-section" style={{ paddingTop: 0 }}>
-      <div className="lp-container">
-        <Reveal>
-          <div className="lp-accent-card lp-afford">
-            <h3>{affordability.headline}</h3>
-            {affordability.body.map((paragraph) => (
-              <p key={paragraph.slice(0, 24)}>{paragraph}</p>
-            ))}
-            <p>{affordability.reassurance}</p>
-          </div>
-        </Reveal>
-        <SectionCta href={`${site.checkoutBase}?plan=3_months`}>{pricing.cta}</SectionCta>
-      </div>
-    </section>
-  )
-}
-
-export function Guarantee() {
-  return (
-    <section className="lp-section">
-      <div className="lp-container">
-        <Reveal>
-          <div className="lp-accent-card lp-guarantee">
-            <h2 className="lp-headline" style={{ marginBottom: 14 }}>
-              {guarantee.headline}
-            </h2>
-            <p className="lp-sub">{guarantee.subheadline}</p>
-            <p className="lp-guarantee-note">{guarantee.note}</p>
-          </div>
-        </Reveal>
-        <SectionCta href={`${site.checkoutBase}?plan=3_months`}>{guarantee.cta}</SectionCta>
+        <ul className="lp-includes">
+          {pricing.features.map((feature) => (
+            <li key={feature}>{feature}</li>
+          ))}
+        </ul>
       </div>
     </section>
   )
 }
 
 export function FaqSection() {
+  const [open, setOpen] = useState(0)
   return (
-    <section className="lp-section" id="faq">
-      <div className="lp-container">
-        <Reveal>
-          <div className="lp-section-head">
-            <p className="lp-eyebrow">{faq.eyebrow}</p>
-            <h2 className="lp-headline">{faq.headline}</h2>
-          </div>
-        </Reveal>
-
-        <div className="lp-faq-list">
-          {faq.items.map((item, i) => (
-            <Reveal key={item.q} delay={Math.min(i * 0.03, 0.18)}>
-              <details className="lp-faq-item">
-                <summary>{item.q}</summary>
-                <p>{item.a}</p>
-              </details>
-            </Reveal>
-          ))}
+    <section className="lp-faq" id="faq" aria-labelledby="faq-title">
+      <div className="lp-container lp-faq-grid">
+        <div>
+          <p className="lp-kicker">{faq.eyebrow}</p>
+          <h2 id="faq-title">{faq.headline}</h2>
         </div>
-
-        <SectionCta href={site.whatsappUrl}>{faq.cta}</SectionCta>
+        <div>
+          {faq.items.map((item, index) => {
+            const isOpen = open === index
+            return (
+              <div key={item.q} className="lp-faq-item">
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpen(isOpen ? -1 : index)}
+                >
+                  {item.q}
+                  <span aria-hidden>{isOpen ? '–' : '+'}</span>
+                </button>
+                {isOpen && <p>{item.a}</p>}
+              </div>
+            )
+          })}
+          <p className="lp-note">
+            Refund and cancellation rules:{' '}
+            <a href="/terms#payments-refunds-guarantees">Terms</a>
+          </p>
+        </div>
       </div>
     </section>
   )
@@ -434,24 +273,15 @@ export function FaqSection() {
 
 export function FinalCta() {
   return (
-    <section className="lp-section">
+    <section className="lp-final" aria-labelledby="final-title">
       <div className="lp-container">
-        <Reveal>
-          <div className="lp-final">
-            {/* Replace with large client transformation — set hero.finalCtaImage */}
-            <ImagePlaceholder
-              label="Transformation hero"
-              src={hero.finalCtaImage || undefined}
-            />
-            <div className="lp-final-copy">
-              <h2>{finalCta.headline}</h2>
-              <p className="lp-sub" style={{ maxWidth: 'none' }}>
-                {finalCta.subheadline}
-              </p>
-              <CtaLink href={`${site.checkoutBase}?plan=3_months`}>{finalCta.cta}</CtaLink>
-            </div>
-          </div>
-        </Reveal>
+        <h2 id="final-title">{finalCta.headline}</h2>
+        <p className="lp-lead">{finalCta.subheadline}</p>
+        <p className="lp-price">
+          <span>Starting from</span>
+          <strong>{COACHING_PLANS['3_months'].displayPrice}</strong>
+        </p>
+        <PrimaryCta>Start for {COACHING_PLANS['3_months'].displayPrice}</PrimaryCta>
       </div>
     </section>
   )
@@ -460,16 +290,18 @@ export function FinalCta() {
 export function Footer() {
   return (
     <footer className="lp-footer">
-      <div className="lp-container">
-        <a href="#top" className="lp-logo">
-          LURV<span>OX</span>
-        </a>
-        <p>{footer.tagline}</p>
-        <p>
+      <div className="lp-container lp-footer-inner">
+        <div>
+          <strong>LURVOX</strong>
+          <p>{footer.tagline}</p>
+        </div>
+        <div>
+          <a href="/terms">Terms</a>
+          <a href="/terms#payments-refunds-guarantees">Refunds</a>
           <a href={site.whatsappUrl} target="_blank" rel="noopener noreferrer">
-            WhatsApp — {site.whatsappDisplay}
+            WhatsApp {site.whatsappDisplay}
           </a>
-        </p>
+        </div>
         <p>{footer.payments}</p>
         <p>{footer.legal}</p>
         <p>{footer.copyright}</p>

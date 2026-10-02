@@ -8,10 +8,10 @@ export const colors = {
   bgCard: '#18181b',
   bgElevated: '#1f1f23',
   bgGlass: 'rgba(24, 24, 27, 0.72)',
-  accent: '#f97316',
-  accentHover: '#fb923c',
-  accentMuted: 'rgba(249, 115, 22, 0.12)',
-  accentGlow: 'rgba(249, 115, 22, 0.22)',
+  accent: '#ff6200',
+  accentHover: '#ff7a2e',
+  accentMuted: 'rgba(255, 98, 0, 0.14)',
+  accentGlow: 'rgba(255, 98, 0, 0.22)',
   success: '#22c55e',
   successMuted: 'rgba(34, 197, 94, 0.12)',
   warning: '#f59e0b',
@@ -26,30 +26,8 @@ export const colors = {
   borderSubtle: 'rgba(255, 255, 255, 0.08)',
 } as const
 
-/** Light, colorful client app. Coach portal uses `coachColors`. Admin and checkout stay on dark `colors`. */
-export const clientColors = {
-  bgPrimary: '#f3f6fb',
-  bgSecondary: '#e7eef8',
-  bgCard: '#ffffff',
-  bgElevated: '#ffffff',
-  bgGlass: 'rgba(255, 255, 255, 0.94)',
-  accent: '#0284c7',
-  accentHover: '#0369a1',
-  accentMuted: 'rgba(2, 132, 199, 0.14)',
-  accentGlow: 'rgba(2, 132, 199, 0.22)',
-  success: '#15803d',
-  successMuted: 'rgba(21, 128, 61, 0.12)',
-  warning: '#c2410c',
-  warningMuted: 'rgba(194, 65, 12, 0.12)',
-  danger: '#dc2626',
-  dangerMuted: 'rgba(220, 38, 38, 0.1)',
-  textPrimary: '#0f172a',
-  textSecondary: '#334155',
-  textMuted: '#64748b',
-  textInverse: '#ffffff',
-  divider: 'rgba(15, 23, 42, 0.08)',
-  borderSubtle: 'rgba(15, 23, 42, 0.12)',
-} as const
+/** Client app uses the same dark surfaces and orange accent as the marketing site. */
+export const clientColors = colors
 
 /** Light theme — coach portal only. */
 export const coachColors = {

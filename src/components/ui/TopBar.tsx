@@ -68,7 +68,7 @@ export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) 
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {user && <NotificationBell theme="light" />}
+        {user && <NotificationBell />}
         {showProfile && user && (
           <button
             type="button"

@@ -57,7 +57,7 @@ export function SupplementsModule({ supplements, completion, onPatch }: Props) {
                   ...(taken
                     ? {
                         background:
-                          'linear-gradient(135deg, rgba(34,197,94,0.2) 0%, #ffffff 72%)',
+                          colors.successMuted,
                         border: '1px solid rgba(34,197,94,0.24)',
                       }
                     : null),
