@@ -56,6 +56,9 @@ const PAYMENT_SUCCESS_KEY = 'lurvox_checkout_success_redirect';
 const CHECKOUT_DRAFT_KEY = 'lurvox_checkout_draft_v1';
 type CheckoutScreen = 1 | 2 | 3;
 
+/** Flip to false to put the "more about you" screen back between basics and payment. */
+const SKIP_CHECKOUT_MORE_INFO = true;
+
 type AppliedDiscountPreview = {
  code: string;
  discountPaise: number;
@@ -353,7 +356,8 @@ function CheckoutForm() {
  if (draft.basicsComplete) setBasicsComplete(true);
  const savedScreen = Number(draft.checkoutScreen);
  if (Number.isInteger(savedScreen) && savedScreen >= 1) {
- setCheckoutScreen((savedScreen > 3 ? 3 : savedScreen) as CheckoutScreen);
+ const restored = (savedScreen > 3 ? 3 : savedScreen) as CheckoutScreen;
+ setCheckoutScreen(SKIP_CHECKOUT_MORE_INFO && restored === 2 ? 3 : restored);
  }
  } catch {
  // ignore
@@ -641,8 +645,11 @@ function CheckoutForm() {
  return;
  }
  setError('');
- setCheckoutScreen(2);
- trackFunnelStep('checkout_view', { plan: plan.slug, screen: 'more_info' });
+ setCheckoutScreen(SKIP_CHECKOUT_MORE_INFO ? 3 : 2);
+ trackFunnelStep('checkout_view', {
+ plan: plan.slug,
+ screen: SKIP_CHECKOUT_MORE_INFO ? 'details' : 'more_info',
+ });
  };
 
  const continueAfterPayment = (redirectTo: string) => {
@@ -900,8 +907,8 @@ function CheckoutForm() {
  : 'Enter your details, then continue to checkout.'}
  </p>
 
- <div style={styles.screenDots} aria-label={`Checkout step ${checkoutScreen} of 3`}>
- {([1, 2, 3] as CheckoutScreen[]).map((step) => (
+ <div style={styles.screenDots} aria-label={`Checkout step ${SKIP_CHECKOUT_MORE_INFO ? (checkoutScreen === 1 ? 1 : 2) : checkoutScreen} of ${SKIP_CHECKOUT_MORE_INFO ? 2 : 3}`}>
+ {(SKIP_CHECKOUT_MORE_INFO ? ([1, 3] as CheckoutScreen[]) : ([1, 2, 3] as CheckoutScreen[])).map((step) => (
  <span
  key={step}
  style={{
@@ -930,7 +937,7 @@ function CheckoutForm() {
  dig={dig}
  />
  )}
- {checkoutScreen === 2 && (
+ {checkoutScreen === 2 && !SKIP_CHECKOUT_MORE_INFO && (
  <CheckoutMoreInfoStep
  onBack={() => { setCheckoutScreen(1); setError(''); }}
  onContinue={() => {
@@ -948,7 +955,7 @@ function CheckoutForm() {
  <>
  <button
  type="button"
- onClick={() => { setCheckoutScreen(2); setError(''); }}
+ onClick={() => { setCheckoutScreen(SKIP_CHECKOUT_MORE_INFO ? 1 : 2); setError(''); }}
  style={dig(styles.backToDetails, 'backLink')}
  >
  {'<- Back'}
