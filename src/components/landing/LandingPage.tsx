@@ -8,16 +8,16 @@ import {
   FinalCta,
   Footer,
   Hero,
-  Included,
   Method,
   Nav,
   Pricing,
   System,
+  WhyFail,
 } from './sections'
 import { PrimaryCta } from './primitives'
 
 export function LandingPage() {
-  const [slug, setSlug] = useState<CoachingPlanSlug>('3_months')
+  const [slug, setSlug] = useState<CoachingPlanSlug>('12_months')
   const selected = COACHING_PLANS[slug]
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export function LandingPage() {
       <Nav />
       <main>
         <Hero slug={slug} onChange={setSlug} />
-        <Included />
+        <WhyFail />
         <System />
         <Coaching />
         <Method />

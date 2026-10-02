@@ -141,29 +141,29 @@ export function WhyFail() {
       n: '01',
       title: 'Your plan',
       body: 'The workout and the diet are built around your goal, schedule, food, and where you train.',
-      image: '/images/lurvox/campaign/intake-morning.webp',
-      alt: 'Woman with coffee and a gym bag before training',
+      image: '/images/lurvox/campaign/why-plan.webp',
+      alt: 'Man at a kitchen table with a closed notebook before training',
     },
     {
       n: '02',
       title: 'It keeps up',
       body: 'The 3-month plan updates every 14 days. The 6- and 12-month plans update every week.',
-      image: '/images/lurvox/campaign/weekly-checkin.webp',
-      alt: 'Woman by a window during a weekly check-in',
+      image: '/images/lurvox/campaign/why-keeps.webp',
+      alt: 'Man setting a dumbbell down beside a window after a week of training',
     },
     {
       n: '03',
       title: 'Made with tested principles',
       body: 'The workout and diet are made from tested training and nutrition principles, then written for your case. There are no live calls.',
-      image: '/landing/instant-coach-piyush.png',
-      alt: 'Piyush Aggarwal, LURVOX coach',
+      image: '/images/lurvox/campaign/why-principles.webp',
+      alt: 'Woman holding a kettlebell in a careful hinge in an empty studio',
     },
     {
       n: '04',
       title: 'The work is decided',
       body: 'What to train and what to eat is written. You are not left choosing it alone.',
-      image: '/images/lurvox/campaign/training-session.webp',
-      alt: 'Man performing a seated cable row',
+      image: '/images/lurvox/campaign/why-work.webp',
+      alt: 'Man standing ready in front of a loaded barbell',
     },
   ]
   const [active, setActive] = useState(0)
@@ -174,19 +174,11 @@ export function WhyFail() {
       <h2>Why you won&apos;t fail with us.</h2>
       <p className="lx-lead">The plan is built for your case, and it does not stop at a file.</p>
       <div className="lx-stage">
-        {current.n === '03' ? (
-          <div className="lx-stage-split">
-            {coaches.map((coach) => (
-              <img key={coach.instagramHandle} src={coach.photo} alt={`${coach.name}, LURVOX coach`} />
-            ))}
-          </div>
-        ) : (
-          <img key={current.n} className="lx-cover" src={current.image} alt={current.alt} />
-        )}
-      </div>
-      <div className="lx-method-copy">
-        <h3>{current.title}</h3>
-        <p>{current.body}</p>
+        <img key={current.n} className="lx-cover" src={current.image} alt={current.alt} />
+        <div className="lx-stage-copy">
+          <h2>{current.title}</h2>
+          <p>{current.body}</p>
+        </div>
       </div>
       <div className="lx-stage-nav lx-quad-nav" role="tablist" aria-label="Why you won't fail with us">
         {problems.map((item, index) => (
@@ -198,15 +190,7 @@ export function WhyFail() {
             className={index === active ? 'is-on' : undefined}
             onClick={() => setActive(index)}
           >
-            {item.n === '03' ? (
-              <span className="lx-thumb-split">
-                {coaches.map((coach) => (
-                  <img key={coach.instagramHandle} src={coach.photo} alt="" />
-                ))}
-              </span>
-            ) : (
-              <img src={item.image} alt="" />
-            )}
+            <img src={item.image} alt="" />
             <span>{item.title}</span>
           </button>
         ))}
@@ -594,16 +578,16 @@ export function Method() {
       n: '03',
       title: 'Do the work.',
       body: 'Train, eat, and log it in the app.',
-      image: '/images/lurvox/campaign/training-session.webp',
-      alt: 'Man performing a seated cable row',
+      image: '/images/lurvox/campaign/method-work.webp',
+      alt: 'Woman rowing in a quiet private studio',
       ui: false,
     },
     {
       n: '04',
       title: 'Adapt.',
       body: 'Check in. The plan changes from what you actually did.',
-      image: '/images/lurvox/campaign/weekly-checkin.webp',
-      alt: 'Woman by a window during a weekly check-in',
+      image: '/images/lurvox/campaign/method-adapt.webp',
+      alt: 'Man on a balcony after training, looking out at dusk',
       ui: false,
     },
   ]
