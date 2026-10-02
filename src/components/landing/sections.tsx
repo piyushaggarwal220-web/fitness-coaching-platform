@@ -694,7 +694,7 @@ export function Pricing() {
               <em>₹{Math.round(plan.amountPaise / 100 / plan.durationMonths)} a month</em>
             </p>
             <ul className="lx-points">
-              {PLAN_POINTS[plan.slug].map((point) => (
+              {PLAN_POINTS[plan.slug as CoachingPlanSlug].map((point) => (
                 <li key={point}>{point}</li>
               ))}
             </ul>
