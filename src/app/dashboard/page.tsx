@@ -348,7 +348,7 @@ export default function Dashboard() {
         : todayTrackerPercent != null
           ? `${todayTrackerPercent}%`
           : null,
-      accent: colors.accent,
+      accent: '#38bdf8',
       visible: Boolean(activePlan) || instantLocked.tracker,
     },
     {
@@ -382,7 +382,7 @@ export default function Dashboard() {
           : '/checkin',
       icon: Calendar,
       badge: instantLocked.tracker ? 'Locked' : dueCheckin ? 'Due' : null,
-      accent: '#f59e0b',
+      accent: '#fbbf24',
       visible: true,
     },
     {
@@ -404,7 +404,7 @@ export default function Dashboard() {
       href: '/client/report-issue',
       icon: Star,
       badge: null,
-      accent: '#f59e0b',
+      accent: '#fb7185',
       visible: true,
     },
     {
@@ -426,7 +426,7 @@ export default function Dashboard() {
             ? '9+'
             : String(unreadMessages)
           : null,
-      accent: '#22c55e',
+      accent: '#4ade80',
       visible: true,
     },
   ]
@@ -459,11 +459,16 @@ export default function Dashboard() {
     <Card
       variant="glass"
       onClick={() => router.push('/plan')}
-      style={{ cursor: 'pointer' }}
+      style={{
+        cursor: 'pointer',
+        backgroundColor: '#1e3a8a',
+        backgroundImage: 'linear-gradient(135deg, rgba(96,165,250,0.42) 0%, rgba(15,23,42,0.92) 70%)',
+        border: '1px solid rgba(96,165,250,0.55)',
+      }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ClipboardList size={22} color={colors.accent} />
+        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(96,165,250,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ClipboardList size={22} color="#93c5fd" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontWeight: 700, fontSize: 17, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -514,12 +519,17 @@ export default function Dashboard() {
     <Card
       variant={status?.preferTrackerUpTop ? 'elevated' : 'glass'}
       onClick={() => router.push('/tracker')}
-      style={{ cursor: 'pointer' }}
+      style={{
+        cursor: 'pointer',
+        backgroundColor: '#14532d',
+        backgroundImage: 'linear-gradient(135deg, rgba(74,222,128,0.38) 0%, rgba(15,23,42,0.92) 70%)',
+        border: '1px solid rgba(74,222,128,0.5)',
+      }}
       className={status?.preferTrackerUpTop ? 'card-hover' : undefined}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ListChecks size={22} color={colors.accent} />
+        <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(74,222,128,0.24)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ListChecks size={22} color="#86efac" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontWeight: 700, fontSize: 17 }}>
@@ -533,8 +543,8 @@ export default function Dashboard() {
           <span style={{
             fontSize: 13,
             fontWeight: 700,
-            color: colors.accent,
-            backgroundColor: colors.accentMuted,
+            color: '#86efac',
+            backgroundColor: 'rgba(74,222,128,0.2)',
             padding: '6px 10px',
             borderRadius: 999,
             flexShrink: 0,
@@ -630,7 +640,7 @@ export default function Dashboard() {
           style={{
             margin: 0,
             fontSize: 13,
-            color: colors.accent,
+            color: '#67e8f9',
             fontWeight: 700,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
@@ -649,13 +659,14 @@ export default function Dashboard() {
           variant="glass"
           style={{
             overflow: 'hidden',
-            background: 'linear-gradient(135deg, rgba(249,115,22,0.14) 0%, rgba(17,24,39,0.96) 42%, rgba(10,10,11,0.98) 100%)',
-            border: '1px solid rgba(249,115,22,0.18)',
+            backgroundColor: '#312e81',
+            backgroundImage: 'linear-gradient(135deg, rgba(56,189,248,0.45) 0%, rgba(249,115,22,0.38) 42%, rgba(167,139,250,0.42) 100%)',
+            border: '1px solid rgba(125,211,252,0.45)',
           }}
         >
           <div style={{ display: 'grid', gap: spacing[4] }}>
             <div>
-              <p style={{ margin: 0, fontSize: 12, color: colors.accent, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <p style={{ margin: 0, fontSize: 12, color: '#e0f2fe', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Coaching Hub
               </p>
               <h2 style={{ margin: '8px 0 0', fontSize: 'clamp(1.55rem, 5vw, 2rem)', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.03em', lineHeight: 1.12 }}>
@@ -668,12 +679,13 @@ export default function Dashboard() {
               </p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing[2] }}>
-              <DashboardHeroStat label="Week workouts" value={String(weekWorkouts)} icon={<Dumbbell size={17} />} />
-              <DashboardHeroStat label="Streak" value={String(trackerStreak)} icon={<Flame size={17} />} />
+              <DashboardHeroStat label="Week workouts" value={String(weekWorkouts)} icon={<Dumbbell size={17} />} tint="#38bdf8" />
+              <DashboardHeroStat label="Streak" value={String(trackerStreak)} icon={<Flame size={17} />} tint="#fb923c" />
               <DashboardHeroStat
                 label="Today"
                 value={todayTrackerPercent != null ? `${todayTrackerPercent}%` : '—'}
                 icon={<Calendar size={17} />}
+                tint="#4ade80"
               />
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing[2] }}>
@@ -787,7 +799,15 @@ export default function Dashboard() {
               </div>
             </Card>
           ) : (
-            <Card variant="glass" style={{ marginBottom: spacing[3] }}>
+            <Card
+              variant="glass"
+              style={{
+                marginBottom: spacing[3],
+                backgroundColor: '#78350f',
+                backgroundImage: 'linear-gradient(135deg, rgba(251,191,36,0.4) 0%, rgba(15,23,42,0.9) 68%)',
+                border: '1px solid rgba(251,191,36,0.55)',
+              }}
+            >
               <div style={{ display: 'grid', gap: spacing[3] }}>
                 <div>
                   <p style={eyebrowLabel}>Current Coaching Week</p>
@@ -807,8 +827,8 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accentMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Timer size={20} color={colors.accent} />
+                      <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(251,191,36,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Timer size={20} color="#fde68a" />
                       </div>
                       <div>
                         <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, fontWeight: 600 }}>
@@ -1114,21 +1134,24 @@ function DashboardHeroStat({
   label,
   value,
   icon,
+  tint,
 }: {
   label: string
   value: string
   icon: React.ReactNode
+  tint: string
 }) {
   return (
     <div
       style={{
         borderRadius: 14,
         padding: spacing[3],
-        background: 'rgba(255,255,255,0.04)',
-        border: `1px solid ${colors.borderSubtle}`,
+        backgroundColor: `${tint}33`,
+        backgroundImage: `linear-gradient(160deg, ${tint}55, rgba(15,23,42,0.35))`,
+        border: `1px solid ${tint}`,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.textMuted, fontSize: 12, fontWeight: 700 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: tint, fontSize: 12, fontWeight: 700 }}>
         {icon}
         {label}
       </div>
@@ -1164,7 +1187,12 @@ function QuickLinkCard({
       interactive
       staggerIndex={index}
       onClick={() => onOpen(href)}
-      style={{ marginBottom: 0 }}
+      style={{
+        marginBottom: 0,
+        backgroundColor: accent,
+        backgroundImage: `linear-gradient(145deg, ${accent}66 0%, rgba(15,23,42,0.88) 72%)`,
+        border: `1px solid ${accent}`,
+      }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing[3] }}>
         <div
@@ -1172,7 +1200,7 @@ function QuickLinkCard({
             width: 42,
             height: 42,
             borderRadius: 12,
-            backgroundColor: `${accent}22`,
+            backgroundColor: `${accent}44`,
             color: accent,
             display: 'flex',
             alignItems: 'center',

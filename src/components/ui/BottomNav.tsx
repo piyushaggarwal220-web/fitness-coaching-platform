@@ -8,11 +8,11 @@ import { useInstantLockState } from '@/hooks/useInstantLockState'
 import { unlockHrefForFeature, type InstantFeature } from '@/lib/instant-feature-access'
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Home', icon: Home, tour: 'nav-home', feature: null },
-  { href: '/tracker', label: 'Tracker', icon: ListChecks, tour: 'nav-tracker', feature: 'tracker' as const },
-  { href: '/plan', label: 'Plan', icon: ClipboardList, tour: 'nav-plan', feature: null },
-  { href: '/client/chat', label: 'Chat', icon: MessageCircle, tour: 'nav-chat', feature: 'ai_chat' as const },
-  { href: '/journey', label: 'Journey', icon: Map, tour: 'nav-journey', feature: 'journey' as const },
+  { href: '/dashboard', label: 'Home', icon: Home, tour: 'nav-home', feature: null, color: '#38bdf8' },
+  { href: '/tracker', label: 'Tracker', icon: ListChecks, tour: 'nav-tracker', feature: 'tracker' as const, color: '#4ade80' },
+  { href: '/plan', label: 'Plan', icon: ClipboardList, tour: 'nav-plan', feature: null, color: '#60a5fa' },
+  { href: '/client/chat', label: 'Chat', icon: MessageCircle, tour: 'nav-chat', feature: 'ai_chat' as const, color: '#2dd4bf' },
+  { href: '/journey', label: 'Journey', icon: Map, tour: 'nav-journey', feature: 'journey' as const, color: '#c4b5fd' },
 ] as const
 
 function hrefForItem(
@@ -49,7 +49,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
       }}
       aria-label="Main navigation"
     >
-      {NAV_ITEMS.map(({ href, label, icon: Icon, tour, feature }) => {
+      {NAV_ITEMS.map(({ href, label, icon: Icon, tour, feature, color }) => {
         const isLocked = Boolean(feature && (loading || locked[feature]))
         // Instant-locked surfaces stay off the nav until unlocked (unlock via dashboard /unlock).
         if (isLocked) return null
@@ -69,7 +69,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
               minWidth: 48,
               minHeight: 56,
               padding: `${spacing[1]}px`,
-              color: active ? colors.accent : colors.textMuted,
+              color: active ? color : colors.textMuted,
               textDecoration: 'none',
               transition: 'color 150ms ease',
             }}
@@ -89,7 +89,7 @@ export function BottomNav({ unreadChats = 0 }: { unreadChats?: number }) {
                     height: 17,
                     padding: '0 4px',
                     borderRadius: 999,
-                    backgroundColor: colors.accent,
+                    backgroundColor: '#2dd4bf',
                     color: colors.textInverse,
                     display: 'flex',
                     alignItems: 'center',
