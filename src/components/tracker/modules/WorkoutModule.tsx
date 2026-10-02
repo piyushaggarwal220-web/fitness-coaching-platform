@@ -782,14 +782,14 @@ export function WorkoutModule({
                   ...(isDone
                     ? {
                         background:
-                          'linear-gradient(135deg, rgba(34,197,94,0.14) 0%, rgba(24,24,27,0.92) 60%)',
-                        border: '1px solid rgba(34,197,94,0.25)',
+                          'linear-gradient(135deg, rgba(34,197,94,0.2) 0%, #ffffff 72%)',
+                        border: '1px solid rgba(22,163,74,0.35)',
                       }
                     : isCurrent
                       ? {
                           background:
-                            'linear-gradient(135deg, rgba(249,115,22,0.16) 0%, rgba(24,24,27,0.92) 60%)',
-                          border: '1px solid rgba(249,115,22,0.28)',
+                            'linear-gradient(135deg, rgba(2,132,199,0.16) 0%, #ffffff 72%)',
+                          border: '2px solid #0284c7',
                         }
                       : null),
                 }}

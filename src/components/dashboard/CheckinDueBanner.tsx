@@ -89,17 +89,11 @@ export function CheckinDueBanner({
     minHeight: CHECKIN_DUE_BANNER_HEIGHT,
     padding: `${spacing[3]}px ${spacing[4]}px`,
     border: 'none',
-    borderBottom: isDue
-      ? '1px solid rgba(249, 115, 22, 0.35)'
-      : '1px solid rgba(255, 255, 255, 0.08)',
-    background: isDue
-      ? 'linear-gradient(90deg, rgba(249,115,22,0.22) 0%, rgba(249,115,22,0.12) 55%, rgba(24,24,27,0.96) 100%)'
-      : 'linear-gradient(90deg, rgba(39,39,42,0.98) 0%, rgba(24,24,27,0.96) 100%)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
+    borderBottom: isDue ? '2px solid #f97316' : '2px solid #f59e0b',
+    background: isDue ? '#fff7ed' : '#fffbeb',
     color: colors.textPrimary,
     textAlign: 'left',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
   }
 
   const icon = isDue ? (

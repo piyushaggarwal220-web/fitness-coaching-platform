@@ -28,9 +28,7 @@ export function MembershipRenewalBanner({ prompt }: Props) {
         padding: `${spacing[3]}px ${spacing[4]}px`,
         border: `1px solid ${isDanger ? 'rgba(239, 68, 68, 0.4)' : 'rgba(249, 115, 22, 0.4)'}`,
         borderRadius: 14,
-        background: isDanger
-          ? 'linear-gradient(90deg, rgba(239,68,68,0.18) 0%, rgba(24,24,27,0.96) 100%)'
-          : 'linear-gradient(90deg, rgba(249,115,22,0.2) 0%, rgba(24,24,27,0.96) 100%)',
+        background: isDanger ? '#fef2f2' : '#fff7ed',
         color: colors.textPrimary,
         textAlign: 'left',
         cursor: 'pointer',

@@ -60,7 +60,7 @@ export function ModuleEmpty({ message }: { message: string }) {
       style={{
         padding: spacing[5],
         borderRadius: radius.lg,
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(24,24,27,0.92) 60%)',
+        background: '#ffffff',
         border: `1px solid ${colors.borderSubtle}`,
         backdropFilter: 'blur(16px)',
         textAlign: 'center',
