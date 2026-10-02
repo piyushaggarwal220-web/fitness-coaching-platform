@@ -57,7 +57,7 @@ const CHECKOUT_DRAFT_KEY = 'lurvox_checkout_draft_v1';
 type CheckoutScreen = 1 | 2 | 3;
 
 /** Flip to false to put the "more about you" screen back between basics and payment. */
-const SKIP_CHECKOUT_MORE_INFO = true;
+const SKIP_CHECKOUT_MORE_INFO = false;
 
 type AppliedDiscountPreview = {
  code: string;

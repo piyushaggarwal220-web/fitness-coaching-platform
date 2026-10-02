@@ -1,6 +1,5 @@
 {% comment %}
-  Homepage insert: Instant-style intro → plan cards → truth → 3 steps.
-  lx-sales-20261001: prices before the "why you fail" block. Swap the two renders below to restore the old order.
+  Homepage insert: Instant-style intro → truth → plan cards → 3 steps.
   Old AI plan cards and talk-to-a-coach leftovers are hidden — never hide .shopify-section.
 {% endcomment %}
 <style id="lx-home-hide-legacy">
@@ -13,18 +12,6 @@
   [data-lx-hero-cta] a[href*="choose-your-plan"],
   a[href*="talk-to-a-coach"],
   a[href*="book-a-free-call"] {
-    display: none !important;
-  }
-
-  /* lx-sales-20261001: homepage lead form. Delete this rule to show it again. */
-  .shopify-block:has(form.contact-form),
-  .shopify-section:has(form.contact-form):not(:has(.lx-plans)):not(:has(.lx-intro)):not(:has(.lx-faq)) {
-    display: none !important;
-  }
-
-  /* lx-best-landing: 7,000 carousel and the mid-page quiz. Delete these rules to show them again. */
-  [class*="ai-client-results"],
-  #lx-fitness-quiz {
     display: none !important;
   }
 
@@ -44,9 +31,9 @@
 </style>
 <div class="lx-home-flow">
   {% render 'lurvox-instant-intro' %}
+  {% render 'lurvox-truth-check' %}
   {% render 'lurvox-plan-cards' %}
   {% render 'lurvox-three-steps' %}
-  {% render 'lurvox-truth-check' %}
 </div>
 {% render 'lurvox-athletic-float' %}
 {% render 'lurvox-header-match' %}
