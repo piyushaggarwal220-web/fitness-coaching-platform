@@ -38,7 +38,7 @@ const HERO_OPTIONS: {
     title: 'An athletic body.',
     duration: '12 months',
     image: '/images/lurvox/campaign/hero-athletic.webp',
-    alt: 'Woman running along a waterfront at dawn',
+    alt: 'Muscular man running in shorts along a waterfront at dawn',
   },
 ]
 
@@ -86,6 +86,7 @@ export function Hero({
   return (
     <section className="lx-hero" id="top">
       <div className="lx-hero-copy">
+        <p className="lx-eyebrow">Online coaching</p>
         <h1>{option.title}</h1>
         <p className="lx-lead">Workout, diet, and a coach. First plan in 24–48 hours.</p>
         <div className="lx-switch" role="tablist" aria-label="Coaching plans">
@@ -102,6 +103,9 @@ export function Hero({
             </button>
           ))}
         </div>
+        <div className="lx-hero-photo">
+          <CampaignImage src={option.image} alt={option.alt} priority className="lx-cover" />
+        </div>
         <p className="lx-price">
           <strong>{plan.displayPrice}</strong>
           <em>
@@ -114,9 +118,6 @@ export function Hero({
           </PrimaryCta>
         </div>
       </div>
-      <div className="lx-hero-photo">
-        <CampaignImage src={option.image} alt={option.alt} priority className="lx-cover" />
-      </div>
     </section>
   )
 }
@@ -128,6 +129,167 @@ export function Included() {
       <div className="lx-marquee-track">
         {loop.map((item, index) => (
           <span key={`${item}-${index}`}>{item}</span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export function WhyFail() {
+  const problems = [
+    {
+      n: '01',
+      title: 'Your plan',
+      body: 'The workout and the diet are built around your goal, schedule, food, and where you train.',
+      image: '/images/lurvox/campaign/intake-morning.webp',
+      alt: 'Woman with coffee and a gym bag before training',
+    },
+    {
+      n: '02',
+      title: 'It keeps up',
+      body: 'The 3-month plan updates every 14 days. The 6- and 12-month plans update every week.',
+      image: '/images/lurvox/campaign/weekly-checkin.webp',
+      alt: 'Woman by a window during a weekly check-in',
+    },
+    {
+      n: '03',
+      title: 'Made with tested principles',
+      body: 'The workout and diet are made from tested training and nutrition principles, then written for your case. There are no live calls.',
+      image: '/landing/instant-coach-piyush.png',
+      alt: 'Piyush Aggarwal, LURVOX coach',
+    },
+    {
+      n: '04',
+      title: 'The work is decided',
+      body: 'What to train and what to eat is written. You are not left choosing it alone.',
+      image: '/images/lurvox/campaign/training-session.webp',
+      alt: 'Man performing a seated cable row',
+    },
+  ]
+  const [active, setActive] = useState(0)
+  const current = problems[active]
+  return (
+    <section className="lx-fail" id="why">
+      <p className="lx-eyebrow">With LURVOX</p>
+      <h2>Why you won&apos;t fail with us.</h2>
+      <p className="lx-lead">The plan is built for your case, and it does not stop at a file.</p>
+      <div className="lx-stage">
+        {current.n === '03' ? (
+          <div className="lx-stage-split">
+            {coaches.map((coach) => (
+              <img key={coach.instagramHandle} src={coach.photo} alt={`${coach.name}, LURVOX coach`} />
+            ))}
+          </div>
+        ) : (
+          <img key={current.n} className="lx-cover" src={current.image} alt={current.alt} />
+        )}
+      </div>
+      <div className="lx-method-copy">
+        <h3>{current.title}</h3>
+        <p>{current.body}</p>
+      </div>
+      <div className="lx-stage-nav lx-quad-nav" role="tablist" aria-label="Why you won't fail with us">
+        {problems.map((item, index) => (
+          <button
+            key={item.n}
+            type="button"
+            role="tab"
+            aria-selected={index === active}
+            className={index === active ? 'is-on' : undefined}
+            onClick={() => setActive(index)}
+          >
+            {item.n === '03' ? (
+              <span className="lx-thumb-split">
+                {coaches.map((coach) => (
+                  <img key={coach.instagramHandle} src={coach.photo} alt="" />
+                ))}
+              </span>
+            ) : (
+              <img src={item.image} alt="" />
+            )}
+            <span>{item.title}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export function Difference() {
+  const pillars = [
+    {
+      n: '01',
+      title: 'Personalized',
+      body: 'Your plan is built around your goal, experience, schedule, and where you train.',
+      image: '/images/lurvox/campaign/intake-morning.webp',
+      alt: 'Woman with coffee and a gym bag before training',
+    },
+    {
+      n: '02',
+      title: 'Human coaching',
+      body: 'Piyush Aggarwal and Rakshit Mohla review your case in the app. There are no live calls.',
+      images: coaches.map((coach) => ({ src: coach.photo, alt: `${coach.name}, LURVOX coach` })),
+    },
+    {
+      n: '03',
+      title: 'Adaptive',
+      body: 'The 3-month plan updates every 14 days. The 6- and 12-month plans update every week.',
+      image: '/images/lurvox/campaign/plan-arrived.webp',
+      alt: 'Man reading a phone after training',
+    },
+    {
+      n: '04',
+      title: 'Accountable',
+      body: 'Mid-week and weekly check-ins. You are not left alone with a file.',
+      image: '/images/lurvox/campaign/weekly-checkin.webp',
+      alt: 'Woman by a window during a weekly check-in',
+    },
+  ]
+  const [active, setActive] = useState(0)
+  const current = pillars[active]
+  return (
+    <section className="lx-manifesto" id="difference">
+      <p className="lx-eyebrow">Why LURVOX</p>
+      <h2>Not another workout plan.</h2>
+      <p className="lx-lead">
+        That is what LURVOX is built to fix. Personalized training, nutrition, tracking, and a coach, in one system.
+      </p>
+      <div className="lx-stage">
+        {'images' in current && current.images ? (
+          <div className="lx-stage-split">
+            {current.images.map((image) => (
+              <img key={image.src} src={image.src} alt={image.alt} />
+            ))}
+          </div>
+        ) : (
+          <img key={current.n} className="lx-cover" src={current.image} alt={current.alt} />
+        )}
+      </div>
+      <div className="lx-method-copy">
+        <h3>{current.title}</h3>
+        <p>{current.body}</p>
+      </div>
+      <div className="lx-stage-nav lx-quad-nav" role="tablist" aria-label="Why LURVOX">
+        {pillars.map((item, index) => (
+          <button
+            key={item.n}
+            type="button"
+            role="tab"
+            aria-selected={index === active}
+            className={index === active ? 'is-on' : undefined}
+            onClick={() => setActive(index)}
+          >
+            {'images' in item && item.images ? (
+              <span className="lx-thumb-split">
+                {item.images.map((image) => (
+                  <img key={image.src} src={image.src} alt="" />
+                ))}
+              </span>
+            ) : (
+              <img src={item.image} alt="" />
+            )}
+            <span>{item.title}</span>
+          </button>
         ))}
       </div>
     </section>
@@ -242,6 +404,14 @@ export function System() {
   const current = items[active]
   return (
     <section className="lx-system" id="system">
+      <p className="lx-eyebrow">What you get</p>
+      <h2>One system. Your case.</h2>
+      <p className="lx-lead">The workout, the diet, the check-ins, and a coach reading them.</p>
+      <ul className="lx-include">
+        {PLAN_INCLUSIONS.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
       <div className="lx-stage">
         {current.images.length > 1 ? (
           <div className="lx-stage-split">
@@ -293,7 +463,7 @@ export function Coaching() {
   return (
     <section className="lx-coaches" id="coaching">
       <div className="lx-coaches-copy">
-        <p className="lx-kicker">Human coaching</p>
+        <p className="lx-eyebrow">Human coaching</p>
         <h2>
           Technology
           <br />
@@ -441,7 +611,8 @@ export function Method() {
   const current = steps[active]
   return (
     <section className="lx-method" id="method">
-      <p className="lx-kicker">How it works</p>
+      <p className="lx-eyebrow">How it works</p>
+      <h2>Then it adapts.</h2>
       <div className="lx-stage lx-method-stage">
         <CampaignImage
           key={current.n}
@@ -451,9 +622,7 @@ export function Method() {
         />
       </div>
       <div className="lx-method-copy">
-        <h2>
-          {current.n} {current.title}
-        </h2>
+        <h3>{current.title}</h3>
         <p>{current.body}</p>
       </div>
       <div className="lx-stage-nav lx-method-nav" role="tablist" aria-label="How it works">
@@ -467,9 +636,7 @@ export function Method() {
             onClick={() => setActive(index)}
           >
             <img src={step.image} alt="" />
-            <span>
-              {step.n} {step.title.replace(/\.$/, '')}
-            </span>
+            <span>{step.title.replace(/\.$/, '')}</span>
           </button>
         ))}
       </div>
@@ -477,10 +644,34 @@ export function Method() {
   )
 }
 
+const PLAN_POINTS: Record<CoachingPlanSlug, string[]> = {
+  '3_months': [
+    'Workout and diet for your case',
+    'Coach in the app. No live calls',
+    'Check-ins and daily tracking',
+    'Updates every 14 days',
+  ],
+  '6_months': [
+    'Everything in Fat loss',
+    'Updates every week',
+    'Cardio plan',
+    'Supplement plan',
+    'Plateau coaching after 90 days',
+  ],
+  '12_months': [
+    'Everything in Fat loss + muscle gain',
+    'Stamina coaching',
+    'Weekly updates for 12 months',
+    'Cardio and supplements, kept current',
+    'Plateau coaching through the year',
+    'Lowest rate, ₹142 a month',
+  ],
+}
+
 export function Pricing() {
   return (
     <section className="lx-pricing" id="pricing">
-      <p className="lx-kicker">Plans</p>
+      <p className="lx-eyebrow">Plans</p>
       <h2>Choose your plan.</h2>
       <p className="lx-shared">
         Every plan includes personalized coaching, a workout, a diet, tracking and coach check-ins. A free
@@ -488,23 +679,25 @@ export function Pricing() {
       </p>
       <div className="lx-plans">
         {COACHING_PLAN_LIST.map((plan) => (
-          <article key={plan.slug} className={plan.popular ? 'is-popular' : undefined}>
+          <article
+            key={plan.slug}
+            className={[plan.popular ? 'is-popular' : '', plan.best ? 'is-best' : ''].filter(Boolean).join(' ') || undefined}
+          >
             <p className="lx-kicker">
               {plan.durationMonths === 3 ? '90 days' : `${plan.durationMonths} months`}
               {plan.popular ? <span className="lx-tag">Most popular</span> : null}
+              {plan.best ? <span className="lx-tag">Lowest monthly</span> : null}
             </p>
             <h3>{plan.name}</h3>
-            <p className="lx-plan-price">{plan.displayPrice}</p>
-            <p className="lx-per">
-              ₹{Math.round(plan.amountPaise / 100 / plan.durationMonths)} a month
+            <p className="lx-plan-price">
+              {plan.displayPrice}
+              <em>₹{Math.round(plan.amountPaise / 100 / plan.durationMonths)} a month</em>
             </p>
-            <p className="lx-diff">
-              {plan.slug === '12_months'
-                ? 'Everything in Fat loss + muscle gain, plus stamina coaching.'
-                : plan.slug === '6_months'
-                  ? 'Everything in Fat loss, plus weekly updates, cardio and supplements.'
-                  : 'Plan updates every 14 days.'}
-            </p>
+            <ul className="lx-points">
+              {PLAN_POINTS[plan.slug].map((point) => (
+                <li key={point}>{point}</li>
+              ))}
+            </ul>
             <PrimaryCta plan={plan.slug} className="lx-btn-block">
               Start for {plan.displayPrice}
             </PrimaryCta>

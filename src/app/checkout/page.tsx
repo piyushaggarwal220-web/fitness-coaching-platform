@@ -1,17 +1,17 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { Manrope } from 'next/font/google';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { BRAND_NAME } from '@/lib/brand';
-import { planDurationLabel, planGoalName, planPathForSlug } from '@/lib/payments/plan-pages';
+import { planDurationLabel, planGoalName } from '@/lib/payments/plan-pages';
 import {
  COACHING_PLAN_LIST,
  DIGITAL_PLAN_LIST,
  getPurchasablePlan,
  isDigitalPlanSlug,
- type CoachingPlanSlug,
 } from '@/lib/payments/plans';
 import { createClient } from '@/lib/supabase/client';
 import { isPaymentBypassClient } from '@/lib/config';
@@ -51,6 +51,12 @@ import { leavePublicDemoSession } from '@/lib/public-demo-session';
 
 const supabase = createClient();
 const marketingBaseUrl = resolveMarketingBaseUrl();
+const checkoutFont = Manrope({
+ subsets: ['latin'],
+ weight: ['400', '500', '600', '700', '800'],
+ display: 'swap',
+});
+
 const PAYMENT_SUCCESS_KEY = 'lurvox_checkout_success_redirect';
 const CHECKOUT_DRAFT_KEY = 'lurvox_checkout_draft_v1';
 type CheckoutScreen = 1 | 2 | 3;
@@ -143,6 +149,17 @@ function CheckoutForm() {
  firstTimerPreviewPaise != null ? formatInrFromPaise(firstTimerPreviewPaise) : plan.displayPrice;
  const firstTimerSavingsPaise =
  firstTimerPreviewPaise != null ? plan.amountPaise - firstTimerPreviewPaise : null;
+
+ useEffect(() => {
+ const previousBackground = document.body.style.backgroundColor
+ const previousColor = document.body.style.color
+ document.body.style.backgroundColor = '#f4efe6'
+ document.body.style.color = '#1c1915'
+ return () => {
+ document.body.style.backgroundColor = previousBackground
+ document.body.style.color = previousColor
+ }
+ }, [])
 
  useEffect(() => {
  let cancelled = false
@@ -924,9 +941,7 @@ function CheckoutForm() {
  value={basics}
  onChange={setBasics}
  onBack={() => {
- const planHref = isDigitalCheckout
- ? '/customised-plan'
- : `/plans/${planPathForSlug(plan.slug as CoachingPlanSlug)}`;
+ const planHref = isDigitalCheckout ? '/customised-plan' : marketingBaseUrl;
  window.location.href = planHref;
  }}
  onSubmit={continueFromBasics}
@@ -1158,176 +1173,191 @@ export default function CheckoutPage() {
 
 const intakeTheme: Record<string, CSSProperties> = {
   page: {
-    backgroundColor: '#12100f',
-    backgroundImage: `
-      radial-gradient(ellipse 70% 45% at 85% 0%, rgba(225, 29, 72, 0.22), transparent 55%),
-      radial-gradient(ellipse 55% 40% at 0% 15%, rgba(34, 197, 94, 0.16), transparent 50%),
-      radial-gradient(ellipse 50% 35% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 55%)
-    `,
+    backgroundColor: '#f4efe6',
+    backgroundImage: 'none',
+    fontFamily: checkoutFont.style.fontFamily,
+    color: '#1c1915',
   },
   card: {
-    backgroundColor: '#1c1917',
-    border: '1px solid rgba(251, 191, 36, 0.22)',
-    boxShadow: '0 18px 48px rgba(0,0,0,0.35)',
+    backgroundColor: '#fffaf3',
+    border: '1px solid rgba(28, 25, 21, 0.12)',
+    boxShadow: 'none',
     overflowX: 'hidden',
     minWidth: 0,
   },
   backLink: {
-    color: '#cbd5e1',
+    color: '#4e4942',
   },
   brandMark: {
-    color: '#fbbf24',
+    color: '#1e4d3d',
+    textAlign: 'center',
   },
   eyebrow: {
-    margin: '0 0 8px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '6px 10px',
-    borderRadius: 999,
-    backgroundColor: 'rgba(251, 191, 36, 0.18)',
-    color: '#fbbf24',
-    fontSize: 11,
+    margin: '0 auto 8px',
+    display: 'block',
+    width: 'fit-content',
+    padding: 0,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    color: '#1e4d3d',
+    fontSize: 12,
     fontWeight: 800,
-    letterSpacing: '0.06em',
+    letterSpacing: '0.08em',
+    textAlign: 'center',
   },
   title: {
-    color: '#f8fafc',
+    color: '#1c1915',
+    textAlign: 'center',
+    letterSpacing: 0,
   },
   subtitle: {
-    color: '#cbd5e1',
+    color: '#4e4942',
+    textAlign: 'center',
   },
   dotActive: {
-    backgroundColor: '#22c55e',
+    backgroundColor: '#1e4d3d',
   },
   trustStrip: {
-    backgroundColor: '#241f1c',
-    border: '1px solid rgba(251, 191, 36, 0.22)',
+    backgroundColor: '#f4efe6',
+    border: '1px solid rgba(28, 25, 21, 0.12)',
   },
   trustBadge: {
-    backgroundColor: '#1c1917',
-    border: '1px solid rgba(34, 197, 94, 0.35)',
-    color: '#f8fafc',
+    backgroundColor: '#fffaf3',
+    border: '1px solid rgba(30, 77, 61, 0.28)',
+    color: '#1c1915',
   },
   trustLine: {
-    color: '#cbd5e1',
+    color: '#4e4942',
   },
   planChip: {
-    backgroundColor: '#241f1c',
-    border: '1px solid rgba(251, 191, 36, 0.22)',
-    color: '#f8fafc',
+    backgroundColor: '#fffaf3',
+    border: '1px solid rgba(28, 25, 21, 0.12)',
+    color: '#1c1915',
   },
   planChipSelected: {
-    backgroundColor: 'rgba(34, 197, 94, 0.14)',
-    border: '2px solid #22c55e',
-    boxShadow: '0 0 0 1px rgba(34, 197, 94, 0.25)',
+    backgroundColor: '#fffaf3',
+    border: '2px solid #1e4d3d',
+    borderColor: '#1e4d3d',
+    boxShadow: 'none',
   },
   planChipName: {
-    color: '#f8fafc',
+    color: '#1c1915',
   },
   planChipDuration: {
-    color: '#cbd5e1',
+    color: '#6d675e',
   },
   planChipPrice: {
-    color: '#fbbf24',
+    color: '#1c1915',
   },
   planChipPopular: {
     fontSize: 11,
     fontWeight: 700,
-    color: '#fbbf24',
+    color: '#1e4d3d',
     textDecoration: 'none',
   },
   planChipBest: {
     fontSize: 11,
     fontWeight: 700,
-    color: '#4ade80',
+    color: '#1e4d3d',
     textDecoration: 'none',
   },
   orderSummary: {
-    backgroundColor: '#241f1c',
-    border: '1px solid rgba(251, 191, 36, 0.22)',
+    backgroundColor: '#f4efe6',
+    border: '1px solid rgba(28, 25, 21, 0.12)',
   },
   orderPlanName: {
-    color: '#f8fafc',
+    color: '#1c1915',
   },
   orderPlanMeta: {
-    color: '#cbd5e1',
+    color: '#4e4942',
   },
   orderSummaryPrice: {
-    color: '#fbbf24',
+    color: '#1c1915',
   },
   sectionLabel: {
-    color: '#fbbf24',
+    color: '#1e4d3d',
+    textAlign: 'center',
   },
   label: {
-    color: '#e2e8f0',
+    color: '#1c1915',
   },
   input: {
-    backgroundColor: '#12100f',
-    border: '1px solid rgba(251, 191, 36, 0.28)',
-    color: '#f8fafc',
+    backgroundColor: '#fffaf3',
+    border: '1px solid rgba(28, 25, 21, 0.16)',
+    color: '#1c1915',
+    borderRadius: 12,
+    colorScheme: 'light',
   },
   payBtn: {
-    backgroundColor: '#16a34a',
-    color: '#ffffff',
+    backgroundColor: '#1e4d3d',
+    color: '#f4efe6',
+    borderRadius: 12,
+    fontWeight: 600,
   },
   paySecureNote: {
-    color: '#cbd5e1',
+    color: '#6d675e',
   },
   stickyPayBar: {
-    backgroundColor: 'rgba(28, 25, 23, 0.96)',
-    borderTop: '1px solid rgba(251, 191, 36, 0.22)',
+    backgroundColor: 'rgba(244, 239, 230, 0.96)',
+    borderTop: '1px solid rgba(28, 25, 21, 0.12)',
   },
   stickyPayLabel: {
-    color: '#cbd5e1',
+    color: '#6d675e',
   },
   stickyPayAmount: {
-    color: '#fbbf24',
+    color: '#1c1915',
   },
   stickyPayBtn: {
-    backgroundColor: '#16a34a',
-    color: '#ffffff',
+    backgroundColor: '#1e4d3d',
+    color: '#f4efe6',
+    borderRadius: 12,
+    fontWeight: 600,
   },
   stickyPayNote: {
-    color: '#cbd5e1',
+    color: '#6d675e',
   },
   secure: {
-    color: '#cbd5e1',
+    color: '#6d675e',
   },
   inlineLink: {
-    color: '#fbbf24',
+    color: '#1e4d3d',
   },
   otpBox: {
-    backgroundColor: '#241f1c',
-    border: '1px solid rgba(251, 191, 36, 0.22)',
+    backgroundColor: '#f4efe6',
+    border: '1px solid rgba(28, 25, 21, 0.12)',
   },
   otpTitle: {
-    color: '#f8fafc',
+    color: '#1c1915',
   },
   otpHint: {
-    color: '#cbd5e1',
+    color: '#4e4942',
   },
   otpInput: {
-    backgroundColor: '#12100f',
-    border: '1px solid rgba(251, 191, 36, 0.28)',
-    color: '#f8fafc',
+    backgroundColor: '#fffaf3',
+    border: '1px solid rgba(28, 25, 21, 0.16)',
+    color: '#1c1915',
+    borderRadius: 12,
+    colorScheme: 'light',
   },
   otpBtn: {
-    backgroundColor: '#16a34a',
-    color: '#ffffff',
+    backgroundColor: '#1e4d3d',
+    color: '#f4efe6',
+    borderRadius: 12,
   },
   otpBtnSecondary: {
-    border: '1px solid rgba(251, 191, 36, 0.35)',
-    color: '#fbbf24',
-    backgroundColor: '#1c1917',
+    border: '1px solid rgba(28, 25, 21, 0.16)',
+    color: '#1c1915',
+    backgroundColor: '#fffaf3',
+    borderRadius: 12,
   },
   policyText: {
-    color: '#cbd5e1',
+    color: '#4e4942',
   },
   honestNote: {
     margin: '12px 0 0',
     fontSize: 13,
     lineHeight: 1.45,
-    color: '#cbd5e1',
+    color: '#4e4942',
   },
 }
 
@@ -1337,12 +1367,10 @@ const styles: Record<string, CSSProperties> = {
     width: '100%',
     maxWidth: '100%',
     overflowX: 'hidden',
-    backgroundColor: '#12100f',
-    backgroundImage: `
-      radial-gradient(ellipse 70% 45% at 85% 0%, rgba(225, 29, 72, 0.22), transparent 55%),
-      radial-gradient(ellipse 55% 40% at 0% 15%, rgba(34, 197, 94, 0.16), transparent 50%),
-      radial-gradient(ellipse 50% 35% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 55%)
-    `,
+    backgroundColor: '#f4efe6',
+    backgroundImage: 'none',
+    color: '#1c1915',
+    fontFamily: checkoutFont.style.fontFamily,
     padding: `${spacing[5]}px ${spacing[2]}px ${spacing[7]}px`,
     boxSizing: 'border-box',
   },
@@ -1352,6 +1380,7 @@ const styles: Record<string, CSSProperties> = {
   screenDots: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     marginBottom: 20,
   },
@@ -1359,18 +1388,18 @@ const styles: Record<string, CSSProperties> = {
     width: 8,
     height: 8,
     borderRadius: 999,
-    backgroundColor: 'rgba(251, 191, 36, 0.28)',
+    backgroundColor: 'rgba(30, 77, 61, 0.22)',
     flexShrink: 0,
   },
   screenDotActive: {
-    backgroundColor: '#22c55e',
+    backgroundColor: '#1e4d3d',
     width: 22,
   },
   backToDetails: {
     display: 'block',
     background: 'none',
     border: 'none',
-    color: '#cbd5e1',
+    color: '#4e4942',
     cursor: 'pointer',
     fontSize: 13,
     fontWeight: 600,
@@ -1389,10 +1418,10 @@ const styles: Record<string, CSSProperties> = {
     bottom: 0,
     zIndex: 50,
     padding: `10px ${spacing[2]}px calc(10px + env(safe-area-inset-bottom))`,
-    backgroundColor: 'rgba(28, 25, 23, 0.96)',
+    backgroundColor: 'rgba(244, 239, 230, 0.96)',
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
-    borderTop: '1px solid rgba(251, 191, 36, 0.22)',
+    borderTop: '1px solid rgba(28, 25, 21, 0.12)',
   },
   stickyPayInner: {
     maxWidth: 480,
@@ -1410,21 +1439,21 @@ const styles: Record<string, CSSProperties> = {
   stickyPayLabel: {
     fontSize: 11,
     fontWeight: 600,
-    color: '#cbd5e1',
+    color: '#6d675e',
     letterSpacing: '0.04em',
     textTransform: 'uppercase' as const,
   },
   stickyPayAmount: {
     fontSize: 18,
     fontWeight: 800,
-    color: '#fbbf24',
+    color: '#1c1915',
   },
   stickyPayBtn: {
     flex: '1 1 auto',
     maxWidth: 220,
     padding: '14px 18px',
-    backgroundColor: '#16a34a',
-    color: '#ffffff',
+    backgroundColor: '#1e4d3d',
+    color: '#f4efe6',
     border: 'none',
     borderRadius: radius.sm,
     fontWeight: 800,
@@ -1436,7 +1465,7 @@ const styles: Record<string, CSSProperties> = {
     maxWidth: 480,
     margin: '6px auto 0',
     fontSize: 11,
-    color: '#cbd5e1',
+    color: '#6d675e',
     textAlign: 'center' as const,
   },
   card: {
@@ -1444,17 +1473,17 @@ const styles: Record<string, CSSProperties> = {
     maxWidth: 480,
     minWidth: 0,
     margin: '0 auto',
-    backgroundColor: '#1c1917',
+    backgroundColor: '#fffaf3',
     borderRadius: radius.lg,
     padding: `${spacing[4]}px ${spacing[3]}px ${spacing[5]}px`,
-    border: '1px solid rgba(251, 191, 36, 0.22)',
+    border: '1px solid rgba(28, 25, 21, 0.12)',
     boxSizing: 'border-box',
-    boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
+    boxShadow: 'none',
     overflowX: 'hidden',
   },
   backLink: {
     display: 'inline-block',
-    color: '#cbd5e1',
+    color: '#4e4942',
     textDecoration: 'none',
     fontSize: 13,
     fontWeight: 600,
@@ -1466,19 +1495,22 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 800,
     letterSpacing: '0.14em',
     textTransform: 'uppercase' as const,
-    color: '#fbbf24',
+    color: '#1e4d3d',
+    textAlign: 'center',
   },
   title: {
     margin: '0 0 8px',
     fontSize: 28,
-    color: '#f8fafc',
+    color: '#1c1915',
+    textAlign: 'center',
     fontWeight: 800,
     letterSpacing: '-0.03em',
     lineHeight: 1.15,
   },
   subtitle: {
     margin: '0 0 18px',
-    color: '#cbd5e1',
+    color: '#4e4942',
+    textAlign: 'center',
     fontSize: 15,
     lineHeight: 1.45,
   },
@@ -1546,9 +1578,9 @@ const styles: Record<string, CSSProperties> = {
     boxSizing: 'border-box',
   },
   planChipSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-    boxShadow: `0 0 0 1px ${colors.accent}`,
+    borderColor: '#1e4d3d',
+    backgroundColor: '#fffaf3',
+    boxShadow: 'none',
   },
   planChipName: {
     fontSize: 13,
@@ -1575,19 +1607,19 @@ const styles: Record<string, CSSProperties> = {
     alignItems: 'center',
     padding: '4px 8px',
     borderRadius: 999,
-    border: '1px solid rgba(251, 191, 36, 0.35)',
-    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    border: '1px solid rgba(30, 77, 61, 0.28)',
+    backgroundColor: 'rgba(30, 77, 61, 0.08)',
     fontSize: 11,
     fontWeight: 700,
     letterSpacing: '0.04em',
     textTransform: 'uppercase' as const,
-    color: '#fbbf24',
+    color: '#1e4d3d',
     textDecoration: 'none',
   },
   planChipBadgeBest: {
-    border: '1px solid rgba(34, 197, 94, 0.45)',
-    backgroundColor: 'rgba(34, 197, 94, 0.16)',
-    color: '#4ade80',
+    border: '1px solid rgba(30, 77, 61, 0.28)',
+    backgroundColor: 'rgba(30, 77, 61, 0.08)',
+    color: '#1e4d3d',
   },
   planChipMrp: {
     fontSize: 11,
@@ -1598,9 +1630,9 @@ const styles: Record<string, CSSProperties> = {
  marginBottom: 16,
  padding: '12px 14px',
  borderRadius: radius.sm,
- border: `1px solid ${colors.accent}`,
- backgroundColor: colors.accentMuted,
- color: colors.textPrimary,
+ border: '1px solid rgba(30, 77, 61, 0.28)',
+ backgroundColor: 'rgba(30, 77, 61, 0.08)',
+ color: '#1c1915',
  fontWeight: 700,
  fontSize: 14,
  textAlign: 'center' as const,
@@ -1651,8 +1683,8 @@ const styles: Record<string, CSSProperties> = {
  marginTop: 12,
  padding: 14,
  borderRadius: radius.sm,
- border: '1px solid rgba(249,115,22,0.45)',
- backgroundColor: colors.accentMuted,
+ border: '1px solid rgba(30, 77, 61, 0.28)',
+ backgroundColor: 'rgba(30, 77, 61, 0.06)',
  },
  offerBannerTop: {
  display: 'flex',
@@ -1661,10 +1693,10 @@ const styles: Record<string, CSSProperties> = {
  gap: 10,
  marginBottom: 6,
  fontSize: 13,
- color: colors.textPrimary,
+ color: '#1c1915',
  },
  offerSave: {
- color: colors.accentHover,
+ color: '#1e4d3d',
  fontWeight: 700,
  fontSize: 12,
  },
@@ -1672,7 +1704,7 @@ const styles: Record<string, CSSProperties> = {
  margin: '0 0 12px',
  fontSize: 13,
  lineHeight: 1.45,
- color: colors.textSecondary,
+ color: '#4e4942',
  },
  appliedCodeRow: {
  display: 'flex',
@@ -1686,9 +1718,9 @@ const styles: Record<string, CSSProperties> = {
  alignItems: 'center',
  padding: '8px 12px',
  borderRadius: 999,
- border: '1px solid rgba(249,115,22,0.55)',
- backgroundColor: 'rgba(249,115,22,0.16)',
- color: colors.accentHover,
+ border: '1px solid rgba(30, 77, 61, 0.28)',
+ backgroundColor: 'rgba(30, 77, 61, 0.08)',
+ color: '#1e4d3d',
  fontSize: 13,
  fontWeight: 800,
  letterSpacing: '0.06em',
@@ -1701,31 +1733,31 @@ const styles: Record<string, CSSProperties> = {
  marginTop: 12,
  padding: '12px 14px',
  borderRadius: radius.sm,
- border: '1px solid rgba(249,115,22,0.55)',
- background:
- 'linear-gradient(135deg, rgba(249,115,22,0.22), rgba(249,115,22,0.08))',
+ border: '1px solid rgba(30, 77, 61, 0.22)',
+ background: '#f4efe6',
  },
  priceIncreaseLabel: {
  fontSize: 12,
  fontWeight: 800,
  letterSpacing: '0.12em',
  textTransform: 'uppercase' as const,
- color: colors.accentHover,
+ color: '#1e4d3d',
  },
  priceIncreaseValue: {
  fontSize: 18,
  fontWeight: 800,
  fontVariantNumeric: 'tabular-nums' as const,
  letterSpacing: '0.04em',
- color: colors.textPrimary,
+ color: '#1c1915',
  minWidth: '5.8em',
  textAlign: 'right' as const,
  },
  leagueNote: {
  margin: '0 0 20px',
- color: colors.textMuted,
+ color: '#6d675e',
  fontSize: 12,
  lineHeight: 1.45,
+ textAlign: 'center' as const,
  },
  addonBlock: {
  marginTop: spacing[3],
@@ -1743,7 +1775,7 @@ const styles: Record<string, CSSProperties> = {
  height: 18,
  marginTop: 2,
  flexShrink: 0,
- accentColor: colors.accent,
+ accentColor: '#1e4d3d',
  cursor: 'pointer',
  },
  addonBody: {
@@ -1761,24 +1793,24 @@ const styles: Record<string, CSSProperties> = {
  addonTitle: {
  fontSize: 14,
  fontWeight: 700,
- color: colors.textPrimary,
+ color: '#1c1915',
  },
  addonPrice: {
  fontSize: 14,
  fontWeight: 800,
- color: colors.accent,
+ color: '#1e4d3d',
  fontVariantNumeric: 'tabular-nums' as const,
  whiteSpace: 'nowrap' as const,
  },
  addonCopy: {
  fontSize: 12,
  lineHeight: 1.5,
- color: colors.textMuted,
+ color: '#6d675e',
  },
  addonTotalNote: {
  margin: `${spacing[2]}px 0 0 30px`,
  fontSize: 12,
- color: colors.textSecondary,
+ color: '#4e4942',
  },
  testBanner: {
  backgroundColor: colors.warningMuted,
@@ -1825,8 +1857,8 @@ const styles: Record<string, CSSProperties> = {
  payBtn: {
  marginTop: 14,
  padding: 16,
- backgroundColor: colors.accent,
- color: colors.textInverse,
+ backgroundColor: '#1e4d3d',
+ color: '#f4efe6',
  border: 'none',
  borderRadius: radius.md,
  fontSize: 17,
@@ -1862,15 +1894,15 @@ const styles: Record<string, CSSProperties> = {
  todoBox: {
  margin: '0 0 16px',
  padding: '14px 16px',
- backgroundColor: colors.accentMuted,
- border: '1px solid rgba(249,115,22,0.25)',
+ backgroundColor: 'rgba(30, 77, 61, 0.08)',
+ border: '1px solid rgba(30, 77, 61, 0.22)',
  borderRadius: radius.sm,
  },
  todoTitle: {
  margin: '0 0 8px',
  fontSize: 12,
  fontWeight: 700,
- color: colors.accent,
+ color: '#1e4d3d',
  letterSpacing: '0.04em',
  textTransform: 'uppercase' as const,
  },
@@ -1893,8 +1925,9 @@ const styles: Record<string, CSSProperties> = {
  justifyContent: 'center',
  alignItems: 'center',
  minHeight: '100vh',
- color: colors.textSecondary,
- backgroundColor: colors.bgPrimary,
+ color: '#4e4942',
+ backgroundColor: '#f4efe6',
+ fontFamily: checkoutFont.style.fontFamily,
  },
  redeemBox: {
  marginTop: 10,
@@ -1940,8 +1973,8 @@ const styles: Record<string, CSSProperties> = {
  },
  validateBtn: {
  padding: '12px 16px',
- backgroundColor: colors.accent,
- color: colors.textInverse,
+ backgroundColor: '#1e4d3d',
+ color: '#f4efe6',
  border: 'none',
  borderRadius: radius.sm,
  fontWeight: 600,
@@ -2032,8 +2065,8 @@ const styles: Record<string, CSSProperties> = {
  },
  otpBtn: {
  padding: '12px 14px',
- backgroundColor: colors.accent,
- color: colors.textInverse,
+ backgroundColor: '#1e4d3d',
+ color: '#f4efe6',
  border: 'none',
  borderRadius: radius.sm,
  fontWeight: 600,
@@ -2070,7 +2103,7 @@ const styles: Record<string, CSSProperties> = {
  color: colors.textSecondary,
  },
  inlineLink: {
- color: colors.accent,
+ color: '#1e4d3d',
  fontWeight: 600,
  },
 };
