@@ -156,9 +156,9 @@ export function CtaLink({
   className?: string
 }) {
   const classes = [
-    'lp-btn',
-    variant === 'primary' ? 'lp-btn-primary' : 'lp-btn-ghost',
-    block ? 'lp-btn-block' : '',
+    'lx-btn',
+    variant === 'primary' ? 'lx-btn-primary' : 'lx-btn-ghost',
+    block ? 'lx-btn-block' : '',
     className,
   ]
     .filter(Boolean)
@@ -196,7 +196,7 @@ export function PrimaryCta({
       planName={catalog?.name}
       value={catalog ? catalog.amountPaise / 100 : undefined}
       source="landing"
-      className={['lp-btn', 'lp-btn-primary', className].filter(Boolean).join(' ')}
+      className={['lx-btn', 'lx-btn-primary', className].filter(Boolean).join(' ')}
     >
       {children}
     </CheckoutFunnelLink>
