@@ -1,6 +1,6 @@
 'use client'
 
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 
 type ProgressRingProps = {
   percent: number

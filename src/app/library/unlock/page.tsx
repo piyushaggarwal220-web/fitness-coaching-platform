@@ -16,7 +16,7 @@ import {
 } from '@/lib/payments/checkout-discounts'
 import { startExerciseLibraryCheckout } from '@/lib/payments/exercise-library-checkout-client'
 import { createClient } from '@/lib/supabase/client'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import type { OnboardingProfile } from '@/types/database'
 
 const supabase = createClient()

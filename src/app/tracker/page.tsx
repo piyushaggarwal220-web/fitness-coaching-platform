@@ -5,7 +5,7 @@ import { TrackerRefreshControls } from '@/components/tracker/TrackerRefreshContr
 import { useTracker } from '@/components/tracker/context/TrackerContext'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import { ClipboardList } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 

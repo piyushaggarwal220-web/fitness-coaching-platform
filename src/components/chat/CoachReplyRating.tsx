@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { RATING_OPTIONS } from '@/lib/coach-ratings'
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 import type { CoachRatingValue } from '@/types/database'
 
 type CoachReplyRatingPromptProps = {

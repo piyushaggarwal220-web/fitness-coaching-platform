@@ -3,7 +3,7 @@
 import { AlertTriangle, ChevronRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { MembershipRenewalPrompt } from '@/lib/subscription'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 
 type Props = {
   prompt: MembershipRenewalPrompt

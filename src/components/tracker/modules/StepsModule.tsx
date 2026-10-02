@@ -5,7 +5,7 @@ import { SetLogField } from '@/components/tracker/SetLogField'
 import { WearableConnect } from '@/components/tracker/WearableConnect'
 import { Button } from '@/components/ui/Button'
 import { ProgressBar } from '@/components/tracker/TrackerPrimitives'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import { getStepsScore } from '@/lib/daily-tracker/display'
 import type { TrackerCardioItem, TrackerCompletion } from '@/lib/daily-tracker/types'
 

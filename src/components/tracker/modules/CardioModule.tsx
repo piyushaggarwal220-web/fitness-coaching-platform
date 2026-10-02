@@ -7,7 +7,7 @@ import {
   StatTile,
   trackerSurface,
 } from '@/components/tracker/TrackerPrimitives'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import type { TrackerCardioItem, TrackerCompletion } from '@/lib/daily-tracker/types'
 
 type Props = {

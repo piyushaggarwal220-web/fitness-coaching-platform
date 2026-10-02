@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from 'react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { PLAN_CHANGE_DAILY_LIMIT } from '@/lib/plan-change-limits'
 import { readApiJson } from '@/lib/read-api-json'
 

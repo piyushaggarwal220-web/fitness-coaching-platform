@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Download, Share, X } from 'lucide-react'
-import { colors, layout, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, layout, radius, spacing } from '@/lib/design-tokens'
 import {
   getDeferredInstall,
   isIosDevice,

@@ -2,7 +2,7 @@
 
 import { useEffect, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { colors } from '@/lib/design-tokens';
+import { clientColors as colors } from '@/lib/design-tokens';
 
 const errorBox: CSSProperties = {
   backgroundColor: colors.dangerMuted,

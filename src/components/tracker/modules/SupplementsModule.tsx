@@ -1,7 +1,7 @@
 'use client'
 
 import { CompletionToggle, trackerSurface } from '@/components/tracker/TrackerPrimitives'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import type { TrackerCompletion, TrackerSupplementItem } from '@/lib/daily-tracker/types'
 
 const PERIOD_LABELS: Record<string, string> = {

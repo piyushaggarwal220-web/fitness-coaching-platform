@@ -4,7 +4,7 @@ import { type ReactNode } from 'react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
 import { ModuleEmpty, ModuleShell } from '@/components/tracker/ModuleShell'
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 import { ClipboardList } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 

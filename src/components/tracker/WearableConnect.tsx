@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Watch } from 'lucide-react'
 import { trackerInputStyle, trackerSurface } from '@/components/tracker/TrackerPrimitives'
 import { Button } from '@/components/ui/Button'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import type { TrackerCompletion } from '@/lib/daily-tracker/types'
 import {
   type WearableSource,

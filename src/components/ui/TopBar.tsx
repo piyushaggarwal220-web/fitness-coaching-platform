@@ -8,7 +8,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { DrawerMenuButton } from '@/components/ui/DrawerNav'
 import { createClient } from '@/lib/supabase/client'
 import { BRAND_NAME } from '@/lib/brand'
-import { colors, layout, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, layout, spacing } from '@/lib/design-tokens'
 
 const supabase = createClient()
 
@@ -68,7 +68,7 @@ export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) 
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {user && <NotificationBell />}
+        {user && <NotificationBell theme="light" />}
         {showProfile && user && (
           <button
             type="button"

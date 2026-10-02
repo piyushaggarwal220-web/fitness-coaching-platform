@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type TouchEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
 import { resolveProgressPhotoUrl, resolveStorageUrl } from '@/lib/storage/media-url'
 

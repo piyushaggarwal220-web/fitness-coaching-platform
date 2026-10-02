@@ -13,7 +13,7 @@ import {
   isPlanFullyReady,
 } from '@/lib/purchase-dashboard'
 import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import { createClient } from '@/lib/supabase/client'
 import { resolveStorageUrl } from '@/lib/storage/media-url'
 import type { OnboardingProfile, Plan } from '@/types/database'

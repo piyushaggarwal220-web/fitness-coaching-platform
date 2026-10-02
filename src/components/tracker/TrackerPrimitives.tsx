@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
-import { colors, radius, spacing, transition } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing, transition } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
 
 export const trackerInputStyle: CSSProperties = {
@@ -21,13 +21,13 @@ export const trackerInputStyle: CSSProperties = {
  * `trackerSurface` is for standalone cards; `trackerSurfaceInset` for panels nested inside one.
  */
 export const trackerSurface: CSSProperties = {
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(24,24,27,0.92) 60%)',
+  background: '#ffffff',
   border: `1px solid ${colors.borderSubtle}`,
-  boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+  boxShadow: '0 10px 24px rgba(15, 23, 42, 0.06)',
 }
 
 export const trackerSurfaceInset: CSSProperties = {
-  background: 'rgba(255,255,255,0.045)',
+  background: '#f8fafc',
   border: `1px solid ${colors.borderSubtle}`,
 }
 

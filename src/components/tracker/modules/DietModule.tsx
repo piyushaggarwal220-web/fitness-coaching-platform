@@ -9,7 +9,7 @@ import {
   ProgressBar,
   trackerSurfaceInset,
 } from '@/components/tracker/TrackerPrimitives'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { resolveSuggestedDayKey } from '@/lib/daily-tracker/parser'
 import { getCoachingDayInWeek } from '@/lib/checkin-schedule'
 import { useTracker } from '@/components/tracker/context/TrackerContext'

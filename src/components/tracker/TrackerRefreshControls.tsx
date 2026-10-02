@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
-import { colors, radius } from '@/lib/design-tokens'
+import { clientColors as colors, radius } from '@/lib/design-tokens'
 
 /**
  * Single recovery control for the tracker.

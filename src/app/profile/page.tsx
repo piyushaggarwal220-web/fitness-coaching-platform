@@ -23,7 +23,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { PUBLIC_DEMO_READ_ONLY_MESSAGE, isPublicDemoEmail } from '@/lib/public-demo'
 import { mobileStyles } from '@/lib/mobile-styles'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import type { ProfileForm } from '@/types/database'
 import styles from './profile.module.css'
 

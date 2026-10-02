@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
 import { brandTitle } from '@/lib/brand';
-import { colors, spacing } from '@/lib/design-tokens';
+import { clientColors as colors, spacing } from '@/lib/design-tokens';
 import { mobileStyles } from '@/lib/mobile-styles';
 import type { NewWorkoutForm, Workout } from '@/types/database';
 

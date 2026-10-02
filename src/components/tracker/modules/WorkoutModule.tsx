@@ -13,7 +13,7 @@ import {
   trackerSurface,
   trackerSurfaceInset,
 } from '@/components/tracker/TrackerPrimitives'
-import { colors, radius, spacing, layout } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing, layout } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
 import {
   buildExercisePatch,

@@ -6,7 +6,7 @@ import { WearableConnect } from '@/components/tracker/WearableConnect'
 import { ProgressRing } from '@/components/tracker/ProgressRing'
 import { TrackerRefreshControls } from '@/components/tracker/TrackerRefreshControls'
 import { useTracker } from '@/components/tracker/context/TrackerContext'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { buildModuleSummaries } from '@/lib/daily-tracker/module-summaries'
 import type { TodayTrackerView, TrackerWeekProgress } from '@/lib/daily-tracker/types'
 
@@ -162,9 +162,8 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
           padding: spacing[5],
           borderRadius: radius.xl,
           // Mirrors the dashboard hero so the tracker feels like the same product.
-          background:
-            'linear-gradient(135deg, rgba(249,115,22,0.14) 0%, rgba(17,24,39,0.96) 42%, rgba(10,10,11,0.98) 100%)',
-          border: '1px solid rgba(249,115,22,0.18)',
+          background: '#ffffff',
+          border: '2px solid #0284c7',
           backdropFilter: 'blur(20px)',
           boxShadow: '0 18px 48px rgba(0,0,0,0.38)',
           display: 'flex',
@@ -229,9 +228,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                 gap: 14,
                 padding: spacing[4],
                 borderRadius: radius.lg,
-                background: done
-                  ? 'linear-gradient(135deg, rgba(34,197,94,0.16) 0%, rgba(24,24,27,0.92) 60%)'
-                  : `linear-gradient(135deg, ${tint}22 0%, rgba(24,24,27,0.94) 58%)`,
+                background: '#ffffff',
                 backdropFilter: 'blur(16px)',
                 border: `1px solid ${done ? 'rgba(34,197,94,0.28)' : `${tint}55`}`,
                 textDecoration: 'none',

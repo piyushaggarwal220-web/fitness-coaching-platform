@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Pause, Play, Timer, X } from 'lucide-react'
-import { colors, radius, spacing, layout } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing, layout } from '@/lib/design-tokens'
 import { formatRestClock } from '@/lib/daily-tracker/exercise-utils'
 
 type Props = {

@@ -2,7 +2,8 @@
 
 import type { CSSProperties, ReactNode, ButtonHTMLAttributes } from 'react'
 import { Check } from 'lucide-react'
-import { colors, radius, shadows, transition } from '@/lib/design-tokens'
+import { radius, shadows, transition } from '@/lib/design-tokens'
+import { usePortalColors } from '@/lib/client-theme'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'md' | 'lg'
@@ -16,31 +17,42 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode
 }
 
-const variantStyles: Record<ButtonVariant, CSSProperties> = {
-  primary: {
-    backgroundColor: colors.accent,
-    color: colors.textInverse,
-    border: 'none',
-    boxShadow: shadows.accent,
-  },
-  secondary: {
-    backgroundColor: colors.bgElevated,
-    color: colors.textPrimary,
-    border: `1px solid ${colors.borderSubtle}`,
-    boxShadow: 'none',
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-    color: colors.textSecondary,
-    border: 'none',
-    boxShadow: 'none',
-  },
-  danger: {
-    backgroundColor: colors.dangerMuted,
-    color: colors.danger,
-    border: `1px solid rgba(239, 68, 68, 0.2)`,
-    boxShadow: 'none',
-  },
+function variantStyles(colors: {
+  accent: string
+  textInverse: string
+  bgElevated: string
+  textPrimary: string
+  borderSubtle: string
+  textSecondary: string
+  dangerMuted: string
+  danger: string
+}): Record<ButtonVariant, CSSProperties> {
+  return {
+    primary: {
+      backgroundColor: colors.accent,
+      color: colors.textInverse,
+      border: 'none',
+      boxShadow: shadows.accent,
+    },
+    secondary: {
+      backgroundColor: colors.bgElevated,
+      color: colors.textPrimary,
+      border: `1px solid ${colors.borderSubtle}`,
+      boxShadow: 'none',
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+      color: colors.textSecondary,
+      border: 'none',
+      boxShadow: 'none',
+    },
+    danger: {
+      backgroundColor: colors.dangerMuted,
+      color: colors.danger,
+      border: '1px solid rgba(220, 38, 38, 0.2)',
+      boxShadow: 'none',
+    },
+  }
 }
 
 const sizeStyles: Record<ButtonSize, CSSProperties> = {
@@ -60,6 +72,7 @@ export function Button({
   className,
   ...props
 }: ButtonProps) {
+  const colors = usePortalColors()
   const isDisabled = disabled || loading
 
   return (
@@ -79,7 +92,7 @@ export function Button({
         width: fullWidth ? '100%' : undefined,
         transition: transition('fast', 'transform, opacity, background-color, box-shadow'),
         touchAction: 'manipulation',
-        ...variantStyles[variant],
+        ...variantStyles(colors)[variant],
         ...sizeStyles[size],
         ...style,
       }}

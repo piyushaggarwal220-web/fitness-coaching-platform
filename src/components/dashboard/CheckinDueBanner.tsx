@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { getCheckinTypeDisplayName, describeCheckinWindow, type ScheduledCheckin } from '@/lib/checkin-schedule'
-import { colors, layout, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, layout, spacing } from '@/lib/design-tokens'
 import { usePublicDemo } from '@/hooks/usePublicDemo'
 
 type Props = {

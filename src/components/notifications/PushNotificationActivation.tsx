@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { BellOff, BellRing, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import {
   enableWebPush,
   getWebPushStatus,

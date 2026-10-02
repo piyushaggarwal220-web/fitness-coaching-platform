@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { CircleHelp, X } from 'lucide-react'
-import { colors, layout, radius } from '@/lib/design-tokens'
+import { clientColors as colors, layout, radius } from '@/lib/design-tokens'
 import { COACH_ISSUE_CONTACT } from '@/lib/content'
 
 type Turn = { role: 'user' | 'guide'; text: string }

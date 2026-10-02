@@ -16,7 +16,7 @@ import {
   formatSupportStatus,
 } from '@/lib/support'
 import { createClient } from '@/lib/supabase/client'
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 import type { SupportMessage, SupportRequest } from '@/types/database'
 
 const supabase = createClient()

@@ -24,7 +24,7 @@ import { clientFacingDietPlanText } from '@/lib/ai/nutrition-macro-sync'
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
 import { authenticateClient } from '@/lib/onboarding';
 import { createClient } from '@/lib/supabase/client';
-import { colors, spacing } from '@/lib/design-tokens';
+import { clientColors as colors, spacing } from '@/lib/design-tokens';
 import type { Plan } from '@/types/database';
 import { ADDON_PROTOCOL_HREF, ADDON_PROTOCOL_PAGE_TITLE, ADDON_PROTOCOL_SUBTITLE, entitledAddonIds, type AddonProtocolId } from '@/lib/addon-protocols';
 

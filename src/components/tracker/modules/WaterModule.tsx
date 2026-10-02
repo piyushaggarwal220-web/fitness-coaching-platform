@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { ProgressRing } from '@/components/tracker/ProgressRing'
 import { trackerInputStyle } from '@/components/tracker/TrackerPrimitives'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import type { TrackerCompletion, TrackerWaterItem } from '@/lib/daily-tracker/types'
 
 const QUICK = [250, 500, 750, 1000] as const

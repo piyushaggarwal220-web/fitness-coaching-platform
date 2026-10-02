@@ -13,7 +13,7 @@ import {
 } from '@/lib/issue-reports'
 import { createSupportRequest } from '@/lib/support'
 import { brandTitle } from '@/lib/brand'
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { createClient } from '@/lib/supabase/client'
 import type { IssueCategory, IssueReport, IssueTopic } from '@/types/database'

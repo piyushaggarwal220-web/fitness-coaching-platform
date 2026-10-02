@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { trackerInputStyle } from '@/components/tracker/TrackerPrimitives'
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 import { durationFromParts, formatDurationInput } from '@/lib/daily-tracker/exercise-utils'
 import {
   finishNumberDraft,

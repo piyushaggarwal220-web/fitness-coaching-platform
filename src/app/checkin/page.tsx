@@ -27,7 +27,7 @@ import { PUBLIC_DEMO_READ_ONLY_MESSAGE, isPublicDemoEmail } from '@/lib/public-d
 import { requestComplexityRecalculation } from '@/lib/complexity/client';
 import { SlideTransition, SuccessState } from '@/components/motion'
 import { mobileStyles } from '@/lib/mobile-styles';
-import { colors, spacing } from '@/lib/design-tokens';
+import { clientColors as colors, spacing } from '@/lib/design-tokens';
 import { validatePhotoFiles } from '@/lib/photo';
 import type { Checkin, OnboardingProfile, Plan, WeeklyCheckinFormData } from '@/types/database';
 

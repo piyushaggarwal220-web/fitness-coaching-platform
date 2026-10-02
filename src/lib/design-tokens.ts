@@ -26,7 +26,32 @@ export const colors = {
   borderSubtle: 'rgba(255, 255, 255, 0.08)',
 } as const
 
-/** Light theme — coach portal only (client/admin stay on dark `colors`). */
+/** Light, colorful client app. Coach portal uses `coachColors`. Admin and checkout stay on dark `colors`. */
+export const clientColors = {
+  bgPrimary: '#f3f6fb',
+  bgSecondary: '#e7eef8',
+  bgCard: '#ffffff',
+  bgElevated: '#ffffff',
+  bgGlass: 'rgba(255, 255, 255, 0.94)',
+  accent: '#0284c7',
+  accentHover: '#0369a1',
+  accentMuted: 'rgba(2, 132, 199, 0.14)',
+  accentGlow: 'rgba(2, 132, 199, 0.22)',
+  success: '#15803d',
+  successMuted: 'rgba(21, 128, 61, 0.12)',
+  warning: '#c2410c',
+  warningMuted: 'rgba(194, 65, 12, 0.12)',
+  danger: '#dc2626',
+  dangerMuted: 'rgba(220, 38, 38, 0.1)',
+  textPrimary: '#0f172a',
+  textSecondary: '#334155',
+  textMuted: '#64748b',
+  textInverse: '#ffffff',
+  divider: 'rgba(15, 23, 42, 0.08)',
+  borderSubtle: 'rgba(15, 23, 42, 0.12)',
+} as const
+
+/** Light theme — coach portal only. */
 export const coachColors = {
   bgPrimary: '#ffffff',
   bgSecondary: '#f4f4f5',

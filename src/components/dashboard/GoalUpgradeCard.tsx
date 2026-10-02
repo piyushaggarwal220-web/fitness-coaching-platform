@@ -4,7 +4,7 @@ import { ArrowUpRight, Lock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import {
   GOAL_BODY_TYPE_META,

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Loader2, Play, X } from 'lucide-react'
-import { colors, layout, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, layout, radius, spacing } from '@/lib/design-tokens'
 import type { FormDemoGender } from '@/lib/exercise-form/musclewiki'
 
 type VideoOption = { gender: FormDemoGender; angle: string; hasPoster?: boolean }

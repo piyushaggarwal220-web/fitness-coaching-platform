@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from 'react'
 import { StorageImage } from '@/components/ui/StorageImage'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 
 export type ComparePhotoSet = {
   front?: string | null

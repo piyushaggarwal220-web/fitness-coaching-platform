@@ -53,7 +53,7 @@ import { loadTodayTrackerView } from '@/lib/daily-tracker';
 import { isItemComplete } from '@/lib/daily-tracker/scores';
 import type { DailyTrackerDay, TrackerSnapshotItem } from '@/lib/daily-tracker/types';
 import { createClient } from '@/lib/supabase/client';
-import { colors, spacing, typography } from '@/lib/design-tokens';
+import { clientColors as colors, spacing, typography } from '@/lib/design-tokens';
 import { mobileStyles } from '@/lib/mobile-styles';
 import type { Checkin, Coach, OnboardingProfile, Plan, Purchase, Workout } from '@/types/database';
 import type { InitialPlanGenerationJob } from '@/lib/initial-plan-generation';
@@ -461,14 +461,15 @@ export default function Dashboard() {
       onClick={() => router.push('/plan')}
       style={{
         cursor: 'pointer',
-        backgroundColor: '#1e3a8a',
-        backgroundImage: 'linear-gradient(135deg, rgba(96,165,250,0.42) 0%, rgba(15,23,42,0.92) 70%)',
-        border: '1px solid rgba(96,165,250,0.55)',
+        backgroundColor: '#ffffff',
+        backgroundImage: 'none',
+        border: '2px solid #2563eb',
+        boxShadow: '0 10px 24px rgba(37, 99, 235, 0.12)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
         <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(96,165,250,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ClipboardList size={22} color="#93c5fd" />
+          <ClipboardList size={22} color="#1d4ed8" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontWeight: 700, fontSize: 17, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -521,15 +522,16 @@ export default function Dashboard() {
       onClick={() => router.push('/tracker')}
       style={{
         cursor: 'pointer',
-        backgroundColor: '#14532d',
-        backgroundImage: 'linear-gradient(135deg, rgba(74,222,128,0.38) 0%, rgba(15,23,42,0.92) 70%)',
-        border: '1px solid rgba(74,222,128,0.5)',
+        backgroundColor: '#ffffff',
+        backgroundImage: 'none',
+        border: '2px solid #16a34a',
+        boxShadow: '0 10px 24px rgba(22, 163, 74, 0.12)',
       }}
       className={status?.preferTrackerUpTop ? 'card-hover' : undefined}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
         <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(74,222,128,0.24)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ListChecks size={22} color="#86efac" />
+          <ListChecks size={22} color="#15803d" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontWeight: 700, fontSize: 17 }}>
@@ -543,7 +545,7 @@ export default function Dashboard() {
           <span style={{
             fontSize: 13,
             fontWeight: 700,
-            color: '#86efac',
+            color: '#15803d',
             backgroundColor: 'rgba(74,222,128,0.2)',
             padding: '6px 10px',
             borderRadius: 999,
@@ -640,7 +642,7 @@ export default function Dashboard() {
           style={{
             margin: 0,
             fontSize: 13,
-            color: '#67e8f9',
+            color: '#0369a1',
             fontWeight: 700,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
@@ -648,7 +650,7 @@ export default function Dashboard() {
         >
           Good {getGreeting()}
         </p>
-        <h1 style={{ ...typography.pageTitle, marginTop: 6 }}>{firstName}</h1>
+        <h1 style={{ ...typography.pageTitle, marginTop: 6, color: colors.textPrimary }}>{firstName}</h1>
         <p style={{ margin: '10px 0 0', fontSize: 16, color: colors.textSecondary, lineHeight: 1.45 }}>
           Here&apos;s your coaching overview for today
         </p>
@@ -659,14 +661,15 @@ export default function Dashboard() {
           variant="glass"
           style={{
             overflow: 'hidden',
-            backgroundColor: '#312e81',
-            backgroundImage: 'linear-gradient(135deg, rgba(56,189,248,0.45) 0%, rgba(249,115,22,0.38) 42%, rgba(167,139,250,0.42) 100%)',
-            border: '1px solid rgba(125,211,252,0.45)',
+            backgroundColor: '#ffffff',
+            backgroundImage: 'none',
+            border: '2px solid #0284c7',
+            boxShadow: '0 12px 28px rgba(2, 132, 199, 0.12)',
           }}
         >
           <div style={{ display: 'grid', gap: spacing[4] }}>
             <div>
-              <p style={{ margin: 0, fontSize: 12, color: '#e0f2fe', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <p style={{ margin: 0, fontSize: 12, color: '#0369a1', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Coaching Hub
               </p>
               <h2 style={{ margin: '8px 0 0', fontSize: 'clamp(1.55rem, 5vw, 2rem)', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.03em', lineHeight: 1.12 }}>
@@ -803,9 +806,9 @@ export default function Dashboard() {
               variant="glass"
               style={{
                 marginBottom: spacing[3],
-                backgroundColor: '#78350f',
-                backgroundImage: 'linear-gradient(135deg, rgba(251,191,36,0.4) 0%, rgba(15,23,42,0.9) 68%)',
-                border: '1px solid rgba(251,191,36,0.55)',
+                backgroundColor: '#fffbeb',
+                backgroundImage: 'none',
+                border: '2px solid #f59e0b',
               }}
             >
               <div style={{ display: 'grid', gap: spacing[3] }}>
@@ -828,7 +831,7 @@ export default function Dashboard() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
                       <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(251,191,36,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Timer size={20} color="#fde68a" />
+                        <Timer size={20} color="#b45309" />
                       </div>
                       <div>
                         <p style={{ margin: 0, fontSize: 12, color: colors.textMuted, fontWeight: 600 }}>
@@ -1146,9 +1149,8 @@ function DashboardHeroStat({
       style={{
         borderRadius: 14,
         padding: spacing[3],
-        backgroundColor: `${tint}33`,
-        backgroundImage: `linear-gradient(160deg, ${tint}55, rgba(15,23,42,0.35))`,
-        border: `1px solid ${tint}`,
+        backgroundColor: '#ffffff',
+        border: `2px solid ${tint}`,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: tint, fontSize: 12, fontWeight: 700 }}>
@@ -1189,9 +1191,9 @@ function QuickLinkCard({
       onClick={() => onOpen(href)}
       style={{
         marginBottom: 0,
-        backgroundColor: accent,
-        backgroundImage: `linear-gradient(145deg, ${accent}66 0%, rgba(15,23,42,0.88) 72%)`,
-        border: `1px solid ${accent}`,
+        backgroundColor: '#ffffff',
+        border: `2px solid ${accent}`,
+        boxShadow: `0 10px 24px ${accent}33`,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing[3] }}>

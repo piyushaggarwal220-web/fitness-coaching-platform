@@ -16,7 +16,7 @@ import {
 import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription'
 import { createClient } from '@/lib/supabase/client'
 import { PUBLIC_DEMO_READ_ONLY_MESSAGE, isPublicDemoEmail } from '@/lib/public-demo'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import type { OnboardingProfile, Purchase } from '@/types/database'
 
 const supabase = createClient()

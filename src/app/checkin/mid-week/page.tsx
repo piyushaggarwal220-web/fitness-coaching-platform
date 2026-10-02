@@ -16,7 +16,7 @@ import { readApiJson } from '@/lib/api-response';
 import { authenticateClient } from '@/lib/onboarding';
 import { PUBLIC_DEMO_READ_ONLY_MESSAGE, isPublicDemoEmail } from '@/lib/public-demo';
 import { mobileStyles } from '@/lib/mobile-styles';
-import { colors, spacing } from '@/lib/design-tokens';
+import { clientColors as colors, spacing } from '@/lib/design-tokens';
 import { SuccessState } from '@/components/motion';
 import type { Checkin, MidWeekCheckinFormData, OnboardingProfile } from '@/types/database';
 

@@ -7,7 +7,7 @@ import {
   ProgressBar,
   trackerSurfaceInset,
 } from '@/components/tracker/TrackerPrimitives'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import { qualityLabelToScore } from '@/lib/daily-tracker/display'
 import { sleepHoursFromBedAndWake } from '@/lib/daily-tracker/sleep-duration'
 import type {

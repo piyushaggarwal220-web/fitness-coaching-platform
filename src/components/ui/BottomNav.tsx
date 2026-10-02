@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Map, ClipboardList, MessageCircle, ListChecks } from 'lucide-react'
-import { colors, layout, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, layout, spacing } from '@/lib/design-tokens'
 import { useInstantLockState } from '@/hooks/useInstantLockState'
 import { unlockHrefForFeature, type InstantFeature } from '@/lib/instant-feature-access'
 

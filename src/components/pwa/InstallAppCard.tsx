@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Download } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import {
   getDeferredInstall,
   isIosDevice,

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { TrackerRefreshControls } from '@/components/tracker/TrackerRefreshControls'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import type { ReactNode } from 'react'
 
 type Props = {

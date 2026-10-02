@@ -15,7 +15,7 @@ import {
   PLAN_LATE_UPGRADE_COPY,
   PLAN_UPGRADE_WINDOW_COPY,
 } from '@/lib/payments/plan-upgrade-window'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 
 type Props = {
   subscription: ActiveSubscription

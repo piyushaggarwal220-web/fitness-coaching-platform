@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ImageIcon, Send } from 'lucide-react'
 import { StorageImage } from '@/components/ui/StorageImage'
 import { COACH_REPLY_QUIET_MS, decodeChatPhoto, encodeChatPhoto } from '@/lib/chat-reply-pause'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 
 type Msg = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string }
 

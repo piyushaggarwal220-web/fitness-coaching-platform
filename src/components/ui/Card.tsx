@@ -1,7 +1,8 @@
 'use client'
 
 import type { CSSProperties, ReactNode } from 'react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { radius, spacing } from '@/lib/design-tokens'
+import { usePortalColors } from '@/lib/client-theme'
 import { motionClass, staggerClass } from '@/lib/motion'
 
 type CardVariant = 'default' | 'glass' | 'elevated'
@@ -18,23 +19,30 @@ type CardProps = {
   interactive?: boolean
 }
 
-const variantStyles: Record<CardVariant, CSSProperties> = {
-  default: {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.borderSubtle}`,
-  },
-  glass: {
-    backgroundColor: colors.bgGlass,
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: `1px solid ${colors.borderSubtle}`,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
-  },
-  elevated: {
-    backgroundColor: colors.bgElevated,
-    border: `1px solid ${colors.borderSubtle}`,
-    boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
-  },
+function variantStyles(colors: {
+  bgCard: string
+  bgGlass: string
+  bgElevated: string
+  borderSubtle: string
+}): Record<CardVariant, CSSProperties> {
+  return {
+    default: {
+      backgroundColor: colors.bgCard,
+      border: `1px solid ${colors.borderSubtle}`,
+    },
+    glass: {
+      backgroundColor: colors.bgGlass,
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      border: `1px solid ${colors.borderSubtle}`,
+      boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)',
+    },
+    elevated: {
+      backgroundColor: colors.bgElevated,
+      border: `1px solid ${colors.borderSubtle}`,
+      boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)',
+    },
+  }
 }
 
 export function Card({
@@ -47,6 +55,7 @@ export function Card({
   staggerIndex,
   interactive,
 }: CardProps) {
+  const colors = usePortalColors()
   const pad = typeof padding === 'number' ? padding : spacing[padding]
   const motionClasses = [
     motionClass.cardEnter,
@@ -75,7 +84,7 @@ export function Card({
         borderRadius: radius.md,
         padding: pad,
         marginBottom: spacing[3],
-        ...variantStyles[variant],
+        ...variantStyles(colors)[variant],
         ...(onClick ? { cursor: 'pointer' } : {}),
         ...style,
       }}
@@ -98,6 +107,7 @@ export function StatCard({
   highlight?: boolean
   staggerIndex?: number
 }) {
+  const colors = usePortalColors()
   return (
     <Card variant="elevated" padding={3} style={{ marginBottom: 0, textAlign: 'center' }} staggerIndex={staggerIndex}>
       {icon && <div style={{ marginBottom: spacing[1], color: highlight ? colors.accent : colors.textMuted }}>{icon}</div>}
