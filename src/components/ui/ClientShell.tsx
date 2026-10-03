@@ -21,7 +21,6 @@ import { PageTransition } from '@/components/motion/PageTransition'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { useChatUnreadCount } from '@/hooks/useSupabaseRealtime'
 import { PublicDemoBanner } from '@/components/ui/PublicDemoBanner'
-import { AppGuide } from '@/components/help/AppGuide'
 import { useInstantLockState } from '@/hooks/useInstantLockState'
 
 type ClientShellProps = {
@@ -113,7 +112,6 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
           )}
         </div>
         {!hideBottomNav && <BottomNav unreadChats={unreadChats} />}
-        {!fullHeight && <AppGuide aboveNav={!hideBottomNav} />}
         <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={BRAND_NAME} theme="client" />
       </>
     )
@@ -164,7 +162,6 @@ export function ClientShell({ children, title, hideBottomNav = false, hideTopBar
         )}
       </main>
       {!hideBottomNav && !fullHeight && <BottomNav unreadChats={unreadChats} />}
-      {!fullHeight && <AppGuide aboveNav={!hideBottomNav} />}
       <DrawerNav open={drawerOpen} onClose={() => setDrawerOpen(false)} items={drawerItems} title="Menu" subtitle={BRAND_NAME} theme="client" />
     </>
   )

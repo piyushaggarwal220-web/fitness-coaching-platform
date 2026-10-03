@@ -47,7 +47,6 @@ type Props = {
   firstName: string
   contextLine: string
   modules: TrackerModuleSummary[] | null
-  coachName: string | null
   unreadMessages: number
   showChat: boolean
   weekWorkouts: number
@@ -61,7 +60,6 @@ export function TodayFocus({
   firstName,
   contextLine,
   modules,
-  coachName,
   unreadMessages,
   showChat,
   weekWorkouts,
@@ -244,7 +242,7 @@ export function TodayFocus({
               <MessageCircle size={18} color={colors.textMuted} />
               <span style={{ flex: 1 }}>
                 <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>
-                  {coachName ? `Coach ${coachName}` : 'Your coach'}
+                  Smart Coach
                 </span>
                 <span style={{ display: 'block', marginTop: 2, fontSize: 13, color: colors.textSecondary }}>
                   {unreadMessages > 0

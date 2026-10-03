@@ -158,7 +158,7 @@ export default function ClientChatPage() {
 
   if (aiMode) {
     return (
-      <ClientShell title="Coach" hideBottomNav fullHeight>
+      <ClientShell title="Smart Coach" hideBottomNav fullHeight>
         <AiCoachChatThread />
       </ClientShell>
     )
@@ -173,9 +173,9 @@ export default function ClientChatPage() {
             margin: '8px 0 16px',
             padding: '18px 16px',
             borderRadius: 12,
-            background: 'rgba(255, 98, 0, 0.12)',
-            border: '1px solid rgba(255, 98, 0, 0.35)',
-            color: '#ffb07a',
+            background: 'rgba(30, 77, 61, 0.08)',
+            border: '1px solid rgba(30, 77, 61, 0.22)',
+            color: '#1c1915',
             fontSize: 15,
             fontWeight: 700,
             lineHeight: 1.45,
@@ -184,7 +184,7 @@ export default function ClientChatPage() {
           <p style={{ margin: 0, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             Coach chat
           </p>
-          <p style={{ margin: '8px 0 0', color: '#fff' }}>{CHAT_AFTER_ENROLLMENT_MESSAGE}</p>
+          <p style={{ margin: '8px 0 0', color: '#1c1915' }}>{CHAT_AFTER_ENROLLMENT_MESSAGE}</p>
         </div>
       </ClientShell>
     )
@@ -249,8 +249,8 @@ export default function ClientChatPage() {
               minHeight: 48,
               borderRadius: 12,
               border: 'none',
-              background: '#f97316',
-              color: '#fff',
+              background: '#1e4d3d',
+              color: '#f4efe6',
               fontWeight: 700,
               fontSize: 15,
               cursor: 'pointer',

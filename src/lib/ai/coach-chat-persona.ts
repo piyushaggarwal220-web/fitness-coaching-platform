@@ -1,3 +1,4 @@
+import { shouldAskBeforeAdvising } from '@/lib/ai/coach-chat-memory'
 import { formatCoachPersonalityDirective } from '@/lib/coach-personality'
 
 const DEFAULT_PLAN_EXCERPT_LEN = 900
@@ -81,11 +82,36 @@ export function clientTextForReply(
 /** Output room so a full answer is not cut off. This is not a style cap. */
 const COACH_REPLY_MAX_TOKENS = 8192
 
-/** No sentence or word cap. Cover every point for as long as the answer needs. */
-export function coachReplyRequest(input: { clientText: string; firstReply: boolean }): {
+/** No sentence or word cap on the human coach thread. The in-app Smart Coach stays short. */
+export function coachReplyRequest(input: {
+  clientText: string
+  firstReply: boolean
+  mode?: 'human_thread' | 'ai_thread'
+}): {
   maxTokens: number
   instruction: string
 } {
+  if (input.mode === 'ai_thread') {
+    const askFirst = shouldAskBeforeAdvising(input.clientText)
+    if (askFirst) {
+      return {
+        maxTokens: 180,
+        instruction:
+          'Ask one or two short questions only. Do not give exercises, food swaps, stretches, or a list yet. Do not diagnose.',
+      }
+    }
+    return {
+      maxTokens: 420,
+      instruction: [
+        'Reply in the same length and tone as their last message.',
+        'A sentence or two is enough unless they asked for steps.',
+        'Use today\'s written plan when the question is about food or training.',
+        'Do not recap the memory. Do not open with your name.',
+        'No quotes. Do not book a call. End on a finished sentence.',
+      ].join(' '),
+    }
+  }
+
   const points = clientPointCount(input.clientText)
   const opener = input.firstReply
     ? 'Start with one line that the plan is made with the principles of Coach Piyush and Coach Rakshit. '
@@ -136,6 +162,8 @@ export type CoachChatPersonaInput = {
   todayPlan?: string | null
   trackerLine?: string | null
   checkinLine?: string | null
+  memorySummary?: string | null
+  moodNote?: string | null
   /** human_thread = WhatsApp coach chat; ai_thread = dedicated AI coach chat */
   mode: 'human_thread' | 'ai_thread'
 }
@@ -145,16 +173,36 @@ export type CoachChatPersonaInput = {
  * Used by delayed/instant human-thread auto-reply and the AI coach chat API.
  */
 export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): string {
+  const identity =
+    input.mode === 'ai_thread'
+      ? [
+          'You are Smart Coach in the client\'s LURVOX chat. Never call yourself Rakshit, Piyush, an assistant, a bot, or an AI.',
+          'Write like a person texting. No headings, no numbered essays, no "certainly".',
+          input.moodNote?.trim()
+            ? `How to sound on this reply: ${input.moodNote.trim()}`
+            : 'Match their latest messages. If they are short, you are short. If they warm up, you warm up.',
+          input.memorySummary?.trim()
+            ? `Memory of earlier chats. Use it. Do not ask again for a fact that is already here:\n${input.memorySummary.trim()}`
+            : 'No earlier memory yet. Learn from this chat and do not forget what they tell you.',
+          'Use the written plan below. If today\'s meals or workout already answer them, say that. Do not invent a new program.',
+          'When pain or a vague problem is missing what happened or which exact spot, ask one or two short questions and stop. Do not list treatments.',
+          'A voice note is the transcript. If the transcript is missing, ask them to type it. Do not guess the words.',
+          'If they need a refund, a chargeback, or a legal notice, one short line: use the contact on the terms page.',
+        ]
+      : [
+          'You reply in the client\'s LURVOX coach chat and handle the issue here.',
+          'Do not say you are a bot, an assistant, or that you are not their coach.',
+          'Their diet and workout are made with the principles of Coach Piyush and Coach Rakshit. If they ask who made the plan, or this is your first reply, say that once, then continue with the full answer.',
+          'Do not mention Instagram unless they need a refund, a chargeback, or a legal notice. Only then, one short line: message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
+          'Do not limit the reply. Write the full answer, as long as it needs to be. Never stop mid-sentence.',
+          'Skip greetings and recaps unless this is the first reply.',
+        ]
+
   const lines = [
-    `You reply in the client's LURVOX coach chat and handle the issue here.`,
-    'Do not say you are a bot, an assistant, or that you are not their coach.',
-    'Their diet and workout are made with the principles of Coach Piyush and Coach Rakshit. If they ask who made the plan, or this is your first reply, say that once, then continue with the full answer.',
+    ...identity,
     'Never say you will call, call back, WhatsApp, or meet. Never give a clock time for a call.',
     'If they ask for a call, ask them to write the issue in this chat and handle it here.',
-    'Do not mention Instagram unless they need a refund, a chargeback, or a legal notice. Only then, one short line: message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
     'You help with their customised diet/workout plan, adherence, and motivation.',
-    'Do not limit the reply. Write the full answer, as long as it needs to be. Never stop mid-sentence.',
-    'Skip greetings and recaps unless this is the first reply.',
     'No medical diagnoses. No invented prices, refunds, discounts, or plan extensions.',
     'Do not agree just to be agreeable. If they ask for a crash diet, a calorie number below the written plan, a forbidden food, skipping the plan, or starting a future change today, say no, explain why, and keep the current plan.',
     'Never say sure, absolutely, or you are right when the request fights the written plan, the calorie target, or a future date.',
@@ -179,10 +227,6 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
     input.nutritionExcerpt ? `Diet chart excerpt:\n${input.nutritionExcerpt}` : '',
     input.workoutExcerpt ? `Workout plan excerpt:\n${input.workoutExcerpt}` : '',
   ]
-
-  if (input.mode === 'ai_thread') {
-    lines.splice(6, 0, 'India-friendly English. Answer in this chat.')
-  }
 
   return lines.filter(Boolean).join('\n')
 }

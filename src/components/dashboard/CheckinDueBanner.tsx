@@ -89,7 +89,7 @@ export function CheckinDueBanner({
     minHeight: CHECKIN_DUE_BANNER_HEIGHT,
     padding: `${spacing[3]}px ${spacing[4]}px`,
     border: 'none',
-    borderBottom: isDue ? '2px solid #f97316' : '2px solid #f59e0b',
+    borderBottom: isDue ? `2px solid ${colors.warning}` : `2px solid ${colors.accent}`,
     background: colors.bgSecondary,
     color: colors.textPrimary,
     textAlign: 'left',

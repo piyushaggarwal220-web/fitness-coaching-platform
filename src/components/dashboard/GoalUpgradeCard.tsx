@@ -55,9 +55,8 @@ export function GoalUpgradeCard({ planSlug, accessSource, gender, bodyType }: Pr
       variant="glass"
       style={{
         marginBottom: spacing[4],
-        border: '1px solid rgba(249,115,22,0.28)',
-        background:
-          'linear-gradient(145deg, rgba(249,115,22,0.14) 0%, rgba(17,24,39,0.96) 48%, rgba(9,9,11,0.99) 100%)',
+        border: `1px solid ${colors.borderSubtle}`,
+        background: colors.bgCard,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing[3] }}>
@@ -88,7 +87,7 @@ export function GoalUpgradeCard({ planSlug, accessSource, gender, bodyType }: Pr
           >
             Unlock more goals
           </p>
-          <p style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em' }}>
+          <p style={{ margin: '6px 0 0', fontSize: 17, fontWeight: 800, letterSpacing: '-0.02em', color: colors.textPrimary }}>
             Upgrade to {meta.title}
           </p>
           <p style={{ margin: '8px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>

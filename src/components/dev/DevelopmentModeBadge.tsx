@@ -1,7 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 
 type DevelopmentModeBadgeProps = {
   message?: string
@@ -18,7 +18,7 @@ export function DevelopmentModeBadge({
         padding: '10px 14px',
         borderRadius: 12,
         backgroundColor: colors.warningMuted,
-        border: `1px solid rgba(234, 179, 8, 0.25)`,
+        border: `1px solid ${colors.warning}`,
         marginBottom: 16,
         ...style,
       }}

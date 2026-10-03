@@ -9,9 +9,15 @@ import {
   coachReplyRequest,
   guardAssistantCoachReply,
 } from '@/lib/ai/coach-chat-persona'
+import {
+  buildCoachMemoryUpdatePrompt,
+  clipCoachMemory,
+  readClientMood,
+} from '@/lib/ai/coach-chat-memory'
+import { ownVoicePath, transcribeChatVoice } from '@/lib/ai/transcribe-chat-voice'
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
 import { chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
-import { chatTextForModel } from '@/lib/chat-reply-pause'
+import { chatTextForModel, decodeChatVoice, encodeChatVoice } from '@/lib/chat-reply-pause'
 import { memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
 import { assertInstantFeatureAccess } from '@/lib/instant-feature-guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -21,7 +27,7 @@ export const maxDuration = 45
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
-const MAX_HISTORY = 12
+const MAX_HISTORY = 16
 const MAX_MESSAGE_LEN = 1200
 
 async function coachNameForClient(
@@ -60,6 +66,64 @@ async function earlierCoachThread(
     if (!content) return []
     if (row.sender_type !== 'client' && row.sender_type !== 'coach') return []
     return [{ role: row.sender_type === 'client' ? 'user' as const : 'assistant' as const, content }]
+  })
+}
+
+async function loadCoachMemory(
+  admin: ReturnType<typeof createAdminClient>,
+  clientId: string
+): Promise<string> {
+  const { data, error } = await admin
+    .from('ai_coach_memory')
+    .select('summary')
+    .eq('client_id', clientId)
+    .maybeSingle()
+  if (error || !data?.summary) return ''
+  return data.summary.trim()
+}
+
+async function olderChatForFirstMemory(
+  admin: ReturnType<typeof createAdminClient>,
+  clientId: string
+): Promise<string> {
+  const { data } = await admin
+    .from('ai_coach_messages')
+    .select('role, content')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false })
+    .range(MAX_HISTORY, MAX_HISTORY + 40)
+  const rows = [...(data ?? [])].reverse()
+  return rows
+    .map((row) => `${row.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(row.content)}`)
+    .join('\n')
+    .slice(0, 4000)
+}
+
+async function saveCoachMemory(
+  admin: ReturnType<typeof createAdminClient>,
+  clientId: string,
+  input: { previous: string; turns: string; mood: string }
+): Promise<void> {
+  const older = input.previous ? '' : await olderChatForFirstMemory(admin, clientId)
+  const prompt = buildCoachMemoryUpdatePrompt({
+    previous: input.previous,
+    turns: input.turns,
+    older,
+  })
+  const result = await generateOpenAIResponse({
+    systemPrompt: prompt.systemPrompt,
+    userPrompt: prompt.userPrompt,
+    model: MODELS.GPT_LUNA,
+    maxTokens: 350,
+    temperature: 0.3,
+  })
+  const summary = clipCoachMemory(result.text)
+  if (!summary) return
+  await admin.from('ai_coach_memory').upsert({
+    client_id: clientId,
+    summary,
+    mood: input.mood,
+    updated_at: new Date().toISOString(),
   })
 }
 
@@ -151,11 +215,20 @@ export async function POST(request: Request) {
     earlierCoachThread(admin, auth.user.id),
   ])
 
+  let storedMessage = message
   if (message) {
+    const voice = decodeChatVoice(message)
+    if (voice.audioPath && ownVoicePath(voice.audioPath, auth.user.id) && !voice.text) {
+      const transcript = await transcribeChatVoice(admin, voice.audioPath).catch(() => null)
+      storedMessage = encodeChatVoice(voice.audioPath, transcript ?? '')
+    }
+  }
+
+  if (storedMessage) {
     const { error: userInsertError } = await admin.from('ai_coach_messages').insert({
       client_id: auth.user.id,
       role: 'user',
-      content: message,
+      content: storedMessage,
       created_at: now,
     })
     if (userInsertError) {
@@ -166,7 +239,7 @@ export async function POST(request: Request) {
     }
   }
 
-  if (message && chatNeedsHumanCoach({ content: message })) {
+  if (storedMessage && chatNeedsHumanCoach({ content: chatTextForModel(storedMessage) })) {
     const { data: heldRow, error: heldError } = await admin
       .from('ai_coach_messages')
       .insert({
@@ -204,8 +277,14 @@ export async function POST(request: Request) {
       ?.coachPersonalities ?? null
 
   const thread = await loadAiCoachThreadContext(admin, auth.user.id, profile)
+  const memorySummary = await loadCoachMemory(admin, auth.user.id)
+  const clientLines = history
+    .filter((turn) => turn.role === 'user')
+    .slice(-6)
+    .map((turn) => chatTextForModel(turn.content))
+  const mood = readClientMood(clientLines)
 
-  const dated = datedPlanRequestDirective(message)
+  const dated = datedPlanRequestDirective(chatTextForModel(storedMessage || message))
   const systemPrompt = buildNamedCoachSystemPrompt({
     coachFirstName,
     name: profile.name,
@@ -222,6 +301,8 @@ export async function POST(request: Request) {
     todayPlan: thread.todayPlan,
     trackerLine: thread.trackerLine,
     checkinLine: thread.checkinLine,
+    memorySummary,
+    moodNote: mood.note,
     mode: 'ai_thread',
   })
 
@@ -236,8 +317,9 @@ export async function POST(request: Request) {
     }))
   )
   const replyRequest = coachReplyRequest({
-    clientText: pending || message,
+    clientText: pending || chatTextForModel(storedMessage || message),
     firstReply: !hasCoachReply,
+    mode: 'ai_thread',
   })
 
   let replyText = 'I am here. Tell me what you need help with on your plan today.'
@@ -253,7 +335,7 @@ export async function POST(request: Request) {
       ].join('\n'),
       model: MODELS.GPT_LUNA,
       maxTokens: replyRequest.maxTokens,
-      temperature: 0.6,
+      temperature: 0.8,
     })
     replyText =
       guardAssistantCoachReply(result.text.replace(/[\u2010-\u2015\u2212-]/g, ' ')) || replyText
@@ -275,6 +357,23 @@ export async function POST(request: Request) {
 
   if (assistantError) {
     return NextResponse.json({ error: assistantError.message }, { status: 500 })
+  }
+
+  const latestClient = [...history].reverse().find((turn) => turn.role === 'user')
+  const memoryTurns = [
+    latestClient ? `Client: ${chatTextForModel(latestClient.content)}` : '',
+    `Coach: ${replyText}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+  try {
+    await saveCoachMemory(admin, auth.user.id, {
+      previous: memorySummary,
+      turns: memoryTurns,
+      mood: mood.mood,
+    })
+  } catch {
+    // The reply is already saved. A missed memory rewrite must not fail the chat.
   }
 
   return NextResponse.json({ message: assistantRow, coachFirstName })

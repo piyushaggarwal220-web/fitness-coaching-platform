@@ -101,13 +101,13 @@ export function PublicDemoBanner({ compact = false }: Props) {
             marginRight: 'auto',
             padding: '8px 12px',
             boxSizing: 'border-box',
-            background: 'rgba(9, 9, 11, 0.96)',
-            borderBottom: '1px solid rgba(255, 98, 0, 0.35)',
+            background: '#fffaf3',
+            borderBottom: '1px solid rgba(30, 77, 61, 0.2)',
             boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
           }}
         >
           {showHint ? (
-            <p style={{ margin: '0 0 8px', color: '#fff', fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
+            <p style={{ margin: '0 0 8px', color: '#1c1915', fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
               Take a 30-second tour of where everything lives.
             </p>
           ) : null}
@@ -117,8 +117,8 @@ export function PublicDemoBanner({ compact = false }: Props) {
             style={{
               ...actionBtn,
               border: 'none',
-              background: '#ff6200',
-              color: '#09090b',
+              background: '#1e4d3d',
+              color: '#f4efe6',
               whiteSpace: 'nowrap',
             }}
           >
@@ -139,9 +139,9 @@ export function PublicDemoBanner({ compact = false }: Props) {
           margin: '0 0 16px',
           padding: '14px 14px 16px',
           borderRadius: 12,
-          background: 'rgba(255, 98, 0, 0.12)',
-          border: '1px solid rgba(255, 98, 0, 0.35)',
-          color: '#ffb07a',
+          background: 'rgba(30, 77, 61, 0.08)',
+          border: '1px solid rgba(30, 77, 61, 0.22)',
+          color: '#1c1915',
           fontSize: 13,
           fontWeight: 600,
           lineHeight: 1.45,
@@ -151,7 +151,7 @@ export function PublicDemoBanner({ compact = false }: Props) {
         }}
       >
         <p style={{ margin: 0 }}>{PUBLIC_DEMO_READ_ONLY_MESSAGE}</p>
-        <p style={{ margin: '10px 0 0', color: '#fff', fontWeight: 700 }}>
+        <p style={{ margin: '10px 0 0', color: '#1c1915', fontWeight: 700 }}>
           Like what you see? Start your own plan.
         </p>
 
@@ -162,8 +162,8 @@ export function PublicDemoBanner({ compact = false }: Props) {
               ...actionBtn,
               marginTop: 12,
               border: 'none',
-              background: '#ff6200',
-              color: '#09090b',
+              background: '#1e4d3d',
+              color: '#f4efe6',
             }}
           >
             Get your own plan
@@ -179,9 +179,9 @@ export function PublicDemoBanner({ compact = false }: Props) {
                   href={href}
                   style={{
                     ...actionBtn,
-                    border: popular ? 'none' : '1px solid rgba(255, 98, 0, 0.45)',
-                    background: popular ? '#ff6200' : 'rgba(255, 98, 0, 0.16)',
-                    color: popular ? '#09090b' : '#fff',
+                    border: popular ? 'none' : '1px solid rgba(30, 77, 61, 0.28)',
+                    background: popular ? '#1e4d3d' : '#fffaf3',
+                    color: popular ? '#f4efe6' : '#1c1915',
                     flexDirection: 'column',
                     gap: 2,
                     minHeight: 52,

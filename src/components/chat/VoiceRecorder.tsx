@@ -8,9 +8,16 @@ import { colors } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
 
 type VoiceRecorderProps = {
-  conversationId: string
-  onSent: () => void
+  conversationId?: string
+  onSent?: () => void
   onError: (msg: string) => void
+  /** Parent uploads and sends. Used by Smart Coach, which has no coach conversation id. */
+  onRecorded?: (note: {
+    blob: Blob
+    extension: RecordingFormat['extension']
+    contentType: string
+    duration: number
+  }) => Promise<void>
 }
 
 type RecordingFormat = {
@@ -105,7 +112,7 @@ async function queryMicPermission(): Promise<MicPermissionState> {
   return 'prompt'
 }
 
-export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorderProps) {
+export function VoiceRecorder({ conversationId, onSent, onError, onRecorded }: VoiceRecorderProps) {
   const [recording, setRecording] = useState(false)
   const [preview, setPreview] = useState<PreviewState | null>(null)
   const [sending, setSending] = useState(false)
@@ -234,6 +241,18 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
     if (!preview) return
     setSending(true)
     try {
+      if (onRecorded) {
+        await onRecorded({
+          blob: preview.blob,
+          extension: preview.extension,
+          contentType: preview.contentType,
+          duration: preview.duration,
+        })
+        deletePreview()
+        return
+      }
+      if (!conversationId) throw new Error('Missing conversation')
+
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
@@ -262,7 +281,7 @@ export function VoiceRecorder({ conversationId, onSent, onError }: VoiceRecorder
       if (!parsed.ok) throw new Error(parsed.error)
 
       deletePreview()
-      onSent()
+      onSent?.()
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Failed to send voice note')
     } finally {

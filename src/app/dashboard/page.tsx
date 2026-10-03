@@ -442,7 +442,6 @@ export default function Dashboard() {
         firstName={firstName}
         contextLine={contextLine}
         modules={activePlan && !instantLocked.tracker ? todayModules : []}
-        coachName={coach?.name ?? null}
         unreadMessages={unreadMessages}
         showChat={chatReady}
         weekWorkouts={weekWorkouts}

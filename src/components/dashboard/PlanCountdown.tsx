@@ -14,8 +14,6 @@ import {
 } from '@/lib/purchase-dashboard'
 import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { clientColors as colors, spacing } from '@/lib/design-tokens'
-import { createClient } from '@/lib/supabase/client'
-import { resolveStorageUrl } from '@/lib/storage/media-url'
 import type { OnboardingProfile, Plan } from '@/types/database'
 
 type PlanCountdownProps = {
@@ -30,9 +28,6 @@ type PlanCountdownProps = {
 export function PlanCountdownCard({
   profile,
   activePlan,
-  coachName,
-  coachBio,
-  coachPhotoPath,
   planSlug,
 }: PlanCountdownProps) {
   const router = useRouter()
@@ -57,25 +52,8 @@ export function PlanCountdownCard({
         ? Boolean(activePlan?.diet_opened_at)
         : hasOpenedDietAndWorkout(activePlan)
     : hasOpenedDietAndWorkout(activePlan)
-  const displayCoach = coachName?.trim() || 'Your coach'
+  const displayCoach = 'Smart Coach'
   const deliveryHours = isDigital ? DIGITAL_PLAN_DELIVERY_HOURS : PLAN_DELIVERY_HOURS
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      if (!coachPhotoPath || isDigital) {
-        setPhotoUrl(null)
-        return
-      }
-      const url = await resolveStorageUrl(createClient(), 'avatars', coachPhotoPath)
-      if (!cancelled) setPhotoUrl(url)
-    }
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [coachPhotoPath, isDigital])
 
   // Once diet + workout have been opened, leave the upper slot for the tracker.
   if (planReady && openedCore) return null
@@ -85,7 +63,7 @@ export function PlanCountdownCard({
     return (
       <Card variant="glass" style={{ marginBottom: spacing[4] }}>
         {!isDigital ? (
-          <CoachAssignedHeader coachName={displayCoach} photoUrl={photoUrl} bio={coachBio} />
+          <CoachAssignedHeader coachName={displayCoach} />
         ) : (
           <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
             Finish setup for your customised plan
@@ -94,7 +72,7 @@ export function PlanCountdownCard({
         <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
           {isDigital
             ? `Complete onboarding so we can build your AI customised plan. Delivery is within ${deliveryHours} hours after you submit — by email and in the app.`
-            : `Complete onboarding so ${displayCoach.split(' ')[0]} can build your personal diet and workout. Your plan is delivered within ${deliveryHours} hours after onboarding.`}
+            : `Complete onboarding so Smart Coach can build your personal diet and workout. Your plan is delivered within ${deliveryHours} hours after onboarding.`}
         </p>
         <Button fullWidth style={{ marginTop: 16 }} onClick={() => router.push('/onboarding')}>
           Continue onboarding
@@ -184,10 +162,7 @@ export function PlanCountdownCard({
         paddingTop: spacing[4],
         borderRadius: '16px 16px 0 0',
       }} />
-      <CoachAssignedHeader coachName={displayCoach} photoUrl={photoUrl} bio={coachBio} />
-      {coachBio?.trim() ? (
-        <p style={{ margin: '10px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>{coachBio.trim()}</p>
-      ) : null}
+      <CoachAssignedHeader coachName={displayCoach} />
       <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
         {displayCoach} is preparing your personalized diet and workout plan.
       </p>

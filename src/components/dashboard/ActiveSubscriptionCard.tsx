@@ -38,7 +38,7 @@ export function ActiveSubscriptionCard({ subscription }: Props) {
       style={{
         marginBottom: spacing[4],
         border: renewSoon
-          ? `1px solid ${isActive ? 'rgba(249, 115, 22, 0.45)' : 'rgba(239, 68, 68, 0.45)'}`
+          ? `1px solid ${isActive ? colors.accent : colors.danger}`
           : undefined,
       }}
     >

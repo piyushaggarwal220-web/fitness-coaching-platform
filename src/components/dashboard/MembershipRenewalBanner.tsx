@@ -26,7 +26,7 @@ export function MembershipRenewalBanner({ prompt }: Props) {
         width: '100%',
         marginBottom: spacing[4],
         padding: `${spacing[3]}px ${spacing[4]}px`,
-        border: `1px solid ${isDanger ? 'rgba(239, 68, 68, 0.4)' : 'rgba(249, 115, 22, 0.4)'}`,
+        border: `1px solid ${isDanger ? colors.danger : colors.accent}`,
         borderRadius: 14,
         background: isDanger ? colors.dangerMuted : colors.accentMuted,
         color: colors.textPrimary,

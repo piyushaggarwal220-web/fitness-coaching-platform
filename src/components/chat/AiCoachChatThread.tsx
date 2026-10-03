@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { ImageIcon, Send } from 'lucide-react'
 import { StorageImage } from '@/components/ui/StorageImage'
-import { COACH_REPLY_QUIET_MS, decodeChatPhoto, encodeChatPhoto } from '@/lib/chat-reply-pause'
+import { VoicePlayer } from '@/components/chat/VoicePlayer'
+import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
+import {
+  COACH_REPLY_QUIET_MS,
+  decodeChatPhoto,
+  decodeChatVoice,
+  encodeChatPhoto,
+  encodeChatVoice,
+} from '@/lib/chat-reply-pause'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 
 type Msg = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string }
@@ -160,6 +168,62 @@ export function AiCoachChatThread() {
     }
   }
 
+  const sendVoiceNote = async (note: { blob: Blob; extension: string; contentType: string }) => {
+    if (note.blob.size > 8_000_000) {
+      setError('That voice note is too long. Try a shorter one, or type it.')
+      return
+    }
+    if (sendingRef.current) return
+    sendingRef.current = true
+    setSending(true)
+    setError('')
+    const tempId = `local-${Date.now()}`
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Sign in again to send a voice note.')
+        return
+      }
+      const path = `${user.id}/ai-chat/${Date.now()}.${note.extension}`
+      const { error: uploadError } = await supabase.storage.from('chat-voice').upload(path, note.blob, {
+        contentType: note.contentType,
+        upsert: false,
+      })
+      if (uploadError) {
+        setError('Something went wrong sending that voice note. Try again.')
+        return
+      }
+      const content = encodeChatVoice(path, '')
+      setMessages((prev) => [...prev, { id: tempId, role: 'user', content }])
+      const res = await fetch('/api/client/ai-chat', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: content }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setMessages((prev) => prev.filter((item) => item.id !== tempId))
+        setError('Something went wrong sending that voice note. Try again.')
+        return
+      }
+      if (data?.message) {
+        setWaiting(false)
+        setMessages((prev) => [...prev.filter((item) => item.id !== tempId), data.message as Msg])
+      } else if (data?.pending) {
+        scheduleReply()
+      }
+    } catch {
+      setMessages((prev) => prev.filter((item) => item.id !== tempId))
+      setError('Something went wrong sending that voice note. Try again.')
+    } finally {
+      sendingRef.current = false
+      setSending(false)
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div
@@ -169,9 +233,9 @@ export function AiCoachChatThread() {
           background: colors.bgGlass,
         }}
       >
-        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>Coach Chat</p>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>Smart Coach</p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
-          Ask about your plan, training, nutrition, recovery, or progress.
+          Ask about your plan. A voice note works too.
         </p>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -180,12 +244,13 @@ export function AiCoachChatThread() {
         )}
         {!loading && messages.length === 0 && (
           <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>
-            Start a conversation with your coach.
+            Start a conversation with Smart Coach.
           </p>
         )}
         {messages.map((msg, index) => {
           const mine = msg.role === 'user'
-          const photo = decodeChatPhoto(msg.content)
+          const voice = decodeChatVoice(msg.content)
+          const photo = voice.audioPath ? { imagePath: null, text: voice.text } : decodeChatPhoto(msg.content)
           return (
             <div
               key={msg.id ?? `${msg.role}-${index}`}
@@ -201,6 +266,9 @@ export function AiCoachChatThread() {
                 whiteSpace: 'pre-wrap',
               }}
             >
+              {voice.audioPath ? (
+                <VoicePlayer url={voice.audioPath} duration={undefined} lightBubble={!mine} />
+              ) : null}
               {photo.imagePath ? (
                 <StorageImage
                   bucket="chat-images"
@@ -233,8 +301,8 @@ export function AiCoachChatThread() {
             margin: `0 ${spacing[3]}px ${spacing[2]}px`,
             padding: '10px 12px',
             borderRadius: radius.sm,
-            background: 'rgba(56,189,248,0.12)',
-            border: '1px solid rgba(56,189,248,0.35)',
+            background: colors.accentMuted,
+            border: `1px solid ${colors.borderSubtle}`,
           }}
         >
           <p style={{ margin: 0, fontSize: 13, lineHeight: 1.4, color: colors.textSecondary }}>
@@ -249,8 +317,8 @@ export function AiCoachChatThread() {
               padding: '0 12px',
               border: 'none',
               borderRadius: radius.sm,
-              background: '#38bdf8',
-              color: '#082f49',
+              background: colors.accent,
+              color: colors.textInverse,
               fontWeight: 800,
               cursor: 'pointer',
             }}
@@ -293,15 +361,16 @@ export function AiCoachChatThread() {
           background: colors.bgGlass,
         }}
       >
+        <VoiceRecorder onRecorded={sendVoiceNote} onError={(msg) => setError(msg)} />
         <label
           style={{
             flexShrink: 0,
             minHeight: 44,
             padding: '0 12px',
             borderRadius: radius.sm,
-            border: '1px solid rgba(56,189,248,0.45)',
-            background: 'rgba(56,189,248,0.12)',
-            color: '#7dd3fc',
+            border: `1px solid ${colors.borderSubtle}`,
+            background: colors.bgCard,
+            color: colors.textPrimary,
             fontWeight: 800,
             fontSize: 13,
             display: 'flex',
@@ -334,7 +403,7 @@ export function AiCoachChatThread() {
               void send()
             }
           }}
-          placeholder="Message your coach…"
+          placeholder="Message Smart Coach…"
           aria-label="Message"
           style={{
             flex: 1,
@@ -360,8 +429,8 @@ export function AiCoachChatThread() {
             padding: '0 14px',
             borderRadius: radius.sm,
             border: 'none',
-            background: '#14b8a6',
-            color: '#042f2e',
+            background: colors.accent,
+            color: colors.textInverse,
             fontWeight: 800,
             cursor: sending ? 'wait' : 'pointer',
             opacity: sending || (!draft.trim() && !imagePreview) ? 0.55 : 1,
