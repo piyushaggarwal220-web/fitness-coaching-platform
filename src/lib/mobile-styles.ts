@@ -1,7 +1,7 @@
-/** Shared mobile-first styles — premium dark theme */
+/** Shared mobile-first styles for the client app. */
 
 import type { CSSProperties } from 'react'
-import { colors, spacing, radius, layout, shadows, typography } from './design-tokens'
+import { clientColors as colors, spacing, radius, layout, typography } from './design-tokens'
 
 export const MOBILE_BREAKPOINT = 768
 
@@ -69,7 +69,7 @@ export const mobileStyles = {
     cursor: 'pointer',
     textDecoration: 'none',
     touchAction: 'manipulation',
-    boxShadow: shadows.accent,
+    boxShadow: 'none',
     transition: 'transform 150ms ease, opacity 150ms ease',
   } satisfies CSSProperties,
 

@@ -1,7 +1,7 @@
-/** Shared auth page styles — dark premium cards */
+/** Shared auth page styles — same paper and green as the marketing site. */
 
 import type { CSSProperties } from 'react'
-import { colors, spacing, radius } from './design-tokens'
+import { clientColors as colors, spacing, radius } from './design-tokens'
 
 export const authStyles: Record<string, CSSProperties> = {
   page: {

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { colors, spacing, radius } from '@/lib/design-tokens'
+import { clientColors as colors, spacing, radius } from '@/lib/design-tokens'
 
 export const onboardingStyles: Record<string, CSSProperties> = {
   page: {

@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode, ButtonHTMLAttributes } from 'react'
 import { Check } from 'lucide-react'
-import { radius, shadows, transition } from '@/lib/design-tokens'
+import { radius, transition } from '@/lib/design-tokens'
 import { usePortalColors } from '@/lib/client-theme'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
@@ -32,7 +32,7 @@ function variantStyles(colors: {
       backgroundColor: colors.accent,
       color: colors.textInverse,
       border: 'none',
-      boxShadow: shadows.accent,
+      boxShadow: 'none',
     },
     secondary: {
       backgroundColor: colors.bgElevated,

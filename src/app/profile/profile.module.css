@@ -93,7 +93,7 @@
 .playerEmail {
   margin: 0;
   font-size: 13px;
-  color: #a1a1aa;
+  color: #6d675e;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -108,7 +108,7 @@
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--tier-color, #f97316) 55%, transparent);
   background: color-mix(in srgb, var(--tier-color, #f97316) 14%, transparent);
-  color: #fafafa;
+  color: #1c1915;
   font-size: 12px;
   font-weight: 700;
 }
@@ -122,9 +122,9 @@
 
 .stat {
   padding: 10px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(28, 25, 21, 0.12);
   border-radius: 14px;
-  background: rgba(9, 9, 11, 0.55);
+  background: #fffaf3;
   text-align: center;
 }
 
@@ -154,15 +154,15 @@
   gap: 8px;
   margin-bottom: 6px;
   font-size: 11px;
-  color: #a1a1aa;
+  color: #6d675e;
 }
 
 .progressTrack {
   height: 9px;
   overflow: hidden;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #09090b;
+  border: 1px solid rgba(28, 25, 21, 0.08);
+  background: #efe8dc;
 }
 
 .progressFill {
@@ -197,7 +197,7 @@
   align-items: center;
   gap: 10px;
   padding: 14px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(28, 25, 21, 0.12);
   border-radius: 16px;
   background: linear-gradient(160deg, rgba(39, 39, 42, 0.9), rgba(24, 24, 27, 0.95));
   color: inherit;
@@ -232,7 +232,7 @@
 }
 
 .section {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(28, 25, 21, 0.12);
   border-radius: 20px;
   padding: 16px;
   background: rgba(24, 24, 27, 0.72);
@@ -249,7 +249,7 @@
   margin: 0 0 14px;
   font-size: 13px;
   line-height: 1.45;
-  color: #a1a1aa;
+  color: #6d675e;
 }
 
 .photoGrid {
@@ -263,7 +263,7 @@
   aspect-ratio: 3 / 4;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border: 1px dashed rgba(28, 25, 21, 0.16);
   background: rgba(9, 9, 11, 0.8);
 }
 
@@ -311,7 +311,7 @@
 }
 
 .collapse {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(28, 25, 21, 0.12);
   border-radius: 18px;
   overflow: hidden;
   background: rgba(24, 24, 27, 0.72);
@@ -334,7 +334,7 @@
 
 .collapseBody {
   padding: 0 16px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(28, 25, 21, 0.08);
 }
 
 .goalArea {
@@ -342,9 +342,9 @@
   min-height: 100px;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #09090b;
-  color: #fafafa;
+  border: 1px solid rgba(28, 25, 21, 0.12);
+  background: #efe8dc;
+  color: #1c1915;
   font-size: 15px;
   line-height: 1.5;
   resize: vertical;

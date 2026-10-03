@@ -26,8 +26,34 @@ export const colors = {
   borderSubtle: 'rgba(255, 255, 255, 0.08)',
 } as const
 
-/** Client app uses the same dark surfaces and orange accent as the marketing site. */
-export const clientColors = colors
+/**
+ * Logged-in client app. Matches the live marketing site:
+ * beige paper, warm card, deep green actions, Manrope.
+ * Admin keeps `colors`. Coach portal keeps `coachColors`.
+ */
+export const clientColors = {
+  bgPrimary: '#f4efe6',
+  bgSecondary: '#efe8dc',
+  bgCard: '#fffaf3',
+  bgElevated: '#fffaf3',
+  bgGlass: 'rgba(255, 250, 243, 0.94)',
+  accent: '#1e4d3d',
+  accentHover: '#163c30',
+  accentMuted: 'rgba(30, 77, 61, 0.12)',
+  accentGlow: 'rgba(30, 77, 61, 0.08)',
+  success: '#1e4d3d',
+  successMuted: 'rgba(30, 77, 61, 0.12)',
+  warning: '#8a5a12',
+  warningMuted: 'rgba(138, 90, 18, 0.12)',
+  danger: '#9f2d2d',
+  dangerMuted: 'rgba(159, 45, 45, 0.1)',
+  textPrimary: '#1c1915',
+  textSecondary: '#4e4942',
+  textMuted: '#6d675e',
+  textInverse: '#f4efe6',
+  divider: 'rgba(28, 25, 21, 0.08)',
+  borderSubtle: 'rgba(28, 25, 21, 0.12)',
+} as const
 
 /** Light theme — coach portal only. */
 export const coachColors = {
@@ -111,7 +137,7 @@ export const typography = {
   pageTitle: {
     fontSize: 'clamp(1.75rem, 6vw, 2.25rem)',
     fontWeight: 800,
-    color: colors.textPrimary,
+    color: 'var(--text-primary)',
     margin: 0,
     letterSpacing: '-0.02em',
     lineHeight: 1.15,
@@ -119,30 +145,30 @@ export const typography = {
   sectionTitle: {
     fontSize: 'var(--text-lg)',
     fontWeight: 700,
-    color: colors.textPrimary,
+    color: 'var(--text-primary)',
     margin: '0 0 var(--space-2)',
     letterSpacing: '-0.01em',
   } satisfies CSSProperties,
   subtitle: {
     fontSize: 'var(--text-base)',
-    color: colors.textSecondary,
+    color: 'var(--text-secondary)',
     margin: '0 0 var(--space-4)',
     lineHeight: 1.5,
   } satisfies CSSProperties,
   label: {
     fontSize: 'var(--text-sm)',
     fontWeight: 500,
-    color: colors.textSecondary,
+    color: 'var(--text-secondary)',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.05em',
   } satisfies CSSProperties,
   body: {
     fontSize: 'var(--text-base)',
-    color: colors.textPrimary,
+    color: 'var(--text-primary)',
     lineHeight: 1.6,
   } satisfies CSSProperties,
   caption: {
     fontSize: 'var(--text-sm)',
-    color: colors.textMuted,
+    color: 'var(--text-muted)',
   } satisfies CSSProperties,
 }

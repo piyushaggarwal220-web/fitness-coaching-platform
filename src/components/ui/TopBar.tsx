@@ -55,7 +55,7 @@ export function TopBar({ title, showProfile = true, onMenuClick }: TopBarProps) 
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing[2], minWidth: 0 }}>
-        {onMenuClick && <DrawerMenuButton onClick={onMenuClick} />}
+        {onMenuClick && <DrawerMenuButton onClick={onMenuClick} theme="client" />}
         {title ? (
           <h1 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {title}

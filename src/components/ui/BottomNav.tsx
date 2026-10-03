@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: Home, tour: 'nav-home', feature: null },
   { href: '/tracker', label: 'Track', icon: ListChecks, tour: 'nav-tracker', feature: 'tracker' as const },
   { href: '/plan', label: 'Plan', icon: ClipboardList, tour: 'nav-plan', feature: null },
-  { href: '/client/chat', label: 'Coach', icon: MessageCircle, tour: 'nav-chat', feature: 'ai_chat' as const },
+  { href: '/client/chat', label: 'Chat', icon: MessageCircle, tour: 'nav-chat', feature: 'ai_chat' as const },
   { href: '/journey', label: 'Journey', icon: Map, tour: 'nav-journey', feature: 'journey' as const },
 ] as const
 

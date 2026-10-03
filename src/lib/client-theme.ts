@@ -16,6 +16,14 @@ const CLIENT_ROOTS = [
   '/library',
   '/unlock',
   '/supplement-protocol',
+  '/login',
+  '/onboarding',
+  '/create-account',
+  '/signup',
+  '/forgot-password',
+  '/reset-password',
+  '/enroll',
+  '/membership-required',
 ]
 
 export function isClientAppPath(pathname: string | null | undefined): boolean {

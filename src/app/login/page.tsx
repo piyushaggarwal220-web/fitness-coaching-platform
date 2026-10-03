@@ -97,7 +97,6 @@ function LoginForm() {
     <div
       style={{
         ...authStyles.page,
-        backgroundColor: '#09090b',
       }}
     >
       <div style={authStyles.card}>

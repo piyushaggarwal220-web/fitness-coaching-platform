@@ -18,6 +18,7 @@ export function AiCoachChatThread() {
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const pauseRef = useRef<number | null>(null)
+  const sendingRef = useRef(false)
 
   useEffect(() => {
     let active = true
@@ -75,7 +76,7 @@ export function AiCoachChatThread() {
       })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
-        setError(data?.error ?? 'Could not reply')
+        setError('Something went wrong. Try again.')
         setSending(false)
         return
       }
@@ -99,10 +100,12 @@ export function AiCoachChatThread() {
 
   const send = async () => {
     const text = draft.trim()
-    if ((!text && !imagePreview) || sending) return
+    if ((!text && !imagePreview) || sendingRef.current) return
+    sendingRef.current = true
     setSending(true)
     setError('')
     setDraft('')
+    const tempId = `local-${Date.now()}`
 
     let content = text
     try {
@@ -118,8 +121,8 @@ export function AiCoachChatThread() {
         const path = `${user.id}/ai-chat/${Date.now()}_${imagePreview.file.name}`
         const { error: uploadError } = await supabase.storage.from('chat-images').upload(path, imagePreview.file)
         if (uploadError) {
-          setError(uploadError.message)
-          setSending(false)
+          setDraft(text)
+          setError('Something went wrong sending that photo. Try again.')
           return
         }
         content = encodeChatPhoto(path, text)
@@ -127,7 +130,7 @@ export function AiCoachChatThread() {
         setImagePreview(null)
       }
 
-      setMessages((prev) => [...prev, { role: 'user', content }])
+      setMessages((prev) => [...prev, { id: tempId, role: 'user', content }])
       const res = await fetch('/api/client/ai-chat', {
         method: 'POST',
         credentials: 'include',
@@ -136,19 +139,23 @@ export function AiCoachChatThread() {
       })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
-        setError(data?.error ?? 'Could not send')
-        setSending(false)
+        setMessages((prev) => prev.filter((item) => item.id !== tempId))
+        setDraft(text)
+        setError('Something went wrong sending that message. Try again.')
         return
       }
       if (data?.message) {
         setWaiting(false)
-        setMessages((prev) => [...prev, data.message as Msg])
+        setMessages((prev) => [...prev.filter((item) => item.id !== tempId), data.message as Msg])
       } else if (data?.pending) {
         scheduleReply()
       }
     } catch {
-      setError('Could not send message')
+      setMessages((prev) => prev.filter((item) => item.id !== tempId))
+      setDraft(text)
+      setError('Something went wrong sending that message. Try again.')
     } finally {
+      sendingRef.current = false
       setSending(false)
     }
   }
@@ -162,9 +169,9 @@ export function AiCoachChatThread() {
           background: colors.bgGlass,
         }}
       >
-        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>Coach</p>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>Coach Chat</p>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
-          Plans are made with the principles of Coach Piyush and Coach Rakshit.
+          Ask about your plan, training, nutrition, recovery, or progress.
         </p>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -173,7 +180,7 @@ export function AiCoachChatThread() {
         )}
         {!loading && messages.length === 0 && (
           <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>
-            Send a message or a photo. You can send two or three messages before a reply, so explain the full thing first.
+            Start a conversation with your coach.
           </p>
         )}
         {messages.map((msg, index) => {
