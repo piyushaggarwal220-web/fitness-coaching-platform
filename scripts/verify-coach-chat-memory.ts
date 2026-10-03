@@ -7,6 +7,7 @@ import {
 } from '../src/lib/ai/coach-chat-memory'
 import { coachReplyRequest } from '../src/lib/ai/coach-chat-persona'
 import { chatTextForModel, encodeChatVoice } from '../src/lib/chat-reply-pause'
+import { chatLanguageDirective, explicitChatLanguage } from '../src/lib/ai/coach-chat-language'
 
 assert.equal(shouldAskBeforeAdvising('my hand is paining'), true)
 assert.equal(
@@ -24,7 +25,13 @@ assert.match(chatTextForModel(encodeChatVoice('user/ai-chat/1.webm', 'my knee hu
 assert.equal(readClientMood(['this is useless, nothing is working!!']).mood, 'frustrated')
 assert.equal(readClientMood(['my hand is paining']).mood, 'worried')
 assert.equal(readClientMood(['yaar bhai kya karu']).mood, 'casual')
-assert.match(readClientMood(['yaar bhai kya karu']).note, /Hindi and English/)
+assert.equal(explicitChatLanguage('मेरा हाथ दर्द कर रहा है'), null)
+assert.equal(explicitChatLanguage('please reply in hindi letters'), 'hindi_script')
+assert.equal(explicitChatLanguage('sirf english'), 'english')
+assert.match(chatLanguageDirective('hinglish'), /English letters only/)
+assert.match(chatLanguageDirective('hindi_script'), /Devanagari/)
+assert.match(readClientMood(['yaar bhai kya karu']).note, /Do not switch into Hindi script/)
+assert.doesNotMatch(readClientMood(['मेरा हाथ दर्द कर रहा है']).note, /Reply in Hindi/)
 
 const ask = coachReplyRequest({
   clientText: 'my hand is paining',

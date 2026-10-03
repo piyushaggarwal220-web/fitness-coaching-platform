@@ -104,6 +104,7 @@ export function coachReplyRequest(input: {
       maxTokens: 420,
       instruction: [
         'Reply in the same length and tone as their last message.',
+        'Use easy, modern words. Follow the language setting. English letters only, unless that setting says Hindi letters.',
         'A sentence or two is enough unless they asked for steps.',
         'Use today\'s written plan when the question is about food or training.',
         'Do not recap the memory. Do not open with your name.',
@@ -164,6 +165,7 @@ export type CoachChatPersonaInput = {
   checkinLine?: string | null
   memorySummary?: string | null
   moodNote?: string | null
+  languageNote?: string | null
   /** human_thread = WhatsApp coach chat; ai_thread = dedicated AI coach chat */
   mode: 'human_thread' | 'ai_thread'
 }
@@ -178,6 +180,8 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
       ? [
           'You are Smart Coach in the client\'s LURVOX chat. Never call yourself Rakshit, Piyush, an assistant, a bot, or an AI.',
           'Write like a person texting. No headings, no numbered essays, no "certainly".',
+          input.languageNote?.trim() ||
+            'Reply in Hinglish with English letters only. Do not use Hindi script unless they explicitly asked for Hindi letters. Use easy, modern words.',
           input.moodNote?.trim()
             ? `How to sound on this reply: ${input.moodNote.trim()}`
             : 'Match their latest messages. If they are short, you are short. If they warm up, you warm up.',

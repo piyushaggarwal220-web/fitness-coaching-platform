@@ -13,6 +13,7 @@ import {
   encodeChatVoice,
 } from '@/lib/chat-reply-pause'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
+import { CHAT_LANGUAGES, parseChatLanguage, type ChatLanguage } from '@/lib/ai/coach-chat-language'
 
 type Msg = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string }
 
@@ -24,6 +25,7 @@ export function AiCoachChatThread() {
   const [waiting, setWaiting] = useState(false)
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
+  const [language, setLanguage] = useState<ChatLanguage>('hinglish')
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const pauseRef = useRef<number | null>(null)
   const sendingRef = useRef(false)
@@ -44,6 +46,7 @@ export function AiCoachChatThread() {
         }
         if (!active) return
         setMessages((data?.messages as Msg[]) ?? [])
+        setLanguage(parseChatLanguage(data?.replyLanguage) ?? 'hinglish')
         setLoading(false)
       } catch {
         if (!active) return
@@ -80,7 +83,7 @@ export function AiCoachChatThread() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ replyNow: true }),
+        body: JSON.stringify({ replyNow: true, language }),
       })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
@@ -143,7 +146,7 @@ export function AiCoachChatThread() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content }),
+        body: JSON.stringify({ message: content, language }),
       })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
@@ -201,7 +204,7 @@ export function AiCoachChatThread() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content }),
+        body: JSON.stringify({ message: content, language }),
       })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
@@ -237,6 +240,40 @@ export function AiCoachChatThread() {
         <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
           Ask about your plan. A voice note works too.
         </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }} role="group" aria-label="Chat language">
+          {CHAT_LANGUAGES.map((option) => {
+            const selected = language === option.id
+            return (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => {
+                  setLanguage(option.id)
+                  void fetch('/api/client/ai-chat', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ language: option.id }),
+                  })
+                }}
+                style={{
+                  minHeight: 32,
+                  padding: '0 12px',
+                  borderRadius: 999,
+                  border: `1px solid ${selected ? colors.accent : colors.borderSubtle}`,
+                  background: selected ? colors.accent : colors.bgCard,
+                  color: selected ? colors.textInverse : colors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: spacing[4], display: 'flex', flexDirection: 'column', gap: 10 }}>
         {loading && (
@@ -244,7 +281,7 @@ export function AiCoachChatThread() {
         )}
         {!loading && messages.length === 0 && (
           <p style={{ margin: 0, color: colors.textSecondary, fontSize: 14, lineHeight: 1.5 }}>
-            Start a conversation with Smart Coach.
+            Start a conversation with Smart Coach. Hinglish is the usual choice, and it uses English letters. Pick Hindi letters only if you want Hindi script.
           </p>
         )}
         {messages.map((msg, index) => {

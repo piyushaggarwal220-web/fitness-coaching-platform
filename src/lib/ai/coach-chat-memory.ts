@@ -29,13 +29,12 @@ export function readClientMood(messages: string[]): { mood: ClientChatMood; note
   const recent = messages.map((line) => line.trim()).filter(Boolean).slice(-6)
   const latest = recent[recent.length - 1] ?? ''
   const blob = recent.join('\n')
-  const hindi = /[\u0900-\u097F]/.test(blob)
-  const hinglish = /\b(yaar|bhai|nahi|nahin|kya|hai|hoon|kar|mat|acha|accha|theek|thik|haan)\b/i.test(blob)
-  const language = hindi
-    ? 'They are writing in Hindi. Reply in Hindi.'
-    : hinglish
-      ? 'They mix Hindi and English. Reply in that same mix.'
-      : 'Reply in the same language they used.'
+  const hinglish = /\b(yaar|bhai|nahi|nahin|kya|hai|hoon|kar|mat|acha|accha|theek|thik|haan)\b|[\u0900-\u097F]/i.test(
+    blob
+  )
+  const language = hinglish
+    ? 'They are casual. Stay casual. Do not switch into Hindi script.'
+    : 'Stay in the language already chosen for this chat.'
 
   let mood: ClientChatMood = 'plain'
   if (FRUSTRATED.test(latest) || (latest.length < 12 && FRUSTRATED.test(blob))) mood = 'frustrated'

@@ -14,6 +14,12 @@ import {
   clipCoachMemory,
   readClientMood,
 } from '@/lib/ai/coach-chat-memory'
+import {
+  chatLanguageDirective,
+  explicitChatLanguage,
+  parseChatLanguage,
+  type ChatLanguage,
+} from '@/lib/ai/coach-chat-language'
 import { ownVoicePath, transcribeChatVoice } from '@/lib/ai/transcribe-chat-voice'
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
 import { chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
@@ -72,14 +78,42 @@ async function earlierCoachThread(
 async function loadCoachMemory(
   admin: ReturnType<typeof createAdminClient>,
   clientId: string
-): Promise<string> {
+): Promise<{ summary: string; replyLanguage: ChatLanguage }> {
   const { data, error } = await admin
     .from('ai_coach_memory')
-    .select('summary')
+    .select('summary, reply_language')
     .eq('client_id', clientId)
     .maybeSingle()
-  if (error || !data?.summary) return ''
-  return data.summary.trim()
+  if (error || !data) return { summary: '', replyLanguage: 'hinglish' }
+  return {
+    summary: data.summary?.trim() ?? '',
+    replyLanguage: parseChatLanguage(data.reply_language) ?? 'hinglish',
+  }
+}
+
+async function saveReplyLanguage(
+  admin: ReturnType<typeof createAdminClient>,
+  clientId: string,
+  language: ChatLanguage
+): Promise<void> {
+  const { data } = await admin
+    .from('ai_coach_memory')
+    .select('client_id')
+    .eq('client_id', clientId)
+    .maybeSingle()
+  if (data) {
+    await admin
+      .from('ai_coach_memory')
+      .update({ reply_language: language, updated_at: new Date().toISOString() })
+      .eq('client_id', clientId)
+    return
+  }
+  await admin.from('ai_coach_memory').insert({
+    client_id: clientId,
+    summary: '',
+    mood: 'plain',
+    reply_language: language,
+  })
 }
 
 async function olderChatForFirstMemory(
@@ -168,10 +202,13 @@ export async function GET() {
     ...(rows ?? []),
   ]
 
+  const memory = await loadCoachMemory(admin, auth.user.id)
+
   return NextResponse.json({
     messages,
     coachFirstName,
     coachId: profile.coach_id,
+    replyLanguage: memory.replyLanguage,
   })
 }
 
@@ -179,7 +216,7 @@ export async function POST(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
 
-  let body: { message?: string; replyNow?: boolean }
+  let body: { message?: string; replyNow?: boolean; language?: string }
   try {
     body = await request.json()
   } catch {
@@ -188,7 +225,10 @@ export async function POST(request: Request) {
 
   const message = (body.message || '').trim()
   const replyNow = body.replyNow === true
-  if (!message && !replyNow) return NextResponse.json({ error: 'Message required' }, { status: 400 })
+  const requestedLanguage = parseChatLanguage(body.language)
+  if (!message && !replyNow && !requestedLanguage) {
+    return NextResponse.json({ error: 'Message required' }, { status: 400 })
+  }
   if (message.length > MAX_MESSAGE_LEN) {
     return NextResponse.json({ error: 'Message is too long' }, { status: 400 })
   }
@@ -209,6 +249,11 @@ export async function POST(request: Request) {
   if (denied) return denied
 
   const admin = createAdminClient()
+  if (requestedLanguage && !message && !replyNow) {
+    await saveReplyLanguage(admin, auth.user.id, requestedLanguage)
+    return NextResponse.json({ replyLanguage: requestedLanguage })
+  }
+
   const now = new Date().toISOString()
   const [coachFirstName, earlier] = await Promise.all([
     coachNameForClient(admin, profile),
@@ -277,12 +322,25 @@ export async function POST(request: Request) {
       ?.coachPersonalities ?? null
 
   const thread = await loadAiCoachThreadContext(admin, auth.user.id, profile)
-  const memorySummary = await loadCoachMemory(admin, auth.user.id)
+  const memory = await loadCoachMemory(admin, auth.user.id)
   const clientLines = history
     .filter((turn) => turn.role === 'user')
     .slice(-6)
     .map((turn) => chatTextForModel(turn.content))
   const mood = readClientMood(clientLines)
+  const pendingText = clientTextForReply(
+    history.map((turn) => ({
+      fromClient: turn.role === 'user',
+      content: chatTextForModel(turn.content),
+    }))
+  )
+  const replyLanguage =
+    explicitChatLanguage(pendingText || chatTextForModel(storedMessage || message)) ??
+    requestedLanguage ??
+    memory.replyLanguage
+  if (replyLanguage !== memory.replyLanguage) {
+    await saveReplyLanguage(admin, auth.user.id, replyLanguage).catch(() => undefined)
+  }
 
   const dated = datedPlanRequestDirective(chatTextForModel(storedMessage || message))
   const systemPrompt = buildNamedCoachSystemPrompt({
@@ -301,8 +359,9 @@ export async function POST(request: Request) {
     todayPlan: thread.todayPlan,
     trackerLine: thread.trackerLine,
     checkinLine: thread.checkinLine,
-    memorySummary,
+    memorySummary: memory.summary,
     moodNote: mood.note,
+    languageNote: chatLanguageDirective(replyLanguage),
     mode: 'ai_thread',
   })
 
@@ -310,14 +369,8 @@ export async function POST(request: Request) {
   const transcript = [...earlier.slice(-8), ...history]
     .map((turn) => `${turn.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(turn.content)}`)
     .join('\n')
-  const pending = clientTextForReply(
-    history.map((turn) => ({
-      fromClient: turn.role === 'user',
-      content: chatTextForModel(turn.content),
-    }))
-  )
   const replyRequest = coachReplyRequest({
-    clientText: pending || chatTextForModel(storedMessage || message),
+    clientText: pendingText || chatTextForModel(storedMessage || message),
     firstReply: !hasCoachReply,
     mode: 'ai_thread',
   })
@@ -368,7 +421,7 @@ export async function POST(request: Request) {
     .join('\n')
   try {
     await saveCoachMemory(admin, auth.user.id, {
-      previous: memorySummary,
+      previous: memory.summary,
       turns: memoryTurns,
       mood: mood.mood,
     })
