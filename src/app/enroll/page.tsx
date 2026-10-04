@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, type CSSProperties, type FormEvent } fro
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { brandTitle } from '@/lib/brand'
-import { colors, spacing, radius } from '@/lib/design-tokens'
+import { clientColors as colors, spacing, radius } from '@/lib/design-tokens'
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
 
 const marketingBaseUrl = resolveMarketingBaseUrl()

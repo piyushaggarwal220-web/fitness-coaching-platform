@@ -440,7 +440,7 @@ export function TrackerFolder({
           alignItems: 'center',
           gap: 12,
           padding: spacing[4],
-          background: open ? 'rgba(255,255,255,0.02)' : 'transparent',
+          background: open ? colors.bgSecondary : 'transparent',
           border: 'none',
           cursor: 'pointer',
           textAlign: 'left',

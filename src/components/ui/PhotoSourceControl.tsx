@@ -2,7 +2,7 @@
 
 import { useRef, type CSSProperties, type ChangeEvent } from 'react'
 import { Camera, Images } from 'lucide-react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { radius, spacing } from '@/lib/design-tokens'
 import { PHOTO_INPUT_ACCEPT } from '@/lib/photo'
 
 type PhotoSourceControlProps = {
@@ -97,7 +97,7 @@ export function PhotoSourceControl({
 
 const styles: Record<string, CSSProperties> = {
   fieldset: { border: 0, padding: 0, margin: 0, minWidth: 0 },
-  legend: { padding: 0, marginBottom: spacing[1], fontSize: 14, fontWeight: 600, color: colors.textSecondary },
+  legend: { padding: 0, marginBottom: spacing[1], fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' },
   actions: { display: 'grid', gap: 8 },
   action: {
     display: 'flex',
@@ -106,17 +106,17 @@ const styles: Record<string, CSSProperties> = {
     gap: 8,
     minHeight: 44,
     padding: '9px 12px',
-    border: `1px solid ${colors.borderSubtle}`,
+    border: '1px solid var(--border-subtle)',
     borderRadius: radius.sm,
-    backgroundColor: colors.bgElevated,
-    color: colors.textPrimary,
+    backgroundColor: 'var(--bg-elevated)',
+    color: 'var(--text-primary)',
     fontSize: 13,
     fontWeight: 600,
     cursor: 'pointer',
     textAlign: 'center',
     fontFamily: 'inherit',
   },
-  selected: { margin: '8px 0 0', fontSize: 12, color: colors.success, overflowWrap: 'anywhere' },
+  selected: { margin: '8px 0 0', fontSize: 12, color: 'var(--success)', overflowWrap: 'anywhere' },
   visuallyHidden: {
     position: 'absolute',
     width: 1,

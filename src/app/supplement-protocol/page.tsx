@@ -6,7 +6,7 @@ import { FlaskConical, RefreshCw } from 'lucide-react'
 import { ClientShell } from '@/components/ui/ClientShell'
 import { Card } from '@/components/ui/Card'
 import { authenticateClient } from '@/lib/onboarding'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import { mobileStyles } from '@/lib/mobile-styles'
 import { createClient } from '@/lib/supabase/client'
 import {

@@ -50,7 +50,8 @@ export const clientColors = {
   textPrimary: '#1c1915',
   textSecondary: '#4e4942',
   textMuted: '#6d675e',
-  textInverse: '#f4efe6',
+  /** Button / badge text on accent green — white, never beige (matches page bg). */
+  textInverse: '#ffffff',
   divider: 'rgba(28, 25, 21, 0.08)',
   borderSubtle: 'rgba(28, 25, 21, 0.12)',
 } as const

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { radius, spacing } from '@/lib/design-tokens'
 
 type AccordionItemProps = {
   title: string
@@ -16,10 +16,10 @@ export function AccordionItem({ title, icon, isOpen, onToggle, children }: Accor
   return (
     <div
       style={{
-        backgroundColor: colors.bgCard,
+        backgroundColor: 'var(--bg-card)',
         borderRadius: radius.md,
         marginBottom: spacing[2],
-        border: `1px solid ${colors.borderSubtle}`,
+        border: '1px solid var(--border-subtle)',
         overflow: 'hidden',
       }}
     >
@@ -39,16 +39,16 @@ export function AccordionItem({ title, icon, isOpen, onToggle, children }: Accor
           cursor: 'pointer',
           textAlign: 'left',
           minHeight: 64,
-          color: colors.textPrimary,
+          color: 'var(--text-primary)',
         }}
       >
-        {icon && <span style={{ color: colors.accent, display: 'flex' }}>{icon}</span>}
+        {icon && <span style={{ color: 'var(--accent)', display: 'flex' }}>{icon}</span>}
         <span style={{ flex: 1, fontSize: 17, fontWeight: 600 }}>{title}</span>
         <ChevronDown
           size={20}
-          color={colors.textMuted}
+          color="currentColor"
           className={`accordion-chevron ${isOpen ? 'accordion-chevron--open' : ''}`}
-          style={{ flexShrink: 0 }}
+          style={{ flexShrink: 0, color: 'var(--text-muted)' }}
         />
       </button>
       <div className={`accordion-grid ${isOpen ? 'accordion-grid--open' : ''}`}>

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Check, ListChecks, Lock, Map, MessageCircle, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import {
   INSTANT_FEATURE_LABEL,
   unlockHrefForFeature,
@@ -51,10 +51,10 @@ export function InstantFeatureLockedPanel({ feature, title, description }: Props
           position: 'relative',
           overflow: 'hidden',
           borderRadius: radius.lg,
-          border: `1px solid rgba(249, 115, 22, 0.22)`,
-          background:
-            'linear-gradient(165deg, rgba(249,115,22,0.16) 0%, rgba(24,24,27,0.98) 38%, rgba(9,9,11,1) 100%)',
-          boxShadow: '0 18px 48px rgba(0,0,0,0.35)',
+          border: `1px solid ${colors.borderSubtle}`,
+          background: `linear-gradient(165deg, ${colors.bgCard} 0%, ${colors.bgPrimary} 55%, ${colors.bgSecondary} 100%)`,
+          boxShadow: '0 12px 32px rgba(28, 25, 21, 0.06)',
+          color: colors.textPrimary,
         }}
       >
         <div
@@ -63,7 +63,7 @@ export function InstantFeatureLockedPanel({ feature, title, description }: Props
             position: 'absolute',
             inset: 0,
             background:
-              'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(249,115,22,0.28), transparent 60%)',
+              'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(30,77,61,0.12), transparent 60%)',
             pointerEvents: 'none',
           }}
         />
@@ -76,8 +76,8 @@ export function InstantFeatureLockedPanel({ feature, title, description }: Props
               gap: 6,
               padding: '5px 10px',
               borderRadius: radius.full,
-              background: 'rgba(249,115,22,0.14)',
-              border: '1px solid rgba(249,115,22,0.28)',
+              background: colors.accentMuted,
+              border: `1px solid ${colors.borderSubtle}`,
               color: colors.accent,
               fontSize: 11,
               fontWeight: 700,
@@ -99,7 +99,7 @@ export function InstantFeatureLockedPanel({ feature, title, description }: Props
               alignItems: 'center',
               justifyContent: 'center',
               background: colors.accentMuted,
-              border: `1px solid rgba(249,115,22,0.25)`,
+              border: `1px solid ${colors.borderSubtle}`,
             }}
           >
             <Icon size={26} color={colors.accent} strokeWidth={2.2} />
@@ -176,7 +176,7 @@ export function InstantFeatureLockedPanel({ feature, title, description }: Props
               marginTop: spacing[5],
               padding: spacing[3],
               borderRadius: radius.md,
-              background: 'rgba(255,255,255,0.03)',
+              background: colors.bgElevated,
               border: `1px solid ${colors.borderSubtle}`,
               textAlign: 'center',
             }}
@@ -205,14 +205,7 @@ export function InstantFeatureLockedPanel({ feature, title, description }: Props
               </Button>
             </Link>
             <Link href="/unlock?feature=bundle" style={{ textDecoration: 'none' }}>
-              <Button
-                variant="secondary"
-                style={{
-                  width: '100%',
-                  borderColor: 'rgba(249,115,22,0.35)',
-                  color: colors.textPrimary,
-                }}
-              >
+              <Button variant="secondary" style={{ width: '100%' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   <Sparkles size={16} color={colors.accent} />
                   Unlock all three · {bundle}

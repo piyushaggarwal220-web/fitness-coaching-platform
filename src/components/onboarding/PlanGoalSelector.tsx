@@ -4,7 +4,7 @@ import { Lock } from 'lucide-react'
 import { useMemo, useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import {
   ALL_PLAN_GOAL_OPTIONS,

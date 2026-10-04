@@ -2,7 +2,6 @@
 
 import type { SupportMessage } from '@/types/database'
 import { formatSupportDate } from '@/lib/support'
-import { colors } from '@/lib/design-tokens'
 import { supportStyles as s } from './styles'
 
 type SupportThreadProps = {
@@ -12,7 +11,7 @@ type SupportThreadProps = {
 
 export function SupportThread({ messages, viewer }: SupportThreadProps) {
   if (messages.length === 0) {
-    return <p style={{ color: colors.textMuted, fontSize: 14 }}>No messages yet.</p>
+    return <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>No messages yet.</p>
   }
 
   return (

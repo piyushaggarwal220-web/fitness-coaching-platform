@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DEMO_TOUR_STEPS, markDemoTourDone } from '@/lib/demo-tour'
-import { colors, layout, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, layout, radius, spacing } from '@/lib/design-tokens'
 
 type Hole = { top: number; left: number; width: number; height: number }
 

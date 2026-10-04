@@ -44,7 +44,7 @@ function HeroStat({ label, value, highlight }: { label: string; value: string; h
       style={{
         padding: `${spacing[2]}px ${spacing[1]}px`,
         borderRadius: radius.md,
-        background: 'rgba(255,255,255,0.04)',
+        background: colors.bgSecondary,
         border: `1px solid ${colors.borderSubtle}`,
         textAlign: 'center',
       }}
@@ -82,10 +82,11 @@ function WeekProgressCard({ title, week }: { title: string; week: TrackerWeekPro
         marginTop: spacing[3],
         padding: spacing[4],
         borderRadius: radius.lg,
-        background: 'rgba(255,255,255,0.04)',
+        background: colors.bgSecondary,
         border: `1px solid ${colors.borderSubtle}`,
         width: '100%',
         position: 'relative',
+        color: colors.textPrimary,
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
@@ -109,13 +110,14 @@ function WeekProgressCard({ title, week }: { title: string; week: TrackerWeekPro
                 height: 36,
                 borderRadius: 8,
                 background:
-                  (day.overallPercent ?? 0) >= 60 ? 'rgba(34,197,94,0.22)' : 'rgba(255,255,255,0.06)',
+                  (day.overallPercent ?? 0) >= 60 ? colors.successMuted : colors.bgElevated,
                 border: `1px solid ${colors.borderSubtle}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 11,
                 fontWeight: 800,
+                color: colors.textPrimary,
               }}
             >
               {day.overallPercent != null ? `${day.overallPercent}` : '—'}
@@ -284,7 +286,7 @@ export function TrackerHub({ view }: { view: TodayTrackerView }) {
                     marginTop: 10,
                     height: 5,
                     borderRadius: 999,
-                    background: 'rgba(255,255,255,0.07)',
+                    background: colors.bgElevated,
                     overflow: 'hidden',
                   }}
                 >

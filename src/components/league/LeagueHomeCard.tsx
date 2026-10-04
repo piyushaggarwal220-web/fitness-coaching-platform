@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Trophy } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import {
   LEAGUE_TIER_DETAILS,
   LEAGUE_TIER_LABELS,

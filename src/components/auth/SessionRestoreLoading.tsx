@@ -1,6 +1,5 @@
 'use client'
 
-import { colors } from '@/lib/design-tokens'
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore'
 
 type SessionRestoreLoadingProps = {
@@ -18,7 +17,7 @@ export function SessionRestoreLoading({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: 'var(--bg-primary)',
-        color: colors.textSecondary,
+        color: 'var(--text-secondary)',
         fontSize: 15,
         padding: 24,
         textAlign: 'center',

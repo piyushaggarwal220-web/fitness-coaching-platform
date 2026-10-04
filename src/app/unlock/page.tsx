@@ -30,7 +30,7 @@ import {
 } from '@/lib/payments/platform-unlock-catalog'
 import { startPlatformUnlockCheckout } from '@/lib/payments/platform-unlock-checkout-client'
 import { createClient } from '@/lib/supabase/client'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import {
   INSTANT_BUNDLE_PITCH,
   instantBundleSavingsPaise,

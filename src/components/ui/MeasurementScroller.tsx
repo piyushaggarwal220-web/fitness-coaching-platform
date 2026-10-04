@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, type CSSProperties } from 'react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { radius, spacing } from '@/lib/design-tokens'
 import { MAX_HEIGHT_CM, MIN_HEIGHT_CM } from '@/lib/height'
 
 export const NUMBER_SCROLLER_PRESETS = {
@@ -152,7 +152,7 @@ const styles: Record<string, CSSProperties> = {
   label: {
     fontSize: 14,
     fontWeight: 500,
-    color: colors.textSecondary,
+    color: 'var(--text-secondary)',
   },
   inputRow: {
     display: 'flex',
@@ -164,34 +164,34 @@ const styles: Record<string, CSSProperties> = {
     minHeight: 48,
     padding: `0 ${spacing[3]}px`,
     borderRadius: radius.md,
-    border: `1px solid ${colors.borderSubtle}`,
-    backgroundColor: colors.bgElevated,
-    color: colors.textPrimary,
+    border: '1px solid var(--border-subtle)',
+    backgroundColor: 'var(--bg-elevated)',
+    color: 'var(--text-primary)',
     fontSize: 16,
     fontVariantNumeric: 'tabular-nums',
     boxSizing: 'border-box',
   },
   inputError: {
-    borderColor: colors.danger,
+    borderColor: 'var(--danger)',
   },
   unitSuffix: {
     fontSize: 14,
     fontWeight: 600,
-    color: colors.textMuted,
+    color: 'var(--text-muted)',
     flexShrink: 0,
   },
   hint: {
     margin: 0,
     fontSize: 12,
-    color: colors.textMuted,
+    color: 'var(--text-muted)',
     lineHeight: 1.4,
   },
   rangeHint: {
     margin: 0,
     fontSize: 12,
-    color: colors.textMuted,
+    color: 'var(--text-muted)',
   },
   errorText: {
-    color: colors.danger,
+    color: 'var(--danger)',
   },
 }

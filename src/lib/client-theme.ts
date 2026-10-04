@@ -24,6 +24,8 @@ const CLIENT_ROOTS = [
   '/reset-password',
   '/enroll',
   '/membership-required',
+  '/league',
+  '/install',
 ]
 
 export function isClientAppPath(pathname: string | null | undefined): boolean {

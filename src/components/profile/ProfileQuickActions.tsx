@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ClipboardCheck, Flame, Map } from 'lucide-react'
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 import styles from '@/app/profile/profile.module.css'
 
 const ITEMS = [

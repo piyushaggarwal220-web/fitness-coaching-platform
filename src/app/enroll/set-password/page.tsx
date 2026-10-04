@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { brandTitle } from '@/lib/brand'
 import { createClient } from '@/lib/supabase/client'
-import { colors, spacing, radius } from '@/lib/design-tokens'
+import { clientColors as colors, spacing, radius } from '@/lib/design-tokens'
 import { resolveMarketingBaseUrl } from '@/lib/admin/portal-urls'
 
 const marketingBaseUrl = resolveMarketingBaseUrl()

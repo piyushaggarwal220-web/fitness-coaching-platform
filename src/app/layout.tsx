@@ -9,6 +9,7 @@ import { PhoneViewportLock } from "@/components/pwa/PhoneViewportLock";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
 import { ChunkLoadRecovery } from "@/components/pwa/ChunkLoadRecovery";
 import { SessionKeepalive } from "@/components/auth/SessionKeepalive";
+import { ClientPortalRoot } from "@/components/ui/ClientPortalRoot";
 import { initWhatsAppProvider } from "@/lib/notifications/whatsapp-provider";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import { PHONE_VIEWPORT_BOOTSTRAP } from "@/lib/phone-viewport";
@@ -65,6 +66,7 @@ export default function RootLayout({
     <html lang="en" className={manrope.variable} data-scroll-behavior="smooth">
       <body>
         <script dangerouslySetInnerHTML={{ __html: PHONE_VIEWPORT_BOOTSTRAP }} />
+        <ClientPortalRoot />
         {children}
         <SessionKeepalive />
         <ChunkLoadRecovery />

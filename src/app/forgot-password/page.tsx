@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { BRAND_NAME, brandTitle } from '@/lib/brand'
 import { authStyles } from '@/lib/auth-styles'
-import { colors } from '@/lib/design-tokens'
+import { clientColors as colors } from '@/lib/design-tokens'
 
 function ForgotPasswordForm() {
   const searchParams = useSearchParams()

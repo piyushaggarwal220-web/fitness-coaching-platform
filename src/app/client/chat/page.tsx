@@ -250,7 +250,7 @@ export default function ClientChatPage() {
               borderRadius: 12,
               border: 'none',
               background: '#1e4d3d',
-              color: '#f4efe6',
+              color: '#ffffff',
               fontWeight: 700,
               fontSize: 15,
               cursor: 'pointer',

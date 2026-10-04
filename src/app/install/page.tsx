@@ -11,7 +11,7 @@ import {
   manualInstallCopy,
   triggerNativeInstall,
 } from '@/lib/pwa-install'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import { Download, Share, Smartphone } from 'lucide-react'
 
 export default function InstallAppPage() {

@@ -8,7 +8,7 @@ import { hasClientEntitlement } from '@/lib/entitlements';
 import { createClient } from '@/lib/supabase/client';
 import { BRAND_NAME } from '@/lib/brand';
 import { authStyles } from '@/lib/auth-styles';
-import { colors } from '@/lib/design-tokens';
+import { clientColors as colors } from '@/lib/design-tokens';
 import { safeInternalPath } from '@/lib/safe-navigation';
 import { hydrateBrowserAuthSession, signInViaApi } from '@/lib/auth-login-api';
 import { PasswordInput } from '@/components/ui/PasswordInput';

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import type { UserNotification } from '@/types/database'
-import { colors, coachColors, radius } from '@/lib/design-tokens'
+import { clientColors, colors, coachColors, radius } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
 import { playNotificationSound, prepareNotificationSound } from '@/lib/notification-sound'
 import { safeInternalPathOrNull } from '@/lib/safe-navigation'
@@ -13,13 +13,13 @@ import { useSupabaseRealtimeRefresh } from '@/hooks/useSupabaseRealtime'
 import { canUseWebPush, enableWebPush } from '@/lib/notifications/web-push-client'
 
 type NotificationBellProps = {
-  /** Coach portal uses light chrome; client/admin stay dark. */
-  theme?: 'dark' | 'light'
+  /** Coach = light, client = beige portal, admin = dark. */
+  theme?: 'dark' | 'light' | 'client'
 }
 
 export function NotificationBell({ theme = 'dark' }: NotificationBellProps) {
-  const palette = theme === 'light' ? coachColors : colors
-  const styles = useMemo(() => bellStyles(palette, theme), [palette, theme])
+  const palette = theme === 'client' ? clientColors : theme === 'light' ? coachColors : colors
+  const styles = useMemo(() => bellStyles(palette, theme === 'dark' ? 'dark' : 'light'), [palette, theme])
 
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<UserNotification[]>([])
@@ -194,8 +194,20 @@ function formatTime(date: string): string {
   return d.toLocaleDateString()
 }
 
+type BellPalette = {
+  accent: string
+  textInverse: string
+  bgCard: string
+  borderSubtle: string
+  divider: string
+  textMuted: string
+  textPrimary: string
+  textSecondary: string
+  accentMuted: string
+}
+
 function bellStyles(
-  palette: typeof colors | typeof coachColors,
+  palette: BellPalette,
   theme: 'dark' | 'light'
 ): Record<string, React.CSSProperties> {
   return {

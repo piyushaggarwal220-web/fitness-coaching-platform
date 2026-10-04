@@ -246,7 +246,7 @@ export function WearableConnect({
                 padding: '8px 6px',
                 borderRadius: 12,
                 border: `1px solid ${active ? 'rgba(249,115,22,0.45)' : colors.borderSubtle}`,
-                background: active ? colors.accentMuted : 'rgba(255,255,255,0.04)',
+                background: active ? colors.accentMuted : colors.bgSecondary,
                 color: active ? colors.accent : colors.textSecondary,
                 fontWeight: 800,
                 fontSize: 12,

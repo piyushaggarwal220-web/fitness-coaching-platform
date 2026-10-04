@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type CSSProperties, type InputHTMLAttributes } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { colors } from '@/lib/design-tokens'
 
 type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   inputStyle?: CSSProperties
@@ -101,7 +100,7 @@ const toggleStyle: CSSProperties = {
   border: 'none',
   borderRadius: 8,
   background: 'transparent',
-  color: colors.textMuted,
+  color: 'var(--text-muted)',
   cursor: 'pointer',
   touchAction: 'manipulation',
 }

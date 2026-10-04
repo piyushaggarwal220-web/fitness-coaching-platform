@@ -1,19 +1,19 @@
 'use client'
 
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react'
-import { colors, radius, spacing, transition } from '@/lib/design-tokens'
+import { radius, spacing, transition } from '@/lib/design-tokens'
 import { motionClass } from '@/lib/motion'
 
 const baseInputStyle: React.CSSProperties = {
   width: '100%',
   minHeight: 56,
   padding: `${spacing[2]}px ${spacing[3]}px`,
-  border: `1px solid ${colors.borderSubtle}`,
+  border: '1px solid var(--border-subtle)',
   borderRadius: radius.sm,
   fontSize: 16,
   boxSizing: 'border-box',
-  backgroundColor: colors.bgElevated,
-  color: colors.textPrimary,
+  backgroundColor: 'var(--bg-elevated)',
+  color: 'var(--text-primary)',
   outline: 'none',
   transition: transition('normal', 'border-color'),
 }
@@ -29,17 +29,17 @@ export function Input({ label, error, style, id, ...props }: InputProps) {
   return (
     <div style={{ marginBottom: spacing[3] }}>
       {label && (
-        <label htmlFor={inputId} style={{ display: 'block', marginBottom: spacing[1], fontSize: 14, fontWeight: 500, color: colors.textSecondary }}>
+        <label htmlFor={inputId} style={{ display: 'block', marginBottom: spacing[1], fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}>
           {label}
         </label>
       )}
       <input
         id={inputId}
         className={error ? motionClass.shake : undefined}
-        style={{ ...baseInputStyle, ...(error ? { borderColor: colors.danger } : {}), ...style }}
+        style={{ ...baseInputStyle, ...(error ? { borderColor: 'var(--danger)' } : {}), ...style }}
         {...props}
       />
-      {error && <p className="motion-ai-step-enter" style={{ margin: '6px 0 0', fontSize: 13, color: colors.danger }}>{error}</p>}
+      {error && <p className="motion-ai-step-enter" style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--danger)' }}>{error}</p>}
     </div>
   )
 }
@@ -55,7 +55,7 @@ export function TextArea({ label, error, style, id, ...props }: TextAreaProps) {
   return (
     <div style={{ marginBottom: spacing[3] }}>
       {label && (
-        <label htmlFor={inputId} style={{ display: 'block', marginBottom: spacing[1], fontSize: 14, fontWeight: 500, color: colors.textSecondary }}>
+        <label htmlFor={inputId} style={{ display: 'block', marginBottom: spacing[1], fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}>
           {label}
         </label>
       )}
@@ -67,12 +67,12 @@ export function TextArea({ label, error, style, id, ...props }: TextAreaProps) {
           minHeight: 120,
           resize: 'vertical',
           fontFamily: 'inherit',
-          ...(error ? { borderColor: colors.danger } : {}),
+          ...(error ? { borderColor: 'var(--danger)' } : {}),
           ...style,
         }}
         {...props}
       />
-      {error && <p className="motion-ai-step-enter" style={{ margin: '6px 0 0', fontSize: 13, color: colors.danger }}>{error}</p>}
+      {error && <p className="motion-ai-step-enter" style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--danger)' }}>{error}</p>}
     </div>
   )
 }
@@ -92,8 +92,8 @@ export function Slider({ label, name, value, onChange, min = 1, max = 10 }: Slid
   return (
     <div style={{ marginBottom: spacing[4] }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: spacing[2] }}>
-        <span style={{ fontSize: 15, fontWeight: 500, color: colors.textPrimary }}>{label}</span>
-        <span style={{ fontSize: 24, fontWeight: 800, color: colors.accent }}>{numValue}</span>
+        <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{label}</span>
+        <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent)' }}>{numValue}</span>
       </div>
       <input
         type="range"
@@ -106,8 +106,8 @@ export function Slider({ label, name, value, onChange, min = 1, max = 10 }: Slid
         style={{ width: '100%' }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-        <span style={{ fontSize: 12, color: colors.textMuted }}>{min}</span>
-        <span style={{ fontSize: 12, color: colors.textMuted }}>{max}</span>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{min}</span>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{max}</span>
       </div>
     </div>
   )

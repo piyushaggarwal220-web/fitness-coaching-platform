@@ -1,7 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { radius, spacing } from '@/lib/design-tokens'
 
 type SkeletonProps = {
   width?: string | number

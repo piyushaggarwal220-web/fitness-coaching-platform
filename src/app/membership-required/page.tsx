@@ -8,7 +8,7 @@ import { getClientPaymentGatePath, hasClientEntitlement } from '@/lib/entitlemen
 import { createClient } from '@/lib/supabase/client'
 import { getActiveSubscription, checkoutHrefForSubscription } from '@/lib/subscription'
 import { authStyles } from '@/lib/auth-styles'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import type { OnboardingProfile, Purchase } from '@/types/database'
 
 const supabase = createClient()

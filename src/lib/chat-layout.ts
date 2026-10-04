@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { colors, layout } from '@/lib/design-tokens'
+import { layout } from '@/lib/design-tokens'
 
 /** Shared viewport-filling chat layout — uses dvh for mobile browser chrome. */
 export const chatLayoutStyles = {
@@ -11,7 +11,7 @@ export const chatLayoutStyles = {
     bottom: 'var(--chat-vv-offset, 0px)',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: colors.bgPrimary,
+    backgroundColor: 'var(--bg-primary)',
     zIndex: 50,
     maxWidth: layout.maxWidthWide,
     margin: '0 auto',
@@ -27,8 +27,8 @@ export const chatLayoutStyles = {
     height: 'min(640px, calc(100dvh - 200px - env(safe-area-inset-top, 0px)))',
     borderRadius: 16,
     overflow: 'hidden',
-    border: `1px solid ${colors.borderSubtle}`,
-    backgroundColor: colors.bgCard,
+    border: '1px solid var(--border-subtle)',
+    backgroundColor: 'var(--bg-card)',
   } satisfies CSSProperties,
 
   threadFill: {

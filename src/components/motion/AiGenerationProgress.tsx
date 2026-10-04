@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { colors } from '@/lib/design-tokens'
 import { AI_GENERATION_STEPS, motionClass, useReducedMotion } from '@/lib/motion'
 
 type AiGenerationProgressProps = {
@@ -43,7 +42,7 @@ export function AiGenerationProgress({ active = true }: AiGenerationProgressProp
           marginBottom: 10,
           fontSize: 14,
           fontWeight: 600,
-          color: colors.textPrimary,
+          color: 'var(--text-primary)',
         }}
       >
         <span
@@ -51,19 +50,19 @@ export function AiGenerationProgress({ active = true }: AiGenerationProgressProp
             width: 8,
             height: 8,
             borderRadius: '50%',
-            backgroundColor: colors.accent,
+            backgroundColor: 'var(--accent)',
             flexShrink: 0,
           }}
         />
         {step}
       </div>
-      <div style={{ height: 3, backgroundColor: colors.bgElevated, borderRadius: 999, overflow: 'hidden' }}>
+      <div style={{ height: 3, backgroundColor: 'var(--bg-elevated)', borderRadius: 999, overflow: 'hidden' }}>
         <div
           className="motion-progress-fill"
           style={{
             height: '100%',
             width: `${progress}%`,
-            backgroundColor: colors.accent,
+            backgroundColor: 'var(--accent)',
             borderRadius: 999,
           }}
         />

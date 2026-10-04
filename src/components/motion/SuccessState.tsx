@@ -1,7 +1,7 @@
 'use client'
 
 import { Check } from 'lucide-react'
-import { colors } from '@/lib/design-tokens'
+import { usePortalColors } from '@/lib/client-theme'
 import { motionClass } from '@/lib/motion'
 
 type SuccessStateProps = {
@@ -9,8 +9,9 @@ type SuccessStateProps = {
   onDismiss?: () => void
 }
 
-/** Soft checkmark + orange glow — no confetti */
+/** Soft checkmark + accent glow — no confetti */
 export function SuccessState({ message }: SuccessStateProps) {
+  const colors = usePortalColors()
   return (
     <div
       className={motionClass.successGlow}
@@ -21,7 +22,7 @@ export function SuccessState({ message }: SuccessStateProps) {
         padding: '14px 16px',
         borderRadius: 14,
         backgroundColor: colors.accentMuted,
-        border: `1px solid rgba(249, 115, 22, 0.25)`,
+        border: `1px solid ${colors.borderSubtle}`,
         marginBottom: 16,
       }}
       role="status"

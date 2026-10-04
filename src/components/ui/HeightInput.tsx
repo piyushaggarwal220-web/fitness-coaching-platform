@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, useState, type CSSProperties } from 'react'
-import { colors, radius, spacing } from '@/lib/design-tokens'
+import { radius, spacing } from '@/lib/design-tokens'
 import {
   MAX_HEIGHT_CM,
   MIN_HEIGHT_CM,
@@ -139,20 +139,20 @@ export function HeightInput({
 
 const styles: Record<string, CSSProperties> = {
   fieldset: { border: 0, padding: 0, margin: `0 0 ${spacing[3]}px`, minWidth: 0 },
-  label: { padding: 0, marginBottom: spacing[1], fontSize: 14, fontWeight: 500, color: colors.textSecondary },
+  label: { padding: 0, marginBottom: spacing[1], fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' },
   unitGroup: { display: 'flex', gap: 8, marginBottom: spacing[2] },
   unitButton: {
     minHeight: 40,
     padding: '8px 12px',
     borderRadius: radius.full,
-    border: `1px solid ${colors.borderSubtle}`,
-    backgroundColor: colors.bgElevated,
-    color: colors.textSecondary,
+    border: '1px solid var(--border-subtle)',
+    backgroundColor: 'var(--bg-elevated)',
+    color: 'var(--text-secondary)',
     cursor: 'pointer',
     fontSize: 13,
   },
-  unitButtonActive: { borderColor: colors.accent, backgroundColor: colors.accentMuted, color: colors.accent, fontWeight: 600 },
+  unitButtonActive: { borderColor: 'var(--accent)', backgroundColor: 'var(--accent-muted)', color: 'var(--accent)', fontWeight: 600 },
   imperialGrid: { display: 'grid', gap: spacing[3] },
-  hint: { margin: '6px 0 0', fontSize: 12, color: colors.textMuted },
-  error: { color: colors.danger },
+  hint: { margin: '6px 0 0', fontSize: 12, color: 'var(--text-muted)' },
+  error: { color: 'var(--danger)' },
 }

@@ -1,5 +1,4 @@
 import { BRAND_NAME } from '@/lib/brand'
-import { colors } from '@/lib/design-tokens'
 import type { CSSProperties } from 'react'
 
 type BrandMarkProps = {
@@ -20,7 +19,7 @@ export function BrandMark({ style, size = 'sm' }: BrandMarkProps) {
         display: 'inline-block',
         margin: 0,
         fontWeight: 800,
-        color: colors.accent,
+        color: 'var(--accent)',
         textTransform: size === 'lg' ? 'none' : 'uppercase',
         ...sizeStyles[size],
         ...style,

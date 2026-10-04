@@ -8,7 +8,7 @@ import {
   type CoachPersonalityId,
 } from '@/lib/coach-personality'
 import { onboardingStyles as s } from '@/components/onboarding/styles'
-import { colors, spacing } from '@/lib/design-tokens'
+import { clientColors as colors, spacing } from '@/lib/design-tokens'
 
 type Props = {
   values: string[]
