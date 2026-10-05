@@ -11,7 +11,10 @@ import {
   withConfirmCue,
 } from '@/lib/ai/ai-coach-plan-change-pure'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
-import { assertClientCanReceivePlanChanges } from '@/lib/entitlements'
+import {
+  assertClientCanReceivePlanChanges,
+  type EntitlementProfile,
+} from '@/lib/entitlements'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import {
   createLockedPlanChangeRequest,
@@ -152,7 +155,7 @@ export async function lockAndProcessPlanChangeFromChat(input: {
     }
   }
 
-  const window = assertClientCanReceivePlanChanges(input.profile)
+  const window = assertClientCanReceivePlanChanges(input.profile as EntitlementProfile)
   if (!window.ok) {
     return {
       ok: false,
