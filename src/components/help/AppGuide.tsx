@@ -21,7 +21,7 @@ function guideReply(question: string): string {
     return 'Open My Plan and use PG or hostel menu. Type this week’s meals or upload a photo, then save. The next diet uses that menu. Today’s plan stays as it is until a new one is published.'
   }
   if (/plan change|lock in|edit my plan|3 |three/.test(q)) {
-    return 'You can lock in 3 plan changes a day on My Plan. One is written at a time. After it is sent, you can use another try the same day. The count resets tomorrow.'
+    return 'You can lock in 3 plan changes a day from My Plan, or ask Smart Coach in chat and reply YES to confirm. One is written at a time. The count resets tomorrow.'
   }
   if (/date|11|october|oct|tomorrow|from today/.test(q)) {
     return 'A future date does not change today’s plan. Say “from today” only if you want the change now. Otherwise lock it in on the start date.'

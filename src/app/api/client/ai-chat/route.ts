@@ -22,14 +22,27 @@ import {
 } from '@/lib/ai/coach-chat-language'
 import { ownVoicePath, transcribeChatVoice } from '@/lib/ai/transcribe-chat-voice'
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
+import {
+  extractPlanChangeProposal,
+  isPlanChangeCancel,
+  isPlanChangeConfirm,
+  loadPendingPlanChange,
+  lockAndProcessPlanChangeFromChat,
+  planChangeChatInstruction,
+  savePendingPlanChange,
+  stripPlanChangeTrailer,
+  wantsPlanChangeAppliedNow,
+  withConfirmCue,
+} from '@/lib/ai/ai-coach-plan-change'
 import { chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
 import { chatTextForModel, decodeChatVoice, encodeChatVoice } from '@/lib/chat-reply-pause'
 import { memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
 import { assertInstantFeatureAccess } from '@/lib/instant-feature-guard'
+import { getPlanChangeQuota } from '@/lib/plan-change-requests'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
-export const maxDuration = 45
+export const maxDuration = 120
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -236,7 +249,7 @@ export async function POST(request: Request) {
   const { data: profile } = await auth.supabase
     .from('profiles')
     .select(
-      'id, name, fitness_goal, diet_preference, injuries, checkin_schedule_started_at, checkin_overdue, coach_service, coach_id, journey_summary, onboarding_data, instant_gates_enabled, addon_ai_chat_entitled, access_source, payment_confirmed'
+      'id, name, fitness_goal, diet_preference, injuries, checkin_schedule_started_at, checkin_overdue, coach_service, coach_id, journey_summary, onboarding_data, instant_gates_enabled, addon_ai_chat_entitled, access_source, payment_confirmed, plan_delivered, role, subscription_expires_at'
     )
     .eq('id', auth.user.id)
     .maybeSingle()
@@ -334,15 +347,80 @@ export async function POST(request: Request) {
       content: chatTextForModel(turn.content),
     }))
   )
+  const latestClientText = pendingText || chatTextForModel(storedMessage || message)
   const replyLanguage =
-    explicitChatLanguage(pendingText || chatTextForModel(storedMessage || message)) ??
-    requestedLanguage ??
-    memory.replyLanguage
+    explicitChatLanguage(latestClientText) ?? requestedLanguage ?? memory.replyLanguage
   if (replyLanguage !== memory.replyLanguage) {
     await saveReplyLanguage(admin, auth.user.id, replyLanguage).catch(() => undefined)
   }
 
-  const dated = datedPlanRequestDirective(chatTextForModel(storedMessage || message))
+  const pendingChange = await loadPendingPlanChange(admin, auth.user.id)
+  const quota = await getPlanChangeQuota(auth.user.id)
+
+  const saveAssistant = async (content: string) => {
+    const { data: assistantRow, error: assistantError } = await admin
+      .from('ai_coach_messages')
+      .insert({
+        client_id: auth.user.id,
+        role: 'assistant',
+        content,
+        created_at: new Date().toISOString(),
+      })
+      .select('id, role, content, created_at')
+      .single()
+    if (assistantError || !assistantRow) {
+      return NextResponse.json(
+        { error: assistantError?.message ?? 'Could not save message' },
+        { status: 500 }
+      )
+    }
+    try {
+      await saveCoachMemory(admin, auth.user.id, {
+        previous: memory.summary,
+        turns: [`Client: ${latestClientText}`, `Coach: ${content}`].join('\n'),
+        mood: mood.mood,
+      })
+    } catch {
+      // Reply already saved.
+    }
+    return NextResponse.json({ message: assistantRow, coachFirstName })
+  }
+
+  if (pendingChange && isPlanChangeCancel(latestClientText)) {
+    await savePendingPlanChange(admin, auth.user.id, null)
+    return saveAssistant('Okay — I left the written plan as it is. Tell me if you want a different edit.')
+  }
+
+  if (pendingChange && isPlanChangeConfirm(latestClientText)) {
+    const result = await lockAndProcessPlanChangeFromChat({
+      clientId: auth.user.id,
+      profile,
+      pending: pendingChange,
+    })
+    await savePendingPlanChange(admin, auth.user.id, null)
+    return saveAssistant(result.message)
+  }
+
+  if (!pendingChange && wantsPlanChangeAppliedNow(latestClientText) && !datedPlanRequestDirective(latestClientText)) {
+    const transcript = [...earlier.slice(-8), ...history]
+      .map((turn) => `${turn.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(turn.content)}`)
+      .join('\n')
+    const extracted = await extractPlanChangeProposal({
+      clientText: latestClientText,
+      transcript,
+    })
+    if (extracted) {
+      const result = await lockAndProcessPlanChangeFromChat({
+        clientId: auth.user.id,
+        profile,
+        pending: extracted,
+      })
+      await savePendingPlanChange(admin, auth.user.id, null)
+      return saveAssistant(result.message)
+    }
+  }
+
+  const dated = datedPlanRequestDirective(latestClientText)
   const systemPrompt = buildNamedCoachSystemPrompt({
     coachFirstName,
     name: profile.name,
@@ -370,7 +448,7 @@ export async function POST(request: Request) {
     .map((turn) => `${turn.role === 'user' ? 'Client' : 'Coach'}: ${chatTextForModel(turn.content)}`)
     .join('\n')
   const replyRequest = coachReplyRequest({
-    clientText: pendingText || chatTextForModel(storedMessage || message),
+    clientText: latestClientText,
     firstReply: !hasCoachReply,
     mode: 'ai_thread',
   })
@@ -383,51 +461,31 @@ export async function POST(request: Request) {
         transcript || `Client: ${message}`,
         dated ? `\n${dated}` : '',
         '',
+        planChangeChatInstruction(quota.remainingToday),
+        pendingChange
+          ? `There is already a pending plan edit waiting for YES/NO:\nScope: ${pendingChange.scope}\n${pendingChange.requestText}`
+          : '',
+        '',
         'Write the next coach reply only.',
         replyRequest.instruction,
-      ].join('\n'),
+      ]
+        .filter(Boolean)
+        .join('\n'),
       model: MODELS.GPT_LUNA,
       maxTokens: replyRequest.maxTokens,
       temperature: 0.8,
     })
-    replyText =
-      guardAssistantCoachReply(result.text.replace(/[\u2010-\u2015\u2212-]/g, ' ')) || replyText
+    const raw = result.text.replace(/[\u2010-\u2015\u2212-]/g, ' ')
+    const stripped = stripPlanChangeTrailer(raw)
+    replyText = guardAssistantCoachReply(stripped.visible) || replyText
+    if (stripped.propose && !dated) {
+      await savePendingPlanChange(admin, auth.user.id, stripped.propose)
+      replyText = withConfirmCue(replyText, quota.remainingToday)
+    }
   } catch {
     replyText =
       'I could not reply just now. Try again in a moment — or open your plan and stick to today\'s workouts and meals.'
   }
 
-  const { data: assistantRow, error: assistantError } = await admin
-    .from('ai_coach_messages')
-    .insert({
-      client_id: auth.user.id,
-      role: 'assistant',
-      content: replyText,
-      created_at: new Date().toISOString(),
-    })
-    .select('id, role, content, created_at')
-    .single()
-
-  if (assistantError) {
-    return NextResponse.json({ error: assistantError.message }, { status: 500 })
-  }
-
-  const latestClient = [...history].reverse().find((turn) => turn.role === 'user')
-  const memoryTurns = [
-    latestClient ? `Client: ${chatTextForModel(latestClient.content)}` : '',
-    `Coach: ${replyText}`,
-  ]
-    .filter(Boolean)
-    .join('\n')
-  try {
-    await saveCoachMemory(admin, auth.user.id, {
-      previous: memory.summary,
-      turns: memoryTurns,
-      mood: mood.mood,
-    })
-  } catch {
-    // The reply is already saved. A missed memory rewrite must not fail the chat.
-  }
-
-  return NextResponse.json({ message: assistantRow, coachFirstName })
+  return saveAssistant(replyText)
 }
