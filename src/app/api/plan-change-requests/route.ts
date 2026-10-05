@@ -125,7 +125,6 @@ export async function POST(request: Request) {
       scope: created.request.scope,
       lockedAt: created.request.locked_at,
     },
-    message:
-      'Your changes are locked in. Your coach will review your request shortly. Updated plans are not live until your coach sends them.',
+    message: 'Your changes are locked in. The updated plan is being written and will go live when it is ready.',
   })
 }

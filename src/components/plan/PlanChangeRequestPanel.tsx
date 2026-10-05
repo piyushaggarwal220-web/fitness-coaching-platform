@@ -121,10 +121,10 @@ export function PlanChangeRequestPanel() {
   const statusMessage = (() => {
     if (!openRequest) return null
     if (openRequest.status === 'generating') {
-      return 'Your request is locked in. The updated plan is being written and will replace the live plan when it is sent.'
+      return 'Your request is locked in. The updated plan is being written and will replace the live plan when it is ready.'
     }
     if (openRequest.status === 'draft_ready' || openRequest.status === 'in_review') {
-      return 'Your update is ready to send. The live plan changes when that version goes out.'
+      return 'Your update is ready. Open My Plan again in a moment if you do not see it yet.'
     }
     if (openRequest.status === 'failed') {
       return openRequest.errorMessage
@@ -138,8 +138,8 @@ export function PlanChangeRequestPanel() {
     <section style={styles.card}>
       <h2 style={styles.title}>Request a plan edit</h2>
       <p style={styles.lead}>
-        Tell us what to change in your diet and/or workout. The live plan updates after that
-        version is sent.
+        Tell us what to change in your diet and/or workout. The live plan updates after the new
+        version is written — no human coach review step.
       </p>
 
       <div style={styles.terms}>
@@ -150,11 +150,10 @@ export function PlanChangeRequestPanel() {
             next day the count resets.
           </li>
           <li>
-            One change is written at a time. After it is sent, you can use another try the same day.
+            One change is written at a time. After it goes live, you can use another try the same day.
           </li>
           <li>
-            Locking in does <strong>not</strong> instantly change your live plan. The new version
-            is sent after it is written.
+            Locking in is not instant. The new version replaces the live plan after it is written.
           </li>
           <li>Vague or incomplete requests may be declined or delayed.</li>
         </ul>
