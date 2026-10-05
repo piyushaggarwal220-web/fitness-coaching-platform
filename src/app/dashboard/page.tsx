@@ -36,7 +36,6 @@ import { isPublicDemoEmail, PUBLIC_DEMO_CLIENT_NAME } from '@/lib/public-demo';
 import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability';
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
-import { clientRequiresManualPlanDelivery } from '@/lib/coach-delivery-policy';
 import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
 import { buildModuleSummaries, type TrackerModuleSummary } from '@/lib/daily-tracker/module-summaries';
@@ -230,14 +229,16 @@ export default function Dashboard() {
         // Paint the dashboard first; tracker summary can fill in afterwards.
         setLoading(false);
 
-        // If intake just finished but auto-gen never started, kick it again.
+        // If intake finished but gen never started / stuck / ready-but-undelivered, kick again.
         const job = generationResult.data as InitialPlanGenerationJob | null
         const needsEnsure =
           profileData.onboarding_complete &&
           !profileData.plan_delivered &&
           !planData &&
-          !clientRequiresManualPlanDelivery(profileData) &&
-          (!job || job.status === 'queued' || job.status === 'failed')
+          (!job ||
+            job.status === 'queued' ||
+            job.status === 'failed' ||
+            job.status === 'ready')
         if (needsEnsure) {
           void fetch('/api/onboarding/ensure-generation', {
             method: 'POST',
@@ -255,6 +256,19 @@ export default function Dashboard() {
                 .eq('client_id', userId)
                 .maybeSingle()
               if (refreshed) setGenerationJob(refreshed as InitialPlanGenerationJob)
+              // Delivery may land right after ensure — refresh plan if it appeared.
+              if (body.status === 'generating' || body.status === 'ready') {
+                const { data: deliveredPlan } = await supabase
+                  .from('plans')
+                  .select('*')
+                  .eq('client_id', userId)
+                  .eq('is_active', true)
+                  .maybeSingle()
+                if (deliveredPlan) {
+                  setActivePlan(deliveredPlan as Plan)
+                  setGenerationJob(null)
+                }
+              }
             })
             .catch(() => {})
         }
@@ -340,7 +354,7 @@ export default function Dashboard() {
     ? {
         label: `${getCheckinTypeDisplayName(upcomingCheckin.type)} · Week ${upcomingCheckin.coachingWeek}`,
         detail: dueCheckin
-          ? 'Due now. Photos and answers go to your coach.'
+          ? 'Due now. Photos and answers go to Smart Coach.'
           : checkinSchedule?.countdownDetailed
             ? `Opens in ${checkinSchedule.countdownDetailed}`
             : checkinSchedule?.countdownLabel
@@ -391,8 +405,7 @@ export default function Dashboard() {
         <MembershipRenewalBanner prompt={renewalPrompt} />
       )}
 
-      {(generationJob ||
-        (clientRequiresManualPlanDelivery(profile) && !isDigitalPlanSlug(purchase?.plan_slug))) &&
+      {generationJob &&
         !activePlan &&
         profile?.plan_delivered !== true &&
         profile?.onboarding_complete && (
@@ -407,33 +420,23 @@ export default function Dashboard() {
         }}>
           <strong>
             {isDigitalPlanSlug(purchase?.plan_slug)
-              ? generationJob?.status === 'ready'
+              ? generationJob.status === 'ready'
                 ? 'Your customised plan is almost ready.'
-                : generationJob?.status === 'failed'
+                : generationJob.status === 'failed'
                   ? 'We hit a snag building your plan — retry from onboarding or contact support.'
                   : 'Building your customised plan…'
-              : !generationJob && clientRequiresManualPlanDelivery(profile)
-              ? 'Your coach is preparing your personalized plan.'
-              : generationJob?.status === 'queued' || generationJob?.status === 'generating'
-              ? clientRequiresManualPlanDelivery(profile)
-                ? 'Your coach is preparing your personalized plan.'
-                : 'Your plan is being prepared.'
-              : generationJob?.status === 'ready'
-                ? clientRequiresManualPlanDelivery(profile)
-                  ? 'Your coach is reviewing your plan and will share it with you soon.'
-                  : 'Your plan is almost ready.'
-                : generationJob?.status === 'failed'
+              : generationJob.status === 'queued' || generationJob.status === 'generating'
+              ? 'Smart Coach is building your personalized plan.'
+              : generationJob.status === 'ready'
+                ? 'Your plan is almost ready — finishing delivery now.'
+                : generationJob.status === 'failed'
                   ? 'We hit a snag building your plan. Check back shortly.'
-                : clientRequiresManualPlanDelivery(profile)
-                  ? 'Your coach is working on your plan. Please check back shortly.'
-                  : 'Your plan is being prepared.'}
+                  : 'Smart Coach is building your personalized plan.'}
           </strong>
           <div>
             {isDigitalPlanSlug(purchase?.plan_slug)
               ? 'You’ll get an email when it’s ready, and it will also appear in My Plan (usually within a few hours).'
-              : clientRequiresManualPlanDelivery(profile)
-                ? 'Your plan appears here only after your coach reviews and sends it.'
-                : 'It usually arrives within 24 hours.'}
+              : 'It usually arrives within 24 hours and appears in My Plan automatically.'}
           </div>
         </div>
       )}

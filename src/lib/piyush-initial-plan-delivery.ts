@@ -65,7 +65,7 @@ export async function deliverPiyushInitialPlan(
   await sendNotification({
     userId: input.clientId,
     ...delivered,
-    body: 'Your coach prepared your first diet and workout plan. Open My Plan to get started.',
+    body: 'Your first diet and workout plan is ready. Open My Plan to get started.',
     metadata: {
       ...delivered.metadata,
       planId: input.planId,

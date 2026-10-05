@@ -125,7 +125,7 @@ export function TodayFocus({
             <ActionCard
               eyebrow="Today"
               title="Your plan is being prepared"
-              detail="Your coach is building your personalized plan. Workout and meals show up here once it's ready."
+              detail="Smart Coach is building your personalized plan. Workout and meals show up here once it's ready."
               action="View plan"
               icon={ClipboardList}
               primary

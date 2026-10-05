@@ -162,7 +162,7 @@ export default function ClientPlanPage() {
                 : 'Your plan was delivered. If sections look empty, refresh or message your coach.'
               : isDigitalPlan
                 ? 'Your customised plan is being prepared. You’ll get an email when it’s ready — usually within a few hours.'
-                : 'Your coach is preparing your personalised plan. Check back soon.'
+                : 'Smart Coach is building your personalised plan. It appears here automatically when ready — usually within 24 hours.'
           }
           actionLabel="Back to dashboard"
           onAction={() => router.push('/dashboard')}

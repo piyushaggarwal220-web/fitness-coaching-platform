@@ -110,10 +110,10 @@ export function PlanCountdownCard({
     return (
       <Card variant="glass" style={{ marginBottom: spacing[4] }}>
         <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
-          Assigning your coach
+          Setting up Smart Coach
         </p>
         <p style={{ margin: '8px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-          You&apos;ll see your coach&apos;s name here shortly. Plan delivery starts after onboarding.
+          Smart Coach is almost ready. Plan delivery starts after onboarding.
         </p>
       </Card>
     )
@@ -164,7 +164,7 @@ export function PlanCountdownCard({
       }} />
       <CoachAssignedHeader coachName={displayCoach} />
       <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
-        {displayCoach} is preparing your personalized diet and workout plan.
+        Smart Coach is building your personalized diet and workout plan.
       </p>
       <p style={{ margin: '14px 0 4px', fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>
         Estimated delivery
@@ -221,7 +221,7 @@ function CoachAssignedHeader({
         <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
           {coachName}
         </p>
-        <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textMuted }}>Your coach</p>
+        <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textMuted }}>Smart Coach</p>
       </div>
     </div>
   )

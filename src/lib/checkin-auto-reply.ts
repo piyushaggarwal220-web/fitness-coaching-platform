@@ -68,7 +68,7 @@ async function resolveReply(
       return {
         feedback:
           message ||
-          'Thanks for checking in. Your coach is reviewing your plan update and will send it when ready.',
+          'Thanks for checking in. Your updated plan will appear in My Plan as soon as it’s ready.',
         publishedPlanId: null,
       }
     }

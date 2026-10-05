@@ -306,7 +306,7 @@ export async function getOrCreateTodayTracker(
   const force = options?.force === true
   const plan = await getActivePlan(supabase, clientId)
   if (!plan) {
-    return { day: null, error: 'No active plan. Your coach will deliver your plan soon.' }
+    return { day: null, error: 'No active plan yet. Smart Coach will deliver it automatically soon.' }
   }
   if (!profile.checkin_schedule_started_at) {
     return { day: null, error: 'Your coaching schedule will begin when your first plan is delivered.' }

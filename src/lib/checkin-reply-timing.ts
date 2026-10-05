@@ -54,19 +54,19 @@ export function getCheckinReplyTiming(
 
 /** Client-facing expectation after submitting a check-in. */
 export function getClientCheckinReplyExpectationCopy(): string {
-  return `Your coach typically replies in ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hours.`
+  return `Smart Coach typically replies in ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hours.`
 }
 
 /** Short status label for dashboard / schedule rows. */
 export function getAwaitingReviewClientCopy(timing: CheckinReplyTiming | null): string {
   if (!timing) return getClientCheckinReplyExpectationCopy()
   if (!timing.canSend) {
-    return `Coach is reviewing — usually ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hours`
+    return `Smart Coach is preparing your reply — usually ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hours`
   }
   if (timing.overdueUsualWindow) {
-    return 'Coach reply coming soon'
+    return 'Reply coming soon'
   }
-  return `Coach typically replies within ${CHECKIN_REPLY_USUAL_MAX_HOURS} hours`
+  return `Smart Coach typically replies within ${CHECKIN_REPLY_USUAL_MAX_HOURS} hours`
 }
 
 function formatRemainingDuration(ms: number): string {
