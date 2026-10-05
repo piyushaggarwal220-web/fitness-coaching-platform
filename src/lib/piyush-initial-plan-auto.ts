@@ -17,11 +17,112 @@ import {
 } from '@/lib/initial-plan-generation'
 import { latestCoachingPurchase, latestDigitalPurchase } from '@/lib/payments/digital-purchase'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
+import { fallbackPublishCoachNotes } from '@/lib/plan-metadata'
+import { activatePlan, syncPlanDeliveredFlag } from '@/lib/plans'
 import { clientHasDeliveredPlanStrict } from '@/lib/plans-delivery-guard'
 import { deliverPiyushInitialPlan } from '@/lib/piyush-initial-plan-delivery'
 import type { OnboardingProfile } from '@/types/database'
 
 export { deliverPiyushInitialPlan } from '@/lib/piyush-initial-plan-delivery'
+
+/** Internal coach-review notes that must never ship to the client as-is. */
+function looksLikeInternalReviewNotes(notes: string | null | undefined): boolean {
+  const text = (notes ?? '').trim()
+  if (!text) return false
+  return (
+    /review carefully before delivering/i.test(text) ||
+    /client requested edits \(locked in\)/i.test(text)
+  )
+}
+
+/**
+ * Clients can end up with delivered_at set but no active plan (and plan_delivered=false).
+ * Cron used to skip them as "already delivered" forever — repair by reactivating the latest.
+ */
+async function repairOrphanDeliveredPlan(
+  admin: SupabaseClient,
+  input: { clientId: string; coachId: string; name: string }
+): Promise<PiyushInitialPlanResult | null> {
+  const { data: activeRow } = await admin
+    .from('plans')
+    .select('id')
+    .eq('client_id', input.clientId)
+    .eq('active', true)
+    .limit(1)
+    .maybeSingle()
+
+  if (activeRow?.id) {
+    await syncPlanDeliveredFlag(admin, input.clientId)
+    return {
+      clientId: input.clientId,
+      name: input.name,
+      status: 'skipped',
+      detail: 'delivered plan exists',
+      planId: activeRow.id,
+    }
+  }
+
+  const { data: latest, error } = await admin
+    .from('plans')
+    .select('id, title, coach_notes, phase, coach_id')
+    .eq('client_id', input.clientId)
+    .not('delivered_at', 'is', null)
+    .order('delivered_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    return {
+      clientId: input.clientId,
+      name: input.name,
+      status: 'failed',
+      detail: `orphan repair lookup failed: ${error.message}`,
+    }
+  }
+  if (!latest?.id) return null
+
+  if (looksLikeInternalReviewNotes(latest.coach_notes)) {
+    const { error: notesError } = await admin
+      .from('plans')
+      .update({
+        coach_notes: fallbackPublishCoachNotes(latest),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', latest.id)
+    if (notesError) {
+      return {
+        clientId: input.clientId,
+        name: input.name,
+        status: 'failed',
+        detail: `orphan repair notes failed: ${notesError.message}`,
+        planId: latest.id,
+      }
+    }
+  }
+
+  const activated = await activatePlan(
+    admin,
+    { id: latest.id, client_id: input.clientId, coach_id: input.coachId },
+    { skipReplyWait: true }
+  )
+  if (activated.error) {
+    return {
+      clientId: input.clientId,
+      name: input.name,
+      status: 'failed',
+      detail: `orphan repair activate failed: ${activated.error}`,
+      planId: latest.id,
+    }
+  }
+
+  return {
+    clientId: input.clientId,
+    name: input.name,
+    status: 'sent',
+    detail: 'repaired orphan delivered plan (reactivated)',
+    planId: latest.id,
+  }
+}
 
 export type PiyushInitialPlanResult = {
   clientId: string
@@ -161,6 +262,12 @@ export async function runPiyushInitialPlanForClient(
     }
   }
   if (deliveredGuard.delivered) {
+    const repaired = await repairOrphanDeliveredPlan(admin, {
+      clientId,
+      coachId: coachId!,
+      name,
+    })
+    if (repaired) return repaired
     return { clientId, name, status: 'skipped', detail: 'delivered plan exists' }
   }
 
@@ -404,30 +511,41 @@ export async function listPiyushPendingInitialPlanClients(
   limit = 20
 ): Promise<OnboardingProfile[]> {
   const coachIds = [PIYUSH_COACH_ID, RAKSHIT_COACH_ID]
-  // Over-fetch so we can filter Instant-only + already-delivered clients before applying limit.
-  const fetchLimit = Math.max(limit * 5, 50)
+  // Over-fetch so we can filter Instant-only / expired / orphans before applying limit.
+  const fetchLimit = Math.max(limit * 8, 80)
   const { data, error } = await admin
     .from('profiles')
     .select('*')
     .in('coach_id', coachIds)
     .eq('onboarding_complete', true)
     .eq('plan_delivered', false)
+    .eq('payment_confirmed', true)
     .order('created_at', { ascending: true })
     .limit(fetchLimit)
 
   if (error || !data?.length) return []
 
-  const clientIds = data.map((row) => row.id)
-  const { data: deliveredPlans, error: deliveredError } = await admin
-    .from('plans')
-    .select('client_id')
-    .in('client_id', clientIds)
-    .not('delivered_at', 'is', null)
+  const entitled = (data as OnboardingProfile[]).filter((row) => hasClientEntitlement(row))
+  if (!entitled.length) return []
+
+  const clientIds = entitled.map((row) => row.id)
+  const [{ data: deliveredPlans, error: deliveredError }, { data: activePlans }, { data: readyJobs }] =
+    await Promise.all([
+      admin.from('plans').select('client_id').in('client_id', clientIds).not('delivered_at', 'is', null),
+      admin.from('plans').select('client_id').in('client_id', clientIds).eq('active', true),
+      admin
+        .from('initial_plan_generation_jobs')
+        .select('client_id, status')
+        .in('client_id', clientIds)
+        .eq('status', 'ready'),
+    ])
 
   // Fail closed: if we cannot verify delivery history, return empty rather than over-queue.
   if (deliveredError) return []
 
   const hasDelivered = new Set((deliveredPlans ?? []).map((p) => p.client_id))
+  const hasActive = new Set((activePlans ?? []).map((p) => p.client_id))
+  const hasReadyJob = new Set((readyJobs ?? []).map((p) => p.client_id))
 
   const { data: purchaseRows } = await admin
     .from('purchases')
@@ -444,15 +562,29 @@ export async function listPiyushPendingInitialPlanClients(
     else hasCoaching.add(row.user_id)
   }
 
-  return (data as OnboardingProfile[])
-    .filter(
-      (row) =>
-        !hasDelivered.has(row.id) &&
-        shouldAutoJourneyAndDeliverInitialPlan(row.coach_id, row.created_at) &&
-        // Instant-only buyers belong on digital fulfillment, not coaching auto-deliver.
-        !(hasDigital.has(row.id) && !hasCoaching.has(row.id))
-    )
-    .slice(0, limit)
+  // Entitled + auto-delivery only. Orphans (delivered_at but inactive) stay in this list
+  // because plan_delivered is false — repair path reactivates them instead of skipping forever.
+  const candidates = entitled.filter((row) => {
+    if (!shouldAutoJourneyAndDeliverInitialPlan(row.coach_id, row.created_at)) return false
+    // Instant-only buyers belong on digital fulfillment, not coaching auto-deliver.
+    if (hasDigital.has(row.id) && !hasCoaching.has(row.id)) return false
+    return true
+  })
+
+  // Prefer orphans / ready drafts (seconds) over brand-new generates (minutes).
+  candidates.sort((a, b) => {
+    const score = (row: OnboardingProfile) => {
+      const orphan = hasDelivered.has(row.id) && !hasActive.has(row.id) ? 0 : 1
+      const ready = hasReadyJob.has(row.id) ? 0 : 1
+      const flagSync = hasActive.has(row.id) ? 0 : 2
+      return orphan * 10 + ready + flagSync
+    }
+    const diff = score(a) - score(b)
+    if (diff !== 0) return diff
+    return String(a.created_at ?? '').localeCompare(String(b.created_at ?? ''))
+  })
+
+  return candidates.slice(0, limit)
 }
 
 /**
