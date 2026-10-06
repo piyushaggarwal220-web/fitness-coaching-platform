@@ -662,6 +662,80 @@ export function stabilizeDietCaloriesAfterEdit(
 }
 
 /** Clamp generated JSON macros when safety retry is exhausted. */
+
+/**
+ * Proportionally scale meal / daily-total macro lines so food math lands on targetKcal.
+ * Used to repair overfed delivered diets without an AI remake. Header + narrative claims
+ * are rewritten to match the scaled food math.
+ */
+export function scaleDietTextToCalorieTarget(
+  text: string,
+  targetKcal: number
+): string {
+  const trimmed = text.trim()
+  if (!trimmed) return trimmed
+  if (!Number.isFinite(targetKcal) || targetKcal <= 0) return trimmed
+
+  const current = getAuthoritativeNutritionCalories({
+    calories: parseHeaderCalories(trimmed) ?? 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    meals: [{ example: trimmed }],
+  })
+  if (!Number.isFinite(current) || current <= 0) return trimmed
+  if (Math.abs(current - targetKcal) <= KCAL_MISMATCH_TOLERANCE) {
+    return stabilizeDietCaloriesAfterEdit(trimmed, {
+      previousCalories: current,
+      floorKcal: Math.min(DIET_FLOOR_TARGET_KCAL, targetKcal),
+      preserveCalories: false,
+    })
+  }
+
+  const factor = targetKcal / current
+  const scale = (n: number) => Math.max(0, Math.round(n * factor))
+
+  // P/C/F/~kcal blocks in any order of wrappers (meal lines, Daily Total for Day N, etc.)
+  const pcfKcal =
+    /P:\s*(\d+)\s*g\s*\|\s*C:\s*(\d+)\s*g\s*\|\s*F:\s*(\d+)\s*g\s*\|\s*~?\s*(\d{3,4})\s*kcal/gi
+  // ~kcal | P: … blocks (daily averages / weekly averages)
+  const kcalThenP =
+    /(?:about\s+)?~?\s*(\d{3,4})\s*kcal\s*\|\s*P:\s*(\d+)\s*g\s*\|\s*C:\s*(\d+)\s*g\s*\|\s*F:\s*(\d+)\s*g/gi
+  // ~kcal | Ng protein | … word form
+  const kcalWord =
+    /~?\s*(\d{3,4})\s*kcal\s*\|\s*(\d+)\s*g\s*protein\s*\|\s*(\d+)\s*g\s*carbs\s*\|\s*(\d+)\s*g\s*fat/gi
+
+  let out = trimmed
+    .split('\n')
+    .map((line) => {
+      let next = line.replace(pcfKcal, (_m, p, c, f, k) => {
+        return `P: ${scale(parseInt(p, 10))}g | C: ${scale(parseInt(c, 10))}g | F: ${scale(parseInt(f, 10))}g | ~${scale(parseInt(k, 10))} kcal`
+      })
+      next = next.replace(kcalThenP, (_m, k, p, c, f) => {
+        const about = /about\s+~?\s*\d{3,4}\s*kcal/i.test(_m) ? 'about ' : ''
+        return `${about}~${scale(parseInt(k, 10))} kcal | P: ${scale(parseInt(p, 10))}g | C: ${scale(parseInt(c, 10))}g | F: ${scale(parseInt(f, 10))}g`
+      })
+      if (isDailyTotalOrAverageLine(next) || /daily\s+averages?/i.test(next)) {
+        next = next.replace(kcalWord, (_m, k, p, c, f) => {
+          return `~${scale(parseInt(k, 10))} kcal | ${scale(parseInt(p, 10))}g protein | ${scale(parseInt(c, 10))}g carbs | ${scale(parseInt(f, 10))}g fat`
+        })
+      }
+      return next
+    })
+    .join('\n')
+
+  const inferred = inferMacrosFromDietText(out)
+  const macros: MacroTotals = {
+    calories: targetKcal,
+    protein: inferred?.protein ?? 0,
+    carbs: inferred?.carbs ?? 0,
+    fat: inferred?.fat ?? 0,
+  }
+  out = rewriteNutritionHeader(out, macros)
+  out = reconcileDietProseCalories(out, targetKcal)
+  return out
+}
+
 export function clampGeneratedNutritionCalories(
   plan: GeneratedNutritionPlan,
   opts: {

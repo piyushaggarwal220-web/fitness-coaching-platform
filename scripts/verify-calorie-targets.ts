@@ -20,6 +20,7 @@ import {
   stripLeadingDietMacroHeader,
   isDietOverPreferredTarget,
   PREFERRED_MAX_SLACK_KCAL,
+  scaleDietTextToCalorieTarget,
 } from '../src/lib/ai/nutrition-macro-sync'
 import { planRequiresCoachReviewBeforeAutoDeliver } from '../src/lib/coach-delivery-policy'
 import fs from 'node:fs'
@@ -419,6 +420,119 @@ assert(
     /Diet revision overfed Mifflin target/.test(editPlanSrc) &&
       /food-swap \/ preserveCalories edits can still pad calories/.test(editPlanSrc)
   )
+}
+
+
+{
+  const overfedDiet = `Calories: 3200
+Protein: 160g
+Carbs: 350g
+Fat: 90g
+
+Day 1 (Monday)
+Breakfast: oats
+(P: 30g | C: 70g | F: 18g | ~560 kcal)
+Lunch: rice bowl
+(P: 40g | C: 90g | F: 22g | ~720 kcal)
+Dinner: paneer
+(P: 45g | C: 80g | F: 28g | ~760 kcal)
+Daily Total: P: 160g | C: 350g | F: 90g | ~3200 kcal
+
+Day 2 (Tuesday)
+Breakfast: oats
+(P: 30g | C: 70g | F: 18g | ~560 kcal)
+Lunch: rice bowl
+(P: 40g | C: 90g | F: 22g | ~720 kcal)
+Dinner: paneer
+(P: 45g | C: 80g | F: 28g | ~760 kcal)
+Snack: yogurt
+(P: 20g | C: 40g | F: 10g | ~330 kcal)
+Daily Total: P: 135g | C: 280g | F: 78g | ~2370 kcal`
+  // Force a clearer single-day average case
+  const single = `Calories: 3100
+Protein: 150g
+Carbs: 340g
+Fat: 90g
+
+Day 1 (Monday)
+Breakfast: oats
+(P: 40g | C: 90g | F: 20g | ~700 kcal)
+Lunch: rice
+(P: 50g | C: 120g | F: 30g | ~950 kcal)
+Dinner: chicken
+(P: 60g | C: 130g | F: 40g | ~1100 kcal)
+Daily Total: P: 150g | C: 340g | F: 90g | ~3100 kcal
+
+Day 2 (Tuesday)
+Breakfast: oats
+(P: 40g | C: 90g | F: 20g | ~700 kcal)
+Lunch: rice
+(P: 50g | C: 120g | F: 30g | ~950 kcal)
+Dinner: chicken
+(P: 60g | C: 130g | F: 40g | ~1100 kcal)
+Daily Total: P: 150g | C: 340g | F: 90g | ~3100 kcal
+
+Day 3 (Wednesday)
+Breakfast: oats
+(P: 40g | C: 90g | F: 20g | ~700 kcal)
+Lunch: rice
+(P: 50g | C: 120g | F: 30g | ~950 kcal)
+Dinner: chicken
+(P: 60g | C: 130g | F: 40g | ~1100 kcal)
+Daily Total: P: 150g | C: 340g | F: 90g | ~3100 kcal
+
+Day 4 (Thursday)
+Breakfast: oats
+(P: 40g | C: 90g | F: 20g | ~700 kcal)
+Lunch: rice
+(P: 50g | C: 120g | F: 30g | ~950 kcal)
+Dinner: chicken
+(P: 60g | C: 130g | F: 40g | ~1100 kcal)
+Daily Total: P: 150g | C: 340g | F: 90g | ~3100 kcal
+
+Day 5 (Friday)
+Breakfast: oats
+(P: 40g | C: 90g | F: 20g | ~700 kcal)
+Lunch: rice
+(P: 50g | C: 120g | F: 30g | ~950 kcal)
+Dinner: chicken
+(P: 60g | C: 130g | F: 40g | ~1100 kcal)
+Daily Total: P: 150g | C: 340g | F: 90g | ~3100 kcal
+
+Day 6 (Saturday)
+Breakfast: oats
+(P: 40g | C: 90g | F: 20g | ~700 kcal)
+Lunch: rice
+(P: 50g | C: 120g | F: 30g | ~950 kcal)
+Dinner: chicken
+(P: 60g | C: 130g | F: 40g | ~1100 kcal)
+Daily Total: P: 150g | C: 340g | F: 90g | ~3100 kcal
+
+Day 7 (Sunday)
+Breakfast: oats
+(P: 40g | C: 90g | F: 20g | ~700 kcal)
+Lunch: rice
+(P: 50g | C: 120g | F: 30g | ~950 kcal)
+Dinner: chicken
+(P: 60g | C: 130g | F: 40g | ~1100 kcal)
+Daily Total: P: 150g | C: 340g | F: 90g | ~3100 kcal`
+  const scaled = scaleDietTextToCalorieTarget(single, 2200)
+  const after = getAuthoritativeNutritionCalories({
+    calories: parseHeaderCalories(scaled) ?? 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    meals: [{ example: scaled }],
+  })
+  assert(
+    'scaleDietTextToCalorieTarget pulls 3100 diet down near 2200',
+    after >= 2100 && after <= 2300 && !isDietOverPreferredTarget(after, 2200)
+  )
+  assert(
+    'scaleDietTextToCalorieTarget rewrites Calories header',
+    /Calories:\s*2200/i.test(scaled)
+  )
+  void overfedDiet
 }
 
 assert(
