@@ -71,7 +71,7 @@ export function PlanCountdownCard({
         )}
         <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
           {isDigital
-            ? `Complete onboarding so we can build your AI customised plan. Delivery is within ${deliveryHours} hours after you submit — by email and in the app.`
+            ? `Complete onboarding so we can build your customised plan. Delivery is within ${deliveryHours} hours after you submit — by email and in the app.`
             : `Complete onboarding so Smart Coach can build your personal diet and workout. Your plan is delivered within ${deliveryHours} hours after onboarding.`}
         </p>
         <Button fullWidth style={{ marginTop: 16 }} onClick={() => router.push('/onboarding')}>
@@ -94,7 +94,7 @@ export function PlanCountdownCard({
             </p>
             <p style={{ margin: '6px 0 4px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
               {isDigital
-                ? 'Your AI customised plan is ready. Open it in the app — we also emailed you a link.'
+                ? 'Your customised plan is ready. Open it in the app — we also emailed you a link.'
                 : `${displayCoach} sent your diet and workout. Open both sections to unlock your daily tracker focus.`}
             </p>
             <Button fullWidth style={{ marginTop: 12 }} onClick={() => router.push('/plan')}>
@@ -128,7 +128,7 @@ export function PlanCountdownCard({
           Building your customised plan
         </p>
         <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
-          Your AI personalized plan is being prepared. You&apos;ll get an email when it&apos;s ready,
+          Your personalized plan is being prepared. You&apos;ll get an email when it&apos;s ready,
           and it will also appear in My Plan.
         </p>
         <p style={{ margin: '14px 0 4px', fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>

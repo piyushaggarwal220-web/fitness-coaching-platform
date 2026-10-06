@@ -49,7 +49,7 @@ function InstagramMark() {
 
 
 const FAIL_POINTS = [
-  'Generic AI plans copy the same template for everyone',
+  'Generic one-size-fits-all plans copy the same template for everyone',
   'Old beliefs like “more sweat means more fat loss”',
   'Random YouTube workouts with no weekly structure',
   'Crash diets that crash your energy and adherence',

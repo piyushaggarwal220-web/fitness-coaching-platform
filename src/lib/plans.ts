@@ -173,7 +173,7 @@ export async function activatePlan(
       isAiDraftTitle(fullPlan.title) ||
       isUnfinishedCoachReviewDraftTitle(fullPlan.title)
         ? options?.digitalAutoPublish
-          ? 'Your customised plan is ready. Open it in the app anytime — this is an AI-built plan, not live coaching.'
+          ? 'Your customised plan is ready. Open it in the app anytime — follow My Plan for your diet and workout.'
           : fallbackPublishCoachNotes(fullPlan)
         : null,
   })

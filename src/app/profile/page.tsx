@@ -301,7 +301,7 @@ export default function Profile() {
           <h2 className={styles.sectionTitle}>Your goals in detail</h2>
           <p className={styles.sectionHint}>
             Tell us what you want in your own words — timeline, events, fat loss then reverse, muscle gain, etc.
-            AI uses this to shape your journey plan. Update anytime (not subject to the weekly profile lock).
+            Your coach uses this to shape your journey plan. Update anytime (not subject to the weekly profile lock).
           </p>
           <textarea
             className={styles.goalArea}
