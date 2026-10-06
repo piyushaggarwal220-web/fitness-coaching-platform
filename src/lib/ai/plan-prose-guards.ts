@@ -16,9 +16,10 @@ export const COACH_INSTRUCTION_SUPREMACY_RULES = [
 
 /** Hard rules appended when revising from a client plan-change request. */
 export const CLIENT_PLAN_EDIT_WEEK_RULES = [
-  'FRAMING: Rewrite the client\'s CURRENT plan applying their request — not a new coaching week.',
+  'FRAMING: This is an in-place CLIENT EDIT. Rewrite the client\'s CURRENT plan applying their request — not a new coaching week.',
   'It is NOT a weekly check-in update, NOT a new coaching week, and NOT a "next week" program redesign.',
-  'Keep the same overall plan phase unless the request requires otherwise.',
+  'Keep the same overall plan phase unless the request requires otherwise. Apply ONLY the requested changes (foods, portions, exercises, volume, schedule).',
+  'Preserve days, structure, and everything the client did not ask to change.',
   'NEVER write week-handoff or next-week language: "Welcome to week 2", "Week 2 update", "for next week", "this coming week we will", "now that week 1 is done", "moving into week 2", etc.',
   'NEVER invent a progressive weekly arc ("this week we focus on X, next we will…") unless the client explicitly asked for that.',
 ].join(' ')
