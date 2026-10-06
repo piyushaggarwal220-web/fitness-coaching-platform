@@ -473,11 +473,11 @@ export async function POST(request: Request) {
         .join('\n'),
       model: MODELS.GPT_LUNA,
       maxTokens: replyRequest.maxTokens,
-      temperature: 0.8,
+      temperature: 0.55,
     })
     const raw = result.text.replace(/[\u2010-\u2015\u2212-]/g, ' ')
     const stripped = stripPlanChangeTrailer(raw)
-    replyText = guardAssistantCoachReply(stripped.visible) || replyText
+    replyText = guardAssistantCoachReply(stripped.visible, { clientText: latestClientText }) || replyText
     if (stripped.propose && !dated) {
       await savePendingPlanChange(admin, auth.user.id, stripped.propose)
       replyText = withConfirmCue(replyText, quota.remainingToday)

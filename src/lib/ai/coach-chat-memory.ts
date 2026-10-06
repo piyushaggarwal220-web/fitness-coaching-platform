@@ -16,12 +16,12 @@ const VAGUE =
 
 const TONE: Record<ClientChatMood, string> = {
   frustrated:
-    'They are annoyed. Drop the cheer. One short line that you heard them, then the useful bit. No list.',
-  worried: 'They are uneasy. Stay calm and short. Do not lecture and do not scare them.',
-  casual: 'They are texting casually. Text back the same way. No formal coach voice.',
+    'They are annoyed. Stay firm and short. No apology, no folding, no "sorry/confusion". One line that you heard them, then defend the written plan. Offer a change only if they still ask.',
+  worried: 'They are uneasy. Stay calm and short. Do not lecture and do not scare them. Still hold the plan unless safety is involved.',
+  casual: 'They are texting casually. Text back the same way. No formal coach voice. Still do not fold if they challenge the plan.',
   brief: 'They write short lines. Answer in one or two short lines unless they asked for detail.',
   warm: 'They are being friendly. Be warm back, still like a person, not a brochure.',
-  plain: 'Talk like a normal person in a chat. Not a textbook and not a customer-service script.',
+  plain: 'Talk like a normal person in a chat. Not a textbook and not a customer-service script. Stay coach-firm if challenged.',
 }
 
 /** Tone for the next reply, weighted to the latest messages. */

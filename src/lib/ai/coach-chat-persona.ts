@@ -11,8 +11,19 @@ const CALL_COMMITMENT =
 
 const CLOCK_TIME = /\b\d{1,2}(:\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)\b/i
 
+/** Client is challenging the plan / coach call — stay firm. */
+const CLIENT_CHALLENGE =
+  /\b(wrong|galat|kyun|kyuun|why\b|kya hisab|too (?:high|low|much|many)|ulta|ul[t]?a|weight\s*(?:badh|gain|badha)|not\s+losing|apne\s+hi|you\s+(?:gave|said|put)|bakwas|bekar|faltu|useless|waste|yeh\s+\d+k|3k|calories?\s+ka)\b/i
+
+/** Soft / folding coach replies that must not ship under challenge. */
+const COACH_FOLD =
+  /\b(sorry|soorry|maaf|my\s+bad|meri\s+galti|i\s+was\s+wrong|i\s+am\s+wrong|i'?m\s+wrong|you(?:'re|\s+are)\s+right|bilkul\s+sahi|confusion|confusing|confused\s+ho\s+gaya|as\s+you\s+say|whatever\s+you\s+want|i(?:'| wi)?ll\s+do\s+as\s+you|follow\s+mat\s+karo|published\s+nahi|not\s+published|woh\s+follow\s+mat|scene\s+nahi\s+hai)\b/i
+
 export const ASSISTANT_CALL_REFUSAL =
   'I can’t take a call. Write what you need here and I’ll handle it in this chat.'
+
+export const ASSISTANT_FIRM_PUSHBACK =
+  'Main is call pe galat nahi hoon. My Plan me jo likha hai wahi follow karo — yeh tumhare goal aur schedule ke hisaab se set hai. Agar phir bhi change chahiye, exact batao kya badalna hai; main option dunga, tum YES bolna.'
 
 /** True when a reply books, confirms, or times a call as if the sender were the coach. */
 export function containsCoachCallCommitment(text: string): boolean {
@@ -20,13 +31,27 @@ export function containsCoachCallCommitment(text: string): boolean {
   return /\b(call|callback|call back)\b/i.test(text) && CLOCK_TIME.test(text)
 }
 
+export function clientIsChallengingCoach(text: string | null | undefined): boolean {
+  return Boolean(text?.trim() && CLIENT_CHALLENGE.test(text))
+}
+
+export function replyFoldsUnderPressure(text: string | null | undefined): boolean {
+  return Boolean(text?.trim() && COACH_FOLD.test(text))
+}
+
 /** Replace any reply that commits to a call. Keep line breaks so a multi-point answer stays readable. */
-export function guardAssistantCoachReply(text: string): string {
+export function guardAssistantCoachReply(
+  text: string,
+  options?: { clientText?: string | null }
+): string {
   const cleaned = text
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
   if (!cleaned || containsCoachCallCommitment(cleaned)) return ASSISTANT_CALL_REFUSAL
+  if (clientIsChallengingCoach(options?.clientText) && replyFoldsUnderPressure(cleaned)) {
+    return ASSISTANT_FIRM_PUSHBACK
+  }
   return cleaned
 }
 
@@ -107,7 +132,7 @@ export function coachReplyRequest(input: {
         'Use easy, modern words. Follow the language setting. English letters only, unless that setting says Hindi letters.',
         'A sentence or two is enough unless they asked for steps.',
         'Use today\'s written plan when the question is about food or training.',
-        'If they push back on your call, do not apologize or agree you were wrong. Defend the plan briefly, then offer an optional change only if they still want it.',
+        'If they push back on calories, macros, volume, or results: do not apologize, do not say confusion, and do not pretend My Plan is blank. Hold the call in 1–2 lines, then offer an optional change only if they still want it.',
         'Same-day swaps stay in chat. For a written diet or workout rewrite, summarise it and ask them to reply YES so you can lock it into My Plan from this chat.',
         'Do not recap the memory. Do not open with your name.',
         'No quotes. Do not book a call. End on a finished sentence.',
@@ -210,9 +235,11 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
     'If they ask for a call, ask them to write the issue in this chat and handle it here.',
     'You help with their customised diet/workout plan, adherence, and motivation.',
     'No medical diagnoses. No invented prices, refunds, discounts, or plan extensions.',
-    'CONFRONTATION / PUSHBACK: you are the coach. Do not fold. Never say you were wrong, you are sorry for the plan, sure whatever you want, or I will do as you say — unless there is a clear factual error (wrong diet preference, allergy, injury ignore, or a number that contradicts the written plan).',
-    'If they challenge calories, macros, exercise choice, or volume: hold the recommendation, explain why it fits their goal in 1–3 short lines, then offer an optional change only if they still want it. Pattern: "I am not wrong on this — here is why. If you still want a change, I can do X. Have a look and say YES if you want it locked."',
-    'Do not agree just to be agreeable. If they ask for a crash diet, a calorie number below the written plan, a forbidden food, skipping the plan, or starting a future change today, say no, explain why, and keep the current plan.',
+    'CONFRONTATION / PUSHBACK: you are the coach. Do not fold when someone challenges you.',
+    'Forbidden under pushback: sorry, my bad, meri galti, confusion/confusing, I was wrong, you are right, follow mat karo, that number is not published, as you say, whatever you want.',
+    'If they attack calories or the plan: own what is in My Plan. Do not gaslight. Pattern: "Main is call pe galat nahi hoon — yeh target isliye hai. My Plan follow karo. Agar change chahiye to exact bolo, main option dunga, tum YES."',
+    'Only admit a clear factual error (allergy ignored, wrong diet preference, injury ignored, or a number that truly contradicts the written plan). Even then: correct firmly in one line, no groveling, no repeated sorry.',
+    'Do not agree just to be agreeable. Crash diets, skipping the plan, forbidden foods, or starting a future change today: say no, explain why, keep the current plan.',
     'Never say sure, absolutely, you are right, my bad, or I was wrong when the request fights the written plan, the calorie target, or a future date.',
     'DATE WINDOW: a day and month, or a range such as 11 to 28 Oct, is when the change starts. If that date is after today, do not give the new diet or workout for today and do not ask them to lock a plan edit yet. Say the current plan stays until that date.',
     input.mode === 'ai_thread'

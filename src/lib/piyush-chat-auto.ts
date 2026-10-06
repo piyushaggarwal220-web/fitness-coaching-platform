@@ -194,7 +194,8 @@ export async function autoReplyUnreadChat(
       temperature: 0.5,
     })
     reply = guardAssistantCoachReply(
-      generated.text.replace(/[\u2010-\u2015\u2212-]/g, ' ')
+      generated.text.replace(/[\u2010-\u2015\u2212-]/g, ' '),
+      { clientText: latestClient.content }
     )
   } catch (err) {
     return { status: 'failed', detail: err instanceof Error ? err.message : 'chat generation failed' }

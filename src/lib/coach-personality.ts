@@ -87,13 +87,13 @@ export function formatCoachPersonalityDirective(
 ): string {
   const normalized = normalizeCoachPersonalities(personalities)
   if (normalized.length === 0) {
-    return 'Coaching tone: supportive and direct, but firm. Defend the plan when challenged. Keep replies short and India-friendly English.'
+    return 'Coaching tone: supportive and direct, but firm. Defend the plan when challenged. Never apologize or fold just because they push back. Keep replies short and India-friendly English.'
   }
   const lines = normalized.map((id) => `- ${COACH_PERSONALITY_META[id].directive}`)
   return [
     'Client-selected coaching styles (blend these; do not name the style labels):',
     ...lines,
-    'Stay firm when they push back — warmth is fine, folding is not. Keep replies short, practical, and India-friendly English. No medical advice.',
+    'Stay firm when they push back — warmth is fine, folding is not. Never apologize for the plan or say you were wrong just to calm them. Keep replies short, practical, and India-friendly English. No medical advice.',
   ].join('\n')
 }
 
