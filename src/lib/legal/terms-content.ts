@@ -14,7 +14,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
   {
     title: '1. We can do basically anything',
     paragraphs: [
-      'To the maximum extent permitted by applicable law, LURVOX may, at any time, with or without notice, for any reason or no reason: change prices; change plan names, durations, inclusions, goals, or benefits; remove features; add features; pause coaching; reassign coaches; change coaches; change AI tools; change check-in cadence; change delivery timelines; change upgrade fees; change refund criteria; refuse service; refuse a refund; reverse a prior courtesy; suspend accounts; delete content; throttle access; require extra verification; require extra payments; require add-on purchases; end promotions; end “guarantees”; rewrite these Terms; and interpret these Terms in whatever way we reasonably believe protects the Company.',
+      'To the maximum extent permitted by applicable law, LURVOX may, at any time, with or without notice, for any reason or no reason: change prices; change plan names, durations, inclusions, goals, or benefits; remove features; add features; pause coaching; reassign coaches; change coaches; change coaching tools; change check-in cadence; change delivery timelines; change upgrade fees; change refund criteria; refuse service; refuse a refund; reverse a prior courtesy; suspend accounts; delete content; throttle access; require extra verification; require extra payments; require add-on purchases; end promotions; end “guarantees”; rewrite these Terms; and interpret these Terms in whatever way we reasonably believe protects the Company.',
       'Any “promise”, “guarantee”, “risk reversal”, “money back”, “delivery within X hours”, “results”, or similar language is discretionary goodwill only unless and until an authorized administrator issues a written approval that expressly creates a binding obligation under these Terms. Silence is not approval. A coach chat is not approval. An ad is not approval.',
       'You acknowledge that LURVOX is a private coaching business, not a public utility, not a hospital, not an insurer, and not a consumer bank. Access is a privilege we can condition, limit, or withdraw.',
     ],
@@ -66,7 +66,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
   {
     title: '6. Coaching operations we control completely',
     paragraphs: [
-      'We assign coaches as we wish. We may use human coaches, AI drafting tools, templates, and hybrid workflows. You are not entitled to a specific named coach, response speed, or writing style. No purchase includes a coach phone call, a WhatsApp call, or any live call. That applies to every plan, including Athletic Body and purchases from before 21 September 2026. Coaching is in the app: workout, diet, chat, and check-ins. If you have an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram. Checkout, plan pages, and ads must not offer a call.',
+      'We assign coaches as we wish. We may use human coaches, software drafting tools, templates, and hybrid workflows. You are not entitled to a specific named coach, response speed, or writing style. No purchase includes a coach phone call, a WhatsApp call, or any live call. That applies to every plan, including Athletic Body and purchases from before 21 September 2026. Coaching is in the app: workout, diet, chat, and check-ins. If you have an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram. Checkout, plan pages, and ads must not offer a call.',
       'The first workout and diet are prepared from the onboarding answers you submit, including schedule, equipment, food budget, and injuries. Calories are calculated from your details. Disliking that first target, or asking for changes to movements that conflict with injuries you already reported, is handled by revising the plan. Revision is the remedy. It is not a refund.',
       'Chat timers, “working hours”, and SLA-like UI elements are operational targets, not warranties. Outside 9:00 AM–6:00 PM India time (or any hours we set later), responses may pause indefinitely.',
       'We may change diet protein targets, calories, exercise selection, and check-in rules based on our coaching philosophy, including lower protein intakes when we decide that is appropriate.',
@@ -98,7 +98,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
   {
     title: '10. Third parties',
     paragraphs: [
-      'Razorpay, WhatsApp, email providers, hosting, analytics, AI vendors, and app stores are third parties. Their outages or policies are not our breach. Your relationships with them are separate.',
+      'Razorpay, WhatsApp, email providers, hosting, analytics, software vendors, and app stores are third parties. Their outages or policies are not our breach. Your relationships with them are separate.',
     ],
   },
   {
@@ -195,7 +195,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
   {
     title: '22. Force majeure and staffing',
     paragraphs: [
-      'War, pandemic, outages, payment-processor downtime, AI-vendor downtime, coach illness, strikes, floods, or “we are short-staffed” events excuse delays. No refund arises automatically from delay during such periods.',
+      'War, pandemic, outages, payment-processor downtime, software-vendor downtime, coach illness, strikes, floods, or “we are short-staffed” events excuse delays. No refund arises automatically from delay during such periods.',
     ],
   },
   {
@@ -247,9 +247,9 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
     ],
   },
   {
-    title: '31. AI and automation disclosure',
+    title: '31. Automation disclosure',
     paragraphs: [
-      'Draft plans, draft messages, summaries, and recommendations may be prepared with AI assistance and then edited by humans or shipped with light review. You consent to that workflow. AI error is not automatic refund grounds.',
+      'Draft plans, draft messages, summaries, and recommendations may be prepared with automated software assistance and then edited by humans or shipped with light review. You consent to that workflow. Automation or drafting error is not automatic refund grounds.',
     ],
   },
   {
