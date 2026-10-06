@@ -30,12 +30,15 @@ import { enforceDietPreference, dietScanOptionsFromProfile } from '@/lib/ai/diet
 import { applyDietPlanRepair } from '@/lib/ai/diet-plan-repair'
 import { normalizeAiPlanProse } from '@/lib/ai/plan-format'
 import { applyParsedSectionsToFormData } from '@/lib/plan-section-parser'
-import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction, autoDietModifyInstruction } from '@/lib/ai/calorie-targets'
+import { formatCalorieGuidanceBlock, clientRequestNeedsExpenditureFocus, requestTouchesCalories, requestTargetsMaintenance, autoDietCoachInstruction, autoDietModifyInstruction, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
 import { shouldApplyHighFluxRules } from '@/lib/ai/metabolic-flux'
 import {
+  enforceDietSafety,
+  isDietOverPreferredTarget,
   parseHeaderCalories,
   syncStoredDietText,
+  getAuthoritativeNutritionCalories,
 } from '@/lib/ai/nutrition-macro-sync'
 import { REMAKE_PLAN_PREFIX } from '@/lib/coach/remake-plan'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
@@ -532,6 +535,49 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
             throw new ClaudeResponseError(
               `Diet revision failed preference safety: ${preferenceSafety.error}`
             )
+          }
+
+          // Client / auto diet edits: never accept a Mifflin overfeed (Sagar-class regression).
+          // Coach-directed free edits skip this block (source === 'coach' above).
+          if (!preserveCalories || requestTouchesCalories(instruction, input.coachNote)) {
+            const calorieTargets = resolveClientCalorieTargets(input.profile)
+            const floorKcal =
+              calorieTargets?.floorKcal ?? resolveDietFloorKcal(input.profile.weight)
+            const previousCalories =
+              input.previousCalories ?? parseHeaderCalories(currentText)
+            const safety = enforceDietSafety(
+              {
+                calories: parseHeaderCalories(revisedText) ?? 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+                meals: [{ example: revisedText }],
+              },
+              {
+                previousCalories,
+                floorKcal,
+                preferredMinKcal: calorieTargets?.preferred,
+                maintenanceKcal: calorieTargets?.maintenance,
+              }
+            )
+            if (!safety.ok) {
+              if (attempt < maxAttempts - 1) {
+                dietRetryHint = safety.hint
+                continue
+              }
+              const cals = getAuthoritativeNutritionCalories({
+                calories: parseHeaderCalories(revisedText) ?? 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+                meals: [{ example: revisedText }],
+              })
+              if (isDietOverPreferredTarget(cals, calorieTargets?.preferred)) {
+                throw new ClaudeResponseError(
+                  `Diet revision overfed Mifflin target: ${safety.error}`
+                )
+              }
+            }
           }
         }
       }

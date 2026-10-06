@@ -30,7 +30,14 @@ import {
   collectDietProse,
   dietFailsRequestedVariety,
 } from '@/lib/ai/diet-day-variety'
-import { enforceDietSafety, parseHeaderCalories, syncNutritionPlanMacros } from '@/lib/ai/nutrition-macro-sync'
+import {
+  clampGeneratedNutritionCalories,
+  enforceDietSafety,
+  getAuthoritativeNutritionCalories,
+  isDietOverPreferredTarget,
+  parseHeaderCalories,
+  syncNutritionPlanMacros,
+} from '@/lib/ai/nutrition-macro-sync'
 import { formatCalorieGuidanceBlock, resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import { SAFE_RATE_OF_CHANGE_RULE } from '@/lib/ai/safe-change-policy'
 import {
@@ -881,6 +888,25 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
         if (attempt < maxAttempts - 1) {
           completenessHint = safety.hint
           continue
+        }
+        const authoritative = getAuthoritativeNutritionCalories(plan.nutrition_plan, {
+          skipWeekdays,
+        })
+        const overfed = isDietOverPreferredTarget(authoritative, calorieTargets?.preferred)
+        if (overfed) {
+          // Never ship an overfed auto diet. Cap the JSON header and fail hard so
+          // weekly auto-publish cannot deliver a 3000+ plan from a ~2200 target.
+          plan = {
+            ...plan,
+            nutrition_plan: clampGeneratedNutritionCalories(plan.nutrition_plan, {
+              previousCalories,
+              floorKcal,
+              preferredMinKcal: calorieTargets?.preferred,
+            }),
+          }
+          throw new GeneratePlanError(
+            `Diet plan overfed after ${maxAttempts} attempts: ${safety.error}`
+          )
         }
         const note = `Calorie-safety warning kept for coach review: ${safety.error}`
         plan = {

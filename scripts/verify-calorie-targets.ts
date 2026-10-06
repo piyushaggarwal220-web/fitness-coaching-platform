@@ -18,6 +18,8 @@ import {
   getAuthoritativeNutritionCalories,
   clientFacingDietPlanText,
   stripLeadingDietMacroHeader,
+  isDietOverPreferredTarget,
+  PREFERRED_MAX_SLACK_KCAL,
 } from '../src/lib/ai/nutrition-macro-sync'
 
 let failed = 0
@@ -373,6 +375,45 @@ const guidance = formatCalorieGuidanceBlock({
 assert('guidance names the hard target', Boolean(guidance && /WRITE THIS NUMBER/i.test(guidance)))
 assert('guidance forbids padding above target', Boolean(guidance && /pad portions above the target/i.test(guidance)))
 assert('guidance includes a 4-digit kcal target', Boolean(guidance && /\b2\d{3} kcal/.test(guidance)))
+
+assert(
+  'Sagar-like preferred is a fat-loss cut (BMI ≥ 25 + ai_decide), not maintenance/surplus',
+  Boolean(
+    sagarLike &&
+      sagarLike.preferred <= sagarLike.maintenance - 200 &&
+      sagarLike.preferred >= 1900 &&
+      sagarLike.preferred <= 2600
+  )
+)
+
+assert(
+  'isDietOverPreferredTarget flags 3165 on ~2220 preferred',
+  isDietOverPreferredTarget(3165, 2220) === true
+)
+assert(
+  'isDietOverPreferredTarget allows preferred + slack',
+  isDietOverPreferredTarget(2220 + PREFERRED_MAX_SLACK_KCAL, 2220) === false
+)
+assert(
+  'isDietOverPreferredTarget rejects preferred + slack + 1',
+  isDietOverPreferredTarget(2220 + PREFERRED_MAX_SLACK_KCAL + 1, 2220) === true
+)
+
+const selfReportedVeryActive = resolveEffectiveActivityLevel({
+  activity_level: 'very_active',
+  onboarding_data: { training: { daysPerWeek: 7 } },
+})
+assert(
+  'self-reported very_active is kept (not invented from gym days alone)',
+  selfReportedVeryActive === 'very_active'
+)
+
+const sedentaryNoBump = resolveEffectiveActivityLevel({
+  activity_level: 'sedentary',
+  onboarding_data: { training: { daysPerWeek: 2 } },
+})
+assert('2 training days leaves sedentary alone', sedentaryNoBump === 'sedentary')
+
 
 const clientDiet = clientFacingDietPlanText(`Calories: 1450
 Protein: 120g

@@ -2,6 +2,7 @@ import { extractStepCount } from '@/lib/ai/cardio-steps'
 import { resolveClientCalorieTargets } from '@/lib/ai/calorie-targets'
 import {
   inferMacrosFromDietText,
+  isDietOverPreferredTarget,
   parseHeaderCalories,
 } from '@/lib/ai/nutrition-macro-sync'
 import { resolveDietFloorKcal } from '@/lib/ai/plan-quality-rules'
@@ -79,6 +80,13 @@ export function evaluateHighFluxPlanReview(input: {
         level: 'warning',
         message:
           'Portions look light for this client\'s size, training load, and goal. Regenerate with more generous maintenance-level food before delivering — active lifters should not get crash-diet templates.',
+      })
+    }
+
+    if (targets != null && isDietOverPreferredTarget(calories, targets.preferred)) {
+      flags.push({
+        level: 'warning',
+        message: `Portions look high for this client (~${calories} kcal vs Mifflin target ~${targets.preferred} kcal). Regenerate closer to the target — do not overfeed.`,
       })
     }
   }

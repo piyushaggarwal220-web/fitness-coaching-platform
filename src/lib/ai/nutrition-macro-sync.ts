@@ -297,7 +297,18 @@ export type DietSafetyOptions = {
 }
 
 /** How far above the Mifflin preferred target is still accepted before retry. */
-const PREFERRED_MAX_SLACK_KCAL = 150
+export const PREFERRED_MAX_SLACK_KCAL = 150
+
+/** True when daily calories sit clearly above the Mifflin preferred target. */
+export function isDietOverPreferredTarget(
+  calories: number,
+  preferredKcal: number | null | undefined,
+  slackKcal: number = PREFERRED_MAX_SLACK_KCAL
+): boolean {
+  if (!Number.isFinite(calories) || calories <= 0) return false
+  if (typeof preferredKcal !== 'number' || preferredKcal <= 0) return false
+  return calories > preferredKcal + slackKcal
+}
 
 function splitDietDayBlocks(text: string): Array<{ weekday: string; body: string }> {
   const re = /Day\s*\d\s*\(([^)]+)\)/gi
@@ -659,14 +670,23 @@ export function clampGeneratedNutritionCalories(
     preferredMinKcal?: number
   } = {}
 ): GeneratedNutritionPlan {
-  let cals = plan.calories
-  if (typeof cals !== 'number' || !Number.isFinite(cals) || cals <= 0) return plan
+  let cals = getAuthoritativeNutritionCalories(plan)
+  if (!Number.isFinite(cals) || cals <= 0) {
+    cals = typeof plan.calories === 'number' && Number.isFinite(plan.calories) ? plan.calories : 0
+  }
+  if (!Number.isFinite(cals) || cals <= 0) return plan
 
   const floorKcal = opts.floorKcal ?? DIET_FLOOR_TARGET_KCAL
   cals = Math.max(cals, floorKcal)
+  const preferred = opts.preferredMinKcal
+  if (typeof preferred === 'number' && preferred > 0 && cals > preferred + PREFERRED_MAX_SLACK_KCAL) {
+    // Cap overfeeds at the Mifflin preferred (+slack). Header/prose claims follow;
+    // meal lines stay as written until a rewrite lands — callers should still retry.
+    cals = preferred
+  }
   const prev = opts.previousCalories
   if (typeof prev === 'number' && prev > 0) {
-    cals = clampCaloriesToWeeklyBand(cals, prev, floorKcal)
+    cals = clampCaloriesToWeeklyBand(cals, prev, floorKcal, typeof preferred === 'number' ? preferred : undefined)
   }
 
   if (cals === plan.calories) return plan
