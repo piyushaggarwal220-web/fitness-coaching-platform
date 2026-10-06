@@ -316,6 +316,7 @@ export function generateFakeOnboardingForm(name?: string): OnboardingFormData {
       'Bro split at local gym, inconsistent last month',
       'Home dumbbell full-body 3x/week',
     ]),
+    workout_split_preference: pick(['system_decide', 'system_decide', 'ppl', 'upper_lower', 'full_body']),
     injuries: pick(['None', 'Previous knee strain — cleared for training', 'Mild shoulder tightness']),
     medical_notes: pick(MEDICAL),
     pain_during_exercise: pick(['none', 'none', 'no']),

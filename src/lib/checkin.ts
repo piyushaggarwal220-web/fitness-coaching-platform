@@ -23,6 +23,12 @@ export const CHECKIN_INTERVAL_DAYS = 7
 export const MAX_PHOTO_DIMENSION = 1600
 export const PHOTO_JPEG_QUALITY = 0.82
 
+export {
+  CHECKIN_SPLIT_PREFERENCE_OPTIONS,
+  checkinSplitPreferenceLabel,
+  normalizeCheckinSplitPreference,
+} from '@/lib/ai/workout-split'
+
 export const INITIAL_CHECKIN_FORM: CheckinFormData = {
   weight: '',
   waist: '',
@@ -75,6 +81,7 @@ export const INITIAL_WEEKLY_FORM: WeeklyCheckinFormData = {
   pain_injuries: '',
   cardio_completed: '',
   additional_notes: '',
+  workout_split_preference: 'keep',
 }
 
 function isScoreValid(value: string): boolean {
@@ -138,6 +145,7 @@ export function validateWeeklyCheckinForm(
   if (!isScoreValid(data.motivation_level)) return 'Motivation must be between 1 and 10.'
   if (!isScoreValid(data.progress_rating)) return 'Rate your progress between 1 and 10.'
   if (!data.progress_notes.trim()) return 'Describe your progress compared to last week.'
+  if (!data.workout_split_preference) return 'Choose whether to keep or change your workout split.'
   if (areProgressPhotosOptional(options?.gender)) return null
   if (!photos.front) return 'Front progress photo is required.'
   if (!photos.side) return 'Side progress photo is required.'

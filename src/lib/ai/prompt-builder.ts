@@ -2,6 +2,10 @@ import { dietPreferenceBannedListForPrompt } from '@/lib/ai/diet-preference-guar
 import { formatCalorieTargetPrompt } from '@/lib/ai/calorie-targets'
 import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
 import { buildMesocyclePromptBlock } from '@/lib/ai/mesocycle'
+import {
+  checkinSplitPreferenceLabel,
+  onboardingSplitPreferenceLabel,
+} from '@/lib/ai/workout-split'
 import { buildMetabolicFluxSection, shouldApplyHighFluxRules } from '@/lib/ai/metabolic-flux'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
@@ -242,6 +246,7 @@ function buildCheckinSection(checkin: Checkin): string {
     `- Digestion: ${hasMeaningfulText(checkin.digestion) ? checkin.digestion!.trim() : 'None'}`,
     `- Cardio completed: ${hasMeaningfulText(checkin.cardio_completed) ? checkin.cardio_completed!.trim() : 'None'}`,
     `- Questions for coach: ${hasMeaningfulText(checkin.questions_for_coach) ? checkin.questions_for_coach!.trim() : 'None'}`,
+    `- Workout split preference: ${checkinSplitPreferenceLabel(checkin.workout_split_preference)}`,
     `- Notes: ${hasMeaningfulText(checkin.notes) ? checkin.notes!.trim() : 'None'}`,
   ]
   return lines.join('\n')
@@ -256,6 +261,7 @@ function buildMesocycleSection(
     coachingWeek: checkin?.coaching_week ?? 1,
     priorWorkout: activePlan?.workout_plan,
     profile,
+    checkinSplitPreference: checkin?.workout_split_preference,
   })
 }
 
@@ -371,7 +377,7 @@ function buildOnboardingSection(data: OnboardingData | null | undefined): string
       ? getOnboardingLabel('can_pullup', data.training.canPullup)
       : '—'
     lines.push(
-      `Training: location ${data.training.location ?? '—'}, training history ${durationLabel}, days/week ${data.training.daysPerWeek ?? '—'}${(data.training.availableDays ?? []).filter(Boolean).length ? ` on ${(data.training.availableDays ?? []).filter(Boolean).join(', ')}` : ''}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}, squat comfort ${squat}, push-up comfort ${pushup}, pull-up comfort ${pullup}${recentProgram ? `, recent program ${recentProgram}` : ''}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}`
+      `Training: location ${data.training.location ?? '—'}, training history ${durationLabel}, days/week ${data.training.daysPerWeek ?? '—'}${(data.training.availableDays ?? []).filter(Boolean).length ? ` on ${(data.training.availableDays ?? []).filter(Boolean).join(', ')}` : ''}, duration ${data.training.durationMinutes ?? '—'}, preferred time ${data.training.preferredTime ?? '—'}, equipment ${(data.training.equipmentAvailable ?? []).join(', ') || '—'}, squat comfort ${squat}, push-up comfort ${pushup}, pull-up comfort ${pullup}${recentProgram ? `, recent program ${recentProgram}` : ''}${favorite ? `, favorite exercises ${favorite}` : ''}${disliked ? `, exercises to avoid ${disliked}` : ''}${data.training.workoutSplitPreference ? `, split preference ${onboardingSplitPreferenceLabel(data.training.workoutSplitPreference)}` : ''}`
     )
   }
   if (data.medical) {
@@ -639,6 +645,7 @@ function buildTrainingPreferencesSection(profile: OnboardingProfile): string {
     `- Recent workout program: ${training?.recentProgram?.trim() || 'Not provided'}`,
     `- Favorite exercises / exercises to include: ${training?.favoriteExercises?.trim() || 'None specified'}`,
     `- Exercises to avoid: ${training?.exercisesDisliked?.trim() || 'None specified'}`,
+    `- Workout split preference: ${onboardingSplitPreferenceLabel(training?.workoutSplitPreference)}`,
     `- Training experience: ${getOnboardingLabel('training_experience', profile.training_experience)}`,
   ]
 

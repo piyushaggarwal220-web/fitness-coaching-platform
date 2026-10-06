@@ -132,6 +132,11 @@ export type OnboardingData = {
     canPullup?: string | null
     /** Recent or current workout program description (or "None"). */
     recentProgram?: string | null
+    /**
+     * Preferred workout split for initial programming.
+     * system_decide | full_body | upper_lower | ppl
+     */
+    workoutSplitPreference?: string | null
   }
   medical?: {
     conditions?: string | null
@@ -333,6 +338,11 @@ export type OnboardingFormData = {
   can_pullup: string
   /** Recent workout program description, or "None" */
   recent_program: string
+  /**
+   * Preferred workout split.
+   * system_decide | full_body | upper_lower | ppl
+   */
+  workout_split_preference: string
   injuries: string
   medical_notes: string
   pain_during_exercise: string
@@ -524,6 +534,10 @@ export type Checkin = {
   auto_reply_at: string | null
   /** Set once the automated reply was actually delivered. */
   auto_replied_at: string | null
+  /**
+   * Weekly: keep | change_system | full_body | upper_lower | ppl
+   */
+  workout_split_preference: string | null
 }
 
 export type JourneyEntry = {
@@ -619,6 +633,8 @@ export type WeeklyCheckinFormData = {
   pain_injuries: string
   cardio_completed: string
   additional_notes: string
+  /** keep | change_system | full_body | upper_lower | ppl */
+  workout_split_preference: string
 }
 
 export type CoachCheckinResponse = {

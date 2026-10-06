@@ -95,14 +95,16 @@ export function buildMesocyclePromptBlock(opts: {
   priorWorkout?: string | null
   profile?: Pick<
     OnboardingProfile,
-    'fitness_goal' | 'training_experience' | 'training_days_per_week' | 'onboarding_data'
+    'fitness_goal' | 'training_experience' | 'onboarding_data'
   > | null
+  checkinSplitPreference?: string | null
 }): string {
   const meso = resolveMesocycle(opts.coachingWeek)
   const prior = summarizePriorSplit(opts.priorWorkout)
   const sticky = formatStickySplitGuidance({
     priorWorkout: opts.priorWorkout,
     profile: opts.profile,
+    checkinSplitPreference: opts.checkinSplitPreference,
   })
   return formatMesocyclePromptSection(meso, prior, sticky)
 }

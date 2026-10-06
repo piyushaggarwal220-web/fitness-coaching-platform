@@ -13,6 +13,7 @@ import { MeasurementScroller, NumberScroller } from '@/components/ui/Measurement
 import { PhotoCompareStrip } from '@/components/journey/PhotoCompareStrip';
 import {
   INITIAL_WEEKLY_FORM,
+  CHECKIN_SPLIT_PREFERENCE_OPTIONS,
   areProgressPhotosOptional,
   uploadCheckinPhoto,
   validateWeeklyCheckinForm,
@@ -257,6 +258,7 @@ export default function CheckinPage() {
           pain_injuries: form.pain_injuries || null,
           cardio_completed: form.cardio_completed || null,
           additional_notes: form.additional_notes || null,
+          workout_split_preference: form.workout_split_preference || 'keep',
           progress_photo_front: frontUrl,
           progress_photo_side: sideUrl,
           progress_photo_back: backUrl,
@@ -423,6 +425,39 @@ export default function CheckinPage() {
             <TextArea label="Pain / injuries" name="pain_injuries" value={form.pain_injuries} onChange={handleChange} rows={2} placeholder="Any pain or injuries this week?" />
             <Input label="Cardio completed" name="cardio_completed" value={form.cardio_completed} onChange={handleChange} placeholder="e.g. 3 sessions, 45 min total" />
             <TextArea label="Additional notes" name="additional_notes" value={form.additional_notes} onChange={handleChange} rows={3} placeholder="Wins, struggles, questions..." />
+            <div style={{ marginTop: spacing[4] }}>
+              <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>
+                Next week&apos;s workout split *
+              </p>
+              <p style={{ margin: '0 0 10px', fontSize: 13, color: colors.textMuted }}>
+                Keep your current structure by default. Only change if you want a different split.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {CHECKIN_SPLIT_PREFERENCE_OPTIONS.map((option) => {
+                  const selected = form.workout_split_preference === option.value
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, workout_split_preference: option.value }))}
+                      style={{
+                        textAlign: 'left',
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: selected ? `2px solid ${colors.accent}` : `1px solid ${colors.borderSubtle}`,
+                        background: selected ? colors.accentMuted : colors.bgElevated,
+                        color: colors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: selected ? 700 : 500,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </Card>
         )}
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { checkinSplitPreferenceLabel } from '@/lib/ai/workout-split'
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { CoachShell } from '@/components/ui/CoachShell';
@@ -320,6 +321,13 @@ export default function CoachCheckinDetailPage() {
           <section style={styles.card}>
             <h2 style={styles.cardTitle}>Progress notes</h2>
             <p style={styles.notes}>{checkin.progress_notes}</p>
+          </section>
+        )}
+
+        {isWeekly && (
+          <section style={styles.card}>
+            <h2 style={styles.cardTitle}>Workout split preference</h2>
+            <p style={styles.notes}>{checkinSplitPreferenceLabel(checkin.workout_split_preference)}</p>
           </section>
         )}
 

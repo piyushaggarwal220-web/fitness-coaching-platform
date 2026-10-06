@@ -75,6 +75,7 @@ import {
   WHEY_OPTIONS,
   WORKOUT_DURATION_OPTIONS,
   WORKOUT_TIME_OPTIONS,
+  ONBOARDING_SPLIT_PREFERENCE_OPTIONS,
 } from '@/lib/onboarding'
 import { isSessionLostMessage, refreshAuthSessionIfExpiring } from '@/lib/session-restore'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
@@ -1198,6 +1199,17 @@ function renderStep(
           </Field>
           <Field label="Preferred workout time" required>
             <ChipGroup options={WORKOUT_TIME_OPTIONS} value={form.preferred_workout_time} onChange={(v) => update({ preferred_workout_time: v })} />
+          </Field>
+          <Field
+            label="Workout split preference"
+            required
+            hint="Not sure? Pick Decide for me — we choose from full body, upper/lower, or push/pull/legs based on your days and experience."
+          >
+            <ChipGroup
+              options={ONBOARDING_SPLIT_PREFERENCE_OPTIONS}
+              value={form.workout_split_preference}
+              onChange={(v) => update({ workout_split_preference: v })}
+            />
           </Field>
         </div>
       )

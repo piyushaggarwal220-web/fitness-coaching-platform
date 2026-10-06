@@ -29,6 +29,12 @@ import type {
   OnboardingProfile,
 } from '@/types/database'
 import { importWithChunkRetry } from '@/lib/chunk-load-recovery'
+import {
+  ONBOARDING_SPLIT_PREFERENCE_OPTIONS,
+  onboardingSplitPreferenceLabel,
+} from '@/lib/ai/workout-split'
+
+export { ONBOARDING_SPLIT_PREFERENCE_OPTIONS, onboardingSplitPreferenceLabel }
 
 export const ONBOARDING_PHOTO_BUCKET = 'onboarding-photos'
 
@@ -247,6 +253,7 @@ export const TRAINING_DURATION_OPTIONS = [
   { value: '2_to_5_years', label: '2–5 years' },
   { value: 'over_5_years', label: 'Over 5 years' },
 ] as const
+
 
 export const ACTIVITY_OPTIONS = [
   { value: 'sedentary', label: 'Sedentary' },
@@ -618,6 +625,7 @@ export const INITIAL_ONBOARDING_FORM: OnboardingFormData = {
   can_pushup: '',
   can_pullup: '',
   recent_program: '',
+  workout_split_preference: 'system_decide',
   injuries: '',
   medical_notes: '',
   pain_during_exercise: '',
@@ -810,6 +818,7 @@ export function formFromProfile(profile: OnboardingProfile): OnboardingFormData 
     can_pushup: data.training?.canPushup ?? '',
     can_pullup: data.training?.canPullup ?? '',
     recent_program: data.training?.recentProgram ?? '',
+    workout_split_preference: data.training?.workoutSplitPreference ?? 'system_decide',
     pain_during_exercise: data.medical?.painDuringExercise ?? '',
     medications: data.medical?.medications ?? '',
     acne_status: data.medical?.acne ?? '',
@@ -992,6 +1001,7 @@ export function buildOnboardingData(
       canPushup: form.can_pushup || null,
       canPullup: form.can_pullup || null,
       recentProgram: form.recent_program.trim() || null,
+      workoutSplitPreference: form.workout_split_preference || 'system_decide',
     },
     medical: {
       conditions: form.medical_notes.trim() || null,
@@ -1327,6 +1337,9 @@ export function validateOnboardingStep(
       }
       if (!data.workout_duration) return 'Please select workout duration.'
       if (!data.preferred_workout_time) return 'Please select preferred workout time.'
+      if (!data.workout_split_preference) {
+        return 'Please choose a workout split preference (or Decide for me).'
+      }
       return null
     }
     case 9: {
@@ -1570,6 +1583,7 @@ export function buildReviewSections(
         { label: 'Training days', value: formatWeekdays(form.training_available_days) },
         { label: 'Duration', value: getOnboardingLabel('workout_duration', form.workout_duration) },
         { label: 'Preferred time', value: getOnboardingLabel('preferred_workout_time', form.preferred_workout_time) },
+        { label: 'Workout split', value: onboardingSplitPreferenceLabel(form.workout_split_preference) },
         { label: 'Equipment', value: equipment },
         { label: 'Gym stations', value: formatGymStations(form.gym_stations) },
         {

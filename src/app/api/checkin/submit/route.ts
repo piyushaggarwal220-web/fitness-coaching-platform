@@ -21,6 +21,7 @@ import { sendNotification, NotificationTemplates } from '@/lib/notifications/dis
 import { createAdminClient } from '@/lib/supabase/admin'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { parseAdherenceDays } from '@/lib/checkin-adherence-days'
+import { normalizeCheckinSplitPreference } from '@/lib/ai/workout-split'
 import { areProgressPhotosOptional } from '@/lib/checkin'
 import type { CheckinType } from '@/types/database'
 
@@ -66,6 +67,7 @@ type WeeklyBody = {
   pain_injuries?: string | null
   cardio_completed?: string | null
   additional_notes?: string | null
+  workout_split_preference?: string | null
   progress_photo_front?: string | null
   progress_photo_side?: string | null
   progress_photo_back?: string | null
@@ -114,6 +116,9 @@ function validateBody(body: SubmitBody, options?: { gender?: string | null }): s
   if (!isScore(body.motivation_level)) return 'Invalid motivation level.'
   if (!isScore(body.progress_rating)) return 'Invalid progress rating.'
   if (!body.progress_notes?.trim()) return 'Progress notes are required.'
+  if (!normalizeCheckinSplitPreference(body.workout_split_preference)) {
+    return 'Choose whether to keep or change your workout split.'
+  }
   if (!areProgressPhotosOptional(options?.gender)) {
     if (!body.progress_photo_front || !body.progress_photo_side || !body.progress_photo_back) {
       return 'Progress photos are required.'
@@ -299,6 +304,7 @@ export async function POST(request: Request) {
         digestion: body.digestion ?? null,
         cardio_completed: body.cardio_completed ?? null,
         notes: body.additional_notes ?? null,
+        workout_split_preference: normalizeCheckinSplitPreference(body.workout_split_preference),
         progress_photo_front: body.progress_photo_front ?? null,
         progress_photo_side: body.progress_photo_side ?? null,
         progress_photo_back: body.progress_photo_back ?? null,
