@@ -178,6 +178,7 @@ export const WORKOUT_VOLUME_PROMPT_RULES = [
   '- Reps by experience: beginners 8 to 15 on compounds. Intermediate 6 to 12. Advanced or strength-focused: 3 to 6 on main compounds only, 8 to 15 on accessories.',
   '- Fit the stated session duration. Prefer the mesocycle set count over junk volume.',
   '- Training days per week is a hard cap. Label all 7 calendar days. Remaining days after training days are rest or active recovery. Do not add extra training days. Do not require both a recovery day AND a rest day if that would steal a training day or overflow 7 days. If they train 6 days, one rest. If 7, no extra rest day.',
+  '- Sticky split: keep the client\'s established day structure (full body, upper/lower, or PPL). New clients without a prior plan use the goal/days default. Mesocycle week 1 refreshes exercises within that split — it does NOT invent a different template. Low sleep/fatigue = lower load/RIR, never a silent full-body swap.',
   '- Proven splits are fine (full body, upper/lower, PPL) when they fit days, duration, equipment, and injuries. Personalise exercise selection. Do not invent an unsafe novelty split. Do not default to a chest, back, and arms bro-split.',
   '- If Hard Constraints list gym stations, use only those stations plus bodyweight. Do not assume a full commercial gym.',
 ].join('\n')

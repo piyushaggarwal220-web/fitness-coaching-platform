@@ -1,6 +1,9 @@
 import { DIET_FLOOR_BASE_KCAL } from '@/lib/ai/plan-quality-rules'
 
-/** Mesocycle helpers for monthly split rotation and weeks 1–4 volume ramps. */
+import { formatStickySplitGuidance } from '@/lib/ai/workout-split'
+import type { OnboardingProfile } from '@/types/database'
+
+/** Mesocycle helpers for monthly volume ramps within a sticky workout split. */
 
 export type MesocycleContext = {
   coachingWeek: number
@@ -10,7 +13,10 @@ export type MesocycleContext = {
   volumeGuidance: string
   /** Human-readable calorie guidance paired with volume week. */
   calorieGuidance: string
-  /** Whether this week should open a brand-new split. */
+  /**
+   * Week 1 of a mesocycle: refresh exercises + BASE volume within the sticky split.
+   * Does NOT mean invent a different split structure.
+   */
   requiresNewSplit: boolean
 }
 
@@ -31,7 +37,7 @@ const CALORIE_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
 
 /**
  * Coaching week 1 → mesocycle 1 week 1.
- * After every 4 weeks: new mesocycle, week 1, new split + volume reset.
+ * After every 4 weeks: new mesocycle, week 1 = exercise refresh + BASE volume (same sticky split).
  */
 export function resolveMesocycle(coachingWeek: number | null | undefined): MesocycleContext {
   const week = Math.max(1, Math.floor(Number(coachingWeek) || 1))
@@ -47,17 +53,20 @@ export function resolveMesocycle(coachingWeek: number | null | undefined): Mesoc
   }
 }
 
-/** Truncate prior workout text so the model can rotate away from the last split. */
+/** Truncate prior workout text so the model can refresh exercises within the sticky split. */
 export function summarizePriorSplit(workoutPlan: string | null | undefined, maxLen = 900): string {
   const text = workoutPlan?.trim()
-  if (!text) return 'No prior workout on file — pick a proven split that fits this client (full body, upper/lower, or push/pull/legs).'
+  if (!text) {
+    return 'No prior workout on file — use the sticky-split default for this client (full body, upper/lower, or PPL).'
+  }
   if (text.length <= maxLen) return text
   return `${text.slice(0, maxLen)}…`
 }
 
 export function formatMesocyclePromptSection(
   meso: MesocycleContext,
-  priorSplitSummary: string
+  priorSplitSummary: string,
+  stickySplitGuidance?: string
 ): string {
   return [
     '## Training Mesocycle (authoritative — obey this)',
@@ -68,11 +77,32 @@ export function formatMesocyclePromptSection(
     `- Volume target: ${meso.volumeGuidance}`,
     `- Calorie target (hold flat unless coach asks): ${meso.calorieGuidance}`,
     meso.requiresNewSplit
-      ? `- Split rule: NEW split vs last month. Proven templates (full body, upper/lower, PPL) are valid if they fit this client. Do not recycle last month's day structure. Drop working sets to BASE (2 to 3 for everyone) and HOLD calories — raise steps/cardio if fat loss is the goal, never below ${DIET_FLOOR_BASE_KCAL} kcal. Change calories only if the coach specifically asks.`
-      : '- Split rule: KEEP the same split as this mesocycle\'s week 1. Progress with the volume target for this week (load, reps, reps in reserve, and the allowed set count). HOLD calories flat. Do not invent a new split.',
-    '- Cycle rule: week 1 is 2 to 3 working sets for everyone. Weeks 2 to 4 follow the volume target (beginners stay lower; intermediate and advanced may reach 4 sets on main compounds). Never 5 or more working sets. Calories stay flat. Do NOT auto-increase calories week to week. Raise or lower food ONLY when the coach specifically asks. New month (new split, base volume) still HOLDS calories and raises steps if fat loss needs more output.',
+      ? `- Split rule: KEEP the sticky split. New month week 1 = refresh exercises within that same day structure at BASE volume (2 to 3 working sets). Do NOT invent a different split template. HOLD calories — raise steps/cardio if fat loss is the goal, never below ${DIET_FLOOR_BASE_KCAL} kcal. Change calories only if the coach specifically asks.`
+      : '- Split rule: KEEP the sticky split. Progress with the volume target for this week (load, reps, reps in reserve, and the allowed set count). HOLD calories flat. Do not invent a new split.',
+    '- Cycle rule: week 1 is 2 to 3 working sets for everyone. Weeks 2 to 4 follow the volume target (beginners stay lower; intermediate and advanced may reach 4 sets on main compounds). Never 5 or more working sets. Calories stay flat. Do NOT auto-increase calories week to week. Raise or lower food ONLY when the coach specifically asks. New month (exercise refresh + base volume, same sticky split) still HOLDS calories and raises steps if fat loss needs more output.',
     '',
-    '### Prior workout / split hint (rotate away when a new split is required)',
+    stickySplitGuidance?.trim() ||
+      formatStickySplitGuidance({}),
+    '',
+    '### Prior workout (refresh exercises within sticky split; do not copy-paste wholesale)',
     priorSplitSummary,
   ].join('\n')
+}
+
+/** Convenience for prompt builders that have profile + active plan. */
+export function buildMesocyclePromptBlock(opts: {
+  coachingWeek: number | null | undefined
+  priorWorkout?: string | null
+  profile?: Pick<
+    OnboardingProfile,
+    'fitness_goal' | 'training_experience' | 'training_days_per_week' | 'onboarding_data'
+  > | null
+}): string {
+  const meso = resolveMesocycle(opts.coachingWeek)
+  const prior = summarizePriorSplit(opts.priorWorkout)
+  const sticky = formatStickySplitGuidance({
+    priorWorkout: opts.priorWorkout,
+    profile: opts.profile,
+  })
+  return formatMesocyclePromptSection(meso, prior, sticky)
 }

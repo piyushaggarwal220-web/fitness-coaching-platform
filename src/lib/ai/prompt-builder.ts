@@ -1,11 +1,7 @@
 import { dietPreferenceBannedListForPrompt } from '@/lib/ai/diet-preference-guard'
 import { formatCalorieTargetPrompt } from '@/lib/ai/calorie-targets'
 import type { ComplexityScoreResult } from '@/lib/ai/complexity-score'
-import {
-  formatMesocyclePromptSection,
-  resolveMesocycle,
-  summarizePriorSplit,
-} from '@/lib/ai/mesocycle'
+import { buildMesocyclePromptBlock } from '@/lib/ai/mesocycle'
 import { buildMetabolicFluxSection, shouldApplyHighFluxRules } from '@/lib/ai/metabolic-flux'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { resolveWorkoutEnvironment } from '@/lib/ai/workout-prompt-selection'
@@ -253,12 +249,14 @@ function buildCheckinSection(checkin: Checkin): string {
 
 function buildMesocycleSection(
   checkin: Checkin | null | undefined,
-  activePlan: Plan | null | undefined
+  activePlan: Plan | null | undefined,
+  profile?: OnboardingProfile | null
 ): string {
-  const week = checkin?.coaching_week ?? 1
-  const meso = resolveMesocycle(week)
-  const prior = summarizePriorSplit(activePlan?.workout_plan)
-  return formatMesocyclePromptSection(meso, prior)
+  return buildMesocyclePromptBlock({
+    coachingWeek: checkin?.coaching_week ?? 1,
+    priorWorkout: activePlan?.workout_plan,
+    profile,
+  })
 }
 
 function buildComplexitySection(complexityScore: ComplexityScoreResult): string {
@@ -828,7 +826,7 @@ export function buildPromptContextSections(
     checkin: input.latestCheckin
       ? buildCheckinSection(input.latestCheckin)
       : '## Latest Check-In\nNo check-in provided for this request.',
-    mesocycle: buildMesocycleSection(input.latestCheckin, input.activePlan),
+    mesocycle: buildMesocycleSection(input.latestCheckin, input.activePlan, input.profile),
     coachNotes: hasMeaningfulText(input.coachInstructions)
       ? [
           '## Coach Notes (ABSOLUTE — overrides conflicting rules)',
@@ -1028,7 +1026,7 @@ function buildUserPrompt(
 ): string {
   const sections = [
     buildClientProfileSection(profile),
-    buildMesocycleSection(latestCheckin, activePlan),
+    buildMesocycleSection(latestCheckin, activePlan, profile),
     latestCheckin ? buildCheckinSection(latestCheckin) : null,
     buildComplexitySection(complexityScore),
     hasMeaningfulText(coachInstructions)

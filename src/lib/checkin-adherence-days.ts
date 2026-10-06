@@ -61,7 +61,7 @@ export function formatAdherenceDaysForPrompt(checkin: Checkin, maxDays: number):
     dayHint(checkin.days_followed_sleep, maxDays, 'Sleep'),
     dayHint(checkin.days_followed_water, maxDays, 'Water'),
     dayHint(checkin.days_followed_steps, maxDays, 'Steps'),
-    'Update EVERY guidance section (diet, workout, sleep, water, steps/cardio) with tips that match those days. Low days = simpler plan + concrete how-to. High days = keep structure + polish.',
+    'Update EVERY guidance section (diet, workout, sleep, water, steps/cardio) with tips that match those days. Low days = simpler tips + concrete how-to (for workouts: lower load/sets/RIR — do NOT change the sticky split structure for sleep alone). High days = keep structure + polish.',
   ].join('\n')
 }
 

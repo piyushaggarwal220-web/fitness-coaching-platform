@@ -195,7 +195,7 @@ export function buildActionCoachInstructions(
       return appendNote(
         [
           'Generate a personalized workout plan for this client.',
-          'Opening mesocycle week 1: pick a proven split that fits this client (full body, upper/lower, or push/pull/legs). Personalise the exercises. Do not invent a novelty split, and do not default to a chest, back, and arms bro-split.',
+          'Opening mesocycle week 1: use the sticky-split default for this client (full body, upper/lower, or push/pull/legs from goal/days/experience). Personalise the exercises. Do not invent a novelty split, and do not default to a chest, back, and arms bro-split.',
           'Use BASE volume for week 1: 2 to 3 working sets per exercise for every experience level.',
           'Follow Metabolic Flux Bias for session density and daily step targets within hard day/duration caps.',
           'Prioritize workout_plan only (strength / resistance training).',
@@ -264,8 +264,8 @@ export function buildActionCoachInstructions(
           'CRITICAL: Address every client request, struggle, pain note, and check-in flag with concrete exercise/volume/split changes.',
           'Do NOT return a near-copy of the current workout. Opening lines must name what changed; day lists must show the edits.',
           'If the client asked for easier/harder sessions, different exercises, home vs gym, or injury workarounds — those must appear in the days.',
-          'Obey mesocycle rules: week 1 of a month = a new proven split (full body, upper/lower, or push/pull/legs) at base volume; weeks 2 to 4 = the same split with the mesocycle set progression; after week 4 reset.',
-          'Open the workout with a short training-tips block based on days trained (deload/simplify if low, progress if high). Include a Sleep recovery note.',
+          'Obey sticky-split + mesocycle rules: week 1 of a month = KEEP the established split, refresh exercises at base volume; weeks 2 to 4 = the same split with the mesocycle set progression; after week 4 reset volume only. Never silently swap PPL/upper-lower/full-body for sleep or fatigue — cut load/RIR instead. Change structure only if the client or coach explicitly asks.',
+          'Open the workout with a short training-tips block based on days trained (deload/simplify volume if low, progress if high). Include a Sleep recovery note that does NOT change the split.',
           'The plan header MAY show Week N. Do not write Welcome to week N in exercise lists.',
           'Adjust workout_plan only (strength / resistance training).',
           'Do NOT include Cardio or Supplements sections in the workout text; leave those JSON arrays empty.',
