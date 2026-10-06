@@ -132,7 +132,7 @@ Daily averages: ~1780 kcal | P: 110g | C: 160g | F: 55g
 )
 assert(
   'blocks 2100→1780 crash cut (max 200 kcal drop)',
-  parseHeaderCalories(crashCut) === 2000
+  parseHeaderCalories(crashCut) === 1900
 )
 
 const headerMealMismatch = `Calories: 1806
@@ -280,13 +280,13 @@ const sixDayProfile = {
   onboarding_data: { training: { daysPerWeek: 6 } },
 } as const
 assert(
-  '6-day training bumps activity for maintenance',
-  resolveEffectiveActivityLevel(sixDayProfile) === 'very_active'
+  '6-day training soft-bumps moderately_active, never invents very_active',
+  resolveEffectiveActivityLevel(sixDayProfile) === 'moderately_active'
 )
 const sixDayTargets = resolveClientCalorieTargets(sixDayProfile)
 assert(
-  '6-day lifter gets maintenance above 2400 kcal',
-  Boolean(sixDayTargets && sixDayTargets.maintenance >= 2400)
+  '6-day lifter maintenance stays realistic (not 1.725-inflated)',
+  Boolean(sixDayTargets && sixDayTargets.maintenance >= 2200 && sixDayTargets.maintenance < 2800)
 )
 assert(
   '6-day recomp target equals maintenance (real number)',
@@ -303,8 +303,12 @@ const officeMale = resolveClientCalorieTargets({
   onboarding_data: { training: { daysPerWeek: 3 } },
 })
 assert(
-  'desk-job male fat loss is still ~2000+ (not 1500)',
-  Boolean(officeMale && officeMale.preferred >= 2000)
+  'desk-job male fat loss stays above floor without overfeeding',
+  Boolean(
+    officeMale &&
+      officeMale.preferred >= officeMale.floorKcal &&
+      officeMale.preferred <= officeMale.maintenance - FAT_LOSS_DEFICIT_KCAL.steady + 20
+  )
 )
 
 const smallFemale = resolveClientCalorieTargets({
@@ -316,8 +320,13 @@ const smallFemale = resolveClientCalorieTargets({
   fitness_goal: 'fat_loss',
 })
 assert(
-  'smaller sedentary female is floored to 2000, not 1400',
-  Boolean(smallFemale && smallFemale.preferred >= 2000 && smallFemale.floorKcal >= 2000)
+  'smaller sedentary female uses ~1800 floor, not a 1400 crash or forced 2000+',
+  Boolean(
+    smallFemale &&
+      smallFemale.floorKcal === 1800 &&
+      smallFemale.preferred >= 1800 &&
+      smallFemale.preferred < 2100
+  )
 )
 
 const heavyMale = resolveClientCalorieTargets({
@@ -329,8 +338,28 @@ const heavyMale = resolveClientCalorieTargets({
   fitness_goal: 'fat_loss',
 })
 assert(
-  '86kg client uses weight floor (~2150) not a 1800 template',
-  Boolean(heavyMale && heavyMale.preferred >= 2150)
+  '86kg client uses weight floor (~1890) not a padded 2200+',
+  Boolean(heavyMale && heavyMale.floorKcal === Math.round(86 * 22) && heavyMale.preferred >= heavyMale.floorKcal)
+)
+
+const sagarLike = resolveClientCalorieTargets({
+  weight: 90,
+  height: 168,
+  age: 24,
+  gender: 'male',
+  activity_level: 'sedentary',
+  fitness_goal: 'ai_decide',
+  onboarding_data: { training: { daysPerWeek: 7 } },
+})
+assert(
+  'sedentary + 7 gym days never invents very_active 3165 maintenance',
+  Boolean(
+    sagarLike &&
+      sagarLike.activityLevel === 'lightly_active' &&
+      sagarLike.maintenance < 2800 &&
+      sagarLike.preferred < sagarLike.maintenance &&
+      sagarLike.preferred >= sagarLike.floorKcal
+  )
 )
 
 const guidance = formatCalorieGuidanceBlock({
@@ -342,7 +371,7 @@ const guidance = formatCalorieGuidanceBlock({
   fitness_goal: 'fat_loss',
 })
 assert('guidance names the hard target', Boolean(guidance && /WRITE THIS NUMBER/i.test(guidance)))
-assert('guidance forbids crash-diet templates', Boolean(guidance && /FORBIDDEN: 1400/i.test(guidance)))
+assert('guidance forbids padding above target', Boolean(guidance && /pad portions above the target/i.test(guidance)))
 assert('guidance includes a 4-digit kcal target', Boolean(guidance && /\b2\d{3} kcal/.test(guidance)))
 
 const clientDiet = clientFacingDietPlanText(`Calories: 1450

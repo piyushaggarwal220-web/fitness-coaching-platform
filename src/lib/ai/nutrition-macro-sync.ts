@@ -387,13 +387,13 @@ function buildLowCalorieHint(
       : floorKcal
   const maintenance =
     typeof opts.maintenanceKcal === 'number' && opts.maintenanceKcal > 0
-      ? ` Maintenance is ~${opts.maintenanceKcal} kcal — do not write 1800 (or any round guess) unless meal lines sum there.`
+      ? ` Maintenance is ~${opts.maintenanceKcal} kcal — write the Mifflin target, not a round guess.`
       : ''
   const bumpFoods =
     opts.calorieBumpFoods?.trim() || 'roti, rice, dal, paneer, snacks, oil/ghee'
   return (
     `Meal math averages ~${cals} kcal/day but this client's Mifflin-St Jeor target is ~${target} kcal/day.${maintenance} ` +
-    `Do not write a 1400–1800 crash diet. Rebuild all 7 days: increase portions (${bumpFoods}) so each Daily Total lands near ~${target} kcal. ` +
+    `Do not invent a crash diet below the floor. Rebuild all 7 days: adjust portions (${bumpFoods}) so each Daily Total lands near ~${target} kcal — not padded above it. ` +
     'The Calories header and weekly average must match those Daily Total lines — never a higher header with lower meals.'
   )
 }

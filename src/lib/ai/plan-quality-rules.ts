@@ -1,33 +1,33 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v26'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v27'
 
 /** Platform soft floor before weight-based floor. Prefer formula target when higher. */
-export const DIET_FLOOR_BASE_KCAL = 2000
+export const DIET_FLOOR_BASE_KCAL = 1800
 /** Reject (and retry) only when clearly under the floor; ~1% rounding is tolerated. */
-export const DIET_FLOOR_HARD_KCAL = 1980
-/** Weight-based floor. 25 kcal/kg is about 22 kcal/kg plus a small buffer above a crash intake. */
-export const DIET_FLOOR_KCAL_PER_KG = 25
+export const DIET_FLOOR_HARD_KCAL = 1780
+/** Weight-based floor (~22 kcal/kg) — crash diets stay blocked without forcing oversized intakes. */
+export const DIET_FLOOR_KCAL_PER_KG = 22
 /** Cap so a very heavy client is not forced onto an extreme intake by the floor alone. */
-export const DIET_FLOOR_CAP_KCAL = 2400
+export const DIET_FLOOR_CAP_KCAL = 2200
 
 /**
  * Daily fat-loss cut from maintenance. High flux keeps the most food.
  * Build-up sits between high flux and steady. Steady is the largest mild cut.
  */
 export const FAT_LOSS_DEFICIT_KCAL = {
-  steady: 250,
-  build_up: 200,
-  high_flux: 150,
+  steady: 350,
+  build_up: 300,
+  high_flux: 250,
 } as const
 
 /**
  * Daily muscle-gain surplus above maintenance.
- * High flux is the largest surplus because output rises with the food.
+ * Keep surpluses lean — inflated maintenance + big surplus was overfeeding clients.
  */
 export const MUSCLE_SURPLUS_KCAL = {
-  steady: 200,
-  build_up: 300,
-  high_flux: 350,
+  steady: 150,
+  build_up: 200,
+  high_flux: 250,
 } as const
 
 /** @deprecated Use resolveDietFloorKcal(weight) — kept for static fallbacks. */

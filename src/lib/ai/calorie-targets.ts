@@ -78,19 +78,24 @@ function parseTrainingDaysPerWeek(profile: Pick<OnboardingProfile, 'onboarding_d
   return Number.isFinite(days) && days > 0 ? days : null
 }
 
-/** Boost activity tier when the client trains most days — maintenance must reflect gym load. */
+/**
+ * Soft activity bump from training days only.
+ * Never auto-promote to very_active — that 1.725 factor was overestimating TDEE for
+ * desk-job clients who gym 4–6 days. Self-reported very_active is kept as-is.
+ */
 export function resolveEffectiveActivityLevel(
   profile: Pick<OnboardingProfile, 'activity_level' | 'onboarding_data'>
 ): string {
-  const base = profile.activity_level?.trim() || 'moderately_active'
-  let level = ACTIVITY_MULTIPLIER[base] ? base : 'moderately_active'
+  const base = profile.activity_level?.trim() || 'lightly_active'
+  let level = ACTIVITY_MULTIPLIER[base] ? base : 'lightly_active'
   const days = parseTrainingDaysPerWeek(profile)
 
   if (days != null && days >= 6) {
-    level = 'very_active'
+    if (level === 'sedentary') level = 'lightly_active'
+    else if (level === 'lightly_active') level = 'moderately_active'
+    // moderately_active / very_active stay — do not invent 1.725 from gym days alone
   } else if (days != null && days >= 4) {
-    if (level === 'sedentary' || level === 'lightly_active') level = 'moderately_active'
-    else if (level === 'moderately_active') level = 'very_active'
+    if (level === 'sedentary') level = 'lightly_active'
   } else if (days != null && days >= 3 && level === 'sedentary') {
     level = 'lightly_active'
   }
@@ -112,7 +117,7 @@ export function estimateMaintenanceCalories(input: {
   const height = Number(input.heightCm)
   const age = Number(input.age)
   const gender = (input.gender ?? '').toLowerCase()
-  const activity = ACTIVITY_MULTIPLIER[input.activityLevel ?? ''] ?? 1.45
+  const activity = ACTIVITY_MULTIPLIER[input.activityLevel ?? ''] ?? 1.375
 
   let bmr: number
   if (Number.isFinite(height) && height > 0 && Number.isFinite(age) && age > 0) {
@@ -147,6 +152,26 @@ const MUSCLE_SURPLUS_BAND: Record<MetabolicFluxLevel, { min: number; max: number
   steady: { min: MUSCLE_SURPLUS_KCAL.steady - 50, max: MUSCLE_SURPLUS_KCAL.steady + 50 },
   build_up: { min: MUSCLE_SURPLUS_KCAL.build_up - 50, max: MUSCLE_SURPLUS_KCAL.build_up + 50 },
   high_flux: { min: MUSCLE_SURPLUS_KCAL.high_flux - 50, max: MUSCLE_SURPLUS_KCAL.high_flux + 50 },
+}
+
+/** Infer a coaching goal when intake says ai_decide / blank. */
+function resolveEffectiveGoalHint(profile: CalorieProfile): string {
+  const raw = (profile.fitness_goal ?? '').trim().toLowerCase()
+  if (raw && raw !== 'ai_decide' && raw !== 'not_sure' && raw !== 'unsure') return raw
+
+  const selected = profile.onboarding_data?.goals?.selectedGoals
+  if (Array.isArray(selected) && selected.length > 0) {
+    return selected.map((g) => String(g)).join(' ')
+  }
+
+  const weight = Number(profile.weight)
+  const height = Number(profile.height)
+  if (Number.isFinite(weight) && weight > 0 && Number.isFinite(height) && height > 0) {
+    const bmi = weight / (height / 100) ** 2
+    if (bmi >= 25) return 'fat_loss'
+    if (bmi < 18.5) return 'muscle_gain'
+  }
+  return 'recomposition'
 }
 
 /** One precise daily kcal from maintenance + goal — not a band guess. */
@@ -223,7 +248,8 @@ export function resolveClientCalorieTargets(profile: CalorieProfile): ClientCalo
 
   const flux = resolveMetabolicFluxPlan(profile as OnboardingProfile)
   const floorKcal = resolveDietFloorKcal(profile.weight)
-  const band = calorieTargetBand(maintenance, profile.fitness_goal, flux.level, floorKcal)
+  const goalHint = resolveEffectiveGoalHint(profile)
+  const band = calorieTargetBand(maintenance, goalHint, flux.level, floorKcal)
 
   return {
     maintenance: band.maintenance,
@@ -281,7 +307,7 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
   const targets = resolveClientCalorieTargets(profile)
   const flux = resolveMetabolicFluxPlan(profile as OnboardingProfile)
   const days = parseTrainingDaysPerWeek(profile)
-  const goal = (profile.fitness_goal ?? '').toLowerCase()
+  const goal = resolveEffectiveGoalHint(profile).toLowerCase()
   const weight = Number(profile.weight)
   const height = Number(profile.height)
   const age = Number(profile.age)
@@ -293,37 +319,38 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
     Number.isFinite(age) &&
     age > 0
 
-  const activityLevel = targets?.activityLevel ?? profile.activity_level ?? 'moderately_active'
+  const activityLevel = targets?.activityLevel ?? profile.activity_level ?? 'lightly_active'
   const activityFactor =
-    ACTIVITY_MULTIPLIER_LABEL[activityLevel] ?? ACTIVITY_MULTIPLIER_LABEL.moderately_active!
+    ACTIVITY_MULTIPLIER_LABEL[activityLevel] ?? ACTIVITY_MULTIPLIER_LABEL.lightly_active!
 
   const trainingNote =
-    days != null && days >= 5
-      ? `Training ${days} days/week — activity tier bumped to ${activityLevel} for maintenance math.`
+    days != null && days >= 6
+      ? `Training ${days} days/week — soft activity bump only (never auto-set very_active). Current factor: ${activityLevel}.`
       : days != null && days >= 3
-        ? `Training ${days} days/week — factor gym load into portion sizes.`
+        ? `Training ${days} days/week — do not invent a higher activity factor than ${activityLevel}.`
         : null
 
   const target = targets?.preferred
+  const floor = targets?.floorKcal ?? DIET_FLOOR_BASE_KCAL
   const formulaSection = hasFormulaInputs
     ? [
-        'MANDATORY DAILY CALORIES (already computed on the server — do NOT invent a lower number):',
+        'MANDATORY DAILY CALORIES (already computed on the server — write this number, not a guess):',
         `Formula: Mifflin-St Jeor. BMR = ${formatBmrFormula(profile.gender)}`,
         `Inputs: ${Math.round(weight)} kg, ${Math.round(height)} cm, ${Math.round(age)} y, ${profile.gender ?? 'unspecified'}. Activity factor ${activityFactor}.`,
         targets
           ? `BMR × activity = maintenance ~${targets.maintenance} kcal/day. ${formatGoalAdjustmentLine(goal, targets.maintenance, targets.preferred, targets.fluxLevel)}`
-          : `Compute maintenance = BMR × ${activityFactor}, then a mild goal adjustment.`,
+          : `Compute maintenance = BMR × ${activityFactor}, then a goal adjustment.`,
         target
-          ? `WRITE THIS NUMBER: every Daily Total and the Calories header must average ${target} kcal/day (±100). Floor is ${targets?.floorKcal ?? DIET_FLOOR_BASE_KCAL}.`
-          : `Build all 7 days at or above ${DIET_FLOOR_BASE_KCAL} kcal with honest meal math.`,
-        'FORBIDDEN: 1400, 1500, 1600, 1700, 1800 crash-diet templates. Almost nobody on this platform needs that. If your first instinct is 1500, you are wrong — use the number above.',
+          ? `WRITE THIS NUMBER: every Daily Total and the Calories header must average ${target} kcal/day (±100). Floor is ${floor}.`
+          : `Build all 7 days at or above ${floor} kcal with honest meal math.`,
+        `FORBIDDEN: inventing a crash diet below the floor (~${floor}). Do not pad portions above the target either — if the formula says ~${target ?? floor}, write that, not 200–400 kcal higher.`,
         'If one weekday is a religious fast, keep the OTHER 6 days at the full daily target. Do not crash the whole week.',
       ]
     : [
         'MANDATORY DAILY CALORIES — Mifflin-St Jeor when weight, height, and age exist.',
         `BMR = ${formatBmrFormula(profile.gender)}; Maintenance = BMR × ${activityFactor}.`,
         weight > 0
-          ? `Client ~${Math.round(weight)} kg — plan at or above ${resolveDietFloorKcal(weight)} kcal. Never a 1500–1800 template.`
+          ? `Client ~${Math.round(weight)} kg — plan at or above ${resolveDietFloorKcal(weight)} kcal. No crash diet below the floor.`
           : `Plan at or above ${DIET_FLOOR_BASE_KCAL} kcal. No crash diet.`,
       ]
 
