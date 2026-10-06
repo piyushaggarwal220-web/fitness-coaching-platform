@@ -19,4 +19,4 @@ ALTER TABLE public.checkins
   );
 
 COMMENT ON COLUMN public.checkins.workout_split_preference IS
-  'Weekly check-in: keep current split, change_system (AI picks), or a named split.';
+  'Weekly check-in: keep current split, change_system (system decides), or a named split.';

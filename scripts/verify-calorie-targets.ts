@@ -21,6 +21,10 @@ import {
   isDietOverPreferredTarget,
   PREFERRED_MAX_SLACK_KCAL,
 } from '../src/lib/ai/nutrition-macro-sync'
+import { planRequiresCoachReviewBeforeAutoDeliver } from '../src/lib/coach-delivery-policy'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 let failed = 0
 
@@ -397,6 +401,39 @@ assert(
 assert(
   'isDietOverPreferredTarget rejects preferred + slack + 1',
   isDietOverPreferredTarget(2220 + PREFERRED_MAX_SLACK_KCAL + 1, 2220) === true
+)
+
+
+
+{
+  const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const generatePlanSrc = fs.readFileSync(path.join(rootDir, 'src/lib/ai/generate-plan.ts'), 'utf8')
+  assert(
+    'generate-plan diet safety is not skipped for coachDirected initial/remake',
+    !/&& !coachDirected/.test(generatePlanSrc) &&
+      /Never ship an overfed auto diet/.test(generatePlanSrc)
+  )
+  const editPlanSrc = fs.readFileSync(path.join(rootDir, 'src/lib/ai/edit-plan-section.ts'), 'utf8')
+  assert(
+    'edit-plan-section always hard-fails Mifflin overfeed on client diets',
+    /Diet revision overfed Mifflin target/.test(editPlanSrc) &&
+      /food-swap \/ preserveCalories edits can still pad calories/.test(editPlanSrc)
+  )
+}
+
+assert(
+  'auto-deliver holds on calorie-safety warning notes',
+  planRequiresCoachReviewBeforeAutoDeliver(
+    'Calorie-safety warning kept for coach review: preferred 2200 got 3100'
+  ) === true
+)
+assert(
+  'auto-deliver holds on overfed notes',
+  planRequiresCoachReviewBeforeAutoDeliver('Diet overfed Mifflin preferred target') === true
+)
+assert(
+  'auto-deliver allows clean coach notes',
+  planRequiresCoachReviewBeforeAutoDeliver('Plan ready for delivery') === false
 )
 
 const selfReportedVeryActive = resolveEffectiveActivityLevel({

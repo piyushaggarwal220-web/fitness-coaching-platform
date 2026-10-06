@@ -6,6 +6,7 @@ import {
   PIYUSH_COACH_ID,
   RAKSHIT_COACH_ID,
   coachRequiresManualPlanDelivery,
+  planRequiresCoachReviewBeforeAutoDeliver,
   shouldAutoProcessCoachWorkQueue,
   shouldAutoProcessPiyushWorkQueue,
   shouldScheduleCheckinAutoReply,
@@ -18,6 +19,12 @@ assert.equal(shouldScheduleCheckinAutoReply('weekly', RAKSHIT_COACH_ID), true)
 assert.equal(shouldAutoProcessCoachWorkQueue(PIYUSH_COACH_ID), true)
 assert.equal(shouldAutoProcessCoachWorkQueue(RAKSHIT_COACH_ID), true)
 assert.equal(shouldAutoProcessPiyushWorkQueue(RAKSHIT_COACH_ID), true)
+assert.equal(
+  planRequiresCoachReviewBeforeAutoDeliver('Calorie-safety warning kept for coach review: x'),
+  true
+)
+assert.equal(planRequiresCoachReviewBeforeAutoDeliver('Looks good'), false)
+
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const chatSrc = fs.readFileSync(path.join(root, 'src/lib/piyush-chat-auto.ts'), 'utf8')

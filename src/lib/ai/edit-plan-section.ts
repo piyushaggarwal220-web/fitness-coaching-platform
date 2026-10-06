@@ -538,8 +538,9 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
           }
 
           // Client / auto diet edits: never accept a Mifflin overfeed (Sagar-class regression).
+          // Always check — food-swap / preserveCalories edits can still pad calories.
           // Coach-directed free edits skip this block (source === 'coach' above).
-          if (!preserveCalories || requestTouchesCalories(instruction, input.coachNote)) {
+          {
             const calorieTargets = resolveClientCalorieTargets(input.profile)
             const floorKcal =
               calorieTargets?.floorKcal ?? resolveDietFloorKcal(input.profile.weight)
@@ -561,10 +562,6 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
               }
             )
             if (!safety.ok) {
-              if (attempt < maxAttempts - 1) {
-                dietRetryHint = safety.hint
-                continue
-              }
               const cals = getAuthoritativeNutritionCalories({
                 calories: parseHeaderCalories(revisedText) ?? 0,
                 protein: 0,
@@ -572,10 +569,19 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
                 fat: 0,
                 meals: [{ example: revisedText }],
               })
-              if (isDietOverPreferredTarget(cals, calorieTargets?.preferred)) {
-                throw new ClaudeResponseError(
-                  `Diet revision overfed Mifflin target: ${safety.error}`
-                )
+              const overfed = isDietOverPreferredTarget(cals, calorieTargets?.preferred)
+              // Overfeed always retries / hard-fails. Other safety misses only retry when
+              // this edit was meant to touch calories (avoid looping food-only swaps).
+              if (overfed || !preserveCalories || requestTouchesCalories(instruction, input.coachNote)) {
+                if (attempt < maxAttempts - 1) {
+                  dietRetryHint = safety.hint
+                  continue
+                }
+                if (overfed) {
+                  throw new ClaudeResponseError(
+                    `Diet revision overfed Mifflin target: ${safety.error}`
+                  )
+                }
               }
             }
           }

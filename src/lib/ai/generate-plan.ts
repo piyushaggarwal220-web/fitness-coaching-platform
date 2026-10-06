@@ -853,14 +853,10 @@ export async function generatePlan(input: GeneratePlanInput): Promise<GeneratePl
     }
 
     // Force the non-negotiable diet numbers (floor + no large weekly swing) on diet generations.
-    // Weekly check-in updates are auto-published, so they always run this check.
-    // Other coach-directed generations stay as written for a human to review.
+    // Always run this — initial/remake paths also auto-deliver for some coaches, so
+    // coachInstructions must not skip Mifflin overfeed hard-fail.
     const enforcesDiet = validationMode === 'nutrition_focus' || validationMode === 'full'
-    // Weekly check-in diet updates always get the swing check. Those drafts are
-    // auto-published, and their standing instructions are not a calorie request.
-    const coachDirected =
-      Boolean(input.coachInstructions?.trim()) && input.actionId !== 'review_update_diet'
-    if (enforcesDiet && !supportSection && providerMode !== 'mock' && !coachDirected) {
+    if (enforcesDiet && !supportSection && providerMode !== 'mock') {
       const repaired = applyDietPlanRepair(plan.nutrition_plan, input.profile)
       plan = { ...plan, nutrition_plan: repaired.plan }
       if (repaired.fixes.length > 0) {

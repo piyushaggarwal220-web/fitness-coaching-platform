@@ -132,5 +132,7 @@ export function planRequiresCoachReviewBeforeAutoDeliver(
   coachNotes: string | null | undefined
 ): boolean {
   if (!coachNotes?.trim()) return false
-  return /held at\s+\d+\s*kcal floor|please review|requires?\s+review/i.test(coachNotes)
+  return /held at\s+\d+\s*kcal floor|please review|requires?\s+review|calorie-safety warning|overfed|over\s*preferred|mifflin/i.test(
+    coachNotes
+  )
 }

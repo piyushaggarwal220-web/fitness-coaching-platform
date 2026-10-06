@@ -9,7 +9,7 @@ export type OnboardingSplitPreference = 'system_decide' | 'ppl' | 'upper_lower' 
 /**
  * Weekly check-in:
  * keep = sticky current split
- * change_system = change structure, AI picks
+ * change_system = change structure, system decides
  * named split = change to that template
  */
 export type CheckinSplitPreference =

@@ -17,7 +17,7 @@ export type MesocycleContext = {
    * Week 1 of a mesocycle: refresh exercises + BASE volume within the sticky split.
    * Does NOT mean invent a different split structure.
    */
-  requiresNewSplit: boolean
+  isMesocycleWeek1Refresh: boolean
 }
 
 const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
@@ -49,7 +49,7 @@ export function resolveMesocycle(coachingWeek: number | null | undefined): Mesoc
     mesocycleIndex,
     volumeGuidance: VOLUME_BY_WEEK[weekInMesocycle],
     calorieGuidance: CALORIE_BY_WEEK[weekInMesocycle],
-    requiresNewSplit: weekInMesocycle === 1,
+    isMesocycleWeek1Refresh: weekInMesocycle === 1,
   }
 }
 
@@ -76,7 +76,7 @@ export function formatMesocyclePromptSection(
     `- Week within mesocycle: ${meso.weekInMesocycle} of 4`,
     `- Volume target: ${meso.volumeGuidance}`,
     `- Calorie target (hold flat unless coach asks): ${meso.calorieGuidance}`,
-    meso.requiresNewSplit
+    meso.isMesocycleWeek1Refresh
       ? `- Split rule: KEEP the sticky split. New month week 1 = refresh exercises within that same day structure at BASE volume (2 to 3 working sets). Do NOT invent a different split template. HOLD calories — raise steps/cardio if fat loss is the goal, never below ${DIET_FLOOR_BASE_KCAL} kcal. Change calories only if the coach specifically asks.`
       : '- Split rule: KEEP the sticky split. Progress with the volume target for this week (load, reps, reps in reserve, and the allowed set count). HOLD calories flat. Do not invent a new split.',
     '- Cycle rule: week 1 is 2 to 3 working sets for everyone. Weeks 2 to 4 follow the volume target (beginners stay lower; intermediate and advanced may reach 4 sets on main compounds). Never 5 or more working sets. Calories stay flat. Do NOT auto-increase calories week to week. Raise or lower food ONLY when the coach specifically asks. New month (exercise refresh + base volume, same sticky split) still HOLDS calories and raises steps if fat loss needs more output.',
