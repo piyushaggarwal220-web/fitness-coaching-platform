@@ -1070,7 +1070,7 @@ function CheckoutForm() {
  ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
  : isDigitalCheckout
  ? 'After payment, finish the remaining intake questions and receive your plan on the platform.'
- : 'Personal workout, diet, coach chat, and weekly check-ins are included. No live calls. Issues go to Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.'}
+ : 'Personal workout, diet, coach chat, and weekly check-ins are included. Issues go to Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.'}
  </p>
 
  {error && <div style={styles.error}>{error}</div>}

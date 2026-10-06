@@ -23,22 +23,22 @@ export const hero = {
   coachPhotoAlt: 'LURVOX coaches Piyush Aggarwal and Rakshit Mohla',
 } as const
 
-/** No live, phone, or WhatsApp calls. Issues go to the two coaches on Instagram. */
+/** Issues go to the two coaches on Instagram. */
 export const COACH_ISSUE_CONTACT =
-  'We do not do live calls. If you have an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.'
+  'If you have an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.'
 
 export const coaches = [
   {
     name: 'Piyush Aggarwal',
     firstName: 'Piyush',
-    photo: '/landing/instant-coach-piyush.png',
+    photo: '/landing/coach-piyush-dark.webp',
     instagramHandle: '@maximusvault',
     instagramUrl: 'https://www.instagram.com/maximusvault/',
   },
   {
     name: 'Rakshit Mohla',
     firstName: 'Rakshit',
-    photo: '/landing/instant-coach-rakshit.png',
+    photo: '/landing/coach-rakshit-dark.webp',
     instagramHandle: '@rakshitmohla_',
     instagramUrl: 'https://www.instagram.com/rakshitmohla_/',
   },
@@ -97,7 +97,7 @@ export const system = {
 export const coaching = {
   eyebrow: 'Human coaching',
   headline: 'Your coach guides the journey.',
-  lead: 'Piyush and Rakshit review your case in the app. There are no live calls.',
+  lead: 'Piyush and Rakshit guide your case in the app — plans built on tested training and nutrition principles.',
   note: COACH_ISSUE_CONTACT,
 } as const
 
@@ -176,7 +176,7 @@ export const faq = {
     },
     {
       q: 'How do I reach a coach?',
-      a: 'Inside the app. LURVOX does not do live calls. For an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
+      a: 'Inside the app. For an issue, message Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.',
     },
     {
       q: 'Are results guaranteed?',

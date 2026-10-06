@@ -12,6 +12,7 @@ const HERO_OPTIONS: {
   slug: CoachingPlanSlug
   label: string
   title: string
+  lead: string
   duration: string
   image: string
   alt: string
@@ -20,6 +21,7 @@ const HERO_OPTIONS: {
     slug: '3_months',
     label: 'Fat loss',
     title: 'Your fat loss plan.',
+    lead: 'Best for a 90-day fat-loss push. First plan in 24–48 hours.',
     duration: '90 days',
     image: '/images/lurvox/campaign/hero-fat-loss.webp',
     alt: 'Man walking uphill on a treadmill in a private gym',
@@ -28,6 +30,7 @@ const HERO_OPTIONS: {
     slug: '6_months',
     label: 'Muscle',
     title: 'Fat loss and muscle.',
+    lead: 'Best for losing fat while building muscle. First plan in 24–48 hours.',
     duration: '6 months',
     image: '/images/lurvox/campaign/hero-muscle.webp',
     alt: 'Man in a heavy squat in a private studio',
@@ -36,6 +39,7 @@ const HERO_OPTIONS: {
     slug: '12_months',
     label: 'Athletic',
     title: 'An athletic body.',
+    lead: 'Best for building an athletic body — fat loss, muscle gain, and stamina. First plan in 24–48 hours.',
     duration: '12 months',
     image: '/images/lurvox/campaign/hero-athletic.webp',
     alt: 'Muscular man running in shorts along a waterfront at dawn',
@@ -57,16 +61,8 @@ export function Nav() {
         </a>
         <div className="lx-nav-actions">
           <CtaLink href="/login" variant="ghost" className="lx-login">
-            Log in
+            Client login
           </CtaLink>
-          <details className="lx-menu">
-            <summary>Menu</summary>
-            <a href="#system">What’s included</a>
-            <a href="#coaching">Coaches</a>
-            <a href="#method">How it works</a>
-            <a href="#pricing">Plans</a>
-            <a href="/login">Log in</a>
-          </details>
         </div>
       </div>
     </header>
@@ -88,7 +84,7 @@ export function Hero({
       <div className="lx-hero-copy">
         <p className="lx-eyebrow">Online coaching</p>
         <h1>{option.title}</h1>
-        <p className="lx-lead">Workout, diet, and a coach. First plan in 24–48 hours.</p>
+        <p className="lx-lead">{option.lead}</p>
         <div className="lx-switch" role="tablist" aria-label="Coaching plans">
           {HERO_OPTIONS.map((item) => (
             <button
@@ -154,7 +150,7 @@ export function WhyFail() {
     {
       n: '03',
       title: 'Made with tested principles',
-      body: 'The workout and diet are made from tested training and nutrition principles, then written for your case. There are no live calls.',
+      body: 'The workout and diet follow professional principles, backed by science, then written for your case.',
       image: '/images/lurvox/campaign/why-principles.webp',
       alt: 'Woman holding a kettlebell in a careful hinge in an empty studio',
     },
@@ -211,7 +207,7 @@ export function Difference() {
     {
       n: '02',
       title: 'Human coaching',
-      body: 'Piyush Aggarwal and Rakshit Mohla review your case in the app. There are no live calls.',
+      body: 'Piyush Aggarwal and Rakshit Mohla guide your case in the app — plans built on tested principles, not random templates.',
       images: coaches.map((coach) => ({ src: coach.photo, alt: `${coach.name}, LURVOX coach` })),
     },
     {
@@ -367,11 +363,8 @@ export function System() {
     },
     {
       title: 'Coach',
-      body: 'Piyush Aggarwal and Rakshit Mohla reply in the app. No live calls.',
-      images: coaches.map((coach) => ({
-        src: coach.photo,
-        alt: `${coach.name}, LURVOX coach`,
-      })),
+      body: 'Piyush Aggarwal and Rakshit Mohla reply in the app.',
+      images: coaches.map((coach) => ({ src: coach.photo, alt: `${coach.name}, LURVOX coach` })),
     },
     {
       title: 'Check-in',
@@ -390,7 +383,7 @@ export function System() {
     <section className="lx-system" id="system">
       <p className="lx-eyebrow">What you get</p>
       <h2>One system. Your case.</h2>
-      <p className="lx-lead">The workout, the diet, the check-ins, and a coach reading them.</p>
+      <p className="lx-lead">The workout, the diet, the check-ins, and a coach reading them — built on tested principles.</p>
       <ul className="lx-include">
         {PLAN_INCLUSIONS.map((item) => (
           <li key={item}>{item}</li>
@@ -443,37 +436,51 @@ export function System() {
   )
 }
 
+function CoachSwitch() {
+  const [active, setActive] = useState(0)
+  const coach = coaches[active]
+  return (
+    <>
+      <div className="lx-stage">
+        <a href={coach.instagramUrl} target="_blank" rel="noopener noreferrer">
+          {/* eslint-disable-next-line @next/next/no-img-element -- real coach photograph */}
+          <img className="lx-cover" src={coach.photo} alt={`${coach.name}, LURVOX coach`} />
+        </a>
+        <div className="lx-stage-copy">
+          <h2>{coach.name}</h2>
+          <p>{coach.instagramHandle}</p>
+          <p>Tap to open Instagram</p>
+        </div>
+      </div>
+      <div className="lx-stage-nav lx-coach-nav" role="tablist" aria-label="Coaches">
+        {coaches.map((item, index) => (
+          <button
+            key={item.instagramHandle}
+            type="button"
+            role="tab"
+            aria-selected={index === active}
+            className={index === active ? 'is-on' : undefined}
+            onClick={() => setActive(index)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- real coach photograph */}
+            <img src={item.photo} alt="" />
+            <span>{item.firstName}</span>
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
 export function Coaching() {
   return (
     <section className="lx-coaches" id="coaching">
       <div className="lx-coaches-copy">
-        <p className="lx-eyebrow">Human coaching</p>
-        <h2>
-          Technology
-          <br />
-          organizes it.
-        </h2>
-        <h2>
-          People
-          <br />
-          guide you.
-        </h2>
-        <p className="lx-lead">
-          Piyush Aggarwal and Rakshit Mohla work inside the app. LURVOX does not do live calls.
-        </p>
+        <p className="lx-eyebrow">The method</p>
+        <h2>Get trained with professional principles.</h2>
+        <p className="lx-lead">Backed by science, not random things.</p>
       </div>
-      <div className="lx-coach-row">
-        {coaches.map((coach) => (
-          <a key={coach.instagramHandle} href={coach.instagramUrl} target="_blank" rel="noopener noreferrer">
-            {/* eslint-disable-next-line @next/next/no-img-element -- real coach photographs */}
-            <img src={coach.photo} alt={`${coach.name}, LURVOX coach`} />
-            <span>
-              <strong>{coach.name}</strong>
-              <em>{coach.instagramHandle}</em>
-            </span>
-          </a>
-        ))}
-      </div>
+      <CoachSwitch />
     </section>
   )
 }
@@ -595,8 +602,7 @@ export function Method() {
   const current = steps[active]
   return (
     <section className="lx-method" id="method">
-      <p className="lx-eyebrow">How it works</p>
-      <h2>Then it adapts.</h2>
+      <h2>How it works.</h2>
       <div className="lx-stage lx-method-stage">
         <CampaignImage
           key={current.n}
@@ -604,10 +610,10 @@ export function Method() {
           alt={current.alt}
           className="lx-cover"
         />
-      </div>
-      <div className="lx-method-copy">
-        <h3>{current.title}</h3>
-        <p>{current.body}</p>
+        <div className="lx-stage-copy">
+          <h2>{current.title}</h2>
+          <p>{current.body}</p>
+        </div>
       </div>
       <div className="lx-stage-nav lx-method-nav" role="tablist" aria-label="How it works">
         {steps.map((step, index) => (
@@ -631,7 +637,7 @@ export function Method() {
 const PLAN_POINTS: Record<CoachingPlanSlug, string[]> = {
   '3_months': [
     'Workout and diet for your case',
-    'Coach in the app. No live calls',
+    'Professional principles, backed by science',
     'Check-ins and daily tracking',
     'Updates every 14 days',
   ],
@@ -696,7 +702,7 @@ export function FaqSection() {
   const items = [
     ['What is LURVOX?', 'Online fitness coaching. A personal workout, a personal diet, tracking, and a coach in the app.'],
     ['What do I receive?', 'The plan for the goal you choose, check-ins, daily tracking, and coach chat. The 3-month plan updates every 14 days. The 6- and 12-month plans update every week.'],
-    ['How does the coach work?', 'Piyush Aggarwal and Rakshit Mohla review your case in the app. There are no live calls.'],
+    ['What is the training based on?', 'Professional principles, backed by science. Not random workouts or diets.'],
     ['When do I receive my plan?', 'After you finish onboarding. The first plan is prepared in 24 to 48 hours.'],
     ['Do I need a gym?', 'No. The plan uses a gym, home, or a mix, based on what you have.'],
     ['Can I message my coach?', 'Yes, in the app, once your coaching access is active.'],
