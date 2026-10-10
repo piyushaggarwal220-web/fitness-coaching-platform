@@ -17,6 +17,7 @@ import {
 } from '@/lib/initial-plan-generation'
 import { latestCoachingPurchase, latestDigitalPurchase } from '@/lib/payments/digital-purchase'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
+import { instantPlanWindowOpen } from '@/lib/plan-delivery-window'
 import { fallbackPublishCoachNotes } from '@/lib/plan-metadata'
 import { activatePlan, syncPlanDeliveredFlag } from '@/lib/plans'
 import { clientHasDeliveredPlanStrict } from '@/lib/plans-delivery-guard'
@@ -131,6 +132,20 @@ export type PiyushInitialPlanResult = {
   detail: string
   planId?: string
   journeyCreated?: boolean
+}
+
+function initialDeliveryStatus(
+  delivered: { error: string | null; heldForReview?: boolean; heldForWindow?: boolean },
+  sentDetail: string
+): { status: PiyushInitialPlanResult['status']; detail: string } {
+  if (delivered.error) return { status: 'failed', detail: `deliver: ${delivered.error}` }
+  if (delivered.heldForReview) {
+    return { status: 'skipped', detail: 'held for coach review (calorie floor flag)' }
+  }
+  if (delivered.heldForWindow) {
+    return { status: 'skipped', detail: 'waiting for the 1–2 hour delivery window' }
+  }
+  return { status: 'sent', detail: sentDetail }
 }
 
 async function ensureAiJourneyPlan(
@@ -288,29 +303,12 @@ export async function runPiyushInitialPlanForClient(
       planId: job.draft_plan_id,
       createdAt: typed.created_at,
     })
-    if (delivered.error) {
-      return {
-        clientId,
-        name,
-        status: 'failed',
-        detail: `deliver: ${delivered.error}`,
-        planId: job.draft_plan_id,
-      }
-    }
-    if (delivered.heldForReview) {
-      return {
-        clientId,
-        name,
-        status: 'skipped',
-        detail: 'held for coach review (calorie floor flag)',
-        planId: job.draft_plan_id,
-      }
-    }
+    const outcome = initialDeliveryStatus(delivered, 'delivered ready draft')
     return {
       clientId,
       name,
-      status: 'sent',
-      detail: 'delivered ready draft',
+      status: outcome.status,
+      detail: outcome.detail,
       planId: job.draft_plan_id,
     }
   }
@@ -354,31 +352,12 @@ export async function runPiyushInitialPlanForClient(
       planId: job.draft_plan_id,
       createdAt: typed.created_at,
     })
-    if (delivered.error) {
-      return {
-        clientId,
-        name,
-        status: 'failed',
-        detail: `deliver: ${delivered.error}`,
-        planId: job.draft_plan_id,
-        journeyCreated,
-      }
-    }
-    if (delivered.heldForReview) {
-      return {
-        clientId,
-        name,
-        status: 'skipped',
-        detail: 'held for coach review (calorie floor flag)',
-        planId: job.draft_plan_id,
-        journeyCreated,
-      }
-    }
+    const outcome = initialDeliveryStatus(delivered, 'delivered after enqueue')
     return {
       clientId,
       name,
-      status: 'sent',
-      detail: 'delivered after enqueue',
+      status: outcome.status,
+      detail: outcome.detail,
       planId: job.draft_plan_id,
       journeyCreated,
     }
@@ -464,31 +443,12 @@ export async function runPiyushInitialPlanForClient(
       planId: latest.draft_plan_id,
       createdAt: typed.created_at,
     })
-    if (delivered.error) {
-      return {
-        clientId,
-        name,
-        status: 'failed',
-        detail: `deliver: ${delivered.error}`,
-        planId: latest.draft_plan_id,
-        journeyCreated,
-      }
-    }
-    if (delivered.heldForReview) {
-      return {
-        clientId,
-        name,
-        status: 'skipped',
-        detail: 'held for coach review (calorie floor flag)',
-        planId: latest.draft_plan_id,
-        journeyCreated,
-      }
-    }
+    const outcome = initialDeliveryStatus(delivered, 'generated and delivered')
     return {
       clientId,
       name,
-      status: 'sent',
-      detail: 'generated and delivered',
+      status: outcome.status,
+      detail: outcome.detail,
       planId: latest.draft_plan_id,
       journeyCreated,
     }
@@ -568,6 +528,11 @@ export async function listPiyushPendingInitialPlanClients(
     if (!shouldAutoJourneyAndDeliverInitialPlan(row.coach_id, row.created_at)) return false
     // Instant-only buyers belong on digital fulfillment, not coaching auto-deliver.
     if (hasDigital.has(row.id) && !hasCoaching.has(row.id)) return false
+    // Ready drafts wait here until the shared 1–2 hour send time. The release
+    // cron delivers them; keeping them in this list would block new generates.
+    if (hasReadyJob.has(row.id) && !instantPlanWindowOpen(row.onboarding_completed_at, row.id)) {
+      return false
+    }
     return true
   })
 

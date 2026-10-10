@@ -5,7 +5,7 @@ import { BRAND_NAME } from '@/lib/brand'
 export const metadata: Metadata = {
   title: `${BRAND_NAME} · Customised fitness plan`,
   description:
-    'Personalised workout and diet plans from ₹49. One time payment. Delivered to email and app within a few hours. Made by the coach. Not live coaching.',
+    'Personalised workout and diet plans from ₹49. One time payment. Delivered to email and app within 1–2 hours. Made by the coach. Not live coaching.',
 }
 
 const fontVars = {

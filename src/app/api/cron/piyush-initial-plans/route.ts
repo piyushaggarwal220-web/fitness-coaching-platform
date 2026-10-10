@@ -1,4 +1,5 @@
 import { after, NextResponse } from 'next/server'
+import { releaseDueInitialPlans } from '@/lib/initial-plan-release'
 import { processPiyushPendingInitialPlans, runPiyushInitialPlanForClient } from '@/lib/piyush-initial-plan-auto'
 import { processAutoCoachWorkQueues } from '@/lib/piyush-work-queue-auto'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -50,11 +51,18 @@ async function handle(request: Request) {
   const ignoreDelay = url.searchParams.get('ignoreDelay') === '1'
 
   const admin = createAdminClient()
+  const released = await releaseDueInitialPlans(admin).catch((err) => {
+    console.error(
+      '[cron/piyush-initial-plans] held plan release failed:',
+      err instanceof Error ? err.message : err
+    )
+    return 0
+  })
 
   if (clientId) {
     if (sync) {
       const result = await runPiyushInitialPlanForClient(admin, clientId)
-      return NextResponse.json({ ok: true, sync: true, results: [result] })
+      return NextResponse.json({ ok: true, sync: true, released, results: [result] })
     }
 
     const prepared = await runPiyushInitialPlanForClient(admin, clientId, {
@@ -77,7 +85,7 @@ async function handle(request: Request) {
         )
       }
     }
-    return NextResponse.json({ ok: true, sync: false, results: [prepared] })
+    return NextResponse.json({ ok: true, sync: false, released, results: [prepared] })
   }
 
   const queue = skipQueue
@@ -94,6 +102,7 @@ async function handle(request: Request) {
     return NextResponse.json({
       ok: true,
       sync: true,
+      released,
       processed: results.length,
       results,
       queue,
@@ -126,6 +135,7 @@ async function handle(request: Request) {
   return NextResponse.json({
     ok: true,
     sync: false,
+    released,
     processed: prepared.length,
     results: prepared,
     queue,

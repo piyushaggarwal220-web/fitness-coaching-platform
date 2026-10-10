@@ -167,9 +167,7 @@ function CreateAccountForm() {
               </li>
               <li>
                 <strong>Then.</strong> Your plan arrives{' '}
-                {planSlug.startsWith('digital_')
-                  ? 'usually within a few hours.'
-                  : 'within 24–48 hours.'}
+                within 1–2 hours.
               </li>
             </ol>
             <p style={styles.hint}>We email the same steps, so you can leave and come back.</p>

@@ -1,13 +1,27 @@
+import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy'
 import { getClientPaymentGatePath, hasClientEntitlement } from '@/lib/entitlements'
 import { clientFacingPlanTitle } from '@/lib/plan-metadata'
+import {
+  INSTANT_PLAN_WINDOW_LABEL,
+  instantPlanDeliverAt,
+} from '@/lib/plan-delivery-window'
 import { isDigitalPlanSlug } from '@/lib/payments/plans'
 import type { Coach, OnboardingProfile, Plan, Purchase } from '@/types/database'
 
-/** Coaching plan delivery SLA after onboarding completes (hours). */
+/** Manual-coach plan delivery SLA after onboarding completes (hours). */
 export const PLAN_DELIVERY_HOURS = 24
 
-/** Customised digital plan SLA — auto-deliver within 3 hours of intake. */
-export const DIGITAL_PLAN_DELIVERY_HOURS = 3
+/** Upper bound of the auto-delivery window. The live countdown uses the exact send time. */
+export const DIGITAL_PLAN_DELIVERY_HOURS = 2
+
+export { INSTANT_PLAN_WINDOW_LABEL }
+
+function usesInstantPlanWindow(
+  profile: Pick<OnboardingProfile, 'id' | 'coach_id'>,
+  digital: boolean
+): boolean {
+  return digital || isAutoDeliveryCoach(profile.coach_id)
+}
 
 export type ClientDashboardStatus = {
   paymentConfirmed: boolean
@@ -32,15 +46,21 @@ export function hasOpenedDietAndWorkout(
 }
 
 export function getExpectedPlanDeliveryDate(
-  profile: Pick<OnboardingProfile, 'onboarding_complete' | 'onboarding_completed_at' | 'plan_delivered'>,
+  profile: Pick<
+    OnboardingProfile,
+    'id' | 'coach_id' | 'onboarding_complete' | 'onboarding_completed_at' | 'plan_delivered'
+  >,
   options?: { digital?: boolean }
 ): Date | null {
   if (!profile.onboarding_complete || profile.plan_delivered) return null
   if (!profile.onboarding_completed_at) return null
 
-  const hours = options?.digital ? DIGITAL_PLAN_DELIVERY_HOURS : PLAN_DELIVERY_HOURS
+  if (usesInstantPlanWindow(profile, options?.digital === true)) {
+    return instantPlanDeliverAt(profile.onboarding_completed_at, profile.id)
+  }
+
   const completedAt = new Date(profile.onboarding_completed_at)
-  return new Date(completedAt.getTime() + hours * 60 * 60 * 1000)
+  return new Date(completedAt.getTime() + PLAN_DELIVERY_HOURS * 60 * 60 * 1000)
 }
 
 export function formatExpectedDelivery(date: Date | null): string | null {
@@ -55,7 +75,10 @@ export function formatExpectedDelivery(date: Date | null): string | null {
 }
 
 export function formatPlanCountdown(
-  profile: Pick<OnboardingProfile, 'onboarding_complete' | 'onboarding_completed_at' | 'plan_delivered'>,
+  profile: Pick<
+    OnboardingProfile,
+    'id' | 'coach_id' | 'onboarding_complete' | 'onboarding_completed_at' | 'plan_delivered'
+  >,
   options?: { digital?: boolean }
 ): string | null {
   const deadline = getExpectedPlanDeliveryDate(profile, options)
@@ -148,8 +171,8 @@ export function getClientDashboardStatus(params: {
         ? 'Upload front, side, and back photos to finish onboarding — your customised plan starts after that.'
         : 'Upload front, side, and back photos to finish onboarding — your personalized diet and workout plan will start being prepared after that.'
       : isDigital
-        ? 'Finish onboarding so we can build your customised plan (usually within a few hours). Tracker, Journey, and Coach chat unlock separately if you want them.'
-        : 'Finish onboarding (review & submit) so your plan can be prepared.'
+        ? `Finish onboarding so we can build your customised plan (within ${INSTANT_PLAN_WINDOW_LABEL}). Tracker, Journey, and Coach chat unlock separately if you want them.`
+        : `Finish onboarding (review & submit) so your plan can be prepared. It arrives within ${INSTANT_PLAN_WINDOW_LABEL}.`
     nextActionHref = '/onboarding'
   } else if (!coachAssigned && !isDigital) {
     nextAction = 'Your plan is being prepared.'

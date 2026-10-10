@@ -6,6 +6,7 @@ import {
   shouldAutoJourneyAndDeliverInitialPlan,
 } from '@/lib/coach-delivery-policy'
 import { NotificationTemplates, sendNotification } from '@/lib/notifications/dispatcher'
+import { readInstantPlanWindow } from '@/lib/plan-delivery-window-server'
 import { activatePlan } from '@/lib/plans'
 
 /** Deliver a ready initial draft to an auto-initial client and notify them. */
@@ -17,9 +18,14 @@ export async function deliverPiyushInitialPlan(
     planId: string
     createdAt?: string | null
   }
-): Promise<{ error: string | null; heldForReview?: boolean }> {
+): Promise<{ error: string | null; heldForReview?: boolean; heldForWindow?: boolean; deliverAt?: string | null }> {
   if (!shouldAutoJourneyAndDeliverInitialPlan(input.coachId, input.createdAt)) {
     return { error: 'Auto-deliver is only enabled for eligible auto-initial coaching clients.' }
+  }
+
+  const window = await readInstantPlanWindow(admin, input.clientId)
+  if (!window.open) {
+    return { error: null, heldForWindow: true, deliverAt: window.deliverAt }
   }
 
   const { data: planRow } = await admin

@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { CheckCircle2, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy'
+import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import {
-  DIGITAL_PLAN_DELIVERY_HOURS,
   PLAN_DELIVERY_HOURS,
   formatPlanCountdown,
   hasOpenedDietAndWorkout,
@@ -53,7 +54,10 @@ export function PlanCountdownCard({
         : hasOpenedDietAndWorkout(activePlan)
     : hasOpenedDietAndWorkout(activePlan)
   const displayCoach = 'Smart Coach'
-  const deliveryHours = isDigital ? DIGITAL_PLAN_DELIVERY_HOURS : PLAN_DELIVERY_HOURS
+  const instantWindow = isDigital || isAutoDeliveryCoach(profile.coach_id)
+  const deliveryWindowLabel = instantWindow
+    ? INSTANT_PLAN_WINDOW_LABEL
+    : `${PLAN_DELIVERY_HOURS} hours`
 
   // Once diet + workout have been opened, leave the upper slot for the tracker.
   if (planReady && openedCore) return null
@@ -71,8 +75,8 @@ export function PlanCountdownCard({
         )}
         <p style={{ margin: '12px 0 0', fontSize: 15, color: colors.textSecondary, lineHeight: 1.55 }}>
           {isDigital
-            ? `Complete onboarding so we can build your customised plan. Delivery is within ${deliveryHours} hours after you submit — by email and in the app.`
-            : `Complete onboarding so Smart Coach can build your personal diet and workout. Your plan is delivered within ${deliveryHours} hours after onboarding.`}
+            ? `Complete onboarding so we can build your customised plan. Delivery is within ${deliveryWindowLabel} after you submit — by email and in the app.`
+            : `Complete onboarding so Smart Coach can build your personal diet and workout. Your plan is delivered within ${deliveryWindowLabel} after onboarding.`}
         </p>
         <Button fullWidth style={{ marginTop: 16 }} onClick={() => router.push('/onboarding')}>
           Continue onboarding
@@ -135,7 +139,7 @@ export function PlanCountdownCard({
           Estimated delivery
         </p>
         <p style={{ margin: 0, fontSize: 14, color: colors.textSecondary }}>
-          Within {deliveryHours} hours
+          Within {deliveryWindowLabel}
         </p>
         {countdown && (
           <p
@@ -170,7 +174,7 @@ export function PlanCountdownCard({
         Estimated delivery
       </p>
       <p style={{ margin: 0, fontSize: 14, color: colors.textSecondary }}>
-        Within {PLAN_DELIVERY_HOURS} hours
+        Within {deliveryWindowLabel}
       </p>
       {countdown && (
         <p style={{

@@ -21,6 +21,8 @@ import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { clientFacingPlanTitle } from '@/lib/plan-metadata';
 import { planGoalName } from '@/lib/payments/plan-pages';
+import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy';
+import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window';
 import { isDigitalPlanSlug } from '@/lib/payments/plans';
 import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { useInstantLockState } from '@/hooks/useInstantLockState';
@@ -434,8 +436,8 @@ export default function Dashboard() {
                   : 'Smart Coach is building your personalized plan.'}
           </strong>
           <div>
-            {isDigitalPlanSlug(purchase?.plan_slug)
-              ? 'You’ll get an email when it’s ready, and it will also appear in My Plan (usually within a few hours).'
+            {isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id)
+              ? `You’ll get an email when it’s ready, and it will also appear in My Plan (within ${INSTANT_PLAN_WINDOW_LABEL}).`
               : 'It usually arrives within 24 hours and appears in My Plan automatically.'}
           </div>
         </div>

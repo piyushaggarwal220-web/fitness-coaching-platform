@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ImageIcon, Send } from 'lucide-react'
 import { StorageImage } from '@/components/ui/StorageImage'
 import { VoicePlayer } from '@/components/chat/VoicePlayer'
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder'
 import {
-  COACH_REPLY_QUIET_MS,
+  AI_COACH_REPLY_BATCH_MS,
+  chatTextForModel,
+  coachTypingDurationMs,
   decodeChatPhoto,
   decodeChatVoice,
   encodeChatPhoto,
@@ -17,18 +19,32 @@ import { CHAT_LANGUAGES, parseChatLanguage, type ChatLanguage } from '@/lib/ai/c
 
 type Msg = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string }
 
+function typingDotStyle(delaySeconds: number): CSSProperties {
+  return {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: '#aebac1',
+    display: 'inline-block',
+    animation: 'wa-typing 1.2s infinite ease-in-out',
+    animationDelay: `${delaySeconds}s`,
+  }
+}
+
 export function AiCoachChatThread() {
   const [messages, setMessages] = useState<Msg[]>([])
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
-  const [waiting, setWaiting] = useState(false)
+  const [coachTyping, setCoachTyping] = useState(false)
   const [error, setError] = useState('')
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null)
   const [language, setLanguage] = useState<ChatLanguage>('hinglish')
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const pauseRef = useRef<number | null>(null)
   const sendingRef = useRef(false)
+  const replyEpoch = useRef(0)
+  const typingSince = useRef<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -62,7 +78,7 @@ export function AiCoachChatThread() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, sending, waiting])
+  }, [messages, sending, coachTyping])
 
   useEffect(() => {
     return () => {
@@ -70,13 +86,24 @@ export function AiCoachChatThread() {
     }
   }, [])
 
-  const requestReply = async () => {
+  const revealCoachMessage = async (epoch: number, message: Msg) => {
+    const needed = coachTypingDurationMs(chatTextForModel(message.content))
+    const started = typingSince.current ?? Date.now()
+    const remain = Math.max(0, needed - (Date.now() - started))
+    if (remain > 0) {
+      await new Promise((resolve) => window.setTimeout(resolve, remain))
+    }
+    setMessages((prev) => (prev.some((item) => item.id && item.id === message.id) ? prev : [...prev, message]))
+    if (epoch !== replyEpoch.current) return
+    typingSince.current = null
+    setCoachTyping(false)
+  }
+
+  const requestReply = async (epoch: number) => {
     if (pauseRef.current) {
       window.clearTimeout(pauseRef.current)
       pauseRef.current = null
     }
-    setWaiting(false)
-    setSending(true)
     setError('')
     try {
       const res = await fetch('/api/client/ai-chat', {
@@ -87,26 +114,34 @@ export function AiCoachChatThread() {
       })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
+        if (epoch !== replyEpoch.current) return
+        setCoachTyping(false)
+        typingSince.current = null
         setError('Something went wrong. Try again.')
-        setSending(false)
         return
       }
       if (data?.message) {
-        setMessages((prev) => [...prev, data.message as Msg])
+        await revealCoachMessage(epoch, data.message as Msg)
+      } else if (epoch === replyEpoch.current) {
+        typingSince.current = null
+        setCoachTyping(false)
       }
     } catch {
+      if (epoch !== replyEpoch.current) return
+      typingSince.current = null
+      setCoachTyping(false)
       setError('Could not reply')
-    } finally {
-      setSending(false)
     }
   }
 
   const scheduleReply = () => {
     if (pauseRef.current) window.clearTimeout(pauseRef.current)
-    setWaiting(true)
+    if (!typingSince.current) typingSince.current = Date.now()
+    setCoachTyping(true)
+    const epoch = ++replyEpoch.current
     pauseRef.current = window.setTimeout(() => {
-      void requestReply()
-    }, COACH_REPLY_QUIET_MS)
+      void requestReply(epoch)
+    }, AI_COACH_REPLY_BATCH_MS)
   }
 
   const send = async () => {
@@ -156,8 +191,10 @@ export function AiCoachChatThread() {
         return
       }
       if (data?.message) {
-        setWaiting(false)
-        setMessages((prev) => [...prev.filter((item) => item.id !== tempId), data.message as Msg])
+        if (!typingSince.current) typingSince.current = Date.now()
+        setCoachTyping(true)
+        const epoch = ++replyEpoch.current
+        await revealCoachMessage(epoch, data.message as Msg)
       } else if (data?.pending) {
         scheduleReply()
       }
@@ -213,8 +250,10 @@ export function AiCoachChatThread() {
         return
       }
       if (data?.message) {
-        setWaiting(false)
-        setMessages((prev) => [...prev.filter((item) => item.id !== tempId), data.message as Msg])
+        if (!typingSince.current) typingSince.current = Date.now()
+        setCoachTyping(true)
+        const epoch = ++replyEpoch.current
+        await revealCoachMessage(epoch, data.message as Msg)
       } else if (data?.pending) {
         scheduleReply()
       }
@@ -318,8 +357,24 @@ export function AiCoachChatThread() {
             </div>
           )
         })}
-        {sending && !waiting && (
-          <p style={{ margin: 0, color: colors.textMuted, fontSize: 13 }}>Sending…</p>
+        {coachTyping && (
+          <div style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 8 }} aria-live="polite">
+            <div
+              style={{
+                display: 'flex',
+                gap: 4,
+                alignItems: 'center',
+                background: colors.bgElevated,
+                borderRadius: 16,
+                padding: '10px 12px',
+              }}
+            >
+              <span style={typingDotStyle(0)} />
+              <span style={typingDotStyle(0.15)} />
+              <span style={typingDotStyle(0.3)} />
+            </div>
+            <span style={{ color: colors.textMuted, fontSize: 12 }}>Coach is typing</span>
+          </div>
         )}
         <div ref={bottomRef} />
       </div>
@@ -327,42 +382,6 @@ export function AiCoachChatThread() {
         <p style={{ margin: `0 ${spacing[4]}px ${spacing[2]}px`, color: colors.danger, fontSize: 13 }}>
           {error}
         </p>
-      )}
-      {waiting && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 10,
-            margin: `0 ${spacing[3]}px ${spacing[2]}px`,
-            padding: '10px 12px',
-            borderRadius: radius.sm,
-            background: colors.accentMuted,
-            border: `1px solid ${colors.borderSubtle}`,
-          }}
-        >
-          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.4, color: colors.textSecondary }}>
-            Send another message if you are still explaining. A reply starts when you pause.
-          </p>
-          <button
-            type="button"
-            onClick={() => void requestReply()}
-            style={{
-              flexShrink: 0,
-              minHeight: 40,
-              padding: '0 12px',
-              border: 'none',
-              borderRadius: radius.sm,
-              background: colors.accent,
-              color: colors.textInverse,
-              fontWeight: 800,
-              cursor: 'pointer',
-            }}
-          >
-            Reply now
-          </button>
-        </div>
       )}
       {imagePreview && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: `0 ${spacing[3]}px ${spacing[2]}px` }}>

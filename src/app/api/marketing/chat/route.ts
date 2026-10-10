@@ -10,7 +10,7 @@ type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
 const INSTANT_SYSTEM = `You are Lurvox Instant Plan help on app.lurvox.in/customised-plan.
 Product: one-time customised digital plans (Workout ₹49, Diet ₹89, Complete ₹99).
-Delivery: after pay, short in-app questionnaire, plan in app + email within a few hours. Written guidance, not live chat coaching.
+Delivery: after pay, short in-app questionnaire, plan in app + email within 1–2 hours. Written guidance, not live chat coaching.
 Guarantee: moneyback if no results when they follow the plan.
 ${COACH_ISSUE_CONTACT} Never offer a phone call, a WhatsApp call, or a booked time.
 Tone: short, clear, India-friendly English. No medical advice. Do not invent discounts.
@@ -19,6 +19,7 @@ Max 3 short sentences unless they ask for detail.`
 
 const COACHING_SYSTEM = `You are Lurvox coaching help for www.lurvox.in.
 Product: affordable 1-to-1 online fitness coaching. Plans: Fat loss 3 months ₹599, Fat loss + muscle 6 months ₹999, Athletic body 12 months ₹1,699.
+First plan arrives within 1–2 hours after onboarding, in the app.
 Positioning: personalised online coaching with guarantee of visible results when they follow the plan. Do not say "AI", "human coach", or "chatbot". Say 1-to-1 coaching, personalised plans, check-ins, app support.
 ${COACH_ISSUE_CONTACT} Never offer a phone call, a WhatsApp call, or a booked time. Do not say a plan includes a weekly call.
 Tone: short, clear, India-friendly English. No medical advice. No fake urgency.
@@ -115,7 +116,7 @@ function faqFallback(surface: 'instant' | 'coaching', message: string): string |
       return 'Workout is ₹49. Diet is ₹89. Complete Guidance is ₹99 for both, plus sleep, cardio, water, and optional supplements.'
     }
     if (/deliver|how long|when|hours|receive/.test(q)) {
-      return 'After payment, finish the short in-app questionnaire. Your plan usually arrives in the app and email within a few hours.'
+      return 'After payment, finish the short in-app questionnaire. Your plan arrives in the app and email within 1–2 hours.'
     }
     if (/money.?back|refund|guarantee|result/.test(q)) {
       return 'We stand behind guaranteed results with moneyback if you see none, when you follow the plan as written.'

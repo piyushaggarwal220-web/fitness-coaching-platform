@@ -23,6 +23,7 @@ import {
   getCoachWorkingHoursStatus,
 } from '@/lib/coach-working-hours'
 import { CHAT_AFTER_ENROLLMENT_MESSAGE } from '@/lib/chat-availability'
+import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy'
 import { Check, CheckCheck, ImageIcon, Send, Smile } from 'lucide-react'
 
 /** WhatsApp-like dark palette (client portal) */
@@ -145,6 +146,8 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(initialMessages.length === 0)
   const [peerTyping, setPeerTyping] = useState(false)
+  const [localCoachTyping, setLocalCoachTyping] = useState(false)
+  const awaitingCoachSinceRef = useRef<number | null>(null)
   const [peerOnline, setPeerOnline] = useState(false)
   const [peerLastSeenAt, setPeerLastSeenAt] = useState<string | null>(null)
   const [serverResponseTarget, setServerResponseTarget] = useState<CoachResponseTarget | null>(null)
@@ -400,7 +403,21 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
       scrollThreadToBottom(behavior)
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [messages, imagePreview, peerTyping, scrollThreadToBottom])
+  }, [messages, imagePreview, peerTyping, localCoachTyping, scrollThreadToBottom])
+
+  useEffect(() => {
+    const since = awaitingCoachSinceRef.current
+    if (since == null) return
+    const replied = messages.some(
+      (msg) =>
+        msg.sender_type === 'coach' &&
+        !msg.id.startsWith('temp-') &&
+        new Date(msg.created_at).getTime() >= since - 1500
+    )
+    if (!replied) return
+    awaitingCoachSinceRef.current = null
+    setLocalCoachTyping(false)
+  }, [messages])
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -482,6 +499,10 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
         })
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
+      }
+      if (viewer === 'client' && isAutoDeliveryCoach(coachId)) {
+        awaitingCoachSinceRef.current = Date.now()
+        setLocalCoachTyping(true)
       }
       // Refresh metadata / peer state without relying on fuzzy temp matching
       await fetchMessages(false)
@@ -855,7 +876,7 @@ export function CoachChatThread({ conversationId, coachId, viewer, initialMessag
           )
         })}
 
-        {peerTyping && (
+        {(peerTyping || localCoachTyping) && (
           <div className={motionClass.messageEnterTheirs} style={styles.typingRow}>
             <div style={styles.typingBubble}>
               <span style={styles.typingDot} />
@@ -1165,6 +1186,7 @@ const styles: Record<string, CSSProperties> = {
   typingRow: {
     display: 'flex',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: 8,
     padding: '4px 8px',
     zIndex: 1,

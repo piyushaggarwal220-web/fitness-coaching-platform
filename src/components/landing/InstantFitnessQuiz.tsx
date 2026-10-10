@@ -268,7 +268,7 @@ export function InstantFitnessQuiz() {
               <Check size={15} aria-hidden /> Coach-made plan from your answers
             </li>
             <li>
-              <Check size={15} aria-hidden /> Delivered to app + email in a few hours
+              <Check size={15} aria-hidden /> Delivered to app + email in 1–2 hours
             </li>
             <li>
               <Check size={15} aria-hidden /> Complete ₹99 — sleep, cardio, water &amp; supplement guidance free

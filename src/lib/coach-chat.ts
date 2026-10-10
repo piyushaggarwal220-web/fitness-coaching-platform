@@ -429,6 +429,12 @@ export async function sendChatMessage(
 
   if (error || !data) return { data: null, error: error?.message ?? 'Failed to send message.' }
 
+  const typingField = input.senderType === 'coach' ? 'coach_typing_at' : 'client_typing_at'
+  await supabase
+    .from('coach_conversations')
+    .update({ [typingField]: null })
+    .eq('id', input.conversationId)
+
   const preview = messagePreview(messageType, input.content)
 
   const { data: conv } = await supabase
@@ -526,6 +532,21 @@ export async function setTypingIndicator(
     .from('coach_conversations')
     .update({ [field]: new Date().toISOString() })
     .eq('id', conversationId)
+}
+
+/** Keep the typing flag fresh for `totalMs`, then return so the reply can be sent. */
+export async function pulseCoachTyping(
+  supabase: SupabaseClient,
+  conversationId: string,
+  totalMs: number
+): Promise<void> {
+  const end = Date.now() + Math.max(0, totalMs)
+  do {
+    await setTypingIndicator(supabase, conversationId, 'coach')
+    const left = end - Date.now()
+    if (left <= 0) break
+    await new Promise((resolve) => setTimeout(resolve, Math.min(4_000, left)))
+  } while (Date.now() < end)
 }
 
 export function formatConversationStatus(status: ConversationStatus): string {

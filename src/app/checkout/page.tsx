@@ -851,8 +851,8 @@ function CheckoutForm() {
  <h1 style={styles.title}>Payment received</h1>
  <p style={styles.subtitle}>
  {plan.isDigital
- ? 'Next: set your password on the following screen. Then a short questionnaire. Your plan usually arrives within a few hours. We email the same steps if you leave.'
- : 'Next: set your password on the following screen. Then a short setup with photos. Your plan arrives within 24–48 hours. We email the same steps if you leave.'}
+ ? 'Next: set your password on the following screen. Then a short questionnaire. Your plan arrives within 1–2 hours. We email the same steps if you leave.'
+ : 'Next: set your password on the following screen. Then a short setup with photos. Your plan arrives within 1–2 hours. We email the same steps if you leave.'}
  </p>
  </div>
  </div>
@@ -1145,8 +1145,8 @@ function CheckoutForm() {
  </Link>
  .{' '}
  {isDigitalCheckout
- ? 'Right after you pay: set your password, then a short questionnaire. Your plan usually arrives within a few hours. If this page closes, we email those steps.'
- : 'Right after you pay: set your password, then a short setup with photos. Your plan arrives within 24–48 hours. If you leave to finish payment in another app, come back here. If this page closes, we email those steps.'}
+ ? 'Right after you pay: set your password, then a short questionnaire. Your plan arrives within 1–2 hours. If this page closes, we email those steps.'
+ : 'Right after you pay: set your password, then a short setup with photos. Your plan arrives within 1–2 hours. If you leave to finish payment in another app, come back here. If this page closes, we email those steps.'}
  </p>
  </div>
  </>

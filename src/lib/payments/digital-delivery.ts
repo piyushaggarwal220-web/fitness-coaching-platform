@@ -4,6 +4,7 @@ import { resolveAppBaseUrl } from '@/lib/admin/portal-urls'
 import { sendDirectEmail } from '@/lib/notifications/email-provider'
 import { NotificationTemplates, sendNotification } from '@/lib/notifications/dispatcher'
 import { digitalProductDisplayName } from '@/lib/payments/digital-purchase'
+import { readInstantPlanWindow } from '@/lib/plan-delivery-window-server'
 import { activatePlan } from '@/lib/plans'
 
 /** Auto publish a digital customised plan and notify the buyer by email + in app. */
@@ -15,7 +16,12 @@ export async function autoDeliverDigitalPlan(
     planId: string
     planSlug: string | null
   }
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; heldForWindow?: boolean; deliverAt?: string | null }> {
+  const window = await readInstantPlanWindow(admin, input.clientId)
+  if (!window.open) {
+    return { error: null, heldForWindow: true, deliverAt: window.deliverAt }
+  }
+
   const activated = await activatePlan(
     admin,
     { id: input.planId, client_id: input.clientId, coach_id: input.coachId },

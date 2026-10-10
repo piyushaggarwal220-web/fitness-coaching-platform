@@ -19,6 +19,7 @@ import { BRAND_NAME } from '@/lib/brand'
 import { formatPlanDate } from '@/lib/plans';
 import { clientFacingPlanTitle, parsePlanMeta, extractWeekFromTitle } from '@/lib/plan-metadata';
 import { planGoalName, planDurationLabel } from '@/lib/payments/plan-pages'
+import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { clientFacingDietPlanText } from '@/lib/ai/nutrition-macro-sync'
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
@@ -161,8 +162,8 @@ export default function ClientPlanPage() {
                 ? 'Your plan was delivered. If sections look empty, refresh or check your email link.'
                 : 'Your plan was delivered. If sections look empty, refresh or message your coach.'
               : isDigitalPlan
-                ? 'Your customised plan is being prepared. You’ll get an email when it’s ready — usually within a few hours.'
-                : 'Smart Coach is building your personalised plan. It appears here automatically when ready — usually within 24 hours.'
+                ? `Your customised plan is being prepared. You’ll get an email when it’s ready — within ${INSTANT_PLAN_WINDOW_LABEL}.`
+                : `Smart Coach is building your personalised plan. It appears here automatically when ready — within ${INSTANT_PLAN_WINDOW_LABEL}.`
           }
           actionLabel="Back to dashboard"
           onAction={() => router.push('/dashboard')}

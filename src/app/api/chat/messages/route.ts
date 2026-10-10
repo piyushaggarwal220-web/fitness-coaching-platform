@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server'
 import { logApiDev } from '@/lib/api-dev-log'
-import { markConversationRead, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
+import { markConversationRead, pulseCoachTyping, sendChatMessage, setTypingIndicator } from '@/lib/coach-chat'
 import { requireConversationParticipant } from '@/lib/chat-api-access'
 import { getCoachResponseTargetFromAnchor } from '@/lib/chat-response-target'
 import { enforceClientCallPolicy, loadClientCallBookingPolicy } from '@/lib/call-booking-policy-server'
@@ -10,12 +10,12 @@ import {
 } from '@/lib/coach-delivery-policy'
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { autoReplyUnreadChat, chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
-import { COACH_REPLY_QUIET_MS } from '@/lib/chat-reply-pause'
+import { COACH_REPLY_QUIET_MS, COACH_TYPING_FRESH_MS } from '@/lib/chat-reply-pause'
 import { isPublicDemoEmail } from '@/lib/public-demo'
 import { publicDemoReadOnlyJson } from '@/lib/public-demo-guard'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 120
 
 export async function GET(request: Request) {
   try {
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
       typingField as keyof typeof participant.conversation
     ] as string | null
     const peerTyping = typingAt
-      ? Date.now() - new Date(typingAt).getTime() < 5000
+      ? Date.now() - new Date(typingAt).getTime() < COACH_TYPING_FRESH_MS
       : false
 
     const [
@@ -290,7 +290,7 @@ export async function POST(request: Request) {
       const clientId = participant.conversation.client_id
       after(() =>
         (async () => {
-          await new Promise((resolve) => setTimeout(resolve, COACH_REPLY_QUIET_MS))
+          await pulseCoachTyping(admin, conversationId, COACH_REPLY_QUIET_MS)
           const { data: coach } = await admin
             .from('coaches')
             .select('user_id, name')

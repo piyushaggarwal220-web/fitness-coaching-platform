@@ -77,7 +77,7 @@ const FAQS = [
   },
   {
     q: 'How will I receive my plan?',
-    a: 'Within a few hours of finishing onboarding, your plan appears in the app under My Plan and we email you a link. This is a written plan, not live chat coaching.',
+    a: 'Within 1–2 hours of finishing onboarding, your plan appears in the app under My Plan and we email you a link. This is a written plan, not live chat coaching.',
   },
   {
     q: 'Can I choose my fitness goal?',
@@ -210,10 +210,10 @@ export default function CustomisedPlanLandingPage() {
           <p className={styles.eyebrow}>Personalised fitness plans</p>
           <h1 className={styles.headline}>
             Personal diet and workout,
-            <span> within a few hours.</span>
+            <span> within 1–2 hours.</span>
           </h1>
           <p className={styles.lede}>
-            Coach-made plans around your goals, from ₹49. Delivered to email and the app within a few
+            Coach-made plans around your goals, from ₹49. Delivered to email and the app within 1–2
             hours. Written guidance — not live coaching. Tracker, Journey, and Coach chat are optional
             add-ons if you want them later.
           </p>
@@ -421,7 +421,7 @@ export default function CustomisedPlanLandingPage() {
             <span>04</span>
             <div>
               <strong>Receive your plan</strong>
-              <p>Your coach-made plan is delivered on the platform and email, usually within a few hours.</p>
+              <p>Your coach-made plan is delivered on the platform and email, within 1–2 hours.</p>
             </div>
           </li>
         </ol>

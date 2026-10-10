@@ -4,6 +4,7 @@ import { sendDirectEmail } from '@/lib/notifications/email-provider'
 import { NotificationTemplates } from '@/lib/notifications/service'
 import { sendDirectWhatsApp } from '@/lib/notifications/whatsapp-provider'
 import { sendNotification } from '@/lib/notifications/dispatcher'
+import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NotificationType } from '@/types/database'
 
@@ -151,7 +152,7 @@ export async function sendAccountSetupRecovery(input: {
   const kind = `account_setup_${input.stage}`
   const digital = Boolean(input.planSlug && input.planSlug.startsWith('digital_'))
   const planLabel = input.planName?.trim() || (digital ? 'customised plan' : 'coaching plan')
-  const planEta = digital ? 'usually within a few hours' : 'within 24–48 hours'
+  const planEta = `within ${INSTANT_PLAN_WINDOW_LABEL}`
   const subject = `Your LURVOX ${planLabel} is paid — here are your next steps`
   const text = [
     `Hi ${greeting}, your payment is confirmed.`,

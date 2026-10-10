@@ -12,8 +12,8 @@ import {
 import { datedPlanRequestDirective } from '@/lib/ai/dated-plan-request'
 import { loadAiCoachThreadContext } from '@/lib/ai/ai-coach-context'
 import { autoCoachFirstName } from '@/lib/coach-delivery-policy'
-import { markConversationRead, sendChatMessage } from '@/lib/coach-chat'
-import { COACH_REPLY_QUIET_MS } from '@/lib/chat-reply-pause'
+import { markConversationRead, pulseCoachTyping, sendChatMessage } from '@/lib/coach-chat'
+import { COACH_REPLY_QUIET_MS, coachTypingDurationMs } from '@/lib/chat-reply-pause'
 
 const MEDICAL_ONLY =
   /\b(chest pain|suicid|kill myself|self.?harm|emergency|hospitalized|can'?t breathe|cannot breathe)\b/i
@@ -184,6 +184,7 @@ export async function autoReplyUnreadChat(
     history: chronological.slice(-12),
   })
 
+  const writingStarted = Date.now()
   let reply: string
   try {
     const generated = await generateOpenAIResponse({
@@ -202,6 +203,11 @@ export async function autoReplyUnreadChat(
   }
 
   if (!reply) return { status: 'failed', detail: 'empty reply' }
+
+  const writingMs = Math.max(0, coachTypingDurationMs(reply) - (Date.now() - writingStarted))
+  if (writingMs > 0) {
+    await pulseCoachTyping(admin, input.conversationId, writingMs)
+  }
 
   const sent = await sendChatMessage(admin, {
     conversationId: input.conversationId,

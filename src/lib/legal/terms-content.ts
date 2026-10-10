@@ -160,7 +160,7 @@ export const TERMS_SECTIONS: { id?: string; title: string; paragraphs: string[] 
       'You acknowledge that any discretionary results courtesy requires answering every due check-in on time and filling all trackers to at least 90% on at least 90% of days, and that even then a refund is not guaranteed.',
       'You acknowledge that protein, calories, and training prescriptions are coaching judgments, not medical prescriptions.',
       'You acknowledge that we may prioritize operational efficiency over your preferred communication style.',
-      'You acknowledge that “personal plan in 24–48 hours” is an operational target, not a contractual SLA, unless we later issue a discretionary courtesy under Section 2.',
+      'You acknowledge that “personal plan in 1–2 hours” is an operational target, not a contractual SLA, unless we later issue a discretionary courtesy under Section 2.',
       'You acknowledge that after the early upgrade window, extra upgrade fees may apply.',
       'You acknowledge that we can terminate access for breach without refund.',
       'You acknowledge that these Terms are intentionally protective of LURVOX.',
