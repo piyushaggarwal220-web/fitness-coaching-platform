@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { isPublicDemoEmail } from '@/lib/public-demo'
+import { countSmartCoachUnread, SMART_COACH_READ_EVENT } from '@/lib/smart-coach-unread'
 
 export type RealtimeChangePayload = {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE'
@@ -199,6 +201,13 @@ export function useChatUnreadCount(viewer: 'client' | 'coach', enabled = true) {
 
   const refresh = useCallback(async () => {
     if (!enabled || !ownerId) return
+    if (viewer === 'client') {
+      const { data: { user } } = await supabaseRef.current.auth.getUser()
+      if (user && !isPublicDemoEmail(user.email)) {
+        setCount(await countSmartCoachUnread(supabaseRef.current, ownerId))
+        return
+      }
+    }
     const unreadColumn = viewer === 'client' ? 'unread_by_client' : 'unread_by_coach'
     const ownerColumn = viewer === 'client' ? 'client_id' : 'coach_id'
     const { data } = await supabaseRef.current
@@ -217,7 +226,11 @@ export function useChatUnreadCount(viewer: 'client' | 'coach', enabled = true) {
 
   useEffect(() => {
     void refresh()
-  }, [refresh])
+    if (viewer !== 'client') return
+    const onRead = () => { void refresh() }
+    window.addEventListener(SMART_COACH_READ_EVENT, onRead)
+    return () => window.removeEventListener(SMART_COACH_READ_EVENT, onRead)
+  }, [refresh, viewer])
 
   useSupabaseRealtimeRefresh({
     channelName: `chat-unread:${viewer}:${ownerId ?? 'pending'}`,

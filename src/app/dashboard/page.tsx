@@ -40,7 +40,11 @@ import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 import { getClientDashboardStatus } from '@/lib/purchase-dashboard';
 import { getActiveSubscription, getMembershipRenewalPrompt } from '@/lib/subscription';
 import { loadTodayTrackerView } from '@/lib/daily-tracker';
+import { trackerDayCountsAsWorkout } from '@/lib/daily-tracker/week-workouts';
 import { buildModuleSummaries, type TrackerModuleSummary } from '@/lib/daily-tracker/module-summaries';
+import { coachingDateKeyDaysAgo } from '@/lib/checkin-schedule';
+import { countSmartCoachUnread, SMART_COACH_READ_EVENT } from '@/lib/smart-coach-unread';
+import type { TrackerCompletion } from '@/lib/daily-tracker/types';
 import { createClient } from '@/lib/supabase/client';
 import { clientColors as colors, spacing, typography } from '@/lib/design-tokens';
 import { mobileStyles } from '@/lib/mobile-styles';
@@ -48,6 +52,9 @@ import type { Checkin, Coach, OnboardingProfile, Plan, Purchase, Workout } from 
 import type { InitialPlanGenerationJob } from '@/lib/initial-plan-generation';
 
 const supabase = createClient();
+
+const DASHBOARD_PLAN_COLUMNS =
+  'id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, diet_opened_at, workout_opened_at, coach_notes, nutrition_plan, workout_plan';
 
 type ActivityItem = {
   id: string;
@@ -84,6 +91,20 @@ export default function Dashboard() {
   const [scheduleNow, setScheduleNow] = useState(() => new Date());
   const [generationJob, setGenerationJob] = useState<InitialPlanGenerationJob | null>(null);
   const { locked: instantLocked } = useInstantLockState();
+
+  useEffect(() => {
+    if (!user || isPublicDemoEmail(user.email)) return;
+    const refreshUnread = () => {
+      void countSmartCoachUnread(supabase, user.id).then(setUnreadMessages);
+    };
+    refreshUnread();
+    const timer = window.setInterval(refreshUnread, 20_000);
+    window.addEventListener(SMART_COACH_READ_EVENT, refreshUnread);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener(SMART_COACH_READ_EVENT, refreshUnread);
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!profile?.checkin_schedule_started_at) return;
@@ -123,9 +144,6 @@ export default function Dashboard() {
 
         const userId = result.user.id;
         const activity: ActivityItem[] = [];
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        const weekAgoStr = weekAgo.toISOString().slice(0, 10);
         const coachId = profileData.coach_id;
 
         const [
@@ -146,7 +164,7 @@ export default function Dashboard() {
             .limit(24),
           supabase
             .from('plans')
-            .select('id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, diet_opened_at, workout_opened_at, coach_notes')
+            .select(DASHBOARD_PLAN_COLUMNS)
             .eq('client_id', userId)
             .eq('active', true)
             .order('updated_at', { ascending: false })
@@ -167,14 +185,14 @@ export default function Dashboard() {
             .order('created_at', { ascending: false })
             .limit(5),
           supabase
-            .from('workouts')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId)
-            .gte('date', weekAgoStr),
+            .from('daily_tracker_days')
+            .select('log_date, completion')
+            .eq('client_id', userId)
+            .gte('log_date', coachingDateKeyDaysAgo(6)),
           coachId
             ? supabase.from('coaches').select('id, name, user_id, hard_cap, bio, display_photo_path').eq('id', coachId).maybeSingle()
             : Promise.resolve({ data: null, error: null }),
-          coachId
+          isPublicDemoEmail(result.user.email) && coachId
             ? supabase.from('coach_conversations').select('unread_by_client').eq('client_id', userId).maybeSingle()
             : Promise.resolve({ data: null, error: null }),
           supabase
@@ -210,7 +228,8 @@ export default function Dashboard() {
         const planData = planResult.data as Plan | null;
         setActivePlan(planData);
         setPurchase(purchaseResult.data as Purchase | null);
-        setWeekWorkouts(weekWorkoutsResult.count ?? 0);
+        const trackerWeek = (weekWorkoutsResult.data ?? []) as Array<{ completion?: TrackerCompletion | null }>;
+        setWeekWorkouts(trackerWeek.filter((row) => trackerDayCountsAsWorkout(row.completion)).length);
 
         const workouts = (workoutsResult.data ?? []) as Workout[];
         for (const w of workouts.slice(0, 3)) {
@@ -225,7 +244,11 @@ export default function Dashboard() {
         setRecentActivity(activity.slice(0, 5));
 
         if (coachResult.data) setCoach(coachResult.data as Coach);
-        setUnreadMessages((convResult.data?.unread_by_client as number) ?? 0);
+        if (isPublicDemoEmail(result.user.email)) {
+          setUnreadMessages((convResult.data?.unread_by_client as number) ?? 0);
+        } else {
+          setUnreadMessages(await countSmartCoachUnread(supabase, userId));
+        }
         setGenerationJob(generationResult.data as InitialPlanGenerationJob | null);
 
         // Paint the dashboard first; tracker summary can fill in afterwards.
@@ -262,9 +285,11 @@ export default function Dashboard() {
               if (body.status === 'generating' || body.status === 'ready') {
                 const { data: deliveredPlan } = await supabase
                   .from('plans')
-                  .select('*')
+                  .select(DASHBOARD_PLAN_COLUMNS)
                   .eq('client_id', userId)
-                  .eq('is_active', true)
+                  .eq('active', true)
+                  .order('updated_at', { ascending: false })
+                  .limit(1)
                   .maybeSingle()
                 if (deliveredPlan) {
                   setActivePlan(deliveredPlan as Plan)
@@ -327,7 +352,8 @@ export default function Dashboard() {
    */
   const stickyCheckin = dueCheckin ?? checkinSchedule?.nextCheckin ?? null;
   const stickyCheckinMode = dueCheckin ? 'due' : 'countdown';
-  const chatReady = Boolean(coach) && !isPublicDemoEmail(user?.email);
+  const chatReady =
+    !isPublicDemoEmail(user?.email) && (Boolean(coach) || !instantLocked.ai_chat);
 
   const rawName = (profile?.name || user?.email?.split('@')[0] || 'there').trim()
   // Public demo is "Demo Client" — keep the full label (do not split to "Demo").
@@ -421,23 +447,13 @@ export default function Dashboard() {
           lineHeight: 1.5,
         }}>
           <strong>
-            {isDigitalPlanSlug(purchase?.plan_slug)
-              ? generationJob.status === 'ready'
-                ? 'Your customised plan is almost ready.'
-                : generationJob.status === 'failed'
-                  ? 'We hit a snag building your plan — retry from onboarding or contact support.'
-                  : 'Building your customised plan…'
-              : generationJob.status === 'queued' || generationJob.status === 'generating'
-              ? 'Smart Coach is building your personalized plan.'
-              : generationJob.status === 'ready'
-                ? 'Your plan is almost ready — finishing delivery now.'
-                : generationJob.status === 'failed'
-                  ? 'We hit a snag building your plan. Check back shortly.'
-                  : 'Smart Coach is building your personalized plan.'}
+            {generationJob.status === 'failed'
+              ? 'We hit a snag building your plan. Check back shortly.'
+              : 'Smart Coach is building your plan.'}
           </strong>
           <div>
             {isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id)
-              ? `You’ll get an email when it’s ready, and it will also appear in My Plan (within ${INSTANT_PLAN_WINDOW_LABEL}).`
+              ? `It arrives within ${INSTANT_PLAN_WINDOW_LABEL}. You’ll get an email, and it will show up in My Plan.`
               : 'It usually arrives within 24 hours and appears in My Plan automatically.'}
           </div>
         </div>
@@ -446,6 +462,11 @@ export default function Dashboard() {
       <TodayFocus
         firstName={firstName}
         contextLine={contextLine}
+        preparingDetail={
+          isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id)
+            ? `Smart Coach is building your plan. It arrives within ${INSTANT_PLAN_WINDOW_LABEL}. Workout and meals show up here once it’s ready.`
+            : undefined
+        }
         modules={activePlan && !instantLocked.tracker ? todayModules : []}
         unreadMessages={unreadMessages}
         showChat={chatReady}

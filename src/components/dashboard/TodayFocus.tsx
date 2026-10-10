@@ -46,6 +46,7 @@ export type TodayCheckin = {
 type Props = {
   firstName: string
   contextLine: string
+  preparingDetail?: string
   modules: TrackerModuleSummary[] | null
   unreadMessages: number
   showChat: boolean
@@ -59,6 +60,7 @@ type Props = {
 export function TodayFocus({
   firstName,
   contextLine,
+  preparingDetail,
   modules,
   unreadMessages,
   showChat,
@@ -125,7 +127,10 @@ export function TodayFocus({
             <ActionCard
               eyebrow="Today"
               title="Your plan is being prepared"
-              detail="Smart Coach is building your personalized plan. Workout and meals show up here once it's ready."
+              detail={
+                preparingDetail ??
+                'Smart Coach is building your personalized plan. Workout and meals show up here once it is ready.'
+              }
               action="View plan"
               icon={ClipboardList}
               primary

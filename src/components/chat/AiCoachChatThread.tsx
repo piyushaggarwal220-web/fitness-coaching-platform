@@ -15,6 +15,7 @@ import {
   encodeChatVoice,
 } from '@/lib/chat-reply-pause'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
+import { markSmartCoachRead } from '@/lib/smart-coach-unread'
 import { CHAT_LANGUAGES, parseChatLanguage, type ChatLanguage } from '@/lib/ai/coach-chat-language'
 
 type Msg = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string }
@@ -79,6 +80,16 @@ export function AiCoachChatThread() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, sending, coachTyping])
+
+  useEffect(() => {
+    if (loading) return
+    const latest = messages.reduce<string | null>((newest, message) => {
+      if (!message.created_at) return newest
+      if (!newest || message.created_at > newest) return message.created_at
+      return newest
+    }, null)
+    markSmartCoachRead(latest ?? new Date().toISOString())
+  }, [loading, messages])
 
   useEffect(() => {
     return () => {
