@@ -913,15 +913,17 @@ function CheckoutForm() {
  ? 'Start your 7-day trial'
  : isDigitalCheckout
  ? 'Start your customised plan'
+ : checkoutScreen === 2
+ ? 'After you pay'
  : 'Start your coaching intake'}
  </h1>
+ {checkoutScreen === 2 ? null : (
  <p style={dig(styles.subtitle, 'subtitle')}>
  {checkoutScreen === 1
  ? 'Answer a few basics so we can customize your coaching.'
- : checkoutScreen === 2
- ? 'Almost there - we need more details after you unlock.'
  : 'Enter your details, then continue to checkout.'}
  </p>
+ )}
 
  <div style={styles.screenDots} aria-label={`Checkout step ${SKIP_CHECKOUT_MORE_INFO ? (checkoutScreen === 1 ? 1 : 2) : checkoutScreen} of ${SKIP_CHECKOUT_MORE_INFO ? 2 : 3}`}>
  {(SKIP_CHECKOUT_MORE_INFO ? ([1, 3] as CheckoutScreen[]) : ([1, 2, 3] as CheckoutScreen[])).map((step) => (
@@ -1060,17 +1062,11 @@ function CheckoutForm() {
  </section>
 
  <p style={styles.leagueNote}>
- <a href={marketingBaseUrl} style={dig(styles.inlineLink, 'inlineLink')}>
- See all plans on lurvox.in
- </a>
- </p>
-
- <p style={styles.leagueNote}>
  {isTrialCheckout
  ? 'Once per person. Includes coach chat, personal plan, trackers, and check-ins.'
  : isDigitalCheckout
  ? 'After payment, finish the remaining intake questions and receive your plan on the platform.'
- : 'Personal workout, diet, coach chat, and weekly check-ins are included. Issues go to Coach Piyush (@maximusvault) or Coach Rakshit (@rakshitmohla_) on Instagram.'}
+ : 'The other questions come only after payment.'}
  </p>
 
  {error && <div style={styles.error}>{error}</div>}
@@ -1146,7 +1142,9 @@ function CheckoutForm() {
  .{' '}
  {isDigitalCheckout
  ? 'Right after you pay: set your password, then a short questionnaire. Your plan arrives within 1–2 hours. If this page closes, we email those steps.'
- : 'Right after you pay: set your password, then a short setup with photos. Your plan arrives within 1–2 hours. If you leave to finish payment in another app, come back here. If this page closes, we email those steps.'}
+ : isTrialCheckout
+ ? 'Right after you pay: set your password, then a short setup with photos. Your plan arrives within 1–2 hours. If you leave to finish payment in another app, come back here. If this page closes, we email those steps.'
+ : 'The other 14 questions come only after payment.'}
  </p>
  </div>
  </>

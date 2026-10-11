@@ -16,30 +16,21 @@ export function CheckoutMoreInfoStep({ onContinue, onBack, styles, dig }: Props)
  {'<- Edit basics'}
  </button>
 
- <p style={dig(styles.sectionLabel, 'sectionLabel')}>NEXT STEP</p>
  <h2
  style={{
  ...dig(styles.title, 'title'),
  fontSize: 26,
- margin: '0 0 12px',
+ margin: '8px 0 12px',
  }}
  >
- We need more about you to create your plan
+ 14 more questions. Only after you pay.
  </h2>
  <p style={dig(styles.subtitle, 'subtitle')}>
- Basics are a start. After checkout we ask about your lifestyle, training, diet details, and
- photos - then your customized diet, workout, cardio, and sleep guidance is built on the
- platform.
+ Not on this page. Pay first, then the questions, then your plan.
  </p>
 
- <ul style={{ ...styles.todoList, margin: '20px 0 28px' }}>
- <li>More questions after you unlock</li>
- <li>Plan delivered on the platform</li>
- <li>Not a random PDF - built from your answers</li>
- </ul>
-
- <button type="button" style={dig(styles.payBtn, 'payBtn')} onClick={onContinue}>
- Complete checkout to continue
+ <button type="button" style={{ ...dig(styles.payBtn, 'payBtn'), marginTop: 24 }} onClick={onContinue}>
+ Continue to payment
  </button>
  </>
  )

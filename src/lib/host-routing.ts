@@ -59,9 +59,9 @@ function isPreviewDeploymentHost(host: string): boolean {
 }
 
 /**
- * Production host routing while DNS transitions:
- * - app host `/` -> Shopify marketing site
- * - www/apex still on Vercel -> marketing `/`, app paths -> app subdomain
+ * Production host routing:
+ * - app host `/` is the coaching landing
+ * - www/apex still on Vercel -> marketing `/`, other paths -> app subdomain
  */
 export function resolveProductionHostRedirect(
   hostHeader: string | null | undefined,
@@ -81,12 +81,8 @@ export function resolveProductionHostRedirect(
   const apexHost = getApexHost(marketingHost)
   const appOrigin = `https://${appHost}`
 
-  // Keep the app host for PWA launches (start_url / install). Marketing still owns bare `/`.
   if (host === appHost && pathname === '/') {
-    if (search.includes('source=pwa') || search.includes('utm_source=pwa')) {
-      return null
-    }
-    return marketingUrl
+    return null
   }
 
   if (host === marketingHost || host === apexHost) {
