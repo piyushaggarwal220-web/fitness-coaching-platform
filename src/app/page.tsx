@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#121216',
+  themeColor: '#f4efe6',
 }
 
 export const dynamic = 'force-dynamic'
