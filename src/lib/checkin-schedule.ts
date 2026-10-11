@@ -15,6 +15,20 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const INDIA_TIME_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
 export const COACHING_TIME_ZONE = 'Asia/Kolkata'
 
+/** Clock time in coaching timezone, for home-page plan delivery and Smart Coach context. */
+export function formatCoachingDateTime(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return 'unknown time'
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: COACHING_TIME_ZONE,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date)
+}
+
 /** The first coaching day begins at midnight IST after initial plan delivery. */
 export function getNextCoachingDayStart(deliveredAt: string | Date): Date {
   const delivered = anchorDate(deliveredAt)

@@ -187,7 +187,7 @@ export function MidWeekAnalysisPanel({
           <h2 style={styles.title}>Send mid-week reply</h2>
           <p style={styles.subtitle}>
             Short WhatsApp style reply (max 40 words). Edit if you want, then send after the
-            minimum wait — clients expect a reply in 3–6 hours.
+            minimum wait — clients expect a reply within 30 minutes.
           </p>
         </div>
         <button

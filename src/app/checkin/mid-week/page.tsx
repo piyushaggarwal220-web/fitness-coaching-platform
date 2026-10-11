@@ -126,7 +126,7 @@ export default function MidWeekCheckinPage() {
       if (!parsed.ok) throw new Error(parsed.error)
 
       setSuccess(
-        'Day 3 check-in submitted! Your coach typically replies in 3–6 hours (including overnight).'
+        'Day 3 check-in submitted! Smart Coach replies within 30 minutes. Your plan stays the same until the next weekly update.'
       );
       setForm(INITIAL_MID_WEEK_FORM);
       setTimeout(() => router.push('/dashboard'), 1800);

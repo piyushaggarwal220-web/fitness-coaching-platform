@@ -51,6 +51,7 @@ function buildReplyPrompt(input: {
   todayPlan?: string | null
   trackerLine?: string | null
   checkinLine?: string | null
+  situationLine?: string | null
   history: ChatRow[]
 }): { systemPrompt: string; userPrompt: string; maxTokens: number } {
   const history = input.history
@@ -91,6 +92,7 @@ function buildReplyPrompt(input: {
       todayPlan: input.todayPlan,
       trackerLine: input.trackerLine,
       checkinLine: input.checkinLine,
+      situationLine: input.situationLine,
       mode: 'human_thread',
     }),
     userPrompt: [
@@ -180,6 +182,7 @@ export async function autoReplyUnreadChat(
     todayPlan: thread.todayPlan,
     trackerLine: thread.trackerLine,
     checkinLine: thread.checkinLine,
+    situationLine: thread.situationLine,
     personalities,
     history: chronological.slice(-12),
   })

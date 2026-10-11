@@ -18,7 +18,7 @@
     },
     {
       "path": "/api/cron/checkin-auto-reply",
-      "schedule": "*/15 * * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/ai-marketing-sync",

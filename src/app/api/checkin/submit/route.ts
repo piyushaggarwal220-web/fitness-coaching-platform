@@ -429,11 +429,13 @@ export async function POST(request: Request) {
       })
     }
 
+    let planUpdateScheduled = false
     if (body.checkinType === 'weekly') {
       const planSlug = await fetchCapturedPlanSlug(user.id)
       const autoUpdate =
         shouldAutoGenerateWeeklyPlanDraft(planSlug, scheduled.coachingWeek) &&
         !coachRequiresManualPlanDelivery(profile.coach_id)
+      planUpdateScheduled = autoUpdate
 
       if (autoUpdate) {
         // Mark in-flight before the response returns so coaches see Generating immediately.
@@ -477,6 +479,7 @@ export async function POST(request: Request) {
       checkinId: inserted.id,
       checkinType: body.checkinType,
       coachingWeek: scheduled.coachingWeek,
+      planUpdateScheduled,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Check-in submission failed'

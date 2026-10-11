@@ -13,10 +13,13 @@ import { ClientShell } from '@/components/ui/ClientShell';
 import { Card } from '@/components/ui/Card';
 import { formatCheckinDate } from '@/lib/checkin';
 import {
+  formatCoachingDateTime,
   getClientCheckinSchedule,
   getCheckinTypeDisplayName,
   hasCoachingDayStarted,
 } from '@/lib/checkin-schedule';
+import { isBiweeklyPlanUpdate, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence';
+import { UPDATED_PLAN_READY_WITHIN_MS } from '@/lib/checkin-reply-timing';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { clientFacingPlanTitle } from '@/lib/plan-metadata';
@@ -28,6 +31,7 @@ import { authenticateClient, getOnboardingLabel } from '@/lib/onboarding';
 import { useInstantLockState } from '@/hooks/useInstantLockState';
 import { SESSION_RESTORE_MESSAGE } from '@/lib/session-restore';
 import { PlanCountdownCard } from '@/components/dashboard/PlanCountdown';
+import { PlanUpdateHome } from '@/components/dashboard/PlanUpdateHome';
 import { ActiveSubscriptionCard } from '@/components/dashboard/ActiveSubscriptionCard';
 import { CheckinDueBanner } from '@/components/dashboard/CheckinDueBanner';
 import { MembershipRenewalBanner } from '@/components/dashboard/MembershipRenewalBanner';
@@ -377,6 +381,35 @@ export default function Dashboard() {
     checkinSchedule ? `Week ${checkinSchedule.activeCoachingWeek}` : null,
   ].filter(Boolean).join(' · ')
 
+  const latestWeekly = allCheckins.find((row) => row.checkin_type === 'weekly') ?? null
+  const weeklyWeek = latestWeekly?.coaching_week
+  const expectsPlanUpdate =
+    typeof weeklyWeek === 'number' &&
+    shouldAutoGenerateWeeklyPlanDraft(purchase?.plan_slug, weeklyWeek)
+  const weeklySubmittedMs = latestWeekly ? Date.parse(latestWeekly.submitted_at) : Number.NaN
+  const planDeliveredMs = activePlan?.delivered_at ? Date.parse(activePlan.delivered_at) : Number.NaN
+  const planStillComing =
+    Boolean(latestWeekly) &&
+    expectsPlanUpdate &&
+    !latestWeekly?.reviewed &&
+    Number.isFinite(weeklySubmittedMs) &&
+    (!Number.isFinite(planDeliveredMs) || planDeliveredMs < weeklySubmittedMs)
+  const lastDeliveredLabel = activePlan?.delivered_at
+    ? `Last plan delivered ${formatCoachingDateTime(activePlan.delivered_at)}.`
+    : 'No plan has been delivered yet.'
+  const standingPlanTiming = isBiweeklyPlanUpdate(purchase?.plan_slug)
+    ? 'On plan-update weeks, your updated plan is ready in 30 minutes after the weekly check-in. Check My Plan by then.'
+    : 'After your weekly check-in, your updated plan is ready in 30 minutes. Check My Plan by then.'
+  let planTimingLabel = standingPlanTiming
+  if (planStillComing && latestWeekly && Number.isFinite(weeklySubmittedMs)) {
+    const readyBy = formatCoachingDateTime(new Date(weeklySubmittedMs + UPDATED_PLAN_READY_WITHIN_MS))
+    const checkedInAt = formatCoachingDateTime(latestWeekly.submitted_at)
+    planTimingLabel =
+      Date.now() >= weeklySubmittedMs + UPDATED_PLAN_READY_WITHIN_MS
+        ? `You checked in at ${checkedInAt}. Your updated plan should be in My Plan now. It was due by ${readyBy}.`
+        : `You checked in at ${checkedInAt}. Your updated plan will be ready by ${readyBy}. Check My Plan by then.`
+  }
+
   const upcomingCheckin = dueCheckin ?? checkinSchedule?.nextCheckin ?? null
   const nextCheckinFocus = upcomingCheckin
     ? {
@@ -476,6 +509,14 @@ export default function Dashboard() {
         nextCheckin={nextCheckinFocus}
         missedCount={checkinSchedule?.missedCheckins.length ?? 0}
       />
+
+      {profile && (
+        <PlanUpdateHome
+          lastDeliveredLabel={lastDeliveredLabel}
+          timingLabel={planTimingLabel}
+          showChat={chatReady}
+        />
+      )}
 
       {checkinScheduleBypass && (
         <DevelopmentModeBadge style={{ marginBottom: spacing[4] }} />

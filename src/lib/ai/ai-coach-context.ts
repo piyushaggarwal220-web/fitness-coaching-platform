@@ -3,12 +3,15 @@ import { splitSnapshot } from '@/lib/daily-tracker/display'
 import { buildTrackerSnapshot, resolveSuggestedDayKey } from '@/lib/daily-tracker/parser'
 import type { TrackerCompletion, TrackerPlanDayOption, TrackerSnapshot, TrackerWorkoutItem } from '@/lib/daily-tracker/types'
 import {
+  coachingDateKeyDaysAgo,
+  formatCoachingDateTime,
   getClientCheckinSchedule,
   getCoachingDateKey,
   getCoachingDay,
   getCoachingDayInWeek,
 } from '@/lib/checkin-schedule'
-import { planUpdateCadenceLabel } from '@/lib/plan-update-cadence'
+import { planUpdateCadenceLabel, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
+import { UPDATED_PLAN_READY_WITHIN_LABEL } from '@/lib/checkin-reply-timing'
 import { getCoachingPlan } from '@/lib/payments/plans'
 import { latestCoachingPurchase } from '@/lib/payments/digital-purchase'
 import { truncatePlanExcerpt } from '@/lib/ai/coach-chat-persona'
@@ -24,10 +27,25 @@ const DIET_LABELS: Record<string, string> = {
 type CheckinRow = {
   checkin_type: CheckinType
   coaching_week: number | null
+  submitted_at?: string | null
+  reviewed?: boolean | null
+  diet_adherence?: number | null
+  workout_adherence?: number | null
+  energy_level?: number | null
+  weight?: number | null
+  adherence_wins?: string | null
+  adherence_struggles?: string | null
+  questions_for_coach?: string | null
   progress_photo_front: string | null
   progress_photo_side: string | null
   progress_photo_back: string | null
   pain_injuries: string | null
+}
+
+type RecentTrackerDay = {
+  log_date: string
+  overall_percent: number | null
+  completion: TrackerCompletion | null
 }
 
 export type AiCoachThreadContext = {
@@ -39,6 +57,8 @@ export type AiCoachThreadContext = {
   todayPlan: string | null
   trackerLine: string | null
   checkinLine: string | null
+  /** Last check-in, recent logs, and when the current plan went out. */
+  situationLine: string | null
   nutritionExcerpt: string | null
   workoutExcerpt: string | null
 }
@@ -208,6 +228,104 @@ export function formatCheckinLine(input: {
   return 'Check-in: not due. Photos: not required today.'
 }
 
+function scoreBit(label: string, value: number | null | undefined): string | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return `${label} ${value}/10`
+}
+
+function summarizeTrackerDay(day: RecentTrackerDay): string {
+  const completion = day.completion
+  const meals = completion?.meals ? Object.values(completion.meals) : []
+  const mealsDone = meals.filter((meal) => meal.completed).length
+  const exercises = completion?.exercises ? Object.values(completion.exercises) : []
+  const trained =
+    exercises.some((exercise) => exercise.completed) || completion?.workoutSession?.status === 'saved'
+  const parts = [
+    meals.length ? `meals ${mealsDone}/${meals.length}` : null,
+    trained ? 'trained' : 'no workout logged',
+    typeof completion?.water?.ml === 'number' && completion.water.ml > 0
+      ? `water ${completion.water.ml} ml`
+      : null,
+    typeof completion?.sleep?.hours === 'number' ? `sleep ${completion.sleep.hours}h` : null,
+    typeof day.overall_percent === 'number' ? `${day.overall_percent}% logged` : null,
+  ].filter(Boolean)
+  return `${day.log_date}: ${parts.join(', ')}`
+}
+
+/** Facts Smart Coach must already know: last check-in, recent logs, plan delivery. */
+export function formatClientSituation(input: {
+  planDeliveredAt: string | null | undefined
+  planSlug: string | null | undefined
+  checkins: CheckinRow[]
+  recentDays: RecentTrackerDay[]
+}): string {
+  const lines: string[] = []
+  if (input.planDeliveredAt) {
+    lines.push(`Current plan delivered: ${formatCoachingDateTime(input.planDeliveredAt)} IST.`)
+  } else {
+    lines.push('Current plan: not delivered yet.')
+  }
+
+  const latest = input.checkins.find((row) => row.submitted_at)
+  if (!latest?.submitted_at) {
+    lines.push('Last check-in: none yet.')
+  } else {
+    const kind = latest.checkin_type === 'mid_week' ? 'mid-week' : 'weekly'
+    const week = typeof latest.coaching_week === 'number' ? ` week ${latest.coaching_week}` : ''
+    const details = [
+      scoreBit('diet adherence', latest.diet_adherence),
+      scoreBit('workout adherence', latest.workout_adherence),
+      scoreBit('energy', latest.energy_level),
+      typeof latest.weight === 'number' ? `weight ${latest.weight} kg` : null,
+      clip(latest.adherence_wins, 160) ? `wins: ${clip(latest.adherence_wins, 160)}` : null,
+      clip(latest.adherence_struggles, 160)
+        ? `struggles: ${clip(latest.adherence_struggles, 160)}`
+        : null,
+      clip(latest.questions_for_coach, 180)
+        ? `asked: ${clip(latest.questions_for_coach, 180)}`
+        : null,
+      clip(latest.pain_injuries, 160) ? `pain: ${clip(latest.pain_injuries, 160)}` : null,
+    ].filter(Boolean)
+    lines.push(
+      `Last check-in: ${kind}${week}, submitted ${formatCoachingDateTime(latest.submitted_at)} IST. ${
+        latest.reviewed ? 'Already reviewed.' : 'Not reviewed yet.'
+      }${details.length ? ` ${details.join('. ')}.` : ''}`
+    )
+
+    const updatesPlan =
+      latest.checkin_type === 'weekly' &&
+      typeof latest.coaching_week === 'number' &&
+      shouldAutoGenerateWeeklyPlanDraft(input.planSlug, latest.coaching_week)
+    if (!latest.reviewed && updatesPlan) {
+      lines.push(
+        `This check-in updates the plan. It is delivered 26–28 minutes after submit. Tell them it is ready within ${UPDATED_PLAN_READY_WITHIN_LABEL} and to open My Plan by then.`
+      )
+    } else if (!latest.reviewed && latest.checkin_type === 'weekly') {
+      lines.push('This weekly check-in does not change the plan. The current plan stays.')
+    }
+  }
+
+  const previous = input.checkins.filter((row) => row.submitted_at).slice(1, 2)[0]
+  if (previous?.submitted_at) {
+    const kind = previous.checkin_type === 'mid_week' ? 'mid-week' : 'weekly'
+    lines.push(
+      `Check-in before that: ${kind}${
+        typeof previous.coaching_week === 'number' ? ` week ${previous.coaching_week}` : ''
+      }, ${formatCoachingDateTime(previous.submitted_at)} IST.`
+    )
+  }
+
+  if (input.recentDays.length === 0) {
+    lines.push('Recent tracking: nothing logged in the last 7 days.')
+  } else {
+    lines.push(
+      `Recent tracking (newest first): ${input.recentDays.slice(0, 7).map(summarizeTrackerDay).join(' | ')}`
+    )
+  }
+
+  return clip(lines.join('\n'), 1400) ?? lines.join('\n')
+}
+
 function coachingDayInWeek(scheduleStartedAt: string | null | undefined, referenceDate: Date): number | null {
   if (!scheduleStartedAt) return null
   try {
@@ -234,7 +352,8 @@ export async function loadAiCoachThreadContext(
     medical?: { painDuringExercise?: string | null }
   } | null
 
-  const [{ data: plan }, coaching, { data: tracker }, { data: checkins }] = await Promise.all([
+  const [{ data: plan }, coaching, { data: tracker }, { data: checkins }, { data: recentDays }] =
+    await Promise.all([
     admin
       .from('plans')
       .select(
@@ -253,11 +372,18 @@ export async function loadAiCoachThreadContext(
     admin
       .from('checkins')
       .select(
-        'checkin_type, coaching_week, progress_photo_front, progress_photo_side, progress_photo_back, pain_injuries'
+        'checkin_type, coaching_week, submitted_at, reviewed, diet_adherence, workout_adherence, energy_level, weight, adherence_wins, adherence_struggles, questions_for_coach, progress_photo_front, progress_photo_side, progress_photo_back, pain_injuries'
       )
       .eq('client_id', userId)
       .order('submitted_at', { ascending: false })
       .limit(16),
+    admin
+      .from('daily_tracker_days')
+      .select('log_date, overall_percent, completion')
+      .eq('client_id', userId)
+      .gte('log_date', coachingDateKeyDaysAgo(6, referenceDate))
+      .order('log_date', { ascending: false })
+      .limit(7),
   ])
 
   const planRow = (plan as Plan | null) ?? null
@@ -301,6 +427,12 @@ export async function loadAiCoachThreadContext(
       checkinOverdue: profile.checkin_overdue,
       checkins: checkinRows,
       referenceDate,
+    }),
+    situationLine: formatClientSituation({
+      planDeliveredAt: planRow?.delivered_at,
+      planSlug: coaching?.planSlug ?? null,
+      checkins: checkinRows,
+      recentDays: (recentDays ?? []) as RecentTrackerDay[],
     }),
     nutritionExcerpt: todayPlan ? null : truncatePlanExcerpt(planRow?.nutrition_plan),
     workoutExcerpt: todayPlan ? null : truncatePlanExcerpt(planRow?.workout_plan),

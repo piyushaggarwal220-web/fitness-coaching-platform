@@ -437,6 +437,7 @@ export async function POST(request: Request) {
     todayPlan: thread.todayPlan,
     trackerLine: thread.trackerLine,
     checkinLine: thread.checkinLine,
+    situationLine: thread.situationLine,
     memorySummary: memory.summary,
     moodNote: mood.note,
     languageNote: chatLanguageDirective(replyLanguage),

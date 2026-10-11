@@ -530,7 +530,7 @@ export type Checkin = {
   coach_response: string | null
   reviewed: boolean
   reviewed_at: string | null
-  /** When the automated reply is scheduled to go out (4–6h post-submission, outside quiet hours). */
+  /** When the automated reply is scheduled to go out (26–28 minutes after submission). */
   auto_reply_at: string | null
   /** Set once the automated reply was actually delivered. */
   auto_replied_at: string | null

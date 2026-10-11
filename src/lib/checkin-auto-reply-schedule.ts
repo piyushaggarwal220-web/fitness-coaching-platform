@@ -3,12 +3,13 @@
  * used from route handlers and exercised directly in scripts/tests.
  */
 
-const HOUR_MS = 60 * 60 * 1000
-const INDIA_TIME_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
+const MINUTE_MS = 60 * 1000
 
-/** Replies land 3–6 hours after the client submits (including overnight). */
-export const AUTO_REPLY_MIN_DELAY_MS = 3 * HOUR_MS
-export const AUTO_REPLY_MAX_DELAY_MS = 6 * HOUR_MS
+/** Plan and check-in reply go out 26–28 minutes after submit (including overnight). */
+export const AUTO_REPLY_MIN_DELAY_MS = 26 * MINUTE_MS
+export const AUTO_REPLY_MAX_DELAY_MS = 28 * MINUTE_MS
+
+const INDIA_TIME_OFFSET_MS = (5 * 60 + 30) * 60 * 1000
 
 /** Kept for callers that still label overnight hours; auto-send is allowed during this window. */
 export const QUIET_HOURS_END_HOUR = 8
@@ -24,8 +25,8 @@ export function isWithinQuietHours(date: Date): boolean {
 }
 
 /**
- * When the automated reply (and plan, if ready) should go out: a random 3–6 hours after
- * submission, including overnight. Never sooner than 3 hours after submit.
+ * When the automated reply (and updated plan, if this week includes one) should go out:
+ * a random 26–28 minutes after submission, including overnight. Never sooner than 26 minutes.
  */
 export function computeAutoReplyAt(
   submittedAt: string | Date,

@@ -267,7 +267,12 @@ export default function CheckinPage() {
         }),
       });
 
-      const parsed = await readApiJson<{ success?: boolean; error?: string; checkinId?: string }>(res)
+      const parsed = await readApiJson<{
+        success?: boolean
+        error?: string
+        checkinId?: string
+        planUpdateScheduled?: boolean
+      }>(res)
       if (!parsed.ok) throw new Error(parsed.error)
 
       const data = parsed.data
@@ -277,9 +282,9 @@ export default function CheckinPage() {
 
       setReportCheckinId(data.checkinId)
       setSuccess(
-        photosOptional && !frontUrl && !sideUrl && !backUrl
-          ? 'Weekly check-in submitted! We emailed your week report as an Excel file. Your coach typically replies in 3–6 hours (including overnight).'
-          : 'Weekly check-in submitted! We emailed your week report as an Excel file. Your coach typically replies in 3–6 hours (including overnight).'
+        data.planUpdateScheduled
+          ? 'Weekly check-in submitted! We emailed your week report as an Excel file. Your updated plan will be ready in 30 minutes. Check My Plan by then.'
+          : 'Weekly check-in submitted! We emailed your week report as an Excel file. This week keeps your current plan.'
       );
       setForm(INITIAL_WEEKLY_FORM);
       setPhotos({ front: null, side: null, back: null });

@@ -190,6 +190,7 @@ export type CoachChatPersonaInput = {
   todayPlan?: string | null
   trackerLine?: string | null
   checkinLine?: string | null
+  situationLine?: string | null
   memorySummary?: string | null
   moodNote?: string | null
   languageNote?: string | null
@@ -216,6 +217,8 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
             ? `Memory of earlier chats. Use it. Do not ask again for a fact that is already here:\n${input.memorySummary.trim()}`
             : 'No earlier memory yet. Learn from this chat and do not forget what they tell you.',
           'Use the written plan below. If today\'s meals or workout already answer them, say that. Do not invent a new program.',
+          'On an update week, the updated plan is ready within 30 minutes of the weekly check-in. Tell them to open My Plan by then. On a check-in-only week, the current plan stays.',
+          'Use the client situation below for their last check-in, recent logs, and when the current plan was delivered. Do not invent a check-in, a delivery time, or a log that is not listed.',
           'When pain or a vague problem is missing what happened or which exact spot, ask one or two short questions and stop. Do not list treatments.',
           'A voice note is the transcript. If the transcript is missing, ask them to type it. Do not guess the words.',
           'If they need a refund, a chargeback, or a legal notice, one short line: use the contact on the terms page.',
@@ -262,6 +265,7 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
     input.todayPlan ? `Today on the written plan:\n${input.todayPlan}` : '',
     input.trackerLine ? input.trackerLine : '',
     input.checkinLine ? input.checkinLine : '',
+    input.situationLine ? `Client situation:\n${input.situationLine}` : '',
     input.nutritionExcerpt ? `Diet chart excerpt:\n${input.nutritionExcerpt}` : '',
     input.workoutExcerpt ? `Workout plan excerpt:\n${input.workoutExcerpt}` : '',
   ]

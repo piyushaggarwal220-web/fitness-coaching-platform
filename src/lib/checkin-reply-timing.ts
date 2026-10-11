@@ -1,16 +1,21 @@
 /**
- * Check-in reply delivery timing — keeps responses feeling human, not instant.
+ * Check-in reply and updated-plan delivery timing.
  *
  * Policy:
- * - Minimum wait after submit before coach feedback can reach the client: 3 hours
- * - Usual / expected window communicated to clients: 3–6 hours
+ * - The plan and reply go out 26–28 minutes after the weekly check-in.
+ * - Clients are told to check within 30 minutes.
  */
 
-export const CHECKIN_REPLY_MIN_WAIT_MS = 3 * 60 * 60 * 1000
-export const CHECKIN_REPLY_USUAL_MIN_HOURS = 3
-export const CHECKIN_REPLY_USUAL_MAX_HOURS = 6
-export const CHECKIN_REPLY_TARGET_WAIT_MS = CHECKIN_REPLY_USUAL_MIN_HOURS * 60 * 60 * 1000
-export const CHECKIN_REPLY_OVERDUE_MS = CHECKIN_REPLY_USUAL_MAX_HOURS * 60 * 60 * 1000
+const MINUTE_MS = 60 * 1000
+
+export const CHECKIN_REPLY_MIN_WAIT_MS = 26 * MINUTE_MS
+export const CHECKIN_REPLY_USUAL_MIN_MINUTES = 26
+export const CHECKIN_REPLY_USUAL_MAX_MINUTES = 28
+/** What the home page and check-in confirmation tell the client. */
+export const UPDATED_PLAN_READY_WITHIN_MS = 30 * MINUTE_MS
+export const UPDATED_PLAN_READY_WITHIN_LABEL = '30 minutes'
+export const CHECKIN_REPLY_TARGET_WAIT_MS = CHECKIN_REPLY_USUAL_MIN_MINUTES * MINUTE_MS
+export const CHECKIN_REPLY_OVERDUE_MS = UPDATED_PLAN_READY_WITHIN_MS
 
 export type CheckinReplyTiming = {
   submittedAtMs: number
@@ -52,21 +57,21 @@ export function getCheckinReplyTiming(
   }
 }
 
-/** Client-facing expectation after submitting a check-in. */
+/** Client-facing expectation after a weekly check-in that updates the plan. */
 export function getClientCheckinReplyExpectationCopy(): string {
-  return `Smart Coach typically replies in ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hours.`
+  return `Your updated plan will be ready in ${UPDATED_PLAN_READY_WITHIN_LABEL}. Check My Plan by then.`
 }
 
 /** Short status label for dashboard / schedule rows. */
 export function getAwaitingReviewClientCopy(timing: CheckinReplyTiming | null): string {
   if (!timing) return getClientCheckinReplyExpectationCopy()
   if (!timing.canSend) {
-    return `Smart Coach is preparing your reply — usually ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hours`
+    return `Your updated plan will be ready in ${UPDATED_PLAN_READY_WITHIN_LABEL}. Check My Plan by then.`
   }
   if (timing.overdueUsualWindow) {
-    return 'Reply coming soon'
+    return 'Your updated plan should be in My Plan now.'
   }
-  return `Smart Coach typically replies within ${CHECKIN_REPLY_USUAL_MAX_HOURS} hours`
+  return `Your updated plan will be ready in ${UPDATED_PLAN_READY_WITHIN_LABEL}. Check My Plan by then.`
 }
 
 function formatRemainingDuration(ms: number): string {
@@ -81,16 +86,17 @@ function formatRemainingDuration(ms: number): string {
 
 /** Coach-facing gate message when send is blocked. */
 export function getCoachReplyWaitMessage(timing: CheckinReplyTiming): string {
+  const windowLabel = `${CHECKIN_REPLY_USUAL_MIN_MINUTES}–${CHECKIN_REPLY_USUAL_MAX_MINUTES} minutes`
   if (timing.canSend) {
     if (timing.overdueUsualWindow) {
-      return `Minimum wait met. Usual window was ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hours — send when ready.`
+      return `Minimum wait met. Usual window was ${windowLabel} — send when ready.`
     }
     if (timing.inUsualWindow) {
-      return `In the usual ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hour reply window — good time to send.`
+      return `In the usual ${windowLabel} reply window — good time to send.`
     }
-    return `Minimum ${CHECKIN_REPLY_MIN_WAIT_MS / 3_600_000}h wait met. Prefer sending in the ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hour window when you can.`
+    return `Minimum ${CHECKIN_REPLY_USUAL_MIN_MINUTES} minute wait met. Prefer sending in the ${windowLabel} window when you can.`
   }
-  return `Wait at least ${CHECKIN_REPLY_MIN_WAIT_MS / 3_600_000} hours before sending (${formatRemainingDuration(timing.remainingMinWaitMs)} left). Usual target is ${CHECKIN_REPLY_USUAL_MIN_HOURS}–${CHECKIN_REPLY_USUAL_MAX_HOURS} hours.`
+  return `Wait at least ${CHECKIN_REPLY_USUAL_MIN_MINUTES} minutes before sending (${formatRemainingDuration(timing.remainingMinWaitMs)} left). Usual target is ${windowLabel}. Clients are told ${UPDATED_PLAN_READY_WITHIN_LABEL}.`
 }
 
 export function assertCheckinReplyWaitElapsed(

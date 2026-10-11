@@ -181,7 +181,7 @@ export async function sendCheckinAutoReply(
         trigger: 'retry',
       }).catch((err) => console.error('[checkin-auto-reply] draft regenerate failed:', err))
 
-      const nextAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+      const nextAt = new Date(Date.now() + 2 * 60 * 1000).toISOString()
       await supabase.from('checkins').update({ auto_reply_at: nextAt }).eq('id', checkin.id)
       return { status: 'skipped', reason: 'draft_not_ready' }
     }
@@ -279,8 +279,9 @@ export type AutoReplySweepSummary = {
 }
 
 /**
- * Send every automated reply that has come due. Driven by a 15-minute scheduler; safe to run
- * repeatedly because each row is claimed via a conditional update before anything is sent.
+ * Send every automated reply that has come due. Driven by a one-minute scheduler so a
+ * 26–28 minute plan lands inside that window. Safe to run repeatedly because each row is
+ * claimed via a conditional update before anything is sent.
  */
 export async function processDueCheckinAutoReplies(
   supabase: SupabaseClient,
