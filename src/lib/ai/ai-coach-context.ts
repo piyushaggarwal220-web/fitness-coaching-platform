@@ -28,7 +28,7 @@ type CheckinRow = {
   checkin_type: CheckinType
   coaching_week: number | null
   submitted_at?: string | null
-  reviewed?: boolean | null
+  reviewed?: boolean
   diet_adherence?: number | null
   workout_adherence?: number | null
   energy_level?: number | null
