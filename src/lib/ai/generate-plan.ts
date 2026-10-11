@@ -1,4 +1,5 @@
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
+import { isOpenAiBillingError } from '@/lib/ai/openai-quota'
 import {
   DEFAULTS,
   LIMITS,
@@ -141,6 +142,7 @@ export function shouldRetryProviderError(
   attempt: number,
   maxAttempts: number
 ): boolean {
+  if (isOpenAiBillingError(err.message)) return false
   return err.retryable && attempt < maxAttempts - 1
 }
 

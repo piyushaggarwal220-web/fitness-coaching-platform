@@ -13,6 +13,10 @@ export const maxDuration = 300
  *
  * Driven every minute by pg_cron in Supabase. Safe to call more often — each check-in is claimed
  * with a conditional update before anything is sent.
+ *
+ * When OpenAI has no credits, the sweep does not start plan generation. It waits 15 minutes,
+ * emails the operator once, and tries a small credit check again. Delivery resumes on its own
+ * after that check succeeds.
  */
 function authorizeCron(request: Request): boolean {
   // AUTO_REPLY_CRON_SECRET is dedicated to the Supabase pg_cron caller; CRON_SECRET is accepted
@@ -50,6 +54,7 @@ export async function GET(request: Request) {
         skipped: summary.skipped,
         failed: summary.failed,
         deferredForQuietHours: summary.deferredForQuietHours,
+        billingHold: summary.billingHold,
       })
     }
     return NextResponse.json(summary)

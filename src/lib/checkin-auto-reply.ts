@@ -7,6 +7,8 @@ import { shouldScheduleCheckinAutoReply, coachRequiresManualPlanDelivery } from 
 import { hasClientEntitlement } from '@/lib/entitlements'
 import { ensureClientCoachMessage } from '@/lib/ai/coach-message'
 import { generateMidWeekAnalysis, loadCachedMidWeekPack } from '@/lib/ai/midweek-analysis'
+import { OPENAI_BILLING_HOLD_MS } from '@/lib/ai/openai-quota'
+import { openAiBillingHoldUntil, probeOpenAiBilling } from '@/lib/ai/openai-quota-guard'
 import { findAiDraftForCheckin, generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
 import { sendNotification } from '@/lib/notifications/dispatcher'
@@ -164,6 +166,15 @@ export async function sendCheckinAutoReply(
 
   if ('error' in resolved) {
     if (resolved.error === 'draft_not_ready') {
+      const billingHoldUntil = await openAiBillingHoldUntil()
+      if (billingHoldUntil) {
+        await supabase
+          .from('checkins')
+          .update({ auto_reply_at: billingHoldUntil.toISOString() })
+          .eq('id', checkin.id)
+        return { status: 'skipped', reason: 'openai_billing_hold' }
+      }
+
       // Self-heal: kick draft generation again, then retry auto-reply later.
       void persistDraftGenerationStarted({
         clientId: checkin.client_id,
@@ -275,6 +286,7 @@ export type AutoReplySweepSummary = {
   skipped: number
   failed: number
   deferredForQuietHours: boolean
+  billingHold: boolean
   details: { checkinId: string; status: string; reason?: string }[]
 }
 
@@ -295,6 +307,7 @@ export async function processDueCheckinAutoReplies(
     skipped: 0,
     failed: 0,
     deferredForQuietHours: false,
+    billingHold: false,
     details: [],
   }
 
@@ -313,9 +326,43 @@ export async function processDueCheckinAutoReplies(
 
   if (error) throw new Error(error.message)
 
-  const summary: AutoReplySweepSummary = { ...empty, due: (rows ?? []).length }
+  const dueRows = (rows ?? []) as Checkin[]
+  const summary: AutoReplySweepSummary = { ...empty, due: dueRows.length }
 
-  for (const row of (rows ?? []) as Checkin[]) {
+  if (dueRows.length > 0) {
+    let holdUntil = await openAiBillingHoldUntil(now)
+    if (!holdUntil) {
+      const probe = await probeOpenAiBilling(dueRows.length).catch((err) => {
+        console.error('[checkin-auto-reply] billing probe failed:', err)
+        return 'unavailable' as const
+      })
+      if (probe === 'billing') {
+        holdUntil = (await openAiBillingHoldUntil(now)) ?? new Date(now.getTime() + OPENAI_BILLING_HOLD_MS)
+      }
+    }
+    if (holdUntil) {
+      const { error: holdError } = await supabase
+        .from('checkins')
+        .update({ auto_reply_at: holdUntil.toISOString() })
+        .in(
+          'id',
+          dueRows.map((row) => row.id)
+        )
+      if (holdError) throw new Error(holdError.message)
+      return {
+        ...summary,
+        billingHold: true,
+        skipped: dueRows.length,
+        details: dueRows.map((row) => ({
+          checkinId: row.id,
+          status: 'skipped',
+          reason: 'openai_billing_hold',
+        })),
+      }
+    }
+  }
+
+  for (const row of dueRows) {
     const outcome = await sendCheckinAutoReply(supabase, row)
     summary.details.push({
       checkinId: row.id,

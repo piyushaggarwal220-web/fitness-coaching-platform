@@ -8,6 +8,7 @@ import {
   formatGeneratePlanFailure,
   shouldRetryProviderError,
 } from '../src/lib/ai/generate-plan'
+import { isOpenAiBillingError } from '../src/lib/ai/openai-quota'
 
 function pass(label: string) {
   console.log(`  ✓ ${label}`)
@@ -32,6 +33,29 @@ const permanent = new ClaudeResponseError('Bad request', {
 })
 assert.equal(shouldRetryProviderError(permanent, 0, 3), false)
 pass('does not retry non-retryable provider errors')
+
+const billing = new ClaudeResponseError(
+  'You have no credits remaining. Please check your plan and billing details.',
+  { status: 429, type: 'insufficient_quota', category: 'quota', retryable: true }
+)
+assert.equal(isOpenAiBillingError(billing.message), true)
+assert.equal(shouldRetryProviderError(billing, 0, 5), false)
+pass('does not retry an OpenAI billing failure even when the provider marked it retryable')
+
+assert.equal(isOpenAiBillingError('Rate limit reached for requests'), false)
+assert.equal(
+  shouldRetryProviderError(
+    new ClaudeResponseError('Rate limit reached for requests', {
+      status: 429,
+      category: 'quota',
+      retryable: true,
+    }),
+    0,
+    3
+  ),
+  true
+)
+pass('still retries a rate limit')
 
 const huge = 'x'.repeat(2000)
 const formatted = formatGeneratePlanFailure('Anthropic', 'Invalid plan JSON.', huge, 500)

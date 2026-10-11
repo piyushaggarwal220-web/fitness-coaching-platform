@@ -1,5 +1,6 @@
 import { after, NextResponse } from 'next/server'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
+import { openAiBillingHoldUntil } from '@/lib/ai/openai-quota-guard'
 import { generateOpenAIResponse } from '@/lib/ai/openai'
 import { MODELS } from '@/lib/ai/config'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
@@ -233,6 +234,17 @@ async function discoverMissedWeeklyCheckins(limit: number): Promise<MissedChecki
 }
 
 async function runBatch(limit: number) {
+  const billingHoldUntil = await openAiBillingHoldUntil()
+  if (billingHoldUntil) {
+    return {
+      ok: true,
+      mode: 'batch' as const,
+      queued: 0,
+      billingHoldUntil: billingHoldUntil.toISOString(),
+      checkinIds: [] as string[],
+    }
+  }
+
   const missed = await discoverMissedWeeklyCheckins(limit)
   for (const row of missed) {
     await persistDraftGenerationStarted({

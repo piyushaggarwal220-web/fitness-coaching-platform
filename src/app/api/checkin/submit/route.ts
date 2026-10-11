@@ -2,6 +2,7 @@ import { NextResponse, after } from 'next/server'
 import { requireEntitledClientApiUser } from '@/lib/client-entitlement-guard'
 import { logApiDev } from '@/lib/api-dev-log'
 import { persistDraftGenerationStarted } from '@/lib/ai/draft-workflow-log'
+import { openAiBillingHoldUntil } from '@/lib/ai/openai-quota-guard'
 import { generateMidWeekAnalysis } from '@/lib/ai/midweek-analysis'
 import { generateWeeklyPlanDraft } from '@/lib/ai/weekly-plan-draft'
 import { fetchCapturedPlanSlug, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
@@ -410,23 +411,26 @@ export async function POST(request: Request) {
         checkinType: 'mid_week',
       }).catch((err) => console.error('[checkin-submit] chat post failed:', err))
 
-      after(async () => {
-        try {
-          const adminClient = createAdminClient()
-          const [{ data: fullCheckin }, { data: fullProfile }] = await Promise.all([
-            adminClient.from('checkins').select('*').eq('id', inserted.id).single(),
-            adminClient.from('profiles').select('*').eq('id', user.id).single(),
-          ])
-          if (!fullCheckin || !fullProfile) return
-          await generateMidWeekAnalysis({
-            profile: fullProfile,
-            checkin: fullCheckin,
-            coachId: profile.coach_id,
-          })
-        } catch (err) {
-          console.error('[checkin-submit] mid-week analysis failed:', err)
-        }
-      })
+      const billingHold = await openAiBillingHoldUntil()
+      if (!billingHold) {
+        after(async () => {
+          try {
+            const adminClient = createAdminClient()
+            const [{ data: fullCheckin }, { data: fullProfile }] = await Promise.all([
+              adminClient.from('checkins').select('*').eq('id', inserted.id).single(),
+              adminClient.from('profiles').select('*').eq('id', user.id).single(),
+            ])
+            if (!fullCheckin || !fullProfile) return
+            await generateMidWeekAnalysis({
+              profile: fullProfile,
+              checkin: fullCheckin,
+              coachId: profile.coach_id,
+            })
+          } catch (err) {
+            console.error('[checkin-submit] mid-week analysis failed:', err)
+          }
+        })
+      }
     }
 
     let planUpdateScheduled = false
@@ -437,7 +441,7 @@ export async function POST(request: Request) {
         !coachRequiresManualPlanDelivery(profile.coach_id)
       planUpdateScheduled = autoUpdate
 
-      if (autoUpdate) {
+      if (autoUpdate && !(await openAiBillingHoldUntil())) {
         // Mark in-flight before the response returns so coaches see Generating immediately.
         void persistDraftGenerationStarted({
           clientId: user.id,

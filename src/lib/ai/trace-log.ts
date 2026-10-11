@@ -37,7 +37,9 @@ export async function logAiGeneration(input: AiGenerationLogInput): Promise<void
     const alwaysPersistRendered =
       isDraftWorkflow ||
       input.action === 'mid_week_analysis' ||
-      input.action.startsWith('coach_section_edit')
+      input.action.startsWith('coach_section_edit') ||
+      input.action === 'openai_quota_probe' ||
+      input.action === 'openai_quota_alert'
 
     const costs = calculateAiCostUsd(input.model, input.promptTokens, input.completionTokens)
 

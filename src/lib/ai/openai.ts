@@ -5,6 +5,7 @@ import type {
 } from 'openai/resources/responses/responses'
 import { ClaudeResponseError } from '@/lib/ai/anthropic'
 import { DEFAULTS, MODELS } from '@/lib/ai/config'
+import { isOpenAiBillingError } from '@/lib/ai/openai-quota'
 
 export type GenerateOpenAIResponseParams = {
   systemPrompt: string
@@ -202,6 +203,8 @@ export async function generateOpenAIResponse(
           model,
           fallback: modelIndex > 0,
         })
+        // Same account, so a fallback model cannot succeed. Stop before the retry loop.
+        if (isOpenAiBillingError(converted.message)) throw converted
         if (!converted.retryable || attempt >= attempts) break
         retryCount += 1
         await sleep(Math.min(4_000, 300 * 2 ** (attempt - 1)))

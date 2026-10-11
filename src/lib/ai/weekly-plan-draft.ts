@@ -15,6 +15,12 @@ import {
   type DraftSectionUsage,
 } from '@/lib/ai/draft-workflow-log'
 import { MODELS } from '@/lib/ai/config'
+import { isOpenAiBillingError } from '@/lib/ai/openai-quota'
+import {
+  openAiBillingHoldActive,
+  openAiBillingHoldUntil,
+  recordOpenAiBillingFailure,
+} from '@/lib/ai/openai-quota-guard'
 import { generatedCardioFormData, generatedDietFormData, generatedSupplementFormData, generatedWorkoutFormData } from '@/lib/ai/plan-format'
 import { buildActionCoachInstructions, mergePlanForms } from '@/lib/coach/ai-actions'
 import { encodePlanMeta, planMatchesCheckin } from '@/lib/plan-metadata'
@@ -325,6 +331,10 @@ export async function generateWeeklyPlanDraft(input: {
   const eventStart = trigger === 'retry' ? 'retry_started' : 'draft_started'
   const coachNote = input.coachNote?.trim() || null
   const admin = createAdminClient()
+
+  if (openAiBillingHoldActive() || (await openAiBillingHoldUntil())) {
+    return { planId: null, error: 'openai_billing_hold', generationTimeMs: Date.now() - started }
+  }
 
   if (trigger === 'auto') {
     if (coachRequiresManualPlanDelivery(input.coachId)) {
@@ -658,6 +668,11 @@ export async function generateWeeklyPlanDraft(input: {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Draft generation failed'
     const generationTimeMs = Date.now() - started
+    if (isOpenAiBillingError(message)) {
+      await recordOpenAiBillingFailure(message).catch((recordErr) =>
+        console.error('[weekly-plan-draft] billing hold record failed:', recordErr)
+      )
+    }
 
     // If a core draft was already saved before a later failure, treat as success for the coach.
     try {
