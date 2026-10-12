@@ -52,6 +52,9 @@ async function resolveReply(
   const draft = await findAiDraftForCheckin(supabase, checkin.client_id, checkin.id)
 
   if (!draft && checkin.checkin_type === 'weekly') {
+    const alreadyPublished = await loadPlanPublishedForCheckin(supabase, checkin)
+    if (alreadyPublished) return alreadyPublished
+
     const planSlug = await fetchCapturedPlanSlug(checkin.client_id)
     const week = checkin.coaching_week
     const draftExpected =
@@ -202,17 +205,19 @@ export async function sendCheckinAutoReply(
   const response: CoachCheckinResponse = { feedback: resolved.feedback, action_items: '' }
   const now = new Date().toISOString()
 
-  // Claim the row before sending so a retry or an overlapping sweep cannot double-message.
+  // Publishing the plan marks the check-in reviewed before this claim runs. Lock on the
+  // reply itself so that publish cannot swallow the client message.
   const { data: claimed, error: claimError } = await supabase
     .from('checkins')
     .update({
       coach_response: serializeCoachResponse(response),
       reviewed: true,
-      reviewed_at: now,
+      reviewed_at: checkin.reviewed_at ?? now,
       auto_replied_at: now,
     })
     .eq('id', checkin.id)
-    .eq('reviewed', false)
+    .is('auto_replied_at', null)
+    .is('coach_response', null)
     .select('id')
     .maybeSingle()
 
@@ -290,6 +295,134 @@ export type AutoReplySweepSummary = {
   details: { checkinId: string; status: string; reason?: string }[]
 }
 
+/** How long a published weekly plan can sit without a client notice before we send one. */
+const MISSING_PLAN_NOTICE_AGE_MS = 4 * 24 * 60 * 60 * 1000
+
+/** Active plan already delivered for this check-in. Do not generate another one. */
+async function loadPlanPublishedForCheckin(
+  supabase: SupabaseClient,
+  checkin: Checkin
+): Promise<{ feedback: string; publishedPlanId: string } | null> {
+  const { data: activePlan } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('client_id', checkin.client_id)
+    .eq('active', true)
+    .maybeSingle()
+
+  const plan = activePlan as Plan | null
+  if (!plan?.delivered_at) return null
+  const deliveredMs = new Date(plan.delivered_at).getTime()
+  const submittedMs = new Date(checkin.submitted_at).getTime()
+  if (!Number.isFinite(deliveredMs) || !Number.isFinite(submittedMs) || deliveredMs < submittedMs) {
+    return null
+  }
+
+  const feedback = clientCoachNotes(plan.coach_notes).trim() || fallbackPublishCoachNotes(plan)
+  if (!feedback.trim()) return null
+  return { feedback, publishedPlanId: plan.id }
+}
+
+/**
+ * Plans that published successfully never reached the client when the publish step
+ * marked the check-in reviewed before the reply could be claimed. Tell those clients
+ * the plan is already in My Plan. Does not generate anything.
+ */
+async function notifyPlansPublishedWithoutReply(
+  supabase: SupabaseClient,
+  now: Date
+): Promise<void> {
+  const since = new Date(now.getTime() - MISSING_PLAN_NOTICE_AGE_MS).toISOString()
+  const { data: rows, error } = await supabase
+    .from('checkins')
+    .select('*')
+    .eq('checkin_type', 'weekly')
+    .eq('reviewed', true)
+    .is('auto_replied_at', null)
+    .is('coach_response', null)
+    .gte('submitted_at', since)
+    .order('submitted_at', { ascending: true })
+    .limit(40)
+
+  if (error || !rows?.length) {
+    if (error) console.error('[checkin-auto-reply] missing plan notice lookup failed:', error.message)
+    return
+  }
+
+  for (const checkin of rows as Checkin[]) {
+    const { data: newer } = await supabase
+      .from('checkins')
+      .select('id')
+      .eq('client_id', checkin.client_id)
+      .eq('checkin_type', 'weekly')
+      .gt('submitted_at', checkin.submitted_at)
+      .limit(1)
+    if (newer && newer.length > 0) continue
+
+    const published = await loadPlanPublishedForCheckin(supabase, checkin)
+    if (!published) continue
+
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', checkin.client_id)
+      .maybeSingle()
+    if (profileRow?.email?.includes('@lurvox.test')) continue
+
+    const { data: coach } = await supabase
+      .from('coaches')
+      .select('id, user_id')
+      .eq('id', checkin.coach_id)
+      .maybeSingle()
+    if (!coach?.user_id) continue
+
+    const sentAt = new Date().toISOString()
+    const { data: claimed, error: claimError } = await supabase
+      .from('checkins')
+      .update({
+        coach_response: serializeCoachResponse({ feedback: published.feedback, action_items: '' }),
+        auto_replied_at: sentAt,
+      })
+      .eq('id', checkin.id)
+      .is('auto_replied_at', null)
+      .is('coach_response', null)
+      .select('id')
+      .maybeSingle()
+
+    if (claimError || !claimed) {
+      if (claimError) console.error('[checkin-auto-reply] plan notice claim failed:', claimError.message)
+      continue
+    }
+
+    const chatResult = await postCoachCheckinFeedbackToChat({
+      clientId: checkin.client_id,
+      coachId: coach.id,
+      coachUserId: coach.user_id,
+      checkinType: 'weekly',
+      coachingWeek: checkin.coaching_week,
+      feedback: published.feedback,
+      actionItems: '',
+    })
+    if (chatResult.error) {
+      console.error('[checkin-auto-reply] plan notice chat failed:', chatResult.error)
+    }
+
+    await sendNotification({
+      userId: checkin.client_id,
+      type: 'plan_delivered',
+      title: 'Your updated plan is ready',
+      body: 'Your diet and workout for this week are in My Plan.',
+      actionUrl: '/plan',
+      metadata: {
+        checkinId: checkin.id,
+        planId: published.publishedPlanId,
+        conversationId: chatResult.conversationId,
+      },
+      idempotencyKey: `weekly-plan-notice:${checkin.id}`,
+    })
+  }
+}
+
 /**
  * Send every automated reply that has come due. Driven by a one-minute scheduler so a
  * 26–28 minute plan lands inside that window. Safe to run repeatedly because each row is
@@ -349,16 +482,15 @@ export async function processDueCheckinAutoReplies(
           dueRows.map((row) => row.id)
         )
       if (holdError) throw new Error(holdError.message)
-      return {
-        ...summary,
-        billingHold: true,
-        skipped: dueRows.length,
-        details: dueRows.map((row) => ({
-          checkinId: row.id,
-          status: 'skipped',
-          reason: 'openai_billing_hold',
-        })),
-      }
+      summary.billingHold = true
+      summary.skipped = dueRows.length
+      summary.details = dueRows.map((row) => ({
+        checkinId: row.id,
+        status: 'skipped',
+        reason: 'openai_billing_hold',
+      }))
+      await notifyPlansPublishedWithoutReply(supabase, now)
+      return summary
     }
   }
 
@@ -373,6 +505,8 @@ export async function processDueCheckinAutoReplies(
     else if (outcome.status === 'skipped') summary.skipped += 1
     else summary.failed += 1
   }
+
+  await notifyPlansPublishedWithoutReply(supabase, now)
 
   return summary
 }
