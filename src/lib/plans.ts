@@ -259,28 +259,6 @@ export async function activatePlan(
     }
   }
 
-  // The client notice is part of publishing. If it does not land, leave the check-in
-  // unreviewed so the scheduler can send the message without generating another plan.
-  let planNoticeFailed = false
-  if (meta.checkinId) {
-    try {
-      const { sendNotification } = await import('@/lib/notifications/dispatcher')
-      const notice = await sendNotification({
-        userId: plan.client_id,
-        type: 'plan_delivered',
-        title: 'Your updated plan is ready',
-        body: 'Your diet and workout for this week are in My Plan.',
-        actionUrl: '/plan',
-        metadata: { checkinId: meta.checkinId, planId: plan.id },
-        idempotencyKey: `weekly-plan-notice:${meta.checkinId}`,
-      })
-      planNoticeFailed = !notice
-    } catch (err) {
-      planNoticeFailed = true
-      console.error('[activatePlan] plan-ready notice failed:', err)
-    }
-  }
-
   await supabase
     .from('plan_change_requests')
     .update({
@@ -293,7 +271,7 @@ export async function activatePlan(
 
   // Delivering a check-in-linked weekly draft clears the check-in from the work queue.
   // Without this, coaches keep seeing "Review Weekly Check-in" after Publish.
-  if (meta.checkinId && !planNoticeFailed) {
+  if (meta.checkinId) {
     const { error: checkinError } = await supabase
       .from('checkins')
       .update({

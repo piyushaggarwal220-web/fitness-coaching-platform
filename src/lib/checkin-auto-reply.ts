@@ -257,6 +257,18 @@ export async function sendCheckinAutoReply(
     idempotencyKey: `checkin-review:${checkin.id}`,
   })
 
+  if (resolved.publishedPlanId) {
+    await sendNotification({
+      userId: checkin.client_id,
+      type: 'plan_delivered',
+      title: 'Your updated plan is ready',
+      body: 'Your diet and workout for this week are in My Plan.',
+      actionUrl: '/plan',
+      metadata: { checkinId: checkin.id, planId: resolved.publishedPlanId, automated: true },
+      idempotencyKey: `weekly-plan-notice:${checkin.id}`,
+    })
+  }
+
   return { status: 'sent', publishedPlanId: resolved.publishedPlanId }
 }
 
