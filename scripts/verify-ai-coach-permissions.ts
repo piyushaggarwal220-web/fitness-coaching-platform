@@ -32,8 +32,9 @@ const aiPrompt = buildNamedCoachSystemPrompt({
   mode: 'ai_thread',
 })
 
-assert.match(aiPrompt, /Assistant coach/)
-assert.match(aiPrompt, /cannot set a time/)
+assert.match(aiPrompt, /You are Smart Coach/)
+assert.match(aiPrompt, /Never give a clock time for a call/)
+assert.match(aiPrompt, /Do not answer it as a phone call/)
 assert.doesNotMatch(aiPrompt, /You are Piyush/)
 assert.doesNotMatch(aiPrompt, /Do not mention AI/)
 assert.equal(
@@ -48,6 +49,25 @@ assert.equal(
   guardAssistantCoachReply('Log breakfast, then do the squat session on today’s plan.'),
   'Log breakfast, then do the squat session on today’s plan.'
 )
+assert.equal(
+  guardAssistantCoachReply(
+    "I'll call this a 3-meal diet. Eggs stay the protein. Lunch is the high-protein meal."
+  ),
+  "I'll call this a 3-meal diet. Eggs stay the protein. Lunch is the high-protein meal."
+)
+assert.equal(
+  guardAssistantCoachReply(
+    'Main is call pe galat nahi hoon. Breakfast stays 8 am and lunch stays 1 pm. Reply YES to lock the 3 meals.'
+  ),
+  'Main is call pe galat nahi hoon. Breakfast stays 8 am and lunch stays 1 pm. Reply YES to lock the 3 meals.'
+)
+assert.equal(
+  guardAssistantCoachReply(
+    "Eggs stay the protein and lunch stays the high-protein meal. I'll call you at 8 pm."
+  ),
+  'Eggs stay the protein and lunch stays the high-protein meal.'
+)
+assert.equal(guardAssistantCoachReply(''), '')
 assert.match(aiPrompt, /My Plan/)
 assert.match(aiPrompt, /Fat loss \+ muscle gain/)
 assert.match(aiPrompt, /every week/)
@@ -65,7 +85,7 @@ const humanPrompt = buildNamedCoachSystemPrompt({
   journeySummary: null,
   mode: 'human_thread',
 })
-assert.match(humanPrompt, /Assistant coach/)
+assert.match(humanPrompt, /coach chat/)
 assert.doesNotMatch(humanPrompt, /You are Rakshit/)
 assert.match(humanPrompt, /My Plan/)
 assert.doesNotMatch(humanPrompt, /update shortly/)
@@ -164,9 +184,9 @@ assert.doesNotMatch(purchasedPlanLine('3_months'), /₹/)
 assert.match(purchasedPlanLine('3_months'), /every 14 days/)
 assert.match(purchasedPlanLine('12_months'), /no live call/i)
 assert.doesNotMatch(purchasedPlanLine('12_months'), /phone call/)
-assert.match(aiPrompt, /do not do live calls/i)
-assert.match(aiPrompt, /@maximusvault/)
-assert.match(aiPrompt, /@rakshitmohla_/)
+assert.match(aiPrompt, /Never say you will call/)
+assert.doesNotMatch(aiPrompt, /@maximusvault/)
+assert.doesNotMatch(aiPrompt, /@rakshitmohla_/)
 
 const beforeWindow = new Date('2026-09-28T12:00:00+05:30')
 const duringWindow = new Date('2026-10-15T12:00:00+05:30')
@@ -181,7 +201,7 @@ assert.equal(
 assert.equal(futurePlanChangeRefusal('make it veg from today until 28 Oct', beforeWindow), null)
 assert.match(datedPlanRequestDirective('veg from 11 to 28 oct', beforeWindow) ?? '', /11 Oct 2026/)
 assert.match(aiPrompt, /DATE WINDOW/)
-assert.match(aiPrompt, /crash diet/)
+assert.match(aiPrompt, /crash diet/i)
 assert.equal(PLAN_CHANGE_DAILY_LIMIT, 3)
 assert.match(
   dietCalorieShiftNotice({

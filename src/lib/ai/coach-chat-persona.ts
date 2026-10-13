@@ -7,7 +7,10 @@ const DEFAULT_PLAN_EXCERPT_LEN = 900
 export const ASSISTANT_COACH_LABEL = 'Assistant coach'
 
 const CALL_COMMITMENT =
-  /\b(i['’]?ll call|i will call you|i can call you|going to call you|call you back|calling you|give you a call|whatsapp you|phone you|jump on a call|book(?:ed|ing)? (?:a |your )?call|your call is|expect (?:my |a )?call)\b/i
+  /\b(i['’]?ll call you|i will call you|i can call you|i['’]?ll call back|going to call you|call you back|calling you|give you a call|whatsapp you|phone you|jump on a call|book(?:ed|ing)? (?:a |your )?(?:phone |whatsapp )?call|your call is|expect (?:my |a )?call|a phone call|schedule a call|set up a call)\b/i
+
+/** Hindi "is call pe" means "on this point", not a phone call. */
+const HINGLISH_POINT = /\b(?:is|iss|us|yeh|ye|this)\s+call\s+pe\b/gi
 
 const CLOCK_TIME = /\b\d{1,2}(:\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)\b/i
 
@@ -23,12 +26,13 @@ export const ASSISTANT_CALL_REFUSAL =
   'I can’t take a call. Write what you need here and I’ll handle it in this chat.'
 
 export const ASSISTANT_FIRM_PUSHBACK =
-  'Main is call pe galat nahi hoon. My Plan me jo likha hai wahi follow karo — yeh tumhare goal aur schedule ke hisaab se set hai. Agar phir bhi change chahiye, exact batao kya badalna hai; main option dunga, tum YES bolna.'
+  'Main is baat pe galat nahi hoon. My Plan me jo likha hai wahi follow karo — yeh tumhare goal aur schedule ke hisaab se set hai. Agar phir bhi change chahiye, exact batao kya badalna hai; main option dunga, tum YES bolna.'
 
-/** True when a reply books, confirms, or times a call as if the sender were the coach. */
+/** True when a reply books, confirms, or times a phone call as if the sender were the coach. */
 export function containsCoachCallCommitment(text: string): boolean {
-  if (CALL_COMMITMENT.test(text)) return true
-  return /\b(call|callback|call back)\b/i.test(text) && CLOCK_TIME.test(text)
+  const spoken = text.replace(HINGLISH_POINT, ' ')
+  if (CALL_COMMITMENT.test(spoken)) return true
+  return /\b(call|callback|call back)\b/i.test(spoken) && CLOCK_TIME.test(spoken)
 }
 
 export function clientIsChallengingCoach(text: string | null | undefined): boolean {
@@ -48,7 +52,16 @@ export function guardAssistantCoachReply(
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
-  if (!cleaned || containsCoachCallCommitment(cleaned)) return ASSISTANT_CALL_REFUSAL
+  if (!cleaned) return ''
+  if (containsCoachCallCommitment(cleaned)) {
+    const kept = cleaned
+      .split(/\n+|(?<=[.!?])\s+/)
+      .map((part) => part.trim())
+      .filter((part) => part && !containsCoachCallCommitment(part))
+      .join('\n')
+      .trim()
+    return kept || ASSISTANT_CALL_REFUSAL
+  }
   if (clientIsChallengingCoach(options?.clientText) && replyFoldsUnderPressure(cleaned)) {
     return ASSISTANT_FIRM_PUSHBACK
   }
@@ -126,13 +139,15 @@ export function coachReplyRequest(input: {
       }
     }
     return {
-      maxTokens: 420,
+      maxTokens: 1200,
       instruction: [
         'Reply in the same length and tone as their last message.',
         'Use easy, modern words. Follow the language setting. English letters only, unless that setting says Hindi letters.',
         'A sentence or two is enough unless they asked for steps.',
         'Use today\'s written plan when the question is about food or training.',
-        'If they push back on calories, macros, volume, or results: do not apologize, do not say confusion, and do not pretend My Plan is blank. Hold the call in 1–2 lines, then offer an optional change only if they still want it.',
+        'If they push back on calories, macros, volume, or results: do not apologize, do not say confusion, and do not pretend My Plan is blank. Hold your ground in 1–2 lines, then offer an optional change only if they still want it.',
+        'If they explain a diet, meal, calorie, or workout change, answer that request. A short hmm, haan, or ok continues the same request. Do not mention a phone call unless they asked to be called.',
+        'End on a finished sentence. Never stop mid-word.',
         'Same-day swaps stay in chat. For a written diet or workout rewrite, summarise it and ask them to reply YES so you can lock it into My Plan from this chat.',
         'Do not recap the memory. Do not open with your name.',
         'No quotes. Do not book a call. End on a finished sentence.',
@@ -240,7 +255,8 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
     'No medical diagnoses. No invented prices, refunds, discounts, or plan extensions.',
     'CONFRONTATION / PUSHBACK: you are the coach. Do not fold when someone challenges you.',
     'Forbidden under pushback: sorry, my bad, meri galti, confusion/confusing, I was wrong, you are right, follow mat karo, that number is not published, as you say, whatever you want.',
-    'If they attack calories or the plan: own what is in My Plan. Do not gaslight. Pattern: "Main is call pe galat nahi hoon — yeh target isliye hai. My Plan follow karo. Agar change chahiye to exact bolo, main option dunga, tum YES."',
+    'If they attack calories or the plan: own what is in My Plan. Do not gaslight. Pattern: "Main is baat pe galat nahi hoon — yeh target isliye hai. My Plan follow karo. Agar change chahiye to exact bolo, main option dunga, tum YES."',
+    'A request to change meals, protein, calories, or the written diet is a plan edit. Summarise what they asked and ask YES. Do not answer it as a phone call.',
     'Only admit a clear factual error (allergy ignored, wrong diet preference, injury ignored, or a number that truly contradicts the written plan). Even then: correct firmly in one line, no groveling, no repeated sorry.',
     'Do not agree just to be agreeable. Crash diets, skipping the plan, forbidden foods, or starting a future change today: say no, explain why, keep the current plan.',
     'Never say sure, absolutely, you are right, my bad, or I was wrong when the request fights the written plan, the calorie target, or a future date.',
