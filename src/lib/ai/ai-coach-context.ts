@@ -10,8 +10,9 @@ import {
   getCoachingDay,
   getCoachingDayInWeek,
 } from '@/lib/checkin-schedule'
-import { planUpdateCadenceLabel, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
-import { UPDATED_PLAN_READY_WITHIN_LABEL } from '@/lib/checkin-reply-timing'
+import { isBiweeklyPlanUpdate, nextAutoPlanUpdateWeek, planUpdateCadenceLabel, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence'
+import { getHomePlanCardCopy, getHomePlanPhase, UPDATED_PLAN_READY_WITHIN_MS } from '@/lib/checkin-reply-timing'
+import { clientFacingPlanTitle } from '@/lib/plan-metadata'
 import { getCoachingPlan } from '@/lib/payments/plans'
 import { latestCoachingPurchase } from '@/lib/payments/digital-purchase'
 import { truncatePlanExcerpt } from '@/lib/ai/coach-chat-persona'
@@ -254,19 +255,49 @@ function summarizeTrackerDay(day: RecentTrackerDay): string {
 
 /** Facts Smart Coach must already know: last check-in, recent logs, plan delivery. */
 export function formatClientSituation(input: {
+  planTitle?: string | null
   planDeliveredAt: string | null | undefined
   planSlug: string | null | undefined
   checkins: CheckinRow[]
   recentDays: RecentTrackerDay[]
 }): string {
   const lines: string[] = []
-  if (input.planDeliveredAt) {
-    lines.push(`Current plan delivered: ${formatCoachingDateTime(input.planDeliveredAt)} IST.`)
-  } else {
-    lines.push('Current plan: not delivered yet.')
+  const latest = input.checkins.find((row) => row.submitted_at)
+  const latestWeekly = input.checkins.find((row) => row.checkin_type === 'weekly' && row.submitted_at)
+  const anchor = latestWeekly ?? latest
+  const updatesPlan =
+    anchor?.checkin_type === 'weekly' &&
+    typeof anchor.coaching_week === 'number' &&
+    shouldAutoGenerateWeeklyPlanDraft(input.planSlug, anchor.coaching_week)
+  const submittedMs = anchor?.submitted_at ? Date.parse(anchor.submitted_at) : Number.NaN
+  const deliveredMs = input.planDeliveredAt ? Date.parse(input.planDeliveredAt) : Number.NaN
+  const phase = getHomePlanPhase({
+    hasActivePlan: Boolean(input.planDeliveredAt),
+    expectsUpdate: updatesPlan,
+    submittedAtMs: Number.isFinite(submittedMs) ? submittedMs : null,
+    deliveredAtMs: Number.isFinite(deliveredMs) ? deliveredMs : null,
+  })
+  const week = typeof anchor?.coaching_week === 'number' ? anchor.coaching_week : null
+  const weekForNext = phase === 'delivered_for_checkin' && week != null ? week + 1 : week
+  const card = getHomePlanCardCopy({
+    phase,
+    planTitle: input.planTitle ? clientFacingPlanTitle(input.planTitle) : null,
+    deliveredAtLabel: input.planDeliveredAt ? formatCoachingDateTime(input.planDeliveredAt) : null,
+    biweekly: isBiweeklyPlanUpdate(input.planSlug),
+    nextUpdateWeek: weekForNext != null ? nextAutoPlanUpdateWeek(input.planSlug, weekForNext) : null,
+    weeklyDueNow: false,
+    checkedInAt: anchor?.submitted_at ? formatCoachingDateTime(anchor.submitted_at) : null,
+    readyBy: Number.isFinite(submittedMs)
+      ? formatCoachingDateTime(new Date(submittedMs + UPDATED_PLAN_READY_WITHIN_MS))
+      : null,
+    overdue: Number.isFinite(submittedMs) && Date.now() >= submittedMs + UPDATED_PLAN_READY_WITHIN_MS,
+  })
+  lines.push(card.currentLine)
+  lines.push(card.nextLine)
+  if (phase !== 'waiting' && phase !== 'no_plan') {
+    lines.push('Do not say the plan is still being created.')
   }
 
-  const latest = input.checkins.find((row) => row.submitted_at)
   if (!latest?.submitted_at) {
     lines.push('Last check-in: none yet.')
   } else {
@@ -291,18 +322,6 @@ export function formatClientSituation(input: {
         latest.reviewed ? 'Already reviewed.' : 'Not reviewed yet.'
       }${details.length ? ` ${details.join('. ')}.` : ''}`
     )
-
-    const updatesPlan =
-      latest.checkin_type === 'weekly' &&
-      typeof latest.coaching_week === 'number' &&
-      shouldAutoGenerateWeeklyPlanDraft(input.planSlug, latest.coaching_week)
-    if (!latest.reviewed && updatesPlan) {
-      lines.push(
-        `This check-in updates the plan. It is delivered 26–28 minutes after submit. Tell them it is ready within ${UPDATED_PLAN_READY_WITHIN_LABEL} and to open My Plan by then.`
-      )
-    } else if (!latest.reviewed && latest.checkin_type === 'weekly') {
-      lines.push('This weekly check-in does not change the plan. The current plan stays.')
-    }
   }
 
   const previous = input.checkins.filter((row) => row.submitted_at).slice(1, 2)[0]
@@ -323,7 +342,7 @@ export function formatClientSituation(input: {
     )
   }
 
-  return clip(lines.join('\n'), 1400) ?? lines.join('\n')
+  return clip(lines.join('\n'), 1800) ?? lines.join('\n')
 }
 
 function coachingDayInWeek(scheduleStartedAt: string | null | undefined, referenceDate: Date): number | null {
@@ -429,6 +448,7 @@ export async function loadAiCoachThreadContext(
       referenceDate,
     }),
     situationLine: formatClientSituation({
+      planTitle: planRow?.title,
       planDeliveredAt: planRow?.delivered_at,
       planSlug: coaching?.planSlug ?? null,
       checkins: checkinRows,

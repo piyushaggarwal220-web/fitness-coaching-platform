@@ -47,6 +47,8 @@ type Props = {
   firstName: string
   contextLine: string
   preparingDetail?: string
+  /** Active plan already exists — never tell them it is still being created. */
+  hasPlan?: boolean
   modules: TrackerModuleSummary[] | null
   unreadMessages: number
   showChat: boolean
@@ -61,6 +63,7 @@ export function TodayFocus({
   firstName,
   contextLine,
   preparingDetail,
+  hasPlan = false,
   modules,
   unreadMessages,
   showChat,
@@ -122,6 +125,16 @@ export function TodayFocus({
               icon={MODULE_ICON[primary.id]}
               primary
               onOpen={() => router.push(primary.href)}
+            />
+          ) : hasPlan ? (
+            <ActionCard
+              eyebrow="Today"
+              title="Your plan is ready"
+              detail="Diet and workout are in My Plan."
+              action="View plan"
+              icon={ClipboardList}
+              primary
+              onOpen={() => router.push('/plan')}
             />
           ) : (
             <ActionCard

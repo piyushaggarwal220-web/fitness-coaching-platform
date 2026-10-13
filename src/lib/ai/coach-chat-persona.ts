@@ -217,7 +217,7 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
             ? `Memory of earlier chats. Use it. Do not ask again for a fact that is already here:\n${input.memorySummary.trim()}`
             : 'No earlier memory yet. Learn from this chat and do not forget what they tell you.',
           'Use the written plan below. If today\'s meals or workout already answer them, say that. Do not invent a new program.',
-          'On an update week, the updated plan is ready within 30 minutes of the weekly check-in. Tell them to open My Plan by then. On a check-in-only week, the current plan stays.',
+          'On an update week, the updated plan is ready within 30 minutes of the weekly check-in. Tell them to open My Plan by then. If the situation says the plan is already in My Plan, say that and do not tell them it is still being created. On a check-in-only week, the current plan stays.',
           'Use the client situation below for their last check-in, recent logs, and when the current plan was delivered. Do not invent a check-in, a delivery time, or a log that is not listed.',
           'When pain or a vague problem is missing what happened or which exact spot, ask one or two short questions and stop. Do not list treatments.',
           'A voice note is the transcript. If the transcript is missing, ask them to type it. Do not guess the words.',

@@ -18,11 +18,11 @@ import {
   getCheckinTypeDisplayName,
   hasCoachingDayStarted,
 } from '@/lib/checkin-schedule';
-import { isBiweeklyPlanUpdate, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence';
-import { UPDATED_PLAN_READY_WITHIN_MS } from '@/lib/checkin-reply-timing';
+import { clientFacingPlanTitle } from '@/lib/plan-metadata';
+import { isBiweeklyPlanUpdate, nextAutoPlanUpdateWeek, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence';
+import { getHomePlanCardCopy, UPDATED_PLAN_READY_WITHIN_MS, getHomePlanPhase } from '@/lib/checkin-reply-timing';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
-import { clientFacingPlanTitle } from '@/lib/plan-metadata';
 import { planGoalName } from '@/lib/payments/plan-pages';
 import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy';
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window';
@@ -388,27 +388,37 @@ export default function Dashboard() {
     shouldAutoGenerateWeeklyPlanDraft(purchase?.plan_slug, weeklyWeek)
   const weeklySubmittedMs = latestWeekly ? Date.parse(latestWeekly.submitted_at) : Number.NaN
   const planDeliveredMs = activePlan?.delivered_at ? Date.parse(activePlan.delivered_at) : Number.NaN
-  const planStillComing =
-    Boolean(latestWeekly) &&
-    expectsPlanUpdate &&
-    !latestWeekly?.reviewed &&
-    Number.isFinite(weeklySubmittedMs) &&
-    (!Number.isFinite(planDeliveredMs) || planDeliveredMs < weeklySubmittedMs)
-  const lastDeliveredLabel = activePlan?.delivered_at
-    ? `Last plan delivered ${formatCoachingDateTime(activePlan.delivered_at)}.`
-    : 'No plan has been delivered yet.'
-  const standingPlanTiming = isBiweeklyPlanUpdate(purchase?.plan_slug)
-    ? 'On plan-update weeks, your updated plan is ready in 30 minutes after the weekly check-in. Check My Plan by then.'
-    : 'After your weekly check-in, your updated plan is ready in 30 minutes. Check My Plan by then.'
-  let planTimingLabel = standingPlanTiming
-  if (planStillComing && latestWeekly && Number.isFinite(weeklySubmittedMs)) {
-    const readyBy = formatCoachingDateTime(new Date(weeklySubmittedMs + UPDATED_PLAN_READY_WITHIN_MS))
-    const checkedInAt = formatCoachingDateTime(latestWeekly.submitted_at)
-    planTimingLabel =
-      Date.now() >= weeklySubmittedMs + UPDATED_PLAN_READY_WITHIN_MS
-        ? `You checked in at ${checkedInAt}. Your updated plan should be in My Plan now. It was due by ${readyBy}.`
-        : `You checked in at ${checkedInAt}. Your updated plan will be ready by ${readyBy}. Check My Plan by then.`
-  }
+  const planPhase = getHomePlanPhase({
+    hasActivePlan: Boolean(activePlan),
+    expectsUpdate: expectsPlanUpdate,
+    submittedAtMs: Number.isFinite(weeklySubmittedMs) ? weeklySubmittedMs : null,
+    deliveredAtMs: Number.isFinite(planDeliveredMs) ? planDeliveredMs : null,
+  })
+  const coachingWeek =
+    checkinSchedule?.activeCoachingWeek ??
+    (typeof weeklyWeek === 'number' ? weeklyWeek : null)
+  const weekForNextPlan =
+    planPhase === 'delivered_for_checkin' && coachingWeek != null ? coachingWeek + 1 : coachingWeek
+  const nextUpdateWeek =
+    weekForNextPlan != null ? nextAutoPlanUpdateWeek(purchase?.plan_slug, weekForNextPlan) : null
+  const weeklyDueNow = dueCheckin?.type === 'weekly'
+  const planCard = getHomePlanCardCopy({
+    phase: planPhase,
+    planTitle: activePlan ? clientFacingPlanTitle(activePlan.title) : null,
+    deliveredAtLabel: activePlan?.delivered_at ? formatCoachingDateTime(activePlan.delivered_at) : null,
+    biweekly: isBiweeklyPlanUpdate(purchase?.plan_slug),
+    nextUpdateWeek,
+    weeklyDueNow,
+    checkedInAt:
+      latestWeekly && Number.isFinite(weeklySubmittedMs)
+        ? formatCoachingDateTime(latestWeekly.submitted_at)
+        : null,
+    readyBy:
+      Number.isFinite(weeklySubmittedMs)
+        ? formatCoachingDateTime(new Date(weeklySubmittedMs + UPDATED_PLAN_READY_WITHIN_MS))
+        : null,
+    overdue: Number.isFinite(weeklySubmittedMs) && Date.now() >= weeklySubmittedMs + UPDATED_PLAN_READY_WITHIN_MS,
+  })
 
   const upcomingCheckin = dueCheckin ?? checkinSchedule?.nextCheckin ?? null
   const nextCheckinFocus = upcomingCheckin
@@ -500,6 +510,7 @@ export default function Dashboard() {
             ? `Smart Coach is building your plan. It arrives within ${INSTANT_PLAN_WINDOW_LABEL}. Workout and meals show up here once it’s ready.`
             : undefined
         }
+        hasPlan={Boolean(activePlan)}
         modules={activePlan && !instantLocked.tracker ? todayModules : []}
         unreadMessages={unreadMessages}
         showChat={chatReady}
@@ -512,8 +523,8 @@ export default function Dashboard() {
 
       {profile && (
         <PlanUpdateHome
-          lastDeliveredLabel={lastDeliveredLabel}
-          timingLabel={planTimingLabel}
+          currentLine={planCard.currentLine}
+          nextLine={planCard.nextLine}
           showChat={chatReady}
         />
       )}
