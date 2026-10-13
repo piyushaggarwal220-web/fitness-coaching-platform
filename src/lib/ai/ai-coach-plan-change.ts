@@ -148,13 +148,6 @@ export async function lockAndProcessPlanChangeFromChat(input: {
   if (input.profile.role && input.profile.role !== 'client') {
     return { ok: false, message: 'Only clients can lock plan edits.' }
   }
-  if (!input.profile.plan_delivered) {
-    return {
-      ok: false,
-      message: 'Your first plan is still being prepared. I can lock edits after it arrives.',
-    }
-  }
-
   const window = assertClientCanReceivePlanChanges(input.profile as EntitlementProfile)
   if (!window.ok) {
     return {
@@ -199,7 +192,12 @@ export async function lockAndProcessPlanChangeFromChat(input: {
     .maybeSingle()
 
   if (!activePlan?.id) {
-    return { ok: false, message: 'No active plan found to edit yet.' }
+    return {
+      ok: false,
+      message: input.profile.plan_delivered
+        ? 'No active plan found to edit yet.'
+        : 'Your first plan is not in My Plan yet. I can lock edits after it is there.',
+    }
   }
 
   const created = await createLockedPlanChangeRequest({

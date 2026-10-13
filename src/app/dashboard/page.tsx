@@ -491,13 +491,19 @@ export default function Dashboard() {
         }}>
           <strong>
             {generationJob.status === 'failed'
-              ? 'We hit a snag building your plan. Check back shortly.'
-              : 'Smart Coach is building your plan.'}
+              ? 'Your plan did not finish.'
+              : generationJob.status === 'ready'
+                ? 'Your plan is not live in My Plan.'
+                : 'Smart Coach is building your plan.'}
           </strong>
           <div>
-            {isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id)
-              ? `It arrives within ${INSTANT_PLAN_WINDOW_LABEL}. You’ll get an email, and it will show up in My Plan.`
-              : 'It usually arrives within 24 hours and appears in My Plan automatically.'}
+            {generationJob.status === 'failed'
+              ? 'It is not still being created. Message your coach if My Plan stays empty.'
+              : generationJob.status === 'ready'
+                ? 'A draft was prepared, but it was never published. Refresh My Plan. If it is still empty, message your coach.'
+                : isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id)
+                  ? `It arrives within ${INSTANT_PLAN_WINDOW_LABEL}. You’ll get an email, and it will show up in My Plan.`
+                  : 'It usually arrives within 24 hours and appears in My Plan automatically.'}
           </div>
         </div>
       )}
@@ -505,12 +511,34 @@ export default function Dashboard() {
       <TodayFocus
         firstName={firstName}
         contextLine={contextLine}
-        preparingDetail={
-          isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id)
-            ? `Smart Coach is building your plan. It arrives within ${INSTANT_PLAN_WINDOW_LABEL}. Workout and meals show up here once it’s ready.`
-            : undefined
+        preparingTitle={
+          !activePlan && generationJob?.status === 'failed'
+            ? 'Your plan did not finish'
+            : !activePlan && generationJob?.status === 'ready'
+              ? 'Your plan is not live yet'
+              : undefined
         }
-        hasPlan={Boolean(activePlan)}
+        preparingDetail={
+          !activePlan && generationJob?.status === 'failed'
+            ? 'It is not still being created. Message your coach if My Plan stays empty.'
+            : !activePlan && generationJob?.status === 'ready'
+              ? 'A draft was prepared, but it was never published as the live plan.'
+              : isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id)
+                ? `Smart Coach is building your plan. It arrives within ${INSTANT_PLAN_WINDOW_LABEL}. Workout and meals show up here once it’s ready.`
+                : undefined
+        }
+        readyDetail={
+          activePlan?.nutrition_plan?.trim() && activePlan?.workout_plan?.trim()
+            ? 'Diet and workout are in My Plan.'
+            : activePlan?.nutrition_plan?.trim()
+              ? 'Your diet is in My Plan. The workout section is empty.'
+              : activePlan?.workout_plan?.trim()
+                ? 'Your workout is in My Plan. The diet section is empty.'
+                : profile?.plan_delivered
+                  ? 'Your plan was marked delivered. Open My Plan if the sections look empty.'
+                  : undefined
+        }
+        hasPlan={Boolean(activePlan) || profile?.plan_delivered === true}
         modules={activePlan && !instantLocked.tracker ? todayModules : []}
         unreadMessages={unreadMessages}
         showChat={chatReady}

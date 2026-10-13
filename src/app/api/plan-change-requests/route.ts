@@ -69,13 +69,6 @@ export async function POST(request: Request) {
       { status: 503 }
     )
   }
-  if (!profile.plan_delivered) {
-    return NextResponse.json(
-      { error: 'You can request edits after your first plan arrives.' },
-      { status: 400 }
-    )
-  }
-
   const { assertClientCanReceivePlanChanges } = await import('@/lib/entitlements')
   const planWindow = assertClientCanReceivePlanChanges(profile)
   if (!planWindow.ok) {
@@ -98,7 +91,14 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (!activePlan?.id) {
-    return NextResponse.json({ error: 'No active plan found to edit.' }, { status: 400 })
+    return NextResponse.json(
+      {
+        error: profile.plan_delivered
+          ? 'No active plan found to edit.'
+          : 'Your first plan is not in My Plan yet.',
+      },
+      { status: 400 }
+    )
   }
 
   const created = await createLockedPlanChangeRequest({

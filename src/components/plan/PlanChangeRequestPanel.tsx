@@ -28,6 +28,19 @@ const SCOPE_OPTIONS: { value: Scope; label: string }[] = [
   { value: 'both', label: 'Diet + workout' },
 ]
 
+const STALE_GENERATING_MS = 6 * 60 * 60 * 1000
+const STALE_DRAFT_MS = 24 * 60 * 60 * 1000
+
+function isStaleOpenRequest(open: OpenRequest): boolean {
+  if (!open?.lockedAt) return false
+  const locked = Date.parse(open.lockedAt)
+  if (!Number.isFinite(locked)) return false
+  const age = Date.now() - locked
+  if (open.status === 'generating') return age > STALE_GENERATING_MS
+  if (open.status === 'draft_ready' || open.status === 'in_review') return age > STALE_DRAFT_MS
+  return false
+}
+
 const inFlightProcessIds = new Set<string>()
 
 function startPlanChangeProcess(requestId: string) {
@@ -66,7 +79,7 @@ export function PlanChangeRequestPanel() {
       if (!res.ok) throw new Error(data.error ?? 'Could not load change limits')
       setQuota(data.quota ?? null)
       setOpenRequest(data.openRequest ?? null)
-      if (data.openRequest?.status === 'generating') {
+      if (data.openRequest?.status === 'generating' && !isStaleOpenRequest(data.openRequest)) {
         startPlanChangeProcess(data.openRequest.id)
       }
     } catch (err) {
@@ -120,6 +133,9 @@ export function PlanChangeRequestPanel() {
 
   const statusMessage = (() => {
     if (!openRequest) return null
+    if (isStaleOpenRequest(openRequest)) {
+      return 'That edit did not replace your live plan. Follow the plan already in My Plan.'
+    }
     if (openRequest.status === 'generating') {
       return 'Your request is locked in. The updated plan is being written and will replace the live plan when it is ready.'
     }

@@ -17,6 +17,17 @@ import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import type { OnboardingProfile, Plan } from '@/types/database'
 
+function coachingReadyLine(plan: Plan | null): string {
+  const diet = Boolean(plan?.nutrition_plan?.trim())
+  const workout = Boolean(plan?.workout_plan?.trim())
+  if (diet && workout) {
+    return 'Diet and workout are in My Plan. Open both sections to unlock your daily tracker focus.'
+  }
+  if (diet) return 'Your diet is in My Plan. The workout section is empty.'
+  if (workout) return 'Your workout is in My Plan. The diet section is empty.'
+  return 'Open My Plan.'
+}
+
 type PlanCountdownProps = {
   profile: OnboardingProfile
   activePlan: Plan | null
@@ -99,10 +110,10 @@ export function PlanCountdownCard({
             <p style={{ margin: '6px 0 4px', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
               {isDigital
                 ? 'Your customised plan is ready. Open it in the app — we also emailed you a link.'
-                : `${displayCoach} sent your diet and workout. Open both sections to unlock your daily tracker focus.`}
+                : coachingReadyLine(activePlan)}
             </p>
             <Button fullWidth style={{ marginTop: 12 }} onClick={() => router.push('/plan')}>
-              {isDigital ? 'Open your plan' : 'Open diet & workout'}
+              {isDigital ? 'Open your plan' : 'Open My Plan'}
             </Button>
           </div>
         </div>

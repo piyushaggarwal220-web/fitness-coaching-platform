@@ -106,7 +106,10 @@ export async function getPlanChangeQuota(clientId: string): Promise<PlanChangeQu
 
   const usedToday = todayRows?.length ?? 0
   const remainingToday = Math.max(0, PLAN_CHANGE_DAILY_LIMIT - usedToday)
-  const openRequest = (openRows?.[0] as PlanChangeRequestRow | undefined) ?? null
+  let openRequest = (openRows?.[0] as PlanChangeRequestRow | undefined) ?? null
+  if (openRequest && (await expireStalePlanChangeRequest(admin, openRequest))) {
+    openRequest = null
+  }
 
   return {
     usedToday,
@@ -114,6 +117,36 @@ export async function getPlanChangeQuota(clientId: string): Promise<PlanChangeQu
     canSubmit: remainingToday > 0 && !openRequest,
     openRequest,
   }
+}
+
+const STALE_GENERATING_MS = 6 * 60 * 60 * 1000
+const STALE_DRAFT_MS = 24 * 60 * 60 * 1000
+
+/** A request that never replaced the live plan must not keep saying the plan is being written. */
+async function expireStalePlanChangeRequest(
+  admin: ReturnType<typeof createAdminClient>,
+  row: PlanChangeRequestRow
+): Promise<boolean> {
+  const locked = Date.parse(row.locked_at || row.updated_at || row.created_at)
+  if (!Number.isFinite(locked)) return false
+  const age = Date.now() - locked
+  const stale =
+    (row.status === 'generating' && age > STALE_GENERATING_MS) ||
+    ((row.status === 'draft_ready' || row.status === 'in_review') && age > STALE_DRAFT_MS)
+  if (!stale) return false
+
+  const { error } = await admin
+    .from('plan_change_requests')
+    .update({
+      status: 'failed',
+      error_message: 'This edit did not replace the live plan. Follow the plan already in My Plan.',
+      resolved_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', row.id)
+    .in('status', ['generating', 'draft_ready', 'in_review'])
+
+  return !error
 }
 
 export async function createLockedPlanChangeRequest(input: {

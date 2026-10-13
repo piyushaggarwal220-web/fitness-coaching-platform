@@ -256,7 +256,7 @@ export function buildNamedCoachSystemPrompt(input: CoachChatPersonaInput): strin
     `Primary goal: ${input.fitnessGoal || 'not set'}`,
     input.planTitle
       ? `Active plan: ${input.planTitle}`
-      : 'Active plan: not delivered yet — focus on onboarding / habits.',
+      : 'Active plan title was not loaded. If the client situation names a plan in My Plan, that plan is live. Do not say it is still being created unless the situation says there is no plan yet.',
     input.journeySummary ? `Journey note: ${input.journeySummary}` : '',
     input.dietPreference ? `Diet preference: ${input.dietPreference}` : '',
     input.allergyNote ? `Allergies: ${input.allergyNote}` : '',

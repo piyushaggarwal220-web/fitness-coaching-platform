@@ -37,6 +37,7 @@ export default function ClientPlanPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [planDelivered, setPlanDelivered] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<PlanSection | null>(null);
@@ -55,12 +56,19 @@ export default function ClientPlanPage() {
       }
 
       setPlanDelivered(result.profile?.plan_delivered === true);
+      const { data: generationJob } = await supabase
+        .from('initial_plan_generation_jobs')
+        .select('status')
+        .eq('client_id', result.user.id)
+        .maybeSingle();
+      setGenerationStatus(generationJob?.status ?? null);
       setEntitledAddons(entitledAddonIds(result.profile));
 
       const { data: purchase } = await supabase
         .from('purchases')
         .select('plan_slug, plan_name, status, created_at')
         .eq('user_id', result.user.id)
+        .neq('plan_slug', 'exercise_library')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -161,9 +169,13 @@ export default function ClientPlanPage() {
               ? isDigitalPlan
                 ? 'Your plan was delivered. If sections look empty, refresh or check your email link.'
                 : 'Your plan was delivered. If sections look empty, refresh or message your coach.'
-              : isDigitalPlan
-                ? `Your customised plan is being prepared. You’ll get an email when it’s ready — within ${INSTANT_PLAN_WINDOW_LABEL}.`
-                : `Smart Coach is building your personalised plan. It appears here automatically when ready — within ${INSTANT_PLAN_WINDOW_LABEL}.`
+              : generationStatus === 'failed'
+                ? 'Your plan did not finish. It is not still being created. Message your coach if this stays empty.'
+                : generationStatus === 'ready'
+                  ? 'A draft was prepared, but it is not the live plan. Refresh once. If this stays empty, message your coach.'
+                  : isDigitalPlan
+                    ? `Your customised plan is being prepared. You’ll get an email when it’s ready — within ${INSTANT_PLAN_WINDOW_LABEL}.`
+                    : `Smart Coach is building your personalised plan. It appears here automatically when ready — within ${INSTANT_PLAN_WINDOW_LABEL}.`
           }
           actionLabel="Back to dashboard"
           onAction={() => router.push('/dashboard')}

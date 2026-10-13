@@ -46,7 +46,9 @@ export type TodayCheckin = {
 type Props = {
   firstName: string
   contextLine: string
+  preparingTitle?: string
   preparingDetail?: string
+  readyDetail?: string
   /** Active plan already exists — never tell them it is still being created. */
   hasPlan?: boolean
   modules: TrackerModuleSummary[] | null
@@ -62,7 +64,9 @@ type Props = {
 export function TodayFocus({
   firstName,
   contextLine,
+  preparingTitle,
   preparingDetail,
+  readyDetail,
   hasPlan = false,
   modules,
   unreadMessages,
@@ -130,7 +134,7 @@ export function TodayFocus({
             <ActionCard
               eyebrow="Today"
               title="Your plan is ready"
-              detail="Diet and workout are in My Plan."
+              detail={readyDetail ?? 'Diet and workout are in My Plan.'}
               action="View plan"
               icon={ClipboardList}
               primary
@@ -139,7 +143,7 @@ export function TodayFocus({
           ) : (
             <ActionCard
               eyebrow="Today"
-              title="Your plan is being prepared"
+              title={preparingTitle ?? 'Your plan is being prepared'}
               detail={
                 preparingDetail ??
                 'Smart Coach is building your personalized plan. Workout and meals show up here once it is ready.'
