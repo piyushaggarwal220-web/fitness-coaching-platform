@@ -1197,6 +1197,8 @@ export function validateOnboardingStep(
      * When false, allow legacy single `fitness_goal` profiles.
      */
     requireMultiGoals?: boolean
+    /** New clients only — coaching style was added after many clients finished. */
+    requireCoachPersonalities?: boolean
   }
 ): string | null {
   const confirmedScrollers = new Set(options?.confirmedScrollers ?? [])
@@ -1275,8 +1277,10 @@ export function validateOnboardingStep(
       } else if (!data.fitness_goal || data.fitness_goal === 'ai_decide') {
         return 'Please select your goals.'
       }
-      const personalityError = validateCoachPersonalities(data.coach_personalities)
-      if (personalityError) return personalityError
+      if (options?.requireCoachPersonalities !== false) {
+        const personalityError = validateCoachPersonalities(data.coach_personalities)
+        if (personalityError) return personalityError
+      }
       if (needsTargetWeight(data.fitness_goal)) {
         if (!data.target_weight || Number(data.target_weight) <= 0) return 'Enter a valid target weight.'
       }
@@ -1999,6 +2003,7 @@ export function validateOnboardingAnswersForProfile(
       requirePlateDetail,
       // Completed / generation checks must accept legacy single-goal profiles.
       requireMultiGoals: false,
+      requireCoachPersonalities: requireNewFields,
     })
     if (error) return error
   }

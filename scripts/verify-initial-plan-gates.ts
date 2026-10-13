@@ -9,7 +9,7 @@ import {
   evaluateComplexityInputs,
   profileBlocksAiPlanWork,
 } from '../src/lib/complexity/input-guards'
-import { shouldRequireNewOnboardingFields } from '../src/lib/onboarding'
+import { shouldRequireNewOnboardingFields, validateOnboardingStep } from '../src/lib/onboarding'
 
 const finished = profileBlocksAiPlanWork({
   age: 30,
@@ -69,6 +69,30 @@ assert.equal(
 assert.equal(
   shouldRequireNewOnboardingFields({ plan_delivered: false, onboarding_complete: false }),
   true
+)
+
+const finishedGoals = {
+  fitness_goal: 'muscle_gain',
+  selected_goals: [],
+  coach_personalities: [],
+  target_weight: '',
+  goal_details: '',
+  gender: 'male',
+  starting_body_type: '',
+} as Parameters<typeof validateOnboardingStep>[1]
+
+assert.equal(
+  validateOnboardingStep(2, finishedGoals, undefined, undefined, undefined, {
+    requireMultiGoals: false,
+    requireCoachPersonalities: false,
+  }),
+  null
+)
+assert.match(
+  validateOnboardingStep(2, finishedGoals, undefined, undefined, undefined, {
+    requireMultiGoals: false,
+  }) ?? '',
+  /coaching style/
 )
 
 console.log('✓ a finished intake is not blocked by a stale complexity flag or a later measurement')
