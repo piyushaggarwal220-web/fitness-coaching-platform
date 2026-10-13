@@ -449,18 +449,9 @@ export function enforceDietSafety(
     }
   }
 
-  if (cals < floorHardKcal) {
-    return {
-      ok: false,
-      error: `Diet daily calories ${cals} are below the ${floorKcal} kcal floor.`,
-      hint: buildLowCalorieHint(cals, opts, floorKcal, 'floor'),
-    }
-  }
-
   const preferredMin = opts.preferredMinKcal
   if (typeof preferredMin === 'number' && preferredMin > 0) {
-    const hardPreferred = Math.max(floorHardKcal, preferredMin - 100)
-    if (cals < hardPreferred) {
+    if (cals < preferredMin - 100) {
       return {
         ok: false,
         error: `Diet daily calories ${cals} are below this client's Mifflin-St Jeor target (~${preferredMin} kcal).`,
@@ -473,6 +464,15 @@ export function enforceDietSafety(
         error: `Diet daily calories ${cals} are above this client's Mifflin-St Jeor target (~${preferredMin} kcal).`,
         hint: buildHighCalorieHint(cals, preferredMin),
       }
+    }
+    return { ok: true }
+  }
+
+  if (cals < floorHardKcal) {
+    return {
+      ok: false,
+      error: `Diet daily calories ${cals} are below the ${floorKcal} kcal floor.`,
+      hint: buildLowCalorieHint(cals, opts, floorKcal, 'floor'),
     }
   }
 
@@ -762,16 +762,15 @@ export function clampGeneratedNutritionCalories(
   if (!Number.isFinite(cals) || cals <= 0) return plan
 
   const floorKcal = opts.floorKcal ?? DIET_FLOOR_TARGET_KCAL
-  cals = Math.max(cals, floorKcal)
   const preferred = opts.preferredMinKcal
-  if (typeof preferred === 'number' && preferred > 0 && cals > preferred + PREFERRED_MAX_SLACK_KCAL) {
-    // Cap overfeeds at the Mifflin preferred (+slack). Header/prose claims follow;
-    // meal lines stay as written until a rewrite lands — callers should still retry.
-    cals = preferred
-  }
-  const prev = opts.previousCalories
-  if (typeof prev === 'number' && prev > 0) {
-    cals = clampCaloriesToWeeklyBand(cals, prev, floorKcal, typeof preferred === 'number' ? preferred : undefined)
+  if (typeof preferred === 'number' && preferred > 0) {
+    if (cals > preferred + PREFERRED_MAX_SLACK_KCAL || cals < preferred - 100) cals = preferred
+  } else {
+    cals = Math.max(cals, floorKcal)
+    const prev = opts.previousCalories
+    if (typeof prev === 'number' && prev > 0) {
+      cals = clampCaloriesToWeeklyBand(cals, prev, floorKcal)
+    }
   }
 
   if (cals === plan.calories) return plan

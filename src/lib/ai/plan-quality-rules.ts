@@ -1,5 +1,5 @@
 /** Bump this when protein/calorie/volume prompt rules change so cached hard-constraints refresh. */
-export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v27'
+export const PLAN_QUALITY_RULES_VERSION = 'diet-repair-v28'
 
 /** Platform soft floor before weight-based floor. Prefer formula target when higher. */
 export const DIET_FLOOR_BASE_KCAL = 1800
@@ -55,7 +55,7 @@ export const DAY_HEADER_PROMPT_RULES = [
 export const CALORIE_FORMULA_PROMPT_RULES = [
   'CALORIE FORMULA (non-negotiable for every new or rewritten diet):',
   '- Always derive the daily calorie target with Mifflin-St Jeor: BMR from weight/height/age/gender, then maintenance = BMR × activity factor.',
-  '- Use the CALORIE METHOD block in the client profile — it lists this client\'s already-computed daily target. Write that number (±100 kcal). Never invent a 1400–1800 crash diet.',
+  '- Use the CALORIE METHOD block in the client profile — it lists this client\'s already-computed daily target. Write that number (±100 kcal), including when it is under 1800. Do not replace it with a floor.',
   `- That number is the only daily target. Fat loss is ${FAT_LOSS_DEFICIT_KCAL.steady} kcal below maintenance on steady, ${FAT_LOSS_DEFICIT_KCAL.build_up} on build-up, and ${FAT_LOSS_DEFICIT_KCAL.high_flux} on high flux. Muscle gain is ${MUSCLE_SURPLUS_KCAL.steady} kcal above on steady, ${MUSCLE_SURPLUS_KCAL.build_up} on build-up, and ${MUSCLE_SURPLUS_KCAL.high_flux} on high flux. Recomp is maintenance.`,
   '- If a template, knowledge entry, or older line names a different deficit or surplus (including 300 to 400 below), ignore it and write the CALORIE METHOD number.',
   '- When editing and the client did NOT ask to change calories, keep the current daily average; when rebuilding from profile, always run the formula fresh.',
@@ -123,14 +123,14 @@ export const DIET_MODIFY_COACH_WRITING_RULES = [
 
 export const PROTEIN_CALORIE_PROMPT_RULES = [
   'PROTEIN vs CALORIES (non-negotiable):',
-  `- Derive the daily calorie target from Mifflin-St Jeor (see CALORIE METHOD). Calories come first so the client can function. Daily average must be at least ${DIET_FLOOR_TARGET_KCAL} kcal.`,
+  '- Derive the daily calorie target from Mifflin-St Jeor (see CALORIE METHOD). Write that number. Do not raise it to a floor and do not cap it.',
   `- If allowed foods cannot hit a high protein number (veg, few animal-protein days, no whey), LOWER the protein target. Do not cut calories, rice, roti, oil, or snacks to chase grams.`,
   '- Fill remaining calories with carbs and fats the client actually eats so energy stays high.',
   '- Never tell a protein number higher than the food on the plate. Header protein, daily averages, and each (P: Xg) meal line must match the actual portions. Do not inflate protein.',
   '- Each meal has ONE primary option. Daily Total, weekly averages, and header macros count only that primary option (the first option written). If you offer a swap, give the swap its own macro line so the client can compare, but NEVER add primary + swap together.',
   '- Tight budget means cheaper protein foods (dal, eggs if allowed, soya, chana), not a default of 0.5 g/kg.',
   '- If whey is mentioned, that scoop must be inside that meal\'s (P: Xg | C: Yg | F: Zg | ~K kcal) line. If it is not in the macros, do not mention whey.',
-  `- If a textbook cut would go below ${DIET_FLOOR_TARGET_KCAL} kcal, still write ${DIET_FLOOR_TARGET_KCAL} or more and put one line in coach_notes: "Held at ${DIET_FLOOR_TARGET_KCAL} kcal floor — please review." Auto-delivery will hold that plan for coach review.`,
+  '- If an older note says to hold 1800 or 2000, ignore it and write the CALORIE METHOD number.',
 ].join('\n')
 
 export const EDIT_CALORIE_PRESERVATION_RULES = [

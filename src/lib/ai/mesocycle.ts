@@ -1,5 +1,3 @@
-import { DIET_FLOOR_BASE_KCAL } from '@/lib/ai/plan-quality-rules'
-
 import { formatStickySplitGuidance } from '@/lib/ai/workout-split'
 import type { OnboardingProfile } from '@/types/database'
 
@@ -29,7 +27,7 @@ const VOLUME_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
 
 /** Calorie guidance: hold food flat across weeks unless the coach asks to change it. */
 const CALORIE_BY_WEEK: Record<1 | 2 | 3 | 4, string> = {
-  1: `BASE calories: HOLD the established daily average (within ~100 kcal). Do NOT trim food to match lighter training — reduce volume only. Do NOT raise calories because a new mesocycle started. Change calories only if the coach specifically asks. If fat loss is the goal, raise step targets instead. Never go below ${DIET_FLOOR_BASE_KCAL} kcal.`,
+  1: `BASE calories: HOLD the established daily average (within ~100 kcal) unless CALORIE METHOD gives a new target. Do NOT trim food to match lighter training — reduce volume only. Do NOT raise calories because a new mesocycle started. If fat loss is the goal, raise step targets instead. Do not replace the computed target with an 1800 floor.`,
   2: 'BUILD calories: HOLD the same daily average as last week (within ~100 kcal). Progress training via load/reps/RIR only — do NOT bump food with volume unless the coach specifically asks to raise calories.',
   3: 'PUSH calories: HOLD the same daily average as last week (within ~100 kcal). Intensity up via load/reps/RIR only — do NOT raise calories unless the coach specifically asks.',
   4: 'PEAK calories: HOLD the same daily average as last week (within ~100 kcal). Peak via training intensity only — do NOT raise food for peak week unless the coach specifically asks. Next mesocycle week 1 also keeps calories flat.',
@@ -77,7 +75,7 @@ export function formatMesocyclePromptSection(
     `- Volume target: ${meso.volumeGuidance}`,
     `- Calorie target (hold flat unless coach asks): ${meso.calorieGuidance}`,
     meso.isMesocycleWeek1Refresh
-      ? `- Split rule: KEEP the sticky split. New month week 1 = refresh exercises within that same day structure at BASE volume (2 to 3 working sets). Do NOT invent a different split template. HOLD calories — raise steps/cardio if fat loss is the goal, never below ${DIET_FLOOR_BASE_KCAL} kcal. Change calories only if the coach specifically asks.`
+      ? `- Split rule: KEEP the sticky split. New month week 1 = refresh exercises within that same day structure at BASE volume (2 to 3 working sets). Do NOT invent a different split template. HOLD calories unless CALORIE METHOD gives a new target — raise steps/cardio if fat loss is the goal. Do not replace that target with an 1800 floor.`
       : '- Split rule: KEEP the sticky split. Progress with the volume target for this week (load, reps, reps in reserve, and the allowed set count). HOLD calories flat. Do not invent a new split.',
     '- Cycle rule: week 1 is 2 to 3 working sets for everyone. Weeks 2 to 4 follow the volume target (beginners stay lower; intermediate and advanced may reach 4 sets on main compounds). Never 5 or more working sets. Calories stay flat. Do NOT auto-increase calories week to week. Raise or lower food ONLY when the coach specifically asks. New month (exercise refresh + base volume, same sticky split) still HOLDS calories and raises steps if fat loss needs more output.',
     '',

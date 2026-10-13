@@ -20,7 +20,8 @@ assert.equal(trailer.propose?.calorieTarget, 2100)
 assert.equal(trailer.propose?.photoPath, null)
 
 assert.equal(parseProfileChangeJson('{"columns":{"weight":"20"}}'), null)
-assert.equal(parseProfileChangeJson('{"calorieTarget":900}'), null)
+assert.equal(parseProfileChangeJson('{"calorieTarget":20}'), null)
+assert.equal(parseProfileChangeJson('{"calorieTarget":1600}')?.calorieTarget, 1600)
 assert.equal(parseProfileChangeJson('{"columns":{"coach_id":"x"}}'), null)
 
 const fromText = extractProfileChangeFromText(
@@ -47,6 +48,7 @@ const targets = resolveClientCalorieTargets({
 })
 assert.ok(targets)
 assert.equal(targets?.preferred, 2400)
-assert.equal(clientRequestedCalories({ onboarding_data: { version: 1, resumeStep: 0, diet: { requestedCalories: 900 } } }), null)
+assert.equal(clientRequestedCalories({ onboarding_data: { version: 1, resumeStep: 0, diet: { requestedCalories: 1600 } } }), 1600)
+assert.equal(clientRequestedCalories({ onboarding_data: { version: 1, resumeStep: 0, diet: { requestedCalories: 20 } } }), null)
 
 console.log('ai coach profile change checks passed')

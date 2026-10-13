@@ -110,7 +110,7 @@ export function profileChangeChatInstruction(): string {
     'onboarding groups: goals, lifestyle, measurements, training, medical, diet, eatingPattern, messMenu. Only fields they named.',
     'photoSlot is avatar, front, side, back, gallery, or null. calorieTarget is a daily kcal number or null. Do not invent a photo path.',
     'Do not say the profile is already saved. Ask them to reply YES. Reply NO cancels.',
-    'A calorie target they name at or above 1800 is allowed even when it differs from the formula. Under 1800, tell them the written plan stays at the floor and do not set calorieTarget.',
+    'If they name a daily calorie target, set calorieTarget to that number. Do not refuse it for being under or over 1800.',
   ].join('\n')
 }
 
@@ -211,7 +211,7 @@ function sanitizeProfileChange(
   let calorieTarget: number | null = null
   if (parsed.calorieTarget != null && parsed.calorieTarget !== '') {
     const kcal = Math.round(Number(parsed.calorieTarget))
-    if (Number.isFinite(kcal) && kcal >= 1800 && kcal <= 4500) calorieTarget = kcal
+    if (Number.isFinite(kcal) && kcal >= 400 && kcal <= 12000) calorieTarget = kcal
   }
 
   const summaryRaw = typeof parsed.summary === 'string' ? clip(parsed.summary, 240) : ''

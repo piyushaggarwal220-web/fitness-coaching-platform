@@ -178,14 +178,13 @@ function resolveEffectiveGoalHint(profile: CalorieProfile): string {
 function resolveGoalCalorieTarget(
   maintenance: number,
   goalHint: string | null | undefined,
-  fluxLevel: MetabolicFluxLevel,
-  floorKcal: number
+  fluxLevel: MetabolicFluxLevel
 ): number {
   const goal = (goalHint ?? '').toLowerCase()
   const m = Math.round(maintenance)
 
   if (/fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)) {
-    return Math.max(m - FAT_LOSS_DEFICIT_KCAL[fluxLevel], floorKcal)
+    return m - FAT_LOSS_DEFICIT_KCAL[fluxLevel]
   }
   if (/gain|bulk|muscle|size|mass|weight\s*gain/.test(goal)) {
     return m + MUSCLE_SURPLUS_KCAL[fluxLevel]
@@ -201,7 +200,7 @@ export function calorieTargetBand(
   maintenance: number,
   goalHint?: string | null,
   fluxLevel: MetabolicFluxLevel = 'high_flux',
-  floorKcal: number = DIET_FLOOR_BASE_KCAL
+  _floorKcal: number = DIET_FLOOR_BASE_KCAL
 ): {
   maintenance: number
   min: number
@@ -225,10 +224,10 @@ export function calorieTargetBand(
     max = maintenance + 200
   }
 
-  min = Math.max(Math.round(min), floorKcal)
+  min = Math.round(min)
   max = Math.max(Math.round(max), min + 100)
 
-  let preferred = resolveGoalCalorieTarget(maintenance, goalHint, fluxLevel, floorKcal)
+  let preferred = resolveGoalCalorieTarget(maintenance, goalHint, fluxLevel)
   preferred = Math.min(Math.max(preferred, min), max)
 
   return { maintenance: Math.round(maintenance), min, max, preferred }
@@ -251,12 +250,11 @@ export function resolveClientCalorieTargets(profile: CalorieProfile): ClientCalo
   const goalHint = resolveEffectiveGoalHint(profile)
   const band = calorieTargetBand(maintenance, goalHint, flux.level, floorKcal)
   const requested = clientRequestedCalories(profile)
-  const preferred =
-    requested != null ? Math.min(4500, Math.max(requested, floorKcal)) : band.preferred
+  const preferred = requested ?? band.preferred
 
   return {
     maintenance: band.maintenance,
-    min: requested != null ? Math.max(floorKcal, preferred - 100) : band.min,
+    min: requested != null ? preferred - 100 : band.min,
     max: requested != null ? preferred + 150 : band.max,
     preferred,
     floorKcal,
@@ -270,7 +268,7 @@ export function resolveClientCalorieTargets(profile: CalorieProfile): ClientCalo
 export function clientRequestedCalories(profile: CalorieProfile): number | null {
   const raw = profile.onboarding_data?.diet?.requestedCalories
   const kcal = Math.round(Number(raw))
-  if (!Number.isFinite(kcal) || kcal < 1800 || kcal > 4500) return null
+  if (!Number.isFinite(kcal) || kcal < 400 || kcal > 12000) return null
   return kcal
 }
 
@@ -358,15 +356,15 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
                 : ''
             }`
           : `Build all 7 days at or above ${floor} kcal with honest meal math.`,
-        `FORBIDDEN: inventing a crash diet below the floor (~${floor}). Do not pad portions above the target either — if the formula says ~${target ?? floor}, write that, not 200–400 kcal higher.`,
+        `Write that computed target even when it is under 1800. Do not replace it with a floor. Do not pad portions above the target.`,
         'If one weekday is a religious fast, keep the OTHER 6 days at the full daily target. Do not crash the whole week.',
       ]
     : [
         'MANDATORY DAILY CALORIES — Mifflin-St Jeor when weight, height, and age exist.',
         `BMR = ${formatBmrFormula(profile.gender)}; Maintenance = BMR × ${activityFactor}.`,
         weight > 0
-          ? `Client ~${Math.round(weight)} kg — plan at or above ${resolveDietFloorKcal(weight)} kcal. No crash diet below the floor.`
-          : `Plan at or above ${DIET_FLOOR_BASE_KCAL} kcal. No crash diet.`,
+          ? `Client ~${Math.round(weight)} kg — write the computed Mifflin target. Do not replace it with a floor.`
+          : `Write the computed Mifflin target. Do not replace it with a floor.`,
       ]
 
   return [

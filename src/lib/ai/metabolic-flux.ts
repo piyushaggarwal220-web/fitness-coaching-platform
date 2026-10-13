@@ -1,8 +1,4 @@
-import {
-  DIET_FLOOR_TARGET_KCAL,
-  FAT_LOSS_DEFICIT_KCAL,
-  MUSCLE_SURPLUS_KCAL,
-} from '@/lib/ai/plan-quality-rules'
+import { FAT_LOSS_DEFICIT_KCAL, MUSCLE_SURPLUS_KCAL } from '@/lib/ai/plan-quality-rules'
 import type { OnboardingProfile } from '@/types/database'
 
 /** Client-stated willingness for higher energy-in + higher energy-out coaching. */
@@ -105,7 +101,7 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
       `Fat loss: ${FAT_LOSS_DEFICIT_KCAL.steady} kcal below maintenance. When progress stalls, add steps/training/cardio FIRST — never slash calories as the first lever.`,
       `Muscle gain: ${MUSCLE_SURPLUS_KCAL.steady} kcal surplus. Recomp: daily average at maintenance.`,
       'Keep food volume manageable; avoid forcing large meals if appetite is limited.',
-      `Floor still at least ${DIET_FLOOR_TARGET_KCAL} kcal. If a lower intake seems indicated, stay at the floor and flag the coach.`,
+      'Write the computed daily target. Do not raise it to a floor.',
       'If eating is already low and weight is not dropping: reverse diet (raise calories gradually), never cut further.',
     ].join(' '),
     build_up: [
@@ -114,7 +110,7 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
       `Muscle gain: ${MUSCLE_SURPLUS_KCAL.build_up} kcal surplus with enough carbs around training; do not force huge meals.`,
       'Recomp: daily average at maintenance.',
       'Prefer higher-volume meals (veg, lean protein, dairy/curd, fruit) so the client can eat more without feeling restricted.',
-      `Floor at least ${DIET_FLOOR_TARGET_KCAL} kcal.`,
+      'Write the computed daily target. Do not raise it to a floor.',
       'If eating is already low and weight is not dropping: reverse diet (raise calories gradually).',
     ].join(' '),
     high_flux: [
@@ -122,7 +118,7 @@ export function resolveMetabolicFluxPlan(profile: OnboardingProfile): MetabolicF
       `Fat loss: ${FAT_LOSS_DEFICIT_KCAL.high_flux} kcal below maintenance. Keep intake relatively high; create the gap mainly via steps and training.`,
       `Muscle gain: ${MUSCLE_SURPLUS_KCAL.high_flux} kcal surplus with high meal volume, still without forcing food they cannot finish.`,
       'Recomp: daily average at maintenance.',
-      `Use denser and higher-volume foods so hitting calories is realistic; never below ${DIET_FLOOR_TARGET_KCAL} kcal.`,
+      'Use foods they can finish so the computed target is realistic. Do not raise that target to a floor.',
       'If hunger is low, spread calories across more feedings rather than cutting the target.',
       'If eating is already low and weight is not dropping: reverse diet (raise calories gradually).',
     ].join(' '),

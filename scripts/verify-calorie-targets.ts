@@ -232,6 +232,19 @@ assert(
   ).ok === false
 )
 assert(
+  'enforce allows the formula when it sits under the old 1800 floor',
+  enforceDietSafety(
+    {
+      calories: 1182,
+      protein: 80,
+      carbs: 140,
+      fat: 40,
+      meals: [],
+    },
+    { floorKcal: 1800, preferredMinKcal: 1182, previousCalories: 2100 }
+  ).ok === true
+)
+assert(
   'enforce allows a plan within 100 kcal of the Mifflin target',
   enforceDietSafety(
     {
@@ -310,11 +323,10 @@ const officeMale = resolveClientCalorieTargets({
   onboarding_data: { training: { daysPerWeek: 3 } },
 })
 assert(
-  'desk-job male fat loss stays above floor without overfeeding',
+  'desk-job male fat loss is maintenance minus the steady deficit',
   Boolean(
     officeMale &&
-      officeMale.preferred >= officeMale.floorKcal &&
-      officeMale.preferred <= officeMale.maintenance - FAT_LOSS_DEFICIT_KCAL.steady + 20
+      officeMale.preferred === officeMale.maintenance - FAT_LOSS_DEFICIT_KCAL.steady
   )
 )
 
@@ -327,12 +339,12 @@ const smallFemale = resolveClientCalorieTargets({
   fitness_goal: 'fat_loss',
 })
 assert(
-  'smaller sedentary female uses ~1800 floor, not a 1400 crash or forced 2000+',
+  'smaller sedentary female keeps the formula, not an 1800 floor',
   Boolean(
     smallFemale &&
       smallFemale.floorKcal === 1800 &&
-      smallFemale.preferred >= 1800 &&
-      smallFemale.preferred < 2100
+      smallFemale.preferred === smallFemale.maintenance - FAT_LOSS_DEFICIT_KCAL.steady &&
+      smallFemale.preferred < 1800
   )
 )
 
@@ -345,8 +357,13 @@ const heavyMale = resolveClientCalorieTargets({
   fitness_goal: 'fat_loss',
 })
 assert(
-  '86kg client uses weight floor (~1890) not a padded 2200+',
-  Boolean(heavyMale && heavyMale.floorKcal === Math.round(86 * 22) && heavyMale.preferred >= heavyMale.floorKcal)
+  '86kg client keeps the formula instead of the weight floor',
+  Boolean(
+    heavyMale &&
+      heavyMale.floorKcal === Math.round(86 * 22) &&
+      heavyMale.preferred === heavyMale.maintenance - FAT_LOSS_DEFICIT_KCAL.steady &&
+      heavyMale.preferred < heavyMale.floorKcal
+  )
 )
 
 const sagarLike = resolveClientCalorieTargets({
@@ -364,8 +381,7 @@ assert(
     sagarLike &&
       sagarLike.activityLevel === 'lightly_active' &&
       sagarLike.maintenance < 2800 &&
-      sagarLike.preferred < sagarLike.maintenance &&
-      sagarLike.preferred >= sagarLike.floorKcal
+      sagarLike.preferred === sagarLike.maintenance - FAT_LOSS_DEFICIT_KCAL.steady
   )
 )
 
