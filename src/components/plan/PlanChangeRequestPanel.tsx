@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import { clientColors as colors, radius, spacing } from '@/lib/design-tokens'
 import { PLAN_CHANGE_DAILY_LIMIT } from '@/lib/plan-change-limits'
+import { isStalePlanChangeRequest } from '@/lib/client-plan-presence'
 import { readApiJson } from '@/lib/read-api-json'
 
 type Scope = 'diet' | 'workout' | 'both'
@@ -28,17 +29,9 @@ const SCOPE_OPTIONS: { value: Scope; label: string }[] = [
   { value: 'both', label: 'Diet + workout' },
 ]
 
-const STALE_GENERATING_MS = 6 * 60 * 60 * 1000
-const STALE_DRAFT_MS = 24 * 60 * 60 * 1000
-
 function isStaleOpenRequest(open: OpenRequest): boolean {
   if (!open?.lockedAt) return false
-  const locked = Date.parse(open.lockedAt)
-  if (!Number.isFinite(locked)) return false
-  const age = Date.now() - locked
-  if (open.status === 'generating') return age > STALE_GENERATING_MS
-  if (open.status === 'draft_ready' || open.status === 'in_review') return age > STALE_DRAFT_MS
-  return false
+  return isStalePlanChangeRequest(open.status, Date.parse(open.lockedAt))
 }
 
 const inFlightProcessIds = new Set<string>()

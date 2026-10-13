@@ -21,6 +21,7 @@ import {
 import { clientFacingPlanTitle } from '@/lib/plan-metadata';
 import { isBiweeklyPlanUpdate, nextAutoPlanUpdateWeek, shouldAutoGenerateWeeklyPlanDraft } from '@/lib/plan-update-cadence';
 import { getHomePlanCardCopy, UPDATED_PLAN_READY_WITHIN_MS, getHomePlanPhase } from '@/lib/checkin-reply-timing';
+import { absentPlanCopy, livePlanSectionDetail } from '@/lib/client-plan-presence';
 import { shouldBypassCheckinScheduleClient } from '@/lib/config';
 import { DevelopmentModeBadge } from '@/components/dev/DevelopmentModeBadge';
 import { planGoalName } from '@/lib/payments/plan-pages';
@@ -489,21 +490,17 @@ export default function Dashboard() {
           fontSize: 14,
           lineHeight: 1.5,
         }}>
-          <strong>
-            {generationJob.status === 'failed'
-              ? 'Your plan did not finish.'
-              : generationJob.status === 'ready'
-                ? 'Your plan is not live in My Plan.'
-                : 'Smart Coach is building your plan.'}
-          </strong>
+          <strong>{absentPlanCopy({
+            jobStatus: generationJob.status,
+            instant: isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id),
+            windowLabel: INSTANT_PLAN_WINDOW_LABEL,
+          }).headline}</strong>
           <div>
-            {generationJob.status === 'failed'
-              ? 'It is not still being created. Message your coach if My Plan stays empty.'
-              : generationJob.status === 'ready'
-                ? 'A draft was prepared, but it was never published. Refresh My Plan. If it is still empty, message your coach.'
-                : isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id)
-                  ? `It arrives within ${INSTANT_PLAN_WINDOW_LABEL}. You’ll get an email, and it will show up in My Plan.`
-                  : 'It usually arrives within 24 hours and appears in My Plan automatically.'}
+            {absentPlanCopy({
+              jobStatus: generationJob.status,
+              instant: isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id),
+              windowLabel: INSTANT_PLAN_WINDOW_LABEL,
+            }).detail}
           </div>
         </div>
       )}
@@ -512,32 +509,30 @@ export default function Dashboard() {
         firstName={firstName}
         contextLine={contextLine}
         preparingTitle={
-          !activePlan && generationJob?.status === 'failed'
-            ? 'Your plan did not finish'
-            : !activePlan && generationJob?.status === 'ready'
-              ? 'Your plan is not live yet'
-              : undefined
+          activePlan
+            ? undefined
+            : absentPlanCopy({
+                jobStatus: generationJob?.status,
+                planDelivered: profile?.plan_delivered === true,
+                instant: isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id),
+                windowLabel: INSTANT_PLAN_WINDOW_LABEL,
+              }).headline
         }
         preparingDetail={
-          !activePlan && generationJob?.status === 'failed'
-            ? 'It is not still being created. Message your coach if My Plan stays empty.'
-            : !activePlan && generationJob?.status === 'ready'
-              ? 'A draft was prepared, but it was never published as the live plan.'
-              : isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id)
-                ? `Smart Coach is building your plan. It arrives within ${INSTANT_PLAN_WINDOW_LABEL}. Workout and meals show up here once it’s ready.`
-                : undefined
+          activePlan
+            ? undefined
+            : absentPlanCopy({
+                jobStatus: generationJob?.status,
+                planDelivered: profile?.plan_delivered === true,
+                instant: isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(profile?.coach_id),
+                windowLabel: INSTANT_PLAN_WINDOW_LABEL,
+              }).detail
         }
-        readyDetail={
-          activePlan?.nutrition_plan?.trim() && activePlan?.workout_plan?.trim()
-            ? 'Diet and workout are in My Plan.'
-            : activePlan?.nutrition_plan?.trim()
-              ? 'Your diet is in My Plan. The workout section is empty.'
-              : activePlan?.workout_plan?.trim()
-                ? 'Your workout is in My Plan. The diet section is empty.'
-                : profile?.plan_delivered
-                  ? 'Your plan was marked delivered. Open My Plan if the sections look empty.'
-                  : undefined
-        }
+        readyDetail={livePlanSectionDetail({
+          hasDiet: Boolean(activePlan?.nutrition_plan?.trim()),
+          hasWorkout: Boolean(activePlan?.workout_plan?.trim()),
+          planDelivered: profile?.plan_delivered === true,
+        })}
         hasPlan={Boolean(activePlan) || profile?.plan_delivered === true}
         modules={activePlan && !instantLocked.tracker ? todayModules : []}
         unreadMessages={unreadMessages}

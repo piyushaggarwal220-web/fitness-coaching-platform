@@ -18,6 +18,7 @@ import { persistAiPlanDraft, updateAiPlanDraft, activatePlan } from '@/lib/plans
 import { createAdminClient } from '@/lib/supabase/admin'
 import { autoAssignCoachToClient } from '@/lib/coach-assignment'
 import { PLAN_CHANGE_DAILY_LIMIT } from '@/lib/plan-change-limits'
+import { isStalePlanChangeRequest } from '@/lib/client-plan-presence'
 import { futurePlanChangeRefusal } from '@/lib/ai/dated-plan-request'
 import type { Checkin, OnboardingProfile, Plan, PlanFormData } from '@/types/database'
 export const PLAN_CHANGE_MIN_CHARS = 10
@@ -119,21 +120,13 @@ export async function getPlanChangeQuota(clientId: string): Promise<PlanChangeQu
   }
 }
 
-const STALE_GENERATING_MS = 6 * 60 * 60 * 1000
-const STALE_DRAFT_MS = 24 * 60 * 60 * 1000
-
 /** A request that never replaced the live plan must not keep saying the plan is being written. */
 async function expireStalePlanChangeRequest(
   admin: ReturnType<typeof createAdminClient>,
   row: PlanChangeRequestRow
 ): Promise<boolean> {
   const locked = Date.parse(row.locked_at || row.updated_at || row.created_at)
-  if (!Number.isFinite(locked)) return false
-  const age = Date.now() - locked
-  const stale =
-    (row.status === 'generating' && age > STALE_GENERATING_MS) ||
-    ((row.status === 'draft_ready' || row.status === 'in_review') && age > STALE_DRAFT_MS)
-  if (!stale) return false
+  if (!isStalePlanChangeRequest(row.status, locked)) return false
 
   const { error } = await admin
     .from('plan_change_requests')

@@ -20,6 +20,8 @@ import { formatPlanDate } from '@/lib/plans';
 import { clientFacingPlanTitle, parsePlanMeta, extractWeekFromTitle } from '@/lib/plan-metadata';
 import { planGoalName, planDurationLabel } from '@/lib/payments/plan-pages'
 import { INSTANT_PLAN_WINDOW_LABEL } from '@/lib/plan-delivery-window'
+import { absentPlanCopy } from '@/lib/client-plan-presence'
+import { isAutoDeliveryCoach } from '@/lib/coach-delivery-policy'
 import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
 import { clientFacingDietPlanText } from '@/lib/ai/nutrition-macro-sync'
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser';
@@ -38,6 +40,7 @@ export default function ClientPlanPage() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [planDelivered, setPlanDelivered] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<string | null>(null);
+  const [instantDelivery, setInstantDelivery] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<PlanSection | null>(null);
@@ -79,6 +82,9 @@ export default function ClientPlanPage() {
         setIsDigitalPlan(digital)
         setDigitalSections(digital ? digitalPlanSections(purchase.plan_slug) : null)
       }
+      setInstantDelivery(
+        isDigitalPlanSlug(purchase?.plan_slug) || isAutoDeliveryCoach(result.profile?.coach_id)
+      );
 
       const { data, error: planError } = await supabase
         .from('plans')
@@ -164,19 +170,15 @@ export default function ClientPlanPage() {
         <EmptyState
           icon={<ClipboardListIcon />}
           title="No active plan yet"
-          description={
-            planDelivered
-              ? isDigitalPlan
-                ? 'Your plan was delivered. If sections look empty, refresh or check your email link.'
-                : 'Your plan was delivered. If sections look empty, refresh or message your coach.'
-              : generationStatus === 'failed'
-                ? 'Your plan did not finish. It is not still being created. Message your coach if this stays empty.'
-                : generationStatus === 'ready'
-                  ? 'A draft was prepared, but it is not the live plan. Refresh once. If this stays empty, message your coach.'
-                  : isDigitalPlan
-                    ? `Your customised plan is being prepared. You’ll get an email when it’s ready — within ${INSTANT_PLAN_WINDOW_LABEL}.`
-                    : `Smart Coach is building your personalised plan. It appears here automatically when ready — within ${INSTANT_PLAN_WINDOW_LABEL}.`
-          }
+          description={(() => {
+            const copy = absentPlanCopy({
+              jobStatus: generationStatus,
+              planDelivered,
+              instant: instantDelivery || isDigitalPlan,
+              windowLabel: INSTANT_PLAN_WINDOW_LABEL,
+            })
+            return `${copy.headline}. ${copy.detail}`
+          })()}
           actionLabel="Back to dashboard"
           onAction={() => router.push('/dashboard')}
         />

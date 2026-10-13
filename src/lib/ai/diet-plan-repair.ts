@@ -641,6 +641,47 @@ function repairProse(text: string, profile: DietRepairProfile, scan: DietScanOpt
   return { text: out, fixes }
 }
 
+/**
+ * Clean a stored diet: swap foods that break the client's rules, remove injected
+ * calorie-fill snacks, and make the calorie header match the meals that remain.
+ * Does not add snacks to push calories up.
+ */
+export function repairStoredDietChart(
+  text: string,
+  profile: DietRepairProfile
+): { text: string; fixes: string[] } {
+  const scan = dietScanOptionsFromProfile(profile)
+  const repaired = repairProse(text, profile, scan)
+  const fasting = fastingWeekdaysFromNotes(profile.onboarding_data?.diet?.customNotes)
+  let next = repaired.text
+  const fixes = [...repaired.fixes]
+
+  for (let i = 0; i < 21; i += 1) {
+    const stripped = stripOneCalorieFill(next, fasting)
+    if (stripped === next) break
+    next = stripped
+    if (!fixes.includes('removed calorie fill')) fixes.push('removed calorie fill')
+  }
+
+  const beforeSync = inferMacrosFromDietText(next)
+  const synced = syncStoredDietText(next, {
+    floorKcal: resolveDietFloorKcal(profile.weight),
+  })
+  const afterSync = inferMacrosFromDietText(synced)
+  const collapsed =
+    beforeSync != null &&
+    afterSync != null &&
+    afterSync.calories < beforeSync.calories - 80 &&
+    afterSync.calories < 1200
+  const zeroedProtein = /^\s*protein:\s*0g/im.test(synced) && !/^\s*protein:\s*0g/im.test(next)
+  if (collapsed || zeroedProtein) {
+    fixes.push('left calorie header unchanged')
+    return { text: next, fixes }
+  }
+  if (synced !== next) fixes.push('header matched to meals')
+  return { text: synced, fixes }
+}
+
 function toCalorieProfile(profile: DietRepairProfile): Parameters<typeof resolveClientCalorieTargets>[0] {
   return {
     weight: profile.weight ?? null,

@@ -656,6 +656,17 @@ export function stabilizeDietCaloriesAfterEdit(
     fat: trustFoodTotals ? inferred!.fat : inferred?.fat ?? headerFat,
   }
 
+  // A leftover snack line must not replace a real daily total (1842 → 150) or zero the protein header.
+  const headerWouldCollapse =
+    typeof previous === 'number' &&
+    previous >= 1200 &&
+    macros.calories < 1200 &&
+    previous - macros.calories > 80
+  const proteinWouldZero = headerProtein > 0 && macros.protein <= 0
+  if (headerWouldCollapse || proteinWouldZero) {
+    return trimmed
+  }
+
   let out = rewriteNutritionHeader(trimmed, macros)
   out = reconcileDietProseCalories(out, targetCalories)
   return out

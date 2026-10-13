@@ -14,6 +14,7 @@ import {
   isPlanFullyReady,
 } from '@/lib/purchase-dashboard'
 import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
+import { livePlanSectionDetail } from '@/lib/client-plan-presence'
 import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import type { OnboardingProfile, Plan } from '@/types/database'
 
@@ -23,9 +24,7 @@ function coachingReadyLine(plan: Plan | null): string {
   if (diet && workout) {
     return 'Diet and workout are in My Plan. Open both sections to unlock your daily tracker focus.'
   }
-  if (diet) return 'Your diet is in My Plan. The workout section is empty.'
-  if (workout) return 'Your workout is in My Plan. The diet section is empty.'
-  return 'Open My Plan.'
+  return livePlanSectionDetail({ hasDiet: diet, hasWorkout: workout, planDelivered: true })
 }
 
 type PlanCountdownProps = {
