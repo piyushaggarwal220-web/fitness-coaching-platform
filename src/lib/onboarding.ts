@@ -1984,6 +1984,9 @@ export function validateOnboardingAnswersForProfile(
     parseOnboardingData(profile.onboarding_data)?.eatingPattern?.mealsForTiming
   )
   const requireNewFields = shouldRequireNewOnboardingFields(profile)
+  // A finished intake was already accepted. Later questions (weekday picker,
+  // coaching style, tape, gym stations) must not fail first-plan generation.
+  if (!requireNewFields) return null
   const requireBodyMeasurements = options?.requireBodyMeasurements ?? requireNewFields
   const requireWorkSchoolSchedule = options?.requireWorkSchoolSchedule ?? requireNewFields
   const requireFluxCapacity = options?.requireFluxCapacity ?? requireNewFields
