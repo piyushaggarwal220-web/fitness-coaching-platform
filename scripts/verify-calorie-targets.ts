@@ -231,6 +231,29 @@ assert(
     { floorKcal: 2000, preferredMinKcal: 3331 }
   ).ok === false
 )
+const formulaPlan = `Calories: 1182
+Protein: 80g
+Carbs: 140g
+Fat: 40g
+Day 1 (Monday)
+Daily total: P: 80g | C: 140g | F: 40g | ~1182 kcal
+Day 2 (Tuesday)
+Daily total: P: 80g | C: 140g | F: 40g | ~1182 kcal
+`
+assert(
+  'sync keeps a real 1182 plan instead of raising it to 1800',
+  parseHeaderCalories(syncStoredDietText(formulaPlan, { floorKcal: 1800, previousCalories: 2100 })) === 1182
+)
+assert(
+  'explicit target under the old floor is not raised',
+  parseHeaderCalories(
+    syncStoredDietText('Calories: 900\nProtein: 40g\n', {
+      explicitTargetKcal: 1182,
+      floorKcal: 1800,
+      previousCalories: 2100,
+    })
+  ) === 1182
+)
 assert(
   'enforce allows the formula when it sits under the old 1800 floor',
   enforceDietSafety(

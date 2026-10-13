@@ -73,7 +73,7 @@ export function evaluateHighFluxPlanReview(input: {
 
   if (calories != null) {
     const looksLight =
-      calories <= floor + 80 || (targets != null && calories < targets.min)
+      targets != null ? calories < targets.preferred - 100 : calories <= floor + 80
 
     if (looksLight) {
       flags.push({
@@ -116,7 +116,11 @@ export function evaluateHighFluxPlanReview(input: {
     })
   }
 
-  if (calories != null && calories >= floor + 100 && cardioLooksMinimal(input.cardioPlan)) {
+  if (
+    calories != null &&
+    calories >= (targets?.preferred ?? floor) - 100 &&
+    cardioLooksMinimal(input.cardioPlan)
+  ) {
     flags.push({
       level: 'warning',
       message: 'Food is reasonable but output plan is missing — high flux needs both sides up.',

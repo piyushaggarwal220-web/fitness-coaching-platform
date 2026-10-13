@@ -273,7 +273,6 @@ assert('jain garlic gone', !/\bgarlic\b/i.test(jainText))
 assert('jain potato/aloo gone', !/\b(potato|aloo)\b/i.test(jainText))
 assert('jain carrot gone', !/\bcarrot\b/i.test(jainText))
 
-const fastDirty = weekPlan(1600, () => 'dal, roti, sabzi')
 const fastProfile = {
   diet_preference: 'vegetarian',
   weight: '63',
@@ -289,6 +288,7 @@ const fastProfile = {
     },
   },
 }
+const fastDirty = weekPlan(resolveClientCalorieTargets(fastProfile)?.preferred ?? 1225, () => 'dal, roti, sabzi')
 const fastRepaired = applyDietPlanRepair(fastDirty, fastProfile)
 const fastText = prose(fastRepaired.plan)
 const tue = fastText.slice(
@@ -312,7 +312,13 @@ assert(
   `got ${fastNonFasting} vs ${fastTargets?.preferred}`
 )
 
-const nutDirty = weekPlan(1700, () => 'apple with peanut butter and almonds')
+const nutDirty = weekPlan(
+  resolveClientCalorieTargets({
+    ...veganSouth,
+    onboarding_data: { diet: { allergies: 'Nut allergy', wheyProtein: 'no' } },
+  })?.preferred ?? 1450,
+  () => 'apple with peanut butter and almonds'
+)
 const nutProfile = {
   ...veganSouth,
   onboarding_data: { diet: { allergies: 'Nut allergy', wheyProtein: 'no' } },

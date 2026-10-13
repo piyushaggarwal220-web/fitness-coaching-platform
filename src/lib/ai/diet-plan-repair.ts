@@ -672,7 +672,7 @@ export function repairStoredDietChart(
     beforeSync != null &&
     afterSync != null &&
     afterSync.calories < beforeSync.calories - 80 &&
-    afterSync.calories < 1200
+    afterSync.calories < 800
   const zeroedProtein = /^\s*protein:\s*0g/im.test(synced) && !/^\s*protein:\s*0g/im.test(next)
   if (collapsed || zeroedProtein) {
     fixes.push('left calorie header unchanged')
@@ -783,7 +783,8 @@ export function applyDietPlanRepair(
 
   next = mapMealProse(next, (text) =>
     syncStoredDietText(text, {
-      floorKcal: resolveDietFloorKcal(profile.weight),
+      explicitTargetKcal: targetKcal,
+      floorKcal: targetKcal,
     })
   )
   next = syncNutritionPlanMacros(next)

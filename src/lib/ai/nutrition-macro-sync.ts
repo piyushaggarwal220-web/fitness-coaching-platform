@@ -624,23 +624,13 @@ export function stabilizeDietCaloriesAfterEdit(
     }
   }
 
-  if (typeof opts.explicitTargetKcal === 'number' && opts.explicitTargetKcal > floorKcal) {
-    if (!opts.preserveCalories && !hasReliableFoodTotals(trimmed)) {
-      targetCalories = Math.max(targetCalories, opts.explicitTargetKcal)
-      if (typeof previous === 'number' && previous > 0) {
-        targetCalories = clampCaloriesToWeeklyBand(
-          targetCalories,
-          previous,
-          floorKcal,
-          opts.explicitTargetKcal
-        )
-      }
-    }
-  }
-
-  // Only inflate a header when meal math is missing — never lie above food-derived totals.
-  if (!hasReliableFoodTotals(trimmed)) {
-    targetCalories = Math.max(targetCalories, floorKcal)
+  if (
+    typeof opts.explicitTargetKcal === 'number' &&
+    opts.explicitTargetKcal > 0 &&
+    !opts.preserveCalories &&
+    !hasReliableFoodTotals(trimmed)
+  ) {
+    targetCalories = Math.round(opts.explicitTargetKcal)
   }
 
   const trustFoodTotals = hasReliableFoodTotals(trimmed) && inferred && inferred.calories > 0
@@ -657,10 +647,11 @@ export function stabilizeDietCaloriesAfterEdit(
   }
 
   // A leftover snack line must not replace a real daily total (1842 → 150) or zero the protein header.
+  // A real target under 1200, such as 1182, is allowed.
   const headerWouldCollapse =
     typeof previous === 'number' &&
     previous >= 1200 &&
-    macros.calories < 1200 &&
+    macros.calories < 800 &&
     previous - macros.calories > 80
   const proteinWouldZero = headerProtein > 0 && macros.protein <= 0
   if (headerWouldCollapse || proteinWouldZero) {

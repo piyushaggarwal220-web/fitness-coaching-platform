@@ -251,7 +251,7 @@ const LIBRARY_DIET_OUTPUT_INSTRUCTIONS = [
   '- Set workout_plan.overview to "N/A" and workout_plan.days to [].',
   '- cardio_plan.sessions MUST be [].',
   '- supplement_plan.items MUST be [].',
-  '- coach_notes must be empty unless you held calories at the platform kcal floor as an exception — then one short coach flag only, under 200 characters.',
+  '- coach_notes must be empty unless a real safety problem needs one short flag, under 200 characters.',
 ].join('\n')
 
 const LIBRARY_WORKOUT_OUTPUT_INSTRUCTIONS = [

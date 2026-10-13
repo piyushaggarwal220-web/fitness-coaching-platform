@@ -317,7 +317,7 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
     input.section === 'workout' ? WORKOUT_SECTION_PROMPT_RULES : null,
     input.section === 'workout' && source !== 'coach' ? WORKOUT_VOLUME_PROMPT_RULES : null,
     input.section === 'nutrition' && source !== 'coach'
-      ? '- For nutrition sections: if protein is hard to hit with allowed foods, lower protein and keep calories high. Never inflate protein numbers. Daily totals count only the primary meal option. Minimum platform kcal floor unless the coach already set otherwise.'
+      ? '- For nutrition sections: if protein is hard to hit with allowed foods, lower protein and keep calories at the Mifflin target. Never inflate protein numbers. Daily totals count only the primary meal option. Do not raise that target to a floor.'
       : null,
     input.section === 'nutrition' && source !== 'coach' ? PROTEIN_CALORIE_PROMPT_RULES : null,
     '- Do not invent unsafe extreme restrictions or medical claims.',
@@ -463,7 +463,14 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
                 previousCalories:
                   input.previousCalories ?? parseHeaderCalories(currentText),
                 preserveCalories,
-                floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
+                explicitTargetKcal:
+                  input.profile && !preserveCalories
+                    ? resolveClientCalorieTargets(input.profile)?.preferred
+                    : undefined,
+                floorKcal: input.profile
+                  ? (resolveClientCalorieTargets(input.profile)?.preferred ??
+                    resolveDietFloorKcal(input.profile.weight))
+                  : undefined,
               })
             : revisedRaw
 
@@ -506,7 +513,11 @@ export async function editPlanSection(input: EditPlanSectionInput): Promise<Edit
           revisedText = syncStoredDietText(revisedText, {
             previousCalories: input.previousCalories ?? parseHeaderCalories(currentText),
             preserveCalories,
-            floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
+            explicitTargetKcal:
+              !preserveCalories ? resolveClientCalorieTargets(input.profile)?.preferred : undefined,
+            floorKcal:
+              resolveClientCalorieTargets(input.profile)?.preferred ??
+              resolveDietFloorKcal(input.profile.weight),
           })
         }
 
@@ -849,7 +860,14 @@ export async function editPlanForClientChange(
     {
       previousCalories: parseHeaderCalories(input.nutritionText),
       preserveCalories,
-      floorKcal: input.profile ? resolveDietFloorKcal(input.profile.weight) : undefined,
+      explicitTargetKcal:
+        input.profile && !preserveCalories
+          ? resolveClientCalorieTargets(input.profile)?.preferred
+          : undefined,
+      floorKcal: input.profile
+        ? (resolveClientCalorieTargets(input.profile)?.preferred ??
+          resolveDietFloorKcal(input.profile.weight))
+        : undefined,
     }
   )
   let workoutPlan = stripPlanEditMetaLanguage(

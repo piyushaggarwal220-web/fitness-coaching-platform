@@ -297,7 +297,7 @@ function formatGoalAdjustmentLine(
   if (/fat|loss|cut|lean|shred|weight\s*loss|lose/.test(goal)) {
     const cut = maintenance - preferred
     if (cut <= 0) {
-      return `Fat loss (${fluxName}): the mild deficit would sit under the calorie floor, so plan at the floor (~${preferred} kcal/day). Most of any further gap comes from steps and training.`
+      return `Fat loss (${fluxName}): plan at the computed target (~${preferred} kcal/day). Most of any further gap comes from steps and training.`
     }
     return `Fat loss (${fluxName}): maintenance (~${maintenance}) minus ${cut} kcal → plan around ~${preferred} kcal/day. Most of the gap comes from steps and training.`
   }
@@ -340,7 +340,6 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
         : null
 
   const target = targets?.preferred
-  const floor = targets?.floorKcal ?? DIET_FLOOR_BASE_KCAL
   const formulaSection = hasFormulaInputs
     ? [
         'MANDATORY DAILY CALORIES (already computed on the server — write this number, not a guess):',
@@ -350,12 +349,12 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
           ? `BMR × activity = maintenance ~${targets.maintenance} kcal/day. ${formatGoalAdjustmentLine(goal, targets.maintenance, targets.preferred, targets.fluxLevel)}`
           : `Compute maintenance = BMR × ${activityFactor}, then a goal adjustment.`,
         target
-          ? `WRITE THIS NUMBER: every Daily Total and the Calories header must average ${target} kcal/day (±100). Floor is ${floor}.${
+          ? `WRITE THIS NUMBER: every Daily Total and the Calories header must average ${target} kcal/day (±100).${
               clientRequestedCalories(profile) != null
                 ? ' The client set this calorie target on their profile. Use it.'
                 : ''
             }`
-          : `Build all 7 days at or above ${floor} kcal with honest meal math.`,
+          : `Build all 7 days at the computed Mifflin target with honest meal math.`,
         `Write that computed target even when it is under 1800. Do not replace it with a floor. Do not pad portions above the target.`,
         'If one weekday is a religious fast, keep the OTHER 6 days at the full daily target. Do not crash the whole week.',
       ]
