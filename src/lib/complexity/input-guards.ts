@@ -127,27 +127,40 @@ export function parseReviewReasons(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
 }
 
-/** True when the profile gate is set or live metrics currently look impossible. */
+/**
+ * True when live metrics are impossible, or a full rescore still jumps far from
+ * the stored score. A stored review flag alone does not block: it was being set
+ * by comparing that score to age/height/weight only, which dropped a real 42 to 6.
+ */
 export function profileBlocksAiPlanWork(profile: {
   age?: number | string | null
   height?: number | string | null
   weight?: number | string | null
+  gender?: string | null
+  fitness_goal?: string | null
+  activity_level?: string | null
+  training_experience?: string | null
+  diet_preference?: string | null
+  injuries?: string | null
+  medical_notes?: string | null
+  sleep_duration?: string | null
   complexity_input_needs_review?: boolean | null
   complexity_input_review_reasons?: unknown
   complexity_score?: number | null
 }): { blocked: boolean; reasons: string[] } {
-  if (profile.complexity_input_needs_review) {
-    return {
-      blocked: true,
-      reasons: parseReviewReasons(profile.complexity_input_review_reasons),
-    }
-  }
-
   const live = evaluateComplexityInputs(
     {
       age: profile.age,
       height: profile.height,
       weight: profile.weight,
+      gender: profile.gender,
+      fitnessGoal: profile.fitness_goal,
+      activityLevel: profile.activity_level,
+      trainingExperience: profile.training_experience,
+      dietPreference: profile.diet_preference,
+      injuries: profile.injuries,
+      medicalNotes: profile.medical_notes,
+      sleepDuration: profile.sleep_duration,
     },
     {
       previousDisplayScore:
@@ -155,5 +168,8 @@ export function profileBlocksAiPlanWork(profile: {
     }
   )
 
-  return { blocked: live.needsReview, reasons: live.reasons }
+  const hard = live.reasons.filter((reason) => !/coaching complexity from/i.test(reason))
+  if (hard.length > 0) return { blocked: true, reasons: hard }
+  if (live.needsReview) return { blocked: true, reasons: live.reasons }
+  return { blocked: false, reasons: [] }
 }

@@ -1912,11 +1912,16 @@ export function hasCompletedOnboarding(
   return isOnboardingComplete(profile)
 }
 
-/** New intake fields are optional for clients who already have a delivered plan. */
+/**
+ * New intake fields are optional once the client has already finished onboarding
+ * or has a delivered plan. A measurement added later must not block the first plan.
+ */
 export function shouldRequireNewOnboardingFields(
-  profile: Pick<OnboardingProfile, 'plan_delivered'> | null | undefined
+  profile: Pick<OnboardingProfile, 'plan_delivered' | 'onboarding_complete'> | null | undefined
 ): boolean {
-  return profile?.plan_delivered !== true
+  if (profile?.plan_delivered === true) return false
+  if (profile?.onboarding_complete === true) return false
+  return true
 }
 
 /** Tape measurements are for first-time onboarding or weekly check-ins — not existing delivered clients. */

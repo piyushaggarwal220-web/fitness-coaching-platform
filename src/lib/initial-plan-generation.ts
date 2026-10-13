@@ -230,6 +230,16 @@ export async function processInitialPlanGeneration(jobId: string): Promise<void>
     const gateError = validateAuthoritativeOnboarding(profile)
     if (gateError) throw new Error(`Onboarding validation failed: ${gateError}`)
     const metricsGate = profileBlocksAiPlanWork(profile)
+    if (!metricsGate.blocked && profile.complexity_input_needs_review) {
+      await admin
+        .from('profiles')
+        .update({
+          complexity_input_needs_review: false,
+          complexity_input_review_reasons: [],
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', profile.id)
+    }
     if (metricsGate.blocked) {
       const reasons =
         metricsGate.reasons.length > 0
