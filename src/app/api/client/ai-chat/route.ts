@@ -35,7 +35,18 @@ import {
   withConfirmCue,
 } from '@/lib/ai/ai-coach-plan-change'
 import { chatNeedsHumanCoach } from '@/lib/piyush-chat-auto'
-import { chatTextForModel, decodeChatVoice, encodeChatVoice } from '@/lib/chat-reply-pause'
+import { chatTextForModel, decodeChatPhoto, decodeChatVoice, encodeChatVoice } from '@/lib/chat-reply-pause'
+import {
+  applyProfileChangeFromChat,
+  describeProfileChange,
+  extractProfileChangeFromText,
+  loadPendingProfileChange,
+  profileChangeChatInstruction,
+  savePendingProfileChange,
+  stripProfileChangeTrailer,
+  withProfileConfirmCue,
+  type ProfileChangeProposal,
+} from '@/lib/ai/ai-coach-profile-change'
 import { memberFacingCoachFirstName } from '@/lib/coach-delivery-policy'
 import { assertInstantFeatureAccess } from '@/lib/instant-feature-guard'
 import { getPlanChangeQuota } from '@/lib/plan-change-requests'
@@ -355,7 +366,27 @@ export async function POST(request: Request) {
   }
 
   const pendingChange = await loadPendingPlanChange(admin, auth.user.id)
+  const pendingProfile = await loadPendingProfileChange(admin, auth.user.id)
   const quota = await getPlanChangeQuota(auth.user.id)
+  const ownPhotoPath = (raw: string | null | undefined): string | null => {
+    if (!raw) return null
+    const path = decodeChatPhoto(raw).imagePath
+    return path && ownVoicePath(path, auth.user.id) ? path : null
+  }
+  const latestPhotoPath = (): string | null => {
+    const current = ownPhotoPath(storedMessage)
+    if (current) return current
+    for (let i = history.length - 1; i >= 0; i -= 1) {
+      if (history[i]?.role !== 'user') continue
+      const path = ownPhotoPath(history[i]?.content)
+      if (path) return path
+    }
+    return null
+  }
+  const withPhoto = (proposal: ProfileChangeProposal): ProfileChangeProposal => {
+    if (!proposal.photoSlot) return { ...proposal, photoPath: null }
+    return { ...proposal, photoPath: latestPhotoPath() }
+  }
 
   const saveAssistant = async (content: string) => {
     const { data: assistantRow, error: assistantError } = await admin
@@ -386,9 +417,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: assistantRow, coachFirstName })
   }
 
-  if (pendingChange && isPlanChangeCancel(latestClientText)) {
-    await savePendingPlanChange(admin, auth.user.id, null)
-    return saveAssistant('Okay — I left the written plan as it is. Tell me if you want a different edit.')
+  if ((pendingProfile || pendingChange) && isPlanChangeCancel(latestClientText)) {
+    if (pendingProfile) await savePendingProfileChange(admin, auth.user.id, null)
+    if (pendingChange) await savePendingPlanChange(admin, auth.user.id, null)
+    return saveAssistant('Okay — I left your profile and your written plan as they are.')
+  }
+
+  if (pendingProfile && isPlanChangeConfirm(latestClientText)) {
+    const result = await applyProfileChangeFromChat({
+      clientId: auth.user.id,
+      pending: withPhoto(pendingProfile),
+    })
+    if (result.ok) await savePendingProfileChange(admin, auth.user.id, null)
+    const planStillWaiting =
+      result.ok && pendingChange
+        ? '\n\nThe written plan edit is still waiting. Reply YES again if you want that locked into My Plan.'
+        : ''
+    return saveAssistant(`${result.message}${planStillWaiting}`)
   }
 
   if (pendingChange && isPlanChangeConfirm(latestClientText)) {
@@ -463,8 +508,12 @@ export async function POST(request: Request) {
         dated ? `\n${dated}` : '',
         '',
         planChangeChatInstruction(quota.remainingToday),
+        profileChangeChatInstruction(),
         pendingChange
           ? `There is already a pending plan edit waiting for YES/NO:\nScope: ${pendingChange.scope}\n${pendingChange.requestText}`
+          : '',
+        pendingProfile
+          ? `There is already a pending profile update waiting for YES/NO:\n${pendingProfile.summary}`
           : '',
         '',
         'Write the next coach reply only.',
@@ -477,8 +526,34 @@ export async function POST(request: Request) {
       temperature: 0.55,
     })
     const raw = result.text.replace(/[\u2010-\u2015\u2212-]/g, ' ')
-    const stripped = stripPlanChangeTrailer(raw)
+    const profileStripped = stripProfileChangeTrailer(raw)
+    const stripped = stripPlanChangeTrailer(profileStripped.visible)
     replyText = guardAssistantCoachReply(stripped.visible, { clientText: latestClientText }) || replyText
+    const fromText = extractProfileChangeFromText(latestClientText, latestPhotoPath())
+    const profileProposal = profileStripped.propose
+      ? withPhoto(profileStripped.propose)
+      : fromText
+    if (profileProposal) {
+      if (isPlanChangeConfirm(latestClientText)) {
+        const applied = await applyProfileChangeFromChat({
+          clientId: auth.user.id,
+          pending: profileProposal,
+        })
+        if (applied.ok) {
+          await savePendingProfileChange(admin, auth.user.id, null)
+          replyText = applied.message
+        } else {
+          await savePendingProfileChange(admin, auth.user.id, profileProposal)
+          replyText = applied.message
+        }
+      } else {
+        await savePendingProfileChange(admin, auth.user.id, profileProposal)
+        if (!profileStripped.propose) {
+          replyText = `I can save this on your profile: ${describeProfileChange(profileProposal)}.`
+        }
+        replyText = withProfileConfirmCue(replyText)
+      }
+    }
     if (stripped.propose && !dated) {
       await savePendingPlanChange(admin, auth.user.id, stripped.propose)
       replyText = withConfirmCue(replyText, quota.remainingToday)

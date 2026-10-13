@@ -166,6 +166,8 @@ export type OnboardingData = {
     customNotes?: string | null
     /** Previous diets that did not work for the client. */
     previousDietsFailed?: string | null
+    /** Daily kcal the client set in Smart Coach. Plans use this when it is at least the floor. */
+    requestedCalories?: number | null
   }
   eatingPattern?: {
     breakfast?: string | null

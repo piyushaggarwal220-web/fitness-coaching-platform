@@ -250,17 +250,28 @@ export function resolveClientCalorieTargets(profile: CalorieProfile): ClientCalo
   const floorKcal = resolveDietFloorKcal(profile.weight)
   const goalHint = resolveEffectiveGoalHint(profile)
   const band = calorieTargetBand(maintenance, goalHint, flux.level, floorKcal)
+  const requested = clientRequestedCalories(profile)
+  const preferred =
+    requested != null ? Math.min(4500, Math.max(requested, floorKcal)) : band.preferred
 
   return {
     maintenance: band.maintenance,
-    min: band.min,
-    max: band.max,
-    preferred: band.preferred,
+    min: requested != null ? Math.max(floorKcal, preferred - 100) : band.min,
+    max: requested != null ? preferred + 150 : band.max,
+    preferred,
     floorKcal,
     fluxLabel: flux.label,
     fluxLevel: flux.level,
     activityLevel,
   }
+}
+
+/** Calorie target the client set on their own profile. Null when missing or out of range. */
+export function clientRequestedCalories(profile: CalorieProfile): number | null {
+  const raw = profile.onboarding_data?.diet?.requestedCalories
+  const kcal = Math.round(Number(raw))
+  if (!Number.isFinite(kcal) || kcal < 1800 || kcal > 4500) return null
+  return kcal
 }
 
 const ACTIVITY_MULTIPLIER_LABEL: Record<string, string> = {
@@ -341,7 +352,11 @@ export function formatCalorieGuidanceBlock(profile: CalorieProfile): string | nu
           ? `BMR × activity = maintenance ~${targets.maintenance} kcal/day. ${formatGoalAdjustmentLine(goal, targets.maintenance, targets.preferred, targets.fluxLevel)}`
           : `Compute maintenance = BMR × ${activityFactor}, then a goal adjustment.`,
         target
-          ? `WRITE THIS NUMBER: every Daily Total and the Calories header must average ${target} kcal/day (±100). Floor is ${floor}.`
+          ? `WRITE THIS NUMBER: every Daily Total and the Calories header must average ${target} kcal/day (±100). Floor is ${floor}.${
+              clientRequestedCalories(profile) != null
+                ? ' The client set this calorie target on their profile. Use it.'
+                : ''
+            }`
           : `Build all 7 days at or above ${floor} kcal with honest meal math.`,
         `FORBIDDEN: inventing a crash diet below the floor (~${floor}). Do not pad portions above the target either — if the formula says ~${target ?? floor}, write that, not 200–400 kcal higher.`,
         'If one weekday is a religious fast, keep the OTHER 6 days at the full daily target. Do not crash the whole week.',
