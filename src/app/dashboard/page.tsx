@@ -574,6 +574,7 @@ export default function Dashboard() {
             coachBio={coach?.bio}
             coachPhotoPath={coach?.display_photo_path}
             planSlug={purchase?.plan_slug}
+            generationStatus={generationJob?.status ?? null}
           />
         )}
         {!isPublicDemoEmail(user?.email) && <NotificationActivationGate />}

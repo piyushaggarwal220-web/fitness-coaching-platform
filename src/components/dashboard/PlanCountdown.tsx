@@ -14,7 +14,7 @@ import {
   isPlanFullyReady,
 } from '@/lib/purchase-dashboard'
 import { digitalPlanSections, isDigitalPlanSlug } from '@/lib/payments/plans'
-import { livePlanSectionDetail } from '@/lib/client-plan-presence'
+import { absentPlanCopy, livePlanSectionDetail } from '@/lib/client-plan-presence'
 import { clientColors as colors, spacing } from '@/lib/design-tokens'
 import type { OnboardingProfile, Plan } from '@/types/database'
 
@@ -34,12 +34,14 @@ type PlanCountdownProps = {
   coachBio?: string | null
   coachPhotoPath?: string | null
   planSlug?: string | null
+  generationStatus?: string | null
 }
 
 export function PlanCountdownCard({
   profile,
   activePlan,
   planSlug,
+  generationStatus,
 }: PlanCountdownProps) {
   const router = useRouter()
   const isDigital = isDigitalPlanSlug(planSlug)
@@ -134,6 +136,25 @@ export function PlanCountdownCard({
   }
 
   if (!profile.onboarding_completed_at) return null
+
+  const absent = absentPlanCopy({
+    jobStatus: generationStatus,
+    planDelivered: profile.plan_delivered === true,
+    instant: instantWindow,
+    windowLabel: INSTANT_PLAN_WINDOW_LABEL,
+  })
+  if (!absent.inProgress) {
+    return (
+      <Card variant="glass" style={{ marginBottom: spacing[4] }}>
+        <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: colors.textPrimary }}>
+          {absent.headline}
+        </p>
+        <p style={{ margin: '8px 0 0', fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
+          {absent.detail}
+        </p>
+      </Card>
+    )
+  }
 
   if (isDigital) {
     return (
