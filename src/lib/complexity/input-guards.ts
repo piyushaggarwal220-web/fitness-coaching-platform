@@ -127,12 +127,7 @@ export function parseReviewReasons(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
 }
 
-/**
- * True when live metrics are impossible, or a full rescore still jumps far from
- * the stored score. A stored review flag alone does not block: it was being set
- * by comparing that score to age/height/weight only, which dropped a real 42 to 6.
- */
-export function profileBlocksAiPlanWork(profile: {
+export type ComplexityProfileFields = {
   age?: number | string | null
   height?: number | string | null
   weight?: number | string | null
@@ -144,29 +139,39 @@ export function profileBlocksAiPlanWork(profile: {
   injuries?: string | null
   medical_notes?: string | null
   sleep_duration?: string | null
+}
+
+/** Same inputs the stored complexity score used. Age/height/weight alone are not enough. */
+export function complexityMetricsFromProfile(profile: ComplexityProfileFields): ComplexityMetricValues {
+  return {
+    age: profile.age,
+    height: profile.height,
+    weight: profile.weight,
+    gender: profile.gender,
+    fitnessGoal: profile.fitness_goal,
+    activityLevel: profile.activity_level,
+    trainingExperience: profile.training_experience,
+    dietPreference: profile.diet_preference,
+    injuries: profile.injuries,
+    medicalNotes: profile.medical_notes,
+    sleepDuration: profile.sleep_duration,
+  }
+}
+
+/**
+ * True when live metrics are impossible, or a full rescore still jumps far from
+ * the stored score. A stored review flag alone does not block: it was being set
+ * by comparing that score to age/height/weight only, which dropped a real 42 to 6.
+ */
+export function profileBlocksAiPlanWork(profile: ComplexityProfileFields & {
   complexity_input_needs_review?: boolean | null
   complexity_input_review_reasons?: unknown
   complexity_score?: number | null
 }): { blocked: boolean; reasons: string[] } {
-  const live = evaluateComplexityInputs(
-    {
-      age: profile.age,
-      height: profile.height,
-      weight: profile.weight,
-      gender: profile.gender,
-      fitnessGoal: profile.fitness_goal,
-      activityLevel: profile.activity_level,
-      trainingExperience: profile.training_experience,
-      dietPreference: profile.diet_preference,
-      injuries: profile.injuries,
-      medicalNotes: profile.medical_notes,
-      sleepDuration: profile.sleep_duration,
-    },
-    {
-      previousDisplayScore:
-        typeof profile.complexity_score === 'number' ? profile.complexity_score : null,
-    }
-  )
+  const live = evaluateComplexityInputs(complexityMetricsFromProfile(profile), {
+    previousDisplayScore:
+      typeof profile.complexity_score === 'number' ? profile.complexity_score : null,
+  })
 
   const hard = live.reasons.filter((reason) => !/coaching complexity from/i.test(reason))
   if (hard.length > 0) return { blocked: true, reasons: hard }

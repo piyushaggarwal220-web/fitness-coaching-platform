@@ -66,6 +66,15 @@ export default function Profile() {
   const [reviewReasons, setReviewReasons] = useState<string[]>([])
   const [confirmMetrics, setConfirmMetrics] = useState(false)
   const [previousDisplayScore, setPreviousDisplayScore] = useState<number | null>(null)
+  const [scoringProfile, setScoringProfile] = useState({
+    gender: null as string | null,
+    activity_level: null as string | null,
+    training_experience: null as string | null,
+    diet_preference: null as string | null,
+    injuries: null as string | null,
+    medical_notes: null as string | null,
+    sleep_duration: null as string | null,
+  })
   const [savingGoals, setSavingGoals] = useState(false)
   const [goalMessage, setGoalMessage] = useState('')
   const [demoReadOnly, setDemoReadOnly] = useState(false)
@@ -104,6 +113,15 @@ export default function Profile() {
         setPreviousDisplayScore(
           typeof result.profile.complexity_score === 'number' ? result.profile.complexity_score : null
         )
+        setScoringProfile({
+          gender: result.profile.gender ?? null,
+          activity_level: result.profile.activity_level ?? null,
+          training_experience: result.profile.training_experience ?? null,
+          diet_preference: result.profile.diet_preference ?? null,
+          injuries: result.profile.injuries ?? null,
+          medical_notes: result.profile.medical_notes ?? null,
+          sleep_duration: result.profile.sleep_duration ?? null,
+        })
       }
 
       setLoading(false)
@@ -219,7 +237,19 @@ export default function Profile() {
     const height = parseHeightCm(profile.height)
 
     const guard = evaluateComplexityInputs(
-      { age, height, weight },
+      {
+        age,
+        height,
+        weight,
+        gender: scoringProfile.gender,
+        fitnessGoal: profile.fitness_goal,
+        activityLevel: scoringProfile.activity_level,
+        trainingExperience: scoringProfile.training_experience,
+        dietPreference: scoringProfile.diet_preference,
+        injuries: scoringProfile.injuries,
+        medicalNotes: scoringProfile.medical_notes,
+        sleepDuration: scoringProfile.sleep_duration,
+      },
       { previousDisplayScore }
     )
 

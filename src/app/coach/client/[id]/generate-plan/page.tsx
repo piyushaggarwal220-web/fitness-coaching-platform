@@ -19,6 +19,7 @@ import { aiActionStyles as s } from '@/components/coach/ai-actions/styles'
 import type { Coach, OnboardingProfile, Plan } from '@/types/database'
 import type { CoachAiActionId } from '@/lib/coach/ai-actions'
 import { getGenerationFailureGuidance } from '@/lib/generation-failure-guidance'
+import { profileBlocksAiPlanWork } from '@/lib/complexity/input-guards'
 import type { InitialPlanGenerationJob } from '@/lib/initial-plan-generation'
 
 const supabase = createClient()
@@ -286,10 +287,7 @@ export default function CoachGeneratePlanPage() {
 
   if (!client) return null
 
-  const metricsBlocked =
-    Boolean(client.complexity_input_needs_review) ||
-    (Array.isArray(client.complexity_input_review_reasons) &&
-      client.complexity_input_review_reasons.length > 0)
+  const metricsBlocked = profileBlocksAiPlanWork(client).blocked
 
   const isInitialPlanFlow = intentInitial || !activePlan
 
