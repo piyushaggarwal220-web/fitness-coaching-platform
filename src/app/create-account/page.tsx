@@ -196,6 +196,9 @@ function CreateAccountForm() {
                   placeholder="pay_…"
                   style={styles.input}
                   autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
                 <p style={styles.hint}>
                   Find this on your Razorpay SMS/email receipt (starts with pay_).

@@ -10,6 +10,7 @@ import type { CoachingPlan } from '@/lib/payments/plans'
 import { getCoachingPlan, subscriptionExpiryFromPlan } from '@/lib/payments/plans'
 import type { CheckoutAddonId } from '@/lib/payments/checkout-discounts'
 import { checkoutAddonsPaise } from '@/lib/payments/checkout-discounts'
+import { canonicalRazorpayReference } from '@/lib/payments/razorpay-reference'
 import type { Purchase } from '@/types/database'
 
 const CLAIM_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -436,19 +437,43 @@ export async function lookupClaimablePurchase(input: {
     }
   } else {
     const email = input.email?.trim().toLowerCase()
-    const paymentId = input.paymentId?.trim()
-    if (!email || !paymentId) {
+    const paymentId = input.paymentId?.trim() ?? ''
+    const reference = canonicalRazorpayReference(paymentId)
+    if (!email || (!reference.paymentId && !reference.orderId && !paymentId)) {
       throw new Error('Email and Razorpay payment ID are required')
     }
 
-    const { data, error } = await admin
-      .from('purchases')
-      .select('*')
-      .eq('razorpay_payment_id', paymentId)
-      .maybeSingle()
+    if (reference.paymentId) {
+      const { data, error } = await admin
+        .from('purchases')
+        .select('*')
+        .eq('razorpay_payment_id', reference.paymentId)
+        .maybeSingle()
+      if (error) throw new Error(error.message)
+      purchase = data as PurchaseRow | null
+    }
 
-    if (error) throw new Error(error.message)
-    purchase = data as PurchaseRow | null
+    if (!purchase && reference.orderId) {
+      const { data, error } = await admin
+        .from('purchases')
+        .select('*')
+        .eq('razorpay_order_id', reference.orderId)
+        .eq('status', 'captured')
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (error) throw new Error(error.message)
+      purchase = (data?.[0] as PurchaseRow | undefined) ?? null
+    }
+
+    if (!purchase && paymentId && paymentId !== reference.paymentId && paymentId !== reference.orderId) {
+      const { data, error } = await admin
+        .from('purchases')
+        .select('*')
+        .eq('razorpay_payment_id', paymentId)
+        .maybeSingle()
+      if (error) throw new Error(error.message)
+      purchase = data as PurchaseRow | null
+    }
 
     if (!purchase) {
       throw new Error('No payment found for that ID. Check your Razorpay receipt and try again.')

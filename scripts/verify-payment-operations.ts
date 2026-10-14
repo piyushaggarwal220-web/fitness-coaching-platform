@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { canonicalRazorpayReference } from '../src/lib/payments/razorpay-reference'
 import { isMetaPurchaseEligibleSale } from '../src/lib/analytics/meta-purchase-eligibility'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -53,7 +54,7 @@ assert.equal(
   isMetaPurchaseEligibleSale({ status: 'captured', amountPaise: 169900, razorpayPaymentId: 'test_payment_1' }),
   false
 )
-assert.match(fulfillment, /queueMetaPurchaseForRecordedSale/)
+assert.match(read('src/app/api/payment/verify/route.ts'), /queueMetaPurchaseForRecordedSale/)
 assert.match(read('src/lib/payments/exercise-library-addon.ts'), /queueMetaPurchaseForRecordedSale/)
 assert.match(read('src/lib/payments/platform-unlock-addon.ts'), /queueMetaPurchaseForRecordedSale/)
 assert.match(read('src/lib/analytics/meta-purchase-backfill.ts'), /isMetaPurchaseEligibleSale/)
@@ -73,6 +74,23 @@ assert.match(refundTerms, /does not limit rights that cannot legally be excluded
 assert.match(refundEligibility, /at least 90%/)
 assert.match(refundOperations, /getPurchaseRefundEligibility/)
 assert.match(refundOperations, /documented, admin-reviewed no-result claim/)
+assert.deepEqual(canonicalRazorpayReference('Pay_TnlBIxzrsfTXZ9'), {
+  paymentId: 'pay_TnlBIxzrsfTXZ9',
+  orderId: null,
+})
+assert.deepEqual(canonicalRazorpayReference('pay_TnlBIxzrsfTXZ9'), {
+  paymentId: 'pay_TnlBIxzrsfTXZ9',
+  orderId: null,
+})
+assert.deepEqual(canonicalRazorpayReference('pay_TnlB IxzrsfTXZ9'), {
+  paymentId: 'pay_TnlBIxzrsfTXZ9',
+  orderId: null,
+})
+assert.deepEqual(canonicalRazorpayReference('Order_TnlBBepbhD2HN0'), {
+  paymentId: null,
+  orderId: 'order_TnlBBepbhD2HN0',
+})
+assert.match(read('src/app/create-account/page.tsx'), /autoCapitalize="none"/)
 
 console.log('✓ Payment operation schema has durable idempotency')
 console.log('✓ Claim tokens remain hashed at rest')
@@ -83,3 +101,4 @@ console.log('✓ Every captured paid sale, including manual payments, is eligibl
 console.log('✓ Anthropic rollback path has classified retries and model fallback')
 console.log('✓ OpenAI is the default (and only live) plan provider with classified retries')
 console.log('✓ Results-guarantee policy is disclosed in Terms and server-enforced')
+console.log('✓ A capitalized Razorpay pay_ prefix still matches the stored payment id')
