@@ -1,4 +1,4 @@
-import { resolvePlanDayMeta, toProgramDayLabel, WEEKDAY_PROGRAM_DAY } from '@/lib/plan-day-labels'
+import { resolvePlanDayMeta, WEEKDAY_PROGRAM_DAY } from '@/lib/plan-day-labels'
 import { resolvePlanSectionsFromPlan } from '@/lib/plan-section-parser'
 import type { OnboardingProfile, Plan } from '@/types/database'
 import type {
@@ -23,7 +23,7 @@ import { DEFAULT_WARMUP_EXERCISES, withTrackingMeta } from './exercise-utils'
 import { withDerivedSleepHours } from './sleep-duration'
 
 /** Bump when parser output shape/names change so today's tracker rebuilds without a manual tap. */
-export const TRACKER_PARSER_VERSION = 20
+export const TRACKER_PARSER_VERSION = 21
 
 const CARDIO_MOVEMENT =
   /\b(walk|walking|jog|jogging|run|running|bike|bicycle|cycling|cycle|row|rowing|elliptical|stair|cardio|liss|hiit|incline)\b/i
@@ -224,6 +224,17 @@ function matchMealHeader(raw: string): { name: string; mealTime?: string } | nul
     }
   }
 
+  // "Breakfast, 10:00" and "Breakfast 09:00" — clock after the meal name.
+  const nameThenClock = trimmed.match(
+    new RegExp(`^(${MEAL_NAME_PATTERN})\\s*(?:,\\s*|\\s+)(${CLOCK_RANGE})\\s*$`, 'i')
+  )
+  if (nameThenClock && !isWorkoutOnlyLabel(trimmed)) {
+    return {
+      name: nameThenClock[1]!,
+      mealTime: nameThenClock[2]!.replace(/\s+/g, ' ').trim(),
+    }
+  }
+
   const timeFirst = trimmed.match(MEAL_TIME_FIRST_LINE)
   if (timeFirst) {
     const rest = timeFirst[2]!.trim()
@@ -351,6 +362,15 @@ function parseMealsInDay(
 
   for (const line of lines) {
     const trimmed = normalizeMealLine(line)
+    if (/^(?:daily\s+(?:total|totals|target|cooking)|daily cooking fat|cooking fat)\b/i.test(trimmed)) {
+      continue
+    }
+    if (
+      /^\(P:\s*\d+/i.test(trimmed) &&
+      current?.lines.some((existing) => /\(P:\s*\d+/i.test(existing))
+    ) {
+      continue
+    }
     const header = matchMealHeader(trimmed) ?? matchMealHeader(line)
     if (header) {
       flush()
@@ -654,20 +674,27 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
     String.raw`^(.+?)\s*[:–—]?\s*(\d+)\s*sets?\s*[x×]\s*(\d+)\s*${durationUnit}`,
     'i'
   )
-  const cardioSetsDuration = trimmed.match(setsDuration)
-  if (cardioSetsDuration && isCardioExerciseName(cardioSetsDuration[1]!)) {
-    const cardioName = cardioSetsDuration[1]!.trim().replace(/:$/, '')
-    const amount = cardioSetsDuration[3]!
-    const unit = cardioSetsDuration[4]!.toLowerCase()
-    const reps = /m/.test(unit) ? `${amount} min` : `${amount}s`
-    return withTrackingMeta({
-      id: `ex-${phase}-${slug(cardioName)}-${index}`,
-      name: cardioName,
-      targetSets: 1,
-      targetReps: reps,
-      phase,
-      restSeconds: 20,
-    })
+  const timedSets = trimmed.match(setsDuration)
+  if (timedSets) {
+    const timedName = timedSets[1]!.trim().replace(/:$/, '')
+    if (
+      timedName.length >= 2 &&
+      /[a-z]/i.test(timedName) &&
+      !SESSION_LABEL_ONLY.test(timedName) &&
+      !isCoachingExerciseName(timedName)
+    ) {
+      const amount = timedSets[3]!
+      const unit = timedSets[4]!.toLowerCase()
+      const reps = /m/.test(unit) ? `${amount} min` : `${amount}s`
+      return withTrackingMeta({
+        id: `ex-${phase}-${slug(timedName)}-${index}`,
+        name: timedName,
+        targetSets: isCardioExerciseName(timedName) ? 1 : Number(timedSets[2]),
+        targetReps: reps,
+        phase,
+        restSeconds: isCardioExerciseName(timedName) ? 20 : 30,
+      })
+    }
   }
 
   const match =
@@ -719,6 +746,7 @@ function parseExerciseLine(line: string, phase: WorkoutExercisePhase, index: num
   // Drop leading labels like "Core: "
   name = name.replace(/^(?:core|finisher|accessory)\s*:\s*/i, '').trim()
   if (!name || name.length < 2 || isCoachingExerciseName(name)) return null
+  if (/^\d+\s*(?:sets?|[x×])/i.test(name)) return null
 
   const restMatch = trimmed.match(
     /(?:rest|recover(?:y)?)\s*(?:for\s*)?(\d+)\s*(?:[-–]\s*\d+)?\s*(s|sec|secs|seconds|m|min|mins|minutes)?/i
@@ -811,6 +839,8 @@ function parseLooseExerciseLine(
     })
   }
 
+  if (/^\d+\s*(?:sets?|[x×])/i.test(trimmed)) return null
+
   const allowLoose =
     phase !== 'main' ||
     LOOSE_MOVEMENT.test(trimmed) ||
@@ -867,11 +897,11 @@ function parseWorkoutPhases(section: string): {
         headerConsumed = true
         continue
       }
-      const dayOnly = trimmed.match(
-        /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|day\s*\d+)\s*$/i
+      const dayHeaderOnly = trimmed.match(
+        /^(?:(day\s*\d+)|(monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b(?:\s*[(\[]\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*[)\]])?\s*$/i
       )
-      if (dayOnly) {
-        dayLabel = toProgramDayLabel(dayOnly[1]!)
+      if (dayHeaderOnly) {
+        dayLabel = resolvePlanDayMeta(dayHeaderOnly[1] || dayHeaderOnly[2]!, dayHeaderOnly[3]).label
         headerConsumed = true
         continue
       }

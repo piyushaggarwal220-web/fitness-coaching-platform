@@ -59,7 +59,7 @@ import type { InitialPlanGenerationJob } from '@/lib/initial-plan-generation';
 const supabase = createClient();
 
 const DASHBOARD_PLAN_COLUMNS =
-  'id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, diet_opened_at, workout_opened_at, coach_notes, nutrition_plan, workout_plan';
+  'id, client_id, coach_id, title, phase, version, active, delivered_at, updated_at, created_at, diet_opened_at, workout_opened_at';
 
 type ActivityItem = {
   id: string;
@@ -529,8 +529,8 @@ export default function Dashboard() {
               }).detail
         }
         readyDetail={livePlanSectionDetail({
-          hasDiet: Boolean(activePlan?.nutrition_plan?.trim()),
-          hasWorkout: Boolean(activePlan?.workout_plan?.trim()),
+          hasDiet: Boolean(activePlan),
+          hasWorkout: Boolean(activePlan),
           planDelivered: profile?.plan_delivered === true,
         })}
         hasPlan={Boolean(activePlan) || profile?.plan_delivered === true}

@@ -1,4 +1,5 @@
 import {
+  TRACKER_PARSER_VERSION,
   buildTrackerSnapshot,
   dropSelectedDaysForPlanChange,
   mergeCompletion,
@@ -1282,6 +1283,56 @@ Day 7 (Sunday): Active Recovery`,
       !(i.phases.find((p) => p.phase === 'main')?.exercises.length)
   )
   assert('title-only plan does not create warmup-only training days', warmupOnly.length === 0)
+}
+
+{
+  assert('parser version rebuilds stored tracker days', TRACKER_PARSER_VERSION === 21)
+  const liveDiet = `Day 3 (Wednesday)
+Breakfast, 10:00
+Have 60g oats.
+(P: 25g | C: 75g | F: 22g | ~598 kcal)
+Lunch, 14:00
+Rice and chicken.
+(P: 40g | C: 80g | F: 12g | ~600 kcal)
+Snack
+Fruit.
+Dinner 22:15
+Eggs.
+Daily total: 1800 kcal`
+  const liveWorkout = `Day 3 (Wednesday)
+Leg Press: 3 sets x 10 to 12 reps
+Stationary Bike: 1 set x 5 minutes
+Quadriceps Stretch: 2 sets x 30 seconds each side`
+  const liveSnap = buildTrackerSnapshot({
+    id: 'plan-live-headers',
+    version: 9,
+    nutrition_plan: liveDiet,
+    workout_plan: liveWorkout,
+  } as Plan)
+  const wedMeals = liveSnap.items.filter((item) => item.type === 'meal' && item.dietDay === 'wednesday')
+  assert(
+    'comma and clock meal headers stay separate',
+    wedMeals.map((item) => item.title).join('|') === 'Breakfast|Lunch|Snack|Dinner'
+  )
+  const wedWorkout = liveSnap.items.find((item) => item.type === 'workout' && item.workoutDay === 'wednesday')
+  const names =
+    wedWorkout && wedWorkout.type === 'workout' ? wedWorkout.exercises.map((exercise) => exercise.name) : []
+  assert(
+    'sets, timed cardio, and stretches stay in the workout',
+    ['Leg Press', 'Stationary Bike', 'Quadriceps Stretch'].every((name) => names.includes(name))
+  )
+  const junkSnap = buildTrackerSnapshot({
+    id: 'plan-junk-name',
+    version: 1,
+    workout_plan: `Day 1 (Monday)
+4 sets x 5 reps
+Leg Press: 4 sets x 5 reps`,
+  } as Plan)
+  const junkNames = junkSnap.items.flatMap((item) =>
+    item.type === 'workout' ? item.exercises.map((exercise) => exercise.name) : []
+  )
+  assert('a bare prescription is not stored as an exercise name', !junkNames.includes('4 sets x 5 reps'))
+  assert('the named lift next to a bare prescription still parses', junkNames.includes('Leg Press'))
 }
 
 if (failed > 0) {

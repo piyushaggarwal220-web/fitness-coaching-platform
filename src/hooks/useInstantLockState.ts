@@ -25,6 +25,9 @@ const OPEN: InstantLockState = {
   locked: { tracker: false, journey: false, ai_chat: false },
 }
 
+const LOCK_CACHE_MS = 60_000
+let lockCache: { at: number; state: InstantLockState } | null = null
+
 /** Optimistic lock while resolving — Instant clients never flash open nav/pages. */
 const PENDING: InstantLockState = {
   loading: true,
@@ -34,9 +37,15 @@ const PENDING: InstantLockState = {
 
 /** Shared client hook so nav + pages hide Instant-locked surfaces. */
 export function useInstantLockState(): InstantLockState {
-  const [state, setState] = useState<InstantLockState>(PENDING)
+  const [state, setState] = useState<InstantLockState>(
+    lockCache && Date.now() - lockCache.at < LOCK_CACHE_MS ? lockCache.state : PENDING
+  )
 
   useEffect(() => {
+    if (lockCache && Date.now() - lockCache.at < LOCK_CACHE_MS) {
+      setState(lockCache.state)
+      return
+    }
     let active = true
     const run = async () => {
       const {
@@ -90,7 +99,9 @@ export function useInstantLockState(): InstantLockState {
         }),
       }
 
-      setState({ loading: false, isInstantOnly, locked })
+      const next = { loading: false, isInstantOnly, locked }
+      lockCache = { at: Date.now(), state: next }
+      setState(next)
     }
     void run()
     return () => {

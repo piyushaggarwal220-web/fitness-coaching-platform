@@ -56,6 +56,24 @@ function rowToDay(row: Record<string, unknown>): DailyTrackerDay {
   }
 }
 
+const ACTIVE_PLAN_STAMP = 'id, version, updated_at'
+
+async function getActivePlanStamp(
+  supabase: SupabaseClient,
+  clientId: string
+): Promise<{ id: string; version: number; updated_at: string } | null> {
+  const { data } = await supabase
+    .from('plans')
+    .select(ACTIVE_PLAN_STAMP)
+    .eq('client_id', clientId)
+    .eq('active', true)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (!data?.id || data.version == null || !data.updated_at) return null
+  return { id: data.id, version: data.version, updated_at: data.updated_at }
+}
+
 export async function getActivePlan(
   supabase: SupabaseClient,
   clientId: string
@@ -304,10 +322,6 @@ export async function getOrCreateTodayTracker(
   options?: { force?: boolean }
 ): Promise<{ day: DailyTrackerDay | null; error: string | null }> {
   const force = options?.force === true
-  const plan = await getActivePlan(supabase, clientId)
-  if (!plan) {
-    return { day: null, error: 'No active plan yet. Smart Coach will deliver it automatically soon.' }
-  }
   if (!profile.checkin_schedule_started_at) {
     return { day: null, error: 'Your coaching schedule will begin when your first plan is delivered.' }
   }
@@ -328,6 +342,66 @@ export async function getOrCreateTodayTracker(
     .eq('client_id', clientId)
     .eq('log_date', logDate)
     .maybeSingle()
+
+  const planStamp = await getActivePlanStamp(supabase, clientId)
+  if (!planStamp) {
+    return { day: null, error: 'No active plan yet. Smart Coach will deliver it automatically soon.' }
+  }
+
+  // Today's snapshot already matches this plan. Skip downloading and re-parsing
+  // the full diet and workout, which was making every page change wait.
+  if (existing && !force) {
+    const existingDay = rowToDay(existing as Record<string, unknown>)
+    const snapshotFresh =
+      existingDay.snapshot.parserVersion === TRACKER_PARSER_VERSION &&
+      existingDay.plan_id === planStamp.id &&
+      existingDay.plan_version === planStamp.version &&
+      existingDay.snapshot.planVersion === planStamp.version &&
+      existingDay.snapshot.planUpdatedAt === planStamp.updated_at
+    if (snapshotFresh) {
+      const coachingFieldsStale =
+        existingDay.coaching_day !== coachingDay || existingDay.coaching_week !== coachingWeek
+      const refreshWorkout = workoutDayStillOpen(existingDay.completion)
+      const refreshDiet = dietDayStillOpen(existingDay.completion)
+      const synced = applySuggestedDaySelections(
+        existingDay.completion,
+        existingDay.snapshot,
+        coachingDay,
+        { refreshWorkoutDay: refreshWorkout, refreshDietDay: refreshDiet }
+      )
+      const daySelectionChanged =
+        synced.selectedWorkoutDay !== existingDay.completion.selectedWorkoutDay ||
+        synced.selectedDietDay !== existingDay.completion.selectedDietDay
+      if (!coachingFieldsStale && !daySelectionChanged) {
+        return { day: existingDay, error: null }
+      }
+      const updatePayload: Record<string, unknown> = {
+        coaching_day: coachingDay,
+        coaching_week: coachingWeek,
+      }
+      if (daySelectionChanged) {
+        const { scores, overall } = calculateTrackerScores(existingDay.snapshot, synced)
+        updatePayload.completion = synced
+        updatePayload.scores = scores
+        updatePayload.overall_percent = overall
+        updatePayload.updated_at = new Date().toISOString()
+      }
+      const { data: touched, error: touchError } = await supabase
+        .from('daily_tracker_days')
+        .update(updatePayload)
+        .eq('id', existingDay.id)
+        .select()
+        .single()
+      if (!touchError && touched) {
+        return { day: rowToDay(touched as Record<string, unknown>), error: null }
+      }
+    }
+  }
+
+  const plan = await getActivePlan(supabase, clientId)
+  if (!plan) {
+    return { day: null, error: 'No active plan yet. Smart Coach will deliver it automatically soon.' }
+  }
 
   const snapshot = buildTrackerSnapshot(plan, profile)
   const now = new Date().toISOString()

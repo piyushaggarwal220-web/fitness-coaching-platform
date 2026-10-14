@@ -3,6 +3,7 @@ import {
   getMuscleWikiExercise,
   inferEquipmentCategory,
   isMuscleWikiConfigured,
+  MuscleWikiUnavailableError,
   searchMuscleWiki,
   videosForDemoGender,
   type FormDemoGender,
@@ -17,7 +18,7 @@ import {
 } from '@/lib/exercise-form/normalize'
 
 const HIT_TTL_MS = 30 * 24 * 60 * 60 * 1000
-const MISS_TTL_MS = 7 * 24 * 60 * 60 * 1000
+const MISS_TTL_MS = 15 * 60 * 1000
 const MIN_ACCEPT_SCORE = 36
 const CACHE_VERSION = 'v2'
 
@@ -40,6 +41,7 @@ export type ExerciseFormResult = {
   videos: MuscleWikiVideo[]
   exerciseId: number | null
   details: ExerciseFormDetails
+  unavailable?: boolean
 }
 
 const memory = new Map<string, { expiresAt: number; value: ExerciseFormResult }>()
@@ -194,6 +196,7 @@ export function publicFormPayload(result: ExerciseFormResult, preferredGender: F
     mechanic: result.details.mechanic,
     grips: result.details.grips,
     exerciseId: result.exerciseId,
+    unavailable: result.unavailable === true,
     preferredGender: videos[0]?.gender ?? preferredGender,
     videos,
     hasVideo: videos.length > 0,
@@ -213,7 +216,15 @@ export async function lookupExerciseForm(rawName: string): Promise<ExerciseFormR
   const cached = await readCache(key)
   if (cached) return cached
 
-  const hits = await searchMuscleWiki(query, 8)
+  let hits
+  try {
+    hits = await searchMuscleWiki(query, 8)
+  } catch (error) {
+    if (error instanceof MuscleWikiUnavailableError) {
+      return emptyResult(query, { unavailable: true })
+    }
+    throw error
+  }
   const ranked = rankHits(query, hits)
   const best = ranked[0]
   if (!best || best.score < MIN_ACCEPT_SCORE) {
@@ -222,7 +233,14 @@ export async function lookupExerciseForm(rawName: string): Promise<ExerciseFormR
     return miss
   }
 
-  const detailed = (await getMuscleWikiExercise(best.hit.id)) ?? best.hit
+  let detailed = best.hit
+  try {
+    detailed = (await getMuscleWikiExercise(best.hit.id)) ?? best.hit
+  } catch (error) {
+    if (error instanceof MuscleWikiUnavailableError) {
+      return emptyResult(query, { unavailable: true })
+    }
+  }
   const value = fromExercise(query, detailed)
   await writeCache(key, value)
   return value

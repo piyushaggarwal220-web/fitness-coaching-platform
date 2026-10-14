@@ -23,6 +23,7 @@ type FormPayload = {
   videos: VideoOption[]
   exerciseId: number | null
   hasVideo: boolean
+  unavailable?: boolean
   locked?: boolean
   entitled?: boolean
   freeUnlock?: boolean
@@ -406,6 +407,10 @@ export function ExerciseFormSheet({ exerciseName, onClose }: Props) {
           ) : !data?.configured ? (
             <p style={{ margin: 0, color: colors.textSecondary, lineHeight: 1.45 }}>
               Form videos are not connected yet. Follow your coach&apos;s notes, or ask in chat.
+            </p>
+          ) : data?.unavailable ? (
+            <p style={{ margin: 0, color: colors.textSecondary, lineHeight: 1.45 }}>
+              Exercise videos are temporarily unavailable. The move is still in your workout. Try the video again later.
             </p>
           ) : data?.skipped || !data?.found ? (
             <p style={{ margin: 0, color: colors.textSecondary, lineHeight: 1.45 }}>

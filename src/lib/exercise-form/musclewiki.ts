@@ -22,8 +22,15 @@ export type MuscleWikiExercise = {
   grips: string[]
 }
 
+export class MuscleWikiUnavailableError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'MuscleWikiUnavailableError'
+  }
+}
+
 function apiKey(): string | null {
-  const key = process.env.MUSCLEWIKI_API_KEY?.trim()
+  const key = process.env.MUSCLEWIKI_API_KEY?.trim() || process.env.EXERCISE_VIDEO_API_KEY?.trim()
   return key || null
 }
 
@@ -40,7 +47,11 @@ async function mwFetch(path: string): Promise<unknown> {
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`MuscleWiki ${res.status}${text ? `: ${text.slice(0, 180)}` : ''}`)
+    const message = `MuscleWiki ${res.status}${text ? `: ${text.slice(0, 180)}` : ''}`
+    if (res.status === 401 || res.status === 403 || res.status >= 500) {
+      throw new MuscleWikiUnavailableError(message)
+    }
+    throw new Error(message)
   }
   return res.json()
 }
@@ -182,28 +193,22 @@ export async function searchMuscleWiki(query: string, limit = 8): Promise<Muscle
   const capped = Math.max(1, Math.min(20, limit))
   const category = inferEquipmentCategory(query)
   const hits = new Map<number, MuscleWikiExercise>()
-  try {
-    await collectSearchHits(`/search?q=${q}&limit=${capped}`, hits)
-  } catch {
-    /* fall through */
-  }
-  if (hits.size === 0 && category) {
+  const failure: { error: MuscleWikiUnavailableError | null } = { error: null }
+  const collect = async (path: string) => {
     try {
-      await collectSearchHits(
-        `/search?q=${q}&limit=${capped}&category=${encodeURIComponent(category)}`,
-        hits
-      )
-    } catch {
-      /* fall through */
+      await collectSearchHits(path, hits)
+    } catch (error) {
+      if (error instanceof MuscleWikiUnavailableError) failure.error = error
     }
+  }
+  await collect(`/search?q=${q}&limit=${capped}`)
+  if (hits.size === 0 && category) {
+    await collect(`/search?q=${q}&limit=${capped}&category=${encodeURIComponent(category)}`)
   }
   if (hits.size === 0) {
-    try {
-      await collectSearchHits(`/exercises?search=${q}&limit=${capped}`, hits)
-    } catch {
-      /* ignore */
-    }
+    await collect(`/exercises?search=${q}&limit=${capped}`)
   }
+  if (hits.size === 0 && failure.error) throw failure.error
   return [...hits.values()]
 }
 

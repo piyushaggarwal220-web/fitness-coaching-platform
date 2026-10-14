@@ -64,7 +64,7 @@ const SESSION_RETRY_DELAYS_MS = [0, 300, 800, 1500]
 /** Short-lived client profile seed so post-onboarding navigations skip a stale incomplete read. */
 const CLIENT_SESSION_CACHE_TTL_MS = 60_000
 /** Deduplicate concurrent restores and reuse a warm result across portal sections. */
-const SESSION_CACHE_TTL_MS = 15_000
+const SESSION_CACHE_TTL_MS = 60_000
 
 type CachedClientSession = {
   user: SessionUser
